@@ -6,7 +6,11 @@ This directory contains tests and testing docs.
 
 ## Running unit tests
 
-TODO(#66): Write real unit tests.
+To run all unit tests:
+
+```bash
+go test ./...
+```
 
 ---
 
