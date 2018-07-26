@@ -25,11 +25,13 @@
 [ -v KNATIVE_TEST_INFRA ] || exit 1
 
 function build_tests() {
-  header "TODO(#16): Write build tests"
+  header "Running build tests"
+  go build -v ./...
 }
 
 function unit_tests() {
-  header "TODO(#15): Write unit tests"
+  header "Running unit tests"
+  report_go_test ./...
 }
 
 function integration_tests() {
