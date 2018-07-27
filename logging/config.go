@@ -96,14 +96,15 @@ type Config struct {
 	LoggingLevel  map[string]zapcore.Level
 }
 
-// NewConfigFromMap creates a LoggingConfig from the supplied map
-func NewConfigFromMap(data map[string]string) (*Config, error) {
+// NewConfigFromMap creates a LoggingConfig from the supplied map,
+// expecting the given list of components.
+func NewConfigFromMap(data map[string]string, components ...string) (*Config, error) {
 	lc := &Config{}
 	if zlc, ok := data["zap-logger-config"]; ok {
 		lc.LoggingConfig = zlc
 	}
 	lc.LoggingLevel = make(map[string]zapcore.Level)
-	for _, component := range []string{"controller", "queueproxy", "webhook", "activator", "autoscaler"} {
+	for _, component := range components {
 		if ll, ok := data["loglevel."+component]; ok {
 			if len(ll) > 0 {
 				level, err := levelFromString(ll)
@@ -117,9 +118,10 @@ func NewConfigFromMap(data map[string]string) (*Config, error) {
 	return lc, nil
 }
 
-// NewConfigFromConfigMap creates a LoggingConfig from the supplied ConfigMap
-func NewConfigFromConfigMap(configMap *corev1.ConfigMap) (*Config, error) {
-	return NewConfigFromMap(configMap.Data)
+// NewConfigFromConfigMap creates a LoggingConfig from the supplied ConfigMap,
+// expecting the given list of components.
+func NewConfigFromConfigMap(configMap *corev1.ConfigMap, components ...string) (*Config, error) {
+	return NewConfigFromMap(configMap.Data, components...)
 }
 
 func levelFromString(level string) (*zapcore.Level, error) {
@@ -132,9 +134,10 @@ func levelFromString(level string) (*zapcore.Level, error) {
 
 // UpdateLevelFromConfigMap returns a helper func that can be used to update the logging level
 // when a config map is updated
-func UpdateLevelFromConfigMap(logger *zap.SugaredLogger, atomicLevel zap.AtomicLevel, levelKey string) func(configMap *corev1.ConfigMap) {
+func UpdateLevelFromConfigMap(logger *zap.SugaredLogger, atomicLevel zap.AtomicLevel,
+	levelKey string, components ...string) func(configMap *corev1.ConfigMap) {
 	return func(configMap *corev1.ConfigMap) {
-		loggingConfig, err := NewConfigFromConfigMap(configMap)
+		loggingConfig, err := NewConfigFromConfigMap(configMap, components...)
 		if err != nil {
 			logger.Error("Failed to parse the logging configmap. Previous config map will be used.", zap.Error(err))
 			return
