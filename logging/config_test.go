@@ -191,7 +191,7 @@ func TestInvalidLevel(t *testing.T) {
 			"zap-logger-config":   wantCfg,
 			"loglevel.queueproxy": "invalid",
 		},
-	})
+	}, "queueproxy")
 	if err == nil {
 		t.Errorf("Expected errors. got nothing")
 	}
@@ -209,7 +209,7 @@ func getTestConfig() (*Config, string, string) {
 			"zap-logger-config":   wantCfg,
 			"loglevel.queueproxy": wantLevel,
 		},
-	})
+	}, "queueproxy")
 	return c, wantCfg, wantLevel
 }
 
@@ -242,7 +242,7 @@ func TestUpdateLevelFromConfigMap(t *testing.T) {
 		{"debug", zapcore.DebugLevel},
 	}
 
-	u := UpdateLevelFromConfigMap(logger, atomicLevel, "controller")
+	u := UpdateLevelFromConfigMap(logger, atomicLevel, "controller", "controller")
 	for _, tt := range tests {
 		cm.Data["loglevel.controller"] = tt.setLevel
 		u(cm)
