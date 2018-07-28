@@ -39,6 +39,7 @@
   name = "github.com/google/go-cmp"
   packages = [
     "cmp",
+    "cmp/cmpopts",
     "cmp/internal/diff",
     "cmp/internal/function",
     "cmp/internal/value"
@@ -73,6 +74,12 @@
   packages = ["."]
   revision = "0ac74bba4a81211b28e32ef260c0f16ae41f1377"
   version = "1.1.1"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/mattbaird/jsonpatch"
+  packages = ["."]
+  revision = "81af80346b1a01caae0cbc27fd3c1ba5b11e189f"
 
 [[projects]]
   name = "github.com/spf13/pflag"
@@ -190,6 +197,7 @@
 [[projects]]
   name = "k8s.io/api"
   packages = [
+    "admission/v1beta1",
     "admissionregistration/v1alpha1",
     "admissionregistration/v1beta1",
     "apps/v1",
@@ -444,6 +452,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "31ca3b1ef4b0de939b020c8096ff8b69c354175da18cf25a696a3dac0a69b82b"
+  inputs-digest = "5e33f4af550da484739b3e3fd9445ee9ff1a11f9c5cc4dfe63f919f4bc0725ff"
   solver-name = "gps-cdcl"
   solver-version = 1

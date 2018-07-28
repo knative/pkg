@@ -25,7 +25,7 @@ go install ./vendor/k8s.io/code-generator/cmd/deepcopy-gen
 
 # Depends on generate-groups.sh to install bin/deepcopy-gen
 ${GOPATH}/bin/deepcopy-gen --input-dirs \
-  github.com/knative/pkg/logging \
+  github.com/knative/pkg/logging,github.com/knative/pkg/webhook/testing \
   -O zz_generated.deepcopy \
   --go-header-file ${PKG_ROOT}/hack/boilerplate/boilerplate.go.txt
 
