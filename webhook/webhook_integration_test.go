@@ -54,7 +54,7 @@ func TestMissingContentType(t *testing.T) {
 		t.Fatalf("waitForServerAvailable() = %v", err)
 	}
 
-	tlsClient, err := createSecureTLSClient(t, ac.client, &ac.options)
+	tlsClient, err := createSecureTLSClient(t, ac.Client, &ac.Options)
 	if err != nil {
 		t.Fatalf("createSecureTLSClient() = %v", err)
 	}
@@ -105,7 +105,7 @@ func TestEmptyRequestBody(t *testing.T) {
 		t.Fatalf("waitForServerAvailable() = %v", err)
 	}
 
-	tlsClient, err := createSecureTLSClient(t, ac.client, &ac.options)
+	tlsClient, err := createSecureTLSClient(t, ac.Client, &ac.Options)
 	if err != nil {
 		t.Fatalf("createSecureTLSClient() = %v", err)
 	}
@@ -157,7 +157,7 @@ func TestValidResponseForResource(t *testing.T) {
 	if pollErr != nil {
 		t.Fatalf("waitForServerAvailable() = %v", err)
 	}
-	tlsClient, err := createSecureTLSClient(t, ac.client, &ac.options)
+	tlsClient, err := createSecureTLSClient(t, ac.Client, &ac.Options)
 	if err != nil {
 		t.Fatalf("createSecureTLSClient() = %v", err)
 	}
@@ -248,7 +248,7 @@ func TestInvalidResponseForResource(t *testing.T) {
 	if pollErr != nil {
 		t.Fatalf("waitForServerAvailable() = %v", err)
 	}
-	tlsClient, err := createSecureTLSClient(t, ac.client, &ac.options)
+	tlsClient, err := createSecureTLSClient(t, ac.Client, &ac.Options)
 	if err != nil {
 		t.Fatalf("createSecureTLSClient() = %v", err)
 	}
@@ -335,12 +335,12 @@ func testSetup(t *testing.T) (*AdmissionController, string, error) {
 	defaultOpts.Port = port
 	_, ac := newNonRunningTestAdmissionController(t, defaultOpts)
 
-	nsErr := createNamespace(t, ac.client, metav1.NamespaceSystem)
+	nsErr := createNamespace(t, ac.Client, metav1.NamespaceSystem)
 	if nsErr != nil {
 		return nil, "", nsErr
 	}
 
-	cMapsErr := createTestConfigMap(t, ac.client)
+	cMapsErr := createTestConfigMap(t, ac.Client)
 	if cMapsErr != nil {
 		return nil, "", cMapsErr
 	}
