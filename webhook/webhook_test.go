@@ -249,8 +249,8 @@ func TestInvalidUpdateResourceFailsImmutability(t *testing.T) {
 func TestValidWebhook(t *testing.T) {
 	_, ac := newNonRunningTestAdmissionController(t, newDefaultOptions())
 	createDeployment(ac)
-	ac.register(TestContextWithLogger(t), ac.client.AdmissionregistrationV1beta1().MutatingWebhookConfigurations(), []byte{})
-	_, err := ac.client.AdmissionregistrationV1beta1().MutatingWebhookConfigurations().Get(ac.options.WebhookName, metav1.GetOptions{})
+	ac.register(TestContextWithLogger(t), ac.Client.AdmissionregistrationV1beta1().MutatingWebhookConfigurations(), []byte{})
+	_, err := ac.Client.AdmissionregistrationV1beta1().MutatingWebhookConfigurations().Get(ac.Options.WebhookName, metav1.GetOptions{})
 	if err != nil {
 		t.Fatalf("Failed to create webhook: %s", err)
 	}
@@ -260,10 +260,10 @@ func TestUpdatingWebhook(t *testing.T) {
 	_, ac := newNonRunningTestAdmissionController(t, newDefaultOptions())
 	webhook := &admissionregistrationv1beta1.MutatingWebhookConfiguration{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: ac.options.WebhookName,
+			Name: ac.Options.WebhookName,
 		},
 		Webhooks: []admissionregistrationv1beta1.Webhook{{
-			Name:         ac.options.WebhookName,
+			Name:         ac.Options.WebhookName,
 			Rules:        []admissionregistrationv1beta1.RuleWithOperations{{}},
 			ClientConfig: admissionregistrationv1beta1.WebhookClientConfig{},
 		}},
@@ -271,8 +271,8 @@ func TestUpdatingWebhook(t *testing.T) {
 
 	createDeployment(ac)
 	createWebhook(ac, webhook)
-	ac.register(TestContextWithLogger(t), ac.client.AdmissionregistrationV1beta1().MutatingWebhookConfigurations(), []byte{})
-	currentWebhook, _ := ac.client.AdmissionregistrationV1beta1().MutatingWebhookConfigurations().Get(ac.options.WebhookName, metav1.GetOptions{})
+	ac.register(TestContextWithLogger(t), ac.Client.AdmissionregistrationV1beta1().MutatingWebhookConfigurations(), []byte{})
+	currentWebhook, _ := ac.Client.AdmissionregistrationV1beta1().MutatingWebhookConfigurations().Get(ac.Options.WebhookName, metav1.GetOptions{})
 	if reflect.DeepEqual(currentWebhook.Webhooks, webhook.Webhooks) {
 		t.Fatalf("Expected webhook to be updated")
 	}
@@ -282,11 +282,11 @@ func TestRegistrationForAlreadyExistingWebhook(t *testing.T) {
 	_, ac := newNonRunningTestAdmissionController(t, newDefaultOptions())
 	webhook := &admissionregistrationv1beta1.MutatingWebhookConfiguration{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: ac.options.WebhookName,
+			Name: ac.Options.WebhookName,
 		},
 		Webhooks: []admissionregistrationv1beta1.Webhook{
 			{
-				Name:         ac.options.WebhookName,
+				Name:         ac.Options.WebhookName,
 				Rules:        []admissionregistrationv1beta1.RuleWithOperations{{}},
 				ClientConfig: admissionregistrationv1beta1.WebhookClientConfig{},
 			},
@@ -294,7 +294,7 @@ func TestRegistrationForAlreadyExistingWebhook(t *testing.T) {
 	}
 	createWebhook(ac, webhook)
 
-	ac.options.RegistrationDelay = 1 * time.Millisecond
+	ac.Options.RegistrationDelay = 1 * time.Millisecond
 	stopCh := make(chan struct{})
 	errCh := make(chan error)
 
@@ -330,10 +330,10 @@ func TestCertConfigurationForAlreadyGeneratedSecret(t *testing.T) {
 		t.Fatalf("Failed to create secret: %v", err)
 	}
 
-	createNamespace(t, ac.client, metav1.NamespaceSystem)
-	createTestConfigMap(t, ac.client)
+	createNamespace(t, ac.Client, metav1.NamespaceSystem)
+	createTestConfigMap(t, ac.Client)
 
-	tlsConfig, caCert, err := configureCerts(ctx, kubeClient, &ac.options)
+	tlsConfig, caCert, err := configureCerts(ctx, kubeClient, &ac.Options)
 	if err != nil {
 		t.Fatalf("Failed to configure secret: %v", err)
 	}
@@ -366,10 +366,10 @@ func TestCertConfigurationForGeneratedSecret(t *testing.T) {
 	kubeClient, ac := newNonRunningTestAdmissionController(t, opts)
 
 	ctx := context.TODO()
-	createNamespace(t, ac.client, metav1.NamespaceSystem)
-	createTestConfigMap(t, ac.client)
+	createNamespace(t, ac.Client, metav1.NamespaceSystem)
+	createTestConfigMap(t, ac.Client)
 
-	tlsConfig, caCert, err := configureCerts(ctx, kubeClient, &ac.options)
+	tlsConfig, caCert, err := configureCerts(ctx, kubeClient, &ac.Options)
 	if err != nil {
 		t.Fatalf("Failed to configure certificates: %v", err)
 	}
@@ -397,7 +397,7 @@ func createDeployment(ac *AdmissionController) {
 			Namespace: "knative-something",
 		},
 	}
-	ac.client.ExtensionsV1beta1().Deployments("knative-something").Create(deployment)
+	ac.Client.ExtensionsV1beta1().Deployments("knative-something").Create(deployment)
 }
 
 func createResource(generation int64, name string) Resource {
@@ -449,7 +449,7 @@ func createCreateResource(r *Resource) *admissionv1beta1.AdmissionRequest {
 }
 
 func createWebhook(ac *AdmissionController, webhook *admissionregistrationv1beta1.MutatingWebhookConfiguration) {
-	client := ac.client.AdmissionregistrationV1beta1().MutatingWebhookConfigurations()
+	client := ac.Client.AdmissionregistrationV1beta1().MutatingWebhookConfigurations()
 	_, err := client.Create(webhook)
 	if err != nil {
 		panic(fmt.Sprintf("failed to create test webhook: %s", err))
@@ -500,15 +500,15 @@ func incrementGenerationPatch(old float64) jsonpatch.JsonPatchOperation {
 func NewAdmissionController(client kubernetes.Interface, options ControllerOptions,
 	logger *zap.SugaredLogger) (*AdmissionController, error) {
 	return &AdmissionController{
-		client:  client,
-		options: options,
-		groupVersion: schema.GroupVersion{
+		Client:  client,
+		Options: options,
+		GroupVersion: schema.GroupVersion{
 			Group:   "pkg.knative.dev",
 			Version: "v1alpha1",
 		},
-		handlers: map[string]runtime.Object{
+		Handlers: map[string]runtime.Object{
 			"Resource": &Resource{},
 		},
-		logger: logger,
+		Logger: logger,
 	}, nil
 }
