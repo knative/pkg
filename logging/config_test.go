@@ -193,7 +193,7 @@ func TestInvalidLevel(t *testing.T) {
 		},
 	}, "queueproxy")
 	if err == nil {
-		t.Errorf("Expected errors. got nothing")
+		t.Errorf("Expected errors when invalid level is present in logging config. got nothing")
 	}
 }
 
