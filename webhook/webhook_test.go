@@ -42,7 +42,7 @@ import (
 	fakekubeclientset "k8s.io/client-go/kubernetes/fake"
 
 	. "github.com/knative/pkg/logging/testing"
-	. "github.com/knative/pkg/webhook/testing"
+	. "github.com/knative/pkg/testing"
 )
 
 func newDefaultOptions() ControllerOptions {
