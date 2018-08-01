@@ -101,7 +101,18 @@ Body.`,
 		err:      ErrInvalidValue("foo", "bar"),
 		prefixes: [][]string{{"baz"}},
 		want:     `invalid value "foo": baz.bar`,
-	}}
+	}, {
+		name:     "mutually exclusive fields",
+		err:      ErrMutuallyExclusiveFields("foo", "bar"),
+		prefixes: [][]string{{CurrentField}},
+		want:     `mutually exclusive fields, must set only one of: .foo, .bar`,
+	}, {
+		name:     "mutually exclusive fields with prefix",
+		err:      ErrMutuallyExclusiveFields("foo", "bar"),
+		prefixes: [][]string{{"baz"}},
+		want:     `mutually exclusive fields, must set only one of: baz.foo, baz.bar`,
+	},
+	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {

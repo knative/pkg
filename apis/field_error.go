@@ -108,3 +108,12 @@ func ErrInvalidValue(value string, fieldPath string) *FieldError {
 		Paths:   []string{fieldPath},
 	}
 }
+
+// ErrMutuallyExclusiveFields is a variadic helper method for constructing a FieldError for a set of mutually exclusive fields.
+// Must have at least one set, but only one.
+func ErrMutuallyExclusiveFields(fieldPaths ...string) *FieldError {
+	return &FieldError{
+		Message: "mutually exclusive fields, must set only one of",
+		Paths:   fieldPaths,
+	}
+}
