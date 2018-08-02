@@ -85,7 +85,8 @@ func (fe *FieldError) Error() string {
 	return fmt.Sprintf("%v: %v\n%v", fe.Message, strings.Join(fe.Paths, ", "), fe.Details)
 }
 
-// ErrMissingField is a variadic helper method for constructing a FieldError for a set of missing fields.
+// ErrMissingField is a variadic helper method for constructing a FieldError for
+// a set of missing fields.
 func ErrMissingField(fieldPaths ...string) *FieldError {
 	return &FieldError{
 		Message: "missing field(s)",
@@ -93,7 +94,8 @@ func ErrMissingField(fieldPaths ...string) *FieldError {
 	}
 }
 
-// ErrDisallowedFields is a variadic helper method for constructing a FieldError for a set of disallowed fields.
+// ErrDisallowedFields is a variadic helper method for constructing a FieldError
+// for a set of disallowed fields.
 func ErrDisallowedFields(fieldPaths ...string) *FieldError {
 	return &FieldError{
 		Message: "must not set the field(s)",
@@ -101,19 +103,39 @@ func ErrDisallowedFields(fieldPaths ...string) *FieldError {
 	}
 }
 
-// ErrInvalidValue constructs a FieldError for a field that has received an invalid string value.
-func ErrInvalidValue(value string, fieldPath string) *FieldError {
+// ErrInvalidValue constructs a FieldError for a field that has received an
+// invalid string value.
+func ErrInvalidValue(value, fieldPath string) *FieldError {
 	return &FieldError{
 		Message: fmt.Sprintf("invalid value %q", value),
 		Paths:   []string{fieldPath},
 	}
 }
 
-// ErrMutuallyExclusiveFields is a variadic helper method for constructing a FieldError for a set of mutually exclusive fields.
-// Must have at least one set, but only one.
-func ErrMutuallyExclusiveFields(fieldPaths ...string) *FieldError {
+// ErrMissingOneOf is a variadic helper method for constructing a FieldError for
+// not having at least one field in a mutually exclusive field group.
+func ErrMissingOneOf(fieldPaths ...string) *FieldError {
 	return &FieldError{
-		Message: "mutually exclusive fields, must set only one of",
+		Message: "expected exactly one, got both",
 		Paths:   fieldPaths,
+	}
+}
+
+// ErrMultipleOneOf is a variadic helper method for constructing a FieldError
+// for having more than one field set in a mutually exclusive field group.
+func ErrMultipleOneOf(fieldPaths ...string) *FieldError {
+	return &FieldError{
+		Message: "expected exactly one, got neither",
+		Paths:   fieldPaths,
+	}
+}
+
+// ErrInvalidParameterName is a variadic helper method for constructing a
+// FieldError that specifies a parameter name that is invalid.
+func ErrInvalidParameterName(value, fieldPath string, errs []string) *FieldError {
+	return &FieldError{
+		Message: fmt.Sprintf("invalid parameter name %q", value),
+		Paths:   []string{fieldPath},
+		Details: strings.Join(errs, ", "),
 	}
 }

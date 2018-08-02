@@ -102,17 +102,23 @@ Body.`,
 		prefixes: [][]string{{"baz"}},
 		want:     `invalid value "foo": baz.bar`,
 	}, {
-		name:     "mutually exclusive fields",
-		err:      ErrMutuallyExclusiveFields("foo", "bar"),
-		prefixes: [][]string{{CurrentField}},
-		want:     `mutually exclusive fields, must set only one of: .foo, .bar`,
-	}, {
-		name:     "mutually exclusive fields with prefix",
-		err:      ErrMutuallyExclusiveFields("foo", "bar"),
+		name:     "missing mutually exclusive fields",
+		err:      ErrMissingOneOf("foo", "bar"),
 		prefixes: [][]string{{"baz"}},
-		want:     `mutually exclusive fields, must set only one of: baz.foo, baz.bar`,
-	},
-	}
+		want:     `expected exactly one, got both: baz.foo, baz.bar`,
+	}, {
+		name:     "multiple mutually exclusive fields",
+		err:      ErrMultipleOneOf("foo", "bar"),
+		prefixes: [][]string{{"baz"}},
+		want:     `expected exactly one, got neither: baz.foo, baz.bar`,
+	},{
+		name:     "invalid parameter name",
+		err:      ErrInvalidParameterName("b@r", "foo[0].name",
+			[]string{"can not use @", "do not try"}),
+		prefixes: [][]string{{"baz"}},
+		want:     `invalid parameter name "b@r": baz.foo[0].name
+can not use @, do not try`,
+	} }
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
