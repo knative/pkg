@@ -112,11 +112,11 @@ Body.`,
 		prefixes: [][]string{{"baz"}},
 		want:     `expected exactly one, got neither: baz.foo, baz.bar`,
 	},{
-		name:     "invalid parameter name",
-		err:      ErrInvalidParameterName("b@r", "foo[0].name",
+		name:     "invalid key name",
+		err:      ErrInvalidKeyName("b@r", "foo[0].name",
 			[]string{"can not use @", "do not try"}),
 		prefixes: [][]string{{"baz"}},
-		want:     `invalid parameter name "b@r": baz.foo[0].name
+		want:     `invalid key name "b@r": baz.foo[0].name
 can not use @, do not try`,
 	} }
 

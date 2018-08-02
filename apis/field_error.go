@@ -130,11 +130,11 @@ func ErrMultipleOneOf(fieldPaths ...string) *FieldError {
 	}
 }
 
-// ErrInvalidParameterName is a variadic helper method for constructing a
-// FieldError that specifies a parameter name that is invalid.
-func ErrInvalidParameterName(value, fieldPath string, errs []string) *FieldError {
+// ErrInvalidKeyName is a variadic helper method for constructing a
+// FieldError that specifies a key name that is invalid.
+func ErrInvalidKeyName(value, fieldPath string, errs []string) *FieldError {
 	return &FieldError{
-		Message: fmt.Sprintf("invalid parameter name %q", value),
+		Message: fmt.Sprintf("invalid key name %q", value),
 		Paths:   []string{fieldPath},
 		Details: strings.Join(errs, ", "),
 	}
