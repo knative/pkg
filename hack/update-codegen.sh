@@ -23,11 +23,24 @@ CODEGEN_PKG=${CODEGEN_PKG:-$(cd ${PKG_ROOT}; ls -d -1 ./vendor/k8s.io/code-gener
 
 go install ./vendor/k8s.io/code-generator/cmd/deepcopy-gen
 
+# generate the code with:
+# --output-base    because this script should also be able to run inside the vendor dir of
+#                  k8s.io/kubernetes. The output-base is needed for the generators to output into the vendor dir
+#                  instead of the $GOPATH directly. For normal projects this can be dropped.
+${CODEGEN_PKG}/generate-groups.sh "deepcopy,client,informer,lister" \
+  github.com/knative/pkg/client github.com/knative/pkg/apis \
+  "istio:v1alpha3" \
+  --go-header-file ${PKG_ROOT}/hack/boilerplate/boilerplate.go.txt
+
 # Depends on generate-groups.sh to install bin/deepcopy-gen
 ${GOPATH}/bin/deepcopy-gen --input-dirs \
-  github.com/knative/pkg/logging,github.com/knative/pkg/testing \
+  github.com/knative/pkg/apis,github.com/knative/pkg/logging,github.com/knative/pkg/testing \
   -O zz_generated.deepcopy \
   --go-header-file ${PKG_ROOT}/hack/boilerplate/boilerplate.go.txt
+
+# Update code to change Gatewaies -> Gateways to workaround cleverness of codegen pluralizer.
+[[ x$(uname) == "xDarwin" ]] && sedi=(-i '') || sedi=(-i)
+find . -name '*.go' -exec grep -l atewaies {} \; | xargs sed "${sedi[@]}" 's/atewaies/ateways/g'
 
 # Make sure our dependencies are up-to-date
 ${PKG_ROOT}/hack/update-deps.sh
