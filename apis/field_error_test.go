@@ -101,6 +101,30 @@ Body.`,
 		err:      ErrInvalidValue("foo", "bar"),
 		prefixes: [][]string{{"baz"}},
 		want:     `invalid value "foo": baz.bar`,
+	}, {
+		name:     "missing mutually exclusive fields",
+		err:      ErrMissingOneOf("foo", "bar"),
+		prefixes: [][]string{{"baz"}},
+		want:     `expected exactly one, got both: baz.foo, baz.bar`,
+	}, {
+		name:     "multiple mutually exclusive fields",
+		err:      ErrMultipleOneOf("foo", "bar"),
+		prefixes: [][]string{{"baz"}},
+		want:     `expected exactly one, got neither: baz.foo, baz.bar`,
+	},{
+		name:     "invalid key name",
+		err:      ErrInvalidKeyName("b@r", "foo[0].name",
+			"can not use @", "do not try"),
+		prefixes: [][]string{{"baz"}},
+		want:     `invalid key name "b@r": baz.foo[0].name
+can not use @, do not try`,
+	},{
+		name:     "invalid key name with details array",
+		err:      ErrInvalidKeyName("b@r", "foo[0].name",
+			[]string{"can not use @", "do not try"}...),
+		prefixes: [][]string{{"baz"}},
+		want:     `invalid key name "b@r": baz.foo[0].name
+can not use @, do not try`,
 	}}
 
 	for _, test := range tests {
