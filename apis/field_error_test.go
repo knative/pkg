@@ -114,11 +114,18 @@ Body.`,
 	},{
 		name:     "invalid key name",
 		err:      ErrInvalidKeyName("b@r", "foo[0].name",
-			[]string{"can not use @", "do not try"}),
+			"can not use @", "do not try"),
 		prefixes: [][]string{{"baz"}},
 		want:     `invalid key name "b@r": baz.foo[0].name
 can not use @, do not try`,
-	} }
+	},{
+		name:     "invalid key name with details array",
+		err:      ErrInvalidKeyName("b@r", "foo[0].name",
+			[]string{"can not use @", "do not try"}...),
+		prefixes: [][]string{{"baz"}},
+		want:     `invalid key name "b@r": baz.foo[0].name
+can not use @, do not try`,
+	}}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
