@@ -116,7 +116,7 @@ func ErrInvalidValue(value, fieldPath string) *FieldError {
 // not having at least one field in a mutually exclusive field group.
 func ErrMissingOneOf(fieldPaths ...string) *FieldError {
 	return &FieldError{
-		Message: "expected exactly one, got both",
+		Message: "expected exactly one, got neither",
 		Paths:   fieldPaths,
 	}
 }
@@ -125,7 +125,7 @@ func ErrMissingOneOf(fieldPaths ...string) *FieldError {
 // for having more than one field set in a mutually exclusive field group.
 func ErrMultipleOneOf(fieldPaths ...string) *FieldError {
 	return &FieldError{
-		Message: "expected exactly one, got neither",
+		Message: "expected exactly one, got both",
 		Paths:   fieldPaths,
 	}
 }
