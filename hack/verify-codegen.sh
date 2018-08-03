@@ -30,19 +30,20 @@ trap "cleanup" EXIT SIGINT
 cleanup
 
 # Save working tree state
-mkdir -p "${TMP_DIFFROOT}/pkg"
-cp -aR "${PKG_ROOT_DIR}/Gopkg.lock" "${PKG_ROOT_DIR}/pkg" "${PKG_ROOT_DIR}/vendor" "${TMP_DIFFROOT}"
+mkdir -p "${TMP_DIFFROOT}/apis"
+mkdir -p "${TMP_DIFFROOT}/client"
+cp -aR "${PKG_ROOT_DIR}/Gopkg.lock" "${PKG_ROOT_DIR}/apis" "${PKG_ROOT_DIR}/client" "${PKG_ROOT_DIR}/vendor" "${TMP_DIFFROOT}"
 
 # TODO(mattmoor): We should be able to rm -rf pkg/client/ and vendor/
 
 "${PKG_ROOT_DIR}/hack/update-codegen.sh"
 echo "Diffing ${PKG_ROOT_DIR} against freshly generated codegen"
 ret=0
-diff -Naupr "${PKG_ROOT_DIR}/pkg" "${TMP_DIFFROOT}/pkg" || ret=1
+diff -Naupr "${PKG_ROOT_DIR}/apis" "${TMP_DIFFROOT}/apis" || ret=1
+diff -Naupr "${PKG_ROOT_DIR}/client" "${TMP_DIFFROOT}/client" || ret=1
 
 # Restore working tree state
-rm -fr "${TMP_DIFFROOT}/config"
-rm -fr "${PKG_ROOT_DIR}/Gopkg.lock" "${PKG_ROOT_DIR}/pkg" "${PKG_ROOT_DIR}/vendor"
+rm -fr "${PKG_ROOT_DIR}/Gopkg.lock" "${PKG_ROOT_DIR}/apis" "${PKG_ROOT_DIR}/client" "${PKG_ROOT_DIR}/vendor"
 cp -aR "${TMP_DIFFROOT}"/* "${PKG_ROOT_DIR}"
 
 if [[ $ret -eq 0 ]]
