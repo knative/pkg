@@ -38,9 +38,5 @@ ${GOPATH}/bin/deepcopy-gen --input-dirs \
   -O zz_generated.deepcopy \
   --go-header-file ${PKG_ROOT}/hack/boilerplate/boilerplate.go.txt
 
-# Update code to change Gatewaies -> Gateways to workaround cleverness of codegen pluralizer.
-[[ x$(uname) == "xDarwin" ]] && sedi=(-i '') || sedi=(-i)
-find . -name '*.go' -exec grep -l atewaies {} \; | xargs sed "${sedi[@]}" 's/atewaies/ateways/g'
-
 # Make sure our dependencies are up-to-date
 ${PKG_ROOT}/hack/update-deps.sh
