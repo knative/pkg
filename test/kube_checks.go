@@ -22,6 +22,7 @@ package test
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"go.opencensus.io/trace"
 	corev1 "k8s.io/api/core/v1"
@@ -30,6 +31,11 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/client-go/kubernetes/typed/extensions/v1beta1"
+)
+
+const (
+	interval = 1 * time.Second
+	timeout  = 5 * time.Minute
 )
 
 // WaitForDeploymentState polls the status of the Deployment called name

@@ -81,12 +81,12 @@ func EventuallyMatchesBody(expected string) spoof.ResponseChecker {
 // the domain in the request headers, otherwise it will make the request directly to domain.
 // desc will be used to name the metric that is emitted to track how long it took for the
 // domain to get into the state checked by inState.  Commas in `desc` must be escaped.
-func WaitForEndpointState(kubeClientset *kubernetes.Clientset, logger *zap.SugaredLogger, domain string, inState spoof.ResponseChecker, desc string) error {
+func WaitForEndpointState(kubeClientset *kubernetes.Clientset, logger *zap.SugaredLogger, domain string, inState spoof.ResponseChecker, desc string, resolvable bool) error {
 	metricName := fmt.Sprintf("WaitForEndpointState/%s", desc)
 	_, span := trace.StartSpan(context.Background(), metricName)
 	defer span.End()
 
-	client, err := spoof.New(kubeClientset, logger, domain, Flags.ResolvableDomain)
+	client, err := spoof.New(kubeClientset, logger, domain, resolvable)
 	if err != nil {
 		return err
 	}
