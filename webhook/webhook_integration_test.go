@@ -164,7 +164,11 @@ func TestValidResponseForResource(t *testing.T) {
 
 	admissionreq := &admissionv1beta1.AdmissionRequest{
 		Operation: admissionv1beta1.Create,
-		Kind:      metav1.GroupVersionKind{Kind: "Resource"},
+		Kind: metav1.GroupVersionKind{
+			Group:   "pkg.knative.dev",
+			Version: "v1alpha1",
+			Kind:    "Resource",
+		},
 	}
 	testRev := createResource(1234, "testrev")
 	marshaled, err := json.Marshal(testRev)
@@ -263,7 +267,11 @@ func TestInvalidResponseForResource(t *testing.T) {
 
 	admissionreq := &admissionv1beta1.AdmissionRequest{
 		Operation: admissionv1beta1.Create,
-		Kind:      metav1.GroupVersionKind{Kind: "Resource"},
+		Kind: metav1.GroupVersionKind{
+			Group:   "pkg.knative.dev",
+			Version: "v1alpha1",
+			Kind:    "Resource",
+		},
 	}
 
 	admissionreq.Object.Raw = marshaled

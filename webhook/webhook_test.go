@@ -125,7 +125,11 @@ func TestUnknownKindFails(t *testing.T) {
 
 	req := admissionv1beta1.AdmissionRequest{
 		Operation: admissionv1beta1.Create,
-		Kind:      metav1.GroupVersionKind{Kind: "Garbage"},
+		Kind: metav1.GroupVersionKind{
+			Group:   "pkg.knative.dev",
+			Version: "v1alpha1",
+			Kind:    "Garbage",
+		},
 	}
 
 	expectFailsWith(t, ac.admit(TestContextWithLogger(t), &req), "unhandled kind")
@@ -135,7 +139,11 @@ func TestInvalidNameFails(t *testing.T) {
 	_, ac := newNonRunningTestAdmissionController(t, newDefaultOptions())
 	req := &admissionv1beta1.AdmissionRequest{
 		Operation: admissionv1beta1.Create,
-		Kind:      metav1.GroupVersionKind{Kind: "Resource"},
+		Kind: metav1.GroupVersionKind{
+			Group:   "pkg.knative.dev",
+			Version: "v1alpha1",
+			Kind:    "Resource",
+		},
 	}
 	invalidName := "an.example"
 	config := createResource(0, invalidName)
@@ -416,7 +424,11 @@ func createResource(generation int64, name string) Resource {
 func createBaseUpdateResource() *admissionv1beta1.AdmissionRequest {
 	return &admissionv1beta1.AdmissionRequest{
 		Operation: admissionv1beta1.Update,
-		Kind:      metav1.GroupVersionKind{Kind: "Resource"},
+		Kind: metav1.GroupVersionKind{
+			Group:   "pkg.knative.dev",
+			Version: "v1alpha1",
+			Kind:    "Resource",
+		},
 	}
 }
 
@@ -438,7 +450,11 @@ func createUpdateResource(old, new *Resource) *admissionv1beta1.AdmissionRequest
 func createCreateResource(r *Resource) *admissionv1beta1.AdmissionRequest {
 	req := &admissionv1beta1.AdmissionRequest{
 		Operation: admissionv1beta1.Create,
-		Kind:      metav1.GroupVersionKind{Kind: "Resource"},
+		Kind: metav1.GroupVersionKind{
+			Group:   "pkg.knative.dev",
+			Version: "v1alpha1",
+			Kind:    "Resource",
+		},
 	}
 	marshaled, err := json.Marshal(r)
 	if err != nil {
@@ -502,12 +518,12 @@ func NewAdmissionController(client kubernetes.Interface, options ControllerOptio
 	return &AdmissionController{
 		Client:  client,
 		Options: options,
-		GroupVersion: schema.GroupVersion{
-			Group:   "pkg.knative.dev",
-			Version: "v1alpha1",
-		},
-		Handlers: map[string]runtime.Object{
-			"Resource": &Resource{},
+		Handlers: map[schema.GroupVersionKind]runtime.Object{
+			{
+				Group:   "pkg.knative.dev",
+				Version: "v1alpha1",
+				Kind:    "Resource",
+			}: &Resource{},
 		},
 		Logger: logger,
 	}, nil
