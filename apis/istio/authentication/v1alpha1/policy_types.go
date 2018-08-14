@@ -18,6 +18,7 @@ package v1alpha1
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"github.com/knative/pkg/apis/istio/common/v1alpha1"
 )
 
 // +genclient
@@ -184,6 +185,7 @@ type TargetSelector struct {
 type PortSelector struct {
 	// It is requred to specify exactly one of the fields:
 	// Number or Name
+
 	// Valid port number
 	Number uint32 `json:"number,omitempty"`
 	
@@ -308,6 +310,12 @@ type Jwt struct {
 	//
 	// For example, `query=jwt_token`.
 	JwtParams []string `json:"jwtParams,omitempty"`
+
+	// URL paths that should be excluded from the JWT validation. If the request path is matched,
+  	// the JWT validation will be skipped and the request will proceed regardless.
+  	// This is useful to keep a couple of URLs public for external health checks.
+  	// Example: "/health_check", "/status/cpu_usage".
+	ExcludedPaths []v1alpha1.StringMatch `json:"excludedPaths,omitempty"`
 }
 
 // OriginAuthenticationMethod defines authentication method/params for origin

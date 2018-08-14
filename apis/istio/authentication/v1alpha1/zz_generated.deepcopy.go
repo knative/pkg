@@ -21,6 +21,7 @@ limitations under the License.
 package v1alpha1
 
 import (
+	commonv1alpha1 "github.com/knative/pkg/apis/istio/common/v1alpha1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 )
 
@@ -40,6 +41,11 @@ func (in *Jwt) DeepCopyInto(out *Jwt) {
 	if in.JwtParams != nil {
 		in, out := &in.JwtParams, &out.JwtParams
 		*out = make([]string, len(*in))
+		copy(*out, *in)
+	}
+	if in.ExcludedPaths != nil {
+		in, out := &in.ExcludedPaths, &out.ExcludedPaths
+		*out = make([]commonv1alpha1.StringMatch, len(*in))
 		copy(*out, *in)
 	}
 	return
