@@ -135,35 +135,6 @@ func TestUnknownKindFails(t *testing.T) {
 	expectFailsWith(t, ac.admit(TestContextWithLogger(t), &req), "unhandled kind")
 }
 
-func TestInvalidNameFails(t *testing.T) {
-	_, ac := newNonRunningTestAdmissionController(t, newDefaultOptions())
-	req := &admissionv1beta1.AdmissionRequest{
-		Operation: admissionv1beta1.Create,
-		Kind: metav1.GroupVersionKind{
-			Group:   "pkg.knative.dev",
-			Version: "v1alpha1",
-			Kind:    "Resource",
-		},
-	}
-	invalidName := "an.example"
-	config := createResource(0, invalidName)
-	marshaled, err := json.Marshal(config)
-	if err != nil {
-		t.Fatalf("Failed to marshal resource: %s", err)
-	}
-	req.Object.Raw = marshaled
-	expectFailsWith(t, ac.admit(TestContextWithLogger(t), req), "Invalid resource name")
-
-	invalidName = strings.Repeat("a", 64)
-	config = createResource(0, invalidName)
-	marshaled, err = json.Marshal(config)
-	if err != nil {
-		t.Fatalf("Failed to marshal resource: %s", err)
-	}
-	req.Object.Raw = marshaled
-	expectFailsWith(t, ac.admit(TestContextWithLogger(t), req), "Invalid resource name")
-}
-
 func TestValidCreateResourceSucceeds(t *testing.T) {
 	r := createResource(1234, "a name")
 	r.SetDefaults() // Fill in defaults to check that there are no patches.
