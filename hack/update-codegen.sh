@@ -29,7 +29,7 @@ go install ./vendor/k8s.io/code-generator/cmd/deepcopy-gen
 #                  instead of the $GOPATH directly. For normal projects this can be dropped.
 ${CODEGEN_PKG}/generate-groups.sh "deepcopy,client,informer,lister" \
   github.com/knative/pkg/client github.com/knative/pkg/apis \
-  "istio:v1alpha3" \
+  "istio:v1alpha3 istio/authentication:v1alpha1" \
   --go-header-file ${PKG_ROOT}/hack/boilerplate/boilerplate.go.txt
 
 # Depends on generate-groups.sh to install bin/deepcopy-gen
