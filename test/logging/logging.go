@@ -1,12 +1,9 @@
 /*
 Copyright 2018 The Knative Authors
-
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
-
     http://www.apache.org/licenses/LICENSE-2.0
-
 Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -17,7 +14,7 @@ limitations under the License.
 // logging.go contains the logic to configure and interact with the
 // logging and metrics libraries.
 
-package test
+package logging
 
 import (
 	"flag"
@@ -39,7 +36,7 @@ const (
 	metricViewReportingPeriod = 1 * time.Second
 )
 
-var baseLogger *zap.SugaredLogger
+var baseLogger *BaseLogger
 
 var exporter *zapMetricExporter
 
@@ -48,6 +45,11 @@ var exporter *zapMetricExporter
 // It conforms to the view.Exporter and trace.Exporter interfaces.
 type zapMetricExporter struct {
 	logger *zap.SugaredLogger
+}
+
+// BaseLogger is a common knative test files logger.
+type BaseLogger struct {
+	Logger *zap.SugaredLogger
 }
 
 // ExportView will emit the view data vd (i.e. the stats that have been
@@ -65,7 +67,7 @@ func (e *zapMetricExporter) ExportSpan(vd *trace.SpanData) {
 	e.logger.Infof("metric %s %d %d %s", vd.Name, vd.StartTime.UnixNano(), vd.EndTime.UnixNano(), duration)
 }
 
-func newLogger(logLevel string) *zap.SugaredLogger {
+func newLogger(logLevel string) *BaseLogger {
 	configJSONTemplate := `{
 	  "level": "%s",
 	  "encoding": "console",
@@ -87,15 +89,17 @@ func newLogger(logLevel string) *zap.SugaredLogger {
 	}`
 	configJSON := fmt.Sprintf(configJSONTemplate, logLevel)
 	l, _ := logging.NewLogger(string(configJSON), logLevel)
-	return l
+	return &BaseLogger{Logger: l}
 }
 
-func initializeMetricExporter() {
+// InitializeMetricExporter initializes the metric exporter logger
+func InitializeMetricExporter() {
 	trace.ApplyConfig(trace.Config{DefaultSampler: trace.AlwaysSample()})
 	view.SetReportingPeriod(metricViewReportingPeriod)
 }
 
-func initializeLogger(logVerbose bool) {
+// InitializeLogger initializes the base logger
+func InitializeLogger(logVerbose bool) {
 	logLevel := "info"
 	if logVerbose {
 		// Both gLog and "go test" use -v flag. The code below is a work around so that we can still set v value for gLog
@@ -112,7 +116,7 @@ func initializeLogger(logVerbose bool) {
 // using the provided context as a name. This will also register the logger as a metric exporter,
 // which is unfortunately global, so calling `GetContextLogger` will have the side effect of
 // changing the context in which all metrics are logged from that point forward.
-func GetContextLogger(context string) *zap.SugaredLogger {
+func GetContextLogger(context string) *BaseLogger {
 	// If there was a previously registered exporter, unregister it so we only emit
 	// the metrics in the current context.
 	if exporter != nil {
@@ -120,11 +124,42 @@ func GetContextLogger(context string) *zap.SugaredLogger {
 		trace.UnregisterExporter(exporter)
 	}
 
-	logger := baseLogger.Named(context)
+	logger := baseLogger.Logger.Named(context)
 
 	exporter = &zapMetricExporter{logger: logger}
 	view.RegisterExporter(exporter)
 	trace.RegisterExporter(exporter)
 
-	return logger
+	return &BaseLogger{Logger: logger}
 }
+
+// Infof logs a templated message.
+func (b *BaseLogger) Infof(template string, args ...interface{}) {
+	b.Logger.Infof(template, args...)
+}
+
+// Info logs an info message.
+func (b *BaseLogger) Info(args ...interface{}) {
+	b.Logger.Info(args...)
+}
+
+// Fatal logs a fatal message.
+func (b *BaseLogger) Fatal(args ...interface{}) {
+	b.Logger.Fatal(args...)
+}
+
+// Fatalf logs a templated fatal message.
+func (b *BaseLogger) Fatalf(template string, args ...interface{}) {
+	b.Logger.Fatalf(template, args...)
+}
+
+// Debugf logs a templated debug message.
+func (b *BaseLogger) Debugf(template string, args ...interface{}) {
+	b.Logger.Debugf(template, args...)
+}
+
+// Debug logs a debug message.
+func (b *BaseLogger) Debug(args ...interface{}) {
+	b.Logger.Debug(args...)
+}
+
