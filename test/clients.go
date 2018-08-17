@@ -42,7 +42,7 @@ func NewKubeClient(configPath string, clusterName string) (*KubeClient, error) {
 }
 
 // BuildClientConfig builds the client config specified by the config path and the cluster name
-func BuildClientConfig(kubeConfigPath string, clusterName string) (*rest.Config, error) {
+func buildClientConfig(kubeConfigPath string, clusterName string) (*rest.Config, error) {
 	overrides := clientcmd.ConfigOverrides{}
 	// Override the cluster name if provided.
 	if clusterName != "" {
