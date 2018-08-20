@@ -24,6 +24,8 @@ import (
 	"os"
 	"os/user"
 	"path"
+
+	"github.com/knative/pkg/test/logging"
 )
 
 // Flags holds the command line flags or defaults for settings in the user's environment.
@@ -67,10 +69,10 @@ func initializeFlags() *EnvironmentFlags {
 
 	flag.Parse()
 	flag.Set("alsologtostderr", "true")
-	initializeLogger(f.LogVerbose)
+	logging.InitializeLogger(f.LogVerbose)
 
 	if f.EmitMetrics {
-		initializeMetricExporter()
+		logging.InitializeMetricExporter()
 	}
 	return &f
 }
