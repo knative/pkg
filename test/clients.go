@@ -19,7 +19,11 @@ limitations under the License.
 package test
 
 import (
+	"github.com/knative/pkg/test/logging"
+	"github.com/knative/pkg/test/spoof"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
+	k8styped "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 )
@@ -27,6 +31,11 @@ import (
 // KubeClient holds instances of interfaces for making requests to kubernetes client.
 type KubeClient struct {
 	Kube *kubernetes.Clientset
+}
+
+// NewSpoofingClient returns a spoofing client to make requests
+func NewSpoofingClient(client *KubeClient, logger *logging.BaseLogger, domain string, resolvable bool) (*spoof.SpoofingClient, error) {
+	return spoof.New(client.Kube, logger, domain, resolvable)
 }
 
 // NewKubeClient instantiates and returns several clientsets required for making request to the
@@ -56,3 +65,22 @@ func buildClientConfig(kubeConfigPath string, clusterName string) (*rest.Config,
 		&overrides).ClientConfig()
 }
 
+// UpdateConfigMap updates the config map for specified @name with values
+func (client *KubeClient) UpdateConfigMap(name string, configName string, values map[string]string) error {
+	configMap, err := client.getConfigMap(name).Get(configName, metav1.GetOptions{})
+	if err != nil {
+		return err
+	}
+
+	for key, value := range values {
+		configMap.Data[key] = value
+	}
+
+	_, err = client.getConfigMap(name).Update(configMap)
+	return err
+}
+
+// getConfigMap gets the knative serving config map.
+func (client *KubeClient) getConfigMap(name string) k8styped.ConfigMapInterface {
+	return client.Kube.CoreV1().ConfigMaps(name)
+}
