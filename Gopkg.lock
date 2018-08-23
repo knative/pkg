@@ -97,6 +97,14 @@
   revision = "9cad4c3443a7200dd6400aef47183728de563a38"
 
 [[projects]]
+  branch = "master"
+  digest = "1:d6415e6b744ec877c21fe734067636b9ee149af77276b08a3d33dd8698abf947"
+  name = "github.com/knative/test-infra"
+  packages = ["."]
+  pruneopts = "T"
+  revision = "4a4a682ee1fd31f33e450406393c3553b9ec5c2a"
+
+[[projects]]
   digest = "1:475b179287e8afdcd352014b2c2500e67decdf63e66125e2129286873453e1cd"
   name = "github.com/hashicorp/golang-lru"
   packages = [
