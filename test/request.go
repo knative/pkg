@@ -95,6 +95,5 @@ func WaitForEndpointState(kubeClient *KubeClient, logger *logging.BaseLogger, do
 		return nil, err
 	}
 
-	res, err := client.Poll(req, inState)
-	return res, err
+	return client.Poll(req, inState)
 }
