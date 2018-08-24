@@ -18,8 +18,9 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
-PKG_ROOT=$(dirname ${BASH_SOURCE})/..
-CODEGEN_PKG=${CODEGEN_PKG:-$(cd ${PKG_ROOT}; ls -d -1 ./vendor/k8s.io/code-generator 2>/dev/null || echo ../code-generator)}
+source $(dirname $0)/../vendor/github.com/knative/test-infra/scripts/library.sh
+
+CODEGEN_PKG=${CODEGEN_PKG:-$(cd ${REPO_ROOT_DIR}; ls -d -1 ./vendor/k8s.io/code-generator 2>/dev/null || echo ../code-generator)}
 
 go install ./vendor/k8s.io/code-generator/cmd/deepcopy-gen
 
@@ -30,13 +31,13 @@ go install ./vendor/k8s.io/code-generator/cmd/deepcopy-gen
 ${CODEGEN_PKG}/generate-groups.sh "deepcopy,client,informer,lister" \
   github.com/knative/pkg/client github.com/knative/pkg/apis \
   "istio:v1alpha3 istio/authentication:v1alpha1" \
-  --go-header-file ${PKG_ROOT}/hack/boilerplate/boilerplate.go.txt
+  --go-header-file ${REPO_ROOT_DIR}/hack/boilerplate/boilerplate.go.txt
 
 # Depends on generate-groups.sh to install bin/deepcopy-gen
 ${GOPATH}/bin/deepcopy-gen --input-dirs \
   github.com/knative/pkg/apis,github.com/knative/pkg/logging,github.com/knative/pkg/testing \
   -O zz_generated.deepcopy \
-  --go-header-file ${PKG_ROOT}/hack/boilerplate/boilerplate.go.txt
+  --go-header-file ${REPO_ROOT_DIR}/hack/boilerplate/boilerplate.go.txt
 
 # Make sure our dependencies are up-to-date
-${PKG_ROOT}/hack/update-deps.sh
+${REPO_ROOT_DIR}/hack/update-deps.sh

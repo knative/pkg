@@ -18,8 +18,9 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
-readonly PKG_ROOT_DIR="$(git rev-parse --show-toplevel)"
-readonly TMP_DIFFROOT="$(mktemp -d -p ${PKG_ROOT_DIR})"
+source $(dirname $0)/../vendor/github.com/knative/test-infra/scripts/library.sh
+
+readonly TMP_DIFFROOT="$(mktemp -d -p ${REPO_ROOT_DIR})"
 
 cleanup() {
   rm -rf "${TMP_DIFFROOT}"
@@ -32,24 +33,24 @@ cleanup
 # Save working tree state
 mkdir -p "${TMP_DIFFROOT}/apis"
 mkdir -p "${TMP_DIFFROOT}/client"
-cp -aR "${PKG_ROOT_DIR}/Gopkg.lock" "${PKG_ROOT_DIR}/apis" "${PKG_ROOT_DIR}/client" "${PKG_ROOT_DIR}/vendor" "${TMP_DIFFROOT}"
+cp -aR "${REPO_ROOT_DIR}/Gopkg.lock" "${REPO_ROOT_DIR}/apis" "${REPO_ROOT_DIR}/client" "${REPO_ROOT_DIR}/vendor" "${TMP_DIFFROOT}"
 
 # TODO(mattmoor): We should be able to rm -rf pkg/client/ and vendor/
 
-"${PKG_ROOT_DIR}/hack/update-codegen.sh"
-echo "Diffing ${PKG_ROOT_DIR} against freshly generated codegen"
+"${REPO_ROOT_DIR}/hack/update-codegen.sh"
+echo "Diffing ${REPO_ROOT_DIR} against freshly generated codegen"
 ret=0
-diff -Naupr "${PKG_ROOT_DIR}/apis" "${TMP_DIFFROOT}/apis" || ret=1
-diff -Naupr "${PKG_ROOT_DIR}/client" "${TMP_DIFFROOT}/client" || ret=1
+diff -Naupr "${REPO_ROOT_DIR}/apis" "${TMP_DIFFROOT}/apis" || ret=1
+diff -Naupr "${REPO_ROOT_DIR}/client" "${TMP_DIFFROOT}/client" || ret=1
 
 # Restore working tree state
-rm -fr "${PKG_ROOT_DIR}/Gopkg.lock" "${PKG_ROOT_DIR}/apis" "${PKG_ROOT_DIR}/client" "${PKG_ROOT_DIR}/vendor"
-cp -aR "${TMP_DIFFROOT}"/* "${PKG_ROOT_DIR}"
+rm -fr "${REPO_ROOT_DIR}/Gopkg.lock" "${REPO_ROOT_DIR}/apis" "${REPO_ROOT_DIR}/client" "${REPO_ROOT_DIR}/vendor"
+cp -aR "${TMP_DIFFROOT}"/* "${REPO_ROOT_DIR}"
 
 if [[ $ret -eq 0 ]]
 then
-  echo "${PKG_ROOT_DIR} up to date."
+  echo "${REPO_ROOT_DIR} up to date."
 else
-  echo "ERROR: ${PKG_ROOT_DIR} is out of date. Please run ./hack/update-codegen.sh"
+  echo "ERROR: ${REPO_ROOT_DIR} is out of date. Please run ./hack/update-codegen.sh"
   exit 1
 fi
