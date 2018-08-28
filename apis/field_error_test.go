@@ -148,7 +148,7 @@ can not use @, do not try`,
 	}
 }
 
-func TestViaIndexFieldError(t *testing.T) {
+func TestViaIndexOrKeyFieldError(t *testing.T) {
 	tests := []struct {
 		name     string
 		err      *FieldError
@@ -160,19 +160,34 @@ func TestViaIndexFieldError(t *testing.T) {
 			Message: "hear me roar",
 			Paths:   []string{"bar"},
 		},
-		prefixes: [][]string{{"foo", "INDEX:1,2,3"}},
+		prefixes: [][]string{{"INDEX:1,2,3", "foo"}},
 		want:     "hear me roar: foo[1][2][3].bar",
+	}, {
+		name: "simple key",
+		err: &FieldError{
+			Message: "hear me roar",
+			Paths:   []string{"bar"},
+		},
+		prefixes: [][]string{{"KEY:A,B,C", "foo"}},
+		want:     "hear me roar: foo[A][B][C].bar",
 	}, {
 		name:     "missing field propagation",
 		err:      ErrMissingField("foo", "bar"),
-		prefixes: [][]string{{"baz", "INDEX:2"}},
+		prefixes: [][]string{{"[2]", "baz"}},
 		want:     "missing field(s): baz[2].foo, baz[2].bar",
 	}, {
 		name: "invalid key name",
 		err: ErrInvalidKeyName("b@r", "name",
 			"can not use @", "do not try"),
 		prefixes: [][]string{{"baz", "INDEX:0", "foo"}},
-		want: `invalid key name "b@r": foo.baz[0].name
+		want: `invalid key name "b@r": foo[0].baz.name
+can not use @, do not try`,
+	}, {
+		name: "invalid key name with keys",
+		err: ErrInvalidKeyName("b@r", "name",
+			"can not use @", "do not try"),
+		prefixes: [][]string{{"baz", "INDEX:0", "foo"}, {"bar", "KEY:A", "boo"}},
+		want: `invalid key name "b@r": boo[A].bar.foo[0].baz.name
 can not use @, do not try`,
 	}, {
 		name: "multi prefixes provided",
@@ -180,22 +195,75 @@ can not use @, do not try`,
 			Message: "invalid field(s)",
 			Paths:   []string{"foo"},
 		},
-		prefixes: [][]string{{"bee"}, {"INDEX:0"}, {"baa", "baz", "ugh"}, {"INDEX:2"}},
-		want:     "invalid field(s): ugh[2].baz.baa.bee[0].foo",
+		prefixes: [][]string{{"INDEX:2"}, {"bee"}, {"INDEX:0"}, {"baa", "baz", "ugh"}},
+		want:     "invalid field(s): ugh.baz.baa[0].bee[2].foo",
 	}, {
-		name: "manual call",
+		name: "bypass helpers",
+		err: &FieldError{
+			Message: "invalid field(s)",
+			Paths:   []string{"foo"},
+		},
+		prefixes: [][]string{{"[2]"}, {"[1]"}, {"bar"}},
+		want:     "invalid field(s): bar[1][2].foo",
+	}, {
+		name: "multi paths provided",
+		err: &FieldError{
+			Message: "invalid field(s)",
+			Paths:   []string{"foo", "bar"},
+		},
+		prefixes: [][]string{{"INDEX:0"}, {"index"}, {"KEY:A"}, {"map"}},
+		want:     "invalid field(s): map[A].index[0].foo, map[A].index[0].bar",
+	}, {
+		name: "manual index",
+		err: func() *FieldError {
+			// Example, return an error in a loop:
+			// for i, item := spec.myList {
+			//   err := item.validate().ViaIndex(i).ViaField("myList")
+			//   if err != nil {
+			// 		return err
+			//   }
+			// }
+			// --> I expect path to be myList[i].foo
+
+			err := &FieldError{
+				Message: "invalid field(s)",
+				Paths:   []string{"foo"},
+			}
+
+			err = err.ViaIndex(0).ViaField("bar")
+			err = err.ViaIndex(1, 2).ViaField("baz")
+			err = err.ViaIndex(3).ViaIndex(4).ViaField("boof")
+			return err
+		}(),
+		want: "invalid field(s): boof[4][3].baz[1][2].bar[0].foo",
+	}, {
+		name: "manual keys",
 		err: func() *FieldError {
 			err := &FieldError{
 				Message: "invalid field(s)",
 				Paths:   []string{"foo"},
 			}
-			err = err.ViaIndex(-1)
-			err = err.ViaField("bar").ViaIndex(0)
-			err = err.ViaField("baz").ViaIndex(1, 2)
-			err = err.ViaField("boof").ViaIndex(3).ViaIndex(4)
+
+			err = err.ViaKey("A").ViaField("bar")
+			err = err.ViaKey("BB", "CCC").ViaField("baz")
+			err = err.ViaKey("E").ViaKey("F").ViaField("jar")
 			return err
 		}(),
-		want: "invalid field(s): boof[3][4].baz[1][2].bar[0].foo[-1]",
+		want: "invalid field(s): jar[F][E].baz[BB][CCC].bar[A].foo",
+	}, {
+		name: "manual index and keys",
+		err: func() *FieldError {
+			err := &FieldError{
+				Message: "invalid field(s)",
+				Paths:   []string{"foo", "faa"},
+			}
+
+			err = err.ViaKey("A").ViaField("bar")
+			err = err.ViaIndex(1).ViaField("baz")
+			err = err.ViaKey("E").ViaIndex(0).ViaField("jar")
+			return err
+		}(),
+		want: "invalid field(s): jar[0][E].baz[1].bar[A].foo, jar[0][E].baz[1].bar[A].faa",
 	}, {
 		name:     "nil propagation",
 		err:      nil,
@@ -211,6 +279,9 @@ can not use @, do not try`,
 					if strings.Contains(p, "INDEX") {
 						index := strings.Split(p, ":")
 						fe = fe.ViaIndex(makeIndex(index[1])...)
+					} else if strings.Contains(p, "KEY") {
+						key := strings.Split(p, ":")
+						fe = fe.ViaKey(makeKey(key[1])...)
 					} else {
 						fe = fe.ViaField(p)
 					}
@@ -240,4 +311,15 @@ func makeIndex(index string) []int {
 	}
 
 	return indexes
+}
+
+func makeKey(key string) []string {
+	keys := []string(nil)
+
+	all := strings.Split(key, ",")
+	for _, k := range all {
+		keys = append(keys, k)
+
+	}
+	return keys
 }

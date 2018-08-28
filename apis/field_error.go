@@ -73,15 +73,18 @@ func (fe *FieldError) ViaField(prefix ...string) *FieldError {
 				strings.Join(append(prefix, oldPath), "."))
 		}
 	}
+
+	newPaths = flattenIndexes(newPaths)
+
 	fe.Paths = newPaths
 	return fe
 }
 
-// ViaIndex is used to attach an index to the last field provided.
+// ViaIndex is used to attach an index to the next via field provided.
 // For example, if a type recursively validates a parameter that has a collection:
 //  for i, c := range spec.Collection {
 //    if err := doValidation(c); err != nil {
-//      return err.ViaField("collection").ViaIndex(i)
+//      return err.ViaIndex(i).ViaField("collection")
 //    }
 //  }
 func (fe *FieldError) ViaIndex(index ...int) *FieldError {
@@ -89,22 +92,63 @@ func (fe *FieldError) ViaIndex(index ...int) *FieldError {
 		return nil
 	}
 
-	var newPaths []string
-	for _, oldPath := range fe.Paths {
-		if oldPath == CurrentField {
-			for _, i := range index {
-				newPaths = append(newPaths, fmt.Sprintf("[%d]", i))
-			}
-		} else {
-			prefix := strings.Split(oldPath, ".")
-			for _, i := range index {
-				prefix[0] = fmt.Sprintf("%s[%d]", prefix[0], i)
-			}
-			newPaths = append(newPaths, strings.Join(prefix, "."))
-		}
+	prefix := []string{}
+	for _, i := range index {
+		prefix = append(prefix, fmt.Sprintf("[%d]", i))
 	}
-	fe.Paths = newPaths
-	return fe
+
+	return fe.ViaField(prefix...)
+}
+
+// ViaKey is used to attach a key to the next via field provided.
+// For example, if a type recursively validates a parameter that has a collection:
+//  for k, v := range spec.Bag. {
+//    if err := doValidation(v); err != nil {
+//      return err.ViaField("bag").ViaKey(k)
+//    }
+//  }
+func (fe *FieldError) ViaKey(key ...string) *FieldError {
+	if fe == nil {
+		return nil
+	}
+
+	prefix := []string{}
+	for _, k := range key {
+		prefix = append(prefix, fmt.Sprintf("[%s]", k))
+	}
+
+	return fe.ViaField(prefix...)
+}
+
+// flattenIndexes takes in a set of paths and looks for chances to flatten
+// objects that have index prefixes, examples:
+//   err([0]).ViaField(bar).ViaField(foo) -> foo.bar.[0] converts to foo.bar[0]
+//   err(bar).ViaIndex(0).ViaField(foo) -> foo.[0].bar converts to foo[0].bar
+//   err(bar).ViaField(foo).ViaIndex(0) -> [0].foo.bar converts to [0].foo.bar
+//   err(bar).ViaIndex(0).ViaIndex[1].ViaField(foo) -> foo.[0].[1].bar converts to foo[1][0].bar
+func flattenIndexes(paths []string) []string {
+	var newPaths []string
+	for _, path := range paths {
+		if !strings.Contains(path, "[") && !strings.Contains(path, "]") {
+			newPaths = append(newPaths, path)
+			continue
+		}
+		thisPath := strings.Split(path, ".")
+		newPath := []string(nil)
+		for _, p := range thisPath {
+			if len(newPath) != 0 && isIndex(p) {
+				newPath[len(newPath)-1] = fmt.Sprintf("%s%s", newPath[len(newPath)-1], p)
+			} else {
+				newPath = append(newPath, p)
+			}
+		}
+		newPaths = append(newPaths, strings.Join(newPath, "."))
+	}
+	return newPaths
+}
+
+func isIndex(part string) bool {
+	return strings.HasPrefix(part, "[") && strings.HasSuffix(part, "]")
 }
 
 // Error implements error
