@@ -77,6 +77,36 @@ func (fe *FieldError) ViaField(prefix ...string) *FieldError {
 	return fe
 }
 
+// ViaIndex is used to attach an index to the last field provided.
+// For example, if a type recursively validates a parameter that has a collection:
+//  for i, c := range spec.Collection {
+//    if err := doValidation(c); err != nil {
+//      return err.ViaField("collection").ViaIndex(i)
+//    }
+//  }
+func (fe *FieldError) ViaIndex(index ...int) *FieldError {
+	if fe == nil {
+		return nil
+	}
+
+	var newPaths []string
+	for _, oldPath := range fe.Paths {
+		if oldPath == CurrentField {
+			for _, i := range index {
+				newPaths = append(newPaths, fmt.Sprintf("[%d]", i))
+			}
+		} else {
+			prefix := strings.Split(oldPath, ".")
+			for _, i := range index {
+				prefix[0] = fmt.Sprintf("%s[%d]", prefix[0], i)
+			}
+			newPaths = append(newPaths, strings.Join(prefix, "."))
+		}
+	}
+	fe.Paths = newPaths
+	return fe
+}
+
 // Error implements error
 func (fe *FieldError) Error() string {
 	if fe.Details == "" {

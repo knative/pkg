@@ -17,6 +17,8 @@ limitations under the License.
 package apis
 
 import (
+	"strconv"
+	"strings"
 	"testing"
 )
 
@@ -111,19 +113,19 @@ Body.`,
 		err:      ErrMultipleOneOf("foo", "bar"),
 		prefixes: [][]string{{"baz"}},
 		want:     `expected exactly one, got both: baz.foo, baz.bar`,
-	},{
-		name:     "invalid key name",
-		err:      ErrInvalidKeyName("b@r", "foo[0].name",
+	}, {
+		name: "invalid key name",
+		err: ErrInvalidKeyName("b@r", "foo[0].name",
 			"can not use @", "do not try"),
 		prefixes: [][]string{{"baz"}},
-		want:     `invalid key name "b@r": baz.foo[0].name
+		want: `invalid key name "b@r": baz.foo[0].name
 can not use @, do not try`,
-	},{
-		name:     "invalid key name with details array",
-		err:      ErrInvalidKeyName("b@r", "foo[0].name",
+	}, {
+		name: "invalid key name with details array",
+		err: ErrInvalidKeyName("b@r", "foo[0].name",
 			[]string{"can not use @", "do not try"}...),
 		prefixes: [][]string{{"baz"}},
-		want:     `invalid key name "b@r": baz.foo[0].name
+		want: `invalid key name "b@r": baz.foo[0].name
 can not use @, do not try`,
 	}}
 
@@ -144,4 +146,98 @@ can not use @, do not try`,
 			}
 		})
 	}
+}
+
+func TestViaIndexFieldError(t *testing.T) {
+	tests := []struct {
+		name     string
+		err      *FieldError
+		prefixes [][]string
+		want     string
+	}{{
+		name: "simple single no propagation",
+		err: &FieldError{
+			Message: "hear me roar",
+			Paths:   []string{"bar"},
+		},
+		prefixes: [][]string{{"foo", "INDEX:1,2,3"}},
+		want:     "hear me roar: foo[1][2][3].bar",
+	}, {
+		name:     "missing field propagation",
+		err:      ErrMissingField("foo", "bar"),
+		prefixes: [][]string{{"baz", "INDEX:2"}},
+		want:     "missing field(s): baz[2].foo, baz[2].bar",
+	}, {
+		name: "invalid key name",
+		err: ErrInvalidKeyName("b@r", "name",
+			"can not use @", "do not try"),
+		prefixes: [][]string{{"baz", "INDEX:0", "foo"}},
+		want: `invalid key name "b@r": foo.baz[0].name
+can not use @, do not try`,
+	}, {
+		name: "multi prefixes provided",
+		err: &FieldError{
+			Message: "invalid field(s)",
+			Paths:   []string{"foo"},
+		},
+		prefixes: [][]string{{"bee"}, {"INDEX:0"}, {"baa", "baz", "ugh"}, {"INDEX:2"}},
+		want:     "invalid field(s): ugh[2].baz.baa.bee[0].foo",
+	}, {
+		name: "manual call",
+		err: func() *FieldError {
+			err := &FieldError{
+				Message: "invalid field(s)",
+				Paths:   []string{"foo"},
+			}
+			err = err.ViaIndex(-1)
+			err = err.ViaField("bar").ViaIndex(0)
+			err = err.ViaField("baz").ViaIndex(1, 2)
+			err = err.ViaField("boof").ViaIndex(3).ViaIndex(4)
+			return err
+		}(),
+		want: "invalid field(s): boof[3][4].baz[1][2].bar[0].foo[-1]",
+	}, {
+		name:     "nil propagation",
+		err:      nil,
+		prefixes: [][]string{{"baz", "ugh", "INDEX:0"}},
+	}}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			fe := test.err
+			// Simulate propagation up a call stack.
+			for _, prefix := range test.prefixes {
+				for _, p := range prefix {
+					if strings.Contains(p, "INDEX") {
+						index := strings.Split(p, ":")
+						fe = fe.ViaIndex(makeIndex(index[1])...)
+					} else {
+						fe = fe.ViaField(p)
+					}
+				}
+			}
+
+			if test.want != "" {
+				got := fe.Error()
+				if got != test.want {
+					t.Errorf("Error() = %v, wanted %v", got, test.want)
+				}
+			} else if fe != nil {
+				t.Errorf("ViaField() = %v, wanted nil", fe)
+			}
+		})
+	}
+}
+
+func makeIndex(index string) []int {
+	indexes := []int(nil)
+
+	all := strings.Split(index, ",")
+	for _, index := range all {
+		if i, err := strconv.Atoi(index); err == nil {
+			indexes = append(indexes, i)
+		}
+	}
+
+	return indexes
 }
