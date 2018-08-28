@@ -267,7 +267,7 @@ can not use @, do not try`,
 	}, {
 		name:     "nil propagation",
 		err:      nil,
-		prefixes: [][]string{{"baz", "ugh", "INDEX:0"}},
+		prefixes: [][]string{{"baz", "ugh", "INDEX:0", "KEY:A"}},
 	}}
 
 	for _, test := range tests {
