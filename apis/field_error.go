@@ -104,7 +104,7 @@ func (fe *FieldError) ViaIndex(index ...int) *FieldError {
 // For example, if a type recursively validates a parameter that has a collection:
 //  for k, v := range spec.Bag. {
 //    if err := doValidation(v); err != nil {
-//      return err.ViaField("bag").ViaKey(k)
+//      return err.ViaKey(k).ViaField("bag")
 //    }
 //  }
 func (fe *FieldError) ViaKey(key ...string) *FieldError {
