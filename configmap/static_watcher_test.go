@@ -23,7 +23,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func TestFixedWatch(t *testing.T) {
+func TestStaticWatcher(t *testing.T) {
 	fooCM := &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: "knative-system",
@@ -37,7 +37,7 @@ func TestFixedWatch(t *testing.T) {
 		},
 	}
 
-	cm := NewFixedWatcher(fooCM, barCM)
+	cm := NewStaticWatcher(fooCM, barCM)
 
 	foo1 := &counter{name: "foo1"}
 	cm.Watch("foo", foo1.callback)
@@ -45,13 +45,8 @@ func TestFixedWatch(t *testing.T) {
 	cm.Watch("foo", foo2.callback)
 	bar := &counter{name: "bar"}
 	cm.Watch("bar", bar.callback)
-	// This won't increment bar.  However, it will log to make it
-	// easier to debug failed lookups in tests.
-	cm.Watch("unknown", bar.callback)
 
-	stopCh := make(chan struct{})
-	defer close(stopCh)
-	err := cm.Start(stopCh)
+	err := cm.Start(nil)
 	if err != nil {
 		t.Fatalf("cm.Start() = %v", err)
 	}
@@ -63,4 +58,15 @@ func TestFixedWatch(t *testing.T) {
 			t.Errorf("%v.count = %v, want %v", obj, got, want)
 		}
 	}
+}
+
+func TestUnknownConfigMapName(t *testing.T) {
+	defer func() {
+		if recover() == nil {
+			t.Error("Expected calling Watch with an unknown configmap name to panic")
+		}
+	}()
+
+	cm := NewStaticWatcher()
+	cm.Watch("unknown", func(*corev1.ConfigMap) {})
 }

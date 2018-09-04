@@ -33,27 +33,27 @@ func (c *counter) callback(*corev1.ConfigMap) {
 	c.count++
 }
 
-func TestWatch(t *testing.T) {
+func TestInformedWatcher(t *testing.T) {
 	fooCM := &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
-			Namespace: "knative-system",
+			Namespace: "default",
 			Name:      "foo",
 		},
 	}
 	barCM := &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
-			Namespace: "knative-system",
+			Namespace: "default",
 			Name:      "bar",
 		},
 	}
 	kc := fakekubeclientset.NewSimpleClientset(fooCM, barCM)
-	cm := NewDefaultWatcher(kc, "knative-system").(*defaultImpl)
+	cm := NewInformedWatcher(kc, "default")
 
 	foo1 := &counter{name: "foo1"}
-	cm.Watch("foo", foo1.callback)
 	foo2 := &counter{name: "foo2"}
-	cm.Watch("foo", foo2.callback)
 	bar := &counter{name: "bar"}
+	cm.Watch("foo", foo1.callback)
+	cm.Watch("foo", foo2.callback)
 	cm.Watch("bar", bar.callback)
 
 	stopCh := make(chan struct{})
@@ -79,6 +79,7 @@ func TestWatch(t *testing.T) {
 			t.Errorf("%v.count = %v, want %v", obj, got, want)
 		}
 	}
+
 	for _, obj := range []*counter{bar} {
 		if got, want := obj.count, 1; got != want {
 			t.Errorf("%v.count = %v, want %v", obj, got, want)
@@ -109,9 +110,10 @@ func TestWatch(t *testing.T) {
 	}
 
 	// After an unwatched ConfigMap update, no change.
+
 	cm.updateConfigMapEvent(nil, &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
-			Namespace: "knative-system",
+			Namespace: "default",
 			Name:      "not-watched",
 		},
 	})
@@ -124,7 +126,7 @@ func TestWatch(t *testing.T) {
 	// After a change in an unrelated namespace, no change.
 	cm.updateConfigMapEvent(nil, &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
-			Namespace: "different-system",
+			Namespace: "not-default",
 			Name:      "foo",
 		},
 	})
@@ -137,7 +139,7 @@ func TestWatch(t *testing.T) {
 
 func TestWatchMissingFailsOnStart(t *testing.T) {
 	kc := fakekubeclientset.NewSimpleClientset()
-	cm := NewDefaultWatcher(kc, "knative-system").(*defaultImpl)
+	cm := NewInformedWatcher(kc, "default")
 
 	foo1 := &counter{name: "foo1"}
 	cm.Watch("foo", foo1.callback)
@@ -155,12 +157,12 @@ func TestWatchMissingFailsOnStart(t *testing.T) {
 func TestErrorOnMultipleStarts(t *testing.T) {
 	fooCM := &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
-			Namespace: "knative-system",
+			Namespace: "default",
 			Name:      "foo",
 		},
 	}
 	kc := fakekubeclientset.NewSimpleClientset(fooCM)
-	cm := NewDefaultWatcher(kc, "knative-system").(*defaultImpl)
+	cm := NewInformedWatcher(kc, "default")
 
 	foo1 := &counter{name: "foo1"}
 	cm.Watch("foo", foo1.callback)
