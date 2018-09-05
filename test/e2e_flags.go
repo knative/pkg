@@ -62,12 +62,5 @@ func initializeFlags() *EnvironmentFlags {
 	flag.BoolVar(&f.EmitMetrics, "emitmetrics", false,
 		"Set this flag to true if you would like tests to emit metrics, e.g. latency of resources being realized in the system.")
 
-	flag.Parse()
-	flag.Set("alsologtostderr", "true")
-	logging.InitializeLogger(f.LogVerbose)
-
-	if f.EmitMetrics {
-		logging.InitializeMetricExporter()
-	}
 	return &f
 }
