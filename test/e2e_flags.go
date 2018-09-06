@@ -24,8 +24,6 @@ import (
 	"os"
 	"os/user"
 	"path"
-
-	"github.com/knative/pkg/test/logging"
 )
 
 // Flags holds the command line flags or defaults for settings in the user's environment.
