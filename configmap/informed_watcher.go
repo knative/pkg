@@ -57,6 +57,9 @@ type InformedWatcher struct {
 	informer corev1informers.ConfigMapInformer
 	started  bool
 
+	// Embedding this struct allows us to reuse the logic
+	// of registering and notifying observers. This simplifies the
+	// InformedWatcher to just setting up the Kubernetes informer
 	ManualWatcher
 }
 
