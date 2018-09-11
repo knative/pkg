@@ -76,8 +76,9 @@ func (cs *ConditionStatus) IsReady() bool {
 	return false
 }
 
-func (config *ConditionStatus) GetCondition(t ConditionType) *Condition {
-	for _, cond := range config.Conditions {
+// GetCondition finds and returns the Condition that matches the ConditionType previously set on ConditionStatus.
+func (cs *ConditionStatus) GetCondition(t ConditionType) *Condition {
+	for _, cond := range cs.Conditions {
 		if cond.Type == t {
 			return &cond
 		}
@@ -85,6 +86,7 @@ func (config *ConditionStatus) GetCondition(t ConditionType) *Condition {
 	return nil
 }
 
+// SetCondition sets or updates the Condition on ConditionStatus for Condition.Type.
 func (cs *ConditionStatus) SetCondition(new *Condition) {
 	if new == nil {
 		return
@@ -108,6 +110,7 @@ func (cs *ConditionStatus) SetCondition(new *Condition) {
 	cs.Conditions = conditions
 }
 
+// InitializeConditions updates the Ready Condition to unknown if not set.
 func (cs *ConditionStatus) InitializeConditions() {
 	if rc := cs.GetCondition(ConditionReady); rc == nil {
 		cs.SetCondition(&Condition{

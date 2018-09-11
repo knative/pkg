@@ -106,9 +106,11 @@ func TestConfigurationIsReady(t *testing.T) {
 	}}
 
 	for _, tc := range cases {
-		if e, a := tc.isReady, tc.status.IsReady(); e != a {
-			t.Errorf("%q expected: %v got: %v", tc.name, e, a)
-		}
+		t.Run(tc.name, func(t *testing.T) {
+			if e, a := tc.isReady, tc.status.IsReady(); e != a {
+				t.Errorf("%q expected: %v got: %v", tc.name, e, a)
+			}
+		})
 	}
 }
 
@@ -163,19 +165,21 @@ func TestUpdateLastTransitionTime(t *testing.T) {
 	}}
 
 	for _, tc := range cases {
-		was := tc.status.GetCondition(tc.condition.Type)
-		tc.status.SetCondition(&tc.condition)
-		now := tc.status.GetCondition(tc.condition.Type)
+		t.Run(tc.name, func(t *testing.T) {
+			was := tc.status.GetCondition(tc.condition.Type)
+			tc.status.SetCondition(&tc.condition)
+			now := tc.status.GetCondition(tc.condition.Type)
 
-		if tc.update {
-			if e, a := was.LastTransitionTime, now.LastTransitionTime; e == a {
-				t.Errorf("%q expected: %v to not match %v", tc.name, e, a)
+			if tc.update {
+				if e, a := was.LastTransitionTime, now.LastTransitionTime; e == a {
+					t.Errorf("%q expected: %v to not match %v", tc.name, e, a)
+				}
+			} else {
+				if e, a := was.LastTransitionTime, now.LastTransitionTime; e != a {
+					t.Errorf("%q expected: %v to match %v", tc.name, e, a)
+				}
 			}
-		} else {
-			if e, a := was.LastTransitionTime, now.LastTransitionTime; e != a {
-				t.Errorf("%q expected: %v to match %v", tc.name, e, a)
-			}
-		}
+		})
 	}
 }
 
@@ -217,18 +221,37 @@ func TestResourceConditions(t *testing.T) {
 }
 
 func TestInitializeConditions(t *testing.T) {
+	cases := []struct {
+		name      string
+		status    ConditionStatus
+		condition *Condition
+	}{{
+		name:   "initialized",
+		status: ConditionStatus{},
+		condition: &Condition{
+			Type:   ConditionReady,
+			Status: corev1.ConditionUnknown,
+		},
+	}, {
+		name: "already initialized",
+		status: ConditionStatus{
+			Conditions: []Condition{{
+				Type:   ConditionReady,
+				Status: corev1.ConditionFalse,
+			}},
+		},
+		condition: &Condition{
+			Type:   ConditionReady,
+			Status: corev1.ConditionFalse,
+		},
+	}}
 
-	s := ConditionStatus{}
-	s.InitializeConditions()
-
-	e := &Condition{
-		Type:   ConditionReady,
-		Status: corev1.ConditionUnknown,
-	}
-
-	a := s.GetCondition(ConditionReady)
-
-	if !equality.Semantic.DeepEqual(e, a) {
-		t.Errorf("expected: %v got:  %v", e, a)
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			tc.status.InitializeConditions()
+			if e, a := tc.condition, tc.status.GetCondition(ConditionReady); !equality.Semantic.DeepEqual(e, a) {
+				t.Errorf("%q expected: %v got: %v", tc.name, e, a)
+			}
+		})
 	}
 }
