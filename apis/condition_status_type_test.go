@@ -21,6 +21,8 @@ import (
 
 	"time"
 
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -29,15 +31,15 @@ import (
 func TestConfigurationIsReady(t *testing.T) {
 	cases := []struct {
 		name    string
-		status  ConditionStatus
+		status  Conditions
 		isReady bool
 	}{{
 		name:    "empty status should not be ready",
-		status:  ConditionStatus{},
+		status:  Conditions{},
 		isReady: false,
 	}, {
 		name: "Different condition type should not be ready",
-		status: ConditionStatus{
+		status: Conditions{
 			Conditions: []Condition{{
 				Type:   "Foo",
 				Status: corev1.ConditionTrue,
@@ -46,7 +48,7 @@ func TestConfigurationIsReady(t *testing.T) {
 		isReady: false,
 	}, {
 		name: "False condition status should not be ready",
-		status: ConditionStatus{
+		status: Conditions{
 			Conditions: []Condition{{
 				Type:   ConditionReady,
 				Status: corev1.ConditionFalse,
@@ -55,7 +57,7 @@ func TestConfigurationIsReady(t *testing.T) {
 		isReady: false,
 	}, {
 		name: "Unknown condition status should not be ready",
-		status: ConditionStatus{
+		status: Conditions{
 			Conditions: []Condition{{
 				Type:   ConditionReady,
 				Status: corev1.ConditionUnknown,
@@ -64,7 +66,7 @@ func TestConfigurationIsReady(t *testing.T) {
 		isReady: false,
 	}, {
 		name: "Missing condition status should not be ready",
-		status: ConditionStatus{
+		status: Conditions{
 			Conditions: []Condition{{
 				Type: ConditionReady,
 			}},
@@ -72,7 +74,7 @@ func TestConfigurationIsReady(t *testing.T) {
 		isReady: false,
 	}, {
 		name: "True condition status should be ready",
-		status: ConditionStatus{
+		status: Conditions{
 			Conditions: []Condition{{
 				Type:   ConditionReady,
 				Status: corev1.ConditionTrue,
@@ -81,7 +83,7 @@ func TestConfigurationIsReady(t *testing.T) {
 		isReady: true,
 	}, {
 		name: "Multiple conditions with ready status should be ready",
-		status: ConditionStatus{
+		status: Conditions{
 			Conditions: []Condition{{
 				Type:   "Foo",
 				Status: corev1.ConditionTrue,
@@ -93,7 +95,7 @@ func TestConfigurationIsReady(t *testing.T) {
 		isReady: true,
 	}, {
 		name: "Multiple conditions with ready status false should not be ready",
-		status: ConditionStatus{
+		status: Conditions{
 			Conditions: []Condition{{
 				Type:   "Foo",
 				Status: corev1.ConditionTrue,
@@ -118,12 +120,12 @@ func TestUpdateLastTransitionTime(t *testing.T) {
 
 	cases := []struct {
 		name      string
-		status    ConditionStatus
+		status    Conditions
 		condition Condition
 		update    bool
 	}{{
 		name: "LastTransitionTime should be set",
-		status: ConditionStatus{
+		status: Conditions{
 			Conditions: []Condition{{
 				Type:   ConditionReady,
 				Status: corev1.ConditionFalse,
@@ -136,7 +138,7 @@ func TestUpdateLastTransitionTime(t *testing.T) {
 		update: true,
 	}, {
 		name: "LastTransitionTime should update",
-		status: ConditionStatus{
+		status: Conditions{
 			Conditions: []Condition{{
 				Type:               ConditionReady,
 				Status:             corev1.ConditionFalse,
@@ -150,7 +152,7 @@ func TestUpdateLastTransitionTime(t *testing.T) {
 		update: true,
 	}, {
 		name: "if LastTransitionTime is the only chance, don't do it",
-		status: ConditionStatus{
+		status: Conditions{
 			Conditions: []Condition{{
 				Type:               ConditionReady,
 				Status:             corev1.ConditionFalse,
@@ -167,7 +169,7 @@ func TestUpdateLastTransitionTime(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			was := tc.status.GetCondition(tc.condition.Type)
-			tc.status.SetCondition(&tc.condition)
+			tc.status.setCondition(&tc.condition)
 			now := tc.status.GetCondition(tc.condition.Type)
 
 			if tc.update {
@@ -184,7 +186,7 @@ func TestUpdateLastTransitionTime(t *testing.T) {
 }
 
 type testResource struct {
-	Status ConditionStatus
+	Status Conditions
 }
 
 func TestResourceConditions(t *testing.T) {
@@ -199,42 +201,121 @@ func TestResourceConditions(t *testing.T) {
 	}
 
 	// Add a new condition.
-	config.Status.SetCondition(foo)
+	config.Status.setCondition(foo)
 
 	if got, want := len(config.Status.Conditions), 1; got != want {
 		t.Fatalf("Unexpected Condition length; got %d, want %d", got, want)
 	}
 
 	// Add a second condition.
-	config.Status.SetCondition(bar)
+	config.Status.setCondition(bar)
 
 	if got, want := len(config.Status.Conditions), 2; got != want {
 		t.Fatalf("Unexpected Condition length; got %d, want %d", got, want)
 	}
 
 	// Add nil condition.
-	config.Status.SetCondition(nil)
+	config.Status.setCondition(nil)
 
 	if got, want := len(config.Status.Conditions), 2; got != want {
 		t.Fatalf("Unexpected Condition length; got %d, want %d", got, want)
 	}
 }
 
+func TestMarkTrue(t *testing.T) {
+	c := &Conditions{
+		Conditions: []Condition{{
+			Type:   ConditionReady,
+			Status: corev1.ConditionFalse,
+		}},
+	}
+	c.MarkTrue(ConditionReady)
+
+	if e, a := true, c.IsReady(); e != a {
+		t.Errorf("%q expected: %v got: %v", "mark true", e, a)
+	}
+
+	expected := &Condition{
+		Type:   ConditionReady,
+		Status: corev1.ConditionTrue,
+	}
+
+	e, a := expected, c.GetCondition(ConditionReady)
+	ignoreArguments := cmpopts.IgnoreFields(Condition{}, "LastTransitionTime")
+	if diff := cmp.Diff(e, a, ignoreArguments); diff != "" {
+		t.Errorf("markTrue (-want, +got) = %v", diff)
+	}
+}
+
+func TestMarkFalse(t *testing.T) {
+	c := &Conditions{
+		Conditions: []Condition{{
+			Type:   ConditionReady,
+			Status: corev1.ConditionTrue,
+		}},
+	}
+	c.MarkFalse(ConditionReady, "false-reason", "false-message")
+
+	if e, a := false, c.IsReady(); e != a {
+		t.Errorf("%q expected: %v got: %v", "mark false", e, a)
+	}
+
+	expected := &Condition{
+		Type:    ConditionReady,
+		Status:  corev1.ConditionFalse,
+		Reason:  "false-reason",
+		Message: "false-message",
+	}
+
+	e, a := expected, c.GetCondition(ConditionReady)
+	ignoreArguments := cmpopts.IgnoreFields(Condition{}, "LastTransitionTime")
+	if diff := cmp.Diff(e, a, ignoreArguments); diff != "" {
+		t.Errorf("markFalse (-want, +got) = %v", diff)
+	}
+}
+
+func TestMarkUnknown(t *testing.T) {
+	c := &Conditions{
+		Conditions: []Condition{{
+			Type:   ConditionReady,
+			Status: corev1.ConditionTrue,
+		}},
+	}
+	c.MarkUnknown(ConditionReady, "unknown-reason", "unknown-message")
+
+	if e, a := false, c.IsReady(); e != a {
+		t.Errorf("%q expected: %v got: %v", "mark unknown", e, a)
+	}
+
+	expected := &Condition{
+		Type:    ConditionReady,
+		Status:  corev1.ConditionUnknown,
+		Reason:  "unknown-reason",
+		Message: "unknown-message",
+	}
+
+	e, a := expected, c.GetCondition(ConditionReady)
+	ignoreArguments := cmpopts.IgnoreFields(Condition{}, "LastTransitionTime")
+	if diff := cmp.Diff(e, a, ignoreArguments); diff != "" {
+		t.Errorf("markUnknown (-want, +got) = %v", diff)
+	}
+}
+
 func TestInitializeConditions(t *testing.T) {
 	cases := []struct {
 		name      string
-		status    ConditionStatus
+		status    Conditions
 		condition *Condition
 	}{{
 		name:   "initialized",
-		status: ConditionStatus{},
+		status: Conditions{},
 		condition: &Condition{
 			Type:   ConditionReady,
 			Status: corev1.ConditionUnknown,
 		},
 	}, {
 		name: "already initialized",
-		status: ConditionStatus{
+		status: Conditions{
 			Conditions: []Condition{{
 				Type:   ConditionReady,
 				Status: corev1.ConditionFalse,
