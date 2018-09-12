@@ -30,86 +30,109 @@ import (
 
 func TestConfigurationIsReady(t *testing.T) {
 	cases := []struct {
-		name    string
-		status  Conditions
-		isReady bool
+		name       string
+		conditions Conditions
+		requires   []ConditionType
+		isReady    bool
 	}{{
-		name:    "empty status should not be ready",
-		status:  Conditions{},
-		isReady: false,
+		name:       "empty status should not be ready",
+		conditions: Conditions(nil),
+		requires:   []ConditionType{ConditionReady},
+		isReady:    false,
 	}, {
 		name: "Different condition type should not be ready",
-		status: Conditions{
-			Conditions: []Condition{{
-				Type:   "Foo",
-				Status: corev1.ConditionTrue,
-			}},
-		},
-		isReady: false,
+		conditions: Conditions{{
+			Type:   "Foo",
+			Status: corev1.ConditionTrue,
+		}},
+		requires: []ConditionType{ConditionReady},
+		isReady:  false,
 	}, {
 		name: "False condition status should not be ready",
-		status: Conditions{
-			Conditions: []Condition{{
-				Type:   ConditionReady,
-				Status: corev1.ConditionFalse,
-			}},
-		},
-		isReady: false,
+		conditions: Conditions{{
+			Type:   ConditionReady,
+			Status: corev1.ConditionFalse,
+		}},
+		requires: []ConditionType{ConditionReady},
+		isReady:  false,
 	}, {
 		name: "Unknown condition status should not be ready",
-		status: Conditions{
-			Conditions: []Condition{{
-				Type:   ConditionReady,
-				Status: corev1.ConditionUnknown,
-			}},
-		},
-		isReady: false,
+		conditions: Conditions{{
+			Type:   ConditionReady,
+			Status: corev1.ConditionUnknown,
+		}},
+		requires: []ConditionType{ConditionReady},
+		isReady:  false,
 	}, {
 		name: "Missing condition status should not be ready",
-		status: Conditions{
-			Conditions: []Condition{{
-				Type: ConditionReady,
-			}},
-		},
-		isReady: false,
+		conditions: Conditions{{
+			Type: ConditionReady,
+		}},
+		requires: []ConditionType{ConditionReady},
+		isReady:  false,
 	}, {
 		name: "True condition status should be ready",
-		status: Conditions{
-			Conditions: []Condition{{
-				Type:   ConditionReady,
-				Status: corev1.ConditionTrue,
-			}},
-		},
-		isReady: true,
+		conditions: Conditions{{
+			Type:   ConditionReady,
+			Status: corev1.ConditionTrue,
+		}},
+		requires: []ConditionType{ConditionReady},
+		isReady:  true,
 	}, {
 		name: "Multiple conditions with ready status should be ready",
-		status: Conditions{
-			Conditions: []Condition{{
-				Type:   "Foo",
-				Status: corev1.ConditionTrue,
-			}, {
-				Type:   ConditionReady,
-				Status: corev1.ConditionTrue,
-			}},
-		},
-		isReady: true,
+		conditions: Conditions{{
+			Type:   "Foo",
+			Status: corev1.ConditionTrue,
+		}, {
+			Type:   ConditionReady,
+			Status: corev1.ConditionTrue,
+		}},
+		requires: []ConditionType{ConditionReady, "Foo"},
+		isReady:  true,
 	}, {
 		name: "Multiple conditions with ready status false should not be ready",
-		status: Conditions{
-			Conditions: []Condition{{
-				Type:   "Foo",
-				Status: corev1.ConditionTrue,
-			}, {
-				Type:   ConditionReady,
-				Status: corev1.ConditionFalse,
-			}},
-		},
-		isReady: false,
+		conditions: Conditions{{
+			Type:   "Foo",
+			Status: corev1.ConditionTrue,
+		}, {
+			Type:   ConditionReady,
+			Status: corev1.ConditionFalse,
+		}},
+		requires: []ConditionType{ConditionReady, "Foo"},
+		isReady:  false,
+	}, {
+		name: "Multiple conditions with mixed ready status, some don't matter,  ready",
+		conditions: Conditions{{
+			Type:   "Foo",
+			Status: corev1.ConditionTrue,
+		}, {
+			Type:   "Bar",
+			Status: corev1.ConditionFalse,
+		}, {
+			Type:   ConditionReady,
+			Status: corev1.ConditionTrue,
+		}},
+		requires: []ConditionType{ConditionReady, "Foo"},
+		isReady:  true,
+	}, {
+		name: "Multiple conditions with mixed ready status, some don't matter, not ready",
+		conditions: Conditions{{
+			Type:   "Foo",
+			Status: corev1.ConditionTrue,
+		}, {
+			Type:   "Bar",
+			Status: corev1.ConditionTrue,
+		}, {
+			Type:   ConditionReady,
+			Status: corev1.ConditionFalse,
+		}},
+		requires: []ConditionType{ConditionReady, "Foo"},
+		isReady:  false,
 	}}
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			if e, a := tc.isReady, tc.status.IsReady(); e != a {
+			if e, a := tc.isReady, tc.conditions.IsReady(tc.requires); e != a {
 				t.Errorf("%q expected: %v got: %v", tc.name, e, a)
 			}
 		})
@@ -119,18 +142,16 @@ func TestConfigurationIsReady(t *testing.T) {
 func TestUpdateLastTransitionTime(t *testing.T) {
 
 	cases := []struct {
-		name      string
-		status    Conditions
-		condition Condition
-		update    bool
+		name       string
+		conditions Conditions
+		condition  Condition
+		update     bool
 	}{{
 		name: "LastTransitionTime should be set",
-		status: Conditions{
-			Conditions: []Condition{{
-				Type:   ConditionReady,
-				Status: corev1.ConditionFalse,
-			}},
-		},
+		conditions: Conditions{{
+			Type:   ConditionReady,
+			Status: corev1.ConditionFalse,
+		}},
 		condition: Condition{
 			Type:   ConditionReady,
 			Status: corev1.ConditionTrue,
@@ -138,13 +159,11 @@ func TestUpdateLastTransitionTime(t *testing.T) {
 		update: true,
 	}, {
 		name: "LastTransitionTime should update",
-		status: Conditions{
-			Conditions: []Condition{{
-				Type:               ConditionReady,
-				Status:             corev1.ConditionFalse,
-				LastTransitionTime: VolatileTime{metav1.NewTime(time.Unix(1337, 0))},
-			}},
-		},
+		conditions: Conditions{{
+			Type:               ConditionReady,
+			Status:             corev1.ConditionFalse,
+			LastTransitionTime: VolatileTime{metav1.NewTime(time.Unix(1337, 0))},
+		}},
 		condition: Condition{
 			Type:   ConditionReady,
 			Status: corev1.ConditionTrue,
@@ -152,13 +171,11 @@ func TestUpdateLastTransitionTime(t *testing.T) {
 		update: true,
 	}, {
 		name: "if LastTransitionTime is the only chance, don't do it",
-		status: Conditions{
-			Conditions: []Condition{{
-				Type:               ConditionReady,
-				Status:             corev1.ConditionFalse,
-				LastTransitionTime: VolatileTime{metav1.NewTime(time.Unix(1337, 0))},
-			}},
-		},
+		conditions: Conditions{{
+			Type:               ConditionReady,
+			Status:             corev1.ConditionFalse,
+			LastTransitionTime: VolatileTime{metav1.NewTime(time.Unix(1337, 0))},
+		}},
 		condition: Condition{
 			Type:   ConditionReady,
 			Status: corev1.ConditionFalse,
@@ -168,9 +185,9 @@ func TestUpdateLastTransitionTime(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			was := tc.status.GetCondition(tc.condition.Type)
-			tc.status.setCondition(&tc.condition)
-			now := tc.status.GetCondition(tc.condition.Type)
+			was := tc.conditions.GetCondition(tc.condition.Type)
+			tc.conditions = tc.conditions.SetCondition(&tc.condition)
+			now := tc.conditions.GetCondition(tc.condition.Type)
 
 			if tc.update {
 				if e, a := was.LastTransitionTime, now.LastTransitionTime; e == a {
@@ -186,7 +203,7 @@ func TestUpdateLastTransitionTime(t *testing.T) {
 }
 
 type testResource struct {
-	Status Conditions
+	Conditions Conditions
 }
 
 func TestResourceConditions(t *testing.T) {
@@ -201,37 +218,35 @@ func TestResourceConditions(t *testing.T) {
 	}
 
 	// Add a new condition.
-	config.Status.setCondition(foo)
+	config.Conditions = config.Conditions.SetCondition(foo)
 
-	if got, want := len(config.Status.Conditions), 1; got != want {
+	if got, want := len(config.Conditions), 1; got != want {
 		t.Fatalf("Unexpected Condition length; got %d, want %d", got, want)
 	}
 
 	// Add a second condition.
-	config.Status.setCondition(bar)
+	config.Conditions = config.Conditions.SetCondition(bar)
 
-	if got, want := len(config.Status.Conditions), 2; got != want {
+	if got, want := len(config.Conditions), 2; got != want {
 		t.Fatalf("Unexpected Condition length; got %d, want %d", got, want)
 	}
 
 	// Add nil condition.
-	config.Status.setCondition(nil)
+	config.Conditions.SetCondition(nil)
 
-	if got, want := len(config.Status.Conditions), 2; got != want {
+	if got, want := len(config.Conditions), 2; got != want {
 		t.Fatalf("Unexpected Condition length; got %d, want %d", got, want)
 	}
 }
 
 func TestMarkTrue(t *testing.T) {
-	c := &Conditions{
-		Conditions: []Condition{{
-			Type:   ConditionReady,
-			Status: corev1.ConditionFalse,
-		}},
-	}
-	c.MarkTrue(ConditionReady)
+	c := Conditions{{
+		Type:   ConditionReady,
+		Status: corev1.ConditionFalse,
+	}}
+	c = c.MarkTrue(ConditionReady)
 
-	if e, a := true, c.IsReady(); e != a {
+	if e, a := true, c.IsReady([]ConditionType{ConditionReady}); e != a {
 		t.Errorf("%q expected: %v got: %v", "mark true", e, a)
 	}
 
@@ -248,15 +263,13 @@ func TestMarkTrue(t *testing.T) {
 }
 
 func TestMarkFalse(t *testing.T) {
-	c := &Conditions{
-		Conditions: []Condition{{
-			Type:   ConditionReady,
-			Status: corev1.ConditionTrue,
-		}},
-	}
-	c.MarkFalse(ConditionReady, "false-reason", "false-message")
+	c := Conditions{{
+		Type:   ConditionReady,
+		Status: corev1.ConditionTrue,
+	}}
+	c = c.MarkFalse(ConditionReady, "false-reason", "false-message")
 
-	if e, a := false, c.IsReady(); e != a {
+	if e, a := false, c.IsReady([]ConditionType{ConditionReady}); e != a {
 		t.Errorf("%q expected: %v got: %v", "mark false", e, a)
 	}
 
@@ -275,15 +288,13 @@ func TestMarkFalse(t *testing.T) {
 }
 
 func TestMarkUnknown(t *testing.T) {
-	c := &Conditions{
-		Conditions: []Condition{{
-			Type:   ConditionReady,
-			Status: corev1.ConditionTrue,
-		}},
-	}
-	c.MarkUnknown(ConditionReady, "unknown-reason", "unknown-message")
+	c := Conditions{{
+		Type:   ConditionReady,
+		Status: corev1.ConditionTrue,
+	}}
+	c = c.MarkUnknown(ConditionReady, "unknown-reason", "unknown-message")
 
-	if e, a := false, c.IsReady(); e != a {
+	if e, a := false, c.IsReady([]ConditionType{ConditionReady}); e != a {
 		t.Errorf("%q expected: %v got: %v", "mark unknown", e, a)
 	}
 
@@ -303,24 +314,21 @@ func TestMarkUnknown(t *testing.T) {
 
 func TestInitializeConditions(t *testing.T) {
 	cases := []struct {
-		name      string
-		status    Conditions
-		condition *Condition
+		name       string
+		conditions Conditions
+		condition  *Condition
 	}{{
-		name:   "initialized",
-		status: Conditions{},
+		name: "initialized",
 		condition: &Condition{
 			Type:   ConditionReady,
 			Status: corev1.ConditionUnknown,
 		},
 	}, {
 		name: "already initialized",
-		status: Conditions{
-			Conditions: []Condition{{
-				Type:   ConditionReady,
-				Status: corev1.ConditionFalse,
-			}},
-		},
+		conditions: Conditions{{
+			Type:   ConditionReady,
+			Status: corev1.ConditionFalse,
+		}},
 		condition: &Condition{
 			Type:   ConditionReady,
 			Status: corev1.ConditionFalse,
@@ -329,8 +337,8 @@ func TestInitializeConditions(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			tc.status.InitializeConditions()
-			if e, a := tc.condition, tc.status.GetCondition(ConditionReady); !equality.Semantic.DeepEqual(e, a) {
+			tc.conditions = tc.conditions.InitializeConditions([]ConditionType{ConditionReady})
+			if e, a := tc.condition, tc.conditions.GetCondition(ConditionReady); !equality.Semantic.DeepEqual(e, a) {
 				t.Errorf("%q expected: %v got: %v", tc.name, e, a)
 			}
 		})

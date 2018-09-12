@@ -43,13 +43,7 @@ const (
 )
 
 // Conditions communicates the observed state of the Knative resource (from the controller).
-type Conditions struct {
-	// Conditions communicates information about ongoing/complete
-	// reconciliation processes that bring the "spec" inline with the observed
-	// state of the world.
-	// +optional
-	Conditions []Condition `json:"conditions,omitempty"`
-}
+type Conditions []Condition
 
 // Conditions defines a readiness condition for a Knative resource.
 // See: https://github.com/kubernetes/community/blob/master/contributors/devel/api-conventions.md#typical-status-properties
@@ -81,72 +75,65 @@ func (c *Condition) IsTrue() bool {
 	return c.Status == ConditionTrue
 }
 
-// IsReady looks at the conditions on the Conditions.
-// Returns true if condition[Ready].Status is true.
-func (cs *Conditions) IsReady() bool {
-
-	// check all conditions, call IsTrue on them each.
-	if len(cs.Conditions) > 0 {
-		for _, c := range cs.Conditions {
-			if !c.IsTrue() {
-				return false
-			}
-		}
-
-		// The resource must also be Ready or Succeeded.
-		for _, t := range []ConditionType{ConditionReady, ConditionSucceeded} {
-			if c := cs.GetCondition(t); c != nil && c.IsTrue() {
-				return true
-			}
+// IsReady looks at all conditions in the required array.
+// Returns true if all condition[requires..].Status are true.
+func (cs Conditions) IsReady(requires []ConditionType) bool {
+	for _, t := range requires {
+		if c := cs.GetCondition(t); c == nil || !c.IsTrue() {
+			return false
 		}
 	}
-	return false
+	return true
 }
 
 // GetCondition finds and returns the Condition that matches the ConditionType previously set on Conditions.
-func (cs *Conditions) GetCondition(t ConditionType) *Condition {
-	for _, cond := range cs.Conditions {
-		if cond.Type == t {
-			return &cond
+func (cs Conditions) GetCondition(t ConditionType) *Condition {
+	for _, c := range cs {
+		if c.Type == t {
+			return &c
 		}
 	}
 	return nil
 }
 
-// setCondition sets or updates the Condition on Conditions for Condition.Type.
-func (cs *Conditions) setCondition(new *Condition) {
+// SetCondition sets or updates the Condition on Conditions for Condition.Type.
+// returns the mutated list of Conditions.
+func (cs Conditions) SetCondition(new *Condition) Conditions {
 	if new == nil {
-		return
+		return cs
 	}
 	t := new.Type
 	var conditions []Condition
-	for _, cond := range cs.Conditions {
-		if cond.Type != t {
-			conditions = append(conditions, cond)
+	for _, c := range cs {
+		if c.Type != t {
+			conditions = append(conditions, c)
 		} else {
 			// If we'd only update the LastTransitionTime, then return.
-			new.LastTransitionTime = cond.LastTransitionTime
-			if reflect.DeepEqual(new, &cond) {
-				return
+			new.LastTransitionTime = c.LastTransitionTime
+			if reflect.DeepEqual(new, &c) {
+				return cs
 			}
 		}
 	}
 	new.LastTransitionTime = VolatileTime{metav1.NewTime(time.Now())}
 	conditions = append(conditions, *new)
 	sort.Slice(conditions, func(i, j int) bool { return conditions[i].Type < conditions[j].Type })
-	cs.Conditions = conditions
+	return conditions
 }
 
 // MarkTrue sets the status of t to true.
-func (cs *Conditions) MarkTrue(t ConditionType) {
-	cs.setCondition(&Condition{
+// returns the mutated list of Conditions.
+func (cs Conditions) MarkTrue(t ConditionType) Conditions {
+	return cs.SetCondition(&Condition{
 		Type:   t,
 		Status: corev1.ConditionTrue,
 	})
 }
 
-func (cs *Conditions) MarkUnknown(t ConditionType, reason, message string) {
-	cs.setCondition(&Condition{
+// MarkUnknown sets the status of t to true.
+// returns the mutated list of Conditions.
+func (cs Conditions) MarkUnknown(t ConditionType, reason, message string) Conditions {
+	return cs.SetCondition(&Condition{
 		Type:    t,
 		Status:  corev1.ConditionUnknown,
 		Reason:  reason,
@@ -154,8 +141,10 @@ func (cs *Conditions) MarkUnknown(t ConditionType, reason, message string) {
 	})
 }
 
-func (cs *Conditions) MarkFalse(t ConditionType, reason, message string) {
-	cs.setCondition(&Condition{
+// MarkFalse sets the status of t to true.
+// returns the mutated list of Conditions.
+func (cs Conditions) MarkFalse(t ConditionType, reason, message string) Conditions {
+	return cs.SetCondition(&Condition{
 		Type:    t,
 		Status:  corev1.ConditionFalse,
 		Reason:  reason,
@@ -164,11 +153,15 @@ func (cs *Conditions) MarkFalse(t ConditionType, reason, message string) {
 }
 
 // InitializeConditions updates the Ready Condition to unknown if not set.
-func (cs *Conditions) InitializeConditions() {
-	if rc := cs.GetCondition(ConditionReady); rc == nil {
-		cs.setCondition(&Condition{
-			Type:   ConditionReady,
-			Status: corev1.ConditionUnknown,
-		})
+// returns the mutated list of Conditions.
+func (cs Conditions) InitializeConditions(ts []ConditionType) Conditions {
+	for _, t := range ts {
+		if c := cs.GetCondition(t); c == nil {
+			cs = cs.SetCondition(&Condition{
+				Type:   t,
+				Status: corev1.ConditionUnknown,
+			})
+		}
 	}
+	return cs
 }
