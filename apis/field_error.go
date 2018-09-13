@@ -74,7 +74,7 @@ func (fe *FieldError) ViaField(prefix ...string) *FieldError {
 		}
 	}
 
-	newPaths = flattenIndexes(newPaths)
+	newPaths = flattenIndices(newPaths)
 
 	fe.Paths = newPaths
 	return fe
@@ -87,17 +87,20 @@ func (fe *FieldError) ViaField(prefix ...string) *FieldError {
 //      return err.ViaIndex(i).ViaField("collection")
 //    }
 //  }
-func (fe *FieldError) ViaIndex(index ...int) *FieldError {
+func (fe *FieldError) ViaIndex(index int) *FieldError {
 	if fe == nil {
 		return nil
 	}
 
 	prefix := []string{}
-	for _, i := range index {
-		prefix = append(prefix, fmt.Sprintf("[%d]", i))
-	}
+	prefix = append(prefix, fmt.Sprintf("[%d]", index))
 
 	return fe.ViaField(prefix...)
+}
+
+// ViaFieldIndex is the short way to chain: err.ViaIndex(bar).ViaField(foo)
+func (fe *FieldError) ViaFieldIndex(field string, index int) *FieldError {
+	return fe.ViaIndex(index).ViaField(field)
 }
 
 // ViaKey is used to attach a key to the next via field provided.
@@ -107,26 +110,29 @@ func (fe *FieldError) ViaIndex(index ...int) *FieldError {
 //      return err.ViaKey(k).ViaField("bag")
 //    }
 //  }
-func (fe *FieldError) ViaKey(key ...string) *FieldError {
+func (fe *FieldError) ViaKey(key string) *FieldError {
 	if fe == nil {
 		return nil
 	}
 
 	prefix := []string{}
-	for _, k := range key {
-		prefix = append(prefix, fmt.Sprintf("[%s]", k))
-	}
+	prefix = append(prefix, fmt.Sprintf("[%s]", key))
 
 	return fe.ViaField(prefix...)
 }
 
-// flattenIndexes takes in a set of paths and looks for chances to flatten
+// ViaFieldKey is the short way to chain: err.ViaKey(bar).ViaField(foo)
+func (fe *FieldError) ViaFieldKey(field string, key string) *FieldError {
+	return fe.ViaKey(key).ViaField(field)
+}
+
+// flattenIndices takes in a set of paths and looks for chances to flatten
 // objects that have index prefixes, examples:
 //   err([0]).ViaField(bar).ViaField(foo) -> foo.bar.[0] converts to foo.bar[0]
 //   err(bar).ViaIndex(0).ViaField(foo) -> foo.[0].bar converts to foo[0].bar
 //   err(bar).ViaField(foo).ViaIndex(0) -> [0].foo.bar converts to [0].foo.bar
 //   err(bar).ViaIndex(0).ViaIndex[1].ViaField(foo) -> foo.[0].[1].bar converts to foo[1][0].bar
-func flattenIndexes(paths []string) []string {
+func flattenIndices(paths []string) []string {
 	var newPaths []string
 	for _, path := range paths {
 		if !strings.Contains(path, "[") && !strings.Contains(path, "]") {

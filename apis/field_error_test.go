@@ -160,7 +160,7 @@ func TestViaIndexOrKeyFieldError(t *testing.T) {
 			Message: "hear me roar",
 			Paths:   []string{"bar"},
 		},
-		prefixes: [][]string{{"INDEX:1,2,3", "foo"}},
+		prefixes: [][]string{{"INDEX:3", "INDEX:2", "INDEX:1", "foo"}},
 		want:     "hear me roar: foo[1][2][3].bar",
 	}, {
 		name: "simple key",
@@ -168,7 +168,7 @@ func TestViaIndexOrKeyFieldError(t *testing.T) {
 			Message: "hear me roar",
 			Paths:   []string{"bar"},
 		},
-		prefixes: [][]string{{"KEY:A,B,C", "foo"}},
+		prefixes: [][]string{{"KEY:C", "KEY:B", "KEY:A", "foo"}},
 		want:     "hear me roar: foo[A][B][C].bar",
 	}, {
 		name:     "missing field propagation",
@@ -197,6 +197,22 @@ can not use @, do not try`,
 		},
 		prefixes: [][]string{{"INDEX:2"}, {"bee"}, {"INDEX:0"}, {"baa", "baz", "ugh"}},
 		want:     "invalid field(s): ugh.baz.baa[0].bee[2].foo",
+	}, {
+		name: "use helper viaFieldIndex",
+		err: &FieldError{
+			Message: "invalid field(s)",
+			Paths:   []string{"foo"},
+		},
+		prefixes: [][]string{{"FIELDINDEX:bee,2"}, {"FIELDINDEX:baa,0"}, {"baz", "ugh"}},
+		want:     "invalid field(s): ugh.baz.baa[0].bee[2].foo",
+	}, {
+		name: "use helper viaFieldKey",
+		err: &FieldError{
+			Message: "invalid field(s)",
+			Paths:   []string{"foo"},
+		},
+		prefixes: [][]string{{"FIELDKEY:bee,AAA"}, {"FIELDKEY:baa,BBB"}, {"baz", "ugh"}},
+		want:     "invalid field(s): ugh.baz.baa[BBB].bee[AAA].foo",
 	}, {
 		name: "bypass helpers",
 		err: &FieldError{
@@ -231,7 +247,7 @@ can not use @, do not try`,
 			}
 
 			err = err.ViaIndex(0).ViaField("bar")
-			err = err.ViaIndex(1, 2).ViaField("baz")
+			err = err.ViaIndex(2).ViaIndex(1).ViaField("baz")
 			err = err.ViaIndex(3).ViaIndex(4).ViaField("boof")
 			return err
 		}(),
@@ -245,7 +261,7 @@ can not use @, do not try`,
 			}
 
 			err = err.ViaKey("A").ViaField("bar")
-			err = err.ViaKey("BB", "CCC").ViaField("baz")
+			err = err.ViaKey("CCC").ViaKey("BB").ViaField("baz")
 			err = err.ViaKey("E").ViaKey("F").ViaField("jar")
 			return err
 		}(),
@@ -276,12 +292,18 @@ can not use @, do not try`,
 			// Simulate propagation up a call stack.
 			for _, prefix := range test.prefixes {
 				for _, p := range prefix {
-					if strings.Contains(p, "INDEX") {
+					if strings.HasPrefix(p, "INDEX") {
 						index := strings.Split(p, ":")
-						fe = fe.ViaIndex(makeIndex(index[1])...)
-					} else if strings.Contains(p, "KEY") {
+						fe = fe.ViaIndex(makeIndex(index[1]))
+					} else if strings.HasPrefix(p, "FIELDINDEX") {
+						index := strings.Split(p, ":")
+						fe = fe.ViaFieldIndex(makeFieldIndex(index[1]))
+					} else if strings.HasPrefix(p, "KEY") {
 						key := strings.Split(p, ":")
-						fe = fe.ViaKey(makeKey(key[1])...)
+						fe = fe.ViaKey(makeKey(key[1]))
+					} else if strings.HasPrefix(p, "FIELDKEY") {
+						index := strings.Split(p, ":")
+						fe = fe.ViaFieldKey(makeFieldKey(index[1]))
 					} else {
 						fe = fe.ViaField(p)
 					}
@@ -300,26 +322,28 @@ can not use @, do not try`,
 	}
 }
 
-func makeIndex(index string) []int {
-	indexes := []int(nil)
-
+func makeIndex(index string) int {
 	all := strings.Split(index, ",")
-	for _, index := range all {
-		if i, err := strconv.Atoi(index); err == nil {
-			indexes = append(indexes, i)
-		}
+	if i, err := strconv.Atoi(all[0]); err == nil {
+		return i
 	}
-
-	return indexes
+	return -1
 }
 
-func makeKey(key string) []string {
-	keys := []string(nil)
-
-	all := strings.Split(key, ",")
-	for _, k := range all {
-		keys = append(keys, k)
-
+func makeFieldIndex(fi string) (string, int) {
+	all := strings.Split(fi, ",")
+	if i, err := strconv.Atoi(all[1]); err == nil {
+		return all[0], i
 	}
-	return keys
+	return "error", -1
+}
+
+func makeKey(key string) string {
+	all := strings.Split(key, ",")
+	return all[0]
+}
+
+func makeFieldKey(fk string) (string, string) {
+	all := strings.Split(fk, ",")
+	return all[0], all[1]
 }
