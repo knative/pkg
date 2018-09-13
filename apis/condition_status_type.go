@@ -123,7 +123,14 @@ func (cs Conditions) SetCondition(new *Condition) Conditions {
 
 // MarkTrue sets the status of t to true.
 // returns the mutated list of Conditions.
-func (cs Conditions) MarkTrue(t ConditionType) Conditions {
+func (cs Conditions) MarkTrue(t ConditionType, top ConditionType, trumps []ConditionType) Conditions {
+	for _, cond := range trumps {
+		c := cs.GetCondition(cond)
+		// Failed or Unknown conditions trump true conditions
+		if c == nil || c.Status != corev1.ConditionTrue {
+			return cs
+		}
+	} // TODO: this needs to flip and add TOP
 	return cs.SetCondition(&Condition{
 		Type:   t,
 		Status: corev1.ConditionTrue,
@@ -132,7 +139,14 @@ func (cs Conditions) MarkTrue(t ConditionType) Conditions {
 
 // MarkUnknown sets the status of t to true.
 // returns the mutated list of Conditions.
-func (cs Conditions) MarkUnknown(t ConditionType, reason, message string) Conditions {
+func (cs Conditions) MarkUnknown(t ConditionType, reason, message string, top ConditionType, trumps []ConditionType) Conditions {
+	for _, c := range trumps {
+		c := cs.GetCondition(c)
+		if c == nil || c.Status == corev1.ConditionFalse {
+			// Failed conditions trump unknown conditions
+			return cs
+		}
+	} // TODO: this needs to flip and add TOP
 	return cs.SetCondition(&Condition{
 		Type:    t,
 		Status:  corev1.ConditionUnknown,
@@ -143,13 +157,19 @@ func (cs Conditions) MarkUnknown(t ConditionType, reason, message string) Condit
 
 // MarkFalse sets the status of t to true.
 // returns the mutated list of Conditions.
-func (cs Conditions) MarkFalse(t ConditionType, reason, message string) Conditions {
-	return cs.SetCondition(&Condition{
-		Type:    t,
-		Status:  corev1.ConditionFalse,
-		Reason:  reason,
-		Message: message,
-	})
+func (cs Conditions) MarkFalse(t ConditionType, reason, message string, top ConditionType) Conditions {
+	for _, t := range []ConditionType{
+		t,
+		top,
+	} {
+		cs = cs.SetCondition(&Condition{
+			Type:    t,
+			Status:  corev1.ConditionFalse,
+			Reason:  reason,
+			Message: message,
+		})
+	}
+	return cs
 }
 
 // InitializeConditions updates the Ready Condition to unknown if not set.
