@@ -16,11 +16,6 @@ limitations under the License.
 
 package apis
 
-import (
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime/schema"
-)
-
 // Defaultable defines an interface for setting the defaults for the
 // uninitialized fields of this instance.
 type Defaultable interface {
@@ -39,15 +34,4 @@ type Immutable interface {
 	// CheckImmutableFields checks that the current instance's immutable
 	// fields haven't changed from the provided original.
 	CheckImmutableFields(original Immutable) *FieldError
-}
-
-// NewControllerRefable indicates that a particular type has sufficient
-// information to produce a metav1.OwnerReference to an object.
-type OwnerRefable interface {
-	metav1.ObjectMetaAccessor
-
-	// GetGroupVersionKind returns a GroupVersionKind. The name is chosen
-	// to avoid collision with TypeMeta's GroupVersionKind() method.
-	// See: https://issues.k8s.io/3030
-	GetGroupVersionKind() schema.GroupVersionKind
 }
