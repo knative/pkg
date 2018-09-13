@@ -42,27 +42,27 @@ import (
 // MakeVersionLabels constructs a set of labels to apply to subresources
 // instantiated at this version of the parent resource, so that we can
 // efficiently select them.
-func MakeVersionLabels(om metav1.ObjectMeta) labels.Set {
+func MakeVersionLabels(om metav1.ObjectMetaAccessor) labels.Set {
 	return map[string]string{
-		"controller": string(om.UID),
-		"version":    om.ResourceVersion,
+		"controller": string(om.GetObjectMeta().GetUID()),
+		"version":    om.GetObjectMeta().GetResourceVersion(),
 	}
 }
 
 // MakeVersionLabelSelector constructs a selector for subresources
 // instantiated at this version of the parent resource.  This keys
 // off of the labels populated by MakeVersionLabels.
-func MakeVersionLabelSelector(om metav1.ObjectMeta) labels.Selector {
+func MakeVersionLabelSelector(om metav1.ObjectMetaAccessor) labels.Selector {
 	return labels.SelectorFromSet(MakeVersionLabels(om))
 }
 
 // MakeOldVersionLabelSelector constructs a selector for subresources
 // instantiated at an older version of the parent resource.  This keys
 // off of the labels populated by MakeVersionLabels.
-func MakeOldVersionLabelSelector(om metav1.ObjectMeta) labels.Selector {
+func MakeOldVersionLabelSelector(om metav1.ObjectMetaAccessor) labels.Selector {
 	return labels.NewSelector().Add(
-		mustNewRequirement("controller", selection.Equals, []string{string(om.UID)}),
-		mustNewRequirement("version", selection.NotEquals, []string{om.ResourceVersion}),
+		mustNewRequirement("controller", selection.Equals, []string{string(om.GetObjectMeta().GetUID())}),
+		mustNewRequirement("version", selection.NotEquals, []string{om.GetObjectMeta().GetResourceVersion()}),
 	)
 }
 

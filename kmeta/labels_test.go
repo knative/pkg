@@ -45,7 +45,7 @@ func TestMakeVersionLabels(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			ls := MakeVersionLabels(test.om)
+			ls := MakeVersionLabels(&test.om)
 			if want, got := test.s, ls.String(); got != want {
 				t.Errorf("MakeVersionLabels() = %v, wanted %v", got, want)
 			}
@@ -76,7 +76,7 @@ func TestMakeVersionLabelSelector(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			ls := MakeVersionLabelSelector(test.om)
+			ls := MakeVersionLabelSelector(&test.om)
 			if want, got := test.s, ls.String(); got != want {
 				t.Errorf("MakeVersionLabelSelector() = %v, wanted %v", got, want)
 			}
@@ -107,7 +107,7 @@ func TestMakeOldVersionLabelSelector(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			ls := MakeOldVersionLabelSelector(test.om)
+			ls := MakeOldVersionLabelSelector(&test.om)
 			if want, got := test.s, ls.String(); got != want {
 				t.Errorf("MakeOldVersionLabelSelector() = %v, wanted %v", got, want)
 			}
