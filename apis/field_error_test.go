@@ -253,6 +253,19 @@ can not use @, do not try`,
 		}(),
 		want: "invalid field(s): boof[4][3].baz[1][2].bar[0].foo",
 	}, {
+		name: "manual multiple index",
+		err: func() *FieldError {
+
+			err := &FieldError{
+				Message: "invalid field(s)",
+				Paths:   []string{"foo"},
+			}
+
+			err = err.ViaField("bear", "[1]", "[2]", "[3]", "baz", "]xxx[").ViaField("bar")
+			return err
+		}(),
+		want: "invalid field(s): bar.bear[1][2][3].baz.]xxx[.foo",
+	}, {
 		name: "manual keys",
 		err: func() *FieldError {
 			err := &FieldError{
@@ -317,6 +330,49 @@ can not use @, do not try`,
 				}
 			} else if fe != nil {
 				t.Errorf("ViaField() = %v, wanted nil", fe)
+			}
+		})
+	}
+}
+
+func TestFlattenIndices(t *testing.T) {
+	tests := []struct {
+		name    string
+		indices string
+		want    string
+	}{{
+		name:    "simple",
+		indices: "foo.[1]",
+		want:    "foo[1]",
+	}, {
+		name:    "no brackets",
+		indices: "foo.bar",
+		want:    "foo.bar",
+	}, {
+		name:    "err([0]).ViaField(bar).ViaField(foo)",
+		indices: "foo.bar.[0]",
+		want:    "foo.bar[0]",
+	}, {
+		name:    "err(bar).ViaIndex(0).ViaField(foo)",
+		indices: "foo.[0].bar",
+		want:    "foo[0].bar",
+	}, {
+		name:    "err(bar).ViaField(foo).ViaIndex(0)",
+		indices: "[0].foo.bar",
+		want:    "[0].foo.bar",
+	}, {
+		name:    "err(bar).ViaIndex(0).ViaIndex[1].ViaField(foo)",
+		indices: "foo.[1].[0].bar",
+		want:    "foo[1][0].bar",
+	}}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+
+			got := flattenIndices(test.indices)
+
+			if got != test.want {
+				t.Errorf("got: %q, want %q", got, test.want)
 			}
 		})
 	}
