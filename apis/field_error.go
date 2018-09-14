@@ -66,15 +66,8 @@ func (fe *FieldError) ViaField(prefix ...string) *FieldError {
 	}
 	var newPaths []string
 	for _, oldPath := range fe.Paths {
-		var newPath string
-		if oldPath == CurrentField {
-			newPath = strings.Join(prefix, ".")
-		} else {
-			newPath = strings.Join(append(prefix, oldPath), ".")
-		}
-		newPaths = append(newPaths, flattenIndices(newPath))
+		newPaths = append(newPaths, flatten(append(prefix, oldPath)))
 	}
-
 	fe.Paths = newPaths
 	return fe
 }
@@ -117,24 +110,23 @@ func (fe *FieldError) ViaFieldKey(field string, key string) *FieldError {
 	return fe.ViaKey(key).ViaField(field)
 }
 
-// flattenIndices takes in a set of paths and looks for chances to flatten
+// flatten takes in a array of path components and looks for chances to flatten
 // objects that have index prefixes, examples:
 //   err([0]).ViaField(bar).ViaField(foo) -> foo.bar.[0] converts to foo.bar[0]
 //   err(bar).ViaIndex(0).ViaField(foo) -> foo.[0].bar converts to foo[0].bar
 //   err(bar).ViaField(foo).ViaIndex(0) -> [0].foo.bar converts to [0].foo.bar
 //   err(bar).ViaIndex(0).ViaIndex[1].ViaField(foo) -> foo.[1].[0].bar converts to foo[1][0].bar
-func flattenIndices(path string) string {
-	// this looks for a path with brackets, example: this is !matching both "[1].bar" and "foo[A].bar"
-	if !strings.Contains(path, "[") && !strings.Contains(path, "]") {
-		return path
-	}
-	thisPath := strings.Split(path, ".")
+func flatten(path []string) string {
 	newPath := []string(nil)
-	for _, p := range thisPath {
-		if len(newPath) != 0 && isIndex(p) {
-			newPath[len(newPath)-1] = fmt.Sprintf("%s%s", newPath[len(newPath)-1], p)
-		} else {
-			newPath = append(newPath, p)
+	for _, part := range path {
+		for _, p := range strings.Split(part, ".") {
+			if len(newPath) != 0 && isIndex(p) {
+				newPath[len(newPath)-1] = fmt.Sprintf("%s%s", newPath[len(newPath)-1], p)
+			} else if p == CurrentField {
+				continue
+			} else {
+				newPath = append(newPath, p)
+			}
 		}
 	}
 	return strings.Join(newPath, ".")

@@ -338,38 +338,42 @@ can not use @, do not try`,
 func TestFlattenIndices(t *testing.T) {
 	tests := []struct {
 		name    string
-		indices string
+		indices []string
 		want    string
 	}{{
 		name:    "simple",
-		indices: "foo.[1]",
+		indices: strings.Split("foo.[1]", "."),
 		want:    "foo[1]",
 	}, {
 		name:    "no brackets",
-		indices: "foo.bar",
+		indices: strings.Split("foo.bar", "."),
 		want:    "foo.bar",
 	}, {
 		name:    "err([0]).ViaField(bar).ViaField(foo)",
-		indices: "foo.bar.[0]",
+		indices: strings.Split("foo.bar.[0]", "."),
 		want:    "foo.bar[0]",
 	}, {
 		name:    "err(bar).ViaIndex(0).ViaField(foo)",
-		indices: "foo.[0].bar",
+		indices: strings.Split("foo.[0].bar", "."),
 		want:    "foo[0].bar",
 	}, {
 		name:    "err(bar).ViaField(foo).ViaIndex(0)",
-		indices: "[0].foo.bar",
+		indices: strings.Split("[0].foo.bar", "."),
 		want:    "[0].foo.bar",
 	}, {
 		name:    "err(bar).ViaIndex(0).ViaIndex[1].ViaField(foo)",
-		indices: "foo.[1].[0].bar",
+		indices: strings.Split("foo.[1].[0].bar", "."),
 		want:    "foo[1][0].bar",
+	}, {
+		name:    "err(bar).ViaIndex(0).ViaIndex[1].ViaField(foo)",
+		indices: []string{"foo", "bar.[0].baz"},
+		want:    "foo.bar[0].baz",
 	}}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 
-			got := flattenIndices(test.indices)
+			got := flatten(test.indices)
 
 			if got != test.want {
 				t.Errorf("got: %q, want %q", got, test.want)
