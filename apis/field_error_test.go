@@ -335,7 +335,7 @@ can not use @, do not try`,
 	}
 }
 
-func TestFlattenIndices(t *testing.T) {
+func TestFlatten(t *testing.T) {
 	tests := []struct {
 		name    string
 		indices []string
