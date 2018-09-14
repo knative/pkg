@@ -117,13 +117,13 @@ func (fe *FieldError) ViaFieldKey(field string, key string) *FieldError {
 //   err(bar).ViaField(foo).ViaIndex(0) -> [0].foo.bar converts to [0].foo.bar
 //   err(bar).ViaIndex(0).ViaIndex[1].ViaField(foo) -> foo.[1].[0].bar converts to foo[1][0].bar
 func flatten(path []string) string {
-	newPath := []string(nil)
+	var newPath []string
 	for _, part := range path {
 		for _, p := range strings.Split(part, ".") {
-			if len(newPath) != 0 && isIndex(p) {
-				newPath[len(newPath)-1] = fmt.Sprintf("%s%s", newPath[len(newPath)-1], p)
-			} else if p == CurrentField {
+			if p == CurrentField {
 				continue
+			} else if len(newPath) > 0 && isIndex(p) {
+				newPath[len(newPath)-1] = fmt.Sprintf("%s%s", newPath[len(newPath)-1], p)
 			} else {
 				newPath = append(newPath, p)
 			}
