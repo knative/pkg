@@ -274,24 +274,106 @@ func TestResourceConditions(t *testing.T) {
 
 func TestMarkTrue(t *testing.T) {
 	condSet := NewLivingConditionSet()
-	config := &TestConds{}
 
-	condSet.Manage(config).InitializeConditions()
-	condSet.Manage(config).MarkTrue(ConditionReady)
+	cases := []struct {
+		name       string
+		conditions Conditions
+		mark       ConditionType
+		happy      bool
+	}{{
+		name:  "no deps",
+		mark:  ConditionReady,
+		happy: true,
+	}, {
+		name: "existing conditions, turns happy",
+		conditions: Conditions{{
+			Type:   ConditionReady,
+			Status: corev1.ConditionFalse,
+		}},
+		mark:  ConditionReady,
+		happy: true,
+	}, {
+		name: "with deps, happy",
+		conditions: Conditions{{
+			Type:   ConditionReady,
+			Status: corev1.ConditionFalse,
+		}, {
+			Type:   "Foo",
+			Status: corev1.ConditionTrue,
+		}},
+		mark:  ConditionReady,
+		happy: true,
+	}, {
+		name: "with deps, not happy",
+		conditions: Conditions{{
+			Type:   ConditionReady,
+			Status: corev1.ConditionFalse,
+		}, {
+			Type:   "Foo",
+			Status: corev1.ConditionFalse,
+		}},
+		mark:  ConditionReady,
+		happy: true,
+	}, {
+		name: "update dep, turns happy",
+		conditions: Conditions{{
+			Type:   ConditionReady,
+			Status: corev1.ConditionFalse,
+		}, {
+			Type:   "Foo",
+			Status: corev1.ConditionFalse,
+		}},
+		mark:  "Foo",
+		happy: true,
+	}, {
+		name: "update dep, happy was unknown, turns happy",
+		conditions: Conditions{{
+			Type:   ConditionReady,
+			Status: corev1.ConditionUnknown,
+		}, {
+			Type:   "Foo",
+			Status: corev1.ConditionFalse,
+		}},
+		mark:  "Foo",
+		happy: true,
+	}, {
+		name: "update dep 1/2, still not happy",
+		conditions: Conditions{{
+			Type:   ConditionReady,
+			Status: corev1.ConditionFalse,
+		}, {
+			Type:   "Foo",
+			Status: corev1.ConditionFalse,
+		}, {
+			Type:   "Bar",
+			Status: corev1.ConditionFalse,
+		}},
+		mark:  "Foo",
+		happy: true,
+	}}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
 
-	if e, a := true, condSet.Manage(config).IsHappy(); e != a {
-		t.Errorf("%q expected: %v got: %v", "mark true", e, a)
-	}
+			config := &TestConds{}
+			condSet.Manage(config).InitializeConditions()
 
-	expected := &Condition{
-		Type:   ConditionReady,
-		Status: corev1.ConditionTrue,
-	}
+			condSet.Manage(config).MarkTrue(tc.mark)
 
-	e, a := expected, condSet.Manage(config).GetCondition(ConditionReady)
-	ignoreArguments := cmpopts.IgnoreFields(Condition{}, "LastTransitionTime")
-	if diff := cmp.Diff(e, a, ignoreArguments); diff != "" {
-		t.Errorf("markTrue (-want, +got) = %v", diff)
+			if e, a := true, condSet.Manage(config).IsHappy(); e != a {
+				t.Errorf("%q expected: %v got: %v", tc.name, e, a)
+			}
+
+			expected := &Condition{
+				Type:   ConditionReady,
+				Status: corev1.ConditionTrue,
+			}
+
+			e, a := expected, condSet.Manage(config).GetCondition(ConditionReady)
+			ignoreArguments := cmpopts.IgnoreFields(Condition{}, "LastTransitionTime")
+			if diff := cmp.Diff(e, a, ignoreArguments); diff != "" {
+				t.Errorf("markTrue (-want, +got) = %v", diff)
+			}
+		})
 	}
 }
 
