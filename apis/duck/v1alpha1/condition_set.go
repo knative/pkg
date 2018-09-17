@@ -81,13 +81,13 @@ type ConditionManager interface {
 }
 
 // NewLivingConditionSet returns a ConditionSet to hold the conditions for the
-// ongoing resource. ConditionReady is used as the happy.
+// living resource. ConditionReady is used as the happy condition.
 func NewLivingConditionSet(d ...ConditionType) ConditionSet {
 	return newConditionSet(ConditionReady, d...)
 }
 
 // NewBatchConditionSet returns a ConditionSet to hold the conditions for the
-// run once resource. ConditionSucceeded is used as the happy.
+// batch resource. ConditionSucceeded is used as the happy condition.
 func NewBatchConditionSet(d ...ConditionType) ConditionSet {
 	return newConditionSet(ConditionSucceeded, d...)
 }
