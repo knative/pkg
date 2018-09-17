@@ -19,10 +19,16 @@ package apis
 import (
 	"testing"
 
+	"encoding/json"
+
+	"time"
+
+	"github.com/google/go-cmp/cmp"
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func TestConfigurationIsTrue(t *testing.T) {
+func TestIsTrue(t *testing.T) {
 	cases := []struct {
 		name      string
 		condition *Condition
@@ -64,7 +70,7 @@ func TestConfigurationIsTrue(t *testing.T) {
 	}
 }
 
-func TestConfigurationIsFalse(t *testing.T) {
+func TestIsFalse(t *testing.T) {
 	cases := []struct {
 		name      string
 		condition *Condition
@@ -106,7 +112,7 @@ func TestConfigurationIsFalse(t *testing.T) {
 	}
 }
 
-func TestConfigurationIsUnknown(t *testing.T) {
+func TestIsUnknown(t *testing.T) {
 	cases := []struct {
 		name      string
 		condition *Condition
@@ -144,6 +150,77 @@ func TestConfigurationIsUnknown(t *testing.T) {
 			if e, a := tc.truth, tc.condition.IsUnknown(); e != a {
 				t.Errorf("%q expected: %v got: %v", tc.name, e, a)
 			}
+		})
+	}
+}
+
+func TestJson(t *testing.T) {
+	cases := []struct {
+		name      string
+		raw       string
+		condition *Condition
+	}{{
+		name:      "empty",
+		raw:       `{}`,
+		condition: &Condition{},
+	}, {
+		name: "Type",
+		raw:  `{"type":"Foo"}`,
+		condition: &Condition{
+			Type: "Foo",
+		},
+	}, {
+		name: "Status",
+		raw:  `{"status":"True"}`,
+		condition: &Condition{
+			Status: corev1.ConditionTrue,
+		},
+	}, {
+		name: "LastTransitionTime",
+		raw:  `{"lastTransitionTime":"1984-02-28T18:52:00Z"}`,
+		condition: &Condition{
+			LastTransitionTime: VolatileTime{Inner: metav1.NewTime(time.Date(1984, 02, 28, 18, 52, 00, 00, time.UTC))},
+		},
+	}, {
+		name: "Reason",
+		raw:  `{"reason":"DatTest"}`,
+		condition: &Condition{
+			Reason: "DatTest",
+		},
+	}, {
+		name: "Message",
+		raw:  `{"message":"this is just a test"}`,
+		condition: &Condition{
+			Message: "this is just a test",
+		},
+	}, {
+		name: "all",
+		raw: `{
+				"type":"Foo", 
+				"status":"True", 
+				"lastTransitionTime":"1984-02-28T18:52:00Z",
+				"reason":"DatTest",
+				"message":"this is just a test"
+		}`,
+		condition: &Condition{
+			Type:               "Foo",
+			Status:             corev1.ConditionTrue,
+			LastTransitionTime: VolatileTime{Inner: metav1.NewTime(time.Date(1984, 02, 28, 18, 52, 00, 00, time.UTC))},
+			Reason:             "DatTest",
+			Message:            "this is just a test",
+		},
+	}}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			cond := &Condition{}
+			if err := json.Unmarshal([]byte(tc.raw), cond); err != nil {
+				t.Errorf("%q unexpected error from json.Unmarshal: %v", tc.name, err)
+			}
+			if diff := cmp.Diff(tc.condition, cond); diff != "" {
+				t.Errorf("%q unexpected diff (-want +got): %s", tc.name, diff)
+			}
+
 		})
 	}
 }

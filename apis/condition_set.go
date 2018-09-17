@@ -96,12 +96,28 @@ func NewBatchConditionSet(d ...ConditionType) ConditionSet {
 // newConditionSet returns a ConditionSet to hold the conditions that are
 // important for the caller. The first ConditionType is the overarching status
 // for that will be used to signal the resources' status is Ready or Succeeded.
-func newConditionSet(l ConditionType, d ...ConditionType) ConditionSet {
-	c := ConditionSet{
-		happy:      l,
-		dependents: d,
+func newConditionSet(happy ConditionType, dependents ...ConditionType) ConditionSet {
+	var deps []ConditionType
+	for _, d := range dependents {
+		// Skip duplicates
+		if d == happy || contains(deps, d) {
+			continue
+		}
+		deps = append(deps, d)
 	}
-	return c
+	return ConditionSet{
+		happy:      happy,
+		dependents: deps,
+	}
+}
+
+func contains(ct []ConditionType, t ConditionType) bool {
+	for _, c := range ct {
+		if c == t {
+			return true
+		}
+	}
+	return false
 }
 
 // Check that conditionsImpl implements ConditionManager.
