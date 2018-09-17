@@ -200,7 +200,7 @@ func (r conditionsImpl) MarkTrue(t ConditionType) {
 	for _, cond := range r.dependents {
 		c := r.GetCondition(cond)
 		// Failed or Unknown conditions trump true conditions
-		if c == nil || c.Status != corev1.ConditionTrue {
+		if !c.IsTrue() {
 			return
 		}
 	}
@@ -227,7 +227,12 @@ func (r conditionsImpl) MarkUnknown(t ConditionType, reason, messageFormat strin
 	for _, cond := range r.dependents {
 		c := r.GetCondition(cond)
 		// Failed conditions trump Unknown conditions
-		if c == nil || c.Status == corev1.ConditionFalse {
+		if c.IsFalse() {
+			// Double check that the happy condition is also false.
+			happy := r.GetCondition(r.happy)
+			if !happy.IsFalse() {
+				r.MarkFalse(r.happy, reason, messageFormat, messageA)
+			}
 			return
 		}
 	}
