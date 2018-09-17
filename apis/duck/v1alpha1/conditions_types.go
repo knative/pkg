@@ -17,17 +17,79 @@ limitations under the License.
 package v1alpha1
 
 import (
+	"time"
+
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"github.com/knative/pkg/apis"
 	"github.com/knative/pkg/apis/duck"
 )
 
 // Conditions is the schema for the conditions portion of the payload
 type Conditions []Condition
 
+// ConditionType is a camel-cased condition type.
+type ConditionType string
+
+const (
+	// ConditionReady specifies that the resource is ready.
+	// For long-running resources.
+	ConditionReady ConditionType = "Ready"
+	// ConditionSucceeded specifies that the resource has finished.
+	// For resource which run to completion.
+	ConditionSucceeded ConditionType = "Succeeded"
+)
+
+// Conditions defines a readiness condition for a Knative resource.
+// See: https://github.com/kubernetes/community/blob/master/contributors/devel/api-conventions.md#typical-status-properties
+// +k8s:deepcopy-gen=true
 type Condition struct {
-	// TODO(n3wscott): Give me a schema!
-	Field string `json:"field,omitempty"`
+	// Type of condition.
+	// +required
+	Type ConditionType `json:"type" description:"type of status condition"`
+
+	// Status of the condition, one of True, False, Unknown.
+	// +required
+	Status corev1.ConditionStatus `json:"status" description:"status of the condition, one of True, False, Unknown"`
+
+	// LastTransitionTime is the last time the condition transitioned from one status to another.
+	// We use VolatileTime in place of metav1.Time to exclude this from creating equality.Semantic
+	// differences (all other things held constant).
+	// +optional
+	LastTransitionTime apis.VolatileTime `json:"lastTransitionTime,omitempty" description:"last time the condition transit from one status to another"`
+
+	// The reason for the condition's last transition.
+	// +optional
+	Reason string `json:"reason,omitempty" description:"one-word CamelCase reason for the condition's last transition"`
+
+	// A human readable message indicating details about the transition.
+	// +optional
+	Message string `json:"message,omitempty" description:"human-readable message indicating details about last transition"`
+}
+
+// IsTrue is true if the condition is True
+func (c *Condition) IsTrue() bool {
+	if c == nil {
+		return false
+	}
+	return c.Status == corev1.ConditionTrue
+}
+
+// IsFalse is true if the condition is False
+func (c *Condition) IsFalse() bool {
+	if c == nil {
+		return false
+	}
+	return c.Status == corev1.ConditionFalse
+}
+
+// IsUnknown is true if the condition is Unknown
+func (c *Condition) IsUnknown() bool {
+	if c == nil {
+		return true
+	}
+	return c.Status == corev1.ConditionUnknown
 }
 
 // Implementations can verify that they implement Conditions via:
@@ -68,7 +130,11 @@ func (_ *Conditions) GetFullType() duck.Populatable {
 func (t *KResource) Populate() {
 	t.Status.Conditions = Conditions{{
 		// Populate ALL fields
-		Field: "this is not empty",
+		Type:               "Birthday",
+		Status:             corev1.ConditionTrue,
+		LastTransitionTime: apis.VolatileTime{Inner: metav1.NewTime(time.Date(1984, 02, 28, 18, 52, 00, 00, time.UTC))},
+		Reason:             "Celebrate",
+		Message:            "n3wScott, find your party hat :tada:",
 	}}
 }
 

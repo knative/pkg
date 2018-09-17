@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package apis
+package v1alpha1
 
 import (
 	"testing"
@@ -22,6 +22,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
+	"github.com/knative/pkg/apis"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -195,7 +196,7 @@ func TestUpdateLastTransitionTime(t *testing.T) {
 		conditions: Conditions{{
 			Type:               ConditionReady,
 			Status:             corev1.ConditionFalse,
-			LastTransitionTime: VolatileTime{metav1.NewTime(time.Unix(1337, 0))},
+			LastTransitionTime: apis.VolatileTime{metav1.NewTime(time.Unix(1337, 0))},
 		}},
 		condition: Condition{
 			Type:   ConditionReady,
@@ -207,7 +208,7 @@ func TestUpdateLastTransitionTime(t *testing.T) {
 		conditions: Conditions{{
 			Type:               ConditionReady,
 			Status:             corev1.ConditionFalse,
-			LastTransitionTime: VolatileTime{metav1.NewTime(time.Unix(1337, 0))},
+			LastTransitionTime: apis.VolatileTime{metav1.NewTime(time.Unix(1337, 0))},
 		}},
 
 		condition: Condition{
