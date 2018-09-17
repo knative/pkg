@@ -40,6 +40,102 @@ func (ts *TestConds) SetConditions(conditions Conditions) {
 	ts.Conditions = conditions
 }
 
+func TestGetCondition(t *testing.T) {
+	condSet := NewLivingConditionSet()
+	cases := []struct {
+		name     string
+		accessor ConditionsAccessor
+		get      ConditionType
+		expect   *Condition
+	}{{
+		name: "simple",
+		accessor: &TestConds{Conditions: Conditions{{
+			Type:   ConditionReady,
+			Status: corev1.ConditionTrue,
+		}}},
+		get: ConditionReady,
+		expect: &Condition{
+			Type:   ConditionReady,
+			Status: corev1.ConditionTrue,
+		},
+	}, {
+		name:     "nil",
+		accessor: nil,
+		get:      ConditionReady,
+		expect:   nil,
+	}, {
+		name: "missing",
+		accessor: &TestConds{Conditions: Conditions{{
+			Type:   ConditionReady,
+			Status: corev1.ConditionTrue,
+		}}},
+		get:    "Missing",
+		expect: nil,
+	}}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			e, a := tc.expect, condSet.Manage(tc.accessor).GetCondition(tc.get)
+			ignoreArguments := cmpopts.IgnoreFields(Condition{}, "LastTransitionTime")
+			if diff := cmp.Diff(e, a, ignoreArguments); diff != "" {
+				t.Errorf("%s (-want, +got) = %v", tc.name, diff)
+			}
+		})
+	}
+}
+
+func TestSetCondition(t *testing.T) {
+	condSet := NewLivingConditionSet()
+	cases := []struct {
+		name     string
+		accessor ConditionsAccessor
+		set      Condition
+		expect   *Condition
+	}{{
+		name: "simple",
+		accessor: &TestConds{Conditions: Conditions{{
+			Type:   ConditionReady,
+			Status: corev1.ConditionFalse,
+		}}},
+		set: Condition{
+			Type:   ConditionReady,
+			Status: corev1.ConditionTrue,
+		},
+		expect: &Condition{
+			Type:   ConditionReady,
+			Status: corev1.ConditionTrue,
+		},
+	}, {
+		name:     "nil",
+		accessor: nil,
+		set: Condition{
+			Type:   ConditionReady,
+			Status: corev1.ConditionTrue,
+		},
+		expect: nil,
+	}, {
+		name:     "missing",
+		accessor: &TestConds{},
+		set: Condition{
+			Type:   ConditionReady,
+			Status: corev1.ConditionTrue,
+		},
+		expect: &Condition{
+			Type:   ConditionReady,
+			Status: corev1.ConditionTrue,
+		},
+	}}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			condSet.Manage(tc.accessor).SetCondition(tc.set)
+			e, a := tc.expect, condSet.Manage(tc.accessor).GetCondition(tc.set.Type)
+			ignoreArguments := cmpopts.IgnoreFields(Condition{}, "LastTransitionTime")
+			if diff := cmp.Diff(e, a, ignoreArguments); diff != "" {
+				t.Errorf("%s (-want, +got) = %v", tc.name, diff)
+			}
+		})
+	}
+}
+
 func TestIsHappy(t *testing.T) {
 	cases := []struct {
 		name    string
