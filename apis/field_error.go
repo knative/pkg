@@ -110,6 +110,9 @@ func (fe *FieldError) ViaFieldKey(field string, key string) *FieldError {
 }
 
 func (fe *FieldError) getNormalizedErrors() []fieldError {
+	if fe == nil {
+		return []fieldError(nil)
+	}
 	if fe.Message != "" {
 		err := fieldError{
 			Message: fe.Message,
@@ -127,9 +130,10 @@ func (fe *FieldError) getNormalizedErrors() []fieldError {
 // Also collects errors, returns a new collection of existing errors and new errors.
 func (fe *FieldError) Also(errs ...*FieldError) *FieldError {
 	var newErrs []fieldError
-	if fe != nil {
-		newErrs = append(newErrs, fe.getNormalizedErrors()...)
+	if fe == nil {
+		fe = &FieldError{}
 	}
+	newErrs = append(newErrs, fe.getNormalizedErrors()...)
 
 	for _, e := range errs {
 		newErrs = append(newErrs, e.getNormalizedErrors()...)
@@ -150,4 +154,59 @@ func (fe *FieldError) Error() string {
 		}
 	}
 	return strings.Join(errs, "\n")
+}
+
+// ErrMissingField is a variadic helper method for constructing a Error for
+// a set of missing fields.
+func ErrMissingField(fieldPaths ...string) *FieldError {
+	return &FieldError{
+		Message: "missing field(s)",
+		Paths:   fieldPaths,
+	}
+}
+
+// ErrDisallowedFields is a variadic helper method for constructing a Error
+// for a set of disallowed fields.
+func ErrDisallowedFields(fieldPaths ...string) *FieldError {
+	return &FieldError{
+		Message: "must not set the field(s)",
+		Paths:   fieldPaths,
+	}
+}
+
+// ErrInvalidValue constructs a Error for a field that has received an
+// invalid string value.
+func ErrInvalidValue(value, fieldPath string) *FieldError {
+	return &FieldError{
+		Message: fmt.Sprintf("invalid value %q", value),
+		Paths:   []string{fieldPath},
+	}
+}
+
+// ErrMissingOneOf is a variadic helper method for constructing a Error for
+// not having at least one field in a mutually exclusive field group.
+func ErrMissingOneOf(fieldPaths ...string) *FieldError {
+	return &FieldError{
+		Message: "expected exactly one, got neither",
+		Paths:   fieldPaths,
+	}
+}
+
+// ErrMultipleOneOf is a variadic helper method for constructing a Error
+// for having more than one field set in a mutually exclusive field group.
+func ErrMultipleOneOf(fieldPaths ...string) *FieldError {
+	return &FieldError{
+		Message: "expected exactly one, got both",
+		Paths:   fieldPaths,
+	}
+}
+
+// ErrInvalidKeyName is a variadic helper method for constructing a
+// Error that specifies a key name that is invalid.
+func ErrInvalidKeyName(value, fieldPath string, details ...string) *FieldError {
+	return &FieldError{
+		Message: fmt.Sprintf("invalid key name %q", value),
+		Paths:   []string{fieldPath},
+		Details: strings.Join(details, ", "),
+	}
 }
