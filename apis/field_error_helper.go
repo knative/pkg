@@ -21,61 +21,61 @@ import (
 	"strings"
 )
 
-func (fe FieldError) Wrap() *FieldErrors {
-	return &FieldErrors{
+func (fe Error) Wrap() *FieldError {
+	return &FieldError{
 		&fe,
 	}
 }
 
-// ErrMissingField is a variadic helper method for constructing a FieldError for
+// ErrMissingField is a variadic helper method for constructing a Error for
 // a set of missing fields.
-func ErrMissingField(fieldPaths ...string) *FieldErrors {
-	return FieldError{
+func ErrMissingField(fieldPaths ...string) *FieldError {
+	return Error{
 		Message: "missing field(s)",
 		Paths:   fieldPaths,
 	}.Wrap()
 }
 
-// ErrDisallowedFields is a variadic helper method for constructing a FieldError
+// ErrDisallowedFields is a variadic helper method for constructing a Error
 // for a set of disallowed fields.
-func ErrDisallowedFields(fieldPaths ...string) *FieldErrors {
-	return FieldError{
+func ErrDisallowedFields(fieldPaths ...string) *FieldError {
+	return Error{
 		Message: "must not set the field(s)",
 		Paths:   fieldPaths,
 	}.Wrap()
 }
 
-// ErrInvalidValue constructs a FieldError for a field that has received an
+// ErrInvalidValue constructs a Error for a field that has received an
 // invalid string value.
-func ErrInvalidValue(value, fieldPath string) *FieldErrors {
-	return FieldError{
+func ErrInvalidValue(value, fieldPath string) *FieldError {
+	return Error{
 		Message: fmt.Sprintf("invalid value %q", value),
 		Paths:   []string{fieldPath},
 	}.Wrap()
 }
 
-// ErrMissingOneOf is a variadic helper method for constructing a FieldError for
+// ErrMissingOneOf is a variadic helper method for constructing a Error for
 // not having at least one field in a mutually exclusive field group.
-func ErrMissingOneOf(fieldPaths ...string) *FieldErrors {
-	return FieldError{
+func ErrMissingOneOf(fieldPaths ...string) *FieldError {
+	return Error{
 		Message: "expected exactly one, got neither",
 		Paths:   fieldPaths,
 	}.Wrap()
 }
 
-// ErrMultipleOneOf is a variadic helper method for constructing a FieldError
+// ErrMultipleOneOf is a variadic helper method for constructing a Error
 // for having more than one field set in a mutually exclusive field group.
-func ErrMultipleOneOf(fieldPaths ...string) *FieldErrors {
-	return FieldError{
+func ErrMultipleOneOf(fieldPaths ...string) *FieldError {
+	return Error{
 		Message: "expected exactly one, got both",
 		Paths:   fieldPaths,
 	}.Wrap()
 }
 
 // ErrInvalidKeyName is a variadic helper method for constructing a
-// FieldError that specifies a key name that is invalid.
-func ErrInvalidKeyName(value, fieldPath string, details ...string) *FieldErrors {
-	return FieldError{
+// Error that specifies a key name that is invalid.
+func ErrInvalidKeyName(value, fieldPath string, details ...string) *FieldError {
+	return Error{
 		Message: fmt.Sprintf("invalid key name %q", value),
 		Paths:   []string{fieldPath},
 		Details: strings.Join(details, ", "),

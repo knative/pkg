@@ -21,18 +21,18 @@ import (
 	"strings"
 )
 
-// FieldErrors is a collection of field errors.
-type FieldErrors []*FieldError
+// FieldError is a collection of field errors.
+type FieldError []*Error
 
-// FieldError implements error
-var _ error = (*FieldErrors)(nil)
+// Error implements error
+var _ error = (*FieldError)(nil)
 
 // ViaField is used to propagate a validation error along a field access.
-func (fe *FieldErrors) ViaField(prefix ...string) *FieldErrors {
+func (fe *FieldError) ViaField(prefix ...string) *FieldError {
 	if fe == nil {
 		return nil
 	}
-	newErrs := FieldErrors(nil)
+	newErrs := FieldError(nil)
 	for _, e := range *fe {
 		if newErr := e.ViaField(prefix...); newErr != nil {
 			newErrs = append(newErrs, newErr)
@@ -42,11 +42,11 @@ func (fe *FieldErrors) ViaField(prefix ...string) *FieldErrors {
 }
 
 // ViaIndex is used to attach an index to the next ViaField provided.
-func (fe *FieldErrors) ViaIndex(index int) *FieldErrors {
+func (fe *FieldError) ViaIndex(index int) *FieldError {
 	if fe == nil {
 		return nil
 	}
-	newErrs := FieldErrors(nil)
+	newErrs := FieldError(nil)
 	for _, e := range *fe {
 		if newErr := e.ViaIndex(index); newErr != nil {
 			newErrs = append(newErrs, newErr)
@@ -56,11 +56,11 @@ func (fe *FieldErrors) ViaIndex(index int) *FieldErrors {
 }
 
 // ViaFieldIndex is the short way to chain: err.ViaIndex(bar).ViaField(foo)
-func (fe *FieldErrors) ViaFieldIndex(field string, index int) *FieldErrors {
+func (fe *FieldError) ViaFieldIndex(field string, index int) *FieldError {
 	if fe == nil {
 		return nil
 	}
-	newErrs := FieldErrors(nil)
+	newErrs := FieldError(nil)
 	for _, e := range *fe {
 		if newErr := e.ViaFieldIndex(field, index); newErr != nil {
 			newErrs = append(newErrs, newErr)
@@ -70,11 +70,11 @@ func (fe *FieldErrors) ViaFieldIndex(field string, index int) *FieldErrors {
 }
 
 // ViaKey is used to attach a key to the next ViaField provided.
-func (fe *FieldErrors) ViaKey(key string) *FieldErrors {
+func (fe *FieldError) ViaKey(key string) *FieldError {
 	if fe == nil {
 		return nil
 	}
-	newErrs := FieldErrors(nil)
+	newErrs := FieldError(nil)
 	for _, e := range *fe {
 		if newErr := e.ViaKey(key); newErr != nil {
 			newErrs = append(newErrs, newErr)
@@ -84,11 +84,11 @@ func (fe *FieldErrors) ViaKey(key string) *FieldErrors {
 }
 
 // ViaFieldKey is the short way to chain: err.ViaKey(bar).ViaField(foo)
-func (fe *FieldErrors) ViaFieldKey(field string, key string) *FieldErrors {
+func (fe *FieldError) ViaFieldKey(field string, key string) *FieldError {
 	if fe == nil {
 		return nil
 	}
-	newErrs := FieldErrors(nil)
+	newErrs := FieldError(nil)
 	for _, e := range *fe {
 		if newErr := e.ViaFieldKey(field, key); newErr != nil {
 			newErrs = append(newErrs, newErr)
@@ -98,8 +98,8 @@ func (fe *FieldErrors) ViaFieldKey(field string, key string) *FieldErrors {
 }
 
 // Also collects errors, returns a new collection of existing errors and new errors.
-func (fe *FieldErrors) Also(errs ...*FieldError) *FieldErrors {
-	newErrs := FieldErrors(nil)
+func (fe *FieldError) Also(errs ...*Error) *FieldError {
+	newErrs := FieldError(nil)
 	if fe != nil {
 		newErrs = append(newErrs, *fe...)
 	}
@@ -108,7 +108,7 @@ func (fe *FieldErrors) Also(errs ...*FieldError) *FieldErrors {
 }
 
 // Error implements error
-func (fe *FieldErrors) Error() string {
+func (fe *FieldError) Error() string {
 	var errs []string
 	for _, e := range *fe {
 		if e.Details == "" {

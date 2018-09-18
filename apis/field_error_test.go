@@ -25,19 +25,19 @@ import (
 func TestFieldError(t *testing.T) {
 	tests := []struct {
 		name     string
-		err      *FieldErrors
+		err      *FieldError
 		prefixes [][]string
 		want     string
 	}{{
 		name: "simple single no propagation",
-		err: FieldError{
+		err: Error{
 			Message: "hear me roar",
 			Paths:   []string{"foo.bar"},
 		}.Wrap(),
 		want: "hear me roar: foo.bar",
 	}, {
 		name: "simple single propagation",
-		err: FieldError{
+		err: Error{
 			Message: `invalid value "blah"`,
 			Paths:   []string{"foo"},
 		}.Wrap(),
@@ -45,7 +45,7 @@ func TestFieldError(t *testing.T) {
 		want:     `invalid value "blah": hoola.baz.ugh.bar.foo`,
 	}, {
 		name: "simple multiple propagation",
-		err: FieldError{
+		err: Error{
 			Message: "invalid field(s)",
 			Paths:   []string{"foo", "bar"},
 		}.Wrap(),
@@ -53,7 +53,7 @@ func TestFieldError(t *testing.T) {
 		want:     "invalid field(s): baz.ugh.foo, baz.ugh.bar",
 	}, {
 		name: "multiple propagation with details",
-		err: FieldError{
+		err: Error{
 			Message: "invalid field(s)",
 			Paths:   []string{"foo", "bar"},
 			Details: `I am a long
@@ -69,7 +69,7 @@ loooong
 Body.`,
 	}, {
 		name: "single propagation, empty start",
-		err: FieldError{
+		err: Error{
 			Message: "invalid field(s)",
 			// We might see this validating a scalar leaf.
 			Paths: []string{CurrentField},
@@ -78,7 +78,7 @@ Body.`,
 		want:     "invalid field(s): baz.ugh",
 	}, {
 		name: "single propagation, no paths",
-		err: FieldError{
+		err: Error{
 			Message: "invalid field(s)",
 			Paths:   nil,
 		}.Wrap(),
@@ -151,12 +151,12 @@ can not use @, do not try`,
 func TestViaIndexOrKeyFieldError(t *testing.T) {
 	tests := []struct {
 		name     string
-		err      *FieldErrors
+		err      *FieldError
 		prefixes [][]string
 		want     string
 	}{{
 		name: "simple single no propagation",
-		err: FieldError{
+		err: Error{
 			Message: "hear me roar",
 			Paths:   []string{"bar"},
 		}.Wrap(),
@@ -164,7 +164,7 @@ func TestViaIndexOrKeyFieldError(t *testing.T) {
 		want:     "hear me roar: foo[1][2][3].bar",
 	}, {
 		name: "simple key",
-		err: FieldError{
+		err: Error{
 			Message: "hear me roar",
 			Paths:   []string{"bar"},
 		}.Wrap(),
@@ -191,7 +191,7 @@ can not use @, do not try`,
 can not use @, do not try`,
 	}, {
 		name: "multi prefixes provided",
-		err: FieldError{
+		err: Error{
 			Message: "invalid field(s)",
 			Paths:   []string{"foo"},
 		}.Wrap(),
@@ -199,7 +199,7 @@ can not use @, do not try`,
 		want:     "invalid field(s): ugh.baz.baa[0].bee[2].foo",
 	}, {
 		name: "use helper viaFieldIndex",
-		err: FieldError{
+		err: Error{
 			Message: "invalid field(s)",
 			Paths:   []string{"foo"},
 		}.Wrap(),
@@ -207,7 +207,7 @@ can not use @, do not try`,
 		want:     "invalid field(s): ugh.baz.baa[0].bee[2].foo",
 	}, {
 		name: "use helper viaFieldKey",
-		err: FieldError{
+		err: Error{
 			Message: "invalid field(s)",
 			Paths:   []string{"foo"},
 		}.Wrap(),
@@ -215,7 +215,7 @@ can not use @, do not try`,
 		want:     "invalid field(s): ugh.baz.baa[BBB].bee[AAA].foo",
 	}, {
 		name: "bypass helpers",
-		err: FieldError{
+		err: Error{
 			Message: "invalid field(s)",
 			Paths:   []string{"foo"},
 		}.Wrap(),
@@ -223,7 +223,7 @@ can not use @, do not try`,
 		want:     "invalid field(s): bar[1][2].foo",
 	}, {
 		name: "multi paths provided",
-		err: FieldError{
+		err: Error{
 			Message: "invalid field(s)",
 			Paths:   []string{"foo", "bar"},
 		}.Wrap(),
@@ -231,7 +231,7 @@ can not use @, do not try`,
 		want:     "invalid field(s): map[A].index[0].foo, map[A].index[0].bar",
 	}, {
 		name: "manual index",
-		err: func() *FieldErrors {
+		err: func() *FieldError {
 			// Example, return an error in a loop:
 			// for i, item := spec.myList {
 			//   err := item.validate().ViaIndex(i).ViaField("myList")
@@ -241,7 +241,7 @@ can not use @, do not try`,
 			// }
 			// --> I expect path to be myList[i].foo
 
-			err := FieldError{
+			err := Error{
 				Message: "invalid field(s)",
 				Paths:   []string{"foo"},
 			}.Wrap()
@@ -254,9 +254,9 @@ can not use @, do not try`,
 		want: "invalid field(s): boof[4][3].baz[1][2].bar[0].foo",
 	}, {
 		name: "manual multiple index",
-		err: func() *FieldErrors {
+		err: func() *FieldError {
 
-			err := &FieldError{
+			err := &Error{
 				Message: "invalid field(s)",
 				Paths:   []string{"foo"},
 			}
@@ -267,8 +267,8 @@ can not use @, do not try`,
 		want: "invalid field(s): bar.bear[1][2][3].baz.]xxx[.foo",
 	}, {
 		name: "manual keys",
-		err: func() *FieldErrors {
-			err := &FieldError{
+		err: func() *FieldError {
+			err := &Error{
 				Message: "invalid field(s)",
 				Paths:   []string{"foo"},
 			}
@@ -281,8 +281,8 @@ can not use @, do not try`,
 		want: "invalid field(s): jar[F][E].baz[BB][CCC].bar[A].foo",
 	}, {
 		name: "manual index and keys",
-		err: func() *FieldErrors {
-			err := &FieldError{
+		err: func() *FieldError {
+			err := &Error{
 				Message: "invalid field(s)",
 				Paths:   []string{"foo", "faa"},
 			}
