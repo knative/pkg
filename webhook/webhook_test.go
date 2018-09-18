@@ -141,7 +141,7 @@ func TestValidCreateResourceSucceeds(t *testing.T) {
 	resp := ac.admit(TestContextWithLogger(t), createCreateResource(&r))
 	expectAllowed(t, resp)
 	expectPatches(t, resp.Patch, []jsonpatch.JsonPatchOperation{
-		incrementGenerationPatch(0),
+		incrementGenerationPatch(r.Spec.Generation),
 	})
 }
 
@@ -151,7 +151,7 @@ func TestValidCreateResourceSucceedsWithDefaultPatch(t *testing.T) {
 	resp := ac.admit(TestContextWithLogger(t), createCreateResource(&r))
 	expectAllowed(t, resp)
 	expectPatches(t, resp.Patch, []jsonpatch.JsonPatchOperation{
-		incrementGenerationPatch(0),
+		incrementGenerationPatch(r.Spec.Generation),
 		{
 			Operation: "add",
 			Path:      "/spec/fieldWithDefault",
@@ -475,11 +475,11 @@ func expectPatches(t *testing.T, a []byte, e []jsonpatch.JsonPatchOperation) {
 	}
 }
 
-func incrementGenerationPatch(old float64) jsonpatch.JsonPatchOperation {
+func incrementGenerationPatch(old int64) jsonpatch.JsonPatchOperation {
 	return jsonpatch.JsonPatchOperation{
-		Operation: "add",
+		Operation: "replace",
 		Path:      "/spec/generation",
-		Value:     old + 1.0,
+		Value:     float64(old) + 1.0,
 	}
 }
 

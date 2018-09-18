@@ -33,6 +33,8 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/knative/pkg/apis"
+	"github.com/knative/pkg/apis/duck"
+	duckv1alpha1 "github.com/knative/pkg/apis/duck/v1alpha1"
 	"github.com/knative/pkg/logging"
 	"github.com/knative/pkg/logging/logkey"
 
@@ -120,8 +122,6 @@ type GenericCRD interface {
 	apis.Validatable
 	runtime.Object
 
-	// GetGeneration returns the current Generation of the object
-	GetGeneration() int64
 	// GetSpecJSON returns the Spec part of the resource marshalled into JSON
 	GetSpecJSON() ([]byte, error)
 }
@@ -224,25 +224,31 @@ func Validate(ctx context.Context) ResourceCallback {
 // SetDefaults simply leverages apis.Defaultable to set defaults.
 func SetDefaults(ctx context.Context) ResourceDefaulter {
 	return func(patches *[]jsonpatch.JsonPatchOperation, crd GenericCRD) error {
-		rawOriginal, err := json.Marshal(crd)
-		if err != nil {
-			return err
-		}
-		crd.SetDefaults()
+		before, after := crd.DeepCopyObject(), crd
+		after.SetDefaults()
 
-		// Marshal the before and after.
-		rawAfter, err := json.Marshal(crd)
-		if err != nil {
-			return err
-		}
-
-		patch, err := jsonpatch.CreatePatch(rawOriginal, rawAfter)
+		patch, err := createPatch(before, after)
 		if err != nil {
 			return err
 		}
 		*patches = append(*patches, patch...)
 		return nil
 	}
+}
+
+func createPatch(before, after interface{}) ([]jsonpatch.JsonPatchOperation, error) {
+	// Marshal the before and after.
+	rawBefore, err := json.Marshal(before)
+	if err != nil {
+		return nil, err
+	}
+
+	rawAfter, err := json.Marshal(after)
+	if err != nil {
+		return nil, err
+	}
+
+	return jsonpatch.CreatePatch(rawBefore, rawAfter)
 }
 
 func configureCerts(ctx context.Context, client kubernetes.Interface, options *ControllerOptions) (*tls.Config, []byte, error) {
@@ -283,7 +289,12 @@ func (ac *AdmissionController) Run(stop <-chan struct{}) error {
 		logger.Infof("Delaying admission webhook registration for %v", ac.Options.RegistrationDelay)
 	}
 
-	// TODO(mattmoor): Check duck typing.
+	// Verify that each of the types we are given implements the Generation duck type.
+	for _, crd := range ac.Handlers {
+		cp := crd.DeepCopyObject()
+		var emptyGen duckv1alpha1.Generation
+		duck.VerifyType(cp, &emptyGen)
+	}
 
 	select {
 	case <-time.After(ac.Options.RegistrationDelay):
@@ -570,47 +581,35 @@ func (ac *AdmissionController) mutate(ctx context.Context, kind metav1.GroupVers
 // ObjectMeta.Generation instead.
 func updateGeneration(ctx context.Context, patches *[]jsonpatch.JsonPatchOperation, old GenericCRD, new GenericCRD) error {
 	logger := logging.FromContext(ctx)
-	var oldGeneration int64
-	if old == nil {
-		logger.Info("Old is nil")
-	} else {
-		oldGeneration = old.GetGeneration()
-	}
-	if oldGeneration == 0 {
-		logger.Info("Creating an object, setting generation to 1")
-		*patches = append(*patches, jsonpatch.JsonPatchOperation{
-			Operation: "add",
-			Path:      "/spec/generation",
-			Value:     1,
-		})
-		return nil
-	}
 
 	if chg, err := hasChanged(ctx, old, new); err != nil {
 		return err
-	} else if chg {
-		operation := "replace"
-		if newGeneration := new.GetGeneration(); newGeneration == 0 {
-			// If new is missing Generation, we need to "add" instead of "replace".
-			// We see this for Service resources because the initial generation is
-			// added to the managed Configuration and Route, but not the Service
-			// that manages them.
-			// TODO(#642): Remove this.
-			operation = "add"
-		}
-		*patches = append(*patches, jsonpatch.JsonPatchOperation{
-			Operation: operation,
-			Path:      "/spec/generation",
-			Value:     oldGeneration + 1,
-		})
+	} else if !chg {
+		logger.Info("No changes in the spec, not bumping generation")
 		return nil
 	}
-	logger.Info("No changes in the spec, not bumping generation")
+
+	// Leverage Spec duck typing to bump the Generation of the resource.
+	before, err := asGenerational(ctx, new)
+	if err != nil {
+		return err
+	}
+	after := before.DeepCopyObject().(*duckv1alpha1.Generational)
+	after.Spec.Generation = after.Spec.Generation + 1
+
+	genBump, err := createPatch(before, after)
+	if err != nil {
+		return err
+	}
+	*patches = append(*patches, genBump...)
 	return nil
 }
 
 // TODO(mattmoor): Change this to check the ResourceVersion and drop GetSpecJSON.
 func hasChanged(ctx context.Context, old, new GenericCRD) (bool, error) {
+	if old == nil {
+		return true, nil
+	}
 	logger := logging.FromContext(ctx)
 
 	oldSpecJSON, err := old.GetSpecJSON()
@@ -639,6 +638,18 @@ func hasChanged(ctx context.Context, old, new GenericCRD) (bool, error) {
 	}
 	logger.Infof("Specs differ:\n%+v\n", string(specPatchesJSON))
 	return true, nil
+}
+
+func asGenerational(ctx context.Context, crd GenericCRD) (*duckv1alpha1.Generational, error) {
+	raw, err := json.Marshal(crd)
+	if err != nil {
+		return nil, err
+	}
+	kr := &duckv1alpha1.Generational{}
+	if err := json.Unmarshal(raw, kr); err != nil {
+		return nil, err
+	}
+	return kr, nil
 }
 
 func generateSecret(ctx context.Context, options *ControllerOptions) (*corev1.Secret, error) {
