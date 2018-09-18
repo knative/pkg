@@ -46,16 +46,16 @@ var _ error = (*Error)(nil)
 //     // via "spec".
 //     return err.ViaField("spec")
 //   }
-func (fe *Error) ViaField(prefix ...string) *Error {
-	if fe == nil {
+func (e *Error) ViaField(prefix ...string) *Error {
+	if e == nil {
 		return nil
 	}
 	var newPaths []string
-	for _, oldPath := range fe.Paths {
+	for _, oldPath := range e.Paths {
 		newPaths = append(newPaths, flatten(append(prefix, oldPath)))
 	}
-	fe.Paths = newPaths
-	return fe
+	e.Paths = newPaths
+	return e
 }
 
 // ViaIndex is used to attach an index to the next ViaField provided.
@@ -65,16 +65,16 @@ func (fe *Error) ViaField(prefix ...string) *Error {
 //      return err.ViaIndex(i).ViaField("collection")
 //    }
 //  }
-func (fe *Error) ViaIndex(index int) *Error {
-	if fe == nil {
+func (e *Error) ViaIndex(index int) *Error {
+	if e == nil {
 		return nil
 	}
-	return fe.ViaField(fmt.Sprintf("[%d]", index))
+	return e.ViaField(fmt.Sprintf("[%d]", index))
 }
 
 // ViaFieldIndex is the short way to chain: err.ViaIndex(bar).ViaField(foo)
-func (fe *Error) ViaFieldIndex(field string, index int) *Error {
-	return fe.ViaIndex(index).ViaField(field)
+func (e *Error) ViaFieldIndex(field string, index int) *Error {
+	return e.ViaIndex(index).ViaField(field)
 }
 
 // ViaKey is used to attach a key to the next ViaField provided.
@@ -84,16 +84,16 @@ func (fe *Error) ViaFieldIndex(field string, index int) *Error {
 //      return err.ViaKey(k).ViaField("bag")
 //    }
 //  }
-func (fe *Error) ViaKey(key string) *Error {
-	if fe == nil {
+func (e *Error) ViaKey(key string) *Error {
+	if e == nil {
 		return nil
 	}
-	return fe.ViaField(fmt.Sprintf("[%s]", key))
+	return e.ViaField(fmt.Sprintf("[%s]", key))
 }
 
 // ViaFieldKey is the short way to chain: err.ViaKey(bar).ViaField(foo)
-func (fe *Error) ViaFieldKey(field string, key string) *Error {
-	return fe.ViaKey(key).ViaField(field)
+func (e *Error) ViaFieldKey(field string, key string) *Error {
+	return e.ViaKey(key).ViaField(field)
 }
 
 // flatten takes in a array of path components and looks for chances to flatten
@@ -123,9 +123,9 @@ func isIndex(part string) bool {
 }
 
 // Error implements error
-func (fe *Error) Error() string {
-	if fe.Details == "" {
-		return fmt.Sprintf("%v: %v", fe.Message, strings.Join(fe.Paths, ", "))
+func (e *Error) Error() string {
+	if e.Details == "" {
+		return fmt.Sprintf("%v: %v", e.Message, strings.Join(e.Paths, ", "))
 	}
-	return fmt.Sprintf("%v: %v\n%v", fe.Message, strings.Join(fe.Paths, ", "), fe.Details)
+	return fmt.Sprintf("%v: %v\n%v", e.Message, strings.Join(e.Paths, ", "), e.Details)
 }

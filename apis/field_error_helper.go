@@ -21,9 +21,10 @@ import (
 	"strings"
 )
 
-func (fe Error) Wrap() *FieldError {
+// Wrap converts a Error into a *FieldError for easy integration.
+func (e Error) Wrap() *FieldError {
 	return &FieldError{
-		&fe,
+		&e,
 	}
 }
 
