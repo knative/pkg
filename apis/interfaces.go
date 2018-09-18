@@ -25,7 +25,7 @@ type Defaultable interface {
 // Validatable indicates that a particular type may have its fields validated.
 type Validatable interface {
 	// Validate checks the validity of this types fields.
-	Validate() *FieldError
+	Validate() *FieldErrors
 }
 
 // Immutable indicates that a particular type has fields that should
@@ -33,5 +33,5 @@ type Validatable interface {
 type Immutable interface {
 	// CheckImmutableFields checks that the current instance's immutable
 	// fields haven't changed from the provided original.
-	CheckImmutableFields(original Immutable) *FieldError
+	CheckImmutableFields(original Immutable) *FieldErrors
 }

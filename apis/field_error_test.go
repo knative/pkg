@@ -25,42 +25,42 @@ import (
 func TestFieldError(t *testing.T) {
 	tests := []struct {
 		name     string
-		err      *FieldError
+		err      *FieldErrors
 		prefixes [][]string
 		want     string
 	}{{
 		name: "simple single no propagation",
-		err: &FieldError{
+		err: FieldError{
 			Message: "hear me roar",
 			Paths:   []string{"foo.bar"},
-		},
+		}.Wrap(),
 		want: "hear me roar: foo.bar",
 	}, {
 		name: "simple single propagation",
-		err: &FieldError{
+		err: FieldError{
 			Message: `invalid value "blah"`,
 			Paths:   []string{"foo"},
-		},
+		}.Wrap(),
 		prefixes: [][]string{{"bar"}, {"baz", "ugh"}, {"hoola"}},
 		want:     `invalid value "blah": hoola.baz.ugh.bar.foo`,
 	}, {
 		name: "simple multiple propagation",
-		err: &FieldError{
+		err: FieldError{
 			Message: "invalid field(s)",
 			Paths:   []string{"foo", "bar"},
-		},
+		}.Wrap(),
 		prefixes: [][]string{{"baz", "ugh"}},
 		want:     "invalid field(s): baz.ugh.foo, baz.ugh.bar",
 	}, {
 		name: "multiple propagation with details",
-		err: &FieldError{
+		err: FieldError{
 			Message: "invalid field(s)",
 			Paths:   []string{"foo", "bar"},
 			Details: `I am a long
 long
 loooong
 Body.`,
-		},
+		}.Wrap(),
 		prefixes: [][]string{{"baz", "ugh"}},
 		want: `invalid field(s): baz.ugh.foo, baz.ugh.bar
 I am a long
@@ -69,19 +69,19 @@ loooong
 Body.`,
 	}, {
 		name: "single propagation, empty start",
-		err: &FieldError{
+		err: FieldError{
 			Message: "invalid field(s)",
 			// We might see this validating a scalar leaf.
 			Paths: []string{CurrentField},
-		},
+		}.Wrap(),
 		prefixes: [][]string{{"baz", "ugh"}},
 		want:     "invalid field(s): baz.ugh",
 	}, {
 		name: "single propagation, no paths",
-		err: &FieldError{
+		err: FieldError{
 			Message: "invalid field(s)",
 			Paths:   nil,
-		},
+		}.Wrap(),
 		prefixes: [][]string{{"baz", "ugh"}},
 		want:     "invalid field(s): ",
 	}, {
@@ -151,23 +151,23 @@ can not use @, do not try`,
 func TestViaIndexOrKeyFieldError(t *testing.T) {
 	tests := []struct {
 		name     string
-		err      *FieldError
+		err      *FieldErrors
 		prefixes [][]string
 		want     string
 	}{{
 		name: "simple single no propagation",
-		err: &FieldError{
+		err: FieldError{
 			Message: "hear me roar",
 			Paths:   []string{"bar"},
-		},
+		}.Wrap(),
 		prefixes: [][]string{{"INDEX:3", "INDEX:2", "INDEX:1", "foo"}},
 		want:     "hear me roar: foo[1][2][3].bar",
 	}, {
 		name: "simple key",
-		err: &FieldError{
+		err: FieldError{
 			Message: "hear me roar",
 			Paths:   []string{"bar"},
-		},
+		}.Wrap(),
 		prefixes: [][]string{{"KEY:C", "KEY:B", "KEY:A", "foo"}},
 		want:     "hear me roar: foo[A][B][C].bar",
 	}, {
@@ -191,47 +191,47 @@ can not use @, do not try`,
 can not use @, do not try`,
 	}, {
 		name: "multi prefixes provided",
-		err: &FieldError{
+		err: FieldError{
 			Message: "invalid field(s)",
 			Paths:   []string{"foo"},
-		},
+		}.Wrap(),
 		prefixes: [][]string{{"INDEX:2"}, {"bee"}, {"INDEX:0"}, {"baa", "baz", "ugh"}},
 		want:     "invalid field(s): ugh.baz.baa[0].bee[2].foo",
 	}, {
 		name: "use helper viaFieldIndex",
-		err: &FieldError{
+		err: FieldError{
 			Message: "invalid field(s)",
 			Paths:   []string{"foo"},
-		},
+		}.Wrap(),
 		prefixes: [][]string{{"FIELDINDEX:bee,2"}, {"FIELDINDEX:baa,0"}, {"baz", "ugh"}},
 		want:     "invalid field(s): ugh.baz.baa[0].bee[2].foo",
 	}, {
 		name: "use helper viaFieldKey",
-		err: &FieldError{
+		err: FieldError{
 			Message: "invalid field(s)",
 			Paths:   []string{"foo"},
-		},
+		}.Wrap(),
 		prefixes: [][]string{{"FIELDKEY:bee,AAA"}, {"FIELDKEY:baa,BBB"}, {"baz", "ugh"}},
 		want:     "invalid field(s): ugh.baz.baa[BBB].bee[AAA].foo",
 	}, {
 		name: "bypass helpers",
-		err: &FieldError{
+		err: FieldError{
 			Message: "invalid field(s)",
 			Paths:   []string{"foo"},
-		},
+		}.Wrap(),
 		prefixes: [][]string{{"[2]"}, {"[1]"}, {"bar"}},
 		want:     "invalid field(s): bar[1][2].foo",
 	}, {
 		name: "multi paths provided",
-		err: &FieldError{
+		err: FieldError{
 			Message: "invalid field(s)",
 			Paths:   []string{"foo", "bar"},
-		},
+		}.Wrap(),
 		prefixes: [][]string{{"INDEX:0"}, {"index"}, {"KEY:A"}, {"map"}},
 		want:     "invalid field(s): map[A].index[0].foo, map[A].index[0].bar",
 	}, {
 		name: "manual index",
-		err: func() *FieldError {
+		err: func() *FieldErrors {
 			// Example, return an error in a loop:
 			// for i, item := spec.myList {
 			//   err := item.validate().ViaIndex(i).ViaField("myList")
@@ -241,10 +241,10 @@ can not use @, do not try`,
 			// }
 			// --> I expect path to be myList[i].foo
 
-			err := &FieldError{
+			err := FieldError{
 				Message: "invalid field(s)",
 				Paths:   []string{"foo"},
-			}
+			}.Wrap()
 
 			err = err.ViaIndex(0).ViaField("bar")
 			err = err.ViaIndex(2).ViaIndex(1).ViaField("baz")
@@ -254,7 +254,7 @@ can not use @, do not try`,
 		want: "invalid field(s): boof[4][3].baz[1][2].bar[0].foo",
 	}, {
 		name: "manual multiple index",
-		err: func() *FieldError {
+		err: func() *FieldErrors {
 
 			err := &FieldError{
 				Message: "invalid field(s)",
@@ -262,12 +262,12 @@ can not use @, do not try`,
 			}
 
 			err = err.ViaField("bear", "[1]", "[2]", "[3]", "baz", "]xxx[").ViaField("bar")
-			return err
+			return err.Wrap()
 		}(),
 		want: "invalid field(s): bar.bear[1][2][3].baz.]xxx[.foo",
 	}, {
 		name: "manual keys",
-		err: func() *FieldError {
+		err: func() *FieldErrors {
 			err := &FieldError{
 				Message: "invalid field(s)",
 				Paths:   []string{"foo"},
@@ -276,12 +276,12 @@ can not use @, do not try`,
 			err = err.ViaKey("A").ViaField("bar")
 			err = err.ViaKey("CCC").ViaKey("BB").ViaField("baz")
 			err = err.ViaKey("E").ViaKey("F").ViaField("jar")
-			return err
+			return err.Wrap()
 		}(),
 		want: "invalid field(s): jar[F][E].baz[BB][CCC].bar[A].foo",
 	}, {
 		name: "manual index and keys",
-		err: func() *FieldError {
+		err: func() *FieldErrors {
 			err := &FieldError{
 				Message: "invalid field(s)",
 				Paths:   []string{"foo", "faa"},
@@ -290,7 +290,7 @@ can not use @, do not try`,
 			err = err.ViaKey("A").ViaField("bar")
 			err = err.ViaIndex(1).ViaField("baz")
 			err = err.ViaKey("E").ViaIndex(0).ViaField("jar")
-			return err
+			return err.Wrap()
 		}(),
 		want: "invalid field(s): jar[0][E].baz[1].bar[A].foo, jar[0][E].baz[1].bar[A].faa",
 	}, {
