@@ -215,11 +215,7 @@ func TestValidResponseForResource(t *testing.T) {
 		t.Fatalf("Failed to decode response: %v", err)
 	}
 
-	expectJsonPatch := jsonpatch.JsonPatchOperation{
-		Operation: "add",
-		Path:      "/spec/generation",
-		Value:     float64(1),
-	}
+	expectJsonPatch := incrementGenerationPatch(testRev.Spec.Generation)
 
 	var respPatch []jsonpatch.JsonPatchOperation
 	err = json.Unmarshal(reviewResponse.Response.Patch, &respPatch)

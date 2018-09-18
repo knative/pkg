@@ -33,7 +33,6 @@ import (
 	"go.uber.org/zap"
 	admissionv1beta1 "k8s.io/api/admission/v1beta1"
 	admissionregistrationv1beta1 "k8s.io/api/admissionregistration/v1beta1"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/kubernetes"
 	// corev1 "k8s.io/api/core/v1"
@@ -142,7 +141,7 @@ func TestValidCreateResourceSucceeds(t *testing.T) {
 	resp := ac.admit(TestContextWithLogger(t), createCreateResource(&r))
 	expectAllowed(t, resp)
 	expectPatches(t, resp.Patch, []jsonpatch.JsonPatchOperation{
-		incrementGenerationPatch(0),
+		incrementGenerationPatch(r.Spec.Generation),
 	})
 }
 
@@ -152,7 +151,7 @@ func TestValidCreateResourceSucceedsWithDefaultPatch(t *testing.T) {
 	resp := ac.admit(TestContextWithLogger(t), createCreateResource(&r))
 	expectAllowed(t, resp)
 	expectPatches(t, resp.Patch, []jsonpatch.JsonPatchOperation{
-		incrementGenerationPatch(0),
+		incrementGenerationPatch(r.Spec.Generation),
 		{
 			Operation: "add",
 			Path:      "/spec/fieldWithDefault",
@@ -476,11 +475,11 @@ func expectPatches(t *testing.T, a []byte, e []jsonpatch.JsonPatchOperation) {
 	}
 }
 
-func incrementGenerationPatch(old float64) jsonpatch.JsonPatchOperation {
+func incrementGenerationPatch(old int64) jsonpatch.JsonPatchOperation {
 	return jsonpatch.JsonPatchOperation{
-		Operation: "add",
+		Operation: "replace",
 		Path:      "/spec/generation",
-		Value:     old + 1.0,
+		Value:     float64(old) + 1.0,
 	}
 }
 
@@ -489,13 +488,11 @@ func NewAdmissionController(client kubernetes.Interface, options ControllerOptio
 	return &AdmissionController{
 		Client:  client,
 		Options: options,
-		Handlers: map[schema.GroupVersionKind]runtime.Object{
-			{
-				Group:   "pkg.knative.dev",
-				Version: "v1alpha1",
-				Kind:    "Resource",
-			}: &Resource{},
-		},
+		Handlers: map[schema.GroupVersionKind]GenericCRD{{
+			Group:   "pkg.knative.dev",
+			Version: "v1alpha1",
+			Kind:    "Resource",
+		}: &Resource{}},
 		Logger: logger,
 	}, nil
 }

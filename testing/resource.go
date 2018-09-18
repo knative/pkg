@@ -17,12 +17,13 @@ limitations under the License.
 package testing
 
 import (
-	"encoding/json"
 	"fmt"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/knative/pkg/apis"
+	"github.com/knative/pkg/apis/duck"
+	duckv1alpha1 "github.com/knative/pkg/apis/duck/v1alpha1"
 )
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -40,24 +41,16 @@ var _ apis.Validatable = (*Resource)(nil)
 var _ apis.Defaultable = (*Resource)(nil)
 var _ apis.Immutable = (*Resource)(nil)
 
+// Check that we implement the Generation duck type.
+var emptyGen duckv1alpha1.Generation
+var _ = duck.VerifyType(&Resource{}, &emptyGen)
+
 type ResourceSpec struct {
 	Generation int64 `json:"generation,omitempty"`
 
 	FieldWithDefault    string `json:"fieldWithDefault,omitempty"`
 	FieldWithValidation string `json:"fieldWithValidation,omitempty"`
 	FieldThatsImmutable string `json:"fieldThatsImmutable,omitempty"`
-}
-
-func (r *Resource) GetGeneration() int64 {
-	return r.Spec.Generation
-}
-
-func (r *Resource) SetGeneration(generation int64) {
-	r.Spec.Generation = generation
-}
-
-func (r *Resource) GetSpecJSON() ([]byte, error) {
-	return json.Marshal(r.Spec)
 }
 
 func (c *Resource) SetDefaults() {
