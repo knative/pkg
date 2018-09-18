@@ -109,7 +109,7 @@ type ResourceDefaulter func(patches *[]jsonpatch.JsonPatchOperation, crd Generic
 type AdmissionController struct {
 	Client   kubernetes.Interface
 	Options  ControllerOptions
-	Handlers map[schema.GroupVersionKind]runtime.Object
+	Handlers map[schema.GroupVersionKind]GenericCRD
 	Logger   *zap.SugaredLogger
 }
 
@@ -118,13 +118,10 @@ type AdmissionController struct {
 type GenericCRD interface {
 	apis.Defaultable
 	apis.Validatable
+	runtime.Object
 
-	// GetObjectMeta return the object metadata
-	GetObjectMeta() metav1.Object
 	// GetGeneration returns the current Generation of the object
 	GetGeneration() int64
-	// SetGeneration sets the Generation of the object
-	SetGeneration(int64)
 	// GetSpecJSON returns the Spec part of the resource marshalled into JSON
 	GetSpecJSON() ([]byte, error)
 }
@@ -285,6 +282,8 @@ func (ac *AdmissionController) Run(stop <-chan struct{}) error {
 	if ac.Options.RegistrationDelay != 0 {
 		logger.Infof("Delaying admission webhook registration for %v", ac.Options.RegistrationDelay)
 	}
+
+	// TODO(mattmoor): Check duck typing.
 
 	select {
 	case <-time.After(ac.Options.RegistrationDelay):
@@ -587,28 +586,9 @@ func updateGeneration(ctx context.Context, patches *[]jsonpatch.JsonPatchOperati
 		return nil
 	}
 
-	oldSpecJSON, err := old.GetSpecJSON()
-	if err != nil {
-		logger.Error("Failed to get Spec JSON for old", zap.Error(err))
-	}
-	newSpecJSON, err := new.GetSpecJSON()
-	if err != nil {
-		logger.Error("Failed to get Spec JSON for new", zap.Error(err))
-	}
-
-	specPatches, err := jsonpatch.CreatePatch(oldSpecJSON, newSpecJSON)
-	if err != nil {
-		fmt.Printf("Error creating JSON patch:%v", err)
+	if chg, err := hasChanged(ctx, old, new); err != nil {
 		return err
-	}
-	if len(specPatches) > 0 {
-		specPatchesJSON, err := json.Marshal(specPatches)
-		if err != nil {
-			logger.Error("Failed to marshal spec patches", zap.Error(err))
-			return err
-		}
-		logger.Infof("Specs differ:\n%+v\n", string(specPatchesJSON))
-
+	} else if chg {
 		operation := "replace"
 		if newGeneration := new.GetGeneration(); newGeneration == 0 {
 			// If new is missing Generation, we need to "add" instead of "replace".
@@ -627,6 +607,38 @@ func updateGeneration(ctx context.Context, patches *[]jsonpatch.JsonPatchOperati
 	}
 	logger.Info("No changes in the spec, not bumping generation")
 	return nil
+}
+
+// TODO(mattmoor): Change this to check the ResourceVersion and drop GetSpecJSON.
+func hasChanged(ctx context.Context, old, new GenericCRD) (bool, error) {
+	logger := logging.FromContext(ctx)
+
+	oldSpecJSON, err := old.GetSpecJSON()
+	if err != nil {
+		logger.Error("Failed to get Spec JSON for old", zap.Error(err))
+		return false, err
+	}
+	newSpecJSON, err := new.GetSpecJSON()
+	if err != nil {
+		logger.Error("Failed to get Spec JSON for new", zap.Error(err))
+		return false, err
+	}
+
+	specPatches, err := jsonpatch.CreatePatch(oldSpecJSON, newSpecJSON)
+	if err != nil {
+		fmt.Printf("Error creating JSON patch:%v", err)
+		return false, err
+	}
+	if len(specPatches) == 0 {
+		return false, nil
+	}
+	specPatchesJSON, err := json.Marshal(specPatches)
+	if err != nil {
+		logger.Error("Failed to marshal spec patches", zap.Error(err))
+		return false, err
+	}
+	logger.Infof("Specs differ:\n%+v\n", string(specPatchesJSON))
+	return true, nil
 }
 
 func generateSecret(ctx context.Context, options *ControllerOptions) (*corev1.Secret, error) {

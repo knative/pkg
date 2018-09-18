@@ -52,10 +52,6 @@ func (r *Resource) GetGeneration() int64 {
 	return r.Spec.Generation
 }
 
-func (r *Resource) SetGeneration(generation int64) {
-	r.Spec.Generation = generation
-}
-
 func (r *Resource) GetSpecJSON() ([]byte, error) {
 	return json.Marshal(r.Spec)
 }

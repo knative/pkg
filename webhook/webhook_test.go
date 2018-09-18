@@ -33,7 +33,6 @@ import (
 	"go.uber.org/zap"
 	admissionv1beta1 "k8s.io/api/admission/v1beta1"
 	admissionregistrationv1beta1 "k8s.io/api/admissionregistration/v1beta1"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/kubernetes"
 	// corev1 "k8s.io/api/core/v1"
@@ -489,13 +488,11 @@ func NewAdmissionController(client kubernetes.Interface, options ControllerOptio
 	return &AdmissionController{
 		Client:  client,
 		Options: options,
-		Handlers: map[schema.GroupVersionKind]runtime.Object{
-			{
-				Group:   "pkg.knative.dev",
-				Version: "v1alpha1",
-				Kind:    "Resource",
-			}: &Resource{},
-		},
+		Handlers: map[schema.GroupVersionKind]GenericCRD{{
+			Group:   "pkg.knative.dev",
+			Version: "v1alpha1",
+			Kind:    "Resource",
+		}: &Resource{}},
 		Logger: logger,
 	}, nil
 }
