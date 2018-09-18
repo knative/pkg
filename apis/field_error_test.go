@@ -154,6 +154,15 @@ func TestMainViaIndexOrKeyFieldError(t *testing.T) {
 		prefixes [][]string
 		want     string
 	}{{
+		name: "nil",
+		err:  nil,
+		want: "",
+	}, {
+		name:     "nil with prefix",
+		err:      nil,
+		prefixes: [][]string{{"INDEX:2"}, {"KEY:B"}, {"FIELDINDEX:6,AAA"}, {"FIELDKEY:bee,AAA"}},
+		want:     "",
+	}, {
 		name: "simple single no propagation",
 		err: &FieldError{
 			Message: "hear me roar",
