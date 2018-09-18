@@ -343,6 +343,15 @@ can not use @, do not try`,
 	}
 }
 
+func TestNilError(t *testing.T) {
+	var err *FieldError
+	got := err.Error()
+	want := ""
+	if got != want {
+		t.Errorf("got %v, wanted %v", got, want)
+	}
+}
+
 func TestAlso(t *testing.T) {
 	tests := []struct {
 		name     string
