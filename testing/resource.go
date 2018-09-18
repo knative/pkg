@@ -17,7 +17,6 @@ limitations under the License.
 package testing
 
 import (
-	"encoding/json"
 	"fmt"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -52,10 +51,6 @@ type ResourceSpec struct {
 	FieldWithDefault    string `json:"fieldWithDefault,omitempty"`
 	FieldWithValidation string `json:"fieldWithValidation,omitempty"`
 	FieldThatsImmutable string `json:"fieldThatsImmutable,omitempty"`
-}
-
-func (r *Resource) GetSpecJSON() ([]byte, error) {
-	return json.Marshal(r.Spec)
 }
 
 func (c *Resource) SetDefaults() {

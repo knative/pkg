@@ -121,9 +121,6 @@ type GenericCRD interface {
 	apis.Defaultable
 	apis.Validatable
 	runtime.Object
-
-	// GetSpecJSON returns the Spec part of the resource marshalled into JSON
-	GetSpecJSON() ([]byte, error)
 }
 
 // GetAPIServerExtensionCACert gets the Kubernetes aggregate apiserver
@@ -605,19 +602,35 @@ func updateGeneration(ctx context.Context, patches *[]jsonpatch.JsonPatchOperati
 	return nil
 }
 
-// TODO(mattmoor): Change this to check the ResourceVersion and drop GetSpecJSON.
+// Not worth fully duck typing since there's no shared schema.
+type hasSpec struct {
+	Spec json.RawMessage `json:"spec"`
+}
+
+func getSpecJSON(crd GenericCRD) ([]byte, error) {
+	b, err := json.Marshal(crd)
+	if err != nil {
+		return nil, err
+	}
+	hs := hasSpec{}
+	if err := json.Unmarshal(b, &hs); err != nil {
+		return nil, err
+	}
+	return []byte(hs.Spec), nil
+}
+
 func hasChanged(ctx context.Context, old, new GenericCRD) (bool, error) {
 	if old == nil {
 		return true, nil
 	}
 	logger := logging.FromContext(ctx)
 
-	oldSpecJSON, err := old.GetSpecJSON()
+	oldSpecJSON, err := getSpecJSON(old)
 	if err != nil {
 		logger.Error("Failed to get Spec JSON for old", zap.Error(err))
 		return false, err
 	}
-	newSpecJSON, err := new.GetSpecJSON()
+	newSpecJSON, err := getSpecJSON(new)
 	if err != nil {
 		logger.Error("Failed to get Spec JSON for new", zap.Error(err))
 		return false, err
