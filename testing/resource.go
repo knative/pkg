@@ -70,30 +70,30 @@ func (cs *ResourceSpec) SetDefaults() {
 	}
 }
 
-func (c *Resource) Validate() *apis.FieldError {
+func (c *Resource) Validate() *apis.FieldErrors {
 	return c.Spec.Validate().ViaField("spec")
 }
 
-func (cs *ResourceSpec) Validate() *apis.FieldError {
+func (cs *ResourceSpec) Validate() *apis.FieldErrors {
 	if cs.FieldWithValidation != "magic value" {
 		return apis.ErrInvalidValue(cs.FieldWithValidation, "fieldWithValidation")
 	}
 	return nil
 }
 
-func (current *Resource) CheckImmutableFields(og apis.Immutable) *apis.FieldError {
+func (current *Resource) CheckImmutableFields(og apis.Immutable) *apis.FieldErrors {
 	original, ok := og.(*Resource)
 	if !ok {
-		return &apis.FieldError{Message: "The provided original was not a Resource"}
+		return apis.FieldError{Message: "The provided original was not a Resource"}.Wrap()
 	}
 
 	if original.Spec.FieldThatsImmutable != current.Spec.FieldThatsImmutable {
-		return &apis.FieldError{
+		return apis.FieldError{
 			Message: "Immutable field changed",
 			Paths:   []string{"spec.fieldThatsImmutable"},
 			Details: fmt.Sprintf("got: %v, want: %v", current.Spec.FieldThatsImmutable,
 				original.Spec.FieldThatsImmutable),
-		}
+		}.Wrap()
 	}
 	return nil
 }
