@@ -21,64 +21,57 @@ import (
 	"strings"
 )
 
-// Wrap converts a Error into a *FieldError for easy integration.
-func (e Error) Wrap() *FieldError {
-	return &FieldError{
-		&e,
-	}
-}
-
 // ErrMissingField is a variadic helper method for constructing a Error for
 // a set of missing fields.
 func ErrMissingField(fieldPaths ...string) *FieldError {
-	return Error{
+	return &FieldError{
 		Message: "missing field(s)",
 		Paths:   fieldPaths,
-	}.Wrap()
+	}
 }
 
 // ErrDisallowedFields is a variadic helper method for constructing a Error
 // for a set of disallowed fields.
 func ErrDisallowedFields(fieldPaths ...string) *FieldError {
-	return Error{
+	return &FieldError{
 		Message: "must not set the field(s)",
 		Paths:   fieldPaths,
-	}.Wrap()
+	}
 }
 
 // ErrInvalidValue constructs a Error for a field that has received an
 // invalid string value.
 func ErrInvalidValue(value, fieldPath string) *FieldError {
-	return Error{
+	return &FieldError{
 		Message: fmt.Sprintf("invalid value %q", value),
 		Paths:   []string{fieldPath},
-	}.Wrap()
+	}
 }
 
 // ErrMissingOneOf is a variadic helper method for constructing a Error for
 // not having at least one field in a mutually exclusive field group.
 func ErrMissingOneOf(fieldPaths ...string) *FieldError {
-	return Error{
+	return &FieldError{
 		Message: "expected exactly one, got neither",
 		Paths:   fieldPaths,
-	}.Wrap()
+	}
 }
 
 // ErrMultipleOneOf is a variadic helper method for constructing a Error
 // for having more than one field set in a mutually exclusive field group.
 func ErrMultipleOneOf(fieldPaths ...string) *FieldError {
-	return Error{
+	return &FieldError{
 		Message: "expected exactly one, got both",
 		Paths:   fieldPaths,
-	}.Wrap()
+	}
 }
 
 // ErrInvalidKeyName is a variadic helper method for constructing a
 // Error that specifies a key name that is invalid.
 func ErrInvalidKeyName(value, fieldPath string, details ...string) *FieldError {
-	return Error{
+	return &FieldError{
 		Message: fmt.Sprintf("invalid key name %q", value),
 		Paths:   []string{fieldPath},
 		Details: strings.Join(details, ", "),
-	}.Wrap()
+	}
 }

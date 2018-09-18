@@ -84,16 +84,16 @@ func (cs *ResourceSpec) Validate() *apis.FieldError {
 func (current *Resource) CheckImmutableFields(og apis.Immutable) *apis.FieldError {
 	original, ok := og.(*Resource)
 	if !ok {
-		return apis.Error{Message: "The provided original was not a Resource"}.Wrap()
+		return &apis.FieldError{Message: "The provided original was not a Resource"}
 	}
 
 	if original.Spec.FieldThatsImmutable != current.Spec.FieldThatsImmutable {
-		return apis.Error{
+		return &apis.FieldError{
 			Message: "Immutable field changed",
 			Paths:   []string{"spec.fieldThatsImmutable"},
 			Details: fmt.Sprintf("got: %v, want: %v", current.Spec.FieldThatsImmutable,
 				original.Spec.FieldThatsImmutable),
-		}.Wrap()
+		}
 	}
 	return nil
 }

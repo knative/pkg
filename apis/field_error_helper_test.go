@@ -17,27 +17,26 @@ limitations under the License.
 package apis
 
 import (
-	"strconv"
 	"strings"
 	"testing"
 )
 
-func TestFieldError(t *testing.T) {
+func TestHelperFieldError(t *testing.T) {
 	tests := []struct {
 		name     string
-		err      *fieldError
+		err      *FieldError
 		prefixes [][]string
 		want     string
 	}{{
 		name: "simple single no propagation",
-		err: &fieldError{
+		err: &FieldError{
 			Message: "hear me roar",
 			Paths:   []string{"foo.bar"},
 		},
 		want: "hear me roar: foo.bar",
 	}, {
 		name: "simple single propagation",
-		err: &fieldError{
+		err: &FieldError{
 			Message: `invalid value "blah"`,
 			Paths:   []string{"foo"},
 		},
@@ -45,7 +44,7 @@ func TestFieldError(t *testing.T) {
 		want:     `invalid value "blah": hoola.baz.ugh.bar.foo`,
 	}, {
 		name: "simple multiple propagation",
-		err: &fieldError{
+		err: &FieldError{
 			Message: "invalid field(s)",
 			Paths:   []string{"foo", "bar"},
 		},
@@ -53,7 +52,7 @@ func TestFieldError(t *testing.T) {
 		want:     "invalid field(s): baz.ugh.foo, baz.ugh.bar",
 	}, {
 		name: "multiple propagation with details",
-		err: &fieldError{
+		err: &FieldError{
 			Message: "invalid field(s)",
 			Paths:   []string{"foo", "bar"},
 			Details: `I am a long
@@ -69,7 +68,7 @@ loooong
 Body.`,
 	}, {
 		name: "single propagation, empty start",
-		err: &fieldError{
+		err: &FieldError{
 			Message: "invalid field(s)",
 			// We might see this validating a scalar leaf.
 			Paths: []string{CurrentField},
@@ -78,7 +77,7 @@ Body.`,
 		want:     "invalid field(s): baz.ugh",
 	}, {
 		name: "single propagation, no paths",
-		err: &fieldError{
+		err: &FieldError{
 			Message: "invalid field(s)",
 			Paths:   nil,
 		},
@@ -88,6 +87,45 @@ Body.`,
 		name:     "nil propagation",
 		err:      nil,
 		prefixes: [][]string{{"baz", "ugh"}},
+	}, {
+		name:     "missing field propagation",
+		err:      ErrMissingField("foo", "bar"),
+		prefixes: [][]string{{"baz"}},
+		want:     "missing field(s): baz.foo, baz.bar",
+	}, {
+		name:     "missing disallowed propagation",
+		err:      ErrDisallowedFields("foo", "bar"),
+		prefixes: [][]string{{"baz"}},
+		want:     "must not set the field(s): baz.foo, baz.bar",
+	}, {
+		name:     "invalid value propagation",
+		err:      ErrInvalidValue("foo", "bar"),
+		prefixes: [][]string{{"baz"}},
+		want:     `invalid value "foo": baz.bar`,
+	}, {
+		name:     "missing mutually exclusive fields",
+		err:      ErrMissingOneOf("foo", "bar"),
+		prefixes: [][]string{{"baz"}},
+		want:     `expected exactly one, got neither: baz.foo, baz.bar`,
+	}, {
+		name:     "multiple mutually exclusive fields",
+		err:      ErrMultipleOneOf("foo", "bar"),
+		prefixes: [][]string{{"baz"}},
+		want:     `expected exactly one, got both: baz.foo, baz.bar`,
+	}, {
+		name: "invalid key name",
+		err: ErrInvalidKeyName("b@r", "foo[0].name",
+			"can not use @", "do not try"),
+		prefixes: [][]string{{"baz"}},
+		want: `invalid key name "b@r": baz.foo[0].name
+can not use @, do not try`,
+	}, {
+		name: "invalid key name with details array",
+		err: ErrInvalidKeyName("b@r", "foo[0].name",
+			[]string{"can not use @", "do not try"}...),
+		prefixes: [][]string{{"baz"}},
+		want: `invalid key name "b@r": baz.foo[0].name
+can not use @, do not try`,
 	}}
 
 	for _, test := range tests {
@@ -100,7 +138,7 @@ Body.`,
 			if test.want != "" {
 				got := fe.Error()
 				if got != test.want {
-					t.Errorf("&fieldError() = %v, wanted %v", got, test.want)
+					t.Errorf("&FieldError() = %v, wanted %v", got, test.want)
 				}
 			} else if fe != nil {
 				t.Errorf("ViaField() = %v, wanted nil", fe)
@@ -109,15 +147,15 @@ Body.`,
 	}
 }
 
-func TestViaIndexOrKeyFieldError(t *testing.T) {
+func TestHelperViaIndexOrKeyFieldError(t *testing.T) {
 	tests := []struct {
 		name     string
-		err      *fieldError
+		err      *FieldError
 		prefixes [][]string
 		want     string
 	}{{
 		name: "simple single no propagation",
-		err: &fieldError{
+		err: &FieldError{
 			Message: "hear me roar",
 			Paths:   []string{"bar"},
 		},
@@ -125,15 +163,34 @@ func TestViaIndexOrKeyFieldError(t *testing.T) {
 		want:     "hear me roar: foo[1][2][3].bar",
 	}, {
 		name: "simple key",
-		err: &fieldError{
+		err: &FieldError{
 			Message: "hear me roar",
 			Paths:   []string{"bar"},
 		},
 		prefixes: [][]string{{"KEY:C", "KEY:B", "KEY:A", "foo"}},
 		want:     "hear me roar: foo[A][B][C].bar",
 	}, {
+		name:     "missing field propagation",
+		err:      ErrMissingField("foo", "bar"),
+		prefixes: [][]string{{"[2]", "baz"}},
+		want:     "missing field(s): baz[2].foo, baz[2].bar",
+	}, {
+		name: "invalid key name",
+		err: ErrInvalidKeyName("b@r", "name",
+			"can not use @", "do not try"),
+		prefixes: [][]string{{"baz", "INDEX:0", "foo"}},
+		want: `invalid key name "b@r": foo[0].baz.name
+can not use @, do not try`,
+	}, {
+		name: "invalid key name with keys",
+		err: ErrInvalidKeyName("b@r", "name",
+			"can not use @", "do not try"),
+		prefixes: [][]string{{"baz", "INDEX:0", "foo"}, {"bar", "KEY:A", "boo"}},
+		want: `invalid key name "b@r": boo[A].bar.foo[0].baz.name
+can not use @, do not try`,
+	}, {
 		name: "multi prefixes provided",
-		err: &fieldError{
+		err: &FieldError{
 			Message: "invalid field(s)",
 			Paths:   []string{"foo"},
 		},
@@ -141,7 +198,7 @@ func TestViaIndexOrKeyFieldError(t *testing.T) {
 		want:     "invalid field(s): ugh.baz.baa[0].bee[2].foo",
 	}, {
 		name: "use helper viaFieldIndex",
-		err: &fieldError{
+		err: &FieldError{
 			Message: "invalid field(s)",
 			Paths:   []string{"foo"},
 		},
@@ -149,7 +206,7 @@ func TestViaIndexOrKeyFieldError(t *testing.T) {
 		want:     "invalid field(s): ugh.baz.baa[0].bee[2].foo",
 	}, {
 		name: "use helper viaFieldKey",
-		err: &fieldError{
+		err: &FieldError{
 			Message: "invalid field(s)",
 			Paths:   []string{"foo"},
 		},
@@ -157,7 +214,7 @@ func TestViaIndexOrKeyFieldError(t *testing.T) {
 		want:     "invalid field(s): ugh.baz.baa[BBB].bee[AAA].foo",
 	}, {
 		name: "bypass helpers",
-		err: &fieldError{
+		err: &FieldError{
 			Message: "invalid field(s)",
 			Paths:   []string{"foo"},
 		},
@@ -165,7 +222,7 @@ func TestViaIndexOrKeyFieldError(t *testing.T) {
 		want:     "invalid field(s): bar[1][2].foo",
 	}, {
 		name: "multi paths provided",
-		err: &fieldError{
+		err: &FieldError{
 			Message: "invalid field(s)",
 			Paths:   []string{"foo", "bar"},
 		},
@@ -173,7 +230,7 @@ func TestViaIndexOrKeyFieldError(t *testing.T) {
 		want:     "invalid field(s): map[A].index[0].foo, map[A].index[0].bar",
 	}, {
 		name: "manual index",
-		err: func() *fieldError {
+		err: func() *FieldError {
 			// Example, return an error in a loop:
 			// for i, item := spec.myList {
 			//   err := item.validate().ViaIndex(i).ViaField("myList")
@@ -183,7 +240,7 @@ func TestViaIndexOrKeyFieldError(t *testing.T) {
 			// }
 			// --> I expect path to be myList[i].foo
 
-			err := &fieldError{
+			err := &FieldError{
 				Message: "invalid field(s)",
 				Paths:   []string{"foo"},
 			}
@@ -196,9 +253,9 @@ func TestViaIndexOrKeyFieldError(t *testing.T) {
 		want: "invalid field(s): boof[4][3].baz[1][2].bar[0].foo",
 	}, {
 		name: "manual multiple index",
-		err: func() *fieldError {
+		err: func() *FieldError {
 
-			err := &fieldError{
+			err := &FieldError{
 				Message: "invalid field(s)",
 				Paths:   []string{"foo"},
 			}
@@ -209,8 +266,8 @@ func TestViaIndexOrKeyFieldError(t *testing.T) {
 		want: "invalid field(s): bar.bear[1][2][3].baz.]xxx[.foo",
 	}, {
 		name: "manual keys",
-		err: func() *fieldError {
-			err := &fieldError{
+		err: func() *FieldError {
+			err := &FieldError{
 				Message: "invalid field(s)",
 				Paths:   []string{"foo"},
 			}
@@ -223,8 +280,8 @@ func TestViaIndexOrKeyFieldError(t *testing.T) {
 		want: "invalid field(s): jar[F][E].baz[BB][CCC].bar[A].foo",
 	}, {
 		name: "manual index and keys",
-		err: func() *fieldError {
-			err := &fieldError{
+		err: func() *FieldError {
+			err := &FieldError{
 				Message: "invalid field(s)",
 				Paths:   []string{"foo", "faa"},
 			}
@@ -268,84 +325,11 @@ func TestViaIndexOrKeyFieldError(t *testing.T) {
 			if test.want != "" {
 				got := fe.Error()
 				if got != test.want {
-					t.Errorf("&fieldError() = %v, wanted %v", got, test.want)
+					t.Errorf("&FieldError() = %v, wanted %v", got, test.want)
 				}
 			} else if fe != nil {
 				t.Errorf("ViaField() = %v, wanted nil", fe)
 			}
 		})
 	}
-}
-
-func TestFlatten(t *testing.T) {
-	tests := []struct {
-		name    string
-		indices []string
-		want    string
-	}{{
-		name:    "simple",
-		indices: strings.Split("foo.[1]", "."),
-		want:    "foo[1]",
-	}, {
-		name:    "no brackets",
-		indices: strings.Split("foo.bar", "."),
-		want:    "foo.bar",
-	}, {
-		name:    "err([0]).ViaField(bar).ViaField(foo)",
-		indices: strings.Split("foo.bar.[0]", "."),
-		want:    "foo.bar[0]",
-	}, {
-		name:    "err(bar).ViaIndex(0).ViaField(foo)",
-		indices: strings.Split("foo.[0].bar", "."),
-		want:    "foo[0].bar",
-	}, {
-		name:    "err(bar).ViaField(foo).ViaIndex(0)",
-		indices: strings.Split("[0].foo.bar", "."),
-		want:    "[0].foo.bar",
-	}, {
-		name:    "err(bar).ViaIndex(0).ViaIndex[1].ViaField(foo)",
-		indices: strings.Split("foo.[1].[0].bar", "."),
-		want:    "foo[1][0].bar",
-	}, {
-		name:    "err(bar).ViaIndex(0).ViaIndex[1].ViaField(foo)",
-		indices: []string{"foo", "bar.[0].baz"},
-		want:    "foo.bar[0].baz",
-	}}
-
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-
-			got := flatten(test.indices)
-
-			if got != test.want {
-				t.Errorf("got: %q, want %q", got, test.want)
-			}
-		})
-	}
-}
-
-func makeIndex(index string) int {
-	all := strings.Split(index, ",")
-	if i, err := strconv.Atoi(all[0]); err == nil {
-		return i
-	}
-	return -1
-}
-
-func makeFieldIndex(fi string) (string, int) {
-	all := strings.Split(fi, ",")
-	if i, err := strconv.Atoi(all[1]); err == nil {
-		return all[0], i
-	}
-	return "error", -1
-}
-
-func makeKey(key string) string {
-	all := strings.Split(key, ",")
-	return all[0]
-}
-
-func makeFieldKey(fk string) (string, string) {
-	all := strings.Split(fk, ",")
-	return all[0], all[1]
 }

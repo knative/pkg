@@ -22,9 +22,16 @@ import (
 )
 
 // FieldError is a collection of field errors.
-type FieldError []*Error
+// +k8s:deepcopy-gen=false
+type FieldError struct {
+	Message string
+	Paths   []string
+	// Details contains an optional longer payload.
+	Details string
+	errors  []fieldError
+}
 
-// Error implements error
+// FieldError implements error
 var _ error = (*FieldError)(nil)
 
 // ViaField is used to propagate a validation error along a field access.
@@ -32,13 +39,14 @@ func (fe *FieldError) ViaField(prefix ...string) *FieldError {
 	if fe == nil {
 		return nil
 	}
-	newErrs := FieldError(nil)
-	for _, e := range *fe {
+	var newErrs []fieldError
+	for _, e := range fe.getNormalizedErrors() {
 		if newErr := e.ViaField(prefix...); newErr != nil {
-			newErrs = append(newErrs, newErr)
+			newErrs = append(newErrs, *newErr)
 		}
 	}
-	return &newErrs
+	fe.errors = newErrs
+	return fe
 }
 
 // ViaIndex is used to attach an index to the next ViaField provided.
@@ -46,13 +54,14 @@ func (fe *FieldError) ViaIndex(index int) *FieldError {
 	if fe == nil {
 		return nil
 	}
-	newErrs := FieldError(nil)
-	for _, e := range *fe {
+	var newErrs []fieldError
+	for _, e := range fe.getNormalizedErrors() {
 		if newErr := e.ViaIndex(index); newErr != nil {
-			newErrs = append(newErrs, newErr)
+			newErrs = append(newErrs, *newErr)
 		}
 	}
-	return &newErrs
+	fe.errors = newErrs
+	return fe
 }
 
 // ViaFieldIndex is the short way to chain: err.ViaIndex(bar).ViaField(foo)
@@ -60,13 +69,14 @@ func (fe *FieldError) ViaFieldIndex(field string, index int) *FieldError {
 	if fe == nil {
 		return nil
 	}
-	newErrs := FieldError(nil)
-	for _, e := range *fe {
+	var newErrs []fieldError
+	for _, e := range fe.getNormalizedErrors() {
 		if newErr := e.ViaFieldIndex(field, index); newErr != nil {
-			newErrs = append(newErrs, newErr)
+			newErrs = append(newErrs, *newErr)
 		}
 	}
-	return &newErrs
+	fe.errors = newErrs
+	return fe
 }
 
 // ViaKey is used to attach a key to the next ViaField provided.
@@ -74,13 +84,14 @@ func (fe *FieldError) ViaKey(key string) *FieldError {
 	if fe == nil {
 		return nil
 	}
-	newErrs := FieldError(nil)
-	for _, e := range *fe {
+	var newErrs []fieldError
+	for _, e := range fe.getNormalizedErrors() {
 		if newErr := e.ViaKey(key); newErr != nil {
-			newErrs = append(newErrs, newErr)
+			newErrs = append(newErrs, *newErr)
 		}
 	}
-	return &newErrs
+	fe.errors = newErrs
+	return fe
 }
 
 // ViaFieldKey is the short way to chain: err.ViaKey(bar).ViaField(foo)
@@ -88,29 +99,50 @@ func (fe *FieldError) ViaFieldKey(field string, key string) *FieldError {
 	if fe == nil {
 		return nil
 	}
-	newErrs := FieldError(nil)
-	for _, e := range *fe {
+	var newErrs []fieldError
+	for _, e := range fe.getNormalizedErrors() {
 		if newErr := e.ViaFieldKey(field, key); newErr != nil {
-			newErrs = append(newErrs, newErr)
+			newErrs = append(newErrs, *newErr)
 		}
 	}
-	return &newErrs
+	fe.errors = newErrs
+	return fe
+}
+
+func (fe *FieldError) getNormalizedErrors() []fieldError {
+	if fe.Message != "" {
+		err := fieldError{
+			Message: fe.Message,
+			Paths:   fe.Paths,
+			Details: fe.Details,
+		}
+		fe.Message = ""
+		fe.Paths = []string(nil)
+		fe.Details = ""
+		fe.errors = append(fe.errors, err)
+	}
+	return fe.errors
 }
 
 // Also collects errors, returns a new collection of existing errors and new errors.
-func (fe *FieldError) Also(errs ...*Error) *FieldError {
-	newErrs := FieldError(nil)
+func (fe *FieldError) Also(errs ...*FieldError) *FieldError {
+	var newErrs []fieldError
 	if fe != nil {
-		newErrs = append(newErrs, *fe...)
+		newErrs = append(newErrs, fe.getNormalizedErrors()...)
 	}
-	newErrs = append(newErrs, errs...)
-	return &newErrs
+
+	for _, e := range errs {
+		newErrs = append(newErrs, e.getNormalizedErrors()...)
+	}
+
+	fe.errors = newErrs
+	return fe
 }
 
-// Error implements error
+// fieldError implements error
 func (fe *FieldError) Error() string {
 	var errs []string
-	for _, e := range *fe {
+	for _, e := range fe.getNormalizedErrors() {
 		if e.Details == "" {
 			errs = append(errs, fmt.Sprintf("%v: %v", e.Message, strings.Join(e.Paths, ", ")))
 		} else {

@@ -25,19 +25,22 @@ import (
 // a problem with the current field itself.
 const CurrentField = ""
 
-// Error is used to propagate the context of errors pertaining to
+// fieldError is used to propagate the context of errors pertaining to
 // specific fields in a manner suitable for use in a recursive walk, so
 // that errors contain the appropriate field context.
-// +k8s:deepcopy-gen=true
-type Error struct {
+// +k8s:deepcopy-gen=false
+type fieldError struct {
+	// +required
 	Message string
-	Paths   []string
+	// +required
+	Paths []string
 	// Details contains an optional longer payload.
+	// +optional
 	Details string
 }
 
-// Error implements error
-var _ error = (*Error)(nil)
+// fieldError implements error
+var _ error = (*fieldError)(nil)
 
 // ViaField is used to propagate a validation error along a field access.
 // For example, if a type recursively validates its "spec" via:
@@ -46,7 +49,7 @@ var _ error = (*Error)(nil)
 //     // via "spec".
 //     return err.ViaField("spec")
 //   }
-func (e *Error) ViaField(prefix ...string) *Error {
+func (e *fieldError) ViaField(prefix ...string) *fieldError {
 	if e == nil {
 		return nil
 	}
@@ -65,7 +68,7 @@ func (e *Error) ViaField(prefix ...string) *Error {
 //      return err.ViaIndex(i).ViaField("collection")
 //    }
 //  }
-func (e *Error) ViaIndex(index int) *Error {
+func (e *fieldError) ViaIndex(index int) *fieldError {
 	if e == nil {
 		return nil
 	}
@@ -73,7 +76,7 @@ func (e *Error) ViaIndex(index int) *Error {
 }
 
 // ViaFieldIndex is the short way to chain: err.ViaIndex(bar).ViaField(foo)
-func (e *Error) ViaFieldIndex(field string, index int) *Error {
+func (e *fieldError) ViaFieldIndex(field string, index int) *fieldError {
 	return e.ViaIndex(index).ViaField(field)
 }
 
@@ -84,7 +87,7 @@ func (e *Error) ViaFieldIndex(field string, index int) *Error {
 //      return err.ViaKey(k).ViaField("bag")
 //    }
 //  }
-func (e *Error) ViaKey(key string) *Error {
+func (e *fieldError) ViaKey(key string) *fieldError {
 	if e == nil {
 		return nil
 	}
@@ -92,7 +95,7 @@ func (e *Error) ViaKey(key string) *Error {
 }
 
 // ViaFieldKey is the short way to chain: err.ViaKey(bar).ViaField(foo)
-func (e *Error) ViaFieldKey(field string, key string) *Error {
+func (e *fieldError) ViaFieldKey(field string, key string) *fieldError {
 	return e.ViaKey(key).ViaField(field)
 }
 
@@ -122,8 +125,8 @@ func isIndex(part string) bool {
 	return strings.HasPrefix(part, "[") && strings.HasSuffix(part, "]")
 }
 
-// Error implements error
-func (e *Error) Error() string {
+// fieldError implements error
+func (e *fieldError) Error() string {
 	if e.Details == "" {
 		return fmt.Sprintf("%v: %v", e.Message, strings.Join(e.Paths, ", "))
 	}
