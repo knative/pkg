@@ -149,9 +149,7 @@ func (r conditionsImpl) IsHappy() bool {
 }
 
 func (r conditionsImpl) getConditions() Conditions {
-	accessorValue := reflect.Indirect(reflect.ValueOf(r.status))
-
-	conditionsField := accessorValue.FieldByName("Conditions")
+	conditionsField := reflect.Indirect(reflect.ValueOf(r.status)).FieldByName("Conditions")
 
 	if conditionsField.IsValid() && conditionsField.CanInterface() {
 		if conditions, ok := conditionsField.Interface().(Conditions); ok {
@@ -163,12 +161,7 @@ func (r conditionsImpl) getConditions() Conditions {
 
 // setConditions uses reflection to set the field on the status called "Conditions".
 func (r conditionsImpl) setConditions(conditions Conditions) {
-	accessorValue := reflect.Indirect(reflect.ValueOf(r.status))
-
-	if accessorValue.Kind() != reflect.Struct {
-		return
-	}
-	conditionsField := accessorValue.FieldByName("Conditions")
+	conditionsField := reflect.Indirect(reflect.ValueOf(r.status)).FieldByName("Conditions")
 
 	if conditionsField.IsValid() && conditionsField.CanSet() {
 		conditionsField.Set(reflect.ValueOf(conditions))
