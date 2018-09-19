@@ -88,6 +88,45 @@ Body.`,
 		name:     "nil propagation",
 		err:      nil,
 		prefixes: [][]string{{"baz", "ugh"}},
+	}, {
+		name:     "missing field propagation",
+		err:      ErrMissingField("foo", "bar"),
+		prefixes: [][]string{{"baz"}},
+		want:     "missing field(s): baz.foo, baz.bar",
+	}, {
+		name:     "missing disallowed propagation",
+		err:      ErrDisallowedFields("foo", "bar"),
+		prefixes: [][]string{{"baz"}},
+		want:     "must not set the field(s): baz.foo, baz.bar",
+	}, {
+		name:     "invalid value propagation",
+		err:      ErrInvalidValue("foo", "bar"),
+		prefixes: [][]string{{"baz"}},
+		want:     `invalid value "foo": baz.bar`,
+	}, {
+		name:     "missing mutually exclusive fields",
+		err:      ErrMissingOneOf("foo", "bar"),
+		prefixes: [][]string{{"baz"}},
+		want:     `expected exactly one, got neither: baz.foo, baz.bar`,
+	}, {
+		name:     "multiple mutually exclusive fields",
+		err:      ErrMultipleOneOf("foo", "bar"),
+		prefixes: [][]string{{"baz"}},
+		want:     `expected exactly one, got both: baz.foo, baz.bar`,
+	}, {
+		name: "invalid key name",
+		err: ErrInvalidKeyName("b@r", "foo[0].name",
+			"can not use @", "do not try"),
+		prefixes: [][]string{{"baz"}},
+		want: `invalid key name "b@r": baz.foo[0].name
+can not use @, do not try`,
+	}, {
+		name: "invalid key name with details array",
+		err: ErrInvalidKeyName("b@r", "foo[0].name",
+			[]string{"can not use @", "do not try"}...),
+		prefixes: [][]string{{"baz"}},
+		want: `invalid key name "b@r": baz.foo[0].name
+can not use @, do not try`,
 	}}
 
 	for _, test := range tests {
@@ -140,6 +179,25 @@ func TestViaIndexOrKeyFieldError(t *testing.T) {
 		},
 		prefixes: [][]string{{"KEY:C", "KEY:B", "KEY:A", "foo"}},
 		want:     "hear me roar: foo[A][B][C].bar",
+	}, {
+		name:     "missing field propagation",
+		err:      ErrMissingField("foo", "bar"),
+		prefixes: [][]string{{"[2]", "baz"}},
+		want:     "missing field(s): baz[2].foo, baz[2].bar",
+	}, {
+		name: "invalid key name",
+		err: ErrInvalidKeyName("b@r", "name",
+			"can not use @", "do not try"),
+		prefixes: [][]string{{"baz", "INDEX:0", "foo"}},
+		want: `invalid key name "b@r": foo[0].baz.name
+can not use @, do not try`,
+	}, {
+		name: "invalid key name with keys",
+		err: ErrInvalidKeyName("b@r", "name",
+			"can not use @", "do not try"),
+		prefixes: [][]string{{"baz", "INDEX:0", "foo"}, {"bar", "KEY:A", "boo"}},
+		want: `invalid key name "b@r": boo[A].bar.foo[0].baz.name
+can not use @, do not try`,
 	}, {
 		name: "multi prefixes provided",
 		err: &FieldError{
