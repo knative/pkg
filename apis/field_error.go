@@ -25,7 +25,9 @@ import (
 // a problem with the current field itself.
 const CurrentField = ""
 
-// FieldError is a collection of field errors.
+// FieldError is used to propagate the context of errors pertaining to
+// specific fields in a manner suitable for use in a recursive walk, so
+// that errors contain the appropriate field context.
 // +k8s:deepcopy-gen=false
 type FieldError struct {
 	Message string
@@ -68,6 +70,12 @@ func (fe *FieldError) ViaField(prefix ...string) *FieldError {
 }
 
 // ViaIndex is used to attach an index to the next ViaField provided.
+// For example, if a type recursively validates a parameter that has a collection:
+//  for i, c := range spec.Collection {
+//    if err := doValidation(c); err != nil {
+//      return err.ViaIndex(i).ViaField("collection")
+//    }
+//  }
 func (fe *FieldError) ViaIndex(index int) *FieldError {
 	if fe == nil {
 		return nil
@@ -98,6 +106,12 @@ func (fe *FieldError) ViaFieldIndex(field string, index int) *FieldError {
 }
 
 // ViaKey is used to attach a key to the next ViaField provided.
+// For example, if a type recursively validates a parameter that has a collection:
+//  for k, v := range spec.Bag. {
+//    if err := doValidation(v); err != nil {
+//      return err.ViaKey(k).ViaField("bag")
+//    }
+//  }
 func (fe *FieldError) ViaKey(key string) *FieldError {
 	if fe == nil {
 		return nil
@@ -177,74 +191,6 @@ func (fe *FieldError) clear() {
 	fe.Details = ""
 }
 
-// fieldError implements error
-func (fe *FieldError) Error() string {
-	var errs []string
-	for _, e := range fe.getNormalizedErrors() {
-		if e.Details == "" {
-			errs = append(errs, fmt.Sprintf("%v: %v", e.Message, strings.Join(e.Paths, ", ")))
-		} else {
-			errs = append(errs, fmt.Sprintf("%v: %v\n%v", e.Message, strings.Join(e.Paths, ", "), e.Details))
-		}
-	}
-	return strings.Join(errs, "\n")
-}
-
-// ErrMissingField is a variadic helper method for constructing a Error for
-// a set of missing fields.
-func ErrMissingField(fieldPaths ...string) *FieldError {
-	return &FieldError{
-		Message: "missing field(s)",
-		Paths:   fieldPaths,
-	}
-}
-
-// ErrDisallowedFields is a variadic helper method for constructing a Error
-// for a set of disallowed fields.
-func ErrDisallowedFields(fieldPaths ...string) *FieldError {
-	return &FieldError{
-		Message: "must not set the field(s)",
-		Paths:   fieldPaths,
-	}
-}
-
-// ErrInvalidValue constructs a Error for a field that has received an
-// invalid string value.
-func ErrInvalidValue(value, fieldPath string) *FieldError {
-	return &FieldError{
-		Message: fmt.Sprintf("invalid value %q", value),
-		Paths:   []string{fieldPath},
-	}
-}
-
-// ErrMissingOneOf is a variadic helper method for constructing a Error for
-// not having at least one field in a mutually exclusive field group.
-func ErrMissingOneOf(fieldPaths ...string) *FieldError {
-	return &FieldError{
-		Message: "expected exactly one, got neither",
-		Paths:   fieldPaths,
-	}
-}
-
-// ErrMultipleOneOf is a variadic helper method for constructing a Error
-// for having more than one field set in a mutually exclusive field group.
-func ErrMultipleOneOf(fieldPaths ...string) *FieldError {
-	return &FieldError{
-		Message: "expected exactly one, got both",
-		Paths:   fieldPaths,
-	}
-}
-
-// ErrInvalidKeyName is a variadic helper method for constructing a
-// Error that specifies a key name that is invalid.
-func ErrInvalidKeyName(value, fieldPath string, details ...string) *FieldError {
-	return &FieldError{
-		Message: fmt.Sprintf("invalid key name %q", value),
-		Paths:   []string{fieldPath},
-		Details: strings.Join(details, ", "),
-	}
-}
-
 // flatten takes in a array of path components and looks for chances to flatten
 // objects that have index prefixes, examples:
 //   err([0]).ViaField(bar).ViaField(foo) -> foo.bar.[0] converts to foo.bar[0]
@@ -269,4 +215,72 @@ func flatten(path []string) string {
 
 func isIndex(part string) bool {
 	return strings.HasPrefix(part, "[") && strings.HasSuffix(part, "]")
+}
+
+// FieldError implements error
+func (fe *FieldError) Error() string {
+	var errs []string
+	for _, e := range fe.getNormalizedErrors() {
+		if e.Details == "" {
+			errs = append(errs, fmt.Sprintf("%v: %v", e.Message, strings.Join(e.Paths, ", ")))
+		} else {
+			errs = append(errs, fmt.Sprintf("%v: %v\n%v", e.Message, strings.Join(e.Paths, ", "), e.Details))
+		}
+	}
+	return strings.Join(errs, "\n")
+}
+
+// ErrMissingField is a variadic helper method for constructing a FieldError for
+// a set of missing fields.
+func ErrMissingField(fieldPaths ...string) *FieldError {
+	return &FieldError{
+		Message: "missing field(s)",
+		Paths:   fieldPaths,
+	}
+}
+
+// ErrDisallowedFields is a variadic helper method for constructing a FieldError
+// for a set of disallowed fields.
+func ErrDisallowedFields(fieldPaths ...string) *FieldError {
+	return &FieldError{
+		Message: "must not set the field(s)",
+		Paths:   fieldPaths,
+	}
+}
+
+// ErrInvalidValue constructs a FieldError for a field that has received an
+// invalid string value.
+func ErrInvalidValue(value, fieldPath string) *FieldError {
+	return &FieldError{
+		Message: fmt.Sprintf("invalid value %q", value),
+		Paths:   []string{fieldPath},
+	}
+}
+
+// ErrMissingOneOf is a variadic helper method for constructing a FieldError for
+// not having at least one field in a mutually exclusive field group.
+func ErrMissingOneOf(fieldPaths ...string) *FieldError {
+	return &FieldError{
+		Message: "expected exactly one, got neither",
+		Paths:   fieldPaths,
+	}
+}
+
+// ErrMultipleOneOf is a variadic helper method for constructing a FieldError
+// for having more than one field set in a mutually exclusive field group.
+func ErrMultipleOneOf(fieldPaths ...string) *FieldError {
+	return &FieldError{
+		Message: "expected exactly one, got both",
+		Paths:   fieldPaths,
+	}
+}
+
+// ErrInvalidKeyName is a variadic helper method for constructing a FieldError
+// that specifies a key name that is invalid.
+func ErrInvalidKeyName(value, fieldPath string, details ...string) *FieldError {
+	return &FieldError{
+		Message: fmt.Sprintf("invalid key name %q", value),
+		Paths:   []string{fieldPath},
+		Details: strings.Join(details, ", "),
+	}
 }
