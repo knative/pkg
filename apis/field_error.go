@@ -21,30 +21,48 @@ import (
 	"strings"
 )
 
+// CurrentField is a constant to supply as a fieldPath for when there is
+// a problem with the current field itself.
+const CurrentField = ""
+
 // FieldError is a collection of field errors.
 // +k8s:deepcopy-gen=false
 type FieldError struct {
 	Message string
 	Paths   []string
 	// Details contains an optional longer payload.
+	// +optional
 	Details string
-	errors  []fieldError
+	errors  []FieldError
 }
 
 // FieldError implements error
 var _ error = (*FieldError)(nil)
 
 // ViaField is used to propagate a validation error along a field access.
+// For example, if a type recursively validates its "spec" via:
+//   if err := foo.Spec.Validate(); err != nil {
+//     // Augment any field paths with the context that they were accessed
+//     // via "spec".
+//     return err.ViaField("spec")
+//   }
 func (fe *FieldError) ViaField(prefix ...string) *FieldError {
 	if fe == nil {
 		return nil
 	}
-	var newErrs []fieldError
+	var newErrs []FieldError
 	for _, e := range fe.getNormalizedErrors() {
-		if newErr := e.ViaField(prefix...); newErr != nil {
-			newErrs = append(newErrs, *newErr)
+		// Prepend the Prefix to existing errors.
+		var newPaths []string
+		for _, oldPath := range e.Paths {
+			newPaths = append(newPaths, flatten(append(prefix, oldPath)))
 		}
+		e.Paths = newPaths
+
+		// Append the mutated error to the errors list.
+		newErrs = append(newErrs, e)
 	}
+	fe.clear()
 	fe.errors = newErrs
 	return fe
 }
@@ -54,12 +72,12 @@ func (fe *FieldError) ViaIndex(index int) *FieldError {
 	if fe == nil {
 		return nil
 	}
-	var newErrs []fieldError
+	var newErrs []FieldError
 	for _, e := range fe.getNormalizedErrors() {
-		if newErr := e.ViaIndex(index); newErr != nil {
-			newErrs = append(newErrs, *newErr)
-		}
+		e.ViaField(fmt.Sprintf("[%d]", index))
+		newErrs = append(newErrs, e)
 	}
+	fe.clear()
 	fe.errors = newErrs
 	return fe
 }
@@ -69,12 +87,12 @@ func (fe *FieldError) ViaFieldIndex(field string, index int) *FieldError {
 	if fe == nil {
 		return nil
 	}
-	var newErrs []fieldError
+	var newErrs []FieldError
 	for _, e := range fe.getNormalizedErrors() {
-		if newErr := e.ViaFieldIndex(field, index); newErr != nil {
-			newErrs = append(newErrs, *newErr)
-		}
+		e.ViaIndex(index).ViaField(field)
+		newErrs = append(newErrs, e)
 	}
+	fe.clear()
 	fe.errors = newErrs
 	return fe
 }
@@ -84,12 +102,12 @@ func (fe *FieldError) ViaKey(key string) *FieldError {
 	if fe == nil {
 		return nil
 	}
-	var newErrs []fieldError
+	var newErrs []FieldError
 	for _, e := range fe.getNormalizedErrors() {
-		if newErr := e.ViaKey(key); newErr != nil {
-			newErrs = append(newErrs, *newErr)
-		}
+		e.ViaField(fmt.Sprintf("[%s]", key))
+		newErrs = append(newErrs, e)
 	}
+	fe.clear()
 	fe.errors = newErrs
 	return fe
 }
@@ -99,37 +117,43 @@ func (fe *FieldError) ViaFieldKey(field string, key string) *FieldError {
 	if fe == nil {
 		return nil
 	}
-	var newErrs []fieldError
+	var newErrs []FieldError
 	for _, e := range fe.getNormalizedErrors() {
-		if newErr := e.ViaFieldKey(field, key); newErr != nil {
-			newErrs = append(newErrs, *newErr)
-		}
+		e.ViaKey(key).ViaField(field)
+		newErrs = append(newErrs, e)
 	}
+	fe.clear()
 	fe.errors = newErrs
 	return fe
 }
 
-func (fe *FieldError) getNormalizedErrors() []fieldError {
+func (fe *FieldError) getNormalizedErrors() []FieldError {
 	if fe == nil {
-		return []fieldError(nil)
+		return []FieldError(nil)
 	}
+	var errors []FieldError
+
+	// if this FieldError is a leaf,
 	if fe.Message != "" {
-		err := fieldError{
+		err := FieldError{
 			Message: fe.Message,
 			Paths:   fe.Paths,
 			Details: fe.Details,
 		}
-		fe.Message = ""
-		fe.Paths = []string(nil)
-		fe.Details = ""
-		fe.errors = append(fe.errors, err)
+		errors = append(errors, err)
 	}
-	return fe.errors
+
+	// and then collect all other errors recursively.
+	for _, e := range fe.errors {
+		errors = append(errors, e.getNormalizedErrors()...)
+	}
+
+	return errors
 }
 
 // Also collects errors, returns a new collection of existing errors and new errors.
 func (fe *FieldError) Also(errs ...*FieldError) *FieldError {
-	var newErrs []fieldError
+	var newErrs []FieldError
 	if fe == nil {
 		fe = &FieldError{}
 	}
@@ -139,8 +163,18 @@ func (fe *FieldError) Also(errs ...*FieldError) *FieldError {
 		newErrs = append(newErrs, e.getNormalizedErrors()...)
 	}
 
+	fe.clear()
 	fe.errors = newErrs
 	return fe
+}
+
+func (fe *FieldError) clear() {
+	if fe == nil {
+		return
+	}
+	fe.Message = ""
+	fe.Paths = []string(nil)
+	fe.Details = ""
 }
 
 // fieldError implements error
@@ -209,4 +243,30 @@ func ErrInvalidKeyName(value, fieldPath string, details ...string) *FieldError {
 		Paths:   []string{fieldPath},
 		Details: strings.Join(details, ", "),
 	}
+}
+
+// flatten takes in a array of path components and looks for chances to flatten
+// objects that have index prefixes, examples:
+//   err([0]).ViaField(bar).ViaField(foo) -> foo.bar.[0] converts to foo.bar[0]
+//   err(bar).ViaIndex(0).ViaField(foo) -> foo.[0].bar converts to foo[0].bar
+//   err(bar).ViaField(foo).ViaIndex(0) -> [0].foo.bar converts to [0].foo.bar
+//   err(bar).ViaIndex(0).ViaIndex[1].ViaField(foo) -> foo.[1].[0].bar converts to foo[1][0].bar
+func flatten(path []string) string {
+	var newPath []string
+	for _, part := range path {
+		for _, p := range strings.Split(part, ".") {
+			if p == CurrentField {
+				continue
+			} else if len(newPath) > 0 && isIndex(p) {
+				newPath[len(newPath)-1] = fmt.Sprintf("%s%s", newPath[len(newPath)-1], p)
+			} else {
+				newPath = append(newPath, p)
+			}
+		}
+	}
+	return strings.Join(newPath, ".")
+}
+
+func isIndex(part string) bool {
+	return strings.HasPrefix(part, "[") && strings.HasSuffix(part, "]")
 }

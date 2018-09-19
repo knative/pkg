@@ -17,11 +17,12 @@ limitations under the License.
 package apis
 
 import (
+	"strconv"
 	"strings"
 	"testing"
 )
 
-func TestMainFieldError(t *testing.T) {
+func TestFieldError(t *testing.T) {
 	tests := []struct {
 		name     string
 		err      *FieldError
@@ -87,45 +88,6 @@ Body.`,
 		name:     "nil propagation",
 		err:      nil,
 		prefixes: [][]string{{"baz", "ugh"}},
-	}, {
-		name:     "missing field propagation",
-		err:      ErrMissingField("foo", "bar"),
-		prefixes: [][]string{{"baz"}},
-		want:     "missing field(s): baz.foo, baz.bar",
-	}, {
-		name:     "missing disallowed propagation",
-		err:      ErrDisallowedFields("foo", "bar"),
-		prefixes: [][]string{{"baz"}},
-		want:     "must not set the field(s): baz.foo, baz.bar",
-	}, {
-		name:     "invalid value propagation",
-		err:      ErrInvalidValue("foo", "bar"),
-		prefixes: [][]string{{"baz"}},
-		want:     `invalid value "foo": baz.bar`,
-	}, {
-		name:     "missing mutually exclusive fields",
-		err:      ErrMissingOneOf("foo", "bar"),
-		prefixes: [][]string{{"baz"}},
-		want:     `expected exactly one, got neither: baz.foo, baz.bar`,
-	}, {
-		name:     "multiple mutually exclusive fields",
-		err:      ErrMultipleOneOf("foo", "bar"),
-		prefixes: [][]string{{"baz"}},
-		want:     `expected exactly one, got both: baz.foo, baz.bar`,
-	}, {
-		name: "invalid key name",
-		err: ErrInvalidKeyName("b@r", "foo[0].name",
-			"can not use @", "do not try"),
-		prefixes: [][]string{{"baz"}},
-		want: `invalid key name "b@r": baz.foo[0].name
-can not use @, do not try`,
-	}, {
-		name: "invalid key name with details array",
-		err: ErrInvalidKeyName("b@r", "foo[0].name",
-			[]string{"can not use @", "do not try"}...),
-		prefixes: [][]string{{"baz"}},
-		want: `invalid key name "b@r": baz.foo[0].name
-can not use @, do not try`,
 	}}
 
 	for _, test := range tests {
@@ -147,7 +109,7 @@ can not use @, do not try`,
 	}
 }
 
-func TestMainViaIndexOrKeyFieldError(t *testing.T) {
+func TestViaIndexOrKeyFieldError(t *testing.T) {
 	tests := []struct {
 		name     string
 		err      *FieldError
@@ -178,25 +140,6 @@ func TestMainViaIndexOrKeyFieldError(t *testing.T) {
 		},
 		prefixes: [][]string{{"KEY:C", "KEY:B", "KEY:A", "foo"}},
 		want:     "hear me roar: foo[A][B][C].bar",
-	}, {
-		name:     "missing field propagation",
-		err:      ErrMissingField("foo", "bar"),
-		prefixes: [][]string{{"[2]", "baz"}},
-		want:     "missing field(s): baz[2].foo, baz[2].bar",
-	}, {
-		name: "invalid key name",
-		err: ErrInvalidKeyName("b@r", "name",
-			"can not use @", "do not try"),
-		prefixes: [][]string{{"baz", "INDEX:0", "foo"}},
-		want: `invalid key name "b@r": foo[0].baz.name
-can not use @, do not try`,
-	}, {
-		name: "invalid key name with keys",
-		err: ErrInvalidKeyName("b@r", "name",
-			"can not use @", "do not try"),
-		prefixes: [][]string{{"baz", "INDEX:0", "foo"}, {"bar", "KEY:A", "boo"}},
-		want: `invalid key name "b@r": boo[A].bar.foo[0].baz.name
-can not use @, do not try`,
 	}, {
 		name: "multi prefixes provided",
 		err: &FieldError{
@@ -432,4 +375,77 @@ not without this: bar.C`,
 			}
 		})
 	}
+}
+
+func TestFlatten(t *testing.T) {
+	tests := []struct {
+		name    string
+		indices []string
+		want    string
+	}{{
+		name:    "simple",
+		indices: strings.Split("foo.[1]", "."),
+		want:    "foo[1]",
+	}, {
+		name:    "no brackets",
+		indices: strings.Split("foo.bar", "."),
+		want:    "foo.bar",
+	}, {
+		name:    "err([0]).ViaField(bar).ViaField(foo)",
+		indices: strings.Split("foo.bar.[0]", "."),
+		want:    "foo.bar[0]",
+	}, {
+		name:    "err(bar).ViaIndex(0).ViaField(foo)",
+		indices: strings.Split("foo.[0].bar", "."),
+		want:    "foo[0].bar",
+	}, {
+		name:    "err(bar).ViaField(foo).ViaIndex(0)",
+		indices: strings.Split("[0].foo.bar", "."),
+		want:    "[0].foo.bar",
+	}, {
+		name:    "err(bar).ViaIndex(0).ViaIndex[1].ViaField(foo)",
+		indices: strings.Split("foo.[1].[0].bar", "."),
+		want:    "foo[1][0].bar",
+	}, {
+		name:    "err(bar).ViaIndex(0).ViaIndex[1].ViaField(foo)",
+		indices: []string{"foo", "bar.[0].baz"},
+		want:    "foo.bar[0].baz",
+	}}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+
+			got := flatten(test.indices)
+
+			if got != test.want {
+				t.Errorf("got: %q, want %q", got, test.want)
+			}
+		})
+	}
+}
+
+func makeIndex(index string) int {
+	all := strings.Split(index, ",")
+	if i, err := strconv.Atoi(all[0]); err == nil {
+		return i
+	}
+	return -1
+}
+
+func makeFieldIndex(fi string) (string, int) {
+	all := strings.Split(fi, ",")
+	if i, err := strconv.Atoi(all[1]); err == nil {
+		return all[0], i
+	}
+	return "error", -1
+}
+
+func makeKey(key string) string {
+	all := strings.Split(key, ",")
+	return all[0]
+}
+
+func makeFieldKey(fk string) (string, string) {
+	all := strings.Split(fk, ",")
+	return all[0], all[1]
 }
