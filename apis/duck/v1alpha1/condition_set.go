@@ -148,26 +148,6 @@ func (r conditionsImpl) IsHappy() bool {
 	return true
 }
 
-func (r conditionsImpl) getConditions() Conditions {
-	conditionsField := reflect.Indirect(reflect.ValueOf(r.status)).FieldByName("Conditions")
-
-	if conditionsField.IsValid() && conditionsField.CanInterface() {
-		if conditions, ok := conditionsField.Interface().(Conditions); ok {
-			return conditions
-		}
-	}
-	return Conditions(nil)
-}
-
-// setConditions uses reflection to set the field on the status called "Conditions".
-func (r conditionsImpl) setConditions(conditions Conditions) {
-	conditionsField := reflect.Indirect(reflect.ValueOf(r.status)).FieldByName("Conditions")
-
-	if conditionsField.IsValid() && conditionsField.CanSet() {
-		conditionsField.Set(reflect.ValueOf(conditions))
-	}
-}
-
 // GetCondition finds and returns the Condition that matches the ConditionType
 // previously set on Conditions.
 func (r conditionsImpl) GetCondition(t ConditionType) *Condition {
@@ -298,5 +278,26 @@ func (r conditionsImpl) InitializeCondition(t ConditionType) {
 			Type:   t,
 			Status: corev1.ConditionUnknown,
 		})
+	}
+}
+
+// getConditions uses reflection to return the field on the status called "Conditions".
+func (r conditionsImpl) getConditions() Conditions {
+	conditionsField := reflect.Indirect(reflect.ValueOf(r.status)).FieldByName("Conditions")
+
+	if conditionsField.IsValid() && conditionsField.CanInterface() {
+		if conditions, ok := conditionsField.Interface().(Conditions); ok {
+			return conditions
+		}
+	}
+	return Conditions(nil)
+}
+
+// setConditions uses reflection to set the field on the status called "Conditions".
+func (r conditionsImpl) setConditions(conditions Conditions) {
+	conditionsField := reflect.Indirect(reflect.ValueOf(r.status)).FieldByName("Conditions")
+
+	if conditionsField.IsValid() && conditionsField.CanSet() {
+		conditionsField.Set(reflect.ValueOf(conditions))
 	}
 }
