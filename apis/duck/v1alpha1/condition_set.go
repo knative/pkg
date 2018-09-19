@@ -121,8 +121,8 @@ type conditionsImpl struct {
 	status interface{}
 }
 
-// Manage creates a ConditionManager from an object that implements
-// ConditionsAccessor using the original ConditionSet as a reference.
+// Manage creates a ConditionManager from a status object using the original
+// ConditionSet as a reference. Status must be or point to a struct.
 func (r ConditionSet) Manage(status interface{}) ConditionManager {
 	accessorValue := reflect.Indirect(reflect.ValueOf(status))
 
