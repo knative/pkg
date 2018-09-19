@@ -28,28 +28,24 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-type TestConds struct {
+type TestStatus struct {
 	Conditions Conditions
 }
 
-func (ts *TestConds) GetConditions() Conditions {
-	return ts.Conditions
-}
-
-func (ts *TestConds) SetConditions(conditions Conditions) {
-	ts.Conditions = conditions
+type TestFatFingers struct {
+	Conditionals Conditions
 }
 
 func TestGetCondition(t *testing.T) {
 	condSet := NewLivingConditionSet()
 	cases := []struct {
-		name     string
-		accessor ConditionsAccessor
-		get      ConditionType
-		expect   *Condition
+		name   string
+		status interface{}
+		get    ConditionType
+		expect *Condition
 	}{{
 		name: "simple",
-		accessor: &TestConds{Conditions: Conditions{{
+		status: &TestStatus{Conditions: Conditions{{
 			Type:   ConditionReady,
 			Status: corev1.ConditionTrue,
 		}}},
@@ -59,13 +55,13 @@ func TestGetCondition(t *testing.T) {
 			Status: corev1.ConditionTrue,
 		},
 	}, {
-		name:     "nil",
-		accessor: nil,
-		get:      ConditionReady,
-		expect:   nil,
+		name:   "nil",
+		status: nil,
+		get:    ConditionReady,
+		expect: nil,
 	}, {
 		name: "missing",
-		accessor: &TestConds{Conditions: Conditions{{
+		status: &TestStatus{Conditions: Conditions{{
 			Type:   ConditionReady,
 			Status: corev1.ConditionTrue,
 		}}},
@@ -74,7 +70,7 @@ func TestGetCondition(t *testing.T) {
 	}}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			e, a := tc.expect, condSet.Manage(tc.accessor).GetCondition(tc.get)
+			e, a := tc.expect, condSet.Manage(tc.status).GetCondition(tc.get)
 			ignoreArguments := cmpopts.IgnoreFields(Condition{}, "LastTransitionTime")
 			if diff := cmp.Diff(e, a, ignoreArguments); diff != "" {
 				t.Errorf("%s (-want, +got) = %v", tc.name, diff)
@@ -86,13 +82,13 @@ func TestGetCondition(t *testing.T) {
 func TestSetCondition(t *testing.T) {
 	condSet := NewLivingConditionSet()
 	cases := []struct {
-		name     string
-		accessor ConditionsAccessor
-		set      Condition
-		expect   *Condition
+		name   string
+		status interface{}
+		set    Condition
+		expect *Condition
 	}{{
 		name: "simple",
-		accessor: &TestConds{Conditions: Conditions{{
+		status: &TestStatus{Conditions: Conditions{{
 			Type:   ConditionReady,
 			Status: corev1.ConditionFalse,
 		}}},
@@ -105,16 +101,16 @@ func TestSetCondition(t *testing.T) {
 			Status: corev1.ConditionTrue,
 		},
 	}, {
-		name:     "nil",
-		accessor: nil,
+		name:   "nil",
+		status: nil,
 		set: Condition{
 			Type:   ConditionReady,
 			Status: corev1.ConditionTrue,
 		},
 		expect: nil,
 	}, {
-		name:     "missing",
-		accessor: &TestConds{},
+		name:   "missing",
+		status: &TestStatus{},
 		set: Condition{
 			Type:   ConditionReady,
 			Status: corev1.ConditionTrue,
@@ -123,11 +119,30 @@ func TestSetCondition(t *testing.T) {
 			Type:   ConditionReady,
 			Status: corev1.ConditionTrue,
 		},
+	}, {
+		name: "invalid status struct, should be nil",
+		status: &TestFatFingers{
+			Conditionals: Conditions{{
+				Type:   "Foo",
+				Status: corev1.ConditionTrue,
+			}, {
+				Type:   "Bar",
+				Status: corev1.ConditionTrue,
+			}, {
+				Type:   ConditionReady,
+				Status: corev1.ConditionFalse,
+			}},
+		},
+		set: Condition{
+			Type:   ConditionReady,
+			Status: corev1.ConditionTrue,
+		},
+		expect: nil,
 	}}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			condSet.Manage(tc.accessor).SetCondition(tc.set)
-			e, a := tc.expect, condSet.Manage(tc.accessor).GetCondition(tc.set.Type)
+			condSet.Manage(tc.status).SetCondition(tc.set)
+			e, a := tc.expect, condSet.Manage(tc.status).GetCondition(tc.set.Type)
 			ignoreArguments := cmpopts.IgnoreFields(Condition{}, "LastTransitionTime")
 			if diff := cmp.Diff(e, a, ignoreArguments); diff != "" {
 				t.Errorf("%s (-want, +got) = %v", tc.name, diff)
@@ -139,19 +154,19 @@ func TestSetCondition(t *testing.T) {
 func TestIsHappy(t *testing.T) {
 	cases := []struct {
 		name    string
-		conds   TestConds
+		status  interface{}
 		condSet ConditionSet
 		isHappy bool
 	}{{
 		name: "empty status should not be ready",
-		conds: TestConds{
+		status: &TestStatus{
 			Conditions: Conditions(nil),
 		},
 		condSet: NewLivingConditionSet(),
 		isHappy: false,
 	}, {
 		name: "Different condition type should not be ready",
-		conds: TestConds{
+		status: &TestStatus{
 			Conditions: Conditions{{
 				Type:   "Foo",
 				Status: corev1.ConditionTrue,
@@ -161,7 +176,7 @@ func TestIsHappy(t *testing.T) {
 		isHappy: false,
 	}, {
 		name: "False condition status should not be ready",
-		conds: TestConds{
+		status: &TestStatus{
 			Conditions: Conditions{{
 				Type:   ConditionReady,
 				Status: corev1.ConditionFalse,
@@ -171,7 +186,7 @@ func TestIsHappy(t *testing.T) {
 		isHappy: false,
 	}, {
 		name: "Unknown condition status should not be ready",
-		conds: TestConds{
+		status: &TestStatus{
 			Conditions: Conditions{{
 				Type:   ConditionReady,
 				Status: corev1.ConditionUnknown,
@@ -181,7 +196,7 @@ func TestIsHappy(t *testing.T) {
 		isHappy: false,
 	}, {
 		name: "Missing condition status should not be ready",
-		conds: TestConds{
+		status: &TestStatus{
 			Conditions: Conditions{{
 				Type: ConditionReady,
 			}},
@@ -190,7 +205,7 @@ func TestIsHappy(t *testing.T) {
 		isHappy: false,
 	}, {
 		name: "True condition status should be ready",
-		conds: TestConds{
+		status: &TestStatus{
 			Conditions: Conditions{{
 				Type:   ConditionReady,
 				Status: corev1.ConditionTrue,
@@ -200,7 +215,7 @@ func TestIsHappy(t *testing.T) {
 		isHappy: true,
 	}, {
 		name: "Multiple conditions with ready status should be ready",
-		conds: TestConds{
+		status: &TestStatus{
 			Conditions: Conditions{{
 				Type:   "Foo",
 				Status: corev1.ConditionTrue,
@@ -213,7 +228,7 @@ func TestIsHappy(t *testing.T) {
 		isHappy: true,
 	}, {
 		name: "Multiple conditions with ready status false should not be ready",
-		conds: TestConds{
+		status: &TestStatus{
 			Conditions: Conditions{{
 				Type:   "Foo",
 				Status: corev1.ConditionTrue,
@@ -225,8 +240,8 @@ func TestIsHappy(t *testing.T) {
 		condSet: NewLivingConditionSet(),
 		isHappy: false,
 	}, {
-		name: "Multiple conditions with mixed ready status, some don't matter,  ready",
-		conds: TestConds{
+		name: "Multiple conditions with mixed ready status, some don't matter, ready",
+		status: &TestStatus{
 			Conditions: Conditions{{
 				Type:   "Foo",
 				Status: corev1.ConditionTrue,
@@ -242,8 +257,24 @@ func TestIsHappy(t *testing.T) {
 		isHappy: true,
 	}, {
 		name: "Multiple conditions with mixed ready status, some don't matter, not ready",
-		conds: TestConds{
+		status: &TestStatus{
 			Conditions: Conditions{{
+				Type:   "Foo",
+				Status: corev1.ConditionTrue,
+			}, {
+				Type:   "Bar",
+				Status: corev1.ConditionTrue,
+			}, {
+				Type:   ConditionReady,
+				Status: corev1.ConditionFalse,
+			}},
+		},
+		condSet: NewLivingConditionSet(),
+		isHappy: false,
+	}, {
+		name: "should not be happy",
+		status: &TestFatFingers{
+			Conditionals: Conditions{{
 				Type:   "Foo",
 				Status: corev1.ConditionTrue,
 			}, {
@@ -260,7 +291,48 @@ func TestIsHappy(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			if e, a := tc.isHappy, tc.condSet.Manage(&tc.conds).IsHappy(); e != a {
+			if e, a := tc.isHappy, tc.condSet.Manage(tc.status).IsHappy(); e != a {
+				t.Errorf("%q expected: %v got: %v", tc.name, e, a)
+			}
+		})
+	}
+}
+
+func TestFatFingersHappy(t *testing.T) {
+	cases := []struct {
+		name     string
+		accessor *TestFatFingers
+		condSet  ConditionSet
+		set      *Condition
+		isHappy  bool
+	}{{
+		name: "should not be happy",
+		accessor: &TestFatFingers{
+			Conditionals: Conditions{{
+				Type:   "Foo",
+				Status: corev1.ConditionTrue,
+			}, {
+				Type:   "Bar",
+				Status: corev1.ConditionTrue,
+			}, {
+				Type:   ConditionReady,
+				Status: corev1.ConditionFalse,
+			}},
+		},
+		set: &Condition{
+			Type:   ConditionReady,
+			Status: corev1.ConditionTrue,
+		},
+		condSet: NewLivingConditionSet(),
+		isHappy: false,
+	}}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			if tc.set != nil {
+				tc.condSet.Manage(tc.accessor).SetCondition(*tc.set)
+			}
+			if e, a := tc.isHappy, tc.condSet.Manage(tc.accessor).IsHappy(); e != a {
 				t.Errorf("%q expected: %v got: %v", tc.name, e, a)
 			}
 		})
@@ -317,7 +389,7 @@ func TestUpdateLastTransitionTime(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 
-			conds := &TestConds{Conditions: tc.conditions}
+			conds := &TestStatus{Conditions: tc.conditions}
 
 			was := condSet.Manage(conds).GetCondition(tc.condition.Type)
 			condSet.Manage(conds).SetCondition(tc.condition)
@@ -343,7 +415,7 @@ func TestUpdateLastTransitionTime(t *testing.T) {
 func TestResourceConditions(t *testing.T) {
 	condSet := NewLivingConditionSet()
 
-	config := &TestConds{}
+	status := &TestStatus{}
 
 	foo := Condition{
 		Type:   "Foo",
@@ -355,16 +427,16 @@ func TestResourceConditions(t *testing.T) {
 	}
 
 	// Add a new condition.
-	condSet.Manage(config).SetCondition(foo)
+	condSet.Manage(status).SetCondition(foo)
 
-	if got, want := len(config.Conditions), 1; got != want {
+	if got, want := len(status.Conditions), 1; got != want {
 		t.Fatalf("Unexpected Condition length; got %d, want %d", got, want)
 	}
 
 	// Add a second condition.
-	condSet.Manage(config).SetCondition(bar)
+	condSet.Manage(status).SetCondition(bar)
 
-	if got, want := len(config.Conditions), 2; got != want {
+	if got, want := len(status.Conditions), 2; got != want {
 		t.Fatalf("Unexpected Condition length; got %d, want %d", got, want)
 	}
 }
@@ -458,12 +530,12 @@ func TestMarkTrue(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			condSet := NewLivingConditionSet(getTypes(tc.conditions)...)
-			config := &TestConds{Conditions: tc.conditions}
-			condSet.Manage(config).InitializeConditions()
+			status := &TestStatus{Conditions: tc.conditions}
+			condSet.Manage(status).InitializeConditions()
 
-			condSet.Manage(config).MarkTrue(tc.mark)
+			condSet.Manage(status).MarkTrue(tc.mark)
 
-			if e, a := tc.happy, condSet.Manage(config).IsHappy(); e != a {
+			if e, a := tc.happy, condSet.Manage(status).IsHappy(); e != a {
 				t.Errorf("%q expected: %v got: %v", tc.name, e, a)
 			}
 
@@ -472,7 +544,7 @@ func TestMarkTrue(t *testing.T) {
 				Status: corev1.ConditionTrue,
 			}
 
-			e, a := expected, condSet.Manage(config).GetCondition(tc.mark)
+			e, a := expected, condSet.Manage(status).GetCondition(tc.mark)
 			ignoreArguments := cmpopts.IgnoreFields(Condition{}, "LastTransitionTime")
 			if diff := cmp.Diff(e, a, ignoreArguments); diff != "" {
 				t.Errorf("%s (-want, +got) = %v", tc.name, diff)
@@ -562,12 +634,12 @@ func TestMarkFalse(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 
 			condSet := NewLivingConditionSet(getTypes(tc.conditions)...)
-			config := &TestConds{Conditions: tc.conditions}
-			condSet.Manage(config).InitializeConditions()
+			status := &TestStatus{Conditions: tc.conditions}
+			condSet.Manage(status).InitializeConditions()
 
-			condSet.Manage(config).MarkFalse(tc.mark, "UnitTest", "calm down, just testing")
+			condSet.Manage(status).MarkFalse(tc.mark, "UnitTest", "calm down, just testing")
 
-			if e, a := !tc.unhappy, condSet.Manage(config).IsHappy(); e != a {
+			if e, a := !tc.unhappy, condSet.Manage(status).IsHappy(); e != a {
 				t.Errorf("%q expected: %v got: %v", tc.name, e, a)
 			}
 
@@ -578,7 +650,7 @@ func TestMarkFalse(t *testing.T) {
 				Message: "calm down, just testing",
 			}
 
-			e, a := expected, condSet.Manage(config).GetCondition(tc.mark)
+			e, a := expected, condSet.Manage(status).GetCondition(tc.mark)
 			ignoreArguments := cmpopts.IgnoreFields(Condition{}, "LastTransitionTime")
 			if diff := cmp.Diff(e, a, ignoreArguments); diff != "" {
 				t.Errorf("%s (-want, +got) = %v", tc.name, diff)
@@ -679,16 +751,16 @@ func TestMarkUnknown(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 
 			condSet := NewLivingConditionSet(getTypes(tc.conditions)...)
-			config := &TestConds{Conditions: tc.conditions}
-			condSet.Manage(config).InitializeConditions()
+			status := &TestStatus{Conditions: tc.conditions}
+			condSet.Manage(status).InitializeConditions()
 
-			condSet.Manage(config).MarkUnknown(tc.mark, "UnitTest", "idk, just testing")
+			condSet.Manage(status).MarkUnknown(tc.mark, "UnitTest", "idk, just testing")
 
-			if e, a := !tc.unhappy, condSet.Manage(config).IsHappy(); e != a {
+			if e, a := !tc.unhappy, condSet.Manage(status).IsHappy(); e != a {
 				t.Errorf("%q expected IsHappy: %v got: %v", tc.name, e, a)
 			}
 
-			if e, a := tc.happyIs, condSet.Manage(config).GetCondition(ConditionReady).Status; e != a {
+			if e, a := tc.happyIs, condSet.Manage(status).GetCondition(ConditionReady).Status; e != a {
 				t.Errorf("%q expected ConditionReady: %v got: %v", tc.name, e, a)
 			}
 
@@ -699,7 +771,7 @@ func TestMarkUnknown(t *testing.T) {
 				Message: "idk, just testing",
 			}
 
-			e, a := expected, condSet.Manage(config).GetCondition(tc.mark)
+			e, a := expected, condSet.Manage(status).GetCondition(tc.mark)
 			ignoreArguments := cmpopts.IgnoreFields(Condition{}, "LastTransitionTime")
 			if diff := cmp.Diff(e, a, ignoreArguments); diff != "" {
 				t.Errorf("%s (-want, +got) = %v", tc.name, diff)
@@ -735,9 +807,9 @@ func TestInitializeConditions(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			config := &TestConds{Conditions: tc.conditions}
-			condSet.Manage(config).InitializeConditions()
-			if e, a := tc.condition, condSet.Manage(config).GetCondition(ConditionReady); !equality.Semantic.DeepEqual(e, a) {
+			status := &TestStatus{Conditions: tc.conditions}
+			condSet.Manage(status).InitializeConditions()
+			if e, a := tc.condition, condSet.Manage(status).GetCondition(ConditionReady); !equality.Semantic.DeepEqual(e, a) {
 				t.Errorf("%q expected: %v got: %v", tc.name, e, a)
 			}
 		})

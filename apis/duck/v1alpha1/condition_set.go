@@ -28,14 +28,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// Conditions is the interface for a Resource that implements the getter and
-// setter for accessing a Condition collection.
-// +k8s:deepcopy-gen=true
-type ConditionsAccessor interface {
-	GetConditions() Conditions
-	SetConditions(Conditions)
-}
-
 // ConditionSet is an abstract collection of the possible ConditionType values
 // that a particular resource might expose.  It also holds the "happy condition"
 // for that resource, which we define to be one of Ready or Succeeded depending
@@ -126,14 +118,23 @@ var _ ConditionManager = (*conditionsImpl)(nil)
 // +k8s:deepcopy-gen=false
 type conditionsImpl struct {
 	ConditionSet
-	accessor ConditionsAccessor
+	status interface{}
 }
 
 // Manage creates a ConditionManager from an object that implements
-// ConditionsAccessopr using the original ConditionSet as a reference.
-func (r ConditionSet) Manage(accessor ConditionsAccessor) ConditionManager {
+// ConditionsAccessor using the original ConditionSet as a reference.
+func (r ConditionSet) Manage(status interface{}) ConditionManager {
+	accessorValue := reflect.Indirect(reflect.ValueOf(status))
+
+	// If status is not a struct, don't even try to use it.
+	if accessorValue.Kind() != reflect.Struct {
+		return conditionsImpl{
+			ConditionSet: r,
+		}
+	}
+
 	return conditionsImpl{
-		accessor:     accessor,
+		status:       status,
 		ConditionSet: r,
 	}
 }
@@ -147,13 +148,41 @@ func (r conditionsImpl) IsHappy() bool {
 	return true
 }
 
+func (r conditionsImpl) getConditions() Conditions {
+	accessorValue := reflect.Indirect(reflect.ValueOf(r.status))
+
+	conditionsField := accessorValue.FieldByName("Conditions")
+
+	if conditionsField.IsValid() && conditionsField.CanInterface() {
+		if conditions, ok := conditionsField.Interface().(Conditions); ok {
+			return conditions
+		}
+	}
+	return Conditions(nil)
+}
+
+// setConditions uses reflection to set the field on the status called "Conditions".
+func (r conditionsImpl) setConditions(conditions Conditions) {
+	accessorValue := reflect.Indirect(reflect.ValueOf(r.status))
+
+	if accessorValue.Kind() != reflect.Struct {
+		return
+	}
+	conditionsField := accessorValue.FieldByName("Conditions")
+
+	if conditionsField.IsValid() && conditionsField.CanSet() {
+		conditionsField.Set(reflect.ValueOf(conditions))
+	}
+}
+
 // GetCondition finds and returns the Condition that matches the ConditionType
 // previously set on Conditions.
 func (r conditionsImpl) GetCondition(t ConditionType) *Condition {
-	if r.accessor == nil {
+	if r.status == nil {
 		return nil
 	}
-	for _, c := range r.accessor.GetConditions() {
+
+	for _, c := range r.getConditions() {
 		if c.Type == t {
 			return &c
 		}
@@ -164,12 +193,12 @@ func (r conditionsImpl) GetCondition(t ConditionType) *Condition {
 // SetCondition sets or updates the Condition on Conditions for Condition.Type.
 // If there is an update, Conditions are stored back sorted.
 func (r conditionsImpl) SetCondition(new Condition) {
-	if r.accessor == nil {
+	if r.status == nil {
 		return
 	}
 	t := new.Type
 	var conditions Conditions
-	for _, c := range r.accessor.GetConditions() {
+	for _, c := range r.getConditions() {
 		if c.Type != t {
 			conditions = append(conditions, c)
 		} else {
@@ -184,7 +213,7 @@ func (r conditionsImpl) SetCondition(new Condition) {
 	conditions = append(conditions, new)
 	// Sorted for convince of the consumer, i.e.: kubectl.
 	sort.Slice(conditions, func(i, j int) bool { return conditions[i].Type < conditions[j].Type })
-	r.accessor.SetConditions(conditions)
+	r.setConditions(conditions)
 }
 
 // MarkTrue sets the status of t to true, and then marks the happy condition to
