@@ -411,12 +411,7 @@ not without this: bar.C`,
 			fe := test.err
 
 			for _, err := range test.also {
-				if fe == nil {
-					fe = fe.Also(&err)
-				} else {
-					// Just to show it mutates the internal state.
-					fe.Also(&err)
-				}
+				fe = fe.Also(&err)
 			}
 
 			// Simulate propagation up a call stack.

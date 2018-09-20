@@ -28,6 +28,7 @@ const CurrentField = ""
 // FieldError is used to propagate the context of errors pertaining to
 // specific fields in a manner suitable for use in a recursive walk, so
 // that errors contain the appropriate field context.
+// FieldError methods are non-mutating.
 // +k8s:deepcopy-gen=false
 type FieldError struct {
 	Message string
@@ -52,7 +53,7 @@ func (fe *FieldError) ViaField(prefix ...string) *FieldError {
 	if fe == nil {
 		return nil
 	}
-	var newErrs []FieldError
+	newErr := &FieldError{}
 	for _, e := range fe.getNormalizedErrors() {
 		// Prepend the Prefix to existing errors.
 		var newPaths []string
@@ -62,11 +63,9 @@ func (fe *FieldError) ViaField(prefix ...string) *FieldError {
 		e.Paths = newPaths
 
 		// Append the mutated error to the errors list.
-		newErrs = append(newErrs, e)
+		newErr = newErr.Also(&e)
 	}
-	fe.clear()
-	fe.errors = newErrs
-	return fe
+	return newErr
 }
 
 // ViaIndex is used to attach an index to the next ViaField provided.
@@ -80,13 +79,11 @@ func (fe *FieldError) ViaIndex(index int) *FieldError {
 	if fe == nil {
 		return nil
 	}
-	var newErrs []FieldError
+	newErr := &FieldError{}
 	for _, e := range fe.getNormalizedErrors() {
-		newErrs = append(newErrs, *e.ViaField(asIndex(index)))
+		newErr = newErr.Also(e.ViaField(asIndex(index)))
 	}
-	fe.clear()
-	fe.errors = newErrs
-	return fe
+	return newErr
 }
 
 // ViaFieldIndex is the short way to chain: err.ViaIndex(bar).ViaField(foo)
@@ -94,13 +91,11 @@ func (fe *FieldError) ViaFieldIndex(field string, index int) *FieldError {
 	if fe == nil {
 		return nil
 	}
-	var newErrs []FieldError
+	newErr := &FieldError{}
 	for _, e := range fe.getNormalizedErrors() {
-		newErrs = append(newErrs, *e.ViaIndex(index).ViaField(field))
+		newErr = newErr.Also(e.ViaIndex(index).ViaField(field))
 	}
-	fe.clear()
-	fe.errors = newErrs
-	return fe
+	return newErr
 }
 
 // ViaKey is used to attach a key to the next ViaField provided.
@@ -114,13 +109,11 @@ func (fe *FieldError) ViaKey(key string) *FieldError {
 	if fe == nil {
 		return nil
 	}
-	var newErrs []FieldError
+	newErr := &FieldError{}
 	for _, e := range fe.getNormalizedErrors() {
-		newErrs = append(newErrs, *e.ViaField(asKey(key)))
+		newErr = newErr.Also(e.ViaField(asKey(key)))
 	}
-	fe.clear()
-	fe.errors = newErrs
-	return fe
+	return newErr
 }
 
 // ViaFieldKey is the short way to chain: err.ViaKey(bar).ViaField(foo)
@@ -128,13 +121,11 @@ func (fe *FieldError) ViaFieldKey(field string, key string) *FieldError {
 	if fe == nil {
 		return nil
 	}
-	var newErrs []FieldError
+	newErr := &FieldError{}
 	for _, e := range fe.getNormalizedErrors() {
-		newErrs = append(newErrs, *e.ViaKey(key).ViaField(field))
+		newErr = newErr.Also(e.ViaKey(key).ViaField(field))
 	}
-	fe.clear()
-	fe.errors = newErrs
-	return fe
+	return newErr
 }
 
 func (fe *FieldError) getNormalizedErrors() []FieldError {
@@ -142,7 +133,6 @@ func (fe *FieldError) getNormalizedErrors() []FieldError {
 		return []FieldError(nil)
 	}
 	var errors []FieldError
-
 	// if this FieldError is a leaf,
 	if fe.Message != "" {
 		err := FieldError{
@@ -152,7 +142,6 @@ func (fe *FieldError) getNormalizedErrors() []FieldError {
 		}
 		errors = append(errors, err)
 	}
-
 	// and then collect all other errors recursively.
 	for _, e := range fe.errors {
 		errors = append(errors, e.getNormalizedErrors()...)
@@ -163,19 +152,16 @@ func (fe *FieldError) getNormalizedErrors() []FieldError {
 
 // Also collects errors, returns a new collection of existing errors and new errors.
 func (fe *FieldError) Also(errs ...*FieldError) *FieldError {
-	var newErrs []FieldError
-	if fe == nil {
-		fe = &FieldError{}
+	newErr := &FieldError{}
+	if fe != nil {
+		newErr.errors = fe.getNormalizedErrors()
 	}
-	newErrs = append(newErrs, fe.getNormalizedErrors()...)
 
 	for _, e := range errs {
-		newErrs = append(newErrs, e.getNormalizedErrors()...)
+		newErr.errors = append(newErr.errors, e.getNormalizedErrors()...)
 	}
 
-	fe.clear()
-	fe.errors = newErrs
-	return fe
+	return newErr
 }
 
 func asIndex(index int) string {
