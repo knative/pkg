@@ -370,6 +370,11 @@ func TestAlso(t *testing.T) {
 		prefixes: [][]string{{"foo"}},
 		want:     "also this: foo.woo",
 	}, {
+		name: "nil all the way",
+		err:  nil,
+		also: []FieldError{{}},
+		want: "",
+	}, {
 		name: "simple",
 		err: &FieldError{
 			Message: "hear me roar",
@@ -427,6 +432,28 @@ not without this: bar.C`,
 				t.Errorf("ViaField() = %v, wanted nil", fe)
 			}
 		})
+	}
+}
+
+func TestAlsoStaysNil(t *testing.T) {
+	var err *FieldError
+	if err != nil {
+		t.Errorf("expected nil, got %v, wanted nil", err)
+	}
+
+	err = err.Also(nil)
+	if err != nil {
+		t.Errorf("expected nil, got %v, wanted nil", err)
+	}
+
+	err = err.ViaField("nil").Also(nil)
+	if err != nil {
+		t.Errorf("expected nil, got %v, wanted nil", err)
+	}
+
+	err = err.Also(&FieldError{})
+	if err != nil {
+		t.Errorf("expected nil, got %v, wanted nil", err)
 	}
 }
 
