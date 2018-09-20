@@ -14,15 +14,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Sinkable is very similar concept as Targetable. However, at the
-// transport level they have different contracts and hence Sinkable
-// and Targetable are two distinct resources.
-// It would be better to have one level of indirection from Status.
-// The way this is currently put in at the same level as the other Status
-// resources. Hence the objects supporting Sinkable (Knative channel for
-// example), will expose it as: Status.DomainInternal
-// For new resources that are built from scratch, they should probably
-// introduce an extra level of indirection.
 package v1alpha1
 
 import (
@@ -33,6 +24,16 @@ import (
 
 	"github.com/knative/pkg/apis/duck"
 )
+
+// Sinkable is very similar concept as Targetable. However, at the
+// transport level they have different contracts and hence Sinkable
+// and Targetable are two distinct resources.
+// It would be better to have one level of indirection from Status.
+// The way this is currently put in at the same level as the other Status
+// resources. Hence the objects supporting Sinkable (Knative channel for
+// example), will expose it as: Status.DomainInternal
+// For new resources that are built from scratch, they should probably
+// introduce an extra level of indirection.
 
 // Sinkable is the schema for the sinkable portion of the payload
 type Sinkable struct {

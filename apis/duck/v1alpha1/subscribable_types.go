@@ -27,10 +27,6 @@ import (
 	"github.com/knative/pkg/apis/duck"
 )
 
-const (
-	StatusKeyName = "subscribable"
-)
-
 // Subscribable is the schema for the subscribable portion of the payload
 type Subscribable struct {
 	// Channelable is a reference to the actual Channelable

@@ -27,7 +27,7 @@ import (
 type Channelable struct {
 	// TODO: What is actually required here for Channel spec.
 	// This is the list of subscriptions for this channel.
-	Subscribers []ChannelSubsciberSpec `json:"subscribers,omitempty"`
+	Subscribers []ChannelSubscriberSpec `json:"subscribers,omitempty"`
 }
 
 // ChannelSubscriberSpec defines a single subscriber to a Channel.
@@ -58,14 +58,14 @@ type Channel struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	// ChannelableSpec is the part where Channelable object is
+	// ChannelSpec is the part where Channelable object is
 	// configured as to be compatible with Channelable contract.
-	Spec ChannelableSpec `json:"spec"`
+	Spec ChannelSpec `json:"spec"`
 }
 
-// ChannelableSpec shows how we expect folks to embed Channelable in
+// ChannelSpec shows how we expect folks to embed Channelable in
 // their Spec field.
-type ChannelableSpec struct {
+type ChannelSpec struct {
 	Channelable *Channelable `json:"channelable,omitempty"`
 }
 
@@ -81,7 +81,7 @@ func (_ *Channelable) GetFullType() duck.Populatable {
 func (t *Channel) Populate() {
 	t.Spec.Channelable = &Channelable{
 		// Populate ALL fields
-		Subscriptions: []string{"subscription1", "subscription2"},
+		Subscribers: []ChannelSubscriberSpec{{"subscription1"}, {"subscription2"}},
 	}
 }
 

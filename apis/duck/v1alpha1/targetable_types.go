@@ -25,6 +25,10 @@ import (
 	"github.com/knative/pkg/apis/duck"
 )
 
+// Targetable is very similar concept as Sinkable. However, at the
+// transport level they have different contracts and hence Sinkable
+// and Targetable are two distinct resources.
+
 // Targetable is the schema for the targetable portion of the payload
 // It would be better to have one level of indirection from Status.
 // The way this is currently put in at the same level as the other Status
