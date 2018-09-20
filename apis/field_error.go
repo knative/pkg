@@ -56,7 +56,7 @@ func (fe *FieldError) ViaField(prefix ...string) *FieldError {
 	newErr := &FieldError{}
 	for _, e := range fe.getNormalizedErrors() {
 		// Prepend the Prefix to existing errors.
-		var newPaths []string
+		newPaths := make([]string, 0, len(e.Paths))
 		for _, oldPath := range e.Paths {
 			newPaths = append(newPaths, flatten(append(prefix, oldPath)))
 		}
@@ -115,6 +115,8 @@ func (fe *FieldError) Also(errs ...*FieldError) *FieldError {
 }
 
 func (fe *FieldError) getNormalizedErrors() []FieldError {
+	// in case we call getNormalizedErrors on a nil object, return just an empty
+	// list. This can happen when .Error() is called on a nil object.
 	if fe == nil {
 		return []FieldError(nil)
 	}
@@ -169,7 +171,7 @@ func isIndex(part string) bool {
 	return strings.HasPrefix(part, "[") && strings.HasSuffix(part, "]")
 }
 
-// FieldError implements error
+// Error implements error
 func (fe *FieldError) Error() string {
 	var errs []string
 	for _, e := range fe.getNormalizedErrors() {
