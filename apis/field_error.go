@@ -103,14 +103,14 @@ func (fe *FieldError) ViaFieldKey(field string, key string) *FieldError {
 // Also collects errors, returns a new collection of existing errors and new errors.
 func (fe *FieldError) Also(errs ...*FieldError) *FieldError {
 	newErr := &FieldError{}
+	// collect the current objects errors, if it has any
 	if fe != nil {
 		newErr.errors = fe.getNormalizedErrors()
 	}
-
+	// and then collect the passed in errors
 	for _, e := range errs {
 		newErr.errors = append(newErr.errors, e.getNormalizedErrors()...)
 	}
-
 	return newErr
 }
 
@@ -132,7 +132,6 @@ func (fe *FieldError) getNormalizedErrors() []FieldError {
 	for _, e := range fe.errors {
 		errors = append(errors, e.getNormalizedErrors()...)
 	}
-
 	return errors
 }
 
