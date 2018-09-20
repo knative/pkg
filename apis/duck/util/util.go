@@ -22,7 +22,7 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
-// FromUnstructured tkaes unstructured object from (say from client-go/dynamic) and
+// FromUnstructured takes unstructured object from (say from client-go/dynamic) and
 // converts it into our duck types.
 func FromUnstructured(obj unstructured.Unstructured, target interface{}) error {
 	// Use the unstructured marshaller to ensure it's proper JSON
