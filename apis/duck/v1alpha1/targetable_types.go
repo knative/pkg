@@ -27,12 +27,6 @@ import (
 // and Targetable are two distinct resources.
 
 // Targetable is the schema for the targetable portion of the payload
-// It would be better to have one level of indirection from Status.
-// The way this is currently put in at the same level as the other Status
-// resources. Hence the objects supporting Targetable (Knative Route for
-// example), will expose it as: Status.DomainInternal
-// For new resources that are built from scratch, they should probably
-// introduce an extra level of indirection.
 type Targetable struct {
 	DomainInternal string `json:"domainInternal,omitempty"`
 }
@@ -54,7 +48,13 @@ type Target struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Status Targetable `json:"status"`
+	Status TargetableStatus `json:"status"`
+}
+
+// TargetableStatus shows how we expect folks to embed Targetable in
+// their Status field.
+type TargetableStatus struct {
+	Targetable *Targetable `json:"targetable,omitempty"`
 }
 
 // In order for Targetable to be Implementable, Target must be Populatable.
@@ -67,9 +67,11 @@ func (_ *Targetable) GetFullType() duck.Populatable {
 
 // Populate implements duck.Populatable
 func (t *Target) Populate() {
-	t.Status = Targetable{
-		// Populate ALL fields
-		DomainInternal: "this is not empty",
+	t.Status = TargetableStatus{
+		&Targetable{
+			// Populate ALL fields
+			DomainInternal: "this is not empty",
+		},
 	}
 }
 
