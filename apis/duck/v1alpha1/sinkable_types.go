@@ -17,10 +17,7 @@ limitations under the License.
 package v1alpha1
 
 import (
-	"encoding/json"
-
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
 	"github.com/knative/pkg/apis/duck"
 )
@@ -84,22 +81,4 @@ type SinkList struct {
 	metav1.ListMeta `json:"metadata"`
 
 	Items []Sink `json:"items"`
-}
-
-func SinkableFromUnstructured(obj *unstructured.Unstructured) (*Sink, error) {
-	if obj == nil {
-		return nil, nil
-	}
-
-	// Use the unstructured marshaller to ensure it's proper JSON
-	raw, err := obj.MarshalJSON()
-	if err != nil {
-		return nil, err
-	}
-
-	r := &Sink{}
-	if err := json.Unmarshal(raw, r); err != nil {
-		return nil, err
-	}
-	return r, nil
 }

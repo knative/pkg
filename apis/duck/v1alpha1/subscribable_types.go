@@ -17,12 +17,8 @@ limitations under the License.
 package v1alpha1
 
 import (
-	"encoding/json"
-	"fmt"
-
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
 	"github.com/knative/pkg/apis/duck"
 )
@@ -94,24 +90,4 @@ type ChannelableRefList struct {
 	metav1.ListMeta `json:"metadata"`
 
 	Items []ChannelableRef `json:"items"`
-}
-
-func ChannelableRefromUnstructured(obj *unstructured.Unstructured) (*ChannelableRef, error) {
-	if obj == nil {
-		return nil, nil
-	}
-
-	// Use the unstructured marshaller to ensure it's proper JSON
-	raw, err := obj.MarshalJSON()
-	if err != nil {
-		fmt.Printf("Failed to marshal %s : %s\n", string(raw), err)
-		return nil, err
-	}
-
-	r := &ChannelableRef{}
-	if err := json.Unmarshal(raw, r); err != nil {
-		fmt.Printf("Failed to unmarshal %s : %s\n", string(raw), err)
-		return nil, err
-	}
-	return r, nil
 }
