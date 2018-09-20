@@ -76,17 +76,11 @@ func (fe *FieldError) ViaField(prefix ...string) *FieldError {
 //    }
 //  }
 func (fe *FieldError) ViaIndex(index int) *FieldError {
-	if fe == nil {
-		return nil
-	}
 	return fe.ViaField(asIndex(index))
 }
 
 // ViaFieldIndex is the short way to chain: err.ViaIndex(bar).ViaField(foo)
 func (fe *FieldError) ViaFieldIndex(field string, index int) *FieldError {
-	if fe == nil {
-		return nil
-	}
 	return fe.ViaIndex(index).ViaField(field)
 }
 
@@ -98,17 +92,11 @@ func (fe *FieldError) ViaFieldIndex(field string, index int) *FieldError {
 //    }
 //  }
 func (fe *FieldError) ViaKey(key string) *FieldError {
-	if fe == nil {
-		return nil
-	}
 	return fe.ViaField(asKey(key))
 }
 
 // ViaFieldKey is the short way to chain: err.ViaKey(bar).ViaField(foo)
 func (fe *FieldError) ViaFieldKey(field string, key string) *FieldError {
-	if fe == nil {
-		return nil
-	}
 	return fe.ViaKey(key).ViaField(field)
 }
 
