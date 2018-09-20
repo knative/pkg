@@ -139,7 +139,7 @@ can not use @, do not try`,
 			if test.want != "" {
 				got := fe.Error()
 				if got != test.want {
-					t.Errorf("&FieldError() = %v, wanted %v", got, test.want)
+					t.Errorf("Error() = %v, wanted %v", got, test.want)
 				}
 			} else if fe != nil {
 				t.Errorf("ViaField() = %v, wanted nil", fe)

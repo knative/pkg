@@ -82,8 +82,7 @@ func (fe *FieldError) ViaIndex(index int) *FieldError {
 	}
 	var newErrs []FieldError
 	for _, e := range fe.getNormalizedErrors() {
-		e.ViaField(fmt.Sprintf("[%d]", index))
-		newErrs = append(newErrs, e)
+		newErrs = append(newErrs, *e.ViaField(asIndex(index)))
 	}
 	fe.clear()
 	fe.errors = newErrs
@@ -97,8 +96,7 @@ func (fe *FieldError) ViaFieldIndex(field string, index int) *FieldError {
 	}
 	var newErrs []FieldError
 	for _, e := range fe.getNormalizedErrors() {
-		e.ViaIndex(index).ViaField(field)
-		newErrs = append(newErrs, e)
+		newErrs = append(newErrs, *e.ViaIndex(index).ViaField(field))
 	}
 	fe.clear()
 	fe.errors = newErrs
@@ -118,8 +116,7 @@ func (fe *FieldError) ViaKey(key string) *FieldError {
 	}
 	var newErrs []FieldError
 	for _, e := range fe.getNormalizedErrors() {
-		e.ViaField(fmt.Sprintf("[%s]", key))
-		newErrs = append(newErrs, e)
+		newErrs = append(newErrs, *e.ViaField(asKey(key)))
 	}
 	fe.clear()
 	fe.errors = newErrs
@@ -133,8 +130,7 @@ func (fe *FieldError) ViaFieldKey(field string, key string) *FieldError {
 	}
 	var newErrs []FieldError
 	for _, e := range fe.getNormalizedErrors() {
-		e.ViaKey(key).ViaField(field)
-		newErrs = append(newErrs, e)
+		newErrs = append(newErrs, *e.ViaKey(key).ViaField(field))
 	}
 	fe.clear()
 	fe.errors = newErrs
@@ -180,6 +176,14 @@ func (fe *FieldError) Also(errs ...*FieldError) *FieldError {
 	fe.clear()
 	fe.errors = newErrs
 	return fe
+}
+
+func asIndex(index int) string {
+	return fmt.Sprintf("[%d]", index)
+}
+
+func asKey(key string) string {
+	return fmt.Sprintf("[%s]", key)
 }
 
 func (fe *FieldError) clear() {
