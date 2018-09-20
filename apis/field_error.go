@@ -79,11 +79,7 @@ func (fe *FieldError) ViaIndex(index int) *FieldError {
 	if fe == nil {
 		return nil
 	}
-	newErr := &FieldError{}
-	for _, e := range fe.getNormalizedErrors() {
-		newErr = newErr.Also(e.ViaField(asIndex(index)))
-	}
-	return newErr
+	return fe.ViaField(asIndex(index))
 }
 
 // ViaFieldIndex is the short way to chain: err.ViaIndex(bar).ViaField(foo)
@@ -91,11 +87,7 @@ func (fe *FieldError) ViaFieldIndex(field string, index int) *FieldError {
 	if fe == nil {
 		return nil
 	}
-	newErr := &FieldError{}
-	for _, e := range fe.getNormalizedErrors() {
-		newErr = newErr.Also(e.ViaIndex(index).ViaField(field))
-	}
-	return newErr
+	return fe.ViaIndex(index).ViaField(field)
 }
 
 // ViaKey is used to attach a key to the next ViaField provided.
@@ -109,11 +101,7 @@ func (fe *FieldError) ViaKey(key string) *FieldError {
 	if fe == nil {
 		return nil
 	}
-	newErr := &FieldError{}
-	for _, e := range fe.getNormalizedErrors() {
-		newErr = newErr.Also(e.ViaField(asKey(key)))
-	}
-	return newErr
+	return fe.ViaField(asKey(key))
 }
 
 // ViaFieldKey is the short way to chain: err.ViaKey(bar).ViaField(foo)
@@ -121,10 +109,20 @@ func (fe *FieldError) ViaFieldKey(field string, key string) *FieldError {
 	if fe == nil {
 		return nil
 	}
+	return fe.ViaKey(key).ViaField(field)
+}
+
+// Also collects errors, returns a new collection of existing errors and new errors.
+func (fe *FieldError) Also(errs ...*FieldError) *FieldError {
 	newErr := &FieldError{}
-	for _, e := range fe.getNormalizedErrors() {
-		newErr = newErr.Also(e.ViaKey(key).ViaField(field))
+	if fe != nil {
+		newErr.errors = fe.getNormalizedErrors()
 	}
+
+	for _, e := range errs {
+		newErr.errors = append(newErr.errors, e.getNormalizedErrors()...)
+	}
+
 	return newErr
 }
 
@@ -150,35 +148,12 @@ func (fe *FieldError) getNormalizedErrors() []FieldError {
 	return errors
 }
 
-// Also collects errors, returns a new collection of existing errors and new errors.
-func (fe *FieldError) Also(errs ...*FieldError) *FieldError {
-	newErr := &FieldError{}
-	if fe != nil {
-		newErr.errors = fe.getNormalizedErrors()
-	}
-
-	for _, e := range errs {
-		newErr.errors = append(newErr.errors, e.getNormalizedErrors()...)
-	}
-
-	return newErr
-}
-
 func asIndex(index int) string {
 	return fmt.Sprintf("[%d]", index)
 }
 
 func asKey(key string) string {
 	return fmt.Sprintf("[%s]", key)
-}
-
-func (fe *FieldError) clear() {
-	if fe == nil {
-		return
-	}
-	fe.Message = ""
-	fe.Paths = []string(nil)
-	fe.Details = ""
 }
 
 // flatten takes in a array of path components and looks for chances to flatten

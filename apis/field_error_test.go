@@ -346,7 +346,6 @@ can not use @, do not try`,
 
 func TestNilError(t *testing.T) {
 	var err *FieldError
-	err.clear() // should have no effect.
 	got := err.Error()
 	want := ""
 	if got != want {
