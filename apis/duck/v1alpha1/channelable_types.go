@@ -31,13 +31,11 @@ type Channelable struct {
 }
 
 // ChannelSubscriberSpec defines a single subscriber to a Channel.
-// Endpoint should conform to Sinkable transport contract. You either
-// take the events on as your pboblem to deal with, or you reject it.
-// Subscription should have no knowledge of what happens down the line
-// and if there are calls, or results follwoing on. You subsribe to me
-// and I give you events and you deal with them.
-// of Call or Result must be present.
+// CallableDomain is the endpoint for the call
+// SinkableDomain is the endpoint for the result
+// One of them must be present
 type ChannelSubscriberSpec struct {
+	CallableDomain string `json:"callableDomain"`
 	SinkableDomain string `json:"sinkableDomain"`
 }
 
