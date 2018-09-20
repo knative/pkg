@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package util
+package duck
 
 import (
 	"fmt"
@@ -23,34 +23,14 @@ import (
 
 	"encoding/json"
 
-	duckv1alpha1 "github.com/knative/pkg/apis/duck/v1alpha1"
-	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
-func getValidReference() corev1.ObjectReference {
-	return corev1.ObjectReference{
-		Kind:       "Channel",
-		APIVersion: "channels.eventing.knative.dev/v1alpha1",
-		Name:       "mychannel"}
-}
-
-type StatusWithExtraFields struct {
-	Value        string                     `json:"value",omitempty"`
-	Another      string                     `json:"another",omitempty"`
-	Subscribable *duckv1alpha1.Subscribable `json:"subscribable,omitempty"`
-}
-
-type StatusWithMissingSubscribable struct {
-	Value   string
-	Another string
-}
-
-func TestFromUnstructuredSubscription(t *testing.T) {
+func TestFromUnstructuredFooable(t *testing.T) {
 	tcs := []struct {
 		name      string
 		in        unstructured.Unstructured
-		want      duckv1alpha1.SubscribableStatus
+		want      FooStatus
 		wantError error
 	}{{
 		name: "Works with valid status",
@@ -59,28 +39,36 @@ func TestFromUnstructuredSubscription(t *testing.T) {
 				"apiVersion": "test",
 				"kind":       "test_kind",
 				"name":       "test_name",
-				"status":     duckv1alpha1.SubscribableStatus{&duckv1alpha1.Subscribable{getValidReference()}},
+				"status": map[string]interface{}{
+					"extra": "fields",
+					"fooable": map[string]interface{}{
+						"field1": "foo",
+						"field2": "bar",
+					},
+				},
 			}},
-		want: duckv1alpha1.SubscribableStatus{&duckv1alpha1.Subscribable{corev1.ObjectReference{
-			Kind:       "Channel",
-			APIVersion: "channels.eventing.knative.dev/v1alpha1",
-			Name:       "mychannel"}}},
+		want: FooStatus{&Fooable{
+			Field1: "foo",
+			Field2: "bar",
+		}},
 		wantError: nil,
 	}, {
-		name: "does not work with missing subscribable status",
+		name: "does not work with missing fooable status",
 		in: unstructured.Unstructured{
 			Object: map[string]interface{}{
 				"apiVersion": "test",
 				"kind":       "test_kind",
 				"name":       "test_name",
-				"status":     StatusWithMissingSubscribable{"first", "second"},
+				"status": map[string]interface{}{
+					"extra": "fields",
+				},
 			}},
-		want:      duckv1alpha1.SubscribableStatus{},
+		want:      FooStatus{},
 		wantError: nil,
 	}, {
 		name:      "empty unstructured",
 		in:        unstructured.Unstructured{},
-		want:      duckv1alpha1.SubscribableStatus{},
+		want:      FooStatus{},
 		wantError: nil,
 	}}
 	for _, tc := range tcs {
@@ -90,7 +78,7 @@ func TestFromUnstructuredSubscription(t *testing.T) {
 		}
 		fmt.Printf("Marshalled : %s", string(raw))
 
-		got := duckv1alpha1.Subscription{}
+		got := Foo{}
 		err = FromUnstructured(tc.in, &got)
 		if err != tc.wantError {
 			t.Errorf("Unexpected error for %q: %v", string(tc.name), err)
