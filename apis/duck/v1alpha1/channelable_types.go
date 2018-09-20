@@ -79,7 +79,7 @@ func (_ *Channelable) GetFullType() duck.Populatable {
 func (t *Channel) Populate() {
 	t.Spec.Channelable = &Channelable{
 		// Populate ALL fields
-		Subscribers: []ChannelSubscriberSpec{{"subscription1"}, {"subscription2"}},
+		Subscribers: []ChannelSubscriberSpec{{"call1", "sink2"}, {"call2", "sink2"}},
 	}
 }
 
