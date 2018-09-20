@@ -155,6 +155,15 @@ func TestViaIndexOrKeyFieldError(t *testing.T) {
 		prefixes [][]string
 		want     string
 	}{{
+		name: "nil",
+		err:  nil,
+		want: "",
+	}, {
+		name:     "nil with prefix",
+		err:      nil,
+		prefixes: [][]string{{"INDEX:2"}, {"KEY:B"}, {"FIELDINDEX:6,AAA"}, {"FIELDKEY:bee,AAA"}},
+		want:     "",
+	}, {
 		name: "simple single no propagation",
 		err: &FieldError{
 			Message: "hear me roar",
@@ -321,6 +330,92 @@ can not use @, do not try`,
 						fe = fe.ViaField(p)
 					}
 				}
+			}
+
+			if test.want != "" {
+				got := fe.Error()
+				if got != test.want {
+					t.Errorf("Error() = %v, wanted %v", got, test.want)
+				}
+			} else if fe != nil {
+				t.Errorf("ViaField() = %v, wanted nil", fe)
+			}
+		})
+	}
+}
+
+func TestNilError(t *testing.T) {
+	var err *FieldError
+	got := err.Error()
+	want := ""
+	if got != want {
+		t.Errorf("got %v, wanted %v", got, want)
+	}
+}
+
+func TestAlso(t *testing.T) {
+	tests := []struct {
+		name     string
+		err      *FieldError
+		also     []FieldError
+		prefixes [][]string
+		want     string
+	}{{
+		name: "nil",
+		err:  nil,
+		also: []FieldError{{
+			Message: "also this",
+			Paths:   []string{"woo"},
+		}},
+		prefixes: [][]string{{"foo"}},
+		want:     "also this: foo.woo",
+	}, {
+		name: "simple",
+		err: &FieldError{
+			Message: "hear me roar",
+			Paths:   []string{"bar"},
+		},
+		also: []FieldError{{
+			Message: "also this",
+			Paths:   []string{"woo"},
+		}},
+		prefixes: [][]string{{"foo", "[A]", "[B]", "[C]"}},
+		want: `hear me roar: foo[A][B][C].bar
+also this: foo[A][B][C].woo`,
+	}, {
+		name: "simple",
+		err: &FieldError{
+			Message: "knock knock",
+			Paths:   []string{"foo"},
+		},
+		also: []FieldError{{
+			Message: "also this",
+			Paths:   []string{"A"},
+		}, {
+			Message: "and this",
+			Paths:   []string{"B"},
+		}, {
+			Message: "not without this",
+			Paths:   []string{"C"},
+		}},
+		prefixes: [][]string{{"bar"}},
+		want: `knock knock: bar.foo
+also this: bar.A
+and this: bar.B
+not without this: bar.C`,
+	}}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			fe := test.err
+
+			for _, err := range test.also {
+				fe = fe.Also(&err)
+			}
+
+			// Simulate propagation up a call stack.
+			for _, prefix := range test.prefixes {
+				fe = fe.ViaField(prefix...)
 			}
 
 			if test.want != "" {
