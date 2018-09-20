@@ -44,7 +44,7 @@ var _ duck.Implementable = (*Subscribable)(nil)
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
 // Subscription is a skeleton type wrapping the notion that this object
-// can be subscribed to. SubscribableStatus provides the reference
+// can be subscribed to. SubscriptionStatus provides the reference
 // (in a form of Subscribable) to the object that you can actually create
 // a subscription to.
 // We will typically use this type to deserialize Subscription objects
@@ -53,16 +53,16 @@ type Subscription struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	// SubscribableStatus is the part of the Status where a Subscribable
+	// SubscriptionStatus is the part of the Status where a Subscribable
 	// object points to the underlying Channelable object that fullfills
 	// the SubscribableSpec contract. Note that this can be a self-link
 	// for example for concrete Channel implementations.
-	Status SubscribableStatus `json:"status"`
+	Status SubscriptionStatus `json:"status"`
 }
 
-// SubscribableStatus shows how we expect folks to embed Subscribable in
+// SubscriptionStatus shows how we expect folks to embed Subscribable in
 // their Status field.
-type SubscribableStatus struct {
+type SubscriptionStatus struct {
 	Subscribable *Subscribable `json:"subscribable,omitempty"`
 }
 
