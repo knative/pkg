@@ -23,7 +23,9 @@ import (
 	"github.com/knative/pkg/apis/duck"
 )
 
-// Subscribable is the schema for the subscribable portion of the payload
+// Subscribable is the schema for the subscribable portion of the payload.
+// It is a reference to actual object that implements Channelable duck
+// type.
 type Subscribable struct {
 	// Channelable is a reference to the actual Channelable
 	// interface that provides the Subscription capabilities. This may
@@ -33,7 +35,7 @@ type Subscribable struct {
 }
 
 // Implementations can verify that they implement Subscribable via:
-var _ = duck.VerifyType(&ChannelableRef{}, &Subscribable{})
+var _ = duck.VerifyType(&Subscription{}, &Subscribable{})
 
 // Subscribable is an Implementable "duck type".
 var _ duck.Implementable = (*Subscribable)(nil)
@@ -41,11 +43,11 @@ var _ duck.Implementable = (*Subscribable)(nil)
 // +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
-// ChannelableRef is a skeleton type wrapping Subscribable in the manner we expect
+// Subscribable is a skeleton type wrapping Subscribable in the manner we expect
 // resource writers defining compatible resources to embed it.  We will
-// typically use this type to deserialize Subscribable ObjectReferences and
-// access the Subscribable data.  This is not a real resource.
-type ChannelableRef struct {
+// typically use this type to deserialize Subscription ObjectReferences and
+// access the Subscription data.  This is not a real resource.
+type Subscription struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
@@ -62,16 +64,16 @@ type SubscribableStatus struct {
 	Subscribable *Subscribable `json:"subscribable,omitempty"`
 }
 
-// In order for Subscribable to be Implementable, ChannelableRef must be Populatable.
-var _ duck.Populatable = (*ChannelableRef)(nil)
+// In order for Subscribable to be Implementable, Subscribable must be Populatable.
+var _ duck.Populatable = (*Subscription)(nil)
 
 // GetFullType implements duck.Implementable
 func (_ *Subscribable) GetFullType() duck.Populatable {
-	return &ChannelableRef{}
+	return &Subscription{}
 }
 
 // Populate implements duck.Populatable
-func (t *ChannelableRef) Populate() {
+func (t *Subscription) Populate() {
 	t.Status.Subscribable = &Subscribable{
 		// Populate ALL fields
 		Channelable: corev1.ObjectReference{
@@ -84,10 +86,10 @@ func (t *ChannelableRef) Populate() {
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
-// ChannelableRefList is a list of ChannelableRef resources
-type ChannelableRefList struct {
+// SubscribableList is a list of Subscribable resources
+type SubscriptionList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata"`
 
-	Items []ChannelableRef `json:"items"`
+	Items []Subscription `json:"items"`
 }
