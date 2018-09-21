@@ -20,6 +20,7 @@ import (
 	"fmt"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 
 	"github.com/knative/pkg/apis"
 	"github.com/knative/pkg/apis/duck"
@@ -40,6 +41,7 @@ type Resource struct {
 var _ apis.Validatable = (*Resource)(nil)
 var _ apis.Defaultable = (*Resource)(nil)
 var _ apis.Immutable = (*Resource)(nil)
+var _ apis.Listable = (*Resource)(nil)
 
 // Check that we implement the Generation duck type.
 var emptyGen duckv1alpha1.Generation
@@ -89,4 +91,19 @@ func (current *Resource) CheckImmutableFields(og apis.Immutable) *apis.FieldErro
 		}
 	}
 	return nil
+}
+
+// GetListType implements apis.Listable
+func (r *Resource) GetListType() runtime.Object {
+	return &ResourceList{}
+}
+
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+
+// ResourceList is a list of Resource resources
+type ResourceList struct {
+	metav1.TypeMeta `json:",inline"`
+	metav1.ListMeta `json:"metadata"`
+
+	Items []Resource `json:"items"`
 }
