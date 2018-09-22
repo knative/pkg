@@ -29,12 +29,12 @@ import (
 func TestFromUnstructuredFooable(t *testing.T) {
 	tcs := []struct {
 		name      string
-		in        unstructured.Unstructured
+		in        Marshalable
 		want      FooStatus
 		wantError error
 	}{{
 		name: "Works with valid status",
-		in: unstructured.Unstructured{
+		in: &unstructured.Unstructured{
 			Object: map[string]interface{}{
 				"apiVersion": "test",
 				"kind":       "test_kind",
@@ -54,7 +54,7 @@ func TestFromUnstructuredFooable(t *testing.T) {
 		wantError: nil,
 	}, {
 		name: "does not work with missing fooable status",
-		in: unstructured.Unstructured{
+		in: &unstructured.Unstructured{
 			Object: map[string]interface{}{
 				"apiVersion": "test",
 				"kind":       "test_kind",
@@ -67,7 +67,7 @@ func TestFromUnstructuredFooable(t *testing.T) {
 		wantError: nil,
 	}, {
 		name:      "empty unstructured",
-		in:        unstructured.Unstructured{},
+		in:        &unstructured.Unstructured{},
 		want:      FooStatus{},
 		wantError: nil,
 	}}
