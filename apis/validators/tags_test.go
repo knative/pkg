@@ -27,4 +27,9 @@ func TestTagParsing(t *testing.T) {
 			t.Errorf("Contains(%q) = %v", tt.opt, !tt.want)
 		}
 	}
+	// Test the empty case.
+	opts = ""
+	if opts.Contains("foo") != false {
+		t.Errorf("\"\".Contains(%q) = %v", "foo", true)
+	}
 }
