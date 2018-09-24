@@ -212,7 +212,7 @@
   version = "v1.1.0"
 
 [[projects]]
-  digest = "1:62c528643cd9de4e18c81ae52a5f0ec8a92c276259203bd1f19e33532bcb1af3"
+  digest = "1:5ab79d2a36037de1ab2908733a2cab0c08b12f6956e3e1eab07cd1b2abf7b903"
   name = "go.uber.org/zap"
   packages = [
     ".",
@@ -220,11 +220,12 @@
     "internal/bufferpool",
     "internal/color",
     "internal/exit",
+    "internal/ztest",
     "zapcore",
+    "zaptest",
   ]
   pruneopts = "NUT"
-  revision = "4d45f9617f7d90f7a663ff21c7a4321dbe78098b"
-  version = "v1.9.0"
+  revision = "67bc79d13d155c02fd008f721863ff8cc5f30659"
 
 [[projects]]
   digest = "1:624a05c7c6ed502bf77364cd3d54631383dafc169982fddd8ee77b53c3d9cccf"
@@ -644,6 +645,7 @@
     "go.opencensus.io/trace",
     "go.uber.org/zap",
     "go.uber.org/zap/zapcore",
+    "go.uber.org/zap/zaptest",
     "golang.org/x/sync/errgroup",
     "k8s.io/api/admission/v1beta1",
     "k8s.io/api/admissionregistration/v1beta1",
