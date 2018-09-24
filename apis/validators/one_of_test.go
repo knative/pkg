@@ -39,10 +39,10 @@ type oneOfThree struct {
 }
 
 type oneOfTwoGroups struct {
-	Foo string `validate:"OneOf,foo"`
 	Bar string `validate:"OneOf,foo"`
-	Dog string `validate:"OneOf,animal"`
+	Foo string `validate:"OneOf,foo"`
 	Cow string `validate:"OneOf,animal"`
+	Dog string `validate:"OneOf,animal"`
 }
 
 func TestOneOfValidator_oneOfNoGroup(t *testing.T) {
@@ -148,11 +148,11 @@ func TestOneOfValidator_oneOfTwoGroups(t *testing.T) {
 		obj: oneOfTwoGroups{
 			Cow: "moo",
 		},
-		want: apis.ErrMissingOneOf("Foo", "Bar"),
+		want: apis.ErrMissingOneOf("Bar", "Foo"),
 	}, {
 		name: "none",
 		obj:  oneOfTwoGroups{},
-		want: apis.ErrMissingOneOf("Foo", "Bar").
+		want: apis.ErrMissingOneOf("Bar", "Foo").
 			Also(apis.ErrMissingOneOf("Cow", "Dog")),
 	}}
 	doTestValidate(t, tests)
