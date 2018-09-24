@@ -32,6 +32,7 @@ const (
 	DefaultValidatorTag       = "Default" // does nothing.
 	QualifiedNameValidatorTag = "QualifiedName"
 	RequiredValidatorTag      = "Required"
+	OneOfValidatorTag         = "OneOf"
 )
 
 // Returns validator struct corresponding to validation type
@@ -44,6 +45,8 @@ func getValidatorsFromTag(tag string) []Validator {
 			validators = append(validators, NewK8sQualifiedNameValidator(vOpts))
 		case RequiredValidatorTag:
 			validators = append(validators, NewRequiredValidator(vOpts))
+		case OneOfValidatorTag:
+			validators = append(validators, NewOneOfValidator(vOpts))
 		case DefaultValidatorTag:
 			validators = append(validators, NewDefaultValidator())
 		}
@@ -71,6 +74,7 @@ func Validate(obj interface{}) *apis.FieldError {
 	}
 
 	var errs *apis.FieldError
+	var parentValidators []Validator
 	for i := 0; i < v.NumField(); i++ {
 		// Get the field name
 		name := getName(v.Type().Field(i))
@@ -88,7 +92,11 @@ func Validate(obj interface{}) *apis.FieldError {
 		for _, validator := range validators {
 			// Perform validation
 			if validator.OnParent() {
-				errs = errs.Also(validator.Validate(obj).ViaField(name))
+				// Ask if the validator considers itself already in the parent validators.
+				if validator.AlreadyIn(parentValidators) == false {
+					parentValidators = append(parentValidators, validator)
+					errs = errs.Also(validator.Validate(obj))
+				}
 			}
 			if validator.OnField() {
 				if field := v.Field(i); field.CanInterface() {
@@ -114,4 +122,8 @@ type Validator interface {
 	// Validate( will perform the validation for the given field based on
 	// OnField and OnParent.
 	Validate(value interface{}) *apis.FieldError
+	// AlreadyIn returns true if a validator that matches the current validator
+	// is already in the list of provided validators. This allows a parent only
+	// validator to signal it only wants to be included once.
+	AlreadyIn(validators []Validator) bool
 }

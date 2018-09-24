@@ -42,7 +42,6 @@ func (v *K8sQualifiedNameValidator) OnField() bool {
 }
 
 func (v *K8sQualifiedNameValidator) Validate(value interface{}) *apis.FieldError {
-
 	name, ok := value.(string)
 	if !ok {
 		return &apis.FieldError{
@@ -50,12 +49,14 @@ func (v *K8sQualifiedNameValidator) Validate(value interface{}) *apis.FieldError
 			Paths:   []string{apis.CurrentField},
 		}
 	}
-
 	if len(name) != 0 {
 		if errs := validation.IsQualifiedName(name); len(errs) > 0 {
 			return apis.ErrInvalidKeyName(name, apis.CurrentField, errs...)
 		}
 	}
-
 	return nil
+}
+
+func (v *K8sQualifiedNameValidator) AlreadyIn(validators []Validator) bool {
+	return false
 }

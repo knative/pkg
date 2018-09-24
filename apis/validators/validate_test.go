@@ -49,15 +49,14 @@ type complex_types struct {
 
 const invalidQualifiedNameError = `name part must consist of alphanumeric characters, '-', '_' or '.', and must start and end with an alphanumeric character (e.g. 'MyName',  or 'my.name',  or '123-abc', regex used for validation is '([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9]')`
 
+type ValidateTest struct {
+	name string
+	obj  interface{}
+	want *apis.FieldError
+}
+
 func TestValidate(t *testing.T) {
-	type args struct {
-		obj interface{}
-	}
-	tests := []struct {
-		name string
-		obj  interface{}
-		want *apis.FieldError
-	}{{
+	tests := []ValidateTest{{
 		name: "default",
 		obj: foo{
 			Default: "default",
@@ -154,6 +153,10 @@ func TestValidate(t *testing.T) {
 			Paths:   []string{"RequiredFoo"},
 		}),
 	}}
+	doTestValidate(t, tests)
+}
+
+func doTestValidate(t *testing.T, tests []ValidateTest) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got := Validate(tt.obj)

@@ -48,3 +48,7 @@ func (v *RequiredValidator) Validate(value interface{}) *apis.FieldError {
 	}
 	return nil
 }
+
+func (v *RequiredValidator) AlreadyIn(validators []Validator) bool {
+	return false
+}

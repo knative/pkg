@@ -38,3 +38,7 @@ func (v *DefaultValidator) OnField() bool {
 func (v *DefaultValidator) Validate(value interface{}) *apis.FieldError {
 	return nil
 }
+
+func (v *DefaultValidator) AlreadyIn(validators []Validator) bool {
+	return false
+}
