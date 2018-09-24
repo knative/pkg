@@ -20,6 +20,9 @@ import (
 	"fmt"
 	"sort"
 	"strings"
+
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 )
 
 // CurrentField is a constant to supply as a fieldPath for when there is
@@ -139,8 +142,40 @@ func (fe *FieldError) getNormalizedErrors() []FieldError {
 	for _, e := range fe.errors {
 		errors = append(errors, e.getNormalizedErrors()...)
 	}
-	sort.Slice(errors, func(i, j int) bool { return errors[i].Message < errors[j].Message })
+
+	errors = flattenErrors(errors)
+
 	return errors
+}
+
+// flattenErrors will combine errors that differ only in their paths.
+// This assumes that errors has been normalized.
+func flattenErrors(errors []FieldError) []FieldError {
+	if len(errors) <= 1 {
+		return errors
+	}
+
+	ignoreArguments := cmpopts.IgnoreFields(FieldError{}, "Paths")
+	ignoreUnexported := cmpopts.IgnoreUnexported(FieldError{})
+
+	// Sort first.
+	sort.Slice(errors, func(i, j int) bool { return errors[i].Message < errors[j].Message })
+
+	newErrors := make([]FieldError, 0, len(errors))
+	i := 0
+	curr := errors[i]
+	newErrors = append(newErrors, curr)
+	for j := 1; j < len(errors); j++ {
+		next := errors[j]
+		if diff := cmp.Diff(curr, next, ignoreArguments, ignoreUnexported); diff == "" {
+			// they match, merge the paths.
+			curr.Paths = append(curr.Paths, next.Paths...)
+		} else {
+			curr = next
+			newErrors = append(newErrors, curr)
+		}
+	}
+	return newErrors
 }
 
 func asIndex(index int) string {
