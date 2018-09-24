@@ -33,6 +33,11 @@ type foo_k8s struct {
 	RequiredName string `json:"requiredName" validate:"QualifiedName,Required"`
 }
 
+type non_json_k8s struct {
+	OptionalName string `validate:"QualifiedName"`
+	RequiredName string `validate:"QualifiedName,Required"`
+}
+
 const invalidQualifiedNameError = `name part must consist of alphanumeric characters, '-', '_' or '.', and must start and end with an alphanumeric character (e.g. 'MyName',  or 'my.name',  or '123-abc', regex used for validation is '([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9]')`
 
 func TestValidate(t *testing.T) {
@@ -111,6 +116,23 @@ func TestValidate(t *testing.T) {
 		}).Also(&apis.FieldError{
 			Message: `invalid key name "v@lid"`,
 			Paths:   []string{"requiredName"},
+			Details: invalidQualifiedNameError,
+		}),
+	}, {
+		name: "non-json invalid optional and required k8s names",
+		args: args{
+			obj: non_json_k8s{
+				OptionalName: "val!d",
+				RequiredName: "v@lid",
+			},
+		},
+		want: (&apis.FieldError{
+			Message: `invalid key name "val!d"`,
+			Paths:   []string{"OptionalName"},
+			Details: invalidQualifiedNameError,
+		}).Also(&apis.FieldError{
+			Message: `invalid key name "v@lid"`,
+			Paths:   []string{"RequiredName"},
 			Details: invalidQualifiedNameError,
 		}),
 	}}
