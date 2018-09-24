@@ -17,17 +17,18 @@ limitations under the License.
 package webhook
 
 import (
-	"context"
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+
+	. "github.com/knative/pkg/logging/testing"
 )
 
 func TestCreateCerts(t *testing.T) {
-	sKey, serverCertPEM, caCertBytes, err := CreateCerts(context.TODO(), "got-the-hook", "knative-webhook")
+	sKey, serverCertPEM, caCertBytes, err := CreateCerts(TestContextWithLogger(t), "got-the-hook", "knative-webhook")
 	if err != nil {
 		t.Fatalf("Failed to create certs %v", err)
 	}
