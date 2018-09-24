@@ -38,10 +38,9 @@ func TestValidate(t *testing.T) {
 		obj interface{}
 	}
 	tests := []struct {
-		name    string
-		args    args
-		wantOk  bool
-		wantErr []*apis.FieldError
+		name string
+		args args
+		want *apis.FieldError
 	}{{
 		name: "default",
 		args: args{
@@ -49,8 +48,7 @@ func TestValidate(t *testing.T) {
 				Default: "default",
 			},
 		},
-		wantOk:  true,
-		wantErr: nil,
+		want: nil,
 	}, {
 		name: "valid k8s",
 		args: args{
@@ -60,18 +58,16 @@ func TestValidate(t *testing.T) {
 				RequiredName: "valid",
 			},
 		},
-		wantOk:  true,
-		wantErr: nil,
+		want: nil,
 	}, {
 		name: "missing required k8s name",
 		args: args{
 			obj: foo_k8s{},
 		},
-		wantOk: false,
-		wantErr: []*apis.FieldError{{
+		want: &apis.FieldError{
 			Message: `missing field(s)`,
 			Paths:   []string{"RequiredName"},
-		}},
+		},
 	}, {
 		name: "invalid required k8s name",
 		args: args{
@@ -79,22 +75,17 @@ func TestValidate(t *testing.T) {
 				RequiredName: "v@lid",
 			},
 		},
-		wantOk: false,
-		wantErr: []*apis.FieldError{{
+		want: &apis.FieldError{
 			Message: `invalid key name "v@lid"`,
 			Paths:   []string{"RequiredName"},
 			Details: `name part must consist of alphanumeric characters, '-', '_' or '.', and must start and end with an alphanumeric character (e.g. 'MyName',  or 'my.name',  or '123-abc', regex used for validation is '([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9]')`,
-		}},
+		},
 	}}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gotOk, gotErr := Validate(tt.args.obj)
-			if gotOk != tt.wantOk {
-				t.Errorf("Validate() got Ok = %v, want %v", gotOk, tt.wantOk)
-			}
-
-			if diff := cmp.Diff(tt.wantErr, gotErr); diff != "" {
-				t.Errorf("Validate() got Err (-want, +got) = %v", diff)
+			got := Validate(tt.args.obj)
+			if diff := cmp.Diff(tt.want.Error(), got.Error()); diff != "" {
+				t.Errorf("Validate() (-want, +got) = %v", diff)
 			}
 		})
 	}

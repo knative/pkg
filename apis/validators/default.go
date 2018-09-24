@@ -35,6 +35,6 @@ func (v *DefaultValidator) OnField() bool {
 	return false
 }
 
-func (v *DefaultValidator) Validate(field string, value interface{}) (bool, *apis.FieldError) {
-	return true, nil
+func (v *DefaultValidator) Validate(value interface{}) *apis.FieldError {
+	return nil
 }

@@ -37,14 +37,18 @@ func getValidatorFromTag(tag string) Validator {
 	return NewDefaultValidator()
 }
 
-func Validate(obj interface{}) (bool, []*apis.FieldError) {
+func Validate(obj interface{}) *apis.FieldError {
 
 	v := reflect.ValueOf(obj)
+	if !v.IsValid() {
+		return nil
+	}
 
-	valid := true
-	errs := []*apis.FieldError(nil)
-
+	var errs *apis.FieldError
 	for i := 0; i < v.NumField(); i++ {
+		// Get the field name
+		name := v.Type().Field(i).Name // TODO: this is wrong, this is the field name of the stuct, not the json name,
+
 		// Get the field tag value
 		tag := v.Type().Field(i).Tag.Get(tagName)
 
@@ -58,25 +62,15 @@ func Validate(obj interface{}) (bool, []*apis.FieldError) {
 
 		// Perform validation
 		if validator.OnParent() {
-			ok, err := validator.Validate(v.Type().Field(i).Name, obj)
-			if !ok {
-				valid = false
-			}
-			if err != nil {
-				errs = append(errs, err)
-			}
+			errs = errs.Also(validator.Validate(obj).ViaField(name))
 		}
 		if validator.OnField() {
-			ok, err := validator.Validate(v.Type().Field(i).Name, v.Field(i).Interface())
-			if !ok {
-				valid = false
-			}
-			if err != nil {
-				errs = append(errs, err)
+			if field := v.Field(i); field.CanInterface() {
+				errs = errs.Also(validator.Validate(field.Interface()).ViaField(name))
 			}
 		}
 	}
-	return valid, errs
+	return errs
 }
 
 // TODO(n3wscott): OnParent and OnField might be strange. Not sure there is
@@ -92,5 +86,5 @@ type Validator interface {
 	OnField() bool
 	// Validate( will perform the validation for the given field based on
 	// OnField and OnParent.
-	Validate(fieldName string, value interface{}) (bool, *apis.FieldError)
+	Validate(value interface{}) *apis.FieldError
 }

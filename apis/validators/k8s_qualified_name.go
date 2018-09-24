@@ -54,25 +54,25 @@ func (v *K8sQualifiedNameValidator) OnField() bool {
 	return true
 }
 
-func (v *K8sQualifiedNameValidator) Validate(fieldName string, value interface{}) (bool, *apis.FieldError) {
+func (v *K8sQualifiedNameValidator) Validate(value interface{}) *apis.FieldError {
 
 	name, ok := value.(string)
 	if !ok {
-		return false, &apis.FieldError{
+		return &apis.FieldError{
 			Message: "failed to marshal field",
-			Paths:   []string{fieldName},
+			Paths:   []string{apis.CurrentField},
 		}
 	}
 
 	if v.required && len(name) == 0 {
-		return false, apis.ErrMissingField(fieldName)
+		return apis.ErrMissingField(apis.CurrentField)
 	}
 
 	if len(name) != 0 {
 		if errs := validation.IsQualifiedName(name); len(errs) > 0 {
-			return false, apis.ErrInvalidKeyName(name, fieldName, errs...)
+			return apis.ErrInvalidKeyName(name, apis.CurrentField, errs...)
 		}
 	}
 
-	return true, nil
+	return nil
 }
