@@ -19,24 +19,36 @@ package validators
 import (
 	"reflect"
 
+	"strings"
+
 	"github.com/knative/pkg/apis"
 )
 
 const (
 	jsonTagName       = "json"
 	validationTagName = "validate"
+
+	// Known validators:
+	DefaultValidatorTag       = "Default" // does nothing.
+	QualifiedNameValidatorTag = "QualifiedName"
+	RequiredValidatorTag      = "Required"
 )
 
 // Returns validator struct corresponding to validation type
-func getValidatorFromTag(tag string) Validator {
-	v, vOpts := parseTag(tag)
-
-	switch v {
-	case QualifiedName:
-		return NewK8sQualifiedNameValidator(vOpts)
+func getValidatorsFromTag(tag string) []Validator {
+	var validators []Validator
+	for _, tag := range strings.Split(tag, ";") {
+		v, vOpts := parseTag(tag)
+		switch v {
+		case QualifiedNameValidatorTag:
+			validators = append(validators, NewK8sQualifiedNameValidator(vOpts))
+		case RequiredValidatorTag:
+			validators = append(validators, NewRequiredValidator(vOpts))
+		case DefaultValidatorTag:
+			validators = append(validators, NewDefaultValidator())
+		}
 	}
-
-	return NewDefaultValidator()
+	return validators
 }
 
 // getName will inspect the struct field for a json annotation and return the
@@ -72,15 +84,16 @@ func Validate(obj interface{}) *apis.FieldError {
 		}
 
 		// Get a validator that corresponds to a tag
-		validator := getValidatorFromTag(tag)
-
-		// Perform validation
-		if validator.OnParent() {
-			errs = errs.Also(validator.Validate(obj).ViaField(name))
-		}
-		if validator.OnField() {
-			if field := v.Field(i); field.CanInterface() {
-				errs = errs.Also(validator.Validate(field.Interface()).ViaField(name))
+		validators := getValidatorsFromTag(tag)
+		for _, validator := range validators {
+			// Perform validation
+			if validator.OnParent() {
+				errs = errs.Also(validator.Validate(obj).ViaField(name))
+			}
+			if validator.OnField() {
+				if field := v.Field(i); field.CanInterface() {
+					errs = errs.Also(validator.Validate(field.Interface()).ViaField(name))
+				}
 			}
 		}
 	}

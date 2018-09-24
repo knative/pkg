@@ -30,12 +30,21 @@ type foo struct {
 type foo_k8s struct {
 	Default      string `json:"default,omitempty"`
 	OptionalName string `json:"optionalName" validate:"QualifiedName"`
-	RequiredName string `json:"requiredName" validate:"QualifiedName,Required"`
+	RequiredName string `json:"requiredName" validate:"QualifiedName;Required"`
 }
 
 type non_json_k8s struct {
 	OptionalName string `validate:"QualifiedName"`
-	RequiredName string `validate:"QualifiedName,Required"`
+	RequiredName string `validate:"QualifiedName;Required"`
+}
+
+type complex_types struct {
+	Name         string
+	RequiredName string `validate:"Required"`
+	Num          int
+	RequiredNum  int `validate:"Required"`
+	Foo          foo
+	RequiredFoo  foo `validate:"Required"`
 }
 
 const invalidQualifiedNameError = `name part must consist of alphanumeric characters, '-', '_' or '.', and must start and end with an alphanumeric character (e.g. 'MyName',  or 'my.name',  or '123-abc', regex used for validation is '([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9]')`
@@ -46,43 +55,35 @@ func TestValidate(t *testing.T) {
 	}
 	tests := []struct {
 		name string
-		args args
+		obj  interface{}
 		want *apis.FieldError
 	}{{
 		name: "default",
-		args: args{
-			obj: foo{
-				Default: "default",
-			},
+		obj: foo{
+			Default: "default",
 		},
 		want: nil,
 	}, {
 		name: "valid k8s",
-		args: args{
-			obj: foo_k8s{
-				Default:      "default",
-				OptionalName: "valid",
-				RequiredName: "valid",
-			},
+		obj: foo_k8s{
+			Default:      "default",
+			OptionalName: "valid",
+			RequiredName: "valid",
 		},
 		want: nil,
 	}, {
 		name: "missing required k8s name",
-		args: args{
-			obj: foo_k8s{},
-		},
+		obj:  foo_k8s{},
 		want: &apis.FieldError{
 			Message: `missing field(s)`,
 			Paths:   []string{"requiredName"},
 		},
 	}, {
 		name: "invalid optional k8s name",
-		args: args{
-			obj: foo_k8s{
-				Default:      "default",
-				OptionalName: "v@lid",
-				RequiredName: "valid",
-			},
+		obj: foo_k8s{
+			Default:      "default",
+			OptionalName: "v@lid",
+			RequiredName: "valid",
 		},
 		want: &apis.FieldError{
 			Message: `invalid key name "v@lid"`,
@@ -91,10 +92,8 @@ func TestValidate(t *testing.T) {
 		},
 	}, {
 		name: "invalid required k8s name",
-		args: args{
-			obj: foo_k8s{
-				RequiredName: "v@lid",
-			},
+		obj: foo_k8s{
+			RequiredName: "v@lid",
 		},
 		want: &apis.FieldError{
 			Message: `invalid key name "v@lid"`,
@@ -103,11 +102,9 @@ func TestValidate(t *testing.T) {
 		},
 	}, {
 		name: "invalid optional and required k8s names",
-		args: args{
-			obj: foo_k8s{
-				OptionalName: "val!d",
-				RequiredName: "v@lid",
-			},
+		obj: foo_k8s{
+			OptionalName: "val!d",
+			RequiredName: "v@lid",
 		},
 		want: (&apis.FieldError{
 			Message: `invalid key name "val!d"`,
@@ -120,11 +117,9 @@ func TestValidate(t *testing.T) {
 		}),
 	}, {
 		name: "non-json invalid optional and required k8s names",
-		args: args{
-			obj: non_json_k8s{
-				OptionalName: "val!d",
-				RequiredName: "v@lid",
-			},
+		obj: non_json_k8s{
+			OptionalName: "val!d",
+			RequiredName: "v@lid",
 		},
 		want: (&apis.FieldError{
 			Message: `invalid key name "val!d"`,
@@ -135,10 +130,33 @@ func TestValidate(t *testing.T) {
 			Paths:   []string{"RequiredName"},
 			Details: invalidQualifiedNameError,
 		}),
+	}, {
+		name: "complex types",
+		obj: complex_types{
+			RequiredName: "foo",
+			RequiredNum:  42,
+			RequiredFoo: foo{
+				Default: "hi",
+			},
+		},
+		want: nil,
+	}, {
+		name: "empty complex types",
+		obj:  complex_types{},
+		want: (&apis.FieldError{
+			Message: `missing field(s)`,
+			Paths:   []string{"RequiredName"},
+		}).Also(&apis.FieldError{
+			Message: `missing field(s)`,
+			Paths:   []string{"RequiredNum"},
+		}).Also(&apis.FieldError{
+			Message: `missing field(s)`,
+			Paths:   []string{"RequiredFoo"},
+		}),
 	}}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := Validate(tt.args.obj)
+			got := Validate(tt.obj)
 			if diff := cmp.Diff(tt.want.Error(), got.Error()); diff != "" {
 				t.Errorf("Validate() (-want, +got) = %v", diff)
 			}

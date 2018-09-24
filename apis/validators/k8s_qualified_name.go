@@ -22,28 +22,14 @@ import (
 	"k8s.io/apimachinery/pkg/util/validation"
 )
 
-const (
-	QualifiedName            = "QualifiedName"
-	K8sQualifiedNameRequired = "Required"
-)
-
 // Usage:
-//  OptionalName string `validate:"QualifiedName"`
-//  RequiredName string `validate:"QualifiedName,Required"`
+//  Name string `validate:"QualifiedName"`
 
 func NewK8sQualifiedNameValidator(opts tagOptions) *K8sQualifiedNameValidator {
-	required := false
-	if opts.Contains(K8sQualifiedNameRequired) {
-		required = true
-	}
-	return &K8sQualifiedNameValidator{
-		required: required,
-	}
+	return &K8sQualifiedNameValidator{}
 }
 
-type K8sQualifiedNameValidator struct {
-	required bool
-}
+type K8sQualifiedNameValidator struct{}
 
 var _ Validator = (*K8sQualifiedNameValidator)(nil)
 
@@ -63,10 +49,6 @@ func (v *K8sQualifiedNameValidator) Validate(value interface{}) *apis.FieldError
 			Message: "failed to marshal field",
 			Paths:   []string{apis.CurrentField},
 		}
-	}
-
-	if v.required && len(name) == 0 {
-		return apis.ErrMissingField(apis.CurrentField)
 	}
 
 	if len(name) != 0 {
