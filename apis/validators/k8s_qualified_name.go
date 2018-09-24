@@ -23,16 +23,17 @@ import (
 )
 
 const (
-	QualifiedName = "QualifiedName"
+	QualifiedName            = "QualifiedName"
+	K8sQualifiedNameRequired = "Required"
 )
 
 // Usage:
 //  OptionalName string `validate:"QualifiedName"`
 //  RequiredName string `validate:"QualifiedName,Required"`
 
-func NewK8sQualifiedNameValidator(opts string) *K8sQualifiedNameValidator {
+func NewK8sQualifiedNameValidator(opts tagOptions) *K8sQualifiedNameValidator {
 	required := false
-	if opts == "Required" {
+	if opts.Contains(K8sQualifiedNameRequired) {
 		required = true
 	}
 	return &K8sQualifiedNameValidator{

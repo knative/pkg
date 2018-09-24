@@ -28,10 +28,12 @@ type foo struct {
 }
 
 type foo_k8s struct {
-	Default      string `validate:"-"`
-	OptionalName string `validate:"QualifiedName"`
-	RequiredName string `validate:"QualifiedName,Required"`
+	Default      string `json:"default,omitempty"`
+	OptionalName string `json:"optionalName" validate:"QualifiedName"`
+	RequiredName string `json:"requiredName" validate:"QualifiedName,Required"`
 }
+
+const invalidQualifiedNameError = `name part must consist of alphanumeric characters, '-', '_' or '.', and must start and end with an alphanumeric character (e.g. 'MyName',  or 'my.name',  or '123-abc', regex used for validation is '([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9]')`
 
 func TestValidate(t *testing.T) {
 	type args struct {
@@ -66,7 +68,21 @@ func TestValidate(t *testing.T) {
 		},
 		want: &apis.FieldError{
 			Message: `missing field(s)`,
-			Paths:   []string{"RequiredName"},
+			Paths:   []string{"requiredName"},
+		},
+	}, {
+		name: "invalid optional k8s name",
+		args: args{
+			obj: foo_k8s{
+				Default:      "default",
+				OptionalName: "v@lid",
+				RequiredName: "valid",
+			},
+		},
+		want: &apis.FieldError{
+			Message: `invalid key name "v@lid"`,
+			Paths:   []string{"optionalName"},
+			Details: invalidQualifiedNameError,
 		},
 	}, {
 		name: "invalid required k8s name",
@@ -77,9 +93,26 @@ func TestValidate(t *testing.T) {
 		},
 		want: &apis.FieldError{
 			Message: `invalid key name "v@lid"`,
-			Paths:   []string{"RequiredName"},
-			Details: `name part must consist of alphanumeric characters, '-', '_' or '.', and must start and end with an alphanumeric character (e.g. 'MyName',  or 'my.name',  or '123-abc', regex used for validation is '([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9]')`,
+			Paths:   []string{"requiredName"},
+			Details: invalidQualifiedNameError,
 		},
+	}, {
+		name: "invalid optional and required k8s names",
+		args: args{
+			obj: foo_k8s{
+				OptionalName: "val!d",
+				RequiredName: "v@lid",
+			},
+		},
+		want: (&apis.FieldError{
+			Message: `invalid key name "val!d"`,
+			Paths:   []string{"optionalName"},
+			Details: invalidQualifiedNameError,
+		}).Also(&apis.FieldError{
+			Message: `invalid key name "v@lid"`,
+			Paths:   []string{"requiredName"},
+			Details: invalidQualifiedNameError,
+		}),
 	}}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

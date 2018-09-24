@@ -18,23 +18,37 @@ package validators
 
 import (
 	"reflect"
-	"strings"
 
 	"github.com/knative/pkg/apis"
 )
 
-const tagName = "validate"
+const (
+	jsonTagName       = "json"
+	validationTagName = "validate"
+)
 
 // Returns validator struct corresponding to validation type
 func getValidatorFromTag(tag string) Validator {
-	args := strings.Split(tag, ",")
+	v, vOpts := parseTag(tag)
 
-	switch args[0] {
+	switch v {
 	case QualifiedName:
-		return NewK8sQualifiedNameValidator(strings.Join(args[1:], ","))
+		return NewK8sQualifiedNameValidator(vOpts)
 	}
 
 	return NewDefaultValidator()
+}
+
+// getName will inspect the struct field for a json annotation and return the
+// specified name, otherwise default to the name of the struct field.
+func getName(field reflect.StructField) string {
+	tag := field.Tag.Get(jsonTagName)
+	if tag == "" || tag == "-" {
+		// no json name defined, use the struct name.
+		return field.Name
+	}
+	name, _ := parseTag(tag)
+	return name
 }
 
 func Validate(obj interface{}) *apis.FieldError {
@@ -47,10 +61,10 @@ func Validate(obj interface{}) *apis.FieldError {
 	var errs *apis.FieldError
 	for i := 0; i < v.NumField(); i++ {
 		// Get the field name
-		name := v.Type().Field(i).Name // TODO: this is wrong, this is the field name of the stuct, not the json name,
+		name := getName(v.Type().Field(i))
 
-		// Get the field tag value
-		tag := v.Type().Field(i).Tag.Get(tagName)
+		// Get the validation tag
+		tag := v.Type().Field(i).Tag.Get(validationTagName)
 
 		// Skip if tag is not defined or ignored
 		if tag == "" || tag == "-" {
