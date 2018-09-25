@@ -21,8 +21,6 @@ import (
 	"sort"
 	"strings"
 
-	"k8s.io/kubernetes/pkg/util/slice"
-
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 )
@@ -175,7 +173,7 @@ func flattenErrors(errors []FieldError) []FieldError {
 			// they match, merge the paths.
 			nextPaths := make([]string, 0, len(next.Paths))
 			for p := 0; p < len(next.Paths); p++ {
-				if slice.ContainsString(curr.Paths, next.Paths[p], nil) == false {
+				if containsString(curr.Paths, next.Paths[p]) == false {
 					nextPaths = append(nextPaths, next.Paths[p])
 				}
 			}
@@ -191,6 +189,15 @@ func flattenErrors(errors []FieldError) []FieldError {
 		newErrors = append(newErrors, curr)
 	}
 	return newErrors
+}
+
+func containsString(slice []string, s string) bool {
+	for _, item := range slice {
+		if item == s {
+			return true
+		}
+	}
+	return false
 }
 
 func asIndex(index int) string {
