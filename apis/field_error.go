@@ -21,6 +21,8 @@ import (
 	"sort"
 	"strings"
 
+	"k8s.io/kubernetes/pkg/util/slice"
+
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 )
@@ -119,6 +121,8 @@ func (fe *FieldError) Also(errs ...*FieldError) *FieldError {
 	if len(newErr.errors) == 0 {
 		return nil
 	}
+	// normalize one last time
+	newErr.errors = newErr.getNormalizedErrors()
 	return newErr
 }
 
@@ -162,18 +166,29 @@ func flattenErrors(errors []FieldError) []FieldError {
 	sort.Slice(errors, func(i, j int) bool { return errors[i].Message < errors[j].Message })
 
 	newErrors := make([]FieldError, 0, len(errors))
+	var next, curr FieldError
 	i := 0
-	curr := errors[i]
-	newErrors = append(newErrors, curr)
+	curr = errors[i]
 	for j := 1; j < len(errors); j++ {
 		next := errors[j]
 		if diff := cmp.Diff(curr, next, ignoreArguments, ignoreUnexported); diff == "" {
 			// they match, merge the paths.
-			curr.Paths = append(curr.Paths, next.Paths...)
+			nextPaths := make([]string, 0, len(next.Paths))
+			for p := 0; p < len(next.Paths); p++ {
+				if slice.ContainsString(curr.Paths, next.Paths[p], nil) == false {
+					nextPaths = append(nextPaths, next.Paths[p])
+				}
+			}
+			// only add new ones.
+			curr.Paths = append(curr.Paths, nextPaths...)
 		} else {
-			curr = next
+			// moving the pointer, save the current object.
 			newErrors = append(newErrors, curr)
+			curr = next
 		}
+	}
+	if diff := cmp.Diff(curr, next, ignoreArguments, ignoreUnexported); diff != "" {
+		newErrors = append(newErrors, curr)
 	}
 	return newErrors
 }

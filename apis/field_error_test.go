@@ -456,6 +456,115 @@ func TestAlsoStaysNil(t *testing.T) {
 	}
 }
 
+func TestFlattenFieldErrors(t *testing.T) {
+	tests := []struct {
+		name     string
+		err      *FieldError
+		also     []FieldError
+		prefixes [][]string
+		want     string
+	}{{
+		name: "simple",
+		err: &FieldError{
+			Message: "A simple error message",
+			Paths:   []string{"bar"},
+		},
+		also: []FieldError{{
+			Message: "A simple error message",
+			Paths:   []string{"foo"},
+		}},
+		want: `A simple error message: bar, foo`,
+	}, {
+		name: "conflict",
+		err: &FieldError{
+			Message: "A simple error message",
+			Paths:   []string{"bar", "foo"},
+		},
+		also: []FieldError{{
+			Message: "A simple error message",
+			Paths:   []string{"foo"},
+		}},
+		want: `A simple error message: bar, foo`,
+	}, {
+		name: "lots of also",
+		err: (&FieldError{
+			Message: "this error",
+			Paths:   []string{"bar", "foo"},
+		}).Also(&FieldError{
+			Message: "another",
+			Paths:   []string{"right", "left"},
+		}).ViaField("head"),
+		also: []FieldError{{
+			Message: "An alpha error message",
+			Paths:   []string{"A"},
+		}, {
+			Message: "An alpha error message",
+			Paths:   []string{"B"},
+		}, {
+			Message: "An alpha error message",
+			Paths:   []string{"B"},
+		}, {
+			Message: "An alpha error message",
+			Paths:   []string{"B"},
+		}, {
+			Message: "An alpha error message",
+			Paths:   []string{"B"},
+		}, {
+			Message: "An alpha error message",
+			Paths:   []string{"B"},
+		}, {
+			Message: "An alpha error message",
+			Paths:   []string{"B"},
+		}, {
+			Message: "An alpha error message",
+			Paths:   []string{"C"},
+		}, {
+			Message: "An alpha error message",
+			Paths:   []string{"D"},
+		}, {
+			Message: "this error",
+			Paths:   []string{"foo"},
+			Details: "devil is in the details",
+		}, {
+			Message: "this error",
+			Paths:   []string{"foo"},
+			Details: "more details",
+		}},
+		prefixes: [][]string{{"this"}},
+		want: `An alpha error message: this.A, this.B, this.C, this.D
+another: this.head.left, this.head.right
+this error: this.head.bar, this.head.foo
+this error: this.foo
+devil is in the details
+this error: this.foo
+more details`,
+	}}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			fe := test.err
+
+			for _, err := range test.also {
+				fe = fe.Also(&err)
+			}
+
+			// Simulate propagation up a call stack.
+			for _, prefix := range test.prefixes {
+				fe = fe.ViaField(prefix...)
+			}
+
+			if test.want != "" {
+				got := fe.Error()
+				if got != test.want {
+					t.Errorf("%s: Error() = %v, wanted %v", test.name, got, test.want)
+				}
+			} else if fe != nil {
+				t.Errorf("%s: ViaField() = %v, wanted nil", test.name, fe)
+			}
+		})
+	}
+}
+
 func TestFlatten(t *testing.T) {
 	tests := []struct {
 		name    string
