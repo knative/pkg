@@ -61,15 +61,15 @@ type ConditionManager interface {
 	// If there is an update, Conditions are stored back sorted.
 	SetCondition(new Condition)
 
-	// MarkTrue sets the accessor of t to true, and then marks the happy condition to
+	// MarkTrue sets the status of t to true, and then marks the happy condition to
 	// true if all other dependents are also true.
 	MarkTrue(t ConditionType)
 
-	// MarkUnknown sets the accessor of t to Unknown and also sets the happy condition
+	// MarkUnknown sets the status of t to Unknown and also sets the happy condition
 	// to Unknown if no other dependent condition is in an error state.
 	MarkUnknown(t ConditionType, reason, messageFormat string, messageA ...interface{})
 
-	// MarkFalse sets the accessor of t and the happy condition to False.
+	// MarkFalse sets the status of t and the happy condition to False.
 	MarkFalse(t ConditionType, reason, messageFormat string, messageA ...interface{})
 
 	// InitializeConditions updates all Conditions in the ConditionSet to Unknown
@@ -93,8 +93,8 @@ func NewBatchConditionSet(d ...ConditionType) ConditionSet {
 }
 
 // newConditionSet returns a ConditionSet to hold the conditions that are
-// important for the caller. The first ConditionType is the overarching accessor
-// for that will be used to signal the resources' accessor is Ready or Succeeded.
+// important for the caller. The first ConditionType is the overarching status
+// for that will be used to signal the resources' status is Ready or Succeeded.
 func newConditionSet(happy ConditionType, dependents ...ConditionType) ConditionSet {
 	var deps []ConditionType
 	for _, d := range dependents {
@@ -204,12 +204,12 @@ func (r conditionsImpl) SetCondition(new Condition) {
 	}
 	new.LastTransitionTime = apis.VolatileTime{Inner: metav1.NewTime(time.Now())}
 	conditions = append(conditions, new)
-	// Sorted for convince of the consumer, i.e. kubectl.
+	// Sorted for convenience of the consumer, i.e. kubectl.
 	sort.Slice(conditions, func(i, j int) bool { return conditions[i].Type < conditions[j].Type })
 	r.accessor.SetConditions(conditions)
 }
 
-// MarkTrue sets the accessor of t to true, and then marks the happy condition to
+// MarkTrue sets the status of t to true, and then marks the happy condition to
 // true if all other dependents are also true.
 func (r conditionsImpl) MarkTrue(t ConditionType) {
 	// set the specified condition
@@ -234,7 +234,7 @@ func (r conditionsImpl) MarkTrue(t ConditionType) {
 	})
 }
 
-// MarkUnknown sets the accessor of t to Unknown and also sets the happy condition
+// MarkUnknown sets the status of t to Unknown and also sets the happy condition
 // to Unknown if no other dependent condition is in an error state.
 func (r conditionsImpl) MarkUnknown(t ConditionType, reason, messageFormat string, messageA ...interface{}) {
 	// set the specified condition
@@ -268,7 +268,7 @@ func (r conditionsImpl) MarkUnknown(t ConditionType, reason, messageFormat strin
 	})
 }
 
-// MarkFalse sets the accessor of t and the happy condition to False.
+// MarkFalse sets the status of t and the happy condition to False.
 func (r conditionsImpl) MarkFalse(t ConditionType, reason, messageFormat string, messageA ...interface{}) {
 	for _, t := range []ConditionType{
 		t,
@@ -304,14 +304,14 @@ func (r conditionsImpl) InitializeCondition(t ConditionType) {
 // NewReflectedConditionsAccessor uses reflection to return a ConditionsAccessor
 // to access the field called "Conditions".
 func NewReflectedConditionsAccessor(status interface{}) ConditionsAccessor {
-	accessorValue := reflect.Indirect(reflect.ValueOf(status))
+	statusValue := reflect.Indirect(reflect.ValueOf(status))
 
-	// If accessor is not a struct, don't even try to use it.
-	if accessorValue.Kind() != reflect.Struct {
+	// If status is not a struct, don't even try to use it.
+	if statusValue.Kind() != reflect.Struct {
 		return nil
 	}
 
-	conditionsField := accessorValue.FieldByName("Conditions")
+	conditionsField := statusValue.FieldByName("Conditions")
 
 	if conditionsField.IsValid() && conditionsField.CanInterface() && conditionsField.CanSet() {
 		if _, ok := conditionsField.Interface().(Conditions); ok {
