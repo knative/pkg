@@ -236,7 +236,7 @@ func TestEnqueues(t *testing.T) {
 			test.work(impl)
 
 			// The rate limit on our queue delays when things are added to the queue.
-			time.Sleep(10 * time.Millisecond)
+			time.Sleep(50 * time.Millisecond)
 			impl.WorkQueue.ShutDown()
 			gotQueue := drainWorkQueue(impl.WorkQueue)
 

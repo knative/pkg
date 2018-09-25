@@ -50,7 +50,7 @@ func TestFieldError(t *testing.T) {
 			Paths:   []string{"foo", "bar"},
 		},
 		prefixes: [][]string{{"baz", "ugh"}},
-		want:     "invalid field(s): baz.ugh.foo, baz.ugh.bar",
+		want:     "invalid field(s): baz.ugh.bar, baz.ugh.foo",
 	}, {
 		name: "multiple propagation with details",
 		err: &FieldError{
@@ -62,7 +62,7 @@ loooong
 Body.`,
 		},
 		prefixes: [][]string{{"baz", "ugh"}},
-		want: `invalid field(s): baz.ugh.foo, baz.ugh.bar
+		want: `invalid field(s): baz.ugh.bar, baz.ugh.foo
 I am a long
 long
 loooong
@@ -92,12 +92,12 @@ Body.`,
 		name:     "missing field propagation",
 		err:      ErrMissingField("foo", "bar"),
 		prefixes: [][]string{{"baz"}},
-		want:     "missing field(s): baz.foo, baz.bar",
+		want:     "missing field(s): baz.bar, baz.foo",
 	}, {
 		name:     "missing disallowed propagation",
 		err:      ErrDisallowedFields("foo", "bar"),
 		prefixes: [][]string{{"baz"}},
-		want:     "must not set the field(s): baz.foo, baz.bar",
+		want:     "must not set the field(s): baz.bar, baz.foo",
 	}, {
 		name:     "invalid value propagation",
 		err:      ErrInvalidValue("foo", "bar"),
@@ -107,12 +107,12 @@ Body.`,
 		name:     "missing mutually exclusive fields",
 		err:      ErrMissingOneOf("foo", "bar"),
 		prefixes: [][]string{{"baz"}},
-		want:     `expected exactly one, got neither: baz.foo, baz.bar`,
+		want:     `expected exactly one, got neither: baz.bar, baz.foo`,
 	}, {
 		name:     "multiple mutually exclusive fields",
 		err:      ErrMultipleOneOf("foo", "bar"),
 		prefixes: [][]string{{"baz"}},
-		want:     `expected exactly one, got both: baz.foo, baz.bar`,
+		want:     `expected exactly one, got both: baz.bar, baz.foo`,
 	}, {
 		name: "invalid key name",
 		err: ErrInvalidKeyName("b@r", "foo[0].name",
@@ -139,10 +139,10 @@ can not use @, do not try`,
 			if test.want != "" {
 				got := fe.Error()
 				if got != test.want {
-					t.Errorf("Error() = %v, wanted %v", got, test.want)
+					t.Errorf("%s: Error() = %v, wanted %v", test.name, got, test.want)
 				}
 			} else if fe != nil {
-				t.Errorf("ViaField() = %v, wanted nil", fe)
+				t.Errorf("%s: ViaField() = %v, wanted nil", test.name, fe)
 			}
 		})
 	}
@@ -155,6 +155,15 @@ func TestViaIndexOrKeyFieldError(t *testing.T) {
 		prefixes [][]string
 		want     string
 	}{{
+		name: "nil",
+		err:  nil,
+		want: "",
+	}, {
+		name:     "nil with prefix",
+		err:      nil,
+		prefixes: [][]string{{"INDEX:2"}, {"KEY:B"}, {"FIELDINDEX:6,AAA"}, {"FIELDKEY:bee,AAA"}},
+		want:     "",
+	}, {
 		name: "simple single no propagation",
 		err: &FieldError{
 			Message: "hear me roar",
@@ -174,7 +183,7 @@ func TestViaIndexOrKeyFieldError(t *testing.T) {
 		name:     "missing field propagation",
 		err:      ErrMissingField("foo", "bar"),
 		prefixes: [][]string{{"[2]", "baz"}},
-		want:     "missing field(s): baz[2].foo, baz[2].bar",
+		want:     "missing field(s): baz[2].bar, baz[2].foo",
 	}, {
 		name: "invalid key name",
 		err: ErrInvalidKeyName("b@r", "name",
@@ -228,7 +237,7 @@ can not use @, do not try`,
 			Paths:   []string{"foo", "bar"},
 		},
 		prefixes: [][]string{{"INDEX:0"}, {"index"}, {"KEY:A"}, {"map"}},
-		want:     "invalid field(s): map[A].index[0].foo, map[A].index[0].bar",
+		want:     "invalid field(s): map[A].index[0].bar, map[A].index[0].foo",
 	}, {
 		name: "manual index",
 		err: func() *FieldError {
@@ -286,13 +295,12 @@ can not use @, do not try`,
 				Message: "invalid field(s)",
 				Paths:   []string{"foo", "faa"},
 			}
-
 			err = err.ViaKey("A").ViaField("bar")
 			err = err.ViaIndex(1).ViaField("baz")
 			err = err.ViaKey("E").ViaIndex(0).ViaField("jar")
 			return err
 		}(),
-		want: "invalid field(s): jar[0][E].baz[1].bar[A].foo, jar[0][E].baz[1].bar[A].faa",
+		want: "invalid field(s): jar[0][E].baz[1].bar[A].faa, jar[0][E].baz[1].bar[A].foo",
 	}, {
 		name:     "nil propagation",
 		err:      nil,
@@ -326,12 +334,125 @@ can not use @, do not try`,
 			if test.want != "" {
 				got := fe.Error()
 				if got != test.want {
-					t.Errorf("Error() = %v, wanted %v", got, test.want)
+					t.Errorf("%s: Error() = %v, wanted %v", test.name, got, test.want)
 				}
 			} else if fe != nil {
-				t.Errorf("ViaField() = %v, wanted nil", fe)
+				t.Errorf("%s: ViaField() = %v, wanted nil", test.name, fe)
 			}
 		})
+	}
+}
+
+func TestNilError(t *testing.T) {
+	var err *FieldError
+	got := err.Error()
+	want := ""
+	if got != want {
+		t.Errorf("got %v, wanted %v", got, want)
+	}
+}
+
+func TestAlso(t *testing.T) {
+	tests := []struct {
+		name     string
+		err      *FieldError
+		also     []FieldError
+		prefixes [][]string
+		want     string
+	}{{
+		name: "nil",
+		err:  nil,
+		also: []FieldError{{
+			Message: "also this",
+			Paths:   []string{"woo"},
+		}},
+		prefixes: [][]string{{"foo"}},
+		want:     "also this: foo.woo",
+	}, {
+		name: "nil all the way",
+		err:  nil,
+		also: []FieldError{{}},
+		want: "",
+	}, {
+		name: "simple",
+		err: &FieldError{
+			Message: "hear me roar",
+			Paths:   []string{"bar"},
+		},
+		also: []FieldError{{
+			Message: "also this",
+			Paths:   []string{"woo"},
+		}},
+		prefixes: [][]string{{"foo", "[A]", "[B]", "[C]"}},
+		want: `also this: foo[A][B][C].woo
+hear me roar: foo[A][B][C].bar`,
+	}, {
+		name: "lots of also",
+		err: &FieldError{
+			Message: "knock knock",
+			Paths:   []string{"foo"},
+		},
+		also: []FieldError{{
+			Message: "also this",
+			Paths:   []string{"A"},
+		}, {
+			Message: "and this",
+			Paths:   []string{"B"},
+		}, {
+			Message: "not without this",
+			Paths:   []string{"C"},
+		}},
+		prefixes: [][]string{{"bar"}},
+		want: `also this: bar.A
+and this: bar.B
+knock knock: bar.foo
+not without this: bar.C`,
+	}}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			fe := test.err
+
+			for _, err := range test.also {
+				fe = fe.Also(&err)
+			}
+
+			// Simulate propagation up a call stack.
+			for _, prefix := range test.prefixes {
+				fe = fe.ViaField(prefix...)
+			}
+
+			if test.want != "" {
+				got := fe.Error()
+				if got != test.want {
+					t.Errorf("%s: Error() = %v, wanted %v", test.name, got, test.want)
+				}
+			} else if fe != nil {
+				t.Errorf("%s: ViaField() = %v, wanted nil", test.name, fe)
+			}
+		})
+	}
+}
+
+func TestAlsoStaysNil(t *testing.T) {
+	var err *FieldError
+	if err != nil {
+		t.Errorf("expected nil, got %v, wanted nil", err)
+	}
+
+	err = err.Also(nil)
+	if err != nil {
+		t.Errorf("expected nil, got %v, wanted nil", err)
+	}
+
+	err = err.ViaField("nil").Also(nil)
+	if err != nil {
+		t.Errorf("expected nil, got %v, wanted nil", err)
+	}
+
+	err = err.Also(&FieldError{})
+	if err != nil {
+		t.Errorf("expected nil, got %v, wanted nil", err)
 	}
 }
 
