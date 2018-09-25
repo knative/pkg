@@ -119,21 +119,6 @@ type KResourceStatus struct {
 	Conditions Conditions `json:"conditions,omitempty"`
 }
 
-var condSet = NewBatchConditionSet()
-
-// GetCondition returns the Condition matching the given type.
-func (krs *KResourceStatus) GetCondition(t ConditionType) *Condition {
-	return condSet.Manage(krs).GetCondition(t)
-}
-
-// SetCondition sets the condition, unsetting previous conditions with the same
-// type as necessary.
-func (krs *KResourceStatus) SetCondition(newCond *Condition) {
-	if newCond != nil {
-		condSet.Manage(krs).SetCondition(*newCond)
-	}
-}
-
 func (krs *KResourceStatus) GetConditions() Conditions {
 	return krs.Conditions
 }
