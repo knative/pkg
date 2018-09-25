@@ -415,11 +415,13 @@
   version = "kubernetes-1.11.0"
 
 [[projects]]
-  digest = "1:7fa94edf47d2e91cffec1efe594a114f104199992f015086d673db5c776392cf"
+  digest = "1:292821230607e7e954ed569d52ede3006c2ecc5f44bb6af0e9eec79777316fee"
   name = "k8s.io/client-go"
   packages = [
     "discovery",
     "discovery/fake",
+    "dynamic",
+    "dynamic/fake",
     "informers",
     "informers/admissionregistration",
     "informers/admissionregistration/v1alpha1",
@@ -647,6 +649,8 @@
     "golang.org/x/sync/errgroup",
     "k8s.io/api/admission/v1beta1",
     "k8s.io/api/admissionregistration/v1beta1",
+    "k8s.io/api/apps/v1",
+    "k8s.io/api/batch/v1",
     "k8s.io/api/core/v1",
     "k8s.io/api/extensions/v1beta1",
     "k8s.io/apimachinery/pkg/api/equality",
@@ -666,6 +670,8 @@
     "k8s.io/apimachinery/pkg/watch",
     "k8s.io/client-go/discovery",
     "k8s.io/client-go/discovery/fake",
+    "k8s.io/client-go/dynamic",
+    "k8s.io/client-go/dynamic/fake",
     "k8s.io/client-go/informers",
     "k8s.io/client-go/informers/core/v1",
     "k8s.io/client-go/kubernetes",

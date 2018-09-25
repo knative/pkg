@@ -27,3 +27,9 @@ dep ensure
 
 # Keep the only dir in knative/test-infra we're interested in
 find vendor/github.com/knative/test-infra -mindepth 1 -maxdepth 1 ! -name scripts -exec rm -fr {} \;
+
+# Patch the Kubernetes dynamic client to fix listing. This patch is from
+# https://github.com/kubernetes/kubernetes/pull/68552/files, which is a
+# cherrypick of #66078.  Remove this once that reaches a client version
+# we have pulled in.
+git apply ${REPO_ROOT_DIR}/hack/66078.patch
