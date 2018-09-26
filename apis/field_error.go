@@ -68,8 +68,10 @@ func (fe *FieldError) ViaField(prefix ...string) *FieldError {
 		e.Paths = newPaths
 
 		// Append the mutated error to the errors list.
-		newErr = newErr.Also(&e)
+		newErr = newErr.also(&e)
 	}
+	// And then merge the normalized errors
+	newErr.errors = merge(newErr.getNormalizedErrors())
 	return newErr
 }
 
@@ -105,8 +107,8 @@ func (fe *FieldError) ViaFieldKey(field string, key string) *FieldError {
 	return fe.ViaKey(key).ViaField(field)
 }
 
-// Also collects errors, returns a new collection of existing errors and new errors.
-func (fe *FieldError) Also(errs ...*FieldError) *FieldError {
+// also collects errors, returns a new collection of existing errors and new errors.
+func (fe *FieldError) also(errs ...*FieldError) *FieldError {
 	newErr := &FieldError{}
 	// collect the current objects errors, if it has any
 	if fe != nil {
@@ -119,8 +121,18 @@ func (fe *FieldError) Also(errs ...*FieldError) *FieldError {
 	if len(newErr.errors) == 0 {
 		return nil
 	}
-	// normalize one last time
-	newErr.errors = newErr.getNormalizedErrors()
+	return newErr
+}
+
+// Also collects errors, returns a new collection of existing errors and new
+// errors, and then merges all errors that are merge-able.
+func (fe *FieldError) Also(errs ...*FieldError) *FieldError {
+	newErr := fe.also(errs...)
+
+	if newErr != nil {
+		// And then merge the normalized errors
+		newErr.errors = merge(newErr.getNormalizedErrors())
+	}
 	return newErr
 }
 
@@ -145,8 +157,6 @@ func (fe *FieldError) getNormalizedErrors() []FieldError {
 		errors = append(errors, e.getNormalizedErrors()...)
 	}
 
-	errors = merge(errors)
-
 	return errors
 }
 
@@ -165,14 +175,15 @@ func merge(errors []FieldError) []FieldError {
 
 	newErrors := make([]FieldError, 0, len(errors))
 	var next, curr FieldError
-	i := 0
-	curr = errors[i]
-	for j := 1; j < len(errors); j++ {
-		next := errors[j]
+	curr = errors[0]
+	for i := 1; i < len(errors); i++ {
+		next := errors[i]
 		if diff := cmp.Diff(curr, next, ignoreArguments, ignoreUnexported); diff == "" {
 			// they match, merge the paths.
 			nextPaths := make([]string, 0, len(next.Paths))
 			for p := 0; p < len(next.Paths); p++ {
+				// Check that the path that is about to be appended is not
+				// already in the list
 				if containsString(curr.Paths, next.Paths[p]) == false {
 					nextPaths = append(nextPaths, next.Paths[p])
 				}
@@ -185,6 +196,9 @@ func merge(errors []FieldError) []FieldError {
 			curr = next
 		}
 	}
+	// If we are here and curr matches next, then we never added the final
+	// element after running off the end of the errors array, so add the curr
+	// element now.
 	if diff := cmp.Diff(curr, next, ignoreArguments, ignoreUnexported); diff != "" {
 		newErrors = append(newErrors, curr)
 	}

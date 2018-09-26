@@ -17,9 +17,11 @@ limitations under the License.
 package apis
 
 import (
+	"math/rand"
 	"strconv"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestFieldError(t *testing.T) {
@@ -610,6 +612,61 @@ func TestFlatten(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestFieldErrorPerformance(t *testing.T) {
+	count := 100
+
+	var withMerge time.Duration
+	var withoutMerge time.Duration
+
+	then := time.Now()
+	{
+		var errs *FieldError
+		for i := 0; i < count; i++ {
+			errs = errs.Also(randFieldError()) // Does merge.
+		}
+		withMerge = time.Since(then)
+	}
+
+	{
+		var errs *FieldError
+		for i := 0; i < count; i++ {
+			errs = errs.also(randFieldError()) // Does no merge.
+		}
+		withoutMerge = time.Since(then)
+	}
+
+	if withMerge.Nanoseconds() >= withoutMerge.Nanoseconds()*2 {
+		t.Errorf("Merge took too long. For %d, duration: merge %s vs no merge %s",
+			count, withMerge, withoutMerge)
+	}
+}
+
+func init() {
+	rand.Seed(1337)
+}
+
+var runes = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
+
+func randFieldError() *FieldError {
+	paths := make([]string, 0, rand.Intn(4))
+	for i := 0; i < cap(paths); i++ {
+		paths = append(paths, randString(5))
+	}
+	return &FieldError{
+		Message: randString(5),
+		Paths:   paths,
+		Details: randString(5),
+	}
+}
+
+func randString(n int) string {
+	b := make([]rune, n)
+	for i := range b {
+		b[i] = runes[rand.Intn(len(runes))]
+	}
+	return string(b)
 }
 
 func makeIndex(index string) int {
