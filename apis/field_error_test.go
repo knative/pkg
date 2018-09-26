@@ -615,32 +615,39 @@ func TestFlatten(t *testing.T) {
 }
 
 func TestFieldErrorPerformance(t *testing.T) {
+	limit := int64(3) // limit performance decrease to at most 3x slower with merge
 	count := 100
 
-	var withMerge time.Duration
 	var withoutMerge time.Duration
-
-	then := time.Now()
-	{
-		var errs *FieldError
-		for i := 0; i < count; i++ {
-			errs = errs.Also(randFieldError()) // Does merge.
-		}
-		withMerge = time.Since(then)
-	}
+	var withMerge time.Duration
 
 	{
+		then := time.Now()
 		var errs *FieldError
 		for i := 0; i < count; i++ {
 			errs = errs.also(randFieldError()) // Does no merge.
 		}
 		withoutMerge = time.Since(then)
+		t.Logf("withoutMerge %s", withoutMerge)
+		//t.Logf("Made %d errors, %s", len(errs.errors), errs.Error())
 	}
 
-	// only allow a 25% increase.
-	if withMerge.Nanoseconds() >= (withoutMerge.Nanoseconds()*125)/100 {
-		t.Errorf("Merge took too long. For %d, duration: merged %s vs unmerged %s",
-			count, withMerge, withoutMerge)
+	{
+		then := time.Now()
+		var errs *FieldError
+		for i := 0; i < count; i++ {
+			errs = errs.Also(randFieldError()) // Does merge.
+		}
+		withMerge = time.Since(then)
+		t.Logf("withMerge %s", withMerge)
+		//t.Logf("Made %d errors, %s", len(errs.errors), errs.Error())
+	}
+
+	increase := withMerge.Nanoseconds() / withoutMerge.Nanoseconds()
+	// allow up to a 2x increase.
+	if increase > limit {
+		t.Errorf("Merge took %dx longer for %d errors wanted %d, duration: merged %s vs unmerged %s",
+			increase, count, limit, withMerge, withoutMerge)
 	}
 }
 

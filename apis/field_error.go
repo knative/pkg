@@ -20,9 +20,6 @@ import (
 	"fmt"
 	"sort"
 	"strings"
-
-	"github.com/google/go-cmp/cmp"
-	"github.com/google/go-cmp/cmp/cmpopts"
 )
 
 // CurrentField is a constant to supply as a fieldPath for when there is
@@ -167,40 +164,30 @@ func merge(errors []FieldError) []FieldError {
 		return errors
 	}
 
-	ignoreArguments := cmpopts.IgnoreFields(FieldError{}, "Paths")
-	ignoreUnexported := cmpopts.IgnoreUnexported(FieldError{})
-
 	// Sort first.
 	sort.Slice(errors, func(i, j int) bool { return errors[i].Message < errors[j].Message })
 
 	newErrors := make([]FieldError, 0, len(errors))
-	var next, curr FieldError
-	curr = errors[0]
+	newErrors = append(newErrors, errors[0])
+	curr := 0
 	for i := 1; i < len(errors); i++ {
-		next := errors[i]
-		if diff := cmp.Diff(curr, next, ignoreArguments, ignoreUnexported); diff == "" {
+		if newErrors[curr].Message == errors[i].Message && newErrors[curr].Details == errors[i].Details {
 			// they match, merge the paths.
-			nextPaths := make([]string, 0, len(next.Paths))
-			for p := 0; p < len(next.Paths); p++ {
+			nextPaths := make([]string, 0, len(errors[i].Paths)+len(newErrors[curr].Paths))
+			for p := 0; p < len(errors[i].Paths); p++ {
 				// Check that the path that is about to be appended is not
 				// already in the list
-				if containsString(curr.Paths, next.Paths[p]) == false {
-					nextPaths = append(nextPaths, next.Paths[p])
+				if containsString(newErrors[curr].Paths, errors[i].Paths[p]) == false {
+					nextPaths = append(nextPaths, errors[i].Paths[p])
 				}
 			}
 			// only add new ones.
-			curr.Paths = append(curr.Paths, nextPaths...)
+			newErrors[curr].Paths = append(newErrors[curr].Paths, nextPaths...)
 		} else {
 			// moving the pointer, save the current object.
-			newErrors = append(newErrors, curr)
-			curr = next
+			newErrors = append(newErrors, errors[i])
+			curr = len(newErrors) - 1
 		}
-	}
-	// If we are here and curr matches next, then we never added the final
-	// element after running off the end of the errors array, so add the curr
-	// element now.
-	if diff := cmp.Diff(curr, next, ignoreArguments, ignoreUnexported); diff != "" {
-		newErrors = append(newErrors, curr)
 	}
 	return newErrors
 }
