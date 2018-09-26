@@ -627,7 +627,7 @@ func TestFieldErrorPerformance(t *testing.T) {
 		then := time.Now()
 		var errs *FieldError
 		for i := 0; i < count; i++ {
-			errs = errs.also(randFieldError()) // Does no merge.
+			errs = errs.also(randFieldError(5, 5)) // Does no merge.
 		}
 		withoutMerge = time.Since(then)
 		t.Logf("withoutMerge %s", withoutMerge)
@@ -638,7 +638,7 @@ func TestFieldErrorPerformance(t *testing.T) {
 		then := time.Now()
 		var errs *FieldError
 		for i := 0; i < count; i++ {
-			errs = errs.Also(randFieldError()) // Does merge.
+			errs = errs.Also(randFieldError(5, 5)) // Does merge.
 		}
 		withMerge = time.Since(then)
 		t.Logf("withMerge %s", withMerge)
@@ -658,14 +658,24 @@ func BenchmarkFieldError(b *testing.B) {
 		name string
 		fun  func(err *FieldError) *FieldError
 	}{{
-		name: "no merge",
+		name: "no merge 5",
 		fun: func(err *FieldError) *FieldError {
-			return err.also(randFieldError()) // Does no merge.
+			return err.also(randFieldError(5, 5)) // Does no merge.
 		},
 	}, {
-		name: "merge",
+		name: "merge 5",
 		fun: func(errs *FieldError) *FieldError {
-			return errs.Also(randFieldError()) // Does merge.
+			return errs.Also(randFieldError(5, 5)) // Does merge.
+		},
+	}, {
+		name: "no merge 1",
+		fun: func(err *FieldError) *FieldError {
+			return err.also(randFieldError(1, 0)) // Does no merge.
+		},
+	}, {
+		name: "merge 1",
+		fun: func(errs *FieldError) *FieldError {
+			return errs.Also(randFieldError(1, 0)) // Does merge.
 		},
 	}}
 	for _, t := range test {
@@ -689,19 +699,23 @@ func init() {
 
 var runes = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
 
-func randFieldError() *FieldError {
+func randFieldError(m, d int) *FieldError {
 	paths := make([]string, 0, rand.Intn(4))
 	for i := 0; i < cap(paths); i++ {
 		paths = append(paths, randString(5))
 	}
 	return &FieldError{
-		Message: randString(5),
+		Message: randString(m),
 		Paths:   paths,
-		Details: randString(5),
+		Details: randString(d),
 	}
 }
 
 func randString(n int) string {
+	if n == 0 {
+		return ""
+	}
+
 	b := make([]rune, n)
 	for i := range b {
 		b[i] = runes[rand.Intn(len(runes))]
