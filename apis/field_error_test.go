@@ -637,8 +637,9 @@ func TestFieldErrorPerformance(t *testing.T) {
 		withoutMerge = time.Since(then)
 	}
 
-	if withMerge.Nanoseconds() >= withoutMerge.Nanoseconds()*2 {
-		t.Errorf("Merge took too long. For %d, duration: merge %s vs no merge %s",
+	// only allow a 25% increase.
+	if withMerge.Nanoseconds() >= (withoutMerge.Nanoseconds()*125)/100 {
+		t.Errorf("Merge took too long. For %d, duration: merged %s vs unmerged %s",
 			count, withMerge, withoutMerge)
 	}
 }
