@@ -456,7 +456,7 @@ func TestAlsoStaysNil(t *testing.T) {
 	}
 }
 
-func TestFlattenFieldErrors(t *testing.T) {
+func TestMergeFieldErrors(t *testing.T) {
 	tests := []struct {
 		name     string
 		err      *FieldError

@@ -145,14 +145,14 @@ func (fe *FieldError) getNormalizedErrors() []FieldError {
 		errors = append(errors, e.getNormalizedErrors()...)
 	}
 
-	errors = flattenErrors(errors)
+	errors = merge(errors)
 
 	return errors
 }
 
-// flattenErrors will combine errors that differ only in their paths.
+// merge will combine errors that differ only in their paths.
 // This assumes that errors has been normalized.
-func flattenErrors(errors []FieldError) []FieldError {
+func merge(errors []FieldError) []FieldError {
 	if len(errors) <= 1 {
 		return errors
 	}
