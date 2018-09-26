@@ -17,7 +17,6 @@ limitations under the License.
 package duck
 
 import (
-	"fmt"
 	"reflect"
 	"testing"
 
@@ -76,7 +75,8 @@ func TestFromUnstructuredFooable(t *testing.T) {
 		if err != nil {
 			panic("failed to marshal")
 		}
-		fmt.Printf("Marshalled : %s", string(raw))
+
+		t.Logf("Marshalled : %s", string(raw))
 
 		got := Foo{}
 		err = FromUnstructured(tc.in, &got)

@@ -17,7 +17,6 @@ limitations under the License.
 package webhook
 
 import (
-	"context"
 	"crypto/tls"
 	"encoding/json"
 	"encoding/pem"
@@ -298,7 +297,7 @@ func TestCertConfigurationForAlreadyGeneratedSecret(t *testing.T) {
 	opts.Namespace = ns
 	kubeClient, ac := newNonRunningTestAdmissionController(t, opts)
 
-	ctx := context.TODO()
+	ctx := TestContextWithLogger(t)
 	newSecret, err := generateSecret(ctx, &opts)
 	if err != nil {
 		t.Fatalf("Failed to generate secret: %v", err)
@@ -343,7 +342,7 @@ func TestCertConfigurationForGeneratedSecret(t *testing.T) {
 	opts.Namespace = ns
 	kubeClient, ac := newNonRunningTestAdmissionController(t, opts)
 
-	ctx := context.TODO()
+	ctx := TestContextWithLogger(t)
 	createNamespace(t, ac.Client, metav1.NamespaceSystem)
 	createTestConfigMap(t, ac.Client)
 

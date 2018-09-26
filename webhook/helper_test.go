@@ -17,7 +17,6 @@ limitations under the License.
 package webhook
 
 import (
-	"context"
 	"crypto/tls"
 	"crypto/x509"
 	"net"
@@ -30,6 +29,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
+
+	. "github.com/knative/pkg/logging/testing"
 )
 
 func waitForServerAvailable(t *testing.T, serverURL string, timeout time.Duration) error {
@@ -96,7 +97,7 @@ func createTestConfigMap(t *testing.T, kubeClient kubernetes.Interface) error {
 
 func createSecureTLSClient(t *testing.T, kubeClient kubernetes.Interface, acOpts *ControllerOptions) (*http.Client, error) {
 	t.Helper()
-	tlsServerConfig, caCert, err := configureCerts(context.TODO(), kubeClient, acOpts)
+	tlsServerConfig, caCert, err := configureCerts(TestContextWithLogger(t), kubeClient, acOpts)
 	if err != nil {
 		return nil, err
 	}
