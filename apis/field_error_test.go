@@ -17,6 +17,8 @@ limitations under the License.
 package apis
 
 import (
+	"fmt"
+	"math"
 	"math/rand"
 	"strconv"
 	"strings"
@@ -648,6 +650,36 @@ func TestFieldErrorPerformance(t *testing.T) {
 	if increase > limit {
 		t.Errorf("Merge took %dx longer for %d errors wanted %d, duration: merged %s vs unmerged %s",
 			increase, count, limit, withMerge, withoutMerge)
+	}
+}
+
+func BenchmarkFieldError(b *testing.B) {
+	test := []struct {
+		name string
+		fun  func(err *FieldError) *FieldError
+	}{{
+		name: "no merge",
+		fun: func(err *FieldError) *FieldError {
+			return err.also(randFieldError()) // Does no merge.
+		},
+	}, {
+		name: "merge",
+		fun: func(errs *FieldError) *FieldError {
+			return errs.Also(randFieldError()) // Does merge.
+		},
+	}}
+	for _, t := range test {
+		for k := 0.; k <= 10; k++ {
+			n := int(math.Pow(2, k))
+			b.Run(fmt.Sprintf("%s/%d", t.name, n), func(b *testing.B) {
+				for i := 0; i < b.N; i++ {
+					var errs *FieldError
+					for i := 0; i < n; i++ {
+						errs = t.fun(errs)
+					}
+				}
+			})
+		}
 	}
 }
 
