@@ -48,10 +48,9 @@ type Populatable interface {
 //   type ConcreteResource struct { ... }
 //
 //   // Check that ConcreteResource properly implement Fooable.
-//   var _ = duck.VerifyType(&ConcreteResource{}, &something.Fooable{})
+//   err := duck.VerifyType(&ConcreteResource{}, &something.Fooable{})
 //
-// This will panic on startup if the duck typing is not satisfied.  The return
-// value is purely cosmetic to enable the `var _ = ...` shorthand.
+// This will return an error if the duck typing is not satisfied.
 func VerifyType(instance interface{}, iface Implementable) error {
 	// Create instances of the full resource for our input and ultimate result
 	// that we will compare at the end.
