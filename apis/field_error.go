@@ -180,7 +180,16 @@ func isIndex(part string) bool {
 // Error implements error
 func (fe *FieldError) Error() string {
 	var errs []string
-	for _, e := range fe.getNormalizedErrors() {
+
+	normedErrors := fe.getNormalizedErrors()
+
+	m := make(map[string]FieldError, len(normedErrors))
+
+	for _, e := range normedErrors {
+		if v, ok := m[]
+	}
+
+	for _, e := range normedErrors {
 		if e.Details == "" {
 			errs = append(errs, fmt.Sprintf("%v: %v", e.Message, strings.Join(e.Paths, ", ")))
 		} else {
