@@ -65,8 +65,10 @@ func (fe *FieldError) ViaField(prefix ...string) *FieldError {
 		e.Paths = newPaths
 
 		// Append the mutated error to the errors list.
-		newErr = newErr.Also(&e)
+		newErr = newErr.also(&e)
 	}
+	// And then merge the normalized errors
+	newErr.errors = merge(newErr.getNormalizedErrors())
 	return newErr
 }
 
@@ -102,8 +104,8 @@ func (fe *FieldError) ViaFieldKey(field string, key string) *FieldError {
 	return fe.ViaKey(key).ViaField(field)
 }
 
-// Also collects errors, returns a new collection of existing errors and new errors.
-func (fe *FieldError) Also(errs ...*FieldError) *FieldError {
+// also collects errors, returns a new collection of existing errors and new errors.
+func (fe *FieldError) also(errs ...*FieldError) *FieldError {
 	newErr := &FieldError{}
 	// collect the current objects errors, if it has any
 	if fe != nil {
@@ -115,6 +117,18 @@ func (fe *FieldError) Also(errs ...*FieldError) *FieldError {
 	}
 	if len(newErr.errors) == 0 {
 		return nil
+	}
+	return newErr
+}
+
+// Also collects errors, returns a new collection of existing errors and new
+// errors, and then merges all errors that are merge-able.
+func (fe *FieldError) Also(errs ...*FieldError) *FieldError {
+	newErr := fe.also(errs...)
+
+	if newErr != nil {
+		// And then merge the normalized errors
+		newErr.errors = merge(newErr.getNormalizedErrors())
 	}
 	return newErr
 }
@@ -139,8 +153,52 @@ func (fe *FieldError) getNormalizedErrors() []FieldError {
 	for _, e := range fe.errors {
 		errors = append(errors, e.getNormalizedErrors()...)
 	}
-	sort.Slice(errors, func(i, j int) bool { return errors[i].Message < errors[j].Message })
+
 	return errors
+}
+
+// merge will combine errors that differ only in their paths.
+// This assumes that errors has been normalized.
+func merge(errors []FieldError) []FieldError {
+	if len(errors) <= 1 {
+		return errors
+	}
+
+	// Sort first.
+	sort.Slice(errors, func(i, j int) bool { return errors[i].Message < errors[j].Message })
+
+	newErrors := make([]FieldError, 0, len(errors))
+	newErrors = append(newErrors, errors[0])
+	curr := 0
+	for i := 1; i < len(errors); i++ {
+		if newErrors[curr].Message == errors[i].Message && newErrors[curr].Details == errors[i].Details {
+			// they match, merge the paths.
+			nextPaths := make([]string, 0, len(errors[i].Paths)+len(newErrors[curr].Paths))
+			for p := 0; p < len(errors[i].Paths); p++ {
+				// Check that the path that is about to be appended is not
+				// already in the list
+				if containsString(newErrors[curr].Paths, errors[i].Paths[p]) == false {
+					nextPaths = append(nextPaths, errors[i].Paths[p])
+				}
+			}
+			// only add new ones.
+			newErrors[curr].Paths = append(newErrors[curr].Paths, nextPaths...)
+		} else {
+			// moving the pointer, save the current object.
+			newErrors = append(newErrors, errors[i])
+			curr = len(newErrors) - 1
+		}
+	}
+	return newErrors
+}
+
+func containsString(slice []string, s string) bool {
+	for _, item := range slice {
+		if item == s {
+			return true
+		}
+	}
+	return false
 }
 
 func asIndex(index int) string {

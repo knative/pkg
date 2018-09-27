@@ -17,9 +17,13 @@ limitations under the License.
 package apis
 
 import (
+	"fmt"
+	"math"
+	"math/rand"
 	"strconv"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestFieldError(t *testing.T) {
@@ -456,6 +460,115 @@ func TestAlsoStaysNil(t *testing.T) {
 	}
 }
 
+func TestMergeFieldErrors(t *testing.T) {
+	tests := []struct {
+		name     string
+		err      *FieldError
+		also     []FieldError
+		prefixes [][]string
+		want     string
+	}{{
+		name: "simple",
+		err: &FieldError{
+			Message: "A simple error message",
+			Paths:   []string{"bar"},
+		},
+		also: []FieldError{{
+			Message: "A simple error message",
+			Paths:   []string{"foo"},
+		}},
+		want: `A simple error message: bar, foo`,
+	}, {
+		name: "conflict",
+		err: &FieldError{
+			Message: "A simple error message",
+			Paths:   []string{"bar", "foo"},
+		},
+		also: []FieldError{{
+			Message: "A simple error message",
+			Paths:   []string{"foo"},
+		}},
+		want: `A simple error message: bar, foo`,
+	}, {
+		name: "lots of also",
+		err: (&FieldError{
+			Message: "this error",
+			Paths:   []string{"bar", "foo"},
+		}).Also(&FieldError{
+			Message: "another",
+			Paths:   []string{"right", "left"},
+		}).ViaField("head"),
+		also: []FieldError{{
+			Message: "An alpha error message",
+			Paths:   []string{"A"},
+		}, {
+			Message: "An alpha error message",
+			Paths:   []string{"B"},
+		}, {
+			Message: "An alpha error message",
+			Paths:   []string{"B"},
+		}, {
+			Message: "An alpha error message",
+			Paths:   []string{"B"},
+		}, {
+			Message: "An alpha error message",
+			Paths:   []string{"B"},
+		}, {
+			Message: "An alpha error message",
+			Paths:   []string{"B"},
+		}, {
+			Message: "An alpha error message",
+			Paths:   []string{"B"},
+		}, {
+			Message: "An alpha error message",
+			Paths:   []string{"C"},
+		}, {
+			Message: "An alpha error message",
+			Paths:   []string{"D"},
+		}, {
+			Message: "this error",
+			Paths:   []string{"foo"},
+			Details: "devil is in the details",
+		}, {
+			Message: "this error",
+			Paths:   []string{"foo"},
+			Details: "more details",
+		}},
+		prefixes: [][]string{{"this"}},
+		want: `An alpha error message: this.A, this.B, this.C, this.D
+another: this.head.left, this.head.right
+this error: this.head.bar, this.head.foo
+this error: this.foo
+devil is in the details
+this error: this.foo
+more details`,
+	}}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			fe := test.err
+
+			for _, err := range test.also {
+				fe = fe.Also(&err)
+			}
+
+			// Simulate propagation up a call stack.
+			for _, prefix := range test.prefixes {
+				fe = fe.ViaField(prefix...)
+			}
+
+			if test.want != "" {
+				got := fe.Error()
+				if got != test.want {
+					t.Errorf("%s: Error() = %v, wanted %v", test.name, got, test.want)
+				}
+			} else if fe != nil {
+				t.Errorf("%s: ViaField() = %v, wanted nil", test.name, fe)
+			}
+		})
+	}
+}
+
 func TestFlatten(t *testing.T) {
 	tests := []struct {
 		name    string
@@ -501,6 +614,113 @@ func TestFlatten(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestFieldErrorPerformance(t *testing.T) {
+	limit := int64(3) // limit performance decrease to at most 3x slower with merge
+	count := 100
+
+	var withoutMerge time.Duration
+	var withMerge time.Duration
+
+	{
+		then := time.Now()
+		var errs *FieldError
+		for i := 0; i < count; i++ {
+			errs = errs.also(randFieldError(5, 5)) // Does no merge.
+		}
+		withoutMerge = time.Since(then)
+		t.Logf("withoutMerge %s", withoutMerge)
+		//t.Logf("Made %d errors, %s", len(errs.errors), errs.Error())
+	}
+
+	{
+		then := time.Now()
+		var errs *FieldError
+		for i := 0; i < count; i++ {
+			errs = errs.Also(randFieldError(5, 5)) // Does merge.
+		}
+		withMerge = time.Since(then)
+		t.Logf("withMerge %s", withMerge)
+		//t.Logf("Made %d errors, %s", len(errs.errors), errs.Error())
+	}
+
+	increase := withMerge.Nanoseconds() / withoutMerge.Nanoseconds()
+	// allow up to a 2x increase.
+	if increase > limit {
+		t.Errorf("Merge took %dx longer for %d errors wanted %d, duration: merged %s vs unmerged %s",
+			increase, count, limit, withMerge, withoutMerge)
+	}
+}
+
+func BenchmarkFieldError(b *testing.B) {
+	test := []struct {
+		name string
+		fun  func(err *FieldError) *FieldError
+	}{{
+		name: "no merge 5",
+		fun: func(err *FieldError) *FieldError {
+			return err.also(randFieldError(5, 5)) // Does no merge.
+		},
+	}, {
+		name: "merge 5",
+		fun: func(errs *FieldError) *FieldError {
+			return errs.Also(randFieldError(5, 5)) // Does merge.
+		},
+	}, {
+		name: "no merge 1",
+		fun: func(err *FieldError) *FieldError {
+			return err.also(randFieldError(1, 0)) // Does no merge.
+		},
+	}, {
+		name: "merge 1",
+		fun: func(errs *FieldError) *FieldError {
+			return errs.Also(randFieldError(1, 0)) // Does merge.
+		},
+	}}
+	for _, t := range test {
+		for k := 0.; k <= 10; k++ {
+			n := int(math.Pow(2, k))
+			b.Run(fmt.Sprintf("%s/%d", t.name, n), func(b *testing.B) {
+				for i := 0; i < b.N; i++ {
+					var errs *FieldError
+					for i := 0; i < n; i++ {
+						errs = t.fun(errs)
+					}
+				}
+			})
+		}
+	}
+}
+
+func init() {
+	rand.Seed(1337)
+}
+
+var runes = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
+
+func randFieldError(m, d int) *FieldError {
+	paths := make([]string, 0, rand.Intn(4))
+	for i := 0; i < cap(paths); i++ {
+		paths = append(paths, randString(5))
+	}
+	return &FieldError{
+		Message: randString(m),
+		Paths:   paths,
+		Details: randString(d),
+	}
+}
+
+func randString(n int) string {
+	if n == 0 {
+		return ""
+	}
+
+	b := make([]rune, n)
+	for i := range b {
+		b[i] = runes[rand.Intn(len(runes))]
+	}
+	return string(b)
 }
 
 func makeIndex(index string) int {
