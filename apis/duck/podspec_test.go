@@ -42,16 +42,6 @@ type WithPodSpec struct {
 	Template PodSpecable `json:"template,omitempty"`
 }
 
-// Check that our canonical type implements PodSpecable.
-var _ = duck.VerifyType(&WithPod{}, &PodSpecable{})
-
-// Check that several Kubernetes built-in type implement PodSpecable.
-var _ = duck.VerifyType(&appsv1.ReplicaSet{}, &PodSpecable{})
-var _ = duck.VerifyType(&appsv1.Deployment{}, &PodSpecable{})
-var _ = duck.VerifyType(&appsv1.StatefulSet{}, &PodSpecable{})
-var _ = duck.VerifyType(&appsv1.DaemonSet{}, &PodSpecable{})
-var _ = duck.VerifyType(&batchv1.Job{}, &PodSpecable{})
-
 var _ duck.Populatable = (*WithPod)(nil)
 var _ duck.Implementable = (*PodSpecable)(nil)
 
@@ -77,8 +67,18 @@ func (t *WithPod) Populate() {
 	}
 }
 
-func TestNothing(t *testing.T) {
-	// Don't test anything, this is simply a demonstration that we
-	// can Duck type core Kubernetes objects and initializing this
-	// package is sufficient to test that assertion.
+func TestImplementsPodSpecable(t *testing.T) {
+	instances := []interface{}{
+		&WithPod{},
+		&appsv1.ReplicaSet{},
+		&appsv1.Deployment{},
+		&appsv1.StatefulSet{},
+		&appsv1.DaemonSet{},
+		&batchv1.Job{},
+	}
+	for _, instance := range instances {
+		if err := duck.VerifyType(instance, &PodSpecable{}); err != nil {
+			t.Error(err)
+		}
+	}
 }
