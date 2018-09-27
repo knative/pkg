@@ -213,7 +213,7 @@ func mergePaths(a, b []string) []string {
 	newPaths := make([]string, 0, len(a)+len(b))
 	newPaths = append(newPaths, a...)
 	for p := 0; p < len(b); p++ {
-		if containsString(newPaths, b[p]) == false {
+		if !containsString(newPaths, b[p]) {
 			newPaths = append(newPaths, b[p])
 		}
 	}
