@@ -30,7 +30,7 @@ const CurrentField = ""
 // specific fields in a manner suitable for use in a recursive walk, so
 // that errors contain the appropriate field context.
 // FieldError methods are non-mutating.
-// +k8s:deepcopy-gen=false
+// +k8s:deepcopy-gen=true
 type FieldError struct {
 	Message string
 	Paths   []string
@@ -54,14 +54,18 @@ func (fe *FieldError) ViaField(prefix ...string) *FieldError {
 	if fe == nil {
 		return nil
 	}
-	newErr := &FieldError{}
+	// Copy over message and details, paths will be updated and errors come
+	// along using .Also().
+	newErr := &FieldError{
+		Message: fe.Message,
+		Details: fe.Details,
+	}
+
 	// Prepend the Prefix to existing errors.
 	newPaths := make([]string, 0, len(fe.Paths))
 	for _, oldPath := range fe.Paths {
 		newPaths = append(newPaths, flatten(append(prefix, oldPath)))
 	}
-	newErr.Details = fe.Details
-	newErr.Message = fe.Message
 	newErr.Paths = newPaths
 	for _, e := range fe.errors {
 		newErr = newErr.Also(e.ViaField(prefix...))
@@ -103,17 +107,16 @@ func (fe *FieldError) ViaFieldKey(field string, key string) *FieldError {
 
 // Also collects errors, returns a new collection of existing errors and new errors.
 func (fe *FieldError) Also(errs ...*FieldError) *FieldError {
-	newErr := &FieldError{}
+	var newErr *FieldError
 	// collect the current objects errors, if it has any
-	if fe.isEmpty() == false {
-		newErr.Message = fe.Message
-		newErr.Details = fe.Details
-		newErr.Paths = fe.Paths
-		newErr.errors = append(fe.errors)
+	if !fe.isEmpty() {
+		newErr = fe.DeepCopy()
+	} else {
+		newErr = &FieldError{}
 	}
 	// and then collect the passed in errors
 	for _, e := range errs {
-		if e.isEmpty() == false {
+		if !e.isEmpty() {
 			newErr.errors = append(newErr.errors, *e)
 		}
 	}
