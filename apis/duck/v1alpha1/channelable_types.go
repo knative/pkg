@@ -43,7 +43,6 @@ type ChannelSubscriberSpec struct {
 	SinkableDomain string `json:"sinkableDomain,omitempty"`
 }
 
-
 // Channelable is an Implementable "duck type".
 var _ duck.Implementable = (*Channelable)(nil)
 
@@ -66,7 +65,7 @@ type Channel struct {
 // ChannelSpec shows how we expect folks to embed Channelable in
 // their Spec field.
 type ChannelSpec struct {
-	Channelable *Channelable `json:"channelable,omitempty"`
+	Channelable
 }
 
 // In order for Channelable to be Implementable, Channel must be Populatable.
@@ -82,7 +81,7 @@ func (_ *Channelable) GetFullType() duck.Populatable {
 
 // Populate implements duck.Populatable
 func (t *Channel) Populate() {
-	t.Spec.Channelable = &Channelable{
+	t.Spec.Channelable = Channelable{
 		// Populate ALL fields
 		Subscribers: []ChannelSubscriberSpec{{"call1", "sink2"}, {"call2", "sink2"}},
 	}
