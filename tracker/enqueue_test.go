@@ -20,7 +20,6 @@ import (
 	"testing"
 	"time"
 
-	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	. "github.com/knative/pkg/testing"
@@ -37,23 +36,17 @@ func TestFoo(t *testing.T) {
 
 	trk := New(f, 10*time.Millisecond)
 
-	objRef := corev1.ObjectReference{
-		APIVersion: "ref.knative.dev/v1alpha1",
-		Kind:       "Thing1",
-		Namespace:  "ns",
-		Name:       "foo",
-	}
-
 	thing1 := &Resource{
 		TypeMeta: metav1.TypeMeta{
-			APIVersion: objRef.APIVersion,
-			Kind:       objRef.Kind,
+			APIVersion: "ref.knative.dev/v1alpha1",
+			Kind:       "Thing1",
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Namespace: objRef.Namespace,
-			Name:      objRef.Name,
+			Namespace: "ns",
+			Name:      "foo",
 		},
 	}
+	objRef := objectReference(thing1)
 
 	thing2 := &Resource{
 		TypeMeta: metav1.TypeMeta{
@@ -97,6 +90,9 @@ func TestFoo(t *testing.T) {
 		trk.OnChanged(thing1)
 		if got, want := calls, 2; got != want {
 			t.Errorf("OnChanged() = %v, wanted %v", got, want)
+		}
+		if _, stillThere := trk.(*impl).mapping[objRef]; stillThere {
+			t.Errorf("Timeout passed, but mapping for objectReference is still there")
 		}
 	})
 
