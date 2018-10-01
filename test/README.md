@@ -28,11 +28,11 @@ You can use the test library in this dir to:
 These flags are useful for running against an existing cluster, making use of your existing
 [environment setup](https://github.com/knative/serving/blob/master/DEVELOPMENT.md#environment-setup).
 
-By importing `github.com/knative/serving/test` you get access to a global variable called
+By importing `github.com/knative/pkg/test` you get access to a global variable called
 `test.Flags` which holds the values of [the command line flags](/test/README.md#flags).
 
 ```go
-imagePath := strings.Join([]string{test.ServingFlags.DockerRepo, image}, "/"))
+logger.Infof("Using namespace %s", test.Flags.Namespace)
 ```
 
 _See [e2e_flags.go](./e2e_flags.go)._
@@ -83,14 +83,14 @@ ctx, span := trace.StartSpan(context.Background(), "MyMetric")
 
 #### Metric format
 
-When a `trace` metric is emitted, the format is `metric name startTime endTime duration`. The name
+When a `trace` metric is emitted, the format is `metric <name> <startTime> <endTime> <duration>`. The name
 of the metric is arbitrary and can be any string. The values are:
 
-* "metric" - Indicates this log is a metric
-* name - Arbitrary string indentifying the metric
-* startTime - Unix time in nanoseconds when measurement started
-* endTime - Unix time in nanoseconds when measurement ended
-* duration - The difference in ms between the startTime and endTime
+* `metric` - Indicates this log is a metric
+* `<name>` - Arbitrary string indentifying the metric
+* `<startTime>` - Unix time in nanoseconds when measurement started
+* `<endTime>` - Unix time in nanoseconds when measurement ended
+* `<duration>` - The difference in ms between the startTime and endTime
 
 For example:
 
@@ -171,11 +171,10 @@ file](https://kubernetes.io/docs/concepts/configuration/organize-cluster-access-
 at `~/.kube/config`. If there is an error getting the current user, it will use `kubeconfig` instead as the default value.
 You can specify a different config file with the argument `--kubeconfig`.
 
-To run the tests with a non-default kubeconfig file:
+To run tests with a non-default kubeconfig file:
 
 ```bash
-go test -v -tags=e2e -count=1 ./test/conformance --kubeconfig /my/path/kubeconfig
-go test -v -tags=e2e -count=1 ./test/e2e --kubeconfig /my/path/kubeconfig
+go test ./test --kubeconfig /my/path/kubeconfig
 ```
 
 ### Specifying cluster
@@ -186,8 +185,7 @@ of your [`K8S_CLUSTER_OVERRIDE` environment variable](https://github.com/knative
 if not specified.
 
 ```bash
-go test -v -tags=e2e -count=1 ./test/conformance --cluster your-cluster-name
-go test -v -tags=e2e -count=1 ./test/e2e --cluster your-cluster-name
+go test ./test --cluster your-cluster-name
 ```
 
 The current cluster names can be obtained by running:
@@ -202,8 +200,7 @@ The `--namespace` argument lets you specify the namespace to use for the
 tests. By default, tests will use `serving-tests`.
 
 ```bash
-go test -v -tags=e2e -count=1 ./test/conformance --namespace your-namespace-name
-go test -v -tags=e2e -count=1 ./test/e2e --namespace your-namespace-name
+go test ./test --namespace your-namespace-name
 ```
 
 ### Output verbose logs
@@ -211,13 +208,17 @@ go test -v -tags=e2e -count=1 ./test/e2e --namespace your-namespace-name
 The `--logverbose` argument lets you see verbose test logs and k8s logs.
 
 ```bash
-go test -v -tags=e2e -count=1 ./test/e2e --logverbose
+go test ./test --logverbose
 ```
 
 ### Metrics flag
 
 Running tests with the `--emitmetrics` argument will cause latency metrics to be emitted by
 the tests.
+
+```bash
+go test ./test --emitmetrics
+```
 
 * To add additional metrics to a test, see [emitting metrics](adding_tests.md#emit-metrics).
 * For more info on the format of the metrics, see [metric format](adding_tests.md#metric-format).
