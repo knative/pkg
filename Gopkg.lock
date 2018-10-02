@@ -325,7 +325,7 @@
   version = "v2.2.1"
 
 [[projects]]
-  digest = "1:5bb189391eeca2d7a48b6fc5b6121bc77aae69613ae7197bc54b5a8da2768c93"
+  digest = "1:ba83efacee6fc544aaebcc643ec8ad8d345bfa7f6cd5afb1492fb19cd994cc4a"
   name = "k8s.io/api"
   packages = [
     "admission/v1beta1",
@@ -360,8 +360,8 @@
     "storage/v1beta1",
   ]
   pruneopts = "NUT"
-  revision = "072894a440bdee3a891dea811fe42902311cd2a3"
-  version = "kubernetes-1.11.0"
+  revision = "2d6f90ab1293a1fb871cf149423ebb72aa7423aa"
+  version = "kubernetes-1.11.2"
 
 [[projects]]
   digest = "1:4b0d523ee389c762d02febbcfa0734c4530ebe87abe925db18f05422adcb33e8"
@@ -413,10 +413,10 @@
   ]
   pruneopts = "NUT"
   revision = "103fd098999dc9c0c88536f5c9ad2e5da39373ae"
-  version = "kubernetes-1.11.0"
+  version = "kubernetes-1.11.2"
 
 [[projects]]
-  digest = "1:292821230607e7e954ed569d52ede3006c2ecc5f44bb6af0e9eec79777316fee"
+  digest = "1:be949a1a8240bf6872d327ffaf56dc3ce21881c159fa522144dfe1dc155c5332"
   name = "k8s.io/client-go"
   packages = [
     "discovery",
@@ -578,8 +578,8 @@
     "util/workqueue",
   ]
   pruneopts = "NUT"
-  revision = "7d04d0e2a0a1a4d4a1cd6baa432a2301492e4e65"
-  version = "kubernetes-1.11.0"
+  revision = "1f13a808da65775f22cbf47862c4e5898d8f4ca1"
+  version = "kubernetes-1.11.2"
 
 [[projects]]
   digest = "1:8ab487a323486c8bbbaa3b689850487fdccc6cbea8690620e083b2d230a4447e"
@@ -607,7 +607,7 @@
   ]
   pruneopts = "T"
   revision = "6702109cc68eb6fe6350b83e14407c8d7309fd1a"
-  version = "kubernetes-1.11.0"
+  version = "kubernetes-1.11.2"
 
 [[projects]]
   branch = "master"
