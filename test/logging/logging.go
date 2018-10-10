@@ -86,8 +86,8 @@ func newLogger(logLevel string) *BaseLogger {
 	    "stacktraceKey": "stacktrace",
 	    "lineEnding": "",
 	    "levelEncoder": "",
-	    "timeEncoder": "",
-	    "durationEncoder": "iso8601",
+	    "timeEncoder": "iso8601",
+	    "durationEncoder": "",
 	    "callerEncoder": ""
 	  }
 	}`
