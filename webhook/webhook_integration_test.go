@@ -18,6 +18,7 @@ package webhook
 
 import (
 	"bytes"
+	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -325,6 +326,29 @@ func TestInvalidResponseForResource(t *testing.T) {
 	}
 	if !strings.Contains(reviewResponse.Response.Result.Message, "spec.fieldWithValidation") {
 		t.Errorf("Received unexpected response status message %s", reviewResponse.Response.Result.Message)
+	}
+}
+
+func TestWebhookClientAuth(t *testing.T) {
+	ac, serverURL, err := testSetup(t)
+	if err != nil {
+		t.Fatalf("testSetup() = %v", err)
+	}
+	ac.Options.ClientAuth = tls.RequireAndVerifyClientCert
+
+	stopCh := make(chan struct{})
+	defer close(stopCh)
+
+	go func() {
+		err := ac.Run(stopCh)
+		if err != nil {
+			t.Fatalf("Unable to run controller: %s", err)
+		}
+	}()
+
+	pollErr := waitForServerAvailable(t, serverURL, testTimeout)
+	if pollErr != nil {
+		t.Fatalf("waitForServerAvailable() = %v", err)
 	}
 }
 
