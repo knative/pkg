@@ -27,7 +27,7 @@ const (
 
 func TestNewStackdriverExporter(t *testing.T) {
 	// The stackdriver project ID is required for stackdriver exporter.
-	exporter, err := newStackdriverExporter(metricsConfig{
+	e, err := newStackdriverExporter(metricsConfig{
 		domain:               testDomain,
 		component:            testComponent,
 		backendDestination:   Stackdriver,
@@ -35,26 +35,26 @@ func TestNewStackdriverExporter(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	if exporter == nil {
+	if e == nil {
 		t.Error("expected a non-nil metrics exporter")
 	}
 
-	exporter, err = newStackdriverExporter(metricsConfig{
+	e, err = newStackdriverExporter(metricsConfig{
 		domain:               testDomain,
 		component:            testComponent,
 		backendDestination:   Stackdriver,
 		stackdriverProjectId: ""}, TestLogger(t))
 	if err == nil {
-		t.Error("expected an error if the project id is empty")
+		t.Error("expected an error if the project id is empty for stackdriver exporter")
 	}
-	if exporter != nil {
+	if e != nil {
 		t.Error("expected a nil metrics exporter")
 	}
 }
 
 func TestNewPrometheusExporter(t *testing.T) {
 	// The stackdriver project ID is not required for prometheus exporter.
-	exporter, err := newPrometheusExporter(metricsConfig{
+	e, err := newPrometheusExporter(metricsConfig{
 		domain:               testDomain,
 		component:            testComponent,
 		backendDestination:   Prometheus,
@@ -62,18 +62,15 @@ func TestNewPrometheusExporter(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	if exporter == nil {
+	if e == nil {
 		t.Error("expected a non-nil metrics exporter")
 	}
-	time.Sleep(10 * time.Millisecond)
-	if promSrv == nil {
-		t.Error("expected a server for prometheus exporter")
-	}
+	expectPromSrv(t)
 }
 
 func TestInterlevedExporters(t *testing.T) {
 	// First create a stackdriver exporter
-	_, err := newMetricsExporter(metricsConfig{
+	err := newMetricsExporter(metricsConfig{
 		domain:               testDomain,
 		component:            testComponent,
 		backendDestination:   Stackdriver,
@@ -81,11 +78,7 @@ func TestInterlevedExporters(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	if promSrv != nil {
-		t.Error("expected no server for stackdriver exporter")
-	}
-	// Then switch to prometheus exporter
-	_, err = newMetricsExporter(metricsConfig{
+	err = newMetricsExporter(metricsConfig{
 		domain:               testDomain,
 		component:            testComponent,
 		backendDestination:   Prometheus,
@@ -94,21 +87,15 @@ func TestInterlevedExporters(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	time.Sleep(10 * time.Millisecond)
-	if promSrv == nil {
-		t.Error("expected a server for prometheus exporter")
-	}
+	expectPromSrv(t)
 	// Finally switch to stackdriver exporter
-	_, err = newMetricsExporter(metricsConfig{
+	err = newMetricsExporter(metricsConfig{
 		domain:               testDomain,
 		component:            testComponent,
 		backendDestination:   Stackdriver,
 		stackdriverProjectId: testProj}, TestLogger(t))
 	if err != nil {
 		t.Error(err)
-	}
-	if promSrv != nil {
-		t.Error("expected no server for stackdriver exporter")
 	}
 }
 
@@ -188,5 +175,13 @@ func TestGetMetricsConfig(t *testing.T) {
 	}
 	if c != expected {
 		t.Errorf("expected config: %v; got config: %v", expected, c)
+	}
+}
+
+func expectPromSrv(t *testing.T) {
+	select {
+	case <-promSrvChan:
+	case <-time.After(50 * time.Millisecond):
+		t.Error("expected a server for prometheus exporter")
 	}
 }

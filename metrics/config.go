@@ -20,6 +20,7 @@ import (
 	"errors"
 	"net/http"
 	"strings"
+	"sync"
 	"time"
 
 	"contrib.go.opencensus.io/exporter/stackdriver"
@@ -58,18 +59,23 @@ const (
 )
 
 var (
-	exporter view.Exporter
-	mConfig  metricsConfig
-	promSrv  *http.Server
+	exporter    view.Exporter
+	mConfig     metricsConfig
+	mux         sync.Mutex
+	promSrvChan chan *http.Server = make(chan *http.Server, 1)
 )
 
-func newMetricsExporter(config metricsConfig, logger *zap.SugaredLogger) (view.Exporter, error) {
+// newMetricsExporter is a blocking operation to get a metrics exporter based on the config.
+func newMetricsExporter(config metricsConfig, logger *zap.SugaredLogger) error {
 	var err error
-	if promSrv != nil {
-		logger.Info("Stop the server for the previous Prometheus exporter.")
-		promSrv.Close()
-		promSrv = nil
+	mux.Lock()
+	defer mux.Unlock()
+	select {
+	case svr := <-promSrvChan:
+		svr.Close()
+	default:
 	}
+
 	if exporter != nil {
 		view.UnregisterExporter(exporter)
 	}
@@ -82,12 +88,14 @@ func newMetricsExporter(config metricsConfig, logger *zap.SugaredLogger) (view.E
 		view.RegisterExporter(exporter)
 		view.SetReportingPeriod(10 * time.Second)
 		logger.Info("Registered the exporter.")
+		logger.Infof("Successfully updated the metrics exporter; old config: %v; new config %v", mConfig, config)
+		mConfig = config
 	}
-	return exporter, err
+	return err
 }
 
 func newStackdriverExporter(config metricsConfig, logger *zap.SugaredLogger) (view.Exporter, error) {
-	exporter, err := stackdriver.NewExporter(stackdriver.Options{
+	e, err := stackdriver.NewExporter(stackdriver.Options{
 		ProjectID:    config.stackdriverProjectId,
 		MetricPrefix: config.domain + "/" + config.component,
 		Resource: &monitoredrespb.MonitoredResource{
@@ -100,11 +108,11 @@ func newStackdriverExporter(config metricsConfig, logger *zap.SugaredLogger) (vi
 		return nil, err
 	}
 	logger.Info("Created Opencensus Stackdriver exporter with config:", config)
-	return exporter, nil
+	return e, nil
 }
 
 func newPrometheusExporter(config metricsConfig, logger *zap.SugaredLogger) (view.Exporter, error) {
-	exporter, err := prometheus.NewExporter(prometheus.Options{Namespace: config.component})
+	e, err := prometheus.NewExporter(prometheus.Options{Namespace: config.component})
 	if err != nil {
 		logger.Error("Failed to create the Prometheus exporter.", zap.Error(err))
 		return nil, err
@@ -113,15 +121,16 @@ func newPrometheusExporter(config metricsConfig, logger *zap.SugaredLogger) (vie
 	logger.Info("Start the endpoint for Prometheus exporter.")
 	// Start the endpoint for Prometheus scraping
 	go func() {
-		mux := http.NewServeMux()
-		mux.Handle("/metrics", exporter)
-		promSrv = &http.Server{
+		sm := http.NewServeMux()
+		sm.Handle("/metrics", e)
+		promSrv := &http.Server{
 			Addr:    ":9090",
-			Handler: mux,
+			Handler: sm,
 		}
 		promSrv.ListenAndServe()
+		promSrvChan <- promSrv
 	}()
-	return exporter, nil
+	return e, nil
 }
 
 func getMetricsConfig(m map[string]string, domain string, component string, logger *zap.SugaredLogger) (metricsConfig, error) {
@@ -179,13 +188,11 @@ func UpdateExporterFromConfigMap(domain string, component string, logger *zap.Su
 		}
 		if newConfig.backendDestination != mConfig.backendDestination ||
 			newConfig.stackdriverProjectId != mConfig.stackdriverProjectId {
-			_, err = newMetricsExporter(newConfig, logger)
+			err = newMetricsExporter(newConfig, logger)
 			if err != nil {
 				logger.Error("Failed to update a new metrics exporter based on metric config.", zap.Error(err))
 				return
 			}
-			logger.Infof("Successfully updated the metrics exporter; old config: %v; new config %v", mConfig, newConfig)
-			mConfig = newConfig
 		}
 	}
 }
