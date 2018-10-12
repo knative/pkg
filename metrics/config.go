@@ -32,10 +32,8 @@ import (
 )
 
 const (
-	ObservabilityConfigName = "config-observability"
 	backendDestinationKey   = "metrics.backend-destination"
-	stackdriverProjectIdKey = "metrics.stackdriver-project-id"
-	metricsPath             = "/etc/config-observability"
+	stackdriverProjectIDKey = "metrics.stackdriver-project-id"
 )
 
 type MetricsBackend string
@@ -47,8 +45,9 @@ type metricsConfig struct {
 	component string
 	// The metrics backend destination.
 	backendDestination MetricsBackend
-	// The stackdriver project ID.
-	stackdriverProjectId string
+	// The stackdriver project ID where the stats data are uploaded to. This is
+	// not the GCP project ID.
+	stackdriverProjectID string
 }
 
 const (
@@ -84,19 +83,19 @@ func newMetricsExporter(config metricsConfig, logger *zap.SugaredLogger) error {
 	} else {
 		exporter, err = newPrometheusExporter(config, logger)
 	}
-	if err == nil {
-		view.RegisterExporter(exporter)
-		view.SetReportingPeriod(10 * time.Second)
-		logger.Info("Registered the exporter.")
-		logger.Infof("Successfully updated the metrics exporter; old config: %v; new config %v", mConfig, config)
-		mConfig = config
+	if err != nil {
+		return err
 	}
-	return err
+	view.RegisterExporter(exporter)
+	view.SetReportingPeriod(10 * time.Second)
+	logger.Infof("Successfully updated the metrics exporter; old config: %v; new config %v", mConfig, config)
+	mConfig = config
+	return nil
 }
 
 func newStackdriverExporter(config metricsConfig, logger *zap.SugaredLogger) (view.Exporter, error) {
 	e, err := stackdriver.NewExporter(stackdriver.Options{
-		ProjectID:    config.stackdriverProjectId,
+		ProjectID:    config.stackdriverProjectID,
 		MetricPrefix: config.domain + "/" + config.component,
 		Resource: &monitoredrespb.MonitoredResource{
 			Type: "global",
@@ -127,8 +126,8 @@ func newPrometheusExporter(config metricsConfig, logger *zap.SugaredLogger) (vie
 			Addr:    ":9090",
 			Handler: sm,
 		}
-		promSrv.ListenAndServe()
 		promSrvChan <- promSrv
+		promSrv.ListenAndServe()
 	}()
 	return e, nil
 }
@@ -150,11 +149,11 @@ func getMetricsConfig(m map[string]string, domain string, component string, logg
 	}
 	mc.backendDestination = mb
 
-	sdProj, ok := m[stackdriverProjectIdKey]
+	sdProj, ok := m[stackdriverProjectIDKey]
 	if strings.EqualFold(backend, "stackdriver") && !ok {
 		return mc, errors.New("metrics.stackdriver-project-id key is missing when the backend-destination is set to stackdriver.")
 	}
-	mc.stackdriverProjectId = sdProj
+	mc.stackdriverProjectID = sdProj
 
 	if domain == "" {
 		logger.Info("Metrics domain name missing. Use \"domain\"")
@@ -187,7 +186,7 @@ func UpdateExporterFromConfigMap(domain string, component string, logger *zap.Su
 			}
 		}
 		if newConfig.backendDestination != mConfig.backendDestination ||
-			newConfig.stackdriverProjectId != mConfig.stackdriverProjectId {
+			newConfig.stackdriverProjectID != mConfig.stackdriverProjectID {
 			err = newMetricsExporter(newConfig, logger)
 			if err != nil {
 				logger.Error("Failed to update a new metrics exporter based on metric config.", zap.Error(err))
