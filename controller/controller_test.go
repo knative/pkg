@@ -28,6 +28,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/util/workqueue"
 
+	. "github.com/knative/pkg/controller/testing"
 	. "github.com/knative/pkg/logging/testing"
 	. "github.com/knative/pkg/testing"
 )
@@ -232,7 +233,7 @@ func TestEnqueues(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			impl := NewImpl(&NopReconciler{}, TestLogger(t), "Testing")
+			impl := NewImpl(&NopReconciler{}, TestLogger(t), "Testing", &FakeStatsReporter{})
 			test.work(impl)
 
 			// The rate limit on our queue delays when things are added to the queue.
@@ -258,7 +259,7 @@ func (cr *CountingReconciler) Reconcile(context.Context, string) error {
 
 func TestStartAndShutdown(t *testing.T) {
 	r := &CountingReconciler{}
-	impl := NewImpl(r, TestLogger(t), "Testing")
+	impl := NewImpl(r, TestLogger(t), "Testing", &FakeStatsReporter{})
 
 	stopCh := make(chan struct{})
 
@@ -281,7 +282,7 @@ func TestStartAndShutdown(t *testing.T) {
 
 func TestStartAndShutdownWithWork(t *testing.T) {
 	r := &CountingReconciler{}
-	impl := NewImpl(r, TestLogger(t), "Testing")
+	impl := NewImpl(r, TestLogger(t), "Testing", &FakeStatsReporter{})
 
 	stopCh := make(chan struct{})
 
@@ -315,7 +316,7 @@ func (er *ErrorReconciler) Reconcile(context.Context, string) error {
 
 func TestStartAndShutdownWithErroringWork(t *testing.T) {
 	r := &ErrorReconciler{}
-	impl := NewImpl(r, TestLogger(t), "Testing")
+	impl := NewImpl(r, TestLogger(t), "Testing", &FakeStatsReporter{})
 
 	stopCh := make(chan struct{})
 
@@ -341,7 +342,7 @@ func TestStartAndShutdownWithErroringWork(t *testing.T) {
 
 func TestStartAndShutdownWithInvalidWork(t *testing.T) {
 	r := &CountingReconciler{}
-	impl := NewImpl(r, TestLogger(t), "Testing")
+	impl := NewImpl(r, TestLogger(t), "Testing", &FakeStatsReporter{})
 
 	stopCh := make(chan struct{})
 
