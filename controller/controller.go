@@ -175,7 +175,7 @@ func (c *Impl) processNextWorkItem() bool {
 	err := func(obj interface{}) error {
 		startTime := time.Now()
 		// Send the metrics for the current queue depth
-		_ = c.statsReporter.ReportQueueDepth(float64(c.WorkQueue.Len()))
+		_ = c.statsReporter.ReportQueueDepth(int64(c.WorkQueue.Len()))
 
 		// We call Done here so the workqueue knows we have finished
 		// processing this item. We also must remember to call Forget if we

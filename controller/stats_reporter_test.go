@@ -21,8 +21,11 @@ import (
 	"testing"
 	"time"
 
+	. "github.com/knative/pkg/controller/testing"
 	"go.opencensus.io/stats/view"
 )
+
+var _ StatsReporter = (*FakeStatsReporter)(nil)
 
 func TestNewStatsReporterErrors(t *testing.T) {
 	// These are invalid as defined by the current OpenCensus library.

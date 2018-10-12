@@ -27,7 +27,7 @@ import (
 )
 
 var (
-	workQueueDepthStat   = stats.Float64("work_queue_depth", "Depth of the work queue", stats.UnitNone)
+	workQueueDepthStat   = stats.Int64("work_queue_depth", "Depth of the work queue", stats.UnitNone)
 	reconcileCountStat   = stats.Int64("reconcile_count", "Number of reconcile operations", stats.UnitNone)
 	reconcileLatencyStat = stats.Int64("reconcile_latency", "Latency of reconcile operations", stats.UnitMilliseconds)
 
@@ -86,7 +86,7 @@ func init() {
 
 // StatsReporter defines the interface for sending metrics
 type StatsReporter interface {
-	ReportQueueDepth(v float64) error
+	ReportQueueDepth(v int64) error
 	ReportReconcile(duration time.Duration, key, success string) error
 }
 
@@ -110,7 +110,7 @@ func NewStatsReporter(reconciler string) (StatsReporter, error) {
 }
 
 // ReportQueueDepth reports the queue depth metric
-func (r *reporter) ReportQueueDepth(v float64) error {
+func (r *reporter) ReportQueueDepth(v int64) error {
 	if r.globalCtx == nil {
 		return errors.New("reporter is not initialized correctly")
 	}

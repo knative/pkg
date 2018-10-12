@@ -24,7 +24,7 @@ import (
 type FakeStatsReporter struct{}
 
 // ReportQueueDepth does nothing and returns success.
-func (r *FakeStatsReporter) ReportQueueDepth(v float64) error {
+func (r *FakeStatsReporter) ReportQueueDepth(v int64) error {
 	return nil
 }
 
