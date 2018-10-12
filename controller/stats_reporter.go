@@ -31,35 +31,21 @@ var (
 	reconcileCountStat   = stats.Int64("reconcile_count", "Number of reconcile operations", stats.UnitNone)
 	reconcileLatencyStat = stats.Int64("reconcile_latency", "Latency of reconcile operations", stats.UnitMilliseconds)
 
-	reconcilerTagKey tag.Key
-	keyTagKey        tag.Key
-	successTagKey    tag.Key
-)
-
-func init() {
-	var err error
 	// Create the tag keys that will be used to add tags to our measurements.
 	// Tag keys must conform to the restrictions described in
 	// go.opencensus.io/tag/validate.go. Currently those restrictions are:
 	// - length between 1 and 255 inclusive
 	// - characters are printable US-ASCII
-	reconcilerTagKey, err = tag.NewKey("reconciler")
-	if err != nil {
-		panic(err)
-	}
-	keyTagKey, err = tag.NewKey("key")
-	if err != nil {
-		panic(err)
-	}
-	successTagKey, err = tag.NewKey("success")
-	if err != nil {
-		panic(err)
-	}
+	reconcilerTagKey = mustNewTagKey("reconciler")
+	keyTagKey        = mustNewTagKey("key")
+	successTagKey    = mustNewTagKey("success")
+)
 
+func init() {
 	// Create views to see our measurements. This can return an error if
 	// a previously-registered view has the same name with a different value.
 	// View name defaults to the measure name if unspecified.
-	err = view.Register(
+	err := view.Register(
 		&view.View{
 			Description: "Depth of the work queue",
 			Measure:     workQueueDepthStat,
@@ -132,4 +118,12 @@ func (r *reporter) ReportReconcile(duration time.Duration, key, success string) 
 	stats.Record(ctx, reconcileCountStat.M(1))
 	stats.Record(ctx, reconcileLatencyStat.M(int64(duration)))
 	return nil
+}
+
+func mustNewTagKey(s string) tag.Key {
+	tagKey, err := tag.NewKey(s)
+	if err != nil {
+		panic(err)
+	}
+	return tagKey
 }
