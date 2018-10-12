@@ -282,7 +282,8 @@ func TestStartAndShutdown(t *testing.T) {
 
 func TestStartAndShutdownWithWork(t *testing.T) {
 	r := &CountingReconciler{}
-	impl := NewImpl(r, TestLogger(t), "Testing", &FakeStatsReporter{})
+	reporter := &FakeStatsReporter{}
+	impl := NewImpl(r, TestLogger(t), "Testing", reporter)
 
 	stopCh := make(chan struct{})
 
@@ -306,6 +307,8 @@ func TestStartAndShutdownWithWork(t *testing.T) {
 	if got, want := impl.WorkQueue.NumRequeues("foo/bar"), 0; got != want {
 		t.Errorf("Count = %v, wanted %v", got, want)
 	}
+
+	checkStats(t, reporter, 1, 0, 1, "true")
 }
 
 type ErrorReconciler struct{}
@@ -316,7 +319,8 @@ func (er *ErrorReconciler) Reconcile(context.Context, string) error {
 
 func TestStartAndShutdownWithErroringWork(t *testing.T) {
 	r := &ErrorReconciler{}
-	impl := NewImpl(r, TestLogger(t), "Testing", &FakeStatsReporter{})
+	reporter := &FakeStatsReporter{}
+	impl := NewImpl(r, TestLogger(t), "Testing", reporter)
 
 	stopCh := make(chan struct{})
 
@@ -338,11 +342,14 @@ func TestStartAndShutdownWithErroringWork(t *testing.T) {
 	if got, want := impl.WorkQueue.NumRequeues("foo/bar"), 1; got != want {
 		t.Errorf("Count = %v, wanted %v", got, want)
 	}
+
+	checkStats(t, reporter, 1, 0, 1, "false")
 }
 
 func TestStartAndShutdownWithInvalidWork(t *testing.T) {
 	r := &CountingReconciler{}
-	impl := NewImpl(r, TestLogger(t), "Testing", &FakeStatsReporter{})
+	reporter := &FakeStatsReporter{}
+	impl := NewImpl(r, TestLogger(t), "Testing", reporter)
 
 	stopCh := make(chan struct{})
 
@@ -368,6 +375,8 @@ func TestStartAndShutdownWithInvalidWork(t *testing.T) {
 	if got, want := impl.WorkQueue.NumRequeues(thing), 0; got != want {
 		t.Errorf("Count = %v, wanted %v", got, want)
 	}
+
+	checkStats(t, reporter, 1, 0, 1, "false")
 }
 
 func drainWorkQueue(wq workqueue.RateLimitingInterface) (hasQueue []string) {
@@ -379,4 +388,19 @@ func drainWorkQueue(wq workqueue.RateLimitingInterface) (hasQueue []string) {
 		hasQueue = append(hasQueue, key.(string))
 	}
 	return
+}
+
+func checkStats(t *testing.T, r *FakeStatsReporter, reportCount, lastQueueDepth, reconcileCount int, lastReconcileSuccess string) {
+	if got, want := len(r.QueueDepths), reportCount; got != want {
+		t.Errorf("Queue depth reports = %v, wanted %v", got, want)
+	}
+	if got, want := r.QueueDepths[len(r.QueueDepths)-1], int64(lastQueueDepth); got != want {
+		t.Errorf("Queue depth report = %v, wanted %v", got, want)
+	}
+	if got, want := len(r.ReconcileData), 1; got != want {
+		t.Errorf("Reconcile reports = %v, wanted %v", got, want)
+	}
+	if got, want := r.ReconcileData[len(r.ReconcileData)-1].Success, lastReconcileSuccess; got != want {
+		t.Errorf("Reconcile success = %v, wanted %v", got, want)
+	}
 }

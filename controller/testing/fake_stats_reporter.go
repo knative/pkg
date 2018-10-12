@@ -17,18 +17,35 @@ limitations under the License.
 package testing
 
 import (
+	"sync"
 	"time"
 )
 
 // FakeStatsReporter is a fake implementation of StatsReporter
-type FakeStatsReporter struct{}
+type FakeStatsReporter struct {
+	QueueDepths   []int64
+	ReconcileData []FakeReconcileStatData
+	Lock          sync.Mutex
+}
 
-// ReportQueueDepth does nothing and returns success.
+// FakeReconcileStatData is used to record the calls to ReportReconcile
+type FakeReconcileStatData struct {
+	Duration     time.Duration
+	Key, Success string
+}
+
+// ReportQueueDepth records the call and returns success.
 func (r *FakeStatsReporter) ReportQueueDepth(v int64) error {
+	r.Lock.Lock()
+	defer r.Lock.Unlock()
+	r.QueueDepths = append(r.QueueDepths, v)
 	return nil
 }
 
-// ReportReconcile does nothing and returns success.
+// ReportReconcile records the call and returns success.
 func (r *FakeStatsReporter) ReportReconcile(duration time.Duration, key, success string) error {
+	r.Lock.Lock()
+	defer r.Lock.Unlock()
+	r.ReconcileData = append(r.ReconcileData, FakeReconcileStatData{duration, key, success})
 	return nil
 }
