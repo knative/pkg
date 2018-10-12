@@ -31,15 +31,6 @@ func TestNewStackdriverExporter(t *testing.T) {
 		domain:               testDomain,
 		component:            testComponent,
 		backendDestination:   Stackdriver,
-		stackdriverProjectID: ""}, TestLogger(t))
-	if err == nil {
-		t.Error("expected an error if the project id is empty for stackdriver exporter")
-	}
-
-	err = newMetricsExporter(metricsConfig{
-		domain:               testDomain,
-		component:            testComponent,
-		backendDestination:   Stackdriver,
 		stackdriverProjectID: testProj}, TestLogger(t))
 	if err != nil {
 		t.Error(err)
@@ -121,6 +112,13 @@ func TestGetMetricsConfig(t *testing.T) {
 	}, testDomain, testComponent, TestLogger(t))
 	if err.Error() != "metrics.stackdriver-project-id key is missing when the backend-destination is set to stackdriver." {
 		t.Errorf("expected error: metrics.stackdriver-project-id key is missing when the backend-destination is set to stackdriver. Got %v", err)
+	}
+	_, err = getMetricsConfig(map[string]string{
+		"metrics.backend-destination":    "stackdriver",
+		"metrics.stackdriver-project-id": "",
+	}, testDomain, testComponent, TestLogger(t))
+	if err.Error() != "metrics.stackdriver-project-id field cannot be empty." {
+		t.Errorf("expected error: metrics.stackdriver-project-id field cannot be empty. Got %v", err)
 	}
 	c, err = getMetricsConfig(map[string]string{
 		"metrics.backend-destination":    "stackdriver",

@@ -153,6 +153,9 @@ func getMetricsConfig(m map[string]string, domain string, component string, logg
 	if strings.EqualFold(backend, "stackdriver") && !ok {
 		return mc, errors.New("metrics.stackdriver-project-id key is missing when the backend-destination is set to stackdriver.")
 	}
+	if strings.EqualFold(backend, "stackdriver") && sdProj == "" {
+		return mc, errors.New("metrics.stackdriver-project-id field cannot be empty.")
+	}
 	mc.stackdriverProjectID = sdProj
 
 	if domain == "" {
