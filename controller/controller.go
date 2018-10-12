@@ -34,6 +34,11 @@ import (
 	"github.com/knative/pkg/logging/logkey"
 )
 
+const (
+	falseString = "false"
+	trueString  = "true"
+)
+
 // Reconciler is the interface that controller implementations are expected
 // to implement, so that the shared controller.Impl can drive work through it.
 type Reconciler interface {
@@ -197,7 +202,7 @@ func (c *Impl) processNextWorkItem() bool {
 			// process a work item that is invalid.
 			c.WorkQueue.Forget(obj)
 			c.logger.Errorf("expected string in workqueue but got %#v", obj)
-			c.statsReporter.ReportReconcile(time.Now().Sub(startTime), "[InvalidKeyType]", "false")
+			c.statsReporter.ReportReconcile(time.Now().Sub(startTime), "[InvalidKeyType]", falseString)
 			return nil
 		}
 
@@ -209,7 +214,7 @@ func (c *Impl) processNextWorkItem() bool {
 		// Run Reconcile, passing it the namespace/name string of the
 		// resource to be synced.
 		if err := c.Reconciler.Reconcile(ctx, key); err != nil {
-			c.statsReporter.ReportReconcile(time.Now().Sub(startTime), key, "false")
+			c.statsReporter.ReportReconcile(time.Now().Sub(startTime), key, falseString)
 			return fmt.Errorf("error syncing %q: %v", key, err)
 		}
 
@@ -217,7 +222,7 @@ func (c *Impl) processNextWorkItem() bool {
 		// get queued again until another change happens.
 		c.WorkQueue.Forget(obj)
 		c.logger.Infof("Successfully synced %q", key)
-		c.statsReporter.ReportReconcile(time.Now().Sub(startTime), key, "true")
+		c.statsReporter.ReportReconcile(time.Now().Sub(startTime), key, trueString)
 		return nil
 	}(obj)
 

@@ -308,7 +308,7 @@ func TestStartAndShutdownWithWork(t *testing.T) {
 		t.Errorf("Count = %v, wanted %v", got, want)
 	}
 
-	checkStats(t, reporter, 1, 0, 1, "true")
+	checkStats(t, reporter, 1, 0, 1, trueString)
 }
 
 type ErrorReconciler struct{}
@@ -343,7 +343,7 @@ func TestStartAndShutdownWithErroringWork(t *testing.T) {
 		t.Errorf("Count = %v, wanted %v", got, want)
 	}
 
-	checkStats(t, reporter, 1, 0, 1, "false")
+	checkStats(t, reporter, 1, 0, 1, falseString)
 }
 
 func TestStartAndShutdownWithInvalidWork(t *testing.T) {
@@ -376,7 +376,7 @@ func TestStartAndShutdownWithInvalidWork(t *testing.T) {
 		t.Errorf("Count = %v, wanted %v", got, want)
 	}
 
-	checkStats(t, reporter, 1, 0, 1, "false")
+	checkStats(t, reporter, 1, 0, 1, falseString)
 }
 
 func drainWorkQueue(wq workqueue.RateLimitingInterface) (hasQueue []string) {
