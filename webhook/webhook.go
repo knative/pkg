@@ -298,13 +298,21 @@ func (ac *AdmissionController) Run(stop <-chan struct{}) error {
 		return nil
 	}
 
+	serverBootstrapErrCh := make(chan struct{})
 	go func() {
 		if err := server.ListenAndServeTLS("", ""); err != nil {
 			logger.Error("ListenAndServeTLS for admission webhook returned error", zap.Error(err))
+			close(serverBootstrapErrCh)
 		}
 	}()
-	<-stop
-	server.Close() // nolint: errcheck
+
+	select {
+	case <-stop:
+		server.Close() // nolint: errcheck
+	case <-serverBootstrapErrCh:
+		return errors.New("webhook server bootstrap failed")
+	}
+
 	return nil
 }
 
