@@ -17,6 +17,7 @@ limitations under the License.
 package metrics
 
 import (
+	"fmt"
 	"net/http"
 	"time"
 
@@ -28,32 +29,32 @@ import (
 )
 
 var (
-	exporter view.Exporter
-	mConfig  *metricsConfig
-	// promSrv     *http.Server
+	exporter    view.Exporter
+	mConfig     *metricsConfig
 	promSrvChan chan *http.Server = make(chan *http.Server, 1)
 )
 
-// newMetricsExporter is a blocking operation to get a metrics exporter based on the config.
+// newMetricsExporter gets a metrics exporter based on the config.
+// This function is not thread safe. It is client's responsibility to synchronize any
+// multithreaded access.
 func newMetricsExporter(config *metricsConfig, logger *zap.SugaredLogger) error {
 	select {
 	case svr := <-promSrvChan:
 		svr.Close()
 	default:
 	}
-	// if promSrv != nil {
-	// 	promSrv.Close()
-	// 	promSrv = nil
-	// }
 
 	if exporter != nil {
 		view.UnregisterExporter(exporter)
 	}
 	var err error
-	if config.backendDestination == Stackdriver {
+	switch config.backendDestination {
+	case Stackdriver:
 		exporter, err = newStackdriverExporter(config, logger)
-	} else {
+	case Prometheus:
 		exporter, err = newPrometheusExporter(config, logger)
+	default:
+		err = fmt.Errorf("Unsupported metrics backend %v", config.backendDestination)
 	}
 	if err != nil {
 		return err
@@ -65,6 +66,8 @@ func newMetricsExporter(config *metricsConfig, logger *zap.SugaredLogger) error 
 	return nil
 }
 
+// newStackdriverExporter function is not thread safe. It is client's responsibility to synchronize any
+// multithreaded access.
 func newStackdriverExporter(config *metricsConfig, logger *zap.SugaredLogger) (view.Exporter, error) {
 	e, err := stackdriver.NewExporter(stackdriver.Options{
 		ProjectID:    config.stackdriverProjectID,
@@ -82,6 +85,8 @@ func newStackdriverExporter(config *metricsConfig, logger *zap.SugaredLogger) (v
 	return e, nil
 }
 
+// newPrometheusExporter function is not thread safe. It is client's responsibility to synchronize any
+// multithreaded access.
 func newPrometheusExporter(config *metricsConfig, logger *zap.SugaredLogger) (view.Exporter, error) {
 	e, err := prometheus.NewExporter(prometheus.Options{Namespace: config.component})
 	if err != nil {
@@ -94,7 +99,6 @@ func newPrometheusExporter(config *metricsConfig, logger *zap.SugaredLogger) (vi
 		sm := http.NewServeMux()
 		sm.Handle("/metrics", e)
 		promSrv := &http.Server{
-			// promSrv = &http.Server{
 			Addr:    ":9090",
 			Handler: sm,
 		}

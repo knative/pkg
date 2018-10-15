@@ -14,13 +14,14 @@ package metrics
 
 import (
 	"testing"
+	"time"
 
 	. "github.com/knative/pkg/logging/testing"
 )
 
 func TestNewStackdriverExporter(t *testing.T) {
 	// The stackdriver project ID is required for stackdriver exporter.
-	err := newMetricsExporter(&metricsConfig{
+	e, err := newStackdriverExporter(&metricsConfig{
 		domain:               servingDomain,
 		component:            testComponent,
 		backendDestination:   Stackdriver,
@@ -28,12 +29,15 @@ func TestNewStackdriverExporter(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	// expectNoPromSrv(t)
+	if e == nil {
+		t.Error("expected a non-nil metrics exporter")
+	}
+	expectNoPromSrv(t)
 }
 
 func TestNewPrometheusExporter(t *testing.T) {
 	// The stackdriver project ID is not required for prometheus exporter.
-	err := newMetricsExporter(&metricsConfig{
+	e, err := newPrometheusExporter(&metricsConfig{
 		domain:               servingDomain,
 		component:            testComponent,
 		backendDestination:   Prometheus,
@@ -41,7 +45,30 @@ func TestNewPrometheusExporter(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	// expectPromSrv(t)
+	if e == nil {
+		t.Error("expected a non-nil metrics exporter")
+	}
+	expectPromSrv(t)
+}
+
+func TestMetricsExporter(t *testing.T) {
+	err := newMetricsExporter(&metricsConfig{
+		domain:               servingDomain,
+		component:            testComponent,
+		backendDestination:   "unsupported",
+		stackdriverProjectID: ""}, TestLogger(t))
+	if err == nil {
+		t.Errorf("Expected an error for unsupported backend %v", err)
+	}
+
+	err = newMetricsExporter(&metricsConfig{
+		domain:               servingDomain,
+		component:            testComponent,
+		backendDestination:   Stackdriver,
+		stackdriverProjectID: testProj}, TestLogger(t))
+	if err != nil {
+		t.Error(err)
+	}
 }
 
 func TestInterlevedExporters(t *testing.T) {
@@ -54,6 +81,8 @@ func TestInterlevedExporters(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
+	expectNoPromSrv(t)
+	// Then switch to prometheus exporter
 	err = newMetricsExporter(&metricsConfig{
 		domain:               servingDomain,
 		component:            testComponent,
@@ -63,7 +92,7 @@ func TestInterlevedExporters(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	// expectPromSrv(t)
+	expectPromSrv(t)
 	// Finally switch to stackdriver exporter
 	err = newMetricsExporter(&metricsConfig{
 		domain:               servingDomain,
@@ -75,20 +104,20 @@ func TestInterlevedExporters(t *testing.T) {
 	}
 }
 
-// func expectPromSrv(t *testing.T) {
-// 	select {
-// 	case <-promSrvChan:
-// 		t.Log("A server found for prometheus.")
-// 	case <-time.After(200 * time.Millisecond):
-// 		t.Error("expected a server for prometheus exporter")
-// 	}
-// }
+func expectPromSrv(t *testing.T) {
+	select {
+	case <-promSrvChan:
+		t.Log("A server found for prometheus.")
+	case <-time.After(200 * time.Millisecond):
+		t.Error("expected a server for prometheus exporter")
+	}
+}
 
-// func expectNoPromSrv(t *testing.T) {
-// 	time.Sleep(200 * time.Millisecond)
-// 	select {
-// 	case <-promSrvChan:
-// 		t.Error("expected no server for stackdriver exporter")
-// 	default:
-// 	}
-// }
+func expectNoPromSrv(t *testing.T) {
+	time.Sleep(200 * time.Millisecond)
+	select {
+	case <-promSrvChan:
+		t.Error("expected no server for stackdriver exporter")
+	default:
+	}
+}

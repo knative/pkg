@@ -112,7 +112,7 @@ func UpdateExporterFromConfigMap(domain string, component string, logger *zap.Su
 			}
 		}
 		changed := false
-		if newConfig.backendDestination != mConfig.backendDestination {
+		if mConfig == nil || newConfig.backendDestination != mConfig.backendDestination {
 			changed = true
 		} else if newConfig.backendDestination == Stackdriver && newConfig.stackdriverProjectID != mConfig.stackdriverProjectID {
 			changed = true
