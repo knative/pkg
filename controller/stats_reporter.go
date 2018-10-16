@@ -31,6 +31,10 @@ var (
 	reconcileCountStat   = stats.Int64("reconcile_count", "Number of reconcile operations", stats.UnitNone)
 	reconcileLatencyStat = stats.Int64("reconcile_latency", "Latency of reconcile operations", stats.UnitMilliseconds)
 
+	// reconcileDistribution defines the bucket boundaries for the histogram of reconcile latency metric.
+	// Bucket boundaries are 5ms, 10ms, 25ms, 50ms, 100ms, 250ms, 500ms, 1s, 2.5s, 5s, 10s, 30s and 60s.
+	reconcileDistribution = view.Distribution(5, 10, 25, 50, 100, 250, 500, 1000, 2500, 5000, 10000, 30000, 60000)
+
 	// Create the tag keys that will be used to add tags to our measurements.
 	// Tag keys must conform to the restrictions described in
 	// go.opencensus.io/tag/validate.go. Currently those restrictions are:
@@ -61,7 +65,7 @@ func init() {
 		&view.View{
 			Description: "Latency of reconcile operations",
 			Measure:     reconcileLatencyStat,
-			Aggregation: view.Distribution(0, 10, 25, 50, 100, 250, 500, 1000, 2500, 5000, 10000, 30000, 60000),
+			Aggregation: reconcileDistribution,
 			TagKeys:     []tag.Key{reconcilerTagKey, keyTagKey, successTagKey},
 		},
 	)
@@ -72,7 +76,10 @@ func init() {
 
 // StatsReporter defines the interface for sending metrics
 type StatsReporter interface {
+	// ReportQueueDepth reports the queue depth metric
 	ReportQueueDepth(v int64) error
+
+	// ReportReconcile reports the count and latency metrics for a reconcile operation
 	ReportReconcile(duration time.Duration, key, success string) error
 }
 
@@ -104,7 +111,7 @@ func (r *reporter) ReportQueueDepth(v int64) error {
 	return nil
 }
 
-// ReportReconcile reports the count and latency metrics for a reconcile operation.
+// ReportReconcile reports the count and latency metrics for a reconcile operation
 func (r *reporter) ReportReconcile(duration time.Duration, key, success string) error {
 	ctx, err := tag.New(
 		context.Background(),
