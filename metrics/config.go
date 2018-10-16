@@ -99,8 +99,6 @@ func getMetricsConfig(m map[string]string, domain string, component string, logg
 // when a config map is updated
 func UpdateExporterFromConfigMap(domain string, component string, logger *zap.SugaredLogger) func(configMap *corev1.ConfigMap) {
 	return func(configMap *corev1.ConfigMap) {
-		mux.Lock()
-		defer mux.Unlock()
 		newConfig, err := getMetricsConfig(configMap.Data, domain, component, logger)
 		if err != nil {
 			if exporter == nil {
@@ -111,6 +109,8 @@ func UpdateExporterFromConfigMap(domain string, component string, logger *zap.Su
 				return
 			}
 		}
+		mux.Lock()
+		defer mux.Unlock()
 		changed := false
 		if mConfig == nil || newConfig.backendDestination != mConfig.backendDestination {
 			changed = true
