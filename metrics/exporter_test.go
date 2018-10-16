@@ -25,15 +25,6 @@ func TestNewStackdriverExporter(t *testing.T) {
 		domain:               servingDomain,
 		component:            testComponent,
 		backendDestination:   Stackdriver,
-		stackdriverProjectID: ""}, TestLogger(t))
-	if err == nil {
-		t.Error("Expected an error when stackdriver project ID is empty")
-	}
-
-	e, err = newStackdriverExporter(&metricsConfig{
-		domain:               servingDomain,
-		component:            testComponent,
-		backendDestination:   Stackdriver,
 		stackdriverProjectID: testProj}, TestLogger(t))
 	if err != nil {
 		t.Error(err)
