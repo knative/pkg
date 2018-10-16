@@ -17,17 +17,20 @@ import (
 	"testing"
 
 	. "github.com/knative/pkg/logging/testing"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 const (
-	testProj      = "test-project"
 	servingDomain = "serving.knative.dev"
 	badDomain     = "test.domain"
 	testComponent = "testComponent"
+	testProj      = "test-project"
+	anotherProj   = "another-project"
 )
 
-func TestGetMetricsConfig(t *testing.T) {
-	errorTests := []struct {
+var (
+	errorTests = []struct {
 		name        string
 		cm          map[string]string
 		domain      string
@@ -80,15 +83,7 @@ func TestGetMetricsConfig(t *testing.T) {
 		component:   "",
 		expectedErr: "Metrics component name cannot be empty",
 	}}
-
-	for _, test := range errorTests {
-		_, err := getMetricsConfig(test.cm, test.domain, test.component, TestLogger(t))
-		if err.Error() != test.expectedErr {
-			t.Errorf("In test %v, wanted err: %v, got: %v", test.name, test.expectedErr, err)
-		}
-	}
-
-	successTests := []struct {
+	successTests = []struct {
 		name           string
 		cm             map[string]string
 		domain         string
@@ -106,14 +101,14 @@ func TestGetMetricsConfig(t *testing.T) {
 	}, {
 		name: "validStackdriver",
 		cm: map[string]string{"metrics.backend-destination": "stackdriver",
-			"metrics.stackdriver-project-id": testProj},
+			"metrics.stackdriver-project-id": anotherProj},
 		domain:    servingDomain,
 		component: testComponent,
 		expectedConfig: metricsConfig{
 			domain:               servingDomain,
 			component:            testComponent,
 			backendDestination:   Stackdriver,
-			stackdriverProjectID: testProj},
+			stackdriverProjectID: anotherProj},
 	}, {
 		name: "validCapitalStackdriver",
 		cm: map[string]string{"metrics.backend-destination": "STACKDRIVER",
@@ -126,6 +121,15 @@ func TestGetMetricsConfig(t *testing.T) {
 			backendDestination:   Stackdriver,
 			stackdriverProjectID: testProj},
 	}}
+)
+
+func TestGetMetricsConfig(t *testing.T) {
+	for _, test := range errorTests {
+		_, err := getMetricsConfig(test.cm, test.domain, test.component, TestLogger(t))
+		if err.Error() != test.expectedErr {
+			t.Errorf("In test %v, wanted err: %v, got: %v", test.name, test.expectedErr, err)
+		}
+	}
 
 	for _, test := range successTests {
 		mc, err := getMetricsConfig(test.cm, test.domain, test.component, TestLogger(t))
@@ -134,6 +138,38 @@ func TestGetMetricsConfig(t *testing.T) {
 		}
 		if !reflect.DeepEqual(*mc, test.expectedConfig) {
 			t.Errorf("In test %v, wanted config %v, got config %v", test.name, test.expectedConfig, *mc)
+		}
+	}
+}
+
+func TestUpdateExporterFromConfigMap(t *testing.T) {
+	cm := &corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "config-observability",
+		},
+		Data: map[string]string{},
+	}
+
+	oldConfig := mConfig
+	for _, test := range successTests {
+		cm.Data = test.cm
+		u := UpdateExporterFromConfigMap(test.domain, test.component, TestLogger(t))
+		u(cm)
+		if mConfig == oldConfig {
+			t.Errorf("In test %v, expected metrics config change", test.name)
+		}
+		if !reflect.DeepEqual(*mConfig, test.expectedConfig) {
+			t.Errorf("In test %v, expected config: %v; got config %v", test.name, test.expectedConfig, mConfig)
+		}
+		oldConfig = mConfig
+	}
+
+	for _, test := range errorTests {
+		cm.Data = test.cm
+		u := UpdateExporterFromConfigMap(test.domain, test.component, TestLogger(t))
+		u(cm)
+		if mConfig != oldConfig {
+			t.Errorf("In test %v, mConfig should not change", test.name)
 		}
 	}
 }
