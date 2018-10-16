@@ -33,6 +33,15 @@ func TestNewStackdriverExporter(t *testing.T) {
 		t.Error("expected a non-nil metrics exporter")
 	}
 	expectNoPromSrv(t)
+
+	e, err = newStackdriverExporter(&metricsConfig{
+		domain:               servingDomain,
+		component:            testComponent,
+		backendDestination:   Stackdriver,
+		stackdriverProjectID: ""}, TestLogger(t))
+	if err == nil {
+		t.Error("Expected an error when stackdriver project ID is empty")
+	}
 }
 
 func TestNewPrometheusExporter(t *testing.T) {
