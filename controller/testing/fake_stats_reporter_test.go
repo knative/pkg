@@ -17,6 +17,7 @@ limitations under the License.
 package testing
 
 import (
+	"reflect"
 	"testing"
 	"time"
 
@@ -28,27 +29,15 @@ var _ controller.StatsReporter = (*FakeStatsReporter)(nil)
 func TestReportQueueDepth(t *testing.T) {
 	r := &FakeStatsReporter{}
 	r.ReportQueueDepth(10)
-	if got, want := len(r.QueueDepths), 1; want != got {
+	if got, want := r.QueueDepths, []int64{10}; !reflect.DeepEqual(want, got) {
 		t.Errorf("queue depth len: want: %v, got: %v", want, got)
-	}
-	if got, want := r.QueueDepths[0], int64(10); want != got {
-		t.Errorf("queue depth value: want: %v, got: %v", want, got)
 	}
 }
 
 func TestReportReconcile(t *testing.T) {
 	r := &FakeStatsReporter{}
 	r.ReportReconcile(time.Duration(123), "testkey", "False")
-	if got, want := len(r.ReconcileData), 1; want != got {
+	if got, want := r.ReconcileData, []FakeReconcileStatData{FakeReconcileStatData{time.Duration(123), "testkey", "False"}}; !reflect.DeepEqual(want, got) {
 		t.Errorf("reconcile data len: want: %v, got: %v", want, got)
-	}
-	if got, want := r.ReconcileData[0].Duration, time.Duration(123); want != got {
-		t.Errorf("reconcile data duration: want: %v, got: %v", want, got)
-	}
-	if got, want := r.ReconcileData[0].Key, "testkey"; want != got {
-		t.Errorf("reconcile data key: want: %v, got: %v", want, got)
-	}
-	if got, want := r.ReconcileData[0].Success, "False"; want != got {
-		t.Errorf("reconcile data success: want: %v, got: %v", want, got)
 	}
 }
