@@ -107,8 +107,9 @@ func newPrometheusExporter(config *metricsConfig, logger *zap.SugaredLogger) (vi
 			Addr:    ":9090",
 			Handler: sm,
 		}
+		srv := promSrv
 		promSrvMux.Unlock()
-		promSrv.ListenAndServe()
+		srv.ListenAndServe()
 	}()
 	return e, nil
 }
