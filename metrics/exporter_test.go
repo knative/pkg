@@ -105,19 +105,17 @@ func TestInterlevedExporters(t *testing.T) {
 }
 
 func expectPromSrv(t *testing.T) {
-	select {
-	case <-promSrvChan:
-		t.Log("A server found for prometheus.")
-	case <-time.After(200 * time.Millisecond):
+	time.Sleep(200 * time.Millisecond)
+	srv := getPromSrv()
+	if srv == nil {
 		t.Error("expected a server for prometheus exporter")
 	}
 }
 
 func expectNoPromSrv(t *testing.T) {
 	time.Sleep(200 * time.Millisecond)
-	select {
-	case <-promSrvChan:
+	srv := getPromSrv()
+	if srv != nil {
 		t.Error("expected no server for stackdriver exporter")
-	default:
 	}
 }

@@ -111,7 +111,7 @@ var (
 			stackdriverProjectID: anotherProj},
 	}, {
 		name: "validCapitalStackdriver",
-		cm: map[string]string{"metrics.backend-destination": "STACKDRIVER",
+		cm: map[string]string{"metrics.backend-destination": "Stackdriver",
 			"metrics.stackdriver-project-id": testProj},
 		domain:    servingDomain,
 		component: testComponent,

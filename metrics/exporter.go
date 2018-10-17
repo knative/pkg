@@ -19,6 +19,7 @@ package metrics
 import (
 	"fmt"
 	"net/http"
+	"sync"
 	"time"
 
 	"contrib.go.opencensus.io/exporter/stackdriver"
@@ -29,21 +30,24 @@ import (
 )
 
 var (
-	exporter    view.Exporter
-	mConfig     *metricsConfig
-	promSrvChan chan *http.Server = make(chan *http.Server, 1)
+	exporter   view.Exporter
+	mConfig    *metricsConfig
+	promSrv    *http.Server
+	promSrvMux sync.Mutex
 )
 
 // newMetricsExporter gets a metrics exporter based on the config.
-// This function is not thread safe. It is client's responsibility to synchronize any
-// multithreaded access.
 func newMetricsExporter(config *metricsConfig, logger *zap.SugaredLogger) error {
-	select {
-	case svr := <-promSrvChan:
-		svr.Close()
-	default:
+	// If there is a Prometheus Exporter server running, stop it.
+	promSrvMux.Lock()
+	if promSrv != nil {
+		promSrv.Close()
+		promSrv = nil
 	}
+	promSrvMux.Unlock()
 
+	mux.Lock()
+	defer mux.Unlock()
 	if exporter != nil {
 		view.UnregisterExporter(exporter)
 	}
@@ -98,12 +102,19 @@ func newPrometheusExporter(config *metricsConfig, logger *zap.SugaredLogger) (vi
 	go func() {
 		sm := http.NewServeMux()
 		sm.Handle("/metrics", e)
-		promSrv := &http.Server{
+		promSrvMux.Lock()
+		promSrv = &http.Server{
 			Addr:    ":9090",
 			Handler: sm,
 		}
-		promSrvChan <- promSrv
+		promSrvMux.Unlock()
 		promSrv.ListenAndServe()
 	}()
 	return e, nil
+}
+
+func getPromSrv() *http.Server {
+	promSrvMux.Lock()
+	defer promSrvMux.Unlock()
+	return promSrv
 }

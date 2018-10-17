@@ -64,12 +64,10 @@ func getMetricsConfig(m map[string]string, domain string, component string, logg
 	if !ok {
 		return nil, errors.New("metrics.backend-destination key is missing")
 	}
-	lb := strings.ToLower(backend)
+	lb := MetricsBackend(strings.ToLower(backend))
 	switch lb {
-	case "stackdriver":
-		mc.backendDestination = Stackdriver
-	case "prometheus":
-		mc.backendDestination = Prometheus
+	case Stackdriver, Prometheus:
+		mc.backendDestination = lb
 	default:
 		return nil, fmt.Errorf("Unsupported metrics backend value \"%s\"", backend)
 	}
@@ -109,14 +107,14 @@ func UpdateExporterFromConfigMap(domain string, component string, logger *zap.Su
 				return
 			}
 		}
-		mux.Lock()
-		defer mux.Unlock()
 		changed := false
+		mux.Lock()
 		if mConfig == nil || newConfig.backendDestination != mConfig.backendDestination {
 			changed = true
 		} else if newConfig.backendDestination == Stackdriver && newConfig.stackdriverProjectID != mConfig.stackdriverProjectID {
 			changed = true
 		}
+		mux.Unlock()
 
 		if changed {
 			if err := newMetricsExporter(newConfig, logger); err != nil {
