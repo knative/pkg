@@ -69,6 +69,13 @@ type UntypedStore struct {
 // These functions can return any type along with an error.
 // If the function definition differs then NewUntypedStore
 // will panic.
+//
+// onAfterStore is a variadic list of callbacks to run
+// after the ConfigMap has been transformed (via the appropriate Constructor)
+// and stored. These callbacks run sequentially (in the argument order) in a
+// separate go-routine and are of type func(name string, value interface{})
+// where name is the config-map name and value is the object that has been
+// constructed from the config-map and stored.
 func NewUntypedStore(
 	name string,
 	logger Logger,
