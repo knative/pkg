@@ -23,8 +23,8 @@ import (
 	corev1 "k8s.io/api/core/v1"
 )
 
-// The UntypedStore expects a logger that conforms to this interface
-// The store will log when updates succeed or fail
+// Logger is the interface that UntypedStore expects its logger to conform to.
+// UntypedStore will log when updates succeed or fail.
 type Logger interface {
 	Infof(string, ...interface{})
 	Fatalf(string, ...interface{})
