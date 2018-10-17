@@ -97,6 +97,88 @@ func TestStoreWatchConfigs(t *testing.T) {
 	}
 }
 
+func appendTo(evidence *[]string) func(int) func(string, interface{}) {
+	return func(i int) func(string, interface{}) {
+		return func(name string, value interface{}) {
+			*evidence = append(*evidence, fmt.Sprintf("%s:%s:%v", name, value, i))
+		}
+	}
+}
+
+func listOf(f func(int) func(string, interface{}), count int, tail ...func(string, interface{})) []func(string, interface{}) {
+	var result []func(string, interface{})
+	for i := 0; i < count; i++ {
+		result = append(result, f(i))
+	}
+	for _, f := range tail {
+		result = append(result, f)
+	}
+	return result
+}
+
+func expectedEvidence(name string, count int) []string {
+	var result []string
+	for i := 0; i < count; i++ {
+		result = append(result, fmt.Sprintf("%s:%s:%v", name, name, i))
+	}
+	return result
+}
+
+func signalComplete(done chan<- string) func(string, interface{}) {
+	return func(name string, value interface{}) {
+		done <- fmt.Sprintf("%s:%s", name, value)
+	}
+}
+
+func TestOnAfterStore(t *testing.T) {
+	constructor := func(c *corev1.ConfigMap) (interface{}, error) {
+		return c.Name, nil
+	}
+
+	var evidence []string
+	completeCh := make(chan string)
+
+	store := NewUntypedStore(
+		"name",
+		TestLogger(t),
+		Constructors{
+			"config-name-1": constructor,
+			"config-name-2": constructor,
+		},
+		listOf(appendTo(&evidence), 100, signalComplete(completeCh))...,
+	)
+
+	store.OnConfigChanged(&corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "config-name-1",
+		},
+	})
+
+	if diff := cmp.Diff("config-name-1:config-name-1", <-completeCh); diff != "" {
+		t.Fatalf("Expected value from completeCh diff: %s", diff)
+	}
+
+	if diff := cmp.Diff(expectedEvidence("config-name-1", 100), evidence); diff != "" {
+		t.Fatalf("Expected evidence diff: %s", diff)
+	}
+
+	evidence = nil
+
+	store.OnConfigChanged(&corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "config-name-2",
+		},
+	})
+
+	if diff := cmp.Diff("config-name-2:config-name-2", <-completeCh); diff != "" {
+		t.Fatalf("Expected value from completeCh diff: %s", diff)
+	}
+
+	if diff := cmp.Diff(expectedEvidence("config-name-2", 100), evidence); diff != "" {
+		t.Fatalf("Expected evidence diff: %s", diff)
+	}
+}
+
 func TestStoreConfigChange(t *testing.T) {
 	constructor := func(c *corev1.ConfigMap) (interface{}, error) {
 		return c.Name, nil
