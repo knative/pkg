@@ -26,6 +26,7 @@ import (
 	"golang.org/x/sync/errgroup"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
 
 	. "github.com/knative/pkg/logging/testing"
@@ -378,4 +379,47 @@ func drainWorkQueue(wq workqueue.RateLimitingInterface) (hasQueue []string) {
 		hasQueue = append(hasQueue, key.(string))
 	}
 	return
+}
+
+type dummyInformer struct {
+	cache.SharedInformer
+}
+
+type dummyStore struct {
+	cache.Store
+}
+
+func (*dummyInformer) GetStore() cache.Store {
+	return &dummyStore{}
+}
+
+var dummyKeys = []string{"foo/bar", "bar/foo", "fizz/buzz"}
+
+func (*dummyStore) ListKeys() []string {
+	return dummyKeys
+}
+
+func TestImplGlobalResync(t *testing.T) {
+	r := &CountingReconciler{}
+	impl := NewImpl(r, TestLogger(t), "Testing")
+
+	stopCh := make(chan struct{})
+
+	var eg errgroup.Group
+	eg.Go(func() error {
+		return impl.Run(1, stopCh)
+	})
+
+	impl.GlobalResync(&dummyInformer{})
+
+	time.Sleep(10 * time.Millisecond)
+	close(stopCh)
+
+	if err := eg.Wait(); err != nil {
+		t.Errorf("Wait() = %v", err)
+	}
+
+	if want, got := 3, r.Count; want != got {
+		t.Errorf("GlobalResync: want = %v, got = %v", want, got)
+	}
 }
