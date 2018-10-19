@@ -106,7 +106,7 @@ func TestInterlevedExporters(t *testing.T) {
 
 func expectPromSrv(t *testing.T) {
 	time.Sleep(200 * time.Millisecond)
-	srv := getPromSrv()
+	srv := getCurPromSrv()
 	if srv == nil {
 		t.Error("expected a server for prometheus exporter")
 	}
@@ -114,7 +114,7 @@ func expectPromSrv(t *testing.T) {
 
 func expectNoPromSrv(t *testing.T) {
 	time.Sleep(200 * time.Millisecond)
-	srv := getPromSrv()
+	srv := getCurPromSrv()
 	if srv != nil {
 		t.Error("expected no server for stackdriver exporter")
 	}

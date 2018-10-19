@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
-	"sync"
 
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
@@ -53,10 +52,7 @@ type metricsConfig struct {
 	stackdriverProjectID string
 }
 
-var (
-	domainRE = regexp.MustCompile("^(serving|build|eventing)\\.knative\\.dev$")
-	mux      sync.Mutex
-)
+var domainRE = regexp.MustCompile("^(serving|build|eventing)\\.knative\\.dev$")
 
 func getMetricsConfig(m map[string]string, domain string, component string, logger *zap.SugaredLogger) (*metricsConfig, error) {
 	var mc metricsConfig
@@ -89,7 +85,6 @@ func getMetricsConfig(m map[string]string, domain string, component string, logg
 		return nil, errors.New("Metrics component name cannot be empty")
 	}
 	mc.component = component
-
 	return &mc, nil
 }
 
@@ -99,7 +94,8 @@ func UpdateExporterFromConfigMap(domain string, component string, logger *zap.Su
 	return func(configMap *corev1.ConfigMap) {
 		newConfig, err := getMetricsConfig(configMap.Data, domain, component, logger)
 		if err != nil {
-			if exporter == nil {
+			ce := getCurMetricsExporter()
+			if ce == nil {
 				// Fail the process if there doesn't exist an exporter.
 				logger.Fatal("Failed to get a valid metrics config")
 			} else {
@@ -108,13 +104,12 @@ func UpdateExporterFromConfigMap(domain string, component string, logger *zap.Su
 			}
 		}
 		changed := false
-		mux.Lock()
-		if mConfig == nil || newConfig.backendDestination != mConfig.backendDestination {
+		cc := getCurMetricsConfig()
+		if cc == nil || newConfig.backendDestination != cc.backendDestination {
 			changed = true
-		} else if newConfig.backendDestination == Stackdriver && newConfig.stackdriverProjectID != mConfig.stackdriverProjectID {
+		} else if newConfig.backendDestination == Stackdriver && newConfig.stackdriverProjectID != cc.stackdriverProjectID {
 			changed = true
 		}
-		mux.Unlock()
 
 		if changed {
 			if err := newMetricsExporter(newConfig, logger); err != nil {

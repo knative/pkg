@@ -30,43 +30,38 @@ import (
 )
 
 var (
-	exporter   view.Exporter
-	mConfig    *metricsConfig
-	promSrv    *http.Server
-	promSrvMux sync.Mutex
+	curMetricsExporter view.Exporter
+	curMetricsConfig   *metricsConfig
+	curPromSrv         *http.Server
+	metricsMux         sync.Mutex
 )
 
 // newMetricsExporter gets a metrics exporter based on the config.
 func newMetricsExporter(config *metricsConfig, logger *zap.SugaredLogger) error {
 	// If there is a Prometheus Exporter server running, stop it.
-	promSrvMux.Lock()
-	if promSrv != nil {
-		promSrv.Close()
-		promSrv = nil
-	}
-	promSrvMux.Unlock()
-
-	mux.Lock()
-	defer mux.Unlock()
-	if exporter != nil {
-		view.UnregisterExporter(exporter)
+	resetCurPromSrv()
+	ce := getCurMetricsExporter()
+	if ce != nil {
+		// UnregisterExporter is idempotent and it can be called multiple times for the same exporter
+		// without side effects.
+		view.UnregisterExporter(ce)
 	}
 	var err error
+	var e view.Exporter
 	switch config.backendDestination {
 	case Stackdriver:
-		exporter, err = newStackdriverExporter(config, logger)
+		e, err = newStackdriverExporter(config, logger)
 	case Prometheus:
-		exporter, err = newPrometheusExporter(config, logger)
+		e, err = newPrometheusExporter(config, logger)
 	default:
 		err = fmt.Errorf("Unsupported metrics backend %v", config.backendDestination)
 	}
 	if err != nil {
 		return err
 	}
-	view.RegisterExporter(exporter)
-	view.SetReportingPeriod(60 * time.Second)
-	logger.Infof("Successfully updated the metrics exporter; old config: %v; new config %v", mConfig, config)
-	mConfig = config
+	existingConfig := getCurMetricsConfig()
+	logger.Infof("Successfully updated the metrics exporter; old config: %v; new config %v", existingConfig, config)
+	setCurMetricsExporterAndConfig(e, config)
 	return nil
 }
 
@@ -100,22 +95,56 @@ func newPrometheusExporter(config *metricsConfig, logger *zap.SugaredLogger) (vi
 	logger.Infof("Created Opencensus Prometheus exporter with config: %v. Start the server for Prometheus exporter.", config)
 	// Start the server for Prometheus scraping
 	go func() {
-		sm := http.NewServeMux()
-		sm.Handle("/metrics", e)
-		promSrvMux.Lock()
-		promSrv = &http.Server{
-			Addr:    ":9090",
-			Handler: sm,
-		}
-		srv := promSrv
-		promSrvMux.Unlock()
+		srv := startCurPromSrv(e)
 		srv.ListenAndServe()
 	}()
 	return e, nil
 }
 
-func getPromSrv() *http.Server {
-	promSrvMux.Lock()
-	defer promSrvMux.Unlock()
-	return promSrv
+func getCurPromSrv() *http.Server {
+	metricsMux.Lock()
+	defer metricsMux.Unlock()
+	return curPromSrv
+}
+
+func resetCurPromSrv() {
+	metricsMux.Lock()
+	defer metricsMux.Unlock()
+	if curPromSrv != nil {
+		curPromSrv.Close()
+		curPromSrv = nil
+	}
+}
+
+func startCurPromSrv(e *prometheus.Exporter) *http.Server {
+	sm := http.NewServeMux()
+	sm.Handle("/metrics", e)
+	metricsMux.Lock()
+	defer metricsMux.Unlock()
+	curPromSrv = &http.Server{
+		Addr:    ":9090",
+		Handler: sm,
+	}
+	return curPromSrv
+}
+
+func getCurMetricsExporter() view.Exporter {
+	metricsMux.Lock()
+	defer metricsMux.Unlock()
+	return curMetricsExporter
+}
+
+func setCurMetricsExporterAndConfig(e view.Exporter, c *metricsConfig) {
+	metricsMux.Lock()
+	defer metricsMux.Unlock()
+	view.RegisterExporter(e)
+	view.SetReportingPeriod(60 * time.Second)
+	curMetricsExporter = e
+	curMetricsConfig = c
+}
+
+func getCurMetricsConfig() *metricsConfig {
+	metricsMux.Lock()
+	defer metricsMux.Unlock()
+	return curMetricsConfig
 }

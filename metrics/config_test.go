@@ -150,11 +150,12 @@ func TestUpdateExporterFromConfigMap(t *testing.T) {
 		Data: map[string]string{},
 	}
 
-	oldConfig := mConfig
+	oldConfig := getCurMetricsConfig()
 	for _, test := range successTests {
 		cm.Data = test.cm
 		u := UpdateExporterFromConfigMap(test.domain, test.component, TestLogger(t))
 		u(cm)
+		mConfig := getCurMetricsConfig()
 		if mConfig == oldConfig {
 			t.Errorf("In test %v, expected metrics config change", test.name)
 		}
@@ -168,6 +169,7 @@ func TestUpdateExporterFromConfigMap(t *testing.T) {
 		cm.Data = test.cm
 		u := UpdateExporterFromConfigMap(test.domain, test.component, TestLogger(t))
 		u(cm)
+		mConfig := getCurMetricsConfig()
 		if mConfig != oldConfig {
 			t.Errorf("In test %v, mConfig should not change", test.name)
 		}
