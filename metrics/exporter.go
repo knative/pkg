@@ -65,8 +65,6 @@ func newMetricsExporter(config *metricsConfig, logger *zap.SugaredLogger) error 
 	return nil
 }
 
-// newStackdriverExporter function is not thread safe. It is client's responsibility to synchronize any
-// multithreaded access.
 func newStackdriverExporter(config *metricsConfig, logger *zap.SugaredLogger) (view.Exporter, error) {
 	e, err := stackdriver.NewExporter(stackdriver.Options{
 		ProjectID:    config.stackdriverProjectID,
@@ -84,8 +82,6 @@ func newStackdriverExporter(config *metricsConfig, logger *zap.SugaredLogger) (v
 	return e, nil
 }
 
-// newPrometheusExporter function is not thread safe. It is client's responsibility to synchronize any
-// multithreaded access.
 func newPrometheusExporter(config *metricsConfig, logger *zap.SugaredLogger) (view.Exporter, error) {
 	e, err := prometheus.NewExporter(prometheus.Options{Namespace: config.component})
 	if err != nil {

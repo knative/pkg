@@ -142,14 +142,44 @@ func TestGetMetricsConfig(t *testing.T) {
 	}
 }
 
+func TestIsMetricsConfigChanged(t *testing.T) {
+	setCurMetricsExporterAndConfig(nil, nil)
+	for _, test := range successTests {
+		mc, err := getMetricsConfig(test.cm, test.domain, test.component, TestLogger(t))
+		if err != nil {
+			t.Errorf("In test %v, wanted valid config %v, got error %v", test.name, test.expectedConfig, err)
+		}
+		changed := isMetricsConfigChanged(mc)
+		if !changed {
+			t.Errorf("In test %v, isMetricsConfigChanged should be true", test.name)
+		}
+		setCurMetricsExporterAndConfig(nil, mc)
+	}
+
+	setCurMetricsExporterAndConfig(nil, &metricsConfig{
+		domain:             servingDomain,
+		component:          testComponent,
+		backendDestination: Prometheus})
+	newConfig := &metricsConfig{
+		domain:               servingDomain,
+		component:            testComponent,
+		backendDestination:   Prometheus,
+		stackdriverProjectID: testProj,
+	}
+	changed := isMetricsConfigChanged(newConfig)
+	if changed {
+		t.Error("isMetricsConfigChanged should be false if stackdriver project ID changes for prometheus backend")
+	}
+}
+
 func TestUpdateExporterFromConfigMap(t *testing.T) {
+	setCurMetricsExporterAndConfig(nil, nil)
 	cm := &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "config-observability",
 		},
 		Data: map[string]string{},
 	}
-
 	oldConfig := getCurMetricsConfig()
 	for _, test := range successTests {
 		cm.Data = test.cm
