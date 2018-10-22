@@ -60,8 +60,8 @@ func newMetricsExporter(config *metricsConfig, logger *zap.SugaredLogger) error 
 		return err
 	}
 	existingConfig := getCurMetricsConfig()
-	logger.Infof("Successfully updated the metrics exporter; old config: %v; new config %v", existingConfig, config)
 	setCurMetricsExporterAndConfig(e, config)
+	logger.Infof("Successfully updated the metrics exporter; old config: %v; new config %v", existingConfig, config)
 	return nil
 }
 
@@ -91,7 +91,7 @@ func newPrometheusExporter(config *metricsConfig, logger *zap.SugaredLogger) (vi
 	logger.Infof("Created Opencensus Prometheus exporter with config: %v. Start the server for Prometheus exporter.", config)
 	// Start the server for Prometheus scraping
 	go func() {
-		srv := startCurPromSrv(e)
+		srv := startNewPromSrv(e)
 		srv.ListenAndServe()
 	}()
 	return e, nil
@@ -112,11 +112,14 @@ func resetCurPromSrv() {
 	}
 }
 
-func startCurPromSrv(e *prometheus.Exporter) *http.Server {
+func startNewPromSrv(e *prometheus.Exporter) *http.Server {
 	sm := http.NewServeMux()
 	sm.Handle("/metrics", e)
 	metricsMux.Lock()
 	defer metricsMux.Unlock()
+	if curPromSrv != nil {
+		curPromSrv.Close()
+	}
 	curPromSrv = &http.Server{
 		Addr:    ":9090",
 		Handler: sm,

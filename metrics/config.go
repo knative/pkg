@@ -116,12 +116,11 @@ func UpdateExporterFromConfigMap(domain string, component string, logger *zap.Su
 // isMetricsConfigChanged compares the non-nil newConfig against curMetricsConfig. When backend changes,
 // or stackdriver project ID changes for stackdriver backend, we need to update the metrics exporter.
 func isMetricsConfigChanged(newConfig *metricsConfig) bool {
-	changed := false
 	cc := getCurMetricsConfig()
 	if cc == nil || newConfig.backendDestination != cc.backendDestination {
-		changed = true
+		return true
 	} else if newConfig.backendDestination == Stackdriver && newConfig.stackdriverProjectID != cc.stackdriverProjectID {
-		changed = true
+		return true
 	}
-	return changed
+	return false
 }
