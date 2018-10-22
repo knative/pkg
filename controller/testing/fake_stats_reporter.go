@@ -23,8 +23,8 @@ import (
 
 // FakeStatsReporter is a fake implementation of StatsReporter
 type FakeStatsReporter struct {
-	QueueDepths   []int64
-	ReconcileData []FakeReconcileStatData
+	queueDepths   []int64
+	reconcileData []FakeReconcileStatData
 	Lock          sync.Mutex
 }
 
@@ -38,7 +38,7 @@ type FakeReconcileStatData struct {
 func (r *FakeStatsReporter) ReportQueueDepth(v int64) error {
 	r.Lock.Lock()
 	defer r.Lock.Unlock()
-	r.QueueDepths = append(r.QueueDepths, v)
+	r.queueDepths = append(r.queueDepths, v)
 	return nil
 }
 
@@ -46,6 +46,20 @@ func (r *FakeStatsReporter) ReportQueueDepth(v int64) error {
 func (r *FakeStatsReporter) ReportReconcile(duration time.Duration, key, success string) error {
 	r.Lock.Lock()
 	defer r.Lock.Unlock()
-	r.ReconcileData = append(r.ReconcileData, FakeReconcileStatData{duration, key, success})
+	r.reconcileData = append(r.reconcileData, FakeReconcileStatData{duration, key, success})
 	return nil
+}
+
+// GetQueueDepths returns the recorded queue depth values
+func (r *FakeStatsReporter) GetQueueDepths() []int64 {
+	r.Lock.Lock()
+	defer r.Lock.Unlock()
+	return r.queueDepths
+}
+
+// GetReconcileData returns the recorded reconcile data
+func (r *FakeStatsReporter) GetReconcileData() []FakeReconcileStatData {
+	r.Lock.Lock()
+	defer r.Lock.Unlock()
+	return r.reconcileData
 }

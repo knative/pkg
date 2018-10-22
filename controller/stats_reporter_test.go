@@ -80,54 +80,59 @@ func TestReportReconcile(t *testing.T) {
 }
 
 func expectSuccess(t *testing.T, f func() error) {
+	t.Helper()
 	if err := f(); err != nil {
 		t.Errorf("Reporter.Report() expected success but got error %v", err)
 	}
 }
 
 func checkLastValueData(t *testing.T, name string, wantTags map[string]string, wantValue float64) {
+	t.Helper()
 	if row := checkRow(t, name); row != nil {
 		checkTags(t, wantTags, row)
 		if s, ok := row.Data.(*view.LastValueData); !ok {
 			t.Error("Reporter.Report() expected a LastValueData type")
-		} else {
-			if s.Value != (float64)(wantValue) {
-				t.Errorf("Reporter.Report() expected %v got %v. metric: %v", s.Value, (float64)(wantValue), name)
-			}
+		} else if s.Value != (float64)(wantValue) {
+			t.Errorf("Reporter.Report() expected %v got %v. metric: %v", s.Value, (float64)(wantValue), name)
 		}
 	}
 }
 
 func checkCountData(t *testing.T, name string, wantTags map[string]string, wantValue int64) {
-	if row := checkRow(t, name); row != nil {
-		checkTags(t, wantTags, row)
-		if s, ok := row.Data.(*view.CountData); !ok {
-			t.Error("Reporter.Report() expected a LastValueData type")
-		} else {
-			if s.Value != wantValue {
-				t.Errorf("Reporter.Report() expected %v got %v. metric: %v", s.Value, (float64)(wantValue), name)
-			}
-		}
+	t.Helper()
+	row := checkRow(t, name)
+	if row == nil {
+		return
+	}
+
+	checkTags(t, wantTags, row)
+	if s, ok := row.Data.(*view.CountData); !ok {
+		t.Error("Reporter.Report() expected a LastValueData type")
+	} else if s.Value != wantValue {
+		t.Errorf("Reporter.Report() expected %v got %v. metric: %v", s.Value, (float64)(wantValue), name)
 	}
 }
 
 func checkDistributionData(t *testing.T, name string, wantTags map[string]string, wantValue float64) {
-	if row := checkRow(t, name); row != nil {
-		checkTags(t, wantTags, row)
-		if s, ok := row.Data.(*view.DistributionData); !ok {
-			t.Error("Reporter.Report() expected a LastValueData type")
-		} else {
-			if s.Sum() != wantValue {
-				t.Errorf("Reporter.Report() expected %v got %v. metric: %v", s.Sum(), wantValue, name)
-			}
-		}
+	t.Helper()
+	row := checkRow(t, name)
+	if row == nil {
+		return
+	}
+
+	checkTags(t, wantTags, row)
+	if s, ok := row.Data.(*view.DistributionData); !ok {
+		t.Error("Reporter.Report() expected a LastValueData type")
+	} else if s.Sum() != wantValue {
+		t.Errorf("Reporter.Report() expected %v got %v. metric: %v", s.Sum(), wantValue, name)
 	}
 }
 
 func checkRow(t *testing.T, name string) *view.Row {
+	t.Helper()
 	d, err := view.RetrieveData(name)
 	if err != nil {
-		t.Errorf("Reporter.Report() error = %v, wantErr %v", err, false)
+		t.Fatalf("Reporter.Report() error = %v, wantErr %v", err, false)
 		return nil
 	}
 	if len(d) != 1 {
@@ -137,13 +142,12 @@ func checkRow(t *testing.T, name string) *view.Row {
 }
 
 func checkTags(t *testing.T, wantTags map[string]string, row *view.Row) {
+	t.Helper()
 	for _, got := range row.Tags {
 		if want, ok := wantTags[got.Key.Name()]; !ok {
 			t.Errorf("Reporter.Report() got an extra tag %v: %v", got.Key.Name(), got.Value)
-		} else {
-			if got.Value != want {
-				t.Errorf("Reporter.Report() expected a different tag value. key:%v, got: %v, want: %v", got.Key.Name(), got.Value, want)
-			}
+		} else if got.Value != want {
+			t.Errorf("Reporter.Report() expected a different tag value. key:%v, got: %v, want: %v", got.Key.Name(), got.Value, want)
 		}
 	}
 }

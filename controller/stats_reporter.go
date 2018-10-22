@@ -32,8 +32,8 @@ var (
 	reconcileLatencyStat = stats.Int64("reconcile_latency", "Latency of reconcile operations", stats.UnitMilliseconds)
 
 	// reconcileDistribution defines the bucket boundaries for the histogram of reconcile latency metric.
-	// Bucket boundaries are 5ms, 10ms, 25ms, 50ms, 100ms, 250ms, 500ms, 1s, 2.5s, 5s, 10s, 30s and 60s.
-	reconcileDistribution = view.Distribution(5, 10, 25, 50, 100, 250, 500, 1000, 2500, 5000, 10000, 30000, 60000)
+	// Bucket boundaries are 10ms, 100ms, 1s, 10s, 30s and 60s.
+	reconcileDistribution = view.Distribution(10, 100, 1000, 10000, 30000, 60000)
 
 	// Create the tag keys that will be used to add tags to our measurements.
 	// Tag keys must conform to the restrictions described in

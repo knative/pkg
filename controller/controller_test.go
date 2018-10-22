@@ -391,16 +391,18 @@ func drainWorkQueue(wq workqueue.RateLimitingInterface) (hasQueue []string) {
 }
 
 func checkStats(t *testing.T, r *FakeStatsReporter, reportCount, lastQueueDepth, reconcileCount int, lastReconcileSuccess string) {
-	if got, want := len(r.QueueDepths), reportCount; got != want {
+	qd := r.GetQueueDepths()
+	if got, want := len(qd), reportCount; got != want {
 		t.Errorf("Queue depth reports = %v, wanted %v", got, want)
 	}
-	if got, want := r.QueueDepths[len(r.QueueDepths)-1], int64(lastQueueDepth); got != want {
+	if got, want := qd[len(qd)-1], int64(lastQueueDepth); got != want {
 		t.Errorf("Queue depth report = %v, wanted %v", got, want)
 	}
-	if got, want := len(r.ReconcileData), 1; got != want {
+	rd := r.GetReconcileData()
+	if got, want := len(rd), 1; got != want {
 		t.Errorf("Reconcile reports = %v, wanted %v", got, want)
 	}
-	if got, want := r.ReconcileData[len(r.ReconcileData)-1].Success, lastReconcileSuccess; got != want {
+	if got, want := rd[len(rd)-1].Success, lastReconcileSuccess; got != want {
 		t.Errorf("Reconcile success = %v, wanted %v", got, want)
 	}
 }
