@@ -29,6 +29,7 @@ import (
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
 
+	. "github.com/knative/pkg/controller/testing"
 	. "github.com/knative/pkg/logging/testing"
 	. "github.com/knative/pkg/testing"
 )
@@ -233,7 +234,7 @@ func TestEnqueues(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			impl := NewImpl(&NopReconciler{}, TestLogger(t), "Testing")
+			impl := NewImpl(&NopReconciler{}, TestLogger(t), "Testing", &FakeStatsReporter{})
 			test.work(impl)
 
 			// The rate limit on our queue delays when things are added to the queue.
@@ -259,7 +260,7 @@ func (cr *CountingReconciler) Reconcile(context.Context, string) error {
 
 func TestStartAndShutdown(t *testing.T) {
 	r := &CountingReconciler{}
-	impl := NewImpl(r, TestLogger(t), "Testing")
+	impl := NewImpl(r, TestLogger(t), "Testing", &FakeStatsReporter{})
 
 	stopCh := make(chan struct{})
 
@@ -282,7 +283,8 @@ func TestStartAndShutdown(t *testing.T) {
 
 func TestStartAndShutdownWithWork(t *testing.T) {
 	r := &CountingReconciler{}
-	impl := NewImpl(r, TestLogger(t), "Testing")
+	reporter := &FakeStatsReporter{}
+	impl := NewImpl(r, TestLogger(t), "Testing", reporter)
 
 	stopCh := make(chan struct{})
 
@@ -306,6 +308,8 @@ func TestStartAndShutdownWithWork(t *testing.T) {
 	if got, want := impl.WorkQueue.NumRequeues("foo/bar"), 0; got != want {
 		t.Errorf("Count = %v, wanted %v", got, want)
 	}
+
+	checkStats(t, reporter, 1, 0, 1, trueString)
 }
 
 type ErrorReconciler struct{}
@@ -316,7 +320,8 @@ func (er *ErrorReconciler) Reconcile(context.Context, string) error {
 
 func TestStartAndShutdownWithErroringWork(t *testing.T) {
 	r := &ErrorReconciler{}
-	impl := NewImpl(r, TestLogger(t), "Testing")
+	reporter := &FakeStatsReporter{}
+	impl := NewImpl(r, TestLogger(t), "Testing", reporter)
 
 	stopCh := make(chan struct{})
 
@@ -338,11 +343,14 @@ func TestStartAndShutdownWithErroringWork(t *testing.T) {
 	if got, want := impl.WorkQueue.NumRequeues("foo/bar"), 1; got != want {
 		t.Errorf("Count = %v, wanted %v", got, want)
 	}
+
+	checkStats(t, reporter, 1, 0, 1, falseString)
 }
 
 func TestStartAndShutdownWithInvalidWork(t *testing.T) {
 	r := &CountingReconciler{}
-	impl := NewImpl(r, TestLogger(t), "Testing")
+	reporter := &FakeStatsReporter{}
+	impl := NewImpl(r, TestLogger(t), "Testing", reporter)
 
 	stopCh := make(chan struct{})
 
@@ -368,6 +376,8 @@ func TestStartAndShutdownWithInvalidWork(t *testing.T) {
 	if got, want := impl.WorkQueue.NumRequeues(thing), 0; got != want {
 		t.Errorf("Count = %v, wanted %v", got, want)
 	}
+
+	checkStats(t, reporter, 1, 0, 1, falseString)
 }
 
 func drainWorkQueue(wq workqueue.RateLimitingInterface) (hasQueue []string) {
@@ -401,7 +411,7 @@ func (*dummyStore) ListKeys() []string {
 
 func TestImplGlobalResync(t *testing.T) {
 	r := &CountingReconciler{}
-	impl := NewImpl(r, TestLogger(t), "Testing")
+	impl := NewImpl(r, TestLogger(t), "Testing", &FakeStatsReporter{})
 
 	stopCh := make(chan struct{})
 
@@ -421,5 +431,22 @@ func TestImplGlobalResync(t *testing.T) {
 
 	if want, got := 3, r.Count; want != got {
 		t.Errorf("GlobalResync: want = %v, got = %v", want, got)
+	}
+}
+
+func checkStats(t *testing.T, r *FakeStatsReporter, reportCount, lastQueueDepth, reconcileCount int, lastReconcileSuccess string) {
+	qd := r.GetQueueDepths()
+	if got, want := len(qd), reportCount; got != want {
+		t.Errorf("Queue depth reports = %v, wanted %v", got, want)
+	}
+	if got, want := qd[len(qd)-1], int64(lastQueueDepth); got != want {
+		t.Errorf("Queue depth report = %v, wanted %v", got, want)
+	}
+	rd := r.GetReconcileData()
+	if got, want := len(rd), 1; got != want {
+		t.Errorf("Reconcile reports = %v, wanted %v", got, want)
+	}
+	if got, want := rd[len(rd)-1].Success, lastReconcileSuccess; got != want {
+		t.Errorf("Reconcile success = %v, wanted %v", got, want)
 	}
 }
