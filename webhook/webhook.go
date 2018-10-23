@@ -38,6 +38,7 @@ import (
 	"github.com/knative/pkg/logging"
 	"github.com/knative/pkg/logging/logkey"
 
+	"github.com/markbates/inflect"
 	"github.com/mattbaird/jsonpatch"
 	admissionv1beta1 "k8s.io/api/admission/v1beta1"
 	admissionregistrationv1beta1 "k8s.io/api/admissionregistration/v1beta1"
@@ -325,8 +326,7 @@ func (ac *AdmissionController) register(
 
 	var rules []admissionregistrationv1beta1.RuleWithOperations
 	for gvk := range ac.Handlers {
-		// Lousy pluralizer
-		plural := strings.ToLower(gvk.Kind) + "s"
+		plural := strings.ToLower(inflect.Pluralize(gvk.Kind))
 
 		rules = append(rules, admissionregistrationv1beta1.RuleWithOperations{
 			Operations: []admissionregistrationv1beta1.OperationType{

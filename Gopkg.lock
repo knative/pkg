@@ -92,6 +92,14 @@
   version = "v1.38.3"
 
 [[projects]]
+  digest = "1:acaf854c7e302a7e13a665d00e6579fb72ead2ecd4932286deeac94ad3070fe7"
+  name = "github.com/gobuffalo/envy"
+  packages = ["."]
+  pruneopts = "NUT"
+  revision = "047ecc927cd0b7d27bab83eb948e120fb7d1ea68"
+  version = "v1.6.5"
+
+[[projects]]
   digest = "1:a6afc27b2a73a5506832f3c5a1c19a30772cb69e7bd1ced4639eb36a55db224f"
   name = "github.com/gogo/protobuf"
   packages = [
@@ -211,6 +219,14 @@
   revision = "0b12d6b5"
 
 [[projects]]
+  digest = "1:da62aa6632d04e080b8a8b85a59ed9ed1550842a0099a55f3ae3a20d02a3745a"
+  name = "github.com/joho/godotenv"
+  packages = ["."]
+  pruneopts = "NUT"
+  revision = "23d116af351c84513e1946b527c88823e476be13"
+  version = "v1.3.0"
+
+[[projects]]
   digest = "1:0243cffa4a3410f161ee613dfdd903a636d07e838a42d341da95d81f42cd1d41"
   name = "github.com/json-iterator/go"
   packages = ["."]
@@ -224,6 +240,14 @@
   packages = ["."]
   pruneopts = "T"
   revision = "c21d3a832727d5d4334e734c0878eac3a5a07ae7"
+
+[[projects]]
+  digest = "1:6abc0ac0adf962ae786cde04327a7207fe3dd0a7c48d9c5584b75f4c542eb5a0"
+  name = "github.com/markbates/inflect"
+  packages = ["."]
+  pruneopts = "NUT"
+  revision = "0eb8590873c6b42bf0e685d8fca260c1e872c4ea"
+  version = "v1.0.3"
 
 [[projects]]
   branch = "master"
@@ -910,6 +934,7 @@
     "github.com/google/go-cmp/cmp",
     "github.com/google/go-cmp/cmp/cmpopts",
     "github.com/knative/test-infra",
+    "github.com/markbates/inflect",
     "github.com/mattbaird/jsonpatch",
     "go.opencensus.io/exporter/prometheus",
     "go.opencensus.io/stats",
