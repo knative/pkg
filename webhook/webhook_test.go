@@ -58,27 +58,6 @@ const (
 	testResourceName = "test-resource"
 )
 
-func newRunningTestAdmissionController(t *testing.T, options ControllerOptions) (
-	kubeClient *fakekubeclientset.Clientset,
-	ac *AdmissionController,
-	stopCh chan struct{}) {
-	// Create fake clients
-	kubeClient = fakekubeclientset.NewSimpleClientset()
-
-	ac, err := NewAdmissionController(kubeClient, options, TestLogger(t))
-	if err != nil {
-		t.Fatalf("Failed to create new admission controller: %s", err)
-	}
-	stopCh = make(chan struct{})
-	go func() {
-		if err := ac.Run(stopCh); err != nil {
-			t.Fatalf("Error running controller: %v", err)
-		}
-	}()
-	ac.Run(stopCh)
-	return
-}
-
 func newNonRunningTestAdmissionController(t *testing.T, options ControllerOptions) (
 	kubeClient *fakekubeclientset.Clientset,
 	ac *AdmissionController) {
