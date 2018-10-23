@@ -252,6 +252,7 @@ func NewDefaultRuleset() *Ruleset {
 	rs.AddIrregular("Status", "Statuses")
 	rs.AddIrregular("status", "statuses")
 	rs.AddIrregular("campus", "campuses")
+	rs.AddIrregular("human", "humans")
 	rs.AddUncountable("equipment")
 	rs.AddUncountable("information")
 	rs.AddUncountable("rice")
