@@ -19,7 +19,6 @@ package metrics
 import (
 	"errors"
 	"fmt"
-	"regexp"
 	"strings"
 
 	"go.uber.org/zap"
@@ -52,8 +51,6 @@ type metricsConfig struct {
 	stackdriverProjectID string
 }
 
-var domainRE = regexp.MustCompile("^(serving|build|eventing)\\.knative\\.dev$")
-
 func getMetricsConfig(m map[string]string, domain string, component string, logger *zap.SugaredLogger) (*metricsConfig, error) {
 	var mc metricsConfig
 	backend, ok := m[backendDestinationKey]
@@ -76,8 +73,8 @@ func getMetricsConfig(m map[string]string, domain string, component string, logg
 		mc.stackdriverProjectID = sdProj
 	}
 
-	if !domainRE.MatchString(domain) {
-		return nil, fmt.Errorf("Invalid metrics domain name \"%s\"", domain)
+	if domain == "" {
+		return nil, errors.New("Metrics domain cannot be empty")
 	}
 	mc.domain = domain
 

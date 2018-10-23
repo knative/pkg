@@ -67,13 +67,13 @@ var (
 		component:   testComponent,
 		expectedErr: "Unsupported metrics backend value \"unsupported\"",
 	}, {
-		name: "invalidDomain",
+		name: "emptyDomain",
 		cm: map[string]string{
 			"metrics.backend-destination": "prometheus",
 		},
-		domain:      "abc.knative.dev",
+		domain:      "",
 		component:   testComponent,
-		expectedErr: "Invalid metrics domain name \"abc.knative.dev\"",
+		expectedErr: "Metrics domain cannot be empty",
 	}, {
 		name: "invalidComponent",
 		cm: map[string]string{
