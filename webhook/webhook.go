@@ -299,14 +299,20 @@ func (ac *AdmissionController) Run(stop <-chan struct{}) error {
 		return nil
 	}
 
+	serverBootstrapErrCh := make(chan struct{})
 	go func() {
 		if err := server.ListenAndServeTLS("", ""); err != nil {
 			logger.Error("ListenAndServeTLS for admission webhook returned error", zap.Error(err))
+			close(serverBootstrapErrCh)
 		}
 	}()
-	<-stop
-	server.Close() // nolint: errcheck
-	return nil
+
+	select {
+	case <-stop:
+		return server.Close()
+	case <-serverBootstrapErrCh:
+		return errors.New("webhook server bootstrap failed")
+	}
 }
 
 // Unregister unregisters the external admission webhook
