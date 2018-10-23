@@ -37,10 +37,6 @@ required = [
   name = "go.uber.org/zap"
   revision = "67bc79d13d155c02fd008f721863ff8cc5f30659"
 
-[[override]]
-  name = "github.com/census-ecosystem/opencensus-go-exporter-stackdriver"
-  version = "0.6.0"
-
 [prune]
   go-tests = true
   unused-packages = true
