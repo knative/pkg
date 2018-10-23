@@ -326,7 +326,6 @@ func (ac *AdmissionController) register(
 
 	var rules []admissionregistrationv1beta1.RuleWithOperations
 	for gvk := range ac.Handlers {
-		// Lousy pluralizer
 		plural := strings.ToLower(inflect.Pluralize(gvk.Kind))
 
 		rules = append(rules, admissionregistrationv1beta1.RuleWithOperations{
