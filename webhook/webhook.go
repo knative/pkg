@@ -308,12 +308,10 @@ func (ac *AdmissionController) Run(stop <-chan struct{}) error {
 
 	select {
 	case <-stop:
-		server.Close() // nolint: errcheck
+		return server.Close()
 	case <-serverBootstrapErrCh:
 		return errors.New("webhook server bootstrap failed")
 	}
-
-	return nil
 }
 
 // Unregister unregisters the external admission webhook
