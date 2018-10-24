@@ -263,7 +263,7 @@ func TestRegistrationForAlreadyExistingWebhook(t *testing.T) {
 		t.Fatal("Expected webhook controller to fail")
 	}
 
-	if !strings.Contains(err.Error(), "configmaps") {
+	if ac.Options.ClientAuth >= tls.VerifyClientCertIfGiven && !strings.Contains(err.Error(), "configmaps") {
 		t.Fatal("Expected error msg to contain configmap key missing error")
 	}
 }
@@ -343,6 +343,14 @@ func TestCertConfigurationForGeneratedSecret(t *testing.T) {
 	}
 	if p.Type != "CERTIFICATE" {
 		t.Fatalf("Expectet type to be CERTIFICATE but got %s", string(p.Type))
+	}
+}
+
+func TestSettingWebhookClientAuth(t *testing.T) {
+	opts := newDefaultOptions()
+	if opts.ClientAuth != tls.NoClientCert {
+		t.Fatalf("Expected default ClientAuth to be NoClientCert (%v) but got (%v)",
+			tls.NoClientCert, opts.ClientAuth)
 	}
 }
 

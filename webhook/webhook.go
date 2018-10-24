@@ -95,6 +95,11 @@ type ControllerOptions struct {
 	// potential races where registration completes and k8s apiserver
 	// invokes the webhook before the HTTP server is started.
 	RegistrationDelay time.Duration
+
+	// ClientAuthType declares the policy the webhook server will follow for
+	// TLS Client Authentication.
+	// The default value is tls.NoClientCert.
+	ClientAuth tls.ClientAuthType
 }
 
 // ResourceCallback defines a signature for resource specific (Route, Configuration, etc.)
@@ -144,7 +149,7 @@ func getAPIServerExtensionCACert(cl kubernetes.Interface) ([]byte, error) {
 }
 
 // MakeTLSConfig makes a TLS configuration suitable for use with the server
-func makeTLSConfig(serverCert, serverKey, caCert []byte) (*tls.Config, error) {
+func makeTLSConfig(serverCert, serverKey, caCert []byte, clientAuthType tls.ClientAuthType) (*tls.Config, error) {
 	caCertPool := x509.NewCertPool()
 	caCertPool.AppendCertsFromPEM(caCert)
 	cert, err := tls.X509KeyPair(serverCert, serverKey)
@@ -154,11 +159,7 @@ func makeTLSConfig(serverCert, serverKey, caCert []byte) (*tls.Config, error) {
 	return &tls.Config{
 		Certificates: []tls.Certificate{cert},
 		ClientCAs:    caCertPool,
-		ClientAuth:   tls.NoClientCert,
-		// Note on GKE there apparently is no client cert sent, so this
-		// does not work on GKE.
-		// TODO: make this into a configuration option.
-		//		ClientAuth:   tls.RequireAndVerifyClientCert,
+		ClientAuth:   clientAuthType,
 	}, nil
 }
 
@@ -236,16 +237,20 @@ func SetDefaults(ctx context.Context) ResourceDefaulter {
 }
 
 func configureCerts(ctx context.Context, client kubernetes.Interface, options *ControllerOptions) (*tls.Config, []byte, error) {
-	apiServerCACert, err := getAPIServerExtensionCACert(client)
+	var apiServerCACert []byte
+	if options.ClientAuth >= tls.VerifyClientCertIfGiven {
+		var err error
+		apiServerCACert, err = getAPIServerExtensionCACert(client)
+		if err != nil {
+			return nil, nil, err
+		}
+	}
+
+	serverKey, serverCert, caCert, err := getOrGenerateKeyCertsFromSecret(ctx, client, options)
 	if err != nil {
 		return nil, nil, err
 	}
-	serverKey, serverCert, caCert, err := getOrGenerateKeyCertsFromSecret(
-		ctx, client, options)
-	if err != nil {
-		return nil, nil, err
-	}
-	tlsConfig, err := makeTLSConfig(serverCert, serverKey, apiServerCACert)
+	tlsConfig, err := makeTLSConfig(serverCert, serverKey, apiServerCACert, options.ClientAuth)
 	if err != nil {
 		return nil, nil, err
 	}
