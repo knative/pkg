@@ -294,11 +294,6 @@ func (ac *AdmissionController) Run(stop <-chan struct{}) error {
 			logger.Error("Failed to register webhook", zap.Error(err))
 			return err
 		}
-		defer func() {
-			if err := ac.unregister(ctx, cl); err != nil {
-				logger.Error("Failed to unregister webhook", zap.Error(err))
-			}
-		}()
 		logger.Info("Successfully registered webhook")
 	case <-stop:
 		return nil
@@ -318,14 +313,6 @@ func (ac *AdmissionController) Run(stop <-chan struct{}) error {
 	case <-serverBootstrapErrCh:
 		return errors.New("webhook server bootstrap failed")
 	}
-}
-
-// Unregister unregisters the external admission webhook
-func (ac *AdmissionController) unregister(
-	ctx context.Context, client clientadmissionregistrationv1beta1.MutatingWebhookConfigurationInterface) error {
-	logger := logging.FromContext(ctx)
-	logger.Info("Exiting..")
-	return nil
 }
 
 // Register registers the external admission webhook for pilot
