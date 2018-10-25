@@ -20,6 +20,7 @@ import (
 )
 
 func TestNewStackdriverExporter(t *testing.T) {
+	resetCurPromSrv()
 	// The stackdriver project ID is required for stackdriver exporter.
 	e, err := newStackdriverExporter(&metricsConfig{
 		domain:               servingDomain,
@@ -36,6 +37,7 @@ func TestNewStackdriverExporter(t *testing.T) {
 }
 
 func TestNewPrometheusExporter(t *testing.T) {
+	resetCurPromSrv()
 	// The stackdriver project ID is not required for prometheus exporter.
 	e, err := newPrometheusExporter(&metricsConfig{
 		domain:               servingDomain,
