@@ -234,12 +234,12 @@
   revision = "f2b4162afba35581b6d4a50d3b8f34e33c144682"
 
 [[projects]]
-  branch = "master"
-  digest = "1:00f434f614520a4b48ef3f6d3ed5c7a1a4f89be1bed98c250711413f6da2eb51"
+  branch = "adrcunha-patch-1"
+  digest = "1:3cd5f8ea053c2d612bc3fdd677fecfa17d254e7e57a1599f67feeff506be2731"
   name = "github.com/knative/test-infra"
   packages = ["."]
   pruneopts = "T"
-  revision = "c21d3a832727d5d4334e734c0878eac3a5a07ae7"
+  revision = "624fc36fd904fcf29abd744d68131c915595cc30"
 
 [[projects]]
   digest = "1:6abc0ac0adf962ae786cde04327a7207fe3dd0a7c48d9c5584b75f4c542eb5a0"
