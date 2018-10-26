@@ -92,7 +92,7 @@ type SpoofingClient struct {
 // follow the ingress if it moves (or if there are multiple ingresses).
 //
 // If that's a problem, see test/request.go#WaitForEndpointState for oneshot spoofing.
-func New(kubeClientset *kubernetes.Clientset, logger *logging.BaseLogger, domain string, resolvable bool) (*SpoofingClient, error) {
+func New(kubeClientset *kubernetes.Clientset, logger *logging.BaseLogger, domain string, resolvable bool, endpointOverride string) (*SpoofingClient, error) {
 	sc := SpoofingClient{
 		Client:          &http.Client{Transport: &ochttp.Transport{Propagation: &b3.HTTPFormat{}}}, // Using ochttp Transport required for zipkin-tracing
 		RequestInterval: requestInterval,
@@ -101,12 +101,16 @@ func New(kubeClientset *kubernetes.Clientset, logger *logging.BaseLogger, domain
 	}
 
 	if !resolvable {
-		// If the domain that the Route controller is configured to assign to Route.Status.Domain
-		// (the domainSuffix) is not resolvable, we need to retrieve the IP of the endpoint and
-		// spoof the Host in our requests.
-		e, err := GetServiceEndpoint(kubeClientset)
-		if err != nil {
-			return nil, err
+		e := &endpointOverride
+		if endpointOverride == "" {
+			var err error
+			// If the domain that the Route controller is configured to assign to Route.Status.Domain
+			// (the domainSuffix) is not resolvable, we need to retrieve the IP of the endpoint and
+			// spoof the Host in our requests.
+			e, err = GetServiceEndpoint(kubeClientset)
+			if err != nil {
+				return nil, err
+			}
 		}
 
 		sc.endpoint = *e

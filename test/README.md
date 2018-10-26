@@ -213,6 +213,16 @@ The current cluster names can be obtained by running:
 kubectl config get-clusters
 ```
 
+### Specifying ingress endpoint
+
+The `--ingressendpoint` argument lets you specify a static url to use as the
+ingress server during tests. This is useful for Kubernetes configurations which
+do not provide external IPs.
+
+```bash
+go test ./test --ingressendpoint <k8s-controller-ip>:32380
+```
+
 ### Specifying namespace
 
 The `--namespace` argument lets you specify the namespace to use for the tests.
