@@ -60,6 +60,7 @@ func TestCreateCerts(t *testing.T) {
 
 	// Verify domain names
 	expectedDNSNames := []string{
+		"got-the-hook",
 		"got-the-hook.knative-webhook",
 		"got-the-hook.knative-webhook.svc",
 		"got-the-hook.knative-webhook.svc.cluster.local",
