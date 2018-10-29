@@ -67,10 +67,9 @@ func getMetricsConfig(m map[string]string, domain string, component string, logg
 
 	if mc.backendDestination == Stackdriver {
 		sdProj, ok := m[stackdriverProjectIDKey]
-		if !ok || sdProj == "" {
-			return nil, errors.New("For backend stackdriver, metrics.stackdriver-project-id field must exist and cannot be empty")
+		if ok && sdProj != "" {
+			mc.stackdriverProjectID = sdProj
 		}
-		mc.stackdriverProjectID = sdProj
 	}
 
 	if domain == "" {
