@@ -230,6 +230,34 @@ func TestEnqueues(t *testing.T) {
 			})
 		},
 		wantQueue: []string{"bar/baz"},
+	}, {
+		name: "enqueue controller of deleted resource with owner",
+		work: func(impl *Impl) {
+			impl.EnqueueControllerOf(cache.DeletedFinalStateUnknown{
+				Key: "foo/bar",
+				Obj: &Resource{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "foo",
+						Namespace: "bar",
+						OwnerReferences: []metav1.OwnerReference{{
+							APIVersion: gvk.GroupVersion().String(),
+							Kind:       gvk.Kind,
+							Name:       "baz",
+							Controller: &boolTrue,
+						}},
+					},
+				},
+			})
+		},
+		wantQueue: []string{"bar/baz"},
+	}, {
+		name: "enqueue controller of deleted bad resource",
+		work: func(impl *Impl) {
+			impl.EnqueueControllerOf(cache.DeletedFinalStateUnknown{
+				Key: "foo/bar",
+				Obj: "bad-resource",
+			})
+		},
 	}}
 
 	for _, test := range tests {
