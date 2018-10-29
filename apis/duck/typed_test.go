@@ -17,11 +17,17 @@ limitations under the License.
 package duck_test
 
 import (
+	"encoding/json"
+	"errors"
 	"testing"
 	"time"
 
+	"github.com/google/go-cmp/cmp"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/dynamic/fake"
 
 	"github.com/knative/pkg/apis/duck"
@@ -84,4 +90,186 @@ func TestSimpleList(t *testing.T) {
 	}
 
 	// TODO(mattmoor): Access through informer
+}
+
+func TestAsStructuredWatcherNestedError(t *testing.T) {
+	want := errors.New("this is what we expect")
+	nwf := func(lo metav1.ListOptions) (watch.Interface, error) {
+		return nil, want
+	}
+
+	wf := duck.AsStructuredWatcher(nwf, &duckv1alpha1.Generational{})
+
+	_, got := wf(metav1.ListOptions{})
+	if got != want {
+		t.Errorf("WatchFunc() = %v, wanted %v", got, want)
+	}
+}
+
+func TestAsStructuredWatcherClosedChannel(t *testing.T) {
+	nwf := func(lo metav1.ListOptions) (watch.Interface, error) {
+		return watch.NewEmptyWatch(), nil
+	}
+
+	wf := duck.AsStructuredWatcher(nwf, &duckv1alpha1.Generational{})
+
+	wi, err := wf(metav1.ListOptions{})
+	if err != nil {
+		t.Errorf("WatchFunc() = %v", err)
+	}
+
+	ch := wi.ResultChan()
+
+	x, ok := <-ch
+	if ok {
+		t.Errorf("<-ch = %v, wanted closed", x)
+	}
+}
+
+func TestAsStructuredWatcherPassThru(t *testing.T) {
+	unstructuredCh := make(chan watch.Event)
+	nwf := func(lo metav1.ListOptions) (watch.Interface, error) {
+		return duck.NewProxyWatcher(unstructuredCh), nil
+	}
+
+	wf := duck.AsStructuredWatcher(nwf, &duckv1alpha1.Generational{})
+
+	wi, err := wf(metav1.ListOptions{})
+	if err != nil {
+		t.Errorf("WatchFunc() = %v", err)
+	}
+	defer wi.Stop()
+	ch := wi.ResultChan()
+
+	// Don't expect a message yet.
+	select {
+	case x, ok := <-ch:
+		t.Errorf("Saw unexpected message on channel: %v, %v.", x, ok)
+	case _ = <-time.After(100 * time.Millisecond):
+		// Expected path.
+	}
+
+	want := watch.Added
+	unstructuredCh <- watch.Event{
+		Type:   want,
+		Object: &unstructured.Unstructured{},
+	}
+
+	// Expect a message when we send one though.
+	select {
+	case x, ok := <-ch:
+		if !ok {
+			t.Fatal("<-ch = closed, wanted *duckv1alpha1.Generational{}")
+		}
+		if got := x.Type; got != want {
+			t.Errorf("x.Type = %v, wanted %v", got, want)
+		}
+		if _, ok := x.Object.(*duckv1alpha1.Generational); !ok {
+			t.Errorf("<-ch = %T, wanted %T", x, &duckv1alpha1.Generational{})
+		}
+	case _ = <-time.After(100 * time.Millisecond):
+		t.Errorf("Didn't see expected message on channel.")
+	}
+}
+
+func TestAsStructuredWatcherPassThruErrors(t *testing.T) {
+	unstructuredCh := make(chan watch.Event)
+	nwf := func(lo metav1.ListOptions) (watch.Interface, error) {
+		return duck.NewProxyWatcher(unstructuredCh), nil
+	}
+
+	wf := duck.AsStructuredWatcher(nwf, &duckv1alpha1.Generational{})
+
+	wi, err := wf(metav1.ListOptions{})
+	if err != nil {
+		t.Errorf("WatchFunc() = %v", err)
+	}
+	defer wi.Stop()
+	ch := wi.ResultChan()
+
+	want := watch.Event{
+		Type: watch.Error,
+		Object: &metav1.Status{
+			Code: 42,
+		},
+	}
+	unstructuredCh <- want
+
+	// Expect a message when we send one though.
+	select {
+	case got, ok := <-ch:
+		if !ok {
+			t.Fatal("<-ch = closed, wanted *metav1.Status{}")
+		}
+		if diff := cmp.Diff(want, got); diff != "" {
+			t.Errorf("<-ch (-want, +got) = %v", diff)
+		}
+	case _ = <-time.After(100 * time.Millisecond):
+		t.Errorf("Didn't see expected message on channel.")
+	}
+}
+
+func TestAsStructuredWatcherErrorConverting(t *testing.T) {
+	unstructuredCh := make(chan watch.Event)
+	nwf := func(lo metav1.ListOptions) (watch.Interface, error) {
+		return duck.NewProxyWatcher(unstructuredCh), nil
+	}
+
+	wf := duck.AsStructuredWatcher(nwf, &badObject{})
+
+	wi, err := wf(metav1.ListOptions{})
+	if err != nil {
+		t.Errorf("WatchFunc() = %v", err)
+	}
+	defer wi.Stop()
+	ch := wi.ResultChan()
+
+	unstructuredCh <- watch.Event{
+		Type: watch.Added,
+		Object: &unstructured.Unstructured{
+			Object: map[string]interface{}{
+				"foo": "bar",
+			},
+		},
+	}
+
+	// Expect a message when we send one though.
+	select {
+	case x, ok := <-ch:
+		if !ok {
+			t.Fatal("<-ch = closed, wanted *duckv1alpha1.Generational{}")
+		}
+		if got, want := x.Type, watch.Error; got != want {
+			t.Errorf("<-ch = %v, wanted %v", got, want)
+		}
+		if status, ok := x.Object.(*metav1.Status); !ok {
+			t.Errorf("<-ch = %T, wanted %T", x, &metav1.Status{})
+		} else if got, want := status.Message, errNoUnmarshal.Error(); got != want {
+			t.Errorf("<-ch = %v, wanted %v", got, want)
+		}
+	case _ = <-time.After(100 * time.Millisecond):
+		t.Errorf("Didn't see expected message on channel.")
+	}
+}
+
+var errNoUnmarshal = errors.New("this cannot be unmarshalled")
+
+type badObject struct {
+	Foo doNotUnmarshal `json:"foo"`
+}
+
+type doNotUnmarshal struct{}
+
+var _ json.Unmarshaler = (*doNotUnmarshal)(nil)
+
+func (*doNotUnmarshal) UnmarshalJSON([]byte) error {
+	return errNoUnmarshal
+}
+
+func (bo *badObject) GetObjectKind() schema.ObjectKind {
+	return &metav1.TypeMeta{}
+}
+
+func (bo *badObject) DeepCopyObject() runtime.Object {
+	return &badObject{}
 }

@@ -18,6 +18,7 @@ package webhook
 
 import (
 	"bytes"
+	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -328,6 +329,29 @@ func TestInvalidResponseForResource(t *testing.T) {
 	}
 }
 
+func TestWebhookClientAuth(t *testing.T) {
+	ac, serverURL, err := testSetup(t)
+	if err != nil {
+		t.Fatalf("testSetup() = %v", err)
+	}
+	ac.Options.ClientAuth = tls.RequireAndVerifyClientCert
+
+	stopCh := make(chan struct{})
+	defer close(stopCh)
+
+	go func() {
+		err := ac.Run(stopCh)
+		if err != nil {
+			t.Fatalf("Unable to run controller: %s", err)
+		}
+	}()
+
+	pollErr := waitForServerAvailable(t, serverURL, testTimeout)
+	if pollErr != nil {
+		t.Fatalf("waitForServerAvailable() = %v", err)
+	}
+}
+
 func testSetup(t *testing.T) (*AdmissionController, string, error) {
 	t.Helper()
 	port, err := newTestPort()
@@ -351,4 +375,37 @@ func testSetup(t *testing.T) (*AdmissionController, string, error) {
 
 	createDeployment(ac)
 	return ac, fmt.Sprintf("0.0.0.0:%d", port), nil
+}
+
+func TestSetupWebhookHTTPServerError(t *testing.T) {
+	defaultOpts := newDefaultOptions()
+	defaultOpts.Port = -1 // invalid port
+	_, ac := newNonRunningTestAdmissionController(t, defaultOpts)
+
+	nsErr := createNamespace(t, ac.Client, metav1.NamespaceSystem)
+	if nsErr != nil {
+		t.Fatalf("testSetup() = %v", nsErr)
+	}
+	cMapsErr := createTestConfigMap(t, ac.Client)
+	if cMapsErr != nil {
+		t.Fatalf("testSetup() = %v", cMapsErr)
+	}
+	createDeployment(ac)
+
+	stopCh := make(chan struct{})
+	errCh := make(chan error)
+	go func() {
+		if err := ac.Run(stopCh); err != nil {
+			errCh <- err
+		}
+	}()
+
+	select {
+	case <-time.After(6 * time.Second):
+		t.Errorf("Timeout in testing bootstrap webhook http server failed\n")
+	case errItem := <-errCh:
+		if !strings.Contains(errItem.Error(), "bootstrap failed") {
+			t.Errorf("Expected bootstrap webhook http server failed\n")
+		}
+	}
 }

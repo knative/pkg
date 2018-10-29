@@ -24,6 +24,98 @@ import (
 	"github.com/google/go-cmp/cmp"
 )
 
+func TestCreateMergePatch(t *testing.T) {
+	tests := []struct {
+		name    string
+		before  interface{}
+		after   interface{}
+		wantErr bool
+		want    []byte
+	}{{
+		name: "patch single field",
+		before: &Patch{
+			Spec: PatchSpec{
+				Patchable: &Patchable{
+					Field1: 12,
+				},
+			},
+		},
+		after: &Patch{
+			Spec: PatchSpec{
+				Patchable: &Patchable{
+					Field1: 13,
+				},
+			},
+		},
+		want: []byte(`{"status":{"patchable":{"field1":13}}}`),
+	}, {
+		name: "patch two fields",
+		before: &Patch{
+			Spec: PatchSpec{
+				Patchable: &Patchable{
+					Field1: 12,
+					Field2: true,
+				},
+			},
+		},
+		after: &Patch{
+			Spec: PatchSpec{
+				Patchable: &Patchable{
+					Field1: 42,
+					Field2: false,
+				},
+			},
+		},
+		want: []byte(`{"status":{"patchable":{"field1":42,"field2":null}}}`),
+	}, {
+		name: "patch array",
+		before: &Patch{
+			Spec: PatchSpec{
+				Patchable: &Patchable{
+					Array: []string{"foo", "baz"},
+				},
+			},
+		},
+		after: &Patch{
+			Spec: PatchSpec{
+				Patchable: &Patchable{
+					Array: []string{"foo", "bar", "baz"},
+				},
+			},
+		},
+		want: []byte(`{"status":{"patchable":{"array":["foo","bar","baz"]}}}`),
+	}, {
+		name:    "before doesn't marshal",
+		before:  &DoesntMarshal{},
+		after:   &Patch{},
+		wantErr: true,
+	}, {
+		name:    "after doesn't marshal",
+		before:  &Patch{},
+		after:   &DoesntMarshal{},
+		wantErr: true,
+	}}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			got, err := CreateMergePatch(test.before, test.after)
+			if err != nil {
+				if !test.wantErr {
+					t.Errorf("CreateMergePatch() = %v", err)
+				}
+				return
+			} else if test.wantErr {
+				t.Errorf("CreateMergePatch() = %v, wanted error", got)
+				return
+			}
+
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("CreatePatch (-want, +got) = %v, %s", diff, got)
+			}
+		})
+	}
+}
+
 func TestCreatePatch(t *testing.T) {
 	tests := []struct {
 		name    string

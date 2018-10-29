@@ -114,3 +114,96 @@ func TestMakeOldVersionLabelSelector(t *testing.T) {
 		})
 	}
 }
+
+func TestMakeGenerationLabels(t *testing.T) {
+	tests := []struct {
+		name string
+		om   metav1.ObjectMeta
+		s    string
+	}{{
+		name: "simple translation",
+		om: metav1.ObjectMeta{
+			UID:        "1234",
+			Generation: 5,
+		},
+		s: "controller=1234,generation=00005",
+	}, {
+		name: "another simple translation",
+		om: metav1.ObjectMeta{
+			UID:        "abcd",
+			Generation: 5432,
+		},
+		s: "controller=abcd,generation=05432",
+	}}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			ls := MakeGenerationLabels(&test.om)
+			if want, got := test.s, ls.String(); got != want {
+				t.Errorf("MakeGenerationLabels() = %v, wanted %v", got, want)
+			}
+		})
+	}
+}
+
+func TestMakeGenerationLabelSelector(t *testing.T) {
+	tests := []struct {
+		name string
+		om   metav1.ObjectMeta
+		s    string
+	}{{
+		name: "simple translation",
+		om: metav1.ObjectMeta{
+			UID:        "1234",
+			Generation: 5,
+		},
+		s: "controller=1234,generation=00005",
+	}, {
+		name: "another simple translation",
+		om: metav1.ObjectMeta{
+			UID:        "abcd",
+			Generation: 5432,
+		},
+		s: "controller=abcd,generation=05432",
+	}}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			ls := MakeGenerationLabelSelector(&test.om)
+			if want, got := test.s, ls.String(); got != want {
+				t.Errorf("MakeGenerationLabelSelector() = %v, wanted %v", got, want)
+			}
+		})
+	}
+}
+
+func TestMakeOldGenerationLabelSelector(t *testing.T) {
+	tests := []struct {
+		name string
+		om   metav1.ObjectMeta
+		s    string
+	}{{
+		name: "simple translation",
+		om: metav1.ObjectMeta{
+			UID:        "1234",
+			Generation: 5,
+		},
+		s: "controller=1234,generation!=00005",
+	}, {
+		name: "another simple translation",
+		om: metav1.ObjectMeta{
+			UID:        "abcd",
+			Generation: 5432,
+		},
+		s: "controller=abcd,generation!=05432",
+	}}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			ls := MakeOldGenerationLabelSelector(&test.om)
+			if want, got := test.s, ls.String(); got != want {
+				t.Errorf("MakeOldGenerationLabelSelector() = %v, wanted %v", got, want)
+			}
+		})
+	}
+}

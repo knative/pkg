@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Copyright 2018 The Knative Authors
 #
@@ -24,9 +24,6 @@ cd ${REPO_ROOT_DIR}
 
 # Ensure we have everything we need under vendor/
 dep ensure
-
-# Keep the only dir in knative/test-infra we're interested in
-find vendor/github.com/knative/test-infra -mindepth 1 -maxdepth 1 ! -name scripts -exec rm -fr {} \;
 
 # Patch the Kubernetes dynamic client to fix listing. This patch is from
 # https://github.com/kubernetes/kubernetes/pull/68552/files, which is a

@@ -33,18 +33,16 @@ type Channelable struct {
 }
 
 // ChannelSubscriberSpec defines a single subscriber to a Channel.
-// CallableDomain is the endpoint for the call
-// SinkableDomain is the endpoint for the result
-// One of them must be present
+// CallableURI is the endpoint for the call
+// SinkableURI is the endpoint for the result
+// At least one of them must be present.
 type ChannelSubscriberSpec struct {
 	// +optional
-	CallableDomain string `json:"callableDomain,omitempty"`
+	CallableURI string `json:"callableURI,omitempty"`
 	// +optional
-	SinkableDomain string `json:"sinkableDomain,omitempty"`
+	SinkableURI string `json:"sinkableURI,omitempty"`
 }
 
-// Implementations can verify that they implement Channelable via:
-var _ = duck.VerifyType(&Channel{}, &Channelable{})
 
 // Channelable is an Implementable "duck type".
 var _ duck.Implementable = (*Channelable)(nil)

@@ -97,14 +97,10 @@ func TestMatches(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			// If we panic, turn it into a test failure
-			defer func() {
-				if r := recover(); r != nil {
-					t.Errorf("panic: %v", r)
-				}
-			}()
+			if err := VerifyType(test.instance, test.iface); err != nil {
+				t.Error(err)
+			}
 
-			VerifyType(test.instance, test.iface)
 		})
 	}
 }
@@ -146,15 +142,9 @@ func TestMismatches(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			// Catch panics, they are the failure mode we expect.
-			defer func() {
-				if r := recover(); r != nil {
-					return
-				}
+			if err := VerifyType(test.instance, test.iface); err == nil {
 				t.Errorf("Unexpected success %T implements %T", test.instance, test.iface)
-			}()
-
-			VerifyType(test.instance, test.iface)
+			}
 		})
 	}
 }
