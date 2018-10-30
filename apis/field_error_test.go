@@ -17,6 +17,7 @@ limitations under the License.
 package apis
 
 import (
+	"fmt"
 	"strconv"
 	"strings"
 	"testing"
@@ -127,6 +128,89 @@ can not use @, do not try`,
 		prefixes: [][]string{{"baz"}},
 		want: `invalid key name "b@r": baz.foo[0].name
 can not use @, do not try`,
+	}, {
+		name: "very complex to simple",
+		err: func() *FieldError {
+			fe := &FieldError{
+				Message: "First",
+				Paths:   []string{"A", "B", "C"},
+			}
+
+			fe = fe.Also(fe).Also(fe).Also(fe).Also(fe)
+
+			fe = fe.Also(&FieldError{
+				Message: "Second",
+				Paths:   []string{"Z", "X", "Y"},
+			})
+
+			fe = fe.Also(fe).Also(fe).Also(fe).Also(fe)
+
+			return fe
+		}(),
+		want: `First: A, B, C
+Second: X, Y, Z`,
+	}, {
+		name: "exponentially grows",
+		err: func() *FieldError {
+			fe := &FieldError{
+				Message: "Top",
+				Paths:   []string{"A", "B", "C"},
+			}
+
+			for _, p := range []string{"3", "2", "1"} {
+				for i := 0; i < 3; i++ {
+					fe = fe.Also(fe)
+				}
+				fe = fe.ViaField(p)
+			}
+
+			return fe
+		}(),
+		want: `Top: 1.2.3.A, 1.2.3.B, 1.2.3.C`,
+	}, {
+		name: "path grows but details are different",
+		err: func() *FieldError {
+			fe := &FieldError{
+				Message: "Top",
+				Paths:   []string{"A", "B", "C"},
+			}
+
+			for _, p := range []string{"3", "2", "1"} {
+				e := fe.ViaField(p)
+				e.Details = fmt.Sprintf("here at %s", p)
+				for i := 0; i < 3; i++ {
+					fe = fe.Also(e)
+				}
+			}
+
+			return fe
+		}(),
+		want: `Top: A, B, C
+Top: 1.A, 1.B, 1.C
+here at 1
+Top: 1.2.A, 1.2.B, 1.2.C, 2.A, 2.B, 2.C
+here at 2
+Top: 1.2.3.A, 1.2.3.B, 1.2.3.C, 1.3.A, 1.3.B, 1.3.C, 2.3.A, 2.3.B, 2.3.C, 3.A, 3.B, 3.C
+here at 3`,
+	}, {
+		name: "very complex to complex",
+		err: func() *FieldError {
+			fe := &FieldError{
+				Message: "First",
+				Paths:   []string{"A", "B", "C"},
+			}
+
+			fe = fe.ViaField("one").Also(fe).ViaField("two").Also(fe).ViaField("three").Also(fe)
+
+			fe = fe.Also(&FieldError{
+				Message: "Second",
+				Paths:   []string{"Z", "X", "Y"},
+			})
+
+			return fe
+		}(),
+		want: `First: A, B, C, three.A, three.B, three.C, three.two.A, three.two.B, three.two.C, three.two.one.A, three.two.one.B, three.two.one.C
+Second: X, Y, Z`,
 	}}
 
 	for _, test := range tests {
@@ -422,6 +506,111 @@ not without this: bar.C`,
 				fe = fe.ViaField(prefix...)
 			}
 
+			if test.want != "" {
+				got := fe.Error()
+				if got != test.want {
+					t.Errorf("%s: Error() = %v, wanted %v", test.name, got, test.want)
+				}
+			} else if fe != nil {
+				t.Errorf("%s: ViaField() = %v, wanted nil", test.name, fe)
+			}
+		})
+	}
+}
+
+func TestMergeFieldErrors(t *testing.T) {
+	tests := []struct {
+		name     string
+		err      *FieldError
+		also     []FieldError
+		prefixes [][]string
+		want     string
+	}{{
+		name: "simple",
+		err: &FieldError{
+			Message: "A simple error message",
+			Paths:   []string{"bar"},
+		},
+		also: []FieldError{{
+			Message: "A simple error message",
+			Paths:   []string{"foo"},
+		}},
+		want: `A simple error message: bar, foo`,
+	}, {
+		name: "conflict",
+		err: &FieldError{
+			Message: "A simple error message",
+			Paths:   []string{"bar", "foo"},
+		},
+		also: []FieldError{{
+			Message: "A simple error message",
+			Paths:   []string{"foo"},
+		}},
+		want: `A simple error message: bar, foo`,
+	}, {
+		name: "lots of also",
+		err: (&FieldError{
+			Message: "this error",
+			Paths:   []string{"bar", "foo"},
+		}).Also(&FieldError{
+			Message: "another",
+			Paths:   []string{"right", "left"},
+		}).ViaField("head"),
+		also: []FieldError{{
+			Message: "An alpha error message",
+			Paths:   []string{"A"},
+		}, {
+			Message: "An alpha error message",
+			Paths:   []string{"B"},
+		}, {
+			Message: "An alpha error message",
+			Paths:   []string{"B"},
+		}, {
+			Message: "An alpha error message",
+			Paths:   []string{"B"},
+		}, {
+			Message: "An alpha error message",
+			Paths:   []string{"B"},
+		}, {
+			Message: "An alpha error message",
+			Paths:   []string{"B"},
+		}, {
+			Message: "An alpha error message",
+			Paths:   []string{"B"},
+		}, {
+			Message: "An alpha error message",
+			Paths:   []string{"C"},
+		}, {
+			Message: "An alpha error message",
+			Paths:   []string{"D"},
+		}, {
+			Message: "this error",
+			Paths:   []string{"foo"},
+			Details: "devil is in the details",
+		}, {
+			Message: "this error",
+			Paths:   []string{"foo"},
+			Details: "more details",
+		}},
+		prefixes: [][]string{{"this"}},
+		want: `An alpha error message: this.A, this.B, this.C, this.D
+another: this.head.left, this.head.right
+this error: this.head.bar, this.head.foo
+this error: this.foo
+devil is in the details
+this error: this.foo
+more details`,
+	}}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			fe := test.err
+			for _, err := range test.also {
+				fe = fe.Also(&err)
+			}
+			// Simulate propagation up a call stack.
+			for _, prefix := range test.prefixes {
+				fe = fe.ViaField(prefix...)
+			}
 			if test.want != "" {
 				got := fe.Error()
 				if got != test.want {
