@@ -230,6 +230,120 @@ func TestEnqueues(t *testing.T) {
 			})
 		},
 		wantQueue: []string{"bar/baz"},
+	}, {
+		name: "enqueue controller of deleted resource with owner",
+		work: func(impl *Impl) {
+			impl.EnqueueControllerOf(cache.DeletedFinalStateUnknown{
+				Key: "foo/bar",
+				Obj: &Resource{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "foo",
+						Namespace: "bar",
+						OwnerReferences: []metav1.OwnerReference{{
+							APIVersion: gvk.GroupVersion().String(),
+							Kind:       gvk.Kind,
+							Name:       "baz",
+							Controller: &boolTrue,
+						}},
+					},
+				},
+			})
+		},
+		wantQueue: []string{"bar/baz"},
+	}, {
+		name: "enqueue controller of deleted bad resource",
+		work: func(impl *Impl) {
+			impl.EnqueueControllerOf(cache.DeletedFinalStateUnknown{
+				Key: "foo/bar",
+				Obj: "bad-resource",
+			})
+		},
+	}, {
+		name: "enqueue label of bad resource",
+		work: func(impl *Impl) {
+			impl.EnqueueLabelOf("test-ns", "test-name")("baz/blah")
+		},
+	}, {
+		name: "enqueue label of resource without label",
+		work: func(impl *Impl) {
+			impl.EnqueueLabelOf("ns-key", "name-key")(&Resource{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "foo",
+					Namespace: "bar",
+					Labels: map[string]string{
+						"ns-key": "bar",
+					},
+				},
+			})
+		},
+	}, {
+		name: "enqueue label of resource without namespace label",
+		work: func(impl *Impl) {
+			impl.EnqueueLabelOf("ns-key", "name-key")(&Resource{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "foo",
+					Namespace: "bar",
+					Labels: map[string]string{
+						"name-key": "baz",
+					},
+				},
+			})
+		},
+	}, {
+		name: "enqueue label of resource with labels",
+		work: func(impl *Impl) {
+			impl.EnqueueLabelOf("ns-key", "name-key")(&Resource{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "foo",
+					Namespace: "bar",
+					Labels: map[string]string{
+						"ns-key": "bar",
+						"name-key": "baz",
+					},
+				},
+			})
+		},
+		wantQueue: []string{"bar/baz"},
+	}, {
+		name: "enqueue label of resource with empty namespace label (cluster-scoped resource)",
+		work: func(impl *Impl) {
+			impl.EnqueueLabelOf("", "name-key")(&Resource{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "foo",
+					Namespace: "bar",
+					Labels: map[string]string{
+						"name-key": "baz",
+					},
+				},
+			})
+		},
+		wantQueue: []string{"baz"},
+	}, {
+		name: "enqueue label of deleted resource with label",
+		work: func(impl *Impl) {
+			impl.EnqueueLabelOf("ns-key", "name-key")(cache.DeletedFinalStateUnknown{
+				Key: "foo/bar",
+				Obj: &Resource{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "foo",
+						Namespace: "bar",
+						Labels: map[string]string{
+							"ns-key": "bar",
+							"name-key": "baz",
+						},
+					},
+				},
+			})
+		},
+		wantQueue: []string{"bar/baz"},
+	}, {
+		name: "enqueue controller of deleted bad resource",
+		work: func(impl *Impl) {
+			impl.EnqueueLabelOf("ns-key", "name-key")(cache.DeletedFinalStateUnknown{
+				Key: "foo/bar",
+				Obj: "bad-resource",
+			})
+		},
 	}}
 
 	for _, test := range tests {
