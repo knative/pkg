@@ -69,10 +69,7 @@ func getMetricsConfig(m map[string]string, domain string, component string, logg
 	// use the application default credentials. If that is not available, Opencensus would fail to create the
 	// metrics exporter.
 	if mc.backendDestination == Stackdriver {
-		sdProj, ok := m[stackdriverProjectIDKey]
-		if ok && sdProj != "" {
-			mc.stackdriverProjectID = sdProj
-		}
+		mc.stackdriverProjectID = m[stackdriverProjectIDKey]
 	}
 
 	if domain == "" {
