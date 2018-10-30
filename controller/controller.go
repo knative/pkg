@@ -123,20 +123,10 @@ func (c *Impl) Enqueue(obj interface{}) {
 // EnqueueControllerOf takes a resource, identifies its controller resource,
 // converts it into a namespace/name string, and passes that to EnqueueKey.
 func (c *Impl) EnqueueControllerOf(obj interface{}) {
-	object, err := meta.Accessor(obj)
+	object, err := getObject(obj)
 	if err != nil {
-		c.logger.Debug(zap.Error(err))
-		// To handle obj deletion, try to fetch info from DeletedFinalStateUnknown.
-		tombstone, ok := obj.(cache.DeletedFinalStateUnknown)
-		if !ok {
-			c.logger.Errorf("Couldn't get object from tombstone %#v", obj)
-			return
-		}
-		object, ok = tombstone.Obj.(metav1.Object)
-		if !ok {
-			c.logger.Errorf("The object that Tombstone contained is not of metav1.Object %#v", obj)
-			return
-		}
+		c.logger.Error(err)
+		return
 	}
 
 	// If we can determine the controller ref of this object, then
@@ -153,26 +143,16 @@ func (c *Impl) EnqueueControllerOf(obj interface{}) {
 // whose controller is of cluster-scoped resource.
 func (c *Impl) EnqueueLabelOf(namespaceLabel, nameLabel string) func(obj interface{}) {
 	return func(obj interface{}) {
-		object, err := meta.Accessor(obj)
+		object, err := getObject(obj)
 		if err != nil {
-			c.logger.Debug(zap.Error(err))
-			// To handle obj deletion, try to fetch info from DeletedFinalStateUnknown.
-			tombstone, ok := obj.(cache.DeletedFinalStateUnknown)
-			if !ok {
-				c.logger.Errorf("Couldn't get object from tombstone %#v", obj)
-				return
-			}
-			object, ok = tombstone.Obj.(metav1.Object)
-			if !ok {
-				c.logger.Errorf("The object that Tombstone contained is not of metav1.Object %#v", obj)
-				return
-			}
+			c.logger.Error(err)
+			return
 		}
 
 		labels := object.GetLabels()
 		controllerKey, ok := labels[nameLabel]
 		if !ok {
-			c.logger.Errorf("Object %s/%s does not have a referring name label %s",
+			c.logger.Infof("Object %s/%s does not have a referring name label %s",
 				object.GetNamespace(), object.GetName(), nameLabel)
 			return
 		}
@@ -180,7 +160,7 @@ func (c *Impl) EnqueueLabelOf(namespaceLabel, nameLabel string) func(obj interfa
 		if namespaceLabel != "" {
 			controllerNamespace, ok := labels[namespaceLabel]
 			if !ok {
-				c.logger.Errorf("Object %s/%s does not have a referring namespace label %s",
+				c.logger.Infof("Object %s/%s does not have a referring namespace label %s",
 					object.GetNamespace(), object.GetName(), namespaceLabel)
 				return
 			}
@@ -190,6 +170,25 @@ func (c *Impl) EnqueueLabelOf(namespaceLabel, nameLabel string) func(obj interfa
 
 		c.EnqueueKey(controllerKey)
 	}
+}
+
+// getObject tries to get runtime Object from given interface in the way of Accessor first;
+// and to handle deletion, it try to fetch info from DeletedFinalStateUnknown on failure.
+func getObject(obj interface{}) (metav1.Object, error) {
+	object, err := meta.Accessor(obj)
+	if err != nil {
+		// To handle obj deletion, try to fetch info from DeletedFinalStateUnknown.
+		tombstone, ok := obj.(cache.DeletedFinalStateUnknown)
+		if !ok {
+			return nil, fmt.Errorf("Couldn't get object from tombstone %#v", obj)
+		}
+		object, ok = tombstone.Obj.(metav1.Object)
+		if !ok {
+			return nil, fmt.Errorf("The object that Tombstone contained is not of metav1.Object %#v", obj)
+		}
+	}
+
+	return object, nil
 }
 
 // EnqueueKey takes a namespace/name string and puts it onto the work queue.
