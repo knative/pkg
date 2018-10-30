@@ -102,7 +102,7 @@ func UpdateExporterFromConfigMap(domain string, component string, logger *zap.Su
 
 		if isMetricsConfigChanged(newConfig) {
 			if err := newMetricsExporter(newConfig, logger); err != nil {
-				logger.Error("Failed to update a new metrics exporter based on metric config.", zap.Error(err))
+				logger.Errorf("Failed to update a new metrics exporter based on metric config %v. error: %v", newConfig, err)
 				return
 			}
 		}
