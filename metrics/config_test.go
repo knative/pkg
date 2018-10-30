@@ -43,21 +43,6 @@ var (
 		component:   testComponent,
 		expectedErr: "metrics.backend-destination key is missing",
 	}, {
-		name:        "stackdriverProjectIDMissing",
-		cm:          map[string]string{"metrics.backend-destination": "stackdriver"},
-		domain:      servingDomain,
-		component:   testComponent,
-		expectedErr: "For backend stackdriver, metrics.stackdriver-project-id field must exist and cannot be empty",
-	}, {
-		name: "stackdriverProjectIDEmpty",
-		cm: map[string]string{
-			"metrics.backend-destination":    "stackdriver",
-			"metrics.stackdriver-project-id": "",
-		},
-		domain:      servingDomain,
-		component:   testComponent,
-		expectedErr: "For backend stackdriver, metrics.stackdriver-project-id field must exist and cannot be empty",
-	}, {
 		name: "unsupportedBackend",
 		cm: map[string]string{
 			"metrics.backend-destination":    "unsupported",
@@ -89,38 +74,50 @@ var (
 		domain         string
 		component      string
 		expectedConfig metricsConfig
-	}{{
-		name:      "validPrometheus",
-		cm:        map[string]string{"metrics.backend-destination": "prometheus"},
-		domain:    servingDomain,
-		component: testComponent,
-		expectedConfig: metricsConfig{
-			domain:             servingDomain,
-			component:          testComponent,
-			backendDestination: Prometheus},
-	}, {
-		name: "validStackdriver",
-		cm: map[string]string{"metrics.backend-destination": "stackdriver",
-			"metrics.stackdriver-project-id": anotherProj},
-		domain:    servingDomain,
-		component: testComponent,
-		expectedConfig: metricsConfig{
-			domain:               servingDomain,
-			component:            testComponent,
-			backendDestination:   Stackdriver,
-			stackdriverProjectID: anotherProj},
-	}, {
-		name: "validCapitalStackdriver",
-		cm: map[string]string{"metrics.backend-destination": "Stackdriver",
-			"metrics.stackdriver-project-id": testProj},
-		domain:    servingDomain,
-		component: testComponent,
-		expectedConfig: metricsConfig{
-			domain:               servingDomain,
-			component:            testComponent,
-			backendDestination:   Stackdriver,
-			stackdriverProjectID: testProj},
-	}}
+	}{
+		// Note the first unit test is skipped in TestUpdateExporterFromConfigMap since
+		// unit test does not have application default credentials.
+		{
+			name:      "stackdriverProjectIDMissing",
+			cm:        map[string]string{"metrics.backend-destination": "stackdriver"},
+			domain:    servingDomain,
+			component: testComponent,
+			expectedConfig: metricsConfig{
+				domain:             servingDomain,
+				component:          testComponent,
+				backendDestination: Stackdriver},
+		}, {
+			name:      "validPrometheus",
+			cm:        map[string]string{"metrics.backend-destination": "prometheus"},
+			domain:    servingDomain,
+			component: testComponent,
+			expectedConfig: metricsConfig{
+				domain:             servingDomain,
+				component:          testComponent,
+				backendDestination: Prometheus},
+		}, {
+			name: "validStackdriver",
+			cm: map[string]string{"metrics.backend-destination": "stackdriver",
+				"metrics.stackdriver-project-id": anotherProj},
+			domain:    servingDomain,
+			component: testComponent,
+			expectedConfig: metricsConfig{
+				domain:               servingDomain,
+				component:            testComponent,
+				backendDestination:   Stackdriver,
+				stackdriverProjectID: anotherProj},
+		}, {
+			name: "validCapitalStackdriver",
+			cm: map[string]string{"metrics.backend-destination": "Stackdriver",
+				"metrics.stackdriver-project-id": testProj},
+			domain:    servingDomain,
+			component: testComponent,
+			expectedConfig: metricsConfig{
+				domain:               servingDomain,
+				component:            testComponent,
+				backendDestination:   Stackdriver,
+				stackdriverProjectID: testProj},
+		}}
 )
 
 func TestGetMetricsConfig(t *testing.T) {
@@ -181,7 +178,7 @@ func TestUpdateExporterFromConfigMap(t *testing.T) {
 		Data: map[string]string{},
 	}
 	oldConfig := getCurMetricsConfig()
-	for _, test := range successTests {
+	for _, test := range successTests[1:] {
 		cm.Data = test.cm
 		u := UpdateExporterFromConfigMap(test.domain, test.component, TestLogger(t))
 		u(cm)
