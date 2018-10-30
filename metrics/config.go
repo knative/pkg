@@ -65,6 +65,9 @@ func getMetricsConfig(m map[string]string, domain string, component string, logg
 		return nil, fmt.Errorf("Unsupported metrics backend value \"%s\"", backend)
 	}
 
+	// If stackdriverProjectIDKey is not provided for stackdriver backend destination, OpenCensus will try to
+	// use the application default credentials. If that is not available, Opencensus would fail to create the metrics
+	// exporter.
 	if mc.backendDestination == Stackdriver {
 		sdProj, ok := m[stackdriverProjectIDKey]
 		if ok && sdProj != "" {
