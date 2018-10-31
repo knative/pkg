@@ -446,6 +446,45 @@ func TestStartAndShutdownWithErroringWork(t *testing.T) {
 		return impl.Run(1, stopCh)
 	})
 
+	time.Sleep(20 * time.Millisecond)
+	close(stopCh)
+
+	if err := eg.Wait(); err != nil {
+		t.Errorf("Wait() = %v", err)
+	}
+
+	// Check that the work was requeued in RateLimiter.
+	// As NumRequeues can't fully reflect the real state of queue length.
+	// Here we need to wait for NumRequeues to be more than 1, to ensure
+	// the key get re-queued and reprocessed as expect.
+	if got, want := impl.WorkQueue.NumRequeues("foo/bar"), 3; got != want {
+		t.Errorf("Requeue count = %v, wanted %v", got, want)
+	}
+
+	checkStats(t, reporter, 2, 0, 2, falseString)
+}
+
+type PermanentErrorReconciler struct{}
+
+func (er *PermanentErrorReconciler) Reconcile(context.Context, string) error {
+	err := errors.New("I always error")
+	return NewPermanentError(err)
+}
+
+func TestStartAndShutdownWithPermanentErroringWork(t *testing.T) {
+	r := &PermanentErrorReconciler{}
+	reporter := &FakeStatsReporter{}
+	impl := NewImpl(r, TestLogger(t), "Testing", reporter)
+
+	stopCh := make(chan struct{})
+
+	impl.EnqueueKey("foo/bar")
+
+	var eg errgroup.Group
+	eg.Go(func() error {
+		return impl.Run(1, stopCh)
+	})
+
 	time.Sleep(10 * time.Millisecond)
 	close(stopCh)
 
@@ -453,9 +492,9 @@ func TestStartAndShutdownWithErroringWork(t *testing.T) {
 		t.Errorf("Wait() = %v", err)
 	}
 
-	// Check that the work was requeued.
-	if got, want := impl.WorkQueue.NumRequeues("foo/bar"), 1; got != want {
-		t.Errorf("Count = %v, wanted %v", got, want)
+	// Check that the work was not requeued in RateLimiter.
+	if got, want := impl.WorkQueue.NumRequeues("foo/bar"), 0; got != want {
+		t.Errorf("Requeue count = %v, wanted %v", got, want)
 	}
 
 	checkStats(t, reporter, 1, 0, 1, falseString)
@@ -557,7 +596,7 @@ func checkStats(t *testing.T, r *FakeStatsReporter, reportCount, lastQueueDepth,
 		t.Errorf("Queue depth report = %v, wanted %v", got, want)
 	}
 	rd := r.GetReconcileData()
-	if got, want := len(rd), 1; got != want {
+	if got, want := len(rd), reconcileCount; got != want {
 		t.Errorf("Reconcile reports = %v, wanted %v", got, want)
 	}
 	if got, want := rd[len(rd)-1].Success, lastReconcileSuccess; got != want {

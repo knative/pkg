@@ -275,6 +275,7 @@ func (c *Impl) processNextWorkItem() bool {
 		// Run Reconcile, passing it the namespace/name string of the
 		// resource to be synced.
 		if err = c.Reconciler.Reconcile(ctx, key); err != nil {
+			c.handleErr(err, key)
 			return fmt.Errorf("error syncing %q: %v", key, err)
 		}
 
@@ -293,9 +294,51 @@ func (c *Impl) processNextWorkItem() bool {
 	return true
 }
 
+func (c *Impl) handleErr(err error, key interface{}) {
+	// Re-queue the key if it's an transient error.
+	if !IsPermanentError(err) {
+		c.WorkQueue.AddRateLimited(key)
+		return
+	}
+
+	c.WorkQueue.Forget(key)
+}
+
 // GlobalResync enqueues all objects from the passed SharedInformer
 func (c *Impl) GlobalResync(si cache.SharedInformer) {
 	for _, key := range si.GetStore().ListKeys() {
 		c.EnqueueKey(key)
 	}
+}
+
+// NewPermanentError returns a new instance of permanentError.
+// Users can wrap an error as permanentError with this in reconcile,
+// when he does not expect the key to get re-queued.
+func NewPermanentError(err error) error {
+	return permanentError{e: err}
+}
+
+// permanentError is an error that is considered not transient.
+// We should not re-queue keys when it returns with thus error in reconcile.
+type permanentError struct {
+	e error
+}
+
+// IsPermanentError returns true if given error is permanentError
+func IsPermanentError(err error) bool {
+	switch err.(type) {
+	case permanentError:
+		return true
+	default:
+		return false
+	}
+}
+
+// Error implements the Error() interface of error.
+func (err permanentError) Error() string {
+	if err.e == nil {
+		return ""
+	}
+
+	return err.e.Error()
 }
