@@ -37,10 +37,6 @@ import (
 const (
 	falseString = "false"
 	trueString  = "true"
-
-	// maxRetries is the number of times a key will be retried before it is dropped out of the queue.
-	// TODO(lichuqiang): make this configurable?
-	maxRetries = 15
 )
 
 // Reconciler is the interface that controller implementations are expected
@@ -299,9 +295,8 @@ func (c *Impl) processNextWorkItem() bool {
 }
 
 func (c *Impl) handleErr(err error, key interface{}) {
-	// Re-queue the key if it's an transient error,
-	// and have not reach the max retry number.
-	if !IsPermanentError(err) && c.WorkQueue.NumRequeues(key) < maxRetries {
+	// Re-queue the key if it's an transient error.
+	if !IsPermanentError(err) {
 		c.WorkQueue.AddRateLimited(key)
 		return
 	}
