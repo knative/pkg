@@ -17,9 +17,11 @@ limitations under the License.
 package tracker
 
 import (
+	"strings"
 	"testing"
 	"time"
 
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	. "github.com/knative/pkg/testing"
@@ -28,7 +30,7 @@ import (
 // Ensure our resource satisfies the interface.
 var _ accessor = (*Resource)(nil)
 
-func TestFoo(t *testing.T) {
+func TestHappyPaths(t *testing.T) {
 	calls := 0
 	f := func(key string) {
 		calls = calls + 1
@@ -122,4 +124,79 @@ func TestFoo(t *testing.T) {
 			t.Error("Track() = nil, wanted error")
 		}
 	})
+}
+
+func TestBadObjectReferences(t *testing.T) {
+	trk := New(func(key string) {}, 10*time.Millisecond)
+	thing1 := &Resource{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: "ref.knative.dev/v1alpha1",
+			Kind:       "Thing1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: "ns",
+			Name:      "foo",
+		},
+	}
+
+	tests := []struct {
+		name      string
+		objRef    corev1.ObjectReference
+		substring string
+	}{{
+		name: "Missing APIVersion",
+		objRef: corev1.ObjectReference{
+			// APIVersion: "build.knative.dev/v1alpha1",
+			Kind:      "Build",
+			Namespace: "default",
+			Name:      "kaniko",
+		},
+		substring: "APIVersion",
+	}, {
+		name: "Missing Kind",
+		objRef: corev1.ObjectReference{
+			APIVersion: "build.knative.dev/v1alpha1",
+			// Kind:      "Build",
+			Namespace: "default",
+			Name:      "kaniko",
+		},
+		substring: "Kind",
+	}, {
+		name: "Missing Namespace",
+		objRef: corev1.ObjectReference{
+			APIVersion: "build.knative.dev/v1alpha1",
+			Kind:       "Build",
+			// Namespace: "default",
+			Name: "kaniko",
+		},
+		substring: "Namespace",
+	}, {
+		name: "Missing Name",
+		objRef: corev1.ObjectReference{
+			APIVersion: "build.knative.dev/v1alpha1",
+			Kind:       "Build",
+			Namespace:  "default",
+			// Name:      "kaniko",
+		},
+		substring: "Name",
+	}, {
+		name:   "Missing All",
+		objRef: corev1.ObjectReference{
+			// APIVersion: "build.knative.dev/v1alpha1",
+			// Kind:       "Build",
+			// Namespace:  "default",
+			// Name:      "kaniko",
+		},
+		substring: "APIVersion Kind Namespace Name",
+	}}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			if err := trk.Track(test.objRef, thing1); err == nil {
+				t.Error("Track() = nil, wanted error")
+			} else if !strings.Contains(err.Error(), test.substring) {
+				t.Errorf("Track() = %v, wanted substring: %s", err, test.substring)
+			}
+		})
+	}
 }
