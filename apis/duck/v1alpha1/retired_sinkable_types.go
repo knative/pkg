@@ -24,11 +24,10 @@ import (
 	"github.com/knative/pkg/apis/duck"
 )
 
-// Sinkable is very similar concept as Targetable. However, at the
-// transport level they have different contracts and hence Sinkable
-// and Targetable are two distinct resources.
+// Sinkable is an earlier version of Addressable. It will be removed
+// shortly in favor of Addressable. Do not use this interface.
 
-// Sinkable is the schema for the sinkable portion of the payload
+// Sinkable is retired; use Addressable instead.
 type Sinkable struct {
 	DomainInternal string `json:"domainInternal,omitempty"`
 }
