@@ -18,11 +18,14 @@ package tracker
 
 import (
 	"fmt"
+	"sort"
+	"strings"
 	"sync"
 	"time"
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/util/validation"
 	"k8s.io/client-go/tools/cache"
 )
 
@@ -62,22 +65,21 @@ type set map[string]time.Time
 
 // Track implements Interface.
 func (i *impl) Track(ref corev1.ObjectReference, obj interface{}) error {
-	var missingFields []string
-	if ref.APIVersion == "" {
-		missingFields = append(missingFields, "APIVersion")
+	invalidFields := map[string][]string{
+		"APIVersion": validation.IsQualifiedName(ref.APIVersion),
+		"Kind":       validation.IsCIdentifier(ref.Kind),
+		"Namespace":  validation.IsDNS1123Label(ref.Namespace),
+		"Name":       validation.IsDNS1123Subdomain(ref.Name),
 	}
-	if ref.Kind == "" {
-		missingFields = append(missingFields, "Kind")
+	fieldErrors := []string{}
+	for k, v := range invalidFields {
+		for _, msg := range v {
+			fieldErrors = append(fieldErrors, fmt.Sprintf("%s: %s", k, msg))
+		}
 	}
-	if ref.Namespace == "" {
-		missingFields = append(missingFields, "Namespace")
-	}
-	if ref.Name == "" {
-		missingFields = append(missingFields, "Name")
-	}
-	if len(missingFields) > 0 {
-		return fmt.Errorf("expected ObjectReference to specify the following missing fields: %v",
-			missingFields)
+	if len(fieldErrors) > 0 {
+		sort.Strings(fieldErrors)
+		return fmt.Errorf("Invalid ObjectReference:\n%s", strings.Join(fieldErrors, "\n"))
 	}
 
 	key, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
