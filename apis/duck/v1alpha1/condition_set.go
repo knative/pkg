@@ -62,7 +62,7 @@ type ConditionManager interface {
 	SetCondition(new Condition)
 
 	// MarkTrue sets the status of t to true, and then marks the happy condition to
-	// true if all other dependents are also true.
+	// true if all dependents are true.
 	MarkTrue(t ConditionType)
 
 	// MarkUnknown sets the status of t to Unknown and also sets the happy condition
@@ -82,12 +82,14 @@ type ConditionManager interface {
 
 // NewLivingConditionSet returns a ConditionSet to hold the conditions for the
 // living resource. ConditionReady is used as the happy condition.
+// The set of condition types provided are those of the terminal subconditions.
 func NewLivingConditionSet(d ...ConditionType) ConditionSet {
 	return newConditionSet(ConditionReady, d...)
 }
 
 // NewBatchConditionSet returns a ConditionSet to hold the conditions for the
 // batch resource. ConditionSucceeded is used as the happy condition.
+// The set of condition types provided are those of the terminal subconditions.
 func NewBatchConditionSet(d ...ConditionType) ConditionSet {
 	return newConditionSet(ConditionSucceeded, d...)
 }
@@ -246,6 +248,7 @@ func (r conditionsImpl) MarkUnknown(t ConditionType, reason, messageFormat strin
 	})
 
 	// check the dependents.
+	isDependent := false
 	for _, cond := range r.dependents {
 		c := r.GetCondition(cond)
 		// Failed conditions trump Unknown conditions
@@ -257,23 +260,32 @@ func (r conditionsImpl) MarkUnknown(t ConditionType, reason, messageFormat strin
 			}
 			return
 		}
+		if cond == t {
+			isDependent = true
+		}
 	}
 
-	// set the happy condition
-	r.SetCondition(Condition{
-		Type:    r.happy,
-		Status:  corev1.ConditionUnknown,
-		Reason:  reason,
-		Message: fmt.Sprintf(messageFormat, messageA...),
-	})
+	if isDependent {
+		// set the happy condition, if it is one of our dependent subconditions.
+		r.SetCondition(Condition{
+			Type:    r.happy,
+			Status:  corev1.ConditionUnknown,
+			Reason:  reason,
+			Message: fmt.Sprintf(messageFormat, messageA...),
+		})
+	}
 }
 
 // MarkFalse sets the status of t and the happy condition to False.
 func (r conditionsImpl) MarkFalse(t ConditionType, reason, messageFormat string, messageA ...interface{}) {
-	for _, t := range []ConditionType{
-		t,
-		r.happy,
-	} {
+	types := []ConditionType{t}
+	for _, cond := range r.dependents {
+		if cond == t {
+			types = append(types, r.happy)
+		}
+	}
+
+	for _, t := range types {
 		r.SetCondition(Condition{
 			Type:    t,
 			Status:  corev1.ConditionFalse,
