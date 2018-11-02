@@ -961,6 +961,7 @@
   analyzer-version = 1
   input-imports = [
     "contrib.go.opencensus.io/exporter/stackdriver",
+    "github.com/davecgh/go-spew/spew",
     "github.com/evanphx/json-patch",
     "github.com/golang/glog",
     "github.com/google/go-cmp/cmp",
@@ -969,6 +970,8 @@
     "github.com/markbates/inflect",
     "github.com/mattbaird/jsonpatch",
     "go.opencensus.io/exporter/prometheus",
+    "go.opencensus.io/plugin/ochttp",
+    "go.opencensus.io/plugin/ochttp/propagation/b3",
     "go.opencensus.io/stats",
     "go.opencensus.io/stats/view",
     "go.opencensus.io/tag",
