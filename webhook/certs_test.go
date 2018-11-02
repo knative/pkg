@@ -28,7 +28,9 @@ import (
 )
 
 func TestCreateCerts(t *testing.T) {
-	sKey, serverCertPEM, caCertBytes, err := CreateCerts(TestContextWithLogger(t), "got-the-hook", "knative-webhook")
+	certTemplateOption := NewDefaultCertTemplateOption()
+	certTemplateOption.DNSNames = generateWebhookSvcDNSNames("got-the-hook", "knative-webhook")
+	sKey, serverCertPEM, caCertBytes, err := CreateCerts(TestContextWithLogger(t), certTemplateOption)
 	if err != nil {
 		t.Fatalf("Failed to create certs %v", err)
 	}

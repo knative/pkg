@@ -649,8 +649,21 @@ func asGenerational(ctx context.Context, crd GenericCRD) (*duckv1alpha1.Generati
 	return kr, nil
 }
 
+func generateWebhookSvcDNSNames(name, namespace string) []string {
+	nameWithNamespace := name + "." + namespace
+	return []string{
+		name,
+		nameWithNamespace,
+		nameWithNamespace + ".svc",
+		nameWithNamespace + ".svc.cluster.local",
+	}
+}
+
 func generateSecret(ctx context.Context, options *ControllerOptions) (*corev1.Secret, error) {
-	serverKey, serverCert, caCert, err := CreateCerts(ctx, options.ServiceName, options.Namespace)
+	certTemplateOption := NewDefaultCertTemplateOption()
+	certTemplateOption.DNSNames = generateWebhookSvcDNSNames(options.ServiceName, options.Namespace)
+
+	serverKey, serverCert, caCert, err := CreateCerts(ctx, certTemplateOption)
 	if err != nil {
 		return nil, err
 	}
