@@ -28,12 +28,10 @@ func TestTypesImplements(t *testing.T) {
 		instance interface{}
 		iface    duck.Implementable
 	}{
-		{instance: &Channel{}, iface: &Channelable{}},
+		{instance: &AddressableType{}, iface: &Addressable{}},
 		{instance: &KResource{}, iface: &Conditions{}},
 		{instance: &Generational{}, iface: &emptyGen},
 		{instance: &LegacyTarget{}, iface: &LegacyTargetable{}},
-		{instance: &Sink{}, iface: &Sinkable{}},
-		{instance: &Subscription{}, iface: &Subscribable{}},
 		{instance: &Target{}, iface: &Targetable{}},
 	}
 	for _, tc := range testCases {
