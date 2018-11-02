@@ -22,7 +22,6 @@ import (
 	"time"
 
 	"go.uber.org/zap"
-	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/runtime"
@@ -30,6 +29,7 @@ import (
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
 
+	"github.com/knative/pkg/kmeta"
 	"github.com/knative/pkg/logging"
 	"github.com/knative/pkg/logging/logkey"
 )
@@ -123,7 +123,7 @@ func (c *Impl) Enqueue(obj interface{}) {
 // EnqueueControllerOf takes a resource, identifies its controller resource,
 // converts it into a namespace/name string, and passes that to EnqueueKey.
 func (c *Impl) EnqueueControllerOf(obj interface{}) {
-	object, err := getObject(obj)
+	object, err := kmeta.DeletionHandlingAccessor(obj)
 	if err != nil {
 		c.logger.Error(err)
 		return
@@ -143,7 +143,7 @@ func (c *Impl) EnqueueControllerOf(obj interface{}) {
 // whose controller is of cluster-scoped resource.
 func (c *Impl) EnqueueLabelOf(namespaceLabel, nameLabel string) func(obj interface{}) {
 	return func(obj interface{}) {
-		object, err := getObject(obj)
+		object, err := kmeta.DeletionHandlingAccessor(obj)
 		if err != nil {
 			c.logger.Error(err)
 			return
@@ -170,25 +170,6 @@ func (c *Impl) EnqueueLabelOf(namespaceLabel, nameLabel string) func(obj interfa
 
 		c.EnqueueKey(controllerKey)
 	}
-}
-
-// getObject tries to get runtime Object from given interface in the way of Accessor first;
-// and to handle deletion, it try to fetch info from DeletedFinalStateUnknown on failure.
-func getObject(obj interface{}) (metav1.Object, error) {
-	object, err := meta.Accessor(obj)
-	if err != nil {
-		// To handle obj deletion, try to fetch info from DeletedFinalStateUnknown.
-		tombstone, ok := obj.(cache.DeletedFinalStateUnknown)
-		if !ok {
-			return nil, fmt.Errorf("Couldn't get object from tombstone %#v", obj)
-		}
-		object, ok = tombstone.Obj.(metav1.Object)
-		if !ok {
-			return nil, fmt.Errorf("The object that Tombstone contained is not of metav1.Object %#v", obj)
-		}
-	}
-
-	return object, nil
 }
 
 // EnqueueKey takes a namespace/name string and puts it onto the work queue.
