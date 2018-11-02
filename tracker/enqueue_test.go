@@ -17,9 +17,11 @@ limitations under the License.
 package tracker
 
 import (
+	"regexp"
 	"testing"
 	"time"
 
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	. "github.com/knative/pkg/testing"
@@ -28,7 +30,7 @@ import (
 // Ensure our resource satisfies the interface.
 var _ accessor = (*Resource)(nil)
 
-func TestFoo(t *testing.T) {
+func TestHappyPaths(t *testing.T) {
 	calls := 0
 	f := func(key string) {
 		calls = calls + 1
@@ -55,7 +57,7 @@ func TestFoo(t *testing.T) {
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: "default",
-			Name:      "bar",
+			Name:      "bar.baz.this-is-fine",
 		},
 	}
 
@@ -122,4 +124,213 @@ func TestFoo(t *testing.T) {
 			t.Error("Track() = nil, wanted error")
 		}
 	})
+}
+
+func TestAllowedObjectReferences(t *testing.T) {
+	trk := New(func(key string) {}, 10*time.Millisecond)
+	thing1 := &Resource{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: "ref.knative.dev/v1alpha1",
+			Kind:       "Thing1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: "ns",
+			Name:      "foo",
+		},
+	}
+	tests := []struct {
+		name   string
+		objRef corev1.ObjectReference
+	}{{
+		name: "Pod",
+		objRef: corev1.ObjectReference{
+			APIVersion: "v1",
+			Kind:       "Pod",
+			Namespace:  "default",
+			Name:       "test",
+		},
+	}, {
+		name: "Non-core resource",
+		objRef: corev1.ObjectReference{
+			APIVersion: "custom.example.com/v1alpha17",
+			Kind:       "Widget",
+			Namespace:  "default",
+			Name:       "test",
+		},
+	}, {
+		name: "Complex Kind",
+		objRef: corev1.ObjectReference{
+			APIVersion: "custom.example.com/v1alpha17",
+			Kind:       "Widget_v3",
+			Namespace:  "default",
+			Name:       "test",
+		},
+	}, {
+		name: "Dashed Namespace",
+		objRef: corev1.ObjectReference{
+			APIVersion: "v1",
+			Kind:       "ConfigMap",
+			Namespace:  "not-default",
+			Name:       "test",
+		},
+	}, {
+		name: "Complex Name",
+		objRef: corev1.ObjectReference{
+			APIVersion: "v1",
+			Kind:       "ConfigMap",
+			Namespace:  "default",
+			Name:       "test.example.cluster.local",
+		},
+	}}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			if err := trk.Track(test.objRef, thing1); err != nil {
+				t.Errorf("Track() on %v returned error: %v", test.objRef, err)
+			}
+		})
+	}
+}
+
+func TestBadObjectReferences(t *testing.T) {
+	trk := New(func(key string) {}, 10*time.Millisecond)
+	thing1 := &Resource{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: "ref.knative.dev/v1alpha1",
+			Kind:       "Thing1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: "ns",
+			Name:      "foo",
+		},
+	}
+
+	tests := []struct {
+		name   string
+		objRef corev1.ObjectReference
+		match  string
+	}{{
+		name: "Missing APIVersion",
+		objRef: corev1.ObjectReference{
+			// APIVersion: "build.knative.dev/v1alpha1",
+			Kind:      "Build",
+			Namespace: "default",
+			Name:      "kaniko",
+		},
+		match: "APIVersion",
+	}, {
+		name: "Bad char in APIVersion",
+		objRef: corev1.ObjectReference{
+			APIVersion: "build.knative.dev%v1alpha1",
+			Kind:       "Build",
+			Namespace:  "default",
+			Name:       "kaniko",
+		},
+		match: "APIVersion",
+	}, {
+		name: "Extra slashes in APIVersion",
+		objRef: corev1.ObjectReference{
+			APIVersion: "build.knative.dev/v1/alpha1",
+			Kind:       "Build",
+			Namespace:  "default",
+			Name:       "kaniko",
+		},
+		match: "APIVersion",
+	}, {
+		name: "Missing Kind",
+		objRef: corev1.ObjectReference{
+			APIVersion: "build.knative.dev/v1alpha1",
+			// Kind:      "Build",
+			Namespace: "default",
+			Name:      "kaniko",
+		},
+		match: "Kind",
+	}, {
+		name: "Invalid Kind",
+		objRef: corev1.ObjectReference{
+			APIVersion: "build.knative.dev/v1alpha1",
+			Kind:       "Build.1",
+			Namespace:  "default",
+			Name:       "kaniko",
+		},
+		match: "Kind",
+	}, {
+		name: "Missing Namespace",
+		objRef: corev1.ObjectReference{
+			APIVersion: "build.knative.dev/v1alpha1",
+			Kind:       "Build",
+			// Namespace: "default",
+			Name: "kaniko",
+		},
+		match: "Namespace",
+	}, {
+		name: "Capital in Namespace",
+		objRef: corev1.ObjectReference{
+			APIVersion: "build.knative.dev/v1alpha1",
+			Kind:       "Build",
+			Namespace:  "Default",
+			Name:       "kaniko",
+		},
+		match: "Namespace",
+	}, {
+		name: "Domain-separated Namespace",
+		objRef: corev1.ObjectReference{
+			APIVersion: "build.knative.dev/v1alpha1",
+			Kind:       "Build",
+			Namespace:  "not.default",
+			Name:       "kaniko",
+		},
+		match: "Namespace",
+	}, {
+		name: "Missing Name",
+		objRef: corev1.ObjectReference{
+			APIVersion: "build.knative.dev/v1alpha1",
+			Kind:       "Build",
+			Namespace:  "default",
+			// Name:      "kaniko",
+		},
+		match: "Name",
+	}, {
+		name: "Capital in Name",
+		objRef: corev1.ObjectReference{
+			APIVersion: "build.knative.dev/v1alpha1",
+			Kind:       "Build",
+			Namespace:  "default",
+			Name:       "Kaniko",
+		},
+		match: "Name",
+	}, {
+		name: "Bad char in Name",
+		objRef: corev1.ObjectReference{
+			APIVersion: "build.knative.dev/v1alpha1",
+			Kind:       "Build",
+			Namespace:  "default",
+			Name:       "kaniko_small",
+		},
+		match: "Name",
+	}, {
+		name:   "Missing All",
+		objRef: corev1.ObjectReference{
+			// APIVersion: "build.knative.dev/v1alpha1",
+			// Kind:       "Build",
+			// Namespace:  "default",
+			// Name:      "kaniko",
+		},
+		match: "\nAPIVersion:.*\nKind:.*\nName:.*\nNamespace:",
+	}}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			if err := trk.Track(test.objRef, thing1); err == nil {
+				t.Error("Track() = nil, wanted error")
+			} else {
+				match, e2 := regexp.Match(test.match, []byte(err.Error()))
+				if e2 != nil {
+					t.Errorf("Failed to compile %q: %v", e2, test.match)
+				} else if !match {
+					t.Errorf("Track() = %v, wanted match: %s", err, test.match)
+				}
+			}
+		})
+	}
 }
