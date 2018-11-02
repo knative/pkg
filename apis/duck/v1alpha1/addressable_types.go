@@ -61,10 +61,8 @@ type AddressStatus struct {
 	Address *Addressable `json:"address,omitempty"`
 }
 
-// In order for Targetable to be Implementable, Target must be Populatable.
+// Verify AddressableType resources meet duck contracts.
 var _ duck.Populatable = (*AddressableType)(nil)
-
-// Ensure Target satisfies apis.Listable
 var _ apis.Listable = (*AddressableType)(nil)
 
 // GetFullType implements duck.Implementable
