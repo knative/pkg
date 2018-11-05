@@ -23,6 +23,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/client-go/tools/cache"
 
 	. "github.com/knative/pkg/testing"
 )
@@ -48,6 +49,27 @@ func TestEnsureTypeMeta(t *testing.T) {
 			ObjectMeta: metav1.ObjectMeta{
 				Namespace: "default",
 				Name:      "thing",
+			},
+		},
+		want: &Resource{
+			TypeMeta: metav1.TypeMeta{
+				APIVersion: apiVersion,
+				Kind:       kind,
+			},
+			ObjectMeta: metav1.ObjectMeta{
+				Namespace: "default",
+				Name:      "thing",
+			},
+		},
+	}, {
+		name: "called with deleted obj",
+		obj: cache.DeletedFinalStateUnknown{
+			Key: "default/thing",
+			Obj: &Resource{
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace: "default",
+					Name:      "thing",
+				},
 			},
 		},
 		want: &Resource{
