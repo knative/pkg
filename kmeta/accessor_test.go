@@ -20,21 +20,21 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	"k8s.io/apimachinery/pkg/api/meta"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/tools/cache"
 
 	. "github.com/knative/pkg/testing"
 )
 
+// Ensure our resource satisfies the interface.
+var _ Accessor = (*Resource)(nil)
+
 func TestAccessor(t *testing.T) {
 	goodResource := &Resource{}
-	goodAccessor, _ := meta.Accessor(goodResource)
 
 	tests := []struct {
 		name string
 		o    interface{}
-		want metav1.Object
+		want Accessor
 	}{{
 		name: "bad object returns error",
 		o:    struct{}{},
@@ -46,13 +46,13 @@ func TestAccessor(t *testing.T) {
 	}, {
 		name: "good object",
 		o:    goodResource,
-		want: goodAccessor,
+		want: Accessor(goodResource),
 	}, {
 		name: "deleted with good final state",
 		o: cache.DeletedFinalStateUnknown{
 			Obj: goodResource,
 		},
-		want: goodAccessor,
+		want: Accessor(goodResource),
 	}}
 
 	for _, test := range tests {
