@@ -51,6 +51,10 @@ type TestFatFingers struct {
 	Conditionals Conditions
 }
 
+var (
+	ignoreFields = cmpopts.IgnoreFields(Condition{}, "LastTransitionTime", "Severity")
+)
+
 func TestGetCondition(t *testing.T) {
 	condSet := NewLivingConditionSet()
 	cases := []struct {
@@ -86,8 +90,7 @@ func TestGetCondition(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			e, a := tc.expect, condSet.Manage(tc.status).GetCondition(tc.get)
-			ignoreArguments := cmpopts.IgnoreFields(Condition{}, "LastTransitionTime")
-			if diff := cmp.Diff(e, a, ignoreArguments); diff != "" {
+			if diff := cmp.Diff(e, a, ignoreFields); diff != "" {
 				t.Errorf("%s (-want, +got) = %v", tc.name, diff)
 			}
 		})
@@ -129,8 +132,7 @@ func TestGetConditionReflection(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			e, a := tc.expect, condSet.Manage(tc.status).GetCondition(tc.get)
-			ignoreArguments := cmpopts.IgnoreFields(Condition{}, "LastTransitionTime")
-			if diff := cmp.Diff(e, a, ignoreArguments); diff != "" {
+			if diff := cmp.Diff(e, a, ignoreFields); diff != "" {
 				t.Errorf("%s (-want, +got) = %v", tc.name, diff)
 			}
 		})
@@ -169,8 +171,7 @@ func TestGetConditionFatFingers(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			e, a := tc.expect, condSet.Manage(tc.status).GetCondition(tc.get)
-			ignoreArguments := cmpopts.IgnoreFields(Condition{}, "LastTransitionTime")
-			if diff := cmp.Diff(e, a, ignoreArguments); diff != "" {
+			if diff := cmp.Diff(e, a, ignoreFields); diff != "" {
 				t.Errorf("%s (-want, +got) = %v", tc.name, diff)
 			}
 		})
@@ -222,8 +223,7 @@ func TestSetCondition(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			condSet.Manage(tc.status).SetCondition(tc.set)
 			e, a := tc.expect, condSet.Manage(tc.status).GetCondition(tc.set.Type)
-			ignoreArguments := cmpopts.IgnoreFields(Condition{}, "LastTransitionTime")
-			if diff := cmp.Diff(e, a, ignoreArguments); diff != "" {
+			if diff := cmp.Diff(e, a, ignoreFields); diff != "" {
 				t.Errorf("%s (-want, +got) = %v", tc.name, diff)
 			}
 		})
@@ -275,8 +275,7 @@ func TestSetConditionReflection(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			condSet.Manage(tc.status).SetCondition(tc.set)
 			e, a := tc.expect, condSet.Manage(tc.status).GetCondition(tc.set.Type)
-			ignoreArguments := cmpopts.IgnoreFields(Condition{}, "LastTransitionTime")
-			if diff := cmp.Diff(e, a, ignoreArguments); diff != "" {
+			if diff := cmp.Diff(e, a, ignoreFields); diff != "" {
 				t.Errorf("%s (-want, +got) = %v", tc.name, diff)
 			}
 		})
@@ -341,8 +340,7 @@ func TestSetConditionFatFingers(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			condSet.Manage(tc.status).SetCondition(tc.set)
 			e, a := tc.expect, condSet.Manage(tc.status).GetCondition(tc.set.Type)
-			ignoreArguments := cmpopts.IgnoreFields(Condition{}, "LastTransitionTime")
-			if diff := cmp.Diff(e, a, ignoreArguments); diff != "" {
+			if diff := cmp.Diff(e, a, ignoreFields); diff != "" {
 				t.Errorf("%s (-want, +got) = %v", tc.name, diff)
 			}
 		})
@@ -770,6 +768,36 @@ func TestResourceConditions(t *testing.T) {
 	}
 }
 
+func TestConditionSeverity(t *testing.T) {
+	condSet := NewLivingConditionSet("Foo")
+	status := &TestStatusReflection{}
+
+	// Add a new condition.
+	condSet.Manage(status).InitializeConditions()
+
+	if got, want := len(status.Conditions), 2; got != want {
+		t.Errorf("Unexpected number of conditions: %d, wanted %d", got, want)
+	}
+
+	condSet.Manage(status).MarkFalse("Bar", "", "")
+
+	if got, want := len(status.Conditions), 3; got != want {
+		t.Errorf("Unexpected number of conditions: %d, wanted %d", got, want)
+	}
+
+	if got, want := condSet.Manage(status).GetCondition("Ready").Severity, ConditionSeverityError; got != want {
+		t.Errorf("GetCondition(%q).Severity = %v, wanted %v", "Ready", got, want)
+	}
+
+	if got, want := condSet.Manage(status).GetCondition("Foo").Severity, ConditionSeverityError; got != want {
+		t.Errorf("GetCondition(%q).Severity = %v, wanted %v", "Foo", got, want)
+	}
+
+	if got, want := condSet.Manage(status).GetCondition("Bar").Severity, ConditionSeverityInfo; got != want {
+		t.Errorf("GetCondition(%q).Severity = %v, wanted %v", "Bar", got, want)
+	}
+}
+
 // getTypes is a small helped to strip out the used ConditionTypes from Conditions
 func getTypes(conds Conditions) []ConditionType {
 	var types []ConditionType
@@ -805,8 +833,7 @@ func doTestMarkTrueAccessor(t *testing.T, cases []ConditionMarkTrueTest) {
 			}
 
 			e, a := expected, condSet.Manage(status).GetCondition(tc.mark)
-			ignoreArguments := cmpopts.IgnoreFields(Condition{}, "LastTransitionTime")
-			if diff := cmp.Diff(e, a, ignoreArguments); diff != "" {
+			if diff := cmp.Diff(e, a, ignoreFields); diff != "" {
 				t.Errorf("%s (-want, +got) = %v", tc.name, diff)
 			}
 		})
@@ -832,8 +859,7 @@ func doTestMarkTrueReflection(t *testing.T, cases []ConditionMarkTrueTest) {
 			}
 
 			e, a := expected, condSet.Manage(status).GetCondition(tc.mark)
-			ignoreArguments := cmpopts.IgnoreFields(Condition{}, "LastTransitionTime")
-			if diff := cmp.Diff(e, a, ignoreArguments); diff != "" {
+			if diff := cmp.Diff(e, a, ignoreFields); diff != "" {
 				t.Errorf("%s (-want, +got) = %v", tc.name, diff)
 			}
 		})
@@ -945,8 +971,7 @@ func doTestMarkFalseAccessor(t *testing.T, cases []ConditionMarkFalseTest) {
 			}
 
 			e, a := expected, condSet.Manage(status).GetCondition(tc.mark)
-			ignoreArguments := cmpopts.IgnoreFields(Condition{}, "LastTransitionTime")
-			if diff := cmp.Diff(e, a, ignoreArguments); diff != "" {
+			if diff := cmp.Diff(e, a, ignoreFields); diff != "" {
 				t.Errorf("%s (-want, +got) = %v", tc.name, diff)
 			}
 		})
@@ -975,8 +1000,7 @@ func doTestMarkFalseReflection(t *testing.T, cases []ConditionMarkFalseTest) {
 			}
 
 			e, a := expected, condSet.Manage(status).GetCondition(tc.mark)
-			ignoreArguments := cmpopts.IgnoreFields(Condition{}, "LastTransitionTime")
-			if diff := cmp.Diff(e, a, ignoreArguments); diff != "" {
+			if diff := cmp.Diff(e, a, ignoreFields); diff != "" {
 				t.Errorf("%s (-want, +got) = %v", tc.name, diff)
 			}
 		})
@@ -1093,8 +1117,7 @@ func doTestMarkUnknownAccessor(t *testing.T, cases []ConditionMarkUnknownTest) {
 			}
 
 			e, a := expected, condSet.Manage(status).GetCondition(tc.mark)
-			ignoreArguments := cmpopts.IgnoreFields(Condition{}, "LastTransitionTime")
-			if diff := cmp.Diff(e, a, ignoreArguments); diff != "" {
+			if diff := cmp.Diff(e, a, ignoreFields); diff != "" {
 				t.Errorf("%s (-want, +got) = %v", tc.name, diff)
 			}
 		})
@@ -1127,8 +1150,7 @@ func doTestMarkUnknownReflection(t *testing.T, cases []ConditionMarkUnknownTest)
 			}
 
 			e, a := expected, condSet.Manage(status).GetCondition(tc.mark)
-			ignoreArguments := cmpopts.IgnoreFields(Condition{}, "LastTransitionTime")
-			if diff := cmp.Diff(e, a, ignoreArguments); diff != "" {
+			if diff := cmp.Diff(e, a, ignoreFields); diff != "" {
 				t.Errorf("%s (-want, +got) = %v", tc.name, diff)
 			}
 		})
@@ -1231,18 +1253,21 @@ func TestInitializeConditions(t *testing.T) {
 	}{{
 		name: "initialized",
 		condition: &Condition{
-			Type:   ConditionReady,
-			Status: corev1.ConditionUnknown,
+			Type:     ConditionReady,
+			Status:   corev1.ConditionUnknown,
+			Severity: ConditionSeverityError,
 		},
 	}, {
 		name: "already initialized",
 		conditions: Conditions{{
-			Type:   ConditionReady,
-			Status: corev1.ConditionFalse,
+			Type:     ConditionReady,
+			Status:   corev1.ConditionFalse,
+			Severity: ConditionSeverityError,
 		}},
 		condition: &Condition{
-			Type:   ConditionReady,
-			Status: corev1.ConditionFalse,
+			Type:     ConditionReady,
+			Status:   corev1.ConditionFalse,
+			Severity: ConditionSeverityError,
 		},
 	}}
 

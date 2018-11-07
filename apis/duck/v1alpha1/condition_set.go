@@ -211,13 +211,30 @@ func (r conditionsImpl) SetCondition(new Condition) {
 	r.accessor.SetConditions(conditions)
 }
 
+func (r conditionsImpl) isTerminal(t ConditionType) bool {
+	for _, cond := range append(r.dependents, r.happy) {
+		if cond == t {
+			return true
+		}
+	}
+	return false
+}
+
+func (r conditionsImpl) severity(t ConditionType) ConditionSeverity {
+	if r.isTerminal(t) {
+		return ConditionSeverityError
+	}
+	return ConditionSeverityInfo
+}
+
 // MarkTrue sets the status of t to true, and then marks the happy condition to
 // true if all other dependents are also true.
 func (r conditionsImpl) MarkTrue(t ConditionType) {
 	// set the specified condition
 	r.SetCondition(Condition{
-		Type:   t,
-		Status: corev1.ConditionTrue,
+		Type:     t,
+		Status:   corev1.ConditionTrue,
+		Severity: r.severity(t),
 	})
 
 	// check the dependents.
@@ -231,8 +248,9 @@ func (r conditionsImpl) MarkTrue(t ConditionType) {
 
 	// set the happy condition
 	r.SetCondition(Condition{
-		Type:   r.happy,
-		Status: corev1.ConditionTrue,
+		Type:     r.happy,
+		Status:   corev1.ConditionTrue,
+		Severity: r.severity(r.happy),
 	})
 }
 
@@ -241,10 +259,11 @@ func (r conditionsImpl) MarkTrue(t ConditionType) {
 func (r conditionsImpl) MarkUnknown(t ConditionType, reason, messageFormat string, messageA ...interface{}) {
 	// set the specified condition
 	r.SetCondition(Condition{
-		Type:    t,
-		Status:  corev1.ConditionUnknown,
-		Reason:  reason,
-		Message: fmt.Sprintf(messageFormat, messageA...),
+		Type:     t,
+		Status:   corev1.ConditionUnknown,
+		Reason:   reason,
+		Message:  fmt.Sprintf(messageFormat, messageA...),
+		Severity: r.severity(t),
 	})
 
 	// check the dependents.
@@ -268,10 +287,11 @@ func (r conditionsImpl) MarkUnknown(t ConditionType, reason, messageFormat strin
 	if isDependent {
 		// set the happy condition, if it is one of our dependent subconditions.
 		r.SetCondition(Condition{
-			Type:    r.happy,
-			Status:  corev1.ConditionUnknown,
-			Reason:  reason,
-			Message: fmt.Sprintf(messageFormat, messageA...),
+			Type:     r.happy,
+			Status:   corev1.ConditionUnknown,
+			Reason:   reason,
+			Message:  fmt.Sprintf(messageFormat, messageA...),
+			Severity: r.severity(r.happy),
 		})
 	}
 }
@@ -287,10 +307,11 @@ func (r conditionsImpl) MarkFalse(t ConditionType, reason, messageFormat string,
 
 	for _, t := range types {
 		r.SetCondition(Condition{
-			Type:    t,
-			Status:  corev1.ConditionFalse,
-			Reason:  reason,
-			Message: fmt.Sprintf(messageFormat, messageA...),
+			Type:     t,
+			Status:   corev1.ConditionFalse,
+			Reason:   reason,
+			Message:  fmt.Sprintf(messageFormat, messageA...),
+			Severity: r.severity(t),
 		})
 	}
 }
@@ -307,8 +328,9 @@ func (r conditionsImpl) InitializeConditions() {
 func (r conditionsImpl) InitializeCondition(t ConditionType) {
 	if c := r.GetCondition(t); c == nil {
 		r.SetCondition(Condition{
-			Type:   t,
-			Status: corev1.ConditionUnknown,
+			Type:     t,
+			Status:   corev1.ConditionUnknown,
+			Severity: r.severity(t),
 		})
 	}
 }
