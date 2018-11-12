@@ -17,8 +17,8 @@ limitations under the License.
 package v1alpha3
 
 import (
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"github.com/knative/pkg/apis/istio/common/v1alpha1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // +genclient
@@ -283,6 +283,11 @@ type HTTPMatchRequest struct {
 	//
 	// **Note:** The keys `uri`, `scheme`, `method`, and `authority` will be ignored.
 	Headers map[string]v1alpha1.StringMatch `json:"headers,omitempty"`
+
+	// Specifies the port on the host that is being addressed. Many services
+	// only expose a single port or label ports with the protocols they support,
+	// in these cases it is not required to explicitly select the port.
+	Port uint32 `json:"port,omitempty"`
 }
 
 type DestinationWeight struct {
