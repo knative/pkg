@@ -139,8 +139,7 @@ func (c *Impl) EnqueueControllerOf(obj interface{}) {
 // EnqueueLabelOf returns with an Enqueue func that takes a resource,
 // identifies its controller resource through given namespace and name labels,
 // converts it into a namespace/name string, and passes that to EnqueueKey.
-// Callers should pass in an empty string as namespace label key for obj
-// whose controller is of cluster-scoped resource.
+// It would pass through given object's namespace if an empty namespace label is specified.
 func (c *Impl) EnqueueLabelOf(namespaceLabel, nameLabel string) func(obj interface{}) {
 	return func(obj interface{}) {
 		object, err := kmeta.DeletionHandlingAccessor(obj)
@@ -165,10 +164,18 @@ func (c *Impl) EnqueueLabelOf(namespaceLabel, nameLabel string) func(obj interfa
 				return
 			}
 
-			controllerKey = fmt.Sprintf("%s/%s", controllerNamespace, controllerKey)
-		}
+			c.EnqueueKey(fmt.Sprintf("%s/%s", controllerNamespace, controllerKey))
+			return
 
-		c.EnqueueKey(controllerKey)
+		}
+		// Pass through namespace of the object itself if no namespace label specified.
+		// This is for the scenario that object and the parent resource are of same namespace,
+		// e.g. to enqueue the reivison of an endpoint.
+		// Note that for objects whose parent resource are cluster-scoped, here it adds the
+		// namespace part that we don't indeed need. Callers should be able to call
+		// "cache.SplitMetaNamespaceKey" func to process the key and throw away the
+		// namespace part when handling the enqueued key in reconcile loop.
+		c.EnqueueKey(fmt.Sprintf("%s/%s", object.GetNamespace(), controllerKey))
 	}
 }
 

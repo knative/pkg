@@ -297,13 +297,13 @@ func TestEnqueues(t *testing.T) {
 					Name:      "foo",
 					Namespace: "bar",
 					Labels: map[string]string{
-						"ns-key": "bar",
+						"ns-key": "qux",
 						"name-key": "baz",
 					},
 				},
 			})
 		},
-		wantQueue: []string{"bar/baz"},
+		wantQueue: []string{"qux/baz"},
 	}, {
 		name: "enqueue label of resource with empty namespace label (cluster-scoped resource)",
 		work: func(impl *Impl) {
@@ -317,7 +317,7 @@ func TestEnqueues(t *testing.T) {
 				},
 			})
 		},
-		wantQueue: []string{"baz"},
+		wantQueue: []string{"bar/baz"},
 	}, {
 		name: "enqueue label of deleted resource with label",
 		work: func(impl *Impl) {
@@ -328,14 +328,14 @@ func TestEnqueues(t *testing.T) {
 						Name:      "foo",
 						Namespace: "bar",
 						Labels: map[string]string{
-							"ns-key": "bar",
+							"ns-key": "qux",
 							"name-key": "baz",
 						},
 					},
 				},
 			})
 		},
-		wantQueue: []string{"bar/baz"},
+		wantQueue: []string{"qux/baz"},
 	}, {
 		name: "enqueue controller of deleted bad resource",
 		work: func(impl *Impl) {
