@@ -259,14 +259,14 @@ func TestEnqueues(t *testing.T) {
 			})
 		},
 	}, {
-		name: "enqueue label of bad resource",
+		name: "enqueue label of namespaced resource bad resource",
 		work: func(impl *Impl) {
-			impl.EnqueueLabelOf("test-ns", "test-name")("baz/blah")
+			impl.EnqueueLabelOfNamespaceScopedResource("test-ns", "test-name")("baz/blah")
 		},
 	}, {
-		name: "enqueue label of resource without label",
+		name: "enqueue label of namespaced resource without label",
 		work: func(impl *Impl) {
-			impl.EnqueueLabelOf("ns-key", "name-key")(&Resource{
+			impl.EnqueueLabelOfNamespaceScopedResource("ns-key", "name-key")(&Resource{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "foo",
 					Namespace: "bar",
@@ -277,9 +277,9 @@ func TestEnqueues(t *testing.T) {
 			})
 		},
 	}, {
-		name: "enqueue label of resource without namespace label",
+		name: "enqueue label of namespaced resource without namespace label",
 		work: func(impl *Impl) {
-			impl.EnqueueLabelOf("ns-key", "name-key")(&Resource{
+			impl.EnqueueLabelOfNamespaceScopedResource("ns-key", "name-key")(&Resource{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "foo",
 					Namespace: "bar",
@@ -290,9 +290,9 @@ func TestEnqueues(t *testing.T) {
 			})
 		},
 	}, {
-		name: "enqueue label of resource with labels",
+		name: "enqueue label of namespaced resource with labels",
 		work: func(impl *Impl) {
-			impl.EnqueueLabelOf("ns-key", "name-key")(&Resource{
+			impl.EnqueueLabelOfNamespaceScopedResource("ns-key", "name-key")(&Resource{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "foo",
 					Namespace: "bar",
@@ -305,9 +305,9 @@ func TestEnqueues(t *testing.T) {
 		},
 		wantQueue: []string{"qux/baz"},
 	}, {
-		name: "enqueue label of resource with empty namespace label (cluster-scoped resource)",
+		name: "enqueue label of namespaced resource with empty namespace label",
 		work: func(impl *Impl) {
-			impl.EnqueueLabelOf("", "name-key")(&Resource{
+			impl.EnqueueLabelOfNamespaceScopedResource("", "name-key")(&Resource{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "foo",
 					Namespace: "bar",
@@ -319,9 +319,9 @@ func TestEnqueues(t *testing.T) {
 		},
 		wantQueue: []string{"bar/baz"},
 	}, {
-		name: "enqueue label of deleted resource with label",
+		name: "enqueue label of deleted namespaced resource with label",
 		work: func(impl *Impl) {
-			impl.EnqueueLabelOf("ns-key", "name-key")(cache.DeletedFinalStateUnknown{
+			impl.EnqueueLabelOfNamespaceScopedResource("ns-key", "name-key")(cache.DeletedFinalStateUnknown{
 				Key: "foo/bar",
 				Obj: &Resource{
 					ObjectMeta: metav1.ObjectMeta{
@@ -337,10 +337,65 @@ func TestEnqueues(t *testing.T) {
 		},
 		wantQueue: []string{"qux/baz"},
 	}, {
-		name: "enqueue controller of deleted bad resource",
+		name: "enqueue label of deleted bad namespaced resource",
 		work: func(impl *Impl) {
-			impl.EnqueueLabelOf("ns-key", "name-key")(cache.DeletedFinalStateUnknown{
+			impl.EnqueueLabelOfNamespaceScopedResource("ns-key", "name-key")(cache.DeletedFinalStateUnknown{
 				Key: "foo/bar",
+				Obj: "bad-resource",
+			})
+		},
+	}, {
+		name: "enqueue label of cluster scoped resource bad resource",
+		work: func(impl *Impl) {
+			impl.EnqueueLabelOfClusterScopedResource("name-key")("baz")
+		},
+	}, {
+		name: "enqueue label of cluster scoped resource without label",
+		work: func(impl *Impl) {
+			impl.EnqueueLabelOfClusterScopedResource("name-key")(&Resource{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "foo",
+					Namespace: "bar",
+					Labels: map[string]string{},
+				},
+			})
+		},
+	}, {
+		name: "enqueue label of cluster scoped resource with label",
+		work: func(impl *Impl) {
+			impl.EnqueueLabelOfClusterScopedResource("name-key")(&Resource{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "foo",
+					Namespace: "bar",
+					Labels: map[string]string{
+						"name-key": "baz",
+					},
+				},
+			})
+		},
+		wantQueue: []string{"baz"},
+	}, {
+		name: "enqueue label of deleted cluster scoped resource with label",
+		work: func(impl *Impl) {
+			impl.EnqueueLabelOfClusterScopedResource("name-key")(cache.DeletedFinalStateUnknown{
+				Key: "foo/bar",
+				Obj: &Resource{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "foo",
+						Namespace: "bar",
+						Labels: map[string]string{
+							"name-key": "baz",
+						},
+					},
+				},
+			})
+		},
+		wantQueue: []string{"baz"},
+	}, {
+		name: "enqueue label of deleted bad cluster scoped resource",
+		work: func(impl *Impl) {
+			impl.EnqueueLabelOfClusterScopedResource("name-key")(cache.DeletedFinalStateUnknown{
+				Key: "bar",
 				Obj: "bad-resource",
 			})
 		},
