@@ -211,6 +211,11 @@ here at 3`,
 		}(),
 		want: `First: A, B, C, three.A, three.B, three.C, three.two.A, three.two.B, three.two.C, three.two.one.A, three.two.one.B, three.two.one.C
 Second: X, Y, Z`,
+	}, {
+		name:     "out of bound value",
+		err:      ErrOutOfBoundsValue("-1", "0", "5", "timeout"),
+		prefixes: [][]string{{"spec"}},
+		want:     `expected 0 <= -1 <= 5: spec.timeout`,
 	}}
 
 	for _, test := range tests {
