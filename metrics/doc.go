@@ -11,8 +11,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-/*
-Package metrics provides utilities for exporting metrics to Stackdriver backend
-or Prometheus backend based on config-observability settings.
-*/
+// Package metrics provides Knative utilities for exporting metrics to Stackdriver
+// backend or Prometheus backend based on config-observability settings.
 package metrics
