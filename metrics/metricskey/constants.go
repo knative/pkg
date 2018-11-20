@@ -37,6 +37,9 @@ const (
 
 	// LabelRevisionName is the label for the monitored revision
 	LabelRevisionName = "revision_name"
+
+	// ValueUnknown is the default value if the field is unknown
+	ValueUnknown = "unknown"
 )
 
 var (
