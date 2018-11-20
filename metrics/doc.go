@@ -12,7 +12,7 @@ limitations under the License.
 */
 
 /*
-Package metrics provides utilites for exporting metrics to Stackdriver backend
+Package metrics provides utilities for exporting metrics to Stackdriver backend
 or Prometheus backend based on config-observability settings.
 */
 package metrics
