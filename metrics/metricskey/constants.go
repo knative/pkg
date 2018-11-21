@@ -17,7 +17,7 @@ const (
 	// ResourceTypeKnativeRevision is the Stackdriver resource type for Knative revision
 	ResourceTypeKnativeRevision = "knative_revision"
 
-	// LabelProject is the label for project number (gaia id)
+	// LabelProject is the label for project (e.g. GCP GAIA ID, AWS project name)
 	LabelProject = "project"
 
 	// LabelLocation is the label for location (e.g. GCE zone, AWS region) where the service is deployed
