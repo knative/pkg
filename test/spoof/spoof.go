@@ -43,7 +43,7 @@ const (
 	requestInterval = 1 * time.Second
 	requestTimeout  = 5 * time.Minute
 	// TODO(tcnghia): These probably shouldn't be hard-coded here?
-	ingressName      = "knative-ingressgateway"
+	ingressName      = "istio-ingressgateway"
 	ingressNamespace = "istio-system"
 )
 
