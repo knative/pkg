@@ -20,7 +20,7 @@ const (
 	// LabelProject is the label for project number (gaia id)
 	LabelProject = "project"
 
-	// LabelLocation is the label for location where the service is deployed
+	// LabelLocation is the label for location (e.g. GCE zone, AWS region) where the service is deployed
 	LabelLocation = "location"
 
 	// LabelClusterName is the label for immutable name of the cluster
@@ -38,7 +38,8 @@ const (
 	// LabelRevisionName is the label for the monitored revision
 	LabelRevisionName = "revision_name"
 
-	// ValueUnknown is the default value if the field is unknown
+	// ValueUnknown is the default value if the field is unknown, e.g. project will be unknown if Knative
+	// is not running on GKE.
 	ValueUnknown = "unknown"
 )
 
