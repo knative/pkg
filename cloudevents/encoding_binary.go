@@ -57,7 +57,7 @@ const (
 	HeaderSource = "CE-Source"
 
 	// HeaderExtensions is the OPTIONAL header prefix for CloudEvents extensions
-	headerExtensionsPrefix = "CE-X-"
+	HeaderExtensionsPrefix = "CE-X-"
 
 	// Binary implements Binary encoding/decoding
 	Binary binary = 0
@@ -92,10 +92,10 @@ func (binary) FromRequest(data interface{}, r *http.Request) (*EventContext, err
 
 	ctx.Extensions = make(map[string]interface{})
 	for k, v := range r.Header {
-		if strings.ToUpper(k)[:len(headerExtensionsPrefix)] != headerExtensionsPrefix {
+		if strings.ToUpper(k)[:len(HeaderExtensionsPrefix)] != HeaderExtensionsPrefix {
 			continue
 		}
-		name := k[len(headerExtensionsPrefix):]
+		name := k[len(HeaderExtensionsPrefix):]
 		var val interface{}
 		if err := json.Unmarshal([]byte(v[0]), &val); err != nil {
 			// If this is not a JSON object, treat it as a string.
@@ -153,7 +153,7 @@ func (binary) NewRequest(urlString string, data interface{}, context EventContex
 		if err != nil {
 			return nil, err
 		}
-		h[headerExtensionsPrefix+name] = []string{
+		h[HeaderExtensionsPrefix+name] = []string{
 			string(encoded),
 		}
 	}
