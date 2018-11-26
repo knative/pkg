@@ -25,7 +25,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/runtime"
-	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
 
@@ -201,7 +200,7 @@ func (c *Impl) EnqueueLabelOfClusterScopedResource(nameLabel string) func(obj in
 
 // EnqueueKey takes a namespace/name string and puts it onto the work queue.
 func (c *Impl) EnqueueKey(key string) {
-	c.WorkQueue.AddRateLimited(key)
+	c.WorkQueue.Add(key)
 }
 
 // Run starts the controller's worker threads, the number of which is threadiness.
@@ -215,10 +214,10 @@ func (c *Impl) Run(threadiness int, stopCh <-chan struct{}) error {
 	logger := c.logger
 	logger.Info("Starting controller and workers")
 	for i := 0; i < threadiness; i++ {
-		go wait.Until(func() {
+		go func() {
 			for c.processNextWorkItem() {
 			}
-		}, time.Second, stopCh)
+		}()
 	}
 
 	logger.Info("Started workers")
@@ -257,9 +256,8 @@ func (c *Impl) processNextWorkItem() bool {
 		// workqueue.
 		key, ok := obj.(string)
 		if !ok {
-			// As the item in the workqueue is actually invalid, we call
-			// Forget here else we'd go into a loop of attempting to
-			// process a work item that is invalid.
+			// This shouldn't be reached, but if it happens, we Forget the item so
+			// that no delays are registered for it.
 			c.WorkQueue.Forget(obj)
 			c.logger.Errorf("expected string in workqueue but got %#v", obj)
 			c.statsReporter.ReportReconcile(time.Now().Sub(startTime), "[InvalidKeyType]", falseString)
@@ -288,8 +286,8 @@ func (c *Impl) processNextWorkItem() bool {
 		}
 
 		// Finally, if no error occurs we Forget this item so it does not
-		// get queued again until another change happens.
-		c.WorkQueue.Forget(obj)
+		// have any delay when another change happens.
+		c.WorkQueue.Forget(key)
 		c.logger.Infof("Successfully synced %q", key)
 		return nil
 	}(obj)
@@ -302,7 +300,7 @@ func (c *Impl) processNextWorkItem() bool {
 	return true
 }
 
-func (c *Impl) handleErr(err error, key interface{}) {
+func (c *Impl) handleErr(err error, key string) {
 	// Re-queue the key if it's an transient error.
 	if !IsPermanentError(err) {
 		c.WorkQueue.AddRateLimited(key)
