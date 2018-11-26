@@ -39,7 +39,7 @@ func TestReportQueueDepth(t *testing.T) {
 func TestReportReconcile(t *testing.T) {
 	r := &FakeStatsReporter{}
 	r.ReportReconcile(time.Duration(123), "testkey", "False")
-	if got, want := r.GetReconcileData(), []FakeReconcileStatData{FakeReconcileStatData{time.Duration(123), "testkey", "False"}}; !reflect.DeepEqual(want, got) {
+	if got, want := r.GetReconcileData(), []FakeReconcileStatData{{time.Duration(123), "testkey", "False"}}; !reflect.DeepEqual(want, got) {
 		t.Errorf("reconcile data len: want: %v, got: %v", want, got)
 	}
 }

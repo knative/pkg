@@ -297,7 +297,7 @@ func TestEnqueues(t *testing.T) {
 					Name:      "foo",
 					Namespace: "bar",
 					Labels: map[string]string{
-						"ns-key": "qux",
+						"ns-key":   "qux",
 						"name-key": "baz",
 					},
 				},
@@ -328,7 +328,7 @@ func TestEnqueues(t *testing.T) {
 						Name:      "foo",
 						Namespace: "bar",
 						Labels: map[string]string{
-							"ns-key": "qux",
+							"ns-key":   "qux",
 							"name-key": "baz",
 						},
 					},
@@ -356,7 +356,7 @@ func TestEnqueues(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "foo",
 					Namespace: "bar",
-					Labels: map[string]string{},
+					Labels:    map[string]string{},
 				},
 			})
 		},

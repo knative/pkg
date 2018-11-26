@@ -54,7 +54,7 @@ func TestReadFile(t *testing.T) {
 		koDataPath:                "",
 		wantErr:                   true,
 		koDataPathEnvDoesNotExist: true,
-		err: fmt.Errorf("%q does not exist or is empty", koDataPathEnvName),
+		err:                       fmt.Errorf("%q does not exist or is empty", koDataPathEnvName),
 	}, {
 		name:       "HEAD file does not exist",
 		koDataPath: "testdata/nonexisting",
