@@ -175,7 +175,6 @@ func (c *Impl) EnqueueLabelOfNamespaceScopedResource(namespaceLabel, nameLabel s
 	}
 }
 
-
 // EnqueueLabelOfClusterScopedResource returns with an Enqueue func
 // that takes a resource, identifies its controller resource through
 // given name label, and passes it to EnqueueKey.
