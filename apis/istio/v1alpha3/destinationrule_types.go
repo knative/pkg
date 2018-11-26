@@ -254,7 +254,7 @@ type Subset struct {
 //            name: user
 //            ttl: 0s
 type LoadBalancerSettings struct {
-	// It is requred to specify exactly one of the fields:
+	// It is required to specify exactly one of the fields:
 	// Simple or ConsistentHash
 	Simple         SimpleLB          `json:"simple,omitempty"`
 	ConsistentHash *ConsistentHashLB `json:"consistentHash,omitempty"`
@@ -293,7 +293,7 @@ const (
 // service.
 type ConsistentHashLB struct {
 
-	// It is requred to specify exactly one of the fields as hash key:
+	// It is required to specify exactly one of the fields as hash key:
 	// HttpHeaderName, HttpCookie, or UseSourceIP.
 	// Hash based on a specific HTTP header.
 	HttpHeaderName string `json:"httpHeaderName,omitempty"`
