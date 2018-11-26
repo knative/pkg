@@ -161,7 +161,7 @@ type PolicySpec struct {
 
 	// Define whether peer or origin identity should be use for principal. Default
 	// value is USE_PEER.
-	// If peer (or orgin) identity is not available, either because of peer/origin
+	// If peer (or origin) identity is not available, either because of peer/origin
 	// authentication is not defined, or failed, principal will be left unset.
 	// In other words, binding rule does not affect the decision to accept or
 	// reject request.
@@ -183,7 +183,7 @@ type TargetSelector struct {
 // matching targets for authenticationn policy. This is copied from
 // networking API to avoid dependency.
 type PortSelector struct {
-	// It is requred to specify exactly one of the fields:
+	// It is required to specify exactly one of the fields:
 	// Number or Name
 
 	// Valid port number
@@ -199,7 +199,7 @@ type PortSelector struct {
 // The type can be progammatically determine by checking the type of the
 // "params" field.
 type PeerAuthenticationMethod struct {
-	// It is requred to specify exactly one of the fields:
+	// It is required to specify exactly one of the fields:
 	// Mtls or Jwt
 	// Set if mTLS is used.
 	Mtls *MutualTls `json:"mtls,omitempty"`
