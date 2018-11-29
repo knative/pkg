@@ -23,15 +23,17 @@
 # Calling this script without arguments will create a new cluster in
 # project $PROJECT_ID, run the tests and delete the cluster.
 
-source $(dirname $0)/../scripts/e2e-tests.sh
+source $(dirname $0)/../../scripts/e2e-tests.sh
+
+function parse_flags() {
+  if [[ "$1" == "--smoke-test-custom-flag" ]]; then
+    echo ">> All tests passed"
+    exit 0
+  fi
+  fail_test "Unexpected flag $1 passed"
+}
 
 # Script entry point.
 
-initialize $@
-
-start_latest_knative_serving || fail_test "Knative Serving is not up"
-
-# This is actually a unit test, but it does exercise the necessary helper functions.
-go_test_e2e -run TestE2ESucceeds ./test || fail_test
-
-success
+echo ">> Testing e2e custom flag"
+initialize --smoke-test-custom-flag

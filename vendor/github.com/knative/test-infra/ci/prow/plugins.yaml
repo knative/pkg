@@ -18,6 +18,15 @@ approve:
   implicit_self_approve: true
   review_acts_as_approve: true
 
+repo_milestone:
+  # Default maintainer
+  '':
+    # You can curl the following endpoint in order to determine the github ID of
+    # your team responsible for maintaining the milestones:
+    # curl -H "Authorization: token <token>" https://api.github.com/orgs/<org-name>/teams
+    maintainers_id: 3012514
+    maintainers_team: knative-milestone-maintainers
+
 plugins:
   knative:
   - approve
@@ -33,6 +42,7 @@ plugins:
   - label
   - lgtm
   - lifecycle
+  - milestone
   - shrug
   - size
   - skip

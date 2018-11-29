@@ -3,6 +3,62 @@
 This directory contains helper scripts used by Prow test jobs, as well and
 local development scripts.
 
+## Using the `presubmit-tests.sh` helper script
+
+This is a helper script to run the presubmit tests. To use it:
+
+1. Source this script.
+
+1. Define the functions `build_tests()` and `unit_tests()`. They should run all
+tests (i.e., not fail fast), and return 0 if all passed, 1 if a failure
+occurred. The environment variables `RUN_BUILD_TESTS`, `RUN_UNIT_TESTS` and
+`RUN_INTEGRATION_TESTS` are set to 0 (false) or 1 (true) accordingly. If
+`--emit-metrics` is passed, `EMIT_METRICS` will be set to 1.
+
+1. [optional] Define the function `integration_tests()`, just like the previous
+ones. If you don't define this function, the default action for running the
+integration tests is to call the `./test/e2e-tests.sh` script (passing the
+`--emit-metrics` flag if necessary).
+
+1. [optional] Define the functions `pre_integration_tests()` or
+`post_integration_tests()`. These functions will be called before or after the
+integration tests (either your custom one or the default action) and will cause
+the test to fail if they don't return success.
+
+1. Call the `main()` function passing `$@` (without quotes).
+
+Running the script without parameters, or with the `--all-tests` flag causes
+all tests to be executed, in the right order (i.e., build, then unit, then
+integration tests).
+
+Use the flags `--build-tests`, `--unit-tests` and `--integration-tests` to run
+a specific set of tests. The flag `--emit-metrics` is used to emit metrics when
+running the tests, and is automatically handled by the default action (see
+above).
+
+### Sample presubmit test script
+
+```bash
+source vendor/github.com/knative/test-infra/scripts/presubmit-tests.sh
+
+function build_tests() {
+  go build .
+}
+
+function unit_tests() {
+  report_go_test .
+}
+
+function pre_integration_tests() {
+  echo "Cleaning up before integration tests"
+  rm -fr ./staging-area
+}
+
+# We use the default integration test runner.
+
+main $@
+```
+
 ## Using the `e2e-tests.sh` helper script
 
 This is a helper script for Knative E2E test scripts. To use it:
@@ -44,6 +100,9 @@ project `$PROJECT_ID` and run the tests against it.
 1. Calling your script with `--run-tests` and the variables `K8S_CLUSTER_OVERRIDE`,
 `K8S_USER_OVERRIDE` and `DOCKER_REPO_OVERRIDE` set will immediately start the
 tests against the cluster.
+
+1. You can force running the tests against a specific GKE cluster version by using
+the `--cluster-version` flag and passing a X.Y.Z version as the flag value.
 
 ### Sample end-to-end test script
 

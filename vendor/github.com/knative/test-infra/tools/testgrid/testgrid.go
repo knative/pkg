@@ -20,7 +20,14 @@ package testgrid
 
 import (
 	"encoding/xml"
+	"log"
 	"os"
+)
+
+const (
+	// Filename to store output that acts as input to testgrid.
+	// Should be of the form junit_*.xml
+	Filename = "junit_knative.xml"
 )
 
 // TestProperty defines a property of the test
@@ -49,6 +56,23 @@ type TestSuite struct {
 	TestCases []TestCase `xml:"testcase"`
 }
 
+// GetArtifactsDir gets the aritfacts directory where we should put the artifacts.
+// By default, it will look at the env var ARTIFACTS.
+func GetArtifactsDir() string {
+	dir := os.Getenv("ARTIFACTS")
+	if dir == "" {
+		log.Printf("Env variable ARTIFACTS not set. Using './artifacts' instead.")
+		return "./artifacts"
+	}
+	return dir
+}
+
+// CreateTestgridXML junit xml file in the default artifacts directory
+func CreateTestgridXML(tc []TestCase) error {
+	ts := TestSuite{TestCases: tc}
+	return CreateXMLOutput(ts, GetArtifactsDir())
+}
+
 // CreateXMLOutput creates the junit xml file in the provided artifacts directory
 func CreateXMLOutput(ts TestSuite, artifactsDir string) error {
 	op, err := xml.MarshalIndent(ts, "", "  ")
@@ -56,8 +80,9 @@ func CreateXMLOutput(ts TestSuite, artifactsDir string) error {
 		return err
 	}
 
-	outputFile := artifactsDir + "/junit_bazel.xml"
-	f, err := os.Create(outputFile)
+	outputFile := artifactsDir + "/" + Filename
+	log.Printf("Storing output in %s", outputFile)
+	f, err := os.OpenFile(outputFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		return err
 	}

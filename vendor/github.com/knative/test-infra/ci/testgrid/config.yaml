@@ -23,7 +23,7 @@ default_test_group:
   num_columns_recent: 10         # The number of columns to consider "recent" for a variety of purposes
   use_kubernetes_client: true    # ** This field is deprecated and should always be true **
   is_external: true              # ** This field is deprecated and should always be true **
-  alert_stale_results_hours: 0   # Don't alert for staleness by default
+  alert_stale_results_hours: 24  # Alert if tests haven't run for a day
   num_failures_to_alert: 3       # Consider a test failed if it has 3 or more consecutive failures
   num_passes_to_disable_alert: 1 # Consider a failing test passing if it has 1 or more consecutive passes
 
@@ -49,16 +49,24 @@ default_dashboard_tab:
   num_columns_recent: 10
   code_search_url_template:      # The URL template to visit when searching for changelists
     url: https://github.com/knative/serving/compare/<start-custom-0>...<end-custom-0>
+  alert_options:
+    alert_mail_to_addresses: ' knative-productivity-dev@googlegroups.com'
 
+#################################################################
 # Test groups
+#################################################################
 
 test_groups:
+
+## Master branch (head)
+
 - name: ci-knative-serving-continuous
   gcs_prefix: knative-prow/logs/ci-knative-serving-continuous
 - name: ci-knative-serving-release
   gcs_prefix: knative-prow/logs/ci-knative-serving-release
 - name: ci-knative-serving-playground
   gcs_prefix: knative-prow/logs/ci-knative-serving-playground
+  alert_stale_results_hours: 168  # Alert if playground haven't been updated for a week
 - name: pull-knative-serving-test-coverage
   gcs_prefix: knative-prow/logs/ci-knative-serving-go-coverage
   short_text_metric: coverage
@@ -68,6 +76,9 @@ test_groups:
 - name: ci-knative-serving-api-coverage
   gcs_prefix: knative-prow/logs/ci-knative-serving-api-coverage
   short_text_metric: api_coverage
+- name: ci-knative-serving-performance
+  gcs_prefix: knative-prow/logs/ci-knative-serving-performance
+  short_text_metric: perf_latency
 - name: ci-knative-build-continuous
   gcs_prefix: knative-prow/logs/ci-knative-build-continuous
 - name: ci-knative-build-release
@@ -80,6 +91,8 @@ test_groups:
   short_text_metric: latency
 - name: ci-knative-build-templates-continuous
   gcs_prefix: knative-prow/logs/ci-knative-build-templates-continuous
+- name: ci-knative-build-pipeline-release
+  gcs_prefix: knative-prow/logs/ci-knative-build-pipeline-release
 - name: pull-knative-build-pipeline-test-coverage
   gcs_prefix: knative-prow/logs/ci-knative-build-pipeline-go-coverage
   short_text_metric: coverage
@@ -113,9 +126,19 @@ test_groups:
   gcs_prefix: knative-prow/logs/ci-knative-caching-go-coverage
   short_text_metric: coverage
 
+## release-0.2 branch
+
+- name: ci-knative-serving-0.2-continuous
+  gcs_prefix: knative-prow/logs/ci-knative-serving-0.2-continuous
+
+#################################################################
 # Dashboards
+#################################################################
 
 dashboards:
+
+## Master branch (head)
+
 - name: knative-serving
   dashboard_tab:
   - name: continuous
@@ -134,6 +157,12 @@ dashboards:
   - name: api-coverage
     test_group_name: ci-knative-serving-api-coverage
     description: 'Conformance tests API coverage.'
+    base_options: 'exclude-filter-by-regex=Overall$&group-by-directory=&expand-groups=&sort-by-name='
+  - name: conformance-tests
+    test_group_name: ci-knative-serving-continuous
+    base_options: 'include-filter-by-regex=//knative/serving/test/conformance:&sort-by-name='
+  - name: performance
+    test_group_name: ci-knative-serving-performance
     base_options: 'exclude-filter-by-regex=Overall$&group-by-directory=&expand-groups=&sort-by-name='
 - name: knative-build
   dashboard_tab:
@@ -154,6 +183,8 @@ dashboards:
     test_group_name: ci-knative-build-templates-continuous
 - name: knative-build-pipeline
   dashboard_tab:
+  - name: release
+    test_group_name: ci-knative-build-pipeline-release
   - name: coverage
     test_group_name: pull-knative-build-pipeline-test-coverage
     base_options: 'exclude-filter-by-regex=Overall&group-by-directory=&expand-groups=&sort-by-name='
@@ -197,7 +228,16 @@ dashboards:
     test_group_name: pull-knative-caching-test-coverage
     base_options: 'exclude-filter-by-regex=Overall&group-by-directory=&expand-groups=&sort-by-name='
 
+## release-0.2 branch
+
+- name: knative-serving-0.2
+  dashboard_tab:
+  - name: continuous
+    test_group_name: ci-knative-serving-0.2-continuous
+
+#################################################################
 # Dashboard groups
+#################################################################
 
 dashboard_groups:
 - name: knative
@@ -211,3 +251,6 @@ dashboard_groups:
   - knative-docs
   - knative-pkg
   - knative-caching
+- name: knative-0.2
+  dashboard_names:
+  - knative-serving-0.2

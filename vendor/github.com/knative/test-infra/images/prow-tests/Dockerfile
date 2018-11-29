@@ -29,8 +29,6 @@ RUN docker-credential-gcr configure-docker
 RUN apt-get install -y uuid-runtime  # for uuidgen
 RUN apt-get install -y npm  # for markdown-link-check
 RUN apt-get install -y rubygems  # for mdl
-RUN apt-get install -y build-essential libssl-dev # for wrk
-RUN apt-get install -y netbase # sets up /etc/services needed for wrk
 
 # Extra tools through go get
 RUN go get -u github.com/google/go-containerregistry/cmd/ko
@@ -44,11 +42,8 @@ RUN npm install -g markdown-link-check
 RUN gem install mixlib-config -v 2.2.4  # required because ruby is 2.1
 RUN gem install mdl
 
-# Install wrk
-RUN git clone https://github.com/wg/wrk.git wrk
-RUN make -C wrk/
-RUN cp wrk/wrk /usr/local/bin
+ADD . /go/src/github.com/knative/test-infra
 
 # Extra custom tools
-ADD githubhelper .
-ADD dep-collector .
+RUN cp /go/src/github.com/knative/test-infra/tools/githubhelper/githubhelper .
+RUN go install github.com/knative/test-infra/tools/dep-collector

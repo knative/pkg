@@ -1,3 +1,5 @@
+#!/bin/bash
+
 # Copyright 2018 The Knative Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,23 +14,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-IMG = gcr.io/knative-tests/test-infra/prow-tests
-TAG := $(shell date +v%Y%m%d)-$(shell git describe --always --dirty --match '^$')
+# Test that pre/post integration tests don't run if unset.
 
-all: build
+source $(dirname $0)/presubmit-integration-tests-common.sh
 
-build:
-	make -C ../../tools/githubhelper
-	docker build -t $(IMG):$(TAG) -f Dockerfile ../..
-	docker tag $(IMG):$(TAG) $(IMG):latest
+function check_results() {
+  (( ! PRE_INTEGRATION_TESTS )) || failed "Pre integration tests did run"
+  (( CUSTOM_INTEGRATION_TESTS )) || failed "Custom integration tests did not run"
+  (( ! POST_INTEGRATION_TESTS )) || failed "Post integration tests did run"
+  echo ">> All tests passed"
+}
 
-push_versioned: build
-	docker push $(IMG):$(TAG)
+echo ">> Testing custom test integration function"
 
-push_latest: build
-	docker push $(IMG):latest
+unset -f pre_integration_tests
+unset -f post_integration_tests
 
-clean:
-	rm -fr githubhelper dep-collector
-
-push: push_versioned push_latest clean
+main $@

@@ -206,7 +206,45 @@ presubmits:
         - "--" # end bootstrap args, scenario args below
         - "--" # end kubernetes_execute_bazel flags (consider following flags as text)
         - "./test/presubmit-tests.sh"
-        - "--integration-tests"
+        - "--run-test"
+        - "./test/e2e-tests.sh"
+        # Bazel needs privileged mode in order to sandbox builds.
+        securityContext:
+          privileged: true
+        resources:
+          requests:
+            memory: "1Gi"
+
+  - name: pull-knative-serving-upgrade-tests
+    agent: kubernetes
+    context: pull-knative-serving-upgrade-tests
+    always_run: true
+    rerun_command: "/test pull-knative-serving-upgrade-tests"
+    trigger: "(?m)^/test (all|pull-knative-serving-upgrade-tests),?(\\s+|$)"
+    labels:
+      preset-service-account: "true"
+      preset-bazel-scratch-dir: "true"
+      preset-bazel-remote-cache-enabled: "true"
+    skip_branches:  # Skip these branches, as test isn't available.
+    - release-0.1
+    - release-0.2
+    spec:
+      containers:
+      - image: gcr.io/knative-tests/test-infra/prow-tests:latest
+        imagePullPolicy: Always
+        args:
+        - "--scenario=kubernetes_execute_bazel"
+        - "--clean"
+        - "--job=$(JOB_NAME)"
+        - "--repo=github.com/$(REPO_OWNER)/$(REPO_NAME)=$(PULL_REFS)"
+        - "--root=/go/src"
+        - "--service-account=/etc/service-account/service-account.json"
+        - "--upload=gs://knative-prow/pr-logs"
+        - "--" # end bootstrap args, scenario args below
+        - "--" # end kubernetes_execute_bazel flags (consider following flags as text)
+        - "./test/presubmit-tests.sh"
+        - "--run-test"
+        - "./test/e2e-upgrade-tests.sh"
         # Bazel needs privileged mode in order to sandbox builds.
         securityContext:
           privileged: true
@@ -236,7 +274,7 @@ presubmits:
         - "--postsubmit-job-name=post-knative-serving-go-coverage"
         - "--artifacts=$(ARTIFACTS)"
         - "--profile-name=coverage_profile.txt"
-        - "--cov-target=./pkg/"
+        - "--cov-target=."
         - "--cov-threshold-percentage=50"
         - "--github-token=/etc/github-token/token"
         volumeMounts:
@@ -270,7 +308,7 @@ presubmits:
         - "--postsubmit-job-name=post-knative-serving-go-coverage"
         - "--profile-name=coverage_profile.txt"
         - "--artifacts=$(ARTIFACTS)"
-        - "--cov-target=./pkg/"
+        - "--cov-target=."
         - "--cov-threshold-percentage=81"
         - "--github-token=/etc/github-token/token"
         volumeMounts:
@@ -359,6 +397,7 @@ presubmits:
       preset-service-account: "true"
       preset-bazel-scratch-dir: "true"
       preset-bazel-remote-cache-enabled: "true"
+      preset-dind-enabled: "true"
     spec:
       containers:
       - image: gcr.io/knative-tests/test-infra/prow-tests:latest
@@ -404,7 +443,7 @@ presubmits:
         - "--postsubmit-job-name=post-knative-build-go-coverage"
         - "--artifacts=$(ARTIFACTS)"
         - "--profile-name=coverage_profile.txt"
-        - "--cov-target=./pkg/"
+        - "--cov-target=."
         - "--cov-threshold-percentage=50"
         - "--github-token=/etc/github-token/token"
         volumeMounts:
@@ -672,7 +711,7 @@ presubmits:
         - "--postsubmit-job-name=post-knative-eventing-go-coverage"
         - "--artifacts=$(ARTIFACTS)"
         - "--profile-name=coverage_profile.txt"
-        - "--cov-target=./pkg/"
+        - "--cov-target=."
         - "--cov-threshold-percentage=50"
         - "--github-token=/etc/github-token/token"
         volumeMounts:
@@ -806,7 +845,7 @@ presubmits:
         - "--postsubmit-job-name=post-knative-eventing-sources-go-coverage"
         - "--artifacts=$(ARTIFACTS)"
         - "--profile-name=coverage_profile.txt"
-        - "--cov-target=./pkg/"
+        - "--cov-target=."
         - "--cov-threshold-percentage=50"
         - "--github-token=/etc/github-token/token"
         volumeMounts:
@@ -940,7 +979,7 @@ presubmits:
         - "--postsubmit-job-name=post-knative-docs-go-coverage"
         - "--artifacts=$(ARTIFACTS)"
         - "--profile-name=coverage_profile.txt"
-        - "--cov-target=./pkg/"
+        - "--cov-target=."
         - "--cov-threshold-percentage=50"
         - "--github-token=/etc/github-token/token"
         volumeMounts:
@@ -1408,7 +1447,7 @@ presubmits:
         - "--postsubmit-job-name=post-knative-caching-go-coverage"
         - "--artifacts=$(ARTIFACTS)"
         - "--profile-name=coverage_profile.txt"
-        - "--cov-target=./pkg/"
+        - "--cov-target=."
         - "--cov-threshold-percentage=50"
         - "--github-token=/etc/github-token/token"
         volumeMounts:
@@ -1446,6 +1485,38 @@ periodics:
       - "./test/presubmit-tests.sh"
       - "--all-tests"
       - "--emit-metrics"
+      # Bazel needs privileged mode in order to sandbox builds.
+      securityContext:
+        privileged: true
+      resources:
+        requests:
+          memory: "1Gi"
+- cron: "15 8 * * *" # Run at 01:15PST every day (08:15 UTC)
+  name: ci-knative-serving-0.2-continuous
+  agent: kubernetes
+  labels:
+    preset-service-account: "true"
+    preset-bazel-scratch-dir: "true"
+    preset-bazel-remote-cache-enabled: "true"
+    preset-dind-enabled: "true"
+  spec:
+    containers:
+    - image: gcr.io/knative-tests/test-infra/prow-tests:latest
+      imagePullPolicy: Always
+      args:
+      - "--scenario=kubernetes_execute_bazel"
+      - "--clean"
+      - "--job=$(JOB_NAME)"
+      - "--repo=github.com/knative/serving=release-0.2"
+      - "--root=/go/src"
+      - "--service-account=/etc/service-account/service-account.json"
+      - "--upload=gs://knative-prow/logs"
+      - "--timeout=50" # Avoid overrun
+      - "--" # end bootstrap args, scenario args below
+      - "--" # end kubernetes_execute_bazel flags (consider following flags as text)
+      - "./hack/release.sh"
+      - "--nopublish"
+      - "--notag-release"
       # Bazel needs privileged mode in order to sandbox builds.
       securityContext:
         privileged: true
@@ -1572,7 +1643,7 @@ periodics:
       args:
       - "--artifacts=$(ARTIFACTS)"
       - "--profile-name=coverage_profile.txt"
-      - "--cov-target=./pkg/"
+      - "--cov-target=."
       - "--cov-threshold-percentage=80"
 - cron: "0 1 * * *" # Run at 01:00 every day
   name: ci-knative-serving-performance
@@ -1706,7 +1777,28 @@ periodics:
       args:
       - "--artifacts=$(ARTIFACTS)"
       - "--profile-name=coverage_profile.txt"
-      - "--cov-target=./pkg/"
+      - "--cov-target=."
+      - "--cov-threshold-percentage=80"
+
+- cron: "0 1 * * *" # Run at 01:00 every day
+  name: ci-knative-build-pipeline-go-coverage
+  agent: kubernetes
+  decorate: true
+  extra_refs:
+  - org: knative
+    repo: build
+    base_ref: master
+    clone_uri: "https://github.com/knative/build-pipeline.git"
+  spec:
+    containers:
+    - image: gcr.io/knative-tests/test-infra/coverage:latest
+      imagePullPolicy: Always
+      command:
+      - "/coverage"
+      args:
+      - "--artifacts=$(ARTIFACTS)"
+      - "--profile-name=coverage_profile.txt"
+      - "--cov-target=."
       - "--cov-threshold-percentage=80"
 
 - cron: "50 * * * *" # Run every hour and 50 minutes
@@ -1757,7 +1849,7 @@ periodics:
       args:
       - "--artifacts=$(ARTIFACTS)"
       - "--profile-name=coverage_profile.txt"
-      - "--cov-target=./pkg/"
+      - "--cov-target=."
       - "--cov-threshold-percentage=80"
 
 - cron: "30 * * * *" # Run every hour and 30 minutes
@@ -1839,7 +1931,7 @@ periodics:
       args:
       - "--artifacts=$(ARTIFACTS)"
       - "--profile-name=coverage_profile.txt"
-      - "--cov-target=./pkg/"
+      - "--cov-target=."
       - "--cov-threshold-percentage=80"
 
 - cron: "30 * * * *" # Run every hour and 30 minutes
@@ -1921,7 +2013,7 @@ periodics:
       args:
       - "--artifacts=$(ARTIFACTS)"
       - "--profile-name=coverage_profile.txt"
-      - "--cov-target=./pkg/"
+      - "--cov-target=."
       - "--cov-threshold-percentage=80"
 
 - cron: "40 * * * *" # Run every hour and 40 minutes
@@ -2054,7 +2146,7 @@ periodics:
       args:
       - "--artifacts=$(ARTIFACTS)"
       - "--profile-name=coverage_profile.txt"
-      - "--cov-target=./pkg/"
+      - "--cov-target=."
       - "--cov-threshold-percentage=80"
 
 postsubmits:
@@ -2074,7 +2166,7 @@ postsubmits:
         args:
         - "--artifacts=$(ARTIFACTS)"
         - "--profile-name=coverage_profile.txt"
-        - "--cov-target=./pkg/"
+        - "--cov-target=."
         - "--cov-threshold-percentage=0"
   - name: post-knative-serving-go-coverage-dev
     branches:
@@ -2091,7 +2183,7 @@ postsubmits:
         args:
         - "--artifacts=$(ARTIFACTS)"
         - "--profile-name=coverage_profile.txt"
-        - "--cov-target=./pkg/"
+        - "--cov-target=."
         - "--cov-threshold-percentage=0"
 
   knative/build:
@@ -2110,7 +2202,26 @@ postsubmits:
         args:
         - "--artifacts=$(ARTIFACTS)"
         - "--profile-name=coverage_profile.txt"
-        - "--cov-target=./pkg/"
+        - "--cov-target=."
+        - "--cov-threshold-percentage=0"
+
+  knative/build-pipeline:
+  - name: post-knative-build-pipeline-go-coverage
+    branches:
+    - master
+    agent: kubernetes
+    decorate: true
+    clone_uri: "https://github.com/knative/build-pipeline.git"
+    spec:
+      containers:
+      - image: gcr.io/knative-tests/test-infra/coverage:latest
+        imagePullPolicy: Always
+        command:
+        - "/coverage"
+        args:
+        - "--artifacts=$(ARTIFACTS)"
+        - "--profile-name=coverage_profile.txt"
+        - "--cov-target=."
         - "--cov-threshold-percentage=0"
 
   knative/docs:
@@ -2129,7 +2240,7 @@ postsubmits:
         args:
         - "--artifacts=$(ARTIFACTS)"
         - "--profile-name=coverage_profile.txt"
-        - "--cov-target=./pkg/"
+        - "--cov-target=."
         - "--cov-threshold-percentage=0"
 
   knative/eventing:
@@ -2148,7 +2259,7 @@ postsubmits:
         args:
         - "--artifacts=$(ARTIFACTS)"
         - "--profile-name=coverage_profile.txt"
-        - "--cov-target=./pkg/"
+        - "--cov-target=."
         - "--cov-threshold-percentage=0"
 
   knative/eventing-sources:
@@ -2167,7 +2278,7 @@ postsubmits:
         args:
         - "--artifacts=$(ARTIFACTS)"
         - "--profile-name=coverage_profile.txt"
-        - "--cov-target=./pkg/"
+        - "--cov-target=."
         - "--cov-threshold-percentage=0"
 
   knative/pkg:
@@ -2205,6 +2316,5 @@ postsubmits:
         args:
         - "--artifacts=$(ARTIFACTS)"
         - "--profile-name=coverage_profile.txt"
-        - "--cov-target=./pkg/"
+        - "--cov-target=."
         - "--cov-threshold-percentage=0"
-
