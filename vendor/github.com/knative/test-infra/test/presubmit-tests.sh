@@ -29,7 +29,7 @@ function build_tests() {
   make -C ci/prow test || failed=1
   make -C ci/testgrid test || failed=1
   for script in scripts/*.sh; do
-    echo "Checking integrity of ${script}"
+    subheader "Checking integrity of ${script}"
     bash -c "source ${script}" || failed=1
   done
   return ${failed}
@@ -38,15 +38,14 @@ function build_tests() {
 function unit_tests() {
   header "Running unit tests"
   local failed=0
-  for test in library release; do
-    ./test/${test}-tests.sh || failed=1
+  for test in ./test/unit/*-tests.sh; do
+    subheader "Running tests in ${test}"
+    ${test} || failed=1
   done
+  go test -count=1 ./... || failed=1
   return ${failed}
 }
 
-function integration_tests() {
-  ./test/e2e-tests.sh --smoke-test-custom-flag-passed
-  ./test/e2e-tests.sh
-}
+# We use the default integration test runner.
 
 main $@

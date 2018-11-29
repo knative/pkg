@@ -1,3 +1,5 @@
+#!/bin/bash
+
 # Copyright 2018 The Knative Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,23 +14,35 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-IMG = gcr.io/knative-tests/test-infra/prow-tests
-TAG := $(shell date +v%Y%m%d)-$(shell git describe --always --dirty --match '^$')
+source $(dirname $0)/../../scripts/presubmit-tests.sh
 
-all: build
+function failed() {
+  echo $1
+  exit 1
+}
 
-build:
-	make -C ../../tools/githubhelper
-	docker build -t $(IMG):$(TAG) -f Dockerfile ../..
-	docker tag $(IMG):$(TAG) $(IMG):latest
+function pre_integration_tests() {
+  PRE_INTEGRATION_TESTS=1
+}
 
-push_versioned: build
-	docker push $(IMG):$(TAG)
+function integration_tests() {
+  CUSTOM_INTEGRATION_TESTS=1
+}
 
-push_latest: build
-	docker push $(IMG):latest
+function post_integration_tests() {
+  POST_INTEGRATION_TESTS=1
+}
 
-clean:
-	rm -fr githubhelper dep-collector
+function build_tests() {
+  return 0
+}
 
-push: push_versioned push_latest clean
+function unit_tests() {
+  return 0
+}
+
+PRE_INTEGRATION_TESTS=0
+CUSTOM_INTEGRATION_TESTS=0
+POST_INTEGRATION_TESTS=0
+
+trap check_results EXIT

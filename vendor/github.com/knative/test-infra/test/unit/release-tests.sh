@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-source $(dirname $0)/../scripts/release.sh
+source $(dirname $0)/../../scripts/release.sh
 
 set -e
 
@@ -28,7 +28,7 @@ function test_function() {
   local output="$(mktemp)"
   local output_code="$(mktemp)"
   shift 2
-  echo -n "$(trap '{ echo $? > ${output_code}; }' EXIT ; $@)" > ${output}
+  echo -n "$(trap '{ echo $? > ${output_code}; }' EXIT ; "$@")" &> ${output}
   local retcode=$(cat ${output_code})
   if [[ ${retcode} -ne ${expected_retcode} ]]; then
     cat ${output}
@@ -54,7 +54,28 @@ function test_function() {
   echo "'$@' returns code ${expected_retcode} and displays '${expected_string}'"
 }
 
-header "Testing initialization"
+function mock_branch_release() {
+  set -e
+  BRANCH_RELEASE=1
+  TAG=sometag
+  function git() {
+	echo $@
+  }
+  function hub() {
+	echo $@
+  }
+  branch_release "$@" 2>&1
+}
+
+function call_function() {
+  set -e
+  local init=$1
+  shift
+  eval ${init}
+  "$@" 2>&1
+}
+
+echo ">> Testing initialization"
 
 test_function 1 "error: missing version" initialize --version
 test_function 1 "error: version format" initialize --version a
@@ -70,4 +91,18 @@ test_function 1 "error: missing release notes" initialize --release-notes
 test_function 1 "error: file a doesn't" initialize --release-notes a
 test_function 0 "" initialize --release-notes $(mktemp)
 
-header "All tests passed"
+echo ">> Testing release branching"
+
+test_function 0 "" branch_release
+test_function 129 "usage: git tag" call_function BRANCH_RELEASE=1 branch_release
+test_function 1 "No such file" call_function BRANCH_RELEASE=1 branch_release "K Foo" "a.yaml b.yaml"
+test_function 0 "release create" mock_branch_release "K Foo" "$(mktemp) $(mktemp)"
+
+echo ">> Testing validation tests"
+
+test_function 0 "Running release validation" run_validation_tests true
+test_function 0 "" call_function SKIP_TESTS=1 run_validation_tests true
+test_function 0 "i_passed" run_validation_tests "echo i_passed"
+test_function 1 "validation tests failed" run_validation_tests false
+
+echo ">> All tests passed"

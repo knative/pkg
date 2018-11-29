@@ -35,7 +35,7 @@ import (
 )
 
 const (
-	logDir         = "logs/ci-knative-serving-continuous/"
+	logDir         = "logs/ci-knative-serving-continuous"
 	buildFile      = "build-log.txt"
 	apiCoverage    = "api_coverage"
 	overallRoute   = "OverallRoute"

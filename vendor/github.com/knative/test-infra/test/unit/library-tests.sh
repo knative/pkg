@@ -17,13 +17,13 @@
 # Fake we're in a Prow job, if running locally.
 [[ -z "${PROW_JOB_ID:-}" ]] && PROW_JOB_ID=123
 
-source $(dirname $0)/../scripts/library.sh
+source $(dirname $0)/../../scripts/library.sh
 
 set -e
 
 function test_report() {
   local REPORT="$(mktemp)"
-  report_go_test -run $1 ./test > ${REPORT} || true
+  report_go_test -tags=library -run $1 ./test > ${REPORT} || true
   cat ${REPORT}
   grep "$2" ${REPORT} > /dev/null
   grep "Done parsing 1 tests" ${REPORT} > /dev/null
@@ -36,15 +36,15 @@ function cleanup_bazel() {
 
 trap cleanup_bazel EXIT
 
-header "Testing report_go_test"
+echo ">> Testing report_go_test"
 
-subheader "Test pass"
+echo ">> Test that test passes"
 test_report TestSucceeds "^- TestSucceeds :PASS:"
 
-subheader "Test fails with fatal"
+echo ">> Testing that test fails with fatal"
 test_report TestFailsWithFatal "^- TestFailsWithFatal :FAIL:"
 
-subheader "Test fails with SIGQUIT"
+echo ">> Testing that test fails with SIGQUIT"
 test_report TestFailsWithSigQuit "^- TestFailsWithSigQuit :FAIL:"
 
-header "All tests passed"
+echo ">> All tests passed"
