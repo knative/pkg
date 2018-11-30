@@ -20,7 +20,6 @@ import (
 	"fmt"
 	"net/http"
 	"sync"
-	"time"
 
 	"contrib.go.opencensus.io/exporter/stackdriver"
 	"go.opencensus.io/exporter/prometheus"
@@ -137,7 +136,7 @@ func setCurMetricsExporterAndConfig(e view.Exporter, c *metricsConfig) {
 	metricsMux.Lock()
 	defer metricsMux.Unlock()
 	view.RegisterExporter(e)
-	view.SetReportingPeriod(60 * time.Second)
+	view.SetReportingPeriod(c.reportingPeriod)
 	curMetricsExporter = e
 	curMetricsConfig = c
 }

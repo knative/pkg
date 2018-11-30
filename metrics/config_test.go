@@ -15,6 +15,7 @@ package metrics
 import (
 	"reflect"
 	"testing"
+	"time"
 
 	. "github.com/knative/pkg/logging/testing"
 	corev1 "k8s.io/api/core/v1"
@@ -67,6 +68,15 @@ var (
 		domain:      servingDomain,
 		component:   "",
 		expectedErr: "Metrics component name cannot be empty",
+	}, {
+		name: "invalidReportingPeriod",
+		cm: map[string]string{
+			"metrics.backend-destination":      "prometheus",
+			"metrics.reporting-period-seconds": "test",
+		},
+		domain:      servingDomain,
+		component:   "",
+		expectedErr: "Invalid reporting-period-seconds value \"test\"",
 	}}
 	successTests = []struct {
 		name           string
@@ -85,7 +95,8 @@ var (
 			expectedConfig: metricsConfig{
 				domain:             servingDomain,
 				component:          testComponent,
-				backendDestination: Stackdriver},
+				backendDestination: Stackdriver,
+				reportingPeriod:    60 * time.Second},
 		}, {
 			name:      "validPrometheus",
 			cm:        map[string]string{"metrics.backend-destination": "prometheus"},
@@ -94,7 +105,8 @@ var (
 			expectedConfig: metricsConfig{
 				domain:             servingDomain,
 				component:          testComponent,
-				backendDestination: Prometheus},
+				backendDestination: Prometheus,
+				reportingPeriod:    5 * time.Second},
 		}, {
 			name: "validStackdriver",
 			cm: map[string]string{"metrics.backend-destination": "stackdriver",
@@ -105,7 +117,8 @@ var (
 				domain:               servingDomain,
 				component:            testComponent,
 				backendDestination:   Stackdriver,
-				stackdriverProjectID: anotherProj},
+				stackdriverProjectID: anotherProj,
+				reportingPeriod:      60 * time.Second},
 		}, {
 			name: "validCapitalStackdriver",
 			cm: map[string]string{"metrics.backend-destination": "Stackdriver",
@@ -116,7 +129,48 @@ var (
 				domain:               servingDomain,
 				component:            testComponent,
 				backendDestination:   Stackdriver,
-				stackdriverProjectID: testProj},
+				stackdriverProjectID: testProj,
+				reportingPeriod:      60 * time.Second},
+		}, {
+			name:      "overriddenReportingPeriodStackdriver",
+			cm:        map[string]string{"metrics.backend-destination": "stackdriver", "metrics.reporting-period-seconds": "7"},
+			domain:    servingDomain,
+			component: testComponent,
+			expectedConfig: metricsConfig{
+				domain:             servingDomain,
+				component:          testComponent,
+				backendDestination: Stackdriver,
+				reportingPeriod:    7 * time.Second},
+		}, {
+			name:      "overriddenReportingPeriodPrometheus",
+			cm:        map[string]string{"metrics.backend-destination": "prometheus", "metrics.reporting-period-seconds": "12"},
+			domain:    servingDomain,
+			component: testComponent,
+			expectedConfig: metricsConfig{
+				domain:             servingDomain,
+				component:          testComponent,
+				backendDestination: Prometheus,
+				reportingPeriod:    12 * time.Second},
+		}, {
+			name:      "emptyReportingPeriodStackdriver",
+			cm:        map[string]string{"metrics.backend-destination": "stackdriver", "metrics.reporting-period-seconds": ""},
+			domain:    servingDomain,
+			component: testComponent,
+			expectedConfig: metricsConfig{
+				domain:             servingDomain,
+				component:          testComponent,
+				backendDestination: Stackdriver,
+				reportingPeriod:    60 * time.Second},
+		}, {
+			name:      "emptyReportingPeriodPrometheus",
+			cm:        map[string]string{"metrics.backend-destination": "prometheus", "metrics.reporting-period-seconds": ""},
+			domain:    servingDomain,
+			component: testComponent,
+			expectedConfig: metricsConfig{
+				domain:             servingDomain,
+				component:          testComponent,
+				backendDestination: Prometheus,
+				reportingPeriod:    5 * time.Second},
 		}}
 )
 

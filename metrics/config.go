@@ -19,7 +19,9 @@ package metrics
 import (
 	"errors"
 	"fmt"
+	"strconv"
 	"strings"
+	"time"
 
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
@@ -28,6 +30,7 @@ import (
 const (
 	backendDestinationKey   = "metrics.backend-destination"
 	stackdriverProjectIDKey = "metrics.stackdriver-project-id"
+	reportingPeriodKey      = "metrics.reporting-period-seconds"
 )
 
 type MetricsBackend string
@@ -49,6 +52,9 @@ type metricsConfig struct {
 	// The stackdriver project ID where the stats data are uploaded to. This is
 	// not the GCP project ID.
 	stackdriverProjectID string
+	// reportingPeriod specifies the interval between reporting aggregated views.
+	// If duration is less than or equal to zero, it enables the default behavior.
+	reportingPeriod time.Duration
 }
 
 func getMetricsConfig(m map[string]string, domain string, component string, logger *zap.SugaredLogger) (*metricsConfig, error) {
@@ -70,6 +76,25 @@ func getMetricsConfig(m map[string]string, domain string, component string, logg
 	// metrics exporter.
 	if mc.backendDestination == Stackdriver {
 		mc.stackdriverProjectID = m[stackdriverProjectIDKey]
+	}
+
+	// If reporting period is specified, use the value from the configuration.
+	// If not, set a default value based on the selected backend.
+	// Each exporter makes different promises about what the lowest supported
+	// reporting period is. For Stackdriver, this value is 1 minute.
+	// For Prometheus, we will use a lower value since the exporter doesn't
+	// push anything but just responds to pull requests, and shorter durations
+	// do not really hurt the performance and we rely on the scraping configuration.
+	if repStr, ok := m[reportingPeriodKey]; ok && len(repStr) != 0 {
+		if repInt, err := strconv.Atoi(repStr); err == nil {
+			mc.reportingPeriod = time.Duration(repInt) * time.Second
+		} else {
+			return nil, fmt.Errorf("Invalid reporting-period-seconds value \"%s\"", repStr)
+		}
+	} else if mc.backendDestination == Stackdriver {
+		mc.reportingPeriod = 60 * time.Second
+	} else if mc.backendDestination == Prometheus {
+		mc.reportingPeriod = 5 * time.Second
 	}
 
 	if domain == "" {
