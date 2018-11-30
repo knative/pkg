@@ -19,25 +19,12 @@ import (
 	. "github.com/knative/pkg/logging/testing"
 )
 
-func TestNewStackdriverExporter(t *testing.T) {
+func TestMain(m *testing.M) {
 	resetCurPromSrv()
-	// The stackdriver project ID is required for stackdriver exporter.
-	e, err := newStackdriverExporter(&metricsConfig{
-		domain:               servingDomain,
-		component:            testComponent,
-		backendDestination:   Stackdriver,
-		stackdriverProjectID: testProj}, TestLogger(t))
-	if err != nil {
-		t.Error(err)
-	}
-	if e == nil {
-		t.Error("expected a non-nil metrics exporter")
-	}
-	expectNoPromSrv(t)
+	m.Run()
 }
 
 func TestNewPrometheusExporter(t *testing.T) {
-	resetCurPromSrv()
 	// The stackdriver project ID is not required for prometheus exporter.
 	e, err := newPrometheusExporter(&metricsConfig{
 		domain:               servingDomain,
@@ -71,6 +58,22 @@ func TestMetricsExporter(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
+}
+
+func TestNewStackdriverExporter(t *testing.T) {
+	// The stackdriver project ID is required for stackdriver exporter.
+	e, err := newStackdriverExporter(&metricsConfig{
+		domain:               servingDomain,
+		component:            testComponent,
+		backendDestination:   Stackdriver,
+		stackdriverProjectID: testProj}, TestLogger(t))
+	if err != nil {
+		t.Error(err)
+	}
+	if e == nil {
+		t.Error("expected a non-nil metrics exporter")
+	}
+	expectNoPromSrv(t)
 }
 
 func TestInterlevedExporters(t *testing.T) {
