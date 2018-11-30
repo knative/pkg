@@ -9,6 +9,7 @@ required = [
   "k8s.io/code-generator/cmd/lister-gen",
   "k8s.io/code-generator/cmd/informer-gen",
   "github.com/knative/test-infra/tools/dep-collector",
+  "github.com/knative/test-infra/scripts",
   "github.com/evanphx/json-patch",
 ]
 
@@ -54,5 +55,4 @@ required = [
 
 [[prune.project]]
   name = "github.com/knative/test-infra"
-  unused-packages = false
   non-go = false
