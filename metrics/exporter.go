@@ -29,10 +29,9 @@ import (
 )
 
 var (
-	curMetricsExporter view.Exporter
-	curMetricsConfig   *metricsConfig
-	curPromSrv         *http.Server
-	//	curGcpMetadata     *gcpMetadata
+	curMetricsExporter       view.Exporter
+	curMetricsConfig         *metricsConfig
+	curPromSrv               *http.Server
 	getMonitoredResourceFunc func(v *view.View, tags []tag.Tag) ([]tag.Tag, monitoredresource.Interface)
 	metricsMux               sync.Mutex
 )
