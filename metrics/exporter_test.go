@@ -19,8 +19,12 @@ import (
 	. "github.com/knative/pkg/logging/testing"
 )
 
-func TestNewStackdriverExporter(t *testing.T) {
+func TestMain(m *testing.M) {
 	resetCurPromSrv()
+	m.Run()
+}
+
+func TestNewStackdriverExporter(t *testing.T) {
 	// The stackdriver project ID is required for stackdriver exporter.
 	e, err := newStackdriverExporter(&metricsConfig{
 		domain:               servingDomain,
@@ -33,11 +37,9 @@ func TestNewStackdriverExporter(t *testing.T) {
 	if e == nil {
 		t.Error("expected a non-nil metrics exporter")
 	}
-	expectNoPromSrv(t)
 }
 
 func TestNewPrometheusExporter(t *testing.T) {
-	resetCurPromSrv()
 	// The stackdriver project ID is not required for prometheus exporter.
 	e, err := newPrometheusExporter(&metricsConfig{
 		domain:               servingDomain,
