@@ -191,9 +191,6 @@ var (
 )
 
 func TestGetMetricsConfig(t *testing.T) {
-	metricsMux.Lock()
-	defer metricsMux.Unlock()
-
 	for _, test := range errorTests {
 		t.Run(test.name, func(t *testing.T) {
 			_, err := getMetricsConfig(test.cm, test.domain, test.component, TestLogger(t))
