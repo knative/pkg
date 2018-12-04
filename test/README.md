@@ -2,9 +2,9 @@
 
 This directory contains tests and testing docs.
 
-* [Test library](#test-library) contains code you can use in your `knative` tests
-* [Flags](#flags) added by [the test library](#test-library)
-* [Unit tests](#running-unit-tests) currently reside in the codebase alongside the code they test
+- [Test library](#test-library) contains code you can use in your `knative` tests
+- [Flags](#flags) added by [the test library](#test-library)
+- [Unit tests](#running-unit-tests) currently reside in the codebase alongside the code they test
 
 ## Running unit tests
 
@@ -18,10 +18,10 @@ go test ./...
 
 You can use the test library in this dir to:
 
-* [Use common test flags](#use-common-test-flags)
-* [Output logs](#output-logs)
-* [Emit metrics](#emit-metrics)
-* [Ensure test cleanup](#ensure-test-cleanup)
+- [Use common test flags](#use-common-test-flags)
+- [Output logs](#output-logs)
+- [Emit metrics](#emit-metrics)
+- [Ensure test cleanup](#ensure-test-cleanup)
 
 ### Use common test flags
 
@@ -37,13 +37,12 @@ logger.Infof("Using namespace %s", test.Flags.Namespace)
 
 _See [e2e_flags.go](./e2e_flags.go)._
 
-
 ### Output logs
 
 [When tests are run with `--logverbose`
 option](README.md#output-verbose-logs), debug logs will be emitted to stdout.
 
-We are using the common [e2e logging library](logging/logging.go) that uses the [Knative logging library](../logging/) for structured logging. 
+We are using the common [e2e logging library](logging/logging.go) that uses the [Knative logging library](../logging/) for structured logging.
 It is built on top of [zap](https://github.com/uber-go/zap). Tests should initialize the global logger to use a test specifc context with `logging.GetContextLogger`:
 
 ```go
@@ -76,9 +75,9 @@ measure latency with [`trace.StartSpan`](https://github.com/census-instrumentati
 ctx, span := trace.StartSpan(context.Background(), "MyMetric")
 ```
 
-* These traces will be emitted automatically by [the generic crd polling
+- These traces will be emitted automatically by [the generic crd polling
   functions](#check-knative-serving-resources).
-* The traces are emitted by [a custom metric exporter](./logging/logging.go)
+- The traces are emitted by [a custom metric exporter](./logging/logging.go)
   that uses the global logger instance.
 
 #### Metric format
@@ -86,11 +85,11 @@ ctx, span := trace.StartSpan(context.Background(), "MyMetric")
 When a `trace` metric is emitted, the format is `metric <name> <startTime> <endTime> <duration>`. The name
 of the metric is arbitrary and can be any string. The values are:
 
-* `metric` - Indicates this log is a metric
-* `<name>` - Arbitrary string indentifying the metric
-* `<startTime>` - Unix time in nanoseconds when measurement started
-* `<endTime>` - Unix time in nanoseconds when measurement ended
-* `<duration>` - The difference in ms between the startTime and endTime
+- `metric` - Indicates this log is a metric
+- `<name>` - Arbitrary string indentifying the metric
+- `<startTime>` - Unix time in nanoseconds when measurement started
+- `<endTime>` - Unix time in nanoseconds when measurement ended
+- `<duration>` - The difference in ms between the startTime and endTime
 
 For example:
 
@@ -158,11 +157,11 @@ need to run against a cluster.
 
 Tests importing [`github.com/knative/pkg/test`](#test-library) recognize these flags:
 
-* [`--kubeconfig`](#specifying-kubeconfig)
-* [`--cluster`](#specifying-cluster)
-* [`--namespace`](#specifying-namespace)
-* [`--logverbose`](#output-verbose-logs)
-* [`--emitmetrics`](#metrics-flag)
+- [`--kubeconfig`](#specifying-kubeconfig)
+- [`--cluster`](#specifying-cluster)
+- [`--namespace`](#specifying-namespace)
+- [`--logverbose`](#output-verbose-logs)
+- [`--emitmetrics`](#metrics-flag)
 
 ### Specifying kubeconfig
 
@@ -220,10 +219,10 @@ the tests.
 go test ./test --emitmetrics
 ```
 
-* To add additional metrics to a test, see [emitting metrics](adding_tests.md#emit-metrics).
-* For more info on the format of the metrics, see [metric format](adding_tests.md#metric-format).
+- To add additional metrics to a test, see [emitting metrics](adding_tests.md#emit-metrics).
+- For more info on the format of the metrics, see [metric format](adding_tests.md#metric-format).
 
-[Minikube]: https://kubernetes.io/docs/setup/minikube/
+[minikube]: https://kubernetes.io/docs/setup/minikube/
 
 ---
 

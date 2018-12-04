@@ -555,39 +555,6 @@ func TestStartAndShutdownWithPermanentErroringWork(t *testing.T) {
 	checkStats(t, reporter, 1, 0, 1, falseString)
 }
 
-func TestStartAndShutdownWithInvalidWork(t *testing.T) {
-	r := &CountingReconciler{}
-	reporter := &FakeStatsReporter{}
-	impl := NewImpl(r, TestLogger(t), "Testing", reporter)
-
-	stopCh := make(chan struct{})
-
-	// Add a nonsense work item, which we couldn't ordinarily get into our workqueue.
-	thing := struct{}{}
-	impl.WorkQueue.AddRateLimited(thing)
-
-	var eg errgroup.Group
-	eg.Go(func() error {
-		return impl.Run(1, stopCh)
-	})
-
-	time.Sleep(10 * time.Millisecond)
-	close(stopCh)
-
-	if err := eg.Wait(); err != nil {
-		t.Errorf("Wait() = %v", err)
-	}
-
-	if got, want := r.Count, 0; got != want {
-		t.Errorf("Count = %v, wanted %v", got, want)
-	}
-	if got, want := impl.WorkQueue.NumRequeues(thing), 0; got != want {
-		t.Errorf("Count = %v, wanted %v", got, want)
-	}
-
-	checkStats(t, reporter, 1, 0, 1, falseString)
-}
-
 func drainWorkQueue(wq workqueue.RateLimitingInterface) (hasQueue []string) {
 	for {
 		key, shutdown := wq.Get()

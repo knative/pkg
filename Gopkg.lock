@@ -258,11 +258,14 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:09521a823a008f7df66962ac2637c22e1cdc842ebfcc7a083c444d35258986f7"
+  digest = "1:7a7aea24f67afa5dedb422fb3592d5a5c3af91b4b9d59eddf06767729915b3c4"
   name = "github.com/knative/test-infra"
-  packages = ["tools/dep-collector"]
-  pruneopts = "T"
-  revision = "7ed32409fa2c447a44a4281f0022ab25ce955f51"
+  packages = [
+    "scripts",
+    "tools/dep-collector",
+  ]
+  pruneopts = "UT"
+  revision = "2377fbc40f81501f2bc09a4e1e359a7ec7c3528e"
 
 [[projects]]
   digest = "1:6abc0ac0adf962ae786cde04327a7207fe3dd0a7c48d9c5584b75f4c542eb5a0"
@@ -966,6 +969,7 @@
     "github.com/golang/glog",
     "github.com/google/go-cmp/cmp",
     "github.com/google/go-cmp/cmp/cmpopts",
+    "github.com/knative/test-infra/scripts",
     "github.com/knative/test-infra/tools/dep-collector",
     "github.com/markbates/inflect",
     "github.com/mattbaird/jsonpatch",
