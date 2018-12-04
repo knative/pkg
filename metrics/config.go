@@ -33,13 +33,14 @@ const (
 	reportingPeriodKey      = "metrics.reporting-period-seconds"
 )
 
-type MetricsBackend string
+// metricsBackend specifies the backend to use for metrics
+type metricsBackend string
 
 const (
-	// The metrics backend is stackdriver
-	Stackdriver MetricsBackend = "stackdriver"
-	// The metrics backend is prometheus
-	Prometheus MetricsBackend = "prometheus"
+	// Stackdriver is used for Stackdriver backend
+	Stackdriver metricsBackend = "stackdriver"
+	// Prometheus is used for Prometheus backend
+	Prometheus metricsBackend = "prometheus"
 )
 
 type metricsConfig struct {
@@ -48,7 +49,7 @@ type metricsConfig struct {
 	// The component that emits the metrics. e.g. "activator", "autoscaler".
 	component string
 	// The metrics backend destination.
-	backendDestination MetricsBackend
+	backendDestination metricsBackend
 	// The stackdriver project ID where the stats data are uploaded to. This is
 	// not the GCP project ID.
 	stackdriverProjectID string
@@ -63,7 +64,7 @@ func getMetricsConfig(m map[string]string, domain string, component string, logg
 	if !ok {
 		return nil, errors.New("metrics.backend-destination key is missing")
 	}
-	lb := MetricsBackend(strings.ToLower(backend))
+	lb := metricsBackend(strings.ToLower(backend))
 	switch lb {
 	case Stackdriver, Prometheus:
 		mc.backendDestination = lb
@@ -85,7 +86,7 @@ func getMetricsConfig(m map[string]string, domain string, component string, logg
 	// For Prometheus, we will use a lower value since the exporter doesn't
 	// push anything but just responds to pull requests, and shorter durations
 	// do not really hurt the performance and we rely on the scraping configuration.
-	if repStr, ok := m[reportingPeriodKey]; ok && len(repStr) != 0 {
+	if repStr, ok := m[reportingPeriodKey]; ok && repStr != "" {
 		if repInt, err := strconv.Atoi(repStr); err == nil {
 			mc.reportingPeriod = time.Duration(repInt) * time.Second
 		} else {

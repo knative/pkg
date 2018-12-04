@@ -154,6 +154,18 @@ var (
 				stackdriverProjectID: "test2",
 				reportingPeriod:      7 * time.Second},
 		}, {
+			name: "overriddenReportingPeriodStackdriver2",
+			cm: map[string]string{"metrics.backend-destination": "stackdriver",
+				"metrics.stackdriver-project-id": "test2", "metrics.reporting-period-seconds": "3"},
+			domain:    servingDomain,
+			component: testComponent,
+			expectedConfig: metricsConfig{
+				domain:               servingDomain,
+				component:            testComponent,
+				backendDestination:   Stackdriver,
+				stackdriverProjectID: "test2",
+				reportingPeriod:      3 * time.Second},
+		}, {
 			name:      "emptyReportingPeriodPrometheus",
 			cm:        map[string]string{"metrics.backend-destination": "prometheus", "metrics.reporting-period-seconds": ""},
 			domain:    servingDomain,

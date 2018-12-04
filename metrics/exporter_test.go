@@ -24,6 +24,21 @@ func TestMain(m *testing.M) {
 	m.Run()
 }
 
+func TestNewStackdriverExporter(t *testing.T) {
+	// The stackdriver project ID is required for stackdriver exporter.
+	e, err := newStackdriverExporter(&metricsConfig{
+		domain:               servingDomain,
+		component:            testComponent,
+		backendDestination:   Stackdriver,
+		stackdriverProjectID: testProj}, TestLogger(t))
+	if err != nil {
+		t.Error(err)
+	}
+	if e == nil {
+		t.Error("expected a non-nil metrics exporter")
+	}
+}
+
 func TestNewPrometheusExporter(t *testing.T) {
 	// The stackdriver project ID is not required for prometheus exporter.
 	e, err := newPrometheusExporter(&metricsConfig{
@@ -58,22 +73,6 @@ func TestMetricsExporter(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-}
-
-func TestNewStackdriverExporter(t *testing.T) {
-	// The stackdriver project ID is required for stackdriver exporter.
-	e, err := newStackdriverExporter(&metricsConfig{
-		domain:               servingDomain,
-		component:            testComponent,
-		backendDestination:   Stackdriver,
-		stackdriverProjectID: testProj}, TestLogger(t))
-	if err != nil {
-		t.Error(err)
-	}
-	if e == nil {
-		t.Error("expected a non-nil metrics exporter")
-	}
-	expectNoPromSrv(t)
 }
 
 func TestInterlevedExporters(t *testing.T) {
