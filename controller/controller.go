@@ -267,14 +267,14 @@ func (c *Impl) processNextWorkItem() bool {
 	// resource to be synced.
 	if err = c.Reconciler.Reconcile(ctx, key); err != nil {
 		c.handleErr(err, key)
-		logger.Errorf("Reconcile failed. Time taken: %d ms.", time.Now().Sub(startTime)/time.Millisecond)
+		logger.Errorf("Reconcile failed. Time taken: %v.", time.Now().Sub(startTime))
 		return true
 	}
 
 	// Finally, if no error occurs we Forget this item so it does not
 	// get queued again until another change happens.
 	c.WorkQueue.Forget(key)
-	logger.Infof("Reconcile succeeded. Time taken: %d ms.", time.Now().Sub(startTime)/time.Millisecond)
+	logger.Infof("Reconcile succeeded. Time taken: %v.", time.Now().Sub(startTime))
 
 	return true
 }
