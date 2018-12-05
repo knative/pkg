@@ -163,12 +163,12 @@ func TestCreatePatch(t *testing.T) {
 			},
 		},
 		want: JSONPatch{{
+			Operation: "remove",
+			Path:      "/status/patchable/field2",
+		}, {
 			Operation: "replace",
 			Path:      "/status/patchable/field1",
 			Value:     42.0,
-		}, {
-			Operation: "remove",
-			Path:      "/status/patchable/field2",
 		}},
 	}, {
 		name: "patch array",
