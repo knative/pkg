@@ -132,6 +132,10 @@ func TestValidCreateResourceSucceedsWithDefaultPatch(t *testing.T) {
 		incrementGenerationPatch(r.Spec.Generation),
 		{
 			Operation: "add",
+			Path:      "/spec/fieldThatsImmutableWithDefault",
+			Value:     "this is another default value",
+		}, {
+			Operation: "add",
 			Path:      "/spec/fieldWithDefault",
 			Value:     "I'm a default.",
 		},
@@ -173,6 +177,10 @@ func TestValidUpdateResourceSucceeds(t *testing.T) {
 		Value:     1235.0,
 	}, {
 		Operation: "add",
+		Path:      "/spec/fieldThatsImmutableWithDefault",
+		Value:     "this is another default value",
+	}, {
+		Operation: "add",
 		Path:      "/spec/fieldWithDefault",
 		Value:     "I'm a default.",
 	}})
@@ -196,10 +204,32 @@ func TestInvalidUpdateResourceFailsImmutability(t *testing.T) {
 
 	// Try to change the value
 	new.Spec.FieldThatsImmutable = "a different value"
+	new.Spec.FieldThatsImmutableWithDefault = "another different value"
 
 	_, ac := newNonRunningTestAdmissionController(t, newDefaultOptions())
 	resp := ac.admit(TestContextWithLogger(t), createUpdateResource(&old, &new))
 	expectFailsWith(t, resp, "Immutable field changed")
+}
+
+func TestDefaultingImmutableFields(t *testing.T) {
+	old := createResource(1234, "a name")
+	new := createResource(1234, "a name")
+
+	// If we don't specify the new, but immutable field, we default it,
+	// and it is not rejected.
+
+	_, ac := newNonRunningTestAdmissionController(t, newDefaultOptions())
+	resp := ac.admit(TestContextWithLogger(t), createUpdateResource(&old, &new))
+	expectAllowed(t, resp)
+	expectPatches(t, resp.Patch, []jsonpatch.JsonPatchOperation{{
+		Operation: "add",
+		Path:      "/spec/fieldThatsImmutableWithDefault",
+		Value:     "this is another default value",
+	}, {
+		Operation: "add",
+		Path:      "/spec/fieldWithDefault",
+		Value:     "I'm a default.",
+	}})
 }
 
 func TestValidWebhook(t *testing.T) {
