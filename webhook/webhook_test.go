@@ -22,6 +22,7 @@ import (
 	"encoding/pem"
 	"fmt"
 	"reflect"
+	"sort"
 	"strings"
 	"testing"
 	"time"
@@ -485,6 +486,24 @@ func expectPatches(t *testing.T, a []byte, e []jsonpatch.JsonPatchOperation) {
 		t.Errorf("failed to unmarshal patches: %s", err)
 		return
 	}
+
+	// Give the patch a deterministic ordering.
+	// Technically this can change the meaning, but the ordering is otherwise unstable
+	// and difficult to test.
+	sort.Slice(e, func(i, j int) bool {
+		lhs, rhs := e[i], e[j]
+		if lhs.Operation != rhs.Operation {
+			return lhs.Operation < rhs.Operation
+		}
+		return lhs.Path < rhs.Path
+	})
+	sort.Slice(got, func(i, j int) bool {
+		lhs, rhs := got[i], got[j]
+		if lhs.Operation != rhs.Operation {
+			return lhs.Operation < rhs.Operation
+		}
+		return lhs.Path < rhs.Path
+	})
 
 	if diff := cmp.Diff(e, got, cmpopts.EquateEmpty()); diff != "" {
 		t.Errorf("expectPatches (-want, +got) = %v", diff)

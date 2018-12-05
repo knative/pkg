@@ -18,7 +18,6 @@ package duck
 
 import (
 	"encoding/json"
-	"sort"
 
 	jsonmergepatch "github.com/evanphx/json-patch"
 	"github.com/mattbaird/jsonpatch"
@@ -51,20 +50,7 @@ func CreatePatch(before, after interface{}) (JSONPatch, error) {
 	if err != nil {
 		return nil, err
 	}
-	patch, err := jsonpatch.CreatePatch(rawBefore, rawAfter)
-	if err != nil {
-		return nil, err
-	}
-
-	// Give the patch a deterministic ordering.
-	sort.Slice(patch, func(i, j int) bool {
-		lhs, rhs := patch[i], patch[j]
-		if lhs.Operation != rhs.Operation {
-			return lhs.Operation < rhs.Operation
-		}
-		return lhs.Path < rhs.Path
-	})
-	return patch, nil
+	return jsonpatch.CreatePatch(rawBefore, rawAfter)
 }
 
 type JSONPatch []jsonpatch.JsonPatchOperation
