@@ -133,8 +133,8 @@ func (fe *FieldError) isEmpty() bool {
 	return fe.Message == "" && fe.Details == "" && len(fe.errors) == 0 && len(fe.Paths) == 0
 }
 
-func (fe *FieldError) getNormalizedErrors() []FieldError {
-	// in case we call getNormalizedErrors on a nil object, return just an empty
+func (fe *FieldError) normalized() []FieldError {
+	// In case we call normalized on a nil object, return just an empty
 	// list. This can happen when .Error() is called on a nil object.
 	if fe == nil {
 		return []FieldError(nil)
@@ -151,16 +151,16 @@ func (fe *FieldError) getNormalizedErrors() []FieldError {
 	}
 	// and then collect all other errors recursively.
 	for _, e := range fe.errors {
-		errors = append(errors, e.getNormalizedErrors()...)
+		errors = append(errors, e.normalized()...)
 	}
 	return errors
 }
 
 // Error implements error
 func (fe *FieldError) Error() string {
-	var errs []string
 	// Get the list of errors as a flat merged list.
-	normedErrors := merge(fe.getNormalizedErrors())
+	normedErrors := merge(fe.normalized())
+	errs := make([]string, 0, len(normedErrors))
 	for _, e := range normedErrors {
 		if e.Details == "" {
 			errs = append(errs, fmt.Sprintf("%v: %v", e.Message, strings.Join(e.Paths, ", ")))
@@ -198,7 +198,7 @@ func flatten(path []string) string {
 			if p == CurrentField {
 				continue
 			} else if len(newPath) > 0 && isIndex(p) {
-				newPath[len(newPath)-1] = fmt.Sprintf("%s%s", newPath[len(newPath)-1], p)
+				newPath[len(newPath)-1] += p
 			} else {
 				newPath = append(newPath, p)
 			}
@@ -336,7 +336,7 @@ func ErrInvalidKeyName(value, fieldPath string, details ...string) *FieldError {
 	}
 }
 
-// ErrOutOFBoundsValue constructs a FieldError for a field that has received an
+// ErrOutOfBoundsValue constructs a FieldError for a field that has received an
 // out of bound value.
 func ErrOutOfBoundsValue(value, lower, upper, fieldPath string) *FieldError {
 	return &FieldError{
