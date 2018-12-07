@@ -14,6 +14,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Package kcmp wraps github.com/google/go-cmp with custom Comparers for
+// Package kmp wraps github.com/google/go-cmp with custom Comparers for
 // frequently used kubernetes resources that have unexported fields.
-package kcmp
+package kmp

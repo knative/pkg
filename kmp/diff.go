@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package kcmp
+package kmp
 
 import (
 	"fmt"
@@ -34,13 +34,13 @@ func init() {
 	}
 }
 
-// Diff wraps cmp.Diff but recovers from panics and uses custom comparers for:
+// SafeDiff wraps cmp.Diff but recovers from panics and uses custom Comparers for:
 // * k8s.io/apimachinery/pkg/api/resource.Quantity
-func Diff(x, y interface{}, opts ...cmp.Option) (diff string, err error) {
+func SafeDiff(x, y interface{}, opts ...cmp.Option) (diff string, err error) {
 	// cmp.Diff will panic if we miss something; return error instead of crashing.
 	defer func() {
 		if r := recover(); r != nil {
-			err = fmt.Errorf("recovered in kcmp.Diff: %v", r)
+			err = fmt.Errorf("recovered in kmp.SafeDiff: %v", r)
 		}
 	}()
 
