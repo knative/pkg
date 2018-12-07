@@ -43,6 +43,7 @@ echo "Diffing ${REPO_ROOT_DIR} against freshly generated codegen"
 ret=0
 diff -Naupr "${REPO_ROOT_DIR}/apis" "${TMP_DIFFROOT}/apis" || ret=1
 diff -Naupr "${REPO_ROOT_DIR}/client" "${TMP_DIFFROOT}/client" || ret=1
+diff -Naupr --no-dereference "${REPO_ROOT_DIR}/vendor" "${TMP_DIFFROOT}/vendor" || ret=1
 
 # Restore working tree state
 rm -fr "${REPO_ROOT_DIR}/Gopkg.lock" "${REPO_ROOT_DIR}/apis" "${REPO_ROOT_DIR}/client" "${REPO_ROOT_DIR}/vendor"

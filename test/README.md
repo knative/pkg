@@ -2,9 +2,11 @@
 
 This directory contains tests and testing docs.
 
-* [Test library](#test-library) contains code you can use in your `knative` tests
-* [Flags](#flags) added by [the test library](#test-library)
-* [Unit tests](#running-unit-tests) currently reside in the codebase alongside the code they test
+- [Test library](#test-library) contains code you can use in your `knative`
+  tests
+- [Flags](#flags) added by [the test library](#test-library)
+- [Unit tests](#running-unit-tests) currently reside in the codebase alongside
+  the code they test
 
 ## Running unit tests
 
@@ -18,18 +20,20 @@ go test ./...
 
 You can use the test library in this dir to:
 
-* [Use common test flags](#use-common-test-flags)
-* [Output logs](#output-logs)
-* [Emit metrics](#emit-metrics)
-* [Ensure test cleanup](#ensure-test-cleanup)
+- [Use common test flags](#use-common-test-flags)
+- [Output logs](#output-logs)
+- [Emit metrics](#emit-metrics)
+- [Ensure test cleanup](#ensure-test-cleanup)
 
 ### Use common test flags
 
-These flags are useful for running against an existing cluster, making use of your existing
+These flags are useful for running against an existing cluster, making use of
+your existing
 [environment setup](https://github.com/knative/serving/blob/master/DEVELOPMENT.md#environment-setup).
 
-By importing `github.com/knative/pkg/test` you get access to a global variable called
-`test.Flags` which holds the values of [the command line flags](/test/README.md#flags).
+By importing `github.com/knative/pkg/test` you get access to a global variable
+called `test.Flags` which holds the values of
+[the command line flags](/test/README.md#flags).
 
 ```go
 logger.Infof("Using namespace %s", test.Flags.Namespace)
@@ -37,22 +41,23 @@ logger.Infof("Using namespace %s", test.Flags.Namespace)
 
 _See [e2e_flags.go](./e2e_flags.go)._
 
-
 ### Output logs
 
-[When tests are run with `--logverbose`
-option](README.md#output-verbose-logs), debug logs will be emitted to stdout.
+[When tests are run with `--logverbose` option](README.md#output-verbose-logs),
+debug logs will be emitted to stdout.
 
-We are using the common [e2e logging library](logging/logging.go) that uses the [Knative logging library](../logging/) for structured logging. 
-It is built on top of [zap](https://github.com/uber-go/zap). Tests should initialize the global logger to use a test specifc context with `logging.GetContextLogger`:
+We are using the common [e2e logging library](logging/logging.go) that uses the
+[Knative logging library](../logging/) for structured logging. It is built on
+top of [zap](https://github.com/uber-go/zap). Tests should initialize the global
+logger to use a test specifc context with `logging.GetContextLogger`:
 
 ```go
 // The convention is for the name of the logger to match the name of the test.
 logging.GetContextLogger("TestHelloWorld")
 ```
 
-Logs can then be emitted using the `logger` object which is required by
-many functions in the test library. To emit logs:
+Logs can then be emitted using the `logger` object which is required by many
+functions in the test library. To emit logs:
 
 ```go
 logger.Infof("Creating a new Route %s and Configuration %s", route, configuration)
@@ -63,34 +68,38 @@ _See [logging.go](./logging/logging.go)._
 
 ### Emit metrics
 
-You can emit metrics from your tests using [the opencensus
-library](https://github.com/census-instrumentation/opencensus-go), which [is being
-used inside Knative as well](https://github.com/knative/serving/blob/master/docs/telemetry.md).
-These metrics will be emitted by the test if the test is run with [the `--emitmetrics` option](#metrics-flag).
+You can emit metrics from your tests using
+[the opencensus library](https://github.com/census-instrumentation/opencensus-go),
+which
+[is being used inside Knative as well](https://github.com/knative/serving/blob/master/docs/telemetry.md).
+These metrics will be emitted by the test if the test is run with
+[the `--emitmetrics` option](#metrics-flag).
 
 You can record arbitrary metrics with
-[`stats.Record`](https://github.com/census-instrumentation/opencensus-go#stats) or
-measure latency with [`trace.StartSpan`](https://github.com/census-instrumentation/opencensus-go#traces):
+[`stats.Record`](https://github.com/census-instrumentation/opencensus-go#stats)
+or measure latency with
+[`trace.StartSpan`](https://github.com/census-instrumentation/opencensus-go#traces):
 
 ```go
 ctx, span := trace.StartSpan(context.Background(), "MyMetric")
 ```
 
-* These traces will be emitted automatically by [the generic crd polling
-  functions](#check-knative-serving-resources).
-* The traces are emitted by [a custom metric exporter](./logging/logging.go)
+- These traces will be emitted automatically by
+  [the generic crd polling functions](#check-knative-serving-resources).
+- The traces are emitted by [a custom metric exporter](./logging/logging.go)
   that uses the global logger instance.
 
 #### Metric format
 
-When a `trace` metric is emitted, the format is `metric <name> <startTime> <endTime> <duration>`. The name
-of the metric is arbitrary and can be any string. The values are:
+When a `trace` metric is emitted, the format is
+`metric <name> <startTime> <endTime> <duration>`. The name of the metric is
+arbitrary and can be any string. The values are:
 
-* `metric` - Indicates this log is a metric
-* `<name>` - Arbitrary string indentifying the metric
-* `<startTime>` - Unix time in nanoseconds when measurement started
-* `<endTime>` - Unix time in nanoseconds when measurement ended
-* `<duration>` - The difference in ms between the startTime and endTime
+- `metric` - Indicates this log is a metric
+- `<name>` - Arbitrary string indentifying the metric
+- `<startTime>` - Unix time in nanoseconds when measurement started
+- `<endTime>` - Unix time in nanoseconds when measurement ended
+- `<duration>` - The difference in ms between the startTime and endTime
 
 For example:
 
@@ -98,31 +107,36 @@ For example:
 metric WaitForConfigurationState/prodxiparjxt/ConfigurationUpdatedWithRevision 1529980772357637397 1529980772431586609 73.949212ms
 ```
 
-_The [`Wait` methods](#check-knative-serving-resources) (which poll resources) will
-prefix the metric names with the name of the function, and if applicable, the name of the resource,
-separated by `/`. In the example above, `WaitForConfigurationState` is the name of
-the function, and `prodxiparjxt` is the name of the configuration resource being polled.
-`ConfigurationUpdatedWithRevision` is the string passed to `WaitForConfigurationState` by
-the caller to identify what state is being polled for._
+_The [`Wait` methods](#check-knative-serving-resources) (which poll resources)
+will prefix the metric names with the name of the function, and if applicable,
+the name of the resource, separated by `/`. In the example above,
+`WaitForConfigurationState` is the name of the function, and `prodxiparjxt` is
+the name of the configuration resource being polled.
+`ConfigurationUpdatedWithRevision` is the string passed to
+`WaitForConfigurationState` by the caller to identify what state is being polled
+for._
 
 ### Check Knative Serving resources
 
 _WARNING: this code also exists in
 [`knative/serving`](https://github.com/knative/serving/blob/master/test/adding_tests.md#make-requests-against-deployed-services)._
 
-After creating Knative Serving resources or making changes to them, you will need to wait for the system
-to realize those changes. You can use the Knative Serving CRD check and polling methods to check the
-resources are either in or reach the desired state.
+After creating Knative Serving resources or making changes to them, you will
+need to wait for the system to realize those changes. You can use the Knative
+Serving CRD check and polling methods to check the resources are either in or
+reach the desired state.
 
-The `WaitFor*` functions use the kubernetes [`wait` package](https://godoc.org/k8s.io/apimachinery/pkg/util/wait).
-To poll they use [`PollImmediate`](https://godoc.org/k8s.io/apimachinery/pkg/util/wait#PollImmediate)
+The `WaitFor*` functions use the kubernetes
+[`wait` package](https://godoc.org/k8s.io/apimachinery/pkg/util/wait). To poll
+they use
+[`PollImmediate`](https://godoc.org/k8s.io/apimachinery/pkg/util/wait#PollImmediate)
 and the return values of the function you provide behave the same as
 [`ConditionFunc`](https://godoc.org/k8s.io/apimachinery/pkg/util/wait#ConditionFunc):
-a `bool` to indicate if the function should stop or continue polling, and an `error` to indicate if
-there has been an error.
+a `bool` to indicate if the function should stop or continue polling, and an
+`error` to indicate if there has been an error.
 
-For example, you can poll a `Configuration` object to find the name of the `Revision` that was created
-for it:
+For example, you can poll a `Configuration` object to find the name of the
+`Revision` that was created for it:
 
 ```go
 var revisionName string
@@ -135,14 +149,16 @@ err := test.WaitForConfigurationState(clients.ServingClient, configName, func(c 
 }, "ConfigurationUpdatedWithRevision")
 ```
 
-_[Metrics will be emitted](#emit-metrics) for these `Wait` method tracking how long test poll for._
+_[Metrics will be emitted](#emit-metrics) for these `Wait` method tracking how
+long test poll for._
 
 _See [kube_checks.go](./kube_checks.go)._
 
 ### Ensure test cleanup
 
-To ensure your test is cleaned up, you should defer cleanup to execute after your
-test completes and also ensure the cleanup occurs if the test is interrupted:
+To ensure your test is cleaned up, you should defer cleanup to execute after
+your test completes and also ensure the cleanup occurs if the test is
+interrupted:
 
 ```go
 defer tearDown(clients)
@@ -153,23 +169,25 @@ _See [cleanup.go](./cleanup.go)._
 
 ## Flags
 
-Importing [the test library](#test-library) adds flags that are useful for end to end tests that
-need to run against a cluster.
+Importing [the test library](#test-library) adds flags that are useful for end
+to end tests that need to run against a cluster.
 
-Tests importing [`github.com/knative/pkg/test`](#test-library) recognize these flags:
+Tests importing [`github.com/knative/pkg/test`](#test-library) recognize these
+flags:
 
-* [`--kubeconfig`](#specifying-kubeconfig)
-* [`--cluster`](#specifying-cluster)
-* [`--namespace`](#specifying-namespace)
-* [`--logverbose`](#output-verbose-logs)
-* [`--emitmetrics`](#metrics-flag)
+- [`--kubeconfig`](#specifying-kubeconfig)
+- [`--cluster`](#specifying-cluster)
+- [`--namespace`](#specifying-namespace)
+- [`--logverbose`](#output-verbose-logs)
+- [`--emitmetrics`](#metrics-flag)
 
 ### Specifying kubeconfig
 
-By default the tests will use the [kubeconfig
-file](https://kubernetes.io/docs/concepts/configuration/organize-cluster-access-kubeconfig/)
-at `~/.kube/config`. If there is an error getting the current user, it will use `kubeconfig` instead as the default value.
-You can specify a different config file with the argument `--kubeconfig`.
+By default the tests will use the
+[kubeconfig file](https://kubernetes.io/docs/concepts/configuration/organize-cluster-access-kubeconfig/)
+at `~/.kube/config`. If there is an error getting the current user, it will use
+`kubeconfig` instead as the default value. You can specify a different config
+file with the argument `--kubeconfig`.
 
 To run tests with a non-default kubeconfig file:
 
@@ -179,9 +197,10 @@ go test ./test --kubeconfig /my/path/kubeconfig
 
 ### Specifying cluster
 
-The `--cluster` argument lets you use a different cluster than [your specified
-kubeconfig's](#specifying-kubeconfig) active context. This will default to the value
-of your [`K8S_CLUSTER_OVERRIDE` environment variable](https://github.com/knative/serving/blob/master/DEVELOPMENT.md#environment-setup)
+The `--cluster` argument lets you use a different cluster than
+[your specified kubeconfig's](#specifying-kubeconfig) active context. This will
+default to the value of your
+[`K8S_CLUSTER_OVERRIDE` environment variable](https://github.com/knative/serving/blob/master/DEVELOPMENT.md#environment-setup)
 if not specified.
 
 ```bash
@@ -196,8 +215,8 @@ kubectl config get-clusters
 
 ### Specifying namespace
 
-The `--namespace` argument lets you specify the namespace to use for the
-tests. By default, tests will use `serving-tests`.
+The `--namespace` argument lets you specify the namespace to use for the tests.
+By default, tests will use `serving-tests`.
 
 ```bash
 go test ./test --namespace your-namespace-name
@@ -213,17 +232,19 @@ go test ./test --logverbose
 
 ### Metrics flag
 
-Running tests with the `--emitmetrics` argument will cause latency metrics to be emitted by
-the tests.
+Running tests with the `--emitmetrics` argument will cause latency metrics to be
+emitted by the tests.
 
 ```bash
 go test ./test --emitmetrics
 ```
 
-* To add additional metrics to a test, see [emitting metrics](adding_tests.md#emit-metrics).
-* For more info on the format of the metrics, see [metric format](adding_tests.md#metric-format).
+- To add additional metrics to a test, see
+  [emitting metrics](adding_tests.md#emit-metrics).
+- For more info on the format of the metrics, see
+  [metric format](adding_tests.md#metric-format).
 
-[Minikube]: https://kubernetes.io/docs/setup/minikube/
+[minikube]: https://kubernetes.io/docs/setup/minikube/
 
 ---
 

@@ -45,9 +45,10 @@ var _ apis.Listable = (*Resource)(nil)
 type ResourceSpec struct {
 	Generation int64 `json:"generation,omitempty"`
 
-	FieldWithDefault    string `json:"fieldWithDefault,omitempty"`
-	FieldWithValidation string `json:"fieldWithValidation,omitempty"`
-	FieldThatsImmutable string `json:"fieldThatsImmutable,omitempty"`
+	FieldWithDefault               string `json:"fieldWithDefault,omitempty"`
+	FieldWithValidation            string `json:"fieldWithValidation,omitempty"`
+	FieldThatsImmutable            string `json:"fieldThatsImmutable,omitempty"`
+	FieldThatsImmutableWithDefault string `json:"fieldThatsImmutableWithDefault,omitempty"`
 }
 
 func (c *Resource) SetDefaults() {
@@ -57,6 +58,9 @@ func (c *Resource) SetDefaults() {
 func (cs *ResourceSpec) SetDefaults() {
 	if cs.FieldWithDefault == "" {
 		cs.FieldWithDefault = "I'm a default."
+	}
+	if cs.FieldThatsImmutableWithDefault == "" {
+		cs.FieldThatsImmutableWithDefault = "this is another default value"
 	}
 }
 
@@ -83,6 +87,15 @@ func (current *Resource) CheckImmutableFields(og apis.Immutable) *apis.FieldErro
 			Paths:   []string{"spec.fieldThatsImmutable"},
 			Details: fmt.Sprintf("got: %v, want: %v", current.Spec.FieldThatsImmutable,
 				original.Spec.FieldThatsImmutable),
+		}
+	}
+
+	if original.Spec.FieldThatsImmutableWithDefault != current.Spec.FieldThatsImmutableWithDefault {
+		return &apis.FieldError{
+			Message: "Immutable field changed",
+			Paths:   []string{"spec.fieldThatsImmutableWithDefault"},
+			Details: fmt.Sprintf("got: %v, want: %v", current.Spec.FieldThatsImmutableWithDefault,
+				original.Spec.FieldThatsImmutableWithDefault),
 		}
 	}
 	return nil

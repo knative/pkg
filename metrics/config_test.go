@@ -15,6 +15,7 @@ package metrics
 import (
 	"reflect"
 	"testing"
+	"time"
 
 	. "github.com/knative/pkg/logging/testing"
 	corev1 "k8s.io/api/core/v1"
@@ -67,6 +68,15 @@ var (
 		domain:      servingDomain,
 		component:   "",
 		expectedErr: "Metrics component name cannot be empty",
+	}, {
+		name: "invalidReportingPeriod",
+		cm: map[string]string{
+			"metrics.backend-destination":      "prometheus",
+			"metrics.reporting-period-seconds": "test",
+		},
+		domain:      servingDomain,
+		component:   "",
+		expectedErr: "Invalid reporting-period-seconds value \"test\"",
 	}}
 	successTests = []struct {
 		name           string
@@ -85,7 +95,8 @@ var (
 			expectedConfig: metricsConfig{
 				domain:             servingDomain,
 				component:          testComponent,
-				backendDestination: Stackdriver},
+				backendDestination: Stackdriver,
+				reportingPeriod:    60 * time.Second},
 		}, {
 			name:      "validPrometheus",
 			cm:        map[string]string{"metrics.backend-destination": "prometheus"},
@@ -94,7 +105,8 @@ var (
 			expectedConfig: metricsConfig{
 				domain:             servingDomain,
 				component:          testComponent,
-				backendDestination: Prometheus},
+				backendDestination: Prometheus,
+				reportingPeriod:    5 * time.Second},
 		}, {
 			name: "validStackdriver",
 			cm: map[string]string{"metrics.backend-destination": "stackdriver",
@@ -105,7 +117,8 @@ var (
 				domain:               servingDomain,
 				component:            testComponent,
 				backendDestination:   Stackdriver,
-				stackdriverProjectID: anotherProj},
+				stackdriverProjectID: anotherProj,
+				reportingPeriod:      60 * time.Second},
 		}, {
 			name: "validCapitalStackdriver",
 			cm: map[string]string{"metrics.backend-destination": "Stackdriver",
@@ -116,41 +129,104 @@ var (
 				domain:               servingDomain,
 				component:            testComponent,
 				backendDestination:   Stackdriver,
-				stackdriverProjectID: testProj},
+				stackdriverProjectID: testProj,
+				reportingPeriod:      60 * time.Second},
+		}, {
+			name:      "overriddenReportingPeriodPrometheus",
+			cm:        map[string]string{"metrics.backend-destination": "prometheus", "metrics.reporting-period-seconds": "12"},
+			domain:    servingDomain,
+			component: testComponent,
+			expectedConfig: metricsConfig{
+				domain:             servingDomain,
+				component:          testComponent,
+				backendDestination: Prometheus,
+				reportingPeriod:    12 * time.Second},
+		}, {
+			name: "overriddenReportingPeriodStackdriver",
+			cm: map[string]string{"metrics.backend-destination": "stackdriver",
+				"metrics.stackdriver-project-id": "test2", "metrics.reporting-period-seconds": "7"},
+			domain:    servingDomain,
+			component: testComponent,
+			expectedConfig: metricsConfig{
+				domain:               servingDomain,
+				component:            testComponent,
+				backendDestination:   Stackdriver,
+				stackdriverProjectID: "test2",
+				reportingPeriod:      7 * time.Second},
+		}, {
+			name: "overriddenReportingPeriodStackdriver2",
+			cm: map[string]string{"metrics.backend-destination": "stackdriver",
+				"metrics.stackdriver-project-id": "test2", "metrics.reporting-period-seconds": "3"},
+			domain:    servingDomain,
+			component: testComponent,
+			expectedConfig: metricsConfig{
+				domain:               servingDomain,
+				component:            testComponent,
+				backendDestination:   Stackdriver,
+				stackdriverProjectID: "test2",
+				reportingPeriod:      3 * time.Second},
+		}, {
+			name:      "emptyReportingPeriodPrometheus",
+			cm:        map[string]string{"metrics.backend-destination": "prometheus", "metrics.reporting-period-seconds": ""},
+			domain:    servingDomain,
+			component: testComponent,
+			expectedConfig: metricsConfig{
+				domain:             servingDomain,
+				component:          testComponent,
+				backendDestination: Prometheus,
+				reportingPeriod:    5 * time.Second},
+		}, {
+			name: "emptyReportingPeriodStackdriver",
+			cm: map[string]string{"metrics.backend-destination": "stackdriver",
+				"metrics.stackdriver-project-id": "test2", "metrics.reporting-period-seconds": ""},
+			domain:    servingDomain,
+			component: testComponent,
+			expectedConfig: metricsConfig{
+				domain:               servingDomain,
+				component:            testComponent,
+				backendDestination:   Stackdriver,
+				stackdriverProjectID: "test2",
+				reportingPeriod:      60 * time.Second},
 		}}
 )
 
 func TestGetMetricsConfig(t *testing.T) {
 	for _, test := range errorTests {
-		_, err := getMetricsConfig(test.cm, test.domain, test.component, TestLogger(t))
-		if err.Error() != test.expectedErr {
-			t.Errorf("In test %v, wanted err: %v, got: %v", test.name, test.expectedErr, err)
-		}
+		t.Run(test.name, func(t *testing.T) {
+			_, err := getMetricsConfig(test.cm, test.domain, test.component, TestLogger(t))
+			if err.Error() != test.expectedErr {
+				t.Errorf("Wanted err: %v, got: %v", test.expectedErr, err)
+			}
+		})
 	}
 
 	for _, test := range successTests {
-		mc, err := getMetricsConfig(test.cm, test.domain, test.component, TestLogger(t))
-		if err != nil {
-			t.Errorf("In test %v, wanted valid config %v, got error %v", test.name, test.expectedConfig, err)
-		}
-		if !reflect.DeepEqual(*mc, test.expectedConfig) {
-			t.Errorf("In test %v, wanted config %v, got config %v", test.name, test.expectedConfig, *mc)
-		}
+		t.Run(test.name, func(t *testing.T) {
+			mc, err := getMetricsConfig(test.cm, test.domain, test.component, TestLogger(t))
+			if err != nil {
+				t.Errorf("Wanted valid config %v, got error %v", test.expectedConfig, err)
+			}
+			if !reflect.DeepEqual(*mc, test.expectedConfig) {
+				t.Errorf("Wanted config %v, got config %v", test.expectedConfig, *mc)
+			}
+		})
 	}
 }
 
 func TestIsMetricsConfigChanged(t *testing.T) {
 	setCurMetricsExporterAndConfig(nil, nil)
 	for _, test := range successTests {
-		mc, err := getMetricsConfig(test.cm, test.domain, test.component, TestLogger(t))
-		if err != nil {
-			t.Errorf("In test %v, wanted valid config %v, got error %v", test.name, test.expectedConfig, err)
-		}
-		changed := isMetricsConfigChanged(mc)
-		if !changed {
-			t.Errorf("In test %v, isMetricsConfigChanged should be true", test.name)
-		}
-		setCurMetricsExporterAndConfig(nil, mc)
+		t.Run(test.name, func(t *testing.T) {
+			mc, err := getMetricsConfig(test.cm, test.domain, test.component, TestLogger(t))
+			if err != nil {
+				t.Errorf("Wanted valid config %v, got error %v", test.expectedConfig, err)
+			}
+			changed := isMetricsConfigChanged(mc)
+			if !changed {
+				t.Error("isMetricsConfigChanged should be true")
+			}
+			setCurMetricsExporterAndConfig(nil, mc)
+		})
 	}
 
 	setCurMetricsExporterAndConfig(nil, &metricsConfig{
@@ -179,26 +255,30 @@ func TestUpdateExporterFromConfigMap(t *testing.T) {
 	}
 	oldConfig := getCurMetricsConfig()
 	for _, test := range successTests[1:] {
-		cm.Data = test.cm
-		u := UpdateExporterFromConfigMap(test.domain, test.component, TestLogger(t))
-		u(cm)
-		mConfig := getCurMetricsConfig()
-		if mConfig == oldConfig {
-			t.Errorf("In test %v, expected metrics config change", test.name)
-		}
-		if !reflect.DeepEqual(*mConfig, test.expectedConfig) {
-			t.Errorf("In test %v, expected config: %v; got config %v", test.name, test.expectedConfig, mConfig)
-		}
-		oldConfig = mConfig
+		t.Run(test.name, func(t *testing.T) {
+			cm.Data = test.cm
+			u := UpdateExporterFromConfigMap(test.domain, test.component, TestLogger(t))
+			u(cm)
+			mConfig := getCurMetricsConfig()
+			if mConfig == oldConfig {
+				t.Error("Expected metrics config change")
+			}
+			if !reflect.DeepEqual(*mConfig, test.expectedConfig) {
+				t.Errorf("Expected config: %v; got config %v", test.expectedConfig, mConfig)
+			}
+			oldConfig = mConfig
+		})
 	}
 
 	for _, test := range errorTests {
-		cm.Data = test.cm
-		u := UpdateExporterFromConfigMap(test.domain, test.component, TestLogger(t))
-		u(cm)
-		mConfig := getCurMetricsConfig()
-		if mConfig != oldConfig {
-			t.Errorf("In test %v, mConfig should not change", test.name)
-		}
+		t.Run(test.name, func(t *testing.T) {
+			cm.Data = test.cm
+			u := UpdateExporterFromConfigMap(test.domain, test.component, TestLogger(t))
+			u(cm)
+			mConfig := getCurMetricsConfig()
+			if mConfig != oldConfig {
+				t.Error("mConfig should not change")
+			}
+		})
 	}
 }
