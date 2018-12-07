@@ -226,9 +226,8 @@ Second: X, Y, Z`,
 				fe = fe.ViaField(prefix...)
 			}
 			if test.want != "" {
-				got := fe.Error()
-				if got != test.want {
-					t.Errorf("%s: Error() = %v, wanted %v", test.name, got, test.want)
+				if got, want := fe.Error(), test.want; got != want {
+					t.Errorf("%s: Error() = %v, wanted %v", test.name, got, want)
 				}
 			} else if fe != nil {
 				t.Errorf("%s: ViaField() = %v, wanted nil", test.name, fe)
@@ -421,9 +420,8 @@ can not use @, do not try`,
 			}
 
 			if test.want != "" {
-				got := fe.Error()
-				if got != test.want {
-					t.Errorf("%s: Error() = %v, wanted %v", test.name, got, test.want)
+				if got, want := fe.Error(), test.want; got != want {
+					t.Errorf("%s: Error() = %v, wanted %v", test.name, got, want)
 				}
 			} else if fe != nil {
 				t.Errorf("%s: ViaField() = %v, wanted nil", test.name, fe)
@@ -434,9 +432,7 @@ can not use @, do not try`,
 
 func TestNilError(t *testing.T) {
 	var err *FieldError
-	got := err.Error()
-	want := ""
-	if got != want {
+	if got, want := err.Error(), ""; got != want {
 		t.Errorf("got %v, wanted %v", got, want)
 	}
 }
@@ -512,9 +508,8 @@ not without this: bar.C`,
 			}
 
 			if test.want != "" {
-				got := fe.Error()
-				if got != test.want {
-					t.Errorf("%s: Error() = %v, wanted %v", test.name, got, test.want)
+				if got, want := fe.Error(), test.want; got != want {
+					t.Errorf("%s: Error() = %v, wanted %v", test.name, got, want)
 				}
 			} else if fe != nil {
 				t.Errorf("%s: ViaField() = %v, wanted nil", test.name, fe)
@@ -680,18 +675,15 @@ func TestFlatten(t *testing.T) {
 		indices: strings.Split("foo.[1].[0].bar", "."),
 		want:    "foo[1][0].bar",
 	}, {
-		name:    "err(bar).ViaIndex(0).ViaIndex[1].ViaField(foo)",
+		name:    "err(foo).ViaField(bar).ViaIndex[0].ViaField(baz)",
 		indices: []string{"foo", "bar.[0].baz"},
 		want:    "foo.bar[0].baz",
 	}}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-
-			got := flatten(test.indices)
-
-			if got != test.want {
-				t.Errorf("got: %q, want %q", got, test.want)
+			if got, want := flatten(test.indices), test.want; got != want {
+				t.Errorf("got: %q, want %q", got, want)
 			}
 		})
 	}
