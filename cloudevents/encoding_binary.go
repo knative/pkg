@@ -114,14 +114,37 @@ func (binary) FromRequest(data interface{}, r *http.Request) (*EventContext, err
 }
 
 // NewRequest creates an HTTP request for Binary content encoding.
-func (binary) NewRequest(urlString string, data interface{}, context EventContext) (*http.Request, error) {
+func (t binary) NewRequest(urlString string, data interface{}, context EventContext) (*http.Request, error) {
 	url, err := url.Parse(urlString)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := ensureRequiredFields(context); err != nil {
+	h := http.Header{}
+	err = t.ToHeaders(&context, h)
+	if err != nil {
 		return nil, err
+	}
+
+	b, err := marshalEventData(context.ContentType, data)
+	if err != nil {
+		return nil, err
+	}
+
+	return &http.Request{
+		Method: http.MethodPost,
+		URL:    url,
+		Header: h,
+		Body:   ioutil.NopCloser(bytes.NewReader(b)),
+	}, nil
+}
+
+func (binary) ToHeaders(context *EventContext, h http.Header) error {
+	if context == nil || h == nil {
+		return nil
+	}
+	if err := ensureRequiredFields(*context); err != nil {
+		return err
 	}
 	// Defaultable values:
 	ceVersion := context.CloudEventsVersion
@@ -139,7 +162,6 @@ func (binary) NewRequest(urlString string, data interface{}, context EventContex
 		eventTime = context.EventTime.Format(time.RFC3339Nano)
 	}
 
-	h := http.Header{}
 	setHeader(h, HeaderCloudEventsVersion, ceVersion)
 	setHeader(h, HeaderEventID, context.EventID)
 	setHeader(h, HeaderEventTime, eventTime)
@@ -151,24 +173,14 @@ func (binary) NewRequest(urlString string, data interface{}, context EventContex
 	for name, value := range context.Extensions {
 		encoded, err := json.Marshal(value)
 		if err != nil {
-			return nil, err
+			return err
 		}
 		h[HeaderExtensionsPrefix+name] = []string{
 			string(encoded),
 		}
 	}
 
-	b, err := marshalEventData(contentType, data)
-	if err != nil {
-		return nil, err
-	}
-
-	return &http.Request{
-		Method: http.MethodPost,
-		URL:    url,
-		Header: h,
-		Body:   ioutil.NopCloser(bytes.NewReader(b)),
-	}, nil
+	return nil
 }
 
 // TODO(inlined) URI encoding/decoding of headers

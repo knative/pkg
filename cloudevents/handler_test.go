@@ -56,14 +56,21 @@ func TestHandlerTypeErrors(t *testing.T) {
 			err:   "Expected a function taking either no parameters, a context.Context, or (context.Context, any); cannot convert parameter 0 from int to context.Context",
 		},
 		{
-			name:  "wrong return count",
-			param: func() (interface{}, error, interface{}) { return nil, nil, nil },
-			err:   "Expected a function returning either nothing, an error, or (any, error); function has too many return types (3)",
+			name:  "wrong 3-arg return type",
+			param: func() (interface{}, interface{}, error) { return nil, nil, nil },
+			err:   "Expected a function returning either nothing, an error, (any, error), or (any, EventContext, error); cannot convert return type 1 from interface {} to EventContext",
+		},
+		{
+			name: "wrong return count",
+			param: func() (interface{}, cloudevents.EventContext, error, interface{}) {
+				return nil, cloudevents.EventContext{}, nil, nil
+			},
+			err: "Expected a function returning either nothing, an error, (any, error), or (any, EventContext, error); function has too many return types (4)",
 		},
 		{
 			name:  "invalid return type",
 			param: func() interface{} { return nil },
-			err:   "Expected a function returning either nothing, an error, or (any, error); cannot convert return type 0 from interface {} to error",
+			err:   "Expected a function returning either nothing, an error, (any, error), or (any, EventContext, error); cannot convert return type 0 from interface {} to error",
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -283,7 +290,7 @@ func TestReturnTypeRendering(t *testing.T) {
 	eventContext := cloudevents.EventContext{
 		CloudEventsVersion: cloudevents.CloudEventsVersion,
 		EventID:            "1234",
-		Source:             "tests:TestUndtypedHandling",
+		Source:             "tests:TestUntypedHandling",
 		EventType:          "dev.eventing.test",
 		Extensions:         map[string]interface{}{},
 	}
@@ -291,6 +298,7 @@ func TestReturnTypeRendering(t *testing.T) {
 		name             string
 		expectedStatus   int
 		expectedResponse string
+		expectedHeader   http.Header
 		handler          http.Handler
 	}{
 		{
@@ -317,6 +325,30 @@ func TestReturnTypeRendering(t *testing.T) {
 				return map[string]interface{}{"hello": "world"}, nil
 			}),
 			expectedResponse: `{"hello":"world"}`,
+			expectedHeader: http.Header{
+				// Default values filled in
+				"Ce-Eventtype": {"dev.knative.pkg.cloudevents.unknown"},
+				"Ce-Source":    {"unknown"},
+			},
+		}, {
+			name:           "response headers",
+			expectedStatus: http.StatusOK,
+			handler: cloudevents.Handler(func() (map[string]interface{}, cloudevents.EventContext, error) {
+				ec := cloudevents.EventContext{
+					EventID:   "1234",
+					EventType: "dev.knative.test.thing",
+					Source:    "this-is-it",
+					SchemaURL: "http://example.com/schema",
+				}
+				return map[string]interface{}{"hello": "world"}, ec, nil
+			}),
+			expectedResponse: `{"hello":"world"}`,
+			expectedHeader: http.Header{
+				"Ce-Eventid":   {"1234"},
+				"Ce-Eventtype": {"dev.knative.test.thing"},
+				"Ce-Source":    {"this-is-it"},
+				"Ce-Schemaurl": {"http://example.com/schema"},
+			},
 		}, {
 			name:           "non-nil error return (two return types)",
 			expectedStatus: http.StatusInternalServerError,
@@ -359,6 +391,13 @@ func TestReturnTypeRendering(t *testing.T) {
 			defer res.Body.Close()
 			if test.expectedStatus != res.StatusCode {
 				t.Fatalf("Wrong status code from event handler; wanted=%d; got=%d", test.expectedStatus, res.StatusCode)
+			}
+			if test.expectedHeader != nil {
+				for k := range test.expectedHeader {
+					if res.Header.Get(k) != test.expectedHeader.Get(k) {
+						t.Fatalf("Wrong response header %q: wanted=%q; got=%q", k, test.expectedHeader.Get(k), res.Header.Get(k))
+					}
+				}
 			}
 			if test.expectedResponse != "" {
 				b, err := ioutil.ReadAll(res.Body)
