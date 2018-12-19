@@ -5,3 +5,5 @@
 **/zz_generated.*.go linguist-generated=true
 /client/** linguist-generated=true
 /test/** coverage-excluded=true
+
+*.sh text eol=lf
