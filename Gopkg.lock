@@ -409,10 +409,11 @@
   version = "v1.0.3"
 
 [[projects]]
-  digest = "1:46928a6f812b22398d0599b069e8eeed11603905b0a77d8ce8f711821fbb9824"
+  digest = "1:bce7c290509e40fd1c73d700305c1961004d08c9a1812e47533416a8742893a7"
   name = "go.opencensus.io"
   packages = [
     ".",
+    "exemplar",
     "exporter/prometheus",
     "internal",
     "internal/tagencoding",
@@ -426,10 +427,11 @@
     "trace",
     "trace/internal",
     "trace/propagation",
+    "trace/tracestate",
   ]
   pruneopts = "NUT"
-  revision = "e262766cd0d230a1bb7c37281e345e465f19b41b"
-  version = "v0.14.0"
+  revision = "b7bf3cdb64150a8c8c53b769fdeb2ba581bd4d4b"
+  version = "v0.18.0"
 
 [[projects]]
   digest = "1:22f696cee54865fb8e9ff91df7b633f6b8f22037a8015253c6b6a71ca82219c7"
