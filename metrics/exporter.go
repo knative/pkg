@@ -69,7 +69,7 @@ func newStackdriverExporter(config *metricsConfig, logger *zap.SugaredLogger) (v
 		ProjectID:    config.stackdriverProjectID,
 		MetricPrefix: config.domain + "/" + config.component,
 		Resource: &monitoredrespb.MonitoredResource{
-			Type: "global",
+			Type: "knative_revision",
 		},
 		DefaultMonitoringLabels: &stackdriver.Labels{},
 	})
