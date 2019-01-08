@@ -46,17 +46,23 @@ const (
 var (
 	// KnativeRevisionLabels stores the set of resource labels for resource type knative_revision
 	KnativeRevisionLabels = map[string]struct{}{
-		LabelProject:           {},
-		LabelLocation:          {},
-		LabelClusterName:       {},
-		LabelNamespaceName:     {},
-		LabelServiceName:       {},
-		LabelConfigurationName: {},
-		LabelRevisionName:      {},
+		LabelProject:           struct{}{},
+		LabelLocation:          struct{}{},
+		LabelClusterName:       struct{}{},
+		LabelNamespaceName:     struct{}{},
+		LabelServiceName:       struct{}{},
+		LabelConfigurationName: struct{}{},
+		LabelRevisionName:      struct{}{},
 	}
 
 	// ResourceTypeToLabelsMap maps resource type to the set of resource labels
 	ResourceTypeToLabelsMap = map[string]map[string]struct{}{
 		ResourceTypeKnativeRevision: KnativeRevisionLabels,
+	}
+
+	// KnativeRevisionMetricsPrefixes stores a set of metrics prefixes that belong to resource type knative_revision
+	KnativeRevisionMetricsPrefixes = map[string]struct{}{
+		"knative.dev/serving/autoscaler": struct{}{},
+		"knative.dev/serving/activator":  struct{}{},
 	}
 )
