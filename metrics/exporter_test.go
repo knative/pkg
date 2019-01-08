@@ -40,13 +40,12 @@ var (
 		TagKeys:     []tag.Key{},
 	}
 
-	nsKey            = tag.Tag{Key: mustNewTagKey(metricskey.LabelNamespaceName), Value: testNS}
-	serviceKey       = tag.Tag{Key: mustNewTagKey(metricskey.LabelServiceName), Value: testService}
-	routeKey         = tag.Tag{Key: mustNewTagKey(metricskey.LabelRouteName), Value: testRoute}
-	configurationKey = tag.Tag{Key: mustNewTagKey(metricskey.LabelConfigurationName), Value: testConfiguration}
-	revisionKey      = tag.Tag{Key: mustNewTagKey(metricskey.LabelRevisionName), Value: testRevision}
+	nsKey       = tag.Tag{Key: mustNewTagKey(metricskey.LabelNamespaceName), Value: testNS}
+	serviceKey  = tag.Tag{Key: mustNewTagKey(metricskey.LabelServiceName), Value: testService}
+	routeKey    = tag.Tag{Key: mustNewTagKey(metricskey.LabelRouteName), Value: testRoute}
+	revisionKey = tag.Tag{Key: mustNewTagKey(metricskey.LabelRevisionName), Value: testRevision}
 
-	testTags = []tag.Tag{nsKey, serviceKey, routeKey, configurationKey, revisionKey}
+	testTags = []tag.Tag{nsKey, serviceKey, routeKey, revisionKey}
 )
 
 func mustNewTagKey(s string) tag.Key {
@@ -63,7 +62,7 @@ func getResourceLabelValue(key string, tags []tag.Tag) string {
 			return t.Value
 		}
 	}
-	return metricskey.ValueUnknown
+	return ""
 }
 
 func TestMain(m *testing.M) {
@@ -96,7 +95,7 @@ func TestNewStackdriverExporterForGlobal(t *testing.T) {
 	}
 	got := getResourceLabelValue(metricskey.LabelNamespaceName, newTags)
 	if got != testNS {
-		t.Errorf("expected new tag: %v, got: %v", routeKey, newTags)
+		t.Errorf("expected new tag %v with value %v, got: %v", routeKey, testNS, newTags)
 	}
 	if len(labels) != 0 {
 		t.Errorf("expected no label, got: %v", labels)
@@ -131,7 +130,11 @@ func TestNewStackdriverExporterForKnativeRevision(t *testing.T) {
 	}
 	got, ok := labels[metricskey.LabelNamespaceName]
 	if !ok || got != testNS {
-		t.Errorf("expected label: %v, got: %v", metricskey.LabelNamespaceName, labels)
+		t.Errorf("expected label %v with value %v, got: %v", metricskey.LabelNamespaceName, testNS, got)
+	}
+	got, ok = labels[metricskey.LabelConfigurationName]
+	if !ok || got != metricskey.ValueUnknown {
+		t.Errorf("expected label %v with value %v, got: %v", metricskey.LabelConfigurationName, metricskey.ValueUnknown, got)
 	}
 }
 
