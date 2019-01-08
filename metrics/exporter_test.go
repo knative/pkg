@@ -57,6 +57,15 @@ func mustNewTagKey(s string) tag.Key {
 	return tagKey
 }
 
+func getResourceLabelValue(key string, tags []tag.Tag) string {
+	for _, t := range tags {
+		if t.Key.Name() == key {
+			return t.Value
+		}
+	}
+	return metricskey.ValueUnknown
+}
+
 func TestMain(m *testing.M) {
 	resetCurPromSrv()
 	os.Exit(m.Run())

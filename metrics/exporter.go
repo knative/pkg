@@ -66,16 +66,17 @@ func newMetricsExporter(config *metricsConfig, logger *zap.SugaredLogger) error 
 
 func getKnativeRevisionMonitoredResource(gm *gcpMetadata) func(v *view.View, tags []tag.Tag) ([]tag.Tag, monitoredresource.Interface) {
 	return func(v *view.View, tags []tag.Tag) ([]tag.Tag, monitoredresource.Interface) {
+		tagsMap := getTagsMap(tags)
 		kr := &KnativeRevision{
 			// The first three resource labels are from metadata.
 			Project:     gm.project,
 			Location:    gm.location,
 			ClusterName: gm.cluster,
 			// The rest resource labels are from metrics labels.
-			NamespaceName:     getResourceLabelValue(metricskey.LabelNamespaceName, tags),
-			ServiceName:       getResourceLabelValue(metricskey.LabelServiceName, tags),
-			ConfigurationName: getResourceLabelValue(metricskey.LabelConfigurationName, tags),
-			RevisionName:      getResourceLabelValue(metricskey.LabelRevisionName, tags),
+			NamespaceName:     valueOrUnknown(metricskey.LabelNamespaceName, tagsMap),
+			ServiceName:       valueOrUnknown(metricskey.LabelServiceName, tagsMap),
+			ConfigurationName: valueOrUnknown(metricskey.LabelConfigurationName, tagsMap),
+			RevisionName:      valueOrUnknown(metricskey.LabelRevisionName, tagsMap),
 		}
 
 		var newTags []tag.Tag
@@ -90,11 +91,17 @@ func getKnativeRevisionMonitoredResource(gm *gcpMetadata) func(v *view.View, tag
 	}
 }
 
-func getResourceLabelValue(key string, tags []tag.Tag) string {
+func getTagsMap(tags []tag.Tag) map[string]string {
+	tagsMap := map[string]string{}
 	for _, t := range tags {
-		if t.Key.Name() == key {
-			return t.Value
-		}
+		tagsMap[t.Key.Name()] = t.Value
+	}
+	return tagsMap
+}
+
+func valueOrUnknown(key string, tagsMap map[string]string) string {
+	if value, ok := tagsMap[key]; ok {
+		return value
 	}
 	return metricskey.ValueUnknown
 }
