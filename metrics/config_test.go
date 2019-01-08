@@ -38,12 +38,6 @@ var (
 		component   string
 		expectedErr string
 	}{{
-		name:        "backendKeyMissing",
-		cm:          map[string]string{"": ""},
-		domain:      servingDomain,
-		component:   testComponent,
-		expectedErr: "metrics.backend-destination key is missing",
-	}, {
 		name: "unsupportedBackend",
 		cm: map[string]string{
 			"metrics.backend-destination":    "unsupported",
@@ -96,6 +90,16 @@ var (
 				domain:             servingDomain,
 				component:          testComponent,
 				backendDestination: Stackdriver,
+				reportingPeriod:    60 * time.Second},
+		}, {
+			name:      "backendKeyMissing",
+			cm:        map[string]string{"": ""},
+			domain:    servingDomain,
+			component: testComponent,
+			expectedConfig: metricsConfig{
+				domain:             servingDomain,
+				component:          testComponent,
+				backendDestination: Prometheus,
 				reportingPeriod:    60 * time.Second},
 		}, {
 			name:      "validPrometheus",
