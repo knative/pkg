@@ -23,7 +23,11 @@ import (
 	"k8s.io/apimachinery/pkg/version"
 )
 
-type serverVersion interface {
+// ServerVersioner is an interface to mock the `ServerVersion`
+// method of the Kubernetes client's Discovery interface.
+// In an application `kubeClient.Discovery()` can be used to
+// suffice this interface.
+type ServerVersioner interface {
 	ServerVersion() (*version.Info, error)
 }
 
@@ -35,7 +39,7 @@ var minimumVersion = "v1.11.0"
 //
 // A Kubernetes discovery client can be passed in as the versioner
 // like `CheckMinimumVersion(kubeClient.Discovery())`.
-func CheckMinimumVersion(versioner serverVersion) error {
+func CheckMinimumVersion(versioner ServerVersioner) error {
 	v, err := versioner.ServerVersion()
 	if err != nil {
 		return err
