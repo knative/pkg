@@ -23,7 +23,7 @@ import (
 )
 
 const (
-	servingDomain = "serving.knative.dev"
+	servingDomain = "knative.dev/serving"
 	badDomain     = "test.domain"
 	testComponent = "testComponent"
 	testProj      = "test-project"
@@ -195,7 +195,7 @@ func TestGetMetricsConfig(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			_, err := getMetricsConfig(test.cm, test.domain, test.component, TestLogger(t))
 			if err.Error() != test.expectedErr {
-				t.Errorf("Wanted err: %v, got: %v", test.expectedErr, err)
+				t.Fatalf("Wanted err: %v, got: %v", test.expectedErr, err)
 			}
 		})
 	}
@@ -204,10 +204,10 @@ func TestGetMetricsConfig(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			mc, err := getMetricsConfig(test.cm, test.domain, test.component, TestLogger(t))
 			if err != nil {
-				t.Errorf("Wanted valid config %v, got error %v", test.expectedConfig, err)
+				t.Fatalf("Wanted valid config %v, got error %v", test.expectedConfig, err)
 			}
 			if !reflect.DeepEqual(*mc, test.expectedConfig) {
-				t.Errorf("Wanted config %v, got config %v", test.expectedConfig, *mc)
+				t.Fatalf("Wanted config %v, got config %v", test.expectedConfig, *mc)
 			}
 		})
 	}
@@ -219,11 +219,11 @@ func TestIsMetricsConfigChanged(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			mc, err := getMetricsConfig(test.cm, test.domain, test.component, TestLogger(t))
 			if err != nil {
-				t.Errorf("Wanted valid config %v, got error %v", test.expectedConfig, err)
+				t.Fatalf("Wanted valid config %v, got error %v", test.expectedConfig, err)
 			}
 			changed := isMetricsConfigChanged(mc)
 			if !changed {
-				t.Error("isMetricsConfigChanged should be true")
+				t.Fatal("isMetricsConfigChanged should be true")
 			}
 			setCurMetricsExporterAndConfig(nil, mc)
 		})
@@ -241,7 +241,7 @@ func TestIsMetricsConfigChanged(t *testing.T) {
 	}
 	changed := isMetricsConfigChanged(newConfig)
 	if changed {
-		t.Error("isMetricsConfigChanged should be false if stackdriver project ID changes for prometheus backend")
+		t.Fatal("isMetricsConfigChanged should be false if stackdriver project ID changes for prometheus backend")
 	}
 }
 
@@ -261,10 +261,10 @@ func TestUpdateExporterFromConfigMap(t *testing.T) {
 			u(cm)
 			mConfig := getCurMetricsConfig()
 			if mConfig == oldConfig {
-				t.Error("Expected metrics config change")
+				t.Fatal("Expected metrics config change")
 			}
 			if !reflect.DeepEqual(*mConfig, test.expectedConfig) {
-				t.Errorf("Expected config: %v; got config %v", test.expectedConfig, mConfig)
+				t.Fatalf("Expected config: %v; got config %v", test.expectedConfig, mConfig)
 			}
 			oldConfig = mConfig
 		})

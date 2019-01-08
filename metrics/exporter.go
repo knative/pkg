@@ -49,8 +49,6 @@ func newMetricsExporter(config *metricsConfig, logger *zap.SugaredLogger) error 
 	var e view.Exporter
 	switch config.backendDestination {
 	case Stackdriver:
-		// Set getMonitoredResourceFunc
-		setMonitoredResourceFunc(config)
 		e, err = newStackdriverExporter(config, logger)
 	case Prometheus:
 		e, err = newPrometheusExporter(config, logger)
@@ -68,33 +66,17 @@ func newMetricsExporter(config *metricsConfig, logger *zap.SugaredLogger) error 
 
 func getKnativeRevisionMonitoredResource(gm *gcpMetadata) func(v *view.View, tags []tag.Tag) ([]tag.Tag, monitoredresource.Interface) {
 	return func(v *view.View, tags []tag.Tag) ([]tag.Tag, monitoredresource.Interface) {
-		// TODO: After knative_revision is onboarded, replace resource type gke_container.
-		// Before it is onboarded, stackdriver would reject metrics with resource type knative_revision.
-		gkeContainer := &monitoredresource.GKEContainer{
+		kr := &KnativeRevision{
 			// The first three resource labels are from metadata.
-			ProjectID:   gm.project,
+			Project:     gm.project,
+			Location:    gm.location,
 			ClusterName: gm.cluster,
-			Zone:        gm.location,
 			// The rest resource labels are from metrics labels.
-			NamespaceID:   getResourceLabelValue(metricskey.LabelNamespaceName, tags),     // use this field for revision namespace
-			ContainerName: getResourceLabelValue(metricskey.LabelServiceName, tags),       // use this field for service name
-			InstanceID:    getResourceLabelValue(metricskey.LabelConfigurationName, tags), // use this field for configuration name
-			PodID:         getResourceLabelValue(metricskey.LabelRevisionName, tags),      // use this field for revision name
+			NamespaceName:     getResourceLabelValue(metricskey.LabelNamespaceName, tags),
+			ServiceName:       getResourceLabelValue(metricskey.LabelServiceName, tags),
+			ConfigurationName: getResourceLabelValue(metricskey.LabelConfigurationName, tags),
+			RevisionName:      getResourceLabelValue(metricskey.LabelRevisionName, tags),
 		}
-
-		// TODO: After knative_revision is onbaroded, use resource type knative_revision
-		// as follows
-		// kr := &KnativeRevision{
-		// 	// The first three resource labels are from metadata.
-		// 	Project:     gm.project,
-		// 	Location:    gm.location,
-		// 	ClusterName: gm.cluster,
-		// 	// The rest resource labels are from metrics labels.
-		// 	NamespaceName:     getResourceLabelValue(metricskey.LabelNamespaceName, tags),
-		// 	ServiceName:       getResourceLabelValue(metricskey.LabelServiceName, tags),
-		// 	ConfigurationName: getResourceLabelValue(metricskey.LabelConfigurationName, tags),
-		// 	RevisionName:      getResourceLabelValue(metricskey.LabelRevisionName, tags),
-		// }
 
 		var newTags []tag.Tag
 		for _, t := range tags {
@@ -105,8 +87,7 @@ func getKnativeRevisionMonitoredResource(gm *gcpMetadata) func(v *view.View, tag
 			}
 		}
 
-		// return newTags, kr
-		return newTags, gkeContainer
+		return newTags, kr
 	}
 }
 
@@ -126,6 +107,7 @@ func getGlobalMonitoredResource() func(v *view.View, tags []tag.Tag) ([]tag.Tag,
 }
 
 func newStackdriverExporter(config *metricsConfig, logger *zap.SugaredLogger) (view.Exporter, error) {
+	setMonitoredResourceFunc(config)
 	e, err := stackdriver.NewExporter(stackdriver.Options{
 		ProjectID:               config.stackdriverProjectID,
 		MetricPrefix:            config.domain + "/" + config.component,
@@ -170,13 +152,22 @@ func resetCurPromSrv() {
 	}
 }
 
+func resetMonitoredResourceFunc() {
+	metricsMux.Lock()
+	defer metricsMux.Unlock()
+	if getMonitoredResourceFunc != nil {
+		getMonitoredResourceFunc = nil
+	}
+}
+
 func setMonitoredResourceFunc(config *metricsConfig) {
 	metricsMux.Lock()
 	defer metricsMux.Unlock()
 	if getMonitoredResourceFunc == nil {
 		gm := retrieveGCPMetadata()
-		fmt.Println("metrics prefix", config.domain+"/"+config.component)
-		if _, ok := metricskey.KnativeRevisionMetricsPrefixes[config.domain+"/"+config.component]; ok {
+		metricsPrefix := config.domain + "/" + config.component
+		fmt.Println("metrics prefix", metricsPrefix)
+		if _, ok := metricskey.KnativeRevisionMetricsPrefixes[metricsPrefix]; ok {
 			getMonitoredResourceFunc = getKnativeRevisionMonitoredResource(gm)
 		} else {
 			getMonitoredResourceFunc = getGlobalMonitoredResource()
