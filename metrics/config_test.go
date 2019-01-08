@@ -100,16 +100,6 @@ var (
 				domain:             servingDomain,
 				component:          testComponent,
 				backendDestination: Prometheus,
-				reportingPeriod:    60 * time.Second},
-		}, {
-			name:      "validPrometheus",
-			cm:        map[string]string{"metrics.backend-destination": "prometheus"},
-			domain:    servingDomain,
-			component: testComponent,
-			expectedConfig: metricsConfig{
-				domain:             servingDomain,
-				component:          testComponent,
-				backendDestination: Prometheus,
 				reportingPeriod:    5 * time.Second},
 		}, {
 			name: "validStackdriver",
@@ -123,6 +113,16 @@ var (
 				backendDestination:   Stackdriver,
 				stackdriverProjectID: anotherProj,
 				reportingPeriod:      60 * time.Second},
+		}, {
+			name:      "validPrometheus",
+			cm:        map[string]string{"metrics.backend-destination": "prometheus"},
+			domain:    servingDomain,
+			component: testComponent,
+			expectedConfig: metricsConfig{
+				domain:             servingDomain,
+				component:          testComponent,
+				backendDestination: Prometheus,
+				reportingPeriod:    5 * time.Second},
 		}, {
 			name: "validCapitalStackdriver",
 			cm: map[string]string{"metrics.backend-destination": "Stackdriver",

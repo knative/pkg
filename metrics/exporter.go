@@ -81,7 +81,6 @@ func getKnativeRevisionMonitoredResource(gm *gcpMetadata) func(v *view.View, tag
 		var newTags []tag.Tag
 		for _, t := range tags {
 			// Keep the metrics labels that are not resource labels
-			fmt.Println(t.Key.Name() + ":" + t.Value)
 			if _, ok := metricskey.KnativeRevisionLabels[t.Key.Name()]; !ok {
 				newTags = append(newTags, t)
 			}
@@ -107,7 +106,7 @@ func getGlobalMonitoredResource() func(v *view.View, tags []tag.Tag) ([]tag.Tag,
 }
 
 func newStackdriverExporter(config *metricsConfig, logger *zap.SugaredLogger) (view.Exporter, error) {
-	setMonitoredResourceFunc(config)
+	setMonitoredResourceFunc(config, logger)
 	e, err := stackdriver.NewExporter(stackdriver.Options{
 		ProjectID:               config.stackdriverProjectID,
 		MetricPrefix:            config.domain + "/" + config.component,
@@ -160,13 +159,13 @@ func resetMonitoredResourceFunc() {
 	}
 }
 
-func setMonitoredResourceFunc(config *metricsConfig) {
+func setMonitoredResourceFunc(config *metricsConfig, logger *zap.SugaredLogger) {
 	metricsMux.Lock()
 	defer metricsMux.Unlock()
 	if getMonitoredResourceFunc == nil {
 		gm := retrieveGCPMetadata()
 		metricsPrefix := config.domain + "/" + config.component
-		fmt.Println("metrics prefix", metricsPrefix)
+		logger.Infof("metrics prefix", metricsPrefix)
 		if _, ok := metricskey.KnativeRevisionMetricsPrefixes[metricsPrefix]; ok {
 			getMonitoredResourceFunc = getKnativeRevisionMonitoredResource(gm)
 		} else {
