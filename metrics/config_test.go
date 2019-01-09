@@ -13,6 +13,7 @@ limitations under the License.
 package metrics
 
 import (
+	"os"
 	"reflect"
 	"testing"
 	"time"
@@ -192,6 +193,34 @@ var (
 				stackdriverProjectID: "test2",
 				reportingPeriod:      60 * time.Second},
 		}}
+	envTests = []struct {
+		name           string
+		cm             map[string]string
+		domain         string
+		component      string
+		expectedConfig metricsConfig
+	}{
+		{
+			name:      "stackdriverFromEnv",
+			cm:        map[string]string{"": ""},
+			domain:    servingDomain,
+			component: testComponent,
+			expectedConfig: metricsConfig{
+				domain:             servingDomain,
+				component:          testComponent,
+				backendDestination: Stackdriver,
+				reportingPeriod:    60 * time.Second},
+		}, {
+			name:      "validPrometheus",
+			cm:        map[string]string{"metrics.backend-destination": "prometheus"},
+			domain:    servingDomain,
+			component: testComponent,
+			expectedConfig: metricsConfig{
+				domain:             servingDomain,
+				component:          testComponent,
+				backendDestination: Prometheus,
+				reportingPeriod:    5 * time.Second},
+		}}
 )
 
 func TestGetMetricsConfig(t *testing.T) {
@@ -215,6 +244,22 @@ func TestGetMetricsConfig(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestGetMetricsConfig_fromEnv(t *testing.T) {
+	os.Setenv(defaultBackendEnvName, "stackdriver")
+	for _, test := range envTests {
+		t.Run(test.name, func(t *testing.T) {
+			mc, err := getMetricsConfig(test.cm, test.domain, test.component, TestLogger(t))
+			if err != nil {
+				t.Errorf("Wanted valid config %v, got error %v", test.expectedConfig, err)
+			}
+			if !reflect.DeepEqual(*mc, test.expectedConfig) {
+				t.Errorf("Wanted config %v, got config %v", test.expectedConfig, *mc)
+			}
+		})
+	}
+	os.Unsetenv(defaultBackendEnvName)
 }
 
 func TestIsMetricsConfigChanged(t *testing.T) {
@@ -282,6 +327,27 @@ func TestUpdateExporterFromConfigMap(t *testing.T) {
 			mConfig := getCurMetricsConfig()
 			if mConfig != oldConfig {
 				t.Error("mConfig should not change")
+			}
+		})
+	}
+}
+
+func TestUpdateExporterFromConfigMap_doesNotCreateExporter(t *testing.T) {
+	setCurMetricsExporterAndConfig(nil, nil)
+	cm := &corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "config-observability",
+		},
+		Data: map[string]string{},
+	}
+	for _, test := range errorTests {
+		t.Run(test.name, func(t *testing.T) {
+			cm.Data = test.cm
+			u := UpdateExporterFromConfigMap(test.domain, test.component, TestLogger(t))
+			u(cm)
+			mConfig := getCurMetricsConfig()
+			if mConfig != nil {
+				t.Error("mConfig should not be created")
 			}
 		})
 	}
