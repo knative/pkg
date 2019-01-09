@@ -18,37 +18,38 @@ package version
 
 import (
 	"errors"
+	"fmt"
 	"testing"
 
 	"k8s.io/apimachinery/pkg/version"
 )
 
 type testVersioner struct {
-	version string
-	err     error
+	major string
+	minor string
+	err   error
 }
 
 func (t *testVersioner) ServerVersion() (*version.Info, error) {
-	return &version.Info{GitVersion: t.version}, t.err
+	return &version.Info{Major: t.major, Minor: t.minor}, t.err
 }
 
 func TestVersionCheck(t *testing.T) {
+	minimumVersion := fmt.Sprintf("v%d.%d", minimumMajor, minimumMinor)
+
 	tests := []struct {
 		name          string
 		actualVersion *testVersioner
 		wantError     bool
 	}{{
-		name:          "greater version (patch)",
-		actualVersion: &testVersioner{version: "v1.11.1"},
-	}, {
 		name:          "greater version (minor)",
-		actualVersion: &testVersioner{version: "v1.12.0"},
+		actualVersion: &testVersioner{major: "1", minor: "12"},
 	}, {
 		name:          "same version",
-		actualVersion: &testVersioner{version: "v1.11.0"},
+		actualVersion: &testVersioner{major: "1", minor: "11"},
 	}, {
 		name:          "smaller version",
-		actualVersion: &testVersioner{version: "v1.10.3"},
+		actualVersion: &testVersioner{major: "1", minor: "10"},
 		wantError:     true,
 	}, {
 		name:          "error while fetching",

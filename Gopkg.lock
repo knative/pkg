@@ -995,7 +995,9 @@
   analyzer-name = "dep"
   analyzer-version = 1
   input-imports = [
+    "cloud.google.com/go/compute/metadata",
     "contrib.go.opencensus.io/exporter/stackdriver",
+    "contrib.go.opencensus.io/exporter/stackdriver/monitoredresource",
     "github.com/davecgh/go-spew/spew",
     "github.com/evanphx/json-patch",
     "github.com/golang/glog",
@@ -1018,7 +1020,6 @@
     "go.uber.org/zap/zapcore",
     "go.uber.org/zap/zaptest",
     "golang.org/x/sync/errgroup",
-    "google.golang.org/genproto/googleapis/api/monitoredres",
     "k8s.io/api/admission/v1beta1",
     "k8s.io/api/admissionregistration/v1beta1",
     "k8s.io/api/apps/v1",
@@ -1041,6 +1042,7 @@
     "k8s.io/apimachinery/pkg/util/sets/types",
     "k8s.io/apimachinery/pkg/util/validation",
     "k8s.io/apimachinery/pkg/util/wait",
+    "k8s.io/apimachinery/pkg/version",
     "k8s.io/apimachinery/pkg/watch",
     "k8s.io/client-go/discovery",
     "k8s.io/client-go/discovery/fake",
