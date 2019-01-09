@@ -17,6 +17,7 @@ limitations under the License.
 package duck
 
 import (
+	"errors"
 	"testing"
 )
 
@@ -101,6 +102,15 @@ func TestMatches(t *testing.T) {
 				t.Error(err)
 			}
 
+			ok, err := ConformsToType(test.instance, test.iface)
+
+			if err != nil {
+				t.Error(err)
+			}
+
+			if !ok {
+				t.Errorf("Expected %T to conform to %T", test.instance, test.iface)
+			}
 		})
 	}
 }
@@ -145,6 +155,52 @@ func TestMismatches(t *testing.T) {
 			if err := VerifyType(test.instance, test.iface); err == nil {
 				t.Errorf("Unexpected success %T implements %T", test.instance, test.iface)
 			}
+
+			ok, err := ConformsToType(test.instance, test.iface)
+
+			if err != nil {
+				t.Error(err)
+			}
+
+			if ok {
+				t.Errorf("Expected %T to not conform to %T", test.instance, test.iface)
+			}
+		})
+	}
+}
+
+func TestMarshallingErrors(t *testing.T) {
+	tests := []struct {
+		name     string
+		instance interface{}
+		iface    Implementable
+	}{{
+		name:     "duck type - fails to marshal",
+		instance: &Foo{},
+		iface:    &UnableToMarshal{},
+	}, {
+		name:     "duck type - fails to unmarshal",
+		instance: &Foo{},
+		iface:    &UnableToUnmarshal{},
+	}, {
+		name:     "instance - fails to unmarshal",
+		instance: &UnableToUnmarshal{},
+		iface:    &Fooable{},
+	}, {
+		name:     "instance - fails to marshal",
+		instance: &UnableToMarshal{},
+		iface:    &Fooable{},
+	}}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			if err := VerifyType(test.instance, test.iface); err == nil {
+				t.Error("expected VerifyType to return an error")
+			}
+
+			if _, err := ConformsToType(test.instance, test.iface); err == nil {
+				t.Error("expected ConformsToType to return an error")
+			}
 		})
 	}
 }
@@ -164,7 +220,7 @@ type FooStatus struct {
 var _ Implementable = (*Fooable)(nil)
 var _ Populatable = (*Foo)(nil)
 
-func (_ *Fooable) GetFullType() Populatable {
+func (*Fooable) GetFullType() Populatable {
 	return &Foo{}
 }
 
@@ -191,7 +247,7 @@ type BarStatus struct {
 var _ Implementable = (*Barable)(nil)
 var _ Populatable = (*Bar)(nil)
 
-func (_ *Barable) GetFullType() Populatable {
+func (*Barable) GetFullType() Populatable {
 	return &Bar{}
 }
 
@@ -218,7 +274,7 @@ type SliceStatus struct {
 var _ Implementable = (*Sliceable)(nil)
 var _ Populatable = (*Slice)(nil)
 
-func (_ *Sliceable) GetFullType() Populatable {
+func (*Sliceable) GetFullType() Populatable {
 	return &Slice{}
 }
 
@@ -238,7 +294,7 @@ type StringStatus struct {
 var _ Implementable = (*Stringable)(nil)
 var _ Populatable = (*String)(nil)
 
-func (_ *Stringable) GetFullType() Populatable {
+func (*Stringable) GetFullType() Populatable {
 	return &String{}
 }
 
@@ -248,3 +304,41 @@ func (f *String) Populate() {
 
 // We have to do this for Stringable because we're aliasing a value type.
 var emptyStringable Stringable
+
+// For testing this doubles as the 'Implementable'
+// and 'Populataable'
+type UnableToMarshal struct{}
+
+var _ Implementable = (*UnableToMarshal)(nil)
+var _ Populatable = (*UnableToMarshal)(nil)
+
+func (u *UnableToMarshal) GetFullType() Populatable {
+	return u
+}
+
+func (u *UnableToMarshal) Populate() {
+	return
+}
+
+func (u *UnableToMarshal) MarshalJSON() ([]byte, error) {
+	return nil, errors.New("I will never marshal for you")
+}
+
+// For testing this doubles as the 'Implementable'
+// and 'Populataable'
+type UnableToUnmarshal struct{}
+
+var _ Implementable = (*UnableToUnmarshal)(nil)
+var _ Populatable = (*UnableToUnmarshal)(nil)
+
+func (u *UnableToUnmarshal) GetFullType() Populatable {
+	return u
+}
+
+func (u *UnableToUnmarshal) Populate() {
+	return
+}
+
+func (u *UnableToUnmarshal) UnmarshalJSON([]byte) error {
+	return errors.New("I will never unmarshal for you")
+}
