@@ -70,8 +70,7 @@ func getMetricsConfig(m map[string]string, domain string, component string, logg
 		backend = string(Prometheus)
 	}
 	// Override backend if it is setting in config map.
-	backendFromConfig, ok := m[backendDestinationKey]
-	if ok {
+	if backendFromConfig, ok := m[backendDestinationKey]; ok {
 		backend = backendFromConfig
 	}
 	lb := metricsBackend(strings.ToLower(backend))
