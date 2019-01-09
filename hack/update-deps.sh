@@ -25,6 +25,8 @@ cd ${REPO_ROOT_DIR}
 # Ensure we have everything we need under vendor/
 dep ensure
 
+check_licenses $(go list ./...)
+
 # Patch the Kubernetes dynamic client to fix listing. This patch is from
 # https://github.com/kubernetes/kubernetes/pull/68552/files, which is a
 # cherrypick of #66078.  Remove this once that reaches a client version
