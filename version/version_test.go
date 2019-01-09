@@ -52,6 +52,14 @@ func TestVersionCheck(t *testing.T) {
 		actualVersion: &testVersioner{major: "1", minor: "10"},
 		wantError:     true,
 	}, {
+		name:          "error while parsing major",
+		actualVersion: &testVersioner{major: "test", minor: "10"},
+		wantError:     true,
+	}, {
+		name:          "error while parsing minor",
+		actualVersion: &testVersioner{major: "10", minor: "test"},
+		wantError:     true,
+	}, {
 		name:          "error while fetching",
 		actualVersion: &testVersioner{err: errors.New("random error")},
 		wantError:     true,
