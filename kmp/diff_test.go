@@ -17,6 +17,7 @@ limitations under the License.
 package kmp
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -30,9 +31,15 @@ func TestCompareKcmpDefault(t *testing.T) {
 	want := "{resource.Quantity}:\n\t-: resource.Quantity{i: resource.int64Amount{value: 50, scale: resource.Scale(-3)}, s: \"50m\", Format: resource.Format(\"DecimalSI\")}\n\t+: resource.Quantity{i: resource.int64Amount{value: 100, scale: resource.Scale(-3)}, s: \"100m\", Format: resource.Format(\"DecimalSI\")}\n"
 
 	if got, err := SafeDiff(a, b); err != nil {
-		t.Fatalf("unexpected SafeDiff err: %v", err)
+		t.Errorf("unexpected SafeDiff err: %v", err)
 	} else if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("SafeDiff (-want, +got): %v", diff)
+	}
+
+	if got, err := SafeEqual(a, b); err != nil {
+		t.Fatalf("unexpected SafeEqual err: %v", err)
+	} else if diff := cmp.Diff(false, got); diff != "" {
+		t.Errorf("SafeEqual(-want, +got): %v", diff)
 	}
 }
 
@@ -44,11 +51,23 @@ func TestRecovery(t *testing.T) {
 	a := foo{"a"}
 	b := foo{"b"}
 
-	want := "recovered in kmp.SafeDiff: cannot handle unexported field: {kmp.foo}.bar\nconsider using AllowUnexported or cmpopts.IgnoreUnexported"
-
+	want := recoveryErrorMessageFor("SafeDiff")
 	if _, err := SafeDiff(a, b); err == nil {
-		t.Fatalf("expected err, got nil")
+		t.Errorf("expected err, got nil")
 	} else if diff := cmp.Diff(want, err.Error()); diff != "" {
 		t.Errorf("SafeDiff (-want, +got): %v", diff)
 	}
+
+	want = recoveryErrorMessageFor("SafeEqual")
+	if _, err := SafeEqual(a, b); err == nil {
+		t.Errorf("expected err, got nil")
+	} else if diff := cmp.Diff(want, err.Error()); diff != "" {
+		t.Errorf("SafeEqual (-want, +got): %v", diff)
+	}
+}
+
+func recoveryErrorMessageFor(funcName string) string {
+	return fmt.Sprintf(
+		`recovered in kmp.%v: cannot handle unexported field: {kmp.foo}.bar
+consider using AllowUnexported or cmpopts.IgnoreUnexported`, funcName)
 }
