@@ -20,7 +20,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/google/go-cmp/cmp"
+	"github.com/knative/pkg/kmp"
 )
 
 // Implementable is implemented by the Fooable duck type that consumers
@@ -62,7 +62,9 @@ func VerifyType(instance interface{}, iface Implementable) error {
 
 	// Now verify that we were able to roundtrip all of our fields through the type
 	// we are checking.
-	if diff := cmp.Diff(input, output); diff != "" {
+	if diff, err := kmp.SafeDiff(input, output); err != nil {
+		return err
+	} else if diff != "" {
 		return fmt.Errorf("%T does not implement the duck type %T, the following fields were lost: %s",
 			instance, iface, diff)
 	}
@@ -81,7 +83,7 @@ func ConformsToType(instance interface{}, iface Implementable) (bool, error) {
 		return false, err
 	}
 
-	return cmp.Equal(input, output), nil
+	return kmp.SafeEqual(input, output)
 }
 
 func roundTrip(instance interface{}, input, output Populatable) error {

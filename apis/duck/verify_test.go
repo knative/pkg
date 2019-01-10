@@ -169,7 +169,7 @@ func TestMismatches(t *testing.T) {
 	}
 }
 
-func TestMarshallingErrors(t *testing.T) {
+func TestErrors(t *testing.T) {
 	tests := []struct {
 		name     string
 		instance interface{}
@@ -190,6 +190,10 @@ func TestMarshallingErrors(t *testing.T) {
 		name:     "instance - fails to marshal",
 		instance: &UnableToMarshal{},
 		iface:    &Fooable{},
+	}, {
+		name:     "duck type - unexported fields",
+		instance: &Foo{},
+		iface:    &UnexportedFields{},
 	}}
 
 	for _, test := range tests {
@@ -325,7 +329,7 @@ func (u *UnableToMarshal) MarshalJSON() ([]byte, error) {
 }
 
 // For testing this doubles as the 'Implementable'
-// and 'Populataable'
+// and 'Populatable'
 type UnableToUnmarshal struct{}
 
 var _ Implementable = (*UnableToUnmarshal)(nil)
@@ -341,4 +345,22 @@ func (u *UnableToUnmarshal) Populate() {
 
 func (u *UnableToUnmarshal) UnmarshalJSON([]byte) error {
 	return errors.New("I will never unmarshal for you")
+}
+
+// For testing this doubles as the 'Implementable'
+// and 'Populatable'
+type UnexportedFields struct {
+	a string
+}
+
+var _ Implementable = (*UnexportedFields)(nil)
+var _ Populatable = (*UnexportedFields)(nil)
+
+func (u *UnexportedFields) GetFullType() Populatable {
+	return &UnexportedFields{}
+}
+
+func (u *UnexportedFields) Populate() {
+	u.a = "hello"
+	return
 }
