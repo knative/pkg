@@ -78,7 +78,7 @@ var _ Interface = (*SpoofingClient)(nil)
 // https://github.com/kubernetes/apimachinery/blob/cf7ae2f57dabc02a3d215f15ca61ae1446f3be8f/pkg/util/wait/wait.go#L172
 type ResponseChecker func(resp *Response) (done bool, err error)
 
-// SpoofingClient is a minimal http client wrapper that spoofs the domain of requests
+// SpoofingClient is a minimal HTTP client wrapper that spoofs the domain of requests
 // for non-resolvable domains.
 type SpoofingClient struct {
 	Client          *http.Client
@@ -123,7 +123,7 @@ func New(kubeClientset *kubernetes.Clientset, logger *logging.BaseLogger, domain
 	return &sc, nil
 }
 
-// GetServiceEndpoint gets the endpoint IP or hostname to use for the service
+// GetServiceEndpoint gets the endpoint IP or hostname to use for the service.
 func GetServiceEndpoint(kubeClientset *kubernetes.Clientset) (*string, error) {
 	var err error
 
@@ -135,7 +135,7 @@ func GetServiceEndpoint(kubeClientset *kubernetes.Clientset) (*string, error) {
 		}
 
 		var endpoint string
-		endpoint, err = getEndpointFromService(ingress)
+		endpoint, err = endpointFromService(ingress)
 		if err != nil {
 			continue
 		}
@@ -145,8 +145,8 @@ func GetServiceEndpoint(kubeClientset *kubernetes.Clientset) (*string, error) {
 	return nil, err
 }
 
-// getEndpointFromService extracts the endpoint from the service's ingress.
-func getEndpointFromService(svc *v1.Service) (string, error) {
+// endpointFromService extracts the endpoint from the service's ingress.
+func endpointFromService(svc *v1.Service) (string, error) {
 	ingresses := svc.Status.LoadBalancer.Ingress
 	if len(ingresses) != 1 {
 		return "", fmt.Errorf("Expected exactly one ingress load balancer, instead had %d: %v", len(ingresses), ingresses)
