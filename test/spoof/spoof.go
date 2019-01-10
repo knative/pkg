@@ -149,17 +149,18 @@ func GetServiceEndpoint(kubeClientset *kubernetes.Clientset) (*string, error) {
 func getEndpointFromService(svc *v1.Service) (string, error) {
 	ingresses := svc.Status.LoadBalancer.Ingress
 	if len(ingresses) != 1 {
-		return "", fmt.Errorf("Expected exactly one ingress load balancer, instead had %d: %s", len(ingresses), ingresses)
+		return "", fmt.Errorf("Expected exactly one ingress load balancer, instead had %d: %v", len(ingresses), ingresses)
 	}
-	ingressToUse := ingresses[0]
+	itu := ingresses[0]
 
-	if ingressToUse.IP == "" {
-		if ingressToUse.Hostname == "" {
-			return "", fmt.Errorf("Expected ingress loadbalancer IP or hostname for %s to be set, instead was empty", svc.Name)
-		}
-		return ingressToUse.Hostname, nil
+	switch {
+	case itu.IP != "":
+		return itu.IP, nil
+	case itu.Hostname != "":
+		return itu.Hostname, nil
+	default:
+		return "", fmt.Errorf("Expected ingress loadbalancer IP or hostname for %s to be set, instead was empty", svc.Name)
 	}
-	return ingressToUse.IP, nil
 }
 
 // Do dispatches to the underlying http.Client.Do, spoofing domains as needed
@@ -212,7 +213,7 @@ func (sc *SpoofingClient) Poll(req *http.Request, inState ResponseChecker) (*Res
 		resp, err = sc.Do(req)
 		if err != nil {
 			if err, ok := err.(net.Error); ok && err.Timeout() {
-				sc.logger.Infof("Retrying for TCP timeout %v", err)
+				sc.logger.Infof("Retrying %s for TCP timeout %v", req.URL.String(), err)
 				return false, nil
 			}
 			return true, err
