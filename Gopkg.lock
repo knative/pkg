@@ -270,14 +270,14 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:7a7aea24f67afa5dedb422fb3592d5a5c3af91b4b9d59eddf06767729915b3c4"
+  digest = "1:d64d88b84d29988e063db8a0573ef8e078aeec050419a33fdc8559bb9c73379c"
   name = "github.com/knative/test-infra"
   packages = [
     "scripts",
     "tools/dep-collector",
   ]
   pruneopts = "UT"
-  revision = "2377fbc40f81501f2bc09a4e1e359a7ec7c3528e"
+  revision = "9f92bcabaa7ce248cc6bc02546bff26df3c0b6be"
 
 [[projects]]
   digest = "1:56dbf15e091bf7926cb33a57cb6bdfc658fc6d3498d2f76f10a97ce7856f1fde"
@@ -995,7 +995,9 @@
   analyzer-name = "dep"
   analyzer-version = 1
   input-imports = [
+    "cloud.google.com/go/compute/metadata",
     "contrib.go.opencensus.io/exporter/stackdriver",
+    "contrib.go.opencensus.io/exporter/stackdriver/monitoredresource",
     "github.com/davecgh/go-spew/spew",
     "github.com/evanphx/json-patch",
     "github.com/golang/glog",
@@ -1007,6 +1009,7 @@
     "github.com/knative/test-infra/tools/dep-collector",
     "github.com/markbates/inflect",
     "github.com/mattbaird/jsonpatch",
+    "github.com/rogpeppe/go-internal/semver",
     "go.opencensus.io/exporter/prometheus",
     "go.opencensus.io/plugin/ochttp",
     "go.opencensus.io/plugin/ochttp/propagation/b3",
@@ -1018,7 +1021,6 @@
     "go.uber.org/zap/zapcore",
     "go.uber.org/zap/zaptest",
     "golang.org/x/sync/errgroup",
-    "google.golang.org/genproto/googleapis/api/monitoredres",
     "k8s.io/api/admission/v1beta1",
     "k8s.io/api/admissionregistration/v1beta1",
     "k8s.io/api/apps/v1",
@@ -1041,6 +1043,7 @@
     "k8s.io/apimachinery/pkg/util/sets/types",
     "k8s.io/apimachinery/pkg/util/validation",
     "k8s.io/apimachinery/pkg/util/wait",
+    "k8s.io/apimachinery/pkg/version",
     "k8s.io/apimachinery/pkg/watch",
     "k8s.io/client-go/discovery",
     "k8s.io/client-go/discovery/fake",
