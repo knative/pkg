@@ -470,11 +470,11 @@ func expectAllowed(t *testing.T, resp *admissionv1beta1.AdmissionResponse) {
 func expectFailsWith(t *testing.T, resp *admissionv1beta1.AdmissionResponse, contains string) {
 	t.Helper()
 	if resp.Allowed {
-		t.Errorf("expected denial, got allowed")
+		t.Error("Expected denial, got allowed")
 		return
 	}
 	if !strings.Contains(resp.Result.Message, contains) {
-		t.Errorf("expected failure containing %q got %q", contains, resp.Result.Message)
+		t.Errorf("Expected failure containing %q got %q", contains, resp.Result.Message)
 	}
 }
 
@@ -484,7 +484,7 @@ func expectPatches(t *testing.T, a []byte, e []jsonpatch.JsonPatchOperation) {
 
 	err := json.Unmarshal(a, &got)
 	if err != nil {
-		t.Errorf("failed to unmarshal patches: %s", err)
+		t.Errorf("Failed to unmarshal patches: %s", err)
 		return
 	}
 

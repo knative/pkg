@@ -168,7 +168,7 @@ func TestAsStructuredWatcherPassThru(t *testing.T) {
 			t.Errorf("<-ch = %T, wanted %T", x, &duckv1alpha1.Generational{})
 		}
 	case _ = <-time.After(100 * time.Millisecond):
-		t.Errorf("Didn't see expected message on channel.")
+		t.Error("Didn't see expected message on channel.")
 	}
 }
 
@@ -205,7 +205,7 @@ func TestAsStructuredWatcherPassThruErrors(t *testing.T) {
 			t.Errorf("<-ch (-want, +got) = %v", diff)
 		}
 	case _ = <-time.After(100 * time.Millisecond):
-		t.Errorf("Didn't see expected message on channel.")
+		t.Error("Didn't see expected message on channel.")
 	}
 }
 
@@ -248,7 +248,7 @@ func TestAsStructuredWatcherErrorConverting(t *testing.T) {
 			t.Errorf("<-ch = %v, wanted %v", got, want)
 		}
 	case _ = <-time.After(100 * time.Millisecond):
-		t.Errorf("Didn't see expected message on channel.")
+		t.Error("Didn't see expected message on channel.")
 	}
 }
 

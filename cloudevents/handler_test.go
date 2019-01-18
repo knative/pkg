@@ -43,7 +43,7 @@ func TestHandlerTypeErrors(t *testing.T) {
 		{
 			name:  "non-func",
 			param: 5,
-			err:   "Must pass a function to handle events",
+			err:   "must pass a function to handle events",
 		},
 		{
 			name:  "wrong param count",
