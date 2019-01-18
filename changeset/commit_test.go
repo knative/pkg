@@ -59,7 +59,7 @@ func TestReadFile(t *testing.T) {
 		name:       "HEAD file does not exist",
 		koDataPath: "testdata/nonexisting",
 		wantErr:    true,
-		err:        fmt.Errorf("open testdata/nonexisting/HEAD: no such file or directory"),
+		err:        fmt.Error("open testdata/nonexisting/HEAD: no such file or directory"),
 	}}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {

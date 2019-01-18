@@ -247,11 +247,10 @@ func (sc *SpoofingClient) LogZipkinTrace(traceID string) error {
 	}
 
 	var prettyJSON bytes.Buffer
-	error := json.Indent(&prettyJSON, trace, "", "\t")
-	if error != nil {
+	if error := json.Indent(&prettyJSON, trace, "", "\t"); error != nil {
 		return fmt.Errorf("JSON Parser Error while trying for Pretty-Format: %v, Original Response: %s", error, string(trace))
 	}
-	sc.logger.Infof(prettyJSON.String())
+	sc.logger.Info(prettyJSON.String())
 
 	return nil
 }

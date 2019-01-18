@@ -92,7 +92,7 @@ func TestHappyPaths(t *testing.T) {
 			t.Errorf("OnChanged() = %v, wanted %v", got, want)
 		}
 		if _, stillThere := trk.(*impl).mapping[objRef]; stillThere {
-			t.Errorf("Timeout passed, but mapping for objectReference is still there")
+			t.Error("Timeout passed, but mapping for objectReference is still there")
 		}
 	})
 

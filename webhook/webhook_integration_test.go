@@ -134,7 +134,7 @@ func TestEmptyRequestBody(t *testing.T) {
 	}
 
 	if !strings.Contains(string(responseBody), "could not decode body") {
-		t.Errorf("Response body to contain 'decode failure information' , got = '%s'", string(responseBody))
+		t.Errorf("Response body to contain 'decode failure information' , got = %q", string(responseBody))
 	}
 }
 
@@ -402,10 +402,10 @@ func TestSetupWebhookHTTPServerError(t *testing.T) {
 
 	select {
 	case <-time.After(6 * time.Second):
-		t.Errorf("Timeout in testing bootstrap webhook http server failed\n")
+		t.Error("Timeout in testing bootstrap webhook http server failed")
 	case errItem := <-errCh:
 		if !strings.Contains(errItem.Error(), "bootstrap failed") {
-			t.Errorf("Expected bootstrap webhook http server failed\n")
+			t.Error("Expected bootstrap webhook http server failed")
 		}
 	}
 }

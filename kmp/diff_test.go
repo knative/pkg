@@ -53,14 +53,14 @@ func TestRecovery(t *testing.T) {
 
 	want := recoveryErrorMessageFor("SafeDiff")
 	if _, err := SafeDiff(a, b); err == nil {
-		t.Errorf("expected err, got nil")
+		t.Error("expected err, got nil")
 	} else if diff := cmp.Diff(want, err.Error()); diff != "" {
 		t.Errorf("SafeDiff (-want, +got): %v", diff)
 	}
 
 	want = recoveryErrorMessageFor("SafeEqual")
 	if _, err := SafeEqual(a, b); err == nil {
-		t.Errorf("expected err, got nil")
+		t.Error("expected err, got nil")
 	} else if diff := cmp.Diff(want, err.Error()); diff != "" {
 		t.Errorf("SafeEqual (-want, +got): %v", diff)
 	}
