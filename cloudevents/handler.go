@@ -115,7 +115,7 @@ func validateOutParamSignature(fnType reflect.Type) error {
 // of allowed types. If successful, returns the expected in-param type, otherwise panics.
 func validateFunction(fnType reflect.Type) errAndHandler {
 	if fnType.Kind() != reflect.Func {
-		return &failedHandler{err: errors.New("Must pass a function to handle events")}
+		return &failedHandler{err: errors.New("must pass a function to handle events")}
 	}
 	err := anyError(
 		validateInParamSignature(fnType),
