@@ -40,8 +40,8 @@ func TestSimpleList(t *testing.T) {
 	AddToScheme(scheme)
 	duckv1alpha1.AddToScheme(scheme)
 
-	namespace, name := "foo", "bar"
-	var want int64 = 1234
+	namespace, name, want := "foo", "bar", "my_hostname"
+
 	// Despite the signature allowing `...runtime.Object`, this method
 	// will not work properly unless the passed objects are `unstructured.Unstructured`
 	client := fake.NewSimpleDynamicClient(scheme, &unstructured.Unstructured{
@@ -52,8 +52,10 @@ func TestSimpleList(t *testing.T) {
 				"namespace": namespace,
 				"name":      name,
 			},
-			"spec": map[string]interface{}{
-				"generation": want,
+			"status": map[string]interface{}{
+				"address": map[string]interface{}{
+					"hostname": want,
+				},
 			},
 		},
 	})
@@ -63,7 +65,7 @@ func TestSimpleList(t *testing.T) {
 
 	tif := &duck.TypedInformerFactory{
 		Client:       client,
-		Type:         &duckv1alpha1.Generational{},
+		Type:         &duckv1alpha1.AddressableType{},
 		ResyncPeriod: 1 * time.Second,
 		StopChannel:  stopCh,
 	}
@@ -80,13 +82,13 @@ func TestSimpleList(t *testing.T) {
 		t.Fatalf("Get() = %v", err)
 	}
 
-	got, ok := elt.(*duckv1alpha1.Generational)
+	got, ok := elt.(*duckv1alpha1.AddressableType)
 	if !ok {
-		t.Fatalf("Get() = %T, wanted *duckv1alpha1.Generational", elt)
+		t.Fatalf("Get() = %T, wanted *duckv1alpha1.AddressableType", elt)
 	}
 
-	if want != int64(got.Spec.Generation) {
-		t.Errorf("Get().Spec.Generation = %v, wanted %v", got.Spec.Generation, want)
+	if gotHostname := got.Status.Address.Hostname; gotHostname != want {
+		t.Errorf("Get().Status.Address.Hostname = %v, wanted %v", gotHostname, want)
 	}
 
 	// TODO(mattmoor): Access through informer
@@ -98,7 +100,7 @@ func TestAsStructuredWatcherNestedError(t *testing.T) {
 		return nil, want
 	}
 
-	wf := duck.AsStructuredWatcher(nwf, &duckv1alpha1.Generational{})
+	wf := duck.AsStructuredWatcher(nwf, &duckv1alpha1.AddressableType{})
 
 	_, got := wf(metav1.ListOptions{})
 	if got != want {
@@ -111,7 +113,7 @@ func TestAsStructuredWatcherClosedChannel(t *testing.T) {
 		return watch.NewEmptyWatch(), nil
 	}
 
-	wf := duck.AsStructuredWatcher(nwf, &duckv1alpha1.Generational{})
+	wf := duck.AsStructuredWatcher(nwf, &duckv1alpha1.AddressableType{})
 
 	wi, err := wf(metav1.ListOptions{})
 	if err != nil {
@@ -132,7 +134,7 @@ func TestAsStructuredWatcherPassThru(t *testing.T) {
 		return duck.NewProxyWatcher(unstructuredCh), nil
 	}
 
-	wf := duck.AsStructuredWatcher(nwf, &duckv1alpha1.Generational{})
+	wf := duck.AsStructuredWatcher(nwf, &duckv1alpha1.AddressableType{})
 
 	wi, err := wf(metav1.ListOptions{})
 	if err != nil {
@@ -159,13 +161,13 @@ func TestAsStructuredWatcherPassThru(t *testing.T) {
 	select {
 	case x, ok := <-ch:
 		if !ok {
-			t.Fatal("<-ch = closed, wanted *duckv1alpha1.Generational{}")
+			t.Fatal("<-ch = closed, wanted *duckv1alpha1.AddressableType{}")
 		}
 		if got := x.Type; got != want {
 			t.Errorf("x.Type = %v, wanted %v", got, want)
 		}
-		if _, ok := x.Object.(*duckv1alpha1.Generational); !ok {
-			t.Errorf("<-ch = %T, wanted %T", x, &duckv1alpha1.Generational{})
+		if _, ok := x.Object.(*duckv1alpha1.AddressableType); !ok {
+			t.Errorf("<-ch = %T, wanted %T", x, &duckv1alpha1.AddressableType{})
 		}
 	case <-time.After(100 * time.Millisecond):
 		t.Error("Didn't see expected message on channel.")
@@ -178,7 +180,7 @@ func TestAsStructuredWatcherPassThruErrors(t *testing.T) {
 		return duck.NewProxyWatcher(unstructuredCh), nil
 	}
 
-	wf := duck.AsStructuredWatcher(nwf, &duckv1alpha1.Generational{})
+	wf := duck.AsStructuredWatcher(nwf, &duckv1alpha1.AddressableType{})
 
 	wi, err := wf(metav1.ListOptions{})
 	if err != nil {
