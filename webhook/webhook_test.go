@@ -17,7 +17,6 @@ limitations under the License.
 package webhook
 
 import (
-	"context"
 	"crypto/tls"
 	"encoding/json"
 	"encoding/pem"
@@ -136,7 +135,7 @@ func TestUnknownVersionFails(t *testing.T) {
 }
 
 func TestValidCreateResourceSucceeds(t *testing.T) {
-	r := createResource(1234, "a name")
+	r := createResource("a name")
 	for _, v := range []string{"v1alpha1", "v1beta1"} {
 		r.TypeMeta.APIVersion = v
 		r.SetDefaults() // Fill in defaults to check that there are no patches.
@@ -144,19 +143,17 @@ func TestValidCreateResourceSucceeds(t *testing.T) {
 		resp := ac.admit(TestContextWithLogger(t), createCreateResource(r))
 		expectAllowed(t, resp)
 		expectPatches(t, resp.Patch, []jsonpatch.JsonPatchOperation{
-			incrementGenerationPatch(r.Spec.Generation),
 			setUserAnnotation(user1, user1),
 		})
 	}
 }
 
 func TestValidCreateResourceSucceedsWithDefaultPatch(t *testing.T) {
-	r := createResource(1234, "a name")
+	r := createResource("a name")
 	_, ac := newNonRunningTestAdmissionController(t, newDefaultOptions())
 	resp := ac.admit(TestContextWithLogger(t), createCreateResource(r))
 	expectAllowed(t, resp)
 	expectPatches(t, resp.Patch, []jsonpatch.JsonPatchOperation{
-		incrementGenerationPatch(r.Spec.Generation),
 		{
 			Operation: "add",
 			Path:      "/spec/fieldThatsImmutableWithDefault",
@@ -189,13 +186,6 @@ func TestValidCreateResourceSucceedsWithRoundTripAndDefaultPatch(t *testing.T) {
 			Operation: "add",
 			Path:      "/spec",
 			Value:     map[string]interface{}{},
-		},
-		// This is almost identical to incrementGenerationPatch(0), but uses 'add', rather than
-		// 'replace' because `spec` is empty to begin with.
-		{
-			Operation: "add",
-			Path:      "/spec/generation",
-			Value:     float64(1),
 		},
 		{
 			Operation: "add",
@@ -232,7 +222,7 @@ func createInnerDefaultResourceWithoutSpec(t *testing.T) []byte {
 }
 
 func TestInvalidCreateResourceFails(t *testing.T) {
-	r := createResource(1234, "a name")
+	r := createResource("a name")
 
 	// Put a bad value in.
 	r.Spec.FieldWithValidation = "not what's expected"
@@ -243,7 +233,7 @@ func TestInvalidCreateResourceFails(t *testing.T) {
 }
 
 func TestNopUpdateResourceSucceeds(t *testing.T) {
-	r := createResource(1234, "a name")
+	r := createResource("a name")
 	r.SetDefaults() // Fill in defaults to check that there are no patches.
 	nr := r.DeepCopyObject().(*Resource)
 	r.AnnotateUserInfo(nil, &authenticationv1.UserInfo{Username: user1})
@@ -253,66 +243,11 @@ func TestNopUpdateResourceSucceeds(t *testing.T) {
 	expectPatches(t, resp.Patch, []jsonpatch.JsonPatchOperation{})
 }
 
-func TestUpdateGeneration(t *testing.T) {
-	ctx := context.Background()
-	r := createResource(1988, "beautiful")
-	rc := createResource(1988, "beautiful")
-	rc.Spec.FieldWithDefault = "lily"
-
-	tests := []struct {
-		name string
-		in   duck.JSONPatch
-		old  *Resource
-		new  *Resource
-		want duck.JSONPatch
-	}{{
-		"nil in, no change",
-		nil,
-		r, r,
-		nil,
-	}, {
-		"empty in, no change",
-		[]jsonpatch.JsonPatchOperation{},
-		r, r,
-		[]jsonpatch.JsonPatchOperation{},
-	}, {
-		"nil in, change",
-		[]jsonpatch.JsonPatchOperation{},
-		r, rc,
-		[]jsonpatch.JsonPatchOperation{
-			{Operation: "replace", Path: "/spec/generation", Value: 1989.0},
-		},
-	}, {
-		"non-nil in, change",
-		[]jsonpatch.JsonPatchOperation{
-			{Operation: "replace", Path: "/spec/fieldWithDefault", Value: "Zero"},
-		},
-		r, rc,
-		[]jsonpatch.JsonPatchOperation{
-			{Operation: "replace", Path: "/spec/fieldWithDefault", Value: "Zero"},
-			{Operation: "replace", Path: "/spec/generation", Value: 1989.0},
-		},
-	}}
-
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			t.Parallel()
-			got, err := updateGeneration(ctx, test.in, test.old, test.new)
-			if err != nil {
-				t.Fatalf("Error in updateGeneration: %v", err)
-			}
-			if got, want := got, test.want; !cmp.Equal(got, want) {
-				t.Errorf("JSONPatch diff (+got, -want): %s", cmp.Diff(got, want))
-			}
-		})
-	}
-}
-
 func TestValidUpdateResourcePreserveAnnotations(t *testing.T) {
-	old := createResource(1234, "a name")
+	old := createResource("a name")
 	old.SetDefaults() // Fill in defaults to check that there are no patches.
 	old.AnnotateUserInfo(nil, &authenticationv1.UserInfo{Username: user1})
-	new := createResource(1234, "a name")
+	new := createResource("a name")
 	new.SetDefaults()
 	// User set annotations on the resource.
 	new.ObjectMeta.SetAnnotations(map[string]string{
@@ -327,20 +262,16 @@ func TestValidUpdateResourcePreserveAnnotations(t *testing.T) {
 }
 
 func TestValidBigChangeResourceSucceeds(t *testing.T) {
-	old := createResource(1234, "a name")
+	old := createResource("a name")
 	old.SetDefaults() // Fill in defaults to check that there are no patches.
 	old.AnnotateUserInfo(nil, &authenticationv1.UserInfo{Username: user1})
-	new := createResource(1234, "a name")
+	new := createResource("a name")
 	new.Spec.FieldWithDefault = "melon collie and the infinite sadness"
 
 	_, ac := newNonRunningTestAdmissionController(t, newDefaultOptions())
 	resp := ac.admit(TestContextWithLogger(t), createUpdateResource(old, new))
 	expectAllowed(t, resp)
 	expectPatches(t, resp.Patch, []jsonpatch.JsonPatchOperation{{
-		Operation: "replace",
-		Path:      "/spec/generation",
-		Value:     float64(1235),
-	}, {
 		Operation: "add",
 		Path:      "/spec/fieldThatsImmutableWithDefault",
 		Value:     "this is another default value",
@@ -349,20 +280,15 @@ func TestValidBigChangeResourceSucceeds(t *testing.T) {
 }
 
 func TestValidUpdateResourceSucceeds(t *testing.T) {
-	old := createResource(1234, "a name")
+	old := createResource("a name")
 	old.SetDefaults() // Fill in defaults to check that there are no patches.
 	old.AnnotateUserInfo(nil, &authenticationv1.UserInfo{Username: user1})
-	new := createResource(1234, "a name")
-	// We clear the field that has a default.
+	new := createResource("a name")
 
 	_, ac := newNonRunningTestAdmissionController(t, newDefaultOptions())
 	resp := ac.admit(TestContextWithLogger(t), createUpdateResource(old, new))
 	expectAllowed(t, resp)
 	expectPatches(t, resp.Patch, []jsonpatch.JsonPatchOperation{{
-		Operation: "replace",
-		Path:      "/spec/generation",
-		Value:     1235.0,
-	}, {
 		Operation: "add",
 		Path:      "/spec/fieldThatsImmutableWithDefault",
 		Value:     "this is another default value",
@@ -374,8 +300,8 @@ func TestValidUpdateResourceSucceeds(t *testing.T) {
 }
 
 func TestInvalidUpdateResourceFailsValidation(t *testing.T) {
-	old := createResource(1234, "a name")
-	new := createResource(1234, "a name")
+	old := createResource("a name")
+	new := createResource("a name")
 
 	// Try to update to a bad value.
 	new.Spec.FieldWithValidation = "not what's expected"
@@ -386,8 +312,8 @@ func TestInvalidUpdateResourceFailsValidation(t *testing.T) {
 }
 
 func TestInvalidUpdateResourceFailsImmutability(t *testing.T) {
-	old := createResource(1234, "a name")
-	new := createResource(1234, "a name")
+	old := createResource("a name")
+	new := createResource("a name")
 
 	// Try to change the value
 	new.Spec.FieldThatsImmutable = "a different value"
@@ -399,9 +325,9 @@ func TestInvalidUpdateResourceFailsImmutability(t *testing.T) {
 }
 
 func TestDefaultingImmutableFields(t *testing.T) {
-	old := createResource(1234, "a name")
+	old := createResource("a name")
 	old.AnnotateUserInfo(nil, &authenticationv1.UserInfo{Username: user1})
-	new := createResource(1234, "a name")
+	new := createResource("a name")
 
 	// If we don't specify the new, but immutable field, we default it,
 	// and it is not rejected.
@@ -622,14 +548,13 @@ func createDeployment(ac *AdmissionController) {
 	ac.Client.ExtensionsV1beta1().Deployments("knative-something").Create(deployment)
 }
 
-func createResource(generation int64, name string) *Resource {
+func createResource(name string) *Resource {
 	return &Resource{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: testNamespace,
 			Name:      name,
 		},
 		Spec: ResourceSpec{
-			Generation:          generation,
 			FieldWithValidation: "magic value",
 		},
 	}
@@ -744,14 +669,6 @@ func expectPatches(t *testing.T, a []byte, e []jsonpatch.JsonPatchOperation) {
 	if diff := cmp.Diff(e, got, cmpopts.EquateEmpty()); diff != "" {
 		t.Logf("diff Patches: %v", diff)
 		t.Errorf("expectPatches (-want, +got) = %s", diff)
-	}
-}
-
-func incrementGenerationPatch(old int64) jsonpatch.JsonPatchOperation {
-	return jsonpatch.JsonPatchOperation{
-		Operation: "replace",
-		Path:      "/spec/generation",
-		Value:     float64(old) + 1.0,
 	}
 }
 

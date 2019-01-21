@@ -52,10 +52,7 @@ var _ apis.Annotatable = (*Resource)(nil)
 var _ apis.Listable = (*Resource)(nil)
 
 // ResourceSpec represents test resource spec.
-// TODO: Check that we implement the Generation duck type.
 type ResourceSpec struct {
-	Generation int64 `json:"generation,omitempty"`
-
 	FieldWithDefault               string `json:"fieldWithDefault,omitempty"`
 	FieldWithValidation            string `json:"fieldWithValidation,omitempty"`
 	FieldThatsImmutable            string `json:"fieldThatsImmutable,omitempty"`
