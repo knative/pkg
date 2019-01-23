@@ -240,6 +240,7 @@ func (sc *SpoofingClient) LogZipkinTrace(traceID string) error {
 	if err != nil {
 		return fmt.Errorf("Error retrieving Zipkin trace: %v", err)
 	}
+	defer resp.Body.Close()
 
 	trace, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
