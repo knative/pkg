@@ -34,6 +34,28 @@ func MatchesAny(_ *spoof.Response) (bool, error) {
 	return true, nil
 }
 
+// RetryingRouteUpdate modifies a ResponseChecker to retry response code
+// that happen when creating or updating a route.
+// A 404 will be returned until the route is ready and reconciled properly.
+// A 503 "no healthy upstream" might be returned intermittently because endpoints
+// are not propagated to all proxies yet.
+func RetryingRouteUpdate(rc spoof.ResponseChecker) spoof.ResponseChecker {
+	return func(resp *spoof.Response) (bool, error) {
+		switch resp.StatusCode {
+		case http.StatusNotFound:
+			return false, nil
+		case http.StatusServiceUnavailable:
+			body := string(resp.Body)
+			if strings.TrimSpace(body) == "no healthy upstream" {
+				return false, nil
+			}
+		}
+
+		// If we didn't match any retryable codes, invoke the ResponseChecker that we wrapped.
+		return rc(resp)
+	}
+}
+
 // Retrying modifies a ResponseChecker to retry certain response codes.
 func Retrying(rc spoof.ResponseChecker, codes ...int) spoof.ResponseChecker {
 	return func(resp *spoof.Response) (bool, error) {
