@@ -29,8 +29,8 @@ example:
 
 ```go
 type Example struct {
-	Sequence int    `json:"id"`
-	Message    string `json:"message"`
+    Sequence int    `json:"id"`
+    Message    string `json:"message"`
 }
 ```
 
@@ -45,49 +45,49 @@ format.
 package main
 
 import (
-	"github.com/google/uuid"
-	"github.com/knative/pkg/cloudevents"
-	"io/ioutil"
-	"log"
-	"net/http"
-	"time"
+    "github.com/google/uuid"
+    "github.com/knative/pkg/cloudevents"
+    "io/ioutil"
+    "log"
+    "net/http"
+    "time"
 )
 
 type Example struct {
-	Sequence int    `json:"id"`
-	Message  string `json:"message"`
+    Sequence int    `json:"id"`
+    Message  string `json:"message"`
 }
 
 func main() {
-	target := "http://localhost:8080"
-	eventType := "dev.knative.cloudevent.example"
-	eventSource := "https://github.com/knative/pkg#cloudevents-example"
-	data := &Example{
-		Sequence: 0,
-		Message:  "hello, world!",
-	}
-	ctx := cloudevents.EventContext{
-		CloudEventsVersion: cloudevents.CloudEventsVersion,
-		EventType:          eventType,
-		EventID:            uuid.New().String(),
-		Source:             eventSource,
-		EventTime:          time.Now(),
-	}
-	req, err := cloudevents.Binary.NewRequest(target, data, ctx)
-	if err != nil {
-		log.Printf("failed to create http request: %s", err)
-		return
-	}
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		log.Printf("failed to do POST: %v", err)
-		return
-	}
-	defer resp.Body.Close()
-	log.Printf("response Status: %s", resp.Status)
-	body, _ := ioutil.ReadAll(resp.Body)
-	log.Printf("response Body: %s", string(body))
+    target := "http://localhost:8080"
+    eventType := "dev.knative.cloudevent.example"
+    eventSource := "https://github.com/knative/pkg#cloudevents-example"
+    data := &Example{
+        Sequence: 0,
+        Message:  "hello, world!",
+    }
+    ctx := cloudevents.EventContext{
+        CloudEventsVersion: cloudevents.CloudEventsVersion,
+        EventType:          eventType,
+        EventID:            uuid.New().String(),
+        Source:             eventSource,
+        EventTime:          time.Now(),
+    }
+    req, err := cloudevents.Binary.NewRequest(target, data, ctx)
+    if err != nil {
+        log.Printf("failed to create http request: %s", err)
+        return
+    }
+    client := &http.Client{}
+    resp, err := client.Do(req)
+    if err != nil {
+        log.Printf("failed to do POST: %v", err)
+        return
+    }
+    defer resp.Body.Close()
+    log.Printf("response Status: %s", resp.Status)
+    body, _ := ioutil.ReadAll(resp.Body)
+    log.Printf("response Body: %s", string(body))
 }
 
 ```
@@ -102,27 +102,27 @@ how to decode the request.
 package main
 
 import (
-	"context"
-	"log"
-	"net/http"
-	"time"
+    "context"
+    "log"
+    "net/http"
+    "time"
 
-	"github.com/knative/pkg/cloudevents"
+    "github.com/knative/pkg/cloudevents"
 )
 
 type Example struct {
-	Sequence int    `json:"id"`
-	Message  string `json:"message"`
+    Sequence int    `json:"id"`
+    Message  string `json:"message"`
 }
 
 func handler(ctx context.Context, data *Example) {
-	metadata := cloudevents.FromContext(ctx)
-	log.Printf("[%s] %s %s: %d,%q", metadata.EventTime.Format(time.RFC3339), metadata.ContentType, metadata.Source, data.Sequence, data.Message)
+    metadata := cloudevents.FromContext(ctx)
+    log.Printf("[%s] %s %s: %d,%q", metadata.EventTime.Format(time.RFC3339), metadata.ContentType, metadata.Source, data.Sequence, data.Message)
 }
 
 func main() {
-	log.Print("ready and listening on port 8080")
-	log.Fatal(http.ListenAndServe(":8080", cloudevents.Handler(handler)))
+    log.Print("ready and listening on port 8080")
+    log.Fatal(http.ListenAndServe(":8080", cloudevents.Handler(handler)))
 }
 
 
