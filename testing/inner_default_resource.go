@@ -35,6 +35,7 @@ type InnerDefaultResource struct {
 	Spec InnerDefaultSpec `json:"spec"`
 }
 
+// InnerDefaultSpec is the spec for InnerDefaultResource.
 type InnerDefaultSpec struct {
 	Generation int64 `json:"generation,omitempty"`
 
@@ -45,16 +46,19 @@ type InnerDefaultSpec struct {
 var _ apis.Validatable = (*InnerDefaultResource)(nil)
 var _ apis.Defaultable = (*InnerDefaultResource)(nil)
 
+// SetDefaults sets default values.
 func (i *InnerDefaultResource) SetDefaults() {
 	i.Spec.SetDefaults()
 }
 
+// SetDefaults sets default values.
 func (cs *InnerDefaultSpec) SetDefaults() {
 	if cs.FieldWithDefault == "" {
 		cs.FieldWithDefault = "I'm a default."
 	}
 }
 
+// Validate validates the resource.
 func (*InnerDefaultResource) Validate() *apis.FieldError {
 	return nil
 }
