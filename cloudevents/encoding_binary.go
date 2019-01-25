@@ -147,13 +147,11 @@ func (binary) ToHeaders(context *EventContext, h http.Header) error {
 		return err
 	}
 	// Defaultable values:
-	ceVersion := context.CloudEventsVersion
-	if ceVersion == "" {
-		ceVersion = CloudEventsVersion
+	if context.CloudEventsVersion == "" {
+		context.CloudEventsVersion = CloudEventsVersion
 	}
-	contentType := context.ContentType
-	if contentType == "" {
-		contentType = contentTypeJSON
+	if context.ContentType == "" {
+		context.ContentType = contentTypeJSON
 	}
 
 	// non-string values:
@@ -162,13 +160,13 @@ func (binary) ToHeaders(context *EventContext, h http.Header) error {
 		eventTime = context.EventTime.Format(time.RFC3339Nano)
 	}
 
-	setHeader(h, HeaderCloudEventsVersion, ceVersion)
+	setHeader(h, HeaderCloudEventsVersion, context.CloudEventsVersion)
 	setHeader(h, HeaderEventID, context.EventID)
 	setHeader(h, HeaderEventTime, eventTime)
 	setHeader(h, HeaderEventType, context.EventType)
 	setHeader(h, HeaderEventTypeVersion, context.EventTypeVersion)
 	setHeader(h, HeaderSchemaURL, context.SchemaURL)
-	setHeader(h, HeaderContentType, contentType)
+	setHeader(h, HeaderContentType, context.ContentType)
 	setHeader(h, HeaderSource, context.Source)
 	for name, value := range context.Extensions {
 		encoded, err := json.Marshal(value)
