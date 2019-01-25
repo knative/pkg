@@ -35,7 +35,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/kubernetes"
 	// corev1 "k8s.io/api/core/v1"
-	v1beta1 "k8s.io/api/extensions/v1beta1"
+	"k8s.io/api/extensions/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	fakekubeclientset "k8s.io/client-go/kubernetes/fake"
 
@@ -136,6 +136,68 @@ func TestValidCreateResourceSucceedsWithDefaultPatch(t *testing.T) {
 			Value:     "I'm a default.",
 		},
 	})
+}
+
+func TestValidCreateResourceSucceedsWithRoundTripAndDefaultPatch(t *testing.T) {
+	req := &admissionv1beta1.AdmissionRequest{
+		Operation: admissionv1beta1.Create,
+		Kind: metav1.GroupVersionKind{
+			Group:   "pkg.knative.dev",
+			Version: "v1alpha1",
+			Kind:    "InnerDefaultResource",
+		},
+	}
+
+	b := createInnerDefaultResourceWithoutSpec()
+	req.Object.Raw = b
+
+	_, ac := newNonRunningTestAdmissionController(t, newDefaultOptions())
+	resp := ac.admit(TestContextWithLogger(t), req)
+	expectAllowed(t, resp)
+	expectPatches(t, resp.Patch, []jsonpatch.JsonPatchOperation{
+		{
+			Operation: "add",
+			Path:      "/spec",
+			Value:     map[string]interface{}{},
+		},
+		// This is almost identical to incrementGenerationPatch(0), but uses 'add', rather than
+		// 'replace' because `spec` is empty to begin with.
+		{
+			Operation: "add",
+			Path:      "/spec/generation",
+			Value:     float64(1),
+		},
+		{
+			Operation: "add",
+			Path:      "/spec/fieldWithDefault",
+			Value:     "I'm a default.",
+		},
+	})
+}
+
+func createInnerDefaultResourceWithoutSpec() []byte {
+	r := InnerDefaultResource{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: testNamespace,
+			Name:      "a name",
+		},
+	}
+	// Remove the 'spec' field of the generated JSON by marshaling it to JSON, parsing that as a
+	// generic map[string]interface{}, removing 'spec', and marshaling it again.
+	origBytes, err := json.Marshal(r)
+	if err != nil {
+		panic(err)
+	}
+	var q map[string]interface{}
+	if err := json.Unmarshal(origBytes, &q); err != nil {
+		panic(err)
+	}
+	delete(q, "spec")
+	if b, err := json.Marshal(q); err != nil {
+		panic(err)
+	} else {
+		return b
+	}
 }
 
 func TestInvalidCreateResourceFails(t *testing.T) {
@@ -466,11 +528,18 @@ func NewAdmissionController(client kubernetes.Interface, options ControllerOptio
 	return &AdmissionController{
 		Client:  client,
 		Options: options,
-		Handlers: map[schema.GroupVersionKind]GenericCRD{{
-			Group:   "pkg.knative.dev",
-			Version: "v1alpha1",
-			Kind:    "Resource",
-		}: &Resource{}},
+		Handlers: map[schema.GroupVersionKind]GenericCRD{
+			{
+				Group:   "pkg.knative.dev",
+				Version: "v1alpha1",
+				Kind:    "Resource",
+			}: &Resource{},
+			{
+				Group:   "pkg.knative.dev",
+				Version: "v1alpha1",
+				Kind:    "InnerDefaultResource",
+			}: &InnerDefaultResource{},
+		},
 		Logger: logger,
 	}, nil
 }
