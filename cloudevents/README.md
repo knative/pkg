@@ -3,28 +3,28 @@
 This library produces CloudEvents in version 0.1 compatible form. To learn more
 about CloudEvents, see the [Specification](https://github.com/cloudevents/spec).
 
-There are two roles the SDK fulfills: the [producer](#producer) and the 
-[consumer](#consumer). The producer creates a cloud event in either 
+There are two roles the SDK fulfills: the [producer](#producer) and the
+[consumer](#consumer). The producer creates a cloud event in either
 [Binary](#binary) or [Structured](#structured) request format. The producer
 assembles and sends the event through an HTTP endpoint. The consumer will
 inspect the incoming HTTP request and select the correct decode format.
 
 This SDK should be wire-compatible with any other producer or consumer of the
-supported versions of CloudEvents.   
+supported versions of CloudEvents.
 
 ## Getting Started
 
 CloudEvents acts as the envelope in which to send a custom object. Create a
-CloudEvent type for the events you will be producing. 
+CloudEvent type for the events you will be producing.
 
 Example CloudEvent Type: `dev.knative.cloudevent.example`
 
-Select a source to identify the originator of this CloudEvent. It should be a 
-valid URI. 
+Select a source to identify the originator of this CloudEvent. It should be a
+valid URI.
 
-Example CloudEvent Source: `https://github.com/knative/pkg#cloudevents-example` 
+Example CloudEvent Source: `https://github.com/knative/pkg#cloudevents-example`
 
-And finally, create a struct that will be the data inside the CloudEvent, 
+And finally, create a struct that will be the data inside the CloudEvent,
 example:
 
 ```go
@@ -32,7 +32,7 @@ type Example struct {
 	Sequence int    `json:"id"`
 	Message    string `json:"message"`
 }
-``` 
+```
 
 ### Producer
 
@@ -95,7 +95,7 @@ func main() {
 ### Consumer
 
 The consumer will listen for a post and then inspect the headers to understand
-how to decode the request. 
+how to decode the request.
 
 ```go
 
@@ -146,4 +146,3 @@ Changes to the producer code to leverage structured request format:
 ```go
 req, err := cloudevents.Structured.NewRequest(target, data, ctx)
 ```
-
