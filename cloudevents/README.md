@@ -45,12 +45,8 @@ format.
 package main
 
 import (
-    "github.com/google/uuid"
     "github.com/knative/pkg/cloudevents"
-    "io/ioutil"
     "log"
-    "net/http"
-    "time"
 )
 
 type Example struct {
@@ -59,35 +55,20 @@ type Example struct {
 }
 
 func main() {
-    target := "http://localhost:8080"
-    eventType := "dev.knative.cloudevent.example"
-    eventSource := "https://github.com/knative/pkg#cloudevents-example"
-    data := &Example{
-        Sequence: 0,
-        Message:  "hello, world!",
+    c := cloudevents.NewClient(
+        "dev.knative.cloudevent.example",
+        "https://github.com/knative/pkg#cloudevents-example",
+        "http://localhost:8080",
+    )
+    for i := 0; i < 10; i++ {
+        data := &Example{
+            Message:  "hello, world!",
+            Sequence: i,
+        }
+        if err := c.Send(data); err != nil {
+            log.Printf("error sending: %v", err)
+        }
     }
-    ctx := cloudevents.EventContext{
-        CloudEventsVersion: cloudevents.CloudEventsVersion,
-        EventType:          eventType,
-        EventID:            uuid.New().String(),
-        Source:             eventSource,
-        EventTime:          time.Now(),
-    }
-    req, err := cloudevents.Binary.NewRequest(target, data, ctx)
-    if err != nil {
-        log.Printf("failed to create http request: %s", err)
-        return
-    }
-    client := &http.Client{}
-    resp, err := client.Do(req)
-    if err != nil {
-        log.Printf("failed to do POST: %v", err)
-        return
-    }
-    defer resp.Body.Close()
-    log.Printf("response Status: %s", resp.Status)
-    body, _ := ioutil.ReadAll(resp.Body)
-    log.Printf("response Body: %s", string(body))
 }
 
 ```
@@ -117,7 +98,7 @@ type Example struct {
 
 func handler(ctx context.Context, data *Example) {
     metadata := cloudevents.FromContext(ctx)
-    log.Printf("[%s] %s %s: %d,%q", metadata.EventTime.Format(time.RFC3339), metadata.ContentType, metadata.Source, data.Sequence, data.Message)
+    log.Printf("[%s] %s %s: %d, %q", metadata.EventTime.Format(time.RFC3339), metadata.ContentType, metadata.Source, data.Sequence, data.Message)
 }
 
 func main() {
