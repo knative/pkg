@@ -147,9 +147,7 @@ func TestValidCreateResourceSucceedsWithRoundTripAndDefaultPatch(t *testing.T) {
 			Kind:    "InnerDefaultResource",
 		},
 	}
-
-	b := createInnerDefaultResourceWithoutSpec()
-	req.Object.Raw = b
+	req.Object.Raw = createInnerDefaultResourceWithoutSpec(t)
 
 	_, ac := newNonRunningTestAdmissionController(t, newDefaultOptions())
 	resp := ac.admit(TestContextWithLogger(t), req)
@@ -175,7 +173,7 @@ func TestValidCreateResourceSucceedsWithRoundTripAndDefaultPatch(t *testing.T) {
 	})
 }
 
-func createInnerDefaultResourceWithoutSpec() []byte {
+func createInnerDefaultResourceWithoutSpec(t *testing.T) []byte {
 	r := InnerDefaultResource{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: testNamespace,
@@ -186,18 +184,18 @@ func createInnerDefaultResourceWithoutSpec() []byte {
 	// generic map[string]interface{}, removing 'spec', and marshaling it again.
 	origBytes, err := json.Marshal(r)
 	if err != nil {
-		panic(err)
+		t.Fatalf("Error marshaling origBytes: %v", err)
 	}
 	var q map[string]interface{}
 	if err := json.Unmarshal(origBytes, &q); err != nil {
-		panic(err)
+		t.Fatalf("Error unmarshaling origBytes: %v", err)
 	}
 	delete(q, "spec")
-	if b, err := json.Marshal(q); err != nil {
-		panic(err)
-	} else {
-		return b
+	b, err := json.Marshal(q)
+	if err != nil {
+		t.Fatalf("Error marshaling q: %v", err)
 	}
+	return b
 }
 
 func TestInvalidCreateResourceFails(t *testing.T) {
