@@ -116,6 +116,12 @@ func main() {
 This is default, but to leverage binary request format:
 
 ```go
+
+c := cloudevents.NewClient(
+    "dev.knative.cloudevent.example",
+    "https://github.com/knative/pkg#cloudevents-example",
+    "http://localhost:8080",
+)
 c.Builder.Encoding = cloudevents.BinaryEncoding
 
 ```
@@ -125,5 +131,11 @@ c.Builder.Encoding = cloudevents.BinaryEncoding
 To leverage structured request format:
 
 ```go
+
+c := cloudevents.NewClient(
+    "dev.knative.cloudevent.example",
+    "https://github.com/knative/pkg#cloudevents-example",
+    "http://localhost:8080",
+)
 c.Builder.Encoding = cloudevents.StructuredEncoding
 ```
