@@ -113,17 +113,17 @@ func main() {
 
 ### Binary
 
-Changes to the producer code required to leverage binary request format:
+This is default, but to leverage binary request format:
 
 ```go
-req, err := cloudevents.Binary.NewRequest(target, data, ctx)
+c.Builder.Encoding = cloudevents.BinaryEncoding
 
 ```
 
 ### Structured
 
-Changes to the producer code to leverage structured request format:
+To leverage structured request format:
 
 ```go
-req, err := cloudevents.Structured.NewRequest(target, data, ctx)
+c.Builder.Encoding = cloudevents.StructuredEncoding
 ```
