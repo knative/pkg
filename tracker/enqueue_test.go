@@ -70,16 +70,20 @@ func TestHappyPaths(t *testing.T) {
 		if err := trk.Track(objRef, thing2); err != nil {
 			t.Errorf("Track() = %v", err)
 		}
+		// New registrations should result in an immediate callback.
+		if got, want := calls, 1; got != want {
+			t.Errorf("Track() = %v, wanted %v", got, want)
+		}
 
 		trk.OnChanged(thing1)
-		if got, want := calls, 1; got != want {
+		if got, want := calls, 2; got != want {
 			t.Errorf("OnChanged() = %v, wanted %v", got, want)
 		}
 	})
 
 	t.Run("Still gets called", func(t *testing.T) {
 		trk.OnChanged(thing1)
-		if got, want := calls, 2; got != want {
+		if got, want := calls, 3; got != want {
 			t.Errorf("OnChanged() = %v, wanted %v", got, want)
 		}
 	})
@@ -88,7 +92,7 @@ func TestHappyPaths(t *testing.T) {
 	time.Sleep(20 * time.Millisecond)
 	t.Run("Stops getting called", func(t *testing.T) {
 		trk.OnChanged(thing1)
-		if got, want := calls, 2; got != want {
+		if got, want := calls, 3; got != want {
 			t.Errorf("OnChanged() = %v, wanted %v", got, want)
 		}
 		if _, stillThere := trk.(*impl).mapping[objRef]; stillThere {
@@ -100,9 +104,13 @@ func TestHappyPaths(t *testing.T) {
 		if err := trk.Track(objRef, thing2); err != nil {
 			t.Errorf("Track() = %v", err)
 		}
+		// New registrations should result in an immediate callback.
+		if got, want := calls, 4; got != want {
+			t.Errorf("Track() = %v, wanted %v", got, want)
+		}
 
 		trk.OnChanged(thing1)
-		if got, want := calls, 3; got != want {
+		if got, want := calls, 5; got != want {
 			t.Errorf("OnChanged() = %v, wanted %v", got, want)
 		}
 	})
@@ -112,7 +120,7 @@ func TestHappyPaths(t *testing.T) {
 		// accessor won't panic.
 		trk.OnChanged("not an accessor")
 
-		if got, want := calls, 3; got != want {
+		if got, want := calls, 5; got != want {
 			t.Errorf("OnChanged() = %v, wanted %v", got, want)
 		}
 	})
@@ -126,7 +134,7 @@ func TestHappyPaths(t *testing.T) {
 			Obj: "not an accessor",
 		})
 
-		if got, want := calls, 3; got != want {
+		if got, want := calls, 5; got != want {
 			t.Errorf("OnChanged() = %v, wanted %v", got, want)
 		}
 	})
@@ -136,7 +144,7 @@ func TestHappyPaths(t *testing.T) {
 			Key: "ns/foo",
 			Obj: thing1,
 		})
-		if got, want := calls, 4; got != want {
+		if got, want := calls, 6; got != want {
 			t.Errorf("OnChanged() = %v, wanted %v", got, want)
 		}
 	})
