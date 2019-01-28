@@ -62,6 +62,26 @@ func TestBuilderBuildValidation(t *testing.T) {
 			},
 			overrides: []cloudevents.SendContext{nil},
 			errText:   "Build called with unknown override type",
+		}, {
+			name: "valid default",
+			b: cloudevents.Builder{
+				Source:    "source",
+				EventType: "event.type",
+			},
+		}, {
+			name: "valid binary v0.1",
+			b: cloudevents.Builder{
+				Source:    "source",
+				EventType: "event.type",
+				Encoding:  cloudevents.BinaryEncodingV01,
+			},
+		}, {
+			name: "valid structured v0.1",
+			b: cloudevents.Builder{
+				Source:    "source",
+				EventType: "event.type",
+				Encoding:  cloudevents.StructuredEncodingV01,
+			},
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
