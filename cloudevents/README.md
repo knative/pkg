@@ -14,7 +14,7 @@ supported versions of CloudEvents.
 
 ## Getting Started
 
-CloudEvents acts as the envelope in which to send a custom object. Create a
+CloudEvents acts as the envelope in which to send a custom object. Define a
 CloudEvent type for the events you will be producing.
 
 Example CloudEvent Type: `dev.knative.cloudevent.example`
