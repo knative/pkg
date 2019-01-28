@@ -49,6 +49,35 @@ func TestCloudEventsContextV01(t *testing.T) {
 			},
 			opt: cmpopts.IgnoreFields(V01EventContext{}, "EventID", "EventTime"),
 		}, {
+			name: "full",
+			b: Builder{
+				Source:           "source",
+				EventType:        "event.type",
+				EventTypeVersion: "beta",
+				SchemaURL:        "http://test/",
+				Extensions: map[string]interface{}{
+					"a": "outer",
+					"b": map[string]interface{}{
+						"c": "inner",
+					},
+				},
+			},
+			want: V01EventContext{
+				CloudEventsVersion: "0.1",
+				EventType:          "event.type",
+				ContentType:        "application/json",
+				Source:             "source",
+				EventTypeVersion:   "beta",
+				SchemaURL:          "http://test/",
+				Extensions: map[string]interface{}{
+					"a": "outer",
+					"b": map[string]interface{}{
+						"c": "inner",
+					},
+				},
+			},
+			opt: cmpopts.IgnoreFields(V01EventContext{}, "EventID", "EventTime"),
+		}, {
 			name: "override time",
 			b: Builder{
 				Source:    "source",
@@ -112,6 +141,46 @@ func TestCloudEventsContextV01(t *testing.T) {
 				EventType:          "event.type",
 				ContentType:        "Override-ContentType",
 				Source:             "source",
+			},
+			opt: cmpopts.IgnoreFields(V01EventContext{}, "EventID", "EventTime"),
+		}, {
+			name: "override extensions",
+			b: Builder{
+				Source:           "source",
+				EventType:        "event.type",
+				EventTypeVersion: "beta",
+				SchemaURL:        "http://test/",
+				Extensions: map[string]interface{}{
+					"a": "outer",
+					"b": map[string]interface{}{
+						"c": "inner",
+					},
+				},
+			},
+			override: &V01EventContext{
+				Extensions: map[string]interface{}{
+					"a": "override-outer",
+					"d": map[string]interface{}{
+						"e": "add-inner",
+					},
+				},
+			},
+			want: V01EventContext{
+				CloudEventsVersion: "0.1",
+				EventType:          "event.type",
+				ContentType:        "application/json",
+				Source:             "source",
+				EventTypeVersion:   "beta",
+				SchemaURL:          "http://test/",
+				Extensions: map[string]interface{}{
+					"a": "override-outer",
+					"b": map[string]interface{}{
+						"c": "inner",
+					},
+					"d": map[string]interface{}{
+						"e": "add-inner",
+					},
+				},
 			},
 			opt: cmpopts.IgnoreFields(V01EventContext{}, "EventID", "EventTime"),
 		},
