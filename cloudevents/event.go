@@ -24,14 +24,9 @@ import (
 	"io"
 	"net/http"
 	"reflect"
-	"time"
 )
 
 const (
-	// CloudEventsVersion is the version of the CloudEvents spec targeted
-	// by this library.
-	CloudEventsVersion = "0.1"
-
 	// ContentTypeStructuredJSON is the content-type for "Structured" encoding
 	// where an event envelope is written in JSON and the body is arbitrary
 	// data which might be an alternate encoding.
@@ -48,43 +43,48 @@ const (
 	// HeaderContentType is the standard HTTP header "Content-Type"
 	HeaderContentType = "Content-Type"
 
-	// required attributes
-	fieldCloudEventsVersion = "CloudEventsVersion"
-	fieldEventID            = "EventID"
-	fieldEventType          = "EventType"
-	fieldSource             = "Source"
+	// CloudEventsVersion is a legacy alias of V01CloudEventsVersion, for compatibility.
+	CloudEventsVersion = V01CloudEventsVersion
 )
 
-// EventContext holds standard metadata about an event. See
-// https://github.com/cloudevents/spec/blob/v0.1/spec.md#context-attributes for
-// details on these fields.
-type EventContext struct {
-	// The version of the CloudEvents specification used by the event.
-	CloudEventsVersion string `json:"cloudEventsVersion,omitempty"`
-	// ID of the event; must be non-empty and unique within the scope of the producer.
-	EventID string `json:"eventID"`
-	// Timestamp when the event happened.
-	EventTime time.Time `json:"eventTime,omitempty"`
-	// Type of occurrence which has happened.
-	EventType string `json:"eventType"`
-	// The version of the `eventType`; this is producer-specific.
-	EventTypeVersion string `json:"eventTypeVersion,omitempty"`
-	// A link to the schema that the `data` attribute adheres to.
-	SchemaURL string `json:"schemaURL,omitempty"`
-	// A MIME (RFC 2046) string describing the media type of `data`.
-	// TODO: Should an empty string assume `application/json`, or auto-detect the content?
-	ContentType string `json:"contentType,omitempty"`
-	// A URI describing the event producer.
-	Source string `json:"source"`
-	// Additional metadata without a well-defined structure.
-	Extensions map[string]interface{} `json:"extensions,omitempty"`
-}
+// EventContext is a legacy un-versioned alias, from when we thought that field names would stay the same.
+type EventContext = V01EventContext
 
 // HTTPMarshaller implements a scheme for decoding CloudEvents over HTTP.
 // Implementations are Binary, Structured, and Any
 type HTTPMarshaller interface {
 	FromRequest(data interface{}, r *http.Request) (*EventContext, error)
-	NewRequest(urlString string, data interface{}, context EventContext) (*http.Request, error)
+	NewRequest(urlString string, data interface{}, context SendContext) (*http.Request, error)
+}
+
+// SendContext provides an interface for extracting information from an
+// EventContext (the set of non-data event attributes of a CloudEvent).
+type SendContext interface {
+	StructuredSender
+	BinarySender
+}
+
+// LoadContext provides an interface for extracting information from an
+// EventContext (the set of non-data event attributes of a CloudEvent).
+//
+// LoadContext also provides a set of translation methods between the
+// versions of the CloudEvents spec, which allows programs to interoperate with
+// different versions of the CloudEvents spec at the same time.
+type LoadContext interface {
+	StructuredLoader
+	BinaryLoader
+
+	// AsV01 provides a translation from whatever the "native" encoding of the
+	// CloudEvent was to the equivalent in v0.1 field names, moving fields to or
+	// from extensions as necessary.
+	AsV01() V01EventContext
+}
+
+// ContextType is a unified interface for both sending and loading the
+// CloudEvent data across versions.
+type ContextType interface {
+	SendContext
+	LoadContext
 }
 
 func anyError(errs ...error) error {
@@ -94,13 +94,6 @@ func anyError(errs ...error) error {
 		}
 	}
 	return nil
-}
-
-func ensureRequiredFields(context EventContext) error {
-	return anyError(
-		require(fieldEventID, context.EventID),
-		require(fieldEventType, context.EventType),
-		require(fieldSource, context.Source))
 }
 
 func require(name string, value string) error {
@@ -184,16 +177,16 @@ func FromRequest(data interface{}, r *http.Request) (*EventContext, error) {
 }
 
 // NewRequest craetes an HTTP request for Structured content encoding.
-func NewRequest(urlString string, data interface{}, context EventContext) (*http.Request, error) {
+func NewRequest(urlString string, data interface{}, context SendContext) (*http.Request, error) {
 	return Structured.NewRequest(urlString, data, context)
 }
 
-// Opaque key type used to store EventContexts in a context.Context
+// Opaque key type used to store V01EventContexts in a context.Context
 type contextKeyType struct{}
 
 var contextKey = contextKeyType{}
 
-// FromContext loads an EventContext from a normal context.Context
-func FromContext(ctx context.Context) *EventContext {
-	return ctx.Value(contextKey).(*EventContext)
+// FromContext loads an V01EventContext from a normal context.Context
+func FromContext(ctx context.Context) *V01EventContext {
+	return ctx.Value(contextKey).(*V01EventContext)
 }
