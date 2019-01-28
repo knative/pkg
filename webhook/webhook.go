@@ -531,15 +531,15 @@ func (ac *AdmissionController) mutate(ctx context.Context, kind metav1.GroupVers
 
 	// Add these before defaulting fields, otherwise defaulting may cause an illegal patch because
 	// it expects the round tripped through Golang fields to be present already.
-	roundTripPatch, err := roundTripPatch(newBytes, newObj)
+	rtp, err := roundTripPatch(newBytes, newObj)
 	if err != nil {
 		return nil, fmt.Errorf("cannot create patch for round tripped newBytes: %v", err)
 	}
-	patches = append(patches, roundTripPatch...)
+	patches = append(patches, rtp...)
 
 	err = updateGeneration(ctx, &patches, oldObj, newObj)
 	if err != nil {
-		logger.Error("Failed to update generation", zap.Error(err))
+		logger.Errorw("Failed to update generation", zap.Error(err))
 		return nil, fmt.Errorf("Failed to update generation: %s", err)
 	}
 
