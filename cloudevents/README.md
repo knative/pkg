@@ -20,7 +20,8 @@ CloudEvent type for the events you will be producing.
 Example CloudEvent Type: `dev.knative.cloudevent.example`
 
 Select a source to identify the originator of this CloudEvent. It should be a
-valid URI.
+valid URI which represents the subject which created the CloudEvent (cloud 
+bucket, git repo, etc).
 
 Example CloudEvent Source: `https://github.com/knative/pkg#cloudevents-example`
 
@@ -40,7 +41,7 @@ type Example struct {
 
 The producer will create a new `Example` object, fill out the CloudEvent struct,
 and post the event via a [Binary](#binary) or [Structured](#structured) request
-format.
+format. Binary is used by default.
 
 ```go
 
@@ -63,7 +64,7 @@ func main() {
         "http://localhost:8080",
     )
     for i := 0; i < 10; i++ {
-        data := &Example{
+        data := Example{
             Message:  "hello, world!",
             Sequence: i,
         }
@@ -104,7 +105,7 @@ func handler(ctx context.Context, data *Example) {
 }
 
 func main() {
-    log.Print("ready and listening on port 8080")
+    log.Print("listening on port 8080")
     log.Fatal(http.ListenAndServe(":8080", cloudevents.Handler(handler)))
 }
 

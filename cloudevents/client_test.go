@@ -37,7 +37,6 @@ var (
 	unimportantHeaders = map[string]struct{}{
 		"accept-encoding": {},
 		"content-length":  {},
-		"content-type":    {},
 		"user-agent":      {},
 	}
 )
@@ -128,6 +127,7 @@ func TestValidRoundTripsWithClient(t *testing.T) {
 					"ce-eventtime":          {now.Format(time.RFC3339Nano)},
 					"ce-eventtype":          {"google.firestore.document.create"},
 					"ce-source":             {"//firestore.googleapis.com/projects/demo/databases/default/documents/users/inlined"},
+					"content-type":          {"application/json"},
 				},
 				Body: fmt.Sprintf(
 					`{"name":"projects/demo/databases/default/documents/users/inlined","fields":{"handle":"@inlined","project":"eventing"},"createTime":"1985-06-05T12:00:00Z","updateTime":%q}`,
@@ -169,6 +169,7 @@ func TestValidRoundTripsWithClient(t *testing.T) {
 					"ce-source":             {"//firestore.googleapis.com/projects/demo/databases/default/documents/users/inlined"},
 					"ce-schemaurl":          {"http://type.googleapis.com/google.firestore.v1beta1.Document"},
 					"ce-x-purpose":          {"tbd"},
+					"content-type":          {"application/json"},
 				},
 				Body: fmt.Sprintf(
 					`{"name":"projects/demo/databases/default/documents/users/inlined","fields":{"handle":"@inlined","project":"eventing"},"createTime":"1985-06-05T12:00:00Z","updateTime":%q}`,
@@ -194,7 +195,9 @@ func TestValidRoundTripsWithClient(t *testing.T) {
 				StatusCode: http.StatusAccepted,
 			},
 			expectedRequest: &requestValidation{
-				Headers: map[string][]string{},
+				Headers: map[string][]string{
+					"content-type": {"application/cloudevents+json"},
+				},
 				Body: fmt.Sprintf(
 					`{"cloudEventsVersion":"0.1","contentType":"application/json","data":{"name":"projects/demo/databases/default/documents/users/inlined","fields":{"handle":"@inlined","project":"eventing"},"createTime":"1985-06-05T12:00:00Z","updateTime":%q},"eventID":"AABBCCDDEE","eventTime":%q,"eventType":"google.firestore.document.create","extensions":null,"source":"//firestore.googleapis.com/projects/demo/databases/default/documents/users/inlined"}`,
 					now.UTC().Format(time.RFC3339Nano), now.Format(time.RFC3339Nano),
@@ -226,7 +229,9 @@ func TestValidRoundTripsWithClient(t *testing.T) {
 				StatusCode: http.StatusAccepted,
 			},
 			expectedRequest: &requestValidation{
-				Headers: map[string][]string{},
+				Headers: map[string][]string{
+					"content-type": {"application/cloudevents+json"},
+				},
 				Body: fmt.Sprintf(
 					`{"cloudEventsVersion":"0.1","contentType":"application/json","data":{"name":"projects/demo/databases/default/documents/users/inlined","fields":{"handle":"@inlined","project":"eventing"},"createTime":"1985-06-05T12:00:00Z","updateTime":%q},"eventID":"AABBCCDDEE","eventTime":%q,"eventType":"google.firestore.document.create","eventTypeVersion":"v1beta2","extensions":{"purpose":"tbd"},"schemaURL":"http://type.googleapis.com/google.firestore.v1beta1.Document","source":"//firestore.googleapis.com/projects/demo/databases/default/documents/users/inlined"}`,
 					now.UTC().Format(time.RFC3339Nano), now.Format(time.RFC3339Nano),

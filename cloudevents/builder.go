@@ -40,8 +40,6 @@ const (
 type Builder struct {
 	// A URI describing the event producer.
 	Source string
-	// Timestamp when the event happened.
-	EventTime time.Time
 	// Type of occurrence which has happened.
 	EventType string
 	// The version of the `eventType`; this is producer-specific.
