@@ -28,10 +28,12 @@ And finally, create a struct that will be the data inside the CloudEvent,
 example:
 
 ```go
+
 type Example struct {
     Sequence int    `json:"id"`
-    Message    string `json:"message"`
+    Message  string `json:"message"`
 }
+
 ```
 
 ### Producer
