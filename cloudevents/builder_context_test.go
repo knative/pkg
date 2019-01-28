@@ -183,6 +183,37 @@ func TestCloudEventsContextV01(t *testing.T) {
 				},
 			},
 			opt: cmpopts.IgnoreFields(V01EventContext{}, "EventID", "EventTime"),
+		}, {
+			name: "override empty extensions",
+			b: Builder{
+				Source:           "source",
+				EventType:        "event.type",
+				EventTypeVersion: "beta",
+				SchemaURL:        "http://test/",
+			},
+			override: &V01EventContext{
+				Extensions: map[string]interface{}{
+					"a": "override-outer",
+					"d": map[string]interface{}{
+						"e": "add-inner",
+					},
+				},
+			},
+			want: V01EventContext{
+				CloudEventsVersion: "0.1",
+				EventType:          "event.type",
+				ContentType:        "application/json",
+				Source:             "source",
+				EventTypeVersion:   "beta",
+				SchemaURL:          "http://test/",
+				Extensions: map[string]interface{}{
+					"a": "override-outer",
+					"d": map[string]interface{}{
+						"e": "add-inner",
+					},
+				},
+			},
+			opt: cmpopts.IgnoreFields(V01EventContext{}, "EventID", "EventTime"),
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
