@@ -50,7 +50,7 @@ var Default defaultMarshaller = 0
 func (defaultMarshaller) FromRequest(data interface{}, r *http.Request) (*cloudevents.EventContext, error) {
 	return cloudevents.FromRequest(data, r)
 }
-func (defaultMarshaller) NewRequest(urlString string, data interface{}, context cloudevents.EventContext) (*http.Request, error) {
+func (defaultMarshaller) NewRequest(urlString string, data interface{}, context cloudevents.SendContext) (*http.Request, error) {
 	return cloudevents.NewRequest(urlString, data, context)
 }
 
@@ -183,6 +183,7 @@ func TestXmlStructuredDecoding(t *testing.T) {
 
 	eventText := `
 	{
+		"cloudEventsVersion": "0.1",
 		"eventID": "1234",
 		"eventType": "dev.eventing.test",
 		"source": "tests://TextXmlStructuredEncoding",
@@ -215,6 +216,7 @@ func TestExtensionsAreNeverNil(t *testing.T) {
 		},
 		Body: ioutil.NopCloser(strings.NewReader(`
 			{
+				"cloudEventsVersion": "0.1",
 				"eventID": "1234",
 				"eventType": "dev.eventing.test",
 				"source": "tests://TextXmlStructuredEncoding",
@@ -234,6 +236,7 @@ func TestExtensionsAreNeverNil(t *testing.T) {
 
 func TestExtensionExtraction(t *testing.T) {
 	h := http.Header{}
+	h.Set(cloudevents.HeaderCloudEventsVersion, cloudevents.V01CloudEventsVersion)
 	h.Set(cloudevents.HeaderContentType, cloudevents.ContentTypeBinaryJSON)
 	h.Set(cloudevents.HeaderEventID, "1234")
 	h.Set(cloudevents.HeaderEventType, "dev.eventing.test")

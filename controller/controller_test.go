@@ -516,7 +516,7 @@ func TestStartAndShutdownWithErroringWork(t *testing.T) {
 		t.Errorf("Requeue count = %v, wanted %v", got, want)
 	}
 
-	checkStats(t, reporter, 2, 0, 2, falseString)
+	checkStats(t, reporter, 3, 0, 3, falseString)
 }
 
 type PermanentErrorReconciler struct{}

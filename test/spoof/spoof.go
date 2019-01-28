@@ -45,12 +45,8 @@ const (
 	requestTimeout  = 5 * time.Minute
 	// TODO(tcnghia): These probably shouldn't be hard-coded here?
 	ingressNamespace = "istio-system"
+	ingressName      = "istio-ingressgateway"
 )
-
-// Temporary work around the upgrade test issue for knative/serving#2434.
-// TODO(lichuqiang): remove the backward compatibility for knative-ingressgateway
-// once knative/serving#2434 is merged
-var ingressNames = []string{"knative-ingressgateway", "istio-ingressgateway"}
 
 // Response is a stripped down subset of http.Response. The is primarily useful
 // for ResponseCheckers to inspect the response body without consuming it.
@@ -125,24 +121,15 @@ func New(kubeClientset *kubernetes.Clientset, logger *logging.BaseLogger, domain
 
 // GetServiceEndpoint gets the endpoint IP or hostname to use for the service.
 func GetServiceEndpoint(kubeClientset *kubernetes.Clientset) (*string, error) {
-	var err error
-
-	for _, ingressName := range ingressNames {
-		var ingress *v1.Service
-		ingress, err = kubeClientset.CoreV1().Services(ingressNamespace).Get(ingressName, metav1.GetOptions{})
-		if err != nil {
-			continue
-		}
-
-		var endpoint string
-		endpoint, err = endpointFromService(ingress)
-		if err != nil {
-			continue
-		}
-
-		return &endpoint, nil
+	ingress, err := kubeClientset.CoreV1().Services(ingressNamespace).Get(ingressName, metav1.GetOptions{})
+	if err != nil {
+		return nil, err
 	}
-	return nil, err
+	endpoint, err := endpointFromService(ingress)
+	if err != nil {
+		return nil, err
+	}
+	return &endpoint, nil
 }
 
 // endpointFromService extracts the endpoint from the service's ingress.
