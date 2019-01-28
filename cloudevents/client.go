@@ -47,8 +47,8 @@ func NewClient(eventType, source, target string) *Client {
 // Send creates a request based on the client's settings and sends the data
 // struct to the target set for this client. It returns error if there was an
 // issue sending the event, otherwise nil means the event was accepted.
-func (c *Client) Send(data interface{}) error {
-	req, err := c.Build(c.Target, data)
+func (c *Client) Send(data interface{}, overrides ...SendContext) error {
+	req, err := c.Build(c.Target, data, overrides...)
 	if err != nil {
 		return err
 	}
@@ -75,9 +75,6 @@ func accepted(resp *http.Response) bool {
 
 // status is a helper method to read the response of the target.
 func status(resp *http.Response) string {
-	if accepted(resp) {
-		return "sent"
-	}
 	status := resp.Status
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {

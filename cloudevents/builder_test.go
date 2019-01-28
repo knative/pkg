@@ -52,7 +52,7 @@ func TestBuilderBuildValidation(t *testing.T) {
 				EventType: "event.type",
 			},
 			overrides: []cloudevents.SendContext{cloudevents.V01EventContext{}, cloudevents.V01EventContext{}},
-			errText:   "Build called with more than one override",
+			errText:   "Build was called with more than one override",
 		},
 		{
 			name: "override is wrong type",
@@ -61,7 +61,7 @@ func TestBuilderBuildValidation(t *testing.T) {
 				EventType: "event.type",
 			},
 			overrides: []cloudevents.SendContext{nil},
-			errText:   "Build called with unknown override type",
+			errText:   "Build was called with unknown override type",
 		}, {
 			name: "valid default",
 			b: cloudevents.Builder{

@@ -49,7 +49,7 @@ type Builder struct {
 	// A link to the schema that the `data` attribute adheres to.
 	SchemaURL string
 	// Additional metadata without a well-defined structure.
-	Extensions map[string]interface{} `json:"extensions,omitempty"`
+	Extensions map[string]interface{}
 
 	// Encoding specifies the requested output encoding of the CloudEvent.
 	Encoding CloudEventEncoding
@@ -67,7 +67,7 @@ func (b *Builder) Build(target string, data interface{}, overrides ...SendContex
 		return nil, fmt.Errorf("Build.EventType is empty")
 	}
 	if len(overrides) > 1 {
-		return nil, fmt.Errorf("Build called with more than one override")
+		return nil, fmt.Errorf("Build was called with more than one override")
 	}
 
 	var overridesV01 *V01EventContext = nil
@@ -77,7 +77,7 @@ func (b *Builder) Build(target string, data interface{}, overrides ...SendContex
 			o := overrides[0].(V01EventContext)
 			overridesV01 = &o
 		default:
-			return nil, fmt.Errorf("Build called with unknown override type %v", t)
+			return nil, fmt.Errorf("Build was called with unknown override type %v", t)
 		}
 	}
 	// TODO: when V02 is supported this will have to shuffle a little.
