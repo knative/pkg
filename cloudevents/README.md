@@ -111,7 +111,7 @@ func main() {
 
 ## Request Formats
 
-### CloudEvents Version 0.1  
+### CloudEvents Version 0.1
 
 #### Binary
 
