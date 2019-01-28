@@ -174,6 +174,7 @@ func TestValidCreateResourceSucceedsWithRoundTripAndDefaultPatch(t *testing.T) {
 }
 
 func createInnerDefaultResourceWithoutSpec(t *testing.T) []byte {
+	t.Helper()
 	r := InnerDefaultResource{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: testNamespace,
