@@ -59,9 +59,11 @@ type Example struct {
 
 func main() {
     c := cloudevents.NewClient(
-        "dev.knative.cloudevent.example",
-        "https://github.com/knative/pkg#cloudevents-example",
         "http://localhost:8080",
+        cloudevents.Builder{
+            Source:    "https://github.com/knative/pkg#cloudevents-example",
+            EventType: "dev.knative.cloudevent.example",
+        },
     )
     for i := 0; i < 10; i++ {
         data := Example{
@@ -109,7 +111,6 @@ func main() {
     log.Fatal(http.ListenAndServe(":8080", cloudevents.Handler(handler)))
 }
 
-
 ```
 
 ## Request Formats
@@ -122,12 +123,14 @@ This is default, but to leverage binary request format:
 
 ```go
 
-c := cloudevents.NewClient(
-    "dev.knative.cloudevent.example",
-    "https://github.com/knative/pkg#cloudevents-example",
-    "http://localhost:8080",
-)
-c.Builder.Encoding = cloudevents.BinaryV01
+    c := cloudevents.NewClient(
+        "http://localhost:8080",
+        cloudevents.Builder{
+            Source:    "https://github.com/knative/pkg#cloudevents-example",
+            EventType: "dev.knative.cloudevent.example",
+            Encoding: cloudevents.BinaryV01,
+        },
+    )
 
 ```
 
@@ -137,10 +140,13 @@ To leverage structured request format:
 
 ```go
 
-c := cloudevents.NewClient(
-    "dev.knative.cloudevent.example",
-    "https://github.com/knative/pkg#cloudevents-example",
-    "http://localhost:8080",
-)
-c.Builder.Encoding = cloudevents.StructuredV01
+    c := cloudevents.NewClient(
+        "http://localhost:8080",
+        cloudevents.Builder{
+            Source:    "https://github.com/knative/pkg#cloudevents-example",
+            EventType: "dev.knative.cloudevent.example",
+            Encoding: cloudevents.StructuredV01,
+        },
+    )
+
 ```

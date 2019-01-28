@@ -25,21 +25,18 @@ import (
 // Client wraps Builder, and is intended to be configured for a single event
 // type and target
 type Client struct {
-	Builder
-	Target string
+	builder Builder
+	Target  string
 }
 
 // NewClient returns a CloudEvent Client used to send CloudEvents. It is
 // intended that a user would create a new client for each tuple of eventType
 // and target. This is an optional helper method to avoid the tricky creation
 // of the embedded Builder struct.
-func NewClient(eventType, source, target string) *Client {
+func NewClient(target string, builder Builder) *Client {
 	c := &Client{
-		Builder: Builder{
-			Source:    source,
-			EventType: eventType,
-		},
-		Target: target,
+		builder: builder,
+		Target:  target,
 	}
 	return c
 }
@@ -48,7 +45,7 @@ func NewClient(eventType, source, target string) *Client {
 // struct to the target set for this client. It returns error if there was an
 // issue sending the event, otherwise nil means the event was accepted.
 func (c *Client) Send(data interface{}, overrides ...SendContext) error {
-	req, err := c.Build(c.Target, data, overrides...)
+	req, err := c.builder.Build(c.Target, data, overrides...)
 	if err != nil {
 		return err
 	}

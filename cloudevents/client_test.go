@@ -27,6 +27,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/go-cmp/cmp/cmpopts"
+
 	"github.com/google/go-cmp/cmp"
 
 	"github.com/knative/pkg/cloudevents"
@@ -61,25 +63,21 @@ func TestNewClient(t *testing.T) {
 			source:    "source",
 			target:    "target",
 			want: &cloudevents.Client{
-				Builder: cloudevents.Builder{
-					Source:    "source",
-					EventType: "event.type",
-				},
 				Target: "target",
 			},
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got := cloudevents.NewClient(test.eventType, test.source, test.target)
+			got := cloudevents.NewClient(test.target, cloudevents.Builder{Source: test.source, EventType: test.eventType})
 
-			if diff := cmp.Diff(test.want, got, test.opt); diff != "" {
+			if diff := cmp.Diff(test.want, got, test.opt, cmpopts.IgnoreUnexported(cloudevents.Client{})); diff != "" {
 				t.Errorf("%s (-want, +got) = %v", m, diff)
 			}
 		})
 	}
 }
 
-func TestValidRoundTripsWithClient(t *testing.T) {
+func TestClientSend(t *testing.T) {
 	now := time.Now()
 	eventID := "AABBCCDDEE"
 	doc := FirestoreDocument{
@@ -106,11 +104,13 @@ func TestValidRoundTripsWithClient(t *testing.T) {
 			name: "binary simple v0.1",
 			client: func() cloudevents.Client {
 				client := cloudevents.NewClient(
-					"google.firestore.document.create",
-					fmt.Sprintf("//%s/%s", service, doc.Name),
 					"server url",
+					cloudevents.Builder{
+						Source:    fmt.Sprintf("//%s/%s", service, doc.Name),
+						EventType: "google.firestore.document.create",
+						Encoding:  cloudevents.BinaryV01,
+					},
 				)
-				client.Encoding = cloudevents.BinaryV01
 				return *client
 			}(),
 			override: &cloudevents.V01EventContext{
@@ -137,20 +137,20 @@ func TestValidRoundTripsWithClient(t *testing.T) {
 		}, {
 			name: "binary full v0.1",
 			client: func() cloudevents.Client {
-				client := cloudevents.Client{
-					Builder: cloudevents.Builder{
+				client := cloudevents.NewClient(
+					"source url",
+					cloudevents.Builder{
 						Source:           fmt.Sprintf("//%s/%s", service, doc.Name),
 						EventType:        "google.firestore.document.create",
 						EventTypeVersion: "v1beta2",
 						SchemaURL:        "http://type.googleapis.com/google.firestore.v1beta1.Document",
+						Encoding:         cloudevents.BinaryV01,
 						Extensions: map[string]interface{}{
 							"purpose": "tbd",
 						},
 					},
-					Target: "source url",
-				}
-				client.Encoding = cloudevents.BinaryV01
-				return client
+				)
+				return *client
 			}(),
 			override: &cloudevents.V01EventContext{
 				EventTime: now,
@@ -180,11 +180,13 @@ func TestValidRoundTripsWithClient(t *testing.T) {
 			name: "structured simple v0.1",
 			client: func() cloudevents.Client {
 				client := cloudevents.NewClient(
-					"google.firestore.document.create",
-					fmt.Sprintf("//%s/%s", service, doc.Name),
 					"server url",
+					cloudevents.Builder{
+						Source:    fmt.Sprintf("//%s/%s", service, doc.Name),
+						EventType: "google.firestore.document.create",
+						Encoding:  cloudevents.StructuredV01,
+					},
 				)
-				client.Encoding = cloudevents.StructuredV01
 				return *client
 			}(),
 			override: &cloudevents.V01EventContext{
@@ -206,20 +208,20 @@ func TestValidRoundTripsWithClient(t *testing.T) {
 		}, {
 			name: "structured full v0.1",
 			client: func() cloudevents.Client {
-				client := cloudevents.Client{
-					Builder: cloudevents.Builder{
+				client := cloudevents.NewClient(
+					"source url",
+					cloudevents.Builder{
 						Source:           fmt.Sprintf("//%s/%s", service, doc.Name),
 						EventType:        "google.firestore.document.create",
 						EventTypeVersion: "v1beta2",
 						SchemaURL:        "http://type.googleapis.com/google.firestore.v1beta1.Document",
+						Encoding:         cloudevents.StructuredV01,
 						Extensions: map[string]interface{}{
 							"purpose": "tbd",
 						},
 					},
-					Target: "source url",
-				}
-				client.Encoding = cloudevents.StructuredV01
-				return client
+				)
+				return *client
 			}(),
 			override: &cloudevents.V01EventContext{
 				EventTime: now,
@@ -241,9 +243,10 @@ func TestValidRoundTripsWithClient(t *testing.T) {
 			name: "builder fails, no event type",
 			client: func() cloudevents.Client {
 				client := cloudevents.NewClient(
-					"",
-					fmt.Sprintf("//%s/%s", service, doc.Name),
 					"server url",
+					cloudevents.Builder{
+						Source: fmt.Sprintf("//%s/%s", service, doc.Name),
+					},
 				)
 				return *client
 			}(),
@@ -253,11 +256,12 @@ func TestValidRoundTripsWithClient(t *testing.T) {
 			name: "request not accepted",
 			client: func() cloudevents.Client {
 				client := cloudevents.NewClient(
-					"google.firestore.document.create",
-					fmt.Sprintf("//%s/%s", service, doc.Name),
 					"server url",
+					cloudevents.Builder{
+						Source:    fmt.Sprintf("//%s/%s", service, doc.Name),
+						EventType: "google.firestore.document.create",
+					},
 				)
-				client.Encoding = cloudevents.BinaryV01
 				return *client
 			}(),
 			override: &cloudevents.V01EventContext{},
