@@ -14,9 +14,9 @@ type CloudEventEncoding int
 
 const (
 	// Binary
-	BinaryEncoding CloudEventEncoding = 0
+	BinaryEncodingV01 CloudEventEncoding = 0
 	// Structured
-	StructuredEncoding CloudEventEncoding = 1
+	StructuredEncodingV01 CloudEventEncoding = 1
 )
 
 // Builder holds settings that do not change over CloudEvents. It is intended
@@ -42,9 +42,9 @@ func (b *Builder) Build(target string, data interface{}) (*http.Request, error) 
 	ctx := b.cloudEventsContext()
 
 	switch b.Encoding {
-	case BinaryEncoding:
+	case BinaryEncodingV01:
 		return Binary.NewRequest(target, data, ctx)
-	case StructuredEncoding:
+	case StructuredEncodingV01:
 		return Structured.NewRequest(target, data, ctx)
 	default:
 		return nil, fmt.Errorf("unsupported encoding: %v", b.Encoding)
