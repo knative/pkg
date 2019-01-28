@@ -73,14 +73,14 @@ func TestBuilderBuildValidation(t *testing.T) {
 			b: cloudevents.Builder{
 				Source:    "source",
 				EventType: "event.type",
-				Encoding:  cloudevents.BinaryEncodingV01,
+				Encoding:  cloudevents.BinaryV01,
 			},
 		}, {
 			name: "valid structured v0.1",
 			b: cloudevents.Builder{
 				Source:    "source",
 				EventType: "event.type",
-				Encoding:  cloudevents.StructuredEncodingV01,
+				Encoding:  cloudevents.StructuredV01,
 			},
 		},
 	} {

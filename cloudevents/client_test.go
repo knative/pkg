@@ -111,7 +111,7 @@ func TestValidRoundTripsWithClient(t *testing.T) {
 					fmt.Sprintf("//%s/%s", service, doc.Name),
 					"server url",
 				)
-				client.Encoding = cloudevents.BinaryEncodingV01
+				client.Encoding = cloudevents.BinaryV01
 				return *client
 			}(),
 			override: &cloudevents.V01EventContext{
@@ -149,7 +149,7 @@ func TestValidRoundTripsWithClient(t *testing.T) {
 					},
 					Target: "source url",
 				}
-				client.Encoding = cloudevents.BinaryEncodingV01
+				client.Encoding = cloudevents.BinaryV01
 				return client
 			}(),
 			override: &cloudevents.V01EventContext{
@@ -183,7 +183,7 @@ func TestValidRoundTripsWithClient(t *testing.T) {
 					fmt.Sprintf("//%s/%s", service, doc.Name),
 					"server url",
 				)
-				client.Encoding = cloudevents.StructuredEncodingV01
+				client.Encoding = cloudevents.StructuredV01
 				return *client
 			}(),
 			override: &cloudevents.V01EventContext{
@@ -215,7 +215,7 @@ func TestValidRoundTripsWithClient(t *testing.T) {
 					},
 					Target: "source url",
 				}
-				client.Encoding = cloudevents.StructuredEncodingV01
+				client.Encoding = cloudevents.StructuredV01
 				return client
 			}(),
 			override: &cloudevents.V01EventContext{
@@ -252,7 +252,7 @@ func TestValidRoundTripsWithClient(t *testing.T) {
 					fmt.Sprintf("//%s/%s", service, doc.Name),
 					"server url",
 				)
-				client.Encoding = cloudevents.BinaryEncodingV01
+				client.Encoding = cloudevents.BinaryV01
 				return *client
 			}(),
 			override: &cloudevents.V01EventContext{},

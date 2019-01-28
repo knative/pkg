@@ -124,7 +124,7 @@ c := cloudevents.NewClient(
     "https://github.com/knative/pkg#cloudevents-example",
     "http://localhost:8080",
 )
-c.Builder.Encoding = cloudevents.BinaryEncodingV01
+c.Builder.Encoding = cloudevents.BinaryV01
 
 ```
 
@@ -139,5 +139,5 @@ c := cloudevents.NewClient(
     "https://github.com/knative/pkg#cloudevents-example",
     "http://localhost:8080",
 )
-c.Builder.Encoding = cloudevents.StructuredEncodingV01
+c.Builder.Encoding = cloudevents.StructuredV01
 ```
