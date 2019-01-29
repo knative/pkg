@@ -60,9 +60,31 @@ type V01EventContext struct {
 	Extensions map[string]interface{} `json:"extensions,omitempty"`
 }
 
-// AsV01 implements the LoadContext interface.
+// AsV01 implements the ContextTranslator interface.
 func (ec V01EventContext) AsV01() V01EventContext {
 	return ec
+}
+
+// AsV02 implements the ContextTranslator interface.
+func (ec V01EventContext) AsV02() V02EventContext {
+	ret := V02EventContext{
+		SpecVersion: V02CloudEventsVersion,
+		Type:        ec.EventType,
+		Source:      ec.Source,
+		ID:          ec.EventID,
+		Time:        ec.EventTime,
+		SchemaURL:   ec.SchemaURL,
+		ContentType: ec.ContentType,
+		Extensions:  make(map[string]interface{}),
+	}
+	// eventTypeVersion was retired in v0.2, so put it in an extension.
+	if ec.EventTypeVersion != "" {
+		ret.Extensions["eventtypeversion"] = ec.EventTypeVersion
+	}
+	for k, v := range ec.Extensions {
+		ret.Extensions[k] = v
+	}
+	return ret
 }
 
 // AsHeaders implements the BinarySender interface.
@@ -93,12 +115,13 @@ func (ec V01EventContext) AsHeaders() http.Header {
 		if err != nil {
 			data = string(encoded)
 		}
+		// Preserve case in v0.1, even though HTTP headers are case-insensitive.
 		h["CE-X-"+k] = []string{data}
 	}
 	return h
 }
 
-// FromHeaders implements the BinaryContext interface
+// FromHeaders implements the BinaryLoader interface.
 func (ec *V01EventContext) FromHeaders(in http.Header) error {
 	missingField := func(name string) error {
 		if in.Get("CE-"+name) == "" {
@@ -146,7 +169,7 @@ func (ec *V01EventContext) FromHeaders(in http.Header) error {
 	return nil
 }
 
-// AsJSON implements the StructuredSender interface
+// AsJSON implements the StructuredSender interface.
 func (ec V01EventContext) AsJSON() (map[string]json.RawMessage, error) {
 	ret := make(map[string]json.RawMessage)
 	err := anyError(
@@ -162,12 +185,12 @@ func (ec V01EventContext) AsJSON() (map[string]json.RawMessage, error) {
 	return ret, err
 }
 
-// DataContentType implements the StructuredSender interface
+// DataContentType implements the StructuredSender interface.
 func (ec V01EventContext) DataContentType() string {
 	return ec.ContentType
 }
 
-// FromJSON implements the StructuredContext interface
+// FromJSON implements the StructuredLoader interface.
 func (ec *V01EventContext) FromJSON(in map[string]json.RawMessage) error {
 	data := V01EventContext{
 		CloudEventsVersion: extractKey(in, "cloudEventsVersion"),

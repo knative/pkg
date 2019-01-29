@@ -55,7 +55,7 @@ type StructuredLoader interface {
 }
 
 // FromRequest parses a CloudEvent from structured content encoding.
-func (structured) FromRequest(data interface{}, r *http.Request) (*EventContext, error) {
+func (structured) FromRequest(data interface{}, r *http.Request) (LoadContext, error) {
 	raw := make(map[string]json.RawMessage)
 	if err := json.NewDecoder(r.Body).Decode(&raw); err != nil {
 		return nil, err
@@ -64,13 +64,29 @@ func (structured) FromRequest(data interface{}, r *http.Request) (*EventContext,
 	rawData := raw["data"]
 	delete(raw, "data")
 
+	jsonDebug, _ := json.Marshal(raw)
+	fmt.Printf("Decoding from %q\n\n\n", jsonDebug)
+
 	// TODO: support both v01 and v02 encoding
-	ec := &EventContext{}
+	var ec ContextType
+	v := ""
+	if err := json.Unmarshal(raw["specversion"], &v); err == nil && v == V02CloudEventsVersion {
+		fmt.Printf("specversion is %q\n", v)
+		ec = &V02EventContext{}
+	} else if err := json.Unmarshal(raw["cloudEventsVersion"], &v); err == nil && v == V01CloudEventsVersion {
+		ec = &V01EventContext{}
+	} else {
+		// For historical reasons, this library treated unknown payloads as V01. Preserve for now.
+		ec = &V01EventContext{}
+		// TODO: change behavior to be an error:
+		// return nil, fmt.Errorf("Could not determine Cloud Events version from payload: %q", data)
+	}
 	if err := ec.FromJSON(raw); err != nil {
+		fmt.Printf("FromJSON failed for %q: %v\n", jsonDebug, err)
 		return nil, err
 	}
 
-	contentType := ec.ContentType
+	contentType := ec.DataContentType()
 	if contentType == "" {
 		contentType = contentTypeJSON
 	}

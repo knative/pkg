@@ -20,6 +20,7 @@ package cloudevents
 
 import (
 	"bytes"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -76,14 +77,21 @@ type BinaryLoader interface {
 }
 
 // FromRequest parses event data and context from an HTTP request.
-func (binary) FromRequest(data interface{}, r *http.Request) (*EventContext, error) {
+func (binary) FromRequest(data interface{}, r *http.Request) (LoadContext, error) {
 	// TODO: detect version and create correct VXXEventContext
-	ec := &EventContext{}
+	var ec ContextType
+	if r.Header.Get("CE-SpecVersion") == V02CloudEventsVersion {
+		ec = &V02EventContext{}
+	} else if r.Header.Get("CE-CloudEventsVersion") == V01CloudEventsVersion {
+		ec = &V01EventContext{}
+	} else {
+		return nil, fmt.Errorf("Could not determine Cloud Events version from header: %+v", r.Header)
+	}
 	if err := ec.FromHeaders(r.Header); err != nil {
 		return nil, err
 	}
 
-	if err := unmarshalEventData(ec.ContentType, r.Body, data); err != nil {
+	if err := unmarshalEventData(ec.DataContentType(), r.Body, data); err != nil {
 		return nil, err
 	}
 
