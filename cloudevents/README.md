@@ -40,7 +40,7 @@ type Example struct {
 ### Producer
 
 The producer creates a new `cloudevent.Client,` and then sends 10 `Example`
-events to `"http://localhost:8080"`. 
+events to `"http://localhost:8080"`.
 
 ```go
 
