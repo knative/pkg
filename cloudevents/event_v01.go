@@ -106,13 +106,11 @@ func (ec *V01EventContext) FromHeaders(in http.Header) error {
 		}
 		return nil
 	}
-	err := anyError(
+	if err := anyError(
 		missingField("CloudEventsVersion"),
 		missingField("EventID"),
 		missingField("EventType"),
-		missingField("Source"),
-	)
-	if err != nil {
+		missingField("Source")); err != nil {
 		return err
 	}
 	data := V01EventContext{
@@ -126,6 +124,7 @@ func (ec *V01EventContext) FromHeaders(in http.Header) error {
 		Extensions:         make(map[string]interface{}),
 	}
 	if timeStr := in.Get("CE-EventTime"); timeStr != "" {
+		var err error
 		if data.EventTime, err = time.Parse(time.RFC3339Nano, timeStr); err != nil {
 			return err
 		}
@@ -134,10 +133,10 @@ func (ec *V01EventContext) FromHeaders(in http.Header) error {
 		if strings.EqualFold(k[:len("CE-X-")], "CE-X-") {
 			key := k[len("CE-X-"):]
 			var tmp interface{}
-			if err = json.Unmarshal([]byte(v[0]), &tmp); err == nil {
+			if err := json.Unmarshal([]byte(v[0]), &tmp); err == nil {
 				data.Extensions[key] = tmp
 			} else {
-				// If we can't unmarshall the data, treat it as a string
+				// If we can't unmarshall the data, treat it as a string.
 				data.Extensions[key] = v[0]
 			}
 		}
@@ -150,15 +149,15 @@ func (ec *V01EventContext) FromHeaders(in http.Header) error {
 func (ec V01EventContext) AsJSON() (map[string]json.RawMessage, error) {
 	ret := make(map[string]json.RawMessage)
 	err := anyError(
-		encodeKey(&ret, "cloudEventsVersion", ec.CloudEventsVersion),
-		encodeKey(&ret, "eventID", ec.EventID),
-		encodeKey(&ret, "eventTime", ec.EventTime),
-		encodeKey(&ret, "eventType", ec.EventType),
-		encodeKey(&ret, "eventTypeVersion", ec.EventTypeVersion),
-		encodeKey(&ret, "schemaURL", ec.SchemaURL),
-		encodeKey(&ret, "contentType", ec.ContentType),
-		encodeKey(&ret, "source", ec.Source),
-		encodeKey(&ret, "extensions", ec.Extensions))
+		encodeKey(ret, "cloudEventsVersion", ec.CloudEventsVersion),
+		encodeKey(ret, "eventID", ec.EventID),
+		encodeKey(ret, "eventTime", ec.EventTime),
+		encodeKey(ret, "eventType", ec.EventType),
+		encodeKey(ret, "eventTypeVersion", ec.EventTypeVersion),
+		encodeKey(ret, "schemaURL", ec.SchemaURL),
+		encodeKey(ret, "contentType", ec.ContentType),
+		encodeKey(ret, "source", ec.Source),
+		encodeKey(ret, "extensions", ec.Extensions))
 	return ret, err
 }
 
@@ -176,8 +175,7 @@ func (ec *V01EventContext) FromJSON(in map[string]json.RawMessage) error {
 		Source:             extractKey(in, "source"),
 	}
 	var err error
-	timeStr := extractKey(in, "eventTime")
-	if timeStr != "" {
+	if timeStr := extractKey(in, "eventTime"); timeStr != "" {
 		if data.EventTime, err = time.Parse(time.RFC3339Nano, timeStr); err != nil {
 			return err
 		}
@@ -188,20 +186,19 @@ func (ec *V01EventContext) FromJSON(in map[string]json.RawMessage) error {
 	if len(in["extensions"]) == 0 {
 		in["extensions"] = []byte("{}")
 	}
-	err = json.Unmarshal(in["extensions"], &data.Extensions)
-	if err != nil {
+	if err = json.Unmarshal(in["extensions"], &data.Extensions); err != nil {
 		return err
 	}
 	*ec = data
 	return nil
 }
 
-func encodeKey(out *map[string]json.RawMessage, key string, value interface{}) (err error) {
-	if s, ok := value.(string); s == "" && ok {
-		// Skip empty strings
+func encodeKey(out map[string]json.RawMessage, key string, value interface{}) (err error) {
+	if s, ok := value.(string); ok && s == "" {
+		// Skip empty strings.
 		return nil
 	}
-	(*out)[key], err = json.Marshal(value)
+	out[key], err = json.Marshal(value)
 	return
 }
 
