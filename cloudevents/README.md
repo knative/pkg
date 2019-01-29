@@ -20,7 +20,7 @@ CloudEvent type for the events you will be producing.
 Example CloudEvent Type: `dev.knative.cloudevent.example`
 
 Select a source to identify the originator of this CloudEvent. It should be a
-valid URI which represents the subject which created the CloudEvent (cloud 
+valid URI which represents the subject which created the CloudEvent (cloud
 bucket, git repo, etc).
 
 Example CloudEvent Source: `https://github.com/knative/pkg#cloudevents-example`
