@@ -36,16 +36,28 @@ func TestBuilderBuildValidation(t *testing.T) {
 		{
 			name:    "Source is empty",
 			b:       cloudevents.Builder{},
-			errText: "Build.Source is empty",
-		},
-		{
+			errText: "Source resolved empty",
+		}, {
 			name: "EventType is empty",
 			b: cloudevents.Builder{
 				Source: "source",
 			},
-			errText: "Build.EventType is empty",
-		},
-		{
+			errText: "EventType resolved empty",
+		}, {
+			name: "source from overrides, EventType is empty",
+			b:    cloudevents.Builder{},
+			overrides: []cloudevents.SendContext{cloudevents.V01EventContext{
+				Source: "source",
+			}},
+			errText: "EventType resolved empty",
+		}, {
+			name: "valid, source and event type from overrides",
+			b:    cloudevents.Builder{},
+			overrides: []cloudevents.SendContext{cloudevents.V01EventContext{
+				Source:    "source",
+				EventType: "event.type",
+			}},
+		}, {
 			name: "too many overrides",
 			b: cloudevents.Builder{
 				Source:    "source",
@@ -53,8 +65,7 @@ func TestBuilderBuildValidation(t *testing.T) {
 			},
 			overrides: []cloudevents.SendContext{cloudevents.V01EventContext{}, cloudevents.V01EventContext{}},
 			errText:   "Build was called with more than one override",
-		},
-		{
+		}, {
 			name: "override is wrong type",
 			b: cloudevents.Builder{
 				Source:    "source",
