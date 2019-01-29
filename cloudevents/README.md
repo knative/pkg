@@ -39,9 +39,8 @@ type Example struct {
 
 ### Producer
 
-The producer will create a new `Example` object, fill out the CloudEvent struct,
-and post the event via a [Binary](#binary) or [Structured](#structured) request
-format. Binary is used by default.
+The producer creates a new `cloudevent.Client,` and then sends 10 `Example`
+events to `"http://localhost:8080"`. 
 
 ```go
 
