@@ -251,7 +251,7 @@ func TestClientSend(t *testing.T) {
 				return *client
 			}(),
 			override: &cloudevents.V01EventContext{},
-			errText:  "Build.EventType is empty",
+			errText:  "EventType resolved empty",
 		}, {
 			name: "request not accepted",
 			client: func() cloudevents.Client {

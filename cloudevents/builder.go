@@ -58,12 +58,6 @@ type Builder struct {
 // send a pre-assembled cloud event to the given target. The target is assumed
 // to be a URL with a scheme, ie: "http://localhost:8080"
 func (b *Builder) Build(target string, data interface{}, overrides ...SendContext) (*http.Request, error) {
-	if b.Source == "" {
-		return nil, fmt.Errorf("Build.Source is empty")
-	}
-	if b.EventType == "" {
-		return nil, fmt.Errorf("Build.EventType is empty")
-	}
 	if len(overrides) > 1 {
 		return nil, fmt.Errorf("Build was called with more than one override")
 	}
@@ -80,6 +74,13 @@ func (b *Builder) Build(target string, data interface{}, overrides ...SendContex
 	}
 	// TODO: when V02 is supported this will have to shuffle a little.
 	ctx := b.cloudEventsContextV01(overridesV01)
+
+	if ctx.Source == "" {
+		return nil, fmt.Errorf("ctx.Source resolved empty")
+	}
+	if b.EventType == "" {
+		return nil, fmt.Errorf("ctx.EventType resolved empty")
+	}
 
 	switch b.Encoding {
 	case BinaryV01:
@@ -111,6 +112,9 @@ func (b *Builder) cloudEventsContextV01(overrides *V01EventContext) V01EventCont
 		}
 		if overrides.EventID != "" {
 			ctx.EventID = overrides.EventID
+		}
+		if overrides.EventType != "" {
+			ctx.EventType = overrides.EventType
 		}
 		if !overrides.EventTime.IsZero() {
 			ctx.EventTime = overrides.EventTime
