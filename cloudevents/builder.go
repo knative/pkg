@@ -78,7 +78,7 @@ func (b *Builder) Build(target string, data interface{}, overrides ...SendContex
 	if ctx.Source == "" {
 		return nil, fmt.Errorf("ctx.Source resolved empty")
 	}
-	if b.EventType == "" {
+	if ctx.EventType == "" {
 		return nil, fmt.Errorf("ctx.EventType resolved empty")
 	}
 

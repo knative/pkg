@@ -107,6 +107,8 @@ func TestBuilderBuildValidation(t *testing.T) {
 					t.Fatalf("failed to return expected error, got %v, want %v", err, want)
 				}
 				return
+			} else if err != nil {
+				t.Fatalf("wanted no error, got %v", err)
 			}
 
 			_ = req
