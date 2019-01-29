@@ -64,14 +64,9 @@ func (structured) FromRequest(data interface{}, r *http.Request) (LoadContext, e
 	rawData := raw["data"]
 	delete(raw, "data")
 
-	jsonDebug, _ := json.Marshal(raw)
-	fmt.Printf("Decoding from %q\n\n\n", jsonDebug)
-
-	// TODO: support both v01 and v02 encoding
 	var ec ContextType
 	v := ""
 	if err := json.Unmarshal(raw["specversion"], &v); err == nil && v == V02CloudEventsVersion {
-		fmt.Printf("specversion is %q\n", v)
 		ec = &V02EventContext{}
 	} else if err := json.Unmarshal(raw["cloudEventsVersion"], &v); err == nil && v == V01CloudEventsVersion {
 		ec = &V01EventContext{}
@@ -81,8 +76,8 @@ func (structured) FromRequest(data interface{}, r *http.Request) (LoadContext, e
 		// TODO: change behavior to be an error:
 		// return nil, fmt.Errorf("Could not determine Cloud Events version from payload: %q", data)
 	}
+
 	if err := ec.FromJSON(raw); err != nil {
-		fmt.Printf("FromJSON failed for %q: %v\n", jsonDebug, err)
 		return nil, err
 	}
 

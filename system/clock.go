@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Knative Authors
+Copyright 2019 The Knative Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,22 +14,19 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v1alpha1
+package system
 
-// Describes how to match a given string in HTTP headers. Match is
-// case-sensitive.
-type StringMatch struct {
-	// Specified exactly one of the fields below.
+import (
+	"time"
+)
 
-	// exact string match
-	Exact string `json:"exact,omitempty"`
+// Mockable interface for time based testing
+type Clock interface {
+	Now() time.Time
+}
 
-	// prefix-based match
-	Prefix string `json:"prefix,omitempty"`
+type RealClock struct{}
 
-	// suffix-based match.
-	Suffix string `json:"suffix,omitempty"`
-
-	// ECMAscript style regex-based match
-	Regex string `json:"regex,omitempty"`
+func (RealClock) Now() time.Time {
+	return time.Now()
 }
