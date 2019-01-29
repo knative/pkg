@@ -40,8 +40,6 @@ type StructuredSender interface {
 	// AsJSON encodes the object into a map from string to JSON data, which
 	// allows additional keys to be encoded later.
 	AsJSON() (map[string]json.RawMessage, error)
-	// DataContentType returns the MIME content type for encoding data.
-	DataContentType() string
 }
 
 // StructuredLoader implements an interface for translating a structured
@@ -64,7 +62,7 @@ func (structured) FromRequest(data interface{}, r *http.Request) (LoadContext, e
 	rawData := raw["data"]
 	delete(raw, "data")
 
-	var ec ContextType
+	var ec LoadContext
 	v := ""
 	if err := json.Unmarshal(raw["specversion"], &v); err == nil && v == V02CloudEventsVersion {
 		ec = &V02EventContext{}

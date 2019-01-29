@@ -71,6 +71,10 @@ type ContextTranslator interface {
 	// CloudEvent was to the equivalent in v0.2 field names, moving fields to or
 	// from extensions as necessary.
 	AsV02() V02EventContext
+
+	// DataContentType returns the MIME content type for encoding data, which is
+	// needed by both encoding and decoding.
+	DataContentType() string
 }
 
 // SendContext provides an interface for extracting information from an
