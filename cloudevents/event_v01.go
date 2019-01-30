@@ -136,7 +136,7 @@ func (ec *V01EventContext) FromHeaders(in http.Header) error {
 			if err := json.Unmarshal([]byte(v[0]), &tmp); err == nil {
 				data.Extensions[key] = tmp
 			} else {
-				// If we can't unmarshall the data, treat it as a string.
+				// If we can't unmarshal the data, treat it as a string.
 				data.Extensions[key] = v[0]
 			}
 		}
