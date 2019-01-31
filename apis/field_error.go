@@ -73,7 +73,7 @@ func (fe *FieldError) ViaField(prefix ...string) *FieldError {
 	return newErr
 }
 
-// ViaIndex is used to attach an index to the *next* ViaField provided.
+// ViaIndex is used to attach an index to the next ViaField provided.
 // For example, if a type recursively validates a parameter that has a collection:
 //  for i, c := range spec.Collection {
 //    if err := doValidation(c); err != nil {
@@ -82,19 +82,6 @@ func (fe *FieldError) ViaField(prefix ...string) *FieldError {
 //  }
 func (fe *FieldError) ViaIndex(index int) *FieldError {
 	return fe.ViaField(asIndex(index))
-}
-
-
-// AtIndex is used to attach an index to the *previous* ViaField provided.
-func (fe *FieldError) AtIndex(index int) *FieldError {
-	if fe == nil {
-		return nil
-	}
-	ai := asIndex(index)
-	for i := range fe.Paths {
-		fe.Paths[i] = flatten([]string{fe.Paths[i], ai})
-	}
-	return fe
 }
 
 
