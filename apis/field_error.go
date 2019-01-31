@@ -84,6 +84,20 @@ func (fe *FieldError) ViaIndex(index int) *FieldError {
 	return fe.ViaField(asIndex(index))
 }
 
+// AtIndex attaches the index to the current field.
+// Which is different from ViaIndex, that attaches index to the
+// next field.
+func (fe *FieldError) AtIndex(index int) *FieldError {
+	if fe == nil {
+		return nil
+	}
+	ai := asIndex(index)
+	for i := range fe.Paths {
+		fe.Paths[i] = flatten([]string{fe.Paths[i], ai})
+	}
+	return fe
+}
+
 // ViaFieldIndex is the short way to chain: err.ViaIndex(bar).ViaField(foo)
 func (fe *FieldError) ViaFieldIndex(field string, index int) *FieldError {
 	return fe.ViaIndex(index).ViaField(field)
@@ -192,7 +206,7 @@ func asKey(key string) string {
 //   err([0]).ViaField(bar).ViaField(foo) -> foo.bar.[0] converts to foo.bar[0]
 //   err(bar).ViaIndex(0).ViaField(foo) -> foo.[0].bar converts to foo[0].bar
 //   err(bar).ViaField(foo).ViaIndex(0) -> [0].foo.bar converts to [0].foo.bar
-//   err(bar).ViaIndex(0).ViaIndex[1].ViaField(foo) -> foo.[1].[0].bar converts to foo[1][0].bar
+//   err(bar).ViaIndex(0).ViaIndex(1).ViaField(foo) -> foo.[1].[0].bar converts to foo[1][0].bar
 func flatten(path []string) string {
 	var newPath []string
 	for _, part := range path {
