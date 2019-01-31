@@ -84,7 +84,6 @@ func (fe *FieldError) ViaIndex(index int) *FieldError {
 	return fe.ViaField(asIndex(index))
 }
 
-
 // ViaFieldIndex is the short way to chain: err.ViaIndex(bar).ViaField(foo)
 func (fe *FieldError) ViaFieldIndex(field string, index int) *FieldError {
 	return fe.ViaIndex(index).ViaField(field)
