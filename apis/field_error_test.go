@@ -21,6 +21,8 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+
+	"github.com/google/go-cmp/cmp"
 )
 
 func TestFieldError(t *testing.T) {
@@ -390,6 +392,12 @@ can not use @, do not try`,
 		}(),
 		want: "invalid field(s): jar[0][E].baz[1].bar[A].faa, jar[0][E].baz[1].bar[A].foo",
 	}, {
+		name: "leaf field error with index",
+		err: func() *FieldError {
+			return ErrInvalidArrayValue("kapot", "indexed", 5)
+		}(),
+		want: `invalid value "kapot": indexed[5]`,
+	}, {
 		name:     "nil propagation",
 		err:      nil,
 		prefixes: [][]string{{"baz", "ugh", "INDEX:0", "KEY:A"}},
@@ -421,7 +429,7 @@ can not use @, do not try`,
 
 			if test.want != "" {
 				if got, want := fe.Error(), test.want; got != want {
-					t.Errorf("%s: Error() = %v, wanted %v", test.name, got, want)
+t.Errorf("%s: Error() = %q, wanted %q, diff: %s", test.name, got, want, cmp.Diff(got, want))
 				}
 			} else if fe != nil {
 				t.Errorf("%s: ViaField() = %v, wanted nil", test.name, fe)
