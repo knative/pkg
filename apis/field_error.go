@@ -73,7 +73,7 @@ func (fe *FieldError) ViaField(prefix ...string) *FieldError {
 	return newErr
 }
 
-// ViaIndex is used to attach an index to the next ViaField provided.
+// ViaIndex is used to attach an index to the *next* ViaField provided.
 // For example, if a type recursively validates a parameter that has a collection:
 //  for i, c := range spec.Collection {
 //    if err := doValidation(c); err != nil {
@@ -84,9 +84,8 @@ func (fe *FieldError) ViaIndex(index int) *FieldError {
 	return fe.ViaField(asIndex(index))
 }
 
-// AtIndex attaches the index to the current field.
-// Which is different from ViaIndex, that attaches index to the
-// next field.
+
+// AtIndex is used to attach an index to the *previous* ViaField provided.
 func (fe *FieldError) AtIndex(index int) *FieldError {
 	if fe == nil {
 		return nil
@@ -97,6 +96,7 @@ func (fe *FieldError) AtIndex(index int) *FieldError {
 	}
 	return fe
 }
+
 
 // ViaFieldIndex is the short way to chain: err.ViaIndex(bar).ViaField(foo)
 func (fe *FieldError) ViaFieldIndex(field string, index int) *FieldError {
@@ -312,6 +312,12 @@ func ErrDisallowedFields(fieldPaths ...string) *FieldError {
 		Message: "must not set the field(s)",
 		Paths:   fieldPaths,
 	}
+}
+
+// ErrInvalidArrayValue consturcts a FieldError for a repetetive `field`
+// at `index` that has received an invalid string value.
+func ErrInvalidArrayValue(value, field string, index int) *FieldError {
+	return ErrInvalidValue(value, CurrentField).ViaFieldIndex(field, index)
 }
 
 // ErrInvalidValue constructs a FieldError for a field that has received an

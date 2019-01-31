@@ -17,12 +17,11 @@ limitations under the License.
 package apis
 
 import (
+	"github.com/google/go-cmp/cmp"
 	"fmt"
 	"strconv"
 	"strings"
 	"testing"
-
-	"github.com/google/go-cmp/cmp"
 )
 
 func TestFieldError(t *testing.T) {
@@ -340,55 +339,26 @@ can not use @, do not try`,
 			// }
 			// --> I expect path to be myList[i].foo
 
-			return (&FieldError{
-				Message: "invalid field(s)",
-				Paths:   []string{"foo"},
-			}).ViaIndex(0).ViaField("bar").ViaIndex(2).ViaIndex(1).ViaField("baz").ViaIndex(3).ViaIndex(4).ViaField("boof")
-		}(),
-		want: "invalid field(s): boof[4][3].baz[1][2].bar[0].foo",
-	}, {
-		name: "manual index, using ViaFieldIndex",
-		err: func() *FieldError {
-			// Example, return an error in a loop:
-			// for i, item := spec.myList {
-			//   err := item.validate().ViaIndex(i).ViaField("myList")
-			//   if err != nil {
-			// 		return err
-			//   }
-			// }
-			// --> I expect path to be myList[i].foo
-
-			return (&FieldError{
-				Message: "invalid field(s)",
-				Paths:   []string{"foo"},
-			}).ViaFieldIndex("bar", 0).ViaIndex(2).ViaFieldIndex("baz", 1).ViaIndex(3).ViaFieldIndex("boof", 4)
-		}(),
-		want: "invalid field(s): boof[4][3].baz[1][2].bar[0].foo",
-	}, {
-		name: "atIndex",
-		err: func() *FieldError {
-			return (&FieldError{Message: "broken at index 5", Paths: []string{"foo"}}).AtIndex(5)
-		}(),
-		want: "broken at index 5: foo[5]",
-	}, {
-		name: "atIndex, nil",
-		err: func() *FieldError {
-			var fe *FieldError
-			return fe.AtIndex(5)
-		}(),
-	}, {
-		name: "atIndex; 2d",
-		err: func() *FieldError {
-			return (&FieldError{Message: "broken at index[5][3]", Paths: []string{"foo"}}).AtIndex(5).AtIndex(3)
-		}(),
-		want: "broken at index[5][3]: foo[5][3]",
-	}, {
-		name: "manual multiple index",
-		err: func() *FieldError {
 			err := &FieldError{
 				Message: "invalid field(s)",
 				Paths:   []string{"foo"},
 			}
+
+			err = err.ViaIndex(0).ViaField("bar")
+			err = err.ViaIndex(2).ViaIndex(1).ViaField("baz")
+			err = err.ViaIndex(3).ViaIndex(4).ViaField("boof")
+			return err
+		}(),
+		want: "invalid field(s): boof[4][3].baz[1][2].bar[0].foo",
+	}, {
+		name: "manual multiple index",
+		err: func() *FieldError {
+
+			err := &FieldError{
+				Message: "invalid field(s)",
+				Paths:   []string{"foo"},
+			}
+
 			err = err.ViaField("bear", "[1]", "[2]", "[3]", "baz", "]xxx[").ViaField("bar")
 			return err
 		}(),
@@ -396,10 +366,13 @@ can not use @, do not try`,
 	}, {
 		name: "manual keys",
 		err: func() *FieldError {
-			err := (&FieldError{
+			err := &FieldError{
 				Message: "invalid field(s)",
 				Paths:   []string{"foo"},
-			}).ViaKey("A").ViaField("bar").ViaKey("CCC").ViaKey("BB").ViaField("baz")
+			}
+
+			err = err.ViaKey("A").ViaField("bar")
+			err = err.ViaKey("CCC").ViaKey("BB").ViaField("baz")
 			err = err.ViaKey("E").ViaKey("F").ViaField("jar")
 			return err
 		}(),
@@ -407,12 +380,22 @@ can not use @, do not try`,
 	}, {
 		name: "manual index and keys",
 		err: func() *FieldError {
-			return (&FieldError{
+			err := &FieldError{
 				Message: "invalid field(s)",
 				Paths:   []string{"foo", "faa"},
-			}).ViaKey("A").ViaField("bar").ViaIndex(1).ViaField("baz").ViaKey("E").ViaIndex(0).ViaField("jar")
+			}
+			err = err.ViaKey("A").ViaField("bar")
+			err = err.ViaIndex(1).ViaField("baz")
+			err = err.ViaKey("E").ViaIndex(0).ViaField("jar")
+			return err
 		}(),
 		want: "invalid field(s): jar[0][E].baz[1].bar[A].faa, jar[0][E].baz[1].bar[A].foo",
+	}, {
+		name: "leaf field error with index",
+		err: func() *FieldError {
+			return ErrInvalidArrayValue("kapot", "indexed", 5)
+		}(),
+		want: `invalid value "kapot": indexed[5]`,
 	}, {
 		name:     "nil propagation",
 		err:      nil,
@@ -445,7 +428,7 @@ can not use @, do not try`,
 
 			if test.want != "" {
 				if got, want := fe.Error(), test.want; got != want {
-					t.Errorf("%s: Error() = %q, wanted %q, diff: %s", test.name, got, want, cmp.Diff(got, want))
+t.Errorf("%s: Error() = %q, wanted %q, diff: %s", test.name, got, want, cmp.Diff(got, want))
 				}
 			} else if fe != nil {
 				t.Errorf("%s: ViaField() = %v, wanted nil", test.name, fe)
