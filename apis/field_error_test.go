@@ -17,11 +17,12 @@ limitations under the License.
 package apis
 
 import (
-	"github.com/google/go-cmp/cmp"
 	"fmt"
 	"strconv"
 	"strings"
 	"testing"
+
+	"github.com/google/go-cmp/cmp"
 )
 
 func TestFieldError(t *testing.T) {
