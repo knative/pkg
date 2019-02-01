@@ -26,11 +26,12 @@ import (
 	"io/ioutil"
 	"net"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/knative/pkg/test/logging"
-	zipkin "github.com/knative/pkg/test/zipkin"
-	v1 "k8s.io/api/core/v1"
+	"github.com/knative/pkg/test/zipkin"
+	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
@@ -44,8 +45,8 @@ const (
 	requestInterval = 1 * time.Second
 	requestTimeout  = 5 * time.Minute
 	// TODO(tcnghia): These probably shouldn't be hard-coded here?
-	ingressNamespace = "istio-system"
-	ingressName      = "istio-ingressgateway"
+	istioIngressNamespace = "istio-system"
+	istioIngressName      = "istio-ingressgateway"
 )
 
 // Response is a stripped down subset of http.Response. The is primarily useful
@@ -121,6 +122,15 @@ func New(kubeClientset *kubernetes.Clientset, logger *logging.BaseLogger, domain
 
 // GetServiceEndpoint gets the endpoint IP or hostname to use for the service.
 func GetServiceEndpoint(kubeClientset *kubernetes.Clientset) (*string, error) {
+	ingressName := istioIngressName
+	if gatewayOverride := os.Getenv("GATEWAY_OVERRIDE"); gatewayOverride != "" {
+		ingressName = gatewayOverride
+	}
+	ingressNamespace := istioIngressNamespace
+	if gatewayNsOverride := os.Getenv("GATEWAY_NAMESPACE_OVERRIDE"); gatewayNsOverride != "" {
+		ingressNamespace = gatewayNsOverride
+	}
+
 	ingress, err := kubeClientset.CoreV1().Services(ingressNamespace).Get(ingressName, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
