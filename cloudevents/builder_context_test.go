@@ -144,6 +144,22 @@ func TestCloudEventsContextV01(t *testing.T) {
 			},
 			opt: cmpopts.IgnoreFields(V01EventContext{}, "EventID", "EventTime"),
 		}, {
+			name: "override event type",
+			b: Builder{
+				Source:    "source",
+				EventType: "event.type",
+			},
+			override: &V01EventContext{
+				EventType: "override.event.type",
+			},
+			want: V01EventContext{
+				CloudEventsVersion: "0.1",
+				EventType:          "override.event.type",
+				ContentType:        "application/json",
+				Source:             "source",
+			},
+			opt: cmpopts.IgnoreFields(V01EventContext{}, "EventID", "EventTime"),
+		}, {
 			name: "override extensions",
 			b: Builder{
 				Source:           "source",

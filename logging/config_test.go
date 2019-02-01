@@ -121,7 +121,7 @@ func TestNewConfigNoEntry(t *testing.T) {
 	if err != nil {
 		t.Errorf("Expected no errors. got: %v", err)
 	}
-	if got, want := c.LoggingConfig, ""; got != want {
+	if got, want := c.LoggingConfig, defaultZLC; got != want {
 		t.Errorf("LoggingConfig = %v, want %v", got, want)
 	}
 	if got, want := len(c.LoggingLevel), 0; got != want {
