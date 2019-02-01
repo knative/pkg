@@ -207,6 +207,6 @@ type contextKeyType struct{}
 var contextKey = contextKeyType{}
 
 // FromContext loads an V01EventContext from a normal context.Context
-func FromContext(ctx context.Context) *V01EventContext {
-	return ctx.Value(contextKey).(*V01EventContext)
+func FromContext(ctx context.Context) LoadContext {
+	return ctx.Value(contextKey).(LoadContext)
 }

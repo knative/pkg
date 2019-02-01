@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Knative Authors
+Copyright 2019 The Knative Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -30,10 +30,14 @@ const (
 	V02CloudEventsVersion = "0.2"
 
 	// required attributes
-	fieldSpecVersion = "SpecVersion"
-	fieldID          = "Id"
-	fieldType        = "Type"
-	fieldSource      = "Source"
+	fieldSpecVersion  = "specversion"
+	fieldID           = "id"
+	fieldType         = "type"
+	fieldSource       = "source"
+	fieldTime         = "time"
+	fieldSchemaURL    = "schemaurl"
+	fieldContentType  = "contenttype"
+	headerContentType = "Content-Type"
 )
 
 // V02EventContext represents the non-data attributes of a CloudEvents v0.2
@@ -92,21 +96,21 @@ func (ec V02EventContext) AsV02() V02EventContext {
 // AsHeaders implements the BinarySender interface.
 func (ec V02EventContext) AsHeaders() http.Header {
 	h := http.Header{}
-	h.Set("CE-SpecVersion", ec.SpecVersion)
-	h.Set("CE-Type", ec.Type)
-	h.Set("CE-Source", ec.Source)
-	h.Set("CE-ID", ec.ID)
+	h.Set("CE-"+fieldSpecVersion, ec.SpecVersion)
+	h.Set("CE-"+fieldType, ec.Type)
+	h.Set("CE-"+fieldSource, ec.Source)
+	h.Set("CE-"+fieldID, ec.ID)
 	if ec.SpecVersion == "" {
-		h.Set("CE-SpecVersion", V02CloudEventsVersion)
+		h.Set("CE-"+fieldSpecVersion, V02CloudEventsVersion)
 	}
 	if !ec.Time.IsZero() {
-		h.Set("CE-Time", ec.Time.Format(time.RFC3339Nano))
+		h.Set("CE-"+fieldTime, ec.Time.Format(time.RFC3339Nano))
 	}
 	if ec.SchemaURL != "" {
-		h.Set("CE-SchemaURL", ec.SchemaURL)
+		h.Set("CE-"+fieldSchemaURL, ec.SchemaURL)
 	}
 	if ec.ContentType != "" {
-		h.Set("Content-Type", ec.ContentType)
+		h.Set(headerContentType, ec.ContentType)
 	}
 	for k, v := range ec.Extensions {
 		// Per spec, map-valued extensions are converted to a list of headers as:
@@ -114,8 +118,7 @@ func (ec V02EventContext) AsHeaders() http.Header {
 		if mapVal, ok := v.(map[string]interface{}); ok {
 			for subkey, subval := range mapVal {
 				data := fmt.Sprint(subval)
-				encoded, err := json.Marshal(subval)
-				if err != nil {
+				if encoded, err := json.Marshal(subval); err == nil {
 					data = string(encoded)
 				}
 				h.Set("CE-"+k+"-"+subkey, data)
@@ -123,8 +126,7 @@ func (ec V02EventContext) AsHeaders() http.Header {
 			continue
 		}
 		data := fmt.Sprint(v)
-		encoded, err := json.Marshal(v)
-		if err != nil {
+		if encoded, err := json.Marshal(v); err == nil {
 			data = string(encoded)
 		}
 		h.Set("CE-"+k, data)
@@ -142,36 +144,35 @@ func (ec *V02EventContext) FromHeaders(in http.Header) error {
 		return nil
 	}
 	err := anyError(
-		missingField("SpecVersion"),
-		missingField("ID"),
-		missingField("Type"),
-		missingField("Source"),
+		missingField(fieldSpecVersion),
+		missingField(fieldID),
+		missingField(fieldType),
+		missingField(fieldSource),
 	)
 	if err != nil {
 		return err
 	}
 	data := V02EventContext{
-		ContentType: in.Get("Content-Type"),
+		ContentType: in.Get(headerContentType),
 		Extensions:  make(map[string]interface{}),
 	}
 	// Extensions and top-level fields are mixed under "CE-" headers.
 	// Extract them all here rather than trying to clear fields in headers.
 	for k, v := range in {
 		if strings.EqualFold(k[:len("CE-")], "CE-") {
-			key := strings.ToLower(string(k[len("CE-"):]))
-			value := v[0]
+			key, value := strings.ToLower(string(k[len("CE-"):])), v[0]
 			switch key {
-			case "specversion":
+			case fieldSpecVersion:
 				data.SpecVersion = value
-			case "type":
+			case fieldType:
 				data.Type = value
-			case "source":
+			case fieldSource:
 				data.Source = value
-			case "id":
+			case fieldID:
 				data.ID = value
-			case "schemaurl":
+			case fieldSchemaURL:
 				data.SchemaURL = value
-			case "time":
+			case fieldTime:
 				if data.Time, err = time.Parse(time.RFC3339Nano, value); err != nil {
 					return err
 				}
@@ -184,7 +185,7 @@ func (ec *V02EventContext) FromHeaders(in http.Header) error {
 				// CE-attrib-key. This is where things get a bit crazy... see
 				// https://github.com/cloudevents/spec/issues/367 for additional notes.
 				if strings.Contains(key, "-") {
-					items := strings.SplitN(k, "-", 2)
+					items := strings.SplitN(key, "-", 2)
 					key, subkey := items[0], items[1]
 					if _, ok := data.Extensions[key]; !ok {
 						data.Extensions[key] = make(map[string]interface{})
@@ -206,19 +207,19 @@ func (ec *V02EventContext) FromHeaders(in http.Header) error {
 func (ec V02EventContext) AsJSON() (map[string]json.RawMessage, error) {
 	ret := make(map[string]json.RawMessage)
 	err := anyError(
-		encodeKey(&ret, "specversion", ec.SpecVersion),
-		encodeKey(&ret, "type", ec.Type),
-		encodeKey(&ret, "source", ec.Source),
-		encodeKey(&ret, "id", ec.ID),
-		encodeKey(&ret, "time", ec.Time),
-		encodeKey(&ret, "schemaurl", ec.SchemaURL),
-		encodeKey(&ret, "contenttype", ec.ContentType),
+		encodeKey(ret, fieldSpecVersion, ec.SpecVersion),
+		encodeKey(ret, fieldType, ec.Type),
+		encodeKey(ret, fieldSource, ec.Source),
+		encodeKey(ret, fieldID, ec.ID),
+		encodeKey(ret, fieldTime, ec.Time),
+		encodeKey(ret, fieldSchemaURL, ec.SchemaURL),
+		encodeKey(ret, fieldContentType, ec.ContentType),
 	)
 	if err != nil {
 		return nil, err
 	}
 	for k, v := range ec.Extensions {
-		if err = encodeKey(&ret, k, v); err != nil {
+		if err = encodeKey(ret, k, v); err != nil {
 			return nil, err
 		}
 	}
@@ -233,20 +234,20 @@ func (ec V02EventContext) DataContentType() string {
 // FromJSON implements the StructuredLoader interface.
 func (ec *V02EventContext) FromJSON(in map[string]json.RawMessage) error {
 	data := V02EventContext{
-		SpecVersion: extractKey(in, "specversion"),
-		Type:        extractKey(in, "type"),
-		Source:      extractKey(in, "source"),
-		ID:          extractKey(in, "id"),
+		SpecVersion: extractKey(in, fieldSpecVersion),
+		Type:        extractKey(in, fieldType),
+		Source:      extractKey(in, fieldSource),
+		ID:          extractKey(in, fieldID),
 		Extensions:  make(map[string]interface{}),
 	}
 	var err error
-	if timeStr := extractKey(in, "time"); timeStr != "" {
+	if timeStr := extractKey(in, fieldTime); timeStr != "" {
 		if data.Time, err = time.Parse(time.RFC3339Nano, timeStr); err != nil {
 			return err
 		}
 	}
-	extractKeyTo(in, "schemaurl", &data.SchemaURL)
-	extractKeyTo(in, "contenttype", &data.ContentType)
+	extractKeyTo(in, fieldSchemaURL, &data.SchemaURL)
+	extractKeyTo(in, fieldContentType, &data.ContentType)
 	// Extract the remaining items from in by converting to JSON and then
 	// unpacking into Extensions. This avoids having to do funny type
 	// checking/testing in the loop over values.

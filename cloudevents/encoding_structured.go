@@ -69,10 +69,7 @@ func (structured) FromRequest(data interface{}, r *http.Request) (LoadContext, e
 	} else if err := json.Unmarshal(raw["cloudEventsVersion"], &v); err == nil && v == V01CloudEventsVersion {
 		ec = &V01EventContext{}
 	} else {
-		// For historical reasons, this library treated unknown payloads as V01. Preserve for now.
-		ec = &V01EventContext{}
-		// TODO: change behavior to be an error:
-		// return nil, fmt.Errorf("Could not determine Cloud Events version from payload: %q", data)
+		return nil, fmt.Errorf("Could not determine Cloud Events version from payload: %q", data)
 	}
 
 	if err := ec.FromJSON(raw); err != nil {

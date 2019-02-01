@@ -79,11 +79,12 @@ type BinaryLoader interface {
 // FromRequest parses event data and context from an HTTP request.
 func (binary) FromRequest(data interface{}, r *http.Request) (LoadContext, error) {
 	var ec LoadContext
-	if r.Header.Get("CE-SpecVersion") == V02CloudEventsVersion {
+	switch {
+	case r.Header.Get("CE-SpecVersion") == V02CloudEventsVersion:
 		ec = &V02EventContext{}
-	} else if r.Header.Get("CE-CloudEventsVersion") == V01CloudEventsVersion {
+	case r.Header.Get("CE-CloudEventsVersion") == V01CloudEventsVersion:
 		ec = &V01EventContext{}
-	} else {
+	default:
 		return nil, fmt.Errorf("Could not determine Cloud Events version from header: %+v", r.Header)
 	}
 

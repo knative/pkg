@@ -428,16 +428,18 @@ func TestMux(t *testing.T) {
 		Farewell: "Hasta la vista",
 	}
 
-	contextA := &cloudevents.EventContext{
-		EventID:     "1234",
-		EventType:   "org.A.test",
-		Source:      "test:TestMux",
-		ContentType: "application/json",
-		Extensions:  map[string]interface{}{},
+	contextA := &cloudevents.V01EventContext{
+		CloudEventsVersion: cloudevents.V01CloudEventsVersion,
+		EventID:            "1234",
+		EventType:          "org.A.test",
+		Source:             "test:TestMux",
+		ContentType:        "application/json",
+		Extensions:         map[string]interface{}{},
 	}
-	contextB := &cloudevents.EventContext{
-		EventID:     "5678",
-		EventType:   "org.B.test",
+	contextB := &cloudevents.V02EventContext{
+		SpecVersion: cloudevents.V02CloudEventsVersion,
+		ID:          "5678",
+		Type:        "org.B.test",
 		Source:      "test:TestMux",
 		ContentType: "application/json",
 		Extensions:  map[string]interface{}{},

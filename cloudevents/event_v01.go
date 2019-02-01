@@ -112,7 +112,7 @@ func (ec V01EventContext) AsHeaders() http.Header {
 	for k, v := range ec.Extensions {
 		data := fmt.Sprint(v)
 		encoded, err := json.Marshal(v)
-		if err != nil {
+		if err == nil {
 			data = string(encoded)
 		}
 		// Preserve case in v0.1, even though HTTP headers are case-insensitive.

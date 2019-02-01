@@ -23,10 +23,11 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"reflect"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/google/go-cmp/cmp"
 
 	"github.com/knative/pkg/cloudevents"
 )
@@ -92,7 +93,7 @@ func TestValidRoundTrips(t *testing.T) {
 		Source:             fmt.Sprintf("//%s/%s", service, doc.Name),
 		Extensions: map[string]interface{}{
 			"purpose": "tbd",
-			//			"super":   map[string]string{"cali": "fragilistic", "expi": "alidocious"},
+			"super":   map[string]interface{}{"cali": "fragilistic", "expi": "alidocious"},
 		},
 	}
 	for _, test := range []struct {
@@ -122,13 +123,13 @@ func TestValidRoundTrips(t *testing.T) {
 		},
 	} {
 		for encoding, convert := range encoderSets {
-			t.Run(test.name+"-"+encoding, func(t *testing.T) {
+			testName := test.name + "-" + encoding
+			t.Run(testName, func(t *testing.T) {
 				req, err := test.encoder.NewRequest(webhook, doc, convert[0](context))
 				if err != nil {
 					t.Fatalf("Failed to encode event %s", err)
 				}
 
-				fmt.Printf("In %q\n", test.name+"-"+encoding)
 				var foundData FirestoreDocument
 				foundContext, err := test.decoder.FromRequest(&foundData, req)
 				if err != nil {
@@ -136,11 +137,11 @@ func TestValidRoundTrips(t *testing.T) {
 				}
 				foundContext = convert[1](foundContext)
 
-				if !reflect.DeepEqual(convert[0](context), convert[0](foundContext)) {
-					t.Fatalf("Context was transcoded lossily: expected=%+v got=%+v", convert[0](context), convert[0](foundContext))
+				if diff := cmp.Diff(convert[0](context), convert[0](foundContext)); diff != "" {
+					t.Fatalf("%s: Context was transcoded lossily (-want +got): %s", testName, diff)
 				}
-				if !reflect.DeepEqual(doc, foundData) {
-					t.Fatalf("Data was transcoded lossily: expected=%+v got=%+v", doc, foundData)
+				if diff := cmp.Diff(doc, foundData); diff != "" {
+					t.Fatalf("%s: Data was transcoded lossily (-want +got): %s", testName, diff)
 				}
 			})
 		}
@@ -223,8 +224,8 @@ func TestXmlStructuredDecoding(t *testing.T) {
 		t.Fatalf("Failed to parse cross-encoded request: %s", err)
 	}
 
-	if !reflect.DeepEqual(person, &foundPerson) {
-		t.Fatalf("Failed to parse xml-encoded data; wanted=%+v; got=%+v", person, foundPerson)
+	if diff := cmp.Diff(person, &foundPerson); diff != "" {
+		t.Fatalf("Failed to parse xml-encoded data (-want +got): %s", diff)
 	}
 }
 
@@ -283,7 +284,7 @@ func TestExtensionExtraction(t *testing.T) {
 			"nestedProp": "nestedValue",
 		},
 	}
-	if !reflect.DeepEqual(expectedV01Extensions, ctx.AsV01().Extensions) {
-		t.Fatalf("Did not parse expected extensions. Wanted=%v; got=%v", expectedV01Extensions, ctx.AsV01().Extensions)
+	if diff := cmp.Diff(expectedV01Extensions, ctx.AsV01().Extensions); diff != "" {
+		t.Fatalf("Did not parse expected extensions (-want + got): %s", diff)
 	}
 }
