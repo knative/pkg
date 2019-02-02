@@ -20,6 +20,7 @@ package cloudevents
 
 import (
 	"bytes"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -64,7 +65,7 @@ type binary int
 // (possibly one of several versions) as a binary encoding HTTP request.
 type BinarySender interface {
 	// AsHeaders converts this EventContext to a set of HTTP headers.
-	AsHeaders() http.Header
+	AsHeaders() (http.Header, error)
 }
 
 // BinaryLoader implements an interface for translating a binary encoding HTTP
@@ -76,14 +77,22 @@ type BinaryLoader interface {
 }
 
 // FromRequest parses event data and context from an HTTP request.
-func (binary) FromRequest(data interface{}, r *http.Request) (*EventContext, error) {
-	// TODO: detect version and create correct VXXEventContext
-	ec := &EventContext{}
+func (binary) FromRequest(data interface{}, r *http.Request) (LoadContext, error) {
+	var ec LoadContext
+	switch {
+	case r.Header.Get("CE-SpecVersion") == V02CloudEventsVersion:
+		ec = &V02EventContext{}
+	case r.Header.Get("CE-CloudEventsVersion") == V01CloudEventsVersion:
+		ec = &V01EventContext{}
+	default:
+		return nil, fmt.Errorf("Could not determine Cloud Events version from header: %+v", r.Header)
+	}
+
 	if err := ec.FromHeaders(r.Header); err != nil {
 		return nil, err
 	}
 
-	if err := unmarshalEventData(ec.ContentType, r.Body, data); err != nil {
+	if err := unmarshalEventData(ec.DataContentType(), r.Body, data); err != nil {
 		return nil, err
 	}
 
@@ -97,7 +106,10 @@ func (t binary) NewRequest(urlString string, data interface{}, context SendConte
 		return nil, err
 	}
 
-	h := context.AsHeaders()
+	h, err := context.AsHeaders()
+	if err != nil {
+		return nil, err
+	}
 
 	b, err := marshalEventData(h.Get("Content-Type"), data)
 	if err != nil {

@@ -23,10 +23,11 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"reflect"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/google/go-cmp/cmp"
 
 	"github.com/knative/pkg/cloudevents"
 )
@@ -47,12 +48,19 @@ type defaultMarshaller int
 
 var Default defaultMarshaller = 0
 
-func (defaultMarshaller) FromRequest(data interface{}, r *http.Request) (*cloudevents.EventContext, error) {
+func (defaultMarshaller) FromRequest(data interface{}, r *http.Request) (cloudevents.LoadContext, error) {
 	return cloudevents.FromRequest(data, r)
 }
 func (defaultMarshaller) NewRequest(urlString string, data interface{}, context cloudevents.SendContext) (*http.Request, error) {
 	return cloudevents.NewRequest(urlString, data, context)
 }
+
+type desiredVersion func(cloudevents.LoadContext) cloudevents.ContextType
+
+var (
+	v01 = func(a cloudevents.LoadContext) cloudevents.ContextType { tmp := a.AsV01(); return &tmp }
+	v02 = func(a cloudevents.LoadContext) cloudevents.ContextType { tmp := a.AsV02(); return &tmp }
+)
 
 func TestValidRoundTrips(t *testing.T) {
 	doc := FirestoreDocument{
@@ -67,6 +75,13 @@ func TestValidRoundTrips(t *testing.T) {
 
 	service := "firestore.googleapis.com"
 
+	encoderSets := map[string][]desiredVersion{
+		"v1-v1": {v01, v01},
+		"v1-v2": {v01, v02},
+		"v2-v1": {v02, v01},
+		"v2-v2": {v02, v02},
+	}
+
 	context := &cloudevents.EventContext{
 		CloudEventsVersion: "0.1",
 		EventID:            "eventid-123",
@@ -78,6 +93,7 @@ func TestValidRoundTrips(t *testing.T) {
 		Source:             fmt.Sprintf("//%s/%s", service, doc.Name),
 		Extensions: map[string]interface{}{
 			"purpose": "tbd",
+			"super":   map[string]interface{}{"cali": "fragilistic", "expi": "alidocious"},
 		},
 	}
 	for _, test := range []struct {
@@ -106,25 +122,29 @@ func TestValidRoundTrips(t *testing.T) {
 			decoder: Default,
 		},
 	} {
-		t.Run(test.name, func(t *testing.T) {
-			req, err := test.encoder.NewRequest(webhook, doc, *context)
-			if err != nil {
-				t.Fatalf("Failed to encode event %s", err)
-			}
+		for encoding, convert := range encoderSets {
+			testName := test.name + "-" + encoding
+			t.Run(testName, func(t *testing.T) {
+				req, err := test.encoder.NewRequest(webhook, doc, convert[0](context))
+				if err != nil {
+					t.Fatalf("Failed to encode event %s", err)
+				}
 
-			var foundData FirestoreDocument
-			foundContext, err := test.decoder.FromRequest(&foundData, req)
-			if err != nil {
-				t.Fatalf("Failed to decode event %s", err)
-			}
+				var foundData FirestoreDocument
+				foundContext, err := test.decoder.FromRequest(&foundData, req)
+				if err != nil {
+					t.Fatalf("Failed to decode event %s", err)
+				}
+				foundContext = convert[1](foundContext)
 
-			if !reflect.DeepEqual(context, foundContext) {
-				t.Fatalf("Context was transcoded lossily: expected=%+v got=%+v", context, foundContext)
-			}
-			if !reflect.DeepEqual(doc, foundData) {
-				t.Fatalf("Data was transcoded lossily: expected=%+v got=%+v", doc, foundData)
-			}
-		})
+				if diff := cmp.Diff(convert[0](context), convert[0](foundContext)); diff != "" {
+					t.Fatalf("%s: Context was transcoded lossily (-want +got): %s", testName, diff)
+				}
+				if diff := cmp.Diff(doc, foundData); diff != "" {
+					t.Fatalf("%s: Data was transcoded lossily (-want +got): %s", testName, diff)
+				}
+			})
+		}
 	}
 }
 
@@ -204,8 +224,8 @@ func TestXmlStructuredDecoding(t *testing.T) {
 		t.Fatalf("Failed to parse cross-encoded request: %s", err)
 	}
 
-	if !reflect.DeepEqual(person, &foundPerson) {
-		t.Fatalf("Failed to parse xml-encoded data; wanted=%+v; got=%+v", person, foundPerson)
+	if diff := cmp.Diff(person, &foundPerson); diff != "" {
+		t.Fatalf("Failed to parse xml-encoded data (-want +got): %s", diff)
 	}
 }
 
@@ -229,8 +249,11 @@ func TestExtensionsAreNeverNil(t *testing.T) {
 	if err != nil {
 		t.Fatal("Failed to parse request", err)
 	}
-	if ctx.Extensions == nil {
-		t.Fatal("Extensions should never be nil")
+	if ctx.AsV01().Extensions == nil {
+		t.Fatal("v0.1 Extensions should never be nil")
+	}
+	if ctx.AsV02().Extensions == nil {
+		t.Fatal("v0.2 Extensions should never be nil")
 	}
 }
 
@@ -255,13 +278,13 @@ func TestExtensionExtraction(t *testing.T) {
 		t.Fatal("Failed to parse request", err)
 	}
 
-	expectedExtensions := map[string]interface{}{
+	expectedV01Extensions := map[string]interface{}{
 		"Prop1": "value1",
 		"Prop2": map[string]interface{}{
 			"nestedProp": "nestedValue",
 		},
 	}
-	if !reflect.DeepEqual(expectedExtensions, ctx.Extensions) {
-		t.Fatalf("Did not parse expected extensions. Wanted=%v; got=%v", expectedExtensions, ctx.Extensions)
+	if diff := cmp.Diff(expectedV01Extensions, ctx.AsV01().Extensions); diff != "" {
+		t.Fatalf("Did not parse expected extensions (-want + got): %s", diff)
 	}
 }

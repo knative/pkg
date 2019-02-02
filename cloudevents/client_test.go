@@ -168,7 +168,7 @@ func TestClientSend(t *testing.T) {
 					"ce-eventtype":          {"google.firestore.document.create"},
 					"ce-source":             {"//firestore.googleapis.com/projects/demo/databases/default/documents/users/inlined"},
 					"ce-schemaurl":          {"http://type.googleapis.com/google.firestore.v1beta1.Document"},
-					"ce-x-purpose":          {"tbd"},
+					"ce-x-purpose":          {`"tbd"`},
 					"content-type":          {"application/json"},
 				},
 				Body: fmt.Sprintf(

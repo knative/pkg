@@ -40,8 +40,6 @@ type StructuredSender interface {
 	// AsJSON encodes the object into a map from string to JSON data, which
 	// allows additional keys to be encoded later.
 	AsJSON() (map[string]json.RawMessage, error)
-	// DataContentType returns the MIME content type for encoding data.
-	DataContentType() string
 }
 
 // StructuredLoader implements an interface for translating a structured
@@ -55,7 +53,7 @@ type StructuredLoader interface {
 }
 
 // FromRequest parses a CloudEvent from structured content encoding.
-func (structured) FromRequest(data interface{}, r *http.Request) (*EventContext, error) {
+func (structured) FromRequest(data interface{}, r *http.Request) (LoadContext, error) {
 	raw := make(map[string]json.RawMessage)
 	if err := json.NewDecoder(r.Body).Decode(&raw); err != nil {
 		return nil, err
@@ -64,13 +62,21 @@ func (structured) FromRequest(data interface{}, r *http.Request) (*EventContext,
 	rawData := raw["data"]
 	delete(raw, "data")
 
-	// TODO: support both v01 and v02 encoding
-	ec := &EventContext{}
+	var ec LoadContext
+	v := ""
+	if err := json.Unmarshal(raw["specversion"], &v); err == nil && v == V02CloudEventsVersion {
+		ec = &V02EventContext{}
+	} else if err := json.Unmarshal(raw["cloudEventsVersion"], &v); err == nil && v == V01CloudEventsVersion {
+		ec = &V01EventContext{}
+	} else {
+		return nil, fmt.Errorf("Could not determine Cloud Events version from payload: %q", data)
+	}
+
 	if err := ec.FromJSON(raw); err != nil {
 		return nil, err
 	}
 
-	contentType := ec.ContentType
+	contentType := ec.DataContentType()
 	if contentType == "" {
 		contentType = contentTypeJSON
 	}

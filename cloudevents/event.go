@@ -53,38 +53,58 @@ type EventContext = V01EventContext
 // HTTPMarshaller implements a scheme for decoding CloudEvents over HTTP.
 // Implementations are Binary, Structured, and Any
 type HTTPMarshaller interface {
-	FromRequest(data interface{}, r *http.Request) (*EventContext, error)
+	FromRequest(data interface{}, r *http.Request) (LoadContext, error)
 	NewRequest(urlString string, data interface{}, context SendContext) (*http.Request, error)
+}
+
+// ContextTranslator provides a set of translation methods between the
+// different versions of the CloudEvents spec, which allows programs to
+// interoperate with different versions of the CloudEvents spec by
+// converting EventContexts to their preferred version.
+type ContextTranslator interface {
+	// AsV01 provides a translation from whatever the "native" encoding of the
+	// CloudEvent was to the equivalent in v0.1 field names, moving fields to or
+	// from extensions as necessary.
+	AsV01() V01EventContext
+
+	// AsV02 provides a translation from whatever the "native" encoding of the
+	// CloudEvent was to the equivalent in v0.2 field names, moving fields to or
+	// from extensions as necessary.
+	AsV02() V02EventContext
+
+	// DataContentType returns the MIME content type for encoding data, which is
+	// needed by both encoding and decoding.
+	DataContentType() string
 }
 
 // SendContext provides an interface for extracting information from an
 // EventContext (the set of non-data event attributes of a CloudEvent).
 type SendContext interface {
+	ContextTranslator
+
 	StructuredSender
 	BinarySender
 }
 
 // LoadContext provides an interface for extracting information from an
 // EventContext (the set of non-data event attributes of a CloudEvent).
-//
-// LoadContext also provides a set of translation methods between the
-// versions of the CloudEvents spec, which allows programs to interoperate with
-// different versions of the CloudEvents spec at the same time.
 type LoadContext interface {
+	ContextTranslator
+
 	StructuredLoader
 	BinaryLoader
-
-	// AsV01 provides a translation from whatever the "native" encoding of the
-	// CloudEvent was to the equivalent in v0.1 field names, moving fields to or
-	// from extensions as necessary.
-	AsV01() V01EventContext
 }
 
 // ContextType is a unified interface for both sending and loading the
 // CloudEvent data across versions.
 type ContextType interface {
-	SendContext
-	LoadContext
+	ContextTranslator
+
+	StructuredSender
+	BinarySender
+
+	StructuredLoader
+	BinaryLoader
 }
 
 func anyError(errs ...error) error {
@@ -162,7 +182,7 @@ func marshalEventData(encoding string, data interface{}) ([]byte, error) {
 }
 
 // FromRequest parses a CloudEvent from any known encoding.
-func FromRequest(data interface{}, r *http.Request) (*EventContext, error) {
+func FromRequest(data interface{}, r *http.Request) (LoadContext, error) {
 	switch r.Header.Get(HeaderContentType) {
 	case ContentTypeStructuredJSON:
 		return Structured.FromRequest(data, r)
@@ -187,6 +207,6 @@ type contextKeyType struct{}
 var contextKey = contextKeyType{}
 
 // FromContext loads an V01EventContext from a normal context.Context
-func FromContext(ctx context.Context) *V01EventContext {
-	return ctx.Value(contextKey).(*V01EventContext)
+func FromContext(ctx context.Context) LoadContext {
+	return ctx.Value(contextKey).(LoadContext)
 }
