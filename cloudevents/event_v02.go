@@ -94,7 +94,7 @@ func (ec V02EventContext) AsV02() V02EventContext {
 }
 
 // AsHeaders implements the BinarySender interface.
-func (ec V02EventContext) AsHeaders() http.Header {
+func (ec V02EventContext) AsHeaders() (http.Header, error) {
 	h := http.Header{}
 	h.Set("CE-"+fieldSpecVersion, ec.SpecVersion)
 	h.Set("CE-"+fieldType, ec.Type)
@@ -117,22 +117,22 @@ func (ec V02EventContext) AsHeaders() http.Header {
 		// CE-attrib-key
 		if mapVal, ok := v.(map[string]interface{}); ok {
 			for subkey, subval := range mapVal {
-				data := fmt.Sprint(subval)
-				if encoded, err := json.Marshal(subval); err == nil {
-					data = string(encoded)
+				encoded, err := json.Marshal(subval)
+				if err != nil {
+					return nil, err
 				}
-				h.Set("CE-"+k+"-"+subkey, data)
+				h.Set("CE-"+k+"-"+subkey, string(encoded))
 			}
 			continue
 		}
-		data := fmt.Sprint(v)
-		if encoded, err := json.Marshal(v); err == nil {
-			data = string(encoded)
+		encoded, err := json.Marshal(v)
+		if err != nil {
+			return nil, err
 		}
-		h.Set("CE-"+k, data)
+		h.Set("CE-"+k, string(encoded))
 	}
 
-	return h
+	return h, nil
 }
 
 // FromHeaders implements the BinaryLoader interface.

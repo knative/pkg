@@ -58,19 +58,19 @@ func TestHandlerTypeErrors(t *testing.T) {
 		{
 			name:  "wrong 3-arg return type",
 			param: func() (interface{}, interface{}, error) { return nil, nil, nil },
-			err:   "Expected a function returning either nothing, an error, (any, error), or (any, EventContext, error); cannot convert return type 1 from interface {} to EventContext",
+			err:   "Expected a function returning either nothing, an error, (any, error), or (any, SendContext, error); cannot convert return type 1 from interface {} to SendContext",
 		},
 		{
 			name: "wrong return count",
 			param: func() (interface{}, cloudevents.EventContext, error, interface{}) {
 				return nil, cloudevents.EventContext{}, nil, nil
 			},
-			err: "Expected a function returning either nothing, an error, (any, error), or (any, EventContext, error); function has too many return types (4)",
+			err: "Expected a function returning either nothing, an error, (any, error), or (any, SendContext, error); function has too many return types (4)",
 		},
 		{
 			name:  "invalid return type",
 			param: func() interface{} { return nil },
-			err:   "Expected a function returning either nothing, an error, (any, error), or (any, EventContext, error); cannot convert return type 0 from interface {} to error",
+			err:   "Expected a function returning either nothing, an error, (any, error), or (any, SendContext, error); cannot convert return type 0 from interface {} to error",
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -157,7 +157,7 @@ func TestParameterMarsahlling(t *testing.T) {
 	expectedContext := &cloudevents.EventContext{
 		CloudEventsVersion: cloudevents.CloudEventsVersion,
 		EventID:            "1234",
-		Source:             "tests:TestUndtypedHandling",
+		Source:             "tests:TestUntypedHandling",
 		EventType:          "dev.eventing.test",
 		EventTime:          time.Now().UTC(),
 		ContentType:        "application/json",
@@ -287,12 +287,12 @@ func TestReturnTypeRendering(t *testing.T) {
 	type RetVal struct {
 		ID interface{}
 	}
-	eventContext := cloudevents.EventContext{
-		CloudEventsVersion: cloudevents.CloudEventsVersion,
+	eventContext := cloudevents.V01EventContext{
+		CloudEventsVersion: cloudevents.V01CloudEventsVersion,
 		EventID:            "1234",
 		Source:             "tests:TestUntypedHandling",
 		EventType:          "dev.eventing.test",
-		Extensions:         map[string]interface{}{},
+		Extensions:         map[string]interface{}{"foo": "bar"},
 	}
 	for _, test := range []struct {
 		name             string
@@ -333,12 +333,13 @@ func TestReturnTypeRendering(t *testing.T) {
 		}, {
 			name:           "response headers",
 			expectedStatus: http.StatusOK,
-			handler: cloudevents.Handler(func() (map[string]interface{}, cloudevents.EventContext, error) {
+			handler: cloudevents.Handler(func() (map[string]interface{}, cloudevents.V01EventContext, error) {
 				ec := cloudevents.EventContext{
-					EventID:   "1234",
-					EventType: "dev.knative.test.thing",
-					Source:    "this-is-it",
-					SchemaURL: "http://example.com/schema",
+					EventID:    "1234",
+					EventType:  "dev.knative.test.thing",
+					Source:     "this-is-it",
+					SchemaURL:  "http://example.com/schema",
+					Extensions: map[string]interface{}{"foo": "bar"},
 				}
 				return map[string]interface{}{"hello": "world"}, ec, nil
 			}),
@@ -348,6 +349,28 @@ func TestReturnTypeRendering(t *testing.T) {
 				"Ce-Eventtype": {"dev.knative.test.thing"},
 				"Ce-Source":    {"this-is-it"},
 				"Ce-Schemaurl": {"http://example.com/schema"},
+				"Ce-X-Foo":     {`"bar"`},
+			},
+		}, {
+			name:           "v02 response headers",
+			expectedStatus: http.StatusOK,
+			handler: cloudevents.Handler(func() (map[string]interface{}, cloudevents.V02EventContext, error) {
+				ec := cloudevents.V02EventContext{
+					ID:         "1234",
+					Type:       "dev.knative.test.thing",
+					Source:     "this-is-it",
+					SchemaURL:  "http://example.com/schema",
+					Extensions: map[string]interface{}{"foo": "bar"},
+				}
+				return map[string]interface{}{"hello": "world"}, ec, nil
+			}),
+			expectedResponse: `{"hello":"world"}`,
+			expectedHeader: http.Header{
+				"Ce-Id":        {"1234"},
+				"Ce-Type":      {"dev.knative.test.thing"},
+				"Ce-Source":    {"this-is-it"},
+				"Ce-Schemaurl": {"http://example.com/schema"},
+				"Ce-Foo":       {`"bar"`},
 			},
 		}, {
 			name:           "non-nil error return (two return types)",

@@ -65,7 +65,7 @@ type binary int
 // (possibly one of several versions) as a binary encoding HTTP request.
 type BinarySender interface {
 	// AsHeaders converts this EventContext to a set of HTTP headers.
-	AsHeaders() http.Header
+	AsHeaders() (http.Header, error)
 }
 
 // BinaryLoader implements an interface for translating a binary encoding HTTP
@@ -106,7 +106,10 @@ func (t binary) NewRequest(urlString string, data interface{}, context SendConte
 		return nil, err
 	}
 
-	h := context.AsHeaders()
+	h, err := context.AsHeaders()
+	if err != nil {
+		return nil, err
+	}
 
 	b, err := marshalEventData(h.Get("Content-Type"), data)
 	if err != nil {

@@ -88,7 +88,7 @@ func (ec V01EventContext) AsV02() V02EventContext {
 }
 
 // AsHeaders implements the BinarySender interface.
-func (ec V01EventContext) AsHeaders() http.Header {
+func (ec V01EventContext) AsHeaders() (http.Header, error) {
 	h := http.Header{}
 	h.Set("CE-CloudEventsVersion", ec.CloudEventsVersion)
 	h.Set("CE-EventID", ec.EventID)
@@ -110,15 +110,14 @@ func (ec V01EventContext) AsHeaders() http.Header {
 		h.Set("Content-Type", ec.ContentType)
 	}
 	for k, v := range ec.Extensions {
-		data := fmt.Sprint(v)
 		encoded, err := json.Marshal(v)
-		if err == nil {
-			data = string(encoded)
+		if err != nil {
+			return nil, err
 		}
 		// Preserve case in v0.1, even though HTTP headers are case-insensitive.
-		h["CE-X-"+k] = []string{data}
+		h["CE-X-"+k] = []string{string(encoded)}
 	}
-	return h
+	return h, nil
 }
 
 // FromHeaders implements the BinaryLoader interface.
