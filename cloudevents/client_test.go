@@ -27,20 +27,19 @@ import (
 	"testing"
 	"time"
 
-	"github.com/google/go-cmp/cmp/cmpopts"
-
 	"github.com/google/go-cmp/cmp"
-
+	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/knative/pkg/cloudevents"
+	"k8s.io/apimachinery/pkg/util/sets"
 )
 
 var (
 	// Headers that are added to the response, but we don't want to check in our assertions.
-	unimportantHeaders = map[string]struct{}{
-		"accept-encoding": {},
-		"content-length":  {},
-		"user-agent":      {},
-	}
+	unimportantHeaders = sets.NewString(
+		"accept-encoding",
+		"content-length",
+		"user-agent",
+	)
 )
 
 func TestNewClient(t *testing.T) {
@@ -381,7 +380,7 @@ func canonicalizeHeaders(rvs ...requestValidation) {
 		for n, v := range headers {
 			delete(headers, n)
 			ln := strings.ToLower(n)
-			if _, present := unimportantHeaders[ln]; !present {
+			if !unimportantHeaders.Has(ln){
 				headers[ln] = v
 			}
 		}
