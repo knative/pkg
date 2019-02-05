@@ -135,14 +135,15 @@ func newConnection(target string, messageChan chan []byte, connFactory func(targ
 
 // connect tries to establish a websocket connection.
 func (c *ManagedConnection) connect() (err error) {
+	c.connectionLock.Lock()
+	defer c.connectionLock.Unlock()
+
 	wait.ExponentialBackoff(c.connectionBackoff, func() (bool, error) {
 		var conn rawConnection
 		conn, err = c.connectionFactory(c.target)
 		if err != nil {
 			return false, nil
 		}
-		c.connectionLock.Lock()
-		defer c.connectionLock.Unlock()
 
 		c.connection = conn
 		return true, nil
@@ -164,15 +165,15 @@ func (c *ManagedConnection) keepalive() error {
 // If a messageChan is supplied and the current message type is not
 // a control message, the message is sent to that channel.
 func (c *ManagedConnection) read() error {
-	c.readerLock.Lock()
-	defer c.readerLock.Unlock()
-
 	c.connectionLock.Lock()
 	defer c.connectionLock.Unlock()
 
 	if c.connection == nil {
 		return ErrConnectionNotEstablished
 	}
+
+	c.readerLock.Lock()
+	defer c.readerLock.Unlock()
 
 	messageType, reader, err := c.connection.NextReader()
 	if err != nil {
@@ -215,12 +216,12 @@ func (c *ManagedConnection) Send(msg interface{}) error {
 
 // Shutdown closes the websocket connection.
 func (c *ManagedConnection) Shutdown() error {
-	c.connectionLock.Lock()
-	defer c.connectionLock.Unlock()
-
 	c.closeOnce.Do(func() {
 		close(c.closeChan)
 	})
+
+	c.connectionLock.Lock()
+	defer c.connectionLock.Unlock()
 
 	if c.connection != nil {
 		err := c.connection.Close()

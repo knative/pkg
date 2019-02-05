@@ -25,6 +25,8 @@ import (
 	"testing"
 	"time"
 
+	"k8s.io/apimachinery/pkg/util/wait"
+
 	"github.com/gorilla/websocket"
 )
 
@@ -189,24 +191,33 @@ func TestCloseIgnoresNoConnection(t *testing.T) {
 
 func TestDurableConnectionWhenConnectionBreaksDown(t *testing.T) {
 	var upgrader = websocket.Upgrader{}
-	connectionAttempts := make(chan struct{})
 	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		c, err := upgrader.Upgrade(w, r, nil)
 		if err != nil {
 			return
 		}
 
-		connectionAttempts <- struct{}{}
+		// Close the connection immediately, forces a reconnect.
 		c.Close()
 	}))
 	defer s.Close()
 
 	target := "ws" + strings.TrimPrefix(s.URL, "http")
+
 	conn := NewDurableSendingConnection(target)
 	defer conn.Shutdown()
 
-	for i := 0; i < 100; i++ {
-		<-connectionAttempts
+	for i := 0; i < 10; i++ {
+		err := wait.PollImmediate(50*time.Millisecond, 5*time.Second, func() (bool, error) {
+			if err := conn.Send("test"); err != nil {
+				return false, nil
+			}
+			return true, nil
+		})
+
+		if err != nil {
+			t.Errorf("Timed out trying to send a message: %v", err)
+		}
 	}
 }
 
