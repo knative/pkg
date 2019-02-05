@@ -34,14 +34,6 @@ var (
 	// ErrConnectionNotEstablished is returned by methods that need a connection
 	// but no connection is already created.
 	ErrConnectionNotEstablished = errors.New("connection has not yet been established")
-
-	connFactory = func(target string) (rawConnection, error) {
-		dialer := &websocket.Dialer{
-			HandshakeTimeout: 3 * time.Second,
-		}
-		conn, _, err := dialer.Dial(target, nil)
-		return conn, err
-	}
 )
 
 // RawConnection is an interface defining the methods needed
@@ -54,8 +46,9 @@ type rawConnection interface {
 
 // ManagedConnection represents a websocket connection.
 type ManagedConnection struct {
-	target     string
-	connection rawConnection
+	target            string
+	connection        rawConnection
+	connectionFactory func(target string) (rawConnection, error)
 
 	closeChan chan struct{}
 	closeOnce sync.Once
@@ -90,7 +83,15 @@ func NewDurableSendingConnection(target string) *ManagedConnection {
 // The connection will continuously be kept alive and reconnected
 // in case of a loss of connectivity.
 func NewDurableConnection(target string, messageChan chan []byte) *ManagedConnection {
-	c := newConnection(target, messageChan)
+	websocketConnectionFactory := func(target string) (rawConnection, error) {
+		dialer := &websocket.Dialer{
+			HandshakeTimeout: 3 * time.Second,
+		}
+		conn, _, err := dialer.Dial(target, nil)
+		return conn, err
+	}
+
+	c := newConnection(target, messageChan, websocketConnectionFactory)
 
 	// Keep the connection alive asynchronously and reconnect on
 	// connection failure.
@@ -115,11 +116,12 @@ func NewDurableConnection(target string, messageChan chan []byte) *ManagedConnec
 }
 
 // newConnection creates a new connection primitive.
-func newConnection(target string, messageChan chan []byte) *ManagedConnection {
+func newConnection(target string, messageChan chan []byte, connFactory func(target string) (rawConnection, error)) *ManagedConnection {
 	conn := &ManagedConnection{
-		target:      target,
-		closeChan:   make(chan struct{}, 1),
-		messageChan: messageChan,
+		target:            target,
+		connectionFactory: connFactory,
+		closeChan:         make(chan struct{}),
+		messageChan:       messageChan,
 		connectionBackoff: wait.Backoff{
 			Duration: 100 * time.Millisecond,
 			Factor:   1.3,
@@ -135,7 +137,7 @@ func newConnection(target string, messageChan chan []byte) *ManagedConnection {
 func (c *ManagedConnection) connect() (err error) {
 	wait.ExponentialBackoff(c.connectionBackoff, func() (bool, error) {
 		var conn rawConnection
-		conn, err = connFactory(c.target)
+		conn, err = c.connectionFactory(c.target)
 		if err != nil {
 			return false, nil
 		}
