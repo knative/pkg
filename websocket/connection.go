@@ -20,10 +20,13 @@ import (
 	"bytes"
 	"encoding/gob"
 	"errors"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"sync"
 	"time"
+
+	"go.uber.org/zap"
 
 	"k8s.io/apimachinery/pkg/util/wait"
 
@@ -73,8 +76,8 @@ type ManagedConnection struct {
 // that can only send messages to the endpoint it connects to.
 // The connection will continuously be kept alive and reconnected
 // in case of a loss of connectivity.
-func NewDurableSendingConnection(target string) *ManagedConnection {
-	return NewDurableConnection(target, nil)
+func NewDurableSendingConnection(target string, logger *zap.SugaredLogger) *ManagedConnection {
+	return NewDurableConnection(target, nil, logger)
 }
 
 // NewDurableConnection creates a new websocket connection, that
@@ -82,7 +85,7 @@ func NewDurableSendingConnection(target string) *ManagedConnection {
 // send messages to the endpoint it connects to.
 // The connection will continuously be kept alive and reconnected
 // in case of a loss of connectivity.
-func NewDurableConnection(target string, messageChan chan []byte) *ManagedConnection {
+func NewDurableConnection(target string, messageChan chan []byte, logger *zap.SugaredLogger) *ManagedConnection {
 	websocketConnectionFactory := func(target string) (rawConnection, error) {
 		dialer := &websocket.Dialer{
 			HandshakeTimeout: 3 * time.Second,
@@ -102,10 +105,15 @@ func NewDurableConnection(target string, messageChan chan []byte) *ManagedConnec
 		for {
 			select {
 			default:
+				logger.Infof("Connecting to %q", target)
 				if err := c.connect(); err != nil {
+					logger.Errorw(fmt.Sprintf("Connecting to %q failed", target), zap.Error(err))
 					continue
 				}
-				c.keepalive()
+				logger.Infof("Connected to %q", target)
+				if err := c.keepalive(); err != nil {
+					logger.Errorw(fmt.Sprintf("Connection to %q broke down, reconnecting...", target), zap.Error(err))
+				}
 			case <-c.closeChan:
 				return
 			}
@@ -140,6 +148,7 @@ func (c *ManagedConnection) connect() (err error) {
 
 	wait.ExponentialBackoff(c.connectionBackoff, func() (bool, error) {
 		var conn rawConnection
+
 		conn, err = c.connectionFactory(c.target)
 		if err != nil {
 			return false, nil

@@ -25,6 +25,8 @@ import (
 	"testing"
 	"time"
 
+	ktesting "github.com/knative/pkg/logging/testing"
+
 	"k8s.io/apimachinery/pkg/util/wait"
 
 	"github.com/gorilla/websocket"
@@ -202,9 +204,9 @@ func TestDurableConnectionWhenConnectionBreaksDown(t *testing.T) {
 	}))
 	defer s.Close()
 
+	logger := ktesting.TestLogger(t)
 	target := "ws" + strings.TrimPrefix(s.URL, "http")
-
-	conn := NewDurableSendingConnection(target)
+	conn := NewDurableSendingConnection(target, logger)
 	defer conn.Shutdown()
 
 	for i := 0; i < 10; i++ {
