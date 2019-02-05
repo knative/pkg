@@ -149,43 +149,45 @@ func (c *ManagedConnection) connect() (err error) {
 	return err
 }
 
-// keepalive keeps the connection open and reads control messages.
-// All messages are discarded.
+// keepalive keeps the connection open.
 func (c *ManagedConnection) keepalive() error {
-	c.readerLock.Lock()
-	defer c.readerLock.Unlock()
-
 	for {
-		err := func() error {
-			c.connectionLock.Lock()
-			defer c.connectionLock.Unlock()
-
-			if c.connection == nil {
-				return ErrConnectionNotEstablished
-			}
-
-			messageType, reader, err := c.connection.NextReader()
-			if err != nil {
-				c.connection.Close()
-				c.connection = nil
-				return err
-			}
-
-			// Send the message to the channel if its an application level message
-			// and if that channel is set.
-			if c.messageChan != nil && (messageType == websocket.TextMessage || messageType == websocket.BinaryMessage) {
-				if message, _ := ioutil.ReadAll(reader); message != nil {
-					c.messageChan <- message
-				}
-			}
-
-			return nil
-		}()
-
-		if err != nil {
+		if err := c.read(); err != nil {
 			return err
 		}
 	}
+}
+
+// read reads the next message from the connection.
+// If a messageChan is supplied and the current message type is not
+// a control message, the message is sent to that channel.
+func (c *ManagedConnection) read() error {
+	c.readerLock.Lock()
+	defer c.readerLock.Unlock()
+
+	c.connectionLock.Lock()
+	defer c.connectionLock.Unlock()
+
+	if c.connection == nil {
+		return ErrConnectionNotEstablished
+	}
+
+	messageType, reader, err := c.connection.NextReader()
+	if err != nil {
+		c.connection.Close()
+		c.connection = nil
+		return err
+	}
+
+	// Send the message to the channel if its an application level message
+	// and if that channel is set.
+	if c.messageChan != nil && (messageType == websocket.TextMessage || messageType == websocket.BinaryMessage) {
+		if message, _ := ioutil.ReadAll(reader); message != nil {
+			c.messageChan <- message
+		}
+	}
+
+	return nil
 }
 
 // Send sends an encodable message over the websocket connection.
