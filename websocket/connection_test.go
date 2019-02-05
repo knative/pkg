@@ -19,6 +19,8 @@ package websocket
 import (
 	"errors"
 	"io"
+	"net/http"
+	"net/http/httptest"
 	"strings"
 	"testing"
 	"time"
@@ -29,6 +31,8 @@ import (
 const (
 	target = "test"
 )
+
+var originalConnFactory = connFactory
 
 type inspectableConnection struct {
 	nextReaderCalls   chan struct{}
@@ -71,7 +75,7 @@ func TestRetriesWhileConnect(t *testing.T) {
 	conn := newConnection(target, nil)
 
 	conn.connect()
-	conn.Close()
+	conn.Shutdown()
 
 	if got != want {
 		t.Fatalf("Wanted %v retries. Got %v.", want, got)
@@ -167,7 +171,7 @@ func TestCloseClosesConnection(t *testing.T) {
 	}
 	conn := newConnection(target, nil)
 	conn.connect()
-	conn.Close()
+	conn.Shutdown()
 
 	if len(spy.closeCalls) != 1 {
 		t.Fatalf("Expected 'Close' to be called once, got %v", len(spy.closeCalls))
@@ -178,7 +182,7 @@ func TestCloseIgnoresNoConnection(t *testing.T) {
 	conn := &ManagedConnection{
 		closeChan: make(chan struct{}, 1),
 	}
-	got := conn.Close()
+	got := conn.Shutdown()
 
 	if got != nil {
 		t.Fatalf("Expected no error, got %v", got)
@@ -186,51 +190,27 @@ func TestCloseIgnoresNoConnection(t *testing.T) {
 }
 
 func TestDurableConnectionWhenConnectionBreaksDown(t *testing.T) {
-	testConn := &inspectableConnection{
-		nextReaderCalls:   make(chan struct{}),
-		writeMessageCalls: make(chan struct{}),
-		closeCalls:        make(chan struct{}),
+	connFactory = originalConnFactory
 
-		nextReaderFunc: func() (int, io.Reader, error) {
-			return 1, nil, errors.New("next reader errored")
-		},
-	}
-	connectAttempts := make(chan struct{})
-	connFactory = func(_ string) (rawConnection, error) {
-		connectAttempts <- struct{}{}
-		return testConn, nil
-	}
+	var upgrader = websocket.Upgrader{}
+	connectionAttempts := make(chan struct{})
+	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		c, err := upgrader.Upgrade(w, r, nil)
+		if err != nil {
+			return
+		}
+
+		connectionAttempts <- struct{}{}
+		c.Close()
+	}))
+	defer s.Close()
+
+	target := "ws" + strings.TrimPrefix(s.URL, "http")
 	conn := NewDurableSendingConnection(target)
+	defer conn.Shutdown()
 
-	// the connection is constantly created, tried to read from
-	// and closed because NextReader (which holds the connection
-	// open) fails.
-	for i := 0; i < 100; i++ {
-		<-connectAttempts
-		<-testConn.nextReaderCalls
-		<-testConn.closeCalls
-	}
-
-	// Enter the reconnect loop
-	<-connectAttempts
-
-	// Call 'Close' asynchronously and wait for it to reach
-	// the channel.
-	go conn.Close()
-	<-testConn.closeCalls
-
-	// Advance the reconnect loop until 'Close' is called.
-	<-testConn.nextReaderCalls
-	<-testConn.closeCalls
-
-	// Wait for the final call to 'Close' (when the loop is aborted)
-	<-testConn.closeCalls
-
-	if len(connectAttempts) > 1 {
-		t.Fatalf("Expected at most one connection attempts, got %v", len(connectAttempts))
-	}
-	if len(testConn.nextReaderCalls) > 1 {
-		t.Fatalf("Expected at most one calls to 'NextReader', got %v", len(testConn.nextReaderCalls))
+	for i := 0; i < 10; i++ {
+		<-connectionAttempts
 	}
 }
 

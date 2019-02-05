@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Knative Authors
+Copyright 2019 The Knative Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -56,7 +56,9 @@ type rawConnection interface {
 type ManagedConnection struct {
 	target     string
 	connection rawConnection
-	closeChan  chan struct{}
+
+	closeChan chan struct{}
+	closeOnce sync.Once
 
 	// If set, messages will be forwarded to this channel
 	messageChan chan []byte
@@ -95,14 +97,7 @@ func NewDurableConnection(target string, messageChan chan []byte) *ManagedConnec
 	go func() {
 		// If the close signal races the connection attempt, make
 		// sure the connection actually closes.
-		defer func() {
-			c.connectionLock.RLock()
-			defer c.connectionLock.RUnlock()
-
-			if conn := c.connection; conn != nil {
-				conn.Close()
-			}
-		}()
+		defer c.Shutdown()
 		for {
 			select {
 			default:
@@ -156,33 +151,35 @@ func (c *ManagedConnection) connect() (err error) {
 
 // keepalive keeps the connection open and reads control messages.
 // All messages are discarded.
-func (c *ManagedConnection) keepalive() (err error) {
+func (c *ManagedConnection) keepalive() error {
 	c.readerLock.Lock()
 	defer c.readerLock.Unlock()
 
 	for {
-		func() {
-			c.connectionLock.RLock()
-			defer c.connectionLock.RUnlock()
+		err := func() error {
+			c.connectionLock.Lock()
+			defer c.connectionLock.Unlock()
 
-			if conn := c.connection; conn != nil {
-				var reader io.Reader
-				var messageType int
-				messageType, reader, err = conn.NextReader()
-				if err != nil {
-					conn.Close()
-				}
-
-				// Send the message to the channel if its an application level message
-				// and if that channel is set.
-				if c.messageChan != nil && (messageType == websocket.TextMessage || messageType == websocket.BinaryMessage) {
-					if message, _ := ioutil.ReadAll(reader); message != nil {
-						c.messageChan <- message
-					}
-				}
-			} else {
-				err = ErrConnectionNotEstablished
+			if c.connection == nil {
+				return ErrConnectionNotEstablished
 			}
+
+			messageType, reader, err := c.connection.NextReader()
+			if err != nil {
+				c.connection.Close()
+				c.connection = nil
+				return err
+			}
+
+			// Send the message to the channel if its an application level message
+			// and if that channel is set.
+			if c.messageChan != nil && (messageType == websocket.TextMessage || messageType == websocket.BinaryMessage) {
+				if message, _ := ioutil.ReadAll(reader); message != nil {
+					c.messageChan <- message
+				}
+			}
+
+			return nil
 		}()
 
 		if err != nil {
@@ -196,8 +193,7 @@ func (c *ManagedConnection) Send(msg interface{}) error {
 	c.connectionLock.RLock()
 	defer c.connectionLock.RUnlock()
 
-	conn := c.connection
-	if conn == nil {
+	if c.connection == nil {
 		return ErrConnectionNotEstablished
 	}
 
@@ -210,17 +206,22 @@ func (c *ManagedConnection) Send(msg interface{}) error {
 		return err
 	}
 
-	return conn.WriteMessage(websocket.BinaryMessage, b.Bytes())
+	return c.connection.WriteMessage(websocket.BinaryMessage, b.Bytes())
 }
 
-// Close closes the websocket connection.
-func (c *ManagedConnection) Close() error {
-	c.closeChan <- struct{}{}
-	c.connectionLock.RLock()
-	defer c.connectionLock.RUnlock()
+// Shutdown closes the websocket connection.
+func (c *ManagedConnection) Shutdown() error {
+	c.connectionLock.Lock()
+	defer c.connectionLock.Unlock()
 
-	if conn := c.connection; conn != nil {
-		return conn.Close()
+	c.closeOnce.Do(func() {
+		close(c.closeChan)
+	})
+
+	if c.connection != nil {
+		err := c.connection.Close()
+		c.connection = nil
+		return err
 	}
 	return nil
 }
