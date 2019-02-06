@@ -192,7 +192,7 @@ func TestCloseIgnoresNoConnection(t *testing.T) {
 }
 
 func TestDurableConnectionWhenConnectionBreaksDown(t *testing.T) {
-	var upgrader = websocket.Upgrader{}
+	upgrader := websocket.Upgrader{}
 	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		c, err := upgrader.Upgrade(w, r, nil)
 		if err != nil {
