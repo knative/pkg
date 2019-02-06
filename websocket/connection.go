@@ -90,7 +90,7 @@ func NewDurableSendingConnection(target string, logger *zap.SugaredLogger) *Mana
 //
 // Note: The given channel needs to be drained after calling `Shutdown`
 // to not cause any deadlocks. If the channel's buffer is likely to be
-// filled, this needs to happen in seperate goroutines, i.e.
+// filled, this needs to happen in separate goroutines, i.e.
 //
 // go func() {conn.Shutdown(); close(messageChan)}
 // go func() {for range messageChan {}}
