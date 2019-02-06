@@ -37,6 +37,9 @@ var (
 	// ErrConnectionNotEstablished is returned by methods that need a connection
 	// but no connection is already created.
 	ErrConnectionNotEstablished = errors.New("connection has not yet been established")
+
+	// errShuttingDown is returned internally once the shutdown signal has been sent.
+	errShuttingDown = errors.New("shutdown in progress")
 )
 
 // RawConnection is an interface defining the methods needed
@@ -115,6 +118,7 @@ func NewDurableConnection(target string, messageChan chan []byte, logger *zap.Su
 					logger.Errorw(fmt.Sprintf("Connection to %q broke down, reconnecting...", target), zap.Error(err))
 				}
 			case <-c.closeChan:
+				logger.Infof("Connection to %q is being shutdown", target)
 				return
 			}
 		}
@@ -148,15 +152,19 @@ func (c *ManagedConnection) connect() error {
 
 	var err error
 	wait.ExponentialBackoff(c.connectionBackoff, func() (bool, error) {
-		var conn rawConnection
+		select {
+		default:
+			var conn rawConnection
+			conn, err = c.connectionFactory(c.target)
+			if err != nil {
+				return false, nil
+			}
 
-		conn, err = c.connectionFactory(c.target)
-		if err != nil {
-			return false, nil
+			c.connection = conn
+			return true, nil
+		case <-c.closeChan:
+			return false, errShuttingDown
 		}
-
-		c.connection = conn
-		return true, nil
 	})
 
 	return err
@@ -165,8 +173,13 @@ func (c *ManagedConnection) connect() error {
 // keepalive keeps the connection open.
 func (c *ManagedConnection) keepalive() error {
 	for {
-		if err := c.read(); err != nil {
-			return err
+		select {
+		default:
+			if err := c.read(); err != nil {
+				return err
+			}
+		case <-c.closeChan:
+			return errShuttingDown
 		}
 	}
 }
