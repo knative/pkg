@@ -207,6 +207,7 @@ func (c *ManagedConnection) read() error {
 
 	// Send the message to the channel if its an application level message
 	// and if that channel is set.
+	// TODO(markusthoemmes): Return the messageType along with the payload.
 	if c.messageChan != nil && (messageType == websocket.TextMessage || messageType == websocket.BinaryMessage) {
 		if message, _ := ioutil.ReadAll(reader); message != nil {
 			c.messageChan <- message
