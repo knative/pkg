@@ -88,6 +88,9 @@ func NewDurableSendingConnection(target string, logger *zap.SugaredLogger) *Mana
 // send messages to the endpoint it connects to.
 // The connection will continuously be kept alive and reconnected
 // in case of a loss of connectivity.
+//
+// Note: The given channel needs to be drained after calling `Shutdown`
+// to not cause any deadlocks.
 func NewDurableConnection(target string, messageChan chan []byte, logger *zap.SugaredLogger) *ManagedConnection {
 	websocketConnectionFactory := func(_ string) (rawConnection, error) {
 		dialer := &websocket.Dialer{
