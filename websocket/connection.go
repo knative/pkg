@@ -86,7 +86,7 @@ func NewDurableSendingConnection(target string, logger *zap.SugaredLogger) *Mana
 // The connection will continuously be kept alive and reconnected
 // in case of a loss of connectivity.
 func NewDurableConnection(target string, messageChan chan []byte, logger *zap.SugaredLogger) *ManagedConnection {
-	websocketConnectionFactory := func(target string) (rawConnection, error) {
+	websocketConnectionFactory := func(_ string) (rawConnection, error) {
 		dialer := &websocket.Dialer{
 			HandshakeTimeout: 3 * time.Second,
 		}
