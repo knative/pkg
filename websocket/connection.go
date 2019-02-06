@@ -211,14 +211,14 @@ func (c *ManagedConnection) Send(msg interface{}) error {
 		return ErrConnectionNotEstablished
 	}
 
-	c.writerLock.Lock()
-	defer c.writerLock.Unlock()
-
 	var b bytes.Buffer
 	enc := gob.NewEncoder(&b)
 	if err := enc.Encode(msg); err != nil {
 		return err
 	}
+
+	c.writerLock.Lock()
+	defer c.writerLock.Unlock()
 
 	return c.connection.WriteMessage(websocket.BinaryMessage, b.Bytes())
 }
