@@ -52,9 +52,8 @@ type rawConnection interface {
 
 // ManagedConnection represents a websocket connection.
 type ManagedConnection struct {
-	target            string
 	connection        rawConnection
-	connectionFactory func(target string) (rawConnection, error)
+	connectionFactory func() (rawConnection, error)
 
 	closeChan chan struct{}
 	closeOnce sync.Once
@@ -92,7 +91,7 @@ func NewDurableSendingConnection(target string, logger *zap.SugaredLogger) *Mana
 // Note: The given channel needs to be drained after calling `Shutdown`
 // to not cause any deadlocks.
 func NewDurableConnection(target string, messageChan chan []byte, logger *zap.SugaredLogger) *ManagedConnection {
-	websocketConnectionFactory := func(_ string) (rawConnection, error) {
+	websocketConnectionFactory := func() (rawConnection, error) {
 		dialer := &websocket.Dialer{
 			HandshakeTimeout: 3 * time.Second,
 		}
@@ -100,7 +99,7 @@ func NewDurableConnection(target string, messageChan chan []byte, logger *zap.Su
 		return conn, err
 	}
 
-	c := newConnection(target, messageChan, websocketConnectionFactory)
+	c := newConnection(websocketConnectionFactory, messageChan)
 
 	// Keep the connection alive asynchronously and reconnect on
 	// connection failure.
@@ -131,9 +130,8 @@ func NewDurableConnection(target string, messageChan chan []byte, logger *zap.Su
 }
 
 // newConnection creates a new connection primitive.
-func newConnection(target string, messageChan chan []byte, connFactory func(target string) (rawConnection, error)) *ManagedConnection {
+func newConnection(connFactory func() (rawConnection, error), messageChan chan []byte) *ManagedConnection {
 	conn := &ManagedConnection{
-		target:            target,
 		connectionFactory: connFactory,
 		closeChan:         make(chan struct{}),
 		messageChan:       messageChan,
@@ -158,7 +156,7 @@ func (c *ManagedConnection) connect() error {
 		select {
 		default:
 			var conn rawConnection
-			conn, err = c.connectionFactory(c.target)
+			conn, err = c.connectionFactory()
 			if err != nil {
 				return false, nil
 			}
