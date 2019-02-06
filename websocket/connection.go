@@ -142,10 +142,11 @@ func newConnection(target string, messageChan chan []byte, connFactory func(targ
 }
 
 // connect tries to establish a websocket connection.
-func (c *ManagedConnection) connect() (err error) {
+func (c *ManagedConnection) connect() error {
 	c.connectionLock.Lock()
 	defer c.connectionLock.Unlock()
 
+	var err error
 	wait.ExponentialBackoff(c.connectionBackoff, func() (bool, error) {
 		var conn rawConnection
 
