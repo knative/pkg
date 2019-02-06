@@ -89,7 +89,11 @@ func NewDurableSendingConnection(target string, logger *zap.SugaredLogger) *Mana
 // in case of a loss of connectivity.
 //
 // Note: The given channel needs to be drained after calling `Shutdown`
-// to not cause any deadlocks.
+// to not cause any deadlocks. If the channel's buffer is likely to be
+// filled, this needs to happen in seperate goroutines, i.e.
+//
+// go func() {conn.Shutdown(); close(messageChan)}
+// go func() {for range messageChan {}}
 func NewDurableConnection(target string, messageChan chan []byte, logger *zap.SugaredLogger) *ManagedConnection {
 	websocketConnectionFactory := func() (rawConnection, error) {
 		dialer := &websocket.Dialer{
