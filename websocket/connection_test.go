@@ -32,10 +32,6 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-const (
-	target = "test"
-)
-
 type inspectableConnection struct {
 	nextReaderCalls   chan struct{}
 	writeMessageCalls chan struct{}
