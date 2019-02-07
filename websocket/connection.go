@@ -108,9 +108,6 @@ func NewDurableConnection(target string, messageChan chan []byte, logger *zap.Su
 	// Keep the connection alive asynchronously and reconnect on
 	// connection failure.
 	go func() {
-		// If the close signal races the connection attempt, make
-		// sure the connection actually closes.
-		defer c.Shutdown()
 		for {
 			select {
 			default:
@@ -122,6 +119,9 @@ func NewDurableConnection(target string, messageChan chan []byte, logger *zap.Su
 				logger.Infof("Connected to %q", target)
 				if err := c.keepalive(); err != nil {
 					logger.Errorw(fmt.Sprintf("Connection to %q broke down, reconnecting...", target), zap.Error(err))
+				}
+				if err := c.closeConnection(); err != nil {
+					logger.Errorw("Failed to close the connection after crashing", zap.Error(err))
 				}
 			case <-c.closeChan:
 				logger.Infof("Connection to %q is being shutdown", target)
@@ -152,9 +152,6 @@ func newConnection(connFactory func() (rawConnection, error), messageChan chan [
 
 // connect tries to establish a websocket connection.
 func (c *ManagedConnection) connect() error {
-	c.connectionLock.Lock()
-	defer c.connectionLock.Unlock()
-
 	var err error
 	wait.ExponentialBackoff(c.connectionBackoff, func() (bool, error) {
 		select {
@@ -164,6 +161,9 @@ func (c *ManagedConnection) connect() error {
 			if err != nil {
 				return false, nil
 			}
+
+			c.connectionLock.Lock()
+			defer c.connectionLock.Unlock()
 
 			c.connection = conn
 			return true, nil
@@ -189,12 +189,25 @@ func (c *ManagedConnection) keepalive() error {
 	}
 }
 
+// closeConnection closes the underlying websocket connection.
+func (c *ManagedConnection) closeConnection() error {
+	c.connectionLock.Lock()
+	defer c.connectionLock.Unlock()
+
+	if c.connection != nil {
+		err := c.connection.Close()
+		c.connection = nil
+		return err
+	}
+	return nil
+}
+
 // read reads the next message from the connection.
 // If a messageChan is supplied and the current message type is not
 // a control message, the message is sent to that channel.
 func (c *ManagedConnection) read() error {
-	c.connectionLock.Lock()
-	defer c.connectionLock.Unlock()
+	c.connectionLock.RLock()
+	defer c.connectionLock.RUnlock()
 
 	if c.connection == nil {
 		return ErrConnectionNotEstablished
@@ -205,8 +218,6 @@ func (c *ManagedConnection) read() error {
 
 	messageType, reader, err := c.connection.NextReader()
 	if err != nil {
-		c.connection.Close()
-		c.connection = nil
 		return err
 	}
 
@@ -249,13 +260,5 @@ func (c *ManagedConnection) Shutdown() error {
 		close(c.closeChan)
 	})
 
-	c.connectionLock.Lock()
-	defer c.connectionLock.Unlock()
-
-	if c.connection != nil {
-		err := c.connection.Close()
-		c.connection = nil
-		return err
-	}
-	return nil
+	return c.closeConnection()
 }

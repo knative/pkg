@@ -188,6 +188,8 @@ func TestCloseIgnoresNoConnection(t *testing.T) {
 }
 
 func TestDurableConnectionWhenConnectionBreaksDown(t *testing.T) {
+	testPayload := "test"
+
 	upgrader := websocket.Upgrader{}
 	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		c, err := upgrader.Upgrade(w, r, nil)
@@ -195,19 +197,22 @@ func TestDurableConnectionWhenConnectionBreaksDown(t *testing.T) {
 			return
 		}
 
-		// Close the connection immediately, forces a reconnect.
-		c.Close()
+		_, payload, err := c.ReadMessage()
+		// Close connection if an error occurs or we successfully received a message.
+		if err != nil || string(payload) == testPayload {
+			c.Close()
+		}
 	}))
 	defer s.Close()
 
 	logger := ktesting.TestLogger(t)
 	target := "ws" + strings.TrimPrefix(s.URL, "http")
 	conn := NewDurableSendingConnection(target, logger)
-	defer conn.Shutdown()
+	//defer conn.Shutdown()
 
 	for i := 0; i < 10; i++ {
 		err := wait.PollImmediate(50*time.Millisecond, 5*time.Second, func() (bool, error) {
-			if err := conn.Send("test"); err != nil {
+			if err := conn.Send(testPayload); err != nil {
 				return false, nil
 			}
 			return true, nil
