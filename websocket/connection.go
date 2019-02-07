@@ -168,7 +168,8 @@ func (c *ManagedConnection) connect() error {
 			c.connection = conn
 			return true, nil
 		case <-c.closeChan:
-			return false, errShuttingDown
+			err = errShuttingDown
+			return false, err
 		}
 	})
 

@@ -32,6 +32,8 @@ import (
 	"github.com/gorilla/websocket"
 )
 
+const propagationTimeout = 5 * time.Second
+
 type inspectableConnection struct {
 	nextReaderCalls   chan struct{}
 	writeMessageCalls chan struct{}
@@ -41,17 +43,23 @@ type inspectableConnection struct {
 }
 
 func (c *inspectableConnection) WriteMessage(messageType int, data []byte) error {
-	c.writeMessageCalls <- struct{}{}
+	if c.writeMessageCalls != nil {
+		c.writeMessageCalls <- struct{}{}
+	}
 	return nil
 }
 
 func (c *inspectableConnection) NextReader() (int, io.Reader, error) {
-	c.nextReaderCalls <- struct{}{}
+	if c.nextReaderCalls != nil {
+		c.nextReaderCalls <- struct{}{}
+	}
 	return c.nextReaderFunc()
 }
 
 func (c *inspectableConnection) Close() error {
-	c.closeCalls <- struct{}{}
+	if c.closeCalls != nil {
+		c.closeCalls <- struct{}{}
+	}
 	return nil
 }
 
@@ -189,6 +197,7 @@ func TestCloseIgnoresNoConnection(t *testing.T) {
 
 func TestDurableConnectionWhenConnectionBreaksDown(t *testing.T) {
 	testPayload := "test"
+	reconnectChan := make(chan struct{})
 
 	upgrader := websocket.Upgrader{}
 	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -197,18 +206,16 @@ func TestDurableConnectionWhenConnectionBreaksDown(t *testing.T) {
 			return
 		}
 
-		_, payload, err := c.ReadMessage()
-		// Close connection if an error occurs or we successfully received a message.
-		if err != nil || string(payload) == testPayload {
-			c.Close()
-		}
+		// Waits for a message to be sent before dropping the connection.
+		<-reconnectChan
+		c.Close()
 	}))
 	defer s.Close()
 
 	logger := ktesting.TestLogger(t)
 	target := "ws" + strings.TrimPrefix(s.URL, "http")
 	conn := NewDurableSendingConnection(target, logger)
-	//defer conn.Shutdown()
+	defer conn.Shutdown()
 
 	for i := 0; i < 10; i++ {
 		err := wait.PollImmediate(50*time.Millisecond, 5*time.Second, func() (bool, error) {
@@ -221,6 +228,9 @@ func TestDurableConnectionWhenConnectionBreaksDown(t *testing.T) {
 		if err != nil {
 			t.Errorf("Timed out trying to send a message: %v", err)
 		}
+
+		// Message successfully sent, instruct the server to drop the connection.
+		reconnectChan <- struct{}{}
 	}
 }
 
@@ -247,5 +257,59 @@ func TestKeepaliveWithNoConnectionReturnsError(t *testing.T) {
 
 	if got == nil {
 		t.Fatal("Expected an error but got none")
+	}
+}
+
+func TestConnectLoopIsStopped(t *testing.T) {
+	connFactory := func() (rawConnection, error) {
+		return nil, errors.New("connection error")
+	}
+
+	conn := newConnection(connFactory, nil)
+
+	errorChan := make(chan error)
+	go func() {
+		errorChan <- conn.connect()
+	}()
+
+	conn.Shutdown()
+
+	select {
+	case err := <-errorChan:
+		if err != errShuttingDown {
+			t.Errorf("Wrong 'connect' error, got %v, want %v", err, errShuttingDown)
+		}
+	case <-time.After(propagationTimeout):
+		t.Error("Timed out waiting for the keepalive loop to stop.")
+	}
+}
+
+func TestKeepaliveLoopIsStopped(t *testing.T) {
+	spy := &inspectableConnection{
+		nextReaderFunc: func() (int, io.Reader, error) {
+			return websocket.TextMessage, nil, nil
+		},
+	}
+	connFactory := func() (rawConnection, error) {
+		return spy, nil
+	}
+
+	conn := newConnection(connFactory, nil)
+	conn.connect()
+
+	errorChan := make(chan error)
+	go func() {
+		errorChan <- conn.keepalive()
+	}()
+
+	conn.Shutdown()
+
+	select {
+	case err := <-errorChan:
+		if err != errShuttingDown {
+			t.Errorf("Wrong 'keepalive' error, got %v, want %v", err, errShuttingDown)
+		}
+	case <-time.After(propagationTimeout):
+		t.Error("Timed out waiting for the keepalive loop to stop.")
 	}
 }
