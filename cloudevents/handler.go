@@ -60,8 +60,8 @@ var (
 	// it leaves this stack frame. The workaround is to pass a pointer to an interface and then
 	// get the type of its reference.
 	// For example, see: https://play.golang.org/p/_dxLvdkvqvg
-	contextType      = reflect.TypeOf((*context.Context)(nil)).Elem()
-	errorType        = reflect.TypeOf((*error)(nil)).Elem()
+	contextType     = reflect.TypeOf((*context.Context)(nil)).Elem()
+	errorType       = reflect.TypeOf((*error)(nil)).Elem()
 	sendContextType = reflect.TypeOf((*SendContext)(nil)).Elem()
 )
 
