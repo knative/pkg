@@ -380,7 +380,7 @@ func canonicalizeHeaders(rvs ...requestValidation) {
 		for n, v := range headers {
 			delete(headers, n)
 			ln := strings.ToLower(n)
-			if !unimportantHeaders.Has(ln){
+			if !unimportantHeaders.Has(ln) {
 				headers[ln] = v
 			}
 		}

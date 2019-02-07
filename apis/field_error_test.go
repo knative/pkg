@@ -429,7 +429,7 @@ can not use @, do not try`,
 
 			if test.want != "" {
 				if got, want := fe.Error(), test.want; got != want {
-t.Errorf("%s: Error() = %q, wanted %q, diff: %s", test.name, got, want, cmp.Diff(got, want))
+					t.Errorf("%s: Error() = %q, wanted %q, diff: %s", test.name, got, want, cmp.Diff(got, want))
 				}
 			} else if fe != nil {
 				t.Errorf("%s: ViaField() = %v, wanted nil", test.name, fe)
