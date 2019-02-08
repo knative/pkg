@@ -30,10 +30,11 @@ func AppendRandomString(prefix string) string {
 	suffix := make([]byte, randSuffixLen)
 
 	rndMutex.Lock()
+	defer rndMutex.Unlock()
+
 	for i := range suffix {
 		suffix[i] = letterBytes[r.Intn(len(letterBytes))]
 	}
-	rndMutex.Unlock()
 
 	return strings.Join([]string{prefix, string(suffix)}, sep)
 }
