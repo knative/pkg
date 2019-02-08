@@ -313,3 +313,21 @@ func TestKeepaliveLoopIsStopped(t *testing.T) {
 		t.Error("Timed out waiting for the keepalive loop to stop.")
 	}
 }
+
+func TestDoubleShutdown(t *testing.T) {
+	spy := &inspectableConnection{
+		closeCalls: make(chan struct{}, 2), // potentially allow 2 calls
+	}
+	connFactory := func() (rawConnection, error) {
+		return spy, nil
+	}
+
+	conn := newConnection(connFactory, nil)
+	conn.connect()
+	conn.Shutdown()
+	conn.Shutdown()
+
+	if want, got := 1, len(spy.closeCalls); want != got {
+		t.Errorf("Wrong 'Close' callcount, got %d, want %d", got, want)
+	}
+}
