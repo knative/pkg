@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Knative Authors
+Copyright 2019 The Knative Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -19,16 +19,20 @@ package websocket
 import (
 	"errors"
 	"io"
+	"net/http"
+	"net/http/httptest"
 	"strings"
 	"testing"
 	"time"
 
+	ktesting "github.com/knative/pkg/logging/testing"
+
+	"k8s.io/apimachinery/pkg/util/wait"
+
 	"github.com/gorilla/websocket"
 )
 
-const (
-	target = "test"
-)
+const propagationTimeout = 5 * time.Second
 
 type inspectableConnection struct {
 	nextReaderCalls   chan struct{}
@@ -39,18 +43,39 @@ type inspectableConnection struct {
 }
 
 func (c *inspectableConnection) WriteMessage(messageType int, data []byte) error {
-	c.writeMessageCalls <- struct{}{}
+	if c.writeMessageCalls != nil {
+		c.writeMessageCalls <- struct{}{}
+	}
 	return nil
 }
 
 func (c *inspectableConnection) NextReader() (int, io.Reader, error) {
-	c.nextReaderCalls <- struct{}{}
+	if c.nextReaderCalls != nil {
+		c.nextReaderCalls <- struct{}{}
+	}
 	return c.nextReaderFunc()
 }
 
 func (c *inspectableConnection) Close() error {
-	c.closeCalls <- struct{}{}
+	if c.closeCalls != nil {
+		c.closeCalls <- struct{}{}
+	}
 	return nil
+}
+
+// staticConnFactory returns a static connection, for example
+// an inspectable connection.
+func staticConnFactory(conn rawConnection) func() (rawConnection, error) {
+	return func() (rawConnection, error) {
+		return conn, nil
+	}
+}
+
+// errConnFactory returns a static error.
+func errConnFactory(err error) func() (rawConnection, error) {
+	return func() (rawConnection, error) {
+		return nil, err
+	}
 }
 
 func TestRetriesWhileConnect(t *testing.T) {
@@ -61,17 +86,17 @@ func TestRetriesWhileConnect(t *testing.T) {
 		closeCalls: make(chan struct{}, 1),
 	}
 
-	connFactory = func(_ string) (rawConnection, error) {
+	connFactory := func() (rawConnection, error) {
 		got++
 		if got == want {
 			return spy, nil
 		}
 		return nil, errors.New("not yet")
 	}
-	conn := newConnection(target, nil)
+	conn := newConnection(connFactory, nil)
 
 	conn.connect()
-	conn.Close()
+	conn.Shutdown()
 
 	if got != want {
 		t.Fatalf("Wanted %v retries. Got %v.", want, got)
@@ -96,11 +121,7 @@ func TestSendErrorOnEncode(t *testing.T) {
 	spy := &inspectableConnection{
 		writeMessageCalls: make(chan struct{}, 1),
 	}
-
-	connFactory = func(_ string) (rawConnection, error) {
-		return spy, nil
-	}
-	conn := newConnection(target, nil)
+	conn := newConnection(staticConnFactory(spy), nil)
 	conn.connect()
 	// gob cannot encode nil values
 	got := conn.Send(nil)
@@ -117,10 +138,7 @@ func TestSendMessage(t *testing.T) {
 	spy := &inspectableConnection{
 		writeMessageCalls: make(chan struct{}, 1),
 	}
-	connFactory = func(_ string) (rawConnection, error) {
-		return spy, nil
-	}
-	conn := newConnection(target, nil)
+	conn := newConnection(staticConnFactory(spy), nil)
 	conn.connect()
 	got := conn.Send("test")
 
@@ -142,12 +160,9 @@ func TestReceiveMessage(t *testing.T) {
 			return websocket.TextMessage, strings.NewReader(testMessage), nil
 		},
 	}
-	connFactory = func(_ string) (rawConnection, error) {
-		return spy, nil
-	}
 
 	messageChan := make(chan []byte, 1)
-	conn := newConnection(target, messageChan)
+	conn := newConnection(staticConnFactory(spy), messageChan)
 	conn.connect()
 	go conn.keepalive()
 
@@ -162,12 +177,9 @@ func TestCloseClosesConnection(t *testing.T) {
 	spy := &inspectableConnection{
 		closeCalls: make(chan struct{}, 1),
 	}
-	connFactory = func(_ string) (rawConnection, error) {
-		return spy, nil
-	}
-	conn := newConnection(target, nil)
+	conn := newConnection(staticConnFactory(spy), nil)
 	conn.connect()
-	conn.Close()
+	conn.Shutdown()
 
 	if len(spy.closeCalls) != 1 {
 		t.Fatalf("Expected 'Close' to be called once, got %v", len(spy.closeCalls))
@@ -178,7 +190,7 @@ func TestCloseIgnoresNoConnection(t *testing.T) {
 	conn := &ManagedConnection{
 		closeChan: make(chan struct{}, 1),
 	}
-	got := conn.Close()
+	got := conn.Shutdown()
 
 	if got != nil {
 		t.Fatalf("Expected no error, got %v", got)
@@ -186,60 +198,46 @@ func TestCloseIgnoresNoConnection(t *testing.T) {
 }
 
 func TestDurableConnectionWhenConnectionBreaksDown(t *testing.T) {
-	testConn := &inspectableConnection{
-		nextReaderCalls:   make(chan struct{}),
-		writeMessageCalls: make(chan struct{}),
-		closeCalls:        make(chan struct{}),
+	testPayload := "test"
+	reconnectChan := make(chan struct{})
 
-		nextReaderFunc: func() (int, io.Reader, error) {
-			return 1, nil, errors.New("next reader errored")
-		},
-	}
-	connectAttempts := make(chan struct{})
-	connFactory = func(_ string) (rawConnection, error) {
-		connectAttempts <- struct{}{}
-		return testConn, nil
-	}
-	conn := NewDurableSendingConnection(target)
+	upgrader := websocket.Upgrader{}
+	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		c, err := upgrader.Upgrade(w, r, nil)
+		if err != nil {
+			return
+		}
 
-	// the connection is constantly created, tried to read from
-	// and closed because NextReader (which holds the connection
-	// open) fails.
-	for i := 0; i < 100; i++ {
-		<-connectAttempts
-		<-testConn.nextReaderCalls
-		<-testConn.closeCalls
-	}
+		// Waits for a message to be sent before dropping the connection.
+		<-reconnectChan
+		c.Close()
+	}))
+	defer s.Close()
 
-	// Enter the reconnect loop
-	<-connectAttempts
+	logger := ktesting.TestLogger(t)
+	target := "ws" + strings.TrimPrefix(s.URL, "http")
+	conn := NewDurableSendingConnection(target, logger)
+	defer conn.Shutdown()
 
-	// Call 'Close' asynchronously and wait for it to reach
-	// the channel.
-	go conn.Close()
-	<-testConn.closeCalls
+	for i := 0; i < 10; i++ {
+		err := wait.PollImmediate(50*time.Millisecond, 5*time.Second, func() (bool, error) {
+			if err := conn.Send(testPayload); err != nil {
+				return false, nil
+			}
+			return true, nil
+		})
 
-	// Advance the reconnect loop until 'Close' is called.
-	<-testConn.nextReaderCalls
-	<-testConn.closeCalls
+		if err != nil {
+			t.Errorf("Timed out trying to send a message: %v", err)
+		}
 
-	// Wait for the final call to 'Close' (when the loop is aborted)
-	<-testConn.closeCalls
-
-	if len(connectAttempts) > 1 {
-		t.Fatalf("Expected at most one connection attempts, got %v", len(connectAttempts))
-	}
-	if len(testConn.nextReaderCalls) > 1 {
-		t.Fatalf("Expected at most one calls to 'NextReader', got %v", len(testConn.nextReaderCalls))
+		// Message successfully sent, instruct the server to drop the connection.
+		reconnectChan <- struct{}{}
 	}
 }
 
 func TestConnectFailureReturnsError(t *testing.T) {
-	connFactory = func(_ string) (rawConnection, error) {
-		return nil, ErrConnectionNotEstablished
-	}
-
-	conn := newConnection(target, nil)
+	conn := newConnection(errConnFactory(ErrConnectionNotEstablished), nil)
 
 	// Shorten the connection backoff duration for this test
 	conn.connectionBackoff.Duration = 1 * time.Millisecond
@@ -252,10 +250,70 @@ func TestConnectFailureReturnsError(t *testing.T) {
 }
 
 func TestKeepaliveWithNoConnectionReturnsError(t *testing.T) {
-	conn := newConnection(target, nil)
+	conn := newConnection(nil, nil)
 	got := conn.keepalive()
 
 	if got == nil {
 		t.Fatal("Expected an error but got none")
+	}
+}
+
+func TestConnectLoopIsStopped(t *testing.T) {
+	conn := newConnection(errConnFactory(errors.New("connection error")), nil)
+
+	errorChan := make(chan error)
+	go func() {
+		errorChan <- conn.connect()
+	}()
+
+	conn.Shutdown()
+
+	select {
+	case err := <-errorChan:
+		if err != errShuttingDown {
+			t.Errorf("Wrong 'connect' error, got %v, want %v", err, errShuttingDown)
+		}
+	case <-time.After(propagationTimeout):
+		t.Error("Timed out waiting for the keepalive loop to stop.")
+	}
+}
+
+func TestKeepaliveLoopIsStopped(t *testing.T) {
+	spy := &inspectableConnection{
+		nextReaderFunc: func() (int, io.Reader, error) {
+			return websocket.TextMessage, nil, nil
+		},
+	}
+	conn := newConnection(staticConnFactory(spy), nil)
+	conn.connect()
+
+	errorChan := make(chan error)
+	go func() {
+		errorChan <- conn.keepalive()
+	}()
+
+	conn.Shutdown()
+
+	select {
+	case err := <-errorChan:
+		if err != errShuttingDown {
+			t.Errorf("Wrong 'keepalive' error, got %v, want %v", err, errShuttingDown)
+		}
+	case <-time.After(propagationTimeout):
+		t.Error("Timed out waiting for the keepalive loop to stop.")
+	}
+}
+
+func TestDoubleShutdown(t *testing.T) {
+	spy := &inspectableConnection{
+		closeCalls: make(chan struct{}, 2), // potentially allow 2 calls
+	}
+	conn := newConnection(staticConnFactory(spy), nil)
+	conn.connect()
+	conn.Shutdown()
+	conn.Shutdown()
+
+	if want, got := 1, len(spy.closeCalls); want != got {
+		t.Errorf("Wrong 'Close' callcount, got %d, want %d", got, want)
 	}
 }
