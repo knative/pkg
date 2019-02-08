@@ -250,9 +250,9 @@ go test ./test --emitmetrics
 ```
 
 - To add additional metrics to a test, see
-  [emitting metrics](adding_tests.md#emit-metrics).
+  [emitting metrics](https://github.com/knative/pkg/tree/master/test#emit-metrics).
 - For more info on the format of the metrics, see
-  [metric format](adding_tests.md#metric-format).
+  [metric format](https://github.com/knative/pkg/tree/master/test#emit-metrics).
 
 [minikube]: https://kubernetes.io/docs/setup/minikube/
 
