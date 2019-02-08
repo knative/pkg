@@ -63,6 +63,21 @@ func (c *inspectableConnection) Close() error {
 	return nil
 }
 
+// staticConnFactory returns a static connection, for example
+// an inspectable connection.
+func staticConnFactory(conn rawConnection) func() (rawConnection, error) {
+	return func() (rawConnection, error) {
+		return conn, nil
+	}
+}
+
+// errConnFactory returns a static error.
+func errConnFactory(err error) func() (rawConnection, error) {
+	return func() (rawConnection, error) {
+		return nil, err
+	}
+}
+
 func TestRetriesWhileConnect(t *testing.T) {
 	want := 2
 	got := 0
@@ -106,11 +121,7 @@ func TestSendErrorOnEncode(t *testing.T) {
 	spy := &inspectableConnection{
 		writeMessageCalls: make(chan struct{}, 1),
 	}
-
-	connFactory := func() (rawConnection, error) {
-		return spy, nil
-	}
-	conn := newConnection(connFactory, nil)
+	conn := newConnection(staticConnFactory(spy), nil)
 	conn.connect()
 	// gob cannot encode nil values
 	got := conn.Send(nil)
@@ -127,10 +138,7 @@ func TestSendMessage(t *testing.T) {
 	spy := &inspectableConnection{
 		writeMessageCalls: make(chan struct{}, 1),
 	}
-	connFactory := func() (rawConnection, error) {
-		return spy, nil
-	}
-	conn := newConnection(connFactory, nil)
+	conn := newConnection(staticConnFactory(spy), nil)
 	conn.connect()
 	got := conn.Send("test")
 
@@ -152,12 +160,9 @@ func TestReceiveMessage(t *testing.T) {
 			return websocket.TextMessage, strings.NewReader(testMessage), nil
 		},
 	}
-	connFactory := func() (rawConnection, error) {
-		return spy, nil
-	}
 
 	messageChan := make(chan []byte, 1)
-	conn := newConnection(connFactory, messageChan)
+	conn := newConnection(staticConnFactory(spy), messageChan)
 	conn.connect()
 	go conn.keepalive()
 
@@ -172,10 +177,7 @@ func TestCloseClosesConnection(t *testing.T) {
 	spy := &inspectableConnection{
 		closeCalls: make(chan struct{}, 1),
 	}
-	connFactory := func() (rawConnection, error) {
-		return spy, nil
-	}
-	conn := newConnection(connFactory, nil)
+	conn := newConnection(staticConnFactory(spy), nil)
 	conn.connect()
 	conn.Shutdown()
 
@@ -235,11 +237,7 @@ func TestDurableConnectionWhenConnectionBreaksDown(t *testing.T) {
 }
 
 func TestConnectFailureReturnsError(t *testing.T) {
-	connFactory := func() (rawConnection, error) {
-		return nil, ErrConnectionNotEstablished
-	}
-
-	conn := newConnection(connFactory, nil)
+	conn := newConnection(errConnFactory(ErrConnectionNotEstablished), nil)
 
 	// Shorten the connection backoff duration for this test
 	conn.connectionBackoff.Duration = 1 * time.Millisecond
@@ -261,11 +259,7 @@ func TestKeepaliveWithNoConnectionReturnsError(t *testing.T) {
 }
 
 func TestConnectLoopIsStopped(t *testing.T) {
-	connFactory := func() (rawConnection, error) {
-		return nil, errors.New("connection error")
-	}
-
-	conn := newConnection(connFactory, nil)
+	conn := newConnection(errConnFactory(errors.New("connection error")), nil)
 
 	errorChan := make(chan error)
 	go func() {
@@ -290,11 +284,7 @@ func TestKeepaliveLoopIsStopped(t *testing.T) {
 			return websocket.TextMessage, nil, nil
 		},
 	}
-	connFactory := func() (rawConnection, error) {
-		return spy, nil
-	}
-
-	conn := newConnection(connFactory, nil)
+	conn := newConnection(staticConnFactory(spy), nil)
 	conn.connect()
 
 	errorChan := make(chan error)
@@ -318,11 +308,7 @@ func TestDoubleShutdown(t *testing.T) {
 	spy := &inspectableConnection{
 		closeCalls: make(chan struct{}, 2), // potentially allow 2 calls
 	}
-	connFactory := func() (rawConnection, error) {
-		return spy, nil
-	}
-
-	conn := newConnection(connFactory, nil)
+	conn := newConnection(staticConnFactory(spy), nil)
 	conn.connect()
 	conn.Shutdown()
 	conn.Shutdown()
