@@ -270,14 +270,14 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:d64d88b84d29988e063db8a0573ef8e078aeec050419a33fdc8559bb9c73379c"
+  digest = "1:8b3b154702bccda49e074cc86a6889d11c0daad1a5a40b7428a3d3b5ca61f4ce"
   name = "github.com/knative/test-infra"
   packages = [
     "scripts",
     "tools/dep-collector",
   ]
   pruneopts = "UT"
-  revision = "9f92bcabaa7ce248cc6bc02546bff26df3c0b6be"
+  revision = "036c35039cf88c9ca4e8609de5fe0592d4e8067a"
 
 [[projects]]
   digest = "1:56dbf15e091bf7926cb33a57cb6bdfc658fc6d3498d2f76f10a97ce7856f1fde"
@@ -389,8 +389,7 @@
     "semver",
   ]
   pruneopts = "NUT"
-  revision = ""
-  version = "v1.0.1-alpha.6"
+  revision = "4bbc89b6501cca7dd6b5557d78d70c8d2c6e8b97"
 
 [[projects]]
   digest = "1:d917313f309bda80d27274d53985bc65651f81a5b66b820749ac7f8ef061fd04"
@@ -1040,6 +1039,7 @@
     "k8s.io/apimachinery/pkg/selection",
     "k8s.io/apimachinery/pkg/types",
     "k8s.io/apimachinery/pkg/util/runtime",
+    "k8s.io/apimachinery/pkg/util/sets",
     "k8s.io/apimachinery/pkg/util/sets/types",
     "k8s.io/apimachinery/pkg/util/validation",
     "k8s.io/apimachinery/pkg/util/wait",
