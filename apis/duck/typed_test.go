@@ -145,7 +145,7 @@ func TestAsStructuredWatcherPassThru(t *testing.T) {
 	select {
 	case x, ok := <-ch:
 		t.Errorf("Saw unexpected message on channel: %v, %v.", x, ok)
-	case _ = <-time.After(100 * time.Millisecond):
+	case <-time.After(100 * time.Millisecond):
 		// Expected path.
 	}
 
@@ -167,7 +167,7 @@ func TestAsStructuredWatcherPassThru(t *testing.T) {
 		if _, ok := x.Object.(*duckv1alpha1.Generational); !ok {
 			t.Errorf("<-ch = %T, wanted %T", x, &duckv1alpha1.Generational{})
 		}
-	case _ = <-time.After(100 * time.Millisecond):
+	case <-time.After(100 * time.Millisecond):
 		t.Error("Didn't see expected message on channel.")
 	}
 }
@@ -204,7 +204,7 @@ func TestAsStructuredWatcherPassThruErrors(t *testing.T) {
 		if diff := cmp.Diff(want, got); diff != "" {
 			t.Errorf("<-ch (-want, +got) = %v", diff)
 		}
-	case _ = <-time.After(100 * time.Millisecond):
+	case <-time.After(100 * time.Millisecond):
 		t.Error("Didn't see expected message on channel.")
 	}
 }
@@ -247,7 +247,7 @@ func TestAsStructuredWatcherErrorConverting(t *testing.T) {
 		} else if got, want := status.Message, errNoUnmarshal.Error(); got != want {
 			t.Errorf("<-ch = %v, wanted %v", got, want)
 		}
-	case _ = <-time.After(100 * time.Millisecond):
+	case <-time.After(100 * time.Millisecond):
 		t.Error("Didn't see expected message on channel.")
 	}
 }
