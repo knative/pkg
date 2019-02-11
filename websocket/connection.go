@@ -40,6 +40,10 @@ var (
 
 	// errShuttingDown is returned internally once the shutdown signal has been sent.
 	errShuttingDown = errors.New("shutdown in progress")
+
+	// pongTimeout defines the amount of time allowed between two pongs to arrive
+	// before the connection is considered broken.
+	pongTimeout = 10 * time.Second
 )
 
 // RawConnection is an interface defining the methods needed
@@ -48,6 +52,9 @@ type rawConnection interface {
 	WriteMessage(messageType int, data []byte) error
 	NextReader() (int, io.Reader, error)
 	Close() error
+
+	SetReadDeadline(deadline time.Time) error
+	SetPongHandler(func(string) error)
 }
 
 // ManagedConnection represents a websocket connection.
@@ -130,6 +137,21 @@ func NewDurableConnection(target string, messageChan chan []byte, logger *zap.Su
 		}
 	}()
 
+	// Keep sending pings 3 times per pongTimeout interval.
+	go func() {
+		ticker := time.NewTicker(pongTimeout / 3)
+		for {
+			select {
+			case <-ticker.C:
+				if err := c.write(websocket.PingMessage, []byte{}); err != nil {
+					logger.Errorw("Failed to send ping message", zap.Error(err))
+				}
+			case <-c.closeChan:
+				return
+			}
+		}
+	}()
+
 	return c
 }
 
@@ -161,6 +183,12 @@ func (c *ManagedConnection) connect() error {
 			if err != nil {
 				return false, nil
 			}
+
+			conn.SetReadDeadline(time.Now().Add(pongTimeout))
+			conn.SetPongHandler(func(string) error {
+				conn.SetReadDeadline(time.Now().Add(pongTimeout))
+				return nil
+			})
 
 			c.connectionLock.Lock()
 			defer c.connectionLock.Unlock()
@@ -234,8 +262,7 @@ func (c *ManagedConnection) read() error {
 	return nil
 }
 
-// Send sends an encodable message over the websocket connection.
-func (c *ManagedConnection) Send(msg interface{}) error {
+func (c *ManagedConnection) write(messageType int, body []byte) error {
 	c.connectionLock.RLock()
 	defer c.connectionLock.RUnlock()
 
@@ -243,16 +270,21 @@ func (c *ManagedConnection) Send(msg interface{}) error {
 		return ErrConnectionNotEstablished
 	}
 
+	c.writerLock.Lock()
+	defer c.writerLock.Unlock()
+
+	return c.connection.WriteMessage(messageType, body)
+}
+
+// Send sends an encodable message over the websocket connection.
+func (c *ManagedConnection) Send(msg interface{}) error {
 	var b bytes.Buffer
 	enc := gob.NewEncoder(&b)
 	if err := enc.Encode(msg); err != nil {
 		return err
 	}
 
-	c.writerLock.Lock()
-	defer c.writerLock.Unlock()
-
-	return c.connection.WriteMessage(websocket.BinaryMessage, b.Bytes())
+	return c.write(websocket.BinaryMessage, b.Bytes())
 }
 
 // Shutdown closes the websocket connection.
