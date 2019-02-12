@@ -185,6 +185,10 @@ func (c *ManagedConnection) connect() error {
 				return false, nil
 			}
 
+			// Setting the read deadline will cause NextReader in read
+			// to fail if it is exceeded. This deadline is reset each
+			// time we receive a pong message so we know the connection
+			// is still intact.
 			conn.SetReadDeadline(time.Now().Add(pongTimeout))
 			conn.SetPongHandler(func(string) error {
 				conn.SetReadDeadline(time.Now().Add(pongTimeout))
