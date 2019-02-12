@@ -47,3 +47,8 @@ type Listable interface {
 
 	GetListType() runtime.Object
 }
+
+// Annotatable indicates that a particular type applies various annotations.
+type Annotatable interface {
+	AnnotateUserInfo(previous Annotatable, userName string)
+}

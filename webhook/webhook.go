@@ -37,6 +37,7 @@ import (
 	"github.com/knative/pkg/kmp"
 	"github.com/knative/pkg/logging"
 	"github.com/knative/pkg/logging/logkey"
+	perrors "github.com/pkg/errors"
 
 	"github.com/markbates/inflect"
 	"github.com/mattbaird/jsonpatch"
@@ -126,6 +127,7 @@ type AdmissionController struct {
 type GenericCRD interface {
 	apis.Defaultable
 	apis.Validatable
+	apis.Annotatable
 	runtime.Object
 }
 
@@ -222,6 +224,17 @@ func validate(old GenericCRD, new GenericCRD) error {
 		return err
 	}
 	return nil
+}
+
+func setAnnotations(patches duck.JSONPatch, new, old GenericCRD, user string) (duck.JSONPatch, error) {
+	b, a := new.DeepCopyObject(), new
+	a.AnnotateUserInfo(old, user)
+	patch, err := duck.CreatePatch(b, a)
+	fmt.Printf("#### PATH: %#v\n", patch)
+	if err != nil {
+		return nil, err
+	}
+	return append(patches, patch...), nil
 }
 
 // setDefaults simply leverages apis.Defaultable to set defaults.
@@ -469,7 +482,7 @@ func (ac *AdmissionController) admit(ctx context.Context, request *admissionv1be
 		return &admissionv1beta1.AdmissionResponse{Allowed: true}
 	}
 
-	patchBytes, err := ac.mutate(ctx, request.Kind, request.OldObject.Raw, request.Object.Raw)
+	patchBytes, err := ac.mutate(ctx, request)
 	if err != nil {
 		return makeErrorStatus("mutation failed: %v", err)
 	}
@@ -485,7 +498,10 @@ func (ac *AdmissionController) admit(ctx context.Context, request *admissionv1be
 	}
 }
 
-func (ac *AdmissionController) mutate(ctx context.Context, kind metav1.GroupVersionKind, oldBytes []byte, newBytes []byte) ([]byte, error) {
+func (ac *AdmissionController) mutate(ctx context.Context, req *admissionv1beta1.AdmissionRequest) ([]byte, error) {
+	kind := req.Kind
+	newBytes := req.Object.Raw
+	oldBytes := req.OldObject.Raw
 	// Why, oh why are these different types...
 	gvk := schema.GroupVersionKind{
 		Group:   kind.Group,
@@ -517,7 +533,7 @@ func (ac *AdmissionController) mutate(ctx context.Context, kind metav1.GroupVers
 			return nil, fmt.Errorf("cannot decode incoming old object: %v", err)
 		}
 	}
-	var patches []jsonpatch.JsonPatchOperation
+	var patches duck.JSONPatch
 
 	// Add these before defaulting fields, otherwise defaulting may cause an illegal patch because
 	// it expects the round tripped through Golang fields to be present already.
@@ -533,10 +549,15 @@ func (ac *AdmissionController) mutate(ctx context.Context, kind metav1.GroupVers
 	}
 
 	if patches, err = setDefaults(patches, newObj); err != nil {
-		logger.Errorw("Failed the resource specific defaulter", zap.Error(err))
+		logger.Errorw("failed the resource specific defaulter", zap.Error(err))
 		// Return the error message as-is to give the defaulter callback
 		// discretion over (our portion of) the message that the user sees.
 		return nil, err
+	}
+
+	if patches, err = setAnnotations(patches, newObj, oldObj, req.UserInfo.Username); err != nil {
+		logger.Errorw("failed the resource annotator", zap.Error(err))
+		return nil, perrors.Wrap(err, "error setting annotations")
 	}
 
 	// None of the validators will accept a nil value for newObj.

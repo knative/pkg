@@ -35,13 +35,22 @@ type Resource struct {
 	Spec ResourceSpec `json:"spec,omitempty"`
 }
 
+const (
+	// CreatorAnnotation is the annotation that denotes the user that created the resource.
+	CreatorAnnotation = "testing.knative.dev/creator"
+	// UpdaterAnnotation is the annotation that denotes the user that last updated the resource.
+	UpdaterAnnotation = "testing.knative.dev/updater"
+)
+
 // Check that Resource may be validated and defaulted.
 var _ apis.Validatable = (*Resource)(nil)
 var _ apis.Defaultable = (*Resource)(nil)
 var _ apis.Immutable = (*Resource)(nil)
+var _ apis.Annotatable = (*Resource)(nil)
 var _ apis.Listable = (*Resource)(nil)
 
-// Check that we implement the Generation duck type.
+// ResourceSpec represents test resource spec.
+// TODO: Check that we implement the Generation duck type.
 type ResourceSpec struct {
 	Generation int64 `json:"generation,omitempty"`
 
@@ -51,10 +60,12 @@ type ResourceSpec struct {
 	FieldThatsImmutableWithDefault string `json:"fieldThatsImmutableWithDefault,omitempty"`
 }
 
+// SetDefaults sets the defaults on the object.
 func (c *Resource) SetDefaults() {
 	c.Spec.SetDefaults()
 }
 
+// SetDefaults sets the defaults on the spec.
 func (cs *ResourceSpec) SetDefaults() {
 	if cs.FieldWithDefault == "" {
 		cs.FieldWithDefault = "I'm a default."
@@ -62,6 +73,27 @@ func (cs *ResourceSpec) SetDefaults() {
 	if cs.FieldThatsImmutableWithDefault == "" {
 		cs.FieldThatsImmutableWithDefault = "this is another default value"
 	}
+}
+
+// AnnotateUserInfo satisfies the Annotatable interface.
+func (c *Resource) AnnotateUserInfo(p apis.Annotatable, userName string) {
+	a := c.ObjectMeta.GetAnnotations()
+	if a == nil {
+		a = map[string]string{}
+	}
+	// If previous is nil, then we set both fields.
+	// Otherwise copy creator from the previous state.
+	if p == nil {
+		a[CreatorAnnotation] = userName
+	} else {
+		up := p.(*Resource)
+		if up.ObjectMeta.GetAnnotations() != nil {
+			a[CreatorAnnotation] = up.ObjectMeta.GetAnnotations()[CreatorAnnotation]
+		}
+	}
+	// Regardless set the updater.
+	a[UpdaterAnnotation] = userName
+	c.ObjectMeta.SetAnnotations(a)
 }
 
 func (c *Resource) Validate() *apis.FieldError {

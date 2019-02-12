@@ -62,3 +62,7 @@ func (cs *InnerDefaultSpec) SetDefaults() {
 func (*InnerDefaultResource) Validate() *apis.FieldError {
 	return nil
 }
+
+// AnnotateUserInfo satisfies the Annotatable interface.
+// For this type it is nop.
+func (*InnerDefaultResource) AnnotateUserInfo(p apis.Annotatable, userName string) {}
