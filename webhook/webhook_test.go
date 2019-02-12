@@ -17,15 +17,20 @@ limitations under the License.
 package webhook
 
 import (
+	"context"
 	"crypto/tls"
 	"encoding/json"
 	"encoding/pem"
 	"fmt"
+	"net"
 	"reflect"
 	"sort"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/knative/pkg/apis/duck"
+	"golang.org/x/sync/errgroup"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
@@ -63,12 +68,13 @@ const (
 func newNonRunningTestAdmissionController(t *testing.T, options ControllerOptions) (
 	kubeClient *fakekubeclientset.Clientset,
 	ac *AdmissionController) {
+	t.Helper()
 	// Create fake clients
 	kubeClient = fakekubeclientset.NewSimpleClientset()
 
 	ac, err := NewAdmissionController(kubeClient, options, TestLogger(t))
 	if err != nil {
-		t.Fatalf("Failed to create new admission controller: %s", err)
+		t.Fatalf("Failed to create new admission controller: %v", err)
 	}
 	return
 }
@@ -76,33 +82,32 @@ func newNonRunningTestAdmissionController(t *testing.T, options ControllerOption
 func TestDeleteAllowed(t *testing.T) {
 	_, ac := newNonRunningTestAdmissionController(t, newDefaultOptions())
 
-	req := admissionv1beta1.AdmissionRequest{
+	req := &admissionv1beta1.AdmissionRequest{
 		Operation: admissionv1beta1.Delete,
 	}
 
-	resp := ac.admit(TestContextWithLogger(t), &req)
-	if !resp.Allowed {
-		t.Fatalf("unexpected denial of delete")
+	if resp := ac.admit(TestContextWithLogger(t), req); !resp.Allowed {
+		t.Fatal("Unexpected denial of delete")
 	}
 }
 
 func TestConnectAllowed(t *testing.T) {
 	_, ac := newNonRunningTestAdmissionController(t, newDefaultOptions())
 
-	req := admissionv1beta1.AdmissionRequest{
+	req := &admissionv1beta1.AdmissionRequest{
 		Operation: admissionv1beta1.Connect,
 	}
 
-	resp := ac.admit(TestContextWithLogger(t), &req)
+	resp := ac.admit(TestContextWithLogger(t), req)
 	if !resp.Allowed {
-		t.Fatalf("unexpected denial of connect")
+		t.Fatalf("Unexpected denial of connect")
 	}
 }
 
 func TestUnknownKindFails(t *testing.T) {
 	_, ac := newNonRunningTestAdmissionController(t, newDefaultOptions())
 
-	req := admissionv1beta1.AdmissionRequest{
+	req := &admissionv1beta1.AdmissionRequest{
 		Operation: admissionv1beta1.Create,
 		Kind: metav1.GroupVersionKind{
 			Group:   "pkg.knative.dev",
@@ -111,24 +116,40 @@ func TestUnknownKindFails(t *testing.T) {
 		},
 	}
 
-	expectFailsWith(t, ac.admit(TestContextWithLogger(t), &req), "unhandled kind")
+	expectFailsWith(t, ac.admit(TestContextWithLogger(t), req), "unhandled kind")
+}
+
+func TestUnknownVersionFails(t *testing.T) {
+	_, ac := newNonRunningTestAdmissionController(t, newDefaultOptions())
+	req := &admissionv1beta1.AdmissionRequest{
+		Operation: admissionv1beta1.Create,
+		Kind: metav1.GroupVersionKind{
+			Group:   "pkg.knative.dev",
+			Version: "v1beta2",
+			Kind:    "Resource",
+		},
+	}
+	expectFailsWith(t, ac.admit(TestContextWithLogger(t), req), "unhandled kind")
 }
 
 func TestValidCreateResourceSucceeds(t *testing.T) {
 	r := createResource(1234, "a name")
-	r.SetDefaults() // Fill in defaults to check that there are no patches.
-	_, ac := newNonRunningTestAdmissionController(t, newDefaultOptions())
-	resp := ac.admit(TestContextWithLogger(t), createCreateResource(&r))
-	expectAllowed(t, resp)
-	expectPatches(t, resp.Patch, []jsonpatch.JsonPatchOperation{
-		incrementGenerationPatch(r.Spec.Generation),
-	})
+	for _, v := range []string{"v1alpha1", "v1beta1"} {
+		r.TypeMeta.APIVersion = v
+		r.SetDefaults() // Fill in defaults to check that there are no patches.
+		_, ac := newNonRunningTestAdmissionController(t, newDefaultOptions())
+		resp := ac.admit(TestContextWithLogger(t), createCreateResource(r))
+		expectAllowed(t, resp)
+		expectPatches(t, resp.Patch, []jsonpatch.JsonPatchOperation{
+			incrementGenerationPatch(r.Spec.Generation),
+		})
+	}
 }
 
 func TestValidCreateResourceSucceedsWithDefaultPatch(t *testing.T) {
 	r := createResource(1234, "a name")
 	_, ac := newNonRunningTestAdmissionController(t, newDefaultOptions())
-	resp := ac.admit(TestContextWithLogger(t), createCreateResource(&r))
+	resp := ac.admit(TestContextWithLogger(t), createCreateResource(r))
 	expectAllowed(t, resp)
 	expectPatches(t, resp.Patch, []jsonpatch.JsonPatchOperation{
 		incrementGenerationPatch(r.Spec.Generation),
@@ -212,7 +233,7 @@ func TestInvalidCreateResourceFails(t *testing.T) {
 	r.Spec.FieldWithValidation = "not what's expected"
 
 	_, ac := newNonRunningTestAdmissionController(t, newDefaultOptions())
-	resp := ac.admit(TestContextWithLogger(t), createCreateResource(&r))
+	resp := ac.admit(TestContextWithLogger(t), createCreateResource(r))
 	expectFailsWith(t, resp, "invalid value")
 }
 
@@ -220,9 +241,64 @@ func TestNopUpdateResourceSucceeds(t *testing.T) {
 	r := createResource(1234, "a name")
 	r.SetDefaults() // Fill in defaults to check that there are no patches.
 	_, ac := newNonRunningTestAdmissionController(t, newDefaultOptions())
-	resp := ac.admit(TestContextWithLogger(t), createUpdateResource(&r, &r))
+	resp := ac.admit(TestContextWithLogger(t), createUpdateResource(r, r))
 	expectAllowed(t, resp)
 	expectPatches(t, resp.Patch, []jsonpatch.JsonPatchOperation{})
+}
+
+func TestUpdateGeneration(t *testing.T) {
+	ctx := context.Background()
+	r := createResource(1988, "beautiful")
+	rc := createResource(1988, "beautiful")
+	rc.Spec.FieldWithDefault = "lily"
+
+	tests := []struct {
+		name string
+		in   duck.JSONPatch
+		old  *Resource
+		new  *Resource
+		want duck.JSONPatch
+	}{{
+		"nil in, no change",
+		nil,
+		r, r,
+		nil,
+	}, {
+		"empty in, no change",
+		[]jsonpatch.JsonPatchOperation{},
+		r, r,
+		[]jsonpatch.JsonPatchOperation{},
+	}, {
+		"nil in, change",
+		[]jsonpatch.JsonPatchOperation{},
+		r, rc,
+		[]jsonpatch.JsonPatchOperation{
+			{Operation: "replace", Path: "/spec/generation", Value: 1989.0},
+		},
+	}, {
+		"non-nil in, change",
+		[]jsonpatch.JsonPatchOperation{
+			{Operation: "replace", Path: "/spec/fieldWithDefault", Value: "Zero"},
+		},
+		r, rc,
+		[]jsonpatch.JsonPatchOperation{
+			{Operation: "replace", Path: "/spec/fieldWithDefault", Value: "Zero"},
+			{Operation: "replace", Path: "/spec/generation", Value: 1989.0},
+		},
+	}}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			got, err := updateGeneration(ctx, test.in, test.old, test.new)
+			if err != nil {
+				t.Fatalf("Error in updateGeneration: %v", err)
+			}
+			if got, want := got, test.want; !cmp.Equal(got, want) {
+				t.Errorf("JSONPatch diff (+got, -want): %s", cmp.Diff(got, want))
+			}
+		})
+	}
 }
 
 func TestValidUpdateResourceSucceeds(t *testing.T) {
@@ -232,7 +308,7 @@ func TestValidUpdateResourceSucceeds(t *testing.T) {
 	// We clear the field that has a default.
 
 	_, ac := newNonRunningTestAdmissionController(t, newDefaultOptions())
-	resp := ac.admit(TestContextWithLogger(t), createUpdateResource(&old, &new))
+	resp := ac.admit(TestContextWithLogger(t), createUpdateResource(old, new))
 	expectAllowed(t, resp)
 	expectPatches(t, resp.Patch, []jsonpatch.JsonPatchOperation{{
 		Operation: "replace",
@@ -257,7 +333,7 @@ func TestInvalidUpdateResourceFailsValidation(t *testing.T) {
 	new.Spec.FieldWithValidation = "not what's expected"
 
 	_, ac := newNonRunningTestAdmissionController(t, newDefaultOptions())
-	resp := ac.admit(TestContextWithLogger(t), createUpdateResource(&old, &new))
+	resp := ac.admit(TestContextWithLogger(t), createUpdateResource(old, new))
 	expectFailsWith(t, resp, "invalid value")
 }
 
@@ -270,7 +346,7 @@ func TestInvalidUpdateResourceFailsImmutability(t *testing.T) {
 	new.Spec.FieldThatsImmutableWithDefault = "another different value"
 
 	_, ac := newNonRunningTestAdmissionController(t, newDefaultOptions())
-	resp := ac.admit(TestContextWithLogger(t), createUpdateResource(&old, &new))
+	resp := ac.admit(TestContextWithLogger(t), createUpdateResource(old, new))
 	expectFailsWith(t, resp, "Immutable field changed")
 }
 
@@ -282,7 +358,7 @@ func TestDefaultingImmutableFields(t *testing.T) {
 	// and it is not rejected.
 
 	_, ac := newNonRunningTestAdmissionController(t, newDefaultOptions())
-	resp := ac.admit(TestContextWithLogger(t), createUpdateResource(&old, &new))
+	resp := ac.admit(TestContextWithLogger(t), createUpdateResource(old, new))
 	expectAllowed(t, resp)
 	expectPatches(t, resp.Patch, []jsonpatch.JsonPatchOperation{{
 		Operation: "add",
@@ -327,6 +403,42 @@ func TestUpdatingWebhook(t *testing.T) {
 	}
 }
 
+func TestRegistrationStopChanFire(t *testing.T) {
+	opts := newDefaultOptions()
+	_, ac := newNonRunningTestAdmissionController(t, opts)
+	webhook := &admissionregistrationv1beta1.MutatingWebhookConfiguration{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: ac.Options.WebhookName,
+		},
+		Webhooks: []admissionregistrationv1beta1.Webhook{
+			{
+				Name:         ac.Options.WebhookName,
+				Rules:        []admissionregistrationv1beta1.RuleWithOperations{{}},
+				ClientConfig: admissionregistrationv1beta1.WebhookClientConfig{},
+			},
+		},
+	}
+	createWebhook(ac, webhook)
+
+	ac.Options.RegistrationDelay = 1 * time.Minute
+	stopCh := make(chan struct{})
+
+	var g errgroup.Group
+	g.Go(func() error {
+		return ac.Run(stopCh)
+	})
+	close(stopCh)
+
+	if err := g.Wait(); err != nil {
+		t.Fatal("Error during run: ", err)
+	}
+	conn, err := net.Dial("tcp", fmt.Sprintf(":%d", opts.Port))
+	if err == nil {
+		conn.Close()
+		t.Errorf("Unexpected success to dial to port %d", opts.Port)
+	}
+}
+
 func TestRegistrationForAlreadyExistingWebhook(t *testing.T) {
 	_, ac := newNonRunningTestAdmissionController(t, newDefaultOptions())
 	webhook := &admissionregistrationv1beta1.MutatingWebhookConfiguration{
@@ -345,13 +457,12 @@ func TestRegistrationForAlreadyExistingWebhook(t *testing.T) {
 
 	ac.Options.RegistrationDelay = 1 * time.Millisecond
 	stopCh := make(chan struct{})
-	errCh := make(chan error)
 
-	go func() {
-		errCh <- ac.Run(stopCh)
-	}()
-
-	err := <-errCh
+	var g errgroup.Group
+	g.Go(func() error {
+		return ac.Run(stopCh)
+	})
+	err := g.Wait()
 	if err == nil {
 		t.Fatal("Expected webhook controller to fail")
 	}
@@ -457,8 +568,8 @@ func createDeployment(ac *AdmissionController) {
 	ac.Client.ExtensionsV1beta1().Deployments("knative-something").Create(deployment)
 }
 
-func createResource(generation int64, name string) Resource {
-	return Resource{
+func createResource(generation int64, name string) *Resource {
+	return &Resource{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: testNamespace,
 			Name:      name,
@@ -585,6 +696,7 @@ func NewAdmissionController(client kubernetes.Interface, options ControllerOptio
 	return &AdmissionController{
 		Client:  client,
 		Options: options,
+		// Use different versions and domains, for coverage.
 		Handlers: map[schema.GroupVersionKind]GenericCRD{
 			{
 				Group:   "pkg.knative.dev",
@@ -593,6 +705,16 @@ func NewAdmissionController(client kubernetes.Interface, options ControllerOptio
 			}: &Resource{},
 			{
 				Group:   "pkg.knative.dev",
+				Version: "v1beta1",
+				Kind:    "Resource",
+			}: &Resource{},
+			{
+				Group:   "pkg.knative.dev",
+				Version: "v1alpha1",
+				Kind:    "InnerDefaultResource",
+			}: &InnerDefaultResource{},
+			{
+				Group:   "pkg.knative.io",
 				Version: "v1alpha1",
 				Kind:    "InnerDefaultResource",
 			}: &InnerDefaultResource{},
