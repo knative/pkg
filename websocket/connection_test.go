@@ -35,9 +35,11 @@ import (
 const propagationTimeout = 5 * time.Second
 
 type inspectableConnection struct {
-	nextReaderCalls   chan struct{}
-	writeMessageCalls chan struct{}
-	closeCalls        chan struct{}
+	nextReaderCalls      chan struct{}
+	writeMessageCalls    chan struct{}
+	closeCalls           chan struct{}
+	setReadDeadlineCalls chan struct{}
+	setPongHandlerCalls  chan struct{}
 
 	nextReaderFunc func() (int, io.Reader, error)
 }
@@ -63,6 +65,20 @@ func (c *inspectableConnection) Close() error {
 	return nil
 }
 
+func (c *inspectableConnection) SetReadDeadline(deadline time.Time) error {
+	if c.setReadDeadlineCalls != nil {
+		c.setReadDeadlineCalls <- struct{}{}
+	}
+	return nil
+}
+
+func (c *inspectableConnection) SetPongHandler(func(string) error) {
+	if c.setPongHandlerCalls != nil {
+		c.setPongHandlerCalls <- struct{}{}
+	}
+	return
+}
+
 // staticConnFactory returns a static connection, for example
 // an inspectable connection.
 func staticConnFactory(conn rawConnection) func() (rawConnection, error) {
@@ -79,16 +95,18 @@ func errConnFactory(err error) func() (rawConnection, error) {
 }
 
 func TestRetriesWhileConnect(t *testing.T) {
-	want := 2
-	got := 0
+	wantConnects := 2
+	gotConnects := 0
 
 	spy := &inspectableConnection{
-		closeCalls: make(chan struct{}, 1),
+		closeCalls:           make(chan struct{}, 1),
+		setReadDeadlineCalls: make(chan struct{}, 1),
+		setPongHandlerCalls:  make(chan struct{}, 1),
 	}
 
 	connFactory := func() (rawConnection, error) {
-		got++
-		if got == want {
+		gotConnects++
+		if gotConnects == wantConnects {
 			return spy, nil
 		}
 		return nil, errors.New("not yet")
@@ -98,9 +116,18 @@ func TestRetriesWhileConnect(t *testing.T) {
 	conn.connect()
 	conn.Shutdown()
 
-	if got != want {
-		t.Fatalf("Wanted %v retries. Got %v.", want, got)
+	if gotConnects != wantConnects {
+		t.Fatalf("Wanted %v retries. Got %v.", wantConnects, gotConnects)
 	}
+
+	// We want a readDeadline and a pongHandler to be set on the final connection.
+	if got, want := len(spy.setReadDeadlineCalls), 1; got != want {
+		t.Fatalf("Got %d 'SetReadDeadline' calls, want %d", got, want)
+	}
+	if got, want := len(spy.setPongHandlerCalls), 1; got != want {
+		t.Fatalf("Got %d 'SetPongHandler' calls, want %d", got, want)
+	}
+
 	if len(spy.closeCalls) != 1 {
 		t.Fatalf("Wanted 'Close' to be called once, but got %v", len(spy.closeCalls))
 	}
@@ -197,45 +224,6 @@ func TestCloseIgnoresNoConnection(t *testing.T) {
 	}
 }
 
-func TestDurableConnectionWhenConnectionBreaksDown(t *testing.T) {
-	testPayload := "test"
-	reconnectChan := make(chan struct{})
-
-	upgrader := websocket.Upgrader{}
-	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		c, err := upgrader.Upgrade(w, r, nil)
-		if err != nil {
-			return
-		}
-
-		// Waits for a message to be sent before dropping the connection.
-		<-reconnectChan
-		c.Close()
-	}))
-	defer s.Close()
-
-	logger := ktesting.TestLogger(t)
-	target := "ws" + strings.TrimPrefix(s.URL, "http")
-	conn := NewDurableSendingConnection(target, logger)
-	defer conn.Shutdown()
-
-	for i := 0; i < 10; i++ {
-		err := wait.PollImmediate(50*time.Millisecond, 5*time.Second, func() (bool, error) {
-			if err := conn.Send(testPayload); err != nil {
-				return false, nil
-			}
-			return true, nil
-		})
-
-		if err != nil {
-			t.Errorf("Timed out trying to send a message: %v", err)
-		}
-
-		// Message successfully sent, instruct the server to drop the connection.
-		reconnectChan <- struct{}{}
-	}
-}
-
 func TestConnectFailureReturnsError(t *testing.T) {
 	conn := newConnection(errConnFactory(ErrConnectionNotEstablished), nil)
 
@@ -315,5 +303,82 @@ func TestDoubleShutdown(t *testing.T) {
 
 	if want, got := 1, len(spy.closeCalls); want != got {
 		t.Errorf("Wrong 'Close' callcount, got %d, want %d", got, want)
+	}
+}
+
+func TestDurableConnectionWhenConnectionBreaksDown(t *testing.T) {
+	testPayload := "test"
+	reconnectChan := make(chan struct{})
+
+	upgrader := websocket.Upgrader{}
+	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		c, err := upgrader.Upgrade(w, r, nil)
+		if err != nil {
+			return
+		}
+
+		// Waits for a message to be sent before dropping the connection.
+		<-reconnectChan
+		c.Close()
+	}))
+	defer s.Close()
+
+	logger := ktesting.TestLogger(t)
+	target := "ws" + strings.TrimPrefix(s.URL, "http")
+	conn := NewDurableSendingConnection(target, logger)
+	defer conn.Shutdown()
+
+	for i := 0; i < 10; i++ {
+		err := wait.PollImmediate(50*time.Millisecond, 5*time.Second, func() (bool, error) {
+			if err := conn.Send(testPayload); err != nil {
+				return false, nil
+			}
+			return true, nil
+		})
+
+		if err != nil {
+			t.Errorf("Timed out trying to send a message: %v", err)
+		}
+
+		// Message successfully sent, instruct the server to drop the connection.
+		reconnectChan <- struct{}{}
+	}
+}
+
+func TestDurableConnectionSendsPingsRegularly(t *testing.T) {
+	// Reset pongTimeout to something quite short.
+	pongTimeout = 100 * time.Millisecond
+
+	upgrader := websocket.Upgrader{}
+
+	pingReceived := make(chan struct{})
+	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		c, err := upgrader.Upgrade(w, r, nil)
+		if err != nil {
+			return
+		}
+
+		c.SetPingHandler(func(_ string) error {
+			pingReceived <- struct{}{}
+			return c.WriteMessage(websocket.PongMessage, []byte{})
+		})
+
+		for {
+			_, _, err := c.ReadMessage()
+			if err != nil {
+				break
+			}
+		}
+	}))
+	defer s.Close()
+
+	logger := ktesting.TestLogger(t)
+	target := "ws" + strings.TrimPrefix(s.URL, "http")
+	conn := NewDurableSendingConnection(target, logger)
+	defer conn.Shutdown()
+
+	// Wait for 5 pings to be received by the server.
+	for i := 0; i < 5; i++ {
+		<-pingReceived
 	}
 }
