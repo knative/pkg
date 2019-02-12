@@ -140,6 +140,7 @@ func NewDurableConnection(target string, messageChan chan []byte, logger *zap.Su
 	// Keep sending pings 3 times per pongTimeout interval.
 	go func() {
 		ticker := time.NewTicker(pongTimeout / 3)
+		defer ticker.Stop()
 		for {
 			select {
 			case <-ticker.C:
