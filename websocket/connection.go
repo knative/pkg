@@ -65,6 +65,10 @@ type ManagedConnection struct {
 	closeChan chan struct{}
 	closeOnce sync.Once
 
+	// Used to capture asynchronous processes to be waited
+	// on when shutting the connection down.
+	processingWg sync.WaitGroup
+
 	// If set, messages will be forwarded to this channel
 	messageChan chan []byte
 
@@ -114,7 +118,10 @@ func NewDurableConnection(target string, messageChan chan []byte, logger *zap.Su
 
 	// Keep the connection alive asynchronously and reconnect on
 	// connection failure.
+	c.processingWg.Add(1)
 	go func() {
+		defer c.processingWg.Done()
+
 		for {
 			select {
 			default:
@@ -138,7 +145,10 @@ func NewDurableConnection(target string, messageChan chan []byte, logger *zap.Su
 	}()
 
 	// Keep sending pings 3 times per pongTimeout interval.
+	c.processingWg.Add(1)
 	go func() {
+		defer c.processingWg.Done()
+
 		ticker := time.NewTicker(pongTimeout / 3)
 		defer ticker.Stop()
 		for {
@@ -298,5 +308,7 @@ func (c *ManagedConnection) Shutdown() error {
 		close(c.closeChan)
 	})
 
-	return c.closeConnection()
+	err := c.closeConnection()
+	c.processingWg.Wait()
+	return err
 }
