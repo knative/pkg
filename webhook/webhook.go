@@ -564,7 +564,7 @@ func (ac *AdmissionController) mutate(ctx context.Context, req *admissionv1beta1
 		return nil, errMissingNewObject
 	}
 	if err := validate(oldObj, newObj); err != nil {
-		logger.Errorw("failed the resource specific validation", zap.Error(err))
+		logger.Errorw("Failed the resource specific validation", zap.Error(err))
 		// Return the error message as-is to give the validation callback
 		// discretion over (our portion of) the message that the user sees.
 		return nil, err
@@ -649,12 +649,12 @@ func hasChanged(ctx context.Context, old, new GenericCRD) (bool, error) {
 
 	oldSpecJSON, err := getSpecJSON(old)
 	if err != nil {
-		logger.Errorw("failed to get Spec JSON for old", zap.Error(err))
+		logger.Errorw("Failed to get Spec JSON for old", zap.Error(err))
 		return false, err
 	}
 	newSpecJSON, err := getSpecJSON(new)
 	if err != nil {
-		logger.Errorw("failed to get Spec JSON for new", zap.Error(err))
+		logger.Errorw("Failed to get Spec JSON for new", zap.Error(err))
 		return false, err
 	}
 
@@ -667,10 +667,10 @@ func hasChanged(ctx context.Context, old, new GenericCRD) (bool, error) {
 	}
 	specPatchesJSON, err := json.Marshal(specPatches)
 	if err != nil {
-		logger.Errorw("failed to marshal spec patches", zap.Error(err))
+		logger.Errorw("Failed to marshal spec patches", zap.Error(err))
 		return false, err
 	}
-	logger.Infof("Specs differ:\n%+v\n", string(specPatchesJSON))
+	logger.Infof("Specs differ:\n%s\n", string(specPatchesJSON))
 	return true, nil
 }
 
