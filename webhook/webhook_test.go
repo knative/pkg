@@ -246,7 +246,7 @@ func TestNopUpdateResourceSucceeds(t *testing.T) {
 	r := createResource(1234, "a name")
 	r.SetDefaults() // Fill in defaults to check that there are no patches.
 	nr := r.DeepCopyObject().(*Resource)
-	r.AnnotateUserInfo(nil, user1)
+	r.AnnotateUserInfo(nil, &authenticationv1.UserInfo{Username: user1})
 	_, ac := newNonRunningTestAdmissionController(t, newDefaultOptions())
 	resp := ac.admit(TestContextWithLogger(t), createUpdateResource(r, nr))
 	expectAllowed(t, resp)
@@ -311,7 +311,7 @@ func TestUpdateGeneration(t *testing.T) {
 func TestValidUpdateResourcePreserveAnnotations(t *testing.T) {
 	old := createResource(1234, "a name")
 	old.SetDefaults() // Fill in defaults to check that there are no patches.
-	old.AnnotateUserInfo(nil /*prev*/, user1)
+	old.AnnotateUserInfo(nil, &authenticationv1.UserInfo{Username: user1})
 	new := createResource(1234, "a name")
 	new.SetDefaults()
 	// User set annotations on the resource.
@@ -329,8 +329,7 @@ func TestValidUpdateResourcePreserveAnnotations(t *testing.T) {
 func TestValidBigChangeResourceSucceeds(t *testing.T) {
 	old := createResource(1234, "a name")
 	old.SetDefaults() // Fill in defaults to check that there are no patches.
-	old.AnnotateUserInfo(nil /*prev*/, user1)
-	fmt.Println("#### NOW....")
+	old.AnnotateUserInfo(nil, &authenticationv1.UserInfo{Username: user1})
 	new := createResource(1234, "a name")
 	new.Spec.FieldWithDefault = "melon collie and the infinite sadness"
 
@@ -352,7 +351,7 @@ func TestValidBigChangeResourceSucceeds(t *testing.T) {
 func TestValidUpdateResourceSucceeds(t *testing.T) {
 	old := createResource(1234, "a name")
 	old.SetDefaults() // Fill in defaults to check that there are no patches.
-	old.AnnotateUserInfo(nil /*prev*/, user1)
+	old.AnnotateUserInfo(nil, &authenticationv1.UserInfo{Username: user1})
 	new := createResource(1234, "a name")
 	// We clear the field that has a default.
 
@@ -401,7 +400,7 @@ func TestInvalidUpdateResourceFailsImmutability(t *testing.T) {
 
 func TestDefaultingImmutableFields(t *testing.T) {
 	old := createResource(1234, "a name")
-	old.AnnotateUserInfo(nil, user1)
+	old.AnnotateUserInfo(nil, &authenticationv1.UserInfo{Username: user1})
 	new := createResource(1234, "a name")
 
 	// If we don't specify the new, but immutable field, we default it,

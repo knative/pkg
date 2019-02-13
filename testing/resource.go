@@ -19,12 +19,12 @@ package testing
 import (
 	"fmt"
 
+	"github.com/knative/pkg/apis"
 	"github.com/knative/pkg/kmp"
 
+	authenticationv1 "k8s.io/api/authentication/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-
-	"github.com/knative/pkg/apis"
 )
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -78,12 +78,12 @@ func (cs *ResourceSpec) SetDefaults() {
 }
 
 // AnnotateUserInfo satisfies the Annotatable interface.
-func (c *Resource) AnnotateUserInfo(prev apis.Annotatable, userName string) {
-	fmt.Println("#### Its", c.Spec.FieldWithDefault)
+func (c *Resource) AnnotateUserInfo(prev apis.Annotatable, ui *authenticationv1.UserInfo) {
 	a := c.ObjectMeta.GetAnnotations()
 	if a == nil {
 		a = map[string]string{}
 	}
+	userName := ui.Username
 
 	// If previous is nil (i.e. this is `Create` operation),
 	// then we set both fields.

@@ -43,6 +43,7 @@ import (
 	"github.com/mattbaird/jsonpatch"
 	admissionv1beta1 "k8s.io/api/admission/v1beta1"
 	admissionregistrationv1beta1 "k8s.io/api/admissionregistration/v1beta1"
+	authenticationv1 "k8s.io/api/authentication/v1"
 	corev1 "k8s.io/api/core/v1"
 	v1beta1 "k8s.io/api/extensions/v1beta1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -225,7 +226,7 @@ func validate(old GenericCRD, new GenericCRD) error {
 	return nil
 }
 
-func setAnnotations(patches duck.JSONPatch, new, old GenericCRD, user string) (duck.JSONPatch, error) {
+func setAnnotations(patches duck.JSONPatch, new, old GenericCRD, ui *authenticationv1.UserInfo) (duck.JSONPatch, error) {
 	// Nowhere to set the annotations.
 	if new == nil {
 		return patches, nil
@@ -240,7 +241,7 @@ func setAnnotations(patches duck.JSONPatch, new, old GenericCRD, user string) (d
 	}
 	b, a := new.DeepCopyObject().(apis.Annotatable), na
 
-	a.AnnotateUserInfo(oa, user)
+	a.AnnotateUserInfo(oa, ui)
 	patch, err := duck.CreatePatch(b, a)
 	if err != nil {
 		return nil, err
@@ -566,7 +567,7 @@ func (ac *AdmissionController) mutate(ctx context.Context, req *admissionv1beta1
 		return nil, err
 	}
 
-	if patches, err = setAnnotations(patches, newObj, oldObj, req.UserInfo.Username); err != nil {
+	if patches, err = setAnnotations(patches, newObj, oldObj, &req.UserInfo); err != nil {
 		logger.Errorw("Failed the resource annotator", zap.Error(err))
 		return nil, perrors.Wrap(err, "error setting annotations")
 	}
