@@ -81,7 +81,8 @@ func (c *Resource) AnnotateUserInfo(p apis.Annotatable, userName string) {
 	if a == nil {
 		a = map[string]string{}
 	}
-	// If previous is nil, then we set both fields.
+	// If previous is nil (i.e. this is `Create` operation),
+	// then we set both fields.
 	// Otherwise copy creator from the previous state.
 	if p == nil {
 		a[CreatorAnnotation] = userName
@@ -91,7 +92,7 @@ func (c *Resource) AnnotateUserInfo(p apis.Annotatable, userName string) {
 			a[CreatorAnnotation] = up.ObjectMeta.GetAnnotations()[CreatorAnnotation]
 		}
 	}
-	// Regardless set the updater.
+	// Regardless of `old` set the updater.
 	a[UpdaterAnnotation] = userName
 	c.ObjectMeta.SetAnnotations(a)
 }
