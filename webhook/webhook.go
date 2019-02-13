@@ -543,8 +543,8 @@ func (ac *AdmissionController) mutate(ctx context.Context, req *admissionv1beta1
 	patches = append(patches, rtp...)
 
 	if patches, err = updateGeneration(ctx, patches, oldObj, newObj); err != nil {
-		logger.Errorw("failed to update generation", zap.Error(err))
-		return nil, fmt.Errorf("Failed to update generation: %s", err)
+		logger.Errorw("Failed to update generation", zap.Error(err))
+		return nil, fmt.Errorf("failed to update generation: %s", err)
 	}
 
 	if patches, err = setDefaults(patches, newObj); err != nil {
@@ -555,7 +555,7 @@ func (ac *AdmissionController) mutate(ctx context.Context, req *admissionv1beta1
 	}
 
 	if patches, err = setAnnotations(patches, newObj, oldObj, req.UserInfo.Username); err != nil {
-		logger.Errorw("failed the resource annotator", zap.Error(err))
+		logger.Errorw("Failed the resource annotator", zap.Error(err))
 		return nil, perrors.Wrap(err, "error setting annotations")
 	}
 
