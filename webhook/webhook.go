@@ -127,7 +127,6 @@ type AdmissionController struct {
 type GenericCRD interface {
 	apis.Defaultable
 	apis.Validatable
-	apis.Annotatable
 	runtime.Object
 }
 
@@ -227,8 +226,21 @@ func validate(old GenericCRD, new GenericCRD) error {
 }
 
 func setAnnotations(patches duck.JSONPatch, new, old GenericCRD, user string) (duck.JSONPatch, error) {
-	b, a := new.DeepCopyObject(), new
-	a.AnnotateUserInfo(old, user)
+	// Nowhere to set the annotations.
+	if new == nil {
+		return patches, nil
+	}
+	na, ok := new.(apis.Annotatable)
+	if !ok {
+		return patches, nil
+	}
+	var oa apis.Annotatable
+	if old != nil {
+		oa = old.(apis.Annotatable)
+	}
+	b, a := new.DeepCopyObject().(apis.Annotatable), na
+
+	a.AnnotateUserInfo(oa, user)
 	patch, err := duck.CreatePatch(b, a)
 	if err != nil {
 		return nil, err
