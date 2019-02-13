@@ -19,6 +19,8 @@ package testing
 import (
 	"fmt"
 
+	"github.com/knative/pkg/kmp"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 
@@ -76,18 +78,24 @@ func (cs *ResourceSpec) SetDefaults() {
 }
 
 // AnnotateUserInfo satisfies the Annotatable interface.
-func (c *Resource) AnnotateUserInfo(p apis.Annotatable, userName string) {
+func (c *Resource) AnnotateUserInfo(prev apis.Annotatable, userName string) {
+	fmt.Println("#### Its", c.Spec.FieldWithDefault)
 	a := c.ObjectMeta.GetAnnotations()
 	if a == nil {
 		a = map[string]string{}
 	}
+
 	// If previous is nil (i.e. this is `Create` operation),
 	// then we set both fields.
 	// Otherwise copy creator from the previous state.
-	if p == nil {
+	if prev == nil {
 		a[CreatorAnnotation] = userName
 	} else {
-		up := p.(*Resource)
+		up := prev.(*Resource)
+		// No spec update ==> bail out.
+		if ok, _ := kmp.SafeEqual(up.Spec, c.Spec); ok {
+			return
+		}
 		if up.ObjectMeta.GetAnnotations() != nil {
 			a[CreatorAnnotation] = up.ObjectMeta.GetAnnotations()[CreatorAnnotation]
 		}

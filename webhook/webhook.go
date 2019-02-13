@@ -581,7 +581,6 @@ func (ac *AdmissionController) mutate(ctx context.Context, req *admissionv1beta1
 		// discretion over (our portion of) the message that the user sees.
 		return nil, err
 	}
-
 	return json.Marshal(patches)
 }
 

@@ -250,11 +250,7 @@ func TestNopUpdateResourceSucceeds(t *testing.T) {
 	_, ac := newNonRunningTestAdmissionController(t, newDefaultOptions())
 	resp := ac.admit(TestContextWithLogger(t), createUpdateResource(r, nr))
 	expectAllowed(t, resp)
-	expectPatches(t, resp.Patch, []jsonpatch.JsonPatchOperation{
-		// Even if no changes have been made, we need to record
-		//the user that sent the last mutation request.
-		setUserAnnotation(user1, user2),
-	})
+	expectPatches(t, resp.Patch, []jsonpatch.JsonPatchOperation{})
 }
 
 func TestUpdateGeneration(t *testing.T) {
@@ -326,7 +322,31 @@ func TestValidUpdateResourcePreserveAnnotations(t *testing.T) {
 	_, ac := newNonRunningTestAdmissionController(t, newDefaultOptions())
 	resp := ac.admit(TestContextWithLogger(t), createUpdateResource(old, new))
 	expectAllowed(t, resp)
-	expectPatches(t, resp.Patch, updateAnnotationsWithUser(user1, user2))
+	// No spec change => no user info change.
+	expectPatches(t, resp.Patch, duck.JSONPatch{})
+}
+
+func TestValidBigChangeResourceSucceeds(t *testing.T) {
+	old := createResource(1234, "a name")
+	old.SetDefaults() // Fill in defaults to check that there are no patches.
+	old.AnnotateUserInfo(nil /*prev*/, user1)
+	fmt.Println("#### NOW....")
+	new := createResource(1234, "a name")
+	new.Spec.FieldWithDefault = "melon collie and the infinite sadness"
+
+	_, ac := newNonRunningTestAdmissionController(t, newDefaultOptions())
+	resp := ac.admit(TestContextWithLogger(t), createUpdateResource(old, new))
+	expectAllowed(t, resp)
+	expectPatches(t, resp.Patch, []jsonpatch.JsonPatchOperation{{
+		Operation: "replace",
+		Path:      "/spec/generation",
+		Value:     float64(1235),
+	}, {
+		Operation: "add",
+		Path:      "/spec/fieldThatsImmutableWithDefault",
+		Value:     "this is another default value",
+	}, setUserAnnotation(user1, user2),
+	})
 }
 
 func TestValidUpdateResourceSucceeds(t *testing.T) {
@@ -351,8 +371,7 @@ func TestValidUpdateResourceSucceeds(t *testing.T) {
 		Operation: "add",
 		Path:      "/spec/fieldWithDefault",
 		Value:     "I'm a default.",
-	}, setUserAnnotation(user1, user2),
-	})
+	}})
 }
 
 func TestInvalidUpdateResourceFailsValidation(t *testing.T) {
@@ -724,6 +743,7 @@ func expectPatches(t *testing.T, a []byte, e []jsonpatch.JsonPatchOperation) {
 	t.Logf("Got Patches:  %#v", got)
 	t.Logf("Want Patches: %#v", e)
 	if diff := cmp.Diff(e, got, cmpopts.EquateEmpty()); diff != "" {
+		t.Logf("diff Patches: %v", diff)
 		t.Errorf("expectPatches (-want, +got) = %s", diff)
 	}
 }
