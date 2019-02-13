@@ -10,7 +10,7 @@ import (
 const (
 	letterBytes   = "abcdefghijklmnopqrstuvwxyz"
 	randSuffixLen = 8
-	sep = "-"
+	sep           = "-"
 )
 
 var (
