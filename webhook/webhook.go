@@ -544,7 +544,7 @@ func (ac *AdmissionController) mutate(ctx context.Context, req *admissionv1beta1
 
 	if patches, err = updateGeneration(ctx, patches, oldObj, newObj); err != nil {
 		logger.Errorw("Failed to update generation", zap.Error(err))
-		return nil, fmt.Errorf("failed to update generation: %s", err)
+		return nil, perrors.Wrap(err, "failed to update generation")
 	}
 
 	if patches, err = setDefaults(patches, newObj); err != nil {
