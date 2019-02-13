@@ -318,6 +318,7 @@ func TestValidUpdateResourcePreserveAnnotations(t *testing.T) {
 	old.AnnotateUserInfo(nil /*prev*/, user1)
 	new := createResource(1234, "a name")
 	new.SetDefaults()
+	// User set annotations on the resource.
 	new.ObjectMeta.SetAnnotations(map[string]string{
 		"key": "to-my-heart",
 	})
