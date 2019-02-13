@@ -730,8 +730,10 @@ func expectPatches(t *testing.T, a []byte, e []jsonpatch.JsonPatchOperation) {
 		return lhs.Path < rhs.Path
 	})
 
-	fmt.Printf("GOT:  %#v\n", got)
-	fmt.Printf("WANT: %#v\n", e)
+	// Even though diff is useful, seeing the whole objects
+	// one under another helps a lot.
+	t.Logf("Got Patches:  %#v", got)
+	t.Logf("Want Patches: %#v", e)
 	if diff := cmp.Diff(e, got, cmpopts.EquateEmpty()); diff != "" {
 		t.Errorf("expectPatches (-want, +got) = %s", diff)
 	}
