@@ -317,27 +317,15 @@ func TestValidUpdateResourcePreserveAnnotations(t *testing.T) {
 	old.SetDefaults() // Fill in defaults to check that there are no patches.
 	old.AnnotateUserInfo(nil /*prev*/, user1)
 	new := createResource(1234, "a name")
+	new.SetDefaults()
 	new.ObjectMeta.SetAnnotations(map[string]string{
 		"key": "to-my-heart",
 	})
-	// We clear the field that has a default.
 
 	_, ac := newNonRunningTestAdmissionController(t, newDefaultOptions())
 	resp := ac.admit(TestContextWithLogger(t), createUpdateResource(old, new))
 	expectAllowed(t, resp)
-	expectPatches(t, resp.Patch, append([]jsonpatch.JsonPatchOperation{{
-		Operation: "replace",
-		Path:      "/spec/generation",
-		Value:     1235.0,
-	}, {
-		Operation: "add",
-		Path:      "/spec/fieldThatsImmutableWithDefault",
-		Value:     "this is another default value",
-	}, {
-		Operation: "add",
-		Path:      "/spec/fieldWithDefault",
-		Value:     "I'm a default.",
-	}}, updateAnnotationsWithUser(user1, user2)...))
+	expectPatches(t, resp.Patch, updateAnnotationsWithUser(user1, user2))
 }
 
 func TestValidUpdateResourceSucceeds(t *testing.T) {
