@@ -230,7 +230,6 @@ func setAnnotations(patches duck.JSONPatch, new, old GenericCRD, user string) (d
 	b, a := new.DeepCopyObject(), new
 	a.AnnotateUserInfo(old, user)
 	patch, err := duck.CreatePatch(b, a)
-	fmt.Printf("#### PATH: %#v\n", patch)
 	if err != nil {
 		return nil, err
 	}
@@ -549,7 +548,7 @@ func (ac *AdmissionController) mutate(ctx context.Context, req *admissionv1beta1
 	}
 
 	if patches, err = setDefaults(patches, newObj); err != nil {
-		logger.Errorw("failed the resource specific defaulter", zap.Error(err))
+		logger.Errorw("Failed the resource specific defaulter", zap.Error(err))
 		// Return the error message as-is to give the defaulter callback
 		// discretion over (our portion of) the message that the user sees.
 		return nil, err
