@@ -77,11 +77,11 @@ These metrics will be emitted by the test if the test is run with
 
 You can record arbitrary metrics with
 [`stats.Record`](https://github.com/census-instrumentation/opencensus-go#stats)
-or measure latency with
-[`trace.StartSpan`](https://github.com/census-instrumentation/opencensus-go#traces):
+or measure latency by creating a instance of [`trace.Span`](https://github.com/census-instrumentation/opencensus-go#traces)
+by using the helper method [`logging.GetEmitableSpan()`](../logging/logger.go)
 
 ```go
-ctx, span := trace.StartSpan(context.Background(), "MyMetric")
+span := logging.GetEmitableSpan(context.Background(), "MyMetric")
 ```
 
 - These traces will be emitted automatically by
