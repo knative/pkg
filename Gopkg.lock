@@ -14,15 +14,14 @@
   version = "v0.34.0"
 
 [[projects]]
-  digest = "1:b73244f6a5ab381f938bfd2d831c57eeea884b0fab333126cc175914ec82dec5"
+  digest = "1:b6eb7c2538ec2999a072c0e372a18d7b7e3aedac249f26e159586fa5f892909f"
   name = "contrib.go.opencensus.io/exporter/stackdriver"
   packages = [
     ".",
     "monitoredresource",
   ]
   pruneopts = "NUT"
-  revision = "2b7f4fc93daf5ec3048fa4fc1c15573466711a17"
-  version = "v0.8.0"
+  revision = "c06c82c832edca4eaf7b0241bd655560a1be0346"
 
 [[projects]]
   digest = "1:4a31397b1b81c6856aab6d2d963a727b4235af18adaaedc2cc51646ae812f683"
@@ -69,6 +68,18 @@
   packages = ["quantile"]
   pruneopts = "NUT"
   revision = "3a771d992973f24aa725d07868b467d1ddfceafb"
+
+[[projects]]
+  digest = "1:fa965c1fd0f17153f608037e109e62104058bc1d08d44849867795fd306fa8b8"
+  name = "github.com/census-instrumentation/opencensus-proto"
+  packages = [
+    "gen-go/agent/common/v1",
+    "gen-go/metrics/v1",
+    "gen-go/resource/v1",
+  ]
+  pruneopts = "NUT"
+  revision = "7f2434bc10da710debe5c4315ed6d4df454b4024"
+  version = "v0.1.0"
 
 [[projects]]
   digest = "1:6b21090f60571b20b3ddc2c8e48547dffcf409498ed6002c2cada023725ed377"
