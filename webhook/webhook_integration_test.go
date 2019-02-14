@@ -27,7 +27,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/google/go-cmp/cmp"
 	"github.com/mattbaird/jsonpatch"
 	admissionv1beta1 "k8s.io/api/admission/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -171,7 +170,7 @@ func TestValidResponseForResource(t *testing.T) {
 			Kind:    "Resource",
 		},
 	}
-	testRev := createResource(1234, "testrev")
+	testRev := createResource("testrev")
 	marshaled, err := json.Marshal(testRev)
 	if err != nil {
 		t.Fatalf("Failed to marshal resource: %s", err)
@@ -215,18 +214,6 @@ func TestValidResponseForResource(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to decode response: %v", err)
 	}
-
-	expectJsonPatch := incrementGenerationPatch(testRev.Spec.Generation)
-
-	var respPatch []jsonpatch.JsonPatchOperation
-	err = json.Unmarshal(reviewResponse.Response.Patch, &respPatch)
-	if err != nil {
-		t.Fatalf("Failed to unmarshal json patch %v", err)
-	}
-
-	if diff := cmp.Diff(respPatch[0], expectJsonPatch); diff != "" {
-		t.Errorf("Unexpected patch (-want, +got): %v", diff)
-	}
 }
 
 func TestInvalidResponseForResource(t *testing.T) {
@@ -254,7 +241,7 @@ func TestInvalidResponseForResource(t *testing.T) {
 		t.Fatalf("createSecureTLSClient() = %v", err)
 	}
 
-	resource := createResource(1, testResourceName)
+	resource := createResource(testResourceName)
 
 	resource.Spec.FieldWithValidation = "not the right value"
 	marshaled, err := json.Marshal(resource)

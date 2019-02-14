@@ -23,14 +23,12 @@ import (
 )
 
 func TestTypesImplements(t *testing.T) {
-	var emptyGen Generation
 	testCases := []struct {
 		instance interface{}
 		iface    duck.Implementable
 	}{
 		{instance: &AddressableType{}, iface: &Addressable{}},
 		{instance: &KResource{}, iface: &Conditions{}},
-		{instance: &Generational{}, iface: &emptyGen},
 		{instance: &LegacyTarget{}, iface: &LegacyTargetable{}},
 		{instance: &Target{}, iface: &Targetable{}},
 	}
