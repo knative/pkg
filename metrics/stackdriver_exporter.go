@@ -30,11 +30,13 @@ import (
 const customMetricTypeDomain = "custom.googleapis.com/knative.dev"
 
 func newStackdriverExporter(config *metricsConfig, logger *zap.SugaredLogger) (view.Exporter, error) {
-	gm := newGcpMetadata()
+	gm := retrieveGCPMetadata()
+	mtf := getMetricTypeFunc(config.domain, config.component)
 	e, err := stackdriver.NewExporter(stackdriver.Options{
 		ProjectID:               config.stackdriverProjectID,
-		GetMetricType:           getMetricTypeFunc(config.domain, config.component),
-		GetMonitoredResource:    getMonitoredResourceFunc(config.domain, config.component, &gm),
+		GetMetricDisplayName:    mtf, // Use metric type for display name for custom metrics. No impact on built-in metrics.
+		GetMetricType:           mtf,
+		GetMonitoredResource:    getMonitoredResourceFunc(config.domain, config.component, gm),
 		DefaultMonitoringLabels: &stackdriver.Labels{},
 	})
 	if err != nil {
