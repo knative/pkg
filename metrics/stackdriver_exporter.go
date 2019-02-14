@@ -30,7 +30,12 @@ import (
 const customMetricTypeDomain = "custom.googleapis.com/knative.dev"
 
 func newStackdriverExporter(config *metricsConfig, logger *zap.SugaredLogger) (view.Exporter, error) {
+	// Separate the call of retrieveGCPMetadata() to avoid actual calls in unit tests
 	gm := retrieveGCPMetadata()
+	return newStackdriverExporterWithMetadata(config, logger, gm)
+}
+
+func newStackdriverExporterWithMetadata(config *metricsConfig, logger *zap.SugaredLogger, gm *gcpMetadata) (view.Exporter, error) {
 	mtf := getMetricTypeFunc(config.domain, config.component)
 	e, err := stackdriver.NewExporter(stackdriver.Options{
 		ProjectID:               config.stackdriverProjectID,
