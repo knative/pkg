@@ -50,6 +50,22 @@ func Retrying(rc spoof.ResponseChecker, codes ...int) spoof.ResponseChecker {
 	}
 }
 
+// IsStatusCode checks that the response code is equal to the given one.
+func IsStatusCode(code int) spoof.ResponseChecker {
+	return func(resp *spoof.Response) (bool, error) {
+		if resp.StatusCode == code {
+			return true, nil
+		}
+
+		return true, fmt.Errorf("status = %d, want: %d, body = %s", resp.StatusCode, code, string(resp.Body))
+	}
+}
+
+// IsStatusOK checks that the response code is a 200.
+func IsStatusOK() spoof.ResponseChecker {
+	return IsStatusCode(http.StatusOK)
+}
+
 // MatchesBody checks that the *first* response body matches the "expected" body, otherwise failing.
 func MatchesBody(expected string) spoof.ResponseChecker {
 	return func(resp *spoof.Response) (bool, error) {
