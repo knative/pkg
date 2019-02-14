@@ -435,8 +435,6 @@ func (ac *AdmissionController) register(
 // ServeHTTP implements the external admission webhook for mutating
 // serving resources.
 func (ac *AdmissionController) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	defer r.Body.Close()
-
 	logger := ac.Logger
 	logger.Infof("Webhook ServeHTTP request=%#v", r)
 
