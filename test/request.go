@@ -26,7 +26,6 @@ import (
 
 	"github.com/knative/pkg/test/logging"
 	"github.com/knative/pkg/test/spoof"
-	"go.opencensus.io/trace"
 )
 
 // MatchesAny is a NOP matcher. This is useful for polling until a 200 is returned.
@@ -99,8 +98,7 @@ func EventuallyMatchesBody(expected string) spoof.ResponseChecker {
 // desc will be used to name the metric that is emitted to track how long it took for the
 // domain to get into the state checked by inState.  Commas in `desc` must be escaped.
 func WaitForEndpointState(kubeClient *KubeClient, logger *logging.BaseLogger, domain string, inState spoof.ResponseChecker, desc string, resolvable bool) (*spoof.Response, error) {
-	metricName := fmt.Sprintf("WaitForEndpointState/%s", desc)
-	_, span := trace.StartSpan(context.Background(), metricName)
+	span := logging.GetEmitableSpan(context.Background(), fmt.Sprintf("WaitForEndpointState/%s", desc))
 	defer span.End()
 
 	client, err := NewSpoofingClient(kubeClient, logger, domain, resolvable)
