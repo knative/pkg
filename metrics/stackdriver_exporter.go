@@ -29,13 +29,21 @@ import (
 // See: https://cloud.google.com/monitoring/api/ref_v3/rest/v3/projects.metricDescriptors#MetricDescriptor
 const customMetricTypeDomain = "custom.googleapis.com/knative.dev"
 
-func newStackdriverExporter(config *metricsConfig, logger *zap.SugaredLogger) (view.Exporter, error) {
-	// Separate the call of retrieveGCPMetadata() to avoid actual calls in unit tests
-	gm := retrieveGCPMetadata()
-	return newStackdriverExporterWithMetadata(config, logger, gm)
+var (
+	// gcpMetadataFunc is the function used to fetch GCP metadata.
+	// In product usage, this is always set to function retrieveGCPMetadata.
+	// In unit tests this is set to a fake one to avoid calling GCP metadata
+	// service.
+	gcpMetadataFunc func() *gcpMetadata
+)
+
+func init() {
+	// Set gcpMetadataFunc to call GCP metadata service.
+	gcpMetadataFunc = retrieveGCPMetadata
 }
 
-func newStackdriverExporterWithMetadata(config *metricsConfig, logger *zap.SugaredLogger, gm *gcpMetadata) (view.Exporter, error) {
+func newStackdriverExporter(config *metricsConfig, logger *zap.SugaredLogger) (view.Exporter, error) {
+	gm := gcpMetadataFunc()
 	mtf := getMetricTypeFunc(config.domain, config.component)
 	e, err := stackdriver.NewExporter(stackdriver.Options{
 		ProjectID:               config.stackdriverProjectID,

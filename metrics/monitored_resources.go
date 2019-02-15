@@ -24,15 +24,6 @@ type gcpMetadata struct {
 	cluster  string
 }
 
-func newGcpMetadata() gcpMetadata {
-	gm := gcpMetadata{
-		project:  metricskey.ValueUnknown,
-		location: metricskey.ValueUnknown,
-		cluster:  metricskey.ValueUnknown,
-	}
-	return gm
-}
-
 type KnativeRevision struct {
 	Project           string
 	Location          string
@@ -64,7 +55,11 @@ func (g *Global) MonitoredResource() (resType string, labels map[string]string) 
 }
 
 func retrieveGCPMetadata() *gcpMetadata {
-	gm := newGcpMetadata()
+	gm := gcpMetadata{
+		project:  metricskey.ValueUnknown,
+		location: metricskey.ValueUnknown,
+		cluster:  metricskey.ValueUnknown,
+	}
 	project, err := metadata.NumericProjectID()
 	if err == nil && project != "" {
 		gm.project = project

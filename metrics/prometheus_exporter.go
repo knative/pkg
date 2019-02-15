@@ -15,10 +15,16 @@ package metrics
 
 import (
 	"net/http"
+	"sync"
 
 	"go.opencensus.io/exporter/prometheus"
 	"go.opencensus.io/stats/view"
 	"go.uber.org/zap"
+)
+
+var (
+	curPromSrv    *http.Server
+	curPromSrvMux sync.Mutex
 )
 
 func newPrometheusExporter(config *metricsConfig, logger *zap.SugaredLogger) (view.Exporter, error) {
@@ -37,14 +43,14 @@ func newPrometheusExporter(config *metricsConfig, logger *zap.SugaredLogger) (vi
 }
 
 func getCurPromSrv() *http.Server {
-	metricsMux.Lock()
-	defer metricsMux.Unlock()
+	curPromSrvMux.Lock()
+	defer curPromSrvMux.Unlock()
 	return curPromSrv
 }
 
 func resetCurPromSrv() {
-	metricsMux.Lock()
-	defer metricsMux.Unlock()
+	curPromSrvMux.Lock()
+	defer curPromSrvMux.Unlock()
 	if curPromSrv != nil {
 		curPromSrv.Close()
 		curPromSrv = nil
@@ -54,8 +60,8 @@ func resetCurPromSrv() {
 func startNewPromSrv(e *prometheus.Exporter) *http.Server {
 	sm := http.NewServeMux()
 	sm.Handle("/metrics", e)
-	metricsMux.Lock()
-	defer metricsMux.Unlock()
+	curPromSrvMux.Lock()
+	defer curPromSrvMux.Unlock()
 	if curPromSrv != nil {
 		curPromSrv.Close()
 	}

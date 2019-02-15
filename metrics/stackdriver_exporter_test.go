@@ -70,6 +70,10 @@ var (
 	}}
 )
 
+func fakeGcpMetadataFun() *gcpMetadata {
+	return &testGcpMetadata
+}
+
 func TestGetMonitoredResourceFunc_UseKnativeRevision(t *testing.T) {
 	for _, testCase := range supportedMetricsTestCases {
 		testView = &view.View{
@@ -164,11 +168,11 @@ func TestGetgetMetricTypeFunc_UseCustomDomain(t *testing.T) {
 }
 
 func TestNewStackdriverExporterWithMetadata(t *testing.T) {
-	e, err := newStackdriverExporterWithMetadata(&metricsConfig{
+	e, err := newStackdriverExporter(&metricsConfig{
 		domain:               servingDomain,
 		component:            "autoscaler",
 		backendDestination:   Stackdriver,
-		stackdriverProjectID: testProj}, TestLogger(t), &testGcpMetadata)
+		stackdriverProjectID: testProj}, TestLogger(t))
 	if err != nil {
 		t.Error(err)
 	}

@@ -15,7 +15,6 @@ package metrics
 
 import (
 	"fmt"
-	"net/http"
 	"sync"
 
 	"go.opencensus.io/stats/view"
@@ -25,7 +24,6 @@ import (
 var (
 	curMetricsExporter view.Exporter
 	curMetricsConfig   *metricsConfig
-	curPromSrv         *http.Server
 	metricsMux         sync.Mutex
 )
 

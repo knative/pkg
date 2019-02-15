@@ -66,6 +66,8 @@ func getResourceLabelValue(key string, tags []tag.Tag) string {
 
 func TestMain(m *testing.M) {
 	resetCurPromSrv()
+	// Set gcpMetadataFunc for testing
+	gcpMetadataFunc = fakeGcpMetadataFun
 	os.Exit(m.Run())
 }
 
