@@ -3,7 +3,6 @@ package helpers
 import (
 	"math/rand"
 	"strings"
-	"sync"
 	"time"
 )
 
@@ -13,13 +12,8 @@ const (
 	sep           = "-"
 )
 
-var (
-	r        *rand.Rand
-	rndMutex sync.Mutex
-)
-
 func init() {
-	r = rand.New(rand.NewSource(time.Now().UTC().UnixNano()))
+	rand.Seed(time.Now().UTC().UnixNano())
 }
 
 // AppendRandomString will generate a random string that begins with prefix.
@@ -31,11 +25,8 @@ func init() {
 func AppendRandomString(prefix string) string {
 	suffix := make([]byte, randSuffixLen)
 
-	rndMutex.Lock()
-	defer rndMutex.Unlock()
-
 	for i := range suffix {
-		suffix[i] = letterBytes[r.Intn(len(letterBytes))]
+		suffix[i] = letterBytes[rand.Intn(len(letterBytes))]
 	}
 
 	return strings.Join([]string{prefix, string(suffix)}, sep)
