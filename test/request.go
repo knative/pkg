@@ -52,7 +52,7 @@ func Retrying(rc spoof.ResponseChecker, codes ...int) spoof.ResponseChecker {
 // IsOneOfStatusCodes checks that the response code is equal to the given one.
 func IsOneOfStatusCodes(codes ...int) spoof.ResponseChecker {
 	return func(resp *spoof.Response) (bool, error) {
-		for code := range codes {
+		for _, code := range codes {
 			if resp.StatusCode == code {
 				return true, nil
 			}
