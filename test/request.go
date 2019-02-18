@@ -92,6 +92,26 @@ func EventuallyMatchesBody(expected string) spoof.ResponseChecker {
 	}
 }
 
+// MatchesAllOf combines multiple ResponseCheckers to one ResponseChecker with a logical AND. The
+// checkers are executed in order. The first function to trigger an error or a retry will short-circuit
+// the other functions (they will not be executed).
+//
+// This is useful for combining a body with a status check like:
+// MatchesAllOf(IsStatusOK(), MatchesBody("test"))
+//
+// The MatchesBody check will only be executed after the IsStatusOK has passed.
+func MatchesAllOf(checkers ...spoof.ResponseChecker) spoof.ResponseChecker {
+	return func(resp *spoof.Response) (bool, error) {
+		for _, checker := range checkers {
+			done, err := checker(resp)
+			if err != nil || !done {
+				return done, err
+			}
+		}
+		return true, nil
+	}
+}
+
 // WaitForEndpointState will poll an endpoint until inState indicates the state is achieved.
 // If resolvableDomain is false, it will use kubeClientset to look up the ingress and spoof
 // the domain in the request headers, otherwise it will make the request directly to domain.
