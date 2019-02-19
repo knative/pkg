@@ -117,11 +117,11 @@ func MatchesAllOf(checkers ...spoof.ResponseChecker) spoof.ResponseChecker {
 // the domain in the request headers, otherwise it will make the request directly to domain.
 // desc will be used to name the metric that is emitted to track how long it took for the
 // domain to get into the state checked by inState.  Commas in `desc` must be escaped.
-func WaitForEndpointState(kubeClient *KubeClient, logger *logging.BaseLogger, domain string, inState spoof.ResponseChecker, desc string, resolvable bool) (*spoof.Response, error) {
+func WaitForEndpointState(kubeClient *KubeClient, logf spoof.FormatLogger, domain string, inState spoof.ResponseChecker, desc string, resolvable bool) (*spoof.Response, error) {
 	span := logging.GetEmitableSpan(context.Background(), fmt.Sprintf("WaitForEndpointState/%s", desc))
 	defer span.End()
 
-	client, err := NewSpoofingClient(kubeClient, logger, domain, resolvable)
+	client, err := NewSpoofingClient(kubeClient, logf, domain, resolvable)
 	if err != nil {
 		return nil, err
 	}
