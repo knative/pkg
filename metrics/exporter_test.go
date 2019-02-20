@@ -15,7 +15,6 @@ package metrics
 import (
 	"os"
 	"testing"
-	"time"
 
 	. "github.com/knative/pkg/logging/testing"
 	"github.com/knative/pkg/metrics/metricskey"
@@ -67,91 +66,9 @@ func getResourceLabelValue(key string, tags []tag.Tag) string {
 
 func TestMain(m *testing.M) {
 	resetCurPromSrv()
+	// Set gcpMetadataFunc for testing
+	gcpMetadataFunc = fakeGcpMetadataFun
 	os.Exit(m.Run())
-}
-
-func TestNewStackdriverExporterForGlobal(t *testing.T) {
-	resetMonitoredResourceFunc()
-	// The stackdriver project ID is required for stackdriver exporter.
-	e, err := newStackdriverExporter(&metricsConfig{
-		domain:               servingDomain,
-		component:            testComponent,
-		backendDestination:   Stackdriver,
-		stackdriverProjectID: testProj}, TestLogger(t))
-	if err != nil {
-		t.Error(err)
-	}
-	if e == nil {
-		t.Error("expected a non-nil metrics exporter")
-	}
-	if getMonitoredResourceFunc == nil {
-		t.Error("expected a non-nil getMonitoredResourceFunc")
-	}
-	newTags, monitoredResource := getMonitoredResourceFunc(testView, testTags)
-	gotResType, labels := monitoredResource.MonitoredResource()
-	wantedResType := "global"
-	if gotResType != wantedResType {
-		t.Errorf("MonitoredResource=%v, got: %v", wantedResType, gotResType)
-	}
-	got := getResourceLabelValue(metricskey.LabelNamespaceName, newTags)
-	if got != testNS {
-		t.Errorf("expected new tag %v with value %v, got: %v", routeKey, testNS, newTags)
-	}
-	if len(labels) != 0 {
-		t.Errorf("expected no label, got: %v", labels)
-	}
-}
-
-func TestNewStackdriverExporterForKnativeRevision(t *testing.T) {
-	resetMonitoredResourceFunc()
-	e, err := newStackdriverExporter(&metricsConfig{
-		domain:               servingDomain,
-		component:            "autoscaler",
-		backendDestination:   Stackdriver,
-		stackdriverProjectID: testProj}, TestLogger(t))
-	if err != nil {
-		t.Error(err)
-	}
-	if e == nil {
-		t.Error("expected a non-nil metrics exporter")
-	}
-	if getMonitoredResourceFunc == nil {
-		t.Error("expected a non-nil getMonitoredResourceFunc")
-	}
-	newTags, monitoredResource := getMonitoredResourceFunc(testView, testTags)
-	gotResType, labels := monitoredResource.MonitoredResource()
-	wantedResType := "knative_revision"
-	if gotResType != wantedResType {
-		t.Errorf("MonitoredResource=%v, got %v", wantedResType, gotResType)
-	}
-	got := getResourceLabelValue(metricskey.LabelRouteName, newTags)
-	if got != testRoute {
-		t.Errorf("expected new tag: %v, got: %v", routeKey, newTags)
-	}
-	got, ok := labels[metricskey.LabelNamespaceName]
-	if !ok || got != testNS {
-		t.Errorf("expected label %v with value %v, got: %v", metricskey.LabelNamespaceName, testNS, got)
-	}
-	got, ok = labels[metricskey.LabelConfigurationName]
-	if !ok || got != metricskey.ValueUnknown {
-		t.Errorf("expected label %v with value %v, got: %v", metricskey.LabelConfigurationName, metricskey.ValueUnknown, got)
-	}
-}
-
-func TestNewPrometheusExporter(t *testing.T) {
-	// The stackdriver project ID is not required for prometheus exporter.
-	e, err := newPrometheusExporter(&metricsConfig{
-		domain:               servingDomain,
-		component:            testComponent,
-		backendDestination:   Prometheus,
-		stackdriverProjectID: ""}, TestLogger(t))
-	if err != nil {
-		t.Error(err)
-	}
-	if e == nil {
-		t.Error("expected a non-nil metrics exporter")
-	}
-	expectPromSrv(t)
 }
 
 func TestMetricsExporter(t *testing.T) {
@@ -203,21 +120,5 @@ func TestInterlevedExporters(t *testing.T) {
 		stackdriverProjectID: testProj}, TestLogger(t))
 	if err != nil {
 		t.Error(err)
-	}
-}
-
-func expectPromSrv(t *testing.T) {
-	time.Sleep(200 * time.Millisecond)
-	srv := getCurPromSrv()
-	if srv == nil {
-		t.Error("expected a server for prometheus exporter")
-	}
-}
-
-func expectNoPromSrv(t *testing.T) {
-	time.Sleep(200 * time.Millisecond)
-	srv := getCurPromSrv()
-	if srv != nil {
-		t.Error("expected no server for stackdriver exporter")
 	}
 }
