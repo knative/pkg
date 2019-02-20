@@ -44,12 +44,12 @@ func init() {
 
 func newStackdriverExporter(config *metricsConfig, logger *zap.SugaredLogger) (view.Exporter, error) {
 	gm := gcpMetadataFunc()
-	mtf := getMetricTypeFunc(config.domain, config.component)
+	mtf := getMetricTypeFunc(config.stackdriverMetricTypePrefix, config.component)
 	e, err := stackdriver.NewExporter(stackdriver.Options{
 		ProjectID:               config.stackdriverProjectID,
 		GetMetricDisplayName:    mtf, // Use metric type for display name for custom metrics. No impact on built-in metrics.
 		GetMetricType:           mtf,
-		GetMonitoredResource:    getMonitoredResourceFunc(config.domain, config.component, gm),
+		GetMonitoredResource:    getMonitoredResourceFunc(config.stackdriverMetricTypePrefix, gm),
 		DefaultMonitoringLabels: &stackdriver.Labels{},
 	})
 	if err != nil {
@@ -60,9 +60,9 @@ func newStackdriverExporter(config *metricsConfig, logger *zap.SugaredLogger) (v
 	return e, nil
 }
 
-func getMonitoredResourceFunc(domain, component string, gm *gcpMetadata) func(v *view.View, tags []tag.Tag) ([]tag.Tag, monitoredresource.Interface) {
+func getMonitoredResourceFunc(metricTypePrefix string, gm *gcpMetadata) func(v *view.View, tags []tag.Tag) ([]tag.Tag, monitoredresource.Interface) {
 	return func(view *view.View, tags []tag.Tag) ([]tag.Tag, monitoredresource.Interface) {
-		metricType := path.Join(domain, component, view.Measure.Name())
+		metricType := path.Join(metricTypePrefix, view.Measure.Name())
 		if metricskey.KnativeRevisionMetrics.Has(metricType) {
 			return getKnativeRevisionMonitoredResource(view, tags, gm)
 		}
@@ -116,9 +116,9 @@ func getGlobalMonitoredResource(v *view.View, tags []tag.Tag) ([]tag.Tag, monito
 	return tags, &Global{}
 }
 
-func getMetricTypeFunc(domain, component string) func(view *view.View) string {
+func getMetricTypeFunc(metricTypePrefix, component string) func(view *view.View) string {
 	return func(view *view.View) string {
-		metricType := path.Join(domain, component, view.Measure.Name())
+		metricType := path.Join(metricTypePrefix, view.Measure.Name())
 		if metricskey.KnativeRevisionMetrics.Has(metricType) {
 			return metricType
 		}

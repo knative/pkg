@@ -14,6 +14,7 @@ package metrics
 
 import (
 	"os"
+	"path"
 	"reflect"
 	"testing"
 	"time"
@@ -71,14 +72,24 @@ var (
 		},
 		domain:      servingDomain,
 		component:   "",
-		expectedErr: "Invalid reporting-period-seconds value \"test\"",
+		expectedErr: "Invalid metrics.reporting-period-seconds value \"test\"",
+	}, {
+		name: "invalidAllowStackdriverCustomMetrics",
+		cm: map[string]string{
+			"metrics.backend-destination":              "stackdriver",
+			"metrics.allow-stackdriver-custom-metrics": "test",
+		},
+		domain:      servingDomain,
+		component:   "",
+		expectedErr: "Invalid metrics.allow-stackdriver-custom-metrics value \"test\"",
 	}}
 	successTests = []struct {
-		name           string
-		cm             map[string]string
-		domain         string
-		component      string
-		expectedConfig metricsConfig
+		name                 string
+		cm                   map[string]string
+		domain               string
+		component            string
+		expectedConfig       metricsConfig
+		expectedConfigChange bool // Whether the config should trigger an exporter change compared to previous test case
 	}{
 		// Note the first unit test is skipped in TestUpdateExporterFromConfigMap since
 		// unit test does not have application default credentials.
@@ -88,20 +99,27 @@ var (
 			domain:    servingDomain,
 			component: testComponent,
 			expectedConfig: metricsConfig{
-				domain:             servingDomain,
-				component:          testComponent,
-				backendDestination: Stackdriver,
-				reportingPeriod:    60 * time.Second},
+				domain:                      servingDomain,
+				component:                   testComponent,
+				backendDestination:          Stackdriver,
+				reportingPeriod:             60 * time.Second,
+				isStackdriverBackend:        true,
+				stackdriverMetricTypePrefix: path.Join(servingDomain, testComponent),
+			},
+			expectedConfigChange: true,
 		}, {
 			name:      "backendKeyMissing",
 			cm:        map[string]string{"": ""},
 			domain:    servingDomain,
 			component: testComponent,
 			expectedConfig: metricsConfig{
-				domain:             servingDomain,
-				component:          testComponent,
-				backendDestination: Prometheus,
-				reportingPeriod:    5 * time.Second},
+				domain:                      servingDomain,
+				component:                   testComponent,
+				backendDestination:          Prometheus,
+				reportingPeriod:             5 * time.Second,
+				stackdriverMetricTypePrefix: path.Join(servingDomain, testComponent),
+			},
+			expectedConfigChange: true,
 		}, {
 			name: "validStackdriver",
 			cm: map[string]string{"metrics.backend-destination": "stackdriver",
@@ -109,21 +127,28 @@ var (
 			domain:    servingDomain,
 			component: testComponent,
 			expectedConfig: metricsConfig{
-				domain:               servingDomain,
-				component:            testComponent,
-				backendDestination:   Stackdriver,
-				stackdriverProjectID: anotherProj,
-				reportingPeriod:      60 * time.Second},
+				domain:                      servingDomain,
+				component:                   testComponent,
+				backendDestination:          Stackdriver,
+				stackdriverProjectID:        anotherProj,
+				reportingPeriod:             60 * time.Second,
+				isStackdriverBackend:        true,
+				stackdriverMetricTypePrefix: path.Join(servingDomain, testComponent),
+			},
+			expectedConfigChange: true,
 		}, {
 			name:      "validPrometheus",
 			cm:        map[string]string{"metrics.backend-destination": "prometheus"},
 			domain:    servingDomain,
 			component: testComponent,
 			expectedConfig: metricsConfig{
-				domain:             servingDomain,
-				component:          testComponent,
-				backendDestination: Prometheus,
-				reportingPeriod:    5 * time.Second},
+				domain:                      servingDomain,
+				component:                   testComponent,
+				backendDestination:          Prometheus,
+				reportingPeriod:             5 * time.Second,
+				stackdriverMetricTypePrefix: path.Join(servingDomain, testComponent),
+			},
+			expectedConfigChange: true,
 		}, {
 			name: "validCapitalStackdriver",
 			cm: map[string]string{"metrics.backend-destination": "Stackdriver",
@@ -131,21 +156,28 @@ var (
 			domain:    servingDomain,
 			component: testComponent,
 			expectedConfig: metricsConfig{
-				domain:               servingDomain,
-				component:            testComponent,
-				backendDestination:   Stackdriver,
-				stackdriverProjectID: testProj,
-				reportingPeriod:      60 * time.Second},
+				domain:                      servingDomain,
+				component:                   testComponent,
+				backendDestination:          Stackdriver,
+				stackdriverProjectID:        testProj,
+				reportingPeriod:             60 * time.Second,
+				isStackdriverBackend:        true,
+				stackdriverMetricTypePrefix: path.Join(servingDomain, testComponent),
+			},
+			expectedConfigChange: true,
 		}, {
 			name:      "overriddenReportingPeriodPrometheus",
 			cm:        map[string]string{"metrics.backend-destination": "prometheus", "metrics.reporting-period-seconds": "12"},
 			domain:    servingDomain,
 			component: testComponent,
 			expectedConfig: metricsConfig{
-				domain:             servingDomain,
-				component:          testComponent,
-				backendDestination: Prometheus,
-				reportingPeriod:    12 * time.Second},
+				domain:                      servingDomain,
+				component:                   testComponent,
+				backendDestination:          Prometheus,
+				reportingPeriod:             12 * time.Second,
+				stackdriverMetricTypePrefix: path.Join(servingDomain, testComponent),
+			},
+			expectedConfigChange: true,
 		}, {
 			name: "overriddenReportingPeriodStackdriver",
 			cm: map[string]string{"metrics.backend-destination": "stackdriver",
@@ -153,11 +185,15 @@ var (
 			domain:    servingDomain,
 			component: testComponent,
 			expectedConfig: metricsConfig{
-				domain:               servingDomain,
-				component:            testComponent,
-				backendDestination:   Stackdriver,
-				stackdriverProjectID: "test2",
-				reportingPeriod:      7 * time.Second},
+				domain:                      servingDomain,
+				component:                   testComponent,
+				backendDestination:          Stackdriver,
+				stackdriverProjectID:        "test2",
+				reportingPeriod:             7 * time.Second,
+				isStackdriverBackend:        true,
+				stackdriverMetricTypePrefix: path.Join(servingDomain, testComponent),
+			},
+			expectedConfigChange: true,
 		}, {
 			name: "overriddenReportingPeriodStackdriver2",
 			cm: map[string]string{"metrics.backend-destination": "stackdriver",
@@ -165,21 +201,28 @@ var (
 			domain:    servingDomain,
 			component: testComponent,
 			expectedConfig: metricsConfig{
-				domain:               servingDomain,
-				component:            testComponent,
-				backendDestination:   Stackdriver,
-				stackdriverProjectID: "test2",
-				reportingPeriod:      3 * time.Second},
+				domain:                      servingDomain,
+				component:                   testComponent,
+				backendDestination:          Stackdriver,
+				stackdriverProjectID:        "test2",
+				reportingPeriod:             3 * time.Second,
+				isStackdriverBackend:        true,
+				stackdriverMetricTypePrefix: path.Join(servingDomain, testComponent),
+			},
+			expectedConfigChange: true,
 		}, {
 			name:      "emptyReportingPeriodPrometheus",
 			cm:        map[string]string{"metrics.backend-destination": "prometheus", "metrics.reporting-period-seconds": ""},
 			domain:    servingDomain,
 			component: testComponent,
 			expectedConfig: metricsConfig{
-				domain:             servingDomain,
-				component:          testComponent,
-				backendDestination: Prometheus,
-				reportingPeriod:    5 * time.Second},
+				domain:                      servingDomain,
+				component:                   testComponent,
+				backendDestination:          Prometheus,
+				reportingPeriod:             5 * time.Second,
+				stackdriverMetricTypePrefix: path.Join(servingDomain, testComponent),
+			},
+			expectedConfigChange: true,
 		}, {
 			name: "emptyReportingPeriodStackdriver",
 			cm: map[string]string{"metrics.backend-destination": "stackdriver",
@@ -187,11 +230,35 @@ var (
 			domain:    servingDomain,
 			component: testComponent,
 			expectedConfig: metricsConfig{
-				domain:               servingDomain,
-				component:            testComponent,
-				backendDestination:   Stackdriver,
-				stackdriverProjectID: "test2",
-				reportingPeriod:      60 * time.Second},
+				domain:                      servingDomain,
+				component:                   testComponent,
+				backendDestination:          Stackdriver,
+				stackdriverProjectID:        "test2",
+				reportingPeriod:             60 * time.Second,
+				isStackdriverBackend:        true,
+				stackdriverMetricTypePrefix: path.Join(servingDomain, testComponent),
+			},
+			expectedConfigChange: true,
+		}, {
+			name: "allowStackdriverCustomMetric",
+			cm: map[string]string{
+				"metrics.backend-destination":              "stackdriver",
+				"metrics.stackdriver-project-id":           "test2",
+				"metrics.reporting-period-seconds":         "",
+				"metrics.allow-stackdriver-custom-metrics": "true",
+			},
+			domain:    servingDomain,
+			component: testComponent,
+			expectedConfig: metricsConfig{
+				domain:                        servingDomain,
+				component:                     testComponent,
+				backendDestination:            Stackdriver,
+				stackdriverProjectID:          "test2",
+				reportingPeriod:               60 * time.Second,
+				isStackdriverBackend:          true,
+				stackdriverMetricTypePrefix:   path.Join(servingDomain, testComponent),
+				allowStackdriverCustomMetrics: true,
+			},
 		}}
 	envTests = []struct {
 		name           string
@@ -206,20 +273,25 @@ var (
 			domain:    servingDomain,
 			component: testComponent,
 			expectedConfig: metricsConfig{
-				domain:             servingDomain,
-				component:          testComponent,
-				backendDestination: Stackdriver,
-				reportingPeriod:    60 * time.Second},
+				domain:                      servingDomain,
+				component:                   testComponent,
+				backendDestination:          Stackdriver,
+				reportingPeriod:             60 * time.Second,
+				isStackdriverBackend:        true,
+				stackdriverMetricTypePrefix: path.Join(servingDomain, testComponent),
+			},
 		}, {
 			name:      "validPrometheus",
 			cm:        map[string]string{"metrics.backend-destination": "prometheus"},
 			domain:    servingDomain,
 			component: testComponent,
 			expectedConfig: metricsConfig{
-				domain:             servingDomain,
-				component:          testComponent,
-				backendDestination: Prometheus,
-				reportingPeriod:    5 * time.Second},
+				domain:                      servingDomain,
+				component:                   testComponent,
+				backendDestination:          Prometheus,
+				reportingPeriod:             5 * time.Second,
+				stackdriverMetricTypePrefix: path.Join(servingDomain, testComponent),
+			},
 		}}
 )
 
@@ -271,8 +343,8 @@ func TestIsMetricsConfigChanged(t *testing.T) {
 				t.Errorf("Wanted valid config %v, got error %v", test.expectedConfig, err)
 			}
 			changed := isMetricsConfigChanged(mc)
-			if !changed {
-				t.Error("isMetricsConfigChanged should be true")
+			if changed != test.expectedConfigChange {
+				t.Errorf("isMetricsConfigChanged=%v wanted %v", changed, test.expectedConfigChange)
 			}
 			setCurMetricsExporterAndConfig(nil, mc)
 		})

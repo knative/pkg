@@ -20,6 +20,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path"
 	"strconv"
 	"strings"
 	"time"
@@ -29,9 +30,10 @@ import (
 )
 
 const (
-	backendDestinationKey   = "metrics.backend-destination"
-	stackdriverProjectIDKey = "metrics.stackdriver-project-id"
-	reportingPeriodKey      = "metrics.reporting-period-seconds"
+	allowStackdriverCustomMetricsKey = "metrics.allow-stackdriver-custom-metrics"
+	backendDestinationKey            = "metrics.backend-destination"
+	reportingPeriodKey               = "metrics.reporting-period-seconds"
+	stackdriverProjectIDKey          = "metrics.stackdriver-project-id"
 )
 
 // metricsBackend specifies the backend to use for metrics
@@ -53,12 +55,27 @@ type metricsConfig struct {
 	component string
 	// The metrics backend destination.
 	backendDestination metricsBackend
-	// The stackdriver project ID where the stats data are uploaded to. This is
-	// not the GCP project ID.
-	stackdriverProjectID string
 	// reportingPeriod specifies the interval between reporting aggregated views.
 	// If duration is less than or equal to zero, it enables the default behavior.
 	reportingPeriod time.Duration
+
+	// ---- Stackdriver specific below ----
+	// The stackdriver project ID where the stats data are uploaded to. This is
+	// not the GCP project ID.
+	stackdriverProjectID string
+	// allowStackdriverCustomMetrics is true if it is allowed to send metrics to
+	// Stackdriver using "global" resource type and custom metric type if the
+	// metrics are not supported by "knative_revision" resource type. This could
+	// results in extra Stackdriver charge.
+	// If backendDestination is not Stackdriver, this is nil.
+	allowStackdriverCustomMetrics bool
+	// True if backendDestination equals to "stackdriver". Store this in a var
+	// to reduce string comparision.
+	isStackdriverBackend bool
+	// stackdriverMetricTypePrefix is the metric domain joins component, e.g.
+	// "knative.dev/serving/activator". Store this in a var to reduce string join
+	// operation.
+	stackdriverMetricTypePrefix string
 }
 
 func getMetricsConfig(m map[string]string, domain string, component string, logger *zap.SugaredLogger) (*metricsConfig, error) {
@@ -86,6 +103,14 @@ func getMetricsConfig(m map[string]string, domain string, component string, logg
 	// metrics exporter.
 	if mc.backendDestination == Stackdriver {
 		mc.stackdriverProjectID = m[stackdriverProjectIDKey]
+		mc.isStackdriverBackend = true
+		if ascmStr, ok := m[allowStackdriverCustomMetricsKey]; ok && ascmStr != "" {
+			ascmBool, err := strconv.ParseBool(ascmStr)
+			if err != nil {
+				return nil, fmt.Errorf("Invalid %s value \"%s\"", allowStackdriverCustomMetricsKey, ascmStr)
+			}
+			mc.allowStackdriverCustomMetrics = ascmBool
+		}
 	}
 
 	// If reporting period is specified, use the value from the configuration.
@@ -96,11 +121,11 @@ func getMetricsConfig(m map[string]string, domain string, component string, logg
 	// push anything but just responds to pull requests, and shorter durations
 	// do not really hurt the performance and we rely on the scraping configuration.
 	if repStr, ok := m[reportingPeriodKey]; ok && repStr != "" {
-		if repInt, err := strconv.Atoi(repStr); err == nil {
-			mc.reportingPeriod = time.Duration(repInt) * time.Second
-		} else {
-			return nil, fmt.Errorf("Invalid reporting-period-seconds value \"%s\"", repStr)
+		repInt, err := strconv.Atoi(repStr)
+		if err != nil {
+			return nil, fmt.Errorf("Invalid %s value \"%s\"", reportingPeriodKey, repStr)
 		}
+		mc.reportingPeriod = time.Duration(repInt) * time.Second
 	} else if mc.backendDestination == Stackdriver {
 		mc.reportingPeriod = 60 * time.Second
 	} else if mc.backendDestination == Prometheus {
@@ -116,6 +141,9 @@ func getMetricsConfig(m map[string]string, domain string, component string, logg
 		return nil, errors.New("Metrics component name cannot be empty")
 	}
 	mc.component = component
+
+	mc.stackdriverMetricTypePrefix = path.Join(domain, component)
+
 	return &mc, nil
 }
 
