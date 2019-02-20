@@ -77,11 +77,12 @@ These metrics will be emitted by the test if the test is run with
 
 You can record arbitrary metrics with
 [`stats.Record`](https://github.com/census-instrumentation/opencensus-go#stats)
-or measure latency with
-[`trace.StartSpan`](https://github.com/census-instrumentation/opencensus-go#traces):
+or measure latency by creating a instance of
+[`trace.Span`](https://github.com/census-instrumentation/opencensus-go#traces)
+by using the helper method [`logging.GetEmitableSpan()`](../logging/logger.go)
 
 ```go
-ctx, span := trace.StartSpan(context.Background(), "MyMetric")
+span := logging.GetEmitableSpan(context.Background(), "MyMetric")
 ```
 
 - These traces will be emitted automatically by
@@ -198,10 +199,7 @@ go test ./test --kubeconfig /my/path/kubeconfig
 ### Specifying cluster
 
 The `--cluster` argument lets you use a different cluster than
-[your specified kubeconfig's](#specifying-kubeconfig) active context. This will
-default to the value of your
-[`K8S_CLUSTER_OVERRIDE` environment variable](https://github.com/knative/serving/blob/master/DEVELOPMENT.md#environment-setup)
-if not specified.
+[your specified kubeconfig's](#specifying-kubeconfig) active context.
 
 ```bash
 go test ./test --cluster your-cluster-name

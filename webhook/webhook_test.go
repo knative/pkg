@@ -17,7 +17,6 @@ limitations under the License.
 package webhook
 
 import (
-	"context"
 	"crypto/tls"
 	"encoding/json"
 	"encoding/pem"
@@ -38,6 +37,7 @@ import (
 	"go.uber.org/zap"
 	admissionv1beta1 "k8s.io/api/admission/v1beta1"
 	admissionregistrationv1beta1 "k8s.io/api/admissionregistration/v1beta1"
+	authenticationv1 "k8s.io/api/authentication/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/kubernetes"
 
@@ -63,6 +63,8 @@ func newDefaultOptions() ControllerOptions {
 const (
 	testNamespace    = "test-namespace"
 	testResourceName = "test-resource"
+	user1            = "brutto@knative.dev"
+	user2            = "arrabbiato@knative.dev"
 )
 
 func newNonRunningTestAdmissionController(t *testing.T, options ControllerOptions) (
@@ -133,7 +135,7 @@ func TestUnknownVersionFails(t *testing.T) {
 }
 
 func TestValidCreateResourceSucceeds(t *testing.T) {
-	r := createResource(1234, "a name")
+	r := createResource("a name")
 	for _, v := range []string{"v1alpha1", "v1beta1"} {
 		r.TypeMeta.APIVersion = v
 		r.SetDefaults() // Fill in defaults to check that there are no patches.
@@ -141,18 +143,17 @@ func TestValidCreateResourceSucceeds(t *testing.T) {
 		resp := ac.admit(TestContextWithLogger(t), createCreateResource(r))
 		expectAllowed(t, resp)
 		expectPatches(t, resp.Patch, []jsonpatch.JsonPatchOperation{
-			incrementGenerationPatch(r.Spec.Generation),
+			setUserAnnotation(user1, user1),
 		})
 	}
 }
 
 func TestValidCreateResourceSucceedsWithDefaultPatch(t *testing.T) {
-	r := createResource(1234, "a name")
+	r := createResource("a name")
 	_, ac := newNonRunningTestAdmissionController(t, newDefaultOptions())
 	resp := ac.admit(TestContextWithLogger(t), createCreateResource(r))
 	expectAllowed(t, resp)
 	expectPatches(t, resp.Patch, []jsonpatch.JsonPatchOperation{
-		incrementGenerationPatch(r.Spec.Generation),
 		{
 			Operation: "add",
 			Path:      "/spec/fieldThatsImmutableWithDefault",
@@ -162,6 +163,7 @@ func TestValidCreateResourceSucceedsWithDefaultPatch(t *testing.T) {
 			Path:      "/spec/fieldWithDefault",
 			Value:     "I'm a default.",
 		},
+		setUserAnnotation(user1, user1),
 	})
 }
 
@@ -184,13 +186,6 @@ func TestValidCreateResourceSucceedsWithRoundTripAndDefaultPatch(t *testing.T) {
 			Operation: "add",
 			Path:      "/spec",
 			Value:     map[string]interface{}{},
-		},
-		// This is almost identical to incrementGenerationPatch(0), but uses 'add', rather than
-		// 'replace' because `spec` is empty to begin with.
-		{
-			Operation: "add",
-			Path:      "/spec/generation",
-			Value:     float64(1),
 		},
 		{
 			Operation: "add",
@@ -227,7 +222,7 @@ func createInnerDefaultResourceWithoutSpec(t *testing.T) []byte {
 }
 
 func TestInvalidCreateResourceFails(t *testing.T) {
-	r := createResource(1234, "a name")
+	r := createResource("a name")
 
 	// Put a bad value in.
 	r.Spec.FieldWithValidation = "not what's expected"
@@ -238,83 +233,62 @@ func TestInvalidCreateResourceFails(t *testing.T) {
 }
 
 func TestNopUpdateResourceSucceeds(t *testing.T) {
-	r := createResource(1234, "a name")
+	r := createResource("a name")
 	r.SetDefaults() // Fill in defaults to check that there are no patches.
+	nr := r.DeepCopyObject().(*Resource)
+	r.AnnotateUserInfo(nil, &authenticationv1.UserInfo{Username: user1})
 	_, ac := newNonRunningTestAdmissionController(t, newDefaultOptions())
-	resp := ac.admit(TestContextWithLogger(t), createUpdateResource(r, r))
+	resp := ac.admit(TestContextWithLogger(t), createUpdateResource(r, nr))
 	expectAllowed(t, resp)
 	expectPatches(t, resp.Patch, []jsonpatch.JsonPatchOperation{})
 }
 
-func TestUpdateGeneration(t *testing.T) {
-	ctx := context.Background()
-	r := createResource(1988, "beautiful")
-	rc := createResource(1988, "beautiful")
-	rc.Spec.FieldWithDefault = "lily"
+func TestValidUpdateResourcePreserveAnnotations(t *testing.T) {
+	old := createResource("a name")
+	old.SetDefaults() // Fill in defaults to check that there are no patches.
+	old.AnnotateUserInfo(nil, &authenticationv1.UserInfo{Username: user1})
+	new := createResource("a name")
+	new.SetDefaults()
+	// User set annotations on the resource.
+	new.ObjectMeta.SetAnnotations(map[string]string{
+		"key": "to-my-heart",
+	})
 
-	tests := []struct {
-		name string
-		in   duck.JSONPatch
-		old  *Resource
-		new  *Resource
-		want duck.JSONPatch
-	}{{
-		"nil in, no change",
-		nil,
-		r, r,
-		nil,
-	}, {
-		"empty in, no change",
-		[]jsonpatch.JsonPatchOperation{},
-		r, r,
-		[]jsonpatch.JsonPatchOperation{},
-	}, {
-		"nil in, change",
-		[]jsonpatch.JsonPatchOperation{},
-		r, rc,
-		[]jsonpatch.JsonPatchOperation{
-			{Operation: "replace", Path: "/spec/generation", Value: 1989.0},
-		},
-	}, {
-		"non-nil in, change",
-		[]jsonpatch.JsonPatchOperation{
-			{Operation: "replace", Path: "/spec/fieldWithDefault", Value: "Zero"},
-		},
-		r, rc,
-		[]jsonpatch.JsonPatchOperation{
-			{Operation: "replace", Path: "/spec/fieldWithDefault", Value: "Zero"},
-			{Operation: "replace", Path: "/spec/generation", Value: 1989.0},
-		},
-	}}
-
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			t.Parallel()
-			got, err := updateGeneration(ctx, test.in, test.old, test.new)
-			if err != nil {
-				t.Fatalf("Error in updateGeneration: %v", err)
-			}
-			if got, want := got, test.want; !cmp.Equal(got, want) {
-				t.Errorf("JSONPatch diff (+got, -want): %s", cmp.Diff(got, want))
-			}
-		})
-	}
+	_, ac := newNonRunningTestAdmissionController(t, newDefaultOptions())
+	resp := ac.admit(TestContextWithLogger(t), createUpdateResource(old, new))
+	expectAllowed(t, resp)
+	// No spec change => no user info change.
+	expectPatches(t, resp.Patch, duck.JSONPatch{})
 }
 
-func TestValidUpdateResourceSucceeds(t *testing.T) {
-	old := createResource(1234, "a name")
+func TestValidBigChangeResourceSucceeds(t *testing.T) {
+	old := createResource("a name")
 	old.SetDefaults() // Fill in defaults to check that there are no patches.
-	new := createResource(1234, "a name")
-	// We clear the field that has a default.
+	old.AnnotateUserInfo(nil, &authenticationv1.UserInfo{Username: user1})
+	new := createResource("a name")
+	new.Spec.FieldWithDefault = "melon collie and the infinite sadness"
 
 	_, ac := newNonRunningTestAdmissionController(t, newDefaultOptions())
 	resp := ac.admit(TestContextWithLogger(t), createUpdateResource(old, new))
 	expectAllowed(t, resp)
 	expectPatches(t, resp.Patch, []jsonpatch.JsonPatchOperation{{
-		Operation: "replace",
-		Path:      "/spec/generation",
-		Value:     1235.0,
-	}, {
+		Operation: "add",
+		Path:      "/spec/fieldThatsImmutableWithDefault",
+		Value:     "this is another default value",
+	}, setUserAnnotation(user1, user2),
+	})
+}
+
+func TestValidUpdateResourceSucceeds(t *testing.T) {
+	old := createResource("a name")
+	old.SetDefaults() // Fill in defaults to check that there are no patches.
+	old.AnnotateUserInfo(nil, &authenticationv1.UserInfo{Username: user1})
+	new := createResource("a name")
+
+	_, ac := newNonRunningTestAdmissionController(t, newDefaultOptions())
+	resp := ac.admit(TestContextWithLogger(t), createUpdateResource(old, new))
+	expectAllowed(t, resp)
+	expectPatches(t, resp.Patch, []jsonpatch.JsonPatchOperation{{
 		Operation: "add",
 		Path:      "/spec/fieldThatsImmutableWithDefault",
 		Value:     "this is another default value",
@@ -326,8 +300,8 @@ func TestValidUpdateResourceSucceeds(t *testing.T) {
 }
 
 func TestInvalidUpdateResourceFailsValidation(t *testing.T) {
-	old := createResource(1234, "a name")
-	new := createResource(1234, "a name")
+	old := createResource("a name")
+	new := createResource("a name")
 
 	// Try to update to a bad value.
 	new.Spec.FieldWithValidation = "not what's expected"
@@ -338,8 +312,8 @@ func TestInvalidUpdateResourceFailsValidation(t *testing.T) {
 }
 
 func TestInvalidUpdateResourceFailsImmutability(t *testing.T) {
-	old := createResource(1234, "a name")
-	new := createResource(1234, "a name")
+	old := createResource("a name")
+	new := createResource("a name")
 
 	// Try to change the value
 	new.Spec.FieldThatsImmutable = "a different value"
@@ -351,8 +325,9 @@ func TestInvalidUpdateResourceFailsImmutability(t *testing.T) {
 }
 
 func TestDefaultingImmutableFields(t *testing.T) {
-	old := createResource(1234, "a name")
-	new := createResource(1234, "a name")
+	old := createResource("a name")
+	old.AnnotateUserInfo(nil, &authenticationv1.UserInfo{Username: user1})
+	new := createResource("a name")
 
 	// If we don't specify the new, but immutable field, we default it,
 	// and it is not rejected.
@@ -360,15 +335,20 @@ func TestDefaultingImmutableFields(t *testing.T) {
 	_, ac := newNonRunningTestAdmissionController(t, newDefaultOptions())
 	resp := ac.admit(TestContextWithLogger(t), createUpdateResource(old, new))
 	expectAllowed(t, resp)
-	expectPatches(t, resp.Patch, []jsonpatch.JsonPatchOperation{{
-		Operation: "add",
-		Path:      "/spec/fieldThatsImmutableWithDefault",
-		Value:     "this is another default value",
-	}, {
-		Operation: "add",
-		Path:      "/spec/fieldWithDefault",
-		Value:     "I'm a default.",
-	}})
+	expectPatches(t, resp.Patch,
+		[]jsonpatch.JsonPatchOperation{{
+			Operation: "add",
+			Path:      "/spec/fieldThatsImmutableWithDefault",
+			Value:     "this is another default value",
+		}, {
+			Operation: "add",
+			Path:      "/spec/fieldWithDefault",
+			Value:     "I'm a default.",
+		},
+			// From WebHook perspective an update is happening here,
+			// so the annotations must be set.
+			setUserAnnotation(user1, user2),
+		})
 }
 
 func TestValidWebhook(t *testing.T) {
@@ -568,14 +548,13 @@ func createDeployment(ac *AdmissionController) {
 	ac.Client.ExtensionsV1beta1().Deployments("knative-something").Create(deployment)
 }
 
-func createResource(generation int64, name string) *Resource {
+func createResource(name string) *Resource {
 	return &Resource{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: testNamespace,
 			Name:      name,
 		},
 		Spec: ResourceSpec{
-			Generation:          generation,
 			FieldWithValidation: "magic value",
 		},
 	}
@@ -589,7 +568,9 @@ func createBaseUpdateResource() *admissionv1beta1.AdmissionRequest {
 			Version: "v1alpha1",
 			Kind:    "Resource",
 		},
-	}
+		UserInfo: authenticationv1.UserInfo{
+			Username: user2,
+		}}
 }
 
 func createUpdateResource(old, new *Resource) *admissionv1beta1.AdmissionRequest {
@@ -614,6 +595,9 @@ func createCreateResource(r *Resource) *admissionv1beta1.AdmissionRequest {
 			Group:   "pkg.knative.dev",
 			Version: "v1alpha1",
 			Kind:    "Resource",
+		},
+		UserInfo: authenticationv1.UserInfo{
+			Username: user1,
 		},
 	}
 	marshaled, err := json.Marshal(r)
@@ -678,16 +662,36 @@ func expectPatches(t *testing.T, a []byte, e []jsonpatch.JsonPatchOperation) {
 		return lhs.Path < rhs.Path
 	})
 
+	// Even though diff is useful, seeing the whole objects
+	// one under another helps a lot.
+	t.Logf("Got Patches:  %#v", got)
+	t.Logf("Want Patches: %#v", e)
 	if diff := cmp.Diff(e, got, cmpopts.EquateEmpty()); diff != "" {
-		t.Errorf("expectPatches (-want, +got) = %v", diff)
+		t.Logf("diff Patches: %v", diff)
+		t.Errorf("expectPatches (-want, +got) = %s", diff)
 	}
 }
 
-func incrementGenerationPatch(old int64) jsonpatch.JsonPatchOperation {
+func updateAnnotationsWithUser(userC, userU string) []jsonpatch.JsonPatchOperation {
+	// Just keys is being updated, so format is iffy.
+	return []jsonpatch.JsonPatchOperation{{
+		Operation: "add",
+		Path:      "/metadata/annotations/testing.knative.dev~1creator",
+		Value:     "brutto@knative.dev",
+	}, {
+		Operation: "add",
+		Path:      "/metadata/annotations/testing.knative.dev~1updater",
+		Value:     "arrabbiato@knative.dev",
+	}}
+}
+func setUserAnnotation(userC, userU string) jsonpatch.JsonPatchOperation {
 	return jsonpatch.JsonPatchOperation{
-		Operation: "replace",
-		Path:      "/spec/generation",
-		Value:     float64(old) + 1.0,
+		Operation: "add",
+		Path:      "/metadata/annotations",
+		Value: map[string]interface{}{
+			CreatorAnnotation: userC,
+			UpdaterAnnotation: userU,
+		},
 	}
 }
 

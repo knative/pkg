@@ -33,15 +33,16 @@ import (
 
 	"github.com/knative/pkg/apis"
 	"github.com/knative/pkg/apis/duck"
-	duckv1alpha1 "github.com/knative/pkg/apis/duck/v1alpha1"
 	"github.com/knative/pkg/kmp"
 	"github.com/knative/pkg/logging"
 	"github.com/knative/pkg/logging/logkey"
+	perrors "github.com/pkg/errors"
 
 	"github.com/markbates/inflect"
 	"github.com/mattbaird/jsonpatch"
 	admissionv1beta1 "k8s.io/api/admission/v1beta1"
 	admissionregistrationv1beta1 "k8s.io/api/admissionregistration/v1beta1"
+	authenticationv1 "k8s.io/api/authentication/v1"
 	corev1 "k8s.io/api/core/v1"
 	v1beta1 "k8s.io/api/extensions/v1beta1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -224,6 +225,29 @@ func validate(old GenericCRD, new GenericCRD) error {
 	return nil
 }
 
+func setAnnotations(patches duck.JSONPatch, new, old GenericCRD, ui *authenticationv1.UserInfo) (duck.JSONPatch, error) {
+	// Nowhere to set the annotations.
+	if new == nil {
+		return patches, nil
+	}
+	na, ok := new.(apis.Annotatable)
+	if !ok {
+		return patches, nil
+	}
+	var oa apis.Annotatable
+	if old != nil {
+		oa = old.(apis.Annotatable)
+	}
+	b, a := new.DeepCopyObject().(apis.Annotatable), na
+
+	a.AnnotateUserInfo(oa, ui)
+	patch, err := duck.CreatePatch(b, a)
+	if err != nil {
+		return nil, err
+	}
+	return append(patches, patch...), nil
+}
+
 // setDefaults simply leverages apis.Defaultable to set defaults.
 func setDefaults(patches duck.JSONPatch, crd GenericCRD) (duck.JSONPatch, error) {
 	before, after := crd.DeepCopyObject(), crd
@@ -277,15 +301,6 @@ func (ac *AdmissionController) Run(stop <-chan struct{}) error {
 	logger.Info("Found certificates for webhook...")
 	if ac.Options.RegistrationDelay != 0 {
 		logger.Infof("Delaying admission webhook registration for %v", ac.Options.RegistrationDelay)
-	}
-
-	// Verify that each of the types we are given implements the Generation duck type.
-	for _, crd := range ac.Handlers {
-		cp := crd.DeepCopyObject()
-		var emptyGen duckv1alpha1.Generation
-		if err := duck.VerifyType(cp, &emptyGen); err != nil {
-			return err
-		}
 	}
 
 	select {
@@ -410,8 +425,6 @@ func (ac *AdmissionController) register(
 // ServeHTTP implements the external admission webhook for mutating
 // serving resources.
 func (ac *AdmissionController) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	defer r.Body.Close()
-
 	logger := ac.Logger
 	logger.Infof("Webhook ServeHTTP request=%#v", r)
 
@@ -469,7 +482,7 @@ func (ac *AdmissionController) admit(ctx context.Context, request *admissionv1be
 		return &admissionv1beta1.AdmissionResponse{Allowed: true}
 	}
 
-	patchBytes, err := ac.mutate(ctx, request.Kind, request.OldObject.Raw, request.Object.Raw)
+	patchBytes, err := ac.mutate(ctx, request)
 	if err != nil {
 		return makeErrorStatus("mutation failed: %v", err)
 	}
@@ -485,7 +498,10 @@ func (ac *AdmissionController) admit(ctx context.Context, request *admissionv1be
 	}
 }
 
-func (ac *AdmissionController) mutate(ctx context.Context, kind metav1.GroupVersionKind, oldBytes []byte, newBytes []byte) ([]byte, error) {
+func (ac *AdmissionController) mutate(ctx context.Context, req *admissionv1beta1.AdmissionRequest) ([]byte, error) {
+	kind := req.Kind
+	newBytes := req.Object.Raw
+	oldBytes := req.OldObject.Raw
 	// Why, oh why are these different types...
 	gvk := schema.GroupVersionKind{
 		Group:   kind.Group,
@@ -517,7 +533,7 @@ func (ac *AdmissionController) mutate(ctx context.Context, kind metav1.GroupVers
 			return nil, fmt.Errorf("cannot decode incoming old object: %v", err)
 		}
 	}
-	var patches []jsonpatch.JsonPatchOperation
+	var patches duck.JSONPatch
 
 	// Add these before defaulting fields, otherwise defaulting may cause an illegal patch because
 	// it expects the round tripped through Golang fields to be present already.
@@ -527,11 +543,6 @@ func (ac *AdmissionController) mutate(ctx context.Context, kind metav1.GroupVers
 	}
 	patches = append(patches, rtp...)
 
-	if patches, err = updateGeneration(ctx, patches, oldObj, newObj); err != nil {
-		logger.Errorw("failed to update generation", zap.Error(err))
-		return nil, fmt.Errorf("Failed to update generation: %s", err)
-	}
-
 	if patches, err = setDefaults(patches, newObj); err != nil {
 		logger.Errorw("Failed the resource specific defaulter", zap.Error(err))
 		// Return the error message as-is to give the defaulter callback
@@ -539,51 +550,22 @@ func (ac *AdmissionController) mutate(ctx context.Context, kind metav1.GroupVers
 		return nil, err
 	}
 
+	if patches, err = setAnnotations(patches, newObj, oldObj, &req.UserInfo); err != nil {
+		logger.Errorw("Failed the resource annotator", zap.Error(err))
+		return nil, perrors.Wrap(err, "error setting annotations")
+	}
+
 	// None of the validators will accept a nil value for newObj.
 	if newObj == nil {
 		return nil, errMissingNewObject
 	}
 	if err := validate(oldObj, newObj); err != nil {
-		logger.Errorw("failed the resource specific validation", zap.Error(err))
+		logger.Errorw("Failed the resource specific validation", zap.Error(err))
 		// Return the error message as-is to give the validation callback
 		// discretion over (our portion of) the message that the user sees.
 		return nil, err
 	}
-
 	return json.Marshal(patches)
-}
-
-// updateGeneration sets the generation by following this logic:
-// if there's no old object, it's create, set generation to 1
-// if there's an old object and spec has changed, set generation to oldGeneration + 1
-// appends the patch to patches if changes are necessary.
-// TODO: Generation does not work correctly with CRD. They are scrubbed
-// by the APIserver (https://github.com/kubernetes/kubernetes/issues/58778)
-// So, we add Generation here. Once that gets fixed, remove this and use
-// ObjectMeta.Generation instead.
-func updateGeneration(ctx context.Context, patches duck.JSONPatch, old GenericCRD, new GenericCRD) (duck.JSONPatch, error) {
-	logger := logging.FromContext(ctx)
-
-	if chg, err := hasChanged(ctx, old, new); err != nil {
-		return nil, err
-	} else if !chg {
-		logger.Info("No changes in the spec, not bumping generation")
-		return patches, nil
-	}
-
-	// Leverage Spec duck typing to bump the Generation of the resource.
-	before, err := asGenerational(new)
-	if err != nil {
-		return nil, err
-	}
-	after := before.DeepCopyObject().(*duckv1alpha1.Generational)
-	after.Spec.Generation = after.Spec.Generation + 1
-
-	genBump, err := duck.CreatePatch(before, after)
-	if err != nil {
-		return nil, err
-	}
-	return append(patches, genBump...), nil
 }
 
 // roundTripPatch generates the JSONPatch that corresponds to round tripping the given bytes through
@@ -602,68 +584,6 @@ func roundTripPatch(bytes []byte, unmarshalled interface{}) (duck.JSONPatch, err
 		return nil, fmt.Errorf("cannot marshal interface: %v", err)
 	}
 	return jsonpatch.CreatePatch(bytes, marshaledBytes)
-}
-
-// Not worth fully duck typing since there's no shared schema.
-type hasSpec struct {
-	Spec json.RawMessage `json:"spec"`
-}
-
-func getSpecJSON(crd GenericCRD) ([]byte, error) {
-	b, err := json.Marshal(crd)
-	if err != nil {
-		return nil, err
-	}
-	hs := hasSpec{}
-	if err := json.Unmarshal(b, &hs); err != nil {
-		return nil, err
-	}
-	return []byte(hs.Spec), nil
-}
-
-func hasChanged(ctx context.Context, old, new GenericCRD) (bool, error) {
-	if old == nil {
-		return true, nil
-	}
-	logger := logging.FromContext(ctx)
-
-	oldSpecJSON, err := getSpecJSON(old)
-	if err != nil {
-		logger.Errorw("failed to get Spec JSON for old", zap.Error(err))
-		return false, err
-	}
-	newSpecJSON, err := getSpecJSON(new)
-	if err != nil {
-		logger.Errorw("failed to get Spec JSON for new", zap.Error(err))
-		return false, err
-	}
-
-	specPatches, err := jsonpatch.CreatePatch(oldSpecJSON, newSpecJSON)
-	if err != nil {
-		return false, err
-	}
-	if len(specPatches) == 0 {
-		return false, nil
-	}
-	specPatchesJSON, err := json.Marshal(specPatches)
-	if err != nil {
-		logger.Errorw("failed to marshal spec patches", zap.Error(err))
-		return false, err
-	}
-	logger.Infof("Specs differ:\n%+v\n", string(specPatchesJSON))
-	return true, nil
-}
-
-func asGenerational(crd GenericCRD) (*duckv1alpha1.Generational, error) {
-	raw, err := json.Marshal(crd)
-	if err != nil {
-		return nil, err
-	}
-	kr := &duckv1alpha1.Generational{}
-	if err := json.Unmarshal(raw, kr); err != nil {
-		return nil, err
-	}
-	return kr, nil
 }
 
 func generateSecret(ctx context.Context, options *ControllerOptions) (*corev1.Secret, error) {

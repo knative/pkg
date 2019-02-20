@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Knative Authors
+Copyright 2019 The Knative Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,18 +14,19 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package testing
+package helpers
 
 import (
-	"testing"
-
-	"github.com/knative/pkg/apis/duck"
-	duckv1alpha1 "github.com/knative/pkg/apis/duck/v1alpha1"
+	"fmt"
+	"regexp"
 )
 
-func TestResourceImplementsGenerational(t *testing.T) {
-	var emptyGen duckv1alpha1.Generation
-	if err := duck.VerifyType(&Resource{}, &emptyGen); err != nil {
-		t.Error(err)
-	}
+var matcher = regexp.MustCompile("abcd-[a-z]{8}")
+
+func ExampleAppendRandomString() {
+	const s = "abcd"
+	t := AppendRandomString(s)
+	o := AppendRandomString(s)
+	fmt.Println(matcher.MatchString(t), matcher.MatchString(o), o != t)
+	// Output: true true true
 }
