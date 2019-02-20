@@ -199,10 +199,7 @@ go test ./test --kubeconfig /my/path/kubeconfig
 ### Specifying cluster
 
 The `--cluster` argument lets you use a different cluster than
-[your specified kubeconfig's](#specifying-kubeconfig) active context. This will
-default to the value of your
-[`K8S_CLUSTER_OVERRIDE` environment variable](https://github.com/knative/serving/blob/master/DEVELOPMENT.md#environment-setup)
-if not specified.
+[your specified kubeconfig's](#specifying-kubeconfig) active context.
 
 ```bash
 go test ./test --cluster your-cluster-name
