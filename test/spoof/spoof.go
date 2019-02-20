@@ -43,7 +43,7 @@ import (
 const (
 	requestInterval = 1 * time.Second
 	// RequestTimeout is the default timeout for the polling requests.
-	RequestTimeout = 15 * time.Minute
+	RequestTimeout = 5 * time.Minute
 	// TODO(tcnghia): These probably shouldn't be hard-coded here?
 	istioIngressNamespace = "istio-system"
 	istioIngressName      = "istio-ingressgateway"
