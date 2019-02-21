@@ -162,26 +162,28 @@ func UpdateExporterFromConfigMap(domain string, component string, logger *zap.Su
 			return
 		}
 
-		if isMetricsConfigChanged(newConfig) {
-			if err := newMetricsExporter(newConfig, logger); err != nil {
+		if isNewExporterRequired(newConfig) {
+			e, err := newMetricsExporter(newConfig, logger)
+			if err != nil {
 				logger.Errorf("Failed to update a new metrics exporter based on metric config %v. error: %v", newConfig, err)
 				return
 			}
+			existingConfig := getCurMetricsConfig()
+			setCurMetricsExporter(e)
+			logger.Infof("Successfully updated the metrics exporter; old config: %v; new config %v", existingConfig, newConfig)
 		}
+
+		setCurMetricsConfig(newConfig)
 	}
 }
 
-// isMetricsConfigChanged compares the non-nil newConfig against curMetricsConfig. When backend changes,
+// isNewExporterRequired compares the non-nil newConfig against curMetricsConfig. When backend changes,
 // or stackdriver project ID changes for stackdriver backend, we need to update the metrics exporter.
-func isMetricsConfigChanged(newConfig *metricsConfig) bool {
+func isNewExporterRequired(newConfig *metricsConfig) bool {
 	cc := getCurMetricsConfig()
 	if cc == nil || newConfig.backendDestination != cc.backendDestination {
 		return true
 	} else if newConfig.backendDestination == Stackdriver && newConfig.stackdriverProjectID != cc.stackdriverProjectID {
-		return true
-	}
-
-	if cc.reportingPeriod != newConfig.reportingPeriod {
 		return true
 	}
 

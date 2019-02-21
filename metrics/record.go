@@ -20,6 +20,7 @@ import (
 	"context"
 	"path"
 
+	"github.com/knative/pkg/logging"
 	"github.com/knative/pkg/metrics/metricskey"
 	"go.opencensus.io/stats"
 )
@@ -28,6 +29,11 @@ import (
 // metrics config. If yes, it records measurements using OpenCensus.
 func Record(ctx context.Context, ms stats.Measurement) {
 	mc := getCurMetricsConfig()
+	if mc == nil {
+		logger := logging.FromContext(ctx)
+		logger.Error("The current metrics config has not been successfully set yet.")
+		return
+	}
 	// Should record if one of the following conditions satisfies:
 	// 1) the backend is not Stackdriver
 	// 2) the backend is Stackdriver and it is allowed to use custom metrics

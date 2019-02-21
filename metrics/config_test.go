@@ -84,12 +84,12 @@ var (
 		expectedErr: "Invalid metrics.allow-stackdriver-custom-metrics value \"test\"",
 	}}
 	successTests = []struct {
-		name                 string
-		cm                   map[string]string
-		domain               string
-		component            string
-		expectedConfig       metricsConfig
-		expectedConfigChange bool // Whether the config should trigger an exporter change compared to previous test case
+		name                string
+		cm                  map[string]string
+		domain              string
+		component           string
+		expectedConfig      metricsConfig
+		expectedNewExporter bool // Whether the config requires a new exporter compared to previous test case
 	}{
 		// Note the first unit test is skipped in TestUpdateExporterFromConfigMap since
 		// unit test does not have application default credentials.
@@ -106,7 +106,7 @@ var (
 				isStackdriverBackend:        true,
 				stackdriverMetricTypePrefix: path.Join(servingDomain, testComponent),
 			},
-			expectedConfigChange: true,
+			expectedNewExporter: true,
 		}, {
 			name:      "backendKeyMissing",
 			cm:        map[string]string{"": ""},
@@ -119,7 +119,7 @@ var (
 				reportingPeriod:             5 * time.Second,
 				stackdriverMetricTypePrefix: path.Join(servingDomain, testComponent),
 			},
-			expectedConfigChange: true,
+			expectedNewExporter: true,
 		}, {
 			name: "validStackdriver",
 			cm: map[string]string{"metrics.backend-destination": "stackdriver",
@@ -135,7 +135,7 @@ var (
 				isStackdriverBackend:        true,
 				stackdriverMetricTypePrefix: path.Join(servingDomain, testComponent),
 			},
-			expectedConfigChange: true,
+			expectedNewExporter: true,
 		}, {
 			name:      "validPrometheus",
 			cm:        map[string]string{"metrics.backend-destination": "prometheus"},
@@ -148,7 +148,7 @@ var (
 				reportingPeriod:             5 * time.Second,
 				stackdriverMetricTypePrefix: path.Join(servingDomain, testComponent),
 			},
-			expectedConfigChange: true,
+			expectedNewExporter: true,
 		}, {
 			name: "validCapitalStackdriver",
 			cm: map[string]string{"metrics.backend-destination": "Stackdriver",
@@ -164,7 +164,7 @@ var (
 				isStackdriverBackend:        true,
 				stackdriverMetricTypePrefix: path.Join(servingDomain, testComponent),
 			},
-			expectedConfigChange: true,
+			expectedNewExporter: true,
 		}, {
 			name:      "overriddenReportingPeriodPrometheus",
 			cm:        map[string]string{"metrics.backend-destination": "prometheus", "metrics.reporting-period-seconds": "12"},
@@ -177,7 +177,7 @@ var (
 				reportingPeriod:             12 * time.Second,
 				stackdriverMetricTypePrefix: path.Join(servingDomain, testComponent),
 			},
-			expectedConfigChange: true,
+			expectedNewExporter: true,
 		}, {
 			name: "overriddenReportingPeriodStackdriver",
 			cm: map[string]string{"metrics.backend-destination": "stackdriver",
@@ -193,7 +193,7 @@ var (
 				isStackdriverBackend:        true,
 				stackdriverMetricTypePrefix: path.Join(servingDomain, testComponent),
 			},
-			expectedConfigChange: true,
+			expectedNewExporter: true,
 		}, {
 			name: "overriddenReportingPeriodStackdriver2",
 			cm: map[string]string{"metrics.backend-destination": "stackdriver",
@@ -209,7 +209,6 @@ var (
 				isStackdriverBackend:        true,
 				stackdriverMetricTypePrefix: path.Join(servingDomain, testComponent),
 			},
-			expectedConfigChange: true,
 		}, {
 			name:      "emptyReportingPeriodPrometheus",
 			cm:        map[string]string{"metrics.backend-destination": "prometheus", "metrics.reporting-period-seconds": ""},
@@ -222,7 +221,7 @@ var (
 				reportingPeriod:             5 * time.Second,
 				stackdriverMetricTypePrefix: path.Join(servingDomain, testComponent),
 			},
-			expectedConfigChange: true,
+			expectedNewExporter: true,
 		}, {
 			name: "emptyReportingPeriodStackdriver",
 			cm: map[string]string{"metrics.backend-destination": "stackdriver",
@@ -238,7 +237,7 @@ var (
 				isStackdriverBackend:        true,
 				stackdriverMetricTypePrefix: path.Join(servingDomain, testComponent),
 			},
-			expectedConfigChange: true,
+			expectedNewExporter: true,
 		}, {
 			name: "allowStackdriverCustomMetric",
 			cm: map[string]string{
@@ -334,23 +333,23 @@ func TestGetMetricsConfig_fromEnv(t *testing.T) {
 	os.Unsetenv(defaultBackendEnvName)
 }
 
-func TestIsMetricsConfigChanged(t *testing.T) {
-	setCurMetricsExporterAndConfig(nil, nil)
+func TestIsNewExporterRequired(t *testing.T) {
+	setCurMetricsConfig(nil)
 	for _, test := range successTests {
 		t.Run(test.name, func(t *testing.T) {
 			mc, err := getMetricsConfig(test.cm, test.domain, test.component, TestLogger(t))
 			if err != nil {
 				t.Errorf("Wanted valid config %v, got error %v", test.expectedConfig, err)
 			}
-			changed := isMetricsConfigChanged(mc)
-			if changed != test.expectedConfigChange {
-				t.Errorf("isMetricsConfigChanged=%v wanted %v", changed, test.expectedConfigChange)
+			changed := isNewExporterRequired(mc)
+			if changed != test.expectedNewExporter {
+				t.Errorf("isMetricsConfigChanged=%v wanted %v", changed, test.expectedNewExporter)
 			}
-			setCurMetricsExporterAndConfig(nil, mc)
+			setCurMetricsConfig(mc)
 		})
 	}
 
-	setCurMetricsExporterAndConfig(nil, &metricsConfig{
+	setCurMetricsConfig(&metricsConfig{
 		domain:             servingDomain,
 		component:          testComponent,
 		backendDestination: Prometheus})
@@ -360,14 +359,14 @@ func TestIsMetricsConfigChanged(t *testing.T) {
 		backendDestination:   Prometheus,
 		stackdriverProjectID: testProj,
 	}
-	changed := isMetricsConfigChanged(newConfig)
+	changed := isNewExporterRequired(newConfig)
 	if changed {
-		t.Error("isMetricsConfigChanged should be false if stackdriver project ID changes for prometheus backend")
+		t.Error("isNewExporterRequired should be false if stackdriver project ID changes for prometheus backend")
 	}
 }
 
 func TestUpdateExporterFromConfigMap(t *testing.T) {
-	setCurMetricsExporterAndConfig(nil, nil)
+	setCurMetricsConfig(nil)
 	cm := &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "config-observability",
@@ -405,7 +404,7 @@ func TestUpdateExporterFromConfigMap(t *testing.T) {
 }
 
 func TestUpdateExporterFromConfigMap_doesNotCreateExporter(t *testing.T) {
-	setCurMetricsExporterAndConfig(nil, nil)
+	setCurMetricsConfig(nil)
 	cm := &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "config-observability",
