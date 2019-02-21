@@ -26,7 +26,7 @@ import (
 )
 
 // Record decides whether to record one measurement based on current
-// metrics config. If yes, it records measurements using OpenCensus.
+// metrics config. If yes, it records measurements via OpenCensus.
 func Record(ctx context.Context, ms stats.Measurement) {
 	mc := getCurMetricsConfig()
 	if mc == nil {

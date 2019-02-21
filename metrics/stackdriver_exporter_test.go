@@ -139,7 +139,9 @@ func TestGetgetMetricTypeFunc_UseKnativeDomain(t *testing.T) {
 			Aggregation: view.LastValue(),
 			TagKeys:     []tag.Key{},
 		}
-		mtf := getMetricTypeFunc(path.Join(testCase.domain, testCase.component), testCase.component)
+		mtf := getMetricTypeFunc(
+			path.Join(testCase.domain, testCase.component),
+			path.Join(customMetricTypePrefix, testCase.component))
 
 		gotMetricType := mtf(testView)
 		wantedMetricType := path.Join(testCase.domain, testCase.component, testView.Measure.Name())
@@ -157,10 +159,12 @@ func TestGetgetMetricTypeFunc_UseCustomDomain(t *testing.T) {
 			Aggregation: view.LastValue(),
 			TagKeys:     []tag.Key{},
 		}
-		mtf := getMetricTypeFunc(path.Join(testCase.domain, testCase.component), testCase.component)
+		mtf := getMetricTypeFunc(
+			path.Join(testCase.domain, testCase.component),
+			path.Join(customMetricTypePrefix, testCase.component))
 
 		gotMetricType := mtf(testView)
-		wantedMetricType := path.Join(customMetricTypeDomain, testCase.component, testView.Measure.Name())
+		wantedMetricType := path.Join(customMetricTypePrefix, testCase.component, testView.Measure.Name())
 		if gotMetricType != wantedMetricType {
 			t.Fatalf("getMetricType=%v, want %v", gotMetricType, wantedMetricType)
 		}

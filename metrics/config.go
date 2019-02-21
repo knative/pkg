@@ -1,5 +1,5 @@
 /*
-Copyright 2019 The Knative Authors
+Copyright 2018 The Knative Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -60,8 +60,8 @@ type metricsConfig struct {
 	reportingPeriod time.Duration
 
 	// ---- Stackdriver specific below ----
-	// The stackdriver project ID where the stats data are uploaded to. This is
-	// not the GCP project ID.
+	// stackdriverProjectID is the stackdriver project ID where the stats data are
+	// uploaded to. This is not the GCP project ID.
 	stackdriverProjectID string
 	// allowStackdriverCustomMetrics is true if it is allowed to send metrics to
 	// Stackdriver using "global" resource type and custom metric type if the
@@ -69,17 +69,32 @@ type metricsConfig struct {
 	// results in extra Stackdriver charge.
 	// If backendDestination is not Stackdriver, this is nil.
 	allowStackdriverCustomMetrics bool
-	// True if backendDestination equals to "stackdriver". Store this in a var
-	// to reduce string comparision.
+	// True if backendDestination equals to "stackdriver". Store this in a variable
+	// to reduce string comparision operations.
 	isStackdriverBackend bool
 	// stackdriverMetricTypePrefix is the metric domain joins component, e.g.
-	// "knative.dev/serving/activator". Store this in a var to reduce string join
-	// operation.
+	// "knative.dev/serving/activator". Store this in a variable to reduce string
+	// join operations.
 	stackdriverMetricTypePrefix string
+	// stackdriverMetricTypePrefix is "custom.googleapis.com/knative.dev" joins
+	// component, e.g. "custom.googleapis.com/knative.dev/serving/activator".
+	// Store this in a variable to reduce string join operations.
+	stackdriverCustomMetricTypePrefix string
 }
 
 func getMetricsConfig(m map[string]string, domain string, component string, logger *zap.SugaredLogger) (*metricsConfig, error) {
 	var mc metricsConfig
+
+	if domain == "" {
+		return nil, errors.New("Metrics domain cannot be empty")
+	}
+	mc.domain = domain
+
+	if component == "" {
+		return nil, errors.New("Metrics component name cannot be empty")
+	}
+	mc.component = component
+
 	// Read backend setting from environment variable first
 	backend := os.Getenv(defaultBackendEnvName)
 	if backend == "" {
@@ -104,6 +119,8 @@ func getMetricsConfig(m map[string]string, domain string, component string, logg
 	if mc.backendDestination == Stackdriver {
 		mc.stackdriverProjectID = m[stackdriverProjectIDKey]
 		mc.isStackdriverBackend = true
+		mc.stackdriverMetricTypePrefix = path.Join(domain, component)
+		mc.stackdriverCustomMetricTypePrefix = path.Join(customMetricTypePrefix, component)
 		if ascmStr, ok := m[allowStackdriverCustomMetricsKey]; ok && ascmStr != "" {
 			ascmBool, err := strconv.ParseBool(ascmStr)
 			if err != nil {
@@ -131,18 +148,6 @@ func getMetricsConfig(m map[string]string, domain string, component string, logg
 	} else if mc.backendDestination == Prometheus {
 		mc.reportingPeriod = 5 * time.Second
 	}
-
-	if domain == "" {
-		return nil, errors.New("Metrics domain cannot be empty")
-	}
-	mc.domain = domain
-
-	if component == "" {
-		return nil, errors.New("Metrics component name cannot be empty")
-	}
-	mc.component = component
-
-	mc.stackdriverMetricTypePrefix = path.Join(domain, component)
 
 	return &mc, nil
 }
