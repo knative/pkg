@@ -63,11 +63,11 @@ type metricsConfig struct {
 	// stackdriverProjectID is the stackdriver project ID where the stats data are
 	// uploaded to. This is not the GCP project ID.
 	stackdriverProjectID string
-	// allowStackdriverCustomMetrics is true if it is allowed to send metrics to
+	// allowStackdriverCustomMetrics indicates whether it is allowed to send metrics to
 	// Stackdriver using "global" resource type and custom metric type if the
-	// metrics are not supported by "knative_revision" resource type. This could
-	// results in extra Stackdriver charge.
-	// If backendDestination is not Stackdriver, this is nil.
+	// metrics are not supported by "knative_revision" resource type. Setting this
+	// flag to "true" could cause extra Stackdriver charge.
+	// If backendDestination is not Stackdriver, this is ignored.
 	allowStackdriverCustomMetrics bool
 	// True if backendDestination equals to "stackdriver". Store this in a variable
 	// to reduce string comparision operations.
