@@ -30,8 +30,7 @@ import (
 func Record(ctx context.Context, ms stats.Measurement) {
 	mc := getCurMetricsConfig()
 	if mc == nil {
-		logger := logging.FromContext(ctx)
-		logger.Error("The current metrics config has not been successfully set yet.")
+		logging.FromContext(ctx).Warn("The current metrics config has not been successfully set yet, not record the metric %v.", ms)
 		return
 	}
 	// Should record if one of the following conditions satisfies:
