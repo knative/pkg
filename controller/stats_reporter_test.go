@@ -93,8 +93,7 @@ func initMetricsConfig(t *testing.T) {
 		},
 		Data: map[string]string{},
 	}
-	u := metrics.UpdateExporterFromConfigMap("testDomain", "testComponent", TestLogger(t))
-	u(cm)
+	metrics.UpdateExporterFromConfigMap("testDomain", "testComponent", TestLogger(t))(cm)
 }
 
 func expectSuccess(t *testing.T, f func() error) {
@@ -110,8 +109,8 @@ func checkLastValueData(t *testing.T, name string, wantTags map[string]string, w
 		checkTags(t, wantTags, row)
 		if s, ok := row.Data.(*view.LastValueData); !ok {
 			t.Error("Reporter.Report() expected a LastValueData type")
-		} else if s.Value != (float64)(wantValue) {
-			t.Errorf("Reporter.Report() expected %v got %v. metric: %v", s.Value, (float64)(wantValue), name)
+		} else if s.Value != wantValue {
+			t.Errorf("Reporter.Report() expected %v got %v. metric: %v", s.Value, wantValue, name)
 		}
 	}
 }
@@ -154,7 +153,7 @@ func checkRow(t *testing.T, name string) *view.Row {
 		return nil
 	}
 	if len(d) != 1 {
-		t.Errorf("Reporter.Report() len(d) %v, want %v", len(d), 1)
+		t.Errorf("Reporter.Report() len(d)=%v, want 1", len(d))
 	}
 	return d[0]
 }

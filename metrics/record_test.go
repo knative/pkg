@@ -100,8 +100,8 @@ func checkLastValueData(t *testing.T, name string, wantValue float64) {
 	if row := checkRow(t, name); row != nil {
 		if s, ok := row.Data.(*view.LastValueData); !ok {
 			t.Error("Reporter.Report() expected a LastValueData type")
-		} else if s.Value != (float64)(wantValue) {
-			t.Errorf("Reporter.Report() expected %v got %v. metric: %v", s.Value, (float64)(wantValue), name)
+		} else if s.Value != wantValue {
+			t.Errorf("Reporter.Report() expected %v got %v. metric: %v", s.Value, wantValue, name)
 		}
 	}
 }
@@ -114,7 +114,7 @@ func checkRow(t *testing.T, name string) *view.Row {
 		return nil
 	}
 	if len(d) != 1 {
-		t.Fatalf("Reporter.Report() len(d) %v, want %v", len(d), 1)
+		t.Fatalf("Reporter.Report() len(d)=%v, want 1", len(d))
 	}
 	return d[0]
 }

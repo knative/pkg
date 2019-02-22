@@ -70,7 +70,7 @@ type metricsConfig struct {
 	// If backendDestination is not Stackdriver, this is ignored.
 	allowStackdriverCustomMetrics bool
 	// True if backendDestination equals to "stackdriver". Store this in a variable
-	// to reduce string comparision operations.
+	// to reduce string comparison operations.
 	isStackdriverBackend bool
 	// stackdriverMetricTypePrefix is the metric domain joins component, e.g.
 	// "knative.dev/serving/activator". Store this in a variable to reduce string
@@ -86,12 +86,12 @@ func getMetricsConfig(m map[string]string, domain string, component string, logg
 	var mc metricsConfig
 
 	if domain == "" {
-		return nil, errors.New("Metrics domain cannot be empty")
+		return nil, errors.New("metrics domain cannot be empty")
 	}
 	mc.domain = domain
 
 	if component == "" {
-		return nil, errors.New("Metrics component name cannot be empty")
+		return nil, errors.New("metrics component name cannot be empty")
 	}
 	mc.component = component
 
@@ -110,7 +110,7 @@ func getMetricsConfig(m map[string]string, domain string, component string, logg
 	case Stackdriver, Prometheus:
 		mc.backendDestination = lb
 	default:
-		return nil, fmt.Errorf("Unsupported metrics backend value \"%s\"", backend)
+		return nil, fmt.Errorf("unsupported metrics backend value %q", backend)
 	}
 
 	// If stackdriverProjectIDKey is not provided for stackdriver backend destination, OpenCensus will try to
@@ -124,7 +124,7 @@ func getMetricsConfig(m map[string]string, domain string, component string, logg
 		if ascmStr, ok := m[allowStackdriverCustomMetricsKey]; ok && ascmStr != "" {
 			ascmBool, err := strconv.ParseBool(ascmStr)
 			if err != nil {
-				return nil, fmt.Errorf("Invalid %s value \"%s\"", allowStackdriverCustomMetricsKey, ascmStr)
+				return nil, fmt.Errorf("invalid %s value %q", allowStackdriverCustomMetricsKey, ascmStr)
 			}
 			mc.allowStackdriverCustomMetrics = ascmBool
 		}
@@ -140,7 +140,7 @@ func getMetricsConfig(m map[string]string, domain string, component string, logg
 	if repStr, ok := m[reportingPeriodKey]; ok && repStr != "" {
 		repInt, err := strconv.Atoi(repStr)
 		if err != nil {
-			return nil, fmt.Errorf("Invalid %s value \"%s\"", reportingPeriodKey, repStr)
+			return nil, fmt.Errorf("invalid %s value %q", reportingPeriodKey, repStr)
 		}
 		mc.reportingPeriod = time.Duration(repInt) * time.Second
 	} else if mc.backendDestination == Stackdriver {

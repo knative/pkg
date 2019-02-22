@@ -47,7 +47,7 @@ var (
 		},
 		domain:      servingDomain,
 		component:   testComponent,
-		expectedErr: "Unsupported metrics backend value \"unsupported\"",
+		expectedErr: "unsupported metrics backend value \"unsupported\"",
 	}, {
 		name: "emptyDomain",
 		cm: map[string]string{
@@ -55,7 +55,7 @@ var (
 		},
 		domain:      "",
 		component:   testComponent,
-		expectedErr: "Metrics domain cannot be empty",
+		expectedErr: "metrics domain cannot be empty",
 	}, {
 		name: "invalidComponent",
 		cm: map[string]string{
@@ -63,7 +63,7 @@ var (
 		},
 		domain:      servingDomain,
 		component:   "",
-		expectedErr: "Metrics component name cannot be empty",
+		expectedErr: "metrics component name cannot be empty",
 	}, {
 		name: "invalidReportingPeriod",
 		cm: map[string]string{
@@ -72,7 +72,7 @@ var (
 		},
 		domain:      servingDomain,
 		component:   testComponent,
-		expectedErr: "Invalid metrics.reporting-period-seconds value \"test\"",
+		expectedErr: "invalid metrics.reporting-period-seconds value \"test\"",
 	}, {
 		name: "invalidAllowStackdriverCustomMetrics",
 		cm: map[string]string{
@@ -81,7 +81,7 @@ var (
 		},
 		domain:      servingDomain,
 		component:   testComponent,
-		expectedErr: "Invalid metrics.allow-stackdriver-custom-metrics value \"test\"",
+		expectedErr: "invalid metrics.allow-stackdriver-custom-metrics value \"test\"",
 	}}
 	successTests = []struct {
 		name                string
