@@ -25,6 +25,7 @@ import (
 	"os/exec"
 	"sync"
 
+	"github.com/knative/pkg/test/logging"
 	"go.opencensus.io/trace"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -63,7 +64,7 @@ var (
 // 1. Setting up port-forwarding from localhost to zipkin pod on the cluster
 //    (pid of the process doing Port-Forward is stored in a global variable).
 // 2. Enable AlwaysSample config for tracing.
-func SetupZipkinTracing(kubeClientset *kubernetes.Clientset, logf func(template string, args ...interface{})) {
+func SetupZipkinTracing(kubeClientset *kubernetes.Clientset, logf logging.FormatLogger) {
 	setupOnce.Do(func() {
 		if err := CheckZipkinPortAvailability(); err != nil {
 			logf("Zipkin port not available on the machine: %v", err)
@@ -97,7 +98,7 @@ func SetupZipkinTracing(kubeClientset *kubernetes.Clientset, logf func(template 
 }
 
 // CleanupZipkinTracingSetup cleans up the Zipkin tracing setup on the machine. This involves killing the process performing port-forward.
-func CleanupZipkinTracingSetup(logf func(template string, args ...interface{})) {
+func CleanupZipkinTracingSetup(logf logging.FormatLogger) {
 	teardownOnce.Do(func() {
 		if !ZipkinTracingEnabled {
 			return
