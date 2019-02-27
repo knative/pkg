@@ -46,7 +46,7 @@ const (
 	emitableSpanNamePrefix = "emitspan-"
 )
 
-// FormatLogger is a printf style function for logging in the Spoof client.
+// FormatLogger is a printf style function for logging in tests.
 type FormatLogger func(template string, args ...interface{})
 
 var logger *zap.SugaredLogger
