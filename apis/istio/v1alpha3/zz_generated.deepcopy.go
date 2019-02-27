@@ -507,6 +507,11 @@ func (in *HTTPRoute) DeepCopyInto(out *HTTPRoute) {
 			(*out)[key] = val
 		}
 	}
+	if in.CorsPolicy != nil {
+		in, out := &in.CorsPolicy, &out.CorsPolicy
+		*out = new(CorsPolicy)
+		(*in).DeepCopyInto(*out)
+	}
 	return
 }
 

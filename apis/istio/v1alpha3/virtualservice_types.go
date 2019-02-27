@@ -198,6 +198,9 @@ type HTTPRoute struct {
 
 	// Http headers to remove before returning the response to the caller
 	RemoveResponseHeaders map[string]string `json:"removeResponseHeaders,omitempty"`
+
+	// Cross-Origin Resource Sharing policy
+	CorsPolicy *CorsPolicy `json:"corsPolicy,omitempty"`
 }
 
 // HttpMatchRequest specifies a set of criterion to be met in order for the
