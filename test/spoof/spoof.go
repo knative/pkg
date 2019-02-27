@@ -28,6 +28,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/knative/pkg/test/logging"
 	"github.com/knative/pkg/test/zipkin"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -77,9 +78,6 @@ var _ Interface = (*SpoofingClient)(nil)
 // https://github.com/kubernetes/apimachinery/blob/cf7ae2f57dabc02a3d215f15ca61ae1446f3be8f/pkg/util/wait/wait.go#L172
 type ResponseChecker func(resp *Response) (done bool, err error)
 
-// FormatLogger is a printf style function for logging in the Spoof client.
-type FormatLogger func(template string, args ...interface{})
-
 // SpoofingClient is a minimal HTTP client wrapper that spoofs the domain of requests
 // for non-resolvable domains.
 type SpoofingClient struct {
@@ -90,7 +88,7 @@ type SpoofingClient struct {
 	endpoint string
 	domain   string
 
-	logf FormatLogger
+	logf logging.FormatLogger
 }
 
 // New returns a SpoofingClient that rewrites requests if the target domain is not `resolveable`.
@@ -98,7 +96,7 @@ type SpoofingClient struct {
 // follow the ingress if it moves (or if there are multiple ingresses).
 //
 // If that's a problem, see test/request.go#WaitForEndpointState for oneshot spoofing.
-func New(kubeClientset *kubernetes.Clientset, logf FormatLogger, domain string, resolvable bool, endpointOverride string) (*SpoofingClient, error) {
+func New(kubeClientset *kubernetes.Clientset, logf logging.FormatLogger, domain string, resolvable bool, endpointOverride string) (*SpoofingClient, error) {
 	sc := SpoofingClient{
 		Client:          &http.Client{Transport: &ochttp.Transport{Propagation: &b3.HTTPFormat{}}}, // Using ochttp Transport required for zipkin-tracing
 		RequestInterval: requestInterval,

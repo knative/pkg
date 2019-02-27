@@ -46,22 +46,17 @@ _See [e2e_flags.go](./e2e_flags.go)._
 [When tests are run with `--logverbose` option](README.md#output-verbose-logs),
 debug logs will be emitted to stdout.
 
-We are using the common [e2e logging library](logging/logging.go) that uses the
-[Knative logging library](../logging/) for structured logging. It is built on
-top of [zap](https://github.com/uber-go/zap). Tests should initialize the global
-logger to use a test specifc context with `logging.GetContextLogger`:
+We are using a generic [FormatLogger](https://github.com/knative/pkg/blob/master/test/logging/logging.go#L49)
+that can be passed in any existing logger that satisfies it. Test can use the
+generic [logging methods](https://golang.org/pkg/testing/#T) to log info and
+error logs. All the common methods accept generic FormatLogger as a parameter
+and tests can pass in `t.Logf` like this:
 
 ```go
-// The convention is for the name of the logger to match the name of the test.
-logging.GetContextLogger("TestHelloWorld")
-```
-
-Logs can then be emitted using the `logger` object which is required by many
-functions in the test library. To emit logs:
-
-```go
-logger.Infof("Creating a new Route %s and Configuration %s", route, configuration)
-logger.Debugf("The LogURL is %s, not yet verifying", logURL)
+_, err = pkgTest.WaitForEndpointState(
+    clients.KubeClient,
+    t.Logf,
+    ...),
 ```
 
 _See [logging.go](./logging/logging.go)._
@@ -141,13 +136,14 @@ For example, you can poll a `Configuration` object to find the name of the
 
 ```go
 var revisionName string
-err := test.WaitForConfigurationState(clients.ServingClient, configName, func(c *v1alpha1.Configuration) (bool, error) {
-    if c.Status.LatestCreatedRevisionName != "" {
-        revisionName = c.Status.LatestCreatedRevisionName
-        return true, nil
-    }
-    return false, nil
-}, "ConfigurationUpdatedWithRevision")
+err := test.WaitForConfigurationState(
+    clients.ServingClient, configName, func(c *v1alpha1.Configuration) (bool, error) {
+        if c.Status.LatestCreatedRevisionName != "" {
+            revisionName = c.Status.LatestCreatedRevisionName
+            return true, nil
+        }
+        return false, nil
+    }, "ConfigurationUpdatedWithRevision")
 ```
 
 _[Metrics will be emitted](#emit-metrics) for these `Wait` method tracking how
