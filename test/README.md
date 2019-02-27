@@ -46,10 +46,11 @@ _See [e2e_flags.go](./e2e_flags.go)._
 [When tests are run with `--logverbose` option](README.md#output-verbose-logs),
 debug logs will be emitted to stdout.
 
-We are using a generic [FormatLogger]](https://github.com/knative/pkg/blob/master/test/logging/logging.go#L49)
-that can be passed in any existing logger that satisfies it. Test can use the generic
-[logging methods](https://golang.org/pkg/testing/#T) to log info and error logs. All the common methods
-accept generic FormatLogger as a parameter and tests can pass in `t.Logf` like this:
+We are using a generic [FormatLogger](https://github.com/knative/pkg/blob/master/test/logging/logging.go#L49)
+that can be passed in any existing logger that satisfies it. Test can use the
+generic [logging methods](https://golang.org/pkg/testing/#T) to log info and
+error logs. All the common methods accept generic FormatLogger as a parameter
+and tests can pass in `t.Logf` like this:
 
 ```go
 _, err = pkgTest.WaitForEndpointState(
@@ -135,13 +136,14 @@ For example, you can poll a `Configuration` object to find the name of the
 
 ```go
 var revisionName string
-err := test.WaitForConfigurationState(clients.ServingClient, configName, func(c *v1alpha1.Configuration) (bool, error) {
-    if c.Status.LatestCreatedRevisionName != "" {
-        revisionName = c.Status.LatestCreatedRevisionName
-        return true, nil
-    }
-    return false, nil
-}, "ConfigurationUpdatedWithRevision")
+err := test.WaitForConfigurationState(
+    clients.ServingClient, configName, func(c *v1alpha1.Configuration) (bool, error) {
+        if c.Status.LatestCreatedRevisionName != "" {
+            revisionName = c.Status.LatestCreatedRevisionName
+            return true, nil
+        }
+        return false, nil
+    }, "ConfigurationUpdatedWithRevision")
 ```
 
 _[Metrics will be emitted](#emit-metrics) for these `Wait` method tracking how
