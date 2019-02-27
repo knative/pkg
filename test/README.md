@@ -46,9 +46,9 @@ _See [e2e_flags.go](./e2e_flags.go)._
 [When tests are run with `--logverbose` option](README.md#output-verbose-logs),
 debug logs will be emitted to stdout.
 
-We are using a generic [FormatLogger]](https://github.com/knative/pkg/blob/master/test/logging/logging.go#L49) 
-that can be passed in any existing logger that satisfies it. Test can use the generic 
-[logging methods](https://golang.org/pkg/testing/#T) to log info and error logs. All the common methods 
+We are using a generic [FormatLogger]](https://github.com/knative/pkg/blob/master/test/logging/logging.go#L49)
+that can be passed in any existing logger that satisfies it. Test can use the generic
+[logging methods](https://golang.org/pkg/testing/#T) to log info and error logs. All the common methods
 accept generic FormatLogger as a parameter and tests can pass in `t.Logf` like this:
 
 ```go
