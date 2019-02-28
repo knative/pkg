@@ -258,7 +258,7 @@ func (c *Impl) processNextWorkItem() bool {
 		if err != nil {
 			status = falseString
 		}
-		c.statsReporter.ReportReconcile(time.Now().Sub(startTime), key, status)
+		c.statsReporter.ReportReconcile(time.Since(startTime), key, status)
 	}()
 
 	// Embed the key into the logger and attach that to the context we pass
@@ -270,14 +270,14 @@ func (c *Impl) processNextWorkItem() bool {
 	// resource to be synced.
 	if err = c.Reconciler.Reconcile(ctx, key); err != nil {
 		c.handleErr(err, key)
-		logger.Errorf("Reconcile failed. Time taken: %v.", time.Now().Sub(startTime))
+		logger.Infof("Reconcile failed. Time taken: %v.", time.Since(startTime))
 		return true
 	}
 
 	// Finally, if no error occurs we Forget this item so it does not
 	// have any delay when another change happens.
 	c.WorkQueue.Forget(key)
-	logger.Infof("Reconcile succeeded. Time taken: %v.", time.Now().Sub(startTime))
+	logger.Infof("Reconcile succeeded. Time taken: %v.", time.Since(startTime))
 
 	return true
 }
