@@ -103,3 +103,9 @@ func CleanupZipkinTracingSetup(logf logging.FormatLogger) {
 		ZipkinTracingEnabled = false
 	})
 }
+
+// CheckZipkinPortAvailability checks to see if Zipkin Port is available on the machine.
+// returns error if the port is not available.
+func CheckZipkinPortAvailability() error {
+	return monitoring.CheckPortAvailability(ZipkinPort)
+}

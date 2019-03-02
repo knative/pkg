@@ -19,6 +19,8 @@ Package monitoring provides common methods for all the monitoring components use
 
 This package exposes following methods:
 
+	CheckPortAvailability(port int) error
+		Checks if the given port is available
 	GetPods(kubeClientset *kubernetes.Clientset, app string) (*v1.PodList, error)
 		Gets the list of pods that satisfy the lable selector app=<app>
 	Cleanup(pid int) error
