@@ -19,9 +19,12 @@ Package monitoring provides common methods for all the monitoring components use
 
 This package exposes following methods:
 
-	SetupZipkinTracing(*kubernetes.Clientset) error
-		SetupZipkinTracing sets up zipkin tracing by setting up port-forwarding from
-		localhost to zipkin pod on the cluster. On successful setup this method sets
-		an internal flag zipkinTracingEnabled to true.
+	GetPods(kubeClientset *kubernetes.Clientset, app string) (*v1.PodList, error)
+		Gets the list of pods that satisfy the lable selector app=<app>
+	Cleanup(pid int) error
+		Kill the current port forwarding process running in the background
+	PortForward(logf logging.FormatLogger, podList *v1.PodList, localPort, remotePort int) (int, error)
+		Create a background process that will port forward the first pod from the local to remote port
+		It returns the process id for the background process created.
 */
 package monitoring
