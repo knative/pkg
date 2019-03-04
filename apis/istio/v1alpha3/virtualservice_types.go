@@ -473,9 +473,6 @@ type TCPRoute struct {
 	Match []L4MatchAttributes `json:"match"`
 
 	// The destination to which the connection should be forwarded to.
-	// Currently, only one destination is allowed for TCP services. When TCP
-	// weighted routing support is introduced in Envoy, multiple destinations
-	// with weights can be specified.
 	Route []DestinationWeight `json:"route"`
 }
 
