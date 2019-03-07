@@ -82,7 +82,7 @@ func TestGetMonitoredResourceFunc_UseKnativeRevision(t *testing.T) {
 			Aggregation: view.LastValue(),
 			TagKeys:     []tag.Key{},
 		}
-		mrf := getMonitoredResourceFunc(testCase.domain, testCase.component, &testGcpMetadata)
+		mrf := getMonitoredResourceFunc(path.Join(testCase.domain, testCase.component), &testGcpMetadata)
 
 		newTags, monitoredResource := mrf(testView, testTags)
 		gotResType, labels := monitoredResource.MonitoredResource()
@@ -113,7 +113,7 @@ func TestGetMonitoredResourceFunc_UseGlobal(t *testing.T) {
 			Aggregation: view.LastValue(),
 			TagKeys:     []tag.Key{},
 		}
-		mrf := getMonitoredResourceFunc(testCase.domain, testCase.component, &testGcpMetadata)
+		mrf := getMonitoredResourceFunc(path.Join(testCase.domain, testCase.component), &testGcpMetadata)
 
 		newTags, monitoredResource := mrf(testView, testTags)
 		gotResType, labels := monitoredResource.MonitoredResource()
@@ -139,7 +139,9 @@ func TestGetgetMetricTypeFunc_UseKnativeDomain(t *testing.T) {
 			Aggregation: view.LastValue(),
 			TagKeys:     []tag.Key{},
 		}
-		mtf := getMetricTypeFunc(testCase.domain, testCase.component)
+		mtf := getMetricTypeFunc(
+			path.Join(testCase.domain, testCase.component),
+			path.Join(customMetricTypePrefix, testCase.component))
 
 		gotMetricType := mtf(testView)
 		wantedMetricType := path.Join(testCase.domain, testCase.component, testView.Measure.Name())
@@ -157,10 +159,12 @@ func TestGetgetMetricTypeFunc_UseCustomDomain(t *testing.T) {
 			Aggregation: view.LastValue(),
 			TagKeys:     []tag.Key{},
 		}
-		mtf := getMetricTypeFunc(testCase.domain, testCase.component)
+		mtf := getMetricTypeFunc(
+			path.Join(testCase.domain, testCase.component),
+			path.Join(customMetricTypePrefix, testCase.component))
 
 		gotMetricType := mtf(testView)
-		wantedMetricType := path.Join(customMetricTypeDomain, testCase.component, testView.Measure.Name())
+		wantedMetricType := path.Join(customMetricTypePrefix, testCase.component, testView.Measure.Name())
 		if gotMetricType != wantedMetricType {
 			t.Fatalf("getMetricType=%v, want %v", gotMetricType, wantedMetricType)
 		}

@@ -24,10 +24,10 @@ import (
 	"go.uber.org/zap"
 )
 
-// customMetricTypeDomain is the metric type prefix for unsupported metrics by
+// customMetricTypePrefix is the metric type prefix for unsupported metrics by
 // resource type knative_revision.
 // See: https://cloud.google.com/monitoring/api/ref_v3/rest/v3/projects.metricDescriptors#MetricDescriptor
-const customMetricTypeDomain = "custom.googleapis.com/knative.dev"
+const customMetricTypePrefix = "custom.googleapis.com/knative.dev"
 
 var (
 	// gcpMetadataFunc is the function used to fetch GCP metadata.
@@ -44,12 +44,12 @@ func init() {
 
 func newStackdriverExporter(config *metricsConfig, logger *zap.SugaredLogger) (view.Exporter, error) {
 	gm := gcpMetadataFunc()
-	mtf := getMetricTypeFunc(config.domain, config.component)
+	mtf := getMetricTypeFunc(config.stackdriverMetricTypePrefix, config.stackdriverCustomMetricTypePrefix)
 	e, err := stackdriver.NewExporter(stackdriver.Options{
 		ProjectID:               config.stackdriverProjectID,
 		GetMetricDisplayName:    mtf, // Use metric type for display name for custom metrics. No impact on built-in metrics.
 		GetMetricType:           mtf,
-		GetMonitoredResource:    getMonitoredResourceFunc(config.domain, config.component, gm),
+		GetMonitoredResource:    getMonitoredResourceFunc(config.stackdriverMetricTypePrefix, gm),
 		DefaultMonitoringLabels: &stackdriver.Labels{},
 	})
 	if err != nil {
@@ -60,9 +60,9 @@ func newStackdriverExporter(config *metricsConfig, logger *zap.SugaredLogger) (v
 	return e, nil
 }
 
-func getMonitoredResourceFunc(domain, component string, gm *gcpMetadata) func(v *view.View, tags []tag.Tag) ([]tag.Tag, monitoredresource.Interface) {
+func getMonitoredResourceFunc(metricTypePrefix string, gm *gcpMetadata) func(v *view.View, tags []tag.Tag) ([]tag.Tag, monitoredresource.Interface) {
 	return func(view *view.View, tags []tag.Tag) ([]tag.Tag, monitoredresource.Interface) {
-		metricType := path.Join(domain, component, view.Measure.Name())
+		metricType := path.Join(metricTypePrefix, view.Measure.Name())
 		if metricskey.KnativeRevisionMetrics.Has(metricType) {
 			return getKnativeRevisionMonitoredResource(view, tags, gm)
 		}
@@ -116,13 +116,13 @@ func getGlobalMonitoredResource(v *view.View, tags []tag.Tag) ([]tag.Tag, monito
 	return tags, &Global{}
 }
 
-func getMetricTypeFunc(domain, component string) func(view *view.View) string {
+func getMetricTypeFunc(metricTypePrefix, customMetricTypePrefix string) func(view *view.View) string {
 	return func(view *view.View) string {
-		metricType := path.Join(domain, component, view.Measure.Name())
+		metricType := path.Join(metricTypePrefix, view.Measure.Name())
 		if metricskey.KnativeRevisionMetrics.Has(metricType) {
 			return metricType
 		}
 		// Unsupported metric by knative_revision, use custom domain.
-		return path.Join(customMetricTypeDomain, component, view.Measure.Name())
+		return path.Join(customMetricTypePrefix, view.Measure.Name())
 	}
 }
