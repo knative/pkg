@@ -472,7 +472,8 @@ type TCPRoute struct {
 	// is matched if any one of the match blocks succeed.
 	Match []L4MatchAttributes `json:"match"`
 
-	// The destination to which the connection should be forwarded to.
+	// The destinations to which the connection should be forwarded to. Weights
+	// must add to 100%.
 	Route []DestinationWeight `json:"route"`
 }
 
@@ -487,7 +488,7 @@ type TCPRoute struct {
 //   name: bookinfo-sni
 // spec:
 //   hosts:
-//   - &quot;*.bookinfo.com&quot;
+//   - '*.bookinfo.com'
 //   gateways:
 //   - mygateway
 //   tls:
@@ -521,9 +522,7 @@ type TLSRoute struct {
 // is incomplete.
 type L4MatchAttributes struct {
 	// IPv4 or IPv6 ip address of destination with optional subnet.  E.g.,
-	// a.b.c.d/xx form or just a.b.c.d. This is only valid when the
-	// destination service has several IPs and the application explicitly
-	// specifies a particular IP.
+	// a.b.c.d/xx form or just a.b.c.d.
 	DestinationSubnets []string `json:"destinationSubnets,omitempty"`
 
 	// Specifies the port on the host that is being addressed. Many services
@@ -548,7 +547,7 @@ type TLSMatchAttributes struct {
 	// REQUIRED. SNI (server name indicator) to match on. Wildcard prefixes
 	// can be used in the SNI value, e.g., *.com will match foo.example.com
 	// as well as example.com. An SNI value must be a subset (i.e., fall
-	// within the domain) of the corresponding virtual serivce's hosts
+	// within the domain) of the corresponding virtual service's hosts
 	SniHosts []string `json:"sniHosts"`
 
 	// IPv4 or IPv6 ip addresses of destination with optional subnet.  E.g.,
