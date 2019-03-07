@@ -24,9 +24,3 @@ cd ${REPO_ROOT_DIR}
 
 # Ensure we have everything we need under vendor/
 dep ensure
-
-# Patch the Kubernetes dynamic client to fix listing. This patch is from
-# https://github.com/kubernetes/kubernetes/pull/68552/files, which is a
-# cherrypick of #66078.  Remove this once that reaches a client version
-# we have pulled in.
-git apply ${REPO_ROOT_DIR}/hack/66078.patch
