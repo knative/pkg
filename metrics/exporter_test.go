@@ -68,6 +68,7 @@ func TestMain(m *testing.M) {
 	resetCurPromSrv()
 	// Set gcpMetadataFunc for testing
 	gcpMetadataFunc = fakeGcpMetadataFun
+	newStackdriverExporterFunc = newFakeExporter
 	os.Exit(m.Run())
 }
 

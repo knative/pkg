@@ -16,6 +16,7 @@ import (
 	"path"
 	"testing"
 
+	"contrib.go.opencensus.io/exporter/stackdriver"
 	. "github.com/knative/pkg/logging/testing"
 	"github.com/knative/pkg/metrics/metricskey"
 	"go.opencensus.io/stats"
@@ -72,6 +73,14 @@ var (
 
 func fakeGcpMetadataFun() *gcpMetadata {
 	return &testGcpMetadata
+}
+
+type fakeExporter struct{}
+
+func (fe *fakeExporter) ExportView(vd *view.Data) {}
+
+func newFakeExporter(o stackdriver.Options) (view.Exporter, error) {
+	return &fakeExporter{}, nil
 }
 
 func TestGetMonitoredResourceFunc_UseKnativeRevision(t *testing.T) {
