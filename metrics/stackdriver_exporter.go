@@ -35,17 +35,30 @@ var (
 	// In unit tests this is set to a fake one to avoid calling GCP metadata
 	// service.
 	gcpMetadataFunc func() *gcpMetadata
+
+	// newStackdriverExporterFunc is the function used to create new stackdriver
+	// exporter.
+	// In product usage, this is always set to function newOpencensusSDExporter.
+	// In unit tests this is set to a fake one to avoid calling actual Google API
+	// service.
+	newStackdriverExporterFunc func(stackdriver.Options) (view.Exporter, error)
 )
 
 func init() {
 	// Set gcpMetadataFunc to call GCP metadata service.
 	gcpMetadataFunc = retrieveGCPMetadata
+
+	newStackdriverExporterFunc = newOpencensusSDExporter
+}
+
+func newOpencensusSDExporter(o stackdriver.Options) (view.Exporter, error) {
+	return stackdriver.NewExporter(o)
 }
 
 func newStackdriverExporter(config *metricsConfig, logger *zap.SugaredLogger) (view.Exporter, error) {
 	gm := gcpMetadataFunc()
 	mtf := getMetricTypeFunc(config.stackdriverMetricTypePrefix, config.stackdriverCustomMetricTypePrefix)
-	e, err := stackdriver.NewExporter(stackdriver.Options{
+	e, err := newStackdriverExporterFunc(stackdriver.Options{
 		ProjectID:               config.stackdriverProjectID,
 		GetMetricDisplayName:    mtf, // Use metric type for display name for custom metrics. No impact on built-in metrics.
 		GetMetricType:           mtf,
