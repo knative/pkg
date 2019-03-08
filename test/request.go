@@ -60,7 +60,7 @@ func IsOneOfStatusCodes(codes ...int) spoof.ResponseChecker {
 			}
 		}
 
-		return true, fmt.Errorf("status = %d, want one of: %v, body = %s", resp.StatusCode, codes, string(resp.Body))
+		return true, fmt.Errorf("status = %d, want one of: %v", resp.StatusCode, codes)
 	}
 }
 
@@ -74,7 +74,7 @@ func MatchesBody(expected string) spoof.ResponseChecker {
 	return func(resp *spoof.Response) (bool, error) {
 		if !strings.Contains(string(resp.Body), expected) {
 			// Returning (true, err) causes SpoofingClient.Poll to fail.
-			return true, fmt.Errorf("body mismatch: got %q, want %q", string(resp.Body), expected)
+			return true, fmt.Errorf("body = %s, want: %s", string(resp.Body), expected)
 		}
 
 		return true, nil
