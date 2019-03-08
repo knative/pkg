@@ -16,7 +16,6 @@ import (
 	"path"
 	"testing"
 
-	"contrib.go.opencensus.io/exporter/stackdriver"
 	. "github.com/knative/pkg/logging/testing"
 	"github.com/knative/pkg/metrics/metricskey"
 	"go.opencensus.io/stats"
@@ -25,12 +24,6 @@ import (
 )
 
 var (
-	testGcpMetadata = gcpMetadata{
-		project:  "test-project",
-		location: "test-location",
-		cluster:  "test-cluster",
-	}
-
 	supportedMetricsTestCases = []struct {
 		name       string
 		domain     string
@@ -70,18 +63,6 @@ var (
 		metricName: "unsupported",
 	}}
 )
-
-func fakeGcpMetadataFun() *gcpMetadata {
-	return &testGcpMetadata
-}
-
-type fakeExporter struct{}
-
-func (fe *fakeExporter) ExportView(vd *view.Data) {}
-
-func newFakeExporter(o stackdriver.Options) (view.Exporter, error) {
-	return &fakeExporter{}, nil
-}
 
 func TestGetMonitoredResourceFunc_UseKnativeRevision(t *testing.T) {
 	for _, testCase := range supportedMetricsTestCases {
