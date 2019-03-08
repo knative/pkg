@@ -26,8 +26,10 @@ import (
 
 // Record decides whether to record one measurement via OpenCensus based on the
 // following conditions:
-//   1) No package level metrics config. User must ensure metrics config are set
-//      to get expected behavior.
+//   1) No package level metrics config. Users must ensure metrics config are set
+//      to get expected behavior. Otherwise it just proxies to OpenCensus based
+//      on the assumption that users intend to record metric when they call this
+//      function.
 //   2) The backend is not Stackdriver.
 //   3) The backend is Stackdriver and it is allowed to use custom metrics.
 //   4) The backend is Stackdriver and the metric is "knative_revison" built-in metric.
