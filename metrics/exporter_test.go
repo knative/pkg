@@ -66,7 +66,7 @@ func getResourceLabelValue(key string, tags []tag.Tag) string {
 
 func TestMain(m *testing.M) {
 	resetCurPromSrv()
-	// Set gcpMetadataFunc for testing
+	// Set gcpMetadataFunc and newStackdriverExporterFunc for testing
 	gcpMetadataFunc = fakeGcpMetadataFun
 	newStackdriverExporterFunc = newFakeExporter
 	os.Exit(m.Run())

@@ -38,7 +38,7 @@ var (
 
 	// newStackdriverExporterFunc is the function used to create new stackdriver
 	// exporter.
-	// In product usage, this is always set to function stackdriver.NewExporter.
+	// In product usage, this is always set to function newOpencensusSDExporter.
 	// In unit tests this is set to a fake one to avoid calling actual Google API
 	// service.
 	newStackdriverExporterFunc func(stackdriver.Options) (view.Exporter, error)
