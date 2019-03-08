@@ -21,15 +21,10 @@ import (
 	"testing"
 	"time"
 
-	. "github.com/knative/pkg/logging/testing"
-	"github.com/knative/pkg/metrics"
 	"go.opencensus.io/stats/view"
-	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func TestNewStatsReporterErrors(t *testing.T) {
-	initMetricsConfig(t)
 	// These are invalid as defined by the current OpenCensus library.
 	invalidTagValues := []string{
 		"naïve",                  // Includes non-ASCII character.
@@ -46,7 +41,6 @@ func TestNewStatsReporterErrors(t *testing.T) {
 }
 
 func TestReportQueueDepth(t *testing.T) {
-	initMetricsConfig(t)
 	r1 := &reporter{}
 	if err := r1.ReportQueueDepth(10); err == nil {
 		t.Error("Reporter.Report() expected an error for Report call before init. Got success.")
@@ -69,7 +63,6 @@ func TestReportQueueDepth(t *testing.T) {
 }
 
 func TestReportReconcile(t *testing.T) {
-	initMetricsConfig(t)
 	r, _ := NewStatsReporter("testreconciler")
 	wantTags := map[string]string{
 		"reconciler": "testreconciler",
@@ -84,16 +77,6 @@ func TestReportReconcile(t *testing.T) {
 	expectSuccess(t, func() error { return r.ReportReconcile(time.Duration(15*time.Millisecond), "test/key", "true") })
 	checkCountData(t, "reconcile_count", wantTags, 2)
 	checkDistributionData(t, "reconcile_latency", wantTags, 25)
-}
-
-func initMetricsConfig(t *testing.T) {
-	cm := &corev1.ConfigMap{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: "config-observability",
-		},
-		Data: map[string]string{},
-	}
-	metrics.UpdateExporterFromConfigMap("testDomain", "testComponent", TestLogger(t))(cm)
 }
 
 func expectSuccess(t *testing.T, f func() error) {
