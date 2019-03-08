@@ -42,14 +42,15 @@ func Record(ctx context.Context, ms stats.Measurement) {
 		return
 	}
 
+	// Condition 2) and 3)
 	if !mc.isStackdriverBackend || mc.allowStackdriverCustomMetrics {
-		// Condition 2) and 3)
 		stats.Record(ctx, ms)
-	} else {
-		metricType := path.Join(mc.stackdriverMetricTypePrefix, ms.Measure().Name())
-		// Condition 4)
-		if metricskey.KnativeRevisionMetrics.Has(metricType) {
-			stats.Record(ctx, ms)
-		}
+		return
+	}
+
+	// Condition 4)
+	metricType := path.Join(mc.stackdriverMetricTypePrefix, ms.Measure().Name())
+	if metricskey.KnativeRevisionMetrics.Has(metricType) {
+		stats.Record(ctx, ms)
 	}
 }
