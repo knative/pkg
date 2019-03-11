@@ -60,6 +60,9 @@ func TestRecord(t *testing.T) {
 				allowStackdriverCustomMetrics: true,
 			},
 			measurement: measure.M(3),
+		}, {
+			name:        "empty metricsConfig",
+			measurement: measure.M(4),
 		},
 	}
 
@@ -81,9 +84,6 @@ func TestRecord(t *testing.T) {
 				isStackdriverBackend:        true,
 				stackdriverMetricTypePrefix: "knative.dev/unsupported",
 			},
-			measurement: measure.M(4),
-		}, {
-			name:        "empty metricsConfig",
 			measurement: measure.M(5),
 		},
 	}
@@ -91,7 +91,7 @@ func TestRecord(t *testing.T) {
 	for _, test := range shouldNotReportCases {
 		setCurMetricsConfig(test.metricsConfig)
 		Record(ctx, test.measurement)
-		checkLastValueData(t, test.measurement.Measure().Name(), 3) // The value is still the last one of shouldReportCases
+		checkLastValueData(t, test.measurement.Measure().Name(), 4) // The value is still the last one of shouldReportCases
 	}
 }
 
