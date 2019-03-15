@@ -274,7 +274,7 @@ func (sc *SpoofingClient) logZipkinTrace(spoofResp *Response) {
 
 	zipkinTraceEndpoint := zipkin.ZipkinTraceEndpoint + traceID
 	// Sleep to ensure all traces are correctly pushed on the backend.
-	time.Sleep(5 * time.Second)
+	time.Sleep(30 * time.Second)
 	resp, err := http.Get(zipkinTraceEndpoint)
 	if err != nil {
 		sc.logf("Error retrieving Zipkin trace: %v", err)
