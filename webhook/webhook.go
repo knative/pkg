@@ -536,7 +536,7 @@ func (ac *AdmissionController) mutate(ctx context.Context, req *admissionv1beta1
 	var patches duck.JSONPatch
 
 	var err error
-	// Skip this step if the type we're dealing with is a duck type, simce it is inherently
+	// Skip this step if the type we're dealing with is a duck type, since it is inherently
 	// incomplete and this will patch away all of the unspecified fields.
 	if _, ok := newObj.(duck.Populatable); !ok {
 		// Add these before defaulting fields, otherwise defaulting may cause an illegal patch
