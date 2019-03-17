@@ -90,7 +90,7 @@ func TestNewBatchConditionSet(t *testing.T) {
 
 func TestNonTerminalCondition(t *testing.T) {
 	set := NewLivingConditionSet("Foo")
-	status := &KResourceStatus{}
+	status := &Status{}
 
 	manager := set.Manage(status)
 	manager.InitializeConditions()
