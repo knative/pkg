@@ -249,7 +249,7 @@ func (sc *SpoofingClient) Poll(req *http.Request, inState ResponseChecker) (*Res
 			// if errNo == syscall.Errno(0x6f) {...}
 			// But with assertions, of course.
 			if strings.Contains(err.Error(), "connect: connection refused") {
-				sc.logf("Retrying %s for TCP timeout %v", req.URL.String(), err)
+				sc.logf("Retrying %s for connection refused %v", req.URL.String(), err)
 				return false, nil
 			}
 			return true, err
