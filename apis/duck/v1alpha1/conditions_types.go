@@ -144,6 +144,10 @@ type Status struct {
 	Conditions Conditions `json:"conditions,omitempty"`
 }
 
+// TODO: KResourceStatus is added for backwards compatibility for <= 0.4.0 releases. Remove later.
+// KResourceStatus [Deprecated] use Status directly. Will be deleted ~0.6.0 release.
+type KResourceStatus Status
+
 // In order for Conditions to be Implementable, KResource must be Populatable.
 var _ duck.Populatable = (*KResource)(nil)
 
