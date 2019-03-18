@@ -145,7 +145,7 @@ type Status struct {
 	// +optional
 	// +patchMergeKey=type
 	// +patchStrategy=merge
-	Conditions duckv1alpha1.Conditions `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type"`
+	Conditions Conditions `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type"`
 }
 
 // TODO: KResourceStatus is added for backwards compatibility for <= 0.4.0 releases. Remove later.
