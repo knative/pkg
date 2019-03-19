@@ -84,6 +84,10 @@ type Impl struct {
 	// simultaneously in two different workers.
 	WorkQueue workqueue.RateLimitingInterface
 
+	// entryTimes keeps the entry time of a given item in the
+	// WorkQueue, which is used on removal to calculate time spent queuing
+	entryTimes sync.Map
+
 	// Sugared logger is easier to use but is not as performant as the
 	// raw logger. In performance critical paths, call logger.Desugar()
 	// and use the returned raw logger instead. In addition to the
@@ -202,6 +206,7 @@ func (c *Impl) EnqueueLabelOfClusterScopedResource(nameLabel string) func(obj in
 // EnqueueKey takes a namespace/name string and puts it onto the work queue.
 func (c *Impl) EnqueueKey(key string) {
 	c.WorkQueue.Add(key)
+	c.entryTimes.Store(key, time.Now())
 }
 
 // Run starts the controller's worker threads, the number of which is threadiness.
@@ -241,7 +246,7 @@ func (c *Impl) processNextWorkItem() bool {
 	}
 	key := obj.(string)
 
-	startTime := time.Now()
+	queueExitTime := time.Now()
 	// Send the metrics for the current queue depth
 	c.statsReporter.ReportQueueDepth(int64(c.WorkQueue.Len()))
 
@@ -258,7 +263,7 @@ func (c *Impl) processNextWorkItem() bool {
 		if err != nil {
 			status = falseString
 		}
-		c.statsReporter.ReportReconcile(time.Since(startTime), key, status)
+		c.statsReporter.ReportReconcile(time.Since(queueExitTime), key, status)
 	}()
 
 	// Embed the key into the logger and attach that to the context we pass
@@ -270,14 +275,21 @@ func (c *Impl) processNextWorkItem() bool {
 	// resource to be synced.
 	if err = c.Reconciler.Reconcile(ctx, key); err != nil {
 		c.handleErr(err, key)
-		logger.Infof("Reconcile failed. Time taken: %v.", time.Since(startTime))
+		logger.Infof("Reconcile failed. Time taken: %v.", time.Since(queueExitTime))
 		return true
 	}
 
 	// Finally, if no error occurs we Forget this item so it does not
 	// have any delay when another change happens.
 	c.WorkQueue.Forget(key)
-	logger.Infof("Reconcile succeeded. Time taken: %v.", time.Since(startTime))
+
+	queueEntryTime, _ := c.entryTimes.Load(key)
+	if queueEntryTime != nil {
+		c.statsReporter.ReportQueueWaitTime(time.Since(queueEntryTime.(time.Time)))
+		c.entryTimes.Delete(key)
+	}
+
+	logger.Infof("Reconcile succeeded. Time taken: %v.", time.Since(queueExitTime))
 
 	return true
 }

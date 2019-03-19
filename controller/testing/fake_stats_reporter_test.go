@@ -43,3 +43,11 @@ func TestReportReconcile(t *testing.T) {
 		t.Errorf("reconcile data len: want: %v, got: %v", want, got)
 	}
 }
+
+func TestReportQueueWaitTime(t *testing.T) {
+	r := &FakeStatsReporter{}
+	r.ReportQueueWaitTime(time.Duration(123))
+	if got, want := r.GetQueueWaitTime(), []FakeQueueLatencyStatData{{time.Duration(123)}}; !reflect.DeepEqual(want, got) {
+		t.Errorf("queue wait time data len: want: %v, got: %v", want, got)
+	}
+}

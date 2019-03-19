@@ -79,6 +79,23 @@ func TestReportReconcile(t *testing.T) {
 	checkDistributionData(t, "reconcile_latency", wantTags, 25)
 }
 
+func TestReportQueueWaitTimeErrorsBeforeInit(t *testing.T) {
+	r := &reporter{}
+	if err := r.ReportQueueWaitTime(time.Duration(100)); err == nil {
+		t.Error("Reporter.ReportQueueWaitTime() expected an error for Report call before init. Got success.")
+	}
+}
+
+func TestReportQueueWaitTime(t *testing.T) {
+	r, _ := NewStatsReporter("testreconciler")
+	wantTags := map[string]string{
+		"reconciler": "testreconciler",
+	}
+
+	expectSuccess(t, func() error { return r.ReportQueueWaitTime(time.Duration(10 * time.Millisecond)) })
+	checkDistributionData(t, "work_queue_latency", wantTags, 10)
+}
+
 func expectSuccess(t *testing.T, f func() error) {
 	t.Helper()
 	if err := f(); err != nil {

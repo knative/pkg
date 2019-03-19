@@ -478,7 +478,13 @@ func TestStartAndShutdownWithWork(t *testing.T) {
 		t.Errorf("Count = %v, wanted %v", got, want)
 	}
 
-	checkStats(t, reporter, 1, 0, 1, trueString)
+	checkStats(t, reporter, 1, 0, 1, 1, trueString)
+
+	entryTime, ok := impl.entryTimes.Load("foo/bar")
+	if ok {
+		t.Errorf("Expecting entry time to for key foo/bar to be deleted, but was %s", entryTime)
+	}
+
 }
 
 type ErrorReconciler struct{}
@@ -516,7 +522,11 @@ func TestStartAndShutdownWithErroringWork(t *testing.T) {
 		t.Errorf("Requeue count = %v, wanted %v", got, want)
 	}
 
-	checkStats(t, reporter, 3, 0, 3, falseString)
+	// We expect 0 wait time datapoints as the element was never
+	// successfully removed from the work queue
+	checkStats(t, reporter, 3, 0, 0, 3, falseString)
+
+	verifyTimeInQueueIsAtLeast(t, impl, 20)
 }
 
 type PermanentErrorReconciler struct{}
@@ -552,7 +562,23 @@ func TestStartAndShutdownWithPermanentErroringWork(t *testing.T) {
 		t.Errorf("Requeue count = %v, wanted %v", got, want)
 	}
 
-	checkStats(t, reporter, 1, 0, 1, falseString)
+	// We expect 0 wait time datapoints as the element was never
+	// successfully removed from the work queue
+	checkStats(t, reporter, 1, 0, 0, 1, falseString)
+
+	verifyTimeInQueueIsAtLeast(t, impl, 10)
+}
+
+func verifyTimeInQueueIsAtLeast(t *testing.T, impl *Impl, expectAge int64) {
+	entryTime, ok := impl.entryTimes.Load("foo/bar")
+	if !ok {
+		t.Errorf("Expecting an entry time for key foo/bar")
+	}
+
+	tInQueue := time.Since(entryTime.(time.Time))
+	if expectAge > int64(tInQueue*time.Millisecond) {
+		t.Errorf("Expecting entry time earlier than 10ms, was %s", tInQueue)
+	}
 }
 
 func drainWorkQueue(wq workqueue.RateLimitingInterface) (hasQueue []string) {
@@ -609,7 +635,7 @@ func TestImplGlobalResync(t *testing.T) {
 	}
 }
 
-func checkStats(t *testing.T, r *FakeStatsReporter, reportCount, lastQueueDepth, reconcileCount int, lastReconcileSuccess string) {
+func checkStats(t *testing.T, r *FakeStatsReporter, reportCount, lastQueueDepth, queueWaitTimeCount, reconcileCount int, lastReconcileSuccess string) {
 	qd := r.GetQueueDepths()
 	if got, want := len(qd), reportCount; got != want {
 		t.Errorf("Queue depth reports = %v, wanted %v", got, want)
@@ -617,6 +643,12 @@ func checkStats(t *testing.T, r *FakeStatsReporter, reportCount, lastQueueDepth,
 	if got, want := qd[len(qd)-1], int64(lastQueueDepth); got != want {
 		t.Errorf("Queue depth report = %v, wanted %v", got, want)
 	}
+
+	qwt := r.GetQueueWaitTime()
+	if got, want := len(qwt), queueWaitTimeCount; got != want {
+		t.Errorf("Queue wait times = %v, wanted %v", got, want)
+	}
+
 	rd := r.GetReconcileData()
 	if got, want := len(rd), reconcileCount; got != want {
 		t.Errorf("Reconcile reports = %v, wanted %v", got, want)

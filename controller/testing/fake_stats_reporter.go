@@ -23,9 +23,10 @@ import (
 
 // FakeStatsReporter is a fake implementation of StatsReporter
 type FakeStatsReporter struct {
-	queueDepths   []int64
-	reconcileData []FakeReconcileStatData
-	Lock          sync.Mutex
+	queueDepths      []int64
+	queueLatencyData []FakeQueueLatencyStatData
+	reconcileData    []FakeReconcileStatData
+	Lock             sync.Mutex
 }
 
 // FakeReconcileStatData is used to record the calls to ReportReconcile
@@ -34,11 +35,24 @@ type FakeReconcileStatData struct {
 	Key, Success string
 }
 
+// FakeQueueLatencyStatData is used to record the calls to ReportReconcile
+type FakeQueueLatencyStatData struct {
+	Duration time.Duration
+}
+
 // ReportQueueDepth records the call and returns success.
 func (r *FakeStatsReporter) ReportQueueDepth(v int64) error {
 	r.Lock.Lock()
 	defer r.Lock.Unlock()
 	r.queueDepths = append(r.queueDepths, v)
+	return nil
+}
+
+// ReportQueueWaitTime reports the time spent in the work queue
+func (r *FakeStatsReporter) ReportQueueWaitTime(duration time.Duration) error {
+	r.Lock.Lock()
+	defer r.Lock.Unlock()
+	r.queueLatencyData = append(r.queueLatencyData, FakeQueueLatencyStatData{duration})
 	return nil
 }
 
@@ -62,4 +76,11 @@ func (r *FakeStatsReporter) GetReconcileData() []FakeReconcileStatData {
 	r.Lock.Lock()
 	defer r.Lock.Unlock()
 	return r.reconcileData
+}
+
+// GetQueueWaitTime returns the recorded queue wait time data
+func (r *FakeStatsReporter) GetQueueWaitTime() []FakeQueueLatencyStatData {
+	r.Lock.Lock()
+	defer r.Lock.Unlock()
+	return r.queueLatencyData
 }

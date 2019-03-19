@@ -29,12 +29,17 @@ import (
 
 var (
 	workQueueDepthStat   = stats.Int64("work_queue_depth", "Depth of the work queue", stats.UnitNone)
+	workQueueLatencyStat = stats.Int64("work_queue_latency", "Time spent waiting the work queue", stats.UnitMilliseconds)
 	reconcileCountStat   = stats.Int64("reconcile_count", "Number of reconcile operations", stats.UnitNone)
 	reconcileLatencyStat = stats.Int64("reconcile_latency", "Latency of reconcile operations", stats.UnitMilliseconds)
 
 	// reconcileDistribution defines the bucket boundaries for the histogram of reconcile latency metric.
 	// Bucket boundaries are 10ms, 100ms, 1s, 10s, 30s and 60s.
 	reconcileDistribution = view.Distribution(10, 100, 1000, 10000, 30000, 60000)
+
+	// workQueueLatencyDistribution defines the bucket boundaries for the histogram of the work queue latency metric.
+	// Bucket boundaries are 10ms, 100ms, 1s, 10s, 30s and 60s.
+	workQueueLatencyDistribution = view.Distribution(10, 100, 1000, 10000, 30000, 60000)
 
 	// Create the tag keys that will be used to add tags to our measurements.
 	// Tag keys must conform to the restrictions described in
@@ -55,6 +60,12 @@ func init() {
 			Description: "Depth of the work queue",
 			Measure:     workQueueDepthStat,
 			Aggregation: view.LastValue(),
+			TagKeys:     []tag.Key{reconcilerTagKey},
+		},
+		&view.View{
+			Description: "Time spent waiting in the work queue",
+			Measure:     workQueueLatencyStat,
+			Aggregation: workQueueLatencyDistribution,
 			TagKeys:     []tag.Key{reconcilerTagKey},
 		},
 		&view.View{
@@ -79,6 +90,9 @@ func init() {
 type StatsReporter interface {
 	// ReportQueueDepth reports the queue depth metric
 	ReportQueueDepth(v int64) error
+
+	// ReportQueueWaitTime reports the time spent in the work queue
+	ReportQueueWaitTime(duration time.Duration) error
 
 	// ReportReconcile reports the count and latency metrics for a reconcile operation
 	ReportReconcile(duration time.Duration, key, success string) error
@@ -109,6 +123,16 @@ func (r *reporter) ReportQueueDepth(v int64) error {
 		return errors.New("reporter is not initialized correctly")
 	}
 	metrics.Record(r.globalCtx, workQueueDepthStat.M(v))
+	return nil
+}
+
+// ReportQueueWaitTime reports the time spent in the work queue
+func (r *reporter) ReportQueueWaitTime(duration time.Duration) error {
+	if r.globalCtx == nil {
+		return errors.New("reporter is not initialized correctly")
+	}
+
+	metrics.Record(r.globalCtx, workQueueLatencyStat.M(int64(duration/time.Millisecond)))
 	return nil
 }
 
