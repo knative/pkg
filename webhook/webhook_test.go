@@ -17,6 +17,7 @@ limitations under the License.
 package webhook
 
 import (
+	"context"
 	"crypto/tls"
 	"encoding/json"
 	"encoding/pem"
@@ -138,7 +139,7 @@ func TestValidCreateResourceSucceeds(t *testing.T) {
 	r := createResource("a name")
 	for _, v := range []string{"v1alpha1", "v1beta1"} {
 		r.TypeMeta.APIVersion = v
-		r.SetDefaults() // Fill in defaults to check that there are no patches.
+		r.SetDefaults(context.TODO()) // Fill in defaults to check that there are no patches.
 		_, ac := newNonRunningTestAdmissionController(t, newDefaultOptions())
 		resp := ac.admit(TestContextWithLogger(t), createCreateResource(r))
 		expectAllowed(t, resp)
@@ -234,9 +235,9 @@ func TestInvalidCreateResourceFails(t *testing.T) {
 
 func TestNopUpdateResourceSucceeds(t *testing.T) {
 	r := createResource("a name")
-	r.SetDefaults() // Fill in defaults to check that there are no patches.
+	r.SetDefaults(context.TODO()) // Fill in defaults to check that there are no patches.
 	nr := r.DeepCopyObject().(*Resource)
-	r.AnnotateUserInfo(nil, &authenticationv1.UserInfo{Username: user1})
+	r.AnnotateUserInfo(context.TODO(), nil, &authenticationv1.UserInfo{Username: user1})
 	_, ac := newNonRunningTestAdmissionController(t, newDefaultOptions())
 	resp := ac.admit(TestContextWithLogger(t), createUpdateResource(r, nr))
 	expectAllowed(t, resp)
@@ -245,10 +246,10 @@ func TestNopUpdateResourceSucceeds(t *testing.T) {
 
 func TestValidUpdateResourcePreserveAnnotations(t *testing.T) {
 	old := createResource("a name")
-	old.SetDefaults() // Fill in defaults to check that there are no patches.
-	old.AnnotateUserInfo(nil, &authenticationv1.UserInfo{Username: user1})
+	old.SetDefaults(context.TODO()) // Fill in defaults to check that there are no patches.
+	old.AnnotateUserInfo(context.TODO(), nil, &authenticationv1.UserInfo{Username: user1})
 	new := createResource("a name")
-	new.SetDefaults()
+	new.SetDefaults(context.TODO())
 	// User set annotations on the resource.
 	new.ObjectMeta.SetAnnotations(map[string]string{
 		"key": "to-my-heart",
@@ -263,8 +264,8 @@ func TestValidUpdateResourcePreserveAnnotations(t *testing.T) {
 
 func TestValidBigChangeResourceSucceeds(t *testing.T) {
 	old := createResource("a name")
-	old.SetDefaults() // Fill in defaults to check that there are no patches.
-	old.AnnotateUserInfo(nil, &authenticationv1.UserInfo{Username: user1})
+	old.SetDefaults(context.TODO()) // Fill in defaults to check that there are no patches.
+	old.AnnotateUserInfo(context.TODO(), nil, &authenticationv1.UserInfo{Username: user1})
 	new := createResource("a name")
 	new.Spec.FieldWithDefault = "melon collie and the infinite sadness"
 
@@ -281,8 +282,8 @@ func TestValidBigChangeResourceSucceeds(t *testing.T) {
 
 func TestValidUpdateResourceSucceeds(t *testing.T) {
 	old := createResource("a name")
-	old.SetDefaults() // Fill in defaults to check that there are no patches.
-	old.AnnotateUserInfo(nil, &authenticationv1.UserInfo{Username: user1})
+	old.SetDefaults(context.TODO()) // Fill in defaults to check that there are no patches.
+	old.AnnotateUserInfo(context.TODO(), nil, &authenticationv1.UserInfo{Username: user1})
 	new := createResource("a name")
 
 	_, ac := newNonRunningTestAdmissionController(t, newDefaultOptions())
@@ -326,7 +327,7 @@ func TestInvalidUpdateResourceFailsImmutability(t *testing.T) {
 
 func TestDefaultingImmutableFields(t *testing.T) {
 	old := createResource("a name")
-	old.AnnotateUserInfo(nil, &authenticationv1.UserInfo{Username: user1})
+	old.AnnotateUserInfo(context.TODO(), nil, &authenticationv1.UserInfo{Username: user1})
 	new := createResource("a name")
 
 	// If we don't specify the new, but immutable field, we default it,

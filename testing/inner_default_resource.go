@@ -17,6 +17,8 @@ limitations under the License.
 package testing
 
 import (
+	"context"
+
 	"github.com/knative/pkg/apis"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -47,22 +49,23 @@ var _ apis.Validatable = (*InnerDefaultResource)(nil)
 var _ apis.Defaultable = (*InnerDefaultResource)(nil)
 
 // SetDefaults sets default values.
-func (i *InnerDefaultResource) SetDefaults() {
-	i.Spec.SetDefaults()
+func (i *InnerDefaultResource) SetDefaults(ctx context.Context) {
+	i.Spec.SetDefaults(ctx)
 }
 
 // SetDefaults sets default values.
-func (cs *InnerDefaultSpec) SetDefaults() {
+func (cs *InnerDefaultSpec) SetDefaults(ctx context.Context) {
 	if cs.FieldWithDefault == "" {
 		cs.FieldWithDefault = "I'm a default."
 	}
 }
 
 // Validate validates the resource.
-func (*InnerDefaultResource) Validate() *apis.FieldError {
+func (*InnerDefaultResource) Validate(ctx context.Context) *apis.FieldError {
 	return nil
 }
 
 // AnnotateUserInfo satisfies the Annotatable interface.
 // For this type it is nop.
-func (*InnerDefaultResource) AnnotateUserInfo(p apis.Annotatable, userName string) {}
+func (*InnerDefaultResource) AnnotateUserInfo(ctx context.Context, p apis.Annotatable, userName string) {
+}

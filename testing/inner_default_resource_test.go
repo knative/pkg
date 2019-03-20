@@ -16,18 +16,21 @@ limitations under the License.
 
 package testing
 
-import "testing"
+import (
+	"context"
+	"testing"
+)
 
 func TestInnerDefaultResource_Validate(t *testing.T) {
 	r := InnerDefaultResource{}
-	if err := r.Validate(); err != nil {
+	if err := r.Validate(context.TODO()); err != nil {
 		t.Fatalf("Expected no validation errors. Actual %v", err)
 	}
 }
 
 func TestInnerDefaultResource_SetDefaults(t *testing.T) {
 	r := InnerDefaultResource{}
-	r.SetDefaults()
+	r.SetDefaults(context.TODO())
 	if r.Spec.FieldWithDefault != "I'm a default." {
 		t.Fatalf("Unexpected defaulted value: %v", r.Spec.FieldWithDefault)
 	}
