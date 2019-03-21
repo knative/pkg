@@ -17,6 +17,7 @@ limitations under the License.
 package testing
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/knative/pkg/apis"
@@ -60,12 +61,12 @@ type ResourceSpec struct {
 }
 
 // SetDefaults sets the defaults on the object.
-func (c *Resource) SetDefaults() {
-	c.Spec.SetDefaults()
+func (c *Resource) SetDefaults(ctx context.Context) {
+	c.Spec.SetDefaults(ctx)
 }
 
 // SetDefaults sets the defaults on the spec.
-func (cs *ResourceSpec) SetDefaults() {
+func (cs *ResourceSpec) SetDefaults(ctx context.Context) {
 	if cs.FieldWithDefault == "" {
 		cs.FieldWithDefault = "I'm a default."
 	}
@@ -75,7 +76,7 @@ func (cs *ResourceSpec) SetDefaults() {
 }
 
 // AnnotateUserInfo satisfies the Annotatable interface.
-func (c *Resource) AnnotateUserInfo(prev apis.Annotatable, ui *authenticationv1.UserInfo) {
+func (c *Resource) AnnotateUserInfo(ctx context.Context, prev apis.Annotatable, ui *authenticationv1.UserInfo) {
 	a := c.ObjectMeta.GetAnnotations()
 	if a == nil {
 		a = map[string]string{}
@@ -102,18 +103,18 @@ func (c *Resource) AnnotateUserInfo(prev apis.Annotatable, ui *authenticationv1.
 	c.ObjectMeta.SetAnnotations(a)
 }
 
-func (c *Resource) Validate() *apis.FieldError {
-	return c.Spec.Validate().ViaField("spec")
+func (c *Resource) Validate(ctx context.Context) *apis.FieldError {
+	return c.Spec.Validate(ctx).ViaField("spec")
 }
 
-func (cs *ResourceSpec) Validate() *apis.FieldError {
+func (cs *ResourceSpec) Validate(ctx context.Context) *apis.FieldError {
 	if cs.FieldWithValidation != "magic value" {
 		return apis.ErrInvalidValue(cs.FieldWithValidation, "fieldWithValidation")
 	}
 	return nil
 }
 
-func (current *Resource) CheckImmutableFields(og apis.Immutable) *apis.FieldError {
+func (current *Resource) CheckImmutableFields(ctx context.Context, og apis.Immutable) *apis.FieldError {
 	original, ok := og.(*Resource)
 	if !ok {
 		return &apis.FieldError{Message: "The provided original was not a Resource"}
