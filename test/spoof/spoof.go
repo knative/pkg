@@ -28,7 +28,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/knative/pkg/test/ingress"
+	ingress "github.com/knative/pkg/test/ingress"
 	"github.com/knative/pkg/test/logging"
 	"github.com/knative/pkg/test/zipkin"
 	"github.com/pkg/errors"
