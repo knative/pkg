@@ -46,7 +46,7 @@ func GetIngressEndpoint(kubeClientset *kubernetes.Clientset) (*string, error) {
 	if err != nil {
 		return nil, err
 	}
-	endpoint, err := endpointFromService(ingress)
+	endpoint, err := EndpointFromService(ingress)
 	if err != nil {
 		return nil, err
 	}
