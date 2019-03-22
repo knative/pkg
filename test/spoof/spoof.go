@@ -28,7 +28,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/knative/pkg/test"
+	"github.com/knative/pkg/test/ingress"
 	"github.com/knative/pkg/test/logging"
 	"github.com/knative/pkg/test/zipkin"
 	"github.com/pkg/errors"
@@ -112,7 +112,7 @@ func New(kubeClientset *kubernetes.Clientset, logf logging.FormatLogger, domain 
 			// If the domain that the Route controller is configured to assign to Route.Status.Domain
 			// (the domainSuffix) is not resolvable, we need to retrieve the the endpoint and spoof
 			// the Host in our requests.
-			e, err = test.GetIngressEndpoint(kubeClientset)
+			e, err = ingress.GetIngressEndpoint(kubeClientset)
 			if err != nil {
 				return nil, err
 			}
