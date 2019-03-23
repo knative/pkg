@@ -19,6 +19,7 @@ package controller
 import (
 	"context"
 	"errors"
+	"sync"
 	"testing"
 	"time"
 
@@ -418,10 +419,13 @@ func TestEnqueues(t *testing.T) {
 }
 
 type CountingReconciler struct {
+	m     sync.Mutex
 	Count int
 }
 
 func (cr *CountingReconciler) Reconcile(context.Context, string) error {
+	cr.m.Lock()
+	defer cr.m.Unlock()
 	cr.Count++
 	return nil
 }
@@ -671,6 +675,7 @@ func checkStats(t *testing.T, r *FakeStatsReporter, reportCount, lastQueueDepth,
 }
 
 type fixedInformer struct {
+	m    sync.Mutex
 	sunk bool
 }
 
@@ -678,7 +683,15 @@ var _ Informer = (*fixedInformer)(nil)
 
 func (fi *fixedInformer) Run(<-chan struct{}) {}
 func (fi *fixedInformer) HasSynced() bool {
+	fi.m.Lock()
+	defer fi.m.Unlock()
 	return fi.sunk
+}
+
+func (fi *fixedInformer) ToggleSynced(b bool) {
+	fi.m.Lock()
+	defer fi.m.Unlock()
+	fi.sunk = b
 }
 
 func TestStartInformersSuccess(t *testing.T) {
@@ -723,7 +736,7 @@ func TestStartInformersEventualSuccess(t *testing.T) {
 	}
 
 	// Let the Sync complete.
-	fi.sunk = true
+	fi.ToggleSynced(true)
 
 	select {
 	case err := <-errCh:
