@@ -225,3 +225,33 @@ func TestJson(t *testing.T) {
 		})
 	}
 }
+
+func TestStatusGetCondition(t *testing.T) {
+	foo := &Condition{
+		Type:    "Foo",
+		Status:  corev1.ConditionTrue,
+		Message: "Something something foo",
+	}
+	bar := &Condition{
+		Type:    "Bar",
+		Status:  corev1.ConditionTrue,
+		Message: "Something something bar",
+	}
+	s := &Status{
+		Conditions: []Condition{*foo, *bar},
+	}
+
+	got := s.GetCondition(foo.Type)
+	if diff := cmp.Diff(got, foo); diff != "" {
+		t.Errorf("GetCondition(foo) = %s", diff)
+	}
+
+	got = s.GetCondition(bar.Type)
+	if diff := cmp.Diff(got, bar); diff != "" {
+		t.Errorf("GetCondition(bar) = %s", diff)
+	}
+
+	if got := s.GetCondition("None"); got != nil {
+		t.Errorf("GetCondition(None) = %v, wanted nil", got)
+	}
+}
