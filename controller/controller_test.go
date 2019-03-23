@@ -23,7 +23,6 @@ import (
 	"time"
 
 	"github.com/google/go-cmp/cmp"
-	"golang.org/x/sync/errgroup"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/tools/cache"
@@ -432,18 +431,26 @@ func TestStartAndShutdown(t *testing.T) {
 	impl := NewImpl(r, TestLogger(t), "Testing", &FakeStatsReporter{})
 
 	stopCh := make(chan struct{})
+	doneCh := make(chan struct{})
 
-	var eg errgroup.Group
-	eg.Go(func() error {
+	go func() {
+		defer close(doneCh)
 		StartAll(stopCh, impl)
-		return nil
-	})
+	}()
 
-	time.Sleep(10 * time.Millisecond)
+	select {
+	case <-time.After(10 * time.Millisecond):
+		// We don't expect completion before the stopCh closes.
+	case <-doneCh:
+		t.Error("StartAll finished early.")
+	}
 	close(stopCh)
 
-	if err := eg.Wait(); err != nil {
-		t.Errorf("Wait() = %v", err)
+	select {
+	case <-time.After(1 * time.Second):
+		t.Error("Timed out waiting for controller to finish.")
+	case <-doneCh:
+		// We expect the work to complete.
 	}
 
 	if got, want := r.Count, 0; got != want {
@@ -457,20 +464,28 @@ func TestStartAndShutdownWithWork(t *testing.T) {
 	impl := NewImpl(r, TestLogger(t), "Testing", reporter)
 
 	stopCh := make(chan struct{})
+	doneCh := make(chan struct{})
 
 	impl.EnqueueKey("foo/bar")
 
-	var eg errgroup.Group
-	eg.Go(func() error {
+	go func() {
+		defer close(doneCh)
 		StartAll(stopCh, impl)
-		return nil
-	})
+	}()
 
-	time.Sleep(10 * time.Millisecond)
+	select {
+	case <-time.After(10 * time.Millisecond):
+		// We don't expect completion before the stopCh closes.
+	case <-doneCh:
+		t.Error("StartAll finished early.")
+	}
 	close(stopCh)
 
-	if err := eg.Wait(); err != nil {
-		t.Errorf("Wait() = %v", err)
+	select {
+	case <-time.After(1 * time.Second):
+		t.Error("Timed out waiting for controller to finish.")
+	case <-doneCh:
+		// We expect the work to complete.
 	}
 
 	if got, want := r.Count, 1; got != want {
@@ -495,20 +510,28 @@ func TestStartAndShutdownWithErroringWork(t *testing.T) {
 	impl := NewImpl(r, TestLogger(t), "Testing", reporter)
 
 	stopCh := make(chan struct{})
+	doneCh := make(chan struct{})
 
 	impl.EnqueueKey("foo/bar")
 
-	var eg errgroup.Group
-	eg.Go(func() error {
+	go func() {
+		defer close(doneCh)
 		StartAll(stopCh, impl)
-		return nil
-	})
+	}()
 
-	time.Sleep(20 * time.Millisecond)
+	select {
+	case <-time.After(20 * time.Millisecond):
+		// We don't expect completion before the stopCh closes.
+	case <-doneCh:
+		t.Error("StartAll finished early.")
+	}
 	close(stopCh)
 
-	if err := eg.Wait(); err != nil {
-		t.Errorf("Wait() = %v", err)
+	select {
+	case <-time.After(1 * time.Second):
+		t.Error("Timed out waiting for controller to finish.")
+	case <-doneCh:
+		// We expect the work to complete.
 	}
 
 	// Check that the work was requeued in RateLimiter.
@@ -535,20 +558,28 @@ func TestStartAndShutdownWithPermanentErroringWork(t *testing.T) {
 	impl := NewImpl(r, TestLogger(t), "Testing", reporter)
 
 	stopCh := make(chan struct{})
+	doneCh := make(chan struct{})
 
 	impl.EnqueueKey("foo/bar")
 
-	var eg errgroup.Group
-	eg.Go(func() error {
+	go func() {
+		defer close(doneCh)
 		StartAll(stopCh, impl)
-		return nil
-	})
+	}()
 
-	time.Sleep(10 * time.Millisecond)
+	select {
+	case <-time.After(20 * time.Millisecond):
+		// We don't expect completion before the stopCh closes.
+	case <-doneCh:
+		t.Error("StartAll finished early.")
+	}
 	close(stopCh)
 
-	if err := eg.Wait(); err != nil {
-		t.Errorf("Wait() = %v", err)
+	select {
+	case <-time.After(1 * time.Second):
+		t.Error("Timed out waiting for controller to finish.")
+	case <-doneCh:
+		// We expect the work to complete.
 	}
 
 	// Check that the work was not requeued in RateLimiter.
@@ -593,20 +624,28 @@ func TestImplGlobalResync(t *testing.T) {
 	impl := NewImpl(r, TestLogger(t), "Testing", &FakeStatsReporter{})
 
 	stopCh := make(chan struct{})
+	doneCh := make(chan struct{})
 
-	var eg errgroup.Group
-	eg.Go(func() error {
+	go func() {
+		defer close(doneCh)
 		StartAll(stopCh, impl)
-		return nil
-	})
+	}()
 
 	impl.GlobalResync(&dummyInformer{})
 
-	time.Sleep(10 * time.Millisecond)
+	select {
+	case <-time.After(10 * time.Millisecond):
+		// We don't expect completion before the stopCh closes.
+	case <-doneCh:
+		t.Error("StartAll finished early.")
+	}
 	close(stopCh)
 
-	if err := eg.Wait(); err != nil {
-		t.Errorf("Wait() = %v", err)
+	select {
+	case <-time.After(1 * time.Second):
+		t.Error("Timed out waiting for controller to finish.")
+	case <-doneCh:
+		// We expect the work to complete.
 	}
 
 	if want, got := 3, r.Count; want != got {
@@ -631,14 +670,14 @@ func checkStats(t *testing.T, r *FakeStatsReporter, reportCount, lastQueueDepth,
 	}
 }
 
-type FixedInformer struct {
+type fixedInformer struct {
 	sunk bool
 }
 
-var _ Informer = (*FixedInformer)(nil)
+var _ Informer = (*fixedInformer)(nil)
 
-func (fi *FixedInformer) Run(<-chan struct{}) {}
-func (fi *FixedInformer) HasSynced() bool {
+func (fi *fixedInformer) Run(<-chan struct{}) {}
+func (fi *fixedInformer) HasSynced() bool {
 	return fi.sunk
 }
 
@@ -646,7 +685,7 @@ func TestStartInformersSuccess(t *testing.T) {
 	errCh := make(chan error)
 	defer close(errCh)
 
-	fi := &FixedInformer{sunk: true}
+	fi := &fixedInformer{sunk: true}
 
 	stopCh := make(chan struct{})
 	defer close(stopCh)
@@ -664,11 +703,43 @@ func TestStartInformersSuccess(t *testing.T) {
 	}
 }
 
+func TestStartInformersEventualSuccess(t *testing.T) {
+	errCh := make(chan error)
+	defer close(errCh)
+
+	fi := &fixedInformer{sunk: false}
+
+	stopCh := make(chan struct{})
+	defer close(stopCh)
+	go func() {
+		errCh <- StartInformers(stopCh, fi)
+	}()
+
+	select {
+	case err := <-errCh:
+		t.Errorf("Unexpected send on errCh: %v", err)
+	case <-time.After(1 * time.Second):
+		// Wait a brief period to ensure nothing is sent.
+	}
+
+	// Let the Sync complete.
+	fi.sunk = true
+
+	select {
+	case err := <-errCh:
+		if err != nil {
+			t.Errorf("Unexpected error: %v", err)
+		}
+	case <-time.After(1 * time.Second):
+		t.Error("Timed out waiting for informers to sync.")
+	}
+}
+
 func TestStartInformersFailure(t *testing.T) {
 	errCh := make(chan error)
 	defer close(errCh)
 
-	fi := &FixedInformer{sunk: false}
+	fi := &fixedInformer{sunk: false}
 
 	stopCh := make(chan struct{})
 	go func() {

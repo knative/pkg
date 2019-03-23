@@ -40,6 +40,10 @@ const (
 )
 
 var (
+	// DefaultThreadsPerController is the number of threads to use
+	// when processing the controller's workqueue.  Controller binaries
+	// may adjust this process-wide default.  For finer control, invoke
+	// Run on the controller directly.
 	DefaultThreadsPerController = 2
 )
 
