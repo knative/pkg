@@ -435,7 +435,8 @@ func TestStartAndShutdown(t *testing.T) {
 
 	var eg errgroup.Group
 	eg.Go(func() error {
-		return impl.Run(1, stopCh)
+		StartAll(stopCh, impl)
+		return nil
 	})
 
 	time.Sleep(10 * time.Millisecond)
@@ -461,7 +462,8 @@ func TestStartAndShutdownWithWork(t *testing.T) {
 
 	var eg errgroup.Group
 	eg.Go(func() error {
-		return impl.Run(1, stopCh)
+		StartAll(stopCh, impl)
+		return nil
 	})
 
 	time.Sleep(10 * time.Millisecond)
@@ -498,7 +500,8 @@ func TestStartAndShutdownWithErroringWork(t *testing.T) {
 
 	var eg errgroup.Group
 	eg.Go(func() error {
-		return impl.Run(1, stopCh)
+		StartAll(stopCh, impl)
+		return nil
 	})
 
 	time.Sleep(20 * time.Millisecond)
@@ -537,7 +540,8 @@ func TestStartAndShutdownWithPermanentErroringWork(t *testing.T) {
 
 	var eg errgroup.Group
 	eg.Go(func() error {
-		return impl.Run(1, stopCh)
+		StartAll(stopCh, impl)
+		return nil
 	})
 
 	time.Sleep(10 * time.Millisecond)
@@ -592,7 +596,8 @@ func TestImplGlobalResync(t *testing.T) {
 
 	var eg errgroup.Group
 	eg.Go(func() error {
-		return impl.Run(1, stopCh)
+		StartAll(stopCh, impl)
+		return nil
 	})
 
 	impl.GlobalResync(&dummyInformer{})
@@ -623,5 +628,69 @@ func checkStats(t *testing.T, r *FakeStatsReporter, reportCount, lastQueueDepth,
 	}
 	if got, want := rd[len(rd)-1].Success, lastReconcileSuccess; got != want {
 		t.Errorf("Reconcile success = %v, wanted %v", got, want)
+	}
+}
+
+type FixedInformer struct {
+	sunk bool
+}
+
+var _ Informer = (*FixedInformer)(nil)
+
+func (fi *FixedInformer) Run(<-chan struct{}) {}
+func (fi *FixedInformer) HasSynced() bool {
+	return fi.sunk
+}
+
+func TestStartInformersSuccess(t *testing.T) {
+	errCh := make(chan error)
+	defer close(errCh)
+
+	fi := &FixedInformer{sunk: true}
+
+	stopCh := make(chan struct{})
+	defer close(stopCh)
+	go func() {
+		errCh <- StartInformers(stopCh, fi)
+	}()
+
+	select {
+	case err := <-errCh:
+		if err != nil {
+			t.Errorf("Unexpected error: %v", err)
+		}
+	case <-time.After(1 * time.Second):
+		t.Error("Timed out waiting for informers to sync.")
+	}
+}
+
+func TestStartInformersFailure(t *testing.T) {
+	errCh := make(chan error)
+	defer close(errCh)
+
+	fi := &FixedInformer{sunk: false}
+
+	stopCh := make(chan struct{})
+	go func() {
+		errCh <- StartInformers(stopCh, fi)
+	}()
+
+	select {
+	case err := <-errCh:
+		t.Errorf("Unexpected send on errCh: %v", err)
+	case <-time.After(1 * time.Second):
+		// Wait a brief period to ensure nothing is sent.
+	}
+
+	// Now close the stopCh and we should see an error sent.
+	close(stopCh)
+
+	select {
+	case err := <-errCh:
+		if err == nil {
+			t.Error("Unexpected success syncing informers after stopCh closed.")
+		}
+	case <-time.After(1 * time.Second):
+		t.Error("Timed out waiting for informers to sync.")
 	}
 }
