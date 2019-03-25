@@ -35,6 +35,9 @@ type InnerDefaultResource struct {
 	// Note that this does _not_ have omitempty. So when JSON is round tripped through the Golang
 	// type, `spec: {}` will automatically be injected.
 	Spec InnerDefaultSpec `json:"spec"`
+
+	// Status is a simple status.
+	Status InnerDefaultStatus `json:"status,omitempty"`
 }
 
 // InnerDefaultSpec is the spec for InnerDefaultResource.
@@ -42,6 +45,17 @@ type InnerDefaultSpec struct {
 	Generation int64 `json:"generation,omitempty"`
 
 	FieldWithDefault string `json:"fieldWithDefault,omitempty"`
+
+	// Deprecated: This field is deprecated.
+	FieldWithDeprecation string `json:"fieldWithDeprecation,omitempty"`
+}
+
+// InnerDefaultStatus is the status for InnerDefaultResource.
+type InnerDefaultStatus struct {
+	FieldAsString string `json:"fieldAsString,omitempty"`
+
+	// Deprecated: This field is deprecated.
+	FieldWithDeprecation string `json:"fieldWithDeprecation,omitempty"`
 }
 
 // Check that ImmutableDefaultResource may be validated and defaulted.

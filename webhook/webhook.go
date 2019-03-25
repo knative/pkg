@@ -101,6 +101,9 @@ type ControllerOptions struct {
 	// TLS Client Authentication.
 	// The default value is tls.NoClientCert.
 	ClientAuth tls.ClientAuthType
+
+	// Strict defines strict mode validation.
+	Strict bool
 }
 
 // ResourceCallback defines a signature for resource specific (Route, Configuration, etc.)
@@ -203,28 +206,26 @@ func getOrGenerateKeyCertsFromSecret(ctx context.Context, client kubernetes.Inte
 
 // validate checks whether "new" and "old" implement HasImmutableFields and checks them,
 // it then delegates validation to apis.Validatable on "new".
-func validate(old GenericCRD, new GenericCRD) error {
+func validate(ctx context.Context, old GenericCRD, new GenericCRD) error {
 	if immutableNew, ok := new.(apis.Immutable); ok && old != nil {
 		// Copy the old object and set defaults so that we don't reject our own
 		// defaulting done earlier in the webhook.
 		old = old.DeepCopyObject().(GenericCRD)
-		// TODO(mattmoor): Plumb through a real context
-		old.SetDefaults(context.TODO())
+		old.SetDefaults(ctx)
 
 		immutableOld, ok := old.(apis.Immutable)
 		if !ok {
 			return fmt.Errorf("unexpected type mismatch %T vs. %T", old, new)
 		}
-		// TODO(mattmoor): Plumb through a real context
-		if err := immutableNew.CheckImmutableFields(context.TODO(), immutableOld); err != nil {
+		if err := immutableNew.CheckImmutableFields(ctx, immutableOld); err != nil {
 			return err
 		}
 	}
 	// Can't just `return new.Validate()` because it doesn't properly nil-check.
-	// TODO(mattmoor): Plumb through a real context
-	if err := new.Validate(context.TODO()); err != nil {
+	if err := new.Validate(ctx); err != nil {
 		return err
 	}
+
 	return nil
 }
 
@@ -569,11 +570,17 @@ func (ac *AdmissionController) mutate(ctx context.Context, req *admissionv1beta1
 	if newObj == nil {
 		return nil, errMissingNewObject
 	}
-	if err := validate(oldObj, newObj); err != nil {
+	if err := validate(ctx, oldObj, newObj); err != nil {
 		logger.Errorw("Failed the resource specific validation", zap.Error(err))
 		// Return the error message as-is to give the validation callback
 		// discretion over (our portion of) the message that the user sees.
 		return nil, err
+	}
+	if ac.Options.Strict {
+		if err := strictValidate(ctx, oldObj, newObj); err != nil {
+			logger.Errorw("Failed strict validation", zap.Error(err))
+			return nil, err
+		}
 	}
 	return json.Marshal(patches)
 }
