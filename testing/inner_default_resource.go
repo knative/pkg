@@ -47,7 +47,46 @@ type InnerDefaultSpec struct {
 	FieldWithDefault string `json:"fieldWithDefault,omitempty"`
 
 	// Deprecated: This field is deprecated.
-	FieldWithDeprecation string `json:"fieldWithDeprecation,omitempty"`
+	DeprecatedField string `json:"field,omitempty"`
+
+	SubFields *InnerDefaultSubSpec `json:"subfields,omitempty"`
+}
+
+// InnerDefaultSubSpec is a helper to test strict deprecated validation.
+type InnerDefaultSubSpec struct {
+	// Deprecated: This field is deprecated.
+	DeprecatedString string `json:"string,omitempty"`
+
+	// Deprecated: This field is deprecated.
+	DeprecatedStringPtr *string `json:"stringPtr,omitempty"`
+
+	// Deprecated: This field is deprecated.
+	DeprecatedInt int `json:"int,omitempty"`
+
+	// Deprecated: This field is deprecated.
+	DeprecatedIntPtr *int `json:"intPtr,omitempty"`
+
+	// Deprecated: This field is deprecated.
+	DeprecatedMap map[string]string `json:"map,omitempty"`
+
+	// Deprecated: This field is deprecated.
+	DeprecatedSlice []string `json:"slice,omitempty"`
+
+	// Deprecated: This field is deprecated.
+	DeprecatedStruct InnerDefaultStruct `json:"struct,omitempty"`
+
+	// Deprecated: This field is deprecated.
+	DeprecatedStructPtr *InnerDefaultStruct `json:"structPtr,omitempty"`
+
+	SliceStruct []InnerDefaultStruct `json:"slicestruct,omitempty"`
+}
+
+// Adding complication helper.
+type InnerDefaultStruct struct {
+	FieldAsString string `json:"fieldAsString,omitempty"`
+
+	// Deprecated: This field is deprecated.
+	DeprecatedField string `json:"field,omitempty"`
 }
 
 // InnerDefaultStatus is the status for InnerDefaultResource.
@@ -55,7 +94,7 @@ type InnerDefaultStatus struct {
 	FieldAsString string `json:"fieldAsString,omitempty"`
 
 	// Deprecated: This field is deprecated.
-	FieldWithDeprecation string `json:"fieldWithDeprecation,omitempty"`
+	DeprecatedField string `json:"field,omitempty"`
 }
 
 // Check that ImmutableDefaultResource may be validated and defaulted.
