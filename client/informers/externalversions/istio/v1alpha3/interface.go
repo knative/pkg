@@ -28,6 +28,8 @@ type Interface interface {
 	DestinationRules() DestinationRuleInformer
 	// Gateways returns a GatewayInformer.
 	Gateways() GatewayInformer
+	// ServiceEntries returns a ServiceEntryInformer.
+	ServiceEntries() ServiceEntryInformer
 	// VirtualServices returns a VirtualServiceInformer.
 	VirtualServices() VirtualServiceInformer
 }
@@ -51,6 +53,11 @@ func (v *version) DestinationRules() DestinationRuleInformer {
 // Gateways returns a GatewayInformer.
 func (v *version) Gateways() GatewayInformer {
 	return &gatewayInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+}
+
+// ServiceEntries returns a ServiceEntryInformer.
+func (v *version) ServiceEntries() ServiceEntryInformer {
+	return &serviceEntryInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }
 
 // VirtualServices returns a VirtualServiceInformer.

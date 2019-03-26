@@ -22,4 +22,6 @@ type DestinationRuleExpansion interface{}
 
 type GatewayExpansion interface{}
 
+type ServiceEntryExpansion interface{}
+
 type VirtualServiceExpansion interface{}
