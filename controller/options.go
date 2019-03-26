@@ -18,8 +18,6 @@ package controller
 
 import (
 	"context"
-	"github.com/knative/pkg/logging"
-	"github.com/knative/pkg/version"
 	"time"
 
 	"go.uber.org/zap"
@@ -29,6 +27,8 @@ import (
 	"k8s.io/client-go/tools/record"
 
 	sharedclientset "github.com/knative/pkg/client/clientset/versioned"
+	"github.com/knative/pkg/logging"
+	"github.com/knative/pkg/version"
 )
 
 // Options defines the common reconciler options.
@@ -59,7 +59,7 @@ type Options struct {
 	// StopChannel is the shared stop channel to end the process.
 	StopChannel <-chan struct{}
 
-	// TODO: We should havea  common stats reporter, but these are custom at the moment.
+	// TODO: We should have a common stats reporter, but these are custom at the moment.
 	//StatsReporter StatsReporter
 }
 
