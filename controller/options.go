@@ -99,8 +99,8 @@ type ConfigMapConfig struct {
 // NewOptions creates the common to Knative controller options.
 // component is the name of the controller component.
 // loggingConfigFile is the file path to the logging config map.
-func NewOptions(component string, cfg *rest.Config, configCfg ConfigMapConfig) Options {
-	loggingConfigMap, err := configmap.Load(configCfg.LoggingConfigPath)
+func NewOptions(component string, cfg *rest.Config, cmCfg ConfigMapConfig) Options {
+	loggingConfigMap, err := configmap.Load(cmCfg.LoggingConfigPath)
 	if err != nil {
 		log.Fatalf("Error loading logging configuration: %v", err)
 	}
@@ -127,10 +127,10 @@ func NewOptions(component string, cfg *rest.Config, configCfg ConfigMapConfig) O
 	opts.ConfigMapWatcher = configmap.NewInformedWatcher(opts.KubeClientSet, system.Namespace())
 
 	// Watch the logging config map and dynamically update logging levels.
-	opts.ConfigMapWatcher.Watch(configCfg.LoggingConfigPath, configCfg.LoggingObserver(logger, atomicLevel))
+	opts.ConfigMapWatcher.Watch(cmCfg.LoggingConfigPath, cmCfg.LoggingObserver(logger, atomicLevel))
 
 	// Watch the observability config map and dynamically update metrics exporter.
-	opts.ConfigMapWatcher.Watch(configCfg.MetricsConfigName, configCfg.MetricsObserver(logger))
+	opts.ConfigMapWatcher.Watch(cmCfg.MetricsConfigName, cmCfg.MetricsObserver(logger))
 
 	if err := version.CheckMinimumVersion(opts.KubeClientSet.Discovery()); err != nil {
 		logger.Fatalf("Version check failed: %v", err)
