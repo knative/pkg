@@ -14,12 +14,13 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package controller
+package reconciler
 
 import (
 	"go.uber.org/zap"
 
 	sharedclientset "github.com/knative/pkg/client/clientset/versioned"
+	"github.com/knative/pkg/controller"
 	"github.com/knative/pkg/logging/logkey"
 
 	corev1 "k8s.io/api/core/v1"
@@ -31,7 +32,7 @@ import (
 	"k8s.io/client-go/tools/record"
 )
 
-// Base implements the core controller logic, given a Reconciler.
+// Base holds common to Knative reconciler requirements.
 type Base struct {
 	// KubeClientSet allows us to talk to the k8s for core APIs
 	KubeClientSet kubernetes.Interface
@@ -59,7 +60,7 @@ type Base struct {
 
 // NewBase instantiates a new instance of Base implementing
 // the common & boilerplate code between Knative reconcilers.
-func NewBase(opt Options, controllerAgentName string) *Base {
+func NewBase(opt controller.Options, controllerAgentName string) *Base {
 	// Enrich the logs with controller name
 	logger := opt.Logger.Named(controllerAgentName).With(zap.String(logkey.ControllerType, controllerAgentName))
 
