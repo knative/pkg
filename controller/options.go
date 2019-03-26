@@ -31,6 +31,11 @@ import (
 	"github.com/knative/pkg/version"
 )
 
+const (
+	defaultResyncPeriod    = 10 * time.Hour // Based on controller-runtime default.
+	defaultTrackerMultiple = 3              // Based on knative usage.
+)
+
 // Options defines the common reconciler options.
 // We define this to reduce the boilerplate argument list when
 // creating our controllers.
@@ -93,15 +98,13 @@ func NewOptions(ctx context.Context, cfg *rest.Config, stopCh <-chan struct{}) O
 		logger.Fatalf("Version check failed: %v", err)
 	}
 
-	opts := Options{
+	return Options{
 		KubeClientSet:    kubeClient,
 		SharedClientSet:  sharedClient,
 		DynamicClientSet: dynamicClient,
 		Logger:           logger,
-		ResyncPeriod:     10 * time.Hour, // Based on controller-runtime default.
-		TrackerMultiple:  3,              // Based on knative usage.
+		ResyncPeriod:     defaultResyncPeriod,
+		TrackerMultiple:  defaultTrackerMultiple,
 		StopChannel:      stopCh,
 	}
-
-	return opts
 }
