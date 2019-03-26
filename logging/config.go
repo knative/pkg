@@ -20,8 +20,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/knative/pkg/configmap"
-
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	corev1 "k8s.io/api/core/v1"
@@ -168,19 +166,19 @@ func levelFromString(level string) (*zapcore.Level, error) {
 }
 
 // ObserverDecorator should add a logger to a configmap.Observer method.
-type ObserverDecorator func(logger *zap.SugaredLogger, atomicLevel zap.AtomicLevel) configmap.Observer
+type ObserverDecorator func(logger *zap.SugaredLogger, atomicLevel zap.AtomicLevel) func(*corev1.ConfigMap)
 
 // UpdateLogLevelFromConfigMap returns a helper func that can be used to update the exporter
 // when a config map is updated
-func NewObserverLoggingDecorator(levelKey string, components ...string) ObserverLoggingDecorator {
-	return func(logger *zap.SugaredLogger, atomicLevel zap.AtomicLevel) configmap.Observer {
+func NewObserverLoggingDecorator(levelKey string, components ...string) ObserverDecorator {
+	return func(logger *zap.SugaredLogger, atomicLevel zap.AtomicLevel) func(*corev1.ConfigMap) {
 		return UpdateLevelFromConfigMap(logger, atomicLevel, levelKey, components...)
 	}
 }
 
 // UpdateLevelFromConfigMap returns a helper func that can be used to update the logging level
 // when a config map is updated
-func UpdateLevelFromConfigMap(logger *zap.SugaredLogger, atomicLevel zap.AtomicLevel, levelKey string, components ...string) configmap.Observer {
+func UpdateLevelFromConfigMap(logger *zap.SugaredLogger, atomicLevel zap.AtomicLevel, levelKey string, components ...string) func(*corev1.ConfigMap) {
 	return func(configMap *corev1.ConfigMap) {
 		loggingConfig, err := NewConfigFromConfigMap(configMap, components...)
 		if err != nil {
