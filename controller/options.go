@@ -17,7 +17,12 @@ limitations under the License.
 package controller
 
 import (
-	"context"
+	"github.com/knative/pkg/configmap"
+	"github.com/knative/pkg/logging"
+	"github.com/knative/pkg/metrics"
+	"github.com/knative/pkg/signals"
+	"github.com/knative/pkg/system"
+	"log"
 	"time"
 
 	"go.uber.org/zap"
@@ -27,7 +32,6 @@ import (
 	"k8s.io/client-go/tools/record"
 
 	sharedclientset "github.com/knative/pkg/client/clientset/versioned"
-	"github.com/knative/pkg/logging"
 	"github.com/knative/pkg/version"
 )
 
@@ -55,11 +59,16 @@ type Options struct {
 	// Logger logs to the configured log system.
 	Logger *zap.SugaredLogger
 
+	// AtomicLevel is the atomic level the logger was started with.
+	AtomicLevel zap.AtomicLevel
+
 	// ResyncPeriod default informer resync period.
 	ResyncPeriod time.Duration
 
 	// TrackerMultiple a multiple of the resync period to use.
 	TrackerMultiple int
+
+	ConfigMapWatcher *configmap.InformedWatcher
 
 	// StopChannel is the shared stop channel to end the process.
 	StopChannel <-chan struct{}
@@ -76,35 +85,57 @@ func (o Options) GetTrackerLease() time.Duration {
 	return o.ResyncPeriod * time.Duration(o.TrackerMultiple)
 }
 
-func NewOptions(ctx context.Context, cfg *rest.Config, stopCh <-chan struct{}) Options {
-	logger := logging.FromContext(ctx)
+// ConfigMapConfig holds config map names, paths and ObserverDecorator fn for Metrics and Logging.
+type ConfigMapConfig struct {
+	LoggingConfigPath string
+	LoggingConfigName string
+	LoggingObserver   logging.ObserverDecorator
 
-	kubeClient, err := kubernetes.NewForConfig(cfg)
+	MetricsConfigPath string
+	MetricsConfigName string
+	MetricsObserver   metrics.ObserverDecorator
+}
+
+// NewOptions creates the common to Knative controller options.
+// component is the name of the controller component.
+// loggingConfigFile is the file path to the logging config map.
+func NewOptions(component string, cfg *rest.Config, configCfg ConfigMapConfig) Options {
+
+	loggingConfigMap, err := configmap.Load(configCfg.LoggingConfigPath)
 	if err != nil {
-		logger.Fatalw("Error building kubernetes clientset", zap.Error(err))
+		log.Fatalf("Error loading logging configuration: %v", err)
 	}
-
-	sharedClient, err := sharedclientset.NewForConfig(cfg)
+	loggingConfig, err := logging.NewConfigFromMap(loggingConfigMap)
 	if err != nil {
-		logger.Fatalw("Error building shared clientset", zap.Error(err))
+		log.Fatalf("Error parsing logging configuration: %v", err)
 	}
+	logger, atomicLevel := logging.NewLoggerFromConfig(loggingConfig, component)
+	defer logger.Sync()
 
-	dynamicClient, err := dynamic.NewForConfig(cfg)
-	if err != nil {
-		logger.Fatalw("Error building dynamic clientset", zap.Error(err))
-	}
+	// set up signals so we handle the first shutdown signal gracefully
+	stopCh := signals.SetupSignalHandler()
 
-	if err := version.CheckMinimumVersion(kubeClient.Discovery()); err != nil {
-		logger.Fatalf("Version check failed: %v", err)
-	}
-
-	return Options{
-		KubeClientSet:    kubeClient,
-		SharedClientSet:  sharedClient,
-		DynamicClientSet: dynamicClient,
+	opts := Options{
+		KubeClientSet:    kubernetes.NewForConfigOrDie(cfg),
+		SharedClientSet:  sharedclientset.NewForConfigOrDie(cfg),
+		DynamicClientSet: dynamic.NewForConfigOrDie(cfg),
 		Logger:           logger,
+		AtomicLevel:      atomicLevel,
 		ResyncPeriod:     defaultResyncPeriod,
 		TrackerMultiple:  defaultTrackerMultiple,
 		StopChannel:      stopCh,
 	}
+	opts.ConfigMapWatcher = configmap.NewInformedWatcher(opts.KubeClientSet, system.Namespace())
+
+	// Watch the logging config map and dynamically update logging levels.
+	opts.ConfigMapWatcher.Watch(configCfg.LoggingConfigPath, configCfg.LoggingObserver(logger, atomicLevel))
+
+	// Watch the observability config map and dynamically update metrics exporter.
+	opts.ConfigMapWatcher.Watch(configCfg.MetricsConfigName, configCfg.MetricsObserver(logger))
+
+	if err := version.CheckMinimumVersion(opts.KubeClientSet.Discovery()); err != nil {
+		logger.Fatalf("Version check failed: %v", err)
+	}
+
+	return opts
 }

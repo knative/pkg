@@ -19,6 +19,7 @@ package metrics
 import (
 	"errors"
 	"fmt"
+	"github.com/knative/pkg/configmap"
 	"os"
 	"path"
 	"strconv"
@@ -152,9 +153,20 @@ func getMetricsConfig(m map[string]string, domain string, component string, logg
 	return &mc, nil
 }
 
+// ObserverDecorator should add a logger to a configmap.Observer method.
+type ObserverDecorator func(logger *zap.SugaredLogger) configmap.Observer
+
+// UpdateLogLevelFromConfigMap returns a helper func that can be used to update the exporter
+// when a config map is updated
+func NewObserverLoggingDecorator(domain, component string) ObserverDecorator {
+	return func(logger *zap.SugaredLogger) configmap.Observer {
+		return UpdateExporterFromConfigMap(domain, component, logger)
+	}
+}
+
 // UpdateExporterFromConfigMap returns a helper func that can be used to update the exporter
 // when a config map is updated
-func UpdateExporterFromConfigMap(domain string, component string, logger *zap.SugaredLogger) func(configMap *corev1.ConfigMap) {
+func UpdateExporterFromConfigMap(domain, component string, logger *zap.SugaredLogger) configmap.Observer {
 	return func(configMap *corev1.ConfigMap) {
 		newConfig, err := getMetricsConfig(configMap.Data, domain, component, logger)
 		if err != nil {
