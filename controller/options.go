@@ -100,7 +100,6 @@ type ConfigMapConfig struct {
 // component is the name of the controller component.
 // loggingConfigFile is the file path to the logging config map.
 func NewOptions(component string, cfg *rest.Config, configCfg ConfigMapConfig) Options {
-
 	loggingConfigMap, err := configmap.Load(configCfg.LoggingConfigPath)
 	if err != nil {
 		log.Fatalf("Error loading logging configuration: %v", err)
