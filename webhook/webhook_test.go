@@ -135,6 +135,31 @@ func TestUnknownVersionFails(t *testing.T) {
 	expectFailsWith(t, ac.admit(TestContextWithLogger(t), req), "unhandled kind")
 }
 
+func TestUnknownFieldFails(t *testing.T) {
+	_, ac := newNonRunningTestAdmissionController(t, newDefaultOptions())
+	req := &admissionv1beta1.AdmissionRequest{
+		Operation: admissionv1beta1.Create,
+		Kind: metav1.GroupVersionKind{
+			Group:   "pkg.knative.dev",
+			Version: "v1alpha1",
+			Kind:    "Resource",
+		},
+	}
+
+	marshaled, err := json.Marshal(map[string]interface{}{
+		"spec": map[string]interface{}{
+			"foo": "bar",
+		},
+	})
+	if err != nil {
+		panic("failed to marshal resource")
+	}
+	req.Object.Raw = marshaled
+
+	expectFailsWith(t, ac.admit(TestContextWithLogger(t), req),
+		`mutation failed: cannot decode incoming new object: json: unknown field "foo"`)
+}
+
 func TestValidCreateResourceSucceeds(t *testing.T) {
 	r := createResource("a name")
 	for _, v := range []string{"v1alpha1", "v1beta1"} {
@@ -699,8 +724,9 @@ func setUserAnnotation(userC, userU string) jsonpatch.JsonPatchOperation {
 func NewAdmissionController(client kubernetes.Interface, options ControllerOptions,
 	logger *zap.SugaredLogger) (*AdmissionController, error) {
 	return &AdmissionController{
-		Client:  client,
-		Options: options,
+		Client:                client,
+		Options:               options,
+		DisallowUnknownFields: true,
 		// Use different versions and domains, for coverage.
 		Handlers: map[schema.GroupVersionKind]GenericCRD{
 			{
