@@ -179,17 +179,41 @@ func TestValidCreateResourceSucceedsWithDefaultPatch(t *testing.T) {
 	_, ac := newNonRunningTestAdmissionController(t, newDefaultOptions())
 	resp := ac.admit(TestContextWithLogger(t), createCreateResource(r))
 	expectAllowed(t, resp)
-	expectPatches(t, resp.Patch, []jsonpatch.JsonPatchOperation{
-		{
-			Operation: "add",
-			Path:      "/spec/fieldThatsImmutableWithDefault",
-			Value:     "this is another default value",
-		}, {
-			Operation: "add",
-			Path:      "/spec/fieldWithDefault",
-			Value:     "I'm a default.",
-		},
-		setUserAnnotation(user1, user1),
+	expectPatches(t, resp.Patch, []jsonpatch.JsonPatchOperation{{
+		Operation: "add",
+		Path:      "/spec/fieldThatsImmutableWithDefault",
+		Value:     "this is another default value",
+	}, {
+		Operation: "add",
+		Path:      "/spec/fieldWithDefault",
+		Value:     "I'm a default.",
+	}, setUserAnnotation(user1, user1),
+	})
+}
+
+func TestValidCreateResourceSucceedsWithDefaultPatchWithContext(t *testing.T) {
+	r := createResource("a name")
+	_, ac := newNonRunningTestAdmissionController(t, newDefaultOptions())
+	ctx := TestContextWithLogger(t)
+
+	contextDefault := "I came from context y'all"
+	ctx = WithValue(ctx, contextDefault)
+
+	resp := ac.admit(ctx, createCreateResource(r))
+	expectAllowed(t, resp)
+	expectPatches(t, resp.Patch, []jsonpatch.JsonPatchOperation{{
+		Operation: "add",
+		Path:      "/spec/fieldThatsImmutableWithDefault",
+		Value:     "this is another default value",
+	}, {
+		Operation: "add",
+		Path:      "/spec/fieldWithDefault",
+		Value:     "I'm a default.",
+	}, {
+		Operation: "add",
+		Path:      "/spec/fieldWithContextDefault",
+		Value:     contextDefault,
+	}, setUserAnnotation(user1, user1),
 	})
 }
 

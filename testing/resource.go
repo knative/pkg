@@ -55,6 +55,7 @@ var _ apis.Listable = (*Resource)(nil)
 // ResourceSpec represents test resource spec.
 type ResourceSpec struct {
 	FieldWithDefault               string `json:"fieldWithDefault,omitempty"`
+	FieldWithContextDefault        string `json:"fieldWithContextDefault,omitempty"`
 	FieldWithValidation            string `json:"fieldWithValidation,omitempty"`
 	FieldThatsImmutable            string `json:"fieldThatsImmutable,omitempty"`
 	FieldThatsImmutableWithDefault string `json:"fieldThatsImmutableWithDefault,omitempty"`
@@ -65,10 +66,28 @@ func (c *Resource) SetDefaults(ctx context.Context) {
 	c.Spec.SetDefaults(ctx)
 }
 
+type onContextKey struct{}
+
+// WithValue returns a WithContext for attaching an OnContext with the given value.
+func WithValue(ctx context.Context, val string) context.Context {
+	return context.WithValue(ctx, onContextKey{}, &OnContext{Value: val})
+}
+
+// OnContext is a struct for holding a value attached to a context.
+type OnContext struct {
+	Value string
+}
+
 // SetDefaults sets the defaults on the spec.
 func (cs *ResourceSpec) SetDefaults(ctx context.Context) {
 	if cs.FieldWithDefault == "" {
 		cs.FieldWithDefault = "I'm a default."
+	}
+	if cs.FieldWithContextDefault == "" {
+		oc, ok := ctx.Value(onContextKey{}).(*OnContext)
+		if ok {
+			cs.FieldWithContextDefault = oc.Value
+		}
 	}
 	if cs.FieldThatsImmutableWithDefault == "" {
 		cs.FieldThatsImmutableWithDefault = "this is another default value"
