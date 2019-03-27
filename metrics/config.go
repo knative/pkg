@@ -29,17 +29,18 @@ import (
 	corev1 "k8s.io/api/core/v1"
 )
 
-const (
-	allowStackdriverCustomMetricsKey = "metrics.allow-stackdriver-custom-metrics"
-	backendDestinationKey            = "metrics.backend-destination"
-	reportingPeriodKey               = "metrics.reporting-period-seconds"
-	stackdriverProjectIDKey          = "metrics.stackdriver-project-id"
-)
-
 // metricsBackend specifies the backend to use for metrics
 type metricsBackend string
 
 const (
+	// The following keys are used to configure metrics reporting.
+	// See https://github.com/knative/serving/blob/master/config/config-observability.yaml
+	// for details.
+	AllowStackdriverCustomMetricsKey = "metrics.allow-stackdriver-custom-metrics"
+	BackendDestinationKey            = "metrics.backend-destination"
+	ReportingPeriodKey               = "metrics.reporting-period-seconds"
+	StackdriverProjectIDKey          = "metrics.stackdriver-project-id"
+
 	// Stackdriver is used for Stackdriver backend
 	Stackdriver metricsBackend = "stackdriver"
 	// Prometheus is used for Prometheus backend
@@ -102,7 +103,7 @@ func getMetricsConfig(m map[string]string, domain string, component string, logg
 		backend = string(Prometheus)
 	}
 	// Override backend if it is setting in config map.
-	if backendFromConfig, ok := m[backendDestinationKey]; ok {
+	if backendFromConfig, ok := m[BackendDestinationKey]; ok {
 		backend = backendFromConfig
 	}
 	lb := metricsBackend(strings.ToLower(backend))
@@ -117,14 +118,14 @@ func getMetricsConfig(m map[string]string, domain string, component string, logg
 	// use the application default credentials. If that is not available, Opencensus would fail to create the
 	// metrics exporter.
 	if mc.backendDestination == Stackdriver {
-		mc.stackdriverProjectID = m[stackdriverProjectIDKey]
+		mc.stackdriverProjectID = m[StackdriverProjectIDKey]
 		mc.isStackdriverBackend = true
 		mc.stackdriverMetricTypePrefix = path.Join(domain, component)
 		mc.stackdriverCustomMetricTypePrefix = path.Join(customMetricTypePrefix, component)
-		if ascmStr, ok := m[allowStackdriverCustomMetricsKey]; ok && ascmStr != "" {
+		if ascmStr, ok := m[AllowStackdriverCustomMetricsKey]; ok && ascmStr != "" {
 			ascmBool, err := strconv.ParseBool(ascmStr)
 			if err != nil {
-				return nil, fmt.Errorf("invalid %s value %q", allowStackdriverCustomMetricsKey, ascmStr)
+				return nil, fmt.Errorf("invalid %s value %q", AllowStackdriverCustomMetricsKey, ascmStr)
 			}
 			mc.allowStackdriverCustomMetrics = ascmBool
 		}
@@ -137,10 +138,10 @@ func getMetricsConfig(m map[string]string, domain string, component string, logg
 	// For Prometheus, we will use a lower value since the exporter doesn't
 	// push anything but just responds to pull requests, and shorter durations
 	// do not really hurt the performance and we rely on the scraping configuration.
-	if repStr, ok := m[reportingPeriodKey]; ok && repStr != "" {
+	if repStr, ok := m[ReportingPeriodKey]; ok && repStr != "" {
 		repInt, err := strconv.Atoi(repStr)
 		if err != nil {
-			return nil, fmt.Errorf("invalid %s value %q", reportingPeriodKey, repStr)
+			return nil, fmt.Errorf("invalid %s value %q", ReportingPeriodKey, repStr)
 		}
 		mc.reportingPeriod = time.Duration(repInt) * time.Second
 	} else if mc.backendDestination == Stackdriver {
@@ -156,30 +157,36 @@ func getMetricsConfig(m map[string]string, domain string, component string, logg
 // when a config map is updated
 func UpdateExporterFromConfigMap(domain string, component string, logger *zap.SugaredLogger) func(configMap *corev1.ConfigMap) {
 	return func(configMap *corev1.ConfigMap) {
-		newConfig, err := getMetricsConfig(configMap.Data, domain, component, logger)
+		UpdateExporter(configMap.Data, domain, component, logger)
+	}
+}
+
+// UpdateExporter updates the exporter based on the given config string map,
+// domain and component.
+func UpdateExporter(config map[string]string, domain string, component string, logger *zap.SugaredLogger) {
+	newConfig, err := getMetricsConfig(config, domain, component, logger)
+	if err != nil {
+		if ce := getCurMetricsExporter(); ce == nil {
+			// Fail the process if there doesn't exist an exporter.
+			logger.Errorw("Failed to get a valid metrics config", zap.Error(err))
+		} else {
+			logger.Errorw("Failed to get a valid metrics config; Skip updating the metrics exporter", zap.Error(err))
+		}
+		return
+	}
+
+	if isNewExporterRequired(newConfig) {
+		e, err := newMetricsExporter(newConfig, logger)
 		if err != nil {
-			if ce := getCurMetricsExporter(); ce == nil {
-				// Fail the process if there doesn't exist an exporter.
-				logger.Errorw("Failed to get a valid metrics config", zap.Error(err))
-			} else {
-				logger.Errorw("Failed to get a valid metrics config; Skip updating the metrics exporter", zap.Error(err))
-			}
+			logger.Errorf("Failed to update a new metrics exporter based on metric config %v. error: %v", newConfig, err)
 			return
 		}
-
-		if isNewExporterRequired(newConfig) {
-			e, err := newMetricsExporter(newConfig, logger)
-			if err != nil {
-				logger.Errorf("Failed to update a new metrics exporter based on metric config %v. error: %v", newConfig, err)
-				return
-			}
-			existingConfig := getCurMetricsConfig()
-			setCurMetricsExporter(e)
-			logger.Infof("Successfully updated the metrics exporter; old config: %v; new config %v", existingConfig, newConfig)
-		}
-
-		setCurMetricsConfig(newConfig)
+		existingConfig := getCurMetricsConfig()
+		setCurMetricsExporter(e)
+		logger.Infof("Successfully updated the metrics exporter; old config: %v; new config %v", existingConfig, newConfig)
 	}
+
+	setCurMetricsConfig(newConfig)
 }
 
 // isNewExporterRequired compares the non-nil newConfig against curMetricsConfig. When backend changes,
