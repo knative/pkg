@@ -197,7 +197,12 @@ func (sc *SpoofingClient) Poll(req *http.Request, inState ResponseChecker) (*Res
 				sc.logf("Retrying %s for TCP timeout %v", req.URL.String(), err)
 				return false, nil
 			}
-
+			// Retry DNS errors -- as tests may be using .xip.io or .nip.io domains
+			// which may be flaky sometimes.
+			if err, ok := err.(*net.DNSError); ok {
+				sc.logf("Retrying %s for DNS error %v", req.URL.String(), err)
+				return false, nil
+			}
 			// Repeat the poll on `connection refused` errors, which are usually transient Istio errors.
 			// The alternative for the string check is:
 			// 	errNo := (((err.(*url.Error)).Err.(*net.OpError)).Err.(*os.SyscallError).Err).(syscall.Errno)
