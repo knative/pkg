@@ -42,7 +42,7 @@ import (
 	"github.com/mattbaird/jsonpatch"
 	admissionv1beta1 "k8s.io/api/admission/v1beta1"
 	admissionregistrationv1beta1 "k8s.io/api/admissionregistration/v1beta1"
-	v1 "k8s.io/api/apps/v1"
+	appsv1 "k8s.io/api/apps/v1"
 	authenticationv1 "k8s.io/api/authentication/v1"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -60,7 +60,7 @@ const (
 )
 
 var (
-	deploymentKind      = v1.SchemeGroupVersion.WithKind("Deployment")
+	deploymentKind      = appsv1.SchemeGroupVersion.WithKind("Deployment")
 	errMissingNewObject = errors.New("the new object may not be nil")
 )
 

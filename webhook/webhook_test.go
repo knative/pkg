@@ -42,7 +42,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/kubernetes"
 
-	v1 "k8s.io/api/apps/v1"
+	appsv1 "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	fakekubeclientset "k8s.io/client-go/kubernetes/fake"
 
@@ -588,7 +588,7 @@ func TestSettingWebhookClientAuth(t *testing.T) {
 }
 
 func createDeployment(ac *AdmissionController) {
-	deployment := &v1.Deployment{
+	deployment := &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "whatever",
 			Namespace: "knative-something",
