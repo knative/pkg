@@ -72,7 +72,7 @@ func TestTCPConnectRefuse(t *testing.T) {
 func TestTCPTimeout(t *testing.T) {
 	client := &http.Client{}
 
-	// We have no postive test for TCP timeout, but we do have a few negative tests.
+	// We have no positive test for TCP timeout, but we do have a few negative tests.
 	for _, tt := range []struct {
 		name       string
 		url        string
