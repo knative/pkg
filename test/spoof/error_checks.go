@@ -6,11 +6,9 @@ import (
 	"strings"
 )
 
-func isTCPTimeout(err error) bool {
-	if err, ok := err.(net.Error); ok && err.Timeout() {
-		return true
-	}
-	return false
+func isTCPTimeout(e error) bool {
+	err, ok := e.(net.Error)
+	return err != nil && ok && err.Timeout()
 }
 
 func isDNSError(err error) bool {
@@ -29,7 +27,7 @@ func isTCPConnectRefuse(err error) bool {
 	// 	errNo := (((err.(*url.Error)).Err.(*net.OpError)).Err.(*os.SyscallError).Err).(syscall.Errno)
 	// if errNo == syscall.Errno(0x6f) {...}
 	// But with assertions, of course.
-	if strings.Contains(err.Error(), "connect: connection refused") {
+	if err != nil && strings.Contains(err.Error(), "connect: connection refused") {
 		return true
 	}
 	return false
