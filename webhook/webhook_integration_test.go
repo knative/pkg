@@ -18,6 +18,7 @@ package webhook
 
 import (
 	"bytes"
+	"context"
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
@@ -27,8 +28,10 @@ import (
 	"testing"
 	"time"
 
+	. "github.com/knative/pkg/testing"
 	"github.com/mattbaird/jsonpatch"
 	admissionv1beta1 "k8s.io/api/admission/v1beta1"
+	authenticationv1 "k8s.io/api/authentication/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -216,6 +219,104 @@ func TestValidResponseForResource(t *testing.T) {
 	}
 }
 
+func TestValidResponseForResourceWithContextDefault(t *testing.T) {
+	ac, serverURL, err := testSetup(t)
+	if err != nil {
+		t.Fatalf("testSetup() = %v", err)
+	}
+	theDefault := "Some default value"
+	ac.WithContext = func(ctx context.Context) context.Context {
+		return WithValue(ctx, theDefault)
+	}
+
+	stopCh := make(chan struct{})
+	defer close(stopCh)
+
+	go func() {
+		err := ac.Run(stopCh)
+		if err != nil {
+			t.Fatalf("Unable to run controller: %s", err)
+		}
+	}()
+
+	pollErr := waitForServerAvailable(t, serverURL, testTimeout)
+	if pollErr != nil {
+		t.Fatalf("waitForServerAvailable() = %v", err)
+	}
+	tlsClient, err := createSecureTLSClient(t, ac.Client, &ac.Options)
+	if err != nil {
+		t.Fatalf("createSecureTLSClient() = %v", err)
+	}
+
+	admissionreq := &admissionv1beta1.AdmissionRequest{
+		Operation: admissionv1beta1.Create,
+		Kind: metav1.GroupVersionKind{
+			Group:   "pkg.knative.dev",
+			Version: "v1alpha1",
+			Kind:    "Resource",
+		},
+	}
+	testRev := createResource("testrev")
+	marshaled, err := json.Marshal(testRev)
+	if err != nil {
+		t.Fatalf("Failed to marshal resource: %s", err)
+	}
+
+	admissionreq.Object.Raw = marshaled
+	rev := &admissionv1beta1.AdmissionReview{
+		Request: admissionreq,
+	}
+
+	reqBuf := new(bytes.Buffer)
+	err = json.NewEncoder(reqBuf).Encode(&rev)
+	if err != nil {
+		t.Fatalf("Failed to marshal admission review: %v", err)
+	}
+
+	req, err := http.NewRequest("GET", fmt.Sprintf("https://%s", serverURL), reqBuf)
+	if err != nil {
+		t.Fatalf("http.NewRequest() = %v", err)
+	}
+	req.Header.Add("Content-Type", "application/json")
+
+	response, err := tlsClient.Do(req)
+	if err != nil {
+		t.Fatalf("Failed to get response %v", err)
+	}
+
+	if got, want := response.StatusCode, http.StatusOK; got != want {
+		t.Errorf("Response status code = %v, wanted %v", got, want)
+	}
+
+	defer response.Body.Close()
+	responseBody, err := ioutil.ReadAll(response.Body)
+	if err != nil {
+		t.Fatalf("Failed to read response body %v", err)
+	}
+
+	reviewResponse := admissionv1beta1.AdmissionReview{}
+
+	err = json.NewDecoder(bytes.NewReader(responseBody)).Decode(&reviewResponse)
+	if err != nil {
+		t.Fatalf("Failed to decode response: %v", err)
+	}
+
+	expectPatches(t, reviewResponse.Response.Patch, []jsonpatch.JsonPatchOperation{{
+		Operation: "add",
+		Path:      "/spec/fieldThatsImmutableWithDefault",
+		Value:     "this is another default value",
+	}, {
+		Operation: "add",
+		Path:      "/spec/fieldWithDefault",
+		Value:     "I'm a default.",
+	}, {
+		Operation: "add",
+		Path:      "/spec/fieldWithContextDefault",
+		Value:     theDefault,
+	}, setUserAnnotation("", ""),
+	})
+}
+
 func TestInvalidResponseForResource(t *testing.T) {
 	ac, serverURL, err := testSetup(t)
 	if err != nil {
@@ -255,6 +356,9 @@ func TestInvalidResponseForResource(t *testing.T) {
 			Group:   "pkg.knative.dev",
 			Version: "v1alpha1",
 			Kind:    "Resource",
+		},
+		UserInfo: authenticationv1.UserInfo{
+			Username: user1,
 		},
 	}
 
