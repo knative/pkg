@@ -65,7 +65,7 @@ var _ duck.Populatable = (*AddressableType)(nil)
 var _ apis.Listable = (*AddressableType)(nil)
 
 // GetFullType implements duck.Implementable
-func (_ *Addressable) GetFullType() duck.Populatable {
+func (*Addressable) GetFullType() duck.Populatable {
 	return &AddressableType{}
 }
 

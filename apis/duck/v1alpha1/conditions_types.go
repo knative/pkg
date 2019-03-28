@@ -159,7 +159,7 @@ var _ duck.Populatable = (*KResource)(nil)
 var _ apis.Listable = (*KResource)(nil)
 
 // GetFullType implements duck.Implementable
-func (_ *Conditions) GetFullType() duck.Populatable {
+func (*Conditions) GetFullType() duck.Populatable {
 	return &KResource{}
 }
 
