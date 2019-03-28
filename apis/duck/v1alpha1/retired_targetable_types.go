@@ -82,7 +82,7 @@ func (t *Target) Populate() {
 }
 
 // GetListType implements apis.Listable
-func (r *Target) GetListType() runtime.Object {
+func (t *Target) GetListType() runtime.Object {
 	return &TargetList{}
 }
 
