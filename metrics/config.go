@@ -213,7 +213,7 @@ func UpdateExporterFromConfigMap(domain string, component string, logger *zap.Su
 }
 
 // UpdateExporter updates the exporter based on the given ExporterOptions.
-func UpdateExporter(ops ExporterOptions, logger *zap.SugaredLogger) {
+func UpdateExporter(ops ExporterOptions, logger *zap.SugaredLogger) error {
 	newConfig, err := getMetricsConfig(ops, logger)
 	if err != nil {
 		if ce := getCurMetricsExporter(); ce == nil {
@@ -222,14 +222,14 @@ func UpdateExporter(ops ExporterOptions, logger *zap.SugaredLogger) {
 		} else {
 			logger.Errorw("Failed to get a valid metrics config; Skip updating the metrics exporter", zap.Error(err))
 		}
-		return
+		return err
 	}
 
 	if isNewExporterRequired(newConfig) {
 		e, err := newMetricsExporter(newConfig, logger)
 		if err != nil {
 			logger.Errorf("Failed to update a new metrics exporter based on metric config %v. error: %v", newConfig, err)
-			return
+			return err
 		}
 		existingConfig := getCurMetricsConfig()
 		setCurMetricsExporter(e)
@@ -237,6 +237,7 @@ func UpdateExporter(ops ExporterOptions, logger *zap.SugaredLogger) {
 	}
 
 	setCurMetricsConfig(newConfig)
+	return nil
 }
 
 // isNewExporterRequired compares the non-nil newConfig against curMetricsConfig. When backend changes,
