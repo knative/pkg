@@ -91,7 +91,7 @@ func TestGetMonitoredResourceFunc_UseKnativeRevision(t *testing.T) {
 			Aggregation: view.LastValue(),
 			TagKeys:     []tag.Key{},
 		}
-		mrf := getMonitoredResourceFunc(testCase.domain, testCase.component, &testGcpMetadata)
+		mrf := getMonitoredResourceFunc(path.Join(testCase.domain, testCase.component), &testGcpMetadata)
 
 		newTags, monitoredResource := mrf(testView, testTags)
 		gotResType, labels := monitoredResource.MonitoredResource()
@@ -122,7 +122,7 @@ func TestGetMonitoredResourceFunc_UseGlobal(t *testing.T) {
 			Aggregation: view.LastValue(),
 			TagKeys:     []tag.Key{},
 		}
-		mrf := getMonitoredResourceFunc(testCase.domain, testCase.component, &testGcpMetadata)
+		mrf := getMonitoredResourceFunc(path.Join(testCase.domain, testCase.component), &testGcpMetadata)
 
 		newTags, monitoredResource := mrf(testView, testTags)
 		gotResType, labels := monitoredResource.MonitoredResource()
@@ -149,8 +149,7 @@ func TestGetgetMetricTypeFunc_UseKnativeDomain(t *testing.T) {
 			TagKeys:     []tag.Key{},
 		}
 		mtf := getMetricTypeFunc(
-			testCase.domain,
-			testCase.component,
+			path.Join(testCase.domain, testCase.component),
 			path.Join(customMetricTypePrefix, testCase.component))
 
 		gotMetricType := mtf(testView)
@@ -170,8 +169,7 @@ func TestGetgetMetricTypeFunc_UseCustomDomain(t *testing.T) {
 			TagKeys:     []tag.Key{},
 		}
 		mtf := getMetricTypeFunc(
-			testCase.domain,
-			testCase.component,
+			path.Join(testCase.domain, testCase.component),
 			path.Join(customMetricTypePrefix, testCase.component))
 
 		gotMetricType := mtf(testView)

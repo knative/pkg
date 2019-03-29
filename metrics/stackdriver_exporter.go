@@ -42,22 +42,6 @@ var (
 	// In unit tests this is set to a fake one to avoid calling actual Google API
 	// service.
 	newStackdriverExporterFunc func(stackdriver.Options) (view.Exporter, error)
-
-	// metricIDToStackdriverMetricType maps objects of MetricID to stackdriver
-	// metric types.
-	metricIDToStackdriverMetricType = map[metricID]string{
-		getActivatorMetricID("request_count"):               "knative.dev/serving/activator/request_count",
-		getActivatorMetricID("request_latencies"):           "knative.dev/serving/activator/request_latencies",
-		getAutoscalerMetricID("desired_pods"):               "knative.dev/serving/autoscaler/desired_pods",
-		getAutoscalerMetricID("requested_pods"):             "knative.dev/serving/autoscaler/requested_pods",
-		getAutoscalerMetricID("actual_pods"):                "knative.dev/serving/autoscaler/actual_pods",
-		getAutoscalerMetricID("stable_request_concurrency"): "knative.dev/serving/autoscaler/stable_request_concurrency",
-		getAutoscalerMetricID("panic_request_concurrency"):  "knative.dev/serving/autoscaler/panic_request_concurrency",
-		getAutoscalerMetricID("target_concurrency_per_pod"): "knative.dev/serving/autoscaler/target_concurrency_per_pod",
-		getAutoscalerMetricID("panic_mode"):                 "knative.dev/serving/autoscaler/panic_mode",
-		getQueueProxyMetricID("request_count"):              "knative.dev/serving/revision/request_count",
-		getQueueProxyMetricID("request_latencies"):          "knative.dev/serving/revision/request_latencies",
-	}
 )
 
 func init() {
@@ -73,12 +57,12 @@ func newOpencensusSDExporter(o stackdriver.Options) (view.Exporter, error) {
 
 func newStackdriverExporter(config *metricsConfig, logger *zap.SugaredLogger) (view.Exporter, error) {
 	gm := gcpMetadataFunc()
-	mtf := getMetricTypeFunc(config.domain, config.component, config.stackdriverCustomMetricTypePrefix)
+	mtf := getMetricTypeFunc(config.stackdriverMetricTypePrefix, config.stackdriverCustomMetricTypePrefix)
 	e, err := newStackdriverExporterFunc(stackdriver.Options{
 		ProjectID:               config.stackdriverProjectID,
 		GetMetricDisplayName:    mtf, // Use metric type for display name for custom metrics. No impact on built-in metrics.
 		GetMetricType:           mtf,
-		GetMonitoredResource:    getMonitoredResourceFunc(config.domain, config.component, gm),
+		GetMonitoredResource:    getMonitoredResourceFunc(config.stackdriverMetricTypePrefix, gm),
 		DefaultMonitoringLabels: &stackdriver.Labels{},
 	})
 	if err != nil {
@@ -89,14 +73,10 @@ func newStackdriverExporter(config *metricsConfig, logger *zap.SugaredLogger) (v
 	return e, nil
 }
 
-func getMonitoredResourceFunc(domain, component string, gm *gcpMetadata) func(v *view.View, tags []tag.Tag) ([]tag.Tag, monitoredresource.Interface) {
+func getMonitoredResourceFunc(metricTypePrefix string, gm *gcpMetadata) func(v *view.View, tags []tag.Tag) ([]tag.Tag, monitoredresource.Interface) {
 	return func(view *view.View, tags []tag.Tag) ([]tag.Tag, monitoredresource.Interface) {
-		mid := metricID{
-			domain:    domain,
-			component: component,
-			name:      view.Measure.Name(),
-		}
-		if _, ok := metricIDToStackdriverMetricType[mid]; ok {
+		metricType := path.Join(metricTypePrefix, view.Measure.Name())
+		if metricskey.KnativeRevisionMetrics.Has(metricType) {
 			return getKnativeRevisionMonitoredResource(view, tags, gm)
 		}
 		// Unsupported metric by knative_revision, use "global" resource type.
@@ -149,15 +129,11 @@ func getGlobalMonitoredResource(v *view.View, tags []tag.Tag) ([]tag.Tag, monito
 	return tags, &Global{}
 }
 
-func getMetricTypeFunc(domain, component, customMetricTypePrefix string) func(view *view.View) string {
+func getMetricTypeFunc(metricTypePrefix, customMetricTypePrefix string) func(view *view.View) string {
 	return func(view *view.View) string {
-		mid := metricID{
-			domain:    domain,
-			component: component,
-			name:      view.Measure.Name(),
-		}
-		if mt, ok := metricIDToStackdriverMetricType[mid]; ok {
-			return mt
+		metricType := path.Join(metricTypePrefix, view.Measure.Name())
+		if metricskey.KnativeRevisionMetrics.Has(metricType) {
+			return metricType
 		}
 		// Unsupported metric by knative_revision, use custom domain.
 		return path.Join(customMetricTypePrefix, view.Measure.Name())

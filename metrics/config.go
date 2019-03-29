@@ -104,6 +104,10 @@ type metricsConfig struct {
 	// True if backendDestination equals to "stackdriver". Store this in a variable
 	// to reduce string comparison operations.
 	isStackdriverBackend bool
+	// stackdriverMetricTypePrefix is the metric domain joins component, e.g.
+	// "knative.dev/serving/activator". Store this in a variable to reduce string
+	// join operations.
+	stackdriverMetricTypePrefix string
 	// stackdriverCustomMetricTypePrefix is "custom.googleapis.com/knative.dev" joins
 	// component, e.g. "custom.googleapis.com/knative.dev/serving/activator".
 	// Store this in a variable to reduce string join operations.
@@ -162,6 +166,7 @@ func getMetricsConfig(ops ExporterOptions, logger *zap.SugaredLogger) (*metricsC
 	if mc.backendDestination == Stackdriver {
 		mc.stackdriverProjectID = m[StackdriverProjectIDKey]
 		mc.isStackdriverBackend = true
+		mc.stackdriverMetricTypePrefix = path.Join(mc.domain, mc.component)
 		mc.stackdriverCustomMetricTypePrefix = path.Join(customMetricTypePrefix, mc.component)
 		if ascmStr, ok := m[AllowStackdriverCustomMetricsKey]; ok && ascmStr != "" {
 			ascmBool, err := strconv.ParseBool(ascmStr)
