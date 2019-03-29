@@ -18,9 +18,7 @@ package metrics
 
 import (
 	"context"
-	"path"
 
-	"github.com/knative/pkg/metrics/metricskey"
 	"go.opencensus.io/stats"
 )
 
@@ -49,8 +47,12 @@ func Record(ctx context.Context, ms stats.Measurement) {
 	}
 
 	// Condition 4)
-	metricType := path.Join(mc.stackdriverMetricTypePrefix, ms.Measure().Name())
-	if metricskey.KnativeRevisionMetrics.Has(metricType) {
+	mid := metricID{
+		domain:    mc.domain,
+		component: mc.component,
+		name:      ms.Measure().Name(),
+	}
+	if _, ok := metricIDToStackdriverMetricType[mid]; ok {
 		stats.Record(ctx, ms)
 	}
 }

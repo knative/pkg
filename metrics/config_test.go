@@ -20,8 +20,6 @@ import (
 	"time"
 
 	. "github.com/knative/pkg/logging/testing"
-	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 const (
@@ -35,97 +33,142 @@ const (
 var (
 	errorTests = []struct {
 		name        string
-		cm          map[string]string
-		domain      string
-		component   string
+		ops         ExporterOptions
 		expectedErr string
 	}{{
-		name: "unsupportedBackend",
-		cm: map[string]string{
-			"metrics.backend-destination":    "unsupported",
-			"metrics.stackdriver-project-id": testProj,
+		name: "empty config",
+		ops: ExporterOptions{
+			Domain:    servingDomain,
+			Component: testComponent,
 		},
-		domain:      servingDomain,
-		component:   testComponent,
+		expectedErr: "metrics config map cannot be empty",
+	}, {
+		name: "unsupportedBackend",
+		ops: ExporterOptions{
+			ConfigMap: map[string]string{
+				"metrics.backend-destination":    "unsupported",
+				"metrics.stackdriver-project-id": testProj,
+			},
+			Domain:    servingDomain,
+			Component: testComponent,
+		},
 		expectedErr: "unsupported metrics backend value \"unsupported\"",
 	}, {
 		name: "emptyDomain",
-		cm: map[string]string{
-			"metrics.backend-destination": "prometheus",
+		ops: ExporterOptions{
+			ConfigMap: map[string]string{
+				"metrics.backend-destination": "prometheus",
+			},
+			Domain:    "",
+			Component: testComponent,
 		},
-		domain:      "",
-		component:   testComponent,
 		expectedErr: "metrics domain cannot be empty",
 	}, {
 		name: "invalidComponent",
-		cm: map[string]string{
-			"metrics.backend-destination": "prometheus",
+		ops: ExporterOptions{
+			ConfigMap: map[string]string{
+				"metrics.backend-destination": "prometheus",
+			},
+			Domain:    servingDomain,
+			Component: "",
 		},
-		domain:      servingDomain,
-		component:   "",
 		expectedErr: "metrics component name cannot be empty",
 	}, {
 		name: "invalidReportingPeriod",
-		cm: map[string]string{
-			"metrics.backend-destination":      "prometheus",
-			"metrics.reporting-period-seconds": "test",
+		ops: ExporterOptions{
+			ConfigMap: map[string]string{
+				"metrics.backend-destination":      "prometheus",
+				"metrics.reporting-period-seconds": "test",
+			},
+			Domain:    servingDomain,
+			Component: testComponent,
 		},
-		domain:      servingDomain,
-		component:   testComponent,
 		expectedErr: "invalid metrics.reporting-period-seconds value \"test\"",
 	}, {
 		name: "invalidAllowStackdriverCustomMetrics",
-		cm: map[string]string{
-			"metrics.backend-destination":              "stackdriver",
-			"metrics.allow-stackdriver-custom-metrics": "test",
+		ops: ExporterOptions{
+			ConfigMap: map[string]string{
+				"metrics.backend-destination":              "stackdriver",
+				"metrics.allow-stackdriver-custom-metrics": "test",
+			},
+			Domain:    servingDomain,
+			Component: testComponent,
 		},
-		domain:      servingDomain,
-		component:   testComponent,
 		expectedErr: "invalid metrics.allow-stackdriver-custom-metrics value \"test\"",
+	}, {
+		name: "tooSmallPrometheusPort",
+		ops: ExporterOptions{
+			ConfigMap: map[string]string{
+				"metrics.backend-destination": "prometheus",
+			},
+			Domain:         servingDomain,
+			Component:      testComponent,
+			PrometheusPort: 1023,
+		},
+		expectedErr: "invalid port 1023, should between 1024 and 65535",
+	}, {
+		name: "tooBigPrometheusPort",
+		ops: ExporterOptions{
+			ConfigMap: map[string]string{
+				"metrics.backend-destination": "prometheus",
+			},
+			Domain:         servingDomain,
+			Component:      testComponent,
+			PrometheusPort: 65536,
+		},
+		expectedErr: "invalid port 65536, should between 1024 and 65535",
 	}}
 	successTests = []struct {
 		name                string
-		cm                  map[string]string
-		domain              string
-		component           string
+		ops                 ExporterOptions
 		expectedConfig      metricsConfig
 		expectedNewExporter bool // Whether the config requires a new exporter compared to previous test case
 	}{
 		// Note the first unit test is skipped in TestUpdateExporterFromConfigMap since
 		// unit test does not have application default credentials.
 		{
-			name:      "stackdriverProjectIDMissing",
-			cm:        map[string]string{"metrics.backend-destination": "stackdriver"},
-			domain:    servingDomain,
-			component: testComponent,
+			name: "stackdriverProjectIDMissing",
+			ops: ExporterOptions{
+				ConfigMap: map[string]string{
+					"metrics.backend-destination": "stackdriver",
+				},
+				Domain:    servingDomain,
+				Component: testComponent,
+			},
 			expectedConfig: metricsConfig{
 				domain:                            servingDomain,
 				component:                         testComponent,
 				backendDestination:                Stackdriver,
 				reportingPeriod:                   60 * time.Second,
 				isStackdriverBackend:              true,
-				stackdriverMetricTypePrefix:       path.Join(servingDomain, testComponent),
 				stackdriverCustomMetricTypePrefix: path.Join(customMetricTypePrefix, testComponent),
 			},
 			expectedNewExporter: true,
 		}, {
-			name:      "backendKeyMissing",
-			cm:        map[string]string{"": ""},
-			domain:    servingDomain,
-			component: testComponent,
+			name: "backendKeyMissing",
+			ops: ExporterOptions{
+				ConfigMap: map[string]string{},
+				Domain:    servingDomain,
+				Component: testComponent,
+			},
 			expectedConfig: metricsConfig{
 				domain:             servingDomain,
 				component:          testComponent,
 				backendDestination: Prometheus,
 				reportingPeriod:    5 * time.Second,
+				prometheusPort:     defaultPrometheusPort,
 			},
 			expectedNewExporter: true,
 		}, {
 			name: "validStackdriver",
-			cm: map[string]string{"metrics.backend-destination": "stackdriver",
-				"metrics.stackdriver-project-id": anotherProj},
-			domain:    servingDomain,
-			component: testComponent,
+			ops: ExporterOptions{
+				ConfigMap: map[string]string{
+					"metrics.backend-destination":    "stackdriver",
+					"metrics.stackdriver-project-id": anotherProj,
+				},
+				Domain:    servingDomain,
+				Component: testComponent,
+			},
 			expectedConfig: metricsConfig{
 				domain:                            servingDomain,
 				component:                         testComponent,
@@ -133,28 +176,36 @@ var (
 				stackdriverProjectID:              anotherProj,
 				reportingPeriod:                   60 * time.Second,
 				isStackdriverBackend:              true,
-				stackdriverMetricTypePrefix:       path.Join(servingDomain, testComponent),
 				stackdriverCustomMetricTypePrefix: path.Join(customMetricTypePrefix, testComponent),
 			},
 			expectedNewExporter: true,
 		}, {
-			name:      "validPrometheus",
-			cm:        map[string]string{"metrics.backend-destination": "prometheus"},
-			domain:    servingDomain,
-			component: testComponent,
+			name: "validPrometheus",
+			ops: ExporterOptions{
+				ConfigMap: map[string]string{
+					"metrics.backend-destination": "prometheus",
+				},
+				Domain:    servingDomain,
+				Component: testComponent,
+			},
 			expectedConfig: metricsConfig{
 				domain:             servingDomain,
 				component:          testComponent,
 				backendDestination: Prometheus,
 				reportingPeriod:    5 * time.Second,
+				prometheusPort:     defaultPrometheusPort,
 			},
 			expectedNewExporter: true,
 		}, {
 			name: "validCapitalStackdriver",
-			cm: map[string]string{"metrics.backend-destination": "Stackdriver",
-				"metrics.stackdriver-project-id": testProj},
-			domain:    servingDomain,
-			component: testComponent,
+			ops: ExporterOptions{
+				ConfigMap: map[string]string{
+					"metrics.backend-destination":    "Stackdriver",
+					"metrics.stackdriver-project-id": testProj,
+				},
+				Domain:    servingDomain,
+				Component: testComponent,
+			},
 			expectedConfig: metricsConfig{
 				domain:                            servingDomain,
 				component:                         testComponent,
@@ -162,28 +213,38 @@ var (
 				stackdriverProjectID:              testProj,
 				reportingPeriod:                   60 * time.Second,
 				isStackdriverBackend:              true,
-				stackdriverMetricTypePrefix:       path.Join(servingDomain, testComponent),
 				stackdriverCustomMetricTypePrefix: path.Join(customMetricTypePrefix, testComponent),
 			},
 			expectedNewExporter: true,
 		}, {
-			name:      "overriddenReportingPeriodPrometheus",
-			cm:        map[string]string{"metrics.backend-destination": "prometheus", "metrics.reporting-period-seconds": "12"},
-			domain:    servingDomain,
-			component: testComponent,
+			name: "overriddenReportingPeriodPrometheus",
+			ops: ExporterOptions{
+				ConfigMap: map[string]string{
+					"metrics.backend-destination":      "prometheus",
+					"metrics.reporting-period-seconds": "12",
+				},
+				Domain:    servingDomain,
+				Component: testComponent,
+			},
 			expectedConfig: metricsConfig{
 				domain:             servingDomain,
 				component:          testComponent,
 				backendDestination: Prometheus,
 				reportingPeriod:    12 * time.Second,
+				prometheusPort:     defaultPrometheusPort,
 			},
 			expectedNewExporter: true,
 		}, {
 			name: "overriddenReportingPeriodStackdriver",
-			cm: map[string]string{"metrics.backend-destination": "stackdriver",
-				"metrics.stackdriver-project-id": "test2", "metrics.reporting-period-seconds": "7"},
-			domain:    servingDomain,
-			component: testComponent,
+			ops: ExporterOptions{
+				ConfigMap: map[string]string{
+					"metrics.backend-destination":      "stackdriver",
+					"metrics.stackdriver-project-id":   "test2",
+					"metrics.reporting-period-seconds": "7",
+				},
+				Domain:    servingDomain,
+				Component: testComponent,
+			},
 			expectedConfig: metricsConfig{
 				domain:                            servingDomain,
 				component:                         testComponent,
@@ -191,16 +252,20 @@ var (
 				stackdriverProjectID:              "test2",
 				reportingPeriod:                   7 * time.Second,
 				isStackdriverBackend:              true,
-				stackdriverMetricTypePrefix:       path.Join(servingDomain, testComponent),
 				stackdriverCustomMetricTypePrefix: path.Join(customMetricTypePrefix, testComponent),
 			},
 			expectedNewExporter: true,
 		}, {
 			name: "overriddenReportingPeriodStackdriver2",
-			cm: map[string]string{"metrics.backend-destination": "stackdriver",
-				"metrics.stackdriver-project-id": "test2", "metrics.reporting-period-seconds": "3"},
-			domain:    servingDomain,
-			component: testComponent,
+			ops: ExporterOptions{
+				ConfigMap: map[string]string{
+					"metrics.backend-destination":      "stackdriver",
+					"metrics.stackdriver-project-id":   "test2",
+					"metrics.reporting-period-seconds": "3",
+				},
+				Domain:    servingDomain,
+				Component: testComponent,
+			},
 			expectedConfig: metricsConfig{
 				domain:                            servingDomain,
 				component:                         testComponent,
@@ -208,27 +273,37 @@ var (
 				stackdriverProjectID:              "test2",
 				reportingPeriod:                   3 * time.Second,
 				isStackdriverBackend:              true,
-				stackdriverMetricTypePrefix:       path.Join(servingDomain, testComponent),
 				stackdriverCustomMetricTypePrefix: path.Join(customMetricTypePrefix, testComponent),
 			},
 		}, {
-			name:      "emptyReportingPeriodPrometheus",
-			cm:        map[string]string{"metrics.backend-destination": "prometheus", "metrics.reporting-period-seconds": ""},
-			domain:    servingDomain,
-			component: testComponent,
+			name: "emptyReportingPeriodPrometheus",
+			ops: ExporterOptions{
+				ConfigMap: map[string]string{
+					"metrics.backend-destination":      "prometheus",
+					"metrics.reporting-period-seconds": "",
+				},
+				Domain:    servingDomain,
+				Component: testComponent,
+			},
 			expectedConfig: metricsConfig{
 				domain:             servingDomain,
 				component:          testComponent,
 				backendDestination: Prometheus,
 				reportingPeriod:    5 * time.Second,
+				prometheusPort:     defaultPrometheusPort,
 			},
 			expectedNewExporter: true,
 		}, {
 			name: "emptyReportingPeriodStackdriver",
-			cm: map[string]string{"metrics.backend-destination": "stackdriver",
-				"metrics.stackdriver-project-id": "test2", "metrics.reporting-period-seconds": ""},
-			domain:    servingDomain,
-			component: testComponent,
+			ops: ExporterOptions{
+				ConfigMap: map[string]string{
+					"metrics.backend-destination":      "stackdriver",
+					"metrics.stackdriver-project-id":   "test2",
+					"metrics.reporting-period-seconds": "",
+				},
+				Domain:    servingDomain,
+				Component: testComponent,
+			},
 			expectedConfig: metricsConfig{
 				domain:                            servingDomain,
 				component:                         testComponent,
@@ -236,20 +311,21 @@ var (
 				stackdriverProjectID:              "test2",
 				reportingPeriod:                   60 * time.Second,
 				isStackdriverBackend:              true,
-				stackdriverMetricTypePrefix:       path.Join(servingDomain, testComponent),
 				stackdriverCustomMetricTypePrefix: path.Join(customMetricTypePrefix, testComponent),
 			},
 			expectedNewExporter: true,
 		}, {
 			name: "allowStackdriverCustomMetric",
-			cm: map[string]string{
-				"metrics.backend-destination":              "stackdriver",
-				"metrics.stackdriver-project-id":           "test2",
-				"metrics.reporting-period-seconds":         "",
-				"metrics.allow-stackdriver-custom-metrics": "true",
+			ops: ExporterOptions{
+				ConfigMap: map[string]string{
+					"metrics.backend-destination":              "stackdriver",
+					"metrics.stackdriver-project-id":           "test2",
+					"metrics.reporting-period-seconds":         "",
+					"metrics.allow-stackdriver-custom-metrics": "true",
+				},
+				Domain:    servingDomain,
+				Component: testComponent,
 			},
-			domain:    servingDomain,
-			component: testComponent,
 			expectedConfig: metricsConfig{
 				domain:                            servingDomain,
 				component:                         testComponent,
@@ -257,42 +333,61 @@ var (
 				stackdriverProjectID:              "test2",
 				reportingPeriod:                   60 * time.Second,
 				isStackdriverBackend:              true,
-				stackdriverMetricTypePrefix:       path.Join(servingDomain, testComponent),
 				stackdriverCustomMetricTypePrefix: path.Join(customMetricTypePrefix, testComponent),
 				allowStackdriverCustomMetrics:     true,
 			},
+		}, {
+			name: "overridePrometheusPort",
+			ops: ExporterOptions{
+				ConfigMap: map[string]string{
+					"metrics.backend-destination": "prometheus",
+				},
+				Domain:         servingDomain,
+				Component:      testComponent,
+				PrometheusPort: 9091,
+			},
+			expectedConfig: metricsConfig{
+				domain:             servingDomain,
+				component:          testComponent,
+				backendDestination: Prometheus,
+				reportingPeriod:    5 * time.Second,
+				prometheusPort:     9091,
+			},
+			expectedNewExporter: true,
 		}}
 	envTests = []struct {
 		name           string
-		cm             map[string]string
-		domain         string
-		component      string
+		ops            ExporterOptions
 		expectedConfig metricsConfig
 	}{
 		{
-			name:      "stackdriverFromEnv",
-			cm:        map[string]string{"": ""},
-			domain:    servingDomain,
-			component: testComponent,
+			name: "stackdriverFromEnv",
+			ops: ExporterOptions{
+				ConfigMap: map[string]string{},
+				Domain:    servingDomain,
+				Component: testComponent,
+			},
 			expectedConfig: metricsConfig{
 				domain:                            servingDomain,
 				component:                         testComponent,
 				backendDestination:                Stackdriver,
 				reportingPeriod:                   60 * time.Second,
 				isStackdriverBackend:              true,
-				stackdriverMetricTypePrefix:       path.Join(servingDomain, testComponent),
 				stackdriverCustomMetricTypePrefix: path.Join(customMetricTypePrefix, testComponent),
 			},
 		}, {
-			name:      "validPrometheus",
-			cm:        map[string]string{"metrics.backend-destination": "prometheus"},
-			domain:    servingDomain,
-			component: testComponent,
+			name: "validPrometheus",
+			ops: ExporterOptions{
+				ConfigMap: map[string]string{"metrics.backend-destination": "prometheus"},
+				Domain:    servingDomain,
+				Component: testComponent,
+			},
 			expectedConfig: metricsConfig{
 				domain:             servingDomain,
 				component:          testComponent,
 				backendDestination: Prometheus,
 				reportingPeriod:    5 * time.Second,
+				prometheusPort:     defaultPrometheusPort,
 			},
 		}}
 )
@@ -300,7 +395,7 @@ var (
 func TestGetMetricsConfig(t *testing.T) {
 	for _, test := range errorTests {
 		t.Run(test.name, func(t *testing.T) {
-			_, err := getMetricsConfig(test.cm, test.domain, test.component, TestLogger(t))
+			_, err := getMetricsConfig(test.ops, TestLogger(t))
 			if err.Error() != test.expectedErr {
 				t.Errorf("Wanted err: %v, got: %v", test.expectedErr, err)
 			}
@@ -309,7 +404,7 @@ func TestGetMetricsConfig(t *testing.T) {
 
 	for _, test := range successTests {
 		t.Run(test.name, func(t *testing.T) {
-			mc, err := getMetricsConfig(test.cm, test.domain, test.component, TestLogger(t))
+			mc, err := getMetricsConfig(test.ops, TestLogger(t))
 			if err != nil {
 				t.Errorf("Wanted valid config %v, got error %v", test.expectedConfig, err)
 			}
@@ -324,7 +419,7 @@ func TestGetMetricsConfig_fromEnv(t *testing.T) {
 	os.Setenv(defaultBackendEnvName, "stackdriver")
 	for _, test := range envTests {
 		t.Run(test.name, func(t *testing.T) {
-			mc, err := getMetricsConfig(test.cm, test.domain, test.component, TestLogger(t))
+			mc, err := getMetricsConfig(test.ops, TestLogger(t))
 			if err != nil {
 				t.Errorf("Wanted valid config %v, got error %v", test.expectedConfig, err)
 			}
@@ -340,7 +435,7 @@ func TestIsNewExporterRequired(t *testing.T) {
 	setCurMetricsConfig(nil)
 	for _, test := range successTests {
 		t.Run(test.name, func(t *testing.T) {
-			mc, err := getMetricsConfig(test.cm, test.domain, test.component, TestLogger(t))
+			mc, err := getMetricsConfig(test.ops, TestLogger(t))
 			if err != nil {
 				t.Errorf("Wanted valid config %v, got error %v", test.expectedConfig, err)
 			}
@@ -368,20 +463,12 @@ func TestIsNewExporterRequired(t *testing.T) {
 	}
 }
 
-func TestUpdateExporterFromConfigMap(t *testing.T) {
+func TestUpdateExporter(t *testing.T) {
 	setCurMetricsConfig(nil)
-	cm := &corev1.ConfigMap{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: "config-observability",
-		},
-		Data: map[string]string{},
-	}
 	oldConfig := getCurMetricsConfig()
 	for _, test := range successTests[1:] {
 		t.Run(test.name, func(t *testing.T) {
-			cm.Data = test.cm
-			u := UpdateExporterFromConfigMap(test.domain, test.component, TestLogger(t))
-			u(cm)
+			UpdateExporter(test.ops, TestLogger(t))
 			mConfig := getCurMetricsConfig()
 			if mConfig == oldConfig {
 				t.Error("Expected metrics config change")
@@ -395,9 +482,7 @@ func TestUpdateExporterFromConfigMap(t *testing.T) {
 
 	for _, test := range errorTests {
 		t.Run(test.name, func(t *testing.T) {
-			cm.Data = test.cm
-			u := UpdateExporterFromConfigMap(test.domain, test.component, TestLogger(t))
-			u(cm)
+			UpdateExporter(test.ops, TestLogger(t))
 			mConfig := getCurMetricsConfig()
 			if mConfig != oldConfig {
 				t.Error("mConfig should not change")
@@ -406,19 +491,11 @@ func TestUpdateExporterFromConfigMap(t *testing.T) {
 	}
 }
 
-func TestUpdateExporterFromConfigMap_doesNotCreateExporter(t *testing.T) {
+func TestUpdateExporter_doesNotCreateExporter(t *testing.T) {
 	setCurMetricsConfig(nil)
-	cm := &corev1.ConfigMap{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: "config-observability",
-		},
-		Data: map[string]string{},
-	}
 	for _, test := range errorTests {
 		t.Run(test.name, func(t *testing.T) {
-			cm.Data = test.cm
-			u := UpdateExporterFromConfigMap(test.domain, test.component, TestLogger(t))
-			u(cm)
+			UpdateExporter(test.ops, TestLogger(t))
 			mConfig := getCurMetricsConfig()
 			if mConfig != nil {
 				t.Error("mConfig should not be created")

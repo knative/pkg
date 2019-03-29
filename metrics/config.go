@@ -47,7 +47,33 @@ const (
 	Prometheus metricsBackend = "prometheus"
 
 	defaultBackendEnvName = "DEFAULT_METRICS_BACKEND"
+
+	defaultPrometheusPort = 9090
+	maxPrometheusPort     = 65535
+	minPrometheusPort     = 1024
 )
+
+// ExporterOptions contains options for configuring the exporter.
+type ExporterOptions struct {
+	// Domain is the metrics domain. e.g. "knative.dev". Must be present.
+	Domain string
+
+	// Component is the name of the component that emits the metrics. e.g.
+	// "activator", "queue_proxy". Should only contains alphabets and underscore.
+	// Must be present.
+	Component string
+
+	// PrometheusPort is the port to expose metrics if metrics backend is Prometheus.
+	// It should be between maxPrometheusPort and maxPrometheusPort. 0 value means
+	// using the default 9090 value. If is ignored if metrics backend is not
+	// Prometheus.
+	PrometheusPort int
+
+	// ConfigMap is the data from config map config-observability. Must be present.
+	// See https://github.com/knative/serving/blob/master/config/config-observability.yaml
+	// for details.
+	ConfigMap map[string]string
+}
 
 type metricsConfig struct {
 	// The metrics domain. e.g. "serving.knative.dev" or "build.knative.dev".
@@ -59,6 +85,11 @@ type metricsConfig struct {
 	// reportingPeriod specifies the interval between reporting aggregated views.
 	// If duration is less than or equal to zero, it enables the default behavior.
 	reportingPeriod time.Duration
+
+	// ---- Prometheus specific below ----
+	// prometheusPort is the port where metrics are exposed in Prometheus
+	// format. It defaults to 9090.
+	prometheusPort int
 
 	// ---- Stackdriver specific below ----
 	// stackdriverProjectID is the stackdriver project ID where the stats data are
@@ -73,29 +104,29 @@ type metricsConfig struct {
 	// True if backendDestination equals to "stackdriver". Store this in a variable
 	// to reduce string comparison operations.
 	isStackdriverBackend bool
-	// stackdriverMetricTypePrefix is the metric domain joins component, e.g.
-	// "knative.dev/serving/activator". Store this in a variable to reduce string
-	// join operations.
-	stackdriverMetricTypePrefix string
-	// stackdriverMetricTypePrefix is "custom.googleapis.com/knative.dev" joins
+	// stackdriverCustomMetricTypePrefix is "custom.googleapis.com/knative.dev" joins
 	// component, e.g. "custom.googleapis.com/knative.dev/serving/activator".
 	// Store this in a variable to reduce string join operations.
 	stackdriverCustomMetricTypePrefix string
 }
 
-func getMetricsConfig(m map[string]string, domain string, component string, logger *zap.SugaredLogger) (*metricsConfig, error) {
+func getMetricsConfig(ops ExporterOptions, logger *zap.SugaredLogger) (*metricsConfig, error) {
 	var mc metricsConfig
 
-	if domain == "" {
+	if ops.Domain == "" {
 		return nil, errors.New("metrics domain cannot be empty")
 	}
-	mc.domain = domain
+	mc.domain = ops.Domain
 
-	if component == "" {
+	if ops.Component == "" {
 		return nil, errors.New("metrics component name cannot be empty")
 	}
-	mc.component = component
+	mc.component = ops.Component
 
+	if ops.ConfigMap == nil {
+		return nil, errors.New("metrics config map cannot be empty")
+	}
+	m := ops.ConfigMap
 	// Read backend setting from environment variable first
 	backend := os.Getenv(defaultBackendEnvName)
 	if backend == "" {
@@ -114,14 +145,24 @@ func getMetricsConfig(m map[string]string, domain string, component string, logg
 		return nil, fmt.Errorf("unsupported metrics backend value %q", backend)
 	}
 
+	if mc.backendDestination == Prometheus {
+		pp := ops.PrometheusPort
+		if pp == 0 {
+			pp = defaultPrometheusPort
+		}
+		if pp < minPrometheusPort || pp > maxPrometheusPort {
+			return nil, fmt.Errorf("invalid port %v, should between %v and %v", pp, minPrometheusPort, maxPrometheusPort)
+		}
+		mc.prometheusPort = pp
+	}
+
 	// If stackdriverProjectIDKey is not provided for stackdriver backend destination, OpenCensus will try to
 	// use the application default credentials. If that is not available, Opencensus would fail to create the
 	// metrics exporter.
 	if mc.backendDestination == Stackdriver {
 		mc.stackdriverProjectID = m[StackdriverProjectIDKey]
 		mc.isStackdriverBackend = true
-		mc.stackdriverMetricTypePrefix = path.Join(domain, component)
-		mc.stackdriverCustomMetricTypePrefix = path.Join(customMetricTypePrefix, component)
+		mc.stackdriverCustomMetricTypePrefix = path.Join(customMetricTypePrefix, mc.component)
 		if ascmStr, ok := m[AllowStackdriverCustomMetricsKey]; ok && ascmStr != "" {
 			ascmBool, err := strconv.ParseBool(ascmStr)
 			if err != nil {
@@ -154,17 +195,22 @@ func getMetricsConfig(m map[string]string, domain string, component string, logg
 }
 
 // UpdateExporterFromConfigMap returns a helper func that can be used to update the exporter
-// when a config map is updated
+// when a config map is updated.
+// DEPRECATED. Use UpdateExporter instead.
 func UpdateExporterFromConfigMap(domain string, component string, logger *zap.SugaredLogger) func(configMap *corev1.ConfigMap) {
 	return func(configMap *corev1.ConfigMap) {
-		UpdateExporter(configMap.Data, domain, component, logger)
+		UpdateExporter(ExporterOptions{
+			Domain:    domain,
+			Component: component,
+			ConfigMap: configMap.Data,
+		}, logger)
 	}
 }
 
 // UpdateExporter updates the exporter based on the given config string map,
 // domain and component.
-func UpdateExporter(config map[string]string, domain string, component string, logger *zap.SugaredLogger) {
-	newConfig, err := getMetricsConfig(config, domain, component, logger)
+func UpdateExporter(ops ExporterOptions, logger *zap.SugaredLogger) {
+	newConfig, err := getMetricsConfig(ops, logger)
 	if err != nil {
 		if ce := getCurMetricsExporter(); ce == nil {
 			// Fail the process if there doesn't exist an exporter.
