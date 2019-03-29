@@ -212,8 +212,7 @@ func UpdateExporterFromConfigMap(domain string, component string, logger *zap.Su
 	}
 }
 
-// UpdateExporter updates the exporter based on the given config string map,
-// domain and component.
+// UpdateExporter updates the exporter based on the given ExporterOptions.
 func UpdateExporter(ops ExporterOptions, logger *zap.SugaredLogger) {
 	newConfig, err := getMetricsConfig(ops, logger)
 	if err != nil {
