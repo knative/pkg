@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v1alpha1
+package apis
 
 import (
 	"reflect"
@@ -23,7 +23,6 @@ import (
 
 	"fmt"
 
-	"github.com/knative/pkg/apis"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -204,7 +203,7 @@ func (r conditionsImpl) SetCondition(new Condition) {
 			}
 		}
 	}
-	new.LastTransitionTime = apis.VolatileTime{Inner: metav1.NewTime(time.Now())}
+	new.LastTransitionTime = VolatileTime{Inner: metav1.NewTime(time.Now())}
 	conditions = append(conditions, new)
 	// Sorted for convenience of the consumer, i.e. kubectl.
 	sort.Slice(conditions, func(i, j int) bool { return conditions[i].Type < conditions[j].Type })

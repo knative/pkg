@@ -32,27 +32,27 @@ import (
 func TestIsTrue(t *testing.T) {
 	cases := []struct {
 		name      string
-		condition *Condition
+		condition *apis.Condition
 		truth     bool
 	}{{
 		name:      "empty should be false",
-		condition: &Condition{},
+		condition: &apis.Condition{},
 		truth:     false,
 	}, {
 		name: "True should be true",
-		condition: &Condition{
+		condition: &apis.Condition{
 			Status: corev1.ConditionTrue,
 		},
 		truth: true,
 	}, {
 		name: "False should be false",
-		condition: &Condition{
+		condition: &apis.Condition{
 			Status: corev1.ConditionFalse,
 		},
 		truth: false,
 	}, {
 		name: "Unknown should be false",
-		condition: &Condition{
+		condition: &apis.Condition{
 			Status: corev1.ConditionUnknown,
 		},
 		truth: false,
@@ -74,27 +74,27 @@ func TestIsTrue(t *testing.T) {
 func TestIsFalse(t *testing.T) {
 	cases := []struct {
 		name      string
-		condition *Condition
+		condition *apis.Condition
 		truth     bool
 	}{{
 		name:      "empty should be false",
-		condition: &Condition{},
+		condition: &apis.Condition{},
 		truth:     false,
 	}, {
 		name: "True should be false",
-		condition: &Condition{
+		condition: &apis.Condition{
 			Status: corev1.ConditionTrue,
 		},
 		truth: false,
 	}, {
 		name: "False should be true",
-		condition: &Condition{
+		condition: &apis.Condition{
 			Status: corev1.ConditionFalse,
 		},
 		truth: true,
 	}, {
 		name: "Unknown should be false",
-		condition: &Condition{
+		condition: &apis.Condition{
 			Status: corev1.ConditionUnknown,
 		},
 		truth: false,
@@ -116,27 +116,27 @@ func TestIsFalse(t *testing.T) {
 func TestIsUnknown(t *testing.T) {
 	cases := []struct {
 		name      string
-		condition *Condition
+		condition *apis.Condition
 		truth     bool
 	}{{
 		name:      "empty should be false",
-		condition: &Condition{},
+		condition: &apis.Condition{},
 		truth:     false,
 	}, {
 		name: "True should be false",
-		condition: &Condition{
+		condition: &apis.Condition{
 			Status: corev1.ConditionTrue,
 		},
 		truth: false,
 	}, {
 		name: "False should be false",
-		condition: &Condition{
+		condition: &apis.Condition{
 			Status: corev1.ConditionFalse,
 		},
 		truth: false,
 	}, {
 		name: "Unknown should be true",
-		condition: &Condition{
+		condition: &apis.Condition{
 			Status: corev1.ConditionUnknown,
 		},
 		truth: true,
@@ -159,39 +159,39 @@ func TestJson(t *testing.T) {
 	cases := []struct {
 		name      string
 		raw       string
-		condition *Condition
+		condition *apis.Condition
 	}{{
 		name:      "empty",
 		raw:       `{}`,
-		condition: &Condition{},
+		condition: &apis.Condition{},
 	}, {
 		name: "Type",
 		raw:  `{"type":"Foo"}`,
-		condition: &Condition{
+		condition: &apis.Condition{
 			Type: "Foo",
 		},
 	}, {
 		name: "Status",
 		raw:  `{"status":"True"}`,
-		condition: &Condition{
+		condition: &apis.Condition{
 			Status: corev1.ConditionTrue,
 		},
 	}, {
 		name: "LastTransitionTime",
 		raw:  `{"lastTransitionTime":"1984-02-28T18:52:00Z"}`,
-		condition: &Condition{
+		condition: &apis.Condition{
 			LastTransitionTime: apis.VolatileTime{Inner: metav1.NewTime(time.Date(1984, 02, 28, 18, 52, 00, 00, time.UTC))},
 		},
 	}, {
 		name: "Reason",
 		raw:  `{"reason":"DatTest"}`,
-		condition: &Condition{
+		condition: &apis.Condition{
 			Reason: "DatTest",
 		},
 	}, {
 		name: "Message",
 		raw:  `{"message":"this is just a test"}`,
-		condition: &Condition{
+		condition: &apis.Condition{
 			Message: "this is just a test",
 		},
 	}, {
@@ -203,7 +203,7 @@ func TestJson(t *testing.T) {
 				"reason":"DatTest",
 				"message":"this is just a test"
 		}`,
-		condition: &Condition{
+		condition: &apis.Condition{
 			Type:               "Foo",
 			Status:             corev1.ConditionTrue,
 			LastTransitionTime: apis.VolatileTime{Inner: metav1.NewTime(time.Date(1984, 02, 28, 18, 52, 00, 00, time.UTC))},
@@ -214,7 +214,7 @@ func TestJson(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			cond := &Condition{}
+			cond := &apis.Condition{}
 			if err := json.Unmarshal([]byte(tc.raw), cond); err != nil {
 				t.Errorf("%q unexpected error from json.Unmarshal: %v", tc.name, err)
 			}
@@ -227,18 +227,18 @@ func TestJson(t *testing.T) {
 }
 
 func TestStatusGetCondition(t *testing.T) {
-	foo := &Condition{
+	foo := &apis.Condition{
 		Type:    "Foo",
 		Status:  corev1.ConditionTrue,
 		Message: "Something something foo",
 	}
-	bar := &Condition{
+	bar := &apis.Condition{
 		Type:    "Bar",
 		Status:  corev1.ConditionTrue,
 		Message: "Something something bar",
 	}
 	s := &Status{
-		Conditions: []Condition{*foo, *bar},
+		Conditions: []apis.Condition{*foo, *bar},
 	}
 
 	got := s.GetCondition(foo.Type)
