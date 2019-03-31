@@ -1097,7 +1097,6 @@ func doTestMarkUnknownAccessor(t *testing.T, cases []ConditionMarkUnknownTest) {
 
 			condSet := NewLivingConditionSet(getTypes(tc.conditions)...)
 			status := &TestStatus{c: tc.conditions}
-			condSet.Manage(status).InitializeConditions()
 
 			condSet.Manage(status).MarkUnknown(tc.mark, "UnitTest", "idk, just testing")
 
@@ -1130,7 +1129,6 @@ func doTestMarkUnknownReflection(t *testing.T, cases []ConditionMarkUnknownTest)
 
 			condSet := NewLivingConditionSet(getTypes(tc.conditions)...)
 			status := &TestStatusReflection{Conditions: tc.conditions}
-			condSet.Manage(status).InitializeConditions()
 
 			condSet.Manage(status).MarkUnknown(tc.mark, "UnitTest", "idk, just testing")
 
@@ -1249,43 +1247,52 @@ func TestInitializeConditions(t *testing.T) {
 	cases := []struct {
 		name       string
 		conditions Conditions
-		condition  *Condition
+		want       *Condition
 	}{{
-		name: "initialized",
-		condition: &Condition{
+		name: "no conditions is initialized",
+		want: &Condition{
 			Type:     ConditionReady,
 			Status:   corev1.ConditionUnknown,
 			Severity: ConditionSeverityError,
 		},
 	}, {
-		name: "already initialized",
+		name: "initialization is idempotent",
+		conditions: Conditions{{
+			Type:     ConditionReady,
+			Status:   corev1.ConditionUnknown,
+			Severity: ConditionSeverityError,
+		}},
+		want: &Condition{
+			Type:     ConditionReady,
+			Status:   corev1.ConditionUnknown,
+			Severity: ConditionSeverityError,
+		},
+	}, {
+		name: "initialization overwrites existing",
 		conditions: Conditions{{
 			Type:     ConditionReady,
 			Status:   corev1.ConditionFalse,
 			Severity: ConditionSeverityError,
 		}},
-		condition: &Condition{
+		want: &Condition{
 			Type:     ConditionReady,
-			Status:   corev1.ConditionFalse,
+			Status:   corev1.ConditionUnknown,
 			Severity: ConditionSeverityError,
 		},
 	}}
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			{
-				status := &TestStatus{c: tc.conditions}
-				condSet.Manage(status).InitializeConditions()
-				if e, a := tc.condition, condSet.Manage(status).GetCondition(ConditionReady); !equality.Semantic.DeepEqual(e, a) {
-					t.Errorf("accessor, %q expected: %v got: %v", tc.name, e, a)
-				}
+			status := &TestStatus{c: tc.conditions}
+			condSet.Manage(status).InitializeConditions()
+			if e, a := tc.want, condSet.Manage(status).GetCondition(ConditionReady); !equality.Semantic.DeepEqual(e, a) {
+				t.Errorf("accessor, %q expected: %v got: %v", tc.name, e, a)
 			}
-			{
-				status := &TestStatusReflection{Conditions: tc.conditions}
-				condSet.Manage(status).InitializeConditions()
-				if e, a := tc.condition, condSet.Manage(status).GetCondition(ConditionReady); !equality.Semantic.DeepEqual(e, a) {
-					t.Errorf("reflection, %q expected: %v got: %v", tc.name, e, a)
-				}
+
+			statusRefl := &TestStatusReflection{Conditions: tc.conditions}
+			condSet.Manage(statusRefl).InitializeConditions()
+			if e, a := tc.want, condSet.Manage(statusRefl).GetCondition(ConditionReady); !equality.Semantic.DeepEqual(e, a) {
+				t.Errorf("reflection, %q expected: %v got: %v", tc.name, e, a)
 			}
 		})
 	}

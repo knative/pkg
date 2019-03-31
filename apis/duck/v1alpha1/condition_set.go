@@ -332,13 +332,11 @@ func (r conditionsImpl) InitializeConditions() {
 
 // InitializeCondition updates a Condition to Unknown if not set.
 func (r conditionsImpl) InitializeCondition(t ConditionType) {
-	if c := r.GetCondition(t); c == nil {
-		r.SetCondition(Condition{
-			Type:     t,
-			Status:   corev1.ConditionUnknown,
-			Severity: r.severity(t),
-		})
-	}
+	r.SetCondition(Condition{
+		Type:     t,
+		Status:   corev1.ConditionUnknown,
+		Severity: r.severity(t),
+	})
 }
 
 // NewReflectedConditionsAccessor uses reflection to return a ConditionsAccessor
