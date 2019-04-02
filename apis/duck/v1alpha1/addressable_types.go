@@ -78,6 +78,7 @@ func (t *AddressableType) Populate() {
 			// Populate ALL fields
 			Hostname: "this is not empty",
 			Path:     "this is not empty",
+			Port:     "this is not empty",
 		},
 	}
 }
