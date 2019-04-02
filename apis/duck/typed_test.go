@@ -40,7 +40,7 @@ func TestSimpleList(t *testing.T) {
 	AddToScheme(scheme)
 	duckv1alpha1.AddToScheme(scheme)
 
-	namespace, name, wantHostName, wantPort, wantPath := "foo", "bar", "my_hostname", "my_port", "my_path"
+	namespace, name, wantHostName, wantURL := "foo", "bar", "my_hostname", "my_url"
 
 	// Despite the signature allowing `...runtime.Object`, this method
 	// will not work properly unless the passed objects are `unstructured.Unstructured`
@@ -55,8 +55,7 @@ func TestSimpleList(t *testing.T) {
 			"status": map[string]interface{}{
 				"address": map[string]interface{}{
 					"hostname": wantHostName,
-					"port":     wantPort,
-					"path":     wantPath,
+					"url":      wantURL,
 				},
 			},
 		},
@@ -92,13 +91,9 @@ func TestSimpleList(t *testing.T) {
 	if gotHostname := got.Status.Address.Hostname; gotHostname != wantHostName {
 		t.Errorf("Get().Status.Address.Hostname = %v, wanted %v", gotHostname, wantHostName)
 	}
-	if gotPort := got.Status.Address.Port; gotPort != wantPort {
-		t.Errorf("Get().Status.Address.Port = %v, wanted %v", gotPort, wantPort)
+	if gotURL := got.Status.Address.URL; gotURL != wantURL {
+		t.Errorf("Get().Status.Address.URL = %v, wanted %v", gotURL, wantURL)
 	}
-	if gotPath := got.Status.Address.Path; gotPath != wantPath {
-		t.Errorf("Get().Status.Address.Path = %v, wanted %v", gotPath, wantPath)
-	}
-
 	// TODO(mattmoor): Access through informer
 }
 
