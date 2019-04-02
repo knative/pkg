@@ -80,7 +80,7 @@ func (t *LegacyTarget) Populate() {
 }
 
 // GetListType implements apis.Listable
-func (t *LegacyTarget) GetListType() runtime.Object {
+func (*LegacyTarget) GetListType() runtime.Object {
 	return &LegacyTargetList{}
 }
 

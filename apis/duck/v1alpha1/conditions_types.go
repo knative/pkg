@@ -187,7 +187,7 @@ func (t *KResource) Populate() {
 }
 
 // GetListType implements apis.Listable
-func (t *KResource) GetListType() runtime.Object {
+func (*KResource) GetListType() runtime.Object {
 	return &KResourceList{}
 }
 
