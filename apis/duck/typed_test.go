@@ -93,7 +93,7 @@ func TestSimpleList(t *testing.T) {
 		t.Errorf("Get().Status.Address.Hostname = %v, wanted %v", gotHostname, wantHostName)
 	}
 	if gotPort := got.Status.Address.Port; gotPort != wantPort {
-		t.Errorf("Get().Status.Address.Post = %v, wanted %v", gotPort, wantPort)
+		t.Errorf("Get().Status.Address.Port = %v, wanted %v", gotPort, wantPort)
 	}
 	if gotPath := got.Status.Address.Path; gotPath != wantPath {
 		t.Errorf("Get().Status.Address.Path = %v, wanted %v", gotPath, wantPath)
