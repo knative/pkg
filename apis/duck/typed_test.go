@@ -19,6 +19,7 @@ package duck_test
 import (
 	"encoding/json"
 	"errors"
+	"reflect"
 	"testing"
 	"time"
 
@@ -30,6 +31,7 @@ import (
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/dynamic/fake"
 
+	"github.com/knative/pkg/apis"
 	"github.com/knative/pkg/apis/duck"
 	duckv1alpha1 "github.com/knative/pkg/apis/duck/v1alpha1"
 	. "github.com/knative/pkg/testing"
@@ -40,7 +42,7 @@ func TestSimpleList(t *testing.T) {
 	AddToScheme(scheme)
 	duckv1alpha1.AddToScheme(scheme)
 
-	namespace, name, wantHostName, wantURL := "foo", "bar", "my_hostname", "my_url"
+	namespace, name, wantHostName, wantURL := "foo", "bar", "my_hostname", "myscheme://myhost:myport/mypath?myquery"
 
 	// Despite the signature allowing `...runtime.Object`, this method
 	// will not work properly unless the passed objects are `unstructured.Unstructured`
@@ -88,10 +90,10 @@ func TestSimpleList(t *testing.T) {
 		t.Fatalf("Get() = %T, wanted *duckv1alpha1.AddressableType", elt)
 	}
 
-	if gotHostname := got.Status.Address.Hostname; gotHostname != wantHostName {
+	if gotHostname := got.Status.Address.DeprecatedHostname; gotHostname != wantHostName {
 		t.Errorf("Get().Status.Address.Hostname = %v, wanted %v", gotHostname, wantHostName)
 	}
-	if gotURL := got.Status.Address.URL; gotURL != wantURL {
+	if gotURL := got.Status.Address.URL; !reflect.DeepEqual(gotURL, apis.ParseURLRef(wantURL)) {
 		t.Errorf("Get().Status.Address.URL = %v, wanted %v", gotURL, wantURL)
 	}
 	// TODO(mattmoor): Access through informer
