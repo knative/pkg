@@ -21,10 +21,12 @@ import (
 	"os"
 )
 
+const allUsersFullPermission = 0777
+
 // CreateDir creates dir if does not exist.
 // The created dir will have the permission bits as 0777, which means everyone can read/write/execute it.
 func CreateDir(dirPath string) error {
-	return CreateDirWithFileMode(dirPath, 0777)
+	return CreateDirWithFileMode(dirPath, allUsersFullPermission)
 }
 
 // CreateDirWithFileMode creates dir if does not exist.
