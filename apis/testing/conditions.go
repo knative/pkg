@@ -21,15 +21,9 @@ import (
 	corev1 "k8s.io/api/core/v1"
 )
 
-// ConditionCheckable is an interface that most of our status types implement.
-type ConditionCheckable interface {
-	IsReady() bool
-	GetCondition(t apis.ConditionType) *apis.Condition
-}
-
 // CheckCondition checks if condition `c` on `cc` has value `cs`.
-func CheckCondition(cc ConditionCheckable, c apis.ConditionType, cs corev1.ConditionStatus) error {
-	cond := cc.GetCondition(c)
+func CheckCondition(s apis.ConditionsAccessor, c apis.ConditionType, cs corev1.ConditionStatus) error {
+	cond := s.GetCondition(c)
 	if cond == nil {
 		return fmt.Errorf("condition %v is nil", c)
 	}
@@ -40,7 +34,7 @@ func CheckCondition(cc ConditionCheckable, c apis.ConditionType, cs corev1.Condi
 }
 
 // CheckConditionOngoing checks if the condition is in state `Unknown`.
-func CheckConditionOngoing(cc ConditionCheckable, c apis.ConditionType, t *testing.T) {
+func CheckConditionOngoing(s apis.ConditionsAccessor, c apis.ConditionType, t *testing.T) {
 	t.Helper()
 	if err := CheckCondition(cc, c, corev1.ConditionUnknown); err != nil {
 		t.Fatal(err)
@@ -48,7 +42,7 @@ func CheckConditionOngoing(cc ConditionCheckable, c apis.ConditionType, t *testi
 }
 
 // CheckConditionFailed checks if the condition is in state `False`.
-func CheckConditionFailed(cc ConditionCheckable, c apis.ConditionType, t *testing.T) {
+func CheckConditionFailed(s apis.ConditionsAccessor, c apis.ConditionType, t *testing.T) {
 	t.Helper()
 	if err := CheckCondition(cc, c, corev1.ConditionFalse); err != nil {
 		t.Fatal(err)
@@ -56,7 +50,7 @@ func CheckConditionFailed(cc ConditionCheckable, c apis.ConditionType, t *testin
 }
 
 // CheckConditionSucceeded checks if the condition is in state `True`.
-func CheckConditionSucceeded(cc ConditionCheckable, c apis.ConditionType, t *testing.T) {
+func CheckConditionSucceeded(s apis.ConditionsAccessor, c apis.ConditionType, t *testing.T) {
 	t.Helper()
 	if err := CheckCondition(cc, c, corev1.ConditionTrue); err != nil {
 		t.Fatal(err)
