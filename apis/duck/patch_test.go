@@ -250,7 +250,7 @@ type DoesntMarshal struct{}
 
 var _ json.Marshaler = (*DoesntMarshal)(nil)
 
-func (_ *DoesntMarshal) MarshalJSON() ([]byte, error) {
+func (*DoesntMarshal) MarshalJSON() ([]byte, error) {
 	return nil, errors.New("what did you expect?")
 }
 
@@ -270,7 +270,7 @@ type PatchSpec struct {
 var _ Implementable = (*Patchable)(nil)
 var _ Populatable = (*Patch)(nil)
 
-func (_ *Patchable) GetFullType() Populatable {
+func (*Patchable) GetFullType() Populatable {
 	return &Patch{}
 }
 
