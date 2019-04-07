@@ -35,6 +35,16 @@ type Validatable interface {
 	Validate(context.Context) *FieldError
 }
 
+// Convertible indicates that a particular type supports conversions to/from
+// "higher" versions of the same type.
+type Convertible interface {
+	// ConvertUp up-converts the receiver into `to`.
+	ConvertUp(to Convertible) error
+
+	// ConvertDown down-converts from `from` into the receiver.
+	ConvertDown(from Convertible) error
+}
+
 // Immutable indicates that a particular type has fields that should
 // not change after creation.
 type Immutable interface {
