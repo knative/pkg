@@ -128,8 +128,5 @@ func PodsRunning(podList *corev1.PodList) (bool, error) {
 
 // PodRunning will check the status conditions of the pod and return true if it's Running
 func PodRunning(pod *corev1.Pod) bool {
-	if pod.Status.Phase != corev1.PodRunning && pod.Status.Phase != corev1.PodSucceeded {
-		return false
-	}
-	return true
+	return pod.Status.Phase == corev1.PodRunning || pod.Status.Phase == corev1.PodSucceeded
 }
