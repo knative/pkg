@@ -106,7 +106,17 @@ Body.`,
 		name:     "invalid value propagation",
 		err:      ErrInvalidValue("foo", "bar"),
 		prefixes: [][]string{{"baz"}},
-		want:     `invalid value "foo": baz.bar`,
+		want:     `invalid value: foo: baz.bar`,
+	}, {
+		name:     "invalid value propagation (int)",
+		err:      ErrInvalidValue(5, "bar"),
+		prefixes: [][]string{{"baz"}},
+		want:     `invalid value: 5: baz.bar`,
+	}, {
+		name:     "invalid value propagation (duration)",
+		err:      ErrInvalidValue(5*time.Second, "bar"),
+		prefixes: [][]string{{"baz"}},
+		want:     `invalid value: 5s: baz.bar`,
 	}, {
 		name:     "missing mutually exclusive fields",
 		err:      ErrMissingOneOf("foo", "bar"),
@@ -407,7 +417,13 @@ can not use @, do not try`,
 		err: func() *FieldError {
 			return ErrInvalidArrayValue("kapot", "indexed", 5)
 		}(),
-		want: `invalid value "kapot": indexed[5]`,
+		want: `invalid value: kapot: indexed[5]`,
+	}, {
+		name: "leaf field error with index (int)",
+		err: func() *FieldError {
+			return ErrInvalidArrayValue(42, "indexed", 5)
+		}(),
+		want: `invalid value: 42: indexed[5]`,
 	}, {
 		name:     "nil propagation",
 		err:      nil,
