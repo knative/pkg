@@ -73,7 +73,9 @@ func TestStatusGetCondition(t *testing.T) {
 func TestConditionSet(t *testing.T) {
 	condSet := apis.NewLivingConditionSet("Foo")
 
-	s := &Status{}
+	wantGeneration := int64(42)
+
+	s := &Status{ObservedGeneration: wantGeneration}
 	mgr := condSet.Manage(s)
 
 	mgr.InitializeConditions()
@@ -93,6 +95,10 @@ func TestConditionSet(t *testing.T) {
 	}
 	if got, want := len(s2.Conditions), 1; got != want {
 		t.Errorf("len(s2.Conditions) = %d, wanted %d", got, want)
+	}
+	if gotGeneration := s2.ObservedGeneration; wantGeneration != gotGeneration {
+		t.Errorf("len(s2.ObservedGeneration) = %d, wanted %d",
+			gotGeneration, wantGeneration)
 	}
 
 	for _, c := range []apis.ConditionType{"Foo"} {
@@ -115,6 +121,10 @@ func TestConditionSet(t *testing.T) {
 	if got, want := len(s2.Conditions), 1; got != want {
 		t.Errorf("len(s2.Conditions) = %d, wanted %d", got, want)
 	}
+	if gotGeneration := s2.ObservedGeneration; wantGeneration != gotGeneration {
+		t.Errorf("len(s2.ObservedGeneration) = %d, wanted %d",
+			gotGeneration, wantGeneration)
+	}
 
 	for _, c := range []apis.ConditionType{"Foo"} {
 		mgr.MarkTrue(c)
@@ -135,5 +145,9 @@ func TestConditionSet(t *testing.T) {
 	}
 	if got, want := len(s2.Conditions), 1; got != want {
 		t.Errorf("len(s2.Conditions) = %d, wanted %d", got, want)
+	}
+	if gotGeneration := s2.ObservedGeneration; wantGeneration != gotGeneration {
+		t.Errorf("len(s2.ObservedGeneration) = %d, wanted %d",
+			gotGeneration, wantGeneration)
 	}
 }
