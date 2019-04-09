@@ -99,6 +99,7 @@ func (s *Status) GetCondition(t apis.ConditionType) *apis.Condition {
 
 // ConvertTo helps implement apis.Convertible for types embedding this Status.
 func (source *Status) ConvertTo(ctx context.Context, sink *Status) {
+	sink.ObservedGeneration = source.ObservedGeneration
 	for _, c := range source.Conditions {
 		switch c.Type {
 		// Copy over the "happy" condition, which is the only condition that
