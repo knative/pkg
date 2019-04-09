@@ -105,9 +105,14 @@ func WaitForAllPodsRunning(client *KubeClient, namespace string) error {
 }
 
 // WaitForPodRunning waits for the given pod to be in running state
-func WaitForPodRunning(client *KubeClient, pod *corev1.Pod, namespace string) error {
+func WaitForPodRunning(client *KubeClient, name string, namespace string) error {
+	p := client.Kube.CoreV1().Pods(namespace)
 	return wait.PollImmediate(interval, podTimeout, func() (bool, error) {
-		return PodRunning(pod)
+		p, err := p.Get(name, metav1.GetOptions{})
+		if err != nil {
+			return true, err
+		}
+		return PodRunning(p)
 	})
 }
 
