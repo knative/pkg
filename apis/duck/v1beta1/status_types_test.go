@@ -17,6 +17,7 @@ limitations under the License.
 package v1beta1
 
 import (
+	"context"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -85,6 +86,15 @@ func TestConditionSet(t *testing.T) {
 		}
 	}
 
+	s2 := &Status{}
+	s.ConvertTo(context.Background(), s2)
+	if condSet.Manage(s2).IsHappy() {
+		t.Error("s2.IsHappy() = true, wanted false")
+	}
+	if got, want := len(s2.Conditions), 1; got != want {
+		t.Errorf("len(s2.Conditions) = %d, wanted %d", got, want)
+	}
+
 	for _, c := range []apis.ConditionType{"Foo"} {
 		mgr.MarkFalse(c, "bad", "for business")
 	}
@@ -97,6 +107,15 @@ func TestConditionSet(t *testing.T) {
 		}
 	}
 
+	s2 = &Status{}
+	s.ConvertTo(context.Background(), s2)
+	if condSet.Manage(s2).IsHappy() {
+		t.Error("s2.IsHappy() = true, wanted false")
+	}
+	if got, want := len(s2.Conditions), 1; got != want {
+		t.Errorf("len(s2.Conditions) = %d, wanted %d", got, want)
+	}
+
 	for _, c := range []apis.ConditionType{"Foo"} {
 		mgr.MarkTrue(c)
 	}
@@ -107,5 +126,14 @@ func TestConditionSet(t *testing.T) {
 		} else if got, want := cond.Status, corev1.ConditionTrue; got != want {
 			t.Errorf("GetCondition(%q) = %v, wanted %v", c, got, want)
 		}
+	}
+
+	s2 = &Status{}
+	s.ConvertTo(context.Background(), s2)
+	if !condSet.Manage(s2).IsHappy() {
+		t.Error("s2.IsHappy() = false, wanted true")
+	}
+	if got, want := len(s2.Conditions), 1; got != want {
+		t.Errorf("len(s2.Conditions) = %d, wanted %d", got, want)
 	}
 }
