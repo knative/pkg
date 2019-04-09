@@ -21,6 +21,7 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/google/go-cmp/cmp"
 )
@@ -215,9 +216,19 @@ here at 3`,
 Second: X, Y, Z`,
 	}, {
 		name:     "out of bound value",
-		err:      ErrOutOfBoundsValue("-1", "0", "5", "timeout"),
+		err:      ErrOutOfBoundsValue("a", "b", "c", "string"),
+		prefixes: [][]string{{"spec"}},
+		want:     `expected b <= a <= c: spec.string`,
+	}, {
+		name:     "out of bound value (int)",
+		err:      ErrOutOfBoundsValue(-1, 0, 5, "timeout"),
 		prefixes: [][]string{{"spec"}},
 		want:     `expected 0 <= -1 <= 5: spec.timeout`,
+	}, {
+		name:     "out of bound value (time.Duration)",
+		err:      ErrOutOfBoundsValue(1*time.Second, 2*time.Second, 5*time.Second, "timeout"),
+		prefixes: [][]string{{"spec"}},
+		want:     `expected 2s <= 1s <= 5s: spec.timeout`,
 	}}
 
 	for _, test := range tests {

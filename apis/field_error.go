@@ -345,9 +345,9 @@ func ErrInvalidKeyName(value, fieldPath string, details ...string) *FieldError {
 
 // ErrOutOfBoundsValue constructs a FieldError for a field that has received an
 // out of bound value.
-func ErrOutOfBoundsValue(value, lower, upper, fieldPath string) *FieldError {
+func ErrOutOfBoundsValue(value, lower, upper interface{}, fieldPath string) *FieldError {
 	return &FieldError{
-		Message: fmt.Sprintf("expected %s <= %s <= %s", lower, value, upper),
+		Message: fmt.Sprintf("expected %v <= %v <= %v", lower, value, upper),
 		Paths:   []string{fieldPath},
 	}
 }
