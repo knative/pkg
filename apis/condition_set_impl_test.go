@@ -805,3 +805,38 @@ func TestInitializeConditions(t *testing.T) {
 		})
 	}
 }
+
+func TestTerminalInitialization(t *testing.T) {
+	set := NewLivingConditionSet("Foo")
+	status := &TestStatus{}
+
+	manager := set.Manage(status)
+	manager.InitializeConditions()
+
+	if got, want := len(status.c), 2; got != want {
+		t.Errorf("InitializeConditions() = %v, wanted %v", got, want)
+	}
+
+	manager.MarkTrue("Foo")
+	if !manager.IsHappy() {
+		t.Error("IsHappy() = false, wanted true")
+	}
+
+	// Add a new condition "Bar" to simulate the addition of conditions.
+	set = NewLivingConditionSet("Foo", "Bar")
+
+	// Create a new manager for the new set and re-initialize to simulate
+	// Reconcile() with the new conditions.
+	manager = set.Manage(status)
+	manager.InitializeConditions()
+
+	if got, want := len(status.c), 3; got != want {
+		t.Errorf("InitializeConditions() = %v, wanted %v", got, want)
+	}
+
+	if c := manager.GetCondition("Bar"); c == nil {
+		t.Error("GetCondition(Bar) = nil, wanted True")
+	} else if got, want := c.Status, corev1.ConditionTrue; got != want {
+		t.Errorf("GetCondition(Bar) = %s, wanted %s", got, want)
+	}
+}
