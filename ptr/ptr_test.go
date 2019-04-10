@@ -33,3 +33,11 @@ func TestBool(t *testing.T) {
 		t.Errorf("Bool() = &%v, wanted %v", *gotPtr, want)
 	}
 }
+
+func TestString(t *testing.T) {
+	want := "should be a pointer"
+	gotPtr := String(want)
+	if want != *gotPtr {
+		t.Errorf("String() = &%v, wanted %v", *gotPtr, want)
+	}
+}
