@@ -53,7 +53,7 @@ func EnsureTypeMeta(f Callback, gvk schema.GroupVersionKind) Callback {
 }
 
 // SendGlobalUpdates triggers an update event for all objects from the
-// passed ShareInformer.
+// passed SharedInformer.
 //
 // Since this is triggered not by a real update of these objects
 // themselves, we have no way of knowing the change to these objects
