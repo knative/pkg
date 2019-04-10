@@ -224,7 +224,7 @@ func TestAdmitCreates(t *testing.T) {
 			Value:     "I'm a default.",
 		}},
 	}, {
-		name: "test simple creation (with partially overriden defaults)",
+		name: "test simple creation (with partially overridden defaults)",
 		setup: func(ctx context.Context, r *Resource) {
 			r.Spec.FieldThatsImmutableWithDefault = "not the default"
 		},
