@@ -20,7 +20,9 @@ import (
 	"context"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
 	authenticationv1 "k8s.io/api/authentication/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func TestContexts(t *testing.T) {
@@ -61,6 +63,36 @@ func TestContexts(t *testing.T) {
 		ctx:   WithinCreate(ctx),
 		check: IsInUpdate,
 		want:  false,
+	}, {
+		name:  "in spec",
+		ctx:   WithinSpec(ctx),
+		check: IsInSpec,
+		want:  true,
+	}, {
+		name:  "not in spec",
+		ctx:   WithinStatus(ctx),
+		check: IsInSpec,
+		want:  false,
+	}, {
+		name:  "in status",
+		ctx:   WithinStatus(ctx),
+		check: IsInStatus,
+		want:  true,
+	}, {
+		name:  "not in status",
+		ctx:   WithinSpec(ctx),
+		check: IsInStatus,
+		want:  false,
+	}, {
+		name:  "disallow deprecated",
+		ctx:   DisallowDeprecated(ctx),
+		check: IsDeprecatedAllowed,
+		want:  false,
+	}, {
+		name:  "allow deprecated",
+		ctx:   ctx,
+		check: IsDeprecatedAllowed,
+		want:  true,
 	}}
 
 	for _, tc := range tests {
@@ -100,5 +132,23 @@ func TestGetUserInfo(t *testing.T) {
 
 	if want, got := bob, GetUserInfo(ctx); got != want {
 		t.Errorf("GetUserInfo() = %v, wanted %v", got, want)
+	}
+}
+
+func TestParentMeta(t *testing.T) {
+	ctx := context.Background()
+
+	if got, want := ParentMeta(ctx), (metav1.ObjectMeta{}); !cmp.Equal(want, got) {
+		t.Errorf("ParentMeta() = %v, wanted %v", got, want)
+	}
+
+	want := metav1.ObjectMeta{
+		Name:      "foo",
+		Namespace: "bar",
+	}
+	ctx = WithinParent(ctx, want)
+
+	if got := ParentMeta(ctx); !cmp.Equal(want, got) {
+		t.Errorf("ParentMeta() = %v, wanted %v", got, want)
 	}
 }
