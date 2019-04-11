@@ -57,6 +57,14 @@ func TestRecovery(t *testing.T) {
 	if _, err := SafeEqual(a, b); err == nil {
 		t.Error("expected err, got nil")
 	}
+
+	if _, err := ShortDiff(a, b); err == nil {
+		t.Error("expected err, got nil")
+	}
+
+	if _, err := CompareSetFields(a, b); err == nil {
+		t.Error("expected err, got nil")
+	}
 }
 
 func TestFieldDiff(t *testing.T) {
