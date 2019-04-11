@@ -20,6 +20,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 )
 
 type testStruct struct {
@@ -34,6 +35,10 @@ type childStruct struct {
 	ChildInt    int
 }
 
+type privateStruct struct {
+	privateField string
+}
+
 func TestFieldListReporter(t *testing.T) {
 
 	tests := []struct {
@@ -41,6 +46,7 @@ func TestFieldListReporter(t *testing.T) {
 		x    interface{}
 		y    interface{}
 		want []string
+		opts []cmp.Option
 	}{{
 		name: "No diff",
 		x: testStruct{
@@ -112,12 +118,32 @@ func TestFieldListReporter(t *testing.T) {
 		x:    "foo",
 		y:    "bar",
 		want: []string{"{string}"},
+	}, {
+		name: "Private field allowed",
+		x: privateStruct{
+			privateField: "Foo",
+		},
+		y: privateStruct{
+			privateField: "Bar",
+		},
+		want: []string{"privateField"},
+		opts: []cmp.Option{cmp.AllowUnexported(privateStruct{})},
+	}, {
+		name: "Private field ignored",
+		x: privateStruct{
+			privateField: "Foo",
+		},
+		y: privateStruct{
+			privateField: "Bar",
+		},
+		want: nil,
+		opts: []cmp.Option{cmpopts.IgnoreUnexported(privateStruct{})},
 	}}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			reporter := new(FieldListReporter)
-			cmp.Equal(test.x, test.y, cmp.Reporter(reporter))
+			cmp.Equal(test.x, test.y, append(test.opts, cmp.Reporter(reporter))...)
 			got := reporter.Fields()
 			if diff := cmp.Diff(got, test.want); diff != "" {
 				t.Errorf("%s: Fields() = %v, Want %v", test.name, got, test.want)
@@ -133,6 +159,7 @@ func TestImmutableReporter(t *testing.T) {
 		y         interface{}
 		want      string
 		expectErr bool
+		opts      []cmp.Option
 	}{{
 		name: "No diff",
 		x: testStruct{
@@ -228,12 +255,35 @@ func TestImmutableReporter(t *testing.T) {
 	-: "foo"
 	+: "bar"
 `,
+	}, {
+		name: "Private field allowed",
+		x: privateStruct{
+			privateField: "Foo",
+		},
+		y: privateStruct{
+			privateField: "Bar",
+		},
+		want: `{kmp.privateStruct}.privateField:
+	-: "Foo"
+	+: "Bar"
+`,
+		opts: []cmp.Option{cmp.AllowUnexported(privateStruct{})},
+	}, {
+		name: "Private field ignored",
+		x: privateStruct{
+			privateField: "Foo",
+		},
+		y: privateStruct{
+			privateField: "Bar",
+		},
+		want: "",
+		opts: []cmp.Option{cmpopts.IgnoreUnexported(privateStruct{})},
 	}}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			reporter := new(ShortDiffReporter)
-			cmp.Equal(test.x, test.y, cmp.Reporter(reporter))
+			cmp.Equal(test.x, test.y, append(test.opts, cmp.Reporter(reporter))...)
 			got, err := reporter.Diff()
 			if test.expectErr {
 				if err == nil {

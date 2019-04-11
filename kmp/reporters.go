@@ -47,7 +47,7 @@ func (r *FieldListReporter) fieldName() string {
 	} else {
 		name = strings.TrimPrefix(r.path.Index(1).String(), ".")
 	}
-	return strings.ToLower(string(name[0])) + name[1:len(name)]
+	return strings.ToLower(string(name[0])) + name[1:]
 }
 
 // Report implements the cmp.Reporter.

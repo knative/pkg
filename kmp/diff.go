@@ -36,8 +36,8 @@ func init() {
 
 // SafeDiff wraps cmp.Diff but recovers from panics and uses custom Comparers for:
 // * k8s.io/apimachinery/pkg/api/resource.Quantity
-// SafeDiff should be used instead of cmp.Diff in controllers to prevent the controller from
-// crashing.
+// SafeDiff should be used instead of cmp.Diff in non-test code to protect the running
+// process from crashing.
 func SafeDiff(x, y interface{}, opts ...cmp.Option) (diff string, err error) {
 	// cmp.Diff will panic if we miss something; return error instead of crashing.
 	defer func() {
@@ -54,8 +54,8 @@ func SafeDiff(x, y interface{}, opts ...cmp.Option) (diff string, err error) {
 
 // SafeEqual wraps cmp.Equal but recovers from panics and uses custom Comparers for:
 // * k8s.io/apimachinery/pkg/api/resource.Quantity
-// SafeEqual should be used instead of cmp.Equal in controllers to prevent the controller from
-// crashing.
+// SafeEqual should be used instead of cmp.Equal in non-test code to protect the running
+// process from crashing.
 func SafeEqual(x, y interface{}, opts ...cmp.Option) (equal bool, err error) {
 	// cmp.Equal will panic if we miss something; return error instead of crashing.
 	defer func() {
