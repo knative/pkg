@@ -74,7 +74,12 @@ func getPrefixedNamedFieldValues(prefix string, obj interface{}) map[string]refl
 		tf := objValue.Type().Field(i)
 		if v := objValue.Field(i); v.IsValid() {
 			if strings.HasPrefix(tf.Name, prefix) {
-				fields[tf.Name] = v
+				jTag := tf.Tag.Get("json")
+				name := strings.Split(jTag, ",")[0]
+				if name == "" {
+					name = tf.Name
+				}
+				fields[name] = v
 			}
 		}
 	}

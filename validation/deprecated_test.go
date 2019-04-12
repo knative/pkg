@@ -42,7 +42,7 @@ func TestStrictValidation(t *testing.T) {
 			},
 			wantErrs: []string{
 				"must not set",
-				"DeprecatedString",
+				"string",
 			},
 		},
 		"create strict, stringptr": {
@@ -52,7 +52,7 @@ func TestStrictValidation(t *testing.T) {
 			},
 			wantErrs: []string{
 				"must not set",
-				"DeprecatedStringPtr",
+				"stringPtr",
 			},
 		},
 		"create strict, int": {
@@ -62,7 +62,7 @@ func TestStrictValidation(t *testing.T) {
 			},
 			wantErrs: []string{
 				"must not set",
-				"DeprecatedInt",
+				"int",
 			},
 		},
 		"create strict, intptr": {
@@ -72,7 +72,7 @@ func TestStrictValidation(t *testing.T) {
 			},
 			wantErrs: []string{
 				"must not set",
-				"DeprecatedIntPtr",
+				"intPtr",
 			},
 		},
 		"create strict, map": {
@@ -82,7 +82,7 @@ func TestStrictValidation(t *testing.T) {
 			},
 			wantErrs: []string{
 				"must not set",
-				"DeprecatedMap",
+				"map",
 			},
 		},
 		"create strict, slice": {
@@ -92,7 +92,7 @@ func TestStrictValidation(t *testing.T) {
 			},
 			wantErrs: []string{
 				"must not set",
-				"DeprecatedSlice",
+				"slice",
 			},
 		},
 		"create strict, struct": {
@@ -102,7 +102,7 @@ func TestStrictValidation(t *testing.T) {
 			},
 			wantErrs: []string{
 				"must not set",
-				"DeprecatedStruct",
+				"struct",
 			},
 		},
 		"create strict, structptr": {
@@ -114,7 +114,7 @@ func TestStrictValidation(t *testing.T) {
 			},
 			wantErrs: []string{
 				"must not set",
-				"DeprecatedStructPtr",
+				"structPtr",
 			},
 		},
 
@@ -126,7 +126,7 @@ func TestStrictValidation(t *testing.T) {
 			},
 			wantErrs: []string{
 				"must not update",
-				"DeprecatedIntPtr",
+				"intPtr",
 			},
 		},
 		"update strict, map": {
@@ -138,7 +138,7 @@ func TestStrictValidation(t *testing.T) {
 
 			wantErrs: []string{
 				"must not update",
-				"DeprecatedMap",
+				"map",
 			},
 		},
 		"update strict, slice": {
@@ -149,7 +149,7 @@ func TestStrictValidation(t *testing.T) {
 			},
 			wantErrs: []string{
 				"must not update",
-				"DeprecatedSlice",
+				"slice",
 			},
 		},
 		"update strict, struct": {
@@ -162,7 +162,7 @@ func TestStrictValidation(t *testing.T) {
 			},
 			wantErrs: []string{
 				"must not update",
-				"DeprecatedStruct",
+				"struct",
 			},
 		},
 		"update strict, structptr": {
@@ -175,7 +175,7 @@ func TestStrictValidation(t *testing.T) {
 			},
 			wantErrs: []string{
 				"must not update",
-				"DeprecatedStructPtr",
+				"structPtr",
 			},
 		},
 
@@ -189,7 +189,7 @@ func TestStrictValidation(t *testing.T) {
 			},
 			wantErrs: []string{
 				"must not update",
-				"DeprecatedString",
+				"string",
 			},
 		},
 		"overwrite strict, stringptr": {
@@ -202,7 +202,7 @@ func TestStrictValidation(t *testing.T) {
 			},
 			wantErrs: []string{
 				"must not update",
-				"DeprecatedStringPtr",
+				"stringPtr",
 			},
 		},
 		"overwrite strict, int": {
@@ -215,7 +215,7 @@ func TestStrictValidation(t *testing.T) {
 			},
 			wantErrs: []string{
 				"must not update",
-				"DeprecatedInt",
+				"int",
 			},
 		},
 		"overwrite strict, intptr": {
@@ -228,7 +228,7 @@ func TestStrictValidation(t *testing.T) {
 			},
 			wantErrs: []string{
 				"must not update",
-				"DeprecatedIntPtr",
+				"intPtr",
 			},
 		},
 		"overwrite strict, map": {
@@ -241,7 +241,7 @@ func TestStrictValidation(t *testing.T) {
 			},
 			wantErrs: []string{
 				"must not update",
-				"DeprecatedMap",
+				"map",
 			},
 		},
 		"overwrite strict, slice": {
@@ -254,7 +254,7 @@ func TestStrictValidation(t *testing.T) {
 			},
 			wantErrs: []string{
 				"must not update",
-				"DeprecatedSlice",
+				"slice",
 			},
 		},
 		"overwrite strict, struct": {
@@ -271,7 +271,7 @@ func TestStrictValidation(t *testing.T) {
 			},
 			wantErrs: []string{
 				"must not update",
-				"DeprecatedStruct",
+				"struct",
 			},
 		},
 		"overwrite strict, structptr": {
@@ -288,7 +288,7 @@ func TestStrictValidation(t *testing.T) {
 			},
 			wantErrs: []string{
 				"must not update",
-				"DeprecatedStructPtr",
+				"structPtr",
 			},
 		},
 
