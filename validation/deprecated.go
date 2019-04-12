@@ -42,15 +42,10 @@ func CheckDeprecated(ctx context.Context, obj interface{}, org interface{}) *api
 		orgFields := getPrefixedNamedFieldValues(deprecated, org)
 
 		for name, newValue := range newFields {
-			orgValue := orgFields[name]
-
 			if nonZero(newValue) {
-				if differ(orgValue, newValue) {
+				if differ(orgFields[name], newValue) {
 					// Not allowed to update the value.
 					errs = errs.Also(apis.ErrDisallowedUpdateDeprecatedFields(name))
-				} else {
-					// Not allowed to set the value.
-					errs = errs.Also(apis.ErrDisallowedFields(name))
 				}
 			}
 		}

@@ -62,10 +62,10 @@ type InnerDefaultSubSpec struct {
 	DeprecatedStringPtr *string `json:"stringPtr,omitempty"`
 
 	// Deprecated: This field is deprecated.
-	DeprecatedInt int `json:"int,omitempty"`
+	DeprecatedInt int64 `json:"int,omitempty"`
 
 	// Deprecated: This field is deprecated.
-	DeprecatedIntPtr *int `json:"intPtr,omitempty"`
+	DeprecatedIntPtr *int64 `json:"intPtr,omitempty"`
 
 	// Deprecated: This field is deprecated.
 	DeprecatedMap map[string]string `json:"map,omitempty"`

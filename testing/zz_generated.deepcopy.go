@@ -115,7 +115,7 @@ func (in *InnerDefaultSubSpec) DeepCopyInto(out *InnerDefaultSubSpec) {
 	}
 	if in.DeprecatedIntPtr != nil {
 		in, out := &in.DeprecatedIntPtr, &out.DeprecatedIntPtr
-		*out = new(int)
+		*out = new(int64)
 		**out = **in
 	}
 	if in.DeprecatedMap != nil {

@@ -18,6 +18,7 @@ package webhook
 
 import (
 	. "github.com/knative/pkg/logging/testing"
+	"github.com/knative/pkg/ptr"
 	. "github.com/knative/pkg/testing"
 	admissionv1beta1 "k8s.io/api/admission/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -112,10 +113,7 @@ func TestStrictValidation(t *testing.T) {
 			strict: true,
 			req: newCreateReq(createInnerDefaultResourceWithSpecAndStatus(t, &InnerDefaultSpec{
 				SubFields: &InnerDefaultSubSpec{
-					DeprecatedIntPtr: func() *int {
-						i := 42
-						return &i
-					}(),
+					DeprecatedIntPtr: ptr.Int64(42),
 				},
 			}, nil)),
 			wantErrs: []string{
@@ -239,10 +237,7 @@ func TestStrictValidation(t *testing.T) {
 				createInnerDefaultResourceWithoutSpec(t),
 				createInnerDefaultResourceWithSpecAndStatus(t, &InnerDefaultSpec{
 					SubFields: &InnerDefaultSubSpec{
-						DeprecatedIntPtr: func() *int {
-							i := 42
-							return &i
-						}(),
+						DeprecatedIntPtr: ptr.Int64(42),
 					},
 				}, nil)),
 			wantErrs: []string{
@@ -390,18 +385,12 @@ func TestStrictValidation(t *testing.T) {
 			req: newUpdateReq(
 				createInnerDefaultResourceWithSpecAndStatus(t, &InnerDefaultSpec{
 					SubFields: &InnerDefaultSubSpec{
-						DeprecatedIntPtr: func() *int {
-							i := 10
-							return &i
-						}(),
+						DeprecatedIntPtr: ptr.Int64(10),
 					},
 				}, nil),
 				createInnerDefaultResourceWithSpecAndStatus(t, &InnerDefaultSpec{
 					SubFields: &InnerDefaultSubSpec{
-						DeprecatedIntPtr: func() *int {
-							i := 42
-							return &i
-						}(),
+						DeprecatedIntPtr: ptr.Int64(42),
 					},
 				}, nil)),
 			wantErrs: []string{
