@@ -41,13 +41,20 @@ func (r *FieldListReporter) PushStep(ps cmp.PathStep) {
 // fieldName returns the camelCase field name on the root structure based on
 // the current path.
 func (r *FieldListReporter) fieldName() string {
-	var name string
 	if len(r.path) < 2 {
-		name = r.path.Index(0).String()
+		return r.path.Index(0).String()
 	} else {
-		name = strings.TrimPrefix(r.path.Index(1).String(), ".")
+		fieldName := strings.TrimPrefix(r.path.Index(1).String(), ".")
+		// Prefer JSON name to fieldName if it exists
+		structField, exists := r.path.Index(0).Type().FieldByName(fieldName)
+		if exists {
+			jsonName := structField.Tag.Get("json")
+			if jsonName != "" {
+				return jsonName
+			}
+		}
+		return fieldName
 	}
-	return strings.ToLower(string(name[0])) + name[1:]
 }
 
 // Report implements the cmp.Reporter.

@@ -69,8 +69,8 @@ func TestRecovery(t *testing.T) {
 
 func TestFieldDiff(t *testing.T) {
 	type foo struct {
-		Bar string
-		Baz int
+		Bar string `json:"stringField"`
+		Baz int    `json:"intField"`
 	}
 
 	a := foo{
@@ -82,7 +82,7 @@ func TestFieldDiff(t *testing.T) {
 		Baz: 1,
 	}
 
-	want := []string{"bar"}
+	want := []string{"stringField"}
 
 	got, err := CompareSetFields(a, b)
 

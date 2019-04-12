@@ -24,10 +24,10 @@ import (
 )
 
 type testStruct struct {
-	A           string
-	StringField string
+	A           string `json:"a"`
+	StringField string `json:"foo"`
 	IntField    int
-	StructField childStruct
+	StructField childStruct `json:"child"`
 }
 
 type childStruct struct {
@@ -80,7 +80,7 @@ func TestFieldListReporter(t *testing.T) {
 		y: testStruct{
 			StringField: "bar",
 		},
-		want: []string{"stringField"},
+		want: []string{"foo"},
 	}, {
 		name: "Multi field",
 		x: testStruct{
@@ -91,14 +91,14 @@ func TestFieldListReporter(t *testing.T) {
 			StringField: "bar",
 			IntField:    6,
 		},
-		want: []string{"intField", "stringField"},
+		want: []string{"IntField", "foo"},
 	}, {
 		name: "Missing field",
 		x: testStruct{
-			StringField: "foo",
+			StringField: "test",
 		},
 		y:    testStruct{},
-		want: []string{"stringField"},
+		want: []string{"foo"},
 	}, {
 		name: "Nested field",
 		x: testStruct{
@@ -112,7 +112,7 @@ func TestFieldListReporter(t *testing.T) {
 				ChildInt:    1,
 			},
 		},
-		want: []string{"structField"},
+		want: []string{"child"},
 	}, {
 		name: "Non Struct",
 		x:    "foo",
