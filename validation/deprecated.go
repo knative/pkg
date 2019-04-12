@@ -116,7 +116,7 @@ func nonZero(a reflect.Value) bool {
 // differ returns true if a != b
 func differ(a, b reflect.Value) bool {
 	if a.Kind() != b.Kind() {
-		return false
+		return true
 	}
 
 	switch a.Kind() {
