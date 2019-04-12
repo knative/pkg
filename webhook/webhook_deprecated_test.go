@@ -65,7 +65,8 @@ func TestStrictValidation(t *testing.T) {
 				DeprecatedField: "fail setting.",
 			}, nil)),
 			wantErrs: []string{
-				"deprecated field set: Spec.DeprecatedField",
+				"must not set",
+				"spec.DeprecatedField",
 			},
 		},
 		"create strict, spec.sub.string": {
@@ -76,7 +77,8 @@ func TestStrictValidation(t *testing.T) {
 				},
 			}, nil)),
 			wantErrs: []string{
-				"deprecated field set: Spec.SubFields.DeprecatedString",
+				"must not set",
+				"spec.subFields.DeprecatedString",
 			},
 		},
 		"create strict, spec.sub.stringptr": {
@@ -90,7 +92,8 @@ func TestStrictValidation(t *testing.T) {
 				},
 			}, nil)),
 			wantErrs: []string{
-				"deprecated field set: Spec.SubFields.DeprecatedStringPtr",
+				"must not set",
+				"spec.subFields.DeprecatedStringPtr",
 			},
 		},
 		"create strict, spec.sub.int": {
@@ -101,7 +104,8 @@ func TestStrictValidation(t *testing.T) {
 				},
 			}, nil)),
 			wantErrs: []string{
-				"deprecated field set: Spec.SubFields.DeprecatedInt",
+				"must not set",
+				"spec.subFields.DeprecatedInt",
 			},
 		},
 		"create strict, spec.sub.intptr": {
@@ -115,7 +119,8 @@ func TestStrictValidation(t *testing.T) {
 				},
 			}, nil)),
 			wantErrs: []string{
-				"deprecated field set: Spec.SubFields.DeprecatedIntPtr",
+				"must not set",
+				"spec.subFields.DeprecatedIntPtr",
 			},
 		},
 		"create strict, spec.sub.map": {
@@ -126,7 +131,8 @@ func TestStrictValidation(t *testing.T) {
 				},
 			}, nil)),
 			wantErrs: []string{
-				"deprecated field set: Spec.SubFields.DeprecatedMap",
+				"must not set",
+				"spec.subFields.DeprecatedMap",
 			},
 		},
 		"create strict, spec.sub.slice": {
@@ -137,7 +143,8 @@ func TestStrictValidation(t *testing.T) {
 				},
 			}, nil)),
 			wantErrs: []string{
-				"deprecated field set: Spec.SubFields.DeprecatedSlice",
+				"must not set",
+				"spec.subFields.DeprecatedSlice",
 			},
 		},
 		"create strict, spec.sub.struct": {
@@ -150,7 +157,8 @@ func TestStrictValidation(t *testing.T) {
 				},
 			}, nil)),
 			wantErrs: []string{
-				"deprecated field set: Spec.SubFields.DeprecatedStruct",
+				"must not set",
+				"spec.subFields.DeprecatedStruct",
 			},
 		},
 		"create strict, spec.sub.structptr": {
@@ -163,7 +171,8 @@ func TestStrictValidation(t *testing.T) {
 				},
 			}, nil)),
 			wantErrs: []string{
-				"deprecated field set: Spec.SubFields.DeprecatedStructPtr",
+				"must not set",
+				"spec.subFields.DeprecatedStructPtr",
 			},
 		},
 
@@ -175,7 +184,8 @@ func TestStrictValidation(t *testing.T) {
 					DeprecatedField: "fail setting.",
 				}, nil)),
 			wantErrs: []string{
-				"deprecated field updated: Spec.DeprecatedField",
+				"must not update",
+				"spec.DeprecatedField",
 			},
 		},
 		"update strict, spec.sub.string": {
@@ -188,7 +198,8 @@ func TestStrictValidation(t *testing.T) {
 					},
 				}, nil)),
 			wantErrs: []string{
-				"deprecated field set: Spec.SubFields.DeprecatedString",
+				"must not set",
+				"spec.subFields.DeprecatedString",
 			},
 		},
 		"update strict, spec.sub.stringptr": {
@@ -204,7 +215,8 @@ func TestStrictValidation(t *testing.T) {
 					},
 				}, nil)),
 			wantErrs: []string{
-				"deprecated field set: Spec.SubFields.DeprecatedStringPtr",
+				"must not set",
+				"spec.subFields.DeprecatedStringPtr",
 			},
 		},
 		"update strict, spec.sub.int": {
@@ -217,7 +229,8 @@ func TestStrictValidation(t *testing.T) {
 					},
 				}, nil)),
 			wantErrs: []string{
-				"deprecated field set: Spec.SubFields.DeprecatedInt",
+				"must not set",
+				"spec.subFields.DeprecatedInt",
 			},
 		},
 		"update strict, spec.sub.intptr": {
@@ -233,7 +246,8 @@ func TestStrictValidation(t *testing.T) {
 					},
 				}, nil)),
 			wantErrs: []string{
-				"deprecated field set: Spec.SubFields.DeprecatedIntPtr",
+				"must not set",
+				"spec.subFields.DeprecatedIntPtr",
 			},
 		},
 		"update strict, spec.sub.map": {
@@ -246,7 +260,8 @@ func TestStrictValidation(t *testing.T) {
 					},
 				}, nil)),
 			wantErrs: []string{
-				"deprecated field set: Spec.SubFields.DeprecatedMap",
+				"must not set",
+				"spec.subFields.DeprecatedMap",
 			},
 		},
 		"update strict, spec.sub.slice": {
@@ -259,7 +274,8 @@ func TestStrictValidation(t *testing.T) {
 					},
 				}, nil)),
 			wantErrs: []string{
-				"deprecated field set: Spec.SubFields.DeprecatedSlice",
+				"must not set",
+				"spec.subFields.DeprecatedSlice",
 			},
 		},
 		"update strict, spec.sub.struct": {
@@ -274,7 +290,8 @@ func TestStrictValidation(t *testing.T) {
 					},
 				}, nil)),
 			wantErrs: []string{
-				"deprecated field set: Spec.SubFields.DeprecatedStruct",
+				"must not set",
+				"spec.subFields.DeprecatedStruct",
 			},
 		},
 		"update strict, spec.sub.structptr": {
@@ -289,22 +306,8 @@ func TestStrictValidation(t *testing.T) {
 					},
 				}, nil)),
 			wantErrs: []string{
-				"deprecated field set: Spec.SubFields.DeprecatedStructPtr",
-			},
-		},
-		"update strict, spec.sub.slicestruct": {
-			strict: true,
-			req: newUpdateReq(
-				createInnerDefaultResourceWithoutSpec(t),
-				createInnerDefaultResourceWithSpecAndStatus(t, &InnerDefaultSpec{
-					SubFields: &InnerDefaultSubSpec{
-						SliceStruct: []InnerDefaultStruct{
-							InnerDefaultStruct{DeprecatedField: "error"},
-						},
-					},
-				}, nil)),
-			wantErrs: []string{
-				"deprecated field set: Spec.SubFields.SliceStruct[0].DeprecatedField",
+				"must not set",
+				"spec.subFields.DeprecatedStructPtr",
 			},
 		},
 
@@ -318,7 +321,8 @@ func TestStrictValidation(t *testing.T) {
 					DeprecatedField: "fail setting.",
 				}, nil)),
 			wantErrs: []string{
-				"deprecated field updated: Spec.DeprecatedField",
+				"must not update",
+				"spec.DeprecatedField",
 			},
 		},
 		"overwrite strict, spec.sub.string": {
@@ -335,7 +339,8 @@ func TestStrictValidation(t *testing.T) {
 					},
 				}, nil)),
 			wantErrs: []string{
-				"deprecated field updated: Spec.SubFields.DeprecatedString",
+				"must not update",
+				"spec.subFields.DeprecatedString",
 			},
 		},
 		"overwrite strict, spec.sub.stringptr": {
@@ -358,7 +363,8 @@ func TestStrictValidation(t *testing.T) {
 					},
 				}, nil)),
 			wantErrs: []string{
-				"deprecated field updated: Spec.SubFields.DeprecatedStringPtr",
+				"must not update",
+				"spec.subFields.DeprecatedStringPtr",
 			},
 		},
 		"overwrite strict, spec.sub.int": {
@@ -375,7 +381,8 @@ func TestStrictValidation(t *testing.T) {
 					},
 				}, nil)),
 			wantErrs: []string{
-				"deprecated field updated: Spec.SubFields.DeprecatedInt",
+				"must not update",
+				"spec.subFields.DeprecatedInt",
 			},
 		},
 		"overwrite strict, spec.sub.intptr": {
@@ -398,7 +405,8 @@ func TestStrictValidation(t *testing.T) {
 					},
 				}, nil)),
 			wantErrs: []string{
-				"deprecated field updated: Spec.SubFields.DeprecatedIntPtr",
+				"must not update",
+				"spec.subFields.DeprecatedIntPtr",
 			},
 		},
 		"overwrite strict, spec.sub.map": {
@@ -415,7 +423,8 @@ func TestStrictValidation(t *testing.T) {
 					},
 				}, nil)),
 			wantErrs: []string{
-				"deprecated field updated: Spec.SubFields.DeprecatedMap",
+				"must not update",
+				"spec.subFields.DeprecatedMap",
 			},
 		},
 		"overwrite strict, spec.sub.slice": {
@@ -432,7 +441,8 @@ func TestStrictValidation(t *testing.T) {
 					},
 				}, nil)),
 			wantErrs: []string{
-				"deprecated field updated: Spec.SubFields.DeprecatedSlice",
+				"must not update",
+				"spec.subFields.DeprecatedSlice",
 			},
 		},
 		"overwrite strict, spec.sub.struct": {
@@ -453,7 +463,8 @@ func TestStrictValidation(t *testing.T) {
 					},
 				}, nil)),
 			wantErrs: []string{
-				"deprecated field updated: Spec.SubFields.DeprecatedStruct",
+				"must not update",
+				"spec.subFields.DeprecatedStruct",
 			},
 		},
 		"overwrite strict, spec.sub.structptr": {
@@ -474,7 +485,8 @@ func TestStrictValidation(t *testing.T) {
 					},
 				}, nil)),
 			wantErrs: []string{
-				"deprecated field updated: Spec.SubFields.DeprecatedStructPtr",
+				"must not update",
+				"spec.subFields.DeprecatedStructPtr",
 			},
 		},
 
@@ -533,32 +545,8 @@ func TestStrictValidation_Spec_Create(t *testing.T) {
 	_, ac := newNonRunningTestAdmissionController(t, opts)
 	resp := ac.admit(TestContextWithLogger(t), req)
 
-	expectFailsWith(t, resp, "deprecated")
-	expectFailsWith(t, resp, "Spec.DeprecatedField")
-}
-
-// In strict mode, you are not allowed to set a deprecated filed when doing a Create.
-func TestStrictValidation_Status_Create(t *testing.T) {
-	req := &admissionv1beta1.AdmissionRequest{
-		Operation: admissionv1beta1.Create,
-		Kind: metav1.GroupVersionKind{
-			Group:   "pkg.knative.dev",
-			Version: "v1alpha1",
-			Kind:    "InnerDefaultResource",
-		},
-	}
-	req.Object.Raw = createInnerDefaultResourceWithSpecAndStatus(t, nil, &InnerDefaultStatus{
-		DeprecatedField: "fail setting.",
-	})
-
-	opts := newDefaultOptions()
-	opts.Strict = true
-
-	_, ac := newNonRunningTestAdmissionController(t, opts)
-	resp := ac.admit(TestContextWithLogger(t), req)
-
-	expectFailsWith(t, resp, "deprecated")
-	expectFailsWith(t, resp, "Status.DeprecatedField")
+	expectFailsWith(t, resp, "must not set")
+	expectFailsWith(t, resp, "spec.DeprecatedField")
 }
 
 // In strict mode, you are not allowed to update a deprecated filed when doing a Update.
@@ -582,32 +570,7 @@ func TestStrictValidation_Spec_Update(t *testing.T) {
 	_, ac := newNonRunningTestAdmissionController(t, opts)
 	resp := ac.admit(TestContextWithLogger(t), req)
 
-	expectFailsWith(t, resp, "deprecated")
-	expectFailsWith(t, resp, "Spec.DeprecatedField")
+	expectFailsWith(t, resp, "must not update")
+	expectFailsWith(t, resp, "spec.DeprecatedField")
 
-}
-
-// In strict mode, you are not allowed to update a deprecated filed when doing a Update.
-func TestStrictValidation_Status_Update(t *testing.T) {
-	req := &admissionv1beta1.AdmissionRequest{
-		Operation: admissionv1beta1.Update,
-		Kind: metav1.GroupVersionKind{
-			Group:   "pkg.knative.dev",
-			Version: "v1alpha1",
-			Kind:    "InnerDefaultResource",
-		},
-	}
-	req.OldObject.Raw = createInnerDefaultResourceWithoutSpec(t)
-	req.Object.Raw = createInnerDefaultResourceWithSpecAndStatus(t, nil, &InnerDefaultStatus{
-		DeprecatedField: "fail setting.",
-	})
-
-	opts := newDefaultOptions()
-	opts.Strict = true
-
-	_, ac := newNonRunningTestAdmissionController(t, opts)
-	resp := ac.admit(TestContextWithLogger(t), req)
-
-	expectFailsWith(t, resp, "deprecated")
-	expectFailsWith(t, resp, "Status.DeprecatedField")
 }

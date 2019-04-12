@@ -18,6 +18,7 @@ package testing
 
 import (
 	"context"
+	"github.com/knative/pkg/validation"
 
 	"github.com/knative/pkg/apis"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -77,8 +78,6 @@ type InnerDefaultSubSpec struct {
 
 	// Deprecated: This field is deprecated.
 	DeprecatedStructPtr *InnerDefaultStruct `json:"structPtr,omitempty"`
-
-	SliceStruct []InnerDefaultStruct `json:"slicestruct,omitempty"`
 }
 
 // Adding complication helper.
@@ -92,9 +91,6 @@ type InnerDefaultStruct struct {
 // InnerDefaultStatus is the status for InnerDefaultResource.
 type InnerDefaultStatus struct {
 	FieldAsString string `json:"fieldAsString,omitempty"`
-
-	// Deprecated: This field is deprecated.
-	DeprecatedField string `json:"field,omitempty"`
 }
 
 // Check that ImmutableDefaultResource may be validated and defaulted.
@@ -114,6 +110,32 @@ func (cs *InnerDefaultSpec) SetDefaults(ctx context.Context) {
 }
 
 // Validate validates the resource.
-func (*InnerDefaultResource) Validate(ctx context.Context) *apis.FieldError {
-	return nil
+func (i *InnerDefaultResource) Validate(ctx context.Context) *apis.FieldError {
+	var errs *apis.FieldError
+	if apis.IsInUpdate(ctx) {
+		org := apis.GetBaseline(ctx).(*InnerDefaultResource)
+		errs = validation.CheckDeprecated(ctx, i.Spec, org.Spec).ViaField("spec")
+		if i.Spec.SubFields != nil {
+			var orgSubFields interface{}
+			if org != nil && org.Spec.SubFields != nil {
+				orgSubFields = org.Spec.SubFields
+			}
+
+			errs = errs.Also(validation.CheckDeprecated(ctx, i.Spec.SubFields, orgSubFields).ViaField("spec", "subFields"))
+
+			var orgDepStruct interface{}
+			if orgSubFields != nil {
+				orgDepStruct = org.Spec.SubFields.DeprecatedStruct
+			}
+
+			errs = errs.Also(validation.CheckDeprecated(ctx, i.Spec.SubFields.DeprecatedStruct, orgDepStruct).ViaField("spec", "subFields", "deprecatedStruct"))
+		}
+	} else {
+		errs = validation.CheckDeprecated(ctx, i.Spec, nil).ViaField("spec")
+		if i.Spec.SubFields != nil {
+			errs = errs.Also(validation.CheckDeprecated(ctx, i.Spec.SubFields, nil).ViaField("spec", "subFields").
+				Also(validation.CheckDeprecated(ctx, i.Spec.SubFields.DeprecatedStruct, nil).ViaField("deprecatedStruct")))
+		}
+	}
+	return errs
 }

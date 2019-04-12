@@ -136,11 +136,6 @@ func (in *InnerDefaultSubSpec) DeepCopyInto(out *InnerDefaultSubSpec) {
 		*out = new(InnerDefaultStruct)
 		**out = **in
 	}
-	if in.SliceStruct != nil {
-		in, out := &in.SliceStruct, &out.SliceStruct
-		*out = make([]InnerDefaultStruct, len(*in))
-		copy(*out, *in)
-	}
 	return
 }
 

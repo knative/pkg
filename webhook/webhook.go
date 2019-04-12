@@ -567,6 +567,11 @@ func (ac *AdmissionController) mutate(ctx context.Context, req *admissionv1beta1
 		return nil, err
 	}
 
+	// Strict mode does not allow setting or updating deprecated fields.
+	if ac.Options.Strict {
+		ctx = apis.DisallowDeprecated(ctx)
+	}
+
 	// None of the validators will accept a nil value for newObj.
 	if newObj == nil {
 		return nil, errMissingNewObject
@@ -577,12 +582,7 @@ func (ac *AdmissionController) mutate(ctx context.Context, req *admissionv1beta1
 		// discretion over (our portion of) the message that the user sees.
 		return nil, err
 	}
-	if ac.Options.Strict {
-		if err := strictValidate(ctx, oldObj, newObj); err != nil {
-			logger.Errorw("Failed strict validation", zap.Error(err))
-			return nil, err
-		}
-	}
+
 	return json.Marshal(patches)
 }
 
