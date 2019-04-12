@@ -18,6 +18,7 @@ package apis_test
 
 import (
 	"context"
+	"github.com/knative/pkg/apis"
 	"github.com/knative/pkg/ptr"
 	. "github.com/knative/pkg/testing"
 	"strings"
@@ -120,7 +121,7 @@ func TestCheckDeprecated(t *testing.T) {
 			if tc.strict {
 				ctx = apis.DisallowDeprecated(ctx)
 			}
-			resp := CheckDeprecated(ctx, tc.obj)
+			resp := apis.CheckDeprecated(ctx, tc.obj)
 
 			if len(tc.wantErrs) > 0 {
 				for _, err := range tc.wantErrs {
@@ -350,7 +351,7 @@ func TestCheckDeprecatedUpdate(t *testing.T) {
 			if tc.strict {
 				ctx = apis.DisallowDeprecated(ctx)
 			}
-			resp := CheckDeprecatedUpdate(ctx, tc.obj, tc.org)
+			resp := apis.CheckDeprecatedUpdate(ctx, tc.obj, tc.org)
 
 			if len(tc.wantErrs) > 0 {
 				for _, err := range tc.wantErrs {
