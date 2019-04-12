@@ -618,9 +618,14 @@ func (*dummyInformer) GetStore() cache.Store {
 }
 
 var dummyKeys = []string{"foo/bar", "bar/foo", "fizz/buzz"}
+var dummyObjs = []interface{}{"foo/bar", "bar/foo", "fizz/buzz"}
 
 func (*dummyStore) ListKeys() []string {
 	return dummyKeys
+}
+
+func (*dummyStore) List() []interface{} {
+	return dummyObjs
 }
 
 func TestImplGlobalResync(t *testing.T) {

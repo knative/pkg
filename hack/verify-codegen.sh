@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
 
-
 # Copyright 2018 The Knative Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -32,27 +31,44 @@ trap "cleanup" EXIT SIGINT
 cleanup
 
 # Save working tree state
-mkdir -p "${TMP_DIFFROOT}/apis"
-mkdir -p "${TMP_DIFFROOT}/client"
-cp -aR "${REPO_ROOT_DIR}/Gopkg.lock" "${REPO_ROOT_DIR}/apis" "${REPO_ROOT_DIR}/client" "${REPO_ROOT_DIR}/vendor" "${TMP_DIFFROOT}"
+mkdir -p "${TMP_DIFFROOT}"
 
-# TODO(mattmoor): We should be able to rm -rf pkg/client/ and vendor/
+cp -aR \
+  "${REPO_ROOT_DIR}/Gopkg.lock" \
+  "${REPO_ROOT_DIR}/apis" \
+  "${REPO_ROOT_DIR}/logging" \
+  "${REPO_ROOT_DIR}/testing" \
+  "${TMP_DIFFROOT}"
 
 "${REPO_ROOT_DIR}/hack/update-codegen.sh"
 echo "Diffing ${REPO_ROOT_DIR} against freshly generated codegen"
 ret=0
-diff -Naupr "${REPO_ROOT_DIR}/apis" "${TMP_DIFFROOT}/apis" || ret=1
-diff -Naupr "${REPO_ROOT_DIR}/client" "${TMP_DIFFROOT}/client" || ret=1
-diff -Naupr --no-dereference "${REPO_ROOT_DIR}/vendor" "${TMP_DIFFROOT}/vendor" || ret=1
+
+diff -Naupr --no-dereference \
+  "${REPO_ROOT_DIR}/Gopkg.lock" "${TMP_DIFFROOT}/Gopkg.lock" || ret=1
+
+diff -Naupr --no-dereference \
+  "${REPO_ROOT_DIR}/apis" "${TMP_DIFFROOT}/apis" || ret=1
+
+diff -Naupr --no-dereference \
+  "${REPO_ROOT_DIR}/logging" "${TMP_DIFFROOT}/logging" || ret=1
+
+diff -Naupr --no-dereference \
+  "${REPO_ROOT_DIR}/testing" "${TMP_DIFFROOT}/testing" || ret=1
 
 # Restore working tree state
-rm -fr "${REPO_ROOT_DIR}/Gopkg.lock" "${REPO_ROOT_DIR}/apis" "${REPO_ROOT_DIR}/client" "${REPO_ROOT_DIR}/vendor"
+rm -fr \
+  "${REPO_ROOT_DIR}/Gopkg.lock" \
+  "${REPO_ROOT_DIR}/apis" \
+  "${REPO_ROOT_DIR}/logging" \
+  "${REPO_ROOT_DIR}/testing"
+
 cp -aR "${TMP_DIFFROOT}"/* "${REPO_ROOT_DIR}"
 
 if [[ $ret -eq 0 ]]
 then
   echo "${REPO_ROOT_DIR} up to date."
-else
-  echo "ERROR: ${REPO_ROOT_DIR} is out of date. Please run ./hack/update-codegen.sh"
+ else
+  echo "${REPO_ROOT_DIR} is out of date. Please run hack/update-codegen.sh"
   exit 1
 fi

@@ -144,6 +144,17 @@ func TestSendErrorOnNoConnection(t *testing.T) {
 	}
 }
 
+func TestStatusOnNoConnection(t *testing.T) {
+	want := ErrConnectionNotEstablished
+
+	conn := &ManagedConnection{}
+	got := conn.Status()
+
+	if got != want {
+		t.Fatalf("Wanted error to be %v, but it was %v.", want, got)
+	}
+}
+
 func TestSendErrorOnEncode(t *testing.T) {
 	spy := &inspectableConnection{
 		writeMessageCalls: make(chan struct{}, 1),
@@ -167,9 +178,12 @@ func TestSendMessage(t *testing.T) {
 	}
 	conn := newConnection(staticConnFactory(spy), nil)
 	conn.connect()
-	got := conn.Send("test")
 
-	if got != nil {
+	if got := conn.Status(); got != nil {
+		t.Errorf("Status() = %v, wanted nil", got)
+	}
+
+	if got := conn.Send("test"); got != nil {
 		t.Fatalf("Expected no error but got: %+v", got)
 	}
 	if len(spy.writeMessageCalls) != 1 {

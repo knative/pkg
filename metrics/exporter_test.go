@@ -105,14 +105,14 @@ func TestInterlevedExporters(t *testing.T) {
 	expectNoPromSrv(t)
 	// Then switch to prometheus exporter
 	_, err = newMetricsExporter(&metricsConfig{
-		domain:               servingDomain,
-		component:            testComponent,
-		backendDestination:   Prometheus,
-		stackdriverProjectID: ""}, TestLogger(t))
+		domain:             servingDomain,
+		component:          testComponent,
+		backendDestination: Prometheus,
+		prometheusPort:     9090}, TestLogger(t))
 	if err != nil {
 		t.Error(err)
 	}
-	expectPromSrv(t)
+	expectPromSrv(t, ":9090")
 	// Finally switch to stackdriver exporter
 	_, err = newMetricsExporter(&metricsConfig{
 		domain:               servingDomain,

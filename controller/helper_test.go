@@ -28,6 +28,24 @@ import (
 	. "github.com/knative/pkg/testing"
 )
 
+func TestSendGlobalUpdate(t *testing.T) {
+	called := make(map[interface{}]bool)
+	handler := cache.ResourceEventHandlerFuncs{
+		UpdateFunc: func(old, new interface{}) {
+			called[new] = true
+		},
+	}
+	SendGlobalUpdates(&dummyInformer{}, handler)
+	for _, obj := range dummyObjs {
+		if updated, _ := called[obj]; !updated {
+			t.Errorf("Expected obj %v to be updated but wasn't", obj)
+		}
+	}
+	if len(dummyObjs) != len(called) {
+		t.Errorf("Expected to see %d updates, saw %d", len(dummyObjs), len(called))
+	}
+}
+
 func TestEnsureTypeMeta(t *testing.T) {
 	gvk := schema.GroupVersionKind{
 		Group:   "foo.bar.com",

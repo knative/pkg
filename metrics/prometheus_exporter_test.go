@@ -20,26 +20,51 @@ import (
 )
 
 func TestNewPrometheusExporter(t *testing.T) {
-	// The stackdriver project ID is not required for prometheus exporter.
-	e, err := newPrometheusExporter(&metricsConfig{
-		domain:               servingDomain,
-		component:            testComponent,
-		backendDestination:   Prometheus,
-		stackdriverProjectID: ""}, TestLogger(t))
-	if err != nil {
-		t.Error(err)
+	testCases := []struct {
+		name         string
+		config       metricsConfig
+		expectedAddr string
+	}{{
+		name: "port 9090",
+		config: metricsConfig{
+			domain:             servingDomain,
+			component:          testComponent,
+			backendDestination: Prometheus,
+			prometheusPort:     9090,
+		},
+		expectedAddr: ":9090",
+	}, {
+		name: "port 9091",
+		config: metricsConfig{
+			domain:             servingDomain,
+			component:          testComponent,
+			backendDestination: Prometheus,
+			prometheusPort:     9091,
+		},
+		expectedAddr: ":9091",
+	}}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			e, err := newPrometheusExporter(&tc.config, TestLogger(t))
+			if err != nil {
+				t.Error(err)
+			}
+			if e == nil {
+				t.Fatal("expected a non-nil metrics exporter")
+			}
+			expectPromSrv(t, tc.expectedAddr)
+		})
 	}
-	if e == nil {
-		t.Error("expected a non-nil metrics exporter")
-	}
-	expectPromSrv(t)
 }
 
-func expectPromSrv(t *testing.T) {
+func expectPromSrv(t *testing.T, expectedAddr string) {
 	time.Sleep(200 * time.Millisecond)
 	srv := getCurPromSrv()
 	if srv == nil {
-		t.Error("expected a server for prometheus exporter")
+		t.Fatal("expected a server for prometheus exporter")
+	}
+	if got, want := srv.Addr, expectedAddr; got != want {
+		t.Errorf("metrics port addresses diff, got=%v, want=%v", got, want)
 	}
 }
 

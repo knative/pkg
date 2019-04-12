@@ -29,22 +29,21 @@ import (
 	"testing"
 	"time"
 
-	"github.com/knative/pkg/apis/duck"
+	// "github.com/knative/pkg/apis/duck"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
+	"github.com/knative/pkg/apis"
 	"github.com/mattbaird/jsonpatch"
 	"go.uber.org/zap"
 	admissionv1beta1 "k8s.io/api/admission/v1beta1"
 	admissionregistrationv1beta1 "k8s.io/api/admissionregistration/v1beta1"
+	appsv1 "k8s.io/api/apps/v1"
 	authenticationv1 "k8s.io/api/authentication/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/kubernetes"
-
-	// corev1 "k8s.io/api/core/v1"
-	"k8s.io/api/extensions/v1beta1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	fakekubeclientset "k8s.io/client-go/kubernetes/fake"
 
 	. "github.com/knative/pkg/logging/testing"
@@ -135,27 +134,63 @@ func TestUnknownVersionFails(t *testing.T) {
 	expectFailsWith(t, ac.admit(TestContextWithLogger(t), req), "unhandled kind")
 }
 
-func TestValidCreateResourceSucceeds(t *testing.T) {
-	r := createResource("a name")
-	for _, v := range []string{"v1alpha1", "v1beta1"} {
-		r.TypeMeta.APIVersion = v
-		r.SetDefaults(context.TODO()) // Fill in defaults to check that there are no patches.
-		_, ac := newNonRunningTestAdmissionController(t, newDefaultOptions())
-		resp := ac.admit(TestContextWithLogger(t), createCreateResource(r))
-		expectAllowed(t, resp)
-		expectPatches(t, resp.Patch, []jsonpatch.JsonPatchOperation{
-			setUserAnnotation(user1, user1),
-		})
+func TestUnknownFieldFails(t *testing.T) {
+	_, ac := newNonRunningTestAdmissionController(t, newDefaultOptions())
+	req := &admissionv1beta1.AdmissionRequest{
+		Operation: admissionv1beta1.Create,
+		Kind: metav1.GroupVersionKind{
+			Group:   "pkg.knative.dev",
+			Version: "v1alpha1",
+			Kind:    "Resource",
+		},
 	}
+
+	marshaled, err := json.Marshal(map[string]interface{}{
+		"spec": map[string]interface{}{
+			"foo": "bar",
+		},
+	})
+	if err != nil {
+		panic("failed to marshal resource")
+	}
+	req.Object.Raw = marshaled
+
+	expectFailsWith(t, ac.admit(TestContextWithLogger(t), req),
+		`mutation failed: cannot decode incoming new object: json: unknown field "foo"`)
 }
 
-func TestValidCreateResourceSucceedsWithDefaultPatch(t *testing.T) {
-	r := createResource("a name")
-	_, ac := newNonRunningTestAdmissionController(t, newDefaultOptions())
-	resp := ac.admit(TestContextWithLogger(t), createCreateResource(r))
-	expectAllowed(t, resp)
-	expectPatches(t, resp.Patch, []jsonpatch.JsonPatchOperation{
-		{
+func TestAdmitCreates(t *testing.T) {
+	tests := []struct {
+		name      string
+		setup     func(context.Context, *Resource)
+		rejection string
+		patches   []jsonpatch.JsonPatchOperation
+	}{{
+		name: "test simple creation (alpha, no diff)",
+		setup: func(ctx context.Context, r *Resource) {
+			r.TypeMeta.APIVersion = "v1alpha1"
+			r.SetDefaults(ctx)
+		},
+		patches: []jsonpatch.JsonPatchOperation{},
+	}, {
+		name: "test simple creation (beta, no diff)",
+		setup: func(ctx context.Context, r *Resource) {
+			r.TypeMeta.APIVersion = "v1beta1"
+			r.SetDefaults(ctx)
+		},
+		patches: []jsonpatch.JsonPatchOperation{},
+	}, {
+		name: "test simple creation (with defaults)",
+		setup: func(ctx context.Context, r *Resource) {
+		},
+		patches: []jsonpatch.JsonPatchOperation{{
+			Operation: "add",
+			Path:      "/metadata/annotations",
+			Value: map[string]interface{}{
+				"testing.knative.dev/creator": user1,
+				"testing.knative.dev/updater": user1,
+			},
+		}, {
 			Operation: "add",
 			Path:      "/spec/fieldThatsImmutableWithDefault",
 			Value:     "this is another default value",
@@ -163,9 +198,245 @@ func TestValidCreateResourceSucceedsWithDefaultPatch(t *testing.T) {
 			Operation: "add",
 			Path:      "/spec/fieldWithDefault",
 			Value:     "I'm a default.",
+		}},
+	}, {
+		name: "test simple creation (with defaults around annotations)",
+		setup: func(ctx context.Context, r *Resource) {
+			r.Annotations = map[string]string{
+				"foo": "bar",
+			}
 		},
-		setUserAnnotation(user1, user1),
-	})
+		patches: []jsonpatch.JsonPatchOperation{{
+			Operation: "add",
+			Path:      "/metadata/annotations/testing.knative.dev~1creator",
+			Value:     user1,
+		}, {
+			Operation: "add",
+			Path:      "/metadata/annotations/testing.knative.dev~1updater",
+			Value:     user1,
+		}, {
+			Operation: "add",
+			Path:      "/spec/fieldThatsImmutableWithDefault",
+			Value:     "this is another default value",
+		}, {
+			Operation: "add",
+			Path:      "/spec/fieldWithDefault",
+			Value:     "I'm a default.",
+		}},
+	}, {
+		name: "test simple creation (with partially overridden defaults)",
+		setup: func(ctx context.Context, r *Resource) {
+			r.Spec.FieldThatsImmutableWithDefault = "not the default"
+		},
+		patches: []jsonpatch.JsonPatchOperation{{
+			Operation: "add",
+			Path:      "/metadata/annotations",
+			Value: map[string]interface{}{
+				"testing.knative.dev/creator": user1,
+				"testing.knative.dev/updater": user1,
+			},
+		}, {
+			Operation: "add",
+			Path:      "/spec/fieldWithDefault",
+			Value:     "I'm a default.",
+		}},
+	}, {
+		name: "test simple creation (webhook corrects user annotation)",
+		setup: func(ctx context.Context, r *Resource) {
+			r.SetDefaults(apis.WithUserInfo(ctx,
+				// THIS IS NOT WHO IS CREATING IT, IT IS LIES!
+				&authenticationv1.UserInfo{Username: user2}))
+		},
+		patches: []jsonpatch.JsonPatchOperation{{
+			Operation: "replace",
+			Path:      "/metadata/annotations/testing.knative.dev~1creator",
+			Value:     user1,
+		}, {
+			Operation: "replace",
+			Path:      "/metadata/annotations/testing.knative.dev~1updater",
+			Value:     user1,
+		}},
+	}, {
+		name: "with bad field",
+		setup: func(ctx context.Context, r *Resource) {
+			// Put a bad value in.
+			r.Spec.FieldWithValidation = "not what's expected"
+		},
+		rejection: "invalid value",
+	}}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			r := createResource("a name")
+			ctx := apis.WithinCreate(apis.WithUserInfo(
+				TestContextWithLogger(t),
+				&authenticationv1.UserInfo{Username: user1}))
+
+			// Setup the resource.
+			tc.setup(ctx, r)
+
+			_, ac := newNonRunningTestAdmissionController(t, newDefaultOptions())
+			resp := ac.admit(ctx, createCreateResource(ctx, r))
+
+			if tc.rejection == "" {
+				expectAllowed(t, resp)
+				expectPatches(t, resp.Patch, tc.patches)
+			} else {
+				expectFailsWith(t, resp, tc.rejection)
+			}
+		})
+	}
+}
+
+func createCreateResource(ctx context.Context, r *Resource) *admissionv1beta1.AdmissionRequest {
+	req := &admissionv1beta1.AdmissionRequest{
+		Operation: admissionv1beta1.Create,
+		Kind: metav1.GroupVersionKind{
+			Group:   "pkg.knative.dev",
+			Version: "v1alpha1",
+			Kind:    "Resource",
+		},
+		UserInfo: *apis.GetUserInfo(ctx),
+	}
+	marshaled, err := json.Marshal(r)
+	if err != nil {
+		panic("failed to marshal resource")
+	}
+	req.Object.Raw = marshaled
+	return req
+}
+
+func TestAdmitUpdates(t *testing.T) {
+	tests := []struct {
+		name      string
+		setup     func(context.Context, *Resource)
+		mutate    func(context.Context, *Resource)
+		rejection string
+		patches   []jsonpatch.JsonPatchOperation
+	}{{
+		name: "test simple creation (no diff)",
+		setup: func(ctx context.Context, r *Resource) {
+			r.SetDefaults(ctx)
+		},
+		mutate: func(ctx context.Context, r *Resource) {
+			// If we don't change anything, the updater
+			// annotation doesn't change.
+		},
+		patches: []jsonpatch.JsonPatchOperation{},
+	}, {
+		name: "test simple creation (update updater annotation)",
+		setup: func(ctx context.Context, r *Resource) {
+			r.SetDefaults(ctx)
+		},
+		mutate: func(ctx context.Context, r *Resource) {
+			// When we change the spec, the updater
+			// annotation changes.
+			r.Spec.FieldWithDefault = "not the default"
+		},
+		patches: []jsonpatch.JsonPatchOperation{{
+			Operation: "replace",
+			Path:      "/metadata/annotations/testing.knative.dev~1updater",
+			Value:     user2,
+		}},
+	}, {
+		name: "test simple creation (annotation change doesn't change updater)",
+		setup: func(ctx context.Context, r *Resource) {
+			r.SetDefaults(ctx)
+		},
+		mutate: func(ctx context.Context, r *Resource) {
+			// When we change an annotation, the updater doesn't change.
+			r.Annotations["foo"] = "bar"
+		},
+		patches: []jsonpatch.JsonPatchOperation{},
+	}, {
+		name: "test that updates dropping immutable defaults are filled back in",
+		setup: func(ctx context.Context, r *Resource) {
+			r.SetDefaults(ctx)
+			r.Spec.FieldThatsImmutableWithDefault = ""
+		},
+		mutate: func(ctx context.Context, r *Resource) {
+			r.Spec.FieldThatsImmutableWithDefault = ""
+		},
+		patches: []jsonpatch.JsonPatchOperation{{
+			Operation: "replace",
+			Path:      "/metadata/annotations/testing.knative.dev~1updater",
+			Value:     user2,
+		}, {
+			Operation: "add",
+			Path:      "/spec/fieldThatsImmutableWithDefault",
+			Value:     "this is another default value",
+		}},
+	}, {
+		name: "bad mutation (immutable)",
+		setup: func(ctx context.Context, r *Resource) {
+			r.SetDefaults(ctx)
+		},
+		mutate: func(ctx context.Context, r *Resource) {
+			r.Spec.FieldThatsImmutableWithDefault = "something different"
+		},
+		rejection: "Immutable field changed",
+	}, {
+		name: "bad mutation (validation)",
+		setup: func(ctx context.Context, r *Resource) {
+			r.SetDefaults(ctx)
+		},
+		mutate: func(ctx context.Context, r *Resource) {
+			r.Spec.FieldWithValidation = "not what's expected"
+		},
+		rejection: "invalid value",
+	}}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			old := createResource("a name")
+			ctx := TestContextWithLogger(t)
+
+			// Setup the resource using a creation context as user1
+			createCtx := apis.WithUserInfo(apis.WithinCreate(ctx),
+				&authenticationv1.UserInfo{Username: user1})
+			tc.setup(createCtx, old)
+
+			new := old.DeepCopy()
+
+			// Mutate the resource using the update context as user2
+			ctx = apis.WithUserInfo(apis.WithinUpdate(ctx, old),
+				&authenticationv1.UserInfo{Username: user2})
+			tc.mutate(ctx, new)
+
+			_, ac := newNonRunningTestAdmissionController(t, newDefaultOptions())
+			resp := ac.admit(ctx, createUpdateResource(ctx, old, new))
+
+			if tc.rejection == "" {
+				expectAllowed(t, resp)
+				expectPatches(t, resp.Patch, tc.patches)
+			} else {
+				expectFailsWith(t, resp, tc.rejection)
+			}
+		})
+	}
+}
+
+func createUpdateResource(ctx context.Context, old, new *Resource) *admissionv1beta1.AdmissionRequest {
+	req := &admissionv1beta1.AdmissionRequest{
+		Operation: admissionv1beta1.Update,
+		Kind: metav1.GroupVersionKind{
+			Group:   "pkg.knative.dev",
+			Version: "v1alpha1",
+			Kind:    "Resource",
+		},
+		UserInfo: *apis.GetUserInfo(ctx),
+	}
+	marshaled, err := json.Marshal(new)
+	if err != nil {
+		panic("failed to marshal resource")
+	}
+	req.Object.Raw = marshaled
+	marshaledOld, err := json.Marshal(old)
+	if err != nil {
+		panic("failed to marshal resource")
+	}
+	req.OldObject.Raw = marshaledOld
+	return req
 }
 
 func TestValidCreateResourceSucceedsWithRoundTripAndDefaultPatch(t *testing.T) {
@@ -182,18 +453,15 @@ func TestValidCreateResourceSucceedsWithRoundTripAndDefaultPatch(t *testing.T) {
 	_, ac := newNonRunningTestAdmissionController(t, newDefaultOptions())
 	resp := ac.admit(TestContextWithLogger(t), req)
 	expectAllowed(t, resp)
-	expectPatches(t, resp.Patch, []jsonpatch.JsonPatchOperation{
-		{
-			Operation: "add",
-			Path:      "/spec",
-			Value:     map[string]interface{}{},
-		},
-		{
-			Operation: "add",
-			Path:      "/spec/fieldWithDefault",
-			Value:     "I'm a default.",
-		},
-	})
+	expectPatches(t, resp.Patch, []jsonpatch.JsonPatchOperation{{
+		Operation: "add",
+		Path:      "/spec",
+		Value:     map[string]interface{}{},
+	}, {
+		Operation: "add",
+		Path:      "/spec/fieldWithDefault",
+		Value:     "I'm a default.",
+	}})
 }
 
 func createInnerDefaultResourceWithoutSpec(t *testing.T) []byte {
@@ -222,6 +490,7 @@ func createInnerDefaultResourceWithoutSpec(t *testing.T) []byte {
 	return b
 }
 
+<<<<<<< HEAD
 func createInnerDefaultResourceWithSpecAndStatus(t *testing.T, spec *InnerDefaultSpec, status *InnerDefaultStatus) []byte {
 	t.Helper()
 	r := InnerDefaultResource{
@@ -562,13 +831,13 @@ func TestSettingWebhookClientAuth(t *testing.T) {
 }
 
 func createDeployment(ac *AdmissionController) {
-	deployment := &v1beta1.Deployment{
+	deployment := &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "whatever",
 			Namespace: "knative-something",
 		},
 	}
-	ac.Client.ExtensionsV1beta1().Deployments("knative-something").Create(deployment)
+	ac.Client.Apps().Deployments("knative-something").Create(deployment)
 }
 
 func createResource(name string) *Resource {
@@ -581,54 +850,6 @@ func createResource(name string) *Resource {
 			FieldWithValidation: "magic value",
 		},
 	}
-}
-
-func createBaseUpdateResource() *admissionv1beta1.AdmissionRequest {
-	return &admissionv1beta1.AdmissionRequest{
-		Operation: admissionv1beta1.Update,
-		Kind: metav1.GroupVersionKind{
-			Group:   "pkg.knative.dev",
-			Version: "v1alpha1",
-			Kind:    "Resource",
-		},
-		UserInfo: authenticationv1.UserInfo{
-			Username: user2,
-		}}
-}
-
-func createUpdateResource(old, new *Resource) *admissionv1beta1.AdmissionRequest {
-	req := createBaseUpdateResource()
-	marshaled, err := json.Marshal(new)
-	if err != nil {
-		panic("failed to marshal resource")
-	}
-	req.Object.Raw = marshaled
-	marshaledOld, err := json.Marshal(old)
-	if err != nil {
-		panic("failed to marshal resource")
-	}
-	req.OldObject.Raw = marshaledOld
-	return req
-}
-
-func createCreateResource(r *Resource) *admissionv1beta1.AdmissionRequest {
-	req := &admissionv1beta1.AdmissionRequest{
-		Operation: admissionv1beta1.Create,
-		Kind: metav1.GroupVersionKind{
-			Group:   "pkg.knative.dev",
-			Version: "v1alpha1",
-			Kind:    "Resource",
-		},
-		UserInfo: authenticationv1.UserInfo{
-			Username: user1,
-		},
-	}
-	marshaled, err := json.Marshal(r)
-	if err != nil {
-		panic("failed to marshal resource")
-	}
-	req.Object.Raw = marshaled
-	return req
 }
 
 func createWebhook(ac *AdmissionController, webhook *admissionregistrationv1beta1.MutatingWebhookConfiguration) {
@@ -695,18 +916,15 @@ func expectPatches(t *testing.T, a []byte, e []jsonpatch.JsonPatchOperation) {
 	}
 }
 
-func updateAnnotationsWithUser(userC, userU string) []jsonpatch.JsonPatchOperation {
+func updateAnnotationsWithUser(userU string) []jsonpatch.JsonPatchOperation {
 	// Just keys is being updated, so format is iffy.
 	return []jsonpatch.JsonPatchOperation{{
-		Operation: "add",
-		Path:      "/metadata/annotations/testing.knative.dev~1creator",
-		Value:     "brutto@knative.dev",
-	}, {
-		Operation: "add",
+		Operation: "replace",
 		Path:      "/metadata/annotations/testing.knative.dev~1updater",
-		Value:     "arrabbiato@knative.dev",
+		Value:     userU,
 	}}
 }
+
 func setUserAnnotation(userC, userU string) jsonpatch.JsonPatchOperation {
 	return jsonpatch.JsonPatchOperation{
 		Operation: "add",
@@ -721,8 +939,9 @@ func setUserAnnotation(userC, userU string) jsonpatch.JsonPatchOperation {
 func NewAdmissionController(client kubernetes.Interface, options ControllerOptions,
 	logger *zap.SugaredLogger) (*AdmissionController, error) {
 	return &AdmissionController{
-		Client:  client,
-		Options: options,
+		Client:                client,
+		Options:               options,
+		DisallowUnknownFields: true,
 		// Use different versions and domains, for coverage.
 		Handlers: map[schema.GroupVersionKind]GenericCRD{
 			{

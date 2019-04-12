@@ -21,6 +21,7 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/google/go-cmp/cmp"
 )
@@ -105,7 +106,17 @@ Body.`,
 		name:     "invalid value propagation",
 		err:      ErrInvalidValue("foo", "bar"),
 		prefixes: [][]string{{"baz"}},
-		want:     `invalid value "foo": baz.bar`,
+		want:     `invalid value: foo: baz.bar`,
+	}, {
+		name:     "invalid value propagation (int)",
+		err:      ErrInvalidValue(5, "bar"),
+		prefixes: [][]string{{"baz"}},
+		want:     `invalid value: 5: baz.bar`,
+	}, {
+		name:     "invalid value propagation (duration)",
+		err:      ErrInvalidValue(5*time.Second, "bar"),
+		prefixes: [][]string{{"baz"}},
+		want:     `invalid value: 5s: baz.bar`,
 	}, {
 		name:     "missing mutually exclusive fields",
 		err:      ErrMissingOneOf("foo", "bar"),
@@ -215,9 +226,19 @@ here at 3`,
 Second: X, Y, Z`,
 	}, {
 		name:     "out of bound value",
-		err:      ErrOutOfBoundsValue("-1", "0", "5", "timeout"),
+		err:      ErrOutOfBoundsValue("a", "b", "c", "string"),
+		prefixes: [][]string{{"spec"}},
+		want:     `expected b <= a <= c: spec.string`,
+	}, {
+		name:     "out of bound value (int)",
+		err:      ErrOutOfBoundsValue(-1, 0, 5, "timeout"),
 		prefixes: [][]string{{"spec"}},
 		want:     `expected 0 <= -1 <= 5: spec.timeout`,
+	}, {
+		name:     "out of bound value (time.Duration)",
+		err:      ErrOutOfBoundsValue(1*time.Second, 2*time.Second, 5*time.Second, "timeout"),
+		prefixes: [][]string{{"spec"}},
+		want:     `expected 2s <= 1s <= 5s: spec.timeout`,
 	}}
 
 	for _, test := range tests {
@@ -396,7 +417,13 @@ can not use @, do not try`,
 		err: func() *FieldError {
 			return ErrInvalidArrayValue("kapot", "indexed", 5)
 		}(),
-		want: `invalid value "kapot": indexed[5]`,
+		want: `invalid value: kapot: indexed[5]`,
+	}, {
+		name: "leaf field error with index (int)",
+		err: func() *FieldError {
+			return ErrInvalidArrayValue(42, "indexed", 5)
+		}(),
+		want: `invalid value: 42: indexed[5]`,
 	}, {
 		name:     "nil propagation",
 		err:      nil,
