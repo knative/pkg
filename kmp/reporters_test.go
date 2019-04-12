@@ -28,6 +28,10 @@ type testStruct struct {
 	StringField string `json:"foo"`
 	IntField    int
 	StructField childStruct `json:"child"`
+	Omit        string      `json:"omit,omitempty"`
+	Ignore      string      `json:"-"`
+	Dash        string      `json:"-,"`
+	MultiComma  string      `json:"multi,omitempty,somethingelse"`
 }
 
 type childStruct struct {
@@ -138,6 +142,42 @@ func TestFieldListReporter(t *testing.T) {
 		},
 		want: nil,
 		opts: []cmp.Option{cmpopts.IgnoreUnexported(privateStruct{})},
+	}, {
+		name: "Omit empty",
+		x: testStruct{
+			Omit: "Foo",
+		},
+		y: testStruct{
+			Omit: "Bar",
+		},
+		want: []string{"omit"},
+	}, {
+		name: "Ignore JSON",
+		x: testStruct{
+			Ignore: "Foo",
+		},
+		y: testStruct{
+			Ignore: "Bar",
+		},
+		want: []string{"Ignore"},
+	}, {
+		name: "Dash json name",
+		x: testStruct{
+			Dash: "Foo",
+		},
+		y: testStruct{
+			Dash: "Bar",
+		},
+		want: []string{"-"},
+	}, {
+		name: "Multi comma in json tag",
+		x: testStruct{
+			MultiComma: "Foo",
+		},
+		y: testStruct{
+			MultiComma: "Bar",
+		},
+		want: []string{"multi"},
 	}}
 
 	for _, test := range tests {
