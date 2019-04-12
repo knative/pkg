@@ -14,14 +14,12 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package validation_test
+package apis_test
 
 import (
 	"context"
-	"github.com/knative/pkg/apis"
 	"github.com/knative/pkg/ptr"
 	. "github.com/knative/pkg/testing"
-	"github.com/knative/pkg/validation"
 	"strings"
 	"testing"
 )
@@ -122,7 +120,7 @@ func TestCheckDeprecated(t *testing.T) {
 			if tc.strict {
 				ctx = apis.DisallowDeprecated(ctx)
 			}
-			resp := validation.CheckDeprecated(ctx, tc.obj)
+			resp := CheckDeprecated(ctx, tc.obj)
 
 			if len(tc.wantErrs) > 0 {
 				for _, err := range tc.wantErrs {
@@ -352,7 +350,7 @@ func TestCheckDeprecatedUpdate(t *testing.T) {
 			if tc.strict {
 				ctx = apis.DisallowDeprecated(ctx)
 			}
-			resp := validation.CheckDeprecatedUpdate(ctx, tc.obj, tc.org)
+			resp := CheckDeprecatedUpdate(ctx, tc.obj, tc.org)
 
 			if len(tc.wantErrs) > 0 {
 				for _, err := range tc.wantErrs {

@@ -18,8 +18,6 @@ package testing
 
 import (
 	"context"
-	"github.com/knative/pkg/validation"
-
 	"github.com/knative/pkg/apis"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -114,27 +112,27 @@ func (i *InnerDefaultResource) Validate(ctx context.Context) *apis.FieldError {
 	var errs *apis.FieldError
 	if apis.IsInUpdate(ctx) {
 		org := apis.GetBaseline(ctx).(*InnerDefaultResource)
-		errs = validation.CheckDeprecatedUpdate(ctx, i.Spec, org.Spec).ViaField("spec")
+		errs = apis.CheckDeprecatedUpdate(ctx, i.Spec, org.Spec).ViaField("spec")
 		if i.Spec.SubFields != nil {
 			var orgSubFields interface{}
 			if org != nil && org.Spec.SubFields != nil {
 				orgSubFields = org.Spec.SubFields
 			}
 
-			errs = errs.Also(validation.CheckDeprecatedUpdate(ctx, i.Spec.SubFields, orgSubFields).ViaField("spec", "subFields"))
+			errs = errs.Also(apis.CheckDeprecatedUpdate(ctx, i.Spec.SubFields, orgSubFields).ViaField("spec", "subFields"))
 
 			var orgDepStruct interface{}
 			if orgSubFields != nil {
 				orgDepStruct = org.Spec.SubFields.DeprecatedStruct
 			}
 
-			errs = errs.Also(validation.CheckDeprecatedUpdate(ctx, i.Spec.SubFields.DeprecatedStruct, orgDepStruct).ViaField("spec", "subFields", "deprecatedStruct"))
+			errs = errs.Also(apis.CheckDeprecatedUpdate(ctx, i.Spec.SubFields.DeprecatedStruct, orgDepStruct).ViaField("spec", "subFields", "deprecatedStruct"))
 		}
 	} else {
-		errs = validation.CheckDeprecated(ctx, i.Spec).ViaField("spec")
+		errs = apis.CheckDeprecated(ctx, i.Spec).ViaField("spec")
 		if i.Spec.SubFields != nil {
-			errs = errs.Also(validation.CheckDeprecated(ctx, i.Spec.SubFields).ViaField("spec", "subFields").
-				Also(validation.CheckDeprecated(ctx, i.Spec.SubFields.DeprecatedStruct).ViaField("deprecatedStruct")))
+			errs = errs.Also(apis.CheckDeprecated(ctx, i.Spec.SubFields).ViaField("spec", "subFields").
+				Also(apis.CheckDeprecated(ctx, i.Spec.SubFields.DeprecatedStruct).ViaField("deprecatedStruct")))
 		}
 	}
 	return errs
