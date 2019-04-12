@@ -26,13 +26,11 @@ import (
 	"testing"
 )
 
-// In strict mode, you are not allowed to set a deprecated filed when doing a Create.
-func TestStrictValidation(t *testing.T) {
+func TestCheckDeprecated(t *testing.T) {
 
 	testCases := map[string]struct {
 		strict   bool
 		obj      interface{}
-		org      interface{}
 		wantErrs []string
 	}{
 		"create strict, string": {
@@ -117,7 +115,40 @@ func TestStrictValidation(t *testing.T) {
 				"structPtr",
 			},
 		},
+	}
+	for n, tc := range testCases {
+		t.Run(n, func(t *testing.T) {
+			ctx := context.TODO()
+			if tc.strict {
+				ctx = apis.DisallowDeprecated(ctx)
+			}
+			resp := validation.CheckDeprecated(ctx, tc.obj)
 
+			if len(tc.wantErrs) > 0 {
+				for _, err := range tc.wantErrs {
+					var gotErr string
+					if resp != nil {
+						gotErr = resp.Error()
+					}
+					if !strings.Contains(gotErr, err) {
+						t.Errorf("Expected failure containing %q got %q", err, gotErr)
+					}
+				}
+			} else if resp != nil {
+				t.Errorf("Expected no error, got %q", resp.Error())
+			}
+		})
+	}
+}
+
+func TestCheckDeprecatedUpdate(t *testing.T) {
+
+	testCases := map[string]struct {
+		strict   bool
+		obj      interface{}
+		org      interface{}
+		wantErrs []string
+	}{
 		"update strict, intptr": {
 			strict: true,
 			org:    &InnerDefaultSubSpec{},
@@ -321,7 +352,7 @@ func TestStrictValidation(t *testing.T) {
 			if tc.strict {
 				ctx = apis.DisallowDeprecated(ctx)
 			}
-			resp := validation.CheckDeprecated(ctx, tc.obj, tc.org)
+			resp := validation.CheckDeprecatedUpdate(ctx, tc.obj, tc.org)
 
 			if len(tc.wantErrs) > 0 {
 				for _, err := range tc.wantErrs {

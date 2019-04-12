@@ -30,7 +30,14 @@ const (
 // CheckDeprecated checks whether the provided named deprecated fields
 // are set in a context where deprecation is disallowed.
 // This is a shallow check.
-func CheckDeprecated(ctx context.Context, obj interface{}, org interface{}) *apis.FieldError {
+func CheckDeprecated(ctx context.Context, obj interface{}) *apis.FieldError {
+	return CheckDeprecatedUpdate(ctx, obj, nil)
+}
+
+// CheckDeprecated checks whether the provided named deprecated fields
+// are set in a context where deprecation is disallowed.
+// This is a shallow check.
+func CheckDeprecatedUpdate(ctx context.Context, obj interface{}, org interface{}) *apis.FieldError {
 	if apis.IsDeprecatedAllowed(ctx) {
 		return nil
 	}
