@@ -38,7 +38,7 @@ func strictValidate(ctx context.Context, old GenericCRD, new GenericCRD) error {
 
 	var errs *apis.FieldError
 
-	// If old is nil, then we are creating. Not not allowed to set deprecated
+	// If old is nil, then we are creating. Not allowed to set deprecated
 	// fields.
 	if old == nil {
 		errs = errs.Also(
@@ -202,7 +202,7 @@ func strictValidateUpdateReflected(oldField, resField reflect.Value) *apis.Field
 
 	var errs *apis.FieldError
 
-	// for each field,
+	// For each field named Deprecated*, check that it has not been mutated.
 	for i := 0; i < resField.NumField(); i++ {
 		f := resField.Type().Field(i)
 		if v := resField.Field(i); v.IsValid() {
