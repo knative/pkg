@@ -125,7 +125,7 @@ func TestStrictValidation(t *testing.T) {
 				DeprecatedIntPtr: ptr.Int64(42),
 			},
 			wantErrs: []string{
-				"must not update",
+				"must not set",
 				"intPtr",
 			},
 		},
@@ -137,7 +137,7 @@ func TestStrictValidation(t *testing.T) {
 			},
 
 			wantErrs: []string{
-				"must not update",
+				"must not set",
 				"map",
 			},
 		},
@@ -148,7 +148,7 @@ func TestStrictValidation(t *testing.T) {
 				DeprecatedSlice: []string{"hello", "failure"},
 			},
 			wantErrs: []string{
-				"must not update",
+				"must not set",
 				"slice",
 			},
 		},
@@ -161,7 +161,7 @@ func TestStrictValidation(t *testing.T) {
 				},
 			},
 			wantErrs: []string{
-				"must not update",
+				"must not set",
 				"struct",
 			},
 		},
@@ -174,7 +174,7 @@ func TestStrictValidation(t *testing.T) {
 				},
 			},
 			wantErrs: []string{
-				"must not update",
+				"must not set",
 				"structPtr",
 			},
 		},
