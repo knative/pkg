@@ -38,7 +38,7 @@ func CheckDeprecated(ctx context.Context, obj interface{}, org interface{}) *api
 	var errs *apis.FieldError
 	newFields := getPrefixedNamedFieldValues(deprecated, obj)
 
-	if org != nil {
+	if org != nil || nonZero(reflect.ValueOf(org)) {
 		orgFields := getPrefixedNamedFieldValues(deprecated, org)
 
 		for name, newValue := range newFields {
@@ -100,6 +100,10 @@ func nonZero(a reflect.Value) bool {
 			return false
 		}
 		return true
+
+	// This is a nil interface{} type.
+	case 0:
+		return false
 
 	default:
 		if reflect.DeepEqual(a.Interface(), reflect.Zero(a.Type()).Interface()) {
