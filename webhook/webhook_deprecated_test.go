@@ -17,6 +17,7 @@ limitations under the License.
 package webhook
 
 import (
+	"github.com/knative/pkg/apis"
 	. "github.com/knative/pkg/logging/testing"
 	"github.com/knative/pkg/ptr"
 	. "github.com/knative/pkg/testing"
@@ -497,11 +498,13 @@ func TestStrictValidation(t *testing.T) {
 	for n, tc := range testCases {
 		t.Run(n, func(t *testing.T) {
 
-			opts := newDefaultOptions()
-			opts.Strict = tc.strict
+			ctx := TestContextWithLogger(t)
+			if tc.strict {
+				ctx = apis.DisallowDeprecated(ctx)
+			}
 
-			_, ac := newNonRunningTestAdmissionController(t, opts)
-			resp := ac.admit(TestContextWithLogger(t), tc.req)
+			_, ac := newNonRunningTestAdmissionController(t, newDefaultOptions())
+			resp := ac.admit(ctx, tc.req)
 
 			if len(tc.wantErrs) > 0 {
 				for _, err := range tc.wantErrs {
@@ -528,11 +531,10 @@ func TestStrictValidation_Spec_Create(t *testing.T) {
 		DeprecatedField: "fail setting.",
 	}, nil)
 
-	opts := newDefaultOptions()
-	opts.Strict = true
+	ctx := apis.DisallowDeprecated(TestContextWithLogger(t))
 
-	_, ac := newNonRunningTestAdmissionController(t, opts)
-	resp := ac.admit(TestContextWithLogger(t), req)
+	_, ac := newNonRunningTestAdmissionController(t, newDefaultOptions())
+	resp := ac.admit(ctx, req)
 
 	expectFailsWith(t, resp, "must not set")
 	expectFailsWith(t, resp, "spec.field")
@@ -553,11 +555,10 @@ func TestStrictValidation_Spec_Update(t *testing.T) {
 		DeprecatedField: "fail setting.",
 	}, nil)
 
-	opts := newDefaultOptions()
-	opts.Strict = true
+	ctx := apis.DisallowDeprecated(TestContextWithLogger(t))
 
-	_, ac := newNonRunningTestAdmissionController(t, opts)
-	resp := ac.admit(TestContextWithLogger(t), req)
+	_, ac := newNonRunningTestAdmissionController(t, newDefaultOptions())
+	resp := ac.admit(ctx, req)
 
 	expectFailsWith(t, resp, "must not update")
 	expectFailsWith(t, resp, "spec.field")

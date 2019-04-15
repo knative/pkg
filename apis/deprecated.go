@@ -23,7 +23,7 @@ import (
 )
 
 const (
-	deprecated = "Deprecated"
+	deprecatedPrefix = "Deprecated"
 )
 
 // CheckDeprecated checks whether the provided named deprecated fields
@@ -36,27 +36,29 @@ func CheckDeprecated(ctx context.Context, obj interface{}) *FieldError {
 // CheckDeprecated checks whether the provided named deprecated fields
 // are set in a context where deprecation is disallowed.
 // This is a shallow check.
-func CheckDeprecatedUpdate(ctx context.Context, obj interface{}, org interface{}) *FieldError {
+func CheckDeprecatedUpdate(ctx context.Context, obj interface{}, original interface{}) *FieldError {
 	if IsDeprecatedAllowed(ctx) {
 		return nil
 	}
 
 	var errs *FieldError
-	newFields := getPrefixedNamedFieldValues(deprecated, obj)
+	objFields := getPrefixedNamedFieldValues(deprecatedPrefix, obj)
 
-	if nonZero(reflect.ValueOf(org)) {
-		orgFields := getPrefixedNamedFieldValues(deprecated, org)
+	if nonZero(reflect.ValueOf(original)) {
+		originalFields := getPrefixedNamedFieldValues(deprecatedPrefix, original)
 
-		for name, newValue := range newFields {
-			if nonZero(newValue) {
-				if differ(orgFields[name], newValue) {
+		// We only have to walk obj Fields because the assumption is that obj
+		// and original are of the same type.
+		for name, value := range objFields {
+			if nonZero(value) {
+				if differ(originalFields[name], value) {
 					// Not allowed to update the value.
 					errs = errs.Also(ErrDisallowedUpdateDeprecatedFields(name))
 				}
 			}
 		}
 	} else {
-		for name, value := range newFields {
+		for name, value := range objFields {
 			if nonZero(value) {
 				// Not allowed to set the value.
 				errs = errs.Also(ErrDisallowedFields(name))
@@ -83,6 +85,7 @@ func getPrefixedNamedFieldValues(prefix string, obj interface{}) map[string]refl
 				jTag := tf.Tag.Get("json")
 				name := strings.Split(jTag, ",")[0]
 				if name == "" {
+					// Default to field name in go struct if no json name.
 					name = tf.Name
 				}
 				fields[name] = v
