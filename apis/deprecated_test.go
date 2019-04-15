@@ -117,7 +117,7 @@ func TestCheckDeprecated(t *testing.T) {
 	}
 	for n, tc := range testCases {
 		t.Run(n, func(t *testing.T) {
-			ctx := context.TODO()
+			ctx := context.Background()
 			if tc.strict {
 				ctx = apis.DisallowDeprecated(ctx)
 			}
