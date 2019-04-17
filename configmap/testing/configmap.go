@@ -24,7 +24,6 @@ import (
 	"k8s.io/apimachinery/pkg/util/sets"
 )
 
-// TODO(mattmoor): Move this into `knative/pkg/configmap`
 const exampleKey = "_example"
 
 // ConfigMapFromTestFile creates a v1.ConfigMap from a YAML file
