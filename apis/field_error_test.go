@@ -26,6 +26,14 @@ import (
 	"github.com/google/go-cmp/cmp"
 )
 
+type testStruct struct {
+	Name string `json:"name"`
+}
+
+type unexported struct {
+	unexportedField int
+}
+
 func TestFieldError(t *testing.T) {
 	tests := []struct {
 		name     string
@@ -97,6 +105,39 @@ Body.`,
 		err:      ErrMissingField("foo", "bar"),
 		prefixes: [][]string{{"baz"}},
 		want:     "missing field(s): baz.bar, baz.foo",
+	}, {
+		name: "check disallowed - none found",
+		err: CheckDisallowedFields(
+			testStruct{
+				Name: "foo",
+			},
+			testStruct{
+				Name: "foo",
+			}),
+		prefixes: [][]string{{"baz"}},
+		want:     "",
+	}, {
+		name: "check disallowed internal error",
+		err: CheckDisallowedFields(
+			unexported{
+				unexportedField: 2,
+			},
+			unexported{
+				unexportedField: 0,
+			}),
+		prefixes: [][]string{{"baz"}},
+		want:     "Internal Error: baz",
+	}, {
+		name: "check disallowed propagation",
+		err: CheckDisallowedFields(
+			testStruct{
+				Name: "foo",
+			},
+			testStruct{
+				Name: "",
+			}),
+		prefixes: [][]string{{"baz"}},
+		want:     "must not set the field(s): baz.name",
 	}, {
 		name:     "missing disallowed propagation",
 		err:      ErrDisallowedFields("foo", "bar"),
