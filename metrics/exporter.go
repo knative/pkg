@@ -90,18 +90,16 @@ func setCurMetricsConfig(c *metricsConfig) {
 }
 
 // FlushExporter waits for exported data to be uploaded.
-// This is useful when the process is shutting down and
-// you do not want to lose recent data.
-// Return value indicates whether the exporter wrote the
-// contents or not.
+// This should be called before the process shuts down or exporter is replaced.
+// Return value indicates whether the exporter is flushable or not.
 func FlushExporter() bool {
 	e := getCurMetricsExporter()
 	if e == nil {
 		return false
 	}
 
-	if sdEx, ok := e.(flushable); ok {
-		sdEx.Flush()
+	if f, ok := e.(flushable); ok {
+		f.Flush()
 		return true
 	}
 	return false
