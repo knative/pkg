@@ -114,6 +114,87 @@ func TestCheckDeprecated(t *testing.T) {
 				"structPtr",
 			},
 		},
+		"create strict, not json": {
+			strict: true,
+			obj: &InnerDefaultSubSpec{
+				DeprecatedNotJson: "fail",
+			},
+			wantErrs: []string{
+				"must not set",
+				"DeprecatedNotJson",
+			},
+		},
+		"create strict, inlined": {
+			strict: true,
+			obj: &InnerDefaultSubSpec{
+				InlinedStruct: InlinedStruct{
+					DeprecatedField: "fail",
+				},
+			},
+			wantErrs: []string{
+				"must not set",
+				"fieldA",
+			},
+		},
+		"create strict, inlined ptr": {
+			strict: true,
+			obj: &InnerDefaultSubSpec{
+				InlinedPtrStruct: &InlinedPtrStruct{
+					DeprecatedField: "fail",
+				},
+			},
+			wantErrs: []string{
+				"must not set",
+				"fieldB",
+			},
+		},
+		"create strict, inlined nested": {
+			strict: true,
+			obj: &InnerDefaultSubSpec{
+				InlinedStruct: InlinedStruct{
+					InlinedPtrStruct: &InlinedPtrStruct{
+						DeprecatedField: "fail",
+					},
+				},
+			},
+			wantErrs: []string{
+				"must not set",
+				"fieldB",
+			},
+		},
+		"create strict, all errors": {
+			strict: true,
+			obj: &InnerDefaultSubSpec{
+				DeprecatedString:    "an error",
+				DeprecatedStringPtr: ptr.String("test string"),
+				DeprecatedInt:       42,
+				DeprecatedIntPtr:    ptr.Int64(42),
+				DeprecatedMap:       map[string]string{"hello": "failure"},
+				DeprecatedSlice:     []string{"hello", "failure"},
+				DeprecatedStruct:    InnerDefaultStruct{FieldAsString: "not ok"},
+				DeprecatedStructPtr: &InnerDefaultStruct{
+					FieldAsString: "fail",
+				},
+				InlinedStruct: InlinedStruct{
+					DeprecatedField: "fail",
+					InlinedPtrStruct: &InlinedPtrStruct{
+						DeprecatedField: "fail",
+					},
+				},
+			},
+			wantErrs: []string{
+				"string",
+				"stringPtr",
+				"int",
+				"intPtr",
+				"map",
+				"slice",
+				"struct",
+				"structPtr",
+				"fieldA",
+				"fieldB",
+			},
+		},
 	}
 	for n, tc := range testCases {
 		t.Run(n, func(t *testing.T) {
@@ -206,6 +287,40 @@ func TestCheckDeprecatedUpdate(t *testing.T) {
 			wantErrs: []string{
 				"must not set",
 				"structPtr",
+			},
+		},
+		"update strict, all errors": {
+			strict: true,
+			org:    &InnerDefaultSubSpec{},
+			obj: &InnerDefaultSubSpec{
+				DeprecatedString:    "an error",
+				DeprecatedStringPtr: ptr.String("test string"),
+				DeprecatedInt:       42,
+				DeprecatedIntPtr:    ptr.Int64(42),
+				DeprecatedMap:       map[string]string{"hello": "failure"},
+				DeprecatedSlice:     []string{"hello", "failure"},
+				DeprecatedStruct:    InnerDefaultStruct{FieldAsString: "not ok"},
+				DeprecatedStructPtr: &InnerDefaultStruct{
+					FieldAsString: "fail",
+				},
+				InlinedStruct: InlinedStruct{
+					DeprecatedField: "fail",
+					InlinedPtrStruct: &InlinedPtrStruct{
+						DeprecatedField: "fail",
+					},
+				},
+			},
+			wantErrs: []string{
+				"string",
+				"stringPtr",
+				"int",
+				"intPtr",
+				"map",
+				"slice",
+				"struct",
+				"structPtr",
+				"fieldA",
+				"fieldB",
 			},
 		},
 

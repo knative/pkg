@@ -42,10 +42,10 @@ func CheckDeprecatedUpdate(ctx context.Context, obj interface{}, original interf
 	}
 
 	var errs *FieldError
-	objFields := getPrefixedNamedFieldValues(deprecatedPrefix, obj)
+	objFields, objInlined := getPrefixedNamedFieldValues(deprecatedPrefix, obj)
 
 	if nonZero(reflect.ValueOf(original)) {
-		originalFields := getPrefixedNamedFieldValues(deprecatedPrefix, original)
+		originalFields, originalInlined := getPrefixedNamedFieldValues(deprecatedPrefix, original)
 
 		// We only have to walk obj Fields because the assumption is that obj
 		// and original are of the same type.
@@ -57,6 +57,12 @@ func CheckDeprecatedUpdate(ctx context.Context, obj interface{}, original interf
 				}
 			}
 		}
+		// Look for deprecated inlined updates.
+		if len(objInlined) > 0 {
+			for name, value := range objInlined {
+				errs = errs.Also(CheckDeprecatedUpdate(ctx, value, originalInlined[name]))
+			}
+		}
 	} else {
 		for name, value := range objFields {
 			if nonZero(value) {
@@ -64,35 +70,65 @@ func CheckDeprecatedUpdate(ctx context.Context, obj interface{}, original interf
 				errs = errs.Also(ErrDisallowedFields(name))
 			}
 		}
+		// Look for deprecated inlined creates.
+		if len(objInlined) > 0 {
+			for _, value := range objInlined {
+				errs = errs.Also(CheckDeprecated(ctx, value))
+			}
+		}
 	}
 	return errs
 }
 
-func getPrefixedNamedFieldValues(prefix string, obj interface{}) map[string]reflect.Value {
+func getPrefixedNamedFieldValues(prefix string, obj interface{}) (map[string]reflect.Value, map[string]interface{}) {
 	fields := make(map[string]reflect.Value, 0)
+	inlined := make(map[string]interface{}, 0)
 
 	objValue := reflect.Indirect(reflect.ValueOf(obj))
 
 	// If res is not valid or a struct, don't even try to use it.
 	if !objValue.IsValid() || objValue.Kind() != reflect.Struct {
-		return fields
+		return fields, inlined
 	}
 
 	for i := 0; i < objValue.NumField(); i++ {
 		tf := objValue.Type().Field(i)
 		if v := objValue.Field(i); v.IsValid() {
+			jTag := tf.Tag.Get("json")
 			if strings.HasPrefix(tf.Name, prefix) {
-				jTag := tf.Tag.Get("json")
 				name := strings.Split(jTag, ",")[0]
 				if name == "" {
 					// Default to field name in go struct if no json name.
 					name = tf.Name
 				}
 				fields[name] = v
+			} else if jTag == ",inline" {
+				inlined[tf.Name] = getInterface(v)
 			}
 		}
 	}
-	return fields
+	return fields, inlined
+}
+
+// getInterface returns the interface value of the reflected object.
+func getInterface(a reflect.Value) interface{} {
+	switch a.Kind() {
+	case reflect.Ptr:
+		if a.IsNil() {
+			return nil
+		}
+		return a.Elem().Interface()
+
+	case reflect.Map, reflect.Slice, reflect.Array:
+		return a.Elem().Interface()
+
+	// This is a nil interface{} type.
+	case reflect.Invalid:
+		return nil
+
+	default:
+		return a.Interface()
+	}
 }
 
 // nonZero returns true if a is nil or reflect.Zero.

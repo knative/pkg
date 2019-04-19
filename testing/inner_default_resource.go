@@ -76,6 +76,12 @@ type InnerDefaultSubSpec struct {
 
 	// Deprecated: This field is deprecated.
 	DeprecatedStructPtr *InnerDefaultStruct `json:"structPtr,omitempty"`
+
+	InlinedStruct     `json:",inline"`
+	*InlinedPtrStruct `json:",inline"`
+
+	// Deprecated: This field is deprecated.
+	DeprecatedNotJson string
 }
 
 // Adding complication helper.
@@ -84,6 +90,17 @@ type InnerDefaultStruct struct {
 
 	// Deprecated: This field is deprecated.
 	DeprecatedField string `json:"field,omitempty"`
+}
+
+type InlinedStruct struct {
+	// Deprecated: This field is deprecated.
+	DeprecatedField   string `json:"fieldA,omitempty"`
+	*InlinedPtrStruct `json:",inline"`
+}
+
+type InlinedPtrStruct struct {
+	// Deprecated: This field is deprecated.
+	DeprecatedField string `json:"fieldB,omitempty"`
 }
 
 // InnerDefaultStatus is the status for InnerDefaultResource.
