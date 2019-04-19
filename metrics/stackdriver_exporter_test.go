@@ -78,6 +78,7 @@ func fakeGcpMetadataFun() *gcpMetadata {
 type fakeExporter struct{}
 
 func (fe *fakeExporter) ExportView(vd *view.Data) {}
+func (fe *fakeExporter) Flush()                   {}
 
 func newFakeExporter(o stackdriver.Options) (view.Exporter, error) {
 	return &fakeExporter{}, nil
