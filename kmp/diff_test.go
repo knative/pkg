@@ -17,7 +17,6 @@ limitations under the License.
 package kmp
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -28,7 +27,7 @@ func TestCompareKcmpDefault(t *testing.T) {
 	a := resource.MustParse("50m")
 	b := resource.MustParse("100m")
 
-	want := "{resource.Quantity}:\n\t-: resource.Quantity{i: resource.int64Amount{value: 50, scale: resource.Scale(-3)}, s: \"50m\", Format: resource.Format(\"DecimalSI\")}\n\t+: resource.Quantity{i: resource.int64Amount{value: 100, scale: resource.Scale(-3)}, s: \"100m\", Format: resource.Format(\"DecimalSI\")}\n"
+	want := cmp.Diff(a, b, defaultOpts...)
 
 	if got, err := SafeDiff(a, b); err != nil {
 		t.Errorf("unexpected SafeDiff err: %v", err)
@@ -51,23 +50,62 @@ func TestRecovery(t *testing.T) {
 	a := foo{"a"}
 	b := foo{"b"}
 
-	want := recoveryErrorMessageFor("SafeDiff")
 	if _, err := SafeDiff(a, b); err == nil {
 		t.Error("expected err, got nil")
-	} else if diff := cmp.Diff(want, err.Error()); diff != "" {
-		t.Errorf("SafeDiff (-want, +got): %v", diff)
 	}
 
-	want = recoveryErrorMessageFor("SafeEqual")
 	if _, err := SafeEqual(a, b); err == nil {
 		t.Error("expected err, got nil")
-	} else if diff := cmp.Diff(want, err.Error()); diff != "" {
-		t.Errorf("SafeEqual (-want, +got): %v", diff)
+	}
+
+	if _, err := ShortDiff(a, b); err == nil {
+		t.Error("expected err, got nil")
+	}
+
+	if _, err := CompareSetFields(a, b); err == nil {
+		t.Error("expected err, got nil")
 	}
 }
 
-func recoveryErrorMessageFor(funcName string) string {
-	return fmt.Sprintf(
-		`recovered in kmp.%v: cannot handle unexported field: {kmp.foo}.bar
-consider using AllowUnexported or cmpopts.IgnoreUnexported`, funcName)
+func TestFieldDiff(t *testing.T) {
+	type foo struct {
+		Bar string `json:"stringField"`
+		Baz int    `json:"intField"`
+	}
+
+	a := foo{
+		Bar: "a",
+		Baz: 1,
+	}
+	b := foo{
+		Bar: "b",
+		Baz: 1,
+	}
+
+	want := []string{"stringField"}
+
+	got, err := CompareSetFields(a, b)
+
+	if err != nil {
+		t.Errorf("unexpected FieldDiff err: %v", err)
+	} else if !cmp.Equal(got, want) {
+		t.Errorf("FieldDiff() = %v, want: %s", got, want)
+	}
+
+}
+
+func TestImmutableDiff(t *testing.T) {
+	a := resource.MustParse("50m")
+	b := resource.MustParse("100m")
+
+	want := `{resource.Quantity}:
+	-: resource.Quantity: "{i:{value:50 scale:-3} d:{Dec:<nil>} s:50m Format:DecimalSI}"
+	+: resource.Quantity: "{i:{value:100 scale:-3} d:{Dec:<nil>} s:100m Format:DecimalSI}"
+`
+
+	if got, err := ShortDiff(a, b); err != nil {
+		t.Errorf("unexpected ShortDiff err: %v", err)
+	} else if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("SafeDiff (-want, +got): %v", diff)
+	}
 }

@@ -129,6 +129,14 @@
   revision = "44145f04b68cf362d9c4df2182967c2275eaefed"
 
 [[projects]]
+  branch = "master"
+  digest = "1:b7cb6054d3dff43b38ad2e92492f220f57ae6087ee797dca298139776749ace8"
+  name = "github.com/golang/groupcache"
+  packages = ["lru"]
+  pruneopts = "NUT"
+  revision = "5b532d6fd5efaf7fa130d4e859a2fde0fc3a9e1b"
+
+[[projects]]
   digest = "1:4dacf728c83400b3e9d1d3025dd3c1e93e9a1b033726d1b193dc209f3fa9cb7a"
   name = "github.com/golang/protobuf"
   packages = [
@@ -155,18 +163,18 @@
   revision = "e89373fe6b4a7413d7acd6da1725b83ef713e6e4"
 
 [[projects]]
-  digest = "1:d2754cafcab0d22c13541618a8029a70a8959eb3525ff201fe971637e2274cd0"
+  digest = "1:010d46ea3c1e730897e53058d1013a963f3f987675dda87df64f891b945281db"
   name = "github.com/google/go-cmp"
   packages = [
     "cmp",
     "cmp/cmpopts",
     "cmp/internal/diff",
+    "cmp/internal/flags",
     "cmp/internal/function",
     "cmp/internal/value",
   ]
   pruneopts = "NUT"
-  revision = "3af367b6b30c263d47e8895973edcca9a49cf029"
-  version = "v0.2.0"
+  revision = "6f77996f0c42f7b84e5a2b252227263f93432e9b"
 
 [[projects]]
   digest = "1:f9425215dccf1c63f659ec781ca46bc81804341821d0cd8d2459c5b58f8bd067"
@@ -281,14 +289,14 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:921c8888ac7bf7240bc5473d029201b3eb19f9592c7647c4c29f96b6c901b1bb"
+  digest = "1:f3c8dc03bb88bca90c59550e06b0f27a6ca489b1747ac8e5153686a6752e4d74"
   name = "github.com/knative/test-infra"
   packages = [
     "scripts",
     "tools/dep-collector",
   ]
   pruneopts = "UT"
-  revision = "582b6fbee8ae00260baf916b0f9db2aa5f3483d9"
+  revision = "3a09cd7f5428743509941d116fdee644041a3507"
 
 [[projects]]
   digest = "1:56dbf15e091bf7926cb33a57cb6bdfc658fc6d3498d2f76f10a97ce7856f1fde"
@@ -796,7 +804,7 @@
   version = "kubernetes-1.12.6"
 
 [[projects]]
-  digest = "1:db8956be14a2580055d7e43378659c82be3f991bf28bdcbb0d3cebcaea431b38"
+  digest = "1:b7dd0420e85cb2968ffb945f2810ea6c796dc2a08660618e2200c08c596f0624"
   name = "k8s.io/client-go"
   packages = [
     "discovery",
@@ -955,6 +963,7 @@
     "tools/clientcmd/api/v1",
     "tools/metrics",
     "tools/pager",
+    "tools/record",
     "tools/reference",
     "transport",
     "util/buffer",
@@ -1040,6 +1049,7 @@
     "contrib.go.opencensus.io/exporter/stackdriver/monitoredresource",
     "github.com/davecgh/go-spew/spew",
     "github.com/evanphx/json-patch",
+    "github.com/ghodss/yaml",
     "github.com/golang/glog",
     "github.com/google/go-cmp/cmp",
     "github.com/google/go-cmp/cmp/cmpopts",
@@ -1103,6 +1113,7 @@
     "k8s.io/client-go/testing",
     "k8s.io/client-go/tools/cache",
     "k8s.io/client-go/tools/clientcmd",
+    "k8s.io/client-go/tools/record",
     "k8s.io/client-go/util/flowcontrol",
     "k8s.io/client-go/util/workqueue",
     "k8s.io/code-generator/cmd/client-gen",
