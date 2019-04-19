@@ -14,7 +14,9 @@ package metrics
 
 import (
 	"os"
+	"path"
 	"testing"
+	"time"
 
 	. "github.com/knative/pkg/logging/testing"
 	"github.com/knative/pkg/metrics/metricskey"
@@ -121,5 +123,66 @@ func TestInterlevedExporters(t *testing.T) {
 		stackdriverProjectID: testProj}, TestLogger(t))
 	if err != nil {
 		t.Error(err)
+	}
+}
+
+func TestFlushExporter(t *testing.T) {
+	// No exporter - no action should be taken
+	setCurMetricsConfig(nil)
+	if want, got := false, FlushExporter(); got != want {
+		t.Errorf("Expected %v, got %v.", want, got)
+	}
+
+	// Prometheus exporter shouldn't do anything because
+	// it doesn't implement Flush()
+	c := &metricsConfig{
+		domain:             servingDomain,
+		component:          testComponent,
+		reportingPeriod:    1 * time.Minute,
+		backendDestination: Prometheus,
+	}
+	e, err := newMetricsExporter(c, TestLogger(t))
+	if err != nil {
+		t.Errorf("Expected no error. got %v", err)
+	} else {
+		setCurMetricsExporter(e)
+		if want, got := false, FlushExporter(); got != want {
+			t.Errorf("Expected %v, got %v.", want, got)
+		}
+	}
+
+	// Fake Stackdriver exporter should export
+	newStackdriverExporterFunc = newFakeExporter
+	c = &metricsConfig{
+		domain:                            servingDomain,
+		component:                         testComponent,
+		backendDestination:                Stackdriver,
+		allowStackdriverCustomMetrics:     true,
+		isStackdriverBackend:              true,
+		reportingPeriod:                   1 * time.Minute,
+		stackdriverProjectID:              "test",
+		stackdriverMetricTypePrefix:       path.Join(servingDomain, testComponent),
+		stackdriverCustomMetricTypePrefix: path.Join(customMetricTypePrefix, testComponent),
+	}
+	e, err = newMetricsExporter(c, TestLogger(t))
+	if err != nil {
+		t.Errorf("Expected no error. got %v", err)
+	} else {
+		setCurMetricsExporter(e)
+		if want, got := true, FlushExporter(); got != want {
+			t.Errorf("Expected %v, got %v.", want, got)
+		}
+	}
+
+	// Real Stackdriver exporter should export as well.
+	newStackdriverExporterFunc = newOpencensusSDExporter
+	e, err = newMetricsExporter(c, TestLogger(t))
+	if err != nil {
+		t.Errorf("Expected no error. got %v", err)
+	} else {
+		setCurMetricsExporter(e)
+		if want, got := true, FlushExporter(); got != want {
+			t.Errorf("Expected %v, got %v.", want, got)
+		}
 	}
 }
