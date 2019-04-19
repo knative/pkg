@@ -490,6 +490,28 @@ func createInnerDefaultResourceWithoutSpec(t *testing.T) []byte {
 	return b
 }
 
+func createInnerDefaultResourceWithSpecAndStatus(t *testing.T, spec *InnerDefaultSpec, status *InnerDefaultStatus) []byte {
+	t.Helper()
+	r := InnerDefaultResource{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: testNamespace,
+			Name:      "a name",
+		},
+	}
+	if spec != nil {
+		r.Spec = *spec
+	}
+	if status != nil {
+		r.Status = *status
+	}
+
+	b, err := json.Marshal(r)
+	if err != nil {
+		t.Fatalf("Error marshaling bytes: %v", err)
+	}
+	return b
+}
+
 func TestValidWebhook(t *testing.T) {
 	_, ac := newNonRunningTestAdmissionController(t, newDefaultOptions())
 	createDeployment(ac)

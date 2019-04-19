@@ -183,6 +183,11 @@ can not use @, do not try`,
 		want: `invalid key name "b@r": baz.foo[0].name
 can not use @, do not try`,
 	}, {
+		name:     "disallowed update deprecated fields",
+		err:      ErrDisallowedUpdateDeprecatedFields("foo", "bar"),
+		prefixes: [][]string{{"baz"}},
+		want:     `must not update deprecated field(s): baz.bar, baz.foo`,
+	}, {
 		name: "very complex to simple",
 		err: func() *FieldError {
 			fe := &FieldError{

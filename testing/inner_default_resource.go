@@ -18,7 +18,6 @@ package testing
 
 import (
 	"context"
-
 	"github.com/knative/pkg/apis"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -35,6 +34,9 @@ type InnerDefaultResource struct {
 	// Note that this does _not_ have omitempty. So when JSON is round tripped through the Golang
 	// type, `spec: {}` will automatically be injected.
 	Spec InnerDefaultSpec `json:"spec"`
+
+	// Status is a simple status.
+	Status InnerDefaultStatus `json:"status,omitempty"`
 }
 
 // InnerDefaultSpec is the spec for InnerDefaultResource.
@@ -42,6 +44,68 @@ type InnerDefaultSpec struct {
 	Generation int64 `json:"generation,omitempty"`
 
 	FieldWithDefault string `json:"fieldWithDefault,omitempty"`
+
+	// Deprecated: This field is deprecated.
+	DeprecatedField string `json:"field,omitempty"`
+
+	SubFields *InnerDefaultSubSpec `json:"subfields,omitempty"`
+}
+
+// InnerDefaultSubSpec is a helper to test strict deprecated validation.
+type InnerDefaultSubSpec struct {
+	// Deprecated: This field is deprecated.
+	DeprecatedString string `json:"string,omitempty"`
+
+	// Deprecated: This field is deprecated.
+	DeprecatedStringPtr *string `json:"stringPtr,omitempty"`
+
+	// Deprecated: This field is deprecated.
+	DeprecatedInt int64 `json:"int,omitempty"`
+
+	// Deprecated: This field is deprecated.
+	DeprecatedIntPtr *int64 `json:"intPtr,omitempty"`
+
+	// Deprecated: This field is deprecated.
+	DeprecatedMap map[string]string `json:"map,omitempty"`
+
+	// Deprecated: This field is deprecated.
+	DeprecatedSlice []string `json:"slice,omitempty"`
+
+	// Deprecated: This field is deprecated.
+	DeprecatedStruct InnerDefaultStruct `json:"struct,omitempty"`
+
+	// Deprecated: This field is deprecated.
+	DeprecatedStructPtr *InnerDefaultStruct `json:"structPtr,omitempty"`
+
+	InlinedStruct     `json:",inline"`
+	*InlinedPtrStruct `json:",inline"`
+
+	// Deprecated: This field is deprecated.
+	DeprecatedNotJson string
+}
+
+// Adding complication helper.
+type InnerDefaultStruct struct {
+	FieldAsString string `json:"fieldAsString,omitempty"`
+
+	// Deprecated: This field is deprecated.
+	DeprecatedField string `json:"field,omitempty"`
+}
+
+type InlinedStruct struct {
+	// Deprecated: This field is deprecated.
+	DeprecatedField   string `json:"fieldA,omitempty"`
+	*InlinedPtrStruct `json:",inline"`
+}
+
+type InlinedPtrStruct struct {
+	// Deprecated: This field is deprecated.
+	DeprecatedField string `json:"fieldB,omitempty"`
+}
+
+// InnerDefaultStatus is the status for InnerDefaultResource.
+type InnerDefaultStatus struct {
+	FieldAsString string `json:"fieldAsString,omitempty"`
 }
 
 // Check that ImmutableDefaultResource may be validated and defaulted.
@@ -61,6 +125,32 @@ func (cs *InnerDefaultSpec) SetDefaults(ctx context.Context) {
 }
 
 // Validate validates the resource.
-func (*InnerDefaultResource) Validate(ctx context.Context) *apis.FieldError {
-	return nil
+func (i *InnerDefaultResource) Validate(ctx context.Context) *apis.FieldError {
+	var errs *apis.FieldError
+	if apis.IsInUpdate(ctx) {
+		org := apis.GetBaseline(ctx).(*InnerDefaultResource)
+		errs = apis.CheckDeprecatedUpdate(ctx, i.Spec, org.Spec).ViaField("spec")
+		if i.Spec.SubFields != nil {
+			var orgSubFields interface{}
+			if org != nil && org.Spec.SubFields != nil {
+				orgSubFields = org.Spec.SubFields
+			}
+
+			errs = errs.Also(apis.CheckDeprecatedUpdate(ctx, i.Spec.SubFields, orgSubFields).ViaField("spec", "subFields"))
+
+			var orgDepStruct interface{}
+			if orgSubFields != nil {
+				orgDepStruct = org.Spec.SubFields.DeprecatedStruct
+			}
+
+			errs = errs.Also(apis.CheckDeprecatedUpdate(ctx, i.Spec.SubFields.DeprecatedStruct, orgDepStruct).ViaField("spec", "subFields", "deprecatedStruct"))
+		}
+	} else {
+		errs = apis.CheckDeprecated(ctx, i.Spec).ViaField("spec")
+		if i.Spec.SubFields != nil {
+			errs = errs.Also(apis.CheckDeprecated(ctx, i.Spec.SubFields).ViaField("spec", "subFields").
+				Also(apis.CheckDeprecated(ctx, i.Spec.SubFields.DeprecatedStruct).ViaField("deprecatedStruct")))
+		}
+	}
+	return errs
 }
