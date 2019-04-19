@@ -221,6 +221,33 @@ func TestCheckDeprecated(t *testing.T) {
 	}
 }
 
+// This test makes sure that errors will flatten the duped error for fieldB.
+// It comes in on obj.InlinedStruct.InlinedPtrStruct.DeprecatedField and
+// obj.InlinedPtrStruct.DeprecatedField.
+func TestCheckDeprecated_Dedupe(t *testing.T) {
+
+	obj := &InnerDefaultSubSpec{
+		InlinedStruct: InlinedStruct{
+			DeprecatedField: "fail",
+			InlinedPtrStruct: &InlinedPtrStruct{
+				DeprecatedField: "fail",
+			},
+		},
+		InlinedPtrStruct: &InlinedPtrStruct{
+			DeprecatedField: "fail",
+		},
+	}
+	wantErr := "must not set the field(s): fieldA, fieldB"
+
+	ctx := apis.DisallowDeprecated(context.Background())
+	resp := apis.CheckDeprecated(ctx, obj)
+
+	gotErr := resp.Error()
+	if gotErr != wantErr {
+		t.Errorf("Expected failure %q got %q", wantErr, gotErr)
+	}
+}
+
 func TestCheckDeprecatedUpdate(t *testing.T) {
 
 	testCases := map[string]struct {
