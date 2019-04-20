@@ -42,8 +42,10 @@ type WithPodSpec struct {
 	Template PodSpecable `json:"template,omitempty"`
 }
 
-var _ duck.Populatable = (*WithPod)(nil)
-var _ duck.Implementable = (*PodSpecable)(nil)
+var (
+	_ duck.Populatable   = (*WithPod)(nil)
+	_ duck.Implementable = (*PodSpecable)(nil)
+)
 
 // GetFullType implements duck.Implementable
 func (_ *PodSpecable) GetFullType() duck.Populatable {

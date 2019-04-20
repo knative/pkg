@@ -42,8 +42,10 @@ type ScalableStatus struct {
 	Replicas int32 `json:"replicas,omitempty"`
 }
 
-var _ duck.Populatable = (*Scalable)(nil)
-var _ duck.Implementable = (*Scalable)(nil)
+var (
+	_ duck.Populatable   = (*Scalable)(nil)
+	_ duck.Implementable = (*Scalable)(nil)
+)
 
 // GetFullType implements duck.Implementable
 func (_ *Scalable) GetFullType() duck.Populatable {
