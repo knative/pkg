@@ -2,10 +2,12 @@
 
 
 [[projects]]
-  digest = "1:5db4f94a0a6d5e4ce827563b1d96902f8777d58ae23cc59f38ae538ffed52c13"
+  digest = "1:ef8da480a66d7e8e9819261c3526685601b573e0005e84b75e47548d82021a7d"
   name = "cloud.google.com/go"
   packages = [
     "compute/metadata",
+    "container/apiv1",
+    "internal/version",
     "monitoring/apiv3",
     "trace/apiv2",
   ]
@@ -14,14 +16,23 @@
   version = "v0.34.0"
 
 [[projects]]
-  digest = "1:b6eb7c2538ec2999a072c0e372a18d7b7e3aedac249f26e159586fa5f892909f"
+  digest = "1:43fbf05ea84c860a4e86b557d156b1e72511cd29375d3f71adb522362710aea7"
   name = "contrib.go.opencensus.io/exporter/stackdriver"
   packages = [
     ".",
     "monitoredresource",
   ]
   pruneopts = "NUT"
-  revision = "c06c82c832edca4eaf7b0241bd655560a1be0346"
+  revision = "ab5a58af316a529613aadf9f50eeed1b6f044b2f"
+  version = "v0.9.2"
+
+[[projects]]
+  branch = "master"
+  digest = "1:cef70b547ce62d12ea8e5dcb9905bccb57ea1bb253ee6809fd79a17c29ca3cd5"
+  name = "contrib.go.opencensus.io/resource"
+  packages = ["resourcekeys"]
+  pruneopts = "NUT"
+  revision = "21591786a5e0c21806209b266cc6dfdfa85b3cdb"
 
 [[projects]]
   digest = "1:4a31397b1b81c6856aab6d2d963a727b4235af18adaaedc2cc51646ae812f683"
@@ -435,17 +446,19 @@
   version = "v1.0.3"
 
 [[projects]]
-  digest = "1:bce7c290509e40fd1c73d700305c1961004d08c9a1812e47533416a8742893a7"
+  digest = "1:69a97603fe8952de86ee1e74a065f7974ec7d7d1d2301d3f5da6d342156363f4"
   name = "go.opencensus.io"
   packages = [
     ".",
-    "exemplar",
     "exporter/prometheus",
     "internal",
     "internal/tagencoding",
+    "metric/metricdata",
+    "metric/metricproducer",
     "plugin/ocgrpc",
     "plugin/ochttp",
     "plugin/ochttp/propagation/b3",
+    "resource",
     "stats",
     "stats/internal",
     "stats/view",
@@ -456,8 +469,8 @@
     "trace/tracestate",
   ]
   pruneopts = "NUT"
-  revision = "b7bf3cdb64150a8c8c53b769fdeb2ba581bd4d4b"
-  version = "v0.18.0"
+  revision = "75c0cca22312e51bfd4fafdbe9197ae399e18b38"
+  version = "v0.20.2"
 
 [[projects]]
   digest = "1:22f696cee54865fb8e9ff91df7b633f6b8f22037a8015253c6b6a71ca82219c7"
@@ -634,7 +647,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:57005092fa4440ad8b606ba030326b499f27ab920ca645da114b1c4262bb4502"
+  digest = "1:66391109a7c81e46c2229277bb2d91b5423fb603f191aeff23a20639810e0ee2"
   name = "google.golang.org/genproto"
   packages = [
     "googleapis/api/annotations",
@@ -642,6 +655,7 @@
     "googleapis/api/label",
     "googleapis/api/metric",
     "googleapis/api/monitoredres",
+    "googleapis/container/v1",
     "googleapis/devtools/cloudtrace/v2",
     "googleapis/monitoring/v3",
     "googleapis/rpc/status",
