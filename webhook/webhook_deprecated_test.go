@@ -17,13 +17,14 @@ limitations under the License.
 package webhook
 
 import (
+	"testing"
+
 	"github.com/knative/pkg/apis"
 	. "github.com/knative/pkg/logging/testing"
 	"github.com/knative/pkg/ptr"
 	. "github.com/knative/pkg/testing"
 	admissionv1beta1 "k8s.io/api/admission/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"testing"
 )
 
 // In strict mode, you are not allowed to set a deprecated filed when doing a Create.
