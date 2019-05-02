@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Knative Authors
+Copyright 2019 The Knative Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,13 +14,12 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v1alpha1
+package v1beta1
 
 import (
 	"testing"
 
 	"github.com/knative/pkg/apis/duck"
-	"github.com/knative/pkg/apis/duck/v1beta1"
 )
 
 func TestTypesImplements(t *testing.T) {
@@ -29,10 +28,7 @@ func TestTypesImplements(t *testing.T) {
 		iface    duck.Implementable
 	}{
 		{instance: &AddressableType{}, iface: &Addressable{}},
-		{instance: &AddressableType{}, iface: &v1beta1.Addressable{}},
 		{instance: &KResource{}, iface: &Conditions{}},
-		{instance: &LegacyTarget{}, iface: &LegacyTargetable{}},
-		{instance: &Target{}, iface: &Targetable{}},
 	}
 	for _, tc := range testCases {
 		if err := duck.VerifyType(tc.instance, tc.iface); err != nil {
