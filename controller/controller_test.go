@@ -418,6 +418,26 @@ func TestEnqueues(t *testing.T) {
 	}
 }
 
+func TestEnqeueAfter(t *testing.T) {
+	impl := NewImpl(&NopReconciler{}, TestLogger(t), "Testing", &FakeStatsReporter{})
+	impl.EnqueueKeyAfter("waiting/for", time.Second)
+	impl.EnqueueKeyAfter("the/waterfall", time.Second>>1)
+	impl.EnqueueKeyAfter("to/fall", time.Second<<1)
+	time.Sleep(50 * time.Millisecond)
+	if got, want := impl.WorkQueue.Len(), 0; got != want {
+		t.Errorf("|Queue| = %d, want: %d", got, want)
+	}
+	// Sleep the remaining time.
+	time.Sleep(time.Second - 50*time.Millisecond)
+	if got, want := impl.WorkQueue.Len(), 2; got != want {
+		t.Errorf("|Queue| = %d, want: %d", got, want)
+	}
+	impl.WorkQueue.ShutDown()
+	if got, want := drainWorkQueue(impl.WorkQueue), []string{"the/waterfall", "waiting/for"}; !cmp.Equal(got, want) {
+		t.Errorf("Queue = %v, want: %v, diff: %s", got, want, cmp.Diff(got, want))
+	}
+}
+
 type CountingReconciler struct {
 	m     sync.Mutex
 	Count int
