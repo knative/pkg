@@ -24,8 +24,9 @@ import (
 
 func TestParseURL(t *testing.T) {
 	testCases := map[string]struct {
-		t    string
-		want *URL
+		t       string
+		want    *URL
+		wantErr bool
 	}{
 		"empty": {
 			want: nil,
@@ -35,8 +36,9 @@ func TestParseURL(t *testing.T) {
 			want: nil,
 		},
 		"invalid format": {
-			t:    "💩://error",
-			want: nil,
+			t:       "💩://error",
+			want:    nil,
+			wantErr: true,
 		},
 		"relative": {
 			t: "/path/to/something",
@@ -58,7 +60,15 @@ func TestParseURL(t *testing.T) {
 	for n, tc := range testCases {
 		t.Run(n, func(t *testing.T) {
 
-			got := ParseURL(tc.t)
+			got, err := ParseURL(tc.t)
+			if err != nil {
+				if !tc.wantErr {
+					t.Fatalf("ParseURL() = %v", err)
+				}
+				return
+			} else if tc.wantErr {
+				t.Fatalf("ParseURL() = %v, wanted error", got)
+			}
 
 			if diff := cmp.Diff(tc.want, got); diff != "" {
 				t.Errorf("unexpected object (-want, +got) = %v", diff)
@@ -89,7 +99,10 @@ func TestJsonMarshalURL(t *testing.T) {
 		t.Run(n, func(t *testing.T) {
 
 			var got []byte
-			tt := ParseURL(tc.t)
+			tt, err := ParseURL(tc.t)
+			if err != nil {
+				t.Fatalf("ParseURL() = %v", err)
+			}
 			if tt != nil {
 				got, _ = tt.MarshalJSON()
 			}
@@ -176,7 +189,10 @@ func TestURLString(t *testing.T) {
 	for n, tc := range testCases {
 		t.Run(n, func(t *testing.T) {
 
-			tt := ParseURL(tc.t)
+			tt, err := ParseURL(tc.t)
+			if err != nil {
+				t.Fatalf("ParseURL() = %v", err)
+			}
 			got := tt.String()
 
 			if diff := cmp.Diff(tc.want, got); diff != "" {
