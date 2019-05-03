@@ -93,7 +93,7 @@ When a `trace` metric is emitted, the format is
 arbitrary and can be any string. The values are:
 
 - `metric` - Indicates this log is a metric
-- `<name>` - Arbitrary string indentifying the metric
+- `<name>` - Arbitrary string identifying the metric
 - `<startTime>` - Unix time in nanoseconds when measurement started
 - `<endTime>` - Unix time in nanoseconds when measurement ended
 - `<duration>` - The difference in ms between the startTime and endTime
