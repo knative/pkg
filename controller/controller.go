@@ -221,7 +221,7 @@ func (c *Impl) EnqueueKeyAfter(key string, delay time.Duration) {
 // Run starts the controller's worker threads, the number of which is threadiness.
 // It then blocks until stopCh is closed, at which point it shuts down its internal
 // work queue and waits for workers to finish processing their current work items.
-func (c *Impl) Run(threadiness int, stopCh <-chan struct{}) error {
+func (c *Impl) Run(threadiness int, stopCh <-chan struct{}) {
 	defer runtime.HandleCrash()
 	sg := sync.WaitGroup{}
 	defer sg.Wait()
@@ -242,8 +242,6 @@ func (c *Impl) Run(threadiness int, stopCh <-chan struct{}) error {
 	logger.Info("Started workers")
 	<-stopCh
 	logger.Info("Shutting down workers")
-
-	return nil
 }
 
 // processNextWorkItem will read a single work item off the workqueue and
