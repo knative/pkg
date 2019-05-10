@@ -18,6 +18,14 @@ package ptr
 
 import "testing"
 
+func TestInt32(t *testing.T) {
+	want := int32(55)
+	gotPtr := Int32(want)
+	if want != *gotPtr {
+		t.Errorf("Int32() = &%v, wanted %v", *gotPtr, want)
+	}
+}
+
 func TestInt64(t *testing.T) {
 	want := int64(55)
 	gotPtr := Int64(want)
