@@ -78,6 +78,18 @@ func Filter(gvk schema.GroupVersionKind) func(obj interface{}) bool {
 	}
 }
 
+// FilterWithNameAndNamespace makes it simple to create FilterFunc's for use with
+// cache.FilteringResourceEventHandler that filter based on a namespace and a name.
+func FilterWithNameAndNamespace(namespace, name string) func(obj interface{}) bool {
+	return func(obj interface{}) bool {
+		if object, ok := obj.(metav1.Object); ok {
+			return name == object.GetName() &&
+				namespace == object.GetNamespace()
+		}
+		return false
+	}
+}
+
 // Impl is our core controller implementation.  It handles queuing and feeding work
 // from the queue to an implementation of Reconciler.
 type Impl struct {
