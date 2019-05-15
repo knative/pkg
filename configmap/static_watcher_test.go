@@ -54,7 +54,7 @@ func TestStaticWatcher(t *testing.T) {
 	// When Start returns the callbacks should have been called with the
 	// version of the objects that is available.
 	for _, obj := range []*counter{foo1, foo2, bar} {
-		if got, want := obj.count, 1; got != want {
+		if got, want := obj.count(), 1; got != want {
 			t.Errorf("%v.count = %v, want %v", obj, got, want)
 		}
 	}

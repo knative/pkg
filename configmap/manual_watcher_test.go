@@ -47,8 +47,8 @@ func TestCallbackInvoked(t *testing.T) {
 		},
 	})
 
-	if observer.count == 0 {
-		t.Errorf("Expected callback to be invoked - got invocations %v", observer.count)
+	if observer.count() == 0 {
+		t.Errorf("Expected callback to be invoked - got invocations %v", observer.count())
 	}
 }
 
@@ -67,8 +67,8 @@ func TestDifferentNamespace(t *testing.T) {
 		},
 	})
 
-	if observer.count != 0 {
-		t.Errorf("Expected callback to be not be invoked - got invocations %v", observer.count)
+	if observer.count() != 0 {
+		t.Errorf("Expected callback to be not be invoked - got invocations %v", observer.count())
 	}
 }
 
@@ -88,8 +88,8 @@ func TestLateRegistration(t *testing.T) {
 
 	watcher.Watch("foo", observer.callback)
 
-	if observer.count != 0 {
-		t.Errorf("Expected callback to be not be invoked - got invocations %v", observer.count)
+	if observer.count() != 0 {
+		t.Errorf("Expected callback to be not be invoked - got invocations %v", observer.count())
 	}
 }
 
@@ -109,7 +109,7 @@ func TestDifferentConfigName(t *testing.T) {
 
 	watcher.Watch("bar", observer.callback)
 
-	if observer.count != 0 {
-		t.Errorf("Expected callback to be not be invoked - got invocations %v", observer.count)
+	if observer.count() != 0 {
+		t.Errorf("Expected callback to be not be invoked - got invocations %v", observer.count())
 	}
 }
