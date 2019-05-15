@@ -62,8 +62,8 @@ type InformedWatcher struct {
 	informer corev1informers.ConfigMapInformer
 	started  bool
 
-	// cfgs are the default ConfigMaps to use if the real ones do not exist or are deleted.
-	cfgs map[string]*corev1.ConfigMap
+	// defaults are the default ConfigMaps to use if the real ones do not exist or are deleted.
+	defaults map[string]*corev1.ConfigMap
 
 	// Embedding this struct allows us to reuse the logic
 	// of registering and notifying observers. This simplifies the
@@ -79,10 +79,10 @@ var _ DefaultingWatcher = (*InformedWatcher)(nil)
 
 // WatchWithDefault implements DefaultingWatcher.
 func (i *InformedWatcher) WatchWithDefault(cm corev1.ConfigMap, o Observer) {
-	if i.cfgs == nil {
-		i.cfgs = map[string]*corev1.ConfigMap{}
+	if i.defaults == nil {
+		i.defaults = map[string]*corev1.ConfigMap{}
 	}
-	i.cfgs[cm.Name] = &cm
+	i.defaults[cm.Name] = &cm
 
 	i.m.Lock()
 	started := i.started
@@ -105,8 +105,8 @@ func (i *InformedWatcher) Start(stopCh <-chan struct{}) error {
 	// the informer to ensure that if a defaulted ConfigMap does exist, then the real value is
 	// processed after the default one.
 	for k := range i.observers {
-		if cfg, ok := i.cfgs[k]; ok {
-			i.addConfigMapEvent(cfg)
+		if def, ok := i.defaults[k]; ok {
+			i.addConfigMapEvent(def)
 		}
 	}
 
@@ -149,7 +149,7 @@ func (i *InformedWatcher) checkObservedResourcesExist() error {
 		_, err := i.informer.Lister().ConfigMaps(i.Namespace).Get(k)
 		if err != nil {
 			if k8serrors.IsNotFound(err) {
-				if _, ok := i.cfgs[k]; ok {
+				if _, ok := i.defaults[k]; ok {
 					// It is defaulted, so it is OK that it doesn't exist.
 					continue
 				}
@@ -172,7 +172,7 @@ func (i *InformedWatcher) updateConfigMapEvent(old, new interface{}) {
 
 func (i *InformedWatcher) deleteConfigMapEvent(obj interface{}) {
 	configMap := obj.(*corev1.ConfigMap)
-	if def, ok := i.cfgs[configMap.Name]; ok {
+	if def, ok := i.defaults[configMap.Name]; ok {
 		i.OnChange(def)
 	}
 	// If there is no default value, then don't do anything.
