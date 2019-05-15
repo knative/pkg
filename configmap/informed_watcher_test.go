@@ -17,12 +17,13 @@ limitations under the License.
 package configmap
 
 import (
+	"sync"
+	"testing"
+
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	fakekubeclientset "k8s.io/client-go/kubernetes/fake"
-	"sync"
-	"testing"
 )
 
 type counter struct {
@@ -265,7 +266,7 @@ func TestDefaultObserved(t *testing.T) {
 }
 
 func TestDefaultConfigMapDeleted(t *testing.T) {
-		defaultFooCM := &corev1.ConfigMap{
+	defaultFooCM := &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: "default",
 			Name:      "foo",
@@ -320,5 +321,55 @@ func TestDefaultConfigMapDeleted(t *testing.T) {
 		if got, want := foo1.cfg[i].Data, cfg.Data; !equality.Semantic.DeepEqual(want, got) {
 			t.Errorf("%d config seen should have been '%v', actually '%v'", i, want, got)
 		}
+	}
+}
+
+func TestWatchWithDefaultAfterStart(t *testing.T) {
+	defaultFooCM := &corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: "default",
+			Name:      "foo",
+		},
+		Data: map[string]string{
+			"default": "from code",
+		},
+	}
+	fooCM := &corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: "default",
+			Name:      "foo",
+		},
+		Data: map[string]string{
+			"from": "k8s",
+		},
+	}
+
+	kc := fakekubeclientset.NewSimpleClientset(fooCM)
+	cm := NewInformedWatcher(kc, "default")
+
+	stopCh := make(chan struct{})
+	defer close(stopCh)
+	// Start before adding the WatchWithDefault.
+	err := cm.Start(stopCh)
+	if err != nil {
+		t.Fatalf("cm.Start() = %v", err)
+	}
+
+	foo1 := &counter{name: "foo1"}
+
+
+	// Add the WatchWithDefault. This should panic because the InformedWatcher has already started.
+	func() {
+		defer func() {
+			recover()
+		}()
+		cm.WatchWithDefault(*defaultFooCM, foo1.callback)
+			t.Fatal("WatchWithDefault should have panicked")
+	}()
+
+	// We expect nothing.
+	var expected []*corev1.ConfigMap
+	if foo1.count() != len(expected) {
+		t.Fatalf("foo1.count = %v, want %d", len(foo1.cfg), len(expected))
 	}
 }

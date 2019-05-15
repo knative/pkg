@@ -83,6 +83,19 @@ func (i *InformedWatcher) WatchWithDefault(cm corev1.ConfigMap, o Observer) {
 		i.cfgs = map[string]*corev1.ConfigMap{}
 	}
 	i.cfgs[cm.Name] = &cm
+
+	i.m.Lock()
+	started := i.started
+	i.m.Unlock()
+	if started {
+		// TODO make both Watch and WatchWithDefault work after the InformedWatcher has started.
+		// This likely entails changing this to `o(&cm)` and having Watch check started, if it has
+		// started, then ensuring i.informer.Lister().ConfigMaps(i.Namespace).Get(cmName) exists and
+		// calling this observer on it. It may require changing Watch and WatchWithDefault to return
+		// an error.
+		panic(errors.New("cannot WatchWithDefault after the InformedWatcher has started"))
+	}
+
 	i.Watch(cm.Name, o)
 }
 
