@@ -38,12 +38,12 @@ type Watcher interface {
 }
 
 // DefaultingWatcher is similar to Watcher, but if a ConfigMap is absent, then a code provided
-// default may be used instead.
+// default will be used.
 type DefaultingWatcher interface {
 	Watcher
 
-	// WatchWithDefault is called to register a callback to be notified when a named
-	// ConfigMap changes. If no ConfigMap with that name exists or is deleted, then
-	// the default value is used.
-	WatchWithDefault(cmName string, def *corev1.ConfigMap, o Observer)
+	// WatchWithDefault is called to register a callback to be notified when a named ConfigMap
+	// changes. The provided default value is always observed before any real ConfigMap with that
+	// name is. If the real ConfigMap with that name is deleted, then the default value is observed.
+	WatchWithDefault(cm corev1.ConfigMap, o Observer)
 }

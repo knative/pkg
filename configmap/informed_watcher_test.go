@@ -175,7 +175,7 @@ func TestWatchMissingOKWithDefaultOnStart(t *testing.T) {
 	cm := NewInformedWatcher(kc, "default")
 
 	foo1 := &counter{name: "foo1"}
-	cm.WatchWithDefault("foo", fooCM, foo1.callback)
+	cm.WatchWithDefault(*fooCM, foo1.callback)
 
 	stopCh := make(chan struct{})
 	defer close(stopCh)
@@ -242,7 +242,7 @@ func TestDefaultObserved(t *testing.T) {
 	cm := NewInformedWatcher(kc, "default")
 
 	foo1 := &counter{name: "foo1"}
-	cm.WatchWithDefault("foo", defaultFooCM, foo1.callback)
+	cm.WatchWithDefault(*defaultFooCM, foo1.callback)
 
 	stopCh := make(chan struct{})
 	defer close(stopCh)
@@ -288,7 +288,7 @@ func TestDefaultConfigMapDeleted(t *testing.T) {
 	cm := NewInformedWatcher(kc, "default")
 
 	foo1 := &counter{name: "foo1"}
-	cm.WatchWithDefault("foo", defaultFooCM, foo1.callback)
+	cm.WatchWithDefault(*defaultFooCM, foo1.callback)
 
 	stopCh := make(chan struct{})
 	defer close(stopCh)

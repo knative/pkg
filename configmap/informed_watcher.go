@@ -78,12 +78,12 @@ var _ Watcher = (*InformedWatcher)(nil)
 var _ DefaultingWatcher = (*InformedWatcher)(nil)
 
 // WatchWithDefault implements DefaultingWatcher.
-func (i *InformedWatcher) WatchWithDefault(cmName string, def *corev1.ConfigMap, o Observer) {
+func (i *InformedWatcher) WatchWithDefault(cm corev1.ConfigMap, o Observer) {
 	if i.cfgs == nil {
 		i.cfgs = map[string]*corev1.ConfigMap{}
 	}
-	i.cfgs[def.Name] = def
-	i.Watch(def.Name, o)
+	i.cfgs[cm.Name] = &cm
+	i.Watch(cm.Name, o)
 }
 
 // Start implements Watcher.
