@@ -43,6 +43,7 @@ func NewInformedWatcherFromFactory(sif informers.SharedInformerFactory, namespac
 		ManualWatcher: ManualWatcher{
 			Namespace: namespace,
 		},
+		defaults: make(map[string]*corev1.ConfigMap),
 	}
 }
 
@@ -79,9 +80,6 @@ var _ DefaultingWatcher = (*InformedWatcher)(nil)
 
 // WatchWithDefault implements DefaultingWatcher.
 func (i *InformedWatcher) WatchWithDefault(cm corev1.ConfigMap, o Observer) {
-	if i.defaults == nil {
-		i.defaults = map[string]*corev1.ConfigMap{}
-	}
 	i.defaults[cm.Name] = &cm
 
 	i.m.Lock()
