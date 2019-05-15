@@ -17,21 +17,25 @@ limitations under the License.
 package configmap
 
 import (
-	"k8s.io/apimachinery/pkg/api/equality"
-	"testing"
-
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/equality"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	fakekubeclientset "k8s.io/client-go/kubernetes/fake"
+	"sync"
+	"testing"
 )
 
 type counter struct {
 	name  string
 	cfg []*corev1.ConfigMap
+	wg *sync.WaitGroup
 }
 
 func (c *counter) callback(cm *corev1.ConfigMap) {
 	c.cfg = append(c.cfg, cm)
+	if c.wg != nil {
+		c.wg.Done()
+	}
 }
 
 func (c *counter) count() int {
@@ -246,12 +250,14 @@ func TestDefaultObserved(t *testing.T) {
 	if err != nil {
 		t.Fatalf("cm.Start() = %v", err)
 	}
-
-	// The default ConfigMap will be seen once, before the real K8s version.
-	if foo1.count() != 2 {
-		t.Errorf("foo1.count = %v, want 2", len(foo1.cfg))
+	// We expect:
+	// 1. The default to be seen once during startup.
+	// 2. The real K8s version during the initial pass.
+	expected := []*corev1.ConfigMap{defaultFooCM, fooCM}
+	if foo1.count() != len(expected) {
+		t.Fatalf("foo1.count = %v, want %d", len(foo1.cfg), len(expected))
 	}
-	for i, cfg := range []*corev1.ConfigMap{defaultFooCM, fooCM} {
+	for i, cfg := range expected {
 		if got, want := foo1.cfg[i].Data, cfg.Data; !equality.Semantic.DeepEqual(want, got) {
 			t.Errorf("%d config seen should have been '%v', actually '%v'", i, want, got)
 		}
@@ -259,5 +265,60 @@ func TestDefaultObserved(t *testing.T) {
 }
 
 func TestDefaultConfigMapDeleted(t *testing.T) {
-	// TODO
+		defaultFooCM := &corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: "default",
+			Name:      "foo",
+		},
+		Data: map[string]string{
+			"default": "from code",
+		},
+	}
+	fooCM := &corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: "default",
+			Name:      "foo",
+		},
+		Data: map[string]string{
+			"from": "k8s",
+		},
+	}
+
+	kc := fakekubeclientset.NewSimpleClientset(fooCM)
+	cm := NewInformedWatcher(kc, "default")
+
+	foo1 := &counter{name: "foo1"}
+	cm.WatchWithDefault("foo", defaultFooCM, foo1.callback)
+
+	stopCh := make(chan struct{})
+	defer close(stopCh)
+	err := cm.Start(stopCh)
+	if err != nil {
+		t.Fatalf("cm.Start() = %v", err)
+	}
+
+	// Delete the real ConfigMap in K8s, which should cause the default to be processed again.
+	// Because this happens asynchronously via a watcher, use a sync.WaitGroup to wait until it has
+	// occurred.
+	foo1.wg = &sync.WaitGroup{}
+	foo1.wg.Add(1)
+	err = kc.CoreV1().ConfigMaps(fooCM.Namespace).Delete(fooCM.Name, nil)
+	if err != nil {
+		t.Fatalf("Error deleting fooCM: %v", err)
+	}
+	foo1.wg.Wait()
+
+	// We expect:
+	// 1. The default to be seen once during startup.
+	// 2. The real K8s version during the initial pass.
+	// 3. The default again, when the real K8s version is deleted.
+	expected := []*corev1.ConfigMap{defaultFooCM, fooCM, defaultFooCM}
+	if foo1.count() != len(expected) {
+		t.Fatalf("foo1.count = %v, want %d", len(foo1.cfg), len(expected))
+	}
+	for i, cfg := range expected {
+		if got, want := foo1.cfg[i].Data, cfg.Data; !equality.Semantic.DeepEqual(want, got) {
+			t.Errorf("%d config seen should have been '%v', actually '%v'", i, want, got)
+		}
+	}
 }
