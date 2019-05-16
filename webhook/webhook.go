@@ -27,6 +27,7 @@ import (
 	"net/http"
 	"sort"
 	"strings"
+	"sync"
 	"time"
 
 	"go.uber.org/zap"
@@ -267,6 +268,7 @@ func configureCerts(ctx context.Context, client kubernetes.Interface, options *C
 
 // Run implements the admission controller run loop.
 func (ac *AdmissionController) Run(stop <-chan struct{}) error {
+	var wg sync.WaitGroup
 	logger := ac.Logger
 	ctx := logging.WithLogger(context.TODO(), logger)
 	tlsConfig, caCert, err := configureCerts(ctx, ac.Client, &ac.Options)
@@ -280,6 +282,32 @@ func (ac *AdmissionController) Run(stop <-chan struct{}) error {
 		Addr:      fmt.Sprintf(":%v", ac.Options.Port),
 		TLSConfig: tlsConfig,
 	}
+
+	serverBootstrapErrCh := make(chan struct{})
+	wg.Add(1)
+	go func() {
+		if err := server.ListenAndServeTLS("", ""); err != nil {
+			logger.Errorw("ListenAndServeTLS for admission webhook returned error", zap.Error(err))
+			close(serverBootstrapErrCh)
+		}
+	}()
+
+	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {})
+
+	go func() {
+		for {
+			resp, err := http.Get("http://localhost:443")
+			if err != nil {
+				continue
+			}
+			if resp.StatusCode == http.StatusOK {
+				break
+			}
+		}
+		defer wg.Done()
+	}()
+
+	wg.Wait()
 
 	logger.Info("Found certificates for webhook...")
 	if ac.Options.RegistrationDelay != 0 {
@@ -297,14 +325,6 @@ func (ac *AdmissionController) Run(stop <-chan struct{}) error {
 	case <-stop:
 		return nil
 	}
-
-	serverBootstrapErrCh := make(chan struct{})
-	go func() {
-		if err := server.ListenAndServeTLS("", ""); err != nil {
-			logger.Errorw("ListenAndServeTLS for admission webhook returned error", zap.Error(err))
-			close(serverBootstrapErrCh)
-		}
-	}()
 
 	select {
 	case <-stop:
