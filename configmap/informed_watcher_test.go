@@ -27,9 +27,9 @@ import (
 )
 
 type counter struct {
-	name  string
-	cfg []*corev1.ConfigMap
-	wg *sync.WaitGroup
+	name string
+	cfg  []*corev1.ConfigMap
+	wg   *sync.WaitGroup
 }
 
 func (c *counter) callback(cm *corev1.ConfigMap) {
@@ -357,14 +357,13 @@ func TestWatchWithDefaultAfterStart(t *testing.T) {
 
 	foo1 := &counter{name: "foo1"}
 
-
 	// Add the WatchWithDefault. This should panic because the InformedWatcher has already started.
 	func() {
 		defer func() {
 			recover()
 		}()
 		cm.WatchWithDefault(*defaultFooCM, foo1.callback)
-			t.Fatal("WatchWithDefault should have panicked")
+		t.Fatal("WatchWithDefault should have panicked")
 	}()
 
 	// We expect nothing.
