@@ -17,8 +17,10 @@ limitations under the License.
 package signals
 
 import (
+	"context"
 	"os"
 	"os/signal"
+	"time"
 )
 
 var onlyOneSignalHandler = make(chan struct{})
@@ -40,4 +42,34 @@ func SetupSignalHandler() (stopCh <-chan struct{}) {
 	}()
 
 	return stop
+}
+
+// NewContext creates a new context with SetupSignalHandler()
+// as our Done() channel.
+func NewContext() context.Context {
+	return &signalContext{stopCh: SetupSignalHandler()}
+}
+
+type signalContext struct {
+	stopCh <-chan struct{}
+}
+
+// Deadline implements context.Context
+func (scc *signalContext) Deadline() (deadline time.Time, ok bool) {
+	return time.Now(), false
+}
+
+// Done implements context.Context
+func (scc *signalContext) Done() <-chan struct{} {
+	return scc.stopCh
+}
+
+// Err implements context.Context
+func (scc *signalContext) Err() error {
+	return nil
+}
+
+// Value implements context.Context
+func (scc *signalContext) Value(key interface{}) interface{} {
+	return nil
 }
