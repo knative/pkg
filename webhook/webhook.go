@@ -27,7 +27,6 @@ import (
 	"net/http"
 	"sort"
 	"strings"
-	"sync"
 	"time"
 
 	"go.uber.org/zap"
@@ -46,16 +45,27 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/kubernetes"
 	clientadmissionregistrationv1beta1 "k8s.io/client-go/kubernetes/typed/admissionregistration/v1beta1"
+	"k8s.io/client-go/tools/cache"
+	"k8s.io/client-go/util/workqueue"
 )
 
 const (
 	secretServerKey  = "server-key.pem"
 	secretServerCert = "server-cert.pem"
 	secretCACert     = "ca-cert.pem"
+)
+
+type endpointReadiness int
+
+const (
+	endpointCheckShutdown endpointReadiness = iota
+	endpointCheckReady
+	endpointCheckNotReady
 )
 
 var (
@@ -72,7 +82,7 @@ type ControllerOptions struct {
 	// ServiceName is the service name of the webhook.
 	ServiceName string
 
-	// DeploymentName is the service name of the webhook.
+	// DeploymentName is the deployment name of the webhook.
 	DeploymentName string
 
 	// SecretName is the name of k8s secret that contains the webhook
@@ -266,9 +276,111 @@ func configureCerts(ctx context.Context, client kubernetes.Interface, options *C
 	return tlsConfig, caCert, nil
 }
 
+func (ac *AdmissionController) endpointReady(store cache.KeyGetter, queue workqueue.RateLimitingInterface, namespace, name string) endpointReadiness {
+	logger := ac.Logger
+	key, quit := queue.Get()
+	if quit {
+		return endpointCheckShutdown
+	}
+	defer queue.Done(key)
+
+	item, exists, err := store.GetByKey(key.(string))
+	if err != nil || !exists {
+		return endpointCheckNotReady
+	}
+	endpoints, ok := item.(*corev1.Endpoints)
+	if !ok {
+		return endpointCheckNotReady
+	}
+	if len(endpoints.Subsets) == 0 {
+		logger.Warnf("%s/%v endpoint not ready: no subsets", namespace, name)
+		return endpointCheckNotReady
+	}
+	for _, subset := range endpoints.Subsets {
+		if len(subset.Addresses) > 0 {
+			return endpointCheckReady
+		}
+	}
+	logger.Warnf("%s/%v endpoint not ready: no ready addresses", namespace, name)
+	return endpointCheckNotReady
+}
+
+func CreateInformerEndpointSource(cl kubernetes.Interface, namespace, name string) cache.ListerWatcher {
+	return cache.NewListWatchFromClient(
+		cl.CoreV1().RESTClient(),
+		"endpoints",
+		namespace,
+		fields.ParseSelectorOrDie(fmt.Sprintf("metadata.name=%s", name)))
+}
+
+func (ac *AdmissionController) waitForEndpointReady(stopCh <-chan struct{}) (shutdown bool) {
+	logger := ac.Logger
+	defer func() {
+		if shutdown {
+			logger.Info("Endpoint readiness check stopped - controller shutting down")
+		} else {
+			logger.Infof("Endpoint %s/%s is ready", ac.Options.Namespace, ac.Options.ServiceName)
+		}
+	}()
+
+	queue := workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter())
+	defer queue.ShutDown()
+	store, controller := cache.NewInformer(
+		CreateInformerEndpointSource(ac.Client, ac.Options.Namespace, ac.Options.ServiceName),
+		&corev1.Endpoints{},
+		0,
+		cache.ResourceEventHandlerFuncs{
+			AddFunc: func(obj interface{}) {
+				if key, err := cache.MetaNamespaceKeyFunc(obj); err == nil {
+					queue.Add(key)
+				}
+			},
+			UpdateFunc: func(prev, curr interface{}) {
+				prevObj := prev.(*corev1.Endpoints)
+				currObj := curr.(*corev1.Endpoints)
+				if prevObj.ResourceVersion != currObj.ResourceVersion {
+					if key, err := cache.MetaNamespaceKeyFunc(curr); err == nil {
+						queue.Add(key)
+					}
+				}
+			},
+			DeleteFunc: func(obj interface{}) {
+				if key, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj); err == nil {
+					queue.Add(key)
+				}
+			},
+		},
+	)
+
+	controllerStopCh := make(chan struct{})
+	defer close(controllerStopCh)
+	go controller.Run(controllerStopCh)
+
+	if !cache.WaitForCacheSync(stopCh, controller.HasSynced) {
+		logger.Errorf("wait for cache sync failed")
+		return true
+	}
+
+	for {
+		select {
+		case <-stopCh:
+			return true
+		default:
+			ready := ac.endpointReady(store, queue, ac.Options.Namespace, ac.Options.ServiceName)
+			switch ready {
+			case endpointCheckShutdown:
+				return true
+			case endpointCheckReady:
+				return false
+			case endpointCheckNotReady:
+				// continue waiting for endpoint to be ready
+			}
+		}
+	}
+}
+
 // Run implements the admission controller run loop.
 func (ac *AdmissionController) Run(stop <-chan struct{}) error {
-	var wg sync.WaitGroup
 	logger := ac.Logger
 	ctx := logging.WithLogger(context.TODO(), logger)
 	tlsConfig, caCert, err := configureCerts(ctx, ac.Client, &ac.Options)
@@ -284,7 +396,6 @@ func (ac *AdmissionController) Run(stop <-chan struct{}) error {
 	}
 
 	serverBootstrapErrCh := make(chan struct{})
-	wg.Add(1)
 	go func() {
 		if err := server.ListenAndServeTLS("", ""); err != nil {
 			logger.Errorw("ListenAndServeTLS for admission webhook returned error", zap.Error(err))
@@ -292,22 +403,14 @@ func (ac *AdmissionController) Run(stop <-chan struct{}) error {
 		}
 	}()
 
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {})
-
-	go func() {
-		for {
-			resp, err := http.Get("http://localhost:443")
-			if err != nil {
-				continue
-			}
-			if resp.StatusCode == http.StatusOK {
-				break
-			}
+        _, err = ac.Client.CoreV1().Endpoints(ac.Options.Namespace).Get(ac.Options.ServiceName, metav1.GetOptions{})
+        if err != nil {
+		logger.Info("the evironment doesn't have endpoints")
+        } else {
+		if shutdown := ac.waitForEndpointReady(stop); shutdown {
+			return errors.New("EndPoint shutdown")
 		}
-		defer wg.Done()
-	}()
-
-	wg.Wait()
+        }
 
 	logger.Info("Found certificates for webhook...")
 	if ac.Options.RegistrationDelay != 0 {
