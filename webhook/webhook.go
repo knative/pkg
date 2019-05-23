@@ -27,6 +27,7 @@ import (
 	"net/http"
 	"sort"
 	"strings"
+	"sync"
 	"time"
 
 	"go.uber.org/zap"
@@ -381,6 +382,8 @@ func (ac *AdmissionController) waitForEndpointReady(stopCh <-chan struct{}) (shu
 
 // Run implements the admission controller run loop.
 func (ac *AdmissionController) Run(stop <-chan struct{}) error {
+	var wg sync.WaitGroup
+	wg.Add(1)
 	logger := ac.Logger
 	ctx := logging.WithLogger(context.TODO(), logger)
 	tlsConfig, caCert, err := configureCerts(ctx, ac.Client, &ac.Options)
@@ -393,6 +396,27 @@ func (ac *AdmissionController) Run(stop <-chan struct{}) error {
 		Handler:   ac,
 		Addr:      fmt.Sprintf(":%v", ac.Options.Port),
 		TLSConfig: tlsConfig,
+	}
+
+	logger.Info("Found certificates for webhook...")
+	if ac.Options.RegistrationDelay != 0 {
+		logger.Infof("Delaying admission webhook registration for %v", ac.Options.RegistrationDelay)
+	}
+
+	registerErrCh := make(chan struct{})
+	select {
+	case <-time.After(ac.Options.RegistrationDelay):
+		cl := ac.Client.AdmissionregistrationV1beta1().MutatingWebhookConfigurations()
+		go func() {
+			wg.Wait()
+			if err := ac.register(ctx, cl, caCert); err != nil {
+				logger.Errorw("failed to register webhook", zap.Error(err))
+				close(registerErrCh)
+			}
+			logger.Info("Successfully registered webhook")
+		}()
+	case <-stop:
+		return nil
 	}
 
 	serverBootstrapErrCh := make(chan struct{})
@@ -411,29 +435,15 @@ func (ac *AdmissionController) Run(stop <-chan struct{}) error {
 			return errors.New("EndPoint shutdown")
 		}
 	}
-
-	logger.Info("Found certificates for webhook...")
-	if ac.Options.RegistrationDelay != 0 {
-		logger.Infof("Delaying admission webhook registration for %v", ac.Options.RegistrationDelay)
-	}
-
-	select {
-	case <-time.After(ac.Options.RegistrationDelay):
-		cl := ac.Client.AdmissionregistrationV1beta1().MutatingWebhookConfigurations()
-		if err := ac.register(ctx, cl, caCert); err != nil {
-			logger.Errorw("failed to register webhook", zap.Error(err))
-			return err
-		}
-		logger.Info("Successfully registered webhook")
-	case <-stop:
-		return nil
-	}
+	wg.Done()
 
 	select {
 	case <-stop:
 		return server.Close()
 	case <-serverBootstrapErrCh:
 		return errors.New("webhook server bootstrap failed")
+	case <-registerErrCh:
+		return errors.New("failed to register webhook")
 	}
 }
 
