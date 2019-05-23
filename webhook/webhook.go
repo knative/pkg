@@ -403,8 +403,13 @@ func (ac *AdmissionController) Run(stop <-chan struct{}) error {
 		}
 	}()
 
-	if shutdown := ac.waitForEndpointReady(stop); shutdown {
-		return errors.New("EndPoint shutdown")
+	_, err = ac.Client.CoreV1().Endpoints(ac.Options.Namespace).Get(ac.Options.ServiceName, metav1.GetOptions{})
+	if err != nil {
+		logger.Info("the evironment doesn't have endpoints")
+	} else {
+		if shutdown := ac.waitForEndpointReady(stop); shutdown {
+			return errors.New("EndPoint shutdown")
+		}
 	}
 
 	logger.Info("Found certificates for webhook...")

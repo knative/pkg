@@ -22,6 +22,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/google/uuid"
+
 	"go.uber.org/zap"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -300,7 +302,7 @@ func (c *Impl) processNextWorkItem() bool {
 
 	// Embed the key into the logger and attach that to the context we pass
 	// to the Reconciler.
-	logger := c.logger.With(zap.String(logkey.Key, key))
+	logger := c.logger.With(zap.String(logkey.TraceId, uuid.New().String()), zap.String(logkey.Key, key))
 	ctx := logging.WithLogger(context.TODO(), logger)
 
 	// Run Reconcile, passing it the namespace/name string of the

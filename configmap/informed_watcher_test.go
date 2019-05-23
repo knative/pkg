@@ -17,20 +17,30 @@ limitations under the License.
 package configmap
 
 import (
+	"sync"
 	"testing"
 
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/equality"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	fakekubeclientset "k8s.io/client-go/kubernetes/fake"
 )
 
 type counter struct {
-	name  string
-	count int
+	name string
+	cfg  []*corev1.ConfigMap
+	wg   *sync.WaitGroup
 }
 
-func (c *counter) callback(*corev1.ConfigMap) {
-	c.count++
+func (c *counter) callback(cm *corev1.ConfigMap) {
+	c.cfg = append(c.cfg, cm)
+	if c.wg != nil {
+		c.wg.Done()
+	}
+}
+
+func (c *counter) count() int {
+	return len(c.cfg)
 }
 
 func TestInformedWatcher(t *testing.T) {
@@ -66,7 +76,7 @@ func TestInformedWatcher(t *testing.T) {
 	// When Start returns the callbacks should have been called with the
 	// version of the objects that is available.
 	for _, obj := range []*counter{foo1, foo2, bar} {
-		if got, want := obj.count, 1; got != want {
+		if got, want := obj.count(), 1; got != want {
 			t.Errorf("%v.count = %v, want %v", obj, got, want)
 		}
 	}
@@ -75,13 +85,13 @@ func TestInformedWatcher(t *testing.T) {
 	// and the "bar" watchers should still have 1
 	cm.updateConfigMapEvent(nil, fooCM)
 	for _, obj := range []*counter{foo1, foo2} {
-		if got, want := obj.count, 2; got != want {
+		if got, want := obj.count(), 2; got != want {
 			t.Errorf("%v.count = %v, want %v", obj, got, want)
 		}
 	}
 
 	for _, obj := range []*counter{bar} {
-		if got, want := obj.count, 1; got != want {
+		if got, want := obj.count(), 1; got != want {
 			t.Errorf("%v.count = %v, want %v", obj, got, want)
 		}
 	}
@@ -91,12 +101,12 @@ func TestInformedWatcher(t *testing.T) {
 	cm.updateConfigMapEvent(nil, fooCM)
 	cm.updateConfigMapEvent(nil, barCM)
 	for _, obj := range []*counter{foo1, foo2} {
-		if got, want := obj.count, 3; got != want {
+		if got, want := obj.count(), 3; got != want {
 			t.Errorf("%v.count = %v, want %v", obj, got, want)
 		}
 	}
 	for _, obj := range []*counter{bar} {
-		if got, want := obj.count, 2; got != want {
+		if got, want := obj.count(), 2; got != want {
 			t.Errorf("%v.count = %v, want %v", obj, got, want)
 		}
 	}
@@ -104,7 +114,7 @@ func TestInformedWatcher(t *testing.T) {
 	// After a "bar" event, all watchers should have 3
 	cm.updateConfigMapEvent(nil, barCM)
 	for _, obj := range []*counter{foo1, foo2, bar} {
-		if got, want := obj.count, 3; got != want {
+		if got, want := obj.count(), 3; got != want {
 			t.Errorf("%v.count = %v, want %v", obj, got, want)
 		}
 	}
@@ -118,7 +128,7 @@ func TestInformedWatcher(t *testing.T) {
 		},
 	})
 	for _, obj := range []*counter{foo1, foo2, bar} {
-		if got, want := obj.count, 3; got != want {
+		if got, want := obj.count(), 3; got != want {
 			t.Errorf("%v.count = %v, want %v", obj, got, want)
 		}
 	}
@@ -131,7 +141,7 @@ func TestInformedWatcher(t *testing.T) {
 		},
 	})
 	for _, obj := range []*counter{foo1, foo2, bar} {
-		if got, want := obj.count, 3; got != want {
+		if got, want := obj.count(), 3; got != want {
 			t.Errorf("%v.count = %v, want %v", obj, got, want)
 		}
 	}
@@ -151,6 +161,34 @@ func TestWatchMissingFailsOnStart(t *testing.T) {
 	err := cm.Start(stopCh)
 	if err == nil {
 		t.Fatal("cm.Start() succeeded, wanted error")
+	}
+}
+
+func TestWatchMissingOKWithDefaultOnStart(t *testing.T) {
+	fooCM := &corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: "default",
+			Name:      "foo",
+		},
+	}
+
+	kc := fakekubeclientset.NewSimpleClientset()
+	cm := NewInformedWatcher(kc, "default")
+
+	foo1 := &counter{name: "foo1"}
+	cm.WatchWithDefault(*fooCM, foo1.callback)
+
+	stopCh := make(chan struct{})
+	defer close(stopCh)
+
+	// This shouldn't error because we don't have a ConfigMap named "foo", but we do have a default.
+	err := cm.Start(stopCh)
+	if err != nil {
+		t.Fatalf("cm.Start() failed, %v", err)
+	}
+
+	if foo1.count() != 1 {
+		t.Errorf("foo1.count = %v, want 1", foo1.count())
 	}
 }
 
@@ -178,5 +216,159 @@ func TestErrorOnMultipleStarts(t *testing.T) {
 	// This should error because we already called Start()
 	if err := cm.Start(stopCh); err == nil {
 		t.Fatal("cm.Start() succeeded, wanted error")
+	}
+}
+
+func TestDefaultObserved(t *testing.T) {
+	defaultFooCM := &corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: "default",
+			Name:      "foo",
+		},
+		Data: map[string]string{
+			"default": "from code",
+		},
+	}
+	fooCM := &corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: "default",
+			Name:      "foo",
+		},
+		Data: map[string]string{
+			"from": "k8s",
+		},
+	}
+
+	kc := fakekubeclientset.NewSimpleClientset(fooCM)
+	cm := NewInformedWatcher(kc, "default")
+
+	foo1 := &counter{name: "foo1"}
+	cm.WatchWithDefault(*defaultFooCM, foo1.callback)
+
+	stopCh := make(chan struct{})
+	defer close(stopCh)
+	err := cm.Start(stopCh)
+	if err != nil {
+		t.Fatalf("cm.Start() = %v", err)
+	}
+	// We expect:
+	// 1. The default to be seen once during startup.
+	// 2. The real K8s version during the initial pass.
+	expected := []*corev1.ConfigMap{defaultFooCM, fooCM}
+	if foo1.count() != len(expected) {
+		t.Fatalf("foo1.count = %v, want %d", len(foo1.cfg), len(expected))
+	}
+	for i, cfg := range expected {
+		if got, want := foo1.cfg[i].Data, cfg.Data; !equality.Semantic.DeepEqual(want, got) {
+			t.Errorf("%d config seen should have been '%v', actually '%v'", i, want, got)
+		}
+	}
+}
+
+func TestDefaultConfigMapDeleted(t *testing.T) {
+	defaultFooCM := &corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: "default",
+			Name:      "foo",
+		},
+		Data: map[string]string{
+			"default": "from code",
+		},
+	}
+	fooCM := &corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: "default",
+			Name:      "foo",
+		},
+		Data: map[string]string{
+			"from": "k8s",
+		},
+	}
+
+	kc := fakekubeclientset.NewSimpleClientset(fooCM)
+	cm := NewInformedWatcher(kc, "default")
+
+	foo1 := &counter{name: "foo1"}
+	cm.WatchWithDefault(*defaultFooCM, foo1.callback)
+
+	stopCh := make(chan struct{})
+	defer close(stopCh)
+	err := cm.Start(stopCh)
+	if err != nil {
+		t.Fatalf("cm.Start() = %v", err)
+	}
+
+	// Delete the real ConfigMap in K8s, which should cause the default to be processed again.
+	// Because this happens asynchronously via a watcher, use a sync.WaitGroup to wait until it has
+	// occurred.
+	foo1.wg = &sync.WaitGroup{}
+	foo1.wg.Add(1)
+	err = kc.CoreV1().ConfigMaps(fooCM.Namespace).Delete(fooCM.Name, nil)
+	if err != nil {
+		t.Fatalf("Error deleting fooCM: %v", err)
+	}
+	foo1.wg.Wait()
+
+	// We expect:
+	// 1. The default to be seen once during startup.
+	// 2. The real K8s version during the initial pass.
+	// 3. The default again, when the real K8s version is deleted.
+	expected := []*corev1.ConfigMap{defaultFooCM, fooCM, defaultFooCM}
+	if foo1.count() != len(expected) {
+		t.Fatalf("foo1.count = %v, want %d", len(foo1.cfg), len(expected))
+	}
+	for i, cfg := range expected {
+		if got, want := foo1.cfg[i].Data, cfg.Data; !equality.Semantic.DeepEqual(want, got) {
+			t.Errorf("%d config seen should have been '%v', actually '%v'", i, want, got)
+		}
+	}
+}
+
+func TestWatchWithDefaultAfterStart(t *testing.T) {
+	defaultFooCM := &corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: "default",
+			Name:      "foo",
+		},
+		Data: map[string]string{
+			"default": "from code",
+		},
+	}
+	fooCM := &corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: "default",
+			Name:      "foo",
+		},
+		Data: map[string]string{
+			"from": "k8s",
+		},
+	}
+
+	kc := fakekubeclientset.NewSimpleClientset(fooCM)
+	cm := NewInformedWatcher(kc, "default")
+
+	stopCh := make(chan struct{})
+	defer close(stopCh)
+	// Start before adding the WatchWithDefault.
+	err := cm.Start(stopCh)
+	if err != nil {
+		t.Fatalf("cm.Start() = %v", err)
+	}
+
+	foo1 := &counter{name: "foo1"}
+
+	// Add the WatchWithDefault. This should panic because the InformedWatcher has already started.
+	func() {
+		defer func() {
+			recover()
+		}()
+		cm.WatchWithDefault(*defaultFooCM, foo1.callback)
+		t.Fatal("WatchWithDefault should have panicked")
+	}()
+
+	// We expect nothing.
+	var expected []*corev1.ConfigMap
+	if foo1.count() != len(expected) {
+		t.Fatalf("foo1.count = %v, want %d", len(foo1.cfg), len(expected))
 	}
 }
