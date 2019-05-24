@@ -18,6 +18,7 @@ package signals
 
 import (
 	"context"
+	"errors"
 	"os"
 	"os/signal"
 	"time"
@@ -56,7 +57,7 @@ type signalContext struct {
 
 // Deadline implements context.Context
 func (scc *signalContext) Deadline() (deadline time.Time, ok bool) {
-	return time.Now(), false
+	return
 }
 
 // Done implements context.Context
@@ -66,6 +67,13 @@ func (scc *signalContext) Done() <-chan struct{} {
 
 // Err implements context.Context
 func (scc *signalContext) Err() error {
+	select {
+	case _, ok := <-scc.Done():
+		if !ok {
+			return errors.New("received a termination signal.")
+		}
+	default:
+	}
 	return nil
 }
 
