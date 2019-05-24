@@ -52,6 +52,7 @@ func AppendRandomString(prefix string) string {
 // MakeK8sNamePrefix converts each chunk of non-alphanumeric character into a single dash
 // and also convert camelcase tokens into dash-delimited lowercase tokens.
 func MakeK8sNamePrefix(s string) string {
+	const dash = '-'
 	var sb strings.Builder
 	newToken := false
 	for _, c := range s {
@@ -60,7 +61,7 @@ func MakeK8sNamePrefix(s string) string {
 			continue
 		}
 		if sb.Len() > 0 && (newToken || unicode.IsUpper(c)) {
-			sb.WriteRune('-')
+			sb.WriteRune(dash)
 		}
 		sb.WriteRune(unicode.ToLower(c))
 		newToken = false
