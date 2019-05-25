@@ -26,7 +26,7 @@ import (
 const (
 	letterBytes   = "abcdefghijklmnopqrstuvwxyz"
 	randSuffixLen = 8
-	sep           = "-"
+	sep           = '-'
 )
 
 func init() {
@@ -46,13 +46,12 @@ func AppendRandomString(prefix string) string {
 		suffix[i] = letterBytes[rand.Intn(len(letterBytes))]
 	}
 
-	return strings.Join([]string{prefix, string(suffix)}, sep)
+	return strings.Join([]string{prefix, string(suffix)}, string(sep))
 }
 
 // MakeK8sNamePrefix converts each chunk of non-alphanumeric character into a single dash
 // and also convert camelcase tokens into dash-delimited lowercase tokens.
 func MakeK8sNamePrefix(s string) string {
-	const dash = '-'
 	var sb strings.Builder
 	newToken := false
 	for _, c := range s {
@@ -61,7 +60,7 @@ func MakeK8sNamePrefix(s string) string {
 			continue
 		}
 		if sb.Len() > 0 && (newToken || unicode.IsUpper(c)) {
-			sb.WriteRune(dash)
+			sb.WriteRune(sep)
 		}
 		sb.WriteRune(unicode.ToLower(c))
 		newToken = false
