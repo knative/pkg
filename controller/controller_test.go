@@ -901,3 +901,23 @@ func TestStartInformersFailure(t *testing.T) {
 		t.Error("Timed out waiting for informers to sync.")
 	}
 }
+
+func TestGetResyncPeriod(t *testing.T) {
+	ctx := context.Background()
+
+	if got := GetResyncPeriod(ctx); got != DefaultResyncPeriod {
+		t.Errorf("GetResyncPeriod() = %v, wanted %v", got, nil)
+	}
+
+	bob := 30 * time.Second
+	ctx = WithResyncPeriod(ctx, bob)
+
+	if want, got := bob, GetResyncPeriod(ctx); got != want {
+		t.Errorf("GetResyncPeriod() = %v, wanted %v", got, want)
+	}
+
+	tribob := 90 * time.Second
+	if want, got := tribob, GetTrackerLease(ctx); got != want {
+		t.Errorf("GetTrackerLease() = %v, wanted %v", got, want)
+	}
+}
