@@ -69,6 +69,17 @@ func PassNew(f func(interface{})) func(interface{}, interface{}) {
 	}
 }
 
+// HandleAll wraps the provided handler function into a cache.ResourceEventHandler
+// that sends all events to the given handler.  For Updates, only the new object
+// is forwarded.
+func HandleAll(h func(interface{})) cache.ResourceEventHandler {
+	return cache.ResourceEventHandlerFuncs{
+		AddFunc:    h,
+		UpdateFunc: PassNew(h),
+		DeleteFunc: h,
+	}
+}
+
 // Filter makes it simple to create FilterFunc's for use with
 // cache.FilteringResourceEventHandler that filter based on the
 // schema.GroupVersionKind of the controlling resources.

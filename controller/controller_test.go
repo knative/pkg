@@ -45,6 +45,21 @@ func TestPassNew(t *testing.T) {
 	})(old, new)
 }
 
+func TestHandleAll(t *testing.T) {
+	old := "foo"
+	new := "bar"
+
+	ha := HandleAll(func(got interface{}) {
+		if new != got.(string) {
+			t.Errorf("HandleAll() = %v, wanted %v", got, new)
+		}
+	})
+
+	ha.OnAdd(new)
+	ha.OnUpdate(old, new)
+	ha.OnDelete(new)
+}
+
 var (
 	boolTrue  = true
 	boolFalse = false
