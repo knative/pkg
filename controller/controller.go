@@ -39,6 +39,10 @@ import (
 const (
 	falseString = "false"
 	trueString  = "true"
+
+	// DefaultResyncPeriod is the default duration that is used when no
+	// resync period is associated with a controllers initialization context.
+	DefaultResyncPeriod = 10 * time.Hour
 )
 
 var (
@@ -407,4 +411,29 @@ func StartAll(stopCh <-chan struct{}, controllers ...*Impl) {
 		}(ctrlr)
 	}
 	wg.Wait()
+}
+
+// This is attached to contexts passed to controller constructors to associate
+// a resync period.
+type resyncPeriodKey struct{}
+
+// WithResyncPeriod associates the given resync period with the given context in
+// the context that is returned.
+func WithResyncPeriod(ctx context.Context, resync time.Duration) context.Context {
+	return context.WithValue(ctx, resyncPeriodKey{}, resync)
+}
+
+// GetResyncPeriod returns the resync period associated with the given context.
+// When none is specified a default resync period is used.
+func GetResyncPeriod(ctx context.Context) time.Duration {
+	rp := ctx.Value(resyncPeriodKey{})
+	if rp == nil {
+		return DefaultResyncPeriod
+	}
+	return rp.(time.Duration)
+}
+
+// GetTrackerLease fetches the tracker lease from the controller context.
+func GetTrackerLease(ctx context.Context) time.Duration {
+	return 3 * GetResyncPeriod(ctx)
 }
