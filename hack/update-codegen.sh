@@ -24,15 +24,26 @@ CODEGEN_PKG=${CODEGEN_PKG:-$(cd ${REPO_ROOT_DIR}; ls -d -1 ./vendor/k8s.io/code-
 
 go install ./vendor/k8s.io/code-generator/cmd/deepcopy-gen
 
-go install ./codegen/cmd/injection-gen
-
 # generate the code with:
 # --output-base    because this script should also be able to run inside the vendor dir of
 #                  k8s.io/kubernetes. The output-base is needed for the generators to output into the vendor dir
 #                  instead of the $GOPATH directly. For normal projects this can be dropped.
-${CODEGEN_PKG}/generate-groups.sh "deepcopy,client,informer,lister,injection" \
+${CODEGEN_PKG}/generate-groups.sh "deepcopy,client,informer,lister" \
   github.com/knative/pkg/client github.com/knative/pkg/apis \
   "istio:v1alpha3 istio/authentication:v1alpha1" \
+  --go-header-file ${REPO_ROOT_DIR}/hack/boilerplate/boilerplate.go.txt
+
+# Knative Injection
+${REPO_ROOT_DIR}/hack/generate-knative.sh "injection" \
+  github.com/knative/pkg/client github.com/knative/pkg/apis \
+  "istio:v1alpha3 istio/authentication:v1alpha1" \
+  --go-header-file ${REPO_ROOT_DIR}/hack/boilerplate/boilerplate.go.txt
+
+# K8s Injection
+${REPO_ROOT_DIR}/hack/generate-knative.sh "injection" \
+  github.com/knative/pkg/client k8s.io/api \
+  "apps:v1 core:v1 autoscaling:v1" \
+  --versioned-clientset-package k8s.io/client-go/informers \
   --go-header-file ${REPO_ROOT_DIR}/hack/boilerplate/boilerplate.go.txt
 
 # Only deepcopy the Duck types, as they are not real resources.

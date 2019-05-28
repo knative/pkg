@@ -18,15 +18,15 @@ package main
 
 import (
 	"flag"
-	"github.com/knative/pkg/codegen/pkg/util"
 	"path/filepath"
 
-	"github.com/knative/pkg/codegen/cmd/injection-gen/generators"
-	"github.com/spf13/pflag"
+	"k8s.io/code-generator/pkg/util"
 	"k8s.io/gengo/args"
 	"k8s.io/klog"
 
 	generatorargs "github.com/knative/pkg/codegen/cmd/injection-gen/args"
+	"github.com/knative/pkg/codegen/cmd/injection-gen/generators"
+	"github.com/spf13/pflag"
 )
 
 func main() {

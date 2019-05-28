@@ -58,8 +58,7 @@ func (g *injectionGenerator) Namers(c *generator.Context) namer.NameSystems {
 			// "k8s.io/apis/events/v1beta1.Event": "EventResource"
 		},
 		KeyFunc: func(t *types.Type) string {
-			klog.Info()
-			return t.Name.Package + "." + t.Name.Name + t.Name.Name
+			return t.Name.Package + "." + t.Name.Name
 		},
 		Delegate: namer.NewPublicPluralNamer(pluralExceptions),
 	}

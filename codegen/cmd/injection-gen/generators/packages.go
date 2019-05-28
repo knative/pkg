@@ -193,6 +193,18 @@ func Packages(context *generator.Context, arguments *args.GeneratorArgs) generat
 	return packageList
 }
 
+func typedInformerPackage(gv clientgentypes.GroupVersion, clientSetPackage string) string {
+	typedInformerPackage := strings.Replace(clientSetPackage, "clientset/versioned", "informers/externalversions", 1)
+
+	group := strings.ToLower(gv.Group.NonEmpty())
+	if strings.Contains(group, ".") {
+		group = group[:strings.Index(gv.Group.NonEmpty(), ".")]
+	}
+	typedInformerPackage += fmt.Sprintf("/%s/%s", group, gv.Version)
+
+	return typedInformerPackage
+}
+
 func versionInformerPackages(basePackage string, groupPkgName string, gv clientgentypes.GroupVersion, groupGoName string, boilerplate []byte, typesToGenerate []*types.Type, clientSetPackage string) []generator.Package {
 	packagePath := filepath.Join(basePackage, "informers", groupPkgName, strings.ToLower(gv.Version.NonEmpty()))
 
@@ -203,7 +215,7 @@ func versionInformerPackages(basePackage string, groupPkgName string, gv clientg
 		t := t
 
 		packagePath := packagePath + "/" + strings.ToLower(t.Name.Name)
-		typedInformerPackage := strings.Replace(clientSetPackage, "clientset/versioned", "informers/externalversions", 1) + fmt.Sprintf("/%s/%s", strings.ToLower(gv.Group.NonEmpty())[:strings.Index(gv.Group.NonEmpty(), ".")], gv.Version)
+		typedInformerPackage := typedInformerPackage(gv, clientSetPackage)
 		groupInformerFactoryPackage := fmt.Sprintf("%s/informers/%s/factory", basePackage, strings.ToLower(groupGoName))
 
 		// Impl
