@@ -481,7 +481,7 @@ func TestEnqueues(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			impl := NewImpl(&NopReconciler{}, TestLogger(t), "Testing", &FakeStatsReporter{})
+			impl := NewImplWithStats(&NopReconciler{}, TestLogger(t), "Testing", &FakeStatsReporter{})
 			test.work(impl)
 
 			// The rate limit on our queue delays when things are added to the queue.
@@ -497,7 +497,7 @@ func TestEnqueues(t *testing.T) {
 }
 
 func TestEnqeueAfter(t *testing.T) {
-	impl := NewImpl(&NopReconciler{}, TestLogger(t), "Testing", &FakeStatsReporter{})
+	impl := NewImplWithStats(&NopReconciler{}, TestLogger(t), "Testing", &FakeStatsReporter{})
 	impl.EnqueueAfter(&Resource{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "for",
@@ -532,7 +532,7 @@ func TestEnqeueAfter(t *testing.T) {
 }
 
 func TestEnqeueKeyAfter(t *testing.T) {
-	impl := NewImpl(&NopReconciler{}, TestLogger(t), "Testing", &FakeStatsReporter{})
+	impl := NewImplWithStats(&NopReconciler{}, TestLogger(t), "Testing", &FakeStatsReporter{})
 	impl.EnqueueKeyAfter("waiting/for", time.Second)
 	impl.EnqueueKeyAfter("the/waterfall", time.Second>>1)
 	impl.EnqueueKeyAfter("to/fall", time.Second<<1)
@@ -565,7 +565,7 @@ func (cr *CountingReconciler) Reconcile(context.Context, string) error {
 
 func TestStartAndShutdown(t *testing.T) {
 	r := &CountingReconciler{}
-	impl := NewImpl(r, TestLogger(t), "Testing", &FakeStatsReporter{})
+	impl := NewImplWithStats(r, TestLogger(t), "Testing", &FakeStatsReporter{})
 
 	stopCh := make(chan struct{})
 	doneCh := make(chan struct{})
@@ -598,7 +598,7 @@ func TestStartAndShutdown(t *testing.T) {
 func TestStartAndShutdownWithWork(t *testing.T) {
 	r := &CountingReconciler{}
 	reporter := &FakeStatsReporter{}
-	impl := NewImpl(r, TestLogger(t), "Testing", reporter)
+	impl := NewImplWithStats(r, TestLogger(t), "Testing", reporter)
 
 	stopCh := make(chan struct{})
 	doneCh := make(chan struct{})
@@ -644,7 +644,7 @@ func (er *ErrorReconciler) Reconcile(context.Context, string) error {
 func TestStartAndShutdownWithErroringWork(t *testing.T) {
 	r := &ErrorReconciler{}
 	reporter := &FakeStatsReporter{}
-	impl := NewImpl(r, TestLogger(t), "Testing", reporter)
+	impl := NewImplWithStats(r, TestLogger(t), "Testing", reporter)
 
 	stopCh := make(chan struct{})
 	doneCh := make(chan struct{})
@@ -692,7 +692,7 @@ func (er *PermanentErrorReconciler) Reconcile(context.Context, string) error {
 func TestStartAndShutdownWithPermanentErroringWork(t *testing.T) {
 	r := &PermanentErrorReconciler{}
 	reporter := &FakeStatsReporter{}
-	impl := NewImpl(r, TestLogger(t), "Testing", reporter)
+	impl := NewImplWithStats(r, TestLogger(t), "Testing", reporter)
 
 	stopCh := make(chan struct{})
 	doneCh := make(chan struct{})
@@ -763,7 +763,7 @@ func (*dummyStore) List() []interface{} {
 
 func TestImplGlobalResync(t *testing.T) {
 	r := &CountingReconciler{}
-	impl := NewImpl(r, TestLogger(t), "Testing", &FakeStatsReporter{})
+	impl := NewImplWithStats(r, TestLogger(t), "Testing", &FakeStatsReporter{})
 
 	stopCh := make(chan struct{})
 	doneCh := make(chan struct{})
