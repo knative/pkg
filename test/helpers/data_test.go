@@ -17,16 +17,53 @@ limitations under the License.
 package helpers
 
 import (
-	"fmt"
 	"regexp"
+	"testing"
 )
 
 var matcher = regexp.MustCompile("abcd-[a-z]{8}")
 
-func ExampleAppendRandomString() {
+func TestAppendRandomString(t *testing.T) {
 	const s = "abcd"
-	t := AppendRandomString(s)
+	w := AppendRandomString(s)
 	o := AppendRandomString(s)
-	fmt.Println(matcher.MatchString(t), matcher.MatchString(o), o != t)
-	// Output: true true true
+	if !matcher.MatchString(w) || !matcher.MatchString(o) || o == w {
+		t.Fatalf("Generated string(s) are incorrect: %q, %q", w, o)
+	}
+}
+
+func TestMakeK8sNamePrefix(t *testing.T) {
+	testCases := []struct {
+		input    string
+		expected string
+	}{
+		{"abcd123", "abcd123"},
+		{"AbCdef", "ab-cdef"},
+		{"ABCD", "a-b-c-d"},
+		{"aBc*ef&d", "a-bc-ef-d"},
+	}
+	for _, v := range testCases {
+		actual := MakeK8sNamePrefix(v.input)
+		if v.expected != actual {
+			t.Fatalf("Expect %q but actual is %q", v.expected, actual)
+		}
+	}
+}
+
+func TestGetBaseFuncName(t *testing.T) {
+	testCases := []struct {
+		input    string
+		expected string
+	}{
+		{"test/e2e.TestMain", "TestMain"},
+		{"e2e.TestMain", "TestMain"},
+		{"test/TestMain", "TestMain"},
+		{"TestMain", "TestMain"},
+	}
+	for _, v := range testCases {
+		actual := GetBaseFuncName(v.input)
+		if v.expected != actual {
+			t.Fatalf("Expect %q but actual is %q", v.expected, actual)
+		}
+	}
 }
