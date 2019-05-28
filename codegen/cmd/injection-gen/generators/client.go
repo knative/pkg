@@ -17,13 +17,10 @@ limitations under the License.
 package generators
 
 import (
-	clientgentypes "github.com/knative/pkg/codegen/cmd/injection-gen/types"
 	"io"
 	"k8s.io/gengo/generator"
 	"k8s.io/gengo/namer"
 	"k8s.io/gengo/types"
-	"path"
-
 	"k8s.io/klog"
 )
 
@@ -31,13 +28,13 @@ import (
 // type.
 type clientGenerator struct {
 	generator.DefaultGen
-	outputPackage             string
-	imports                   namer.ImportTracker
-	groupVersions             map[string]clientgentypes.GroupVersions
-	gvGoNames                 map[string]string
-	clientSetPackage          string
-	internalInterfacesPackage string
-	filtered                  bool
+	outputPackage string
+	imports       namer.ImportTracker
+	//	groupVersions             map[string]clientgentypes.GroupVersions
+	//gvGoNames                 map[string]string
+	clientSetPackage string
+	//internalInterfacesPackage string
+	filtered bool
 }
 
 var _ generator.Generator = &clientGenerator{}
@@ -66,32 +63,11 @@ func (g *clientGenerator) GenerateType(c *generator.Context, t *types.Type, w io
 
 	klog.V(5).Infof("processing type %v", t)
 
-	gvInterfaces := make(map[string]*types.Type)
-	gvNewFuncs := make(map[string]*types.Type)
-	for groupPkgName := range g.groupVersions {
-		gvInterfaces[groupPkgName] = c.Universe.Type(types.Name{Package: path.Join(g.outputPackage, groupPkgName), Name: "Interface"})
-		gvNewFuncs[groupPkgName] = c.Universe.Function(types.Name{Package: path.Join(g.outputPackage, groupPkgName), Name: "New"})
-	}
 	m := map[string]interface{}{
-		"cacheSharedIndexInformer":       c.Universe.Type(cacheSharedIndexInformer),
-		"groupVersions":                  g.groupVersions,
-		"gvInterfaces":                   gvInterfaces,
-		"gvNewFuncs":                     gvNewFuncs,
-		"gvGoNames":                      g.gvGoNames,
-		"interfacesNewInformerFunc":      c.Universe.Function(types.Name{Package: g.internalInterfacesPackage, Name: "NewInformerFunc"}),
-		"interfacesTweakListOptionsFunc": c.Universe.Type(types.Name{Package: g.internalInterfacesPackage, Name: "TweakListOptionsFunc"}),
-		"informerFactoryInterface":       c.Universe.Type(types.Name{Package: g.internalInterfacesPackage, Name: "SharedInformerFactory"}),
-		"reflectType":                    c.Universe.Type(reflectType),
-		"runtimeObject":                  c.Universe.Type(runtimeObject),
-		"schemaGroupVersionResource":     c.Universe.Type(schemaGroupVersionResource),
-		"syncMutex":                      c.Universe.Type(syncMutex),
-		"timeDuration":                   c.Universe.Type(timeDuration),
-		"namespaceAll":                   c.Universe.Type(metav1NamespaceAll),
-		"object":                         c.Universe.Type(metav1Object),
-		"clientSetNewForConfigOrDie":     c.Universe.Function(types.Name{Package: g.clientSetPackage, Name: "NewForConfigOrDie"}),
-		"clientSetInterface":             c.Universe.Type(types.Name{Package: g.clientSetPackage, Name: "Interface"}),
-		"injectionRegisterClient":        c.Universe.Function(types.Name{Package: "github.com/knative/pkg/injection", Name: "RegisterClient"}),
-		"restConfig":                     c.Universe.Type(types.Name{Package: "k8s.io/client-go/rest", Name: "Config"}),
+		"clientSetNewForConfigOrDie": c.Universe.Function(types.Name{Package: g.clientSetPackage, Name: "NewForConfigOrDie"}),
+		"clientSetInterface":         c.Universe.Type(types.Name{Package: g.clientSetPackage, Name: "Interface"}),
+		"injectionRegisterClient":    c.Universe.Function(types.Name{Package: "github.com/knative/pkg/injection", Name: "Default.RegisterClient"}),
+		"restConfig":                 c.Universe.Type(types.Name{Package: "k8s.io/client-go/rest", Name: "Config"}),
 	}
 
 	sw.Do(injectionClient, m)
@@ -111,8 +87,12 @@ func withClient(ctx context.Context, cfg *{{.restConfig|raw}}) context.Context {
 	return context.WithValue(ctx, Key{}, {{.clientSetNewForConfigOrDie|raw}}(cfg))
 }
 
-// Get extracts the {{.name}} client from the context.
+// Get extracts the {{.clientSetInterface|raw}} client from the context.
 func Get(ctx context.Context) {{.clientSetInterface|raw}} {
-	return ctx.Value(Key{}).({{.clientSetInterface|raw}})
+	untyped := ctx.Value(Key{})
+	if untyped == nil {
+		return nil
+	}
+	return untyped.({{.clientSetInterface|raw}})
 }
 `

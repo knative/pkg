@@ -21,23 +21,22 @@ package istiofactory
 import (
 	"context"
 
+	istio "github.com/knative/pkg/client/informers/clients/istio"
 	externalversions "github.com/knative/pkg/client/informers/externalversions"
-	istio "github.com/knative/pkg/client/injection/clients/istio"
-	controller "github.com/knative/pkg/controller"
 	injection "github.com/knative/pkg/injection"
 )
 
 func init() {
-	injection.Default.RegisterInformerFactory(withInformerFactory)
+	injection.RegisterInformerFactory(withInformerFactory)
 }
 
 // key is used as the key for associating information with a context.Context.
 type Key struct{}
 
 func withInformerFactory(ctx context.Context) context.Context {
-	c := istio.Get(ctx)
+	sc := istio.Get(ctx)
 	return context.WithValue(ctx, Key{},
-		externalversions.NewSharedInformerFactory(c, controller.GetResyncPeriod(ctx)))
+		externalversions.NewSharedInformerFactory(sc, controllerGetResyncPeriod(ctx)))
 }
 
 // Get extracts the InformerFactory from the context.

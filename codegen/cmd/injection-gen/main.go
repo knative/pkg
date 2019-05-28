@@ -18,10 +18,10 @@ package main
 
 import (
 	"flag"
+	"github.com/knative/pkg/codegen/pkg/util"
 	"path/filepath"
 
 	"github.com/knative/pkg/codegen/cmd/injection-gen/generators"
-	"github.com/knative/pkg/codegen/pkg/util"
 	"github.com/spf13/pflag"
 	"k8s.io/gengo/args"
 	"k8s.io/klog"
@@ -34,7 +34,6 @@ func main() {
 	genericArgs, customArgs := generatorargs.NewDefaults()
 
 	// Override defaults.
-	// TODO: move out of informer-gen
 	genericArgs.GoHeaderFilePath = filepath.Join(args.DefaultSourceTree(), util.BoilerplatePath())
 	genericArgs.OutputPackagePath = "k8s.io/kubernetes/pkg/client/injection/informers/informers_generated"
 	customArgs.VersionedClientSetPackage = "k8s.io/kubernetes/pkg/client/injection/clientset_generated/clientset"

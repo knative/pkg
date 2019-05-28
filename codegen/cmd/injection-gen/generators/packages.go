@@ -18,7 +18,6 @@ package generators
 
 import (
 	"fmt"
-	"github.com/knative/pkg/codegen/cmd/injection-gen/generators/util"
 	"path"
 	"path/filepath"
 	"strings"
@@ -30,6 +29,7 @@ import (
 	"k8s.io/klog"
 
 	informergenargs "github.com/knative/pkg/codegen/cmd/injection-gen/args"
+	"github.com/knative/pkg/codegen/cmd/injection-gen/generators/util"
 	clientgentypes "github.com/knative/pkg/codegen/cmd/injection-gen/types"
 )
 
@@ -71,10 +71,7 @@ func objectMetaForPackage(p *types.Package) (*types.Type, bool, error) {
 		}
 		generatingForPackage = true
 		for _, member := range t.Members {
-			klog.Info("got  ---> ", member)
-
 			if member.Name == "ObjectMeta" {
-
 				return member.Type, isInternal(member), nil
 			}
 		}
@@ -103,9 +100,6 @@ func vendorless(p string) string {
 
 // Packages makes the client package definition.
 func Packages(context *generator.Context, arguments *args.GeneratorArgs) generator.Packages {
-
-	klog.Info("HERE", arguments)
-
 	boilerplate, err := arguments.LoadGoBoilerplate()
 	if err != nil {
 		klog.Fatalf("Failed loading boilerplate: %v", err)
@@ -138,8 +132,6 @@ func Packages(context *generator.Context, arguments *args.GeneratorArgs) generat
 		var gv clientgentypes.GroupVersion
 		var targetGroupVersions map[string]clientgentypes.GroupVersions
 
-		klog.Info("path  ---> ", p.Path)
-
 		parts := strings.Split(p.Path, "/")
 		gv.Group = clientgentypes.Group(parts[len(parts)-2])
 		gv.Version = clientgentypes.Version(parts[len(parts)-1])
@@ -171,8 +163,6 @@ func Packages(context *generator.Context, arguments *args.GeneratorArgs) generat
 
 			typesToGenerate = append(typesToGenerate, t)
 
-			klog.Info("typesToGenerate  ---> ", typesToGenerate)
-
 			if _, ok := typesForGroupVersion[gv]; !ok {
 				typesForGroupVersion[gv] = []*types.Type{}
 			}
@@ -192,8 +182,6 @@ func Packages(context *generator.Context, arguments *args.GeneratorArgs) generat
 		groupVersionsEntry.Versions = append(groupVersionsEntry.Versions, clientgentypes.PackageVersion{Version: gv.Version, Package: gvPackage})
 		targetGroupVersions[groupPackageName] = groupVersionsEntry
 
-		klog.Info("targetGroupVersions[groupPackageName]  ---> ", targetGroupVersions[groupPackageName])
-
 		orderer := namer.Orderer{Namer: namer.NewPrivateNamer(0)}
 		typesToGenerate = orderer.OrderTypes(typesToGenerate)
 
@@ -211,10 +199,12 @@ func versionInformerPackages(basePackage string, groupPkgName string, gv clientg
 	vers := []generator.Package(nil)
 
 	for _, t := range typesToGenerate {
+		// Fix for golang iterator bug.
+		t := t
 
 		packagePath := packagePath + "/" + strings.ToLower(t.Name.Name)
-
-		t := t
+		typedInformerPackage := strings.Replace(clientSetPackage, "clientset/versioned", "informers/externalversions", 1) + fmt.Sprintf("/%s/%s", strings.ToLower(gv.Group.NonEmpty())[:strings.Index(gv.Group.NonEmpty(), ".")], gv.Version)
+		groupInformerFactoryPackage := fmt.Sprintf("%s/informers/%s/factory", basePackage, strings.ToLower(groupGoName))
 
 		// Impl
 		vers = append(vers, &generator.DefaultPackage{
@@ -228,15 +218,12 @@ func versionInformerPackages(basePackage string, groupPkgName string, gv clientg
 						OptionalName: strings.ToLower(t.Name.Name),
 					},
 					outputPackage:               packagePath,
-					groupPkgName:                groupPkgName,
 					groupVersion:                gv,
 					groupGoName:                 groupGoName,
 					typeToGenerate:              t,
 					imports:                     generator.NewImportTracker(),
-					clientSetPackage:            clientSetPackage,
-					internalInterfacesPackage:   packageForInternalInterfaces(basePackage),
-					typedInformerPackage:        strings.Replace(clientSetPackage, "clientset/versioned", "informers/externalversions", 1) + fmt.Sprintf("/%s/%s", strings.ToLower(gv.Group.NonEmpty())[:strings.Index(gv.Group.NonEmpty(), ".")], gv.Version),
-					groupInformerFactoryPackage: fmt.Sprintf("%s/informers/%s/factory", basePackage, strings.ToLower(groupGoName)),
+					typedInformerPackage:        typedInformerPackage,
+					groupInformerFactoryPackage: groupInformerFactoryPackage,
 				})
 
 				// Test
@@ -244,16 +231,8 @@ func versionInformerPackages(basePackage string, groupPkgName string, gv clientg
 					DefaultGen: generator.DefaultGen{
 						OptionalName: strings.ToLower(t.Name.Name) + "_test",
 					},
-					outputPackage:               packagePath,
-					groupPkgName:                groupPkgName,
-					groupVersion:                gv,
-					groupGoName:                 groupGoName,
-					typeToGenerate:              t,
-					imports:                     generator.NewImportTracker(),
-					clientSetPackage:            clientSetPackage,
-					internalInterfacesPackage:   packageForInternalInterfaces(basePackage),
-					typedInformerPackage:        strings.Replace(clientSetPackage, "clientset/versioned", "informers/externalversions", 1) + fmt.Sprintf("/%s/%s", strings.ToLower(gv.Group.NonEmpty())[:strings.Index(gv.Group.NonEmpty(), ".")], gv.Version),
-					groupInformerFactoryPackage: fmt.Sprintf("%s/informers/%s/factory", basePackage, strings.ToLower(groupGoName)),
+					typeToGenerate: t,
+					imports:        generator.NewImportTracker(),
 				})
 
 				return generators
@@ -284,8 +263,6 @@ func versionFactoryPackages(basePackage string, groupPkgName string, gv clientge
 				cachingClientSetPackage:      fmt.Sprintf("%s/clients/%s", basePackage, groupPkgName),
 				sharedInformerFactoryPackage: strings.Replace(clientSetPackage, "clientset/versioned", "informers/externalversions", 1),
 				imports:                      generator.NewImportTracker(),
-				clientSetPackage:             clientSetPackage,
-				internalInterfacesPackage:    packageForInternalInterfaces(basePackage),
 			})
 
 			// Test
@@ -293,12 +270,7 @@ func versionFactoryPackages(basePackage string, groupPkgName string, gv clientge
 				DefaultGen: generator.DefaultGen{
 					OptionalName: groupPkgName + "factory_test",
 				},
-				outputPackage:                packagePath,
-				cachingClientSetPackage:      fmt.Sprintf("%s/clients/%s", basePackage, groupPkgName),
-				sharedInformerFactoryPackage: strings.Replace(clientSetPackage, "clientset/versioned", "informers/externalversions", 1),
-				imports:                      generator.NewImportTracker(),
-				clientSetPackage:             clientSetPackage,
-				internalInterfacesPackage:    packageForInternalInterfaces(basePackage),
+				imports: generator.NewImportTracker(),
 			})
 
 			return generators
@@ -324,10 +296,9 @@ func versionClientsPackages(basePackage string, groupPkgName string, gv clientge
 				DefaultGen: generator.DefaultGen{
 					OptionalName: groupPkgName + "client",
 				},
-				outputPackage:             packagePath,
-				imports:                   generator.NewImportTracker(),
-				clientSetPackage:          clientSetPackage,
-				internalInterfacesPackage: packageForInternalInterfaces(basePackage),
+				outputPackage:    packagePath,
+				imports:          generator.NewImportTracker(),
+				clientSetPackage: clientSetPackage,
 			})
 
 			// Test
@@ -335,10 +306,7 @@ func versionClientsPackages(basePackage string, groupPkgName string, gv clientge
 				DefaultGen: generator.DefaultGen{
 					OptionalName: groupPkgName + "client_test",
 				},
-				outputPackage:             packagePath,
-				imports:                   generator.NewImportTracker(),
-				clientSetPackage:          clientSetPackage,
-				internalInterfacesPackage: packageForInternalInterfaces(basePackage),
+				imports: generator.NewImportTracker(),
 			})
 
 			return generators

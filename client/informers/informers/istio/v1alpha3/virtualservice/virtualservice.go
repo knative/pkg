@@ -22,13 +22,13 @@ import (
 	"context"
 
 	v1alpha3 "github.com/knative/pkg/client/informers/externalversions/networking/v1alpha3"
-	factory "github.com/knative/pkg/client/injection/informers/networking/factory"
+	factory "github.com/knative/pkg/client/informers/informers/networking/factory"
 	controller "github.com/knative/pkg/controller"
 	injection "github.com/knative/pkg/injection"
 )
 
 func init() {
-	injection.Default.RegisterInformer(withInformer)
+	injection.RegisterInformer(withInformer)
 }
 
 // key is used for associating the Informer inside the context.Context.
