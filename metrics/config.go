@@ -283,5 +283,11 @@ this via:
   env:
   - name: %s
     value: knative.dev/some-repository
-`, DomainEnv, DomainEnv))
+
+If this is a Go unit test consuming metric.Domain() then it should add the
+following import:
+
+import (
+	_ "github.com/knative/pkg/metrics/testing"
+)`, DomainEnv, DomainEnv))
 }
