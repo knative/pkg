@@ -131,7 +131,7 @@ func TestNewConfigNoEntry(t *testing.T) {
 
 func TestNewConfig(t *testing.T) {
 	wantCfg := "{\"level\": \"error\",\n\"outputPaths\": [\"stdout\"],\n\"errorOutputPaths\": [\"stderr\"],\n\"encoding\": \"json\"}"
-	wantLevel := zapcore.InfoLevel
+	wantLevel := zapcore.ErrorLevel
 	c, err := NewConfigFromConfigMap(&corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: "knative-something",
@@ -175,8 +175,23 @@ func TestEmptyLevel(t *testing.T) {
 	if err != nil {
 		t.Errorf("Expected no errors. got: %v", err)
 	}
-	if _, ok := c.LoggingLevel["queueproxy"]; ok {
-		t.Errorf("Expected nothing for LoggingLevel[queueproxy]. got: %v", c.LoggingLevel["queueproxy"])
+	if l := c.LoggingLevel["queueproxy"]; l != zapcore.InfoLevel {
+		t.Errorf("Expected default Info level for LoggingLevel[queueproxy]. got: %v", l)
+	}
+}
+
+func TestDefaultLevel(t *testing.T) {
+	c, err := NewConfigFromConfigMap(&corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: "knative-something",
+			Name:      "config-logging",
+		},
+	})
+	if err != nil {
+		t.Errorf("Expected no errors. got: %v", err)
+	}
+	if l := c.LoggingLevel["queueproxy"]; l != zapcore.InfoLevel {
+		t.Errorf("Expected default Info level for LoggingLevel[queueproxy]. got: %v", l)
 	}
 }
 
@@ -191,9 +206,31 @@ func TestInvalidLevel(t *testing.T) {
 			"zap-logger-config":   wantCfg,
 			"loglevel.queueproxy": "invalid",
 		},
-	}, "queueproxy")
+	})
 	if err == nil {
 		t.Errorf("Expected errors when invalid level is present in logging config. got nothing")
+	}
+}
+
+func TestEmptyComponent(t *testing.T) {
+	ll := zapcore.ErrorLevel
+	c, err := NewConfigFromConfigMap(&corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: "knative-something",
+			Name:      "config-logging",
+		},
+		Data: map[string]string{
+			"zap-logger-config":   "{\"level\": \"error\",\n\"outputPaths\": [\"stdout\"],\n\"errorOutputPaths\": [\"stderr\"],\n\"encoding\": \"json\"}",
+			"loglevel.": ll.String(),
+		},
+	})
+	if err != nil {
+		t.Errorf("Expected no errors. got: %v", err)
+	}
+	// The empty string component should have been ignored, so it should be the default Info, rather
+	// than error as set in the config map.
+	if l := c.LoggingLevel[""]; l != zapcore.InfoLevel {
+		t.Errorf("Expected default Info level for LoggingLevel[\"\"]. got: %v", l)
 	}
 }
 
@@ -209,7 +246,7 @@ func getTestConfig() (*Config, string, string) {
 			"zap-logger-config":   wantCfg,
 			"loglevel.queueproxy": wantLevel,
 		},
-	}, "queueproxy")
+	})
 	return c, wantCfg, wantLevel
 }
 
@@ -242,7 +279,7 @@ func TestUpdateLevelFromConfigMap(t *testing.T) {
 		{"debug", zapcore.DebugLevel},
 	}
 
-	u := UpdateLevelFromConfigMap(logger, atomicLevel, "controller", "controller")
+	u := UpdateLevelFromConfigMap(logger, atomicLevel, "controller")
 	for _, tt := range tests {
 		cm.Data["loglevel.controller"] = tt.setLevel
 		u(cm)
