@@ -212,6 +212,28 @@ func TestInvalidLevel(t *testing.T) {
 	}
 }
 
+func TestEmptyComponent(t *testing.T) {
+	ll := zapcore.ErrorLevel
+	c, err := NewConfigFromConfigMap(&corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: "knative-something",
+			Name:      "config-logging",
+		},
+		Data: map[string]string{
+			"zap-logger-config":   "{\"level\": \"error\",\n\"outputPaths\": [\"stdout\"],\n\"errorOutputPaths\": [\"stderr\"],\n\"encoding\": \"json\"}",
+			"loglevel.": ll.String(),
+		},
+	})
+	if err != nil {
+		t.Errorf("Expected no errors. got: %v", err)
+	}
+	// The empty string component should have been ignored, so it should be the default Info, rather
+	// than error as set in the config map.
+	if l := c.LoggingLevel[""]; l != zapcore.InfoLevel {
+		t.Errorf("Expected default Info level for LoggingLevel[\"\"]. got: %v", l)
+	}
+}
+
 func getTestConfig() (*Config, string, string) {
 	wantCfg := "{\"level\": \"error\",\n\"outputPaths\": [\"stdout\"],\n\"errorOutputPaths\": [\"stderr\"],\n\"encoding\": \"json\"}"
 	wantLevel := "debug"
