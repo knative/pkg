@@ -142,7 +142,7 @@ func NewConfigFromMap(data map[string]string) (*Config, error) {
 
 	lc.LoggingLevel = make(map[string]zapcore.Level)
 	for k, v := range data {
-		if component := strings.TrimPrefix(k, "loglevel."); component != k {
+		if component := strings.TrimPrefix(k, "loglevel."); component != k && component != "" {
 			if len(v) > 0 {
 				level, err := levelFromString(v)
 				if err != nil {
