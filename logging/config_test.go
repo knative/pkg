@@ -220,8 +220,8 @@ func TestEmptyComponent(t *testing.T) {
 			Name:      "config-logging",
 		},
 		Data: map[string]string{
-			"zap-logger-config":   "{\"level\": \"error\",\n\"outputPaths\": [\"stdout\"],\n\"errorOutputPaths\": [\"stderr\"],\n\"encoding\": \"json\"}",
-			"loglevel.": ll.String(),
+			"zap-logger-config": "{\"level\": \"error\",\n\"outputPaths\": [\"stdout\"],\n\"errorOutputPaths\": [\"stderr\"],\n\"encoding\": \"json\"}",
+			"loglevel.":         ll.String(),
 		},
 	})
 	if err != nil {
