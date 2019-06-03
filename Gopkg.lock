@@ -1101,6 +1101,7 @@
     "github.com/openzipkin/zipkin-go/reporter/recorder",
     "github.com/pkg/errors",
     "github.com/rogpeppe/go-internal/semver",
+    "github.com/spf13/pflag",
     "go.opencensus.io/exporter/prometheus",
     "go.opencensus.io/exporter/zipkin",
     "go.opencensus.io/plugin/ochttp",
@@ -1162,10 +1163,18 @@
     "k8s.io/client-go/util/flowcontrol",
     "k8s.io/client-go/util/workqueue",
     "k8s.io/code-generator/cmd/client-gen",
+    "k8s.io/code-generator/cmd/client-gen/generators/util",
+    "k8s.io/code-generator/cmd/client-gen/types",
     "k8s.io/code-generator/cmd/deepcopy-gen",
     "k8s.io/code-generator/cmd/defaulter-gen",
     "k8s.io/code-generator/cmd/informer-gen",
     "k8s.io/code-generator/cmd/lister-gen",
+    "k8s.io/code-generator/pkg/util",
+    "k8s.io/gengo/args",
+    "k8s.io/gengo/generator",
+    "k8s.io/gengo/namer",
+    "k8s.io/gengo/types",
+    "k8s.io/klog",
   ]
   solver-name = "gps-cdcl"
   solver-version = 1
