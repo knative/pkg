@@ -33,6 +33,12 @@ ${CODEGEN_PKG}/generate-groups.sh "deepcopy,client,informer,lister" \
   "istio:v1alpha3 istio/authentication:v1alpha1" \
   --go-header-file ${REPO_ROOT_DIR}/hack/boilerplate/boilerplate.go.txt
 
+# Knative Injection
+${REPO_ROOT_DIR}/hack/generate-knative.sh "injection" \
+  github.com/knative/pkg/client github.com/knative/pkg/apis \
+  "istio:v1alpha3 istio/authentication:v1alpha1" \
+  --go-header-file ${REPO_ROOT_DIR}/hack/boilerplate/boilerplate.go.txt
+
 # Only deepcopy the Duck types, as they are not real resources.
 ${CODEGEN_PKG}/generate-groups.sh "deepcopy" \
   github.com/knative/pkg/client github.com/knative/pkg/apis \
