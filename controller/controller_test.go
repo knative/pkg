@@ -27,6 +27,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/tools/cache"
+	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/workqueue"
 
 	. "github.com/knative/pkg/controller/testing"
@@ -934,5 +935,19 @@ func TestGetResyncPeriod(t *testing.T) {
 	tribob := 90 * time.Second
 	if want, got := tribob, GetTrackerLease(ctx); got != want {
 		t.Errorf("GetTrackerLease() = %v, wanted %v", got, want)
+	}
+}
+
+func TestGetEventRecorder(t *testing.T) {
+	ctx := context.Background()
+
+	if got := GetEventRecorder(ctx); got != nil {
+		t.Errorf("GetEventRecorder() = %v, wanted nil", got)
+	}
+
+	ctx = WithEventRecorder(ctx, record.NewFakeRecorder(1000))
+
+	if got := GetEventRecorder(ctx); got == nil {
+		t.Error("GetEventRecorder() = nil, wanted non-nil")
 	}
 }
