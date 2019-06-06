@@ -54,9 +54,34 @@ func TestContexts(t *testing.T) {
 		check: IsInUpdate,
 		want:  true,
 	}, {
+		name:  "is in update",
+		ctx:   WithinUpdate(ctx, struct{}{}),
+		check: IsInStatusUpdate,
+		want:  false,
+	}, {
+		name:  "is in update (subresource)",
+		ctx:   WithinSubResourceUpdate(ctx, struct{}{}, "scale"),
+		check: IsInUpdate,
+		want:  true,
+	}, {
+		name:  "is not in status update",
+		ctx:   WithinSubResourceUpdate(ctx, struct{}{}, "scale"),
+		check: IsInStatusUpdate,
+		want:  false,
+	}, {
+		name:  "is in status update",
+		ctx:   WithinSubResourceUpdate(ctx, struct{}{}, "status"),
+		check: IsInStatusUpdate,
+		want:  true,
+	}, {
 		name:  "not in update (bare)",
 		ctx:   ctx,
 		check: IsInUpdate,
+		want:  false,
+	}, {
+		name:  "not in status update (bare)",
+		ctx:   ctx,
+		check: IsInStatusUpdate,
 		want:  false,
 	}, {
 		name:  "not in update (create)",
