@@ -26,13 +26,23 @@ import (
 	"github.com/knative/pkg/injection"
 )
 
-func TestRegistration(t *testing.T) {
+func TestGetPanic(t *testing.T) {
 	ctx := context.Background()
+
+	defer func() {
+		if r := recover(); r == nil {
+			t.Error("Get() should have panicked")
+		}
+	}()
 
 	// Get before registration
 	if empty := Get(ctx); empty != nil {
 		t.Errorf("Unexpected informer: %v", empty)
 	}
+}
+
+func TestRegistration(t *testing.T) {
+	ctx := context.Background()
 
 	// Check how many informers have registered.
 	inffs := injection.Default.GetClients()

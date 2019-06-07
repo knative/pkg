@@ -18,6 +18,7 @@ package factory
 
 import (
 	"context"
+	"github.com/knative/pkg/logging"
 
 	informers "k8s.io/apiextensions-apiserver/pkg/client/informers/externalversions"
 
@@ -44,7 +45,8 @@ func withInformerFactory(ctx context.Context) context.Context {
 func Get(ctx context.Context) informers.SharedInformerFactory {
 	untyped := ctx.Value(Key{})
 	if untyped == nil {
-		return nil
+		logging.FromContext(ctx).Panicf(
+			"Unable to fetch %T from context.", (informers.SharedInformerFactory)(nil))
 	}
 	return untyped.(informers.SharedInformerFactory)
 }
