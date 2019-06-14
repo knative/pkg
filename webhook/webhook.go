@@ -33,6 +33,7 @@ import (
 
 	"github.com/knative/pkg/apis"
 	"github.com/knative/pkg/apis/duck"
+	"github.com/knative/pkg/apis/duck/unversioned"
 	"github.com/knative/pkg/kmp"
 	"github.com/knative/pkg/logging"
 	"github.com/knative/pkg/logging/logkey"
@@ -533,7 +534,7 @@ func (ac *AdmissionController) mutate(ctx context.Context, req *admissionv1beta1
 	var err error
 	// Skip this step if the type we're dealing with is a duck type, since it is inherently
 	// incomplete and this will patch away all of the unspecified fields.
-	if _, ok := newObj.(duck.Populatable); !ok {
+	if _, ok := newObj.(unversioned.Populatable); !ok {
 		// Add these before defaulting fields, otherwise defaulting may cause an illegal patch
 		// because it expects the round tripped through Golang fields to be present already.
 		rtp, err := roundTripPatch(newBytes, newObj)

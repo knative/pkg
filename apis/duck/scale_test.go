@@ -22,7 +22,7 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/knative/pkg/apis/duck"
+	"github.com/knative/pkg/apis/duck/unversioned"
 )
 
 type Scalable struct {
@@ -43,12 +43,12 @@ type ScalableStatus struct {
 }
 
 var (
-	_ duck.Populatable   = (*Scalable)(nil)
-	_ duck.Implementable = (*Scalable)(nil)
+	_ unversioned.Populatable   = (*Scalable)(nil)
+	_ unversioned.Implementable = (*Scalable)(nil)
 )
 
 // GetFullType implements duck.Implementable
-func (_ *Scalable) GetFullType() duck.Populatable {
+func (_ *Scalable) GetFullType() unversioned.Populatable {
 	return &Scalable{}
 }
 
@@ -81,7 +81,7 @@ func TestImplementsScalable(t *testing.T) {
 		&appsv1.StatefulSet{},
 	}
 	for _, instance := range instances {
-		if err := duck.VerifyType(instance, &Scalable{}); err != nil {
+		if err := unversioned.VerifyType(instance, &Scalable{}); err != nil {
 			t.Error(err)
 		}
 	}

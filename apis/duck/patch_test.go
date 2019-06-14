@@ -22,6 +22,8 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+
+	"github.com/knative/pkg/apis/duck/unversioned"
 )
 
 func TestCreateMergePatch(t *testing.T) {
@@ -267,10 +269,10 @@ type PatchSpec struct {
 	Patchable *Patchable `json:"patchable,omitempty"`
 }
 
-var _ Implementable = (*Patchable)(nil)
-var _ Populatable = (*Patch)(nil)
+var _ unversioned.Implementable = (*Patchable)(nil)
+var _ unversioned.Populatable = (*Patch)(nil)
 
-func (*Patchable) GetFullType() Populatable {
+func (*Patchable) GetFullType() unversioned.Populatable {
 	return &Patch{}
 }
 

@@ -24,7 +24,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/knative/pkg/apis/duck"
+	"github.com/knative/pkg/apis/duck/unversioned"
 )
 
 // PodSpecable is implemented by types containing a PodTemplateSpec
@@ -43,12 +43,12 @@ type WithPodSpec struct {
 }
 
 var (
-	_ duck.Populatable   = (*WithPod)(nil)
-	_ duck.Implementable = (*PodSpecable)(nil)
+	_ unversioned.Populatable   = (*WithPod)(nil)
+	_ unversioned.Implementable = (*PodSpecable)(nil)
 )
 
 // GetFullType implements duck.Implementable
-func (_ *PodSpecable) GetFullType() duck.Populatable {
+func (_ *PodSpecable) GetFullType() unversioned.Populatable {
 	return &WithPod{}
 }
 
@@ -79,7 +79,7 @@ func TestImplementsPodSpecable(t *testing.T) {
 		&batchv1.Job{},
 	}
 	for _, instance := range instances {
-		if err := duck.VerifyType(instance, &PodSpecable{}); err != nil {
+		if err := unversioned.VerifyType(instance, &PodSpecable{}); err != nil {
 			t.Error(err)
 		}
 	}

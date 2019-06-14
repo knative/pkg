@@ -17,10 +17,8 @@ limitations under the License.
 package v1alpha1
 
 import (
-	"testing"
-
 	"encoding/json"
-
+	"testing"
 	"time"
 
 	"github.com/google/go-cmp/cmp"

@@ -21,7 +21,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 
 	"github.com/knative/pkg/apis"
-	"github.com/knative/pkg/apis/duck"
+	"github.com/knative/pkg/apis/duck/unversioned"
 )
 
 // Targetable is an earlier version of the Callable interface.
@@ -38,7 +38,7 @@ type Targetable struct {
 }
 
 // Targetable is an Implementable "duck type".
-var _ duck.Implementable = (*Targetable)(nil)
+var _ unversioned.Implementable = (*Targetable)(nil)
 
 // +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -62,14 +62,14 @@ type TargetStatus struct {
 
 var (
 	// In order for Targetable to be Implementable, Target must be Populatable.
-	_ duck.Populatable = (*Target)(nil)
+	_ unversioned.Populatable = (*Target)(nil)
 
 	// Ensure Target satisfies apis.Listable
 	_ apis.Listable = (*Target)(nil)
 )
 
 // GetFullType implements duck.Implementable
-func (*Targetable) GetFullType() duck.Populatable {
+func (*Targetable) GetFullType() unversioned.Populatable {
 	return &Target{}
 }
 

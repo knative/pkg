@@ -21,7 +21,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 
 	"github.com/knative/pkg/apis"
-	"github.com/knative/pkg/apis/duck"
+	"github.com/knative/pkg/apis/duck/unversioned"
 	"github.com/knative/pkg/apis/duck/v1beta1"
 )
 
@@ -38,7 +38,7 @@ type Addressable struct {
 }
 
 // Addressable is an Implementable "duck type".
-var _ duck.Implementable = (*Addressable)(nil)
+var _ unversioned.Implementable = (*Addressable)(nil)
 
 // +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -62,12 +62,12 @@ type AddressStatus struct {
 
 var (
 	// Verify AddressableType resources meet duck contracts.
-	_ duck.Populatable = (*AddressableType)(nil)
-	_ apis.Listable    = (*AddressableType)(nil)
+	_ unversioned.Populatable = (*AddressableType)(nil)
+	_ apis.Listable           = (*AddressableType)(nil)
 )
 
 // GetFullType implements duck.Implementable
-func (*Addressable) GetFullType() duck.Populatable {
+func (*Addressable) GetFullType() unversioned.Populatable {
 	return &AddressableType{}
 }
 

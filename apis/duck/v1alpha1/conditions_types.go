@@ -24,7 +24,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 
 	"github.com/knative/pkg/apis"
-	"github.com/knative/pkg/apis/duck"
+	"github.com/knative/pkg/apis/duck/unversioned"
 )
 
 // Conditions is the schema for the conditions portion of the payload
@@ -116,7 +116,7 @@ func (c *Condition) IsUnknown() bool {
 }
 
 // Conditions is an Implementable "duck type".
-var _ duck.Implementable = (*Conditions)(nil)
+var _ unversioned.Implementable = (*Conditions)(nil)
 
 // +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -153,13 +153,13 @@ type Status struct {
 type KResourceStatus Status
 
 // In order for Conditions to be Implementable, KResource must be Populatable.
-var _ duck.Populatable = (*KResource)(nil)
+var _ unversioned.Populatable = (*KResource)(nil)
 
 // Ensure KResource satisfies apis.Listable
 var _ apis.Listable = (*KResource)(nil)
 
 // GetFullType implements duck.Implementable
-func (*Conditions) GetFullType() duck.Populatable {
+func (*Conditions) GetFullType() unversioned.Populatable {
 	return &KResource{}
 }
 

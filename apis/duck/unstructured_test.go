@@ -25,6 +25,18 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
+// Define a "Fooable" duck type.
+type Fooable struct {
+	Field1 string `json:"field1,omitempty"`
+	Field2 string `json:"field2,omitempty"`
+}
+type Foo struct {
+	Status FooStatus `json:"status"`
+}
+type FooStatus struct {
+	Fooable *Fooable `json:"fooable,omitempty"`
+}
+
 func TestFromUnstructuredFooable(t *testing.T) {
 	tcs := []struct {
 		name      string

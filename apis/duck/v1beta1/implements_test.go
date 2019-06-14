@@ -19,19 +19,19 @@ package v1beta1
 import (
 	"testing"
 
-	"github.com/knative/pkg/apis/duck"
+	"github.com/knative/pkg/apis/duck/unversioned"
 )
 
 func TestTypesImplements(t *testing.T) {
 	testCases := []struct {
 		instance interface{}
-		iface    duck.Implementable
+		iface    unversioned.Implementable
 	}{
 		{instance: &AddressableType{}, iface: &Addressable{}},
 		{instance: &KResource{}, iface: &Conditions{}},
 	}
 	for _, tc := range testCases {
-		if err := duck.VerifyType(tc.instance, tc.iface); err != nil {
+		if err := unversioned.VerifyType(tc.instance, tc.iface); err != nil {
 			t.Error(err)
 		}
 	}

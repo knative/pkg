@@ -21,7 +21,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 
 	"github.com/knative/pkg/apis"
-	"github.com/knative/pkg/apis/duck"
+	"github.com/knative/pkg/apis/duck/unversioned"
 )
 
 // LegacyTargetable left around until we migrate to Addressable in the
@@ -42,7 +42,7 @@ type LegacyTargetable struct {
 }
 
 // LegacyTargetable is an Implementable "duck type".
-var _ duck.Implementable = (*LegacyTargetable)(nil)
+var _ unversioned.Implementable = (*LegacyTargetable)(nil)
 
 // +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -61,13 +61,13 @@ type LegacyTarget struct {
 }
 
 // In order for LegacyTargetable to be Implementable, LegacyTarget must be Populatable.
-var _ duck.Populatable = (*LegacyTarget)(nil)
+var _ unversioned.Populatable = (*LegacyTarget)(nil)
 
 // Ensure LegacyTarget satisfies apis.Listable
 var _ apis.Listable = (*LegacyTarget)(nil)
 
 // GetFullType implements duck.Implementable
-func (*LegacyTargetable) GetFullType() duck.Populatable {
+func (*LegacyTargetable) GetFullType() unversioned.Populatable {
 	return &LegacyTarget{}
 }
 
