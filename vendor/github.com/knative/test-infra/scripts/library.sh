@@ -36,7 +36,8 @@ fi
 # Useful environment variables
 [[ -n "${PROW_JOB_ID:-}" ]] && IS_PROW=1 || IS_PROW=0
 readonly IS_PROW
-readonly REPO_ROOT_DIR="$(git rev-parse --show-toplevel)"
+[[ -z "${REPO_ROOT_DIR:-}" ]] && REPO_ROOT_DIR="$(git rev-parse --show-toplevel)"
+readonly REPO_ROOT_DIR
 readonly REPO_NAME="$(basename ${REPO_ROOT_DIR})"
 
 # Useful flags about the current OS
