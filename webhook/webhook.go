@@ -555,7 +555,7 @@ func (ac *AdmissionController) mutate(ctx context.Context, req *admissionv1beta1
 
 		s, ok := oldObj.(apis.HasSpec)
 		if ok {
-			apis.SetUserInfoAnnotations(s, ctx, ac.Options.GroupName)
+			SetUserInfoAnnotations(s, ctx, ac.Options.GroupName)
 		}
 
 		if req.SubResource == "" {
@@ -606,7 +606,7 @@ func (ac *AdmissionController) setUserInfoAnnotations(ctx context.Context, patch
 
 	b, a := new.DeepCopyObject().(apis.HasSpec), nh
 
-	apis.SetUserInfoAnnotations(nh, ctx, ac.Options.GroupName)
+	SetUserInfoAnnotations(nh, ctx, ac.Options.GroupName)
 
 	patch, err := duck.CreatePatch(b, a)
 	if err != nil {

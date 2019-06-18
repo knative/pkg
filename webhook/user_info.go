@@ -14,10 +14,11 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package apis
+package webhook
 
 import (
 	"context"
+	"github.com/knative/pkg/apis"
 	"k8s.io/apimachinery/pkg/api/equality"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -27,14 +28,14 @@ const (
 	// the user that created the resource.
 	CreatorAnnotationSuffix = "/creator"
 
-	// UpdaterAnnotationSuffix is the suffix of the annotation key to describe
-	// the user that last updated the resource.
-	UpdaterAnnotationSuffix = "/lastModifier"
+	// LastModifierAnnotationSuffix is the suffix of the annotation key to describe
+	// the user who last modified the resource.
+	LastModifierAnnotationSuffix = "/lastModifier"
 )
 
-// SetUserInfoAnnotations sets creator and updater annotations on a resource.
-func SetUserInfoAnnotations(resource HasSpec, ctx context.Context, groupName string) {
-	if ui := GetUserInfo(ctx); ui != nil {
+// SetUserInfoAnnotations sets creator and lastModifier annotations on a resource.
+func SetUserInfoAnnotations(resource apis.HasSpec, ctx context.Context, groupName string) {
+	if ui := apis.GetUserInfo(ctx); ui != nil {
 		objectMetaAccessor, ok := resource.(metav1.ObjectMetaAccessor)
 		if !ok {
 			return
@@ -46,15 +47,15 @@ func SetUserInfoAnnotations(resource HasSpec, ctx context.Context, groupName str
 			defer objectMetaAccessor.GetObjectMeta().SetAnnotations(annotations)
 		}
 
-		if IsInUpdate(ctx) {
-			old := GetBaseline(ctx).(HasSpec)
+		if apis.IsInUpdate(ctx) {
+			old := apis.GetBaseline(ctx).(apis.HasSpec)
 			if equality.Semantic.DeepEqual(old.GetSpec(), resource.GetSpec()) {
 				return
 			}
-			annotations[groupName+UpdaterAnnotationSuffix] = ui.Username
+			annotations[groupName+LastModifierAnnotationSuffix] = ui.Username
 		} else {
 			annotations[groupName+CreatorAnnotationSuffix] = ui.Username
-			annotations[groupName+UpdaterAnnotationSuffix] = ui.Username
+			annotations[groupName+LastModifierAnnotationSuffix] = ui.Username
 		}
 	}
 }
