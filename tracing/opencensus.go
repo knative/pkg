@@ -4,10 +4,10 @@ import (
 	"errors"
 	"sync"
 
+	"contrib.go.opencensus.io/exporter/zipkin"
 	"github.com/knative/pkg/tracing/config"
 	zipkinmodel "github.com/openzipkin/zipkin-go/model"
 	zipkinreporter "github.com/openzipkin/zipkin-go/reporter"
-	"go.opencensus.io/exporter/zipkin"
 	"go.opencensus.io/trace"
 )
 

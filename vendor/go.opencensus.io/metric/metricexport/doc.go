@@ -1,4 +1,4 @@
-// Copyright 2017, OpenCensus Authors
+// Copyright 2018, OpenCensus Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,10 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package opencensus contains Go support for OpenCensus.
-package opencensus // import "go.opencensus.io"
-
-// Version is the current release version of OpenCensus in use.
-func Version() string {
-	return "0.22.0"
-}
+// Package metricexport contains support for exporting metric data.
+//
+// This is an EXPERIMENTAL package, and may change in arbitrary ways without
+// notice.
+package metricexport // import "go.opencensus.io/metric/metricexport"

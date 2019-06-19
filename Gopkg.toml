@@ -63,6 +63,21 @@ required = [
   name = "github.com/knative/test-infra"
   branch = "master"
 
+[[constraint]]
+  name = "contrib.go.opencensus.io/exporter/zipkin"
+  version = "0.1.1"
+
+[[constraint]]
+  name = "contrib.go.opencensus.io/exporter/prometheus"
+  version = "0.1.0"
+
+[[override]]
+  name = "go.opencensus.io"
+  # The Prometheus contrib library uses a type from this version of OpenCensus
+  # that has since been deleted. This override can be removed once Prometheus
+  # releases a patched version.
+  version = "0.22.0"
+
 [prune]
   go-tests = true
   unused-packages = true

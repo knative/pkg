@@ -16,6 +16,14 @@
   version = "v0.34.0"
 
 [[projects]]
+  digest = "1:642cf8e80572f9dc0677b0f241c8ab2e715c9dccc215270ea873c86ddca0062c"
+  name = "contrib.go.opencensus.io/exporter/prometheus"
+  packages = ["."]
+  pruneopts = "NUT"
+  revision = "f4a2c1e53ec45636355d35fb9022b64e4bdd4a91"
+  version = "v0.1.0"
+
+[[projects]]
   digest = "1:43fbf05ea84c860a4e86b557d156b1e72511cd29375d3f71adb522362710aea7"
   name = "contrib.go.opencensus.io/exporter/stackdriver"
   packages = [
@@ -25,6 +33,14 @@
   pruneopts = "NUT"
   revision = "ab5a58af316a529613aadf9f50eeed1b6f044b2f"
   version = "v0.9.2"
+
+[[projects]]
+  digest = "1:7b5f423f5b0dd3dfa32a19a6183b0ab9129bff371ebf3f9efae32f87e4986d8f"
+  name = "contrib.go.opencensus.io/exporter/zipkin"
+  packages = ["."]
+  pruneopts = "NUT"
+  revision = "30f9fad5db2c8944c21d223496e2543aeb445d4c"
+  version = "v0.1.1"
 
 [[projects]]
   branch = "master"
@@ -462,15 +478,14 @@
   version = "v1.0.3"
 
 [[projects]]
-  digest = "1:b8baa7541ef444be218da02d3a7b607d33513263660e489d86d429afbffcdd86"
+  digest = "1:d2e799c7b52b568fa8ee9e62dbd2c5b0a1a34bf4a6bc43c2dd4b0b35bf52874f"
   name = "go.opencensus.io"
   packages = [
     ".",
-    "exporter/prometheus",
-    "exporter/zipkin",
     "internal",
     "internal/tagencoding",
     "metric/metricdata",
+    "metric/metricexport",
     "metric/metricproducer",
     "plugin/ocgrpc",
     "plugin/ochttp",
@@ -486,8 +501,8 @@
     "trace/tracestate",
   ]
   pruneopts = "NUT"
-  revision = "75c0cca22312e51bfd4fafdbe9197ae399e18b38"
-  version = "v0.20.2"
+  revision = "9c377598961b706d1542bd2d84d538b5094d596e"
+  version = "v0.22.0"
 
 [[projects]]
   digest = "1:22f696cee54865fb8e9ff91df7b633f6b8f22037a8015253c6b6a71ca82219c7"
@@ -1098,8 +1113,10 @@
   analyzer-version = 1
   input-imports = [
     "cloud.google.com/go/compute/metadata",
+    "contrib.go.opencensus.io/exporter/prometheus",
     "contrib.go.opencensus.io/exporter/stackdriver",
     "contrib.go.opencensus.io/exporter/stackdriver/monitoredresource",
+    "contrib.go.opencensus.io/exporter/zipkin",
     "github.com/davecgh/go-spew/spew",
     "github.com/evanphx/json-patch",
     "github.com/ghodss/yaml",
@@ -1120,8 +1137,6 @@
     "github.com/pkg/errors",
     "github.com/rogpeppe/go-internal/semver",
     "github.com/spf13/pflag",
-    "go.opencensus.io/exporter/prometheus",
-    "go.opencensus.io/exporter/zipkin",
     "go.opencensus.io/plugin/ochttp",
     "go.opencensus.io/plugin/ochttp/propagation/b3",
     "go.opencensus.io/stats",
