@@ -29,8 +29,8 @@ import (
 )
 
 const (
-	creatorAnnotation      = "testing.knative.dev/creator"
-	lastModifierAnnotation = "testing.knative.dev/lastModifier"
+	creatorAnnotation = "testing.knative.dev/creator"
+	updaterAnnotation = "testing.knative.dev/updater"
 )
 
 func TestSetUserInfoAnnotationsWhenWithinCreate(t *testing.T) {
@@ -49,8 +49,8 @@ func TestSetUserInfoAnnotationsWhenWithinCreate(t *testing.T) {
 				r.Annotations = map[string]string{}
 			},
 			expectedAnnotations: map[string]string{
-				creatorAnnotation:      user1,
-				lastModifierAnnotation: user1,
+				creatorAnnotation: user1,
+				updaterAnnotation: user1,
 			},
 		},
 		{
@@ -60,13 +60,13 @@ func TestSetUserInfoAnnotationsWhenWithinCreate(t *testing.T) {
 			},
 			setup: func(ctx context.Context, r *Resource) {
 				r.Annotations = map[string]string{
-					creatorAnnotation:      user2,
-					lastModifierAnnotation: user2,
+					creatorAnnotation: user2,
+					updaterAnnotation: user2,
 				}
 			},
 			expectedAnnotations: map[string]string{
-				creatorAnnotation:      user1,
-				lastModifierAnnotation: user1,
+				creatorAnnotation: user1,
+				updaterAnnotation: user1,
 			},
 		},
 		{
@@ -111,7 +111,7 @@ func TestSetUserInfoAnnotationsWhenWithinUpdate(t *testing.T) {
 		expectedAnnotations map[string]string
 	}{
 		{
-			name: "test update (should add lastModifier annotation when it is not present)",
+			name: "test update (should add updater annotation when it is not present)",
 			configureContext: func(ctx context.Context, r *Resource) context.Context {
 				return apis.WithinUpdate(apis.WithUserInfo(ctx, &authenticationv1.UserInfo{Username: user1}), r)
 			},
@@ -122,26 +122,26 @@ func TestSetUserInfoAnnotationsWhenWithinUpdate(t *testing.T) {
 				r.Spec.FieldWithDefault = "changing this field"
 			},
 			expectedAnnotations: map[string]string{
-				creatorAnnotation:      user2,
-				lastModifierAnnotation: user1,
+				creatorAnnotation: user2,
+				updaterAnnotation: user1,
 			},
 		},
 		{
-			name: "test update (should update lastModifier annotation when it is present)",
+			name: "test update (should update updater annotation when it is present)",
 			configureContext: func(ctx context.Context, r *Resource) context.Context {
 				return apis.WithinUpdate(apis.WithUserInfo(ctx, &authenticationv1.UserInfo{Username: user1}), r)
 			},
 			setup: func(ctx context.Context, r *Resource) {
 				r.Annotations = map[string]string{
-					creatorAnnotation:      user2,
-					lastModifierAnnotation: user2,
+					creatorAnnotation: user2,
+					updaterAnnotation: user2,
 				}
 				r.Spec.FieldWithDefault = "changing this field"
 			},
 			expectedAnnotations: map[string]string{
 				// should not change
-				creatorAnnotation:      user2,
-				lastModifierAnnotation: user1,
+				creatorAnnotation: user2,
+				updaterAnnotation: user1,
 			},
 		},
 		{

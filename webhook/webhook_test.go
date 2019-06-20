@@ -172,8 +172,8 @@ func TestAdmitCreates(t *testing.T) {
 			r.TypeMeta.APIVersion = "v1alpha1"
 			r.SetDefaults(ctx)
 			r.Annotations = map[string]string{
-				creatorAnnotation:      user1,
-				lastModifierAnnotation: user1,
+				creatorAnnotation: user1,
+				updaterAnnotation: user1,
 			}
 		},
 		patches: []jsonpatch.JsonPatchOperation{},
@@ -183,8 +183,8 @@ func TestAdmitCreates(t *testing.T) {
 			r.TypeMeta.APIVersion = "v1beta1"
 			r.SetDefaults(ctx)
 			r.Annotations = map[string]string{
-				creatorAnnotation:      user1,
-				lastModifierAnnotation: user1,
+				creatorAnnotation: user1,
+				updaterAnnotation: user1,
 			}
 		},
 		patches: []jsonpatch.JsonPatchOperation{},
@@ -196,8 +196,8 @@ func TestAdmitCreates(t *testing.T) {
 			Operation: "add",
 			Path:      "/metadata/annotations",
 			Value: map[string]interface{}{
-				creatorAnnotation:      user1,
-				lastModifierAnnotation: user1,
+				creatorAnnotation: user1,
+				updaterAnnotation: user1,
 			},
 		}, {
 			Operation: "add",
@@ -221,7 +221,7 @@ func TestAdmitCreates(t *testing.T) {
 			Value:     user1,
 		}, {
 			Operation: "add",
-			Path:      "/metadata/annotations/testing.knative.dev~1lastModifier",
+			Path:      "/metadata/annotations/testing.knative.dev~1updater",
 			Value:     user1,
 		}, {
 			Operation: "add",
@@ -241,8 +241,8 @@ func TestAdmitCreates(t *testing.T) {
 			Operation: "add",
 			Path:      "/metadata/annotations",
 			Value: map[string]interface{}{
-				creatorAnnotation:      user1,
-				lastModifierAnnotation: user1,
+				creatorAnnotation: user1,
+				updaterAnnotation: user1,
 			},
 		}, {
 			Operation: "add",
@@ -264,7 +264,7 @@ func TestAdmitCreates(t *testing.T) {
 			Value:     user1,
 		}, {
 			Operation: "add",
-			Path:      "/metadata/annotations/testing.knative.dev~1lastModifier",
+			Path:      "/metadata/annotations/testing.knative.dev~1updater",
 			Value:     user1,
 		}},
 	}, {
@@ -330,32 +330,32 @@ func TestAdmitUpdates(t *testing.T) {
 			r.SetDefaults(ctx)
 		},
 		mutate: func(ctx context.Context, r *Resource) {
-			// If we don't change anything, the lastModifier
+			// If we don't change anything, the updater
 			// annotation doesn't change.
 		},
 		patches: []jsonpatch.JsonPatchOperation{},
 	}, {
-		name: "test simple update (update lastModifier annotation)",
+		name: "test simple update (update updater annotation)",
 		setup: func(ctx context.Context, r *Resource) {
 			r.SetDefaults(ctx)
 		},
 		mutate: func(ctx context.Context, r *Resource) {
-			// When we change the spec, the lastModifier
+			// When we change the spec, the updater
 			// annotation changes.
 			r.Spec.FieldWithDefault = "not the default"
 		},
 		patches: []jsonpatch.JsonPatchOperation{{
 			Operation: "replace",
-			Path:      "/metadata/annotations/testing.knative.dev~1lastModifier",
+			Path:      "/metadata/annotations/testing.knative.dev~1updater",
 			Value:     user2,
 		}},
 	}, {
-		name: "test simple update (annotation change doesn't change lastModifier)",
+		name: "test simple update (annotation change doesn't change updater)",
 		setup: func(ctx context.Context, r *Resource) {
 			r.SetDefaults(ctx)
 		},
 		mutate: func(ctx context.Context, r *Resource) {
-			// When we change an annotation, the lastModifier doesn't change.
+			// When we change an annotation, the updater doesn't change.
 			r.Annotations["foo"] = "bar"
 		},
 		patches: []jsonpatch.JsonPatchOperation{},
@@ -399,8 +399,8 @@ func TestAdmitUpdates(t *testing.T) {
 			ctx := TestContextWithLogger(t)
 
 			old.Annotations = map[string]string{
-				creatorAnnotation:      user1,
-				lastModifierAnnotation: user1,
+				creatorAnnotation: user1,
+				updaterAnnotation: user1,
 			}
 
 			tc.setup(ctx, old)
@@ -787,8 +787,8 @@ func setUserAnnotation(userC, userU string) jsonpatch.JsonPatchOperation {
 		Operation: "add",
 		Path:      "/metadata/annotations",
 		Value: map[string]interface{}{
-			creatorAnnotation:      userC,
-			lastModifierAnnotation: userU,
+			creatorAnnotation: userC,
+			updaterAnnotation: userU,
 		},
 	}
 }

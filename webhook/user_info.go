@@ -28,12 +28,12 @@ const (
 	// the user that created the resource.
 	CreatorAnnotationSuffix = "/creator"
 
-	// LastModifierAnnotationSuffix is the suffix of the annotation key to describe
+	// UpdaterAnnotationSuffix is the suffix of the annotation key to describe
 	// the user who last modified the resource.
-	LastModifierAnnotationSuffix = "/lastModifier"
+	UpdaterAnnotationSuffix = "/updater"
 )
 
-// SetUserInfoAnnotations sets creator and lastModifier annotations on a resource.
+// SetUserInfoAnnotations sets creator and updater annotations on a resource.
 func SetUserInfoAnnotations(resource apis.HasSpec, ctx context.Context, groupName string) {
 	if ui := apis.GetUserInfo(ctx); ui != nil {
 		objectMetaAccessor, ok := resource.(metav1.ObjectMetaAccessor)
@@ -52,10 +52,10 @@ func SetUserInfoAnnotations(resource apis.HasSpec, ctx context.Context, groupNam
 			if equality.Semantic.DeepEqual(old.GetSpec(), resource.GetSpec()) {
 				return
 			}
-			annotations[groupName+LastModifierAnnotationSuffix] = ui.Username
+			annotations[groupName+UpdaterAnnotationSuffix] = ui.Username
 		} else {
 			annotations[groupName+CreatorAnnotationSuffix] = ui.Username
-			annotations[groupName+LastModifierAnnotationSuffix] = ui.Username
+			annotations[groupName+UpdaterAnnotationSuffix] = ui.Username
 		}
 	}
 }
