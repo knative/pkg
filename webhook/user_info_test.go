@@ -39,46 +39,42 @@ func TestSetUserInfoAnnotationsWhenWithinCreate(t *testing.T) {
 		configureContext    func(context.Context) context.Context
 		setup               func(context.Context, *Resource)
 		expectedAnnotations map[string]string
-	}{
-		{
-			name: "test create",
-			configureContext: func(ctx context.Context) context.Context {
-				return apis.WithinCreate(apis.WithUserInfo(ctx, &authenticationv1.UserInfo{Username: user1}))
-			},
-			setup: func(ctx context.Context, r *Resource) {
-				r.Annotations = map[string]string{}
-			},
-			expectedAnnotations: map[string]string{
-				creatorAnnotation: user1,
-				updaterAnnotation: user1,
-			},
+	}{{
+		name: "test create",
+		configureContext: func(ctx context.Context) context.Context {
+			return apis.WithinCreate(apis.WithUserInfo(ctx, &authenticationv1.UserInfo{Username: user1}))
 		},
-		{
-			name: "test create (should override user info annotations when they are present)",
-			configureContext: func(ctx context.Context) context.Context {
-				return apis.WithinCreate(apis.WithUserInfo(ctx, &authenticationv1.UserInfo{Username: user1}))
-			},
-			setup: func(ctx context.Context, r *Resource) {
-				r.Annotations = map[string]string{
-					creatorAnnotation: user2,
-					updaterAnnotation: user2,
-				}
-			},
-			expectedAnnotations: map[string]string{
-				creatorAnnotation: user1,
-				updaterAnnotation: user1,
-			},
+		setup: func(ctx context.Context, r *Resource) {
+			r.Annotations = map[string]string{}
 		},
-		{
-			name: "test create (should not touch annotations when no user info available)",
-			configureContext: func(ctx context.Context) context.Context {
-				return apis.WithinCreate(ctx)
-			},
-			setup: func(ctx context.Context, r *Resource) {
-			},
-			expectedAnnotations: nil,
+		expectedAnnotations: map[string]string{
+			creatorAnnotation: user1,
+			updaterAnnotation: user1,
 		},
-	}
+	}, {
+		name: "test create (should override user info annotations when they are present)",
+		configureContext: func(ctx context.Context) context.Context {
+			return apis.WithinCreate(apis.WithUserInfo(ctx, &authenticationv1.UserInfo{Username: user1}))
+		},
+		setup: func(ctx context.Context, r *Resource) {
+			r.Annotations = map[string]string{
+				creatorAnnotation: user2,
+				updaterAnnotation: user2,
+			}
+		},
+		expectedAnnotations: map[string]string{
+			creatorAnnotation: user1,
+			updaterAnnotation: user1,
+		},
+	}, {
+		name: "test create (should not touch annotations when no user info available)",
+		configureContext: func(ctx context.Context) context.Context {
+			return apis.WithinCreate(ctx)
+		},
+		setup: func(ctx context.Context, r *Resource) {
+		},
+		expectedAnnotations: nil,
+	}}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
@@ -109,63 +105,58 @@ func TestSetUserInfoAnnotationsWhenWithinUpdate(t *testing.T) {
 		configureContext    func(context.Context, *Resource) context.Context
 		setup               func(context.Context, *Resource)
 		expectedAnnotations map[string]string
-	}{
-		{
-			name: "test update (should add updater annotation when it is not present)",
-			configureContext: func(ctx context.Context, r *Resource) context.Context {
-				return apis.WithinUpdate(apis.WithUserInfo(ctx, &authenticationv1.UserInfo{Username: user1}), r)
-			},
-			setup: func(ctx context.Context, r *Resource) {
-				r.Annotations = map[string]string{
-					creatorAnnotation: user2,
-				}
-				r.Spec.FieldWithDefault = "changing this field"
-			},
-			expectedAnnotations: map[string]string{
+	}{{
+		name: "test update (should add updater annotation when it is not present)",
+		configureContext: func(ctx context.Context, r *Resource) context.Context {
+			return apis.WithinUpdate(apis.WithUserInfo(ctx, &authenticationv1.UserInfo{Username: user1}), r)
+		},
+		setup: func(ctx context.Context, r *Resource) {
+			r.Annotations = map[string]string{
 				creatorAnnotation: user2,
-				updaterAnnotation: user1,
-			},
+			}
+			r.Spec.FieldWithDefault = "changing this field"
 		},
-		{
-			name: "test update (should update updater annotation when it is present)",
-			configureContext: func(ctx context.Context, r *Resource) context.Context {
-				return apis.WithinUpdate(apis.WithUserInfo(ctx, &authenticationv1.UserInfo{Username: user1}), r)
-			},
-			setup: func(ctx context.Context, r *Resource) {
-				r.Annotations = map[string]string{
-					creatorAnnotation: user2,
-					updaterAnnotation: user2,
-				}
-				r.Spec.FieldWithDefault = "changing this field"
-			},
-			expectedAnnotations: map[string]string{
-				// should not change
+		expectedAnnotations: map[string]string{
+			creatorAnnotation: user2,
+			updaterAnnotation: user1,
+		},
+	}, {
+		name: "test update (should update updater annotation when it is present)",
+		configureContext: func(ctx context.Context, r *Resource) context.Context {
+			return apis.WithinUpdate(apis.WithUserInfo(ctx, &authenticationv1.UserInfo{Username: user1}), r)
+		},
+		setup: func(ctx context.Context, r *Resource) {
+			r.Annotations = map[string]string{
 				creatorAnnotation: user2,
-				updaterAnnotation: user1,
-			},
+				updaterAnnotation: user2,
+			}
+			r.Spec.FieldWithDefault = "changing this field"
 		},
-		{
-			name: "test update (should not touch annotations when no user info available)",
-			configureContext: func(ctx context.Context, r *Resource) context.Context {
-				return apis.WithinUpdate(ctx, r)
-			},
-			setup: func(ctx context.Context, r *Resource) {
-				// this is not necessary, but let's do this in case the execution flow changes
-				r.Spec.FieldWithDefault = "changing this field"
-			},
-			expectedAnnotations: nil,
+		expectedAnnotations: map[string]string{
+			// should not change
+			creatorAnnotation: user2,
+			updaterAnnotation: user1,
 		},
-		{
-			name: "test update (should not touch annotations when nothing in spec is changed)",
-			configureContext: func(ctx context.Context, r *Resource) context.Context {
-				return apis.WithinUpdate(apis.WithUserInfo(ctx, &authenticationv1.UserInfo{Username: user1}), r)
-			},
-			setup: func(ctx context.Context, r *Resource) {
-				// change nothing
-			},
-			expectedAnnotations: map[string]string{},
+	}, {
+		name: "test update (should not touch annotations when no user info available)",
+		configureContext: func(ctx context.Context, r *Resource) context.Context {
+			return apis.WithinUpdate(ctx, r)
 		},
-	}
+		setup: func(ctx context.Context, r *Resource) {
+			// this is not necessary, but let's do this in case the execution flow changes
+			r.Spec.FieldWithDefault = "changing this field"
+		},
+		expectedAnnotations: nil,
+	}, {
+		name: "test update (should not touch annotations when nothing in spec is changed)",
+		configureContext: func(ctx context.Context, r *Resource) context.Context {
+			return apis.WithinUpdate(apis.WithUserInfo(ctx, &authenticationv1.UserInfo{Username: user1}), r)
+		},
+		setup: func(ctx context.Context, r *Resource) {
+			// change nothing
+		},
+		expectedAnnotations: map[string]string{},
+	}}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
