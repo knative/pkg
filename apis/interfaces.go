@@ -70,6 +70,6 @@ type Annotatable interface{}
 // HasSpec indicates that a particular type has a specification information
 // and that information is retrievable.
 type HasSpec interface {
-	// GetSpec returns the spec of the resource.
-	GetSpec() interface{}
+	// GetUntypedSpec returns the spec of the resource.
+	GetUntypedSpec() interface{}
 }

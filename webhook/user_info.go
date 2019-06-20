@@ -49,7 +49,7 @@ func SetUserInfoAnnotations(resource apis.HasSpec, ctx context.Context, groupNam
 
 		if apis.IsInUpdate(ctx) {
 			old := apis.GetBaseline(ctx).(apis.HasSpec)
-			if equality.Semantic.DeepEqual(old.GetSpec(), resource.GetSpec()) {
+			if equality.Semantic.DeepEqual(old.GetUntypedSpec(), resource.GetUntypedSpec()) {
 				return
 			}
 			annotations[groupName+UpdaterAnnotationSuffix] = ui.Username

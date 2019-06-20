@@ -50,8 +50,8 @@ type ResourceSpec struct {
 	FieldThatsImmutableWithDefault string `json:"fieldThatsImmutableWithDefault,omitempty"`
 }
 
-// GetSpec returns the spec of the Resource.
-func (r *Resource) GetSpec() interface{} {
+// GetUntypedSpec returns the spec of the resource.
+func (r *Resource) GetUntypedSpec() interface{} {
 	return r.Spec
 }
 
