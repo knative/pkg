@@ -99,9 +99,6 @@ type ControllerOptions struct {
 	// TLS Client Authentication.
 	// The default value is tls.NoClientCert.
 	ClientAuth tls.ClientAuthType
-
-	// GroupName is the name of the group that is using this webhook.
-	GroupName string
 }
 
 // ResourceCallback defines a signature for resource specific (Route, Configuration, etc.)
@@ -555,7 +552,7 @@ func (ac *AdmissionController) mutate(ctx context.Context, req *admissionv1beta1
 
 		s, ok := oldObj.(apis.HasSpec)
 		if ok {
-			SetUserInfoAnnotations(s, ctx, ac.Options.GroupName)
+			SetUserInfoAnnotations(s, ctx, req.Resource.Group)
 		}
 
 		if req.SubResource == "" {
@@ -576,7 +573,7 @@ func (ac *AdmissionController) mutate(ctx context.Context, req *admissionv1beta1
 		return nil, err
 	}
 
-	if patches, err = ac.setUserInfoAnnotations(ctx, patches, newObj); err != nil {
+	if patches, err = ac.setUserInfoAnnotations(ctx, patches, newObj, req.Resource.Group); err != nil {
 		logger.Errorw("Failed the resource user info annotator", zap.Error(err))
 		return nil, err
 	}
@@ -595,7 +592,7 @@ func (ac *AdmissionController) mutate(ctx context.Context, req *admissionv1beta1
 	return json.Marshal(patches)
 }
 
-func (ac *AdmissionController) setUserInfoAnnotations(ctx context.Context, patches duck.JSONPatch, new GenericCRD) (duck.JSONPatch, error) {
+func (ac *AdmissionController) setUserInfoAnnotations(ctx context.Context, patches duck.JSONPatch, new GenericCRD, groupName string) (duck.JSONPatch, error) {
 	if new == nil {
 		return patches, nil
 	}
@@ -606,7 +603,7 @@ func (ac *AdmissionController) setUserInfoAnnotations(ctx context.Context, patch
 
 	b, a := new.DeepCopyObject().(apis.HasSpec), nh
 
-	SetUserInfoAnnotations(nh, ctx, ac.Options.GroupName)
+	SetUserInfoAnnotations(nh, ctx, groupName)
 
 	patch, err := duck.CreatePatch(b, a)
 	if err != nil {

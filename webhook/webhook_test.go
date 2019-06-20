@@ -57,7 +57,6 @@ func newDefaultOptions() ControllerOptions {
 		Port:        443,
 		SecretName:  "webhook-certs",
 		WebhookName: "webhook.knative.dev",
-		GroupName:   "testing.knative.dev",
 	}
 }
 
@@ -314,6 +313,7 @@ func createCreateResource(ctx context.Context, r *Resource) *admissionv1beta1.Ad
 		panic("failed to marshal resource")
 	}
 	req.Object.Raw = marshaled
+	req.Resource.Group = "testing.knative.dev"
 	return req
 }
 
@@ -445,6 +445,7 @@ func createUpdateResource(ctx context.Context, old, new *Resource) *admissionv1b
 		panic("failed to marshal resource")
 	}
 	req.OldObject.Raw = marshaledOld
+	req.Resource.Group = "testing.knative.dev"
 	return req
 }
 
