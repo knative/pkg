@@ -1,6 +1,6 @@
 # Releasing knative/pkg
 
-We release the components of Knative ever 6 weeks.  All of these components must
+We release the components of Knative every 6 weeks.  All of these components must
 be moved to the latest "release" of the knative/pkg shared library prior to each
 release, but likely this should happen incrementally over each milestone.
 
@@ -8,9 +8,19 @@ release, but likely this should happen incrementally over each milestone.
 
 ### Step #1: Monday the week prior to each release.
 
-Early the week prior to the Knative release, each of the downstream repositories
-should stage a `[WIP]` Pull Request that advances the knative/pkg dependency to
-the latest commit:
+On Monday of the week prior to the Knative release, each of the downstream
+repositories should stage a `[WIP]` Pull Request that advances the knative/pkg
+dependency to the latest commit.
+
+At present, these downstream repositories include:
+
+1. knative/serving
+1. knative/eventing
+1. knative/build
+1. knative/sample-controller
+1. GoogleCloudPlatform/cloud-run-events
+
+> The automation that auto-bumps these lives [here](https://github.com/mattmoor/knobots/tree/knative/cmd/periodic/kodata).
 
 `Gopkg.toml` should look like:
 
@@ -24,6 +34,7 @@ Then the following is run:
 
 ```shell
 dep ensure -update github.com/knative/pkg
+./hack/update-deps.sh
 ```
 
 If problems are found, they are addressed and the update is merged, and this
@@ -76,4 +87,5 @@ their own release branches, so to update the `knative/pkg` dependency we run:
 
 ```shell
 dep ensure -update github.com/knative/pkg
+./hack/update-deps.sh
 ```
