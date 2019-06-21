@@ -171,8 +171,8 @@ func TestAdmitCreates(t *testing.T) {
 			r.TypeMeta.APIVersion = "v1alpha1"
 			r.SetDefaults(ctx)
 			r.Annotations = map[string]string{
-				creatorAnnotation: user1,
-				updaterAnnotation: user1,
+				"pkg.knative.dev/creator": user1,
+				"pkg.knative.dev/updater": user1,
 			}
 		},
 		patches: []jsonpatch.JsonPatchOperation{},
@@ -182,8 +182,8 @@ func TestAdmitCreates(t *testing.T) {
 			r.TypeMeta.APIVersion = "v1beta1"
 			r.SetDefaults(ctx)
 			r.Annotations = map[string]string{
-				creatorAnnotation: user1,
-				updaterAnnotation: user1,
+				"pkg.knative.dev/creator": user1,
+				"pkg.knative.dev/updater": user1,
 			}
 		},
 		patches: []jsonpatch.JsonPatchOperation{},
@@ -195,8 +195,8 @@ func TestAdmitCreates(t *testing.T) {
 			Operation: "add",
 			Path:      "/metadata/annotations",
 			Value: map[string]interface{}{
-				creatorAnnotation: user1,
-				updaterAnnotation: user1,
+				"pkg.knative.dev/creator": user1,
+				"pkg.knative.dev/updater": user1,
 			},
 		}, {
 			Operation: "add",
@@ -216,11 +216,11 @@ func TestAdmitCreates(t *testing.T) {
 		},
 		patches: []jsonpatch.JsonPatchOperation{{
 			Operation: "add",
-			Path:      "/metadata/annotations/testing.knative.dev~1creator",
+			Path:      "/metadata/annotations/pkg.knative.dev~1creator",
 			Value:     user1,
 		}, {
 			Operation: "add",
-			Path:      "/metadata/annotations/testing.knative.dev~1updater",
+			Path:      "/metadata/annotations/pkg.knative.dev~1updater",
 			Value:     user1,
 		}, {
 			Operation: "add",
@@ -240,8 +240,8 @@ func TestAdmitCreates(t *testing.T) {
 			Operation: "add",
 			Path:      "/metadata/annotations",
 			Value: map[string]interface{}{
-				creatorAnnotation: user1,
-				updaterAnnotation: user1,
+				"pkg.knative.dev/creator": user1,
+				"pkg.knative.dev/updater": user1,
 			},
 		}, {
 			Operation: "add",
@@ -254,16 +254,16 @@ func TestAdmitCreates(t *testing.T) {
 			r.SetDefaults(ctx)
 			// THIS IS NOT WHO IS CREATING IT, IT IS LIES!
 			r.Annotations = map[string]string{
-				creatorAnnotation: user2,
+				"pkg.knative.dev/updater": user2,
 			}
 		},
 		patches: []jsonpatch.JsonPatchOperation{{
 			Operation: "replace",
-			Path:      "/metadata/annotations/testing.knative.dev~1creator",
+			Path:      "/metadata/annotations/pkg.knative.dev~1updater",
 			Value:     user1,
 		}, {
 			Operation: "add",
-			Path:      "/metadata/annotations/testing.knative.dev~1updater",
+			Path:      "/metadata/annotations/pkg.knative.dev~1creator",
 			Value:     user1,
 		}},
 	}, {
@@ -313,7 +313,7 @@ func createCreateResource(ctx context.Context, r *Resource) *admissionv1beta1.Ad
 		panic("failed to marshal resource")
 	}
 	req.Object.Raw = marshaled
-	req.Resource.Group = "testing.knative.dev"
+	req.Resource.Group = "pkg.knative.dev"
 	return req
 }
 
@@ -346,7 +346,7 @@ func TestAdmitUpdates(t *testing.T) {
 		},
 		patches: []jsonpatch.JsonPatchOperation{{
 			Operation: "replace",
-			Path:      "/metadata/annotations/testing.knative.dev~1updater",
+			Path:      "/metadata/annotations/pkg.knative.dev~1updater",
 			Value:     user2,
 		}},
 	}, {
@@ -399,8 +399,8 @@ func TestAdmitUpdates(t *testing.T) {
 			ctx := TestContextWithLogger(t)
 
 			old.Annotations = map[string]string{
-				creatorAnnotation: user1,
-				updaterAnnotation: user1,
+				"pkg.knative.dev/creator": user1,
+				"pkg.knative.dev/updater": user1,
 			}
 
 			tc.setup(ctx, old)
@@ -445,7 +445,7 @@ func createUpdateResource(ctx context.Context, old, new *Resource) *admissionv1b
 		panic("failed to marshal resource")
 	}
 	req.OldObject.Raw = marshaledOld
-	req.Resource.Group = "testing.knative.dev"
+	req.Resource.Group = "pkg.knative.dev"
 	return req
 }
 
@@ -788,8 +788,8 @@ func setUserAnnotation(userC, userU string) jsonpatch.JsonPatchOperation {
 		Operation: "add",
 		Path:      "/metadata/annotations",
 		Value: map[string]interface{}{
-			creatorAnnotation: userC,
-			updaterAnnotation: userU,
+			"pkg.knative.dev/creator": userC,
+			"pkg.knative.dev/updater": userU,
 		},
 	}
 }

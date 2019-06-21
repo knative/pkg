@@ -28,11 +28,6 @@ import (
 	"testing"
 )
 
-const (
-	creatorAnnotation = "testing.knative.dev/creator"
-	updaterAnnotation = "testing.knative.dev/updater"
-)
-
 func TestSetUserInfoAnnotationsWhenWithinCreate(t *testing.T) {
 	tests := []struct {
 		name                string
@@ -48,8 +43,8 @@ func TestSetUserInfoAnnotationsWhenWithinCreate(t *testing.T) {
 			r.Annotations = map[string]string{}
 		},
 		expectedAnnotations: map[string]string{
-			creatorAnnotation: user1,
-			updaterAnnotation: user1,
+			"pkg.knative.dev/creator": user1,
+			"pkg.knative.dev/updater": user1,
 		},
 	}, {
 		name: "test create (should override user info annotations when they are present)",
@@ -58,13 +53,13 @@ func TestSetUserInfoAnnotationsWhenWithinCreate(t *testing.T) {
 		},
 		setup: func(ctx context.Context, r *Resource) {
 			r.Annotations = map[string]string{
-				creatorAnnotation: user2,
-				updaterAnnotation: user2,
+				"pkg.knative.dev/creator": user2,
+				"pkg.knative.dev/updater": user2,
 			}
 		},
 		expectedAnnotations: map[string]string{
-			creatorAnnotation: user1,
-			updaterAnnotation: user1,
+			"pkg.knative.dev/creator": user1,
+			"pkg.knative.dev/updater": user1,
 		},
 	}, {
 		name: "test create (should not touch annotations when no user info available)",
@@ -84,7 +79,7 @@ func TestSetUserInfoAnnotationsWhenWithinCreate(t *testing.T) {
 
 			tc.setup(ctx, r)
 
-			SetUserInfoAnnotations(r, ctx, "testing.knative.dev")
+			SetUserInfoAnnotations(r, ctx, "pkg.knative.dev")
 
 			if !reflect.DeepEqual(r.Annotations, tc.expectedAnnotations) {
 				t.Logf("Got :  %#v", r.Annotations)
@@ -112,13 +107,13 @@ func TestSetUserInfoAnnotationsWhenWithinUpdate(t *testing.T) {
 		},
 		setup: func(ctx context.Context, r *Resource) {
 			r.Annotations = map[string]string{
-				creatorAnnotation: user2,
+				"pkg.knative.dev/creator": user2,
 			}
 			r.Spec.FieldWithDefault = "changing this field"
 		},
 		expectedAnnotations: map[string]string{
-			creatorAnnotation: user2,
-			updaterAnnotation: user1,
+			"pkg.knative.dev/creator": user2,
+			"pkg.knative.dev/updater": user1,
 		},
 	}, {
 		name: "test update (should update updater annotation when it is present)",
@@ -127,15 +122,15 @@ func TestSetUserInfoAnnotationsWhenWithinUpdate(t *testing.T) {
 		},
 		setup: func(ctx context.Context, r *Resource) {
 			r.Annotations = map[string]string{
-				creatorAnnotation: user2,
-				updaterAnnotation: user2,
+				"pkg.knative.dev/creator": user2,
+				"pkg.knative.dev/updater": user2,
 			}
 			r.Spec.FieldWithDefault = "changing this field"
 		},
 		expectedAnnotations: map[string]string{
 			// should not change
-			creatorAnnotation: user2,
-			updaterAnnotation: user1,
+			"pkg.knative.dev/creator": user2,
+			"pkg.knative.dev/updater": user1,
 		},
 	}, {
 		name: "test update (should not touch annotations when no user info available)",
@@ -168,7 +163,7 @@ func TestSetUserInfoAnnotationsWhenWithinUpdate(t *testing.T) {
 
 			tc.setup(ctx, new)
 
-			SetUserInfoAnnotations(new, ctx, "testing.knative.dev")
+			SetUserInfoAnnotations(new, ctx, "pkg.knative.dev")
 
 			if !reflect.DeepEqual(new.Annotations, tc.expectedAnnotations) {
 				t.Logf("Got :  %#v", new.Annotations)
