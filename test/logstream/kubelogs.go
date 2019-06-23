@@ -48,7 +48,7 @@ type logger func(string, ...interface{})
 var _ streamer = (*kubelogs)(nil)
 
 // timeFormat defines a simple timestamp with millisecond granularity
-const timeFormat = "2006-01-02 15:04:05.000"
+const timeFormat = "15:04:05.000"
 
 func (k *kubelogs) init(t *testing.T) {
 	k.keys = make(map[string]logger)
@@ -135,8 +135,13 @@ func (k *kubelogs) handleLine(l string) {
 		if !strings.Contains(line.Key, name) {
 			continue
 		}
-		// 2006-01-02 15:04:05.000 ERROR [route-controller] [default/testroute-xyz] this is my message
-		logf("%s %s [%s] [%s] %s", line.Timestamp.Format(timeFormat), line.Level, line.Controller, line.Key, line.Message)
+		// E 15:04:05.000 [route-controller] [default/testroute-xyz] this is my message
+		logf("%s %s [%s] [%s] %s",
+			strings.ToUpper(string(line.Level[0])),
+			line.Timestamp.Format(timeFormat),
+			line.Controller,
+			line.Key,
+			line.Message)
 	}
 }
 
