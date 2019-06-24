@@ -116,6 +116,7 @@ func (k *kubelogs) handleLine(l string) {
 		Caller     string    `json:"caller"`
 		Key        string    `json:"knative.dev/key"`
 		Message    string    `json:"msg"`
+		Error      string    `json:"error"`
 
 		// TODO(mattmoor): Parse out more context.
 	}
@@ -135,13 +136,20 @@ func (k *kubelogs) handleLine(l string) {
 		if !strings.Contains(line.Key, name) {
 			continue
 		}
+
 		// E 15:04:05.000 [route-controller] [default/testroute-xyz] this is my message
-		logf("%s %s [%s] [%s] %s",
+		msg := fmt.Sprintf("%s %s [%s] [%s] %s",
 			strings.ToUpper(string(line.Level[0])),
 			line.Timestamp.Format(timeFormat),
 			line.Controller,
 			line.Key,
 			line.Message)
+
+		if line.Error != "" {
+			msg += " err=" + line.Error
+		}
+
+		logf(msg)
 	}
 }
 
