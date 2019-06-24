@@ -321,6 +321,7 @@ func TestDoubleShutdown(t *testing.T) {
 }
 
 func TestDurableConnectionWhenConnectionBreaksDown(t *testing.T) {
+	defer ktesting.ClearAll()
 	testPayload := "test"
 	reconnectChan := make(chan struct{})
 
@@ -360,6 +361,7 @@ func TestDurableConnectionWhenConnectionBreaksDown(t *testing.T) {
 }
 
 func TestDurableConnectionSendsPingsRegularly(t *testing.T) {
+	defer ktesting.ClearAll()
 	// Reset pongTimeout to something quite short.
 	pongTimeout = 100 * time.Millisecond
 
