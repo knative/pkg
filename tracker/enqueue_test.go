@@ -34,7 +34,7 @@ func TestHappyPaths(t *testing.T) {
 		calls = calls + 1
 	}
 
-	trk := New(f, 10*time.Millisecond)
+	trk := New(f, 100*time.Millisecond)
 
 	thing1 := &Resource{
 		TypeMeta: metav1.TypeMeta{
@@ -59,14 +59,16 @@ func TestHappyPaths(t *testing.T) {
 		},
 	}
 
-	t.Run("Not tracked yet", func(t *testing.T) {
+	// Not tracked yet
+	{
 		trk.OnChanged(thing1)
 		if got, want := calls, 0; got != want {
 			t.Errorf("OnChanged() = %v, wanted %v", got, want)
 		}
-	})
+	}
 
-	t.Run("Tracked gets called", func(t *testing.T) {
+	// Tracked gets called
+	{
 		if err := trk.Track(objRef, thing2); err != nil {
 			t.Errorf("Track() = %v", err)
 		}
@@ -79,18 +81,19 @@ func TestHappyPaths(t *testing.T) {
 		if got, want := calls, 2; got != want {
 			t.Errorf("OnChanged() = %v, wanted %v", got, want)
 		}
-	})
+	}
 
-	t.Run("Still gets called", func(t *testing.T) {
+	// Still gets called
+	{
 		trk.OnChanged(thing1)
 		if got, want := calls, 3; got != want {
 			t.Errorf("OnChanged() = %v, wanted %v", got, want)
 		}
-	})
+	}
 
 	// Check that after the sleep duration, we stop getting called.
-	time.Sleep(20 * time.Millisecond)
-	t.Run("Stops getting called", func(t *testing.T) {
+	time.Sleep(200 * time.Millisecond)
+	{
 		trk.OnChanged(thing1)
 		if got, want := calls, 3; got != want {
 			t.Errorf("OnChanged() = %v, wanted %v", got, want)
@@ -98,9 +101,10 @@ func TestHappyPaths(t *testing.T) {
 		if _, stillThere := trk.(*impl).mapping[objRef]; stillThere {
 			t.Error("Timeout passed, but mapping for objectReference is still there")
 		}
-	})
+	}
 
-	t.Run("Starts getting called again", func(t *testing.T) {
+	// Starts getting called again
+	{
 		if err := trk.Track(objRef, thing2); err != nil {
 			t.Errorf("Track() = %v", err)
 		}
@@ -113,9 +117,10 @@ func TestHappyPaths(t *testing.T) {
 		if got, want := calls, 5; got != want {
 			t.Errorf("OnChanged() = %v, wanted %v", got, want)
 		}
-	})
+	}
 
-	t.Run("OnChanged non-accessor", func(t *testing.T) {
+	// OnChanged non-accessor
+	{
 		// Check that passing in a resource that doesn't implement
 		// accessor won't panic.
 		trk.OnChanged("not an accessor")
@@ -123,9 +128,10 @@ func TestHappyPaths(t *testing.T) {
 		if got, want := calls, 5; got != want {
 			t.Errorf("OnChanged() = %v, wanted %v", got, want)
 		}
-	})
+	}
 
-	t.Run("OnChanged non-accessor in DeletedFinalStateUnknown", func(t *testing.T) {
+	// OnChanged non-accessor in DeletedFinalStateUnknown
+	{
 		// Check that passing in a DeletedFinalStateUnknown instance
 		// with a resource that doesn't implement accessor won't get
 		// Tracked called, and won't panic.
@@ -137,9 +143,10 @@ func TestHappyPaths(t *testing.T) {
 		if got, want := calls, 5; got != want {
 			t.Errorf("OnChanged() = %v, wanted %v", got, want)
 		}
-	})
+	}
 
-	t.Run("Tracked gets called by DeletedFinalStateUnknown", func(t *testing.T) {
+	// Tracked gets called by DeletedFinalStateUnknown
+	{
 		trk.OnChanged(cache.DeletedFinalStateUnknown{
 			Key: "ns/foo",
 			Obj: thing1,
@@ -147,13 +154,14 @@ func TestHappyPaths(t *testing.T) {
 		if got, want := calls, 6; got != want {
 			t.Errorf("OnChanged() = %v, wanted %v", got, want)
 		}
-	})
+	}
 
-	t.Run("Track bad object", func(t *testing.T) {
+	// Track bad object
+	{
 		if err := trk.Track(objRef, struct{}{}); err == nil {
 			t.Error("Track() = nil, wanted error")
 		}
-	})
+	}
 }
 
 func TestAllowedObjectReferences(t *testing.T) {
