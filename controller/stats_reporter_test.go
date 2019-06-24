@@ -70,13 +70,22 @@ func TestReportReconcile(t *testing.T) {
 		"success":    "true",
 	}
 
+	initialReconcileCount := int64(0)
+	if d, err := view.RetrieveData("reconcile_count"); err == nil && len(d) == 1 {
+		initialReconcileCount = d[0].Data.(*view.CountData).Value
+	}
+	initialReconcileLatency := float64(0)
+	if d, err := view.RetrieveData("reconcile_latency"); err == nil && len(d) == 1 {
+		initialReconcileLatency = d[0].Data.(*view.DistributionData).Sum()
+	}
+
 	expectSuccess(t, func() error { return r.ReportReconcile(time.Duration(10*time.Millisecond), "test/key", "true") })
-	checkCountData(t, "reconcile_count", wantTags, 1)
-	checkDistributionData(t, "reconcile_latency", wantTags, 10)
+	checkCountData(t, "reconcile_count", wantTags, initialReconcileCount+1)
+	checkDistributionData(t, "reconcile_latency", wantTags, initialReconcileLatency+10)
 
 	expectSuccess(t, func() error { return r.ReportReconcile(time.Duration(15*time.Millisecond), "test/key", "true") })
-	checkCountData(t, "reconcile_count", wantTags, 2)
-	checkDistributionData(t, "reconcile_latency", wantTags, 25)
+	checkCountData(t, "reconcile_count", wantTags, initialReconcileCount+2)
+	checkDistributionData(t, "reconcile_latency", wantTags, initialReconcileLatency+25)
 }
 
 func expectSuccess(t *testing.T, f func() error) {
