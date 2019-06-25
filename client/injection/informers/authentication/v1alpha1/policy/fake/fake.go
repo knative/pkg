@@ -21,10 +21,10 @@ package fake
 import (
 	"context"
 
-	fake "github.com/knative/pkg/client/injection/informers/authentication/factory/fake"
-	policy "github.com/knative/pkg/client/injection/informers/authentication/v1alpha1/policy"
-	controller "github.com/knative/pkg/controller"
-	injection "github.com/knative/pkg/injection"
+	fake "knative.dev/pkg/client/injection/informers/authentication/factory/fake"
+	policy "knative.dev/pkg/client/injection/informers/authentication/v1alpha1/policy"
+	controller "knative.dev/pkg/controller"
+	injection "knative.dev/pkg/injection"
 )
 
 var Get = policy.Get

@@ -19,8 +19,8 @@ limitations under the License.
 package networking
 
 import (
-	internalinterfaces "github.com/knative/pkg/client/informers/externalversions/internalinterfaces"
-	v1alpha3 "github.com/knative/pkg/client/informers/externalversions/istio/v1alpha3"
+	internalinterfaces "knative.dev/pkg/client/informers/externalversions/internalinterfaces"
+	v1alpha3 "knative.dev/pkg/client/informers/externalversions/istio/v1alpha3"
 )
 
 // Interface provides access to each of this group's versions.

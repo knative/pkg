@@ -19,8 +19,8 @@ limitations under the License.
 package authentication
 
 import (
-	v1alpha1 "github.com/knative/pkg/client/informers/externalversions/authentication/v1alpha1"
-	internalinterfaces "github.com/knative/pkg/client/informers/externalversions/internalinterfaces"
+	v1alpha1 "knative.dev/pkg/client/informers/externalversions/authentication/v1alpha1"
+	internalinterfaces "knative.dev/pkg/client/informers/externalversions/internalinterfaces"
 )
 
 // Interface provides access to each of this group's versions.

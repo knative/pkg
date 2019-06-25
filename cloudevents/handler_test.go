@@ -31,7 +31,7 @@ import (
 	"time"
 
 	"github.com/davecgh/go-spew/spew"
-	"github.com/knative/pkg/cloudevents"
+	"knative.dev/pkg/cloudevents"
 )
 
 func TestHandlerTypeErrors(t *testing.T) {

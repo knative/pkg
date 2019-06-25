@@ -21,10 +21,10 @@ import (
 
 	batchv1 "k8s.io/client-go/informers/batch/v1"
 
-	"github.com/knative/pkg/controller"
-	"github.com/knative/pkg/injection"
-	"github.com/knative/pkg/injection/informers/kubeinformers/factory"
-	"github.com/knative/pkg/logging"
+	"knative.dev/pkg/controller"
+	"knative.dev/pkg/injection"
+	"knative.dev/pkg/injection/informers/kubeinformers/factory"
+	"knative.dev/pkg/logging"
 )
 
 func init() {

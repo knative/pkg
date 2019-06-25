@@ -21,10 +21,10 @@ package fake
 import (
 	"context"
 
-	fake "github.com/knative/pkg/client/injection/informers/istio/factory/fake"
-	virtualservice "github.com/knative/pkg/client/injection/informers/istio/v1alpha3/virtualservice"
-	controller "github.com/knative/pkg/controller"
-	injection "github.com/knative/pkg/injection"
+	fake "knative.dev/pkg/client/injection/informers/istio/factory/fake"
+	virtualservice "knative.dev/pkg/client/injection/informers/istio/v1alpha3/virtualservice"
+	controller "knative.dev/pkg/controller"
+	injection "knative.dev/pkg/injection"
 )
 
 var Get = virtualservice.Get

@@ -25,7 +25,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/tools/cache"
 
-	. "github.com/knative/pkg/testing"
+	. "knative.dev/pkg/testing"
 )
 
 func TestSendGlobalUpdate(t *testing.T) {

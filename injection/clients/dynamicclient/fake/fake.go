@@ -23,9 +23,9 @@ import (
 	"k8s.io/client-go/dynamic/fake"
 	"k8s.io/client-go/rest"
 
-	"github.com/knative/pkg/injection"
-	"github.com/knative/pkg/injection/clients/dynamicclient"
-	"github.com/knative/pkg/logging"
+	"knative.dev/pkg/injection"
+	"knative.dev/pkg/injection/clients/dynamicclient"
+	"knative.dev/pkg/logging"
 )
 
 func init() {

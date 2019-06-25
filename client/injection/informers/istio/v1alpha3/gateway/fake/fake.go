@@ -21,10 +21,10 @@ package fake
 import (
 	"context"
 
-	fake "github.com/knative/pkg/client/injection/informers/istio/factory/fake"
-	gateway "github.com/knative/pkg/client/injection/informers/istio/v1alpha3/gateway"
-	controller "github.com/knative/pkg/controller"
-	injection "github.com/knative/pkg/injection"
+	fake "knative.dev/pkg/client/injection/informers/istio/factory/fake"
+	gateway "knative.dev/pkg/client/injection/informers/istio/v1alpha3/gateway"
+	controller "knative.dev/pkg/controller"
+	injection "knative.dev/pkg/injection"
 )
 
 var Get = gateway.Get

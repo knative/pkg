@@ -19,12 +19,12 @@ limitations under the License.
 package v1alpha3
 
 import (
-	v1alpha3 "github.com/knative/pkg/apis/istio/v1alpha3"
-	scheme "github.com/knative/pkg/client/clientset/versioned/scheme"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	types "k8s.io/apimachinery/pkg/types"
 	watch "k8s.io/apimachinery/pkg/watch"
 	rest "k8s.io/client-go/rest"
+	v1alpha3 "knative.dev/pkg/apis/istio/v1alpha3"
+	scheme "knative.dev/pkg/client/clientset/versioned/scheme"
 )
 
 // VirtualServicesGetter has a method to return a VirtualServiceInterface.

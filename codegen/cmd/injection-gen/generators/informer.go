@@ -82,12 +82,12 @@ func (g *injectionGenerator) GenerateType(c *generator.Context, t *types.Type, w
 		"group":                     namer.IC(g.groupGoName),
 		"type":                      t,
 		"version":                   namer.IC(g.groupVersion.Version.String()),
-		"injectionRegisterInformer": c.Universe.Type(types.Name{Package: "github.com/knative/pkg/injection", Name: "Default.RegisterInformer"}),
-		"controllerInformer":        c.Universe.Type(types.Name{Package: "github.com/knative/pkg/controller", Name: "Informer"}),
+		"injectionRegisterInformer": c.Universe.Type(types.Name{Package: "knative.dev/pkg/injection", Name: "Default.RegisterInformer"}),
+		"controllerInformer":        c.Universe.Type(types.Name{Package: "knative.dev/pkg/controller", Name: "Informer"}),
 		"informersTypedInformer":    c.Universe.Type(types.Name{Package: g.typedInformerPackage, Name: t.Name.Name + "Informer"}),
 		"factoryGet":                c.Universe.Type(types.Name{Package: g.groupInformerFactoryPackage, Name: "Get"}),
 		"loggingFromContext": c.Universe.Function(types.Name{
-			Package: "github.com/knative/pkg/logging",
+			Package: "knative.dev/pkg/logging",
 			Name:    "FromContext",
 		}),
 	}

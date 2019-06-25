@@ -19,7 +19,7 @@ package tracing
 import (
 	"testing"
 
-	"github.com/knative/pkg/tracing/config"
+	"knative.dev/pkg/tracing/config"
 )
 
 func TestCreateReporter(t *testing.T) {

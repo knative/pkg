@@ -30,9 +30,9 @@ import (
 	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/workqueue"
 
-	. "github.com/knative/pkg/controller/testing"
-	. "github.com/knative/pkg/logging/testing"
-	. "github.com/knative/pkg/testing"
+	. "knative.dev/pkg/controller/testing"
+	. "knative.dev/pkg/logging/testing"
+	. "knative.dev/pkg/testing"
 )
 
 func TestPassNew(t *testing.T) {

@@ -22,7 +22,7 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/knative/pkg/apis/duck"
+	"knative.dev/pkg/apis/duck"
 )
 
 type Scalable struct {

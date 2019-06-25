@@ -24,14 +24,14 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 
-	"github.com/knative/pkg/configmap"
-	"github.com/knative/pkg/controller"
-	"github.com/knative/pkg/injection"
-	"github.com/knative/pkg/injection/clients/kubeclient"
-	"github.com/knative/pkg/logging"
-	"github.com/knative/pkg/metrics"
-	"github.com/knative/pkg/signals"
-	"github.com/knative/pkg/system"
+	"knative.dev/pkg/configmap"
+	"knative.dev/pkg/controller"
+	"knative.dev/pkg/injection"
+	"knative.dev/pkg/injection/clients/kubeclient"
+	"knative.dev/pkg/logging"
+	"knative.dev/pkg/metrics"
+	"knative.dev/pkg/signals"
+	"knative.dev/pkg/system"
 	"go.uber.org/zap"
 )
 

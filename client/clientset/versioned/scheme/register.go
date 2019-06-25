@@ -19,13 +19,13 @@ limitations under the License.
 package scheme
 
 import (
-	authenticationv1alpha1 "github.com/knative/pkg/apis/istio/authentication/v1alpha1"
-	networkingv1alpha3 "github.com/knative/pkg/apis/istio/v1alpha3"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	serializer "k8s.io/apimachinery/pkg/runtime/serializer"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
+	authenticationv1alpha1 "knative.dev/pkg/apis/istio/authentication/v1alpha1"
+	networkingv1alpha3 "knative.dev/pkg/apis/istio/v1alpha3"
 )
 
 var Scheme = runtime.NewScheme()

@@ -71,10 +71,10 @@ func (g *fakeFactoryGenerator) GenerateType(c *generator.Context, t *types.Type,
 		"clientGet":                         c.Universe.Function(types.Name{Package: g.fakeClientInjectionPkg, Name: "Get"}),
 		"informersNewSharedInformerFactory": c.Universe.Function(types.Name{Package: g.sharedInformerFactoryPackage, Name: "NewSharedInformerFactory"}),
 		"injectionRegisterInformerFactory": c.Universe.Function(types.Name{
-			Package: "github.com/knative/pkg/injection",
+			Package: "knative.dev/pkg/injection",
 			Name:    "Fake.RegisterInformerFactory",
 		}),
-		"controllerGetResyncPeriod": c.Universe.Type(types.Name{Package: "github.com/knative/pkg/controller", Name: "GetResyncPeriod"}),
+		"controllerGetResyncPeriod": c.Universe.Type(types.Name{Package: "knative.dev/pkg/controller", Name: "GetResyncPeriod"}),
 	}
 
 	sw.Do(injectionFakeInformerFactory, m)

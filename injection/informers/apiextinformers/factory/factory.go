@@ -19,13 +19,13 @@ package factory
 import (
 	"context"
 
-	"github.com/knative/pkg/logging"
+	"knative.dev/pkg/logging"
 
 	informers "k8s.io/apiextensions-apiserver/pkg/client/informers/externalversions"
 
-	"github.com/knative/pkg/controller"
-	"github.com/knative/pkg/injection"
-	"github.com/knative/pkg/injection/clients/apiextclient"
+	"knative.dev/pkg/controller"
+	"knative.dev/pkg/injection"
+	"knative.dev/pkg/injection/clients/apiextclient"
 )
 
 func init() {

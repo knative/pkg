@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/knative/pkg/tracing/config"
+	"knative.dev/pkg/tracing/config"
 	openzipkin "github.com/openzipkin/zipkin-go"
 	zipkinreporter "github.com/openzipkin/zipkin-go/reporter"
 	reporterrecorder "github.com/openzipkin/zipkin-go/reporter/recorder"

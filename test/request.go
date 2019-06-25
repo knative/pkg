@@ -26,8 +26,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/knative/pkg/test/logging"
-	"github.com/knative/pkg/test/spoof"
+	"knative.dev/pkg/test/logging"
+	"knative.dev/pkg/test/spoof"
 )
 
 // RequestOption enables configuration of requests

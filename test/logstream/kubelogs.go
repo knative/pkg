@@ -29,9 +29,9 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/knative/pkg/ptr"
-	"github.com/knative/pkg/test"
-	"github.com/knative/pkg/test/helpers"
+	"knative.dev/pkg/ptr"
+	"knative.dev/pkg/test"
+	"knative.dev/pkg/test/helpers"
 )
 
 type kubelogs struct {

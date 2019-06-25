@@ -24,7 +24,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/knative/pkg/apis/duck"
+	"knative.dev/pkg/apis/duck"
 )
 
 // PodSpecable is implemented by types containing a PodTemplateSpec

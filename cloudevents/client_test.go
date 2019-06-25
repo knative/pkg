@@ -29,7 +29,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
-	"github.com/knative/pkg/cloudevents"
+	"knative.dev/pkg/cloudevents"
 	"k8s.io/apimachinery/pkg/util/sets"
 )
 

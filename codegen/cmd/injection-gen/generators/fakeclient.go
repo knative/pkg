@@ -68,11 +68,11 @@ func (g *fakeClientGenerator) GenerateType(c *generator.Context, t *types.Type, 
 		"clientKey":  c.Universe.Type(types.Name{Package: g.clientInjectionPkg, Name: "Key"}),
 		"fakeClient": c.Universe.Type(types.Name{Package: g.fakeClientPkg, Name: "Clientset"}),
 		"injectionRegisterClient": c.Universe.Function(types.Name{
-			Package: "github.com/knative/pkg/injection",
+			Package: "knative.dev/pkg/injection",
 			Name:    "Fake.RegisterClient",
 		}),
 		"loggingFromContext": c.Universe.Function(types.Name{
-			Package: "github.com/knative/pkg/logging",
+			Package: "knative.dev/pkg/logging",
 			Name:    "FromContext",
 		}),
 	}

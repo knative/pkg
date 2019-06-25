@@ -14,7 +14,7 @@ limitations under the License.
 package metrics
 
 import (
-	"github.com/knative/pkg/metrics/metricskey"
+	"knative.dev/pkg/metrics/metricskey"
 )
 
 type gcpMetadata struct {

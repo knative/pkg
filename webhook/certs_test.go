@@ -24,7 +24,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 
-	. "github.com/knative/pkg/logging/testing"
+	. "knative.dev/pkg/logging/testing"
 )
 
 func TestCreateCerts(t *testing.T) {

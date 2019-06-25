@@ -21,11 +21,11 @@ package policy
 import (
 	"context"
 
-	v1alpha1 "github.com/knative/pkg/client/informers/externalversions/authentication/v1alpha1"
-	factory "github.com/knative/pkg/client/injection/informers/authentication/factory"
-	controller "github.com/knative/pkg/controller"
-	injection "github.com/knative/pkg/injection"
-	logging "github.com/knative/pkg/logging"
+	v1alpha1 "knative.dev/pkg/client/informers/externalversions/authentication/v1alpha1"
+	factory "knative.dev/pkg/client/injection/informers/authentication/factory"
+	controller "knative.dev/pkg/controller"
+	injection "knative.dev/pkg/injection"
+	logging "knative.dev/pkg/logging"
 )
 
 func init() {

@@ -23,9 +23,9 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
-	"github.com/knative/pkg/apis"
-	. "github.com/knative/pkg/logging/testing"
-	. "github.com/knative/pkg/testing"
+	"knative.dev/pkg/apis"
+	. "knative.dev/pkg/logging/testing"
+	. "knative.dev/pkg/testing"
 	authenticationv1 "k8s.io/api/authentication/v1"
 )
 

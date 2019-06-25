@@ -22,7 +22,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"k8s.io/client-go/tools/cache"
 
-	. "github.com/knative/pkg/testing"
+	. "knative.dev/pkg/testing"
 )
 
 // Ensure our resource satisfies the interface.

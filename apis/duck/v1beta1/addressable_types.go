@@ -20,8 +20,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 
-	"github.com/knative/pkg/apis"
-	"github.com/knative/pkg/apis/duck"
+	"knative.dev/pkg/apis"
+	"knative.dev/pkg/apis/duck"
 )
 
 // Addressable provides a generic mechanism for a custom resource

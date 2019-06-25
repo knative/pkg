@@ -25,7 +25,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/tools/cache"
 
-	. "github.com/knative/pkg/testing"
+	. "knative.dev/pkg/testing"
 )
 
 func TestHappyPaths(t *testing.T) {
