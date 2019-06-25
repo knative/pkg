@@ -18,14 +18,15 @@ package webhook
 
 import (
 	"context"
+	"reflect"
+	"testing"
+
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/knative/pkg/apis"
 	. "github.com/knative/pkg/logging/testing"
 	. "github.com/knative/pkg/testing"
 	authenticationv1 "k8s.io/api/authentication/v1"
-	"reflect"
-	"testing"
 )
 
 func TestSetUserInfoAnnotationsWhenWithinCreate(t *testing.T) {
