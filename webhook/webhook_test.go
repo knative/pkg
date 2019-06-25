@@ -170,6 +170,10 @@ func TestAdmitCreates(t *testing.T) {
 		setup: func(ctx context.Context, r *Resource) {
 			r.TypeMeta.APIVersion = "v1alpha1"
 			r.SetDefaults(ctx)
+			r.Annotations = map[string]string{
+				"pkg.knative.dev/creator": user1,
+				"pkg.knative.dev/updater": user1,
+			}
 		},
 		patches: []jsonpatch.JsonPatchOperation{},
 	}, {
@@ -177,6 +181,10 @@ func TestAdmitCreates(t *testing.T) {
 		setup: func(ctx context.Context, r *Resource) {
 			r.TypeMeta.APIVersion = "v1beta1"
 			r.SetDefaults(ctx)
+			r.Annotations = map[string]string{
+				"pkg.knative.dev/creator": user1,
+				"pkg.knative.dev/updater": user1,
+			}
 		},
 		patches: []jsonpatch.JsonPatchOperation{},
 	}, {
@@ -187,8 +195,8 @@ func TestAdmitCreates(t *testing.T) {
 			Operation: "add",
 			Path:      "/metadata/annotations",
 			Value: map[string]interface{}{
-				"testing.knative.dev/creator": user1,
-				"testing.knative.dev/updater": user1,
+				"pkg.knative.dev/creator": user1,
+				"pkg.knative.dev/updater": user1,
 			},
 		}, {
 			Operation: "add",
@@ -208,11 +216,11 @@ func TestAdmitCreates(t *testing.T) {
 		},
 		patches: []jsonpatch.JsonPatchOperation{{
 			Operation: "add",
-			Path:      "/metadata/annotations/testing.knative.dev~1creator",
+			Path:      "/metadata/annotations/pkg.knative.dev~1creator",
 			Value:     user1,
 		}, {
 			Operation: "add",
-			Path:      "/metadata/annotations/testing.knative.dev~1updater",
+			Path:      "/metadata/annotations/pkg.knative.dev~1updater",
 			Value:     user1,
 		}, {
 			Operation: "add",
@@ -232,8 +240,8 @@ func TestAdmitCreates(t *testing.T) {
 			Operation: "add",
 			Path:      "/metadata/annotations",
 			Value: map[string]interface{}{
-				"testing.knative.dev/creator": user1,
-				"testing.knative.dev/updater": user1,
+				"pkg.knative.dev/creator": user1,
+				"pkg.knative.dev/updater": user1,
 			},
 		}, {
 			Operation: "add",
@@ -243,17 +251,19 @@ func TestAdmitCreates(t *testing.T) {
 	}, {
 		name: "test simple creation (webhook corrects user annotation)",
 		setup: func(ctx context.Context, r *Resource) {
-			r.SetDefaults(apis.WithUserInfo(ctx,
-				// THIS IS NOT WHO IS CREATING IT, IT IS LIES!
-				&authenticationv1.UserInfo{Username: user2}))
+			r.SetDefaults(ctx)
+			// THIS IS NOT WHO IS CREATING IT, IT IS LIES!
+			r.Annotations = map[string]string{
+				"pkg.knative.dev/updater": user2,
+			}
 		},
 		patches: []jsonpatch.JsonPatchOperation{{
 			Operation: "replace",
-			Path:      "/metadata/annotations/testing.knative.dev~1creator",
+			Path:      "/metadata/annotations/pkg.knative.dev~1updater",
 			Value:     user1,
 		}, {
-			Operation: "replace",
-			Path:      "/metadata/annotations/testing.knative.dev~1updater",
+			Operation: "add",
+			Path:      "/metadata/annotations/pkg.knative.dev~1creator",
 			Value:     user1,
 		}},
 	}, {
@@ -303,6 +313,7 @@ func createCreateResource(ctx context.Context, r *Resource) *admissionv1beta1.Ad
 		panic("failed to marshal resource")
 	}
 	req.Object.Raw = marshaled
+	req.Resource.Group = "pkg.knative.dev"
 	return req
 }
 
@@ -314,7 +325,7 @@ func TestAdmitUpdates(t *testing.T) {
 		rejection string
 		patches   []jsonpatch.JsonPatchOperation
 	}{{
-		name: "test simple creation (no diff)",
+		name: "test simple update (no diff)",
 		setup: func(ctx context.Context, r *Resource) {
 			r.SetDefaults(ctx)
 		},
@@ -324,7 +335,7 @@ func TestAdmitUpdates(t *testing.T) {
 		},
 		patches: []jsonpatch.JsonPatchOperation{},
 	}, {
-		name: "test simple creation (update updater annotation)",
+		name: "test simple update (update updater annotation)",
 		setup: func(ctx context.Context, r *Resource) {
 			r.SetDefaults(ctx)
 		},
@@ -335,11 +346,11 @@ func TestAdmitUpdates(t *testing.T) {
 		},
 		patches: []jsonpatch.JsonPatchOperation{{
 			Operation: "replace",
-			Path:      "/metadata/annotations/testing.knative.dev~1updater",
+			Path:      "/metadata/annotations/pkg.knative.dev~1updater",
 			Value:     user2,
 		}},
 	}, {
-		name: "test simple creation (annotation change doesn't change updater)",
+		name: "test simple update (annotation change doesn't change updater)",
 		setup: func(ctx context.Context, r *Resource) {
 			r.SetDefaults(ctx)
 		},
@@ -358,10 +369,6 @@ func TestAdmitUpdates(t *testing.T) {
 			r.Spec.FieldThatsImmutableWithDefault = ""
 		},
 		patches: []jsonpatch.JsonPatchOperation{{
-			Operation: "replace",
-			Path:      "/metadata/annotations/testing.knative.dev~1updater",
-			Value:     user2,
-		}, {
 			Operation: "add",
 			Path:      "/spec/fieldThatsImmutableWithDefault",
 			Value:     "this is another default value",
@@ -391,10 +398,12 @@ func TestAdmitUpdates(t *testing.T) {
 			old := createResource("a name")
 			ctx := TestContextWithLogger(t)
 
-			// Setup the resource using a creation context as user1
-			createCtx := apis.WithUserInfo(apis.WithinCreate(ctx),
-				&authenticationv1.UserInfo{Username: user1})
-			tc.setup(createCtx, old)
+			old.Annotations = map[string]string{
+				"pkg.knative.dev/creator": user1,
+				"pkg.knative.dev/updater": user1,
+			}
+
+			tc.setup(ctx, old)
 
 			new := old.DeepCopy()
 
@@ -436,6 +445,7 @@ func createUpdateResource(ctx context.Context, old, new *Resource) *admissionv1b
 		panic("failed to marshal resource")
 	}
 	req.OldObject.Raw = marshaledOld
+	req.Resource.Group = "pkg.knative.dev"
 	return req
 }
 
@@ -709,18 +719,6 @@ func createDeployment(ac *AdmissionController) {
 	ac.Client.Apps().Deployments("knative-something").Create(deployment)
 }
 
-func createResource(name string) *Resource {
-	return &Resource{
-		ObjectMeta: metav1.ObjectMeta{
-			Namespace: testNamespace,
-			Name:      name,
-		},
-		Spec: ResourceSpec{
-			FieldWithValidation: "magic value",
-		},
-	}
-}
-
 func createWebhook(ac *AdmissionController, webhook *admissionregistrationv1beta1.MutatingWebhookConfiguration) {
 	client := ac.Client.AdmissionregistrationV1beta1().MutatingWebhookConfigurations()
 	_, err := client.Create(webhook)
@@ -785,22 +783,13 @@ func expectPatches(t *testing.T, a []byte, e []jsonpatch.JsonPatchOperation) {
 	}
 }
 
-func updateAnnotationsWithUser(userU string) []jsonpatch.JsonPatchOperation {
-	// Just keys is being updated, so format is iffy.
-	return []jsonpatch.JsonPatchOperation{{
-		Operation: "replace",
-		Path:      "/metadata/annotations/testing.knative.dev~1updater",
-		Value:     userU,
-	}}
-}
-
 func setUserAnnotation(userC, userU string) jsonpatch.JsonPatchOperation {
 	return jsonpatch.JsonPatchOperation{
 		Operation: "add",
 		Path:      "/metadata/annotations",
 		Value: map[string]interface{}{
-			CreatorAnnotation: userC,
-			UpdaterAnnotation: userU,
+			"pkg.knative.dev/creator": userC,
+			"pkg.knative.dev/updater": userU,
 		},
 	}
 }

@@ -179,6 +179,7 @@ func TestValidResponseForResource(t *testing.T) {
 		t.Fatalf("Failed to marshal resource: %s", err)
 	}
 
+	admissionreq.Resource.Group = "pkg.knative.dev"
 	admissionreq.Object.Raw = marshaled
 	rev := &admissionv1beta1.AdmissionReview{
 		Request: admissionreq,
@@ -262,6 +263,7 @@ func TestValidResponseForResourceWithContextDefault(t *testing.T) {
 		t.Fatalf("Failed to marshal resource: %s", err)
 	}
 
+	admissionreq.Resource.Group = "pkg.knative.dev"
 	admissionreq.Object.Raw = marshaled
 	rev := &admissionv1beta1.AdmissionReview{
 		Request: admissionreq,
@@ -362,6 +364,7 @@ func TestInvalidResponseForResource(t *testing.T) {
 		},
 	}
 
+	admissionreq.Resource.Group = "pkg.knative.dev"
 	admissionreq.Object.Raw = marshaled
 
 	rev := &admissionv1beta1.AdmissionReview{

@@ -21,9 +21,6 @@ import (
 	"fmt"
 
 	"github.com/knative/pkg/apis"
-	"github.com/knative/pkg/kmp"
-
-	authenticationv1 "k8s.io/api/authentication/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 )
@@ -37,13 +34,6 @@ type Resource struct {
 
 	Spec ResourceSpec `json:"spec,omitempty"`
 }
-
-const (
-	// CreatorAnnotation is the annotation that denotes the user that created the resource.
-	CreatorAnnotation = "testing.knative.dev/creator"
-	// UpdaterAnnotation is the annotation that denotes the user that last updated the resource.
-	UpdaterAnnotation = "testing.knative.dev/updater"
-)
 
 // Check that Resource may be validated and defaulted.
 var _ apis.Validatable = (*Resource)(nil)
@@ -60,47 +50,14 @@ type ResourceSpec struct {
 	FieldThatsImmutableWithDefault string `json:"fieldThatsImmutableWithDefault,omitempty"`
 }
 
+// GetUntypedSpec returns the spec of the resource.
+func (r *Resource) GetUntypedSpec() interface{} {
+	return r.Spec
+}
+
 // SetDefaults sets the defaults on the object.
 func (c *Resource) SetDefaults(ctx context.Context) {
 	c.Spec.SetDefaults(ctx)
-
-	if apis.IsInUpdate(ctx) {
-		old := apis.GetBaseline(ctx).(*Resource)
-		c.AnnotateUserInfo(ctx, old, apis.GetUserInfo(ctx))
-	} else {
-		c.AnnotateUserInfo(ctx, nil, apis.GetUserInfo(ctx))
-	}
-}
-
-// AnnotateUserInfo satisfies the Annotatable interface.
-func (c *Resource) AnnotateUserInfo(ctx context.Context, prev *Resource, ui *authenticationv1.UserInfo) {
-	a := c.ObjectMeta.GetAnnotations()
-	if a == nil {
-		a = map[string]string{}
-	}
-	userName := ui.Username
-
-	// If previous is nil (i.e. this is `Create` operation),
-	// then we set both fields.
-	// Otherwise copy creator from the previous state.
-	if prev == nil {
-		a[CreatorAnnotation] = userName
-	} else {
-		// No spec update ==> bail out.
-		if ok, _ := kmp.SafeEqual(prev.Spec, c.Spec); ok {
-			if prev.ObjectMeta.GetAnnotations() != nil {
-				a[CreatorAnnotation] = prev.ObjectMeta.GetAnnotations()[CreatorAnnotation]
-				userName = prev.ObjectMeta.GetAnnotations()[UpdaterAnnotation]
-			}
-		} else {
-			if prev.ObjectMeta.GetAnnotations() != nil {
-				a[CreatorAnnotation] = prev.ObjectMeta.GetAnnotations()[CreatorAnnotation]
-			}
-		}
-	}
-	// Regardless of `old` set the updater.
-	a[UpdaterAnnotation] = userName
-	c.ObjectMeta.SetAnnotations(a)
 }
 
 func (c *Resource) Validate(ctx context.Context) *apis.FieldError {
