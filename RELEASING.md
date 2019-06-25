@@ -16,6 +16,7 @@ At present, these downstream repositories include:
 
 1. knative/serving
 1. knative/eventing
+1. knative/eventing-contrib
 1. knative/build
 1. knative/sample-controller
 1. GoogleCloudPlatform/cloud-run-events
@@ -34,7 +35,7 @@ Then the following is run:
 
 ```shell
 dep ensure -update github.com/knative/pkg
-./hack/update-deps.sh
+./hack/update-codegen.sh
 ```
 
 If problems are found, they are addressed and the update is merged, and this
