@@ -32,9 +32,9 @@ import (
 	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/workqueue"
 
-	"github.com/knative/pkg/kmeta"
-	"github.com/knative/pkg/logging"
-	"github.com/knative/pkg/logging/logkey"
+	"knative.dev/pkg/kmeta"
+	"knative.dev/pkg/logging"
+	"knative.dev/pkg/logging/logkey"
 )
 
 const (

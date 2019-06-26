@@ -22,8 +22,8 @@ import (
 
 	"k8s.io/client-go/rest"
 
-	"github.com/knative/pkg/controller"
-	"github.com/knative/pkg/injection"
+	"knative.dev/pkg/controller"
+	"knative.dev/pkg/injection"
 )
 
 func TestGetPanic(t *testing.T) {

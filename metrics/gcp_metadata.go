@@ -15,7 +15,7 @@ package metrics
 
 import (
 	"cloud.google.com/go/compute/metadata"
-	"github.com/knative/pkg/metrics/metricskey"
+	"knative.dev/pkg/metrics/metricskey"
 )
 
 func retrieveGCPMetadata() *gcpMetadata {

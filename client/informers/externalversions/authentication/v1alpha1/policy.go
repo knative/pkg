@@ -21,14 +21,14 @@ package v1alpha1
 import (
 	time "time"
 
-	authenticationv1alpha1 "github.com/knative/pkg/apis/istio/authentication/v1alpha1"
-	versioned "github.com/knative/pkg/client/clientset/versioned"
-	internalinterfaces "github.com/knative/pkg/client/informers/externalversions/internalinterfaces"
-	v1alpha1 "github.com/knative/pkg/client/listers/authentication/v1alpha1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	watch "k8s.io/apimachinery/pkg/watch"
 	cache "k8s.io/client-go/tools/cache"
+	authenticationv1alpha1 "knative.dev/pkg/apis/istio/authentication/v1alpha1"
+	versioned "knative.dev/pkg/client/clientset/versioned"
+	internalinterfaces "knative.dev/pkg/client/informers/externalversions/internalinterfaces"
+	v1alpha1 "knative.dev/pkg/client/listers/authentication/v1alpha1"
 )
 
 // PolicyInformer provides access to a shared informer and lister for

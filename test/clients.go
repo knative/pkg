@@ -22,8 +22,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/knative/pkg/test/logging"
-	"github.com/knative/pkg/test/spoof"
+	"knative.dev/pkg/test/logging"
+	"knative.dev/pkg/test/spoof"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"

@@ -20,7 +20,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/knative/pkg/cloudevents"
+	"knative.dev/pkg/cloudevents"
 )
 
 func TestBuilderBuildValidation(t *testing.T) {

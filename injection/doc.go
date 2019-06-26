@@ -26,8 +26,8 @@ limitations under the License.
 //     // Simply linking this triggers the injection of the informer, which links
 //     // the factory triggering its injection, and which links the client,
 //     // triggering its injection.  All you need to know is that it works :)
-//     deployinformer "github.com/knative/pkg/injection/informers/kubeinformers/appsv1/deployment"
-//     "github.com/knative/pkg/injection"
+//     deployinformer "knative.dev/pkg/injection/informers/kubeinformers/appsv1/deployment"
+//     "knative.dev/pkg/injection"
 //   )
 //
 //   func NewController(ctx context.Context) *controller.Impl {
@@ -52,7 +52,7 @@ limitations under the License.
 //   	"github.com/knative/foo/pkg/reconciler/dave"
 //
 //   	// This defines the shared main for injected controllers.
-//   	"github.com/knative/pkg/injection/sharedmain"
+//   	"knative.dev/pkg/injection/sharedmain"
 //   )
 //
 //   func main() {

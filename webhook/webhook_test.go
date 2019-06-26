@@ -29,12 +29,12 @@ import (
 	"testing"
 	"time"
 
-	// "github.com/knative/pkg/apis/duck"
+	// "knative.dev/pkg/apis/duck"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
-	"github.com/knative/pkg/apis"
+	"knative.dev/pkg/apis"
 	"github.com/mattbaird/jsonpatch"
 	"go.uber.org/zap"
 	admissionv1beta1 "k8s.io/api/admission/v1beta1"
@@ -46,8 +46,8 @@ import (
 	"k8s.io/client-go/kubernetes"
 	fakekubeclientset "k8s.io/client-go/kubernetes/fake"
 
-	. "github.com/knative/pkg/logging/testing"
-	. "github.com/knative/pkg/testing"
+	. "knative.dev/pkg/logging/testing"
+	. "knative.dev/pkg/testing"
 )
 
 func newDefaultOptions() ControllerOptions {

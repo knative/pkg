@@ -23,9 +23,9 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/record"
 
-	"github.com/knative/pkg/controller"
-	"github.com/knative/pkg/injection"
-	logtesting "github.com/knative/pkg/logging/testing"
+	"knative.dev/pkg/controller"
+	"knative.dev/pkg/injection"
+	logtesting "knative.dev/pkg/logging/testing"
 )
 
 func SetupFakeContext(t *testing.T) (context.Context, []controller.Informer) {

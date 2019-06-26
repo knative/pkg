@@ -22,7 +22,7 @@ import (
 
 	"k8s.io/client-go/rest"
 
-	"github.com/knative/pkg/controller"
+	"knative.dev/pkg/controller"
 )
 
 type fakeInformer struct{}

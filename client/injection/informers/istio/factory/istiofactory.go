@@ -21,11 +21,11 @@ package istiofactory
 import (
 	"context"
 
-	externalversions "github.com/knative/pkg/client/informers/externalversions"
-	client "github.com/knative/pkg/client/injection/client"
-	controller "github.com/knative/pkg/controller"
-	injection "github.com/knative/pkg/injection"
-	logging "github.com/knative/pkg/logging"
+	externalversions "knative.dev/pkg/client/informers/externalversions"
+	client "knative.dev/pkg/client/injection/client"
+	controller "knative.dev/pkg/controller"
+	injection "knative.dev/pkg/injection"
+	logging "knative.dev/pkg/logging"
 )
 
 func init() {

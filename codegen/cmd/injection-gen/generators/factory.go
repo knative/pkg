@@ -67,10 +67,10 @@ func (g *factoryGenerator) GenerateType(c *generator.Context, t *types.Type, w i
 		"cachingClientGet":                  c.Universe.Type(types.Name{Package: g.cachingClientSetPackage, Name: "Get"}),
 		"informersNewSharedInformerFactory": c.Universe.Function(types.Name{Package: g.sharedInformerFactoryPackage, Name: "NewSharedInformerFactory"}),
 		"informersSharedInformerFactory":    c.Universe.Function(types.Name{Package: g.sharedInformerFactoryPackage, Name: "SharedInformerFactory"}),
-		"injectionRegisterInformerFactory":  c.Universe.Type(types.Name{Package: "github.com/knative/pkg/injection", Name: "Default.RegisterInformerFactory"}),
-		"controllerGetResyncPeriod":         c.Universe.Type(types.Name{Package: "github.com/knative/pkg/controller", Name: "GetResyncPeriod"}),
+		"injectionRegisterInformerFactory":  c.Universe.Type(types.Name{Package: "knative.dev/pkg/injection", Name: "Default.RegisterInformerFactory"}),
+		"controllerGetResyncPeriod":         c.Universe.Type(types.Name{Package: "knative.dev/pkg/controller", Name: "GetResyncPeriod"}),
 		"loggingFromContext": c.Universe.Function(types.Name{
-			Package: "github.com/knative/pkg/logging",
+			Package: "knative.dev/pkg/logging",
 			Name:    "FromContext",
 		}),
 	}

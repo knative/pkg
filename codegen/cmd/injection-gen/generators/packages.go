@@ -30,7 +30,7 @@ import (
 	"k8s.io/gengo/types"
 	"k8s.io/klog"
 
-	informergenargs "github.com/knative/pkg/codegen/cmd/injection-gen/args"
+	informergenargs "knative.dev/pkg/codegen/cmd/injection-gen/args"
 )
 
 // Packages makes the client package definition.

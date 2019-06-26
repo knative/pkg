@@ -21,10 +21,10 @@ import (
 
 	"k8s.io/client-go/informers"
 
-	"github.com/knative/pkg/controller"
-	"github.com/knative/pkg/injection"
-	"github.com/knative/pkg/injection/clients/kubeclient/fake"
-	"github.com/knative/pkg/injection/informers/kubeinformers/factory"
+	"knative.dev/pkg/controller"
+	"knative.dev/pkg/injection"
+	"knative.dev/pkg/injection/clients/kubeclient/fake"
+	"knative.dev/pkg/injection/informers/kubeinformers/factory"
 )
 
 var Get = factory.Get

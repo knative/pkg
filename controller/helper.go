@@ -21,7 +21,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/tools/cache"
 
-	"github.com/knative/pkg/kmeta"
+	"knative.dev/pkg/kmeta"
 )
 
 type Callback func(interface{})

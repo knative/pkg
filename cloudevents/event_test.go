@@ -29,7 +29,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 
-	"github.com/knative/pkg/cloudevents"
+	"knative.dev/pkg/cloudevents"
 )
 
 type FirestoreDocument struct {

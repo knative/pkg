@@ -19,7 +19,7 @@ package testing
 import (
 	corev1 "k8s.io/api/core/v1"
 
-	"github.com/knative/pkg/tracker"
+	"knative.dev/pkg/tracker"
 )
 
 // NullTracker implements Tracker.

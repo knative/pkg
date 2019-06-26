@@ -20,7 +20,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/knative/pkg/kmp"
+	"knative.dev/pkg/kmp"
 )
 
 // Implementable is implemented by the Fooable duck type that consumers

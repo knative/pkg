@@ -19,10 +19,10 @@ package fake
 import (
 	"context"
 
-	"github.com/knative/pkg/controller"
-	"github.com/knative/pkg/injection"
-	"github.com/knative/pkg/injection/informers/kubeinformers/corev1/secret"
-	"github.com/knative/pkg/injection/informers/kubeinformers/factory/fake"
+	"knative.dev/pkg/controller"
+	"knative.dev/pkg/injection"
+	"knative.dev/pkg/injection/informers/kubeinformers/corev1/secret"
+	"knative.dev/pkg/injection/informers/kubeinformers/factory/fake"
 )
 
 var Get = secret.Get

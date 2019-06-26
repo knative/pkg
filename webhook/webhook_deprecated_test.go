@@ -19,10 +19,10 @@ package webhook
 import (
 	"testing"
 
-	"github.com/knative/pkg/apis"
-	. "github.com/knative/pkg/logging/testing"
-	"github.com/knative/pkg/ptr"
-	. "github.com/knative/pkg/testing"
+	"knative.dev/pkg/apis"
+	. "knative.dev/pkg/logging/testing"
+	"knative.dev/pkg/ptr"
+	. "knative.dev/pkg/testing"
 	admissionv1beta1 "k8s.io/api/admission/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )

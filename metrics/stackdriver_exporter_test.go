@@ -17,8 +17,8 @@ import (
 	"testing"
 
 	"contrib.go.opencensus.io/exporter/stackdriver"
-	. "github.com/knative/pkg/logging/testing"
-	"github.com/knative/pkg/metrics/metricskey"
+	. "knative.dev/pkg/logging/testing"
+	"knative.dev/pkg/metrics/metricskey"
 	"go.opencensus.io/stats"
 	"go.opencensus.io/stats/view"
 	"go.opencensus.io/tag"

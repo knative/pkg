@@ -25,8 +25,8 @@ import (
 	"net/http"
 	"sync"
 
-	"github.com/knative/pkg/test/logging"
-	"github.com/knative/pkg/test/monitoring"
+	"knative.dev/pkg/test/logging"
+	"knative.dev/pkg/test/monitoring"
 	"go.opencensus.io/trace"
 	"k8s.io/client-go/kubernetes"
 )

@@ -47,6 +47,6 @@ If this is a Go unit test consuming system.Namespace() then it should add the
 following import:
 
 import (
-	_ "github.com/knative/pkg/system/testing"
+	_ "knative.dev/pkg/system/testing"
 )`, NamespaceEnvKey, NamespaceEnvKey))
 }

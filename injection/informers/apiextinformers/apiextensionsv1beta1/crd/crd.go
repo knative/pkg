@@ -21,10 +21,10 @@ import (
 
 	apiextv1beta1 "k8s.io/apiextensions-apiserver/pkg/client/informers/externalversions/apiextensions/v1beta1"
 
-	"github.com/knative/pkg/controller"
-	"github.com/knative/pkg/injection"
-	"github.com/knative/pkg/injection/informers/apiextinformers/factory"
-	"github.com/knative/pkg/logging"
+	"knative.dev/pkg/controller"
+	"knative.dev/pkg/injection"
+	"knative.dev/pkg/injection/informers/apiextinformers/factory"
+	"knative.dev/pkg/logging"
 )
 
 func init() {

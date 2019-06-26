@@ -21,10 +21,10 @@ import (
 
 	informers "k8s.io/apiextensions-apiserver/pkg/client/informers/externalversions"
 
-	"github.com/knative/pkg/controller"
-	"github.com/knative/pkg/injection"
-	"github.com/knative/pkg/injection/clients/apiextclient/fake"
-	"github.com/knative/pkg/injection/informers/apiextinformers/factory"
+	"knative.dev/pkg/controller"
+	"knative.dev/pkg/injection"
+	"knative.dev/pkg/injection/clients/apiextclient/fake"
+	"knative.dev/pkg/injection/informers/apiextinformers/factory"
 )
 
 var Get = factory.Get

@@ -20,7 +20,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/knative/pkg/system"
+	"knative.dev/pkg/system"
 )
 
 // Canceler is the type of a function returned when a logstream is started to be

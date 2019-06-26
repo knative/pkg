@@ -87,9 +87,9 @@ func (g *fakeInformerGenerator) GenerateType(c *generator.Context, t *types.Type
 		"group":              namer.IC(g.groupGoName),
 		"type":               t,
 		"version":            namer.IC(g.groupVersion.Version.String()),
-		"controllerInformer": c.Universe.Type(types.Name{Package: "github.com/knative/pkg/controller", Name: "Informer"}),
+		"controllerInformer": c.Universe.Type(types.Name{Package: "knative.dev/pkg/controller", Name: "Informer"}),
 		"injectionRegisterInformer": c.Universe.Function(types.Name{
-			Package: "github.com/knative/pkg/injection",
+			Package: "knative.dev/pkg/injection",
 			Name:    "Fake.RegisterInformer",
 		}),
 	}

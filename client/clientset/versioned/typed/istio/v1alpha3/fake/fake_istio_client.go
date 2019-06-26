@@ -19,9 +19,9 @@ limitations under the License.
 package fake
 
 import (
-	v1alpha3 "github.com/knative/pkg/client/clientset/versioned/typed/istio/v1alpha3"
 	rest "k8s.io/client-go/rest"
 	testing "k8s.io/client-go/testing"
+	v1alpha3 "knative.dev/pkg/client/clientset/versioned/typed/istio/v1alpha3"
 )
 
 type FakeNetworkingV1alpha3 struct {

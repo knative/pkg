@@ -27,8 +27,8 @@ import (
 	"go.uber.org/zap/zapcore"
 	corev1 "k8s.io/api/core/v1"
 
-	"github.com/knative/pkg/changeset"
-	"github.com/knative/pkg/logging/logkey"
+	"knative.dev/pkg/changeset"
+	"knative.dev/pkg/logging/logkey"
 )
 
 const ConfigMapNameEnv = "CONFIG_LOGGING_NAME"

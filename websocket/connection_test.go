@@ -25,7 +25,7 @@ import (
 	"testing"
 	"time"
 
-	ktesting "github.com/knative/pkg/logging/testing"
+	ktesting "knative.dev/pkg/logging/testing"
 
 	"k8s.io/apimachinery/pkg/util/wait"
 
