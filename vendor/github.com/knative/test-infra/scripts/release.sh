@@ -198,6 +198,7 @@ function prepare_dot_release() {
   echo "Dot release requested"
   TAG_RELEASE=1
   PUBLISH_RELEASE=1
+  git fetch --all || abort "error fetching branches/tags from remote"
   # List latest release
   local releases # don't combine with the line below, or $? will be 0
   releases="$(hub_tool release)"
