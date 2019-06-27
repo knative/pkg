@@ -19,12 +19,12 @@ package webhook
 import (
 	"testing"
 
+	admissionv1beta1 "k8s.io/api/admission/v1beta1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"knative.dev/pkg/apis"
 	. "knative.dev/pkg/logging/testing"
 	"knative.dev/pkg/ptr"
 	. "knative.dev/pkg/testing"
-	admissionv1beta1 "k8s.io/api/admission/v1beta1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // In strict mode, you are not allowed to set a deprecated filed when doing a Create.

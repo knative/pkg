@@ -17,11 +17,11 @@ import (
 	"testing"
 
 	"contrib.go.opencensus.io/exporter/stackdriver"
-	. "knative.dev/pkg/logging/testing"
-	"knative.dev/pkg/metrics/metricskey"
 	"go.opencensus.io/stats"
 	"go.opencensus.io/stats/view"
 	"go.opencensus.io/tag"
+	. "knative.dev/pkg/logging/testing"
+	"knative.dev/pkg/metrics/metricskey"
 )
 
 var (

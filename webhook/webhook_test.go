@@ -34,7 +34,6 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
-	"knative.dev/pkg/apis"
 	"github.com/mattbaird/jsonpatch"
 	"go.uber.org/zap"
 	admissionv1beta1 "k8s.io/api/admission/v1beta1"
@@ -45,6 +44,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/kubernetes"
 	fakekubeclientset "k8s.io/client-go/kubernetes/fake"
+	"knative.dev/pkg/apis"
 
 	. "knative.dev/pkg/logging/testing"
 	. "knative.dev/pkg/testing"
