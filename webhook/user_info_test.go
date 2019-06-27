@@ -23,10 +23,10 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
+	authenticationv1 "k8s.io/api/authentication/v1"
 	"knative.dev/pkg/apis"
 	. "knative.dev/pkg/logging/testing"
 	. "knative.dev/pkg/testing"
-	authenticationv1 "k8s.io/api/authentication/v1"
 )
 
 func TestSetUserInfoAnnotationsWhenWithinCreate(t *testing.T) {

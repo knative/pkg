@@ -28,11 +28,11 @@ import (
 	"testing"
 	"time"
 
-	. "knative.dev/pkg/testing"
 	"github.com/mattbaird/jsonpatch"
 	admissionv1beta1 "k8s.io/api/admission/v1beta1"
 	authenticationv1 "k8s.io/api/authentication/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	. "knative.dev/pkg/testing"
 )
 
 const testTimeout = time.Duration(10 * time.Second)
