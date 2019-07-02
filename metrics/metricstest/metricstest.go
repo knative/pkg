@@ -51,7 +51,7 @@ func CheckStatsNotReported(t *testing.T, names ...string) {
 
 // CheckCountData checks the view with a name matching string name to verify that the CountData stats
 // reported are tagged with the tags in wantTags and that wantValue matches reported count.
-func CheckCountData(t *testing.T, name string, wantTags map[string]string, wantValue int) {
+func CheckCountData(t *testing.T, name string, wantTags map[string]string, wantValue int64) {
 	t.Helper()
 	if row := checkExactlyOneRow(t, name); row != nil {
 		for _, got := range row.Tags {
@@ -64,8 +64,8 @@ func CheckCountData(t *testing.T, name string, wantTags map[string]string, wantV
 		}
 
 		if s, ok := row.Data.(*view.CountData); !ok {
-			t.Error("Reporter expected a SumData type")
-		} else if s.Value != int64(wantValue) {
+			t.Error("Reporter expected a CountData type")
+		} else if s.Value != wantValue {
 			t.Errorf("For %s value = %v, want: %d", name, s.Value, wantValue)
 		}
 	}
@@ -74,7 +74,7 @@ func CheckCountData(t *testing.T, name string, wantTags map[string]string, wantV
 // CheckDistributionData checks the view with a name matching string name to verify that the DistributionData stats reported
 // are tagged with the tags in wantTags and that expectedCount number of records were reported.
 // It also checks that expectedMin and expectedMax match the minimum and maximum reported values, respectively.
-func CheckDistributionData(t *testing.T, name string, wantTags map[string]string, expectedCount int, expectedMin float64, expectedMax float64) {
+func CheckDistributionData(t *testing.T, name string, wantTags map[string]string, expectedCount int64, expectedMin float64, expectedMax float64) {
 	t.Helper()
 	if row := checkExactlyOneRow(t, name); row != nil {
 		for _, got := range row.Tags {
@@ -89,7 +89,7 @@ func CheckDistributionData(t *testing.T, name string, wantTags map[string]string
 		if s, ok := row.Data.(*view.DistributionData); !ok {
 			t.Error("Reporter expected a DistributionData type")
 		} else {
-			if s.Count != int64(expectedCount) {
+			if s.Count != expectedCount {
 				t.Errorf("For metric %s: reporter count = %d, want = %d", name, s.Count, expectedCount)
 			}
 			if s.Min != expectedMin {
@@ -117,7 +117,7 @@ func CheckLastValueData(t *testing.T, name string, wantValue float64) {
 
 // CheckSumData checks the view with a name matching string name to verify that the SumData stats
 // reported are tagged with the tags in wantTags and that wantValue matches the reported sum.
-func CheckSumData(t *testing.T, name string, wantTags map[string]string, wantValue int) {
+func CheckSumData(t *testing.T, name string, wantTags map[string]string, wantValue float64) {
 	t.Helper()
 	if row := checkExactlyOneRow(t, name); row != nil {
 		for _, got := range row.Tags {
@@ -131,8 +131,8 @@ func CheckSumData(t *testing.T, name string, wantTags map[string]string, wantVal
 
 		if s, ok := row.Data.(*view.SumData); !ok {
 			t.Error("Reporter expected a SumData type")
-		} else if s.Value != float64(wantValue) {
-			t.Errorf("For %s value = %v, want: %d", name, s.Value, wantValue)
+		} else if s.Value != wantValue {
+			t.Errorf("For %s value = %v, want: %v", name, s.Value, wantValue)
 		}
 	}
 }
