@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Knative Authors
+Copyright 2019 The Knative Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -43,7 +43,7 @@ var (
 		"The response time in milliseconds",
 		stats.UnitMilliseconds)
 
-	defaultLatencyDistribution = view.Distribution(0, 5, 10, 20, 40, 60, 80, 100, 150, 200, 250, 300, 350, 400, 450, 500, 600, 700, 800, 900, 1000, 2000, 5000, 10000, 20000, 50000, 100000)
+	defaultLatencyDistribution = view.Distribution(5, 10, 20, 40, 60, 80, 100, 150, 200, 250, 300, 350, 400, 450, 500, 600, 700, 800, 900, 1000, 2000, 5000, 10000, 20000, 50000, 100000)
 
 	// Create the tag keys that will be used to add tags to our measurements.
 	// Tag keys must conform to the restrictions described in
@@ -75,7 +75,7 @@ func init() {
 		resourceNameKey,
 		admissionAllowedKey}
 
-	err := view.Register(
+	if err := view.Register(
 		&view.View{
 			Description: requestCountM.Description(),
 			Measure:     requestCountM,
@@ -88,8 +88,7 @@ func init() {
 			Aggregation: defaultLatencyDistribution,
 			TagKeys:     tagKeys,
 		},
-	)
-	if err != nil {
+	); err != nil {
 		panic(err)
 	}
 }
