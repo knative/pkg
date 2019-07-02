@@ -1,0 +1,17 @@
+# Aliases for approvers and reviewers in test-infra
+
+aliases:
+  productivity-approvers:
+  - adrcunha
+  - chaodaiG
+  - srinivashegde86
+  productivity-reviewers:
+  - adrcunha
+  - chaodaiG
+  - coryrc
+  - dushyanthsc
+  - Fredy-Z
+  - srinivashegde86
+  - steuhs
+  - yt3liu
+
