@@ -28,6 +28,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/knative/pkg/metrics/metricstest"
 	"github.com/mattbaird/jsonpatch"
 	admissionv1beta1 "k8s.io/api/admission/v1beta1"
 	authenticationv1 "k8s.io/api/authentication/v1"
@@ -218,6 +219,8 @@ func TestValidResponseForResource(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to decode response: %v", err)
 	}
+
+	metricstest.CheckStatsReported(t, requestCountName, requestLatenciesName)
 }
 
 func TestValidResponseForResourceWithContextDefault(t *testing.T) {
@@ -421,6 +424,8 @@ func TestInvalidResponseForResource(t *testing.T) {
 	if !strings.Contains(reviewResponse.Response.Result.Message, "spec.fieldWithValidation") {
 		t.Errorf("Received unexpected response status message %s", reviewResponse.Response.Result.Message)
 	}
+
+	metricstest.CheckStatsNotReported(t, requestCountName, requestLatenciesName)
 }
 
 func TestWebhookClientAuth(t *testing.T) {
