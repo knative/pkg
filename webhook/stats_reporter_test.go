@@ -21,9 +21,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/knative/pkg/metrics/metricstest"
 	admissionv1beta1 "k8s.io/api/admission/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"knative.dev/pkg/metrics/metricstest"
 )
 
 func TestWebhookStatsReporter(t *testing.T) {
