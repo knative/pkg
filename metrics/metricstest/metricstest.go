@@ -31,7 +31,7 @@ func CheckStatsReported(t *testing.T, names ...string) {
 			t.Errorf("Reporter.Report() error = %v, wantErr %v", err, false)
 		}
 		if len(d) < 1 {
-			t.Errorf("No data reported when data was expected. len(d)=%v", len(d))
+			t.Error("No data reported when data was expected, view data is empty.")
 		}
 	}
 }
