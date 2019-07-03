@@ -27,7 +27,7 @@ import (
 )
 
 func TestWebhookStatsReporter(t *testing.T) {
-	admReq := &admissionv1beta1.AdmissionRequest{
+	req := &admissionv1beta1.AdmissionRequest{
 		UID:       "705ab4f5-6393-11e8-b7cc-42010a800002",
 		Kind:      metav1.GroupVersionKind{Group: "autoscaling", Version: "v1", Kind: "Scale"},
 		Resource:  metav1.GroupVersionResource{Group: "apps", Version: "v1", Resource: "deployments"},
@@ -37,24 +37,14 @@ func TestWebhookStatsReporter(t *testing.T) {
 	}
 
 	resp := &admissionv1beta1.AdmissionResponse{
-		UID:     admReq.UID,
+		UID:     req.UID,
 		Allowed: true,
 	}
 
 	r, _ := NewStatsReporter()
 
 	shortTime, longTime := 1100.0, 9100.0
-	expectedTags := createExpectedMetricTags(admReq, resp)
-
-	r.ReportRequest(admReq, resp, time.Duration(shortTime)*time.Millisecond)
-	r.ReportRequest(admReq, resp, time.Duration(longTime)*time.Millisecond)
-
-	metricstest.CheckCountData(t, requestCountName, expectedTags, 2)
-	metricstest.CheckDistributionData(t, requestLatenciesName, expectedTags, 2, shortTime, longTime)
-}
-
-func createExpectedMetricTags(req *admissionv1beta1.AdmissionRequest, resp *admissionv1beta1.AdmissionResponse) map[string]string {
-	return map[string]string{
+	expectedTags := map[string]string{
 		requestOperationKey.Name():  string(req.Operation),
 		kindGroupKey.Name():         req.Kind.Group,
 		kindVersionKey.Name():       req.Kind.Version,
@@ -66,4 +56,10 @@ func createExpectedMetricTags(req *admissionv1beta1.AdmissionRequest, resp *admi
 		resourceNamespaceKey.Name(): req.Namespace,
 		admissionAllowedKey.Name():  strconv.FormatBool(resp.Allowed),
 	}
+
+	r.ReportRequest(req, resp, time.Duration(shortTime)*time.Millisecond)
+	r.ReportRequest(req, resp, time.Duration(longTime)*time.Millisecond)
+
+	metricstest.CheckCountData(t, requestCountName, expectedTags, 2)
+	metricstest.CheckDistributionData(t, requestLatenciesName, expectedTags, 2, shortTime, longTime)
 }
