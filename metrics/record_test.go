@@ -20,7 +20,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/knative/pkg/metrics/metricstest"
+	"knative.dev/pkg/metrics/metricstest"
 
 	"go.opencensus.io/stats"
 	"go.opencensus.io/stats/view"
