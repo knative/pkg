@@ -71,7 +71,7 @@ func TestRecord(t *testing.T) {
 	for _, test := range shouldReportCases {
 		setCurMetricsConfig(test.metricsConfig)
 		Record(ctx, test.measurement)
-		metricstest.CheckLastValueData(t, test.measurement.Measure().Name(), test.measurement.Value())
+		metricstest.CheckLastValueData(t, test.measurement.Measure().Name(), map[string]string{}, test.measurement.Value())
 	}
 
 	shouldNotReportCases := []struct {
@@ -93,6 +93,6 @@ func TestRecord(t *testing.T) {
 	for _, test := range shouldNotReportCases {
 		setCurMetricsConfig(test.metricsConfig)
 		Record(ctx, test.measurement)
-		metricstest.CheckLastValueData(t, test.measurement.Measure().Name(), 4) // The value is still the last one of shouldReportCases
+		metricstest.CheckLastValueData(t, test.measurement.Measure().Name(), map[string]string{}, 4) // The value is still the last one of shouldReportCases
 	}
 }
