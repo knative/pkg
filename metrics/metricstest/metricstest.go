@@ -41,7 +41,7 @@ func CheckStatsReported(t *testing.T, names ...string) {
 func CheckStatsNotReported(t *testing.T, names ...string) {
 	t.Helper()
 	for _, name := range names {
-		if d, err := view.RetrieveData(name); err != nil {
+		if d, err := view.RetrieveData(name); err == nil {
 			if len(d) > 0 {
 				t.Errorf("For metric %s: Unexpected data reported when no data was expected. Reporter len(d) = %d", name, len(d))
 			}
