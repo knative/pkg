@@ -171,8 +171,8 @@ func TestAdmitCreates(t *testing.T) {
 			r.TypeMeta.APIVersion = "v1alpha1"
 			r.SetDefaults(ctx)
 			r.Annotations = map[string]string{
-				"pkg.knative.dev/creator": user1,
-				"pkg.knative.dev/updater": user1,
+				"pkg.knative.dev/creator":      user1,
+				"pkg.knative.dev/lastModifier": user1,
 			}
 		},
 		patches: []jsonpatch.JsonPatchOperation{},
@@ -182,8 +182,8 @@ func TestAdmitCreates(t *testing.T) {
 			r.TypeMeta.APIVersion = "v1beta1"
 			r.SetDefaults(ctx)
 			r.Annotations = map[string]string{
-				"pkg.knative.dev/creator": user1,
-				"pkg.knative.dev/updater": user1,
+				"pkg.knative.dev/creator":      user1,
+				"pkg.knative.dev/lastModifier": user1,
 			}
 		},
 		patches: []jsonpatch.JsonPatchOperation{},
@@ -195,8 +195,8 @@ func TestAdmitCreates(t *testing.T) {
 			Operation: "add",
 			Path:      "/metadata/annotations",
 			Value: map[string]interface{}{
-				"pkg.knative.dev/creator": user1,
-				"pkg.knative.dev/updater": user1,
+				"pkg.knative.dev/creator":      user1,
+				"pkg.knative.dev/lastModifier": user1,
 			},
 		}, {
 			Operation: "add",
@@ -240,8 +240,8 @@ func TestAdmitCreates(t *testing.T) {
 			Operation: "add",
 			Path:      "/metadata/annotations",
 			Value: map[string]interface{}{
-				"pkg.knative.dev/creator": user1,
-				"pkg.knative.dev/updater": user1,
+				"pkg.knative.dev/creator":      user1,
+				"pkg.knative.dev/lastModifier": user1,
 			},
 		}, {
 			Operation: "add",
@@ -254,7 +254,7 @@ func TestAdmitCreates(t *testing.T) {
 			r.SetDefaults(ctx)
 			// THIS IS NOT WHO IS CREATING IT, IT IS LIES!
 			r.Annotations = map[string]string{
-				"pkg.knative.dev/updater": user2,
+				"pkg.knative.dev/lastModifier": user2,
 			}
 		},
 		patches: []jsonpatch.JsonPatchOperation{{
@@ -399,8 +399,8 @@ func TestAdmitUpdates(t *testing.T) {
 			ctx := TestContextWithLogger(t)
 
 			old.Annotations = map[string]string{
-				"pkg.knative.dev/creator": user1,
-				"pkg.knative.dev/updater": user1,
+				"pkg.knative.dev/creator":      user1,
+				"pkg.knative.dev/lastModifier": user1,
 			}
 
 			tc.setup(ctx, old)
@@ -788,8 +788,8 @@ func setUserAnnotation(userC, userU string) jsonpatch.JsonPatchOperation {
 		Operation: "add",
 		Path:      "/metadata/annotations",
 		Value: map[string]interface{}{
-			"pkg.knative.dev/creator": userC,
-			"pkg.knative.dev/updater": userU,
+			"pkg.knative.dev/creator":      userC,
+			"pkg.knative.dev/lastModifier": userU,
 		},
 	}
 }
