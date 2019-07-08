@@ -118,6 +118,21 @@ func CheckSumData(t *testing.T, name string, wantTags map[string]string, wantVal
 	}
 }
 
+// Unregister unregisters the metrics that were registered.
+// This is useful for testing since golang execute test iterations within the same process and
+// opencensus views maintain global state. At the beginning of each test, tests should
+// unregister for all metrics and then re-register for the same metrics. This effectively clears
+// out any existing data and avoids a panic due to re-registering a metric.
+//
+// In normal process shutdown, metrics do not need to be unregistered.
+func Unregister(names ...string) {
+	for _, n := range names {
+		if v := view.Find(n); v != nil {
+			view.Unregister(v)
+		}
+	}
+}
+
 func checkExactlyOneRow(t *testing.T, name string, wantTags map[string]string) *view.Row {
 	t.Helper()
 	d, err := view.RetrieveData(name)

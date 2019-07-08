@@ -39,7 +39,7 @@ var (
 		"The number of requests that are routed to webhook",
 		stats.UnitDimensionless)
 	responseTimeInMsecM = stats.Float64(
-		"request_latencies",
+		requestLatenciesName,
 		"The response time in milliseconds",
 		stats.UnitMilliseconds)
 
@@ -61,34 +61,7 @@ var (
 )
 
 func init() {
-	tagKeys := []tag.Key{
-		requestOperationKey,
-		kindGroupKey,
-		kindVersionKey,
-		kindKindKey,
-		resourceGroupKey,
-		resourceVersionKey,
-		resourceResourceKey,
-		resourceNamespaceKey,
-		resourceNameKey,
-		admissionAllowedKey}
-
-	if err := view.Register(
-		&view.View{
-			Description: requestCountM.Description(),
-			Measure:     requestCountM,
-			Aggregation: view.Count(),
-			TagKeys:     tagKeys,
-		},
-		&view.View{
-			Description: responseTimeInMsecM.Description(),
-			Measure:     responseTimeInMsecM,
-			Aggregation: view.Distribution(metrics.Buckets125(1, 100000)...), // [1 2 5 10 20 50 100 200 500 1000 2000 5000 10000 20000 50000 100000]ms
-			TagKeys:     tagKeys,
-		},
-	); err != nil {
-		panic(err)
-	}
+	register()
 }
 
 // StatsReporter reports webhook metrics
@@ -136,6 +109,37 @@ func (r *reporter) ReportRequest(req *admissionv1beta1.AdmissionRequest, resp *a
 	// Convert time.Duration in nanoseconds to milliseconds
 	metrics.Record(ctx, responseTimeInMsecM.M(float64(d/time.Millisecond)))
 	return nil
+}
+
+func register() {
+	tagKeys := []tag.Key{
+		requestOperationKey,
+		kindGroupKey,
+		kindVersionKey,
+		kindKindKey,
+		resourceGroupKey,
+		resourceVersionKey,
+		resourceResourceKey,
+		resourceNamespaceKey,
+		resourceNameKey,
+		admissionAllowedKey}
+
+	if err := view.Register(
+		&view.View{
+			Description: requestCountM.Description(),
+			Measure:     requestCountM,
+			Aggregation: view.Count(),
+			TagKeys:     tagKeys,
+		},
+		&view.View{
+			Description: responseTimeInMsecM.Description(),
+			Measure:     responseTimeInMsecM,
+			Aggregation: view.Distribution(metrics.Buckets125(1, 100000)...), // [1 2 5 10 20 50 100 200 500 1000 2000 5000 10000 20000 50000 100000]ms
+			TagKeys:     tagKeys,
+		},
+	); err != nil {
+		panic(err)
+	}
 }
 
 func mustNewTagKey(s string) tag.Key {

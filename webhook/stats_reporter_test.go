@@ -27,6 +27,7 @@ import (
 )
 
 func TestWebhookStatsReporter(t *testing.T) {
+	setup()
 	req := &admissionv1beta1.AdmissionRequest{
 		UID:       "705ab4f5-6393-11e8-b7cc-42010a800002",
 		Kind:      metav1.GroupVersionKind{Group: "autoscaling", Version: "v1", Kind: "Scale"},
@@ -62,4 +63,14 @@ func TestWebhookStatsReporter(t *testing.T) {
 
 	metricstest.CheckCountData(t, requestCountName, expectedTags, 2)
 	metricstest.CheckDistributionData(t, requestLatenciesName, expectedTags, 2, shortTime, longTime)
+}
+
+func setup() {
+	resetMetrics()
+}
+
+// opencensus metrics carry global state that need to be reset between unit tests
+func resetMetrics() {
+	metricstest.Unregister(requestCountName, requestLatenciesName)
+	register()
 }

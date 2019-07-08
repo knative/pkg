@@ -86,6 +86,9 @@ func TestMissingContentType(t *testing.T) {
 	if !strings.Contains(string(responseBody), "invalid Content-Type") {
 		t.Errorf("Response body to contain 'invalid Content-Type' , got = '%s'", string(responseBody))
 	}
+
+	// Stats are not reported for internal server errors
+	metricstest.CheckStatsNotReported(t, requestCountName, requestLatenciesName)
 }
 
 func TestEmptyRequestBody(t *testing.T) {
@@ -425,7 +428,8 @@ func TestInvalidResponseForResource(t *testing.T) {
 		t.Errorf("Received unexpected response status message %s", reviewResponse.Response.Result.Message)
 	}
 
-	metricstest.CheckStatsNotReported(t, requestCountName, requestLatenciesName)
+	// Stats should be reported for requests that have admission disallowed
+	metricstest.CheckStatsReported(t, requestCountName, requestLatenciesName)
 }
 
 func TestWebhookClientAuth(t *testing.T) {
@@ -473,6 +477,7 @@ func testSetup(t *testing.T) (*AdmissionController, string, error) {
 	}
 
 	createDeployment(ac)
+	resetMetrics()
 	return ac, fmt.Sprintf("0.0.0.0:%d", port), nil
 }
 
