@@ -43,8 +43,6 @@ var (
 		"The response time in milliseconds",
 		stats.UnitMilliseconds)
 
-	defaultLatencyDistribution = view.Distribution(5, 10, 20, 40, 60, 80, 100, 150, 200, 250, 300, 350, 400, 450, 500, 600, 700, 800, 900, 1000, 2000, 5000, 10000, 20000, 50000, 100000)
-
 	// Create the tag keys that will be used to add tags to our measurements.
 	// Tag keys must conform to the restrictions described in
 	// go.opencensus.io/tag/validate.go. Currently those restrictions are:
@@ -85,7 +83,7 @@ func init() {
 		&view.View{
 			Description: responseTimeInMsecM.Description(),
 			Measure:     responseTimeInMsecM,
-			Aggregation: defaultLatencyDistribution,
+			Aggregation: view.Distribution(metrics.Buckets125(1, 100000)...), // [1 2 5 10 20 50 100 200 500 1000 2000 5000 10000 20000 50000 100000]ms
 			TagKeys:     tagKeys,
 		},
 	); err != nil {
