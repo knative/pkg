@@ -45,7 +45,7 @@ func SetUserInfoAnnotations(resource apis.HasSpec, ctx context.Context, groupNam
 		annotations := objectMetaAccessor.GetObjectMeta().GetAnnotations()
 		if annotations == nil {
 			annotations = map[string]string{}
-			defer objectMetaAccessor.GetObjectMeta().SetAnnotations(annotations)
+			objectMetaAccessor.GetObjectMeta().SetAnnotations(annotations)
 		}
 
 		if apis.IsInUpdate(ctx) {
