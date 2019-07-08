@@ -20,6 +20,8 @@ import (
 	"context"
 	"testing"
 
+	"knative.dev/pkg/metrics/metricstest"
+
 	"go.opencensus.io/stats"
 	"go.opencensus.io/stats/view"
 )
@@ -69,7 +71,7 @@ func TestRecord(t *testing.T) {
 	for _, test := range shouldReportCases {
 		setCurMetricsConfig(test.metricsConfig)
 		Record(ctx, test.measurement)
-		checkLastValueData(t, test.measurement.Measure().Name(), test.measurement.Value())
+		metricstest.CheckLastValueData(t, test.measurement.Measure().Name(), map[string]string{}, test.measurement.Value())
 	}
 
 	shouldNotReportCases := []struct {
@@ -91,30 +93,6 @@ func TestRecord(t *testing.T) {
 	for _, test := range shouldNotReportCases {
 		setCurMetricsConfig(test.metricsConfig)
 		Record(ctx, test.measurement)
-		checkLastValueData(t, test.measurement.Measure().Name(), 4) // The value is still the last one of shouldReportCases
+		metricstest.CheckLastValueData(t, test.measurement.Measure().Name(), map[string]string{}, 4) // The value is still the last one of shouldReportCases
 	}
-}
-
-func checkLastValueData(t *testing.T, name string, wantValue float64) {
-	t.Helper()
-	if row := checkRow(t, name); row != nil {
-		if s, ok := row.Data.(*view.LastValueData); !ok {
-			t.Error("Reporter.Report() expected a LastValueData type")
-		} else if s.Value != wantValue {
-			t.Errorf("Reporter.Report() expected %v got %v. metric: %v", s.Value, wantValue, name)
-		}
-	}
-}
-
-func checkRow(t *testing.T, name string) *view.Row {
-	t.Helper()
-	d, err := view.RetrieveData(name)
-	if err != nil {
-		t.Fatalf("Reporter.Report() error = %v, wantErr %v", err, false)
-		return nil
-	}
-	if len(d) != 1 {
-		t.Fatalf("Reporter.Report() len(d)=%v, want 1", len(d))
-	}
-	return d[0]
 }
