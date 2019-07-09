@@ -42,12 +42,6 @@ func String(s string) *string {
 	return &s
 }
 
-// Time is a helper for turning time.Time into pointers for use in
-// API types that want *time.Time.
-func Time(t time.Time) *time.Time {
-	return &t
-}
-
 // Duration is a helper for turning time.Duration into pointers for use in
 // API types that want *time.Duration.
 func Duration(t time.Duration) *time.Duration {
