@@ -819,5 +819,5 @@ func NewTestAdmissionController(client kubernetes.Interface, options ControllerO
 			Kind:    "InnerDefaultResource",
 		}: &InnerDefaultResource{},
 	}
-	return NewAdmissionController(client, options, handlers, logger, nil, true), nil
+	return NewAdmissionController(client, options, handlers, logger, nil, true)
 }

@@ -143,14 +143,14 @@ func NewAdmissionController(
 	handlers map[schema.GroupVersionKind]GenericCRD,
 	logger *zap.SugaredLogger,
 	ctx func(context.Context) context.Context,
-	disallowUnknownFields bool) *AdmissionController {
+	disallowUnknownFields bool) (*AdmissionController, error) {
 
 	reporter, err := NewStatsReporter()
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 
-	return NewAdmissionControllerWithStats(client, opts, handlers, logger, &reporter, ctx, disallowUnknownFields)
+	return NewAdmissionControllerWithStats(client, opts, handlers, logger, &reporter, ctx, disallowUnknownFields), nil
 }
 
 // NewAdmissionControllerWithStats constructs an AdmissionController where the caller provides the StatsReporter
