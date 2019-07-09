@@ -150,7 +150,7 @@ func NewAdmissionController(
 		panic(err)
 	}
 
-	return NewAdmissionControllerWithStats(client, opts, handlers, logger, reporter, ctx, disallowUnknownFields)
+	return NewAdmissionControllerWithStats(client, opts, handlers, logger, &reporter, ctx, disallowUnknownFields)
 }
 
 // NewAdmissionControllerWithStats constructs an AdmissionController where the caller provides the StatsReporter
@@ -159,7 +159,7 @@ func NewAdmissionControllerWithStats(
 	opts ControllerOptions,
 	handlers map[schema.GroupVersionKind]GenericCRD,
 	logger *zap.SugaredLogger,
-	reporter StatsReporter,
+	reporter *StatsReporter,
 	ctx func(context.Context) context.Context,
 	disallowUnknownFields bool) *AdmissionController {
 	return &AdmissionController{
@@ -167,7 +167,7 @@ func NewAdmissionControllerWithStats(
 		Options:               opts,
 		Handlers:              handlers,
 		Logger:                logger,
-		StatsReporter:         reporter,
+		StatsReporter:         *reporter,
 		WithContext:           ctx,
 		DisallowUnknownFields: disallowUnknownFields,
 	}
