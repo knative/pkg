@@ -220,7 +220,7 @@ func TestAdmitCreates(t *testing.T) {
 			Value:     user1,
 		}, {
 			Operation: "add",
-			Path:      "/metadata/annotations/pkg.knative.dev~1updater",
+			Path:      "/metadata/annotations/pkg.knative.dev~1lastModifier",
 			Value:     user1,
 		}, {
 			Operation: "add",
@@ -259,7 +259,7 @@ func TestAdmitCreates(t *testing.T) {
 		},
 		patches: []jsonpatch.JsonPatchOperation{{
 			Operation: "replace",
-			Path:      "/metadata/annotations/pkg.knative.dev~1updater",
+			Path:      "/metadata/annotations/pkg.knative.dev~1lastModifier",
 			Value:     user1,
 		}, {
 			Operation: "add",
@@ -346,7 +346,7 @@ func TestAdmitUpdates(t *testing.T) {
 		},
 		patches: []jsonpatch.JsonPatchOperation{{
 			Operation: "replace",
-			Path:      "/metadata/annotations/pkg.knative.dev~1updater",
+			Path:      "/metadata/annotations/pkg.knative.dev~1lastModifier",
 			Value:     user2,
 		}},
 	}, {
