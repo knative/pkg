@@ -78,7 +78,7 @@ func newNonRunningTestAdmissionController(t *testing.T, options ControllerOption
 		t.Fatalf("Failed to create new stats reporter: %v", srErr)
 	}
 
-	ac, err := NewAdmissionController(kubeClient, options, TestLogger(t), &statsReporter)
+	ac, err := NewTestAdmissionController(kubeClient, options, TestLogger(t), &statsReporter)
 	if err != nil {
 		t.Fatalf("Failed to create new admission controller: %v", err)
 	}
@@ -798,7 +798,7 @@ func setUserAnnotation(userC, userU string) jsonpatch.JsonPatchOperation {
 	}
 }
 
-func NewAdmissionController(client kubernetes.Interface, options ControllerOptions,
+func NewTestAdmissionController(client kubernetes.Interface, options ControllerOptions,
 	logger *zap.SugaredLogger, statsReporter *StatsReporter) (*AdmissionController, error) {
 	return &AdmissionController{
 		Client:                client,

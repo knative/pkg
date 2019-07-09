@@ -136,6 +136,43 @@ type GenericCRD interface {
 	runtime.Object
 }
 
+// NewAdmissionController constructs an AdmissionController
+func NewAdmissionController(
+	client kubernetes.Interface,
+	opts ControllerOptions,
+	handlers map[schema.GroupVersionKind]GenericCRD,
+	logger *zap.SugaredLogger,
+	ctx func(context.Context) context.Context,
+	disallowUnknownFields bool) *AdmissionController {
+
+	reporter, err := NewStatsReporter()
+	if err != nil {
+		panic(err)
+	}
+
+	return NewAdmissionControllerWithStats(client, opts, handlers, logger, reporter, ctx, disallowUnknownFields)
+}
+
+// NewAdmissionControllerWithStats constructs an AdmissionController where the caller provides the StatsReporter
+func NewAdmissionControllerWithStats(
+	client kubernetes.Interface,
+	opts ControllerOptions,
+	handlers map[schema.GroupVersionKind]GenericCRD,
+	logger *zap.SugaredLogger,
+	reporter StatsReporter,
+	ctx func(context.Context) context.Context,
+	disallowUnknownFields bool) *AdmissionController {
+	return &AdmissionController{
+		Client:                client,
+		Options:               opts,
+		Handlers:              handlers,
+		Logger:                logger,
+		StatsReporter:         reporter,
+		WithContext:           ctx,
+		DisallowUnknownFields: disallowUnknownFields,
+	}
+}
+
 // GetAPIServerExtensionCACert gets the Kubernetes aggregate apiserver
 // client CA cert used by validator.
 //
@@ -455,8 +492,10 @@ func (ac *AdmissionController) ServeHTTP(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	// Only report valid requests
-	ac.StatsReporter.ReportRequest(review.Request, response.Response, time.Since(ttStart))
+	if ac.StatsReporter != nil {
+		// Only report valid requests
+		ac.StatsReporter.ReportRequest(review.Request, response.Response, time.Since(ttStart))
+	}
 }
 
 func makeErrorStatus(reason string, args ...interface{}) *admissionv1beta1.AdmissionResponse {
