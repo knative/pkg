@@ -48,23 +48,27 @@ func (cfg *Config) Equals(other *Config) bool {
 }
 
 // NewTracingConfigFromMap returns a Config given a map corresponding to a ConfigMap
-func NewTracingConfigFromMap(cfgMap map[string]string) (*Config, error) {
-	tc := Config{
+func NewTracingConfigFromMap(cfgMap map[string]string) (tc *Config, err error) {
+
+	tc = &Config{
 		Enable:     false,
 		Debug:      false,
 		SampleRate: 0.1,
 	}
+
 	if enable, ok := cfgMap[enableKey]; ok {
 		enableBool, err := strconv.ParseBool(enable)
 		if err != nil {
-			return nil, fmt.Errorf("Failed parsing tracing config %q: %v", enableKey, err)
+			err = fmt.Errorf("Failed parsing tracing config %q: %v", enableKey, err)
+		} else {
+			tc.Enable = enableBool
 		}
-		tc.Enable = enableBool
 	}
 
 	if endpoint, ok := cfgMap[zipkinEndpointKey]; !ok {
 		if tc.Enable {
-			return nil, errors.New("Tracing enabled but no zipkin endpoint specified")
+			tc.Enable = false
+			err = errors.New("Tracing enabled but no zipkin endpoint specified")
 		}
 	} else {
 		tc.ZipkinEndpoint = endpoint
@@ -73,7 +77,7 @@ func NewTracingConfigFromMap(cfgMap map[string]string) (*Config, error) {
 	if debug, ok := cfgMap[debugKey]; ok {
 		debugBool, err := strconv.ParseBool(debug)
 		if err != nil {
-			return nil, fmt.Errorf("Failed parsing tracing config %q", debugKey)
+			err = fmt.Errorf("Failed parsing tracing config %q", debugKey)
 		}
 		tc.Debug = debugBool
 	}
@@ -81,12 +85,12 @@ func NewTracingConfigFromMap(cfgMap map[string]string) (*Config, error) {
 	if sampleRate, ok := cfgMap[sampleRateKey]; ok {
 		sampleRateFloat, err := strconv.ParseFloat(sampleRate, 64)
 		if err != nil {
-			return nil, fmt.Errorf("Failed to parse sampleRate in tracing config: %v", err)
+			err = fmt.Errorf("Failed to parse sampleRate in tracing config: %v", err)
 		}
 		tc.SampleRate = sampleRateFloat
 	}
 
-	return &tc, nil
+	return
 }
 
 // NewTracingConfigFromConfigMap returns a Config for the given configmap
