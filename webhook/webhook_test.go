@@ -73,12 +73,8 @@ func newNonRunningTestAdmissionController(t *testing.T, options ControllerOption
 	t.Helper()
 	// Create fake clients
 	kubeClient = fakekubeclientset.NewSimpleClientset()
-	statsReporter, srErr := NewStatsReporter()
-	if srErr != nil {
-		t.Fatalf("Failed to create new stats reporter: %v", srErr)
-	}
 
-	ac, err := NewAdmissionController(kubeClient, options, TestLogger(t), &statsReporter)
+	ac, err := NewTestAdmissionController(kubeClient, options, TestLogger(t))
 	if err != nil {
 		t.Fatalf("Failed to create new admission controller: %v", err)
 	}
@@ -798,36 +794,30 @@ func setUserAnnotation(userC, userU string) jsonpatch.JsonPatchOperation {
 	}
 }
 
-func NewAdmissionController(client kubernetes.Interface, options ControllerOptions,
-	logger *zap.SugaredLogger, statsReporter *StatsReporter) (*AdmissionController, error) {
-	return &AdmissionController{
-		Client:                client,
-		Options:               options,
-		DisallowUnknownFields: true,
-		// Use different versions and domains, for coverage.
-		Handlers: map[schema.GroupVersionKind]GenericCRD{
-			{
-				Group:   "pkg.knative.dev",
-				Version: "v1alpha1",
-				Kind:    "Resource",
-			}: &Resource{},
-			{
-				Group:   "pkg.knative.dev",
-				Version: "v1beta1",
-				Kind:    "Resource",
-			}: &Resource{},
-			{
-				Group:   "pkg.knative.dev",
-				Version: "v1alpha1",
-				Kind:    "InnerDefaultResource",
-			}: &InnerDefaultResource{},
-			{
-				Group:   "pkg.knative.io",
-				Version: "v1alpha1",
-				Kind:    "InnerDefaultResource",
-			}: &InnerDefaultResource{},
-		},
-		Logger:        logger,
-		StatsReporter: *statsReporter,
-	}, nil
+func NewTestAdmissionController(client kubernetes.Interface, options ControllerOptions,
+	logger *zap.SugaredLogger) (*AdmissionController, error) {
+	// Use different versions and domains, for coverage.
+	handlers := map[schema.GroupVersionKind]GenericCRD{
+		{
+			Group:   "pkg.knative.dev",
+			Version: "v1alpha1",
+			Kind:    "Resource",
+		}: &Resource{},
+		{
+			Group:   "pkg.knative.dev",
+			Version: "v1beta1",
+			Kind:    "Resource",
+		}: &Resource{},
+		{
+			Group:   "pkg.knative.dev",
+			Version: "v1alpha1",
+			Kind:    "InnerDefaultResource",
+		}: &InnerDefaultResource{},
+		{
+			Group:   "pkg.knative.io",
+			Version: "v1alpha1",
+			Kind:    "InnerDefaultResource",
+		}: &InnerDefaultResource{},
+	}
+	return NewAdmissionController(client, options, handlers, logger, nil, true)
 }
