@@ -25,13 +25,13 @@ import (
 	"sync"
 	"time"
 
-	opencensus "go.opencensus.io"
+	"go.opencensus.io"
 	"go.opencensus.io/stats"
 	"go.opencensus.io/stats/view"
 	"go.opencensus.io/tag"
 	"go.opencensus.io/trace"
 
-	monitoring "cloud.google.com/go/monitoring/apiv3"
+	"cloud.google.com/go/monitoring/apiv3"
 	"github.com/golang/protobuf/ptypes/timestamp"
 	"google.golang.org/api/option"
 	"google.golang.org/api/support/bundler"
@@ -423,7 +423,6 @@ func newTypedValue(vd *view.View, r *view.Row) *monitoringpb.TypedValue {
 			}}
 		}
 	case *view.DistributionData:
-		insertZeroBound := shouldInsertZeroBound(vd.Aggregation.Buckets...)
 		return &monitoringpb.TypedValue{Value: &monitoringpb.TypedValue_DistributionValue{
 			DistributionValue: &distributionpb.Distribution{
 				Count:                 v.Count,
@@ -437,11 +436,11 @@ func newTypedValue(vd *view.View, r *view.Row) *monitoringpb.TypedValue {
 				BucketOptions: &distributionpb.Distribution_BucketOptions{
 					Options: &distributionpb.Distribution_BucketOptions_ExplicitBuckets{
 						ExplicitBuckets: &distributionpb.Distribution_BucketOptions_Explicit{
-							Bounds: addZeroBoundOnCondition(insertZeroBound, vd.Aggregation.Buckets...),
+							Bounds: vd.Aggregation.Buckets,
 						},
 					},
 				},
-				BucketCounts: addZeroBucketCountOnCondition(insertZeroBound, v.CountPerBucket...),
+				BucketCounts: v.CountPerBucket,
 			},
 		}}
 	case *view.LastValueData:
@@ -457,27 +456,6 @@ func newTypedValue(vd *view.View, r *view.Row) *monitoringpb.TypedValue {
 		}
 	}
 	return nil
-}
-
-func shouldInsertZeroBound(bounds ...float64) bool {
-	if len(bounds) > 0 && bounds[0] != 0.0 {
-		return true
-	}
-	return false
-}
-
-func addZeroBucketCountOnCondition(insert bool, counts ...int64) []int64 {
-	if insert {
-		return append([]int64{0}, counts...)
-	}
-	return counts
-}
-
-func addZeroBoundOnCondition(insert bool, bounds ...float64) []float64 {
-	if insert {
-		return append([]float64{0.0}, bounds...)
-	}
-	return bounds
 }
 
 func (e *statsExporter) metricType(v *view.View) string {

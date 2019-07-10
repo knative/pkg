@@ -14,25 +14,25 @@ required = [
   "github.com/pkg/errors",
 ]
 
-[[constraint]]
+[[override]]
   name = "k8s.io/api"
-  version = "kubernetes-1.12.9"
+  version = "kubernetes-1.13.6"
 
 [[override]]
   name = "k8s.io/apiextensions-apiserver"
-  version = "kubernetes-1.12.9"
+  version = "kubernetes-1.13.6"
 
-[[constraint]]
+[[override]]
   name = "k8s.io/apimachinery"
-  version = "kubernetes-1.12.9"
+  version = "kubernetes-1.13.6"
 
-[[constraint]]
+[[override]]
   name = "k8s.io/client-go"
-  version = "kubernetes-1.12.9"
+  version = "kubernetes-1.13.6"
 
-[[constraint]]
+[[override]]
   name = "k8s.io/code-generator"
-  version = "kubernetes-1.12.9"
+  version = "kubernetes-1.13.6"
 
 [[override]]
   name = "github.com/json-iterator/go"
@@ -55,9 +55,13 @@ required = [
   # Needed because release 1.0.0 does not contain a LICENSE file
   revision = "4bbc89b6501cca7dd6b5557d78d70c8d2c6e8b97"
 
-[[constraint]]
+[[override]]
   name = "contrib.go.opencensus.io/exporter/stackdriver"
-  version = "0.9.2"
+  # HEAD as of 2019-02-11
+  # Needed because this includes a fix to support Stackdriver built-in metrics
+  revision = "c06c82c832edca4eaf7b0241bd655560a1be0346"
+
+
 
 [[constraint]]
   name = "github.com/knative/test-infra"
