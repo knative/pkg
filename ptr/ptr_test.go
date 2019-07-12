@@ -61,7 +61,7 @@ func TestDuration(t *testing.T) {
 	}
 }
 
-func TestDuration_Const(t *testing.T) {
+func TestDurationWithConst(t *testing.T) {
 	const want = 42 * time.Second
 	gotPtr := Duration(want)
 	if want != *gotPtr {
