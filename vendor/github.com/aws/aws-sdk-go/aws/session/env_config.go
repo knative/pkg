@@ -80,7 +80,7 @@ type envConfig struct {
 	//	AWS_CONFIG_FILE=$HOME/my_shared_config
 	SharedConfigFile string
 
-	// Sets the path to a custom Credentials Authroity (CA) Bundle PEM file
+	// Sets the path to a custom Credentials Authority (CA) Bundle PEM file
 	// that the SDK will use instead of the system's root CA bundle.
 	// Only use this if you want to configure the SDK to use a custom set
 	// of CAs.
@@ -102,6 +102,7 @@ type envConfig struct {
 	CSMEnabled  bool
 	CSMPort     string
 	CSMClientID string
+	CSMHost     string
 
 	enableEndpointDiscovery string
 	// Enables endpoint discovery via environment variables.
@@ -113,6 +114,9 @@ type envConfig struct {
 var (
 	csmEnabledEnvKey = []string{
 		"AWS_CSM_ENABLED",
+	}
+	csmHostEnvKey = []string{
+		"AWS_CSM_HOST",
 	}
 	csmPortEnvKey = []string{
 		"AWS_CSM_PORT",
@@ -184,6 +188,7 @@ func envConfigLoad(enableSharedConfig bool) envConfig {
 
 	// CSM environment variables
 	setFromEnvVal(&cfg.csmEnabled, csmEnabledEnvKey)
+	setFromEnvVal(&cfg.CSMHost, csmHostEnvKey)
 	setFromEnvVal(&cfg.CSMPort, csmPortEnvKey)
 	setFromEnvVal(&cfg.CSMClientID, csmClientIDEnvKey)
 	cfg.CSMEnabled = len(cfg.csmEnabled) > 0
