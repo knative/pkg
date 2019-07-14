@@ -25,7 +25,9 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"os"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -55,6 +57,10 @@ const (
 	secretServerKey  = "server-key.pem"
 	secretServerCert = "server-cert.pem"
 	secretCACert     = "ca-cert.pem"
+)
+
+const (
+	RegistrationDelayTime = "REG_DELAY_TIME"
 )
 
 var (
@@ -683,4 +689,16 @@ func generateSecret(ctx context.Context, options *ControllerOptions) (*corev1.Se
 			secretCACert:     caCert,
 		},
 	}, nil
+}
+
+func getRegistrationDelayTime() int64 {
+	var RegistrationDelay int64
+	if rdt := os.Getenv(RegistrationDelayTime); rdt != "" {
+		rdtime, err := strconv.ParseInt(rdt, 10, 64)
+		if err != nil {
+			fmt.Sprintf("REG_DELAY_TIME env set failed, RegistrationDelay will be set 0\n")
+		}
+		RegistrationDelay = rdtime
+	}
+	return RegistrationDelay
 }
