@@ -111,12 +111,24 @@ func (r *ShortDiffReporter) Report(rs cmp.Result) {
 	t := cur.Type()
 	var diff string
 	// Prefix struct values with the types to add clarity in output
-	if !vx.IsValid() || !vy.IsValid() {
-		r.err = fmt.Errorf("Unable to diff %+v and %+v on path %#v", vx, vy, r.path)
+	if !vx.IsValid() && !vy.IsValid() {
+		r.err = fmt.Errorf("Both are invalid on path %#v", r.path)
 	} else if t.Kind() == reflect.Struct {
-		diff = fmt.Sprintf("%#v:\n\t-: %+v: \"%+v\"\n\t+: %+v: \"%+v\"\n", r.path, t, vx, t, vy)
+		diff = fmt.Sprintf("%#v:\n", r.path)
+		if vx.IsValid() {
+			diff += fmt.Sprintf("\t-: %+v: \"%+v\"\n", t, vx)
+		}
+		if vy.IsValid() {
+			diff += fmt.Sprintf("\t+: %+v: \"%+v\"\n", t, vy)
+		}
 	} else {
-		diff = fmt.Sprintf("%#v:\n\t-: \"%+v\"\n\t+: \"%+v\"\n", r.path, vx, vy)
+		diff = fmt.Sprintf("%#v:\n", r.path)
+		if vx.IsValid() {
+			diff += fmt.Sprintf("\t-: \"%+v\"\n", vx)
+		}
+		if vy.IsValid() {
+			diff += fmt.Sprintf("\t+: \"%+v\"\n", vy)
+		}
 	}
 	r.diffs = append(r.diffs, diff)
 }

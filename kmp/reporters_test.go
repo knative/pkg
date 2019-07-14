@@ -217,7 +217,9 @@ func TestImmutableReporter(t *testing.T) {
 		x: testStruct{
 			StringField: "foo",
 		},
-		expectErr: true,
+		want: `root:
+	-: "{A: StringField:foo IntField:0 StructField:{ChildString: ChildInt:0} Omit: Ignore: Dash: MultiComma:}"
+`,
 	}, {
 		name: "Single character field name",
 		x: testStruct{
