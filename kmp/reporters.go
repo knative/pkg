@@ -126,13 +126,11 @@ func (r *ShortDiffReporter) Report(rs cmp.Result) {
 }
 
 func (r *ShortDiffReporter) diffString(diffType string, t reflect.Type, v reflect.Value) string {
-	var diff string
 	if t.Kind() == reflect.Struct {
-		diff = fmt.Sprintf("\t%s: %+v: \"%+v\"\n", diffType, t, v)
+		return fmt.Sprintf("\t%s: %+v: \"%+v\"\n", diffType, t, v)
 	} else {
-		diff = fmt.Sprintf("\t%s: \"%+v\"\n", diffType, v)
+		return fmt.Sprintf("\t%s: \"%+v\"\n", diffType, v)
 	}
-	return diff
 }
 
 // PopStep implements the cmp.Reporter.

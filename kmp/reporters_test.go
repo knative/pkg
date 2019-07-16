@@ -329,6 +329,15 @@ func TestImmutableReporter(t *testing.T) {
 		want: `{map[string]string}["Foo"]:
 	-: "Bar"
 `,
+	}, {
+		name: "Map add a key",
+		x:    map[string]string{},
+		y: map[string]string{
+			"Foo": "Bar",
+		},
+		want: `{map[string]string}["Foo"]:
+	+: "Bar"
+`,
 	}}
 
 	for _, test := range tests {
