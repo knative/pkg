@@ -320,6 +320,15 @@ func TestImmutableReporter(t *testing.T) {
 		},
 		want: "",
 		opts: []cmp.Option{cmpopts.IgnoreUnexported(privateStruct{})},
+	}, {
+		name: "Map with a missing key",
+		x: map[string]string{
+			"Foo": "Bar",
+		},
+		y: map[string]string{},
+		want: `{map[string]string}["Foo"]:
+	-: "Bar"
+`,
 	}}
 
 	for _, test := range tests {
