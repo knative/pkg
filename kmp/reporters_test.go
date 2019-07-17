@@ -217,7 +217,9 @@ func TestImmutableReporter(t *testing.T) {
 		x: testStruct{
 			StringField: "foo",
 		},
-		expectErr: true,
+		want: `root:
+	-: "{A: StringField:foo IntField:0 StructField:{ChildString: ChildInt:0} Omit: Ignore: Dash: MultiComma:}"
+`,
 	}, {
 		name: "Single character field name",
 		x: testStruct{
@@ -318,6 +320,24 @@ func TestImmutableReporter(t *testing.T) {
 		},
 		want: "",
 		opts: []cmp.Option{cmpopts.IgnoreUnexported(privateStruct{})},
+	}, {
+		name: "Map with a missing key",
+		x: map[string]string{
+			"Foo": "Bar",
+		},
+		y: map[string]string{},
+		want: `{map[string]string}["Foo"]:
+	-: "Bar"
+`,
+	}, {
+		name: "Map add a key",
+		x:    map[string]string{},
+		y: map[string]string{
+			"Foo": "Bar",
+		},
+		want: `{map[string]string}["Foo"]:
+	+: "Bar"
+`,
 	}}
 
 	for _, test := range tests {

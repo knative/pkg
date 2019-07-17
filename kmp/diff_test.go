@@ -20,6 +20,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 )
 
@@ -95,17 +96,66 @@ func TestFieldDiff(t *testing.T) {
 }
 
 func TestImmutableDiff(t *testing.T) {
-	a := resource.MustParse("50m")
-	b := resource.MustParse("100m")
-
-	want := `{resource.Quantity}:
+	tests := []struct {
+		name      string
+		x         interface{}
+		y         interface{}
+		want      string
+		expectErr bool
+	}{{
+		name: "Resource diff",
+		x:    resource.MustParse("50m"),
+		y:    resource.MustParse("100m"),
+		want: `{resource.Quantity}:
 	-: resource.Quantity: "{i:{value:50 scale:-3} d:{Dec:<nil>} s:50m Format:DecimalSI}"
 	+: resource.Quantity: "{i:{value:100 scale:-3} d:{Dec:<nil>} s:100m Format:DecimalSI}"
-`
+`,
+	}, {
+		name:      "Both Nil objects",
+		expectErr: true,
+	}, {
+		name: "Nil first object",
+		y: corev1.ResourceList{
+			corev1.ResourceName("cpu"): resource.MustParse("100m"),
+		},
+		want: `root:
+	+: "map[cpu:{i:{value:100 scale:-3} d:{Dec:<nil>} s:100m Format:DecimalSI}]"
+`,
+	}, {
+		name: "Nil second object",
+		x: corev1.ResourceList{
+			corev1.ResourceName("cpu"): resource.MustParse("100m"),
+		},
+		want: `root:
+	-: "map[cpu:{i:{value:100 scale:-3} d:{Dec:<nil>} s:100m Format:DecimalSI}]"
+`,
+	}, {
+		name: "Resource list compare",
+		x: corev1.ResourceList{
+			corev1.ResourceName("cpu"):     resource.MustParse("100m"),
+			corev1.ResourceName("storage"): resource.MustParse("1Mi"),
+		},
+		y: corev1.ResourceList{
+			corev1.ResourceName("cpu"):    resource.MustParse("50m"),
+			corev1.ResourceName("memory"): resource.MustParse("200Mi"),
+		},
+		want: `{v1.ResourceList}["cpu"]:
+	-: resource.Quantity: "{i:{value:100 scale:-3} d:{Dec:<nil>} s:100m Format:DecimalSI}"
+	+: resource.Quantity: "{i:{value:50 scale:-3} d:{Dec:<nil>} s:50m Format:DecimalSI}"
+{v1.ResourceList}["memory"]:
+	+: resource.Quantity: "{i:{value:209715200 scale:0} d:{Dec:<nil>} s: Format:BinarySI}"
+{v1.ResourceList}["storage"]:
+	-: resource.Quantity: "{i:{value:1048576 scale:0} d:{Dec:<nil>} s:1Mi Format:BinarySI}"
+`,
+	}}
 
-	if got, err := ShortDiff(a, b); err != nil {
-		t.Errorf("unexpected ShortDiff err: %v", err)
-	} else if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("SafeDiff (-want, +got): %v", diff)
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			if got, err := ShortDiff(test.x, test.y); err != nil {
+				t.Errorf("unexpected ShortDiff err: %v", err)
+			} else if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("SafeDiff (-want, +got): %v", diff)
+			}
+		})
 	}
 }
