@@ -16,7 +16,10 @@ limitations under the License.
 
 package ptr
 
-import "testing"
+import (
+	"testing"
+	"time"
+)
 
 func TestInt32(t *testing.T) {
 	want := int32(55)
@@ -47,5 +50,21 @@ func TestString(t *testing.T) {
 	gotPtr := String(want)
 	if want != *gotPtr {
 		t.Errorf("String() = &%v, wanted %v", *gotPtr, want)
+	}
+}
+
+func TestDuration(t *testing.T) {
+	want := 42 * time.Second
+	gotPtr := Duration(want)
+	if want != *gotPtr {
+		t.Errorf("Duration() = &%v, wanted %v", *gotPtr, want)
+	}
+}
+
+func TestDurationWithConst(t *testing.T) {
+	const want = 42 * time.Second
+	gotPtr := Duration(want)
+	if want != *gotPtr {
+		t.Errorf("Duration() = &%v, wanted %v", *gotPtr, want)
 	}
 }
