@@ -53,6 +53,13 @@ func TestString(t *testing.T) {
 	}
 }
 
+func TestTime(t *testing.T) {
+	want := time.Now().Add(time.Minute)
+	if got, want := *Time(want), want; got != want {
+		t.Errorf("got = %v, want: %v", got, want)
+	}
+}
+
 func TestDuration(t *testing.T) {
 	want := 42 * time.Second
 	gotPtr := Duration(want)
