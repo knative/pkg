@@ -211,7 +211,6 @@ func (r conditionsImpl) severity(t ConditionType) ConditionSeverity {
 }
 
 // RemoveCondition removes the condition that matches the ConditionType
-// Happy condition is changed if removed condition is a terminal type.
 func (r conditionsImpl) RemoveCondition(t ConditionType) {
 	var conditions Conditions
 
