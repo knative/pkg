@@ -840,3 +840,94 @@ func TestTerminalInitialization(t *testing.T) {
 		t.Errorf("GetCondition(Bar) = %s, wanted %s", got, want)
 	}
 }
+
+func TestRemoveNonTerminalConditions(t *testing.T) {
+	set := NewLivingConditionSet("Foo")
+	status := &TestStatus{}
+
+	manager := set.Manage(status)
+	manager.MarkTrue("Foo")
+	manager.MarkTrue("Bar")
+
+	if got, want := len(status.c), 3; got != want {
+		t.Errorf("Marking true() = %v, wanted %v", got, want)
+	}
+
+	if !manager.IsHappy() {
+		t.Error("IsHappy() = false, wanted true")
+	}
+
+	manager.RemoveCondition("Bar")
+	if got, want := len(status.c), 2; got != want {
+		t.Errorf("Marking true() = %v, wanted %v", got, want)
+	}
+
+	if !manager.IsHappy() {
+		t.Error("IsHappy() = false, wanted true")
+	}
+
+}
+func testCondition(t *testing.T, got *Condition, want corev1.ConditionStatus) {
+	if got == nil {
+		t.Errorf("GetCondition = nil, wanted %s", want)
+	}
+	if status := got.Status; status != want {
+		t.Errorf("GetCondition = %s, wanted %s", status, want)
+	}
+
+}
+func TestRemoveTerminalConditions(t *testing.T) {
+	set := NewLivingConditionSet("Foo", "Bar")
+	status := &TestStatus{}
+
+	manager := set.Manage(status)
+	manager.MarkTrue("Foo")
+
+	manager.MarkFalse("Bar", "", "")
+	testCondition(t, manager.GetCondition(ConditionReady), corev1.ConditionFalse)
+	if got, want := len(status.c), 3; got != want {
+		t.Errorf("Marking true() = %v, wanted %v", got, want)
+	}
+
+	// Removing true condition should not change happy. Foo is true
+	manager.RemoveCondition("Bar")
+	testCondition(t, manager.GetCondition(ConditionReady), corev1.ConditionTrue)
+	if got, want := len(status.c), 2; got != want {
+		t.Errorf("Marking true() = %v, wanted %v", got, want)
+	}
+
+	// Removing unknown condition should change happy back to true. Foo is true
+	manager.MarkUnknown("Bar", "", "")
+	testCondition(t, manager.GetCondition(ConditionReady), corev1.ConditionUnknown)
+	manager.RemoveCondition("Bar")
+	testCondition(t, manager.GetCondition(ConditionReady), corev1.ConditionTrue)
+
+	//Removing true condition should not change happy. Foo is unknown
+	manager.MarkUnknown("Foo", "", "")
+	testCondition(t, manager.GetCondition(ConditionReady), corev1.ConditionUnknown)
+	manager.MarkTrue("Bar")
+	testCondition(t, manager.GetCondition(ConditionReady), corev1.ConditionUnknown)
+	manager.RemoveCondition("Bar")
+	testCondition(t, manager.GetCondition(ConditionReady), corev1.ConditionUnknown)
+
+	//Removing False condition should change happy back to Unknown. Foo is unknown
+	manager.MarkFalse("Bar", "", "")
+	testCondition(t, manager.GetCondition(ConditionReady), corev1.ConditionFalse)
+	manager.RemoveCondition("Bar")
+	testCondition(t, manager.GetCondition(ConditionReady), corev1.ConditionUnknown)
+
+	// Removing true condition should not change happy. Foo is false
+	manager.MarkFalse("Foo", "", "")
+	testCondition(t, manager.GetCondition(ConditionReady), corev1.ConditionFalse)
+	manager.MarkTrue("Bar")
+	testCondition(t, manager.GetCondition(ConditionReady), corev1.ConditionFalse)
+	manager.RemoveCondition("Bar")
+	testCondition(t, manager.GetCondition(ConditionReady), corev1.ConditionFalse)
+
+	// Removing false condition should not change happy. Foo is false
+	manager.MarkFalse("Bar", "", "")
+	testCondition(t, manager.GetCondition(ConditionReady), corev1.ConditionFalse)
+	manager.RemoveCondition("Bar")
+	testCondition(t, manager.GetCondition(ConditionReady), corev1.ConditionFalse)
+
+}

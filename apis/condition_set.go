@@ -60,6 +60,9 @@ type ConditionManager interface {
 	// If there is an update, Conditions are stored back sorted.
 	SetCondition(new Condition)
 
+	// RemoveCondition removes the condition that matches the ConditionType
+	RemoveCondition(t ConditionType)
+
 	// MarkTrue sets the status of t to true, and then marks the happy condition to
 	// true if all dependents are true.
 	MarkTrue(t ConditionType)
@@ -205,6 +208,79 @@ func (r conditionsImpl) severity(t ConditionType) ConditionSeverity {
 		return ConditionSeverityError
 	}
 	return ConditionSeverityInfo
+}
+
+// RemoveCondition removes the condition that matches the ConditionType
+// Happy condition is changed if removed condition is a terminal type.
+func (r conditionsImpl) RemoveCondition(t ConditionType) {
+	var conditions Conditions
+
+	if r.accessor == nil {
+		return
+	}
+	cond := r.GetCondition(t)
+	if cond == nil {
+		return
+	}
+	for _, c := range r.accessor.GetConditions() {
+		if c.Type != t {
+			conditions = append(conditions, c)
+		}
+	}
+
+	// Sorted for convenience of the consumer, i.e. kubectl.
+	sort.Slice(conditions, func(i, j int) bool { return conditions[i].Type < conditions[j].Type })
+	r.accessor.SetConditions(conditions)
+
+	happy := r.GetCondition(r.happy)
+	if r.isTerminal(t) {
+		if cond.IsFalse() && happy.IsFalse() {
+			//happy can change to unknown or true
+			// check the dependents.
+			var unknownCond *Condition
+			for _, dep := range r.dependents {
+				if dep == cond.Type {
+					continue
+				}
+				c := r.GetCondition(dep)
+				if c == nil {
+					continue
+				}
+				// if there is a false, return and no change in happy
+				if c.IsFalse() {
+					return
+				} else if c.IsUnknown() {
+					unknownCond = c
+				}
+
+				// if there is a unknown, change happy to unknown
+				// else change back to true(all dependents are true)
+				if unknownCond != nil {
+					r.MarkUnknown(r.happy, unknownCond.Reason, unknownCond.Message)
+				} else {
+					r.MarkTrue(r.happy)
+				}
+
+			}
+		} else if cond.IsUnknown() && happy.IsUnknown() {
+			// happy can change to true if all dependents are true
+			// check the dependents.
+			for _, dep := range r.dependents {
+				if dep == cond.Type {
+					continue
+				}
+				c := r.GetCondition(dep)
+				if c == nil {
+					continue
+				}
+				// Failed or Unknown conditions trump true conditions
+				if !c.IsTrue() {
+					return
+				}
+			}
+			r.MarkTrue(r.happy)
+		}
+	}
 }
 
 // MarkTrue sets the status of t to true, and then marks the happy condition to
