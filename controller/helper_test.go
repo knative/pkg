@@ -37,7 +37,7 @@ func TestSendGlobalUpdate(t *testing.T) {
 	}
 	SendGlobalUpdates(&dummyInformer{}, handler)
 	for _, obj := range dummyObjs {
-		if updated, _ := called[obj]; !updated {
+		if updated := called[obj]; !updated {
 			t.Errorf("Expected obj %v to be updated but wasn't", obj)
 		}
 	}

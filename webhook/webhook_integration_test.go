@@ -49,7 +49,7 @@ func TestMissingContentType(t *testing.T) {
 	go func() {
 		err := ac.Run(stopCh)
 		if err != nil {
-			t.Fatalf("Unable to run controller: %s", err)
+			t.Errorf("Unable to run controller: %s", err)
 		}
 	}()
 
@@ -102,7 +102,7 @@ func TestEmptyRequestBody(t *testing.T) {
 	go func() {
 		err := ac.Run(stopCh)
 		if err != nil {
-			t.Fatalf("Unable to run controller: %s", err)
+			t.Errorf("Unable to run controller: %s", err)
 		}
 	}()
 	defer close(stopCh)
@@ -156,7 +156,7 @@ func TestValidResponseForResource(t *testing.T) {
 	go func() {
 		err := ac.Run(stopCh)
 		if err != nil {
-			t.Fatalf("Unable to run controller: %s", err)
+			t.Errorf("Unable to run controller: %s", err)
 		}
 	}()
 
@@ -242,7 +242,7 @@ func TestValidResponseForResourceWithContextDefault(t *testing.T) {
 	go func() {
 		err := ac.Run(stopCh)
 		if err != nil {
-			t.Fatalf("Unable to run controller: %s", err)
+			t.Errorf("Unable to run controller: %s", err)
 		}
 	}()
 
@@ -337,7 +337,7 @@ func TestInvalidResponseForResource(t *testing.T) {
 	go func() {
 		err := ac.Run(stopCh)
 		if err != nil {
-			t.Fatalf("Unable to run controller: %s", err)
+			t.Errorf("Unable to run controller: %s", err)
 		}
 	}()
 
@@ -445,7 +445,7 @@ func TestWebhookClientAuth(t *testing.T) {
 	go func() {
 		err := ac.Run(stopCh)
 		if err != nil {
-			t.Fatalf("Unable to run controller: %s", err)
+			t.Errorf("Unable to run controller: %s", err)
 		}
 	}()
 

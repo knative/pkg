@@ -40,7 +40,7 @@ func waitForServerAvailable(t *testing.T, serverURL string, timeout time.Duratio
 
 	conditionFunc := func() (done bool, err error) {
 		var conn net.Conn
-		conn, err = net.DialTimeout("tcp", serverURL, timeout)
+		conn, _ = net.DialTimeout("tcp", serverURL, timeout)
 		if conn != nil {
 			conn.Close()
 			return true, nil

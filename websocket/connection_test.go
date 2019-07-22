@@ -76,7 +76,6 @@ func (c *inspectableConnection) SetPongHandler(func(string) error) {
 	if c.setPongHandlerCalls != nil {
 		c.setPongHandlerCalls <- struct{}{}
 	}
-	return
 }
 
 // staticConnFactory returns a static connection, for example
