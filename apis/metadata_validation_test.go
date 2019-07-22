@@ -106,3 +106,50 @@ func TestValidateObjectMetadata(t *testing.T) {
 		})
 	}
 }
+
+func TestServiceAnnotationUpdate(t *testing.T) {
+	const (
+		u1 = "oveja@knative.dev"
+		u2 = "cabra@knative.dev"
+		groupName = "pkg.knative.dev"
+	)
+	tests := []struct {
+		name          string
+		old           interface{}
+		new           interface{}
+		oldAnnotation map[string]string
+		newAnnotation map[string]string
+		want          *FieldError
+	}{{
+		name: "update creator annotation",
+		old:  nil,
+		new:  nil,
+		oldAnnotation: map[string]string{
+			groupName+CreatorAnnotationSuffix: u1,
+		},
+		newAnnotation: map[string]string{
+			groupName+CreatorAnnotationSuffix: u2,
+		},
+		want: &FieldError{Message: "annotation value is immutable",
+			Paths: []string{groupName+CreatorAnnotationSuffix}},
+	}, {
+		name: "update lastModifier without spec changes",
+		old:  nil,
+		new:  nil,
+		oldAnnotation: map[string]string{
+			groupName+UpdaterAnnotationSuffix: u1,
+		},
+		newAnnotation: map[string]string{
+			groupName+UpdaterAnnotationSuffix: u2,
+		},
+		want: ErrInvalidValue(u2, groupName+UpdaterAnnotationSuffix),
+	}}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			err := ValidateCreatorAndModifier(test.old, test.new, test.oldAnnotation, test.newAnnotation, groupName)
+			if !reflect.DeepEqual(test.want.Error(), err.Error()) {
+				t.Errorf("Expected: '%#v', Got: '%#v'", test.want, err)
+			}
+		})
+	}
+}
