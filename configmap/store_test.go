@@ -107,14 +107,11 @@ func appendTo(evidence *[]string) func(int) func(string, interface{}) {
 }
 
 func listOf(f func(int) func(string, interface{}), count int, tail ...func(string, interface{})) []func(string, interface{}) {
-	var result []func(string, interface{})
+	result := make([]func(string, interface{}), 0, count)
 	for i := 0; i < count; i++ {
 		result = append(result, f(i))
 	}
-	for _, f := range tail {
-		result = append(result, f)
-	}
-	return result
+	return append(result, tail...)
 }
 
 func expectedEvidence(name string, count int) []string {

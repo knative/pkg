@@ -321,7 +321,6 @@ func (u *UnableToMarshal) GetFullType() Populatable {
 }
 
 func (u *UnableToMarshal) Populate() {
-	return
 }
 
 func (u *UnableToMarshal) MarshalJSON() ([]byte, error) {
@@ -340,7 +339,6 @@ func (u *UnableToUnmarshal) GetFullType() Populatable {
 }
 
 func (u *UnableToUnmarshal) Populate() {
-	return
 }
 
 func (u *UnableToUnmarshal) UnmarshalJSON([]byte) error {
@@ -362,5 +360,4 @@ func (u *UnexportedFields) GetFullType() Populatable {
 
 func (u *UnexportedFields) Populate() {
 	u.a = "hello"
-	return
 }

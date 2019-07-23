@@ -48,7 +48,7 @@ var (
 )
 
 // GetFullType implements duck.Implementable
-func (_ *Scalable) GetFullType() duck.Populatable {
+func (*Scalable) GetFullType() duck.Populatable {
 	return &Scalable{}
 }
 

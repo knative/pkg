@@ -48,7 +48,7 @@ var (
 )
 
 // GetFullType implements duck.Implementable
-func (_ *PodSpecable) GetFullType() duck.Populatable {
+func (*PodSpecable) GetFullType() duck.Populatable {
 	return &WithPod{}
 }
 
