@@ -840,3 +840,32 @@ func TestTerminalInitialization(t *testing.T) {
 		t.Errorf("GetCondition(Bar) = %s, wanted %s", got, want)
 	}
 }
+
+func TestRemoveNonTerminalConditions(t *testing.T) {
+	set := NewLivingConditionSet("Foo")
+	status := &TestStatus{}
+
+	manager := set.Manage(status)
+	manager.MarkTrue("Foo")
+	manager.MarkTrue("Bar")
+
+	if got, want := len(status.c), 3; got != want {
+		t.Errorf("Marking true() = %v, wanted %v", got, want)
+	}
+
+	if !manager.IsHappy() {
+		t.Error("IsHappy() = false, wanted true")
+	}
+
+	err := manager.ClearCondition("Bar")
+	if err != nil {
+		t.Errorf("Clear condition should not return err %v", err)
+	}
+	if got, want := len(status.c), 2; got != want {
+		t.Errorf("Marking true() = %v, wanted %v", got, want)
+	}
+
+	if !manager.IsHappy() {
+		t.Error("IsHappy() = false, wanted true")
+	}
+}
