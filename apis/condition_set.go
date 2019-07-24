@@ -218,6 +218,10 @@ func (r conditionsImpl) ClearCondition(t ConditionType) error {
 	if r.accessor == nil {
 		return nil
 	}
+	// Terminal conditions are not handled as they can't be nil
+	if r.isTerminal(t) {
+		return fmt.Errorf("Clearing terminal conditions not implemented")
+	}
 	cond := r.GetCondition(t)
 	if cond == nil {
 		return nil
@@ -232,10 +236,6 @@ func (r conditionsImpl) ClearCondition(t ConditionType) error {
 	sort.Slice(conditions, func(i, j int) bool { return conditions[i].Type < conditions[j].Type })
 	r.accessor.SetConditions(conditions)
 
-	// Terminal conditions are not handled as they can't be nil
-	if r.isTerminal(t) {
-		return fmt.Errorf("Clearing terminal conditions not implemented")
-	}
 	return nil
 }
 
