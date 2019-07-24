@@ -231,53 +231,19 @@ func (r conditionsImpl) RemoveCondition(t ConditionType) {
 	sort.Slice(conditions, func(i, j int) bool { return conditions[i].Type < conditions[j].Type })
 	r.accessor.SetConditions(conditions)
 
-	happy := r.GetCondition(r.happy)
 	if r.isTerminal(t) {
-		if cond.IsFalse() && happy.IsFalse() {
-			//happy can change to unknown or true
-			// check the dependents.
-			var unknownCond *Condition
-			for _, dep := range r.dependents {
-				if dep == cond.Type {
-					continue
-				}
-				c := r.GetCondition(dep)
-				if c == nil {
-					continue
-				}
-				// if there is a false, return and no change in happy
-				if c.IsFalse() {
-					return
-				} else if c.IsUnknown() {
-					unknownCond = c
-				}
-
-				// if there is a unknown, change happy to unknown
-				// else change back to true(all dependents are true)
-				if unknownCond != nil {
-					r.MarkUnknown(r.happy, unknownCond.Reason, unknownCond.Message)
-				} else {
-					r.MarkTrue(r.happy)
-				}
-
+		for _, dep := range r.dependents {
+			c := r.GetCondition(dep)
+			if c == nil {
+				continue
 			}
-		} else if cond.IsUnknown() && happy.IsUnknown() {
-			// happy can change to true if all dependents are true
-			// check the dependents.
-			for _, dep := range r.dependents {
-				if dep == cond.Type {
-					continue
-				}
-				c := r.GetCondition(dep)
-				if c == nil {
-					continue
-				}
-				// Failed or Unknown conditions trump true conditions
-				if !c.IsTrue() {
-					return
-				}
+			if c.IsTrue() {
+				r.MarkTrue(c.Type)
+			} else if c.IsUnknown() {
+				r.MarkUnknown(c.Type, c.Reason, c.Message)
+			} else if c.IsFalse() {
+				r.MarkFalse(c.Type, c.Reason, c.Message)
 			}
-			r.MarkTrue(r.happy)
 		}
 	}
 }
@@ -296,7 +262,7 @@ func (r conditionsImpl) MarkTrue(t ConditionType) {
 	for _, cond := range r.dependents {
 		c := r.GetCondition(cond)
 		// Failed or Unknown conditions trump true conditions
-		if !c.IsTrue() {
+		if c != nil && !c.IsTrue() {
 			return
 		}
 	}

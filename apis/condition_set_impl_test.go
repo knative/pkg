@@ -869,7 +869,7 @@ func TestRemoveNonTerminalConditions(t *testing.T) {
 }
 func testCondition(t *testing.T, got *Condition, want corev1.ConditionStatus) {
 	if got == nil {
-		t.Errorf("GetCondition = nil, wanted %s", want)
+		t.Fatalf("GetCondition = nil, wanted %s", want)
 	}
 	if status := got.Status; status != want {
 		t.Errorf("GetCondition = %s, wanted %s", status, want)
@@ -882,18 +882,19 @@ func TestRemoveTerminalConditions(t *testing.T) {
 
 	manager := set.Manage(status)
 	manager.MarkTrue("Foo")
+	testCondition(t, manager.GetCondition(ConditionReady), corev1.ConditionTrue)
 
 	manager.MarkFalse("Bar", "", "")
 	testCondition(t, manager.GetCondition(ConditionReady), corev1.ConditionFalse)
 	if got, want := len(status.c), 3; got != want {
-		t.Errorf("Marking true() = %v, wanted %v", got, want)
+		t.Errorf("Marking false() = %v, wanted %v", got, want)
 	}
 
 	// Removing true condition should not change happy. Foo is true
 	manager.RemoveCondition("Bar")
 	testCondition(t, manager.GetCondition(ConditionReady), corev1.ConditionTrue)
 	if got, want := len(status.c), 2; got != want {
-		t.Errorf("Marking true() = %v, wanted %v", got, want)
+		t.Errorf("RemoveCondition() = %v, wanted %v", got, want)
 	}
 
 	// Removing unknown condition should change happy back to true. Foo is true
@@ -930,4 +931,21 @@ func TestRemoveTerminalConditions(t *testing.T) {
 	manager.RemoveCondition("Bar")
 	testCondition(t, manager.GetCondition(ConditionReady), corev1.ConditionFalse)
 
+}
+
+func TestEmptyTerminalConditions(t *testing.T) {
+	set := NewLivingConditionSet("Foo")
+	status := &TestStatus{}
+	manager := set.Manage(status)
+	manager.MarkTrue("Foo")
+	testCondition(t, manager.GetCondition(ConditionReady), corev1.ConditionTrue)
+	if got, want := len(status.c), 2; got != want {
+		t.Errorf("Marking true() = %v, wanted %v", got, want)
+	}
+	// Removing true condition should not change happy. Foo is true
+	manager.RemoveCondition("Foo")
+	testCondition(t, manager.GetCondition(ConditionReady), corev1.ConditionTrue)
+	if got, want := len(status.c), 1; got != want {
+		t.Errorf("RemoveCondition() = %v, wanted %v", got, want)
+	}
 }
