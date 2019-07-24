@@ -60,8 +60,8 @@ type ConditionManager interface {
 	// If there is an update, Conditions are stored back sorted.
 	SetCondition(new Condition)
 
-	// RemoveCondition removes the condition that matches the ConditionType
-	RemoveCondition(t ConditionType)
+	// ClearCondition removes the non terminal condition that matches the ConditionType
+	ClearCondition(t ConditionType) error
 
 	// MarkTrue sets the status of t to true, and then marks the happy condition to
 	// true if all dependents are true.
@@ -210,16 +210,17 @@ func (r conditionsImpl) severity(t ConditionType) ConditionSeverity {
 	return ConditionSeverityInfo
 }
 
-// RemoveCondition removes the condition that matches the ConditionType
-func (r conditionsImpl) RemoveCondition(t ConditionType) {
+// RemoveCondition removes the non terminal condition that matches the ConditionType
+// Not implemented for terminal conditions
+func (r conditionsImpl) ClearCondition(t ConditionType) error {
 	var conditions Conditions
 
 	if r.accessor == nil {
-		return
+		return nil
 	}
 	cond := r.GetCondition(t)
 	if cond == nil {
-		return
+		return nil
 	}
 	for _, c := range r.accessor.GetConditions() {
 		if c.Type != t {
@@ -231,21 +232,11 @@ func (r conditionsImpl) RemoveCondition(t ConditionType) {
 	sort.Slice(conditions, func(i, j int) bool { return conditions[i].Type < conditions[j].Type })
 	r.accessor.SetConditions(conditions)
 
+	// Terminal conditions are not handled as they can't be nil
 	if r.isTerminal(t) {
-		for _, dep := range r.dependents {
-			c := r.GetCondition(dep)
-			if c == nil {
-				continue
-			}
-			if c.IsTrue() {
-				r.MarkTrue(c.Type)
-			} else if c.IsUnknown() {
-				r.MarkUnknown(c.Type, c.Reason, c.Message)
-			} else if c.IsFalse() {
-				r.MarkFalse(c.Type, c.Reason, c.Message)
-			}
-		}
+		return fmt.Errorf("Clearing terminal conditions not implemented")
 	}
+	return nil
 }
 
 // MarkTrue sets the status of t to true, and then marks the happy condition to
@@ -262,7 +253,7 @@ func (r conditionsImpl) MarkTrue(t ConditionType) {
 	for _, cond := range r.dependents {
 		c := r.GetCondition(cond)
 		// Failed or Unknown conditions trump true conditions
-		if c != nil && !c.IsTrue() {
+		if !c.IsTrue() {
 			return
 		}
 	}
