@@ -81,6 +81,7 @@ func ValidateCreatorAndModifier(oldSpec, newSpec interface{}, oldAnnotation, new
 			Paths:   []string{groupName + CreatorAnnotationSuffix},
 		})
 	}
+
 	if equality.Semantic.DeepEqual(oldSpec, newSpec) && oldAnnotation[groupName+UpdaterAnnotationSuffix] != newAnnotation[groupName+UpdaterAnnotationSuffix] {
 		errs = errs.Also(ErrInvalidValue(newAnnotation[groupName+UpdaterAnnotationSuffix], groupName+UpdaterAnnotationSuffix))
 	}
