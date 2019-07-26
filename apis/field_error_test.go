@@ -599,6 +599,18 @@ not without this: bar.C`,
 	}
 }
 
+func TestAlsoNil(t *testing.T) {
+	errs := &FieldError{
+		Message: "original",
+		Paths:   []string{"foo"},
+	}
+	errs = errs.Also(nil)
+
+	if got, want := errs.Error(), "original: foo"; got != want {
+		t.Errorf("TestAlsoNil: Also(nil).Error() = %v, wanted %v", got, want)
+	}
+}
+
 func TestMergeFieldErrors(t *testing.T) {
 	tests := []struct {
 		name     string
