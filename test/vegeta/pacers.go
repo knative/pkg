@@ -1,3 +1,21 @@
+/*
+Copyright 2019 The Knative Authors
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
+// pacers contains self-defined pacers that can be used in Attack of Vegeta (for performance testing)
+
 package vegeta
 
 import (
@@ -32,16 +50,22 @@ type steadyUpPacer struct {
 
 // NewSteadyUpPacer returns a new SteadyUpPacer with the given config.
 func NewSteadyUpPacer(min vegeta.Rate, max vegeta.Rate, upDuration time.Duration) vegeta.Pacer {
+	if upDuration <= 0 || min.Freq <= 0 || min.Per <= 0 || max.Freq <= 0 || max.Per <= 0 {
+		panic("Configuration for this steadyUpPacer is invalid!")
+	}
+	minHitsPerNs := hitsPerNs(min)
+	maxHitsPerNs := hitsPerNs(max)
+	if minHitsPerNs >= maxHitsPerNs {
+		panic("min rate must be smaller than max rate!")
+	}
+
 	pacer := &steadyUpPacer{
 		min:          min,
 		max:          max,
 		upDuration:   upDuration,
-		slope:        (hitsPerNs(max) - hitsPerNs(min)) / float64(upDuration),
-		minHitsPerNs: hitsPerNs(min),
-		maxHitsPerNs: hitsPerNs(max),
-	}
-	if pacer.invalid() {
-		panic("Configuration for this steadyUpPacer is invalid!")
+		slope:        (maxHitsPerNs - minHitsPerNs) / float64(upDuration),
+		minHitsPerNs: minHitsPerNs,
+		maxHitsPerNs: maxHitsPerNs,
 	}
 	return pacer
 }
@@ -54,18 +78,8 @@ func (sup *steadyUpPacer) String() string {
 	return fmt.Sprintf("Up{%s + %s / %s}, then Steady{%s}", sup.min, sup.max, sup.upDuration, sup.max)
 }
 
-// invalid tests the constraints documented in the steadyUpPacer struct definition.
-func (sup *steadyUpPacer) invalid() bool {
-	return sup.upDuration <= 0 || sup.minHitsPerNs <= 0 || sup.maxHitsPerNs <= sup.minHitsPerNs
-}
-
 // Pace determines the length of time to sleep until the next hit is sent.
 func (sup *steadyUpPacer) Pace(elapsedTime time.Duration, elapsedHits uint64) (time.Duration, bool) {
-	if sup.invalid() {
-		// If pacer configuration is invalid, stop the attack.
-		return 0, true
-	}
-
 	expectedHits := sup.hits(elapsedTime)
 	if elapsedHits < uint64(expectedHits) {
 		// Running behind, send next hit immediately.
@@ -125,7 +139,7 @@ func hitsPerNs(cp vegeta.ConstantPacer) float64 {
 
 // combinedPacer is a pacer that combines multiple pacers and runs them sequentially when being used for attack.
 type combinedPacer struct {
-	// pacers is a list of pacers that will be used sequentially for attack, must be non-empty.
+	// pacers is a list of pacers that will be used sequentially for attack, must be more than 1 pacer.
 	pacers []vegeta.Pacer
 	// durations is the list of durations for the given Pacers, must have the same length as Pacers.
 	durations []time.Duration
@@ -142,6 +156,10 @@ type combinedPacer struct {
 
 // NewCombinedPacer returns a new CombinedPacer with the given config.
 func NewCombinedPacer(pacers []vegeta.Pacer, durations []time.Duration) vegeta.Pacer {
+	if len(pacers) == 0 || len(durations) == 0 || len(pacers) != len(durations) || len(pacers) == 1 {
+		panic("Configuration for this CombinedPacer is invalid!")
+	}
+
 	var totalDuration uint64
 	stepDurations := make([]uint64, len(pacers))
 	for i, duration := range durations {
@@ -163,9 +181,6 @@ func NewCombinedPacer(pacers []vegeta.Pacer, durations []time.Duration) vegeta.P
 		prevElapsedHits: 0,
 		prevElapsedTime: 0,
 	}
-	if pacer.invalid() {
-		panic("Configuration for this combinedPacer is invalid!")
-	}
 	return pacer
 }
 
@@ -180,11 +195,6 @@ func (cp *combinedPacer) String() string {
 		sb.WriteString(pacerStr)
 	}
 	return sb.String()
-}
-
-// invalid tests the constraints documented in the combinedPacer struct definition.
-func (cp *combinedPacer) invalid() bool {
-	return len(cp.pacers) == 0 || len(cp.durations) == 0 || len(cp.pacers) != len(cp.durations)
 }
 
 func (cp *combinedPacer) Pace(elapsedTime time.Duration, elapsedHits uint64) (time.Duration, bool) {
