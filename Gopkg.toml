@@ -12,6 +12,7 @@ required = [
   "knative.dev/test-infra/scripts",
   "knative.dev/test-infra/tools/dep-collector",
   "github.com/pkg/errors",
+  "github.com/tsenart/vegeta",
 ]
 
 [[constraint]]
@@ -59,6 +60,10 @@ required = [
 
 [[constraint]]
   name = "knative.dev/test-infra"
+  branch = "master"
+
+[[constraint]]
+  name = "github.com/tsenart/vegeta"
   branch = "master"
 
 [prune]
