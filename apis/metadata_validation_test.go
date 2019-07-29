@@ -21,6 +21,7 @@ import (
 	"strings"
 	"testing"
 
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -102,6 +103,76 @@ func TestValidateObjectMetadata(t *testing.T) {
 
 			if !reflect.DeepEqual(c.expectErr, err) {
 				t.Errorf("Expected: '%#v', Got: '%#v'", c.expectErr, err)
+			}
+		})
+	}
+}
+
+type WithPod struct {
+	metav1.TypeMeta   `json:",inline"`
+	metav1.ObjectMeta `json:"metadata,omitempty"`
+	Spec              corev1.PodSpec `json:"spec,omitempty"`
+}
+
+func getSpec(image string) corev1.PodSpec {
+	return corev1.PodSpec{
+		Containers: []corev1.Container{{
+			Image: image,
+		}},
+	}
+}
+
+func getAnnotation(groupName, suffix, user string) map[string]string {
+	return map[string]string{
+		groupName + suffix: user,
+	}
+}
+
+func TestServiceAnnotationUpdate(t *testing.T) {
+	const (
+		u1        = "oveja@knative.dev"
+		u2        = "cabra@knative.dev"
+		groupName = "pkg.knative.dev"
+	)
+	tests := []struct {
+		name          string
+		prev          *WithPod
+		this          *WithPod
+		oldAnnotation map[string]string
+		newAnnotation map[string]string
+		want          *FieldError
+	}{{
+		name:          "update creator annotation",
+		prev:          nil,
+		this:          nil,
+		oldAnnotation: getAnnotation(groupName, CreatorAnnotationSuffix, u1),
+		newAnnotation: getAnnotation(groupName, CreatorAnnotationSuffix, u2),
+		want: &FieldError{Message: "annotation value is immutable",
+			Paths: []string{groupName + CreatorAnnotationSuffix}},
+	}, {
+		name:          "update lastModifier without spec changes",
+		prev:          nil,
+		this:          nil,
+		oldAnnotation: getAnnotation(groupName, UpdaterAnnotationSuffix, u1),
+		newAnnotation: getAnnotation(groupName, UpdaterAnnotationSuffix, u2),
+		want:          ErrInvalidValue(u2, groupName+UpdaterAnnotationSuffix),
+	}, {
+		name: "update lastModifier with spec changes",
+		prev: &WithPod{
+			Spec: getSpec("new-image"),
+		},
+		this: &WithPod{
+			Spec: getSpec("old-image"),
+		},
+		oldAnnotation: getAnnotation(groupName, UpdaterAnnotationSuffix, u1),
+		newAnnotation: getAnnotation(groupName, UpdaterAnnotationSuffix, u2),
+		want:          nil,
+	}}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			err := ValidateCreatorAndModifier(test.prev, test.this, test.oldAnnotation, test.newAnnotation, groupName)
+			if !reflect.DeepEqual(test.want.Error(), err.Error()) {
+				t.Errorf("Expected: '%#v', Got: '%#v'", test.want, err)
 			}
 		})
 	}
