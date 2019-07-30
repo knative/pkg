@@ -23,6 +23,7 @@ import (
 // +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 // DestinationRule
+// +k8s:openapi-gen=true
 type DestinationRule struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
@@ -99,6 +100,7 @@ type DestinationRule struct {
 //       loadBalancer:
 //         simple: ROUND_ROBIN
 //
+// +k8s:openapi-gen=true
 type DestinationRuleSpec struct {
 	// REQUIRED. The name of a service from the service registry. Service
 	// names are looked up from the platform's service registry (e.g.,
@@ -129,6 +131,7 @@ type DestinationRuleSpec struct {
 
 // Traffic policies to apply for a specific destination, across all
 // destination ports. See DestinationRule for examples.
+// +k8s:openapi-gen=true
 type TrafficPolicy struct {
 
 	// Settings controlling the load balancer algorithms.
@@ -152,6 +155,7 @@ type TrafficPolicy struct {
 }
 
 // Traffic policies that apply to specific ports of the service
+// +k8s:openapi-gen=true
 type PortTrafficPolicy struct {
 	// Specifies the port name or number of a port on the destination service
 	// on which this policy is being applied.
@@ -203,6 +207,7 @@ type PortTrafficPolicy struct {
 //
 // **Note:** Policies specified for subsets will not take effect until
 // a route rule explicitly sends traffic to this subset.
+// +k8s:openapi-gen=true
 type Subset struct {
 	// REQUIRED. Name of the subset. The service name and the subset name can
 	// be used for traffic splitting in a route rule.
@@ -253,6 +258,7 @@ type Subset struct {
 //          httpCookie:
 //            name: user
 //            ttl: 0s
+// +k8s:openapi-gen=true
 type LoadBalancerSettings struct {
 	// It is required to specify exactly one of the fields:
 	// Simple or ConsistentHash
@@ -291,6 +297,7 @@ const (
 // connections. The affinity to a particular destination host will be
 // lost when one or more hosts are added/removed from the destination
 // service.
+// +k8s:openapi-gen=true
 type ConsistentHashLB struct {
 
 	// It is required to specify exactly one of the fields as hash key:
@@ -315,6 +322,7 @@ type ConsistentHashLB struct {
 // Describes a HTTP cookie that will be used as the hash key for the
 // Consistent Hash load balancer. If the cookie is not present, it will
 // be generated.
+// +k8s:openapi-gen=true
 type HTTPCookie struct {
 	// REQUIRED. Name of the cookie.
 	Name string `json:"name"`
@@ -346,6 +354,7 @@ type HTTPCookie struct {
 //       tcp:
 //         maxConnections: 100
 //         connectTimeout: 30ms
+// +k8s:openapi-gen=true
 type ConnectionPoolSettings struct {
 
 	// Settings common to both HTTP and TCP upstream connections.
@@ -356,6 +365,7 @@ type ConnectionPoolSettings struct {
 }
 
 // Settings common to both HTTP and TCP upstream connections.
+// +k8s:openapi-gen=true
 type TCPSettings struct {
 	// Maximum number of HTTP1 /TCP connections to a destination host.
 	MaxConnections int32 `json:"maxConnections,omitempty"`
@@ -365,6 +375,7 @@ type TCPSettings struct {
 }
 
 // Settings applicable to HTTP1.1/HTTP2/GRPC connections.
+// +k8s:openapi-gen=true
 type HTTPSettings struct {
 	// Maximum number of pending HTTP requests to a destination. Default 1024.
 	HTTP1MaxPendingRequests int32 `json:"http1MaxPendingRequests,omitempty"`
@@ -414,6 +425,7 @@ type HTTPSettings struct {
 //       consecutiveErrors: 7
 //       interval: 5m
 //       baseEjectionTime: 15m
+// +k8s:openapi-gen=true
 type OutlierDetection struct {
 	// Number of errors before a host is ejected from the connection
 	// pool. Defaults to 5. When the upstream host is accessed over HTTP, a
@@ -483,6 +495,7 @@ type OutlierDetection struct {
 //   trafficPolicy:
 //     tls:
 //       mode: ISTIO_MUTUAL
+// +k8s:openapi-gen=true
 type TLSSettings struct {
 
 	// REQUIRED: Indicates whether connections to this port should be secured
@@ -540,6 +553,7 @@ const (
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 // DestinationRuleList is a list of DestinationRule resources
+// +k8s:openapi-gen=true
 type DestinationRuleList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata"`

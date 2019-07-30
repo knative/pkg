@@ -25,6 +25,7 @@ import (
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
 // VirtualService
+// +k8s:openapi-gen=true
 type VirtualService struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
@@ -96,6 +97,7 @@ type VirtualService struct {
 // A host name can be defined by only one VirtualService. A single
 // VirtualService can be used to describe traffic properties for multiple
 // HTTP and TCP ports.
+// +k8s:openapi-gen=true
 type VirtualServiceSpec struct {
 	// REQUIRED. The destination address for traffic captured by this virtual
 	// service. Could be a DNS name with wildcard prefix or a CIDR
@@ -145,6 +147,7 @@ type VirtualServiceSpec struct {
 
 // Describes match conditions and actions for routing HTTP/1.1, HTTP2, and
 // gRPC traffic. See VirtualService for usage examples.
+// +k8s:openapi-gen=true
 type HTTPRoute struct {
 	// Match conditions to be satisfied for the rule to be
 	// activated. All conditions inside a single match block have AND
@@ -209,6 +212,7 @@ type HTTPRoute struct {
 }
 
 // Headers describes header manipulation rules.
+// +k8s:openapi-gen=true
 type Headers struct {
 	// Header manipulation rules to apply before forwarding a request
 	// to the destination service
@@ -220,6 +224,7 @@ type Headers struct {
 }
 
 // HeaderOperations Describes the header manipulations to apply
+// +k8s:openapi-gen=true
 type HeaderOperations struct {
 	// Overwrite the headers specified by key with the given values
 	Set map[string]string `json:"set,omitempty"`
@@ -257,6 +262,7 @@ type HeaderOperations struct {
 //             host: ratings
 //
 // HTTPMatchRequest CANNOT be empty.
+// +k8s:openapi-gen=true
 type HTTPMatchRequest struct {
 	// URI to match
 	// values are case-sensitive and formatted as follows:
@@ -333,6 +339,7 @@ type HTTPMatchRequest struct {
 	Gateways []string `json:"gateways,omitempty"`
 }
 
+// +k8s:openapi-gen=true
 type HTTPRouteDestination struct {
 	// REQUIRED. Destination uniquely identifies the instances of a service
 	// to which the request/connection should be forwarded to.
@@ -451,6 +458,7 @@ type HTTPRouteDestination struct {
 //         - destination:
 //             host: wikipedia.org
 //
+// +k8s:openapi-gen=true
 type Destination struct {
 	// REQUIRED. The name of a service from the service registry. Service
 	// names are looked up from the platform's service registry (e.g.,
@@ -481,6 +489,7 @@ type Destination struct {
 
 // PortSelector specifies the number of a port to be used for
 // matching or selection for final routing.
+// +k8s:openapi-gen=true
 type PortSelector struct {
 	// Choose one of the fields below.
 
@@ -514,6 +523,7 @@ type PortSelector struct {
 //         port:
 //           number: 5555
 // ```
+// +k8s:openapi-gen=true
 type TCPRoute struct {
 	// Match conditions to be satisfied for the rule to be
 	// activated. All conditions inside a single match block have AND
@@ -556,6 +566,7 @@ type TCPRoute struct {
 //     - destination:
 //         host: reviews.prod.svc.cluster.local
 // ```
+// +k8s:openapi-gen=true
 type TLSRoute struct {
 	// REQUIRED. Match conditions to be satisfied for the rule to be
 	// activated. All conditions inside a single match block have AND
@@ -569,6 +580,7 @@ type TLSRoute struct {
 
 // L4 connection match attributes. Note that L4 connection matching support
 // is incomplete.
+// +k8s:openapi-gen=true
 type L4MatchAttributes struct {
 	// IPv4 or IPv6 ip address of destination with optional subnet.  E.g.,
 	// a.b.c.d/xx form or just a.b.c.d.
@@ -592,6 +604,7 @@ type L4MatchAttributes struct {
 }
 
 // TLS connection match attributes.
+// +k8s:openapi-gen=true
 type TLSMatchAttributes struct {
 	// REQUIRED. SNI (server name indicator) to match on. Wildcard prefixes
 	// can be used in the SNI value, e.g., *.com will match foo.example.com
@@ -642,6 +655,7 @@ type TLSMatchAttributes struct {
 //         authority: bookratings.default.svc.cluster.local
 //       ...
 //
+// +k8s:openapi-gen=true
 type HTTPRedirect struct {
 	// On a redirect, overwrite the Path portion of the URL with this
 	// value. Note that the entire path will be replaced, irrespective of the
@@ -677,6 +691,7 @@ type HTTPRedirect struct {
 //             host: ratings
 //             subset: v1
 //
+// +k8s:openapi-gen=true
 type HTTPRewrite struct {
 	// rewrite the path (or the prefix) portion of the URI with this
 	// value. If the original URI was matched based on prefix, the value
@@ -707,6 +722,7 @@ type HTTPRewrite struct {
 //           attempts: 3
 //           perTryTimeout: 2s
 //
+// +k8s:openapi-gen=true
 type HTTPRetry struct {
 	// REQUIRED. Number of retries for a given request. The interval
 	// between retries will be determined automatically (25ms+). Actual
@@ -749,6 +765,7 @@ type HTTPRetry struct {
 //           - X-Foo-Bar
 //           maxAge: "1d"
 //
+// +k8s:openapi-gen=true
 type CorsPolicy struct {
 	// The list of origins that are allowed to perform CORS requests. The
 	// content will be serialized into the Access-Control-Allow-Origin
@@ -785,6 +802,7 @@ type CorsPolicy struct {
 //
 // *Note:* Delay and abort faults are independent of one another, even if
 // both are specified simultaneously.
+// +k8s:openapi-gen=true
 type HTTPFaultInjection struct {
 	// Delay requests before forwarding, emulating various failures such as
 	// network issues, overloaded upstream service, etc.
@@ -824,6 +842,7 @@ type HTTPFaultInjection struct {
 // seconds. An optional _percent_ field, a value between 0 and 100, can
 // be used to only delay a certain percentage of requests. If left
 // unspecified, all request will be delayed.
+// +k8s:openapi-gen=true
 type InjectDelay struct {
 	// Percentage of requests on which the delay will be injected (0-100).
 	Percent int `json:"percent,omitempty"`
@@ -863,6 +882,7 @@ type InjectDelay struct {
 // return to the caller. The optional _percent_ field, a value between 0
 // and 100, is used to only abort a certain percentage of requests. If
 // not specified, all requests are aborted.
+// +k8s:openapi-gen=true
 type InjectAbort struct {
 	// Percentage of requests to be aborted with the error code provided (0-100).
 	Percent int `json:"percent,omitempty"`
@@ -874,6 +894,7 @@ type InjectAbort struct {
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
 // VirtualServiceList is a list of VirtualService resources
+// +k8s:openapi-gen=true
 type VirtualServiceList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata"`

@@ -146,6 +146,7 @@ import (
 //         - destination:
 //             name: mongo.prod
 //
+// +k8s:openapi-gen=true
 type Gateway struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
@@ -153,6 +154,7 @@ type Gateway struct {
 	Spec GatewaySpec `json:"spec"`
 }
 
+// +k8s:openapi-gen=true
 type GatewaySpec struct {
 	// REQUIRED: A list of server specifications.
 	Servers []Server `json:"servers"`
@@ -214,6 +216,7 @@ type GatewaySpec struct {
 //           serverCertificate: /etc/certs/server.pem
 //           privateKey: /etc/certs/privatekey.pem
 //
+// +k8s:openapi-gen=true
 type Server struct {
 	// REQUIRED: The Port on which the proxy should listen for incoming
 	// connections
@@ -236,6 +239,7 @@ type Server struct {
 	TLS *TLSOptions `json:"tls,omitempty"`
 }
 
+// +k8s:openapi-gen=true
 type TLSOptions struct {
 	// If set to true, the load balancer will send a 302 redirect for all
 	// http connections, asking the clients to use HTTPS.
@@ -302,6 +306,7 @@ const (
 )
 
 // Port describes the properties of a specific port of a service.
+// +k8s:openapi-gen=true
 type Port struct {
 	// REQUIRED: A valid non-negative integer port number.
 	Number int `json:"number"`
@@ -328,6 +333,7 @@ const (
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
 // GatewayList is a list of Gateway resources
+// +k8s:openapi-gen=true
 type GatewayList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata"`
