@@ -25,6 +25,7 @@ import (
 	"os/user"
 	"path/filepath"
 
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 
@@ -87,12 +88,24 @@ func MainWithContext(ctx context.Context, component string, ctors ...injection.C
 }
 
 func MainWithConfig(ctx context.Context, component string, cfg *rest.Config, ctors ...injection.ControllerConstructor) {
+	log.Printf("Registering %d clients", len(injection.Default.GetClients()))
+	log.Printf("Registering %d informer factories", len(injection.Default.GetInformerFactories()))
+	log.Printf("Registering %d informers", len(injection.Default.GetInformers()))
+	log.Printf("Registering %d controllers", len(ctors))
+
+	// Adjust our client's rate limits based on the number of controller's we are running.
+	cfg.QPS = float32(len(ctors)) * rest.DefaultQPS
+	cfg.Burst = len(ctors) * rest.DefaultBurst
+
+	ctx, informers := injection.Default.SetupInformers(ctx, cfg)
+	kubeClient := kubeclient.Get(ctx)
+
 	// Set up our logger.
-	loggingConfigMap, err := configmap.Load("/etc/config-logging")
+	loggingConfigMap, err := kubeClient.CoreV1().ConfigMaps(system.Namespace()).Get(logging.ConfigMapName(), metav1.GetOptions{})
 	if err != nil {
 		log.Fatal("Error loading logging configuration:", err)
 	}
-	loggingConfig, err := logging.NewConfigFromMap(loggingConfigMap)
+	loggingConfig, err := logging.NewConfigFromMap(loggingConfigMap.Data)
 	if err != nil {
 		log.Fatal("Error parsing logging configuration:", err)
 	}
@@ -100,19 +113,8 @@ func MainWithConfig(ctx context.Context, component string, cfg *rest.Config, cto
 	defer flush(logger)
 	ctx = logging.WithLogger(ctx, logger)
 
-	logger.Infof("Registering %d clients", len(injection.Default.GetClients()))
-	logger.Infof("Registering %d informer factories", len(injection.Default.GetInformerFactories()))
-	logger.Infof("Registering %d informers", len(injection.Default.GetInformers()))
-	logger.Infof("Registering %d controllers", len(ctors))
-
-	// Adjust our client's rate limits based on the number of controller's we are running.
-	cfg.QPS = float32(len(ctors)) * rest.DefaultQPS
-	cfg.Burst = len(ctors) * rest.DefaultBurst
-
-	ctx, informers := injection.Default.SetupInformers(ctx, cfg)
-
 	// TODO(mattmoor): This should itself take a context and be injection-based.
-	cmw := configmap.NewInformedWatcher(kubeclient.Get(ctx), system.Namespace())
+	cmw := configmap.NewInformedWatcher(kubeClient, system.Namespace())
 
 	// Based on the reconcilers we have linked, build up the set of controllers to run.
 	controllers := make([]*controller.Impl, 0, len(ctors))
