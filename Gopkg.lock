@@ -90,14 +90,6 @@
   version = "v1.0.0"
 
 [[projects]]
-  branch = "master"
-  digest = "1:2755397479777565ae0c383f63be30e8975da63805281283bdde46d73bed9a7d"
-  name = "github.com/c2h5oh/datasize"
-  packages = ["."]
-  pruneopts = "NUT"
-  revision = "4eba002a5eaea69cf8d235a388fc6b65ae68d2dd"
-
-[[projects]]
   digest = "1:06bd9f98d7cf2097c16f820f980709eb4d04e1c7369132c351fbf1ffb54d3117"
   name = "github.com/census-instrumentation/opencensus-proto"
   packages = [
@@ -483,22 +475,6 @@
   version = "v1.0.0"
 
 [[projects]]
-  branch = "master"
-  digest = "1:68cecd4c1137f77dfa2db1f13a0ceef2b5606d6b69d66fa69f7df1b2f2fe9afc"
-  name = "github.com/shurcooL/httpfs"
-  packages = ["vfsutil"]
-  pruneopts = "NUT"
-  revision = "8d4bc4ba774931155e6cd5ef6098cb038dd45135"
-
-[[projects]]
-  branch = "master"
-  digest = "1:9ad746e784d9616f68a0ea56566a01b23dff758b8c864eaf3e69dfe86d6c3c89"
-  name = "github.com/shurcooL/vfsgen"
-  packages = ["."]
-  pruneopts = "NUT"
-  revision = "6a9ea43bcacdf716a5c1b38efff722c07adf0069"
-
-[[projects]]
   digest = "1:9d8420bbf131d1618bde6530af37c3799340d3762cc47210c1d9532a4c3a2779"
   name = "github.com/spf13/pflag"
   packages = ["."]
@@ -508,26 +484,9 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:a889ff8426d462ae8b9a91ef29eb1bcd0d9a9ad792c55f9f32f6f912d57b9b8c"
-  name = "github.com/tsenart/go-tsz"
-  packages = [
-    ".",
-    "testdata",
-  ]
-  pruneopts = "NUT"
-  revision = "0bd30b3df1c328dfc87ed857cdf695c3c7d2cb09"
-
-[[projects]]
-  branch = "master"
-  digest = "1:8b17ce48135286f879e024574ff0711c06df883790e9c32188d29e523ae6f090"
+  digest = "1:25bec9bd4bd740f94fcbd977bff20ca1b43a658645577ca8a705e639aba1eea4"
   name = "github.com/tsenart/vegeta"
-  packages = [
-    ".",
-    "internal/resolver",
-    "lib",
-    "lib/lttb",
-    "lib/plot",
-  ]
+  packages = ["lib"]
   pruneopts = "NUT"
   revision = "b5f4fca92137581c0f118ba6b106ba0cb3a2c84e"
 
@@ -1226,7 +1185,6 @@
     "github.com/pkg/errors",
     "github.com/rogpeppe/go-internal/semver",
     "github.com/spf13/pflag",
-    "github.com/tsenart/vegeta",
     "github.com/tsenart/vegeta/lib",
     "go.opencensus.io/plugin/ochttp",
     "go.opencensus.io/plugin/ochttp/propagation/b3",

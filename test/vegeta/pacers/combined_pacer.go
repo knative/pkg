@@ -78,7 +78,7 @@ var _ vegeta.Pacer = &combinedPacer{}
 func (cp *combinedPacer) String() string {
 	var sb strings.Builder
 	for i := range cp.pacers {
-		pacerStr := fmt.Sprintf("Pacer: %s, Duration: %s", cp.pacers[i], cp.durations[i])
+		pacerStr := fmt.Sprintf("Pacer: %s, Duration: %s\n", cp.pacers[i], cp.durations[i])
 		sb.WriteString(pacerStr)
 	}
 	return sb.String()
