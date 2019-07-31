@@ -17,6 +17,7 @@ limitations under the License.
 package pacers
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -41,10 +42,10 @@ type combinedPacer struct {
 	prevElapsedTime uint64
 }
 
-// NewCombinedPacer returns a new CombinedPacer with the given config.
-func NewCombinedPacer(pacers []vegeta.Pacer, durations []time.Duration) vegeta.Pacer {
+// NewCombined returns a new CombinedPacer with the given config.
+func NewCombined(pacers []vegeta.Pacer, durations []time.Duration) (vegeta.Pacer, error) {
 	if len(pacers) == 0 || len(durations) == 0 || len(pacers) != len(durations) || len(pacers) == 1 {
-		panic("Configuration for this CombinedPacer is invalid!")
+		return nil, errors.New("configuration for this CombinedPacer is invalid")
 	}
 
 	var totalDuration uint64
@@ -68,7 +69,7 @@ func NewCombinedPacer(pacers []vegeta.Pacer, durations []time.Duration) vegeta.P
 		prevElapsedHits: 0,
 		prevElapsedTime: 0,
 	}
-	return pacer
+	return pacer, nil
 }
 
 // combinedPacer satisfies the Pacer interface.

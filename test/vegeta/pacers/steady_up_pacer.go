@@ -17,6 +17,7 @@ limitations under the License.
 package pacers
 
 import (
+	"errors"
 	"fmt"
 	"math"
 	"time"
@@ -45,15 +46,15 @@ type steadyUpPacer struct {
 	maxHitsPerNs float64
 }
 
-// NewSteadyUpPacer returns a new SteadyUpPacer with the given config.
-func NewSteadyUpPacer(min vegeta.Rate, max vegeta.Rate, upDuration time.Duration) vegeta.Pacer {
+// NewSteadyUp returns a new SteadyUpPacer with the given config.
+func NewSteadyUp(min vegeta.Rate, max vegeta.Rate, upDuration time.Duration) (vegeta.Pacer, error) {
 	if upDuration <= 0 || min.Freq <= 0 || min.Per <= 0 || max.Freq <= 0 || max.Per <= 0 {
-		panic("Configuration for this SteadyUpPacer is invalid!")
+		return nil, errors.New("configuration for this SteadyUpPacer is invalid")
 	}
 	minHitsPerNs := hitsPerNs(min)
 	maxHitsPerNs := hitsPerNs(max)
 	if minHitsPerNs >= maxHitsPerNs {
-		panic("min rate must be smaller than max rate for SteadyUpPacer!")
+		return nil, errors.New("min rate must be smaller than max rate for SteadyUpPacer")
 	}
 
 	pacer := &steadyUpPacer{
@@ -64,7 +65,7 @@ func NewSteadyUpPacer(min vegeta.Rate, max vegeta.Rate, upDuration time.Duration
 		minHitsPerNs: minHitsPerNs,
 		maxHitsPerNs: maxHitsPerNs,
 	}
-	return pacer
+	return pacer, nil
 }
 
 // steadyUpPacer satisfies the Pacer interface.
@@ -85,8 +86,6 @@ func (sup *steadyUpPacer) Pace(elapsedTime time.Duration, elapsedHits uint64) (t
 
 	// Re-arranging our hits equation to provide a duration given the number of
 	// requests sent is non-trivial, so we must solve for the duration numerically.
-	// math.Round() added here because we have to coerce to int64 nanoseconds
-	// at some point and it corrects a bunch of off-by-one problems.
 	nsPerHit := 1 / sup.hitsPerNs(elapsedTime)
 	hitsToWait := float64(elapsedHits+1) - expectedHits
 	nextHitIn := time.Duration(nsPerHit * hitsToWait)

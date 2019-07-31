@@ -26,7 +26,7 @@ import (
 func TestCombinedPacer(t *testing.T) {
 	pacer1 := vegeta.Rate{Freq: 1, Per: time.Second}
 	pacer2 := vegeta.Rate{Freq: 5, Per: time.Second}
-	pacer := NewCombinedPacer([]vegeta.Pacer{pacer1, pacer2}, []time.Duration{5 * time.Second, 5 * time.Second})
+	pacer, _ := NewCombined([]vegeta.Pacer{pacer1, pacer2}, []time.Duration{5 * time.Second, 5 * time.Second})
 
 	for _, tt := range []struct {
 		name            string
@@ -59,6 +59,40 @@ func TestCombinedPacer(t *testing.T) {
 			nextHit, _ := pacer.Pace(tt.elapsedTime, tt.elapsedHits)
 			if nextHit != tt.expectedNextHit {
 				t.Errorf("expected next hit %v, got %v", tt.expectedNextHit, nextHit)
+			}
+		})
+	}
+}
+
+func TestInvalidCombinedPacer(t *testing.T) {
+	for _, tt := range []struct {
+		name      string
+		pacers    []vegeta.Pacer
+		durations []time.Duration
+	}{{
+		name:      "pacers must not be empty",
+		pacers:    make([]vegeta.Pacer, 0),
+		durations: []time.Duration{10 * time.Second},
+	}, {
+		name:      "durations must not be empty",
+		pacers:    []vegeta.Pacer{vegeta.Rate{Freq: 10, Per: 10 * time.Second}},
+		durations: make([]time.Duration, 0),
+	}, {
+		name: "pacers and durations must have the same length",
+		pacers: []vegeta.Pacer{
+			vegeta.Rate{Freq: 10, Per: 10 * time.Second},
+			vegeta.Rate{Freq: 10, Per: 5 * time.Second},
+		},
+		durations: []time.Duration{10 * time.Second},
+	}, {
+		name:      "pacers length must be more than 1",
+		pacers:    []vegeta.Pacer{vegeta.Rate{Freq: 10, Per: 10 * time.Second}},
+		durations: []time.Duration{10 * time.Second},
+	}} {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := NewCombined(tt.pacers, tt.durations)
+			if err == nil {
+				t.Errorf("the provided configuration should be invalid: %v, %v", tt.pacers, tt.durations)
 			}
 		})
 	}

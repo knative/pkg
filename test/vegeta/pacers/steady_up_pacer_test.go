@@ -26,7 +26,7 @@ import (
 func TestSteadyUpPacer(t *testing.T) {
 	minRate := vegeta.Rate{Freq: 1, Per: time.Second}
 	maxRate := vegeta.Rate{Freq: 5, Per: time.Second}
-	pacer := NewSteadyUpPacer(minRate, maxRate, 10*time.Second)
+	pacer, _ := NewSteadyUp(minRate, maxRate, 10*time.Second)
 
 	for _, tt := range []struct {
 		name            string
@@ -59,6 +59,42 @@ func TestSteadyUpPacer(t *testing.T) {
 			nextHit, _ := pacer.Pace(tt.elapsedTime, tt.elapsedHits)
 			if nextHit != tt.expectedNextHit {
 				t.Errorf("expected next hit %v, got %v", tt.expectedNextHit, nextHit)
+			}
+		})
+	}
+}
+
+func TestInvalidSteadyUpPacer(t *testing.T) {
+	for _, tt := range []struct {
+		name       string
+		min        vegeta.Rate
+		max        vegeta.Rate
+		upDuration time.Duration
+	}{{
+		name:       "up duration must be larger than 0",
+		min:        vegeta.Rate{Freq: 10, Per: time.Second},
+		max:        vegeta.Rate{Freq: 5, Per: time.Second},
+		upDuration: 0,
+	}, {
+		name:       "min rate must be larger than 0",
+		min:        vegeta.Rate{Freq: 0, Per: time.Second},
+		max:        vegeta.Rate{Freq: 5, Per: time.Second},
+		upDuration: 10 * time.Second,
+	}, {
+		name:       "max rate must be larger than 0",
+		min:        vegeta.Rate{Freq: 10, Per: time.Second},
+		max:        vegeta.Rate{Freq: 0, Per: time.Second},
+		upDuration: 10 * time.Second,
+	}, {
+		name:       "min rate must be smaller than max rate",
+		min:        vegeta.Rate{Freq: 10, Per: time.Second},
+		max:        vegeta.Rate{Freq: 6, Per: time.Second},
+		upDuration: 10 * time.Second,
+	}} {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := NewSteadyUp(tt.min, tt.max, tt.upDuration)
+			if err == nil {
+				t.Errorf("the provided configuration should be invalid: %v, %v, %v", tt.min, tt.max, tt.upDuration)
 			}
 		})
 	}
