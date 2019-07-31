@@ -34,11 +34,14 @@ import (
 //  Min -+------------------------------> t
 //       |<-Up->|
 type steadyUpPacer struct {
-	// upDuration is the duration that attack request rates increase from Min to Max, must be larger than 0.
+	// upDuration is the duration that attack request rates increase from Min to Max.
+	// MUST be larger than 0.
 	upDuration time.Duration
-	// min is the attack request rates from the beginning, must be larger than 0.
+	// min is the attack request rates from the beginning.
+	// MUST be larger than 0.
 	min vegeta.Rate
-	// max is the maximum and final steady attack request rates, must be larger than Min.
+	// max is the maximum and final steady attack request rates.
+	// MUST be larger than Min.
 	max vegeta.Rate
 
 	slope        float64

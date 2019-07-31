@@ -88,6 +88,13 @@ func TestInvalidCombinedPacer(t *testing.T) {
 		name:      "pacers length must be more than 1",
 		pacers:    []vegeta.Pacer{vegeta.Rate{Freq: 10, Per: 10 * time.Second}},
 		durations: []time.Duration{10 * time.Second},
+	}, {
+		name: "duration for each pacer must be longer than 1 second",
+		pacers: []vegeta.Pacer{
+			vegeta.Rate{Freq: 10, Per: 10 * time.Second},
+			vegeta.Rate{Freq: 10, Per: 5 * time.Second},
+		},
+		durations: []time.Duration{500 * time.Millisecond, 10 * time.Second},
 	}} {
 		t.Run(tt.name, func(t *testing.T) {
 			_, err := NewCombined(tt.pacers, tt.durations)

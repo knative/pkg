@@ -27,9 +27,11 @@ import (
 
 // combinedPacer is a Pacer that combines multiple Pacers and runs them sequentially when being used for attack.
 type combinedPacer struct {
-	// pacers is a list of pacers that will be used sequentially for attack, must be more than 1 pacer.
+	// pacers is a list of pacers that will be used sequentially for attack.
+	// MUST have more than 1 pacer.
 	pacers []vegeta.Pacer
-	// durations is the list of durations for the given Pacers, must have the same length as Pacers.
+	// durations is the list of durations for the given Pacers.
+	// MUST have the same length as Pacers, and each duration MUST be longer than 1 second.
 	durations []time.Duration
 
 	// totalDuration is sum of the given Durations.
@@ -37,7 +39,7 @@ type combinedPacer struct {
 	// stepDurations is the accumulative duration of each step calculated from the given Durations.
 	stepDurations []uint64
 
-	curtPacerIndex  uint
+	curPacerIndex   uint
 	prevElapsedHits uint64
 	prevElapsedTime uint64
 }
@@ -49,11 +51,14 @@ func NewCombined(pacers []vegeta.Pacer, durations []time.Duration) (vegeta.Pacer
 	}
 
 	var totalDuration uint64
-	stepDurations := make([]uint64, len(pacers))
+	var stepDurations = make([]uint64, len(pacers))
 	for i, duration := range durations {
+		if duration < 1*time.Second {
+			return nil, errors.New("duration for each pacer must be longer than 1 second")
+		}
 		totalDuration += uint64(duration)
 		if i == 0 {
-			stepDurations[i] = uint64(duration)
+			stepDurations[0] = uint64(duration)
 		} else {
 			stepDurations[i] = stepDurations[i-1] + uint64(duration)
 		}
@@ -65,7 +70,7 @@ func NewCombined(pacers []vegeta.Pacer, durations []time.Duration) (vegeta.Pacer
 		totalDuration: totalDuration,
 		stepDurations: stepDurations,
 
-		curtPacerIndex:  0,
+		curPacerIndex:   0,
 		prevElapsedHits: 0,
 		prevElapsedTime: 0,
 	}
@@ -79,42 +84,39 @@ var _ vegeta.Pacer = &combinedPacer{}
 func (cp *combinedPacer) String() string {
 	var sb strings.Builder
 	for i := range cp.pacers {
-		pacerStr := fmt.Sprintf("Pacer: %s, Duration: %s\n", cp.pacers[i], cp.durations[i])
-		sb.WriteString(pacerStr)
+		sb.WriteString(fmt.Sprintf("Pacer: %s, Duration: %s\n", cp.pacers[i], cp.durations[i]))
 	}
 	return sb.String()
 }
 
 func (cp *combinedPacer) Pace(elapsedTime time.Duration, elapsedHits uint64) (time.Duration, bool) {
 	pacerTimeOffset := uint64(elapsedTime) % cp.totalDuration
-	pacerIndex := cp.getPacerIndex(pacerTimeOffset)
-	// The pacer must be the same or the next neighbor of the current pacer, otherwise stop the attack.
-	if pacerIndex != cp.curtPacerIndex &&
-		pacerIndex != cp.curtPacerIndex+1 &&
-		!(pacerIndex == 0 && cp.curtPacerIndex == uint(len(cp.pacers)-1)) {
-		return 0, true
-	}
+	pacerIndex := cp.pacerIndex(pacerTimeOffset)
 
-	// If it needs to switch to the next pacer, update prevElapsedTime, prevElapsedHits and curtPacerIndex.
-	if pacerIndex != cp.curtPacerIndex {
+	// If it needs to switch to the next pacer, update prevElapsedTime, prevElapsedHits and curPacerIndex.
+	if pacerIndex != cp.curPacerIndex {
 		cp.prevElapsedTime = uint64(elapsedTime)
 		cp.prevElapsedHits = elapsedHits
-		cp.curtPacerIndex = pacerIndex
+		cp.curPacerIndex = pacerIndex
 	}
 
 	// Use the adjusted elapsedTime and elapsedHits to get the time to wait for the next hit.
-	curtPacer := cp.pacers[cp.curtPacerIndex]
-	curtElapsedTime := time.Duration(uint64(elapsedTime) - cp.prevElapsedTime)
-	curtElapsedHits := elapsedHits - cp.prevElapsedHits
-	return curtPacer.Pace(curtElapsedTime, curtElapsedHits)
+	curPacer := cp.pacers[cp.curPacerIndex]
+	curElapsedTime := time.Duration(uint64(elapsedTime) - cp.prevElapsedTime)
+	curElapsedHits := elapsedHits - cp.prevElapsedHits
+	return curPacer.Pace(curElapsedTime, curElapsedHits)
 }
 
-// getPacerIndex returns the index of pacer that pacerTimeOffset falls into
-func (cp *combinedPacer) getPacerIndex(pacerTimeOffset uint64) uint {
-	for i, stepDuration := range cp.stepDurations {
-		if pacerTimeOffset < stepDuration {
-			return uint(i)
+// pacerIndex returns the index of pacer that pacerTimeOffset falls into
+func (cp *combinedPacer) pacerIndex(pacerTimeOffset uint64) uint {
+	i, j := 0, len(cp.stepDurations)
+	for i < j {
+		m := i + (j-i)/2
+		if pacerTimeOffset >= cp.stepDurations[m] {
+			i = m + 1
+		} else {
+			j = m
 		}
 	}
-	return 0
+	return uint(i)
 }
