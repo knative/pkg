@@ -72,15 +72,11 @@ func GetConfig(masterURL, kubeconfig string) (*rest.Config, error) {
 // or via reading a configMap from the API.
 // The context is expected to be initialized with injection.
 func GetLoggingConfig(ctx context.Context) (*logging.Config, error) {
-	loggingConfigData, err := configmap.Load("/etc/config-logging")
-	if err == nil {
-		return logging.NewConfigFromMap(loggingConfigData)
-	}
 	loggingConfigMap, err := kubeclient.Get(ctx).CoreV1().ConfigMaps(system.Namespace()).Get(logging.ConfigMapName(), metav1.GetOptions{})
-	if err == nil {
-		return logging.NewConfigFromConfigMap(loggingConfigMap)
+	if err != nil {
+		return nil, err
 	}
-	return nil, err
+	return logging.NewConfigFromConfigMap(loggingConfigMap)
 }
 
 func Main(component string, ctors ...injection.ControllerConstructor) {
