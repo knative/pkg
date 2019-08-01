@@ -69,10 +69,6 @@ func NewCombined(pacers []vegeta.Pacer, durations []time.Duration) (vegeta.Pacer
 
 		totalDuration: totalDuration,
 		stepDurations: stepDurations,
-
-		curPacerIndex:   0,
-		prevElapsedHits: 0,
-		prevElapsedTime: 0,
 	}
 	return pacer, nil
 }
