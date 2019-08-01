@@ -68,6 +68,21 @@ func GetConfig(masterURL, kubeconfig string) (*rest.Config, error) {
 	return nil, fmt.Errorf("could not create a valid kubeconfig")
 }
 
+// GetLoggingConfig gets the logging config from either the file system if present
+// or via reading a configMap from the API.
+// The context is expected to be initialized with injection.
+func GetLoggingConfig(ctx context.Context) (*logging.Config, error) {
+	loggingConfigData, err := configmap.Load("/etc/config-logging")
+	if err == nil {
+		return logging.NewConfigFromMap(loggingConfigData)
+	}
+	loggingConfigMap, err := kubeclient.Get(ctx).CoreV1().ConfigMaps(system.Namespace()).Get(logging.ConfigMapName(), metav1.GetOptions{})
+	if err == nil {
+		return logging.NewConfigFromConfigMap(loggingConfigMap)
+	}
+	return nil, err
+}
+
 func Main(component string, ctors ...injection.ControllerConstructor) {
 	// Set up signals so we handle the first shutdown signal gracefully.
 	MainWithContext(signals.NewContext(), component, ctors...)
@@ -101,13 +116,9 @@ func MainWithConfig(ctx context.Context, component string, cfg *rest.Config, cto
 	kubeClient := kubeclient.Get(ctx)
 
 	// Set up our logger.
-	loggingConfigMap, err := kubeClient.CoreV1().ConfigMaps(system.Namespace()).Get(logging.ConfigMapName(), metav1.GetOptions{})
+	loggingConfig, err := GetLoggingConfig(ctx)
 	if err != nil {
-		log.Fatal("Error loading logging configuration:", err)
-	}
-	loggingConfig, err := logging.NewConfigFromConfigMap(loggingConfigMap)
-	if err != nil {
-		log.Fatal("Error parsing logging configuration:", err)
+		log.Fatal("Error reading/parsing logging configuration:", err)
 	}
 	logger, atomicLevel := logging.NewLoggerFromConfig(loggingConfig, component)
 	defer flush(logger)
