@@ -113,7 +113,6 @@ func MainWithConfig(ctx context.Context, component string, cfg *rest.Config, cto
 	cfg.Burst = len(ctors) * rest.DefaultBurst
 
 	ctx, informers := injection.Default.SetupInformers(ctx, cfg)
-	kubeClient := kubeclient.Get(ctx)
 
 	// Set up our logger.
 	loggingConfig, err := GetLoggingConfig(ctx)
@@ -125,7 +124,7 @@ func MainWithConfig(ctx context.Context, component string, cfg *rest.Config, cto
 	ctx = logging.WithLogger(ctx, logger)
 
 	// TODO(mattmoor): This should itself take a context and be injection-based.
-	cmw := configmap.NewInformedWatcher(kubeClient, system.Namespace())
+	cmw := configmap.NewInformedWatcher(kubeclient.Get(ctx), system.Namespace())
 
 	// Based on the reconcilers we have linked, build up the set of controllers to run.
 	controllers := make([]*controller.Impl, 0, len(ctors))
