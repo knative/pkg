@@ -26,7 +26,10 @@ import (
 func TestCombinedPacer(t *testing.T) {
 	pacer1 := vegeta.Rate{Freq: 1, Per: time.Second}
 	pacer2 := vegeta.Rate{Freq: 5, Per: time.Second}
-	pacer, _ := NewCombined([]vegeta.Pacer{pacer1, pacer2}, []time.Duration{5 * time.Second, 5 * time.Second})
+	pacer3 := vegeta.Rate{Freq: 10, Per: time.Second}
+	pacers := []vegeta.Pacer{pacer1, pacer2, pacer3}
+	durations := []time.Duration{5 * time.Second, 5 * time.Second, 10 * time.Second}
+	pacer, _ := NewCombined(pacers, durations)
 
 	for _, tt := range []struct {
 		name            string
@@ -45,20 +48,34 @@ func TestCombinedPacer(t *testing.T) {
 		elapsedHits:     5,
 		expectedNextHit: 200 * time.Millisecond,
 	}, {
+		name:            "test the pacer middle hit",
+		elapsedTime:     7 * time.Second,
+		elapsedHits:     15,
+		expectedNextHit: 200 * time.Millisecond,
+	}, {
+		name:            "test the last hit",
+		elapsedTime:     20 * time.Second,
+		elapsedHits:     130,
+		expectedNextHit: 1 * time.Second,
+	}, {
 		name:            "test the loop back pacer hit",
-		elapsedTime:     10 * time.Second,
-		elapsedHits:     30,
+		elapsedTime:     22 * time.Second,
+		elapsedHits:     132,
 		expectedNextHit: 1 * time.Second,
 	}, {
 		name:            "test the catch up hit",
-		elapsedTime:     11 * time.Second,
-		elapsedHits:     30,
+		elapsedTime:     24 * time.Second,
+		elapsedHits:     130,
 		expectedNextHit: 0,
 	}} {
 		t.Run(tt.name, func(t *testing.T) {
 			nextHit, _ := pacer.Pace(tt.elapsedTime, tt.elapsedHits)
 			if nextHit != tt.expectedNextHit {
-				t.Errorf("expected next hit %v, got %v", tt.expectedNextHit, nextHit)
+				t.Errorf(
+					"expected next hit for elapseTime %v and elapsedHits %d is %v, got %v",
+					tt.elapsedTime, tt.elapsedHits,
+					tt.expectedNextHit, nextHit,
+				)
 			}
 		})
 	}

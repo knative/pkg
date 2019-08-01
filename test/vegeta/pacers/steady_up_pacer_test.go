@@ -58,7 +58,11 @@ func TestSteadyUpPacer(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			nextHit, _ := pacer.Pace(tt.elapsedTime, tt.elapsedHits)
 			if nextHit != tt.expectedNextHit {
-				t.Errorf("expected next hit %v, got %v", tt.expectedNextHit, nextHit)
+				t.Errorf(
+					"expected next hit for elapsedTime %v and elapsedHits %d is %v, got %v",
+					tt.elapsedTime, tt.elapsedHits,
+					tt.expectedNextHit, nextHit,
+				)
 			}
 		})
 	}
