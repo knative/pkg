@@ -105,7 +105,7 @@ func MainWithConfig(ctx context.Context, component string, cfg *rest.Config, cto
 	if err != nil {
 		log.Fatal("Error loading logging configuration:", err)
 	}
-	loggingConfig, err := logging.NewConfigFromMap(loggingConfigMap.Data)
+	loggingConfig, err := logging.NewConfigFromConfigMap(loggingConfigMap)
 	if err != nil {
 		log.Fatal("Error parsing logging configuration:", err)
 	}
