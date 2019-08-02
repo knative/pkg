@@ -40,11 +40,25 @@ func TestChildName(t *testing.T) {
 		parent: strings.Repeat("f", 63),
 		suffix: "-deploy",
 		want:   "ffffffffffffffffffffffff105d7597f637e83cc711605ac3ea4957-deploy",
+	}, {
+		parent: strings.Repeat("f", 63),
+		suffix: strings.Repeat("f", 63),
+		want:   "fffffffffffffffffffffffffffffff0502661254f13c89973cb3a83e0cbec0",
+	}, {
+		parent: "a",
+		suffix: strings.Repeat("f", 63),
+		want:   "ab5cfd486935decbc0d305799f4ce4414ffffffffffffffffffffffffffffff",
+	}, {
+		parent: strings.Repeat("b", 32),
+		suffix: strings.Repeat("f", 32),
+		want:   "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb329c7c81b9ab3ba71aa139066aa5625d",
 	}}
 
 	for _, test := range tests {
-		if got, want := ChildName(test.parent, test.suffix), test.want; got != want {
-			t.Errorf("%s-%s: got: %63s want: %63s\ndiff:%s", test.parent, test.suffix, got, want, cmp.Diff(got, want))
-		}
+		t.Run(test.parent+"-"+test.suffix, func(t *testing.T) {
+			if got, want := ChildName(test.parent, test.suffix), test.want; got != want {
+				t.Errorf("%s-%s: got: %63s want: %63s\ndiff:%s", test.parent, test.suffix, got, want, cmp.Diff(want, got))
+			}
+		})
 	}
 }
