@@ -31,10 +31,8 @@ func CalculateTypeCoverage(typeCoverage []TypeCoverage) *CoverageValues {
 			cv.TotalFields++
 			if field.Ignored {
 				cv.IgnoredFields++
-			} else {
-				if field.Coverage {
-					cv.CoveredFields++
-				}
+			} else if field.Coverage {
+				cv.CoveredFields++
 			}
 		}
 	}

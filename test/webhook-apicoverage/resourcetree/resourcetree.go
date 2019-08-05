@@ -20,6 +20,7 @@ import (
 	"container/list"
 	"reflect"
 
+	"k8s.io/apimachinery/pkg/util/sets"
 	"knative.dev/pkg/test/webhook-apicoverage/coveragecalculator"
 )
 
@@ -37,7 +38,7 @@ type coverageDataHelper struct {
 	nodeRules     NodeRules
 	fieldRules    FieldRules
 	ignoredFields coveragecalculator.IgnoredFields
-	coveredTypes  map[string]bool
+	coveredTypes  sets.String
 }
 
 func (r *ResourceTree) createNode(field string, parent NodeInterface, t reflect.Type) NodeInterface {
@@ -89,7 +90,7 @@ func (r *ResourceTree) BuildCoverageData(nodeRules NodeRules, fieldRules FieldRu
 		fieldRules:    fieldRules,
 		typeCoverage:  &[]coveragecalculator.TypeCoverage{},
 		ignoredFields: ignoredFields,
-		coveredTypes:  make(map[string]bool),
+		coveredTypes:  sets.String{},
 	}
 	r.Root.buildCoverageData(coverageHelper)
 	return *coverageHelper.typeCoverage

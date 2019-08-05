@@ -20,14 +20,18 @@ import (
 	"container/list"
 	"reflect"
 
+	"k8s.io/apimachinery/pkg/util/sets"
 	"knative.dev/pkg/test/webhook-apicoverage/coveragecalculator"
 )
 
-// ResourceForest represents the top-level forest that contains individual resource trees for top-level resource types and all connected nodes across resource trees.
+// ResourceForest represents the top-level forest that contains individual resource trees
+// for top-level resource types and all connected nodes across resource trees.
 type ResourceForest struct {
-	Version        string
-	TopLevelTrees  map[string]ResourceTree // Key is ResourceTree.ResourceName
-	ConnectedNodes map[string]*list.List   // Head of the linked list keyed by nodeData.fieldType.pkg + nodeData.fieldType.Name()
+	Version string
+	// Key is ResourceTree.ResourceName
+	TopLevelTrees map[string]ResourceTree
+	// Head of the linked list keyed by nodeData.fieldType.pkg + nodeData.fieldType.Name()
+	ConnectedNodes map[string]*list.List
 }
 
 // AddResourceTree adds a resource tree to the resource forest.
@@ -40,10 +44,13 @@ func (r *ResourceForest) AddResourceTree(resourceName string, resourceType refle
 	r.TopLevelTrees[resourceName] = tree
 }
 
-// getConnectedNodeCoverage calculates the outlined coverage for a Type using ConnectedNodes linkedlist. We traverse through each element in the linkedlist and merge
+// getConnectedNodeCoverage calculates the outlined coverage for a Type using ConnectedNodes linkedlist.
+// We traverse through each element in the linkedlist and merge
 // coverage data into a single coveragecalculator.TypeCoverage object.
-func (r *ResourceForest) getConnectedNodeCoverage(fieldType reflect.Type, fieldRules FieldRules, ignoredFields coveragecalculator.IgnoredFields) coveragecalculator.TypeCoverage {
-	//packageName := strings.Replace(fieldType.PkgPath(), "/", ".", -1)
+func (r *ResourceForest) getConnectedNodeCoverage(
+	fieldType reflect.Type,
+	fieldRules FieldRules,
+	ignoredFields coveragecalculator.IgnoredFields) coveragecalculator.TypeCoverage {
 	packageName := fieldType.PkgPath()
 	coverage := coveragecalculator.TypeCoverage{
 		Type:    fieldType.Name(),
@@ -60,7 +67,7 @@ func (r *ResourceForest) getConnectedNodeCoverage(fieldType reflect.Type, fieldR
 						coverage.Fields[field] = &coveragecalculator.FieldCoverage{
 							Field:   field,
 							Ignored: ignoredFields.FieldIgnored(packageName, fieldType.Name(), field),
-							Values:  make(map[string]bool),
+							Values:  sets.String{},
 						}
 					}
 					// merge values across the list.

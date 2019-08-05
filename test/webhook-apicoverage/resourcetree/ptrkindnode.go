@@ -18,6 +18,8 @@ package resourcetree
 
 import (
 	"reflect"
+
+	"k8s.io/apimachinery/pkg/util/sets"
 )
 
 const (
@@ -60,6 +62,6 @@ func (p *PtrKindNode) buildCoverageData(coverageHelper coverageDataHelper) {
 	}
 }
 
-func (p *PtrKindNode) getValues() map[string]bool {
+func (p *PtrKindNode) getValues() sets.String {
 	return nil
 }

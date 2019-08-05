@@ -18,6 +18,8 @@ package resourcetree
 
 import (
 	"reflect"
+
+	"k8s.io/apimachinery/pkg/util/sets"
 )
 
 const (
@@ -89,19 +91,19 @@ func (s *StructKindNode) buildCoverageData(coverageHelper coverageDataHelper) {
 	coverage := s.Tree.Forest.getConnectedNodeCoverage(s.FieldType, coverageHelper.fieldRules, coverageHelper.ignoredFields)
 	*coverageHelper.typeCoverage = append(*coverageHelper.typeCoverage, coverage)
 	// Adding the type to covered fields so as to avoid revisiting the same node in other parts of the resource tree.
-	coverageHelper.coveredTypes[s.FieldType.PkgPath()+"."+s.FieldType.Name()] = true
+	coverageHelper.coveredTypes.Insert(s.FieldType.PkgPath() + "." + s.FieldType.Name())
 
 	for field := range coverage.Fields {
 		node := s.Children[field]
 		if !coverage.Fields[field].Ignored && node.GetData().Covered && coverageHelper.nodeRules.Apply(node) {
 			// Check to see if the type has already been covered.
-			if ok, _ := coverageHelper.coveredTypes[node.GetData().FieldType.PkgPath()+"."+node.GetData().FieldType.Name()]; !ok {
+			if !coverageHelper.coveredTypes.Has(node.GetData().FieldType.PkgPath() + "." + node.GetData().FieldType.Name()) {
 				node.buildCoverageData(coverageHelper)
 			}
 		}
 	}
 }
 
-func (s *StructKindNode) getValues() map[string]bool {
+func (s *StructKindNode) getValues() sets.String {
 	return nil
 }

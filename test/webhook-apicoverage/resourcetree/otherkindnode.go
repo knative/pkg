@@ -18,6 +18,8 @@ package resourcetree
 
 import (
 	"reflect"
+
+	"k8s.io/apimachinery/pkg/util/sets"
 )
 
 // OtherKindNode represents nodes in the resource tree of types like maps, interfaces, etc
@@ -46,6 +48,6 @@ func (o *OtherKindNode) updateCoverage(v reflect.Value) {
 // no-op as the coverage is calculated as field coverage in parent node.
 func (o *OtherKindNode) buildCoverageData(coverageHelper coverageDataHelper) {}
 
-func (o *OtherKindNode) getValues() map[string]bool {
+func (o *OtherKindNode) getValues() sets.String {
 	return nil
 }

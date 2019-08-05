@@ -16,23 +16,21 @@ limitations under the License.
 
 package coveragecalculator
 
+import "k8s.io/apimachinery/pkg/util/sets"
+
 // FieldCoverage represents coverage data for a field.
 type FieldCoverage struct {
-	Field    string          `json:"Field"`
-	Values   map[string]bool `json:"Values"`
-	Coverage bool            `json:"Covered"`
-	Ignored  bool            `json:"Ignored"`
+	Field    string      `json:"Field"`
+	Values   sets.String `json:"Values"`
+	Coverage bool        `json:"Covered"`
+	Ignored  bool        `json:"Ignored"`
 }
 
 // Merge operation merges the field coverage data when multiple nodes represent the same type. (e.g. ConnectedNodes traversal)
-func (f *FieldCoverage) Merge(coverage bool, values map[string]bool) {
+func (f *FieldCoverage) Merge(coverage bool, values sets.String) {
 	if coverage {
 		f.Coverage = coverage
-		for key, value := range values {
-			if _, ok := f.Values[key]; !ok {
-				f.Values[key] = value
-			}
-		}
+		f.Values = f.Values.Union(values)
 	}
 }
 

@@ -18,6 +18,8 @@ package resourcetree
 
 import (
 	"reflect"
+
+	"k8s.io/apimachinery/pkg/util/sets"
 )
 
 const (
@@ -27,7 +29,9 @@ const (
 // ArrayKindNode represents resource tree node of types reflect.Kind.Array and reflect.Kind.Slice
 type ArrayKindNode struct {
 	NodeData
-	arrKind reflect.Kind // Array type e.g. []int will store reflect.Kind.Int. This is required for type-expansion and value-evaluation decisions.
+	// Array type e.g. []int will store reflect.Kind.Int.
+	// This is required for type-expansion and value-evaluation decisions.
+	arrKind reflect.Kind
 }
 
 // GetData returns node data
@@ -62,6 +66,6 @@ func (a *ArrayKindNode) buildCoverageData(coverageHelper coverageDataHelper) {
 	}
 }
 
-func (a *ArrayKindNode) getValues() map[string]bool {
+func (a *ArrayKindNode) getValues() sets.String {
 	return nil
 }

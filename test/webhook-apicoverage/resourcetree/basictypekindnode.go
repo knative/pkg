@@ -20,13 +20,15 @@ import (
 	"fmt"
 	"reflect"
 	"strconv"
+
+	"k8s.io/apimachinery/pkg/util/sets"
 )
 
 // BasicTypeKindNode represents resource tree node of basic types like int, float, etc.
 type BasicTypeKindNode struct {
 	NodeData
-	values       map[string]bool // Values seen for this node. Useful for enum types.
-	possibleEnum bool            // Flag to indicate if this is a possible enum.
+	values       sets.String // Values seen for this node. Useful for enum types.
+	possibleEnum bool        // Flag to indicate if this is a possible enum.
 }
 
 // GetData returns node data
@@ -36,7 +38,7 @@ func (b *BasicTypeKindNode) GetData() NodeData {
 
 func (b *BasicTypeKindNode) initialize(field string, parent NodeInterface, t reflect.Type, rt *ResourceTree) {
 	b.NodeData.initialize(field, parent, t, rt)
-	b.values = make(map[string]bool)
+	b.values = sets.String{}
 	b.NodeData.LeafNode = true
 }
 
@@ -50,7 +52,7 @@ func (b *BasicTypeKindNode) buildChildNodes(t reflect.Type) {
 func (b *BasicTypeKindNode) updateCoverage(v reflect.Value) {
 	if value := b.string(v); len(value) > 0 {
 		if b.possibleEnum || b.FieldType.Kind() == reflect.Bool {
-			b.addValue(value)
+			b.values.Insert(value)
 		}
 		b.Covered = true
 	}
@@ -84,13 +86,7 @@ func (b *BasicTypeKindNode) string(v reflect.Value) string {
 	return ""
 }
 
-func (b *BasicTypeKindNode) addValue(value string) {
-	if _, ok := b.values[value]; !ok {
-		b.values[value] = true
-	}
-}
-
-func (b *BasicTypeKindNode) getValues() map[string]bool {
+func (b *BasicTypeKindNode) getValues() sets.String {
 	if b.possibleEnum {
 		return b.values
 	}

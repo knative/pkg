@@ -21,12 +21,14 @@ import (
 	"io/ioutil"
 	"strings"
 
+	"k8s.io/apimachinery/pkg/util/sets"
+
 	yaml "gopkg.in/yaml.v2"
 )
 
 // IgnoredFields encapsulates fields to be ignored in a package for API coverage calculation.
 type IgnoredFields struct {
-	ignoredFields map[string]map[string]bool
+	ignoredFields map[string]sets.String
 }
 
 // This type is used for deserialization from the input .yaml file
@@ -50,15 +52,15 @@ func (ig *IgnoredFields) ReadFromFile(filePath string) error {
 		return fmt.Errorf("Error unmarshalling ignoredfields input yaml file: %s Content: %s Error: %v", filePath, string(data), err)
 	}
 
-	ig.ignoredFields = map[string]map[string]bool{}
+	ig.ignoredFields = make(map[string]sets.String)
 
 	for _, entry := range inputEntries {
 		if _, ok := ig.ignoredFields[entry.Package]; !ok {
-			ig.ignoredFields[entry.Package] = map[string]bool{}
+			ig.ignoredFields[entry.Package] = sets.String{}
 		}
 
 		for _, field := range entry.Fields {
-			ig.ignoredFields[entry.Package][entry.Type+"."+field] = true
+			ig.ignoredFields[entry.Package].Insert(entry.Type + "." + field)
 		}
 	}
 	return nil
@@ -69,7 +71,7 @@ func (ig *IgnoredFields) FieldIgnored(packageName string, typeName string, field
 	if ig.ignoredFields != nil {
 		for key, value := range ig.ignoredFields {
 			if strings.HasSuffix(packageName, key) {
-				if _, ok := value[typeName+"."+fieldName]; ok {
+				if value.Has(typeName + "." + fieldName) {
 					return true
 				}
 			}
