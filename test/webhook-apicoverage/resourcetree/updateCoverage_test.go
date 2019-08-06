@@ -29,42 +29,39 @@ func TestSimpleStructValue(t *testing.T) {
 	}
 }
 
-func TestPtrValueAllCovered(t *testing.T) {
-	tree := getTestTree(ptrTypeName, reflect.TypeOf(ptrType{}))
-	tree.UpdateCoverage(reflect.ValueOf(getPtrTypeValueAllCovered()))
-	if err := verifyPtrValueAllCovered(tree.Root); err != nil {
-		t.Fatal(err)
+func TestUpdateCoverage(t *testing.T) {
+	datas := []struct {
+		TestName string
+		name     string
+		typeI    interface{}
+		value    interface{}
+		f        func(NodeInterface) error
+	}{
+		{
+			"TestPtrValueAllCovered", ptrTypeName, ptrType{}, getPtrTypeValueAllCovered(), verifyPtrValueAllCovered,
+		},
+		{
+			"TestPtrValueSomeCovered", ptrTypeName, ptrType{}, getPtrTypeValueSomeCovered(), verifyPtrValueSomeCovered,
+		},
+		{
+			"TestArrValueAllCovered", arrayTypeName, arrayType{}, getArrValueAllCovered(), verifyArryValueAllCovered,
+		},
+		{
+			"TestArrValueSomeCovered", arrayTypeName, arrayType{}, getArrValueSomeCovered(), verifyArrValueSomeCovered,
+		},
+		{
+			"TestOtherValue", otherTypeName, otherType{}, getOtherTypeValue(), verifyOtherTypeValue,
+		},
 	}
-}
 
-func TestPtrValueSomeCovered(t *testing.T) {
-	tree := getTestTree(ptrTypeName, reflect.TypeOf(ptrType{}))
-	tree.UpdateCoverage(reflect.ValueOf(getPtrTypeValueSomeCovered()))
-	if err := verifyPtrValueSomeCovered(tree.Root); err != nil {
-		t.Fatal(err)
-	}
-}
+	for _, data := range datas {
+		t.Run(data.TestName, func(t *testing.T) {
+			tree := getTestTree(data.name, reflect.TypeOf(data.typeI))
+			tree.UpdateCoverage(reflect.ValueOf(data.value))
+			if err := data.f(tree.Root); err != nil {
+				t.Fatal(err)
+			}
+		})
 
-func TestArrValueAllCovered(t *testing.T) {
-	tree := getTestTree(arrayTypeName, reflect.TypeOf(arrayType{}))
-	tree.UpdateCoverage(reflect.ValueOf(getArrValueAllCovered()))
-	if err := verifyArryValueAllCovered(tree.Root); err != nil {
-		t.Fatal(err)
-	}
-}
-
-func TestArrValueSomeCovered(t *testing.T) {
-	tree := getTestTree(arrayTypeName, reflect.TypeOf(arrayType{}))
-	tree.UpdateCoverage(reflect.ValueOf(getArrValueSomeCovered()))
-	if err := verifyArrValueSomeCovered(tree.Root); err != nil {
-		t.Fatal(err)
-	}
-}
-
-func TestOtherValue(t *testing.T) {
-	tree := getTestTree(otherTypeName, reflect.TypeOf(otherType{}))
-	tree.UpdateCoverage(reflect.ValueOf(getOtherTypeValue()))
-	if err := verifyOtherTypeValue(tree.Root); err != nil {
-		t.Fatal(err)
 	}
 }
