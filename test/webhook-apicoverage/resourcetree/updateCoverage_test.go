@@ -36,23 +36,17 @@ func TestUpdateCoverage(t *testing.T) {
 		typeI    interface{}
 		value    interface{}
 		f        func(NodeInterface) error
-	}{
-		{
-			"TestPtrValueAllCovered", ptrTypeName, ptrType{}, getPtrTypeValueAllCovered(), verifyPtrValueAllCovered,
-		},
-		{
-			"TestPtrValueSomeCovered", ptrTypeName, ptrType{}, getPtrTypeValueSomeCovered(), verifyPtrValueSomeCovered,
-		},
-		{
-			"TestArrValueAllCovered", arrayTypeName, arrayType{}, getArrValueAllCovered(), verifyArryValueAllCovered,
-		},
-		{
-			"TestArrValueSomeCovered", arrayTypeName, arrayType{}, getArrValueSomeCovered(), verifyArrValueSomeCovered,
-		},
-		{
-			"TestOtherValue", otherTypeName, otherType{}, getOtherTypeValue(), verifyOtherTypeValue,
-		},
-	}
+	}{{
+		"TestPtrValueAllCovered", ptrTypeName, ptrType{}, getPtrTypeValueAllCovered(), verifyPtrValueAllCovered,
+	}, {
+		"TestPtrValueSomeCovered", ptrTypeName, ptrType{}, getPtrTypeValueSomeCovered(), verifyPtrValueSomeCovered,
+	}, {
+		"TestArrValueAllCovered", arrayTypeName, arrayType{}, getArrValueAllCovered(), verifyArryValueAllCovered,
+	}, {
+		"TestArrValueSomeCovered", arrayTypeName, arrayType{}, getArrValueSomeCovered(), verifyArrValueSomeCovered,
+	}, {
+		"TestOtherValue", otherTypeName, otherType{}, getOtherTypeValue(), verifyOtherTypeValue,
+	}}
 
 	for _, data := range datas {
 		t.Run(data.TestName, func(t *testing.T) {
