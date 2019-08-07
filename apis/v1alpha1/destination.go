@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package apis
+package v1alpha1
 
 import (
 	"context"
@@ -22,6 +22,8 @@ import (
 	"k8s.io/apimachinery/pkg/api/equality"
 	"net/url"
 	"strings"
+
+	"knative.dev/pkg/apis"
 )
 
 // Destination represents a target of an invocation over HTTP.
@@ -30,16 +32,17 @@ type Destination struct {
 	*corev1.ObjectReference `json:",inline"`
 
 	// URI is for direct URI Designations.
-	URI *URL `json:"uri,omitempty"`
+	URI *apis.URL `json:"uri,omitempty"`
 
 	// Path is used with the resulting URL from Addressable ObjectReference or
-	// URI. Must start with `/`.
+	// URI. Must start with `/`. Will be appended to the path of the resulting
+	// URL from the Addressable, or URI.
 	Path *string `json:"path,omitempty"`
 }
 
-func (current *Destination) Validate(ctx context.Context) *FieldError {
+func (current *Destination) Validate(ctx context.Context) *apis.FieldError {
 	if current != nil {
-		errs := validateDestination(*current).ViaField(CurrentField)
+		errs := validateDestination(*current).ViaField(apis.CurrentField)
 		if current.Path != nil {
 			errs = errs.Also(validateDestinationPath(*current.Path).ViaField("path"))
 		}
@@ -49,47 +52,47 @@ func (current *Destination) Validate(ctx context.Context) *FieldError {
 	}
 }
 
-func validateDestination(dest Destination) *FieldError {
+func validateDestination(dest Destination) *apis.FieldError {
 	if dest.URI != nil {
 		if dest.ObjectReference != nil {
-			return ErrMultipleOneOf("uri", "[apiVersion, kind, name]")
+			return apis.ErrMultipleOneOf("uri", "[apiVersion, kind, name]")
 		}
 		if dest.URI.Host == "" || dest.URI.Scheme == "" {
-			return ErrInvalidValue(dest.URI.String(), "uri")
+			return apis.ErrInvalidValue(dest.URI.String(), "uri")
 		}
 	} else if dest.ObjectReference == nil {
-		return ErrMissingOneOf("uri", "[apiVersion, kind, name]")
+		return apis.ErrMissingOneOf("uri", "[apiVersion, kind, name]")
 	} else {
 		return validateDestinationRef(*dest.ObjectReference)
 	}
 	return nil
 }
 
-func validateDestinationPath(path string) *FieldError {
+func validateDestinationPath(path string) *apis.FieldError {
 	if strings.HasPrefix(path, "/") {
 		if pu, err := url.Parse(path); err != nil {
-			return ErrInvalidValue(path, CurrentField)
+			return apis.ErrInvalidValue(path, apis.CurrentField)
 		} else if !equality.Semantic.DeepEqual(pu, &url.URL{Path: pu.Path}) {
-			return ErrInvalidValue(path, CurrentField)
+			return apis.ErrInvalidValue(path, apis.CurrentField)
 		}
 	} else {
-		return ErrInvalidValue(path, CurrentField)
+		return apis.ErrInvalidValue(path, apis.CurrentField)
 	}
 	return nil
 }
 
-func validateDestinationRef(ref corev1.ObjectReference) *FieldError {
+func validateDestinationRef(ref corev1.ObjectReference) *apis.FieldError {
 	// Check the object.
-	var errs *FieldError
+	var errs *apis.FieldError
 	// Required Fields
 	if ref.Name == "" {
-		errs = errs.Also(ErrMissingField("name"))
+		errs = errs.Also(apis.ErrMissingField("name"))
 	}
 	if ref.APIVersion == "" {
-		errs = errs.Also(ErrMissingField("apiVersion"))
+		errs = errs.Also(apis.ErrMissingField("apiVersion"))
 	}
 	if ref.Kind == "" {
-		errs = errs.Also(ErrMissingField("kind"))
+		errs = errs.Also(apis.ErrMissingField("kind"))
 	}
 
 	return errs

@@ -1,5 +1,5 @@
 /*
-Copyright 2017 The Knative Authors
+Copyright 2019 The Knative Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package apis
+package v1alpha1
 
 import (
 	"context"
@@ -22,6 +22,7 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 
+	"knative.dev/pkg/apis"
 	"knative.dev/pkg/ptr"
 )
 
@@ -34,7 +35,7 @@ func TestValidateDestination(t *testing.T) {
 		Name:       "a-name",
 	}
 
-	validURL := URL{
+	validURL := apis.URL{
 		Scheme: "http",
 		Host:   "host",
 	}
@@ -92,7 +93,7 @@ func TestValidateDestination(t *testing.T) {
 		},
 		"invalid, uri has no host": {
 			dest: &Destination{
-				URI: &URL{
+				URI: &apis.URL{
 					Scheme: "http",
 				},
 			},
@@ -100,7 +101,7 @@ func TestValidateDestination(t *testing.T) {
 		},
 		"invalid, uri has no scheme": {
 			dest: &Destination{
-				URI: &URL{
+				URI: &apis.URL{
 					Host: "host",
 				},
 			},
