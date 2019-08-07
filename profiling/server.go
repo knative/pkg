@@ -25,16 +25,16 @@ import (
 // ProfilingPort is the port where we expose profiling information if profiling is enabled
 const ProfilingPort = 8008
 
-// ProfilingHandler holds the main HTTP handler and a flag indicating
+// Handler holds the main HTTP handler and a flag indicating
 // whether the handler is active
-type ProfilingHandler struct {
+type Handler struct {
 	Enabled bool
 	Handler http.Handler
 }
 
 // NewHandler create a new ProfilingHandler which serves runtime profiling data
 // according to the given context path
-func NewHandler(profilingEnabled bool) *ProfilingHandler {
+func NewHandler(profilingEnabled bool) *Handler {
 	const pprofPrefix = "/debug/pprof/"
 
 	mux := http.NewServeMux()
@@ -44,13 +44,13 @@ func NewHandler(profilingEnabled bool) *ProfilingHandler {
 	mux.HandleFunc(pprofPrefix+"symbol", pprof.Symbol)
 	mux.HandleFunc(pprofPrefix+"trace", pprof.Trace)
 
-	return &ProfilingHandler{
+	return &Handler{
 		Enabled: profilingEnabled,
 		Handler: mux,
 	}
 }
 
-func (h *ProfilingHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if h.Enabled {
 		h.Handler.ServeHTTP(w, r)
 	} else {

@@ -25,7 +25,9 @@ import (
 
 const profilingKey = "profiling.enable"
 
-func UpdateProfilingFromConfigMap(profilingHandler *ProfilingHandler, logger *zap.SugaredLogger) func(configMap *corev1.ConfigMap) {
+// UpdateProfilingFromConfigMap modifies the Enabled flag in the Handler that is passed
+// as an argument, according to the value in the given ConfigMap
+func UpdateProfilingFromConfigMap(profilingHandler *Handler, logger *zap.SugaredLogger) func(configMap *corev1.ConfigMap) {
 	return func(configMap *corev1.ConfigMap) {
 		if profiling, ok := configMap.Data[profilingKey]; ok {
 			if enabled, err := strconv.ParseBool(profiling); err == nil {
