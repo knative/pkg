@@ -29,13 +29,16 @@ const profilingKey = "profiling.enable"
 // as an argument, according to the value in the given ConfigMap
 func UpdateProfilingFromConfigMap(profilingHandler *Handler, logger *zap.SugaredLogger) func(configMap *corev1.ConfigMap) {
 	return func(configMap *corev1.ConfigMap) {
-		if profiling, ok := configMap.Data[profilingKey]; ok {
-			if enabled, err := strconv.ParseBool(profiling); err == nil {
-				logger.Infof("Profiling enabled: %t", enabled)
-				profilingHandler.Enabled = enabled
-			} else {
-				logger.Errorw("Failed to update profiling", zap.Error(err))
-			}
+		profiling, ok := configMap.Data[profilingKey]
+		if !ok {
+			return
 		}
+		enabled, err := strconv.ParseBool(profiling)
+		if err != nil {
+			logger.Errorw("Failed to update profiling", zap.Error(err))
+			return
+		}
+		logger.Infof("Profiling enabled: %t", enabled)
+		profilingHandler.Enabled = enabled
 	}
 }
