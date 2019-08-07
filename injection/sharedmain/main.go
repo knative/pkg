@@ -27,7 +27,6 @@ import (
 	"path/filepath"
 
 	"golang.org/x/sync/errgroup"
-	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
@@ -136,13 +135,11 @@ func MainWithConfig(ctx context.Context, component string, cfg *rest.Config, cto
 
 	// Watch the logging config map and dynamically update logging levels.
 	cmw.Watch(logging.ConfigMapName(), logging.UpdateLevelFromConfigMap(logger, atomicLevel, component))
+
 	// Watch the observability config map
-	for _, observer := range []func(*corev1.ConfigMap){
+	cmw.Watch(metrics.ConfigMapName(),
 		metrics.UpdateExporterFromConfigMap(component, logger),
-		profiling.UpdateProfilingFromConfigMap(profilingHandler, logger),
-	} {
-		cmw.Watch(metrics.ConfigMapName(), observer)
-	}
+		profiling.UpdateProfilingFromConfigMap(profilingHandler, logger))
 
 	if err := cmw.Start(ctx.Done()); err != nil {
 		logger.Fatalw("failed to start configuration manager", zap.Error(err))

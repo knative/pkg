@@ -290,7 +290,7 @@ type mockWatcher struct {
 	watches []string
 }
 
-func (w *mockWatcher) Watch(config string, o Observer) {
+func (w *mockWatcher) Watch(config string, o ...Observer) {
 	w.watches = append(w.watches, config)
 }
 
