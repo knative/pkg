@@ -21,10 +21,14 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"net/http"
 	"os"
 	"os/user"
 	"path/filepath"
+	"strconv"
 
+	"golang.org/x/sync/errgroup"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
@@ -38,6 +42,8 @@ import (
 	"knative.dev/pkg/metrics"
 	"knative.dev/pkg/signals"
 	"knative.dev/pkg/system"
+	"knative.dev/serving/pkg/apis/networking"
+	"knative.dev/serving/pkg/profiling"
 )
 
 // GetConfig returns a rest.Config to be used for kubernetes client creation.
@@ -128,10 +134,18 @@ func MainWithConfig(ctx context.Context, component string, cfg *rest.Config, cto
 		controllers = append(controllers, cf(ctx, cmw))
 	}
 
+	profilingHandler := profiling.NewHandler(false)
+
 	// Watch the logging config map and dynamically update logging levels.
 	cmw.Watch(logging.ConfigMapName(), logging.UpdateLevelFromConfigMap(logger, atomicLevel, component))
-	// Watch the observability config map and dynamically update metrics exporter.
-	cmw.Watch(metrics.ConfigMapName(), metrics.UpdateExporterFromConfigMap(component, logger))
+	// Watch the observability config map
+	for _, observer := range []func(*corev1.ConfigMap){
+		metrics.UpdateExporterFromConfigMap(component, logger),
+		profiling.UpdateProfilingFromConfigMap(profilingHandler, logger),
+	} {
+		cmw.Watch(metrics.ConfigMapName(), observer)
+	}
+
 	if err := cmw.Start(ctx.Done()); err != nil {
 		logger.Fatalw("failed to start configuration manager", zap.Error(err))
 	}
@@ -144,7 +158,22 @@ func MainWithConfig(ctx context.Context, component string, cfg *rest.Config, cto
 
 	// Start all of the controllers.
 	logger.Info("Starting controllers...")
-	controller.StartAll(ctx.Done(), controllers...)
+	go controller.StartAll(ctx.Done(), controllers...)
+
+	profilingServer := profiling.NewServer(":"+strconv.Itoa(networking.ProfilingPort), profilingHandler)
+
+	eg, egCtx := errgroup.WithContext(ctx)
+	eg.Go(profilingServer.ListenAndServe)
+
+	// This will block until either a signal arrives or one of the grouped functions
+	// returns an error.
+	<-egCtx.Done()
+
+	profilingServer.Shutdown(context.Background())
+	// Don't forward ErrServerClosed as that indicates we're already shutting down.
+	if err := eg.Wait(); err != nil && err != http.ErrServerClosed {
+		logger.Errorw("Error while running server", zap.Error(err))
+	}
 }
 
 func flush(logger *zap.SugaredLogger) {
