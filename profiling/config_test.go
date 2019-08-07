@@ -21,10 +21,10 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"knative.dev/pkg/logging"
 	"knative.dev/pkg/metrics"
 	"knative.dev/pkg/system"
 	_ "knative.dev/pkg/system/testing"
-	"knative.dev/serving/pkg/logging"
 )
 
 func TestUpdateProfilingFromConfigMap(t *testing.T) {

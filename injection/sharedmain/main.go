@@ -25,7 +25,6 @@ import (
 	"os"
 	"os/user"
 	"path/filepath"
-	"strconv"
 
 	"golang.org/x/sync/errgroup"
 	corev1 "k8s.io/api/core/v1"
@@ -40,10 +39,9 @@ import (
 	"knative.dev/pkg/injection/clients/kubeclient"
 	"knative.dev/pkg/logging"
 	"knative.dev/pkg/metrics"
+	"knative.dev/pkg/profiling"
 	"knative.dev/pkg/signals"
 	"knative.dev/pkg/system"
-	"knative.dev/serving/pkg/apis/networking"
-	"knative.dev/serving/pkg/profiling"
 )
 
 // GetConfig returns a rest.Config to be used for kubernetes client creation.
@@ -160,7 +158,7 @@ func MainWithConfig(ctx context.Context, component string, cfg *rest.Config, cto
 	logger.Info("Starting controllers...")
 	go controller.StartAll(ctx.Done(), controllers...)
 
-	profilingServer := profiling.NewServer(":"+strconv.Itoa(networking.ProfilingPort), profilingHandler)
+	profilingServer := profiling.NewServer(profilingHandler)
 
 	eg, egCtx := errgroup.WithContext(ctx)
 	eg.Go(profilingServer.ListenAndServe)

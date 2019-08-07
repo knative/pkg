@@ -19,7 +19,11 @@ package profiling
 import (
 	"net/http"
 	"net/http/pprof"
+	"strconv"
 )
+
+// ProfilingPort is the port where we expose profiling information if profiling is enabled
+const ProfilingPort = 8008
 
 // ProfilingHandler holds the main HTTP handler and a flag indicating
 // whether the handler is active
@@ -56,9 +60,9 @@ func (h *ProfilingHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 // NewServer creates a new http server that exposes profiling data using the
 // HTTP handler that is passed as an argument
-func NewServer(addr string, handler http.Handler) *http.Server {
+func NewServer(handler http.Handler) *http.Server {
 	return &http.Server{
-		Addr:    addr,
+		Addr:    ":" + strconv.Itoa(ProfilingPort),
 		Handler: handler,
 	}
 }
