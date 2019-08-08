@@ -131,7 +131,7 @@ func MainWithConfig(ctx context.Context, component string, cfg *rest.Config, cto
 		controllers = append(controllers, cf(ctx, cmw))
 	}
 
-	profilingHandler := profiling.NewHandler(false)
+	profilingHandler := profiling.NewHandler()
 
 	// Watch the logging config map and dynamically update logging levels.
 	cmw.Watch(logging.ConfigMapName(), logging.UpdateLevelFromConfigMap(logger, atomicLevel, component))

@@ -73,7 +73,7 @@ func TestUpdateProfilingFromConfigMap(t *testing.T) {
 	for _, tt := range observabilityConfigTests {
 		t.Run(tt.name, func(t *testing.T) {
 			logger, _ := logging.NewLogger("", "debug")
-			handler := NewHandler(false)
+			handler := NewHandler()
 
 			updateFunc := UpdateProfilingFromConfigMap(handler, logger)
 			updateFunc(tt.config)

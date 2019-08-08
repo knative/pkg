@@ -19,11 +19,10 @@ package profiling
 import (
 	"net/http"
 	"net/http/pprof"
-	"strconv"
 )
 
 // ProfilingPort is the port where we expose profiling information if profiling is enabled
-const ProfilingPort = 8008
+const ProfilingPort = ":8008"
 
 // Handler holds the main HTTP handler and a flag indicating
 // whether the handler is active
@@ -34,7 +33,7 @@ type Handler struct {
 
 // NewHandler create a new ProfilingHandler which serves runtime profiling data
 // according to the given context path
-func NewHandler(profilingEnabled bool) *Handler {
+func NewHandler() *Handler {
 	const pprofPrefix = "/debug/pprof/"
 
 	mux := http.NewServeMux()
@@ -45,7 +44,7 @@ func NewHandler(profilingEnabled bool) *Handler {
 	mux.HandleFunc(pprofPrefix+"trace", pprof.Trace)
 
 	return &Handler{
-		Enabled: profilingEnabled,
+		Enabled: false,
 		Handler: mux,
 	}
 }
@@ -62,7 +61,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 // HTTP handler that is passed as an argument
 func NewServer(handler http.Handler) *http.Server {
 	return &http.Server{
-		Addr:    ":" + strconv.Itoa(ProfilingPort),
+		Addr:    ProfilingPort,
 		Handler: handler,
 	}
 }
