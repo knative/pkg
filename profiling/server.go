@@ -21,8 +21,8 @@ import (
 	"net/http/pprof"
 )
 
-// ProfilingPort is the port where we expose profiling information if profiling is enabled
-const ProfilingPort = ":8008"
+// profilingPort is the port where we expose profiling information if profiling is enabled
+const profilingPort = ":8008"
 
 // Handler holds the main HTTP handler and a flag indicating
 // whether the handler is active
@@ -61,7 +61,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 // HTTP handler that is passed as an argument
 func NewServer(handler http.Handler) *http.Server {
 	return &http.Server{
-		Addr:    ProfilingPort,
+		Addr:    profilingPort,
 		Handler: handler,
 	}
 }
