@@ -17,16 +17,13 @@ limitations under the License.
 package profiling
 
 import (
-	"context"
 	"net/http"
-	"strings"
+	"net/http/httptest"
 	"testing"
-	"time"
 
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/util/wait"
 	"knative.dev/pkg/metrics"
 	"knative.dev/pkg/system"
 	_ "knative.dev/pkg/system/testing"
@@ -82,20 +79,12 @@ func TestUpdateFromConfigMap(t *testing.T) {
 	for _, tt := range observabilityConfigTests {
 		t.Run(tt.name, func(t *testing.T) {
 			handler := NewHandler(zap.NewNop().Sugar())
-			server := NewServer(handler)
-			defer server.Shutdown(context.Background())
-			go server.ListenAndServe()
-
-			baseURL := "http://" + server.Addr
-
-			err := waitForServerToBecomeReady(baseURL)
-			if err != nil {
-				t.Errorf("Timed out waiting for the server to become ready: %v", err)
-			}
+			server := httptest.NewServer(handler)
+			defer server.Close()
 
 			handler.UpdateFromConfigMap(tt.config)
 
-			resp, err := sendRequest(baseURL + "/debug/pprof/")
+			resp, err := sendRequest(server.URL + "/debug/pprof/")
 			if err != nil {
 				t.Fatal("Error sending request:", err)
 			}
@@ -112,26 +101,10 @@ func TestUpdateFromConfigMap(t *testing.T) {
 	}
 }
 
-func waitForServerToBecomeReady(url string) error {
-	return wait.PollImmediate(5*time.Millisecond, 2*time.Second, func() (bool, error) {
-		if _, err := sendRequest(url); isTCPConnectRefuse(err) {
-			return false, nil
-		}
-		return true, nil
-	})
-}
-
 func sendRequest(url string) (*http.Response, error) {
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
 		return nil, err
 	}
 	return http.DefaultClient.Do(req)
-}
-
-func isTCPConnectRefuse(err error) bool {
-	if err != nil && strings.Contains(err.Error(), "connect: connection refused") {
-		return true
-	}
-	return false
 }

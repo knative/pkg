@@ -38,10 +38,10 @@ const (
 // Handler holds the main HTTP handler and a flag indicating
 // whether the handler is active
 type Handler struct {
-	enabled bool
-	handler http.Handler
-	log     *zap.SugaredLogger
-	mutex   sync.Mutex
+	enabled    bool
+	enabledMux sync.Mutex
+	handler    http.Handler
+	log        *zap.SugaredLogger
 }
 
 // NewHandler create a new ProfilingHandler which serves runtime profiling data
@@ -64,8 +64,8 @@ func NewHandler(logger *zap.SugaredLogger) *Handler {
 }
 
 func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	h.mutex.Lock()
-	defer h.mutex.Unlock()
+	h.enabledMux.Lock()
+	defer h.enabledMux.Unlock()
 	if h.enabled {
 		h.handler.ServeHTTP(w, r)
 	} else {
@@ -85,11 +85,13 @@ func (h *Handler) UpdateFromConfigMap(configMap *corev1.ConfigMap) {
 		h.log.Errorw("Failed to update profiling", zap.Error(err))
 		return
 	}
-	h.log.Infof("Profiling enabled: %t", enabled)
 
-	h.mutex.Lock()
-	defer h.mutex.Unlock()
-	h.enabled = enabled
+	h.enabledMux.Lock()
+	defer h.enabledMux.Unlock()
+	if h.enabled != enabled {
+		h.enabled = enabled
+		h.log.Infof("Profiling enabled: %t", h.enabled)
+	}
 }
 
 // NewServer creates a new http server that exposes profiling data using the
