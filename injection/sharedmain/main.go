@@ -131,7 +131,7 @@ func MainWithConfig(ctx context.Context, component string, cfg *rest.Config, cto
 		controllers = append(controllers, cf(ctx, cmw))
 	}
 
-	profilingHandler := profiling.NewHandler()
+	profilingHandler := profiling.NewHandler(logger)
 
 	// Watch the logging config map and dynamically update logging levels.
 	cmw.Watch(logging.ConfigMapName(), logging.UpdateLevelFromConfigMap(logger, atomicLevel, component))
@@ -139,7 +139,7 @@ func MainWithConfig(ctx context.Context, component string, cfg *rest.Config, cto
 	// Watch the observability config map
 	cmw.Watch(metrics.ConfigMapName(),
 		metrics.UpdateExporterFromConfigMap(component, logger),
-		profiling.UpdateProfilingFromConfigMap(profilingHandler, logger))
+		profilingHandler.UpdateFromConfigMap)
 
 	if err := cmw.Start(ctx.Done()); err != nil {
 		logger.Fatalw("failed to start configuration manager", zap.Error(err))
