@@ -18,7 +18,7 @@ package clustermanager
 
 // Client is the entrypoint
 type Client interface {
-	Setup(...interface{}) ClusterOperations
+	Setup(...interface{}) (ClusterOperations, error)
 }
 
 // ClusterOperations contains all provider specific logics

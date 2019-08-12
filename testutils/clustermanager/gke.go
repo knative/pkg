@@ -18,6 +18,9 @@ package clustermanager
 
 import (
 	"fmt"
+	"log"
+	"os/exec"
+	"strings"
 
 	"knative.dev/pkg/testutils/clustermanager/boskos"
 	"knative.dev/pkg/testutils/common"
@@ -44,21 +47,26 @@ type GKECluster struct {
 // region: default to regional cluster if not provided, and use default backup regions
 // zone: default is none, must be provided together with region
 func (gs *GKEClient) Setup(numNodes *int, nodeType *string, region *string, zone *string, project *string) (ClusterOperations, error) {
-	var err error
 	gc := &GKECluster{}
-	if nil != project { // use provided project and create cluster
+	// check for local run
+	if nil != project { // if project is supplied, use it and create cluster
 		gc.Project = project
 		gc.NeedCleanup = true
-	} else if err = gc.checkEnvironment(); nil != err {
+	} else if err := gc.checkEnvironment(); nil != err {
 		return nil, fmt.Errorf("failed checking existing cluster: '%v'", err)
-	}
-	if nil != gc.Cluster {
+	} else if nil != gc.Cluster { // return if Cluster was already set by kubeconfig
 		return gc, nil
 	}
+	// check for Prow
 	if common.IsProw() {
-		if *gc.Project, err = boskos.AcquireGKEProject(); nil != err {
+		if project, err := boskos.AcquireGKEProject(); nil != err {
 			return nil, fmt.Errorf("failed acquire boskos project: '%v'", err)
+		} else if "" != project {
+			gc.Project = &project
 		}
+	}
+	if nil == gc.Project {
+		return nil, fmt.Errorf("gcp project must be set")
 	}
 	return gc, nil
 }
@@ -91,6 +99,32 @@ func (gc *GKECluster) Delete() error {
 // and sets up gc.Project and gc.Cluster properly, otherwise fail it.
 // if project can be derived from gcloud, sets it up as well
 func (gc *GKECluster) checkEnvironment() error {
-	// TODO: implement this
+	// if kubeconfig is configured, use it
+	cmd := exec.Command("kubectl", "config", "current-context")
+	output, err := cmd.Output()
+	if nil == err {
+		// output should be in the form of gke_PROJECT_REGION_CLUSTER
+		parts := strings.Split(string(output), "_")
+		if len(parts) != 4 {
+			log.Fatalf("kubectl current-context is malformed: '%s'", string(output))
+		}
+		gc.Project = &parts[1]
+		gc.Cluster = &parts[3]
+		return nil
+	} else if string(output) != "" {
+		// this is unexpected error, should shout out directly
+		return fmt.Errorf("failed running kubectl config current-context: '%s'", string(output))
+	}
+
+	// if gcloud is pointing to a project, use it
+	cmd = exec.Command("gcloud", "config", "get-value", "project")
+	output, err = cmd.Output()
+	if nil != err {
+		return fmt.Errorf("failed getting gcloud project: '%v'", err)
+	} else if string(output) != "" {
+		project := string(output)
+		gc.Project = &project
+	}
+
 	return nil
 }
