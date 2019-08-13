@@ -56,10 +56,13 @@ func TestGKECheckEnvironment(t *testing.T) {
 			// kubeconfig correctly set
 			"a_b_c_d", nil, "", nil, &fakeProj, &fakeCluster, nil,
 		}, {
+			// kubeconfig not set and gcloud failed
 			"", fmt.Errorf("kubectl not set"), "", fmt.Errorf("gcloud failed"), nil, nil, fmt.Errorf("failed getting gcloud project: 'gcloud failed'"),
 		}, {
+			// kubeconfig not set and gcloud not set
 			"", fmt.Errorf("kubectl not set"), "", nil, nil, nil, nil,
 		}, {
+			// kubeconfig not set and gcloud set
 			"", fmt.Errorf("kubectl not set"), "b", nil, &fakeProj, nil, nil,
 		},
 	}

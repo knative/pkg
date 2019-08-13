@@ -18,7 +18,6 @@ package clustermanager
 
 import (
 	"fmt"
-	"os/exec"
 	"strings"
 
 	"knative.dev/pkg/testutils/clustermanager/boskos"
@@ -38,7 +37,7 @@ type GKECluster struct {
 	NeedCleanup bool
 	// TODO: evaluate returning "google.golang.org/api/container/v1.Cluster" when implementing the creation logic
 	Cluster *string
-
+	// Exec is the function used for execute standard shell functions, return stdout and stderr
 	Exec func(string, ...string) ([]byte, error)
 }
 
@@ -49,9 +48,7 @@ type GKECluster struct {
 // zone: default is none, must be provided together with region
 func (gs *GKEClient) Setup(numNodes *int, nodeType *string, region *string, zone *string, project *string) (ClusterOperations, error) {
 	gc := &GKECluster{
-		Exec: func(name string, args ...string) ([]byte, error) {
-			return exec.Command(name, args...).Output()
-		},
+		Exec: standardExec,
 	}
 	// check for local run
 	if nil != project { // if project is supplied, use it and create cluster
@@ -64,13 +61,13 @@ func (gs *GKEClient) Setup(numNodes *int, nodeType *string, region *string, zone
 	}
 	// check for Prow
 	if common.IsProw() {
-		if project, err := boskos.AcquireGKEProject(); nil != err {
+		project, err := boskos.AcquireGKEProject()
+		if nil != err {
 			return nil, fmt.Errorf("failed acquire boskos project: '%v'", err)
-		} else if "" != project {
-			gc.Project = &project
 		}
+		gc.Project = &project
 	}
-	if nil == gc.Project {
+	if nil == gc.Project || "" == *gc.Project {
 		return nil, fmt.Errorf("gcp project must be set")
 	}
 	return gc, nil
