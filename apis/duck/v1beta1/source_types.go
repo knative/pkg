@@ -17,7 +17,6 @@ limitations under the License.
 package v1beta1
 
 import (
-	"context"
 	"time"
 
 	corev1 "k8s.io/api/core/v1"
@@ -63,12 +62,6 @@ type SourceSpec struct {
 // CloudEventOverrides defines arguments for a Source that control the output
 // format of the CloudEvents produced by the Source.
 type CloudEventOverrides struct {
-	// OutputFormat describes the CloudEvent output format the source
-	// should send events in. All formats are over HTTP.
-	// Defaults to binary.
-	// +optional
-	OutputFormat OutputFormatType `json:"outputFormat,omitempty"`
-
 	// Extensions specify what attribute are added or overridden on the
 	// outbound event. Each `Extensions` key-value pair are set on the event as
 	// an attribute extension independently.
@@ -122,33 +115,6 @@ func (*Source) GetFullType() duck.Populatable {
 	return &Source{}
 }
 
-// OutputFormatType describes the data format that a Source is expected to output when it sends Cloud Events.
-type OutputFormatType string
-
-const (
-	// Sources are required to support structured and binary output formats.
-	// Any other format type is invalid.
-	OutputFormatStructured OutputFormatType = "structured"
-	OutputFormatBinary     OutputFormatType = "binary"
-)
-
-// Check that OutputFormatType is Validatable
-var _ apis.Validatable = OutputFormatType("")
-
-// Validate ensures that the OutputFormatType is one of the two allowed types.
-// It assumes that its field is "outputFormat".
-func (o OutputFormatType) Validate(ctx context.Context) *apis.FieldError {
-	switch o {
-	case OutputFormatStructured, OutputFormatBinary:
-		return nil
-	case "":
-		return apis.ErrMissingField(apis.CurrentField)
-	default:
-		// Not supported.
-		return apis.ErrInvalidValue(o, apis.CurrentField)
-	}
-}
-
 // Populate implements duck.Populatable
 func (s *Source) Populate() {
 	s.Spec.Sink = apisv1alpha1.Destination{
@@ -159,8 +125,7 @@ func (s *Source) Populate() {
 		},
 	}
 	s.Spec.CloudEventOverrides = &CloudEventOverrides{
-		OutputFormat: OutputFormatBinary,
-		Extensions:   map[string]string{"boosh": "kakow"},
+		Extensions: map[string]string{"boosh": "kakow"},
 	}
 	s.Status.ObservedGeneration = 42
 	s.Status.Conditions = Conditions{{
