@@ -184,3 +184,21 @@ invalid value: /path?query: path`,
 		})
 	}
 }
+
+func TestDestinationWithPath(t *testing.T) {
+	t.Run("uri has path", func(t *testing.T) {
+		uri, _ := apis.ParseURL("http://example.com/foo")
+		dest := NewDestinationURI(*uri)
+		if got, want := dest.Path, "/foo"; *got != want {
+			t.Errorf("Path was %q, wanted %q", *got, want)
+		}
+	})
+
+	t.Run("multipart path", func(t *testing.T) {
+		uri, _ := apis.ParseURL("http://example.com/foo")
+		dest := NewDestinationURI(*uri).WithPath("bar")
+		if got, want := *dest.Path, "/foo/bar"; got != want {
+			t.Errorf("Path was %q, wanted %q", got, want)
+		}
+	})
+}

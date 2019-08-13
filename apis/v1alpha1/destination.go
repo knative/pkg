@@ -19,6 +19,7 @@ package v1alpha1
 import (
 	"context"
 	"net/url"
+	"path"
 	"strings"
 
 	corev1 "k8s.io/api/core/v1"
@@ -39,6 +40,42 @@ type Destination struct {
 	// URI. Must start with `/`. Will be appended to the path of the resulting
 	// URL from the Addressable, or URI.
 	Path *string `json:"path,omitempty"`
+}
+
+// NewDestination constructs a Destination from an object reference as a convenience.
+func NewDestination(obj *corev1.ObjectReference) *Destination {
+	return &Destination{
+		ObjectReference: obj,
+	}
+}
+
+// NewDestinationURI constructs a Destination from a URI.
+func NewDestinationURI(uri apis.URL) *Destination {
+	dest := &Destination{
+		URI: &uri,
+	}
+
+	// Check the URI for a path -- path must be only in the Destination.Path field.
+	if uri.Path != "" {
+		// Create a new path string on the heap for the destination
+		path := uri.Path
+		dest.Path = &path
+
+		// Mutate the URI reference to not have a path
+		dest.URI.Path = ""
+		dest.URI.RawPath = ""
+	}
+
+	return dest
+}
+
+// WithPath mutates the path set for the Destination; for use with constructors.
+func (current *Destination) WithPath(newpath string) *Destination {
+	if current.Path != nil {
+		newpath = path.Join(*current.Path, newpath)
+	}
+	current.Path = &newpath
+	return current
 }
 
 func (current *Destination) Validate(ctx context.Context) *apis.FieldError {
