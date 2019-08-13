@@ -699,9 +699,13 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:9b9245bd124d95af7072487cd1e5861174b859ebc31cbe9fbab3b88456701485"
+  digest = "1:bcfc1adc3202f2ff120bc4686c613c8f34af0f9e3de49b55d3bbecd70dc6651b"
   name = "google.golang.org/api"
   packages = [
+    "container/v1",
+    "gensupport",
+    "googleapi",
+    "googleapi/internal/uritemplates",
     "googleapi/transport",
     "internal",
     "iterator",
@@ -1254,6 +1258,7 @@
     "go.uber.org/zap/zapcore",
     "go.uber.org/zap/zaptest",
     "golang.org/x/sync/errgroup",
+    "google.golang.org/api/container/v1",
     "gopkg.in/yaml.v2",
     "k8s.io/api/admission/v1beta1",
     "k8s.io/api/admissionregistration/v1beta1",
