@@ -18,7 +18,6 @@ package clustermanager
 
 import (
 	"fmt"
-	"log"
 	"os/exec"
 	"strings"
 
@@ -39,6 +38,8 @@ type GKECluster struct {
 	NeedCleanup bool
 	// TODO: evaluate returning "google.golang.org/api/container/v1.Cluster" when implementing the creation logic
 	Cluster *string
+
+	Exec func(string, ...string) ([]byte, error)
 }
 
 // Setup sets up a GKECluster client.
@@ -47,7 +48,11 @@ type GKECluster struct {
 // region: default to regional cluster if not provided, and use default backup regions
 // zone: default is none, must be provided together with region
 func (gs *GKEClient) Setup(numNodes *int, nodeType *string, region *string, zone *string, project *string) (ClusterOperations, error) {
-	gc := &GKECluster{}
+	gc := &GKECluster{
+		Exec: func(name string, args ...string) ([]byte, error) {
+			return exec.Command(name, args...).Output()
+		},
+	}
 	// check for local run
 	if nil != project { // if project is supplied, use it and create cluster
 		gc.Project = project
@@ -100,28 +105,28 @@ func (gc *GKECluster) Delete() error {
 // if project can be derived from gcloud, sets it up as well
 func (gc *GKECluster) checkEnvironment() error {
 	// if kubeconfig is configured, use it
-	cmd := exec.Command("kubectl", "config", "current-context")
-	output, err := cmd.Output()
+	output, err := gc.Exec("kubectl", "config", "current-context")
 	if nil == err {
 		// output should be in the form of gke_PROJECT_REGION_CLUSTER
 		parts := strings.Split(string(output), "_")
 		if len(parts) != 4 {
-			log.Fatalf("kubectl current-context is malformed: '%s'", string(output))
+			return fmt.Errorf("kubectl current-context is malformed: '%s'", string(output))
 		}
 		gc.Project = &parts[1]
 		gc.Cluster = &parts[3]
 		return nil
-	} else if string(output) != "" {
+	}
+	if string(output) != "" {
 		// this is unexpected error, should shout out directly
 		return fmt.Errorf("failed running kubectl config current-context: '%s'", string(output))
 	}
 
 	// if gcloud is pointing to a project, use it
-	cmd = exec.Command("gcloud", "config", "get-value", "project")
-	output, err = cmd.Output()
+	output, err = gc.Exec("gcloud", "config", "get-value", "project")
 	if nil != err {
 		return fmt.Errorf("failed getting gcloud project: '%v'", err)
-	} else if string(output) != "" {
+	}
+	if string(output) != "" {
 		project := string(output)
 		gc.Project = &project
 	}
