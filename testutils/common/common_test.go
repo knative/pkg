@@ -63,15 +63,15 @@ func TestGetRepoName(t *testing.T) {
 		},
 	}
 
-	oldFunc := Exec
+	oldFunc := StandardExec
 	defer func() {
 		// restore
-		Exec = oldFunc
+		StandardExec = oldFunc
 	}()
 
 	for _, data := range datas {
 		// mock for testing
-		Exec = func(name string, args ...string) ([]byte, error) {
+		StandardExec = func(name string, args ...string) ([]byte, error) {
 			return []byte(data.out), data.err
 		}
 

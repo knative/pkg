@@ -69,22 +69,23 @@ func TestGKECheckEnvironment(t *testing.T) {
 		},
 	}
 
-	oldFunc := common.Exec
+	oldFunc := common.StandardExec
 	defer func() {
 		// restore
-		common.Exec = oldFunc
+		common.StandardExec = oldFunc
 	}()
 
 	for _, data := range datas {
 		gc := GKECluster{}
 		// mock for testing
-		common.Exec = func(name string, args ...string) ([]byte, error) {
+		common.StandardExec = func(name string, args ...string) ([]byte, error) {
 			var out []byte
 			var err error
-			if "gcloud" == name {
+			switch name {
+			case "gcloud":
 				out = []byte(data.gcloudOut)
 				err = data.gcloudErr
-			} else if "kubectl" == name {
+			case "kubectl":
 				out = []byte(data.kubectlOut)
 				err = data.kubectlErr
 			}

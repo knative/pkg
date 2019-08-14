@@ -27,24 +27,23 @@ import (
 var (
 	// GetOSEnv is for easier mocking in unit tests
 	GetOSEnv = os.Getenv
-	// Exec is for easier mocking in unit tests
-	Exec = StandardExec
+	// StandardExec is for easier mocking in unit tests
+	StandardExec = standardExec
 )
 
-// StandardExec executes shell command and returns stdout and stderr
-func StandardExec(name string, args ...string) ([]byte, error) {
+// standardExec executes shell command and returns stdout and stderr
+func standardExec(name string, args ...string) ([]byte, error) {
 	return exec.Command(name, args...).Output()
 }
 
 // IsProw checks if the process is initialized by Prow
 func IsProw() bool {
-	// TODO: Implement
-	return true
+	return "" != GetOSEnv("PROW_JOB_ID")
 }
 
 // GetRepoName gets repo name by the path where the repo cloned to
 func GetRepoName() (string, error) {
-	out, err := Exec("git", "rev-parse", "--show-toplevel")
+	out, err := StandardExec("git", "rev-parse", "--show-toplevel")
 	if nil != err {
 		return "", fmt.Errorf("failed git rev-parse --show-toplevel: '%v'", err)
 	}

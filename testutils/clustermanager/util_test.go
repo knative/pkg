@@ -23,10 +23,13 @@ import (
 )
 
 func TestGetResourceName(t *testing.T) {
-	buildNumStr := "12345678901234567890fakebuildnum"
-	expOut := "kpkg-e2e-cls"
-	if common.IsProw() {
-		expOut = "kpkg-e2e-cls-12345678901234567890"
+	datas := []struct {
+		isProw      bool
+		buildNumStr string
+		exp         string
+	}{
+		{true, "12345678901234567890fakebuildnum", "kpkg-e2e-cls-12345678901234567890"},
+		{false, "", "kpkg-e2e-cls"},
 	}
 
 	// mock GetOSEnv for testing
@@ -35,15 +38,25 @@ func TestGetResourceName(t *testing.T) {
 		// restore GetOSEnv
 		common.GetOSEnv = oldFunc
 	}()
-	common.GetOSEnv = func(key string) string {
-		return buildNumStr
-	}
+	for _, data := range datas {
+		common.GetOSEnv = func(key string) string {
+			if data.isProw {
+				switch key {
+				case "BUILD_NUMBER":
+					return data.buildNumStr
+				case "PROW_JOB_ID": // needed to mock IsProw()
+					return "jobid"
+				}
+			}
+			return ""
+		}
 
-	out, err := getResourceName(ClusterResource)
-	if nil != err {
-		t.Fatalf("getting resource name for cluster, wanted: 'no error', got: '%v'", err)
-	}
-	if out != expOut {
-		t.Fatalf("getting resource name for cluster, wanted: '%s', got: '%s'", expOut, out)
+		out, err := getResourceName(ClusterResource)
+		if nil != err {
+			t.Fatalf("getting resource name for cluster, wanted: 'no error', got: '%v'", err)
+		}
+		if out != data.exp {
+			t.Fatalf("getting resource name for cluster, wanted: '%s', got: '%s'", data.exp, out)
+		}
 	}
 }

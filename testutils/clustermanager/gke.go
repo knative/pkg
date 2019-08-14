@@ -98,7 +98,7 @@ func (gc *GKECluster) Delete() error {
 // if project can be derived from gcloud, sets it up as well
 func (gc *GKECluster) checkEnvironment() error {
 	// if kubeconfig is configured, use it
-	output, err := common.Exec("kubectl", "config", "current-context")
+	output, err := common.StandardExec("kubectl", "config", "current-context")
 	if nil == err {
 		// output should be in the form of gke_PROJECT_REGION_CLUSTER
 		parts := strings.Split(string(output), "_")
@@ -115,7 +115,7 @@ func (gc *GKECluster) checkEnvironment() error {
 	}
 
 	// if gcloud is pointing to a project, use it
-	output, err = common.Exec("gcloud", "config", "get-value", "project")
+	output, err = common.StandardExec("gcloud", "config", "get-value", "project")
 	if nil != err {
 		return fmt.Errorf("failed getting gcloud project: '%v'", err)
 	}
