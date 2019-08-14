@@ -16,14 +16,11 @@ limitations under the License.
 
 package clustermanager
 
-// Client is the entrypoint
-type Client interface {
-	Setup(...interface{}) (ClusterOperations, error)
-}
+import (
+	"os/exec"
+)
 
-// ClusterOperations contains all provider specific logics
-type ClusterOperations interface {
-	Provider() string
-	Acquire() error
-	Delete() error
+// standardExec executes shell command and returns stdout and stderr
+func standardExec(name string, args ...string) ([]byte, error) {
+	return exec.Command(name, args...).Output()
 }
