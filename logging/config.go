@@ -60,7 +60,7 @@ func NewLogger(configJSON string, levelOverride string, opts ...zap.Option) (*za
 }
 
 func enrichLoggerWithCommitID(logger *zap.SugaredLogger) *zap.SugaredLogger {
-	commmitID, err := changeset.Get()
+	commmitID, err := changeset.GetHead()
 	if err == nil {
 		// Enrich logs with GitHub commit ID.
 		return logger.With(zap.String(logkey.GitHubCommitID, commmitID))
