@@ -17,29 +17,46 @@ limitations under the License.
 package clustermanager
 
 import (
-	"fmt"
-	"reflect"
 	"testing"
+
+	"knative.dev/pkg/testutils/common"
 )
 
-func TestStandardExec(t *testing.T) {
+func TestGetResourceName(t *testing.T) {
 	datas := []struct {
-		cmd    string
-		args   []string
-		expOut string
-		expErr error
+		isProw      bool
+		buildNumStr string
+		exp         string
 	}{
-		{"bash", []string{"-c", "echo foo"}, "foo\n", nil},
-		{"cmd_not_exist", []string{"-c", "echo"}, "", fmt.Errorf("exec: \"cmd_not_exist\": executable file not found in $PATH")},
+		{true, "12345678901234567890fakebuildnum", "kpkg-e2e-cls-12345678901234567890"},
+		{false, "", "kpkg-e2e-cls"},
 	}
 
+	// mock GetOSEnv for testing
+	oldFunc := common.GetOSEnv
+	defer func() {
+		// restore GetOSEnv
+		common.GetOSEnv = oldFunc
+	}()
 	for _, data := range datas {
-		data := data
-		out, err := standardExec(data.cmd, data.args...)
-		if !reflect.DeepEqual(string(out), data.expOut) || (nil == err && nil != data.expErr) || (nil != err && nil == data.expErr) ||
-			(nil != err && nil != data.expErr && err.Error() != data.expErr.Error()) {
-			t.Errorf("running cmd: '%v', args: '%v'\nwant: out - '%v', err - '%v'\n got: out - '%s', err - '%v'",
-				data.cmd, data.args, data.expOut, data.expErr, string(out), err)
+		common.GetOSEnv = func(key string) string {
+			if data.isProw {
+				switch key {
+				case "BUILD_NUMBER":
+					return data.buildNumStr
+				case "PROW_JOB_ID": // needed to mock IsProw()
+					return "jobid"
+				}
+			}
+			return ""
+		}
+
+		out, err := getResourceName(ClusterResource)
+		if nil != err {
+			t.Fatalf("getting resource name for cluster, wanted: 'no error', got: '%v'", err)
+		}
+		if out != data.exp {
+			t.Fatalf("getting resource name for cluster, wanted: '%s', got: '%s'", data.exp, out)
 		}
 	}
 }

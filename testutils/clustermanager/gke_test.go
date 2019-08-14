@@ -20,6 +20,8 @@ import (
 	"fmt"
 	"reflect"
 	"testing"
+
+	"knative.dev/pkg/testutils/common"
 )
 
 var (
@@ -67,21 +69,29 @@ func TestGKECheckEnvironment(t *testing.T) {
 		},
 	}
 
+	oldFunc := common.StandardExec
+	defer func() {
+		// restore
+		common.StandardExec = oldFunc
+	}()
+
 	for _, data := range datas {
-		gc := GKECluster{
-			Exec: func(name string, args ...string) ([]byte, error) {
-				var out []byte
-				var err error
-				if "gcloud" == name {
-					out = []byte(data.gcloudOut)
-					err = data.gcloudErr
-				} else if "kubectl" == name {
-					out = []byte(data.kubectlOut)
-					err = data.kubectlErr
-				}
-				return out, err
-			},
+		gc := GKECluster{}
+		// mock for testing
+		common.StandardExec = func(name string, args ...string) ([]byte, error) {
+			var out []byte
+			var err error
+			switch name {
+			case "gcloud":
+				out = []byte(data.gcloudOut)
+				err = data.gcloudErr
+			case "kubectl":
+				out = []byte(data.kubectlOut)
+				err = data.kubectlErr
+			}
+			return out, err
 		}
+
 		if err := gc.checkEnvironment(); !reflect.DeepEqual(err, data.expErr) || !reflect.DeepEqual(gc.Project, data.expProj) || !reflect.DeepEqual(gc.Cluster, data.expCluster) {
 			t.Errorf("check environment with:\n\tkubectl output: '%s'\n\t\terror: '%v'\n\tgcloud output: '%s'\n\t\t"+
 				"error: '%v'\nwant: project - '%v', cluster - '%v', err - '%v'\ngot: project - '%v', cluster - '%v', err - '%v'",
