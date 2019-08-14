@@ -26,18 +26,19 @@ import (
 )
 
 const (
-	commitIDFile      = "HEAD"
-	koDataPathEnvName = "KO_DATA_PATH"
+	headCommitIDFile   = "HEAD"
+	masterCommitIDFile = "master"
+	koDataPathEnvName  = "KO_DATA_PATH"
 )
 
 var (
 	commitIDRE = regexp.MustCompile(`^[a-f0-9]{40}$`)
 )
 
-// Get tries to fetch the first 7 digitals of GitHub commit ID from HEAD file in
+// get tries to fetch the first 7 digitals of GitHub commit ID from given file in
 // KO_DATA_PATH. If it fails, it returns the error it gets.
-func Get() (string, error) {
-	data, err := readFileFromKoData(commitIDFile)
+func get(file string) (string, error) {
+	data, err := readFileFromKoData(file)
 	if err != nil {
 		return "", err
 	}
@@ -47,6 +48,18 @@ func Get() (string, error) {
 		return "", err
 	}
 	return string(commitID[0:7]), nil
+}
+
+// GetMasterBranch tries to fetch the first 7 digitals of GitHub commit ID from master in
+// KO_DATA_PATH. If it fails, it returns the error it gets.
+func GetMasterBranch() (string, error) {
+	return get(masterCommitIDFile)
+}
+
+// GetHead tries to fetch the first 7 digitals of GitHub commit ID from HEAD in
+// KO_DATA_PATH. If it fails, it returns the error it gets.
+func GetHead() (string, error) {
+	return get(headCommitIDFile)
 }
 
 // readFileFromKoData tries to read data as string from the file with given name

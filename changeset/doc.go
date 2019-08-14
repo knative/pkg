@@ -17,7 +17,10 @@ limitations under the License.
 // Package changeset provides Knative utilities for fetching GitHub Commit ID
 // from kodata directory. It requires GitHub HEAD file to be linked into
 // Knative component source code via the following command:
-//   ln -s -r .git/HEAD ./cmd/<knative-component-name>/kodata/
+//   Detached Head: ln -s -r .git/HEAD ./cmd/<knative-component-name>/kodata/
+//   Master branch: ln -s -r .git/refs/heads/master ./cmd/<knative-component-name>/kodata/
 // Then ko will build this file into $KO_DATA_PATH when building the container
 // for a Knative component.
+// ./git/HEAD points to a commitId only in detached head case. Else, it will always link to
+// the branch refs we are currently on.
 package changeset

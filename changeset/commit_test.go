@@ -28,7 +28,7 @@ const (
 	testCommitID            = "a2d1bdf"
 )
 
-func TestReadFile(t *testing.T) {
+func TestReadFileHEAD(t *testing.T) {
 	tests := []struct {
 		name                      string
 		koDataPath                string
@@ -70,7 +70,57 @@ func TestReadFile(t *testing.T) {
 				os.Setenv(koDataPathEnvName, test.koDataPath)
 			}
 
-			got, err := Get()
+			got, err := GetHead()
+
+			if (err != nil) != test.wantErr {
+				t.Errorf("Get() = %v", err)
+			}
+			if !test.wantErr {
+				if test.want != got {
+					t.Errorf("wanted %q but got %q", test.want, got)
+				}
+			} else {
+				if err == nil || err.Error() != test.err.Error() {
+					t.Errorf("wanted error %v but got: %v", test.err, err)
+				}
+			}
+		})
+	}
+}
+
+func TestReadFileMaster(t *testing.T) {
+	tests := []struct {
+		name                      string
+		koDataPath                string
+		koDataPathEnvDoesNotExist bool
+		want                      string
+		wantErr                   bool
+		err                       error
+	}{{
+		name:       "master branch",
+		koDataPath: "testdata",
+		want:       testCommitID,
+	}, {
+		name:       "KO_DATA_PATH is empty",
+		koDataPath: "",
+		wantErr:    true,
+		err:        fmt.Errorf("%q does not exist or is empty", koDataPathEnvName),
+	}, {
+		name:                      "KO_DATA_PATH does not exist",
+		koDataPath:                "",
+		wantErr:                   true,
+		koDataPathEnvDoesNotExist: true,
+		err:                       fmt.Errorf("%q does not exist or is empty", koDataPathEnvName),
+	}}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			if test.koDataPathEnvDoesNotExist {
+				os.Clearenv()
+			} else {
+				os.Setenv(koDataPathEnvName, test.koDataPath)
+			}
+
+			got, err := GetMasterBranch()
 
 			if (err != nil) != test.wantErr {
 				t.Errorf("Get() = %v", err)
