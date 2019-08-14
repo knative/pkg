@@ -186,19 +186,73 @@ invalid value: /path?query: path`,
 }
 
 func TestDestinationWithPath(t *testing.T) {
-	t.Run("uri has path", func(t *testing.T) {
-		uri, _ := apis.ParseURL("http://example.com/foo")
-		dest := NewDestinationURI(*uri)
-		if got, want := dest.Path, "/foo"; *got != want {
-			t.Errorf("Path was %q, wanted %q", *got, want)
-		}
-	})
+	tests := []struct {
+		name     string
+		base     string
+		paths    []string
+		wantpath *string
+	}{{
+		name:     "no path",
+		base:     "http://example.com/",
+		paths:    []string{},
+		wantpath: nil,
+	}, {
+		name:     "path in base",
+		base:     "http://example.com/foo",
+		paths:    []string{},
+		wantpath: nil,
+	}, {
+		name:     "extra path",
+		base:     "http://example.com/foo",
+		paths:    []string{"bar"},
+		wantpath: ptr.String("/bar"),
+	}, {
+		name:     "many paths",
+		base:     "http://example.com/",
+		paths:    []string{"foo", "bar", "baz"},
+		wantpath: ptr.String("/foo/bar/baz"),
+	}, {
+		name:     "badly formatted paths",
+		base:     "http://example.com/",
+		paths:    []string{"////foo/////", "//bar///baz//", "///////"},
+		wantpath: ptr.String("/foo/bar/baz"),
+	}, {
+		name:     "empty string path",
+		base:     "http://example.com/",
+		paths:    []string{""},
+		wantpath: nil,
+	}, {
+		name:     "path with arguments",
+		base:     "https://tableflip.dev/",
+		paths:    []string{"?flip=scott"},
+		wantpath: nil,
+	}, {
+		name:     "path with lots of garbage",
+		base:     "https://example.com/",
+		paths:    []string{"/foo", "bar", "myblog#HowToWriteTests", "%2e", "/?q=knative"},
+		wantpath: ptr.String("/foo/bar/myblog"),
+	}}
 
-	t.Run("multipart path", func(t *testing.T) {
-		uri, _ := apis.ParseURL("http://example.com/foo")
-		dest := NewDestinationURI(*uri).WithPath("bar")
-		if got, want := *dest.Path, "/foo/bar"; got != want {
-			t.Errorf("Path was %q, wanted %q", got, want)
-		}
-	})
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			uri, err := apis.ParseURL(test.base)
+			if err != nil {
+				t.Errorf("Could not parse URI: %v", err)
+				return
+			}
+			dest, err := NewDestinationURI(uri, test.paths...)
+			if err != nil {
+				t.Errorf("Could not create destination: %v", err)
+				return
+			}
+			if dest.Path == nil {
+				if test.wantpath != nil {
+					t.Errorf("Destination path is nil, but wanted %q", *test.wantpath)
+					return
+				}
+			} else if *dest.Path != *test.wantpath {
+				t.Errorf("Got %q, wanted %q", *dest.Path, *test.wantpath)
+			}
+		})
+	}
 }
