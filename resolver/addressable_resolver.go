@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v1alpha1
+package apis
 
 import (
 	"context"
@@ -27,7 +27,8 @@ import (
 	"knative.dev/eventing/pkg/reconciler/names"
 	"knative.dev/pkg/apis"
 	pkgapisduck "knative.dev/pkg/apis/duck"
-	duckv1alpha1 "knative.dev/pkg/apis/duck/v1alpha1"
+	duckv1beta1 "knative.dev/pkg/apis/duck/v1beta1"
+	apisv1alpha1 "knative.dev/pkg/apis/v1alpha1"
 	"knative.dev/pkg/controller"
 	"knative.dev/pkg/tracker"
 
@@ -50,7 +51,7 @@ func NewAddressableResolver(ctx context.Context, callback func(string)) *Address
 		Delegate: &pkgapisduck.EnqueueInformerFactory{
 			Delegate: &pkgapisduck.TypedInformerFactory{
 				Client:       dynamicclient.Get(ctx),
-				Type:         &duckv1alpha1.AddressableType{},
+				Type:         &duckv1beta1.AddressableType{},
 				ResyncPeriod: controller.GetResyncPeriod(ctx),
 				StopChannel:  ctx.Done(),
 			},
@@ -62,7 +63,7 @@ func NewAddressableResolver(ctx context.Context, callback func(string)) *Address
 }
 
 // GetURI resolves a Destination into a URI string.
-func (r *AddressableResolver) GetURI(dest Destination, parent interface{}) (string, error) {
+func (r *AddressableResolver) GetURI(dest apisv1alpha1.Destination, parent interface{}) (string, error) {
 	// Prefer resolved object reference + path, then try URI + path, honoring the Destination documentation
 	if dest.ObjectReference != nil {
 		url, err := r.resolveObjectReference(dest.ObjectReference, parent)
@@ -108,18 +109,21 @@ func (r *AddressableResolver) resolveObjectReference(ref *corev1.ObjectReference
 		return nil, fmt.Errorf("failed to get ref %+v: %+v", ref, err)
 	}
 
-	addressable, ok := obj.(*duckv1alpha1.AddressableType)
+	addressable, ok := obj.(*duckv1beta1.AddressableType)
 	if !ok {
 		return nil, fmt.Errorf("%+v is not an AddressableType", ref)
 	}
 	if addressable.Status.Address == nil {
 		return nil, fmt.Errorf("address not set for %+v", ref)
 	}
-	url := addressable.Status.Address.GetURL()
+	url := addressable.Status.Address.URL
+	if url == nil {
+		return nil, fmt.Errorf("URL missing in address for %+v", ref)
+	}
 	if url.Host == "" {
 		return nil, fmt.Errorf("missing hostname in address of %+v", ref)
 	}
-	return &url, nil
+	return url, nil
 }
 
 // extendPath is a convenience wrapper to add a destination's path.
