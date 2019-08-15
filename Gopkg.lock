@@ -320,6 +320,14 @@
   revision = "f2b4162afba35581b6d4a50d3b8f34e33c144682"
 
 [[projects]]
+  digest = "1:4727191e7f3acb2d87cedda2eccf796186e4da599dbbc9d79956d5fe740940a9"
+  name = "github.com/knative/eventing"
+  packages = ["pkg/utils"]
+  pruneopts = "NUT"
+  revision = "86064bdeeb7635ae7dfe903bd085ede9ea29b4aa"
+  version = "v0.4.1"
+
+[[projects]]
   branch = "master"
   digest = "1:927762c6729b4e72957ba3310e485ed09cf8451c5a637a52fd016a9fe09e7936"
   name = "github.com/mailru/easyjson"
@@ -1151,6 +1159,14 @@
   revision = "33be087ad058f99c78e067996202b60230737e49"
 
 [[projects]]
+  digest = "1:7bb559195de21c4cadfcbfad1c84b9e7d41825dba43016f8d08ddbb50858400e"
+  name = "knative.dev/eventing"
+  packages = ["pkg/reconciler/names"]
+  pruneopts = "NUT"
+  revision = "a59dae6f326057211f43f7c2d1414a9fd821b8aa"
+  version = "v0.8.0"
+
+[[projects]]
   branch = "master"
   digest = "1:39bb1014c454fbf9d8f4eab62a44fcf8d3ade774e2b42015e533e5d9f3fe23d9"
   name = "knative.dev/test-infra"
@@ -1245,6 +1261,7 @@
     "k8s.io/client-go/informers/rbac/v1",
     "k8s.io/client-go/kubernetes",
     "k8s.io/client-go/kubernetes/fake",
+    "k8s.io/client-go/kubernetes/scheme",
     "k8s.io/client-go/kubernetes/typed/admissionregistration/v1beta1",
     "k8s.io/client-go/kubernetes/typed/core/v1",
     "k8s.io/client-go/plugin/pkg/client/auth/gcp",
@@ -1268,6 +1285,7 @@
     "k8s.io/gengo/namer",
     "k8s.io/gengo/types",
     "k8s.io/klog",
+    "knative.dev/eventing/pkg/reconciler/names",
     "knative.dev/test-infra/scripts",
     "knative.dev/test-infra/tools/dep-collector",
   ]
