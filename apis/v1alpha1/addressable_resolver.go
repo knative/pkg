@@ -63,7 +63,7 @@ func NewAddressableResolver(ctx context.Context, callback func(string)) *Address
 
 // GetURI resolves a Destination into a URI string.
 func (r *AddressableResolver) GetURI(dest Destination, parent interface{}) (string, error) {
-	// sinkObjRef *corev1.ObjectReference, source interface{}, sourceDesc string
+	// Prefer resolved object reference + path, then try URI + path, honoring the Destination documentation
 	if dest.ObjectReference != nil {
 		url, err := r.resolveObjectReference(dest.ObjectReference, parent)
 		if err != nil {
