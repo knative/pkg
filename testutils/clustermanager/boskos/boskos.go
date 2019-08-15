@@ -28,12 +28,12 @@ import (
 )
 
 const (
-	boskosURI = "http://boskos.test-pods.svc.cluster.local."
 	// GKEProjectResource is resource type defined for GKE projects
 	GKEProjectResource = "gke-project"
 )
 
 var (
+	boskosURI           = "http://boskos.test-pods.svc.cluster.local."
 	defaultHost         = common.GetOSEnv("JOB_NAME")
 	defaultWaitDuration = time.Minute * 20
 )
