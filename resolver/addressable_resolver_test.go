@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package apis
+package resolver_test
 
 import (
 	"context"
@@ -31,6 +31,7 @@ import (
 	apisv1alpha1 "knative.dev/pkg/apis/v1alpha1"
 	fakedynamicclient "knative.dev/pkg/injection/clients/dynamicclient/fake"
 	"knative.dev/pkg/ptr"
+	"knative.dev/pkg/resolver"
 )
 
 var (
@@ -151,7 +152,7 @@ func TestGetURI_ObjectReference(t *testing.T) {
 	for n, tc := range tests {
 		t.Run(n, func(t *testing.T) {
 			ctx, _ := fakedynamicclient.With(context.Background(), scheme.Scheme, tc.objects...)
-			r := NewAddressableResolver(ctx, func(string) {})
+			r := resolver.NewForDestination(ctx, func(string) {})
 			uri, gotErr := r.GetURI(tc.dest, getAddressable())
 			if gotErr != nil {
 				if tc.wantErr != nil {
