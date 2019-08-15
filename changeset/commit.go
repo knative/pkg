@@ -42,11 +42,18 @@ func Get() (string, error) {
 		return "", err
 	}
 	commitID := strings.TrimSpace(string(data))
-	if !commitIDRE.MatchString(commitID) {
-		err := fmt.Errorf("%q is not a valid GitHub commit ID", commitID)
-		return "", err
+	if strings.HasPrefix(commitID, "ref: ") {
+		refName := commitID[len("ref: "):]
+		data, err := readFileFromKoData(refName)
+		if err != nil {
+			return "", err
+		}
+		commitID = strings.TrimSpace(string(data))
 	}
-	return string(commitID[0:7]), nil
+	if commitIDRE.MatchString(commitID) {
+		return commitID[:7], nil
+	}
+	return "", fmt.Errorf("%q is not a valid GitHub commit ID", commitID)
 }
 
 // readFileFromKoData tries to read data as string from the file with given name

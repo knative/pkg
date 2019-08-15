@@ -24,8 +24,8 @@ import (
 )
 
 const (
-	nonCommittedHeadContext = "ref: refs/heads/non_committed_branch"
-	testCommitID            = "a2d1bdf"
+	nonCommittedHeadRef = "refs/heads/non_committed_branch"
+	testCommitID        = "a2d1bdf"
 )
 
 func TestReadFile(t *testing.T) {
@@ -41,10 +41,19 @@ func TestReadFile(t *testing.T) {
 		koDataPath: "testdata",
 		want:       testCommitID,
 	}, {
-		name:       "non committed branch",
+		name:       "no refs link",
 		koDataPath: "testdata/noncommitted",
 		wantErr:    true,
-		err:        fmt.Errorf("%q is not a valid GitHub commit ID", nonCommittedHeadContext),
+		err:        fmt.Errorf("open testdata/noncommitted/%s: no such file or directory", nonCommittedHeadRef),
+	}, {
+		name:       "with refs link",
+		koDataPath: "testdata/with-refs",
+		want:       testCommitID,
+	}, {
+		name:       "with bad content",
+		koDataPath: "testdata/garbage",
+		wantErr:    true,
+		err:        fmt.Errorf(`"garbage contents" is not a valid GitHub commit ID`),
 	}, {
 		name:       "KO_DATA_PATH is empty",
 		koDataPath: "",
