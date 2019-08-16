@@ -152,8 +152,8 @@ func TestGetURI_ObjectReference(t *testing.T) {
 	for n, tc := range tests {
 		t.Run(n, func(t *testing.T) {
 			ctx, _ := fakedynamicclient.With(context.Background(), scheme.Scheme, tc.objects...)
-			r := resolver.NewForDestination(ctx, func(string) {})
-			uri, gotErr := r.GetURI(tc.dest, getAddressable())
+			r := resolver.NewURIResolver(ctx, func(string) {})
+			uri, gotErr := r.URIFromDestination(tc.dest, getAddressable())
 			if gotErr != nil {
 				if tc.wantErr != nil {
 					if diff := cmp.Diff(tc.wantErr.Error(), gotErr.Error()); diff != "" {

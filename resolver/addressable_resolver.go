@@ -35,16 +35,14 @@ import (
 	"knative.dev/pkg/injection/clients/dynamicclient"
 )
 
-// ForDestination resolves a Destination into a URI.
-// This is a helper component for resources that references other resources' addresses.
-type ForDestination struct {
+// URIResolver resolves Destinations and ObjectReferences into a URI.
+type URIResolver struct {
 	tracker         tracker.Interface
 	informerFactory pkgapisduck.InformerFactory
 }
 
-// NewForDestination creates and initializes a new resolver.ForDestination.
-func NewForDestination(ctx context.Context, callback func(string)) *ForDestination {
-	ret := &ForDestination{}
+func NewURIResolver(ctx context.Context, callback func(string)) *URIResolver {
+	ret := &URIResolver{}
 
 	ret.tracker = tracker.New(callback, controller.GetTrackerLease(ctx))
 	ret.informerFactory = &pkgapisduck.CachedInformerFactory{
@@ -62,11 +60,11 @@ func NewForDestination(ctx context.Context, callback func(string)) *ForDestinati
 	return ret
 }
 
-// GetURI resolves a Destination into a URI string.
-func (r *ForDestination) GetURI(dest apisv1alpha1.Destination, parent interface{}) (string, error) {
+// URIFromDestination resolves a Destination into a URI string.
+func (r *URIResolver) URIFromDestination(dest apisv1alpha1.Destination, parent interface{}) (string, error) {
 	// Prefer resolved object reference + path, then try URI + path, honoring the Destination documentation
 	if dest.ObjectReference != nil {
-		url, err := r.resolveObjectReference(dest.ObjectReference, parent)
+		url, err := r.URIFromObjectReference(dest.ObjectReference, parent)
 		if err != nil {
 			return "", err
 		}
@@ -78,7 +76,8 @@ func (r *ForDestination) GetURI(dest apisv1alpha1.Destination, parent interface{
 	}
 }
 
-func (r *ForDestination) resolveObjectReference(ref *corev1.ObjectReference, parent interface{}) (*apis.URL, error) {
+// URIFromObjectReference resolves an ObjectReference to a URI string.
+func (r *URIResolver) URIFromObjectReference(ref *corev1.ObjectReference, parent interface{}) (*apis.URL, error) {
 	if ref == nil {
 		return nil, fmt.Errorf("ref is nil")
 	}
