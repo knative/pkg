@@ -86,14 +86,14 @@ func TestUpdateFromConfigMap(t *testing.T) {
 				Data: map[string]string{},
 			})
 
-			rr := httptest.NewRecorder()
-
 			handler.UpdateFromConfigMap(tt.config)
 
 			req, err := http.NewRequest(http.MethodGet, "/debug/pprof/", nil)
 			if err != nil {
 				t.Fatal("Error creating request:", err)
 			}
+
+			rr := httptest.NewRecorder()
 
 			handler.ServeHTTP(rr, req)
 

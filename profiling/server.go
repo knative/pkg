@@ -17,12 +17,12 @@ limitations under the License.
 package profiling
 
 import (
-	"errors"
 	"net/http"
 	"net/http/pprof"
 	"strconv"
 	"sync"
 
+	perrors "github.com/pkg/errors"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 )
@@ -85,7 +85,7 @@ func readProfilingFlag(configMap *corev1.ConfigMap) (bool, error) {
 	}
 	enabled, err := strconv.ParseBool(profiling)
 	if err != nil {
-		return false, errors.New("Failed to parse the profiling flag")
+		return false, perrors.Wrapf(err, "failed to parse the profiling flag")
 	}
 	return enabled, nil
 }
