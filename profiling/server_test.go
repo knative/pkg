@@ -85,19 +85,20 @@ func TestUpdateFromConfigMap(t *testing.T) {
 				},
 				Data: map[string]string{},
 			})
-			server := httptest.NewServer(handler)
-			defer server.Close()
+
+			rr := httptest.NewRecorder()
 
 			handler.UpdateFromConfigMap(tt.config)
 
-			resp, err := sendRequest(server.URL + "/debug/pprof/")
+			req, err := http.NewRequest(http.MethodGet, "/debug/pprof/", nil)
 			if err != nil {
-				t.Fatal("Error sending request:", err)
+				t.Fatal("Error creating request:", err)
 			}
-			defer resp.Body.Close()
 
-			if resp.StatusCode != tt.wantStatusCode {
-				t.Errorf("StatusCode: %v, want: %v", resp.StatusCode, tt.wantStatusCode)
+			handler.ServeHTTP(rr, req)
+
+			if rr.Code != tt.wantStatusCode {
+				t.Errorf("StatusCode: %v, want: %v", rr.Code, tt.wantStatusCode)
 			}
 
 			if handler.enabled != tt.wantEnabled {
@@ -105,12 +106,4 @@ func TestUpdateFromConfigMap(t *testing.T) {
 			}
 		})
 	}
-}
-
-func sendRequest(url string) (*http.Response, error) {
-	req, err := http.NewRequest(http.MethodGet, url, nil)
-	if err != nil {
-		return nil, err
-	}
-	return http.DefaultClient.Do(req)
 }
