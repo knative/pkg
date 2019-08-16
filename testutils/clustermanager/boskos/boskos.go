@@ -34,19 +34,19 @@ const (
 
 var (
 	boskosURI           = "http://boskos.test-pods.svc.cluster.local."
-	defaultHost         = common.GetOSEnv("JOB_NAME")
 	defaultWaitDuration = time.Minute * 20
 )
 
 func newClient(host *string) *boskosclient.Client {
 	if nil == host {
-		host = &defaultHost
+		hostName := common.GetOSEnv("JOB_NAME")
+		host = &hostName
 	}
 	return boskosclient.NewClient(*host, boskosURI)
 }
 
 // AcquireGKEProject acquires GKE Boskos Project with "free" state, and not
-// owned by anyone, sets its state to "busy" and assign it an owmner of *host,
+// owned by anyone, sets its state to "busy" and assign it an owner of *host,
 // which by default is env var `JOB_NAME`.
 func AcquireGKEProject(host *string) (*boskoscommon.Resource, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), defaultWaitDuration)
