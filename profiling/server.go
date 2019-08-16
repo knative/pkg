@@ -17,6 +17,7 @@ limitations under the License.
 package profiling
 
 import (
+	"errors"
 	"net/http"
 	"net/http/pprof"
 	"strconv"
@@ -46,7 +47,7 @@ type Handler struct {
 
 // NewHandler create a new ProfilingHandler which serves runtime profiling data
 // according to the given context path
-func NewHandler(logger *zap.SugaredLogger) *Handler {
+func NewHandler(logger *zap.SugaredLogger, configMap *corev1.ConfigMap) *Handler {
 	const pprofPrefix = "/debug/pprof/"
 
 	mux := http.NewServeMux()
@@ -56,8 +57,12 @@ func NewHandler(logger *zap.SugaredLogger) *Handler {
 	mux.HandleFunc(pprofPrefix+"symbol", pprof.Symbol)
 	mux.HandleFunc(pprofPrefix+"trace", pprof.Trace)
 
+	profilingEnabled, _ := readProfilingFlag(configMap)
+
+	logger.Infof("Profiling enabled: %t", profilingEnabled)
+
 	return &Handler{
-		enabled: false,
+		enabled: profilingEnabled,
 		handler: mux,
 		log:     logger,
 	}
@@ -73,19 +78,26 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// UpdateFromConfigMap modifies the Enabled flag in the Handler
-// according to the value in the given ConfigMap
-func (h *Handler) UpdateFromConfigMap(configMap *corev1.ConfigMap) {
+func readProfilingFlag(configMap *corev1.ConfigMap) (bool, error) {
 	profiling, ok := configMap.Data[profilingKey]
 	if !ok {
-		return
+		return false, nil
 	}
 	enabled, err := strconv.ParseBool(profiling)
 	if err != nil {
-		h.log.Errorw("Failed to update profiling", zap.Error(err))
+		return false, errors.New("Failed to parse the profiling flag")
+	}
+	return enabled, nil
+}
+
+// UpdateFromConfigMap modifies the Enabled flag in the Handler
+// according to the value in the given ConfigMap
+func (h *Handler) UpdateFromConfigMap(configMap *corev1.ConfigMap) {
+	enabled, err := readProfilingFlag(configMap)
+	if err != nil {
+		h.log.Errorw("Failed to update the profiling flag", zap.Error(err))
 		return
 	}
-
 	h.enabledMux.Lock()
 	defer h.enabledMux.Unlock()
 	if h.enabled != enabled {
