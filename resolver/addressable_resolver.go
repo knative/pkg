@@ -89,6 +89,7 @@ func (r *ForDestination) resolveObjectReference(ref *corev1.ObjectReference, par
 
 	// K8s Services are special cased. They can be called, even though they do not satisfy the
 	// Callable interface.
+	// TODO(spencer-p,n3wscott) Verify that the service actually exists in K8s.
 	if ref.APIVersion == "v1" && ref.Kind == "Service" {
 		url := &apis.URL{
 			Scheme: "http",
