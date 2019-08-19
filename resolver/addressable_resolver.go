@@ -24,7 +24,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 
-	"knative.dev/eventing/pkg/reconciler/names"
 	"knative.dev/pkg/apis"
 	pkgapisduck "knative.dev/pkg/apis/duck"
 	duckv1beta1 "knative.dev/pkg/apis/duck/v1beta1"
@@ -92,7 +91,7 @@ func (r *URIResolver) URIFromObjectReference(ref *corev1.ObjectReference, parent
 	if ref.APIVersion == "v1" && ref.Kind == "Service" {
 		url := &apis.URL{
 			Scheme: "http",
-			Host:   names.ServiceHostName(ref.Name, ref.Namespace),
+			Host:   ServiceHostName(ref.Name, ref.Namespace),
 			Path:   "/",
 		}
 		return url, nil
