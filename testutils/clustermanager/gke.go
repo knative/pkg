@@ -35,13 +35,14 @@ const (
 	DefaultGKENodeType = "n1-standard-4"
 	DefaultGKERegion   = "us-central1"
 	DefaultGKEZone     = ""
-	backupRegionEnv    = "E2E_BACKUP_REGION"
-	// This is an arbitrary number determined based on past experience
-	creationTimeout = 20 * time.Minute
+	regionEnv          = "E2E_CLUSTER_REGION"
+	backupRegionEnv    = "E2E_CLUSTER_BACKUP_REGIONS"
 )
 
 var (
 	DefaultGKEBackupRegions = []string{"us-west1", "us-east1"}
+	// This is an arbitrary number determined based on past experience
+	creationTimeout = 20 * time.Minute
 )
 
 // GKEClient implements Client
@@ -143,7 +144,9 @@ func (gs *GKEClient) Setup(numNodes *int64, nodeType *string, region *string, zo
 		}
 		if nil != region {
 			gc.Request.Region = *region
-			gc.Request.BackupRegions = make([]string, 0)
+		}
+		if "" != common.GetOSEnv(regionEnv) {
+			gc.Request.Region = common.GetOSEnv(regionEnv)
 		}
 		if "" != common.GetOSEnv(backupRegionEnv) {
 			gc.Request.BackupRegions = strings.Split(common.GetOSEnv(backupRegionEnv), " ")
@@ -181,7 +184,18 @@ func (gc *GKECluster) Acquire() error {
 		return fmt.Errorf("failed getting cluster name: '%v'", err)
 	}
 
-	regions := append([]string{gc.Request.Region}, gc.Request.BackupRegions...)
+	regions := []string{gc.Request.Region}
+	for _, br := range gc.Request.BackupRegions {
+		exist := false
+		for _, region := range regions {
+			if br == region {
+				exist = true
+			}
+		}
+		if !exist {
+			regions = append(regions, br)
+		}
+	}
 	var cluster *container.Cluster
 	for i, region := range regions {
 		rb := &container.CreateClusterRequest{
@@ -195,12 +209,12 @@ func (gc *GKECluster) Acquire() error {
 			ProjectId: *gc.Project,
 		}
 		log.Printf("Creating cluster in %s", getClusterLocation(region, gc.Request.Zone))
-		_, err := gc.operations.create(*gc.Project, getClusterLocation(region, gc.Request.Zone), rb)
+		_, err = gc.operations.create(*gc.Project, getClusterLocation(region, gc.Request.Zone), rb)
 		if nil == err {
 			// The process above doesn't seem to wait, wait for it
 			log.Printf("Waiting for cluster creation")
 			timeout := time.After(creationTimeout)
-			tick := time.Tick(2 * time.Second)
+			tick := time.Tick(50 * time.Millisecond)
 			for {
 				select {
 				// Got a timeout! fail with a timeout error
@@ -213,7 +227,7 @@ func (gc *GKECluster) Acquire() error {
 				if err != nil || cluster.Status == "RUNNING" {
 					break
 				}
-				if cluster.Status != "RUNNING" && cluster.Status != "PROVISIONING" {
+				if cluster.Status != "PROVISIONING" {
 					err = fmt.Errorf("cluster in bad state: '%s'", cluster.Status)
 					break
 				}
@@ -259,7 +273,7 @@ func (gc *GKECluster) checkEnvironment() error {
 			// output should be in the form of gke_PROJECT_REGION_CLUSTER
 			parts := strings.Split(currentContext, "_")
 			if len(parts) != 4 { // fall through with warning
-				log.Printf("WARNING: kubectl current-context is malformed: '%s'", currentContext)
+				log.Printf("WARNING: ignoring kubectl current-context since it's malformed: '%s'", currentContext)
 			} else {
 				log.Printf("kubeconfig isn't empty, uses this cluster for running tests: %s", currentContext)
 				gc.Project = &parts[1]

@@ -21,6 +21,7 @@ import (
 	"reflect"
 	"strings"
 	"testing"
+	"time"
 
 	"google.golang.org/api/container/v1"
 
@@ -32,20 +33,26 @@ var (
 	fakeCluster = "d"
 )
 
+func setupFakeGKECluster() GKECluster {
+	return GKECluster{
+		operations: newFakeGKESDKClient(),
+	}
+}
+
 type FakeGKESDKClient struct {
 	// map of parent: clusters slice
-	clusters map[string][]*container.Cluster
+	clusters     map[string][]*container.Cluster
+	regionStatus map[string]string
 }
 
 func newFakeGKESDKClient() *FakeGKESDKClient {
 	return &FakeGKESDKClient{
-		clusters: make(map[string][]*container.Cluster),
+		clusters:     make(map[string][]*container.Cluster),
+		regionStatus: make(map[string]string),
 	}
 }
 
-// fake create cluster, fail if cluster already exists, uses cluster name as
-// indicator of cluster creation outcome for easy testing:
-// - cluster name "pending-state" means cluster status is "PENDING"
+// fake create cluster, fail if cluster already exists
 func (fgsc *FakeGKESDKClient) create(project, location string, rb *container.CreateClusterRequest) (*container.Operation, error) {
 	parent := fmt.Sprintf("projects/%s/locations/%s", project, location)
 	name := rb.Cluster.Name
@@ -59,12 +66,12 @@ func (fgsc *FakeGKESDKClient) create(project, location string, rb *container.Cre
 		fgsc.clusters[parent] = make([]*container.Cluster, 0)
 	}
 	cluster := &container.Cluster{
-		Name:   name,
-		Status: "RUNNING",
+		Name:     name,
+		Location: location,
+		Status:   "RUNNING",
 	}
-
-	if name == "pending-state" {
-		cluster.Status = "PENDING"
+	if status, ok := fgsc.regionStatus[location]; ok {
+		cluster.Status = status
 	}
 
 	fgsc.clusters[parent] = append(fgsc.clusters[parent], cluster)
@@ -134,18 +141,15 @@ func TestGKECheckEnvironment(t *testing.T) {
 	}()
 
 	for _, data := range datas {
-		fgsc := newFakeGKESDKClient()
+		fgc := setupFakeGKECluster()
 		if data.clusterExist {
 			parts := strings.Split(data.kubectlOut, "_")
-			fgsc.create(parts[1], parts[2], &container.CreateClusterRequest{
+			fgc.operations.create(parts[1], parts[2], &container.CreateClusterRequest{
 				Cluster: &container.Cluster{
 					Name: parts[3],
 				},
 				ProjectId: parts[1],
 			})
-		}
-		gc := GKECluster{
-			operations: fgsc,
 		}
 		// mock for testing
 		common.StandardExec = func(name string, args ...string) ([]byte, error) {
@@ -162,16 +166,96 @@ func TestGKECheckEnvironment(t *testing.T) {
 			return out, err
 		}
 
-		err := gc.checkEnvironment()
+		err := fgc.checkEnvironment()
 		var clusterGot *string
-		if nil != gc.Cluster {
-			clusterGot = &gc.Cluster.Name
+		if nil != fgc.Cluster {
+			clusterGot = &fgc.Cluster.Name
 		}
 
-		if !reflect.DeepEqual(err, data.expErr) || !reflect.DeepEqual(gc.Project, data.expProj) || !reflect.DeepEqual(clusterGot, data.expCluster) {
+		if !reflect.DeepEqual(err, data.expErr) || !reflect.DeepEqual(fgc.Project, data.expProj) || !reflect.DeepEqual(clusterGot, data.expCluster) {
 			t.Errorf("check environment with:\n\tkubectl output: '%s'\n\t\terror: '%v'\n\tgcloud output: '%s'\n\t\t"+
 				"error: '%v'\nwant: project - '%v', cluster - '%v', err - '%v'\ngot: project - '%v', cluster - '%v', err - '%v'",
-				data.kubectlOut, data.kubectlErr, data.gcloudOut, data.gcloudErr, data.expProj, data.expCluster, data.expErr, gc.Project, gc.Cluster, err)
+				data.kubectlOut, data.kubectlErr, data.gcloudOut, data.gcloudErr, data.expProj, data.expCluster, data.expErr, fgc.Project, fgc.Cluster, err)
+		}
+	}
+}
+
+func TestAcquire(t *testing.T) {
+	fakeClusterName := "kpkg-e2e-cls-1234"
+	fakeBuildID := "1234"
+	datas := []struct {
+		existCluster       *container.Cluster
+		regionStates       map[string]string
+		expClusterName     string
+		expClusterLocation string
+		expErr             error
+	}{
+		{
+			// cluster already found
+			&container.Cluster{
+				Name:     "customcluster",
+				Location: "us-central1",
+			}, map[string]string{}, "customcluster", "us-central1", nil,
+		}, {
+			// cluster creation succeeded
+			nil, map[string]string{}, fakeClusterName, "us-central1", nil,
+		}, {
+			// cluster creation succeeded retry
+			nil, map[string]string{"us-central1": "PROVISIONING"}, fakeClusterName, "us-west1", nil,
+		}, {
+			// cluster creation failed all retry
+			nil, map[string]string{"us-central1": "PROVISIONING", "us-west1": "PROVISIONING", "us-east1": "PROVISIONING"},
+			"", "", fmt.Errorf("timed out waiting for cluster creation"),
+		}, {
+			// cluster creation went bad state
+			nil, map[string]string{"us-central1": "BAD", "us-west1": "BAD", "us-east1": "BAD"}, "", "", fmt.Errorf("cluster in bad state: 'BAD'"),
+		},
+	}
+
+	// mock GetOSEnv for testing
+	oldFunc := common.GetOSEnv
+	// mock timeout so it doesn't run forever
+	oldTimeout := creationTimeout
+	creationTimeout = 100 * time.Millisecond
+	defer func() {
+		// restore
+		common.GetOSEnv = oldFunc
+		creationTimeout = oldTimeout
+	}()
+
+	for _, data := range datas {
+		common.GetOSEnv = func(key string) string {
+			switch key {
+			case "BUILD_NUMBER":
+				return fakeBuildID
+			case "PROW_JOB_ID": // needed to mock IsProw()
+				return "jobid"
+			}
+			return oldFunc(key)
+		}
+		fgc := setupFakeGKECluster()
+		if nil != data.existCluster {
+			fgc.Cluster = data.existCluster
+		}
+		fgc.Project = &fakeProj
+		fgc.operations.(*FakeGKESDKClient).regionStatus = data.regionStates
+
+		fgc.Request = &GKERequest{
+			NumNodes:      DefaultGKENumNodes,
+			NodeType:      DefaultGKENodeType,
+			Region:        DefaultGKERegion,
+			Zone:          "",
+			BackupRegions: DefaultGKEBackupRegions,
+		}
+		err := fgc.Acquire()
+		var gotName, gotLocation string
+		if nil != fgc.Cluster {
+			gotName = fgc.Cluster.Name
+			gotLocation = fgc.Cluster.Location
+		}
+		if !reflect.DeepEqual(err, data.expErr) || data.expClusterName != gotName || data.expClusterLocation != gotLocation {
+			t.Errorf("testing acquiring cluster, with:\n\texisting cluster: '%v'\n\tbad regions: '%v'\nwant: cluster name - '%s', location - '%s', err - '%v'\ngot: cluster name - '%s', location - '%s', err - '%v'",
+				data.existCluster, data.regionStates, data.expClusterName, data.expClusterLocation, data.expErr, gotName, gotLocation, err)
 		}
 	}
 }
