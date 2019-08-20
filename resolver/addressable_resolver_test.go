@@ -61,7 +61,7 @@ func TestGetURI_ObjectReference(t *testing.T) {
 		wantURI string
 		wantErr error
 	}{"nil everything": {
-		wantErr: fmt.Errorf("destination missing ObjectReference and URI, expected at least one"),
+		wantErr: fmt.Errorf("destination missing ObjectReference and URI, expected exactly one"),
 	}, "URI with path": {
 		dest: apisv1alpha1.Destination{
 			URI: &apis.URL{
@@ -131,13 +131,19 @@ func TestGetURI_ObjectReference(t *testing.T) {
 			getAddressableNilURL(),
 		},
 		dest:    apisv1alpha1.Destination{ObjectReference: getUnaddressableRef()},
-		wantErr: fmt.Errorf(`URL missing in address for %+v`, getUnaddressableRef()),
+		wantErr: fmt.Errorf(`url missing in address of %+v`, getUnaddressableRef()),
 	}, "nil address": {
 		objects: []runtime.Object{
 			getAddressableNilAddress(),
 		},
 		dest:    apisv1alpha1.Destination{ObjectReference: getUnaddressableRef()},
 		wantErr: fmt.Errorf(`address not set for %+v`, getUnaddressableRef()),
+	}, "missing host": {
+		objects: []runtime.Object{
+			getAddressableNoHostURL(),
+		},
+		dest:    apisv1alpha1.Destination{ObjectReference: getUnaddressableRef()},
+		wantErr: fmt.Errorf(`hostname missing in address of %+v`, getUnaddressableRef()),
 	}, "missing status": {
 		objects: []runtime.Object{
 			getAddressableNoStatus(),
@@ -232,6 +238,24 @@ func getAddressableNilURL() *unstructured.Unstructured {
 			"status": map[string]interface{}{
 				"address": map[string]interface{}{
 					"url": nil,
+				},
+			},
+		},
+	}
+}
+
+func getAddressableNoHostURL() *unstructured.Unstructured {
+	return &unstructured.Unstructured{
+		Object: map[string]interface{}{
+			"apiVersion": unaddressableAPIVersion,
+			"kind":       unaddressableKind,
+			"metadata": map[string]interface{}{
+				"namespace": testNS,
+				"name":      unaddressableName,
+			},
+			"status": map[string]interface{}{
+				"address": map[string]interface{}{
+					"url": "http://",
 				},
 			},
 		},

@@ -70,9 +70,9 @@ func (r *URIResolver) URIFromDestination(dest apisv1alpha1.Destination, parent i
 		return extendPath(url, dest.Path).String(), nil
 	} else if dest.URI != nil {
 		return extendPath(dest.URI, dest.Path).String(), nil
-	} else {
-		return "", fmt.Errorf("destination missing ObjectReference and URI, expected at least one")
 	}
+
+	return "", fmt.Errorf("destination missing ObjectReference and URI, expected exactly one")
 }
 
 // URIFromObjectReference resolves an ObjectReference to a URI string.
@@ -117,10 +117,10 @@ func (r *URIResolver) URIFromObjectReference(ref *corev1.ObjectReference, parent
 	}
 	url := addressable.Status.Address.URL
 	if url == nil {
-		return nil, fmt.Errorf("URL missing in address for %+v", ref)
+		return nil, fmt.Errorf("url missing in address of %+v", ref)
 	}
 	if url.Host == "" {
-		return nil, fmt.Errorf("missing hostname in address of %+v", ref)
+		return nil, fmt.Errorf("hostname missing in address of %+v", ref)
 	}
 	return url, nil
 }

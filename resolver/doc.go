@@ -15,5 +15,4 @@ limitations under the License.
 */
 
 // Package resolver implements resolvers for resolving k8s references and URIs.
-// +k8s:deepcopy-gen=package
 package resolver
