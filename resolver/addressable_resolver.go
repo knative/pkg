@@ -41,6 +41,7 @@ type URIResolver struct {
 	informerFactory pkgapisduck.InformerFactory
 }
 
+// NewURIResolver constructs a new URIResolver with context and a callback passed to the URIResolver's tracker.
 func NewURIResolver(ctx context.Context, callback func(string)) *URIResolver {
 	ret := &URIResolver{}
 
