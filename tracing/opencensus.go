@@ -10,6 +10,7 @@ import (
 	zipkin "github.com/openzipkin/zipkin-go"
 	httpreporter "github.com/openzipkin/zipkin-go/reporter/http"
 	"go.opencensus.io/trace"
+	"go.uber.org/zap"
 
 	"knative.dev/pkg/tracing/config"
 )
@@ -104,7 +105,9 @@ func createOCTConfig(cfg *config.Config) *trace.Config {
 	return &octCfg
 }
 
-func WithExporter(name string) ConfigOption {
+// WithExporter returns a ConfigOption for use with NewOpenCensusTracer that configures
+// it to export traces based on the configuration read from config-tracing.
+func WithExporter(name string, logger *zap.SugaredLogger) ConfigOption {
 	return func(cfg *config.Config) {
 		var (
 			exporter trace.Exporter
@@ -116,21 +119,21 @@ func WithExporter(name string) ConfigOption {
 				ProjectID: cfg.StackdriverProjectID,
 			})
 			if err != nil {
-				// TODO(mattmoor): log the error
+				logger.Errorw("error reading project-id from metadata", err)
 				return
 			}
 			exporter = exp
 		case config.Zipkin:
 			zipEP, err := zipkin.NewEndpoint(name, ":80")
 			if err != nil {
-				// TODO(mattmoor): log the error
+				logger.Errorw("error building zipkin endpoint", err)
 				return
 			}
 			reporter := httpreporter.NewReporter(cfg.ZipkinEndpoint)
 			exporter = oczipkin.NewExporter(reporter, zipEP)
 			closer = reporter
 		default:
-			// TODO(mattmoor): disable tracing.
+			// Disables tracing.
 		}
 		if exporter != nil {
 			trace.RegisterExporter(exporter)
@@ -139,7 +142,7 @@ func WithExporter(name string) ConfigOption {
 			trace.UnregisterExporter(globalOct.exporter)
 		}
 		if globalOct.closer != nil {
-			_ = globalOct.closer.Close()
+			globalOct.closer.Close()
 		}
 
 		globalOct.exporter = exporter

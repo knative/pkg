@@ -19,6 +19,7 @@ package config
 import (
 	"errors"
 	"fmt"
+	"reflect"
 	"strconv"
 
 	"cloud.google.com/go/compute/metadata"
@@ -61,11 +62,7 @@ type Config struct {
 
 // Equals returns true if two Configs are identical
 func (cfg *Config) Equals(other *Config) bool {
-	return other.Backend == cfg.Backend &&
-		other.StackdriverProjectID == cfg.StackdriverProjectID &&
-		other.ZipkinEndpoint == cfg.ZipkinEndpoint &&
-		other.Debug == cfg.Debug &&
-		other.SampleRate == cfg.SampleRate
+	return reflect.DeepEqual(other, cfg)
 }
 
 // NewTracingConfigFromMap returns a Config given a map corresponding to a ConfigMap
@@ -76,30 +73,28 @@ func NewTracingConfigFromMap(cfgMap map[string]string) (*Config, error) {
 		SampleRate: 0.1,
 	}
 
-	// For backwards compatibility, parse the enabled flag as Zipkin.
-	if enable, ok := cfgMap[enableKey]; ok {
-		enableBool, err := strconv.ParseBool(enable)
-		if err != nil {
-			return nil, fmt.Errorf("failed parsing tracing config %q: %v", enableKey, err)
-		}
-		if enableBool {
-			tc.Backend = Zipkin
-		}
-	}
 	if backend, ok := cfgMap[backendKey]; ok {
-		bt := BackendType(backend)
-		switch bt {
+		switch bt := BackendType(backend); bt {
 		case Stackdriver, Zipkin:
 			tc.Backend = bt
 		default:
 			return nil, fmt.Errorf("unsupported tracing backend value %q", backend)
 		}
+	} else {
+		// For backwards compatibility, parse the enabled flag as Zipkin.
+		if enable, ok := cfgMap[enableKey]; ok {
+			enableBool, err := strconv.ParseBool(enable)
+			if err != nil {
+				return nil, fmt.Errorf("failed parsing tracing config %q: %v", enableKey, err)
+			}
+			if enableBool {
+				tc.Backend = Zipkin
+			}
+		}
 	}
 
-	if endpoint, ok := cfgMap[zipkinEndpointKey]; !ok {
-		if tc.Backend == Zipkin {
-			return nil, errors.New("zipkin tracing enabled without a zipkin endpoint specified")
-		}
+	if endpoint, ok := cfgMap[zipkinEndpointKey]; !ok && tc.Backend == Zipkin {
+		return nil, errors.New("zipkin tracing enabled without a zipkin endpoint specified")
 	} else {
 		tc.ZipkinEndpoint = endpoint
 	}
