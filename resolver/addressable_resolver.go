@@ -18,6 +18,7 @@ package resolver
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"path"
 
@@ -78,7 +79,7 @@ func (r *URIResolver) URIFromDestination(dest apisv1alpha1.Destination, parent i
 // URIFromObjectReference resolves an ObjectReference to a URI string.
 func (r *URIResolver) URIFromObjectReference(ref *corev1.ObjectReference, parent interface{}) (*apis.URL, error) {
 	if ref == nil {
-		return nil, fmt.Errorf("ref is nil")
+		return nil, errors.New("ref is nil")
 	}
 
 	if err := r.tracker.Track(*ref, parent); err != nil {
