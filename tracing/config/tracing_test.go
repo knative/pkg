@@ -36,7 +36,7 @@ func TestEquals(t *testing.T) {
 		expect: true,
 	}, {
 		name:   "Unequal",
-		cmp1:   Config{Enable: true},
+		cmp1:   Config{Backend: Zipkin},
 		cmp2:   Config{},
 		expect: false,
 	}}
@@ -59,10 +59,11 @@ func TestNewConfigFromMap(t *testing.T) {
 		name:  "Empty map",
 		input: map[string]string{},
 		output: Config{
+			Backend:    None,
 			SampleRate: 0.1,
 		},
 	}, {
-		name: "Everything enabled",
+		name: "Everything enabled (legacy)",
 		input: map[string]string{
 			enableKey:         "true",
 			zipkinEndpointKey: "some-endpoint",
@@ -70,10 +71,57 @@ func TestNewConfigFromMap(t *testing.T) {
 			sampleRateKey:     "0.5",
 		},
 		output: Config{
-			Enable:         true,
+			Backend:        Zipkin,
 			Debug:          true,
 			ZipkinEndpoint: "some-endpoint",
 			SampleRate:     0.5,
+		},
+	}, {
+		name: "Everything enabled (zipkin)",
+		input: map[string]string{
+			backendKey:        "zipkin",
+			zipkinEndpointKey: "some-endpoint",
+			debugKey:          "true",
+			sampleRateKey:     "0.5",
+		},
+		output: Config{
+			Backend:        Zipkin,
+			Debug:          true,
+			ZipkinEndpoint: "some-endpoint",
+			SampleRate:     0.5,
+		},
+	}, {
+		name: "Everything enabled (stackdriver)",
+		input: map[string]string{
+			backendKey:              "stackdriver",
+			zipkinEndpointKey:       "some-endpoint",
+			stackdriverProjectIDKey: "my-project",
+			debugKey:                "true",
+			sampleRateKey:           "0.5",
+		},
+		output: Config{
+			Backend:              Stackdriver,
+			Debug:                true,
+			ZipkinEndpoint:       "some-endpoint",
+			StackdriverProjectID: "my-project",
+			SampleRate:           0.5,
+		},
+	}, {
+		name: "Everything enabled (stackdriver, with enabled)",
+		input: map[string]string{
+			enableKey:               "true",
+			backendKey:              "stackdriver",
+			zipkinEndpointKey:       "some-endpoint",
+			stackdriverProjectIDKey: "my-project",
+			debugKey:                "true",
+			sampleRateKey:           "0.5",
+		},
+		output: Config{
+			Backend:              Stackdriver,
+			Debug:                true,
+			ZipkinEndpoint:       "some-endpoint",
+			StackdriverProjectID: "my-project",
+			SampleRate:           0.5,
 		},
 	}}
 

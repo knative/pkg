@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"strconv"
 
+	"cloud.google.com/go/compute/metadata"
 	corev1 "k8s.io/api/core/v1"
 )
 
@@ -28,46 +29,89 @@ const (
 	// ConfigName is the name of the configmap
 	ConfigName = "config-tracing"
 
-	enableKey         = "enable"
-	zipkinEndpointKey = "zipkin-endpoint"
-	debugKey          = "debug"
-	sampleRateKey     = "sample-rate"
+	enableKey               = "enable"
+	backendKey              = "backend"
+	zipkinEndpointKey       = "zipkin-endpoint"
+	debugKey                = "debug"
+	sampleRateKey           = "sample-rate"
+	stackdriverProjectIDKey = "stackdriver-project-id"
+)
+
+// BackendType specifies the backend to use for tracing
+type BackendType string
+
+const (
+	// None is used for no backend.
+	None BackendType = "none"
+	// Stackdriver is used for Stackdriver backend.
+	Stackdriver BackendType = "stackdriver"
+	// Zipkin is used for Zipkin backend.
+	Zipkin BackendType = "zipkin"
 )
 
 // Config holds the configuration for tracers
 type Config struct {
-	Enable         bool
-	ZipkinEndpoint string
-	Debug          bool
-	SampleRate     float64
+	Backend              BackendType
+	ZipkinEndpoint       string
+	StackdriverProjectID string
+
+	Debug      bool
+	SampleRate float64
 }
 
 // Equals returns true if two Configs are identical
 func (cfg *Config) Equals(other *Config) bool {
-	return other.Enable == cfg.Enable && other.ZipkinEndpoint == cfg.ZipkinEndpoint && other.Debug == cfg.Debug && other.SampleRate == cfg.SampleRate
+	return other.Backend == cfg.Backend &&
+		other.StackdriverProjectID == cfg.StackdriverProjectID &&
+		other.ZipkinEndpoint == cfg.ZipkinEndpoint &&
+		other.Debug == cfg.Debug &&
+		other.SampleRate == cfg.SampleRate
 }
 
 // NewTracingConfigFromMap returns a Config given a map corresponding to a ConfigMap
 func NewTracingConfigFromMap(cfgMap map[string]string) (*Config, error) {
 	tc := Config{
-		Enable:     false,
+		Backend:    None,
 		Debug:      false,
 		SampleRate: 0.1,
 	}
+
+	// For backwards compatibility, parse the enabled flag as Zipkin.
 	if enable, ok := cfgMap[enableKey]; ok {
 		enableBool, err := strconv.ParseBool(enable)
 		if err != nil {
 			return nil, fmt.Errorf("failed parsing tracing config %q: %v", enableKey, err)
 		}
-		tc.Enable = enableBool
+		if enableBool {
+			tc.Backend = Zipkin
+		}
+	}
+	if backend, ok := cfgMap[backendKey]; ok {
+		bt := BackendType(backend)
+		switch bt {
+		case Stackdriver, Zipkin:
+			tc.Backend = bt
+		default:
+			return nil, fmt.Errorf("unsupported tracing backend value %q", backend)
+		}
 	}
 
 	if endpoint, ok := cfgMap[zipkinEndpointKey]; !ok {
-		if tc.Enable {
-			return nil, errors.New("tracing enabled but no zipkin endpoint specified")
+		if tc.Backend == Zipkin {
+			return nil, errors.New("zipkin tracing enabled without a zipkin endpoint specified")
 		}
 	} else {
 		tc.ZipkinEndpoint = endpoint
+	}
+
+	if projectID, ok := cfgMap[stackdriverProjectIDKey]; ok {
+		tc.StackdriverProjectID = projectID
+	} else if tc.Backend == Stackdriver {
+		projectID, err := metadata.ProjectID()
+		if err != nil {
+			return nil, fmt.Errorf("stackdriver tracing enabled without a project-id specified: %v", err)
+		}
+		tc.StackdriverProjectID = projectID
 	}
 
 	if debug, ok := cfgMap[debugKey]; ok {
