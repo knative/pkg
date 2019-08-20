@@ -70,7 +70,9 @@ func (r *URIResolver) URIFromDestination(dest apisv1alpha1.Destination, parent i
 			return "", err
 		}
 		return extendPath(url, dest.Path).String(), nil
-	} else if dest.URI != nil {
+	}
+
+	if dest.URI != nil {
 		return extendPath(dest.URI, dest.Path).String(), nil
 	}
 
