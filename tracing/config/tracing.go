@@ -75,7 +75,7 @@ func NewTracingConfigFromMap(cfgMap map[string]string) (*Config, error) {
 
 	if backend, ok := cfgMap[backendKey]; ok {
 		switch bt := BackendType(backend); bt {
-		case Stackdriver, Zipkin:
+		case Stackdriver, Zipkin, None:
 			tc.Backend = bt
 		default:
 			return nil, fmt.Errorf("unsupported tracing backend value %q", backend)

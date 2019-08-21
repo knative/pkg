@@ -138,6 +138,7 @@ func WithExporter(name string, logger *zap.SugaredLogger) ConfigOption {
 		if exporter != nil {
 			trace.RegisterExporter(exporter)
 		}
+		// We know this is set because we are called with acquireGlobal lock held
 		if globalOct.exporter != nil {
 			trace.UnregisterExporter(globalOct.exporter)
 		}
