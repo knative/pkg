@@ -135,7 +135,12 @@ func (sc *SpoofingClient) Do(req *http.Request) (*Response, error) {
 
 	// Controls the actual resolution.
 	if sc.endpoint != "" {
-		req.URL.Host = sc.endpoint
+		// Preserve the original port if it is specified
+		if req.URL.Port() != "" {
+			req.URL.Host = fmt.Sprintf("%s:%s", sc.endpoint, req.URL.Port())
+		} else {
+			req.URL.Host = sc.endpoint
+		}
 	}
 
 	// Starting span to capture zipkin trace.
