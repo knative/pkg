@@ -14,17 +14,16 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package tracing
+package tracing_test
 
 import (
 	"net/http"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	openzipkin "github.com/openzipkin/zipkin-go"
-	zipkinreporter "github.com/openzipkin/zipkin-go/reporter"
-	reporterrecorder "github.com/openzipkin/zipkin-go/reporter/recorder"
+	. "knative.dev/pkg/tracing"
 	"knative.dev/pkg/tracing/config"
+	. "knative.dev/pkg/tracing/testing"
 )
 
 type fakeWriter struct {
@@ -52,17 +51,14 @@ func (th *testHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 func TestHTTPSpanMiddleware(t *testing.T) {
 	cfg := config.Config{
-		Enable: true,
-		Debug:  true,
+		Backend: config.Zipkin,
+		Debug:   true,
 	}
 
 	// Create tracer with reporter recorder
-	reporter := reporterrecorder.NewReporter()
+	reporter, co := FakeZipkinExporter()
 	defer reporter.Close()
-	endpoint, _ := openzipkin.NewEndpoint("test", "localhost:1234")
-	oct := NewOpenCensusTracer(WithZipkinExporter(func(cfg *config.Config) (zipkinreporter.Reporter, error) {
-		return reporter, nil
-	}, endpoint))
+	oct := NewOpenCensusTracer(co)
 	defer oct.Finish()
 
 	if err := oct.ApplyConfig(&cfg); err != nil {
