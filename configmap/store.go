@@ -17,6 +17,7 @@ limitations under the License.
 package configmap
 
 import (
+	"reflect"
 	"sync/atomic"
 
 	corev1 "k8s.io/api/core/v1"
@@ -35,11 +36,13 @@ type Logger interface {
 
 // Constructors is a map for specifying config names to
 // their function constructors
-type Constructors map[string]Constructor
-
-// Constructor produces any value or an error from a
-// ConfigMap.
-type Constructor func(*corev1.ConfigMap) (interface{}, error)
+//
+// The values of this map must be functions with the definition
+//
+// func(*k8s.io/api/core/v1.ConfigMap) (... , error)
+//
+// These functions can return any type along with an error
+type Constructors map[string]interface{}
 
 // An UntypedStore is a responsible for storing and
 // constructing configs from Kubernetes ConfigMaps
@@ -51,7 +54,7 @@ type UntypedStore struct {
 	logger Logger
 
 	storages     map[string]*atomic.Value
-	constructors map[string]Constructor
+	constructors map[string]reflect.Value
 
 	onAfterStore []func(name string, value interface{})
 }
@@ -86,7 +89,7 @@ func NewUntypedStore(
 		name:         name,
 		logger:       logger,
 		storages:     make(map[string]*atomic.Value),
-		constructors: make(map[string]Constructor),
+		constructors: make(map[string]reflect.Value),
 		onAfterStore: onAfterStore,
 	}
 
@@ -97,9 +100,25 @@ func NewUntypedStore(
 	return store
 }
 
-func (s *UntypedStore) registerConfig(name string, constructor Constructor) {
+func (s *UntypedStore) registerConfig(name string, constructor interface{}) {
+	cType := reflect.TypeOf(constructor)
+
+	if cType.Kind() != reflect.Func {
+		panic("config constructor must be a function")
+	}
+
+	if cType.NumIn() != 1 || cType.In(0) != reflect.TypeOf(&corev1.ConfigMap{}) {
+		panic("config constructor must be of the type func(*k8s.io/api/core/v1/ConfigMap) (..., error)")
+	}
+
+	errorType := reflect.TypeOf((*error)(nil)).Elem()
+
+	if cType.NumOut() != 2 || !cType.Out(1).Implements(errorType) {
+		panic("config constructor must be of the type func(*k8s.io/api/core/v1/ConfigMap) (..., error)")
+	}
+
 	s.storages[name] = &atomic.Value{}
-	s.constructors[name] = constructor
+	s.constructors[name] = reflect.ValueOf(constructor)
 }
 
 // WatchConfigs uses the provided configmap.Watcher
@@ -129,8 +148,16 @@ func (s *UntypedStore) OnConfigChanged(c *corev1.ConfigMap) {
 	storage := s.storages[name]
 	constructor := s.constructors[name]
 
-	result, err := constructor(c)
-	if err != nil {
+	inputs := []reflect.Value{
+		reflect.ValueOf(c),
+	}
+
+	outputs := constructor.Call(inputs)
+	result := outputs[0].Interface()
+	errVal := outputs[1]
+
+	if !errVal.IsNil() {
+		err := errVal.Interface()
 		if storage.Load() != nil {
 			s.logger.Errorf("Error updating %s config %q: %q", s.name, name, err)
 		} else {
