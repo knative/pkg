@@ -14,19 +14,21 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package resolver
+package network
 
 import (
 	"strings"
 	"testing"
 )
 
-func TestReadClusterDomainName(t *testing.T) {
-	testCases := map[string]struct {
+func TestGetDomainName(t *testing.T) {
+	tests := []struct {
+		name       string
 		resolvConf string
 		want       string
 	}{
-		"all good": {
+		{
+			name: "all good",
 			resolvConf: `
 nameserver 1.1.1.1
 search default.svc.abc.com svc.abc.com abc.com
@@ -34,14 +36,25 @@ options ndots:5
 `,
 			want: "abc.com",
 		},
-		"missing search line": {
+		{
+			name: "all good with trailing dot",
+			resolvConf: `
+nameserver 1.1.1.1
+search default.svc.abc.com. svc.abc.com. abc.com.
+options ndots:5
+`,
+			want: "abc.com",
+		},
+		{
+			name: "missing search line",
 			resolvConf: `
 nameserver 1.1.1.1
 options ndots:5
 `,
 			want: defaultDomainName,
 		},
-		"non k8s resolv.conf format": {
+		{
+			name: "non k8s resolv.conf format",
 			resolvConf: `
 nameserver 1.1.1.1
 search  abc.com xyz.com
@@ -50,34 +63,10 @@ options ndots:5
 			want: defaultDomainName,
 		},
 	}
-	for n, tc := range testCases {
-		t.Run(n, func(t *testing.T) {
-			got := readClusterDomainName(strings.NewReader(tc.resolvConf))
-			if got != tc.want {
-				t.Errorf("Expected: %s but got: %s", tc.want, got)
-			}
-		})
-	}
-}
-
-func TestNames(t *testing.T) {
-	testCases := []struct {
-		Name string
-		F    func() string
-		Want string
-	}{{
-		Name: "ServiceHostName",
-		F: func() string {
-			return ServiceHostName("foo", "namespace")
-		},
-		Want: "foo.namespace.svc." + ClusterDomainName(),
-	}}
-
-	for _, tc := range testCases {
-		t.Run(tc.Name, func(t *testing.T) {
-			if got := tc.F(); got != tc.Want {
-				t.Errorf("want %v, got %v", tc.Want, got)
-			}
-		})
+	for _, tt := range tests {
+		got := getClusterDomainName(strings.NewReader(tt.resolvConf))
+		if got != tt.want {
+			t.Errorf("Test %s failed expected: %s but got: %s", tt.name, tt.want, got)
+		}
 	}
 }

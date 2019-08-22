@@ -30,6 +30,7 @@ import (
 	duckv1beta1 "knative.dev/pkg/apis/duck/v1beta1"
 	apisv1alpha1 "knative.dev/pkg/apis/v1alpha1"
 	"knative.dev/pkg/controller"
+	"knative.dev/pkg/network"
 	"knative.dev/pkg/tracker"
 
 	"knative.dev/pkg/injection/clients/dynamicclient"
@@ -137,4 +138,9 @@ func extendPath(url *apis.URL, extrapath *string) *apis.URL {
 
 	url.Path = path.Join(url.Path, *extrapath)
 	return url
+}
+
+// ServiceHostName resolves the hostname for a Kubernetes Service.
+func ServiceHostName(serviceName, namespace string) string {
+	return fmt.Sprintf("%s.%s.svc.%s", serviceName, namespace, network.GetClusterDomainName())
 }
