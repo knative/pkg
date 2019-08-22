@@ -33,6 +33,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	fakekubeclientset "k8s.io/client-go/kubernetes/fake"
 
+	"knative.dev/pkg/configmap"
 	. "knative.dev/pkg/logging/testing"
 )
 
@@ -44,6 +45,8 @@ func newDefaultOptions() ControllerOptions {
 		SecretName:                      "webhook-certs",
 		ResourceMutatingWebhookName:     "webhook.knative.dev",
 		ResourceAdmissionControllerPath: "/",
+		ConfigValidationWebhookName:     "configmap.webhook.knative.dev",
+		ConfigValidationControllerPath:  "/config-validation",
 	}
 }
 
@@ -104,7 +107,7 @@ func TestRegistrationStopChanFire(t *testing.T) {
 	}
 }
 
-func TestRegistrationForAlreadyExistingWebhook(t *testing.T) {
+func TestRegistrationForAlreadyExistingResourceController(t *testing.T) {
 	kubeClient, ac := newNonRunningTestWebhook(t, newDefaultOptions())
 	webhook := &admissionregistrationv1beta1.MutatingWebhookConfiguration{
 		ObjectMeta: metav1.ObjectMeta{
@@ -119,6 +122,39 @@ func TestRegistrationForAlreadyExistingWebhook(t *testing.T) {
 		},
 	}
 	createWebhook(kubeClient, webhook)
+
+	ac.Options.RegistrationDelay = 1 * time.Millisecond
+	stopCh := make(chan struct{})
+
+	var g errgroup.Group
+	g.Go(func() error {
+		return ac.Run(stopCh)
+	})
+	err := g.Wait()
+	if err == nil {
+		t.Fatal("Expected webhook controller to fail")
+	}
+
+	if ac.Options.ClientAuth >= tls.VerifyClientCertIfGiven && !strings.Contains(err.Error(), "configmaps") {
+		t.Fatal("Expected error msg to contain configmap key missing error")
+	}
+}
+
+func TestRegistrationForAlreadyExistingConfigValidationController(t *testing.T) {
+	kubeClient, ac := newNonRunningTestWebhook(t, newDefaultOptions())
+	webhook := &admissionregistrationv1beta1.ValidatingWebhookConfiguration{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: ac.Options.ConfigValidationWebhookName,
+		},
+		Webhooks: []admissionregistrationv1beta1.ValidatingWebhook{
+			{
+				Name:         ac.Options.ConfigValidationWebhookName,
+				Rules:        []admissionregistrationv1beta1.RuleWithOperations{{}},
+				ClientConfig: admissionregistrationv1beta1.WebhookClientConfig{},
+			},
+		},
+	}
+	createConfigValidationWebhook(kubeClient, webhook)
 
 	ac.Options.RegistrationDelay = 1 * time.Millisecond
 	stopCh := make(chan struct{})
@@ -225,8 +261,11 @@ func TestSettingWebhookClientAuth(t *testing.T) {
 
 func NewTestWebhook(client kubernetes.Interface, options ControllerOptions, logger *zap.SugaredLogger) (*Webhook, error) {
 	resourceHandlers := newResourceHandlers()
+	validations := configmap.Constructors{"test-config": newConfigFromConfigMap}
+
 	admissionControllers := map[string]AdmissionController{
 		options.ResourceAdmissionControllerPath: NewResourceAdmissionController(resourceHandlers, options, true),
+		options.ConfigValidationControllerPath:  NewConfigValidationController(validations, options),
 	}
 	return New(client, options, admissionControllers, logger, nil)
 }
