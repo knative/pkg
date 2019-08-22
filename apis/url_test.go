@@ -16,6 +16,7 @@ limitations under the License.
 package apis
 
 import (
+	"encoding/json"
 	"net/url"
 	"testing"
 
@@ -150,6 +151,266 @@ func TestJsonUnmarshalURL(t *testing.T) {
 
 			got := &URL{}
 			err := got.UnmarshalJSON(tc.b)
+
+			if tc.wantErr != "" || err != nil {
+				var gotErr string
+				if err != nil {
+					gotErr = err.Error()
+				}
+				if diff := cmp.Diff(tc.wantErr, gotErr); diff != "" {
+					t.Errorf("unexpected error (-want, +got) = %v", diff)
+				}
+				return
+			}
+
+			if diff := cmp.Diff(tc.want, got); diff != "" {
+				t.Errorf("unexpected object (-want, +got) = %v", diff)
+			}
+		})
+	}
+}
+
+func TestJsonMarshalURLAsMember(t *testing.T) {
+
+	type objectType struct {
+		URL URL `json:"url,omitempty"`
+	}
+
+	testCases := map[string]struct {
+		obj     *objectType
+		want    []byte
+		wantErr string
+	}{
+		"nil": {
+			want: []byte(`null`),
+		},
+		"empty": {
+			obj:  &objectType{},
+			want: []byte(`{"url":""}`),
+		},
+		"relative": {
+			obj: func() *objectType {
+				uu, _ := url.Parse("/path/to/something")
+				u := URL(*uu)
+				return &objectType{URL: u}
+			}(),
+			want: []byte(`{"url":"/path/to/something"}`),
+		},
+		"url": {
+			obj: func() *objectType {
+				uu, _ := url.Parse("http://path/to/something")
+				u := URL(*uu)
+				return &objectType{URL: u}
+			}(),
+			want: []byte(`{"url":"http://path/to/something"}`),
+		},
+		"empty url": {
+			obj:  &objectType{URL: URL{}},
+			want: []byte(`{"url":""}`),
+		},
+	}
+	for n, tc := range testCases {
+		t.Run(n, func(t *testing.T) {
+
+			got, err := json.Marshal(tc.obj)
+
+			if tc.wantErr != "" || err != nil {
+				var gotErr string
+				if err != nil {
+					gotErr = err.Error()
+				}
+				if diff := cmp.Diff(tc.wantErr, gotErr); diff != "" {
+					t.Errorf("unexpected error (-want, +got) = %v", diff)
+				}
+				return
+			}
+
+			if diff := cmp.Diff(tc.want, got); diff != "" {
+				t.Errorf("unexpected object (-want, +got) = %v", diff)
+				t.Logf("got: %s", string(got))
+			}
+		})
+	}
+}
+
+func TestJsonMarshalURLAsPointerMember(t *testing.T) {
+
+	type objectType struct {
+		URL *URL `json:"url,omitempty"`
+	}
+
+	testCases := map[string]struct {
+		obj     *objectType
+		want    []byte
+		wantErr string
+	}{
+		"nil": {
+			want: []byte(`null`),
+		},
+		"empty": {
+			obj:  &objectType{},
+			want: []byte(`{}`),
+		},
+		"relative": {
+			obj: func() *objectType {
+				uu, _ := url.Parse("/path/to/something")
+				u := URL(*uu)
+				return &objectType{URL: &u}
+			}(),
+			want: []byte(`{"url":"/path/to/something"}`),
+		},
+		"url": {
+			obj: func() *objectType {
+				uu, _ := url.Parse("http://path/to/something")
+				u := URL(*uu)
+				return &objectType{URL: &u}
+			}(),
+			want: []byte(`{"url":"http://path/to/something"}`),
+		},
+		"empty url": {
+			obj:  &objectType{URL: &URL{}},
+			want: []byte(`{"url":""}`),
+		},
+	}
+	for n, tc := range testCases {
+		t.Run(n, func(t *testing.T) {
+
+			got, err := json.Marshal(tc.obj)
+
+			if tc.wantErr != "" || err != nil {
+				var gotErr string
+				if err != nil {
+					gotErr = err.Error()
+				}
+				if diff := cmp.Diff(tc.wantErr, gotErr); diff != "" {
+					t.Errorf("unexpected error (-want, +got) = %v", diff)
+				}
+				return
+			}
+
+			if diff := cmp.Diff(tc.want, got); diff != "" {
+				t.Errorf("unexpected object (-want, +got) = %v", diff)
+				t.Logf("got: %s", string(got))
+			}
+		})
+	}
+}
+
+func TestJsonUnmarshalURLAsMember(t *testing.T) {
+
+	type objectType struct {
+		URL URL `json:"url,omitempty"`
+	}
+
+	testCases := map[string]struct {
+		b       []byte
+		want    *objectType
+		wantErr string
+	}{
+		"zero": {
+			wantErr: "unexpected end of JSON input",
+		},
+		"empty": {
+			b:    []byte(`{}`),
+			want: &objectType{},
+		},
+		"invalid format": {
+			b:       []byte(`{"url":"%"}`),
+			wantErr: `parse %: invalid URL escape "%"`,
+		},
+		"relative": {
+			b: []byte(`{"url":"/path/to/something"}`),
+			want: func() *objectType {
+				uu, _ := url.Parse("/path/to/something")
+				u := URL(*uu)
+				return &objectType{URL: u}
+			}(),
+		},
+		"url": {
+			b: []byte(`{"url":"http://path/to/something"}`),
+			want: func() *objectType {
+				uu, _ := url.Parse("http://path/to/something")
+				u := URL(*uu)
+				return &objectType{URL: u}
+			}(),
+		},
+		"empty url": {
+			b:    []byte(`{"url":""}`),
+			want: &objectType{URL: URL{}},
+		},
+	}
+	for n, tc := range testCases {
+		t.Run(n, func(t *testing.T) {
+
+			got := &objectType{}
+			err := json.Unmarshal(tc.b, got)
+
+			if tc.wantErr != "" || err != nil {
+				var gotErr string
+				if err != nil {
+					gotErr = err.Error()
+				}
+				if diff := cmp.Diff(tc.wantErr, gotErr); diff != "" {
+					t.Errorf("unexpected error (-want, +got) = %v", diff)
+				}
+				return
+			}
+
+			if diff := cmp.Diff(tc.want, got); diff != "" {
+				t.Errorf("unexpected object (-want, +got) = %v", diff)
+			}
+		})
+	}
+}
+
+func TestJsonUnmarshalURLAsMemberPointer(t *testing.T) {
+
+	type objectType struct {
+		URL *URL `json:"url,omitempty"`
+	}
+
+	testCases := map[string]struct {
+		b       []byte
+		want    *objectType
+		wantErr string
+	}{
+		"zero": {
+			wantErr: "unexpected end of JSON input",
+		},
+		"empty": {
+			b:    []byte(`{}`),
+			want: &objectType{},
+		},
+		"invalid format": {
+			b:       []byte(`{"url":"%"}`),
+			wantErr: `parse %: invalid URL escape "%"`,
+		},
+		"relative": {
+			b: []byte(`{"url":"/path/to/something"}`),
+			want: func() *objectType {
+				uu, _ := url.Parse("/path/to/something")
+				u := URL(*uu)
+				return &objectType{URL: &u}
+			}(),
+		},
+		"url": {
+			b: []byte(`{"url":"http://path/to/something"}`),
+			want: func() *objectType {
+				uu, _ := url.Parse("http://path/to/something")
+				u := URL(*uu)
+				return &objectType{URL: &u}
+			}(),
+		},
+		"empty url": {
+			b:    []byte(`{"url":""}`),
+			want: &objectType{URL: &URL{}},
+		},
+	}
+	for n, tc := range testCases {
+		t.Run(n, func(t *testing.T) {
+
+			got := &objectType{}
+			err := json.Unmarshal(tc.b, got)
 
 			if tc.wantErr != "" || err != nil {
 				var gotErr string
