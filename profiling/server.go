@@ -47,7 +47,7 @@ type Handler struct {
 
 // NewHandler create a new ProfilingHandler which serves runtime profiling data
 // according to the given context path
-func NewHandler(logger *zap.SugaredLogger, configMap *corev1.ConfigMap) *Handler {
+func NewHandler(logger *zap.SugaredLogger, enableProfiling bool) *Handler {
 	const pprofPrefix = "/debug/pprof/"
 
 	mux := http.NewServeMux()
@@ -57,12 +57,10 @@ func NewHandler(logger *zap.SugaredLogger, configMap *corev1.ConfigMap) *Handler
 	mux.HandleFunc(pprofPrefix+"symbol", pprof.Symbol)
 	mux.HandleFunc(pprofPrefix+"trace", pprof.Trace)
 
-	profilingEnabled, _ := readProfilingFlag(configMap)
-
-	logger.Infof("Profiling enabled: %t", profilingEnabled)
+	logger.Infof("Profiling enabled: %t", enableProfiling)
 
 	return &Handler{
-		enabled: profilingEnabled,
+		enabled: enableProfiling,
 		handler: mux,
 		log:     logger,
 	}

@@ -27,7 +27,6 @@ import (
 	"path/filepath"
 
 	"golang.org/x/sync/errgroup"
-	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
@@ -84,11 +83,6 @@ func GetLoggingConfig(ctx context.Context) (*logging.Config, error) {
 	return logging.NewConfigFromConfigMap(loggingConfigMap)
 }
 
-// LookupConfigMap retrieves a configmap with the given name
-func LookupConfigMap(ctx context.Context, name string) (*corev1.ConfigMap, error) {
-	return kubeclient.Get(ctx).CoreV1().ConfigMaps(system.Namespace()).Get(name, metav1.GetOptions{})
-}
-
 func Main(component string, ctors ...injection.ControllerConstructor) {
 	// Set up signals so we handle the first shutdown signal gracefully.
 	MainWithContext(signals.NewContext(), component, ctors...)
@@ -138,12 +132,7 @@ func MainWithConfig(ctx context.Context, component string, cfg *rest.Config, cto
 		controllers = append(controllers, cf(ctx, cmw))
 	}
 
-	observConfigMap, err := LookupConfigMap(ctx, metrics.ConfigMapName())
-	if err != nil {
-		logger.Fatalw("Error reading the observability configmap", zap.Error(err))
-	}
-
-	profilingHandler := profiling.NewHandler(logger, observConfigMap)
+	profilingHandler := profiling.NewHandler(logger, false)
 
 	// Watch the logging config map and dynamically update logging levels.
 	cmw.Watch(logging.ConfigMapName(), logging.UpdateLevelFromConfigMap(logger, atomicLevel, component))

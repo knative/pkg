@@ -78,13 +78,7 @@ func TestUpdateFromConfigMap(t *testing.T) {
 
 	for _, tt := range observabilityConfigTests {
 		t.Run(tt.name, func(t *testing.T) {
-			handler := NewHandler(zap.NewNop().Sugar(), &corev1.ConfigMap{
-				ObjectMeta: metav1.ObjectMeta{
-					Namespace: system.Namespace(),
-					Name:      metrics.ConfigMapName(),
-				},
-				Data: map[string]string{},
-			})
+			handler := NewHandler(zap.NewNop().Sugar(), false)
 
 			handler.UpdateFromConfigMap(tt.config)
 
