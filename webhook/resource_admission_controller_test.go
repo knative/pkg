@@ -35,6 +35,7 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	authenticationv1 "k8s.io/api/authentication/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/kubernetes"
 	fakekubeclientset "k8s.io/client-go/kubernetes/fake"
 	"knative.dev/pkg/apis"
@@ -43,9 +44,35 @@ import (
 	. "knative.dev/pkg/testing"
 )
 
+func newResourceHandlers() map[schema.GroupVersionKind]GenericCRD {
+	// Use different versions and domains, for coverage.
+	return map[schema.GroupVersionKind]GenericCRD{
+		{
+			Group:   "pkg.knative.dev",
+			Version: "v1alpha1",
+			Kind:    "Resource",
+		}: &Resource{},
+		{
+			Group:   "pkg.knative.dev",
+			Version: "v1beta1",
+			Kind:    "Resource",
+		}: &Resource{},
+		{
+			Group:   "pkg.knative.dev",
+			Version: "v1alpha1",
+			Kind:    "InnerDefaultResource",
+		}: &InnerDefaultResource{},
+		{
+			Group:   "pkg.knative.io",
+			Version: "v1alpha1",
+			Kind:    "InnerDefaultResource",
+		}: &InnerDefaultResource{},
+	}
+}
+
 func newNonRunningTestResourceAdmissionController(t *testing.T, options ControllerOptions) (
 	kubeClient *fakekubeclientset.Clientset,
-	ac *ResourceAdmissionController) {
+	ac AdmissionController) {
 	t.Helper()
 	// Create fake clients
 	kubeClient = fakekubeclientset.NewSimpleClientset()
@@ -505,13 +532,15 @@ func TestValidWebhook(t *testing.T) {
 }
 
 func TestUpdatingWebhook(t *testing.T) {
-	kubeClient, ac := newNonRunningTestResourceAdmissionController(t, newDefaultOptions())
+	kubeClient, c := newNonRunningTestResourceAdmissionController(t, newDefaultOptions())
+
+	ac := c.(*ResourceAdmissionController)
 	webhook := &admissionregistrationv1beta1.MutatingWebhookConfiguration{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: ac.Options.WebhookName,
+			Name: ac.options.WebhookName,
 		},
 		Webhooks: []admissionregistrationv1beta1.Webhook{{
-			Name:         ac.Options.WebhookName,
+			Name:         ac.options.WebhookName,
 			Rules:        []admissionregistrationv1beta1.RuleWithOperations{{}},
 			ClientConfig: admissionregistrationv1beta1.WebhookClientConfig{},
 		}},
@@ -524,7 +553,7 @@ func TestUpdatingWebhook(t *testing.T) {
 		t.Fatalf("Failed to create webhook: %s", err)
 	}
 
-	currentWebhook, _ := kubeClient.AdmissionregistrationV1beta1().MutatingWebhookConfigurations().Get(ac.Options.WebhookName, metav1.GetOptions{})
+	currentWebhook, _ := kubeClient.AdmissionregistrationV1beta1().MutatingWebhookConfigurations().Get(ac.options.WebhookName, metav1.GetOptions{})
 	if reflect.DeepEqual(currentWebhook.Webhooks, webhook.Webhooks) {
 		t.Fatalf("Expected webhook to be updated")
 	}
@@ -615,12 +644,7 @@ func setUserAnnotation(userC, userU string) jsonpatch.JsonPatchOperation {
 	}
 }
 
-func NewTestResourceAdmissionController(options ControllerOptions) *ResourceAdmissionController {
-	// Use different versions and domains, for coverage.
-	handlers := newHandlers()
-	return &ResourceAdmissionController{
-		Handlers:              handlers,
-		Options:               options,
-		DisallowUnknownFields: true,
-	}
+func NewTestResourceAdmissionController(options ControllerOptions) AdmissionController {
+	handlers := newResourceHandlers()
+	return NewResourceAdmissionController(handlers, options, true)
 }
