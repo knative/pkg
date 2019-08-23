@@ -48,6 +48,10 @@ New regression has been detected, reopening this issue:
 	newIssueCommentTemplate = `
 A new regression for this test has been detected:
 %s`
+
+	// closeIssueComment is the comment of an issue when we close it
+	closeIssueComment = `
+The performance regression goes way for this test, closing this issue.`
 )
 
 // IssueOperations defines operations that can be done to github
@@ -130,24 +134,31 @@ func (gih *issueHandler) createNewIssue(org, repo, title, body string, dryrun bo
 		},
 		dryrun,
 	); nil != err {
-		return fmt.Errorf("failed creating issue '%s' in repo '%s'", title, repo)
+		return err
 	}
-	if err := alerter.Run(
+	return alerter.Run(
 		"adding perf label",
 		func() error {
 			return gih.client.AddLabelsToIssue(org, repo, *newIssue.Number, []string{perfLabel})
 		},
 		dryrun,
-	); nil != err {
-		return fmt.Errorf("failed adding perf label for issue '%s' in repo '%s'", title, repo)
-	}
-	return nil
+	)
 }
 
 // CloseIssue will close the issue.
 func (gih *issueHandler) CloseIssue(issueNumber int) error {
 	org := gih.config.org
 	repo := gih.config.repo
+	if err := alerter.Run(
+		"add comment for the issue to close",
+		func() error {
+			_, cErr := gih.client.CreateComment(org, repo, issueNumber, closeIssueComment)
+			return cErr
+		},
+		gih.config.dryrun,
+	); err != nil {
+		return err
+	}
 	return alerter.Run(
 		"closing issue",
 		func() error {
