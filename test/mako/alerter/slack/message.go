@@ -45,17 +45,17 @@ type messageHandler struct {
 func Setup(userName, tokenPath, repo string, dryrun bool) (MessageOperations, error) {
 	client, err := slackutil.NewClient(userName, tokenPath)
 	if err != nil {
-		return nil, fmt.Errorf("Cannot authenticate to slack: %v", err)
+		return nil, fmt.Errorf("cannot authenticate to slack: %v", err)
 	}
 	var config *repoConfig
-	for _, repoConfig := range repoConfigs.repoConfigs {
+	for _, repoConfig := range repoConfigs {
 		if repoConfig.repo == repo {
 			config = &repoConfig
 			break
 		}
 	}
 	if config == nil {
-		return nil, fmt.Errorf("No channel configuration found for repo %v", repo)
+		return nil, fmt.Errorf("no channel configuration found for repo %v", repo)
 	}
 	return &messageHandler{client: client, config: *config, dryrun: dryrun}, nil
 }
@@ -65,16 +65,19 @@ func (smh *messageHandler) Post(text string) error {
 	// TODO(Fredy-Z): add deduplication logic, maybe do not send more than one alert within 24 hours?
 	errs := make([]error, 0)
 	channels := smh.config.channels
+	mux := &sync.Mutex{}
 	var wg sync.WaitGroup
 	for i := range channels {
 		channel := channels[i]
 		wg.Add(1)
 		go func() {
+			defer wg.Done()
 			message := fmt.Sprintf(messageTemplate, time.Now(), text)
 			if err := smh.client.Post(message, channel.identity); err != nil {
-				errs = append(errs, fmt.Errorf("Failed to send message to channel %v", channel))
+				mux.Lock()
+				errs = append(errs, fmt.Errorf("failed to send message to channel %v", channel))
+				mux.Unlock()
 			}
-			wg.Done()
 		}()
 	}
 	wg.Wait()

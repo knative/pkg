@@ -21,15 +21,15 @@ import (
 	"time"
 
 	"github.com/google/go-github/github"
-	"knative.dev/pkg/test/mako/alerter"
 
+	"knative.dev/pkg/test/mako/alerter"
 	"knative.dev/test-infra/shared/ghutil"
 )
 
 const (
 	// perfLabel is the Github issue label used for querying all auto-generated performance issues.
-	perfLabel       = "auto:perf"
-	daysConsiderOld = 10 // arbitrary number of days for an issue to be considered old
+	perfLabel         = "auto:perf"
+	daysConsideredOld = 10 // arbitrary number of days for an issue to be considered old
 
 	// issueTitleTemplate is a template for issue title
 	issueTitleTemplate = "[performance] %s"
@@ -77,7 +77,7 @@ type config struct {
 func Setup(githubToken string, config config) (IssueOperations, error) {
 	ghc, err := ghutil.NewGithubClient(githubToken)
 	if err != nil {
-		return nil, fmt.Errorf("Cannot authenticate to github: %v", err)
+		return nil, fmt.Errorf("cannot authenticate to github: %v", err)
 	}
 	return &issueHandler{client: ghc, config: config}, nil
 }
@@ -108,9 +108,9 @@ func (gih *issueHandler) AddIssue(testName, desc string) error {
 		if err := gih.addComment(org, repo, *issue.Number, comment, dryrun); err != nil {
 			return err
 		}
-		// If the issue hasn't been updated for a long time, add a new comment
 	} else {
-		if time.Now().Sub(*issue.UpdatedAt) > daysConsiderOld*24*time.Hour {
+		// If the issue hasn't been updated for a long time, add a new comment
+		if time.Now().Sub(*issue.UpdatedAt) > daysConsideredOld*24*time.Hour {
 			comment := fmt.Sprintf(newIssueCommentTemplate, desc)
 			// TODO(Fredy-Z): edit the old comment instead of adding a new one, like flaky-test-reporter
 			if err := gih.addComment(org, repo, *issue.Number, comment, dryrun); err != nil {

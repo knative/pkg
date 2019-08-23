@@ -27,7 +27,7 @@ import (
 // when performance regression happens in the automation tests.
 const configFile = "config.yaml"
 
-var repoConfigs = config{}
+var repoConfigs []repoConfig
 
 // config contains all repo configs for performance regression alerting.
 type config struct {
@@ -52,7 +52,10 @@ func init() {
 	if err != nil {
 		log.Printf("Failed to load the config file: %v", err)
 	}
-	if err = yaml.Unmarshal(contents, &repoConfigs); err != nil {
+	config := &config{}
+	if err = yaml.Unmarshal(contents, &config); err != nil {
 		log.Printf("Failed to unmarshal %v", contents)
+	} else {
+		repoConfigs = config.repoConfigs
 	}
 }

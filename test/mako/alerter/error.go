@@ -19,7 +19,7 @@ limitations under the License.
 package alerter
 
 import (
-	"fmt"
+	"errors"
 	"strings"
 )
 
@@ -28,9 +28,10 @@ func CombineErrors(errs []error) error {
 	if len(errs) == 0 {
 		return nil
 	}
-	var errStrs []string
+	var sb strings.Builder
 	for _, err := range errs {
-		errStrs = append(errStrs, err.Error())
+		sb.WriteString(err.Error())
+		sb.WriteString("\n")
 	}
-	return fmt.Errorf(strings.Join(errStrs, "\n"))
+	return errors.New(strings.Trim(sb.String(), "\n"))
 }
