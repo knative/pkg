@@ -63,18 +63,18 @@ type IssueOperations interface {
 // issueHandler handles methods for github issues
 type issueHandler struct {
 	client ghutil.GithubOperations
-	config Config
+	config config
 }
 
-// Config is the global config that can be used in Github operations
-type Config struct {
+// config is the global config that can be used in Github operations
+type config struct {
 	org    string
 	repo   string
 	dryrun bool
 }
 
 // Setup creates the necessary setup to make calls to work with github issues
-func Setup(githubToken string, config Config) (IssueOperations, error) {
+func Setup(githubToken string, config config) (IssueOperations, error) {
 	ghc, err := ghutil.NewGithubClient(githubToken)
 	if err != nil {
 		return nil, fmt.Errorf("Cannot authenticate to github: %v", err)
