@@ -54,12 +54,6 @@ A new regression for this test has been detected:
 The performance regression goes way for this test, closing this issue.`
 )
 
-// IssueOperations defines operations that can be done to github
-type IssueOperations interface {
-	AddIssue(testName, desc string) error
-	CloseIssue(issueNumber int) error
-}
-
 // issueHandler handles methods for github issues
 type issueHandler struct {
 	client ghutil.GithubOperations
@@ -74,7 +68,7 @@ type config struct {
 }
 
 // Setup creates the necessary setup to make calls to work with github issues
-func Setup(githubToken string, config config) (IssueOperations, error) {
+func Setup(githubToken string, config config) (*issueHandler, error) {
 	ghc, err := ghutil.NewGithubClient(githubToken)
 	if err != nil {
 		return nil, fmt.Errorf("cannot authenticate to github: %v", err)
@@ -82,8 +76,9 @@ func Setup(githubToken string, config config) (IssueOperations, error) {
 	return &issueHandler{client: ghc, config: config}, nil
 }
 
-// AddIssue will try to add an issue with the given testName and description.
-func (gih *issueHandler) AddIssue(testName, desc string) error {
+// CreateIssueForTest will try to add an issue with the given testName and description.
+// If there is already an issue related to the test, it will try to update that issue.
+func (gih *issueHandler) CreateIssueForTest(testName, desc string) error {
 	org := gih.config.org
 	repo := gih.config.repo
 	dryrun := gih.config.dryrun
@@ -145,17 +140,26 @@ func (gih *issueHandler) createNewIssue(org, repo, title, body string, dryrun bo
 	)
 }
 
-// CloseIssue will close the issue.
-func (gih *issueHandler) CloseIssue(issueNumber int) error {
+// CloseIssueForTest will try to close the issue for the given testName.
+// If there is no issue related to the test or the issue is already closed, the function will do nothing.
+func (gih *issueHandler) CloseIssueForTest(testName string) error {
 	org := gih.config.org
 	repo := gih.config.repo
+	dryrun := gih.config.dryrun
+	title := fmt.Sprintf(issueTitleTemplate, testName)
+	issue := gih.findIssue(org, repo, title, dryrun)
+	if issue == nil || *issue.State == string(ghutil.IssueCloseState) {
+		return nil
+	}
+
+	issueNumber := *issue.Number
 	if err := alerter.Run(
 		"add comment for the issue to close",
 		func() error {
 			_, cErr := gih.client.CreateComment(org, repo, issueNumber, closeIssueComment)
 			return cErr
 		},
-		gih.config.dryrun,
+		dryrun,
 	); err != nil {
 		return err
 	}
@@ -164,7 +168,7 @@ func (gih *issueHandler) CloseIssue(issueNumber int) error {
 		func() error {
 			return gih.client.CloseIssue(org, repo, issueNumber)
 		},
-		gih.config.dryrun,
+		dryrun,
 	)
 }
 

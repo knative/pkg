@@ -1242,11 +1242,12 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:66aac42f0076fda7816abe307a79a6e5090f2444aad1ca750668f33aa7369b48"
+  digest = "1:aa89a7d5efa637489243514d2fb2babe11b03e3f523db43cdf074147928f529f"
   name = "knative.dev/test-infra"
   packages = [
     "scripts",
     "shared/ghutil",
+    "shared/ghutil/fakeghutil",
     "shared/slackutil",
     "tools/dep-collector",
   ]
@@ -1381,6 +1382,7 @@
     "k8s.io/test-infra/boskos/common",
     "knative.dev/test-infra/scripts",
     "knative.dev/test-infra/shared/ghutil",
+    "knative.dev/test-infra/shared/ghutil/fakeghutil",
     "knative.dev/test-infra/shared/slackutil",
     "knative.dev/test-infra/tools/dep-collector",
   ]

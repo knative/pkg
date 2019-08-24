@@ -29,11 +29,6 @@ const messageTemplate = `
 As of %s, there is a new performance regression detected from automation test:
 %s`
 
-// MessageOperations defines operations that can be done to slack
-type MessageOperations interface {
-	Post(text string) error
-}
-
 // messageHandler handles methods for slack messages
 type messageHandler struct {
 	client slackutil.Operations
@@ -42,7 +37,7 @@ type messageHandler struct {
 }
 
 // Setup creates the necessary setup to make calls to work with slack
-func Setup(userName, tokenPath, repo string, dryrun bool) (MessageOperations, error) {
+func Setup(userName, tokenPath, repo string, dryrun bool) (*messageHandler, error) {
 	client, err := slackutil.NewClient(userName, tokenPath)
 	if err != nil {
 		return nil, fmt.Errorf("cannot authenticate to slack: %v", err)
