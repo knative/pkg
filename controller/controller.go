@@ -359,14 +359,14 @@ func (c *Impl) handleErr(err error, key string) {
 	c.WorkQueue.Forget(key)
 }
 
-// GlobalResync enqueues all objects from the passed SharedInformer
+// GlobalResync enqueues (with a delay) all objects from the passed SharedInformer
 func (c *Impl) GlobalResync(si cache.SharedInformer) {
 	alwaysTrue := func(interface{}) bool { return true }
 	c.FilteredGlobalResync(alwaysTrue, si)
 }
 
-// FilteredGlobalResync enqueues all objects from the SharedInformer
-// that pass the filter function
+// FilteredGlobalResync enqueues (with a delay) all objects from the
+// SharedInformer that pass the filter function
 func (c *Impl) FilteredGlobalResync(f func(interface{}) bool, si cache.SharedInformer) {
 	list := si.GetStore().List()
 	count := float64(len(list))
