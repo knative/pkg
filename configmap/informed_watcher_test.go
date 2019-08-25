@@ -28,11 +28,14 @@ import (
 
 type counter struct {
 	name string
+	mu   sync.RWMutex
 	cfg  []*corev1.ConfigMap
 	wg   *sync.WaitGroup
 }
 
 func (c *counter) callback(cm *corev1.ConfigMap) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
 	c.cfg = append(c.cfg, cm)
 	if c.wg != nil {
 		c.wg.Done()
@@ -40,6 +43,8 @@ func (c *counter) callback(cm *corev1.ConfigMap) {
 }
 
 func (c *counter) count() int {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
 	return len(c.cfg)
 }
 
@@ -314,7 +319,9 @@ func TestDefaultConfigMapDeleted(t *testing.T) {
 	// Delete the real ConfigMap in K8s, which should cause the default to be processed again.
 	// Because this happens asynchronously via a watcher, use a sync.WaitGroup to wait until it has
 	// occurred.
+	foo1.mu.Lock()
 	foo1.wg = &sync.WaitGroup{}
+	foo1.mu.Unlock()
 	foo1.wg.Add(1)
 	err = kc.CoreV1().ConfigMaps(fooCM.Namespace).Delete(fooCM.Name, nil)
 	if err != nil {
