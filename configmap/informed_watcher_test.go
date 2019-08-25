@@ -49,12 +49,14 @@ func TestInformedWatcher(t *testing.T) {
 			Namespace: "default",
 			Name:      "foo",
 		},
+		Data: map[string]string{"key": "val"},
 	}
 	barCM := &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: "default",
 			Name:      "bar",
 		},
+		Data: map[string]string{"key2": "val3"},
 	}
 	kc := fakekubeclientset.NewSimpleClientset(fooCM, barCM)
 	cm := NewInformedWatcher(kc, "default")
@@ -112,7 +114,18 @@ func TestInformedWatcher(t *testing.T) {
 	}
 
 	// After a "bar" event, all watchers should have 3
-	cm.updateConfigMapEvent(nil, barCM)
+	nbarCM := barCM.DeepCopy()
+	nbarCM.Data["wow"] = "now!"
+	cm.updateConfigMapEvent(barCM, nbarCM)
+	for _, obj := range []*counter{foo1, foo2, bar} {
+		if got, want := obj.count(), 3; got != want {
+			t.Errorf("%v.count = %v, want %v", obj, got, want)
+		}
+	}
+
+	// After an idempotent event no changes should be recorded.
+	cm.updateConfigMapEvent(barCM, barCM)
+	cm.updateConfigMapEvent(fooCM, fooCM)
 	for _, obj := range []*counter{foo1, foo2, bar} {
 		if got, want := obj.count(), 3; got != want {
 			t.Errorf("%v.count = %v, want %v", obj, got, want)
