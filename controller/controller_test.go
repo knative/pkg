@@ -765,7 +765,26 @@ func (*dummyInformer) GetStore() cache.Store {
 }
 
 var dummyKeys = []string{"foo/bar", "bar/foo", "fizz/buzz"}
-var dummyObjs = []interface{}{"foo/bar", "bar/foo", "fizz/buzz"}
+var dummyObjs = []interface{}{
+	&Resource{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "bar",
+			Namespace: "foo",
+		},
+	},
+	&Resource{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "foo",
+			Namespace: "bar",
+		},
+	},
+	&Resource{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "buzz",
+			Namespace: "fizz",
+		},
+	},
+}
 
 func (*dummyStore) ListKeys() []string {
 	return dummyKeys
@@ -790,8 +809,10 @@ func TestImplGlobalResync(t *testing.T) {
 
 	impl.GlobalResync(&dummyInformer{})
 
+	// The global resync delays enqueuing things by a second with a jitter that
+	// goes up to len(dummyObjs) times a second.
 	select {
-	case <-time.After(10 * time.Millisecond):
+	case <-time.After((1 + 3) * time.Second):
 		// We don't expect completion before the stopCh closes.
 	case <-doneCh:
 		t.Error("StartAll finished early.")
