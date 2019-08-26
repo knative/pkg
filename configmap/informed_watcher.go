@@ -18,7 +18,6 @@ package configmap
 
 import (
 	"errors"
-	"time"
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
@@ -52,8 +51,9 @@ func NewInformedWatcherFromFactory(sif informers.SharedInformerFactory, namespac
 func NewInformedWatcher(kc kubernetes.Interface, namespace string) *InformedWatcher {
 	return NewInformedWatcherFromFactory(informers.NewSharedInformerFactoryWithOptions(
 		kc,
-		// This is the default resync period from controller-runtime.
-		10*time.Hour,
+		// We noticed that we're getting updates all the time anyway, due to the
+		// watches being terminated and re-spawned.
+		0,
 		informers.WithNamespace(namespace),
 	), namespace)
 }
