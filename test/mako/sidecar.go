@@ -25,8 +25,8 @@ import (
 	"cloud.google.com/go/compute/metadata"
 	"knative.dev/pkg/injection/clients/kubeclient"
 
-	"github.com/google/mako/helpers/go/quickstore"
-	qpb "github.com/google/mako/helpers/proto/quickstore/quickstore_go_proto"
+	"github.com/google/mako/go/quickstore"
+	qpb "github.com/google/mako/proto/quickstore/quickstore_go_proto"
 	"k8s.io/client-go/rest"
 	"knative.dev/pkg/changeset"
 	"knative.dev/pkg/controller"
