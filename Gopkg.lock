@@ -470,9 +470,11 @@
   version = "v0.8.1"
 
 [[projects]]
-  digest = "1:097cc61836050f45cbb712ae3bb45d66fba464c16b8fac09907fa3c1f753eff6"
+  digest = "1:85624604c83fa9ed36d47d1ac9fb705f85e3d08a98a54eaafbc37b759b592b23"
   name = "github.com/prometheus/client_golang"
   packages = [
+    "api",
+    "api/prometheus/v1",
     "prometheus",
     "prometheus/internal",
     "prometheus/promhttp",
@@ -1295,6 +1297,9 @@
     "github.com/openzipkin/zipkin-go/reporter/http",
     "github.com/openzipkin/zipkin-go/reporter/recorder",
     "github.com/pkg/errors",
+    "github.com/prometheus/client_golang/api",
+    "github.com/prometheus/client_golang/api/prometheus/v1",
+    "github.com/prometheus/common/model",
     "github.com/rogpeppe/go-internal/semver",
     "github.com/spf13/pflag",
     "github.com/tsenart/vegeta/lib",
