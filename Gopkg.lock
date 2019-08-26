@@ -1245,13 +1245,10 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:4da19f1792b6cfdb27f86853678ae81024580b33320e0a947369908584c37681"
+  digest = "1:230d4d8a9aa64db75413202a9d1cde3b80bcc417b858093f0fd27c2017bb4955"
   name = "knative.dev/test-infra"
   packages = [
     "scripts",
-    "shared/ghutil",
-    "shared/ghutil/fakeghutil",
-    "shared/slackutil",
     "tools/dep-collector",
   ]
   pruneopts = "UT"
@@ -1313,6 +1310,7 @@
     "go.uber.org/zap/zapcore",
     "go.uber.org/zap/zaptest",
     "golang.org/x/net/context",
+    "golang.org/x/oauth2",
     "golang.org/x/oauth2/google",
     "golang.org/x/sync/errgroup",
     "google.golang.org/api/container/v1",
@@ -1389,9 +1387,6 @@
     "k8s.io/test-infra/boskos/client",
     "k8s.io/test-infra/boskos/common",
     "knative.dev/test-infra/scripts",
-    "knative.dev/test-infra/shared/ghutil",
-    "knative.dev/test-infra/shared/ghutil/fakeghutil",
-    "knative.dev/test-infra/shared/slackutil",
     "knative.dev/test-infra/tools/dep-collector",
   ]
   solver-name = "gps-cdcl"
