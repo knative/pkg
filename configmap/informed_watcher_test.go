@@ -28,11 +28,14 @@ import (
 
 type counter struct {
 	name string
+	mu   sync.RWMutex
 	cfg  []*corev1.ConfigMap
 	wg   *sync.WaitGroup
 }
 
 func (c *counter) callback(cm *corev1.ConfigMap) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
 	c.cfg = append(c.cfg, cm)
 	if c.wg != nil {
 		c.wg.Done()
@@ -40,6 +43,8 @@ func (c *counter) callback(cm *corev1.ConfigMap) {
 }
 
 func (c *counter) count() int {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
 	return len(c.cfg)
 }
 
@@ -49,12 +54,14 @@ func TestInformedWatcher(t *testing.T) {
 			Namespace: "default",
 			Name:      "foo",
 		},
+		Data: map[string]string{"key": "val"},
 	}
 	barCM := &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: "default",
 			Name:      "bar",
 		},
+		Data: map[string]string{"key2": "val3"},
 	}
 	kc := fakekubeclientset.NewSimpleClientset(fooCM, barCM)
 	cm := NewInformedWatcher(kc, "default")
@@ -112,7 +119,18 @@ func TestInformedWatcher(t *testing.T) {
 	}
 
 	// After a "bar" event, all watchers should have 3
-	cm.updateConfigMapEvent(nil, barCM)
+	nbarCM := barCM.DeepCopy()
+	nbarCM.Data["wow"] = "now!"
+	cm.updateConfigMapEvent(barCM, nbarCM)
+	for _, obj := range []*counter{foo1, foo2, bar} {
+		if got, want := obj.count(), 3; got != want {
+			t.Errorf("%v.count = %v, want %v", obj, got, want)
+		}
+	}
+
+	// After an idempotent event no changes should be recorded.
+	cm.updateConfigMapEvent(barCM, barCM)
+	cm.updateConfigMapEvent(fooCM, fooCM)
 	for _, obj := range []*counter{foo1, foo2, bar} {
 		if got, want := obj.count(), 3; got != want {
 			t.Errorf("%v.count = %v, want %v", obj, got, want)
@@ -301,7 +319,9 @@ func TestDefaultConfigMapDeleted(t *testing.T) {
 	// Delete the real ConfigMap in K8s, which should cause the default to be processed again.
 	// Because this happens asynchronously via a watcher, use a sync.WaitGroup to wait until it has
 	// occurred.
+	foo1.mu.Lock()
 	foo1.wg = &sync.WaitGroup{}
+	foo1.mu.Unlock()
 	foo1.wg.Add(1)
 	err = kc.CoreV1().ConfigMaps(fooCM.Namespace).Delete(fooCM.Name, nil)
 	if err != nil {
