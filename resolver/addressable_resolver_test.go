@@ -28,6 +28,7 @@ import (
 	"k8s.io/client-go/kubernetes/scheme"
 	"knative.dev/pkg/apis"
 	duckv1alpha1 "knative.dev/pkg/apis/duck/v1alpha1"
+	duckv1beta1 "knative.dev/pkg/apis/duck/v1beta1"
 	apisv1alpha1 "knative.dev/pkg/apis/v1alpha1"
 	fakedynamicclient "knative.dev/pkg/injection/clients/dynamicclient/fake"
 	"knative.dev/pkg/ptr"
@@ -52,6 +53,7 @@ var (
 func init() {
 	// Add types to scheme
 	duckv1alpha1.AddToScheme(scheme.Scheme)
+	duckv1beta1.AddToScheme(scheme.Scheme)
 }
 
 func TestGetURI_ObjectReference(t *testing.T) {
@@ -159,7 +161,12 @@ func TestGetURI_ObjectReference(t *testing.T) {
 		t.Run(n, func(t *testing.T) {
 			ctx, _ := fakedynamicclient.With(context.Background(), scheme.Scheme, tc.objects...)
 			r := resolver.NewURIResolver(ctx, func(string) {})
+
+			// Run it twice since this should be idempotent. URI Resolver should
+			// not modify the cache's copy.
+			_, _ = r.URIFromDestination(tc.dest, getAddressable())
 			uri, gotErr := r.URIFromDestination(tc.dest, getAddressable())
+
 			if gotErr != nil {
 				if tc.wantErr != nil {
 					if diff := cmp.Diff(tc.wantErr.Error(), gotErr.Error()); diff != "" {
