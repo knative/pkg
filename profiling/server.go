@@ -28,8 +28,8 @@ import (
 	"knative.dev/pkg/apis/networking"
 )
 
-// profilingKey is the name of the key in config-observability config map that indicates whether profiling
-// is enabled of disabled
+// profilingKey is the name of the key in config-observability config map
+// that indicates whether profiling is enabled
 const profilingKey = "profiling.enable"
 
 // Handler holds the main HTTP handler and a flag indicating
