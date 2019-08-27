@@ -23,11 +23,13 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes/scheme"
 	"knative.dev/pkg/apis"
 	duckv1alpha1 "knative.dev/pkg/apis/duck/v1alpha1"
+	duckv1beta1 "knative.dev/pkg/apis/duck/v1beta1"
 	apisv1alpha1 "knative.dev/pkg/apis/v1alpha1"
 	fakedynamicclient "knative.dev/pkg/injection/clients/dynamicclient/fake"
 	"knative.dev/pkg/ptr"
@@ -52,6 +54,7 @@ var (
 func init() {
 	// Add types to scheme
 	duckv1alpha1.AddToScheme(scheme.Scheme)
+	duckv1beta1.AddToScheme(scheme.Scheme)
 }
 
 func TestGetURI_ObjectReference(t *testing.T) {
@@ -278,4 +281,53 @@ func getUnaddressableRef() *corev1.ObjectReference {
 		APIVersion: unaddressableAPIVersion,
 		Namespace:  testNS,
 	}
+}
+
+func TestResolveDoesNotModifyOriginal(t *testing.T) {
+	obj := &duckv1beta1.AddressableType{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       addressableKind,
+			APIVersion: addressableAPIVersion,
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      addressableName,
+			Namespace: testNS,
+		},
+		Status: duckv1beta1.AddressStatus{
+			Address: &duckv1beta1.Addressable{
+				&apis.URL{
+					Scheme: "http",
+					Host:   "example.com",
+					Path:   "/foo",
+				},
+			},
+		},
+	}
+	dest := apisv1alpha1.Destination{
+		ObjectReference: getAddressableRef(),
+		Path:            ptr.String("/bar"),
+	}
+	wantURI := addressableDNS + "/foo/bar"
+
+	ctx, _ := fakedynamicclient.With(context.Background(), scheme.Scheme, obj)
+	r := resolver.NewURIResolver(ctx, func(string) {})
+	gotURI, gotErr := r.URIFromDestination(dest, getAddressable())
+	if gotErr != nil {
+		t.Errorf("unexpected error: %v", gotErr)
+		t.FailNow()
+	}
+
+	if gotURI != wantURI {
+		t.Errorf("wrong resolved uri, expected %q, got %q", wantURI, gotURI)
+	}
+
+	// None of the input paths should have changed.
+	if gotPath, wantPath := *dest.Path, "/bar"; gotPath != wantPath {
+		t.Errorf("destination path has changed, expected %q, got %q", wantPath, gotPath)
+	}
+
+	if gotPath, wantPath := obj.Status.Address.URL.Path, "/foo"; gotPath != wantPath {
+		t.Errorf("object path has changed, expected %q, got %q", wantPath, gotPath)
+	}
+
 }
