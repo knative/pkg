@@ -26,21 +26,15 @@ import (
 	"go.opencensus.io/stats/view"
 )
 
-func TestRecord(t *testing.T) {
-	ctx := context.TODO()
-	measure := stats.Int64("request_count", "Number of reconcile operations", stats.UnitNone)
-	v := &view.View{
-		Measure:     measure,
-		Aggregation: view.LastValue(),
-	}
-	view.Register(v)
-	defer view.Unregister(v)
+type cases struct {
+	name          string
+	metricsConfig *metricsConfig
+	measurement   stats.Measurement
+}
 
-	shouldReportCases := []struct {
-		name          string
-		metricsConfig *metricsConfig
-		measurement   stats.Measurement
-	}{
+func TestRecordServing(t *testing.T) {
+	measure := stats.Int64("request_count", "Number of reconcile operations", stats.UnitNone)
+	shouldReportCases := []cases{
 		// Increase the measurement value for each test case so that checking
 		// the last value ensures the measurement has been recorded.
 		{
@@ -67,6 +61,49 @@ func TestRecord(t *testing.T) {
 			measurement: measure.M(4),
 		},
 	}
+	testRecord(t, measure, shouldReportCases)
+}
+
+func TestRecordEventing(t *testing.T) {
+	measure := stats.Int64("event_count", "Number of event received", stats.UnitNone)
+	shouldReportCases := []cases{
+		// Increase the measurement value for each test case so that checking
+		// the last value ensures the measurement has been recorded.
+		{
+			name:          "none stackdriver backend",
+			metricsConfig: &metricsConfig{},
+			measurement:   measure.M(1),
+		}, {
+			name: "stackdriver backend with supported metric",
+			metricsConfig: &metricsConfig{
+				isStackdriverBackend:        true,
+				stackdriverMetricTypePrefix: "knative.dev/eventing/broker",
+			},
+			measurement: measure.M(5),
+		}, {
+			name: "stackdriver backend with unsupported metric and allow custom metric",
+			metricsConfig: &metricsConfig{
+				isStackdriverBackend:          true,
+				stackdriverMetricTypePrefix:   "knative.dev/unsupported",
+				allowStackdriverCustomMetrics: true,
+			},
+			measurement: measure.M(3),
+		}, {
+			name:        "empty metricsConfig",
+			measurement: measure.M(4),
+		},
+	}
+	testRecord(t, measure, shouldReportCases)
+}
+
+func testRecord(t *testing.T, measure *stats.Int64Measure, shouldReportCases []cases) {
+	ctx := context.TODO()
+	v := &view.View{
+		Measure:     measure,
+		Aggregation: view.LastValue(),
+	}
+	view.Register(v)
+	defer view.Unregister(v)
 
 	for _, test := range shouldReportCases {
 		setCurMetricsConfig(test.metricsConfig)

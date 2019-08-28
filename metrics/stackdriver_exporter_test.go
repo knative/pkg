@@ -1,15 +1,19 @@
 /*
-Copyright 2019 The Knative Authors.
+Copyright 2019 The Knative Authors
+
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
+
     http://www.apache.org/licenses/LICENSE-2.0
+
 Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
+
 package metrics
 
 import (
@@ -24,6 +28,9 @@ import (
 	"knative.dev/pkg/metrics/metricskey"
 )
 
+// TODO UTs should move to eventing and serving, as appropriate.
+// 	See https://github.com/knative/pkg/issues/608
+
 var (
 	testGcpMetadata = gcpMetadata{
 		project:  "test-project",
@@ -31,7 +38,7 @@ var (
 		cluster:  "test-cluster",
 	}
 
-	supportedMetricsTestCases = []struct {
+	supportedServingMetricsTestCases = []struct {
 		name       string
 		domain     string
 		component  string
@@ -46,6 +53,52 @@ var (
 		domain:     servingDomain,
 		component:  "autoscaler",
 		metricName: "desired_pods",
+	}}
+
+	supportedEventingBrokerMetricsTestCases = []struct {
+		name       string
+		domain     string
+		component  string
+		metricName string
+	}{{
+		name:       "broker metric",
+		domain:     eventingDomain,
+		component:  "broker",
+		metricName: "event_count",
+	}}
+
+	supportedEventingTriggerMetricsTestCases = []struct {
+		name       string
+		domain     string
+		component  string
+		metricName string
+	}{{
+		name:       "trigger metric",
+		domain:     eventingDomain,
+		component:  "trigger",
+		metricName: "event_count",
+	}, {
+		name:       "trigger metric",
+		domain:     eventingDomain,
+		component:  "trigger",
+		metricName: "event_processing_latencies",
+	}, {
+		name:       "trigger metric",
+		domain:     eventingDomain,
+		component:  "trigger",
+		metricName: "event_dispatch_latencies",
+	}}
+
+	supportedEventingImporterMetricsTestCases = []struct {
+		name       string
+		domain     string
+		component  string
+		metricName string
+	}{{
+		name:       "importer metric",
+		domain:     eventingDomain,
+		component:  "importer",
+		metricName: "event_count",
 	}}
 
 	unsupportedMetricsTestCases = []struct {
@@ -68,6 +121,16 @@ var (
 		domain:     servingDomain,
 		component:  "activator",
 		metricName: "unsupported",
+	}, {
+		name:       "unsupported component",
+		domain:     eventingDomain,
+		component:  "unsupported",
+		metricName: "event_count",
+	}, {
+		name:       "unsupported metric",
+		domain:     eventingDomain,
+		component:  "broker",
+		metricName: "unsupported",
 	}}
 )
 
@@ -85,7 +148,7 @@ func newFakeExporter(o stackdriver.Options) (view.Exporter, error) {
 }
 
 func TestGetMonitoredResourceFunc_UseKnativeRevision(t *testing.T) {
-	for _, testCase := range supportedMetricsTestCases {
+	for _, testCase := range supportedServingMetricsTestCases {
 		testView = &view.View{
 			Description: "Test View",
 			Measure:     stats.Int64(testCase.metricName, "Test Measure", stats.UnitNone),
@@ -94,7 +157,7 @@ func TestGetMonitoredResourceFunc_UseKnativeRevision(t *testing.T) {
 		}
 		mrf := getMonitoredResourceFunc(path.Join(testCase.domain, testCase.component), &testGcpMetadata)
 
-		newTags, monitoredResource := mrf(testView, testTags)
+		newTags, monitoredResource := mrf(testView, revisionTestTags)
 		gotResType, labels := monitoredResource.MonitoredResource()
 		wantedResType := "knative_revision"
 		if gotResType != wantedResType {
@@ -115,6 +178,115 @@ func TestGetMonitoredResourceFunc_UseKnativeRevision(t *testing.T) {
 	}
 }
 
+func TestGetMonitoredResourceFunc_UseKnativeBroker(t *testing.T) {
+	for _, testCase := range supportedEventingBrokerMetricsTestCases {
+		testView = &view.View{
+			Description: "Test View",
+			Measure:     stats.Int64(testCase.metricName, "Test Measure", stats.UnitDimensionless),
+			Aggregation: view.LastValue(),
+			TagKeys:     []tag.Key{},
+		}
+		mrf := getMonitoredResourceFunc(path.Join(testCase.domain, testCase.component), &testGcpMetadata)
+
+		newTags, monitoredResource := mrf(testView, brokerTestTags)
+		gotResType, labels := monitoredResource.MonitoredResource()
+		wantedResType := "knative_broker"
+		if gotResType != wantedResType {
+			t.Fatalf("MonitoredResource=%v, want %v", gotResType, wantedResType)
+		}
+		got := getResourceLabelValue(metricskey.LabelEventType, newTags)
+		if got != testEventType {
+			t.Errorf("expected new tag: %v, got: %v", eventTypeKey, newTags)
+		}
+		got = getResourceLabelValue(metricskey.LabelEventSource, newTags)
+		if got != testEventSource {
+			t.Errorf("expected new tag: %v, got: %v", eventSourceKey, newTags)
+		}
+		got, ok := labels[metricskey.LabelNamespaceName]
+		if !ok || got != testNS {
+			t.Errorf("expected label %v with value %v, got: %v", metricskey.LabelNamespaceName, testNS, got)
+		}
+		got, ok = labels[metricskey.LabelBrokerName]
+		if !ok || got != testBroker {
+			t.Errorf("expected label %v with value %v, got: %v", metricskey.LabelBrokerName, testBroker, got)
+		}
+	}
+}
+
+func TestGetMonitoredResourceFunc_UseKnativeTrigger(t *testing.T) {
+	for _, testCase := range supportedEventingTriggerMetricsTestCases {
+		testView = &view.View{
+			Description: "Test View",
+			Measure:     stats.Int64(testCase.metricName, "Test Measure", stats.UnitDimensionless),
+			Aggregation: view.LastValue(),
+			TagKeys:     []tag.Key{},
+		}
+		mrf := getMonitoredResourceFunc(path.Join(testCase.domain, testCase.component), &testGcpMetadata)
+
+		newTags, monitoredResource := mrf(testView, triggerTestTags)
+		gotResType, labels := monitoredResource.MonitoredResource()
+		wantedResType := "knative_trigger"
+		if gotResType != wantedResType {
+			t.Fatalf("MonitoredResource=%v, want %v", gotResType, wantedResType)
+		}
+		got := getResourceLabelValue(metricskey.LabelFilterType, newTags)
+		if got != testFilterType {
+			t.Errorf("expected new tag: %v, got: %v", filterTypeKey, newTags)
+		}
+		got = getResourceLabelValue(metricskey.LabelFilterSource, newTags)
+		if got != testFilterSource {
+			t.Errorf("expected new tag: %v, got: %v", filterSourceKey, newTags)
+		}
+		got, ok := labels[metricskey.LabelNamespaceName]
+		if !ok || got != testNS {
+			t.Errorf("expected label %v with value %v, got: %v", metricskey.LabelNamespaceName, testNS, got)
+		}
+		got, ok = labels[metricskey.LabelBrokerName]
+		if !ok || got != testBroker {
+			t.Errorf("expected label %v with value %v, got: %v", metricskey.LabelBrokerName, testBroker, got)
+		}
+	}
+}
+
+func TestGetMonitoredResourceFunc_UseKnativeImporter(t *testing.T) {
+	for _, testCase := range supportedEventingImporterMetricsTestCases {
+		testView = &view.View{
+			Description: "Test View",
+			Measure:     stats.Int64(testCase.metricName, "Test Measure", stats.UnitDimensionless),
+			Aggregation: view.LastValue(),
+			TagKeys:     []tag.Key{},
+		}
+		mrf := getMonitoredResourceFunc(path.Join(testCase.domain, testCase.component), &testGcpMetadata)
+
+		newTags, monitoredResource := mrf(testView, importerTestTags)
+		gotResType, labels := monitoredResource.MonitoredResource()
+		wantedResType := "knative_importer"
+		if gotResType != wantedResType {
+			t.Fatalf("MonitoredResource=%v, want %v", gotResType, wantedResType)
+		}
+		got := getResourceLabelValue(metricskey.LabelEventType, newTags)
+		if got != testEventType {
+			t.Errorf("expected new tag: %v, got: %v", eventTypeKey, newTags)
+		}
+		got = getResourceLabelValue(metricskey.LabelEventSource, newTags)
+		if got != testEventSource {
+			t.Errorf("expected new tag: %v, got: %v", eventSourceKey, newTags)
+		}
+		got, ok := labels[metricskey.LabelNamespaceName]
+		if !ok || got != testNS {
+			t.Errorf("expected label %v with value %v, got: %v", metricskey.LabelNamespaceName, testNS, got)
+		}
+		got, ok = labels[metricskey.LabelImporterName]
+		if !ok || got != testImporter {
+			t.Errorf("expected label %v with value %v, got: %v", metricskey.LabelImporterName, testImporter, got)
+		}
+		got, ok = labels[metricskey.LabelImporterResourceGroup]
+		if !ok || got != testImporterResourceGroup {
+			t.Errorf("expected label %v with value %v, got: %v", metricskey.LabelImporterResourceGroup, testImporterResourceGroup, got)
+		}
+	}
+}
+
 func TestGetMonitoredResourceFunc_UseGlobal(t *testing.T) {
 	for _, testCase := range unsupportedMetricsTestCases {
 		testView = &view.View{
@@ -125,9 +297,9 @@ func TestGetMonitoredResourceFunc_UseGlobal(t *testing.T) {
 		}
 		mrf := getMonitoredResourceFunc(path.Join(testCase.domain, testCase.component), &testGcpMetadata)
 
-		newTags, monitoredResource := mrf(testView, testTags)
+		newTags, monitoredResource := mrf(testView, revisionTestTags)
 		gotResType, labels := monitoredResource.MonitoredResource()
-		wantedResType := "global"
+		wantedResType := "Global"
 		if gotResType != wantedResType {
 			t.Fatalf("MonitoredResource=%v, want: %v", gotResType, wantedResType)
 		}
@@ -142,7 +314,7 @@ func TestGetMonitoredResourceFunc_UseGlobal(t *testing.T) {
 }
 
 func TestGetgetMetricTypeFunc_UseKnativeDomain(t *testing.T) {
-	for _, testCase := range supportedMetricsTestCases {
+	for _, testCase := range supportedServingMetricsTestCases {
 		testView = &view.View{
 			Description: "Test View",
 			Measure:     stats.Int64(testCase.metricName, "Test Measure", stats.UnitNone),

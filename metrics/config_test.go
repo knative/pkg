@@ -22,12 +22,16 @@ import (
 	. "knative.dev/pkg/logging/testing"
 )
 
+// TODO UTs should move to eventing and serving, as appropriate.
+// 	See https://github.com/knative/pkg/issues/608
+
 const (
-	servingDomain = "knative.dev/serving"
-	badDomain     = "test.domain"
-	testComponent = "testComponent"
-	testProj      = "test-project"
-	anotherProj   = "another-project"
+	servingDomain  = "knative.dev/serving"
+	eventingDomain = "knative.dev/eventing"
+	badDomain      = "test.domain"
+	testComponent  = "testComponent"
+	testProj       = "test-project"
+	anotherProj    = "another-project"
 )
 
 var (
