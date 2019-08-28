@@ -28,8 +28,7 @@ import (
 	"github.com/golang/protobuf/jsonpb"
 
 	"google.golang.org/grpc"
-
-	qspb "knative.dev/pkg/test/mako/stub-sidecar/proto/quickstore_go_proto"
+	qspb "knative.dev/pkg/third_party/mako/proto/quickstore_go_proto"
 )
 
 const (
