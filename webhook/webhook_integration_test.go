@@ -464,19 +464,19 @@ func testSetup(t *testing.T) (*AdmissionController, string, error) {
 
 	defaultOpts := newDefaultOptions()
 	defaultOpts.Port = port
-	_, ac := newNonRunningTestAdmissionController(t, defaultOpts)
+	kubeClient, ac := newNonRunningTestAdmissionController(t, defaultOpts)
 
-	nsErr := createNamespace(t, ac.Client, metav1.NamespaceSystem)
+	nsErr := createNamespace(t, kubeClient, metav1.NamespaceSystem)
 	if nsErr != nil {
 		return nil, "", nsErr
 	}
 
-	cMapsErr := createTestConfigMap(t, ac.Client)
+	cMapsErr := createTestConfigMap(t, kubeClient)
 	if cMapsErr != nil {
 		return nil, "", cMapsErr
 	}
 
-	createDeployment(ac)
+	createDeployment(kubeClient)
 	resetMetrics()
 	return ac, fmt.Sprintf("0.0.0.0:%d", port), nil
 }
@@ -484,17 +484,17 @@ func testSetup(t *testing.T) (*AdmissionController, string, error) {
 func TestSetupWebhookHTTPServerError(t *testing.T) {
 	defaultOpts := newDefaultOptions()
 	defaultOpts.Port = -1 // invalid port
-	_, ac := newNonRunningTestAdmissionController(t, defaultOpts)
+	kubeClient, ac := newNonRunningTestAdmissionController(t, defaultOpts)
 
-	nsErr := createNamespace(t, ac.Client, metav1.NamespaceSystem)
+	nsErr := createNamespace(t, kubeClient, metav1.NamespaceSystem)
 	if nsErr != nil {
 		t.Fatalf("testSetup() = %v", nsErr)
 	}
-	cMapsErr := createTestConfigMap(t, ac.Client)
+	cMapsErr := createTestConfigMap(t, kubeClient)
 	if cMapsErr != nil {
 		t.Fatalf("testSetup() = %v", cMapsErr)
 	}
-	createDeployment(ac)
+	createDeployment(kubeClient)
 
 	stopCh := make(chan struct{})
 	errCh := make(chan error)
