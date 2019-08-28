@@ -18,6 +18,7 @@ package mako
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"runtime"
 	"strings"
@@ -27,6 +28,7 @@ import (
 
 	"github.com/google/mako/go/quickstore"
 	qpb "github.com/google/mako/proto/quickstore/quickstore_go_proto"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/rest"
 	"knative.dev/pkg/changeset"
 	"knative.dev/pkg/controller"
@@ -69,10 +71,18 @@ func Setup(ctx context.Context, extraTags ...string) (context.Context, *quicksto
 	}
 
 	// Get the Kubernetes version from the API server.
-	version, err := kubeclient.Get(ctx).Discovery().ServerVersion()
+	kc := kubeclient.Get(ctx)
+	version, err := kc.Discovery().ServerVersion()
 	if err != nil {
 		return nil, nil, nil, err
 	}
+
+	// Determine the number of Kubernetes nodes through the kubernetes client.
+	nodes, err := kc.CoreV1().Nodes().List(metav1.ListOptions{})
+	if err != nil {
+		return nil, nil, nil, err
+	}
+	tags = append(tags, "nodes="+fmt.Sprintf("%d", len(nodes.Items)))
 
 	// Decorate GCP metadata as tags (when we're running on GCP).
 	if projectID, err := metadata.ProjectID(); err != nil {
