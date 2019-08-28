@@ -74,11 +74,21 @@ func Setup(ctx context.Context, extraTags ...string) (context.Context, *quicksto
 		return nil, nil, nil, err
 	}
 
-	// Get GCP project ID as a tag.
+	// Decorate GCP metadata as tags (when we're running on GCP).
 	if projectID, err := metadata.ProjectID(); err != nil {
 		log.Printf("GCP project ID is not available: %v", err)
 	} else {
 		tags = append(tags, "project-id="+EscapeTag(projectID))
+	}
+	if zone, err := metadata.Zone(); err != nil {
+		log.Printf("GCP zone is not available: %v", err)
+	} else {
+		tags = append(tags, "zone="+EscapeTag(zone))
+	}
+	if machineType, err := metadata.Get("instance/machine-type"); err != nil {
+		log.Printf("GCP machine type is not available: %v", err)
+	} else if parts := strings.Split(machineType, "/"); len(parts) != 4 {
+		tags = append(tags, "instanceType="+EscapeTag(parts[3]))
 	}
 
 	qs, qclose, err := quickstore.NewAtAddress(ctx, &qpb.QuickstoreInput{
