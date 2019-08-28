@@ -299,7 +299,7 @@ func TestGetMonitoredResourceFunc_UseGlobal(t *testing.T) {
 
 		newTags, monitoredResource := mrf(testView, revisionTestTags)
 		gotResType, labels := monitoredResource.MonitoredResource()
-		wantedResType := "Global"
+		wantedResType := "global"
 		if gotResType != wantedResType {
 			t.Fatalf("MonitoredResource=%v, want: %v", gotResType, wantedResType)
 		}

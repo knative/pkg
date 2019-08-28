@@ -90,7 +90,7 @@ func getMonitoredResourceFunc(metricTypePrefix string, gm *gcpMetadata) func(v *
 		} else if metricskey.KnativeImporterMetrics.Has(metricType) {
 			return GetKnativeImporterMonitoredResource(view, tags, gm)
 		}
-		// Unsupported metric by knative_revision, knative_broker, knative_trigger, and knative_importer, use "Global" resource type.
+		// Unsupported metric by knative_revision, knative_broker, knative_trigger, and knative_importer, use "global" resource type.
 		return getGlobalMonitoredResource(view, tags)
 	}
 }

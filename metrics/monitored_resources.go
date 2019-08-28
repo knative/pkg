@@ -24,7 +24,7 @@ import (
 type Global struct{}
 
 func (g *Global) MonitoredResource() (resType string, labels map[string]string) {
-	return "Global", nil
+	return "global", nil
 }
 
 func getTagsMap(tags []tag.Tag) map[string]string {
