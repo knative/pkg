@@ -64,3 +64,28 @@ func TestRegistration(t *testing.T) {
 		t.Error("Get() = nil, wanted non-nil")
 	}
 }
+
+func TestRegistrationWithNamespace(t *testing.T) {
+	ctx := context.Background()
+	ctx = injection.WithNamespaceScope(ctx, "secret-sauce")
+
+	// Check how many informer factories have registered.
+	inffs := injection.Default.GetInformerFactories()
+	if want, got := 1, len(inffs); want != got {
+		t.Errorf("GetInformerFactories() = %d, wanted %d", want, got)
+	}
+
+	// Setup the informers.
+	var infs []controller.Informer
+	ctx, infs = injection.Default.SetupInformers(ctx, &rest.Config{})
+
+	// We should see that a single informer was set up.
+	if want, got := 0, len(infs); want != got {
+		t.Errorf("SetupInformers() = %d, wanted %d", want, got)
+	}
+
+	// Get our informer from the context.
+	if inf := Get(ctx); inf == nil {
+		t.Error("Get() = nil, wanted non-nil")
+	}
+}
