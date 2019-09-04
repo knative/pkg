@@ -30,46 +30,20 @@ import (
 	"golang.org/x/sync/errgroup"
 	admissionregistrationv1beta1 "k8s.io/api/admissionregistration/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/kubernetes"
 	fakekubeclientset "k8s.io/client-go/kubernetes/fake"
 
 	. "knative.dev/pkg/logging/testing"
-	. "knative.dev/pkg/testing"
 )
 
 func newDefaultOptions() ControllerOptions {
 	return ControllerOptions{
-		Namespace:   "knative-something",
-		ServiceName: "webhook",
-		Port:        443,
-		SecretName:  "webhook-certs",
-		WebhookName: "webhook.knative.dev",
-	}
-}
-
-func newHandlers() map[schema.GroupVersionKind]GenericCRD {
-	return map[schema.GroupVersionKind]GenericCRD{
-		{
-			Group:   "pkg.knative.dev",
-			Version: "v1alpha1",
-			Kind:    "Resource",
-		}: &Resource{},
-		{
-			Group:   "pkg.knative.dev",
-			Version: "v1beta1",
-			Kind:    "Resource",
-		}: &Resource{},
-		{
-			Group:   "pkg.knative.dev",
-			Version: "v1alpha1",
-			Kind:    "InnerDefaultResource",
-		}: &InnerDefaultResource{},
-		{
-			Group:   "pkg.knative.io",
-			Version: "v1alpha1",
-			Kind:    "InnerDefaultResource",
-		}: &InnerDefaultResource{},
+		Namespace:                       "knative-something",
+		ServiceName:                     "webhook",
+		Port:                            443,
+		SecretName:                      "webhook-certs",
+		WebhookName:                     "webhook.knative.dev",
+		ResourceAdmissionControllerPath: "/",
 	}
 }
 
@@ -80,14 +54,14 @@ const (
 	user2            = "arrabbiato@knative.dev"
 )
 
-func newNonRunningTestAdmissionController(t *testing.T, options ControllerOptions) (
+func newNonRunningTestWebhook(t *testing.T, options ControllerOptions) (
 	kubeClient *fakekubeclientset.Clientset,
-	ac *AdmissionController) {
+	ac *Webhook) {
 	t.Helper()
 	// Create fake clients
 	kubeClient = fakekubeclientset.NewSimpleClientset()
 
-	ac, err := NewTestAdmissionController(kubeClient, options, TestLogger(t))
+	ac, err := NewTestWebhook(kubeClient, options, TestLogger(t))
 	if err != nil {
 		t.Fatalf("Failed to create new admission controller: %v", err)
 	}
@@ -96,7 +70,7 @@ func newNonRunningTestAdmissionController(t *testing.T, options ControllerOption
 
 func TestRegistrationStopChanFire(t *testing.T) {
 	opts := newDefaultOptions()
-	kubeClient, ac := newNonRunningTestAdmissionController(t, opts)
+	kubeClient, ac := newNonRunningTestWebhook(t, opts)
 	webhook := &admissionregistrationv1beta1.MutatingWebhookConfiguration{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: ac.Options.WebhookName,
@@ -131,7 +105,7 @@ func TestRegistrationStopChanFire(t *testing.T) {
 }
 
 func TestRegistrationForAlreadyExistingWebhook(t *testing.T) {
-	kubeClient, ac := newNonRunningTestAdmissionController(t, newDefaultOptions())
+	kubeClient, ac := newNonRunningTestWebhook(t, newDefaultOptions())
 	webhook := &admissionregistrationv1beta1.MutatingWebhookConfiguration{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: ac.Options.WebhookName,
@@ -169,7 +143,7 @@ func TestCertConfigurationForAlreadyGeneratedSecret(t *testing.T) {
 	opts := newDefaultOptions()
 	opts.SecretName = secretName
 	opts.Namespace = ns
-	kubeClient, ac := newNonRunningTestAdmissionController(t, opts)
+	kubeClient, ac := newNonRunningTestWebhook(t, opts)
 
 	ctx := TestContextWithLogger(t)
 	newSecret, err := generateSecret(ctx, &opts)
@@ -214,7 +188,7 @@ func TestCertConfigurationForGeneratedSecret(t *testing.T) {
 	opts := newDefaultOptions()
 	opts.SecretName = secretName
 	opts.Namespace = ns
-	kubeClient, ac := newNonRunningTestAdmissionController(t, opts)
+	kubeClient, ac := newNonRunningTestWebhook(t, opts)
 
 	ctx := TestContextWithLogger(t)
 	createNamespace(t, kubeClient, metav1.NamespaceSystem)
@@ -249,8 +223,10 @@ func TestSettingWebhookClientAuth(t *testing.T) {
 	}
 }
 
-func NewTestAdmissionController(client kubernetes.Interface, options ControllerOptions,
-	logger *zap.SugaredLogger) (*AdmissionController, error) {
-	handlers := newHandlers()
-	return NewAdmissionController(client, options, handlers, logger, nil, true)
+func NewTestWebhook(client kubernetes.Interface, options ControllerOptions, logger *zap.SugaredLogger) (*Webhook, error) {
+	resourceHandlers := newResourceHandlers()
+	admissionControllers := map[string]AdmissionController{
+		options.ResourceAdmissionControllerPath: NewResourceAdmissionController(resourceHandlers, options, true),
+	}
+	return New(client, options, admissionControllers, logger, nil)
 }

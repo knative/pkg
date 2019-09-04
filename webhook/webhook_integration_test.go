@@ -455,7 +455,7 @@ func TestWebhookClientAuth(t *testing.T) {
 	}
 }
 
-func testSetup(t *testing.T) (*AdmissionController, string, error) {
+func testSetup(t *testing.T) (*Webhook, string, error) {
 	t.Helper()
 	port, err := newTestPort()
 	if err != nil {
@@ -464,7 +464,7 @@ func testSetup(t *testing.T) (*AdmissionController, string, error) {
 
 	defaultOpts := newDefaultOptions()
 	defaultOpts.Port = port
-	kubeClient, ac := newNonRunningTestAdmissionController(t, defaultOpts)
+	kubeClient, ac := newNonRunningTestWebhook(t, defaultOpts)
 
 	nsErr := createNamespace(t, kubeClient, metav1.NamespaceSystem)
 	if nsErr != nil {
@@ -484,7 +484,7 @@ func testSetup(t *testing.T) (*AdmissionController, string, error) {
 func TestSetupWebhookHTTPServerError(t *testing.T) {
 	defaultOpts := newDefaultOptions()
 	defaultOpts.Port = -1 // invalid port
-	kubeClient, ac := newNonRunningTestAdmissionController(t, defaultOpts)
+	kubeClient, ac := newNonRunningTestWebhook(t, defaultOpts)
 
 	nsErr := createNamespace(t, kubeClient, metav1.NamespaceSystem)
 	if nsErr != nil {
