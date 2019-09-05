@@ -25,7 +25,6 @@ import (
 	"os"
 	"os/user"
 	"path"
-	"testing"
 )
 
 // Flags holds the command line flags or defaults for settings in the user's environment.
@@ -45,7 +44,7 @@ type EnvironmentFlags struct {
 }
 
 func initializeFlags() *EnvironmentFlags {
-	testing.Init()
+	initTesting()
 	var f EnvironmentFlags
 	flag.StringVar(&f.Cluster, "cluster", "",
 		"Provide the cluster to test against. Defaults to the current cluster in kubeconfig.")
