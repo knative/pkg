@@ -96,7 +96,7 @@ func TestHTTPSpanMiddleware(t *testing.T) {
 	}
 }
 
-func TestHTTPSpanMiddlewareIgnoringPaths(t *testing.T) {
+func TestHTTPSpanIgnoringPaths(t *testing.T) {
 	cfg := config.Config{
 		Backend: config.Zipkin,
 		Debug:   true,
@@ -113,7 +113,7 @@ func TestHTTPSpanMiddlewareIgnoringPaths(t *testing.T) {
 	}
 
 	paths := []string{"/readyz"}
-	middleware := HTTPSpanMiddlewareIgnoringPaths(paths...)(&testHandler{})
+	middleware := HTTPSpanIgnoringPaths(paths...)(&testHandler{})
 
 	testCases := map[string]struct {
 		path   string

@@ -32,16 +32,15 @@ var (
 	// underlyingSampling uses the underlying sampling configuration (normally via the ConfigMap
 	// config-tracing).
 	underlyingSampling = trace.StartOptions{}
+
+	// HTTPSpanMiddleware is an http.Handler middleware to create spans for the HTTP endpoint.
+	HTTPSpanMiddleware = HTTPSpanIgnoringPaths()
 )
 
-// HTTPSpanMiddleware is a http.Handler middleware to create spans for the HTTP endpoint
-func HTTPSpanMiddleware(next http.Handler) http.Handler {
-	return &ochttp.Handler{Handler: next}
-}
 
-// HTTPSpanMiddlewareIgnoringPaths is an http.Handler middleware to create spans for the HTTP
+// HTTPSpanIgnoringPaths is an http.Handler middleware to create spans for the HTTP
 // endpoint, not sampling any request whose path is in pathsToIgnore.
-func HTTPSpanMiddlewareIgnoringPaths(pathsToIgnore ...string) func(http.Handler) http.Handler {
+func HTTPSpanIgnoringPaths(pathsToIgnore ...string) func(http.Handler) http.Handler {
 	pathsToIgnoreSet := sets.NewString(pathsToIgnore...)
 	return func(next http.Handler) http.Handler {
 		return &ochttp.Handler{
