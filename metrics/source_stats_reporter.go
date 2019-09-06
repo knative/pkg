@@ -36,11 +36,11 @@ var (
 )
 
 type ReportArgs struct {
-	ns            string
-	eventType     string
-	eventSource   string
-	name          string
-	resourceGroup string
+	Namespace     string
+	EventType     string
+	EventSource   string
+	Name          string
+	ResourceGroup string
 }
 
 // StatsReporter defines the interface for sending source metrics.
@@ -136,11 +136,11 @@ func (r *reporter) ReportEventCount(args *ReportArgs, responseCode int) error {
 func (r *reporter) generateTag(args *ReportArgs, responseCode int) (context.Context, error) {
 	return tag.New(
 		context.Background(),
-		tag.Insert(r.namespaceTagKey, args.ns),
-		tag.Insert(r.eventSourceTagKey, args.eventSource),
-		tag.Insert(r.eventTypeTagKey, args.eventType),
-		tag.Insert(r.sourceNameTagKey, args.name),
-		tag.Insert(r.sourceResourceGroupTagKey, args.resourceGroup),
+		tag.Insert(r.namespaceTagKey, args.Namespace),
+		tag.Insert(r.eventSourceTagKey, args.EventSource),
+		tag.Insert(r.eventTypeTagKey, args.EventType),
+		tag.Insert(r.sourceNameTagKey, args.Name),
+		tag.Insert(r.sourceResourceGroupTagKey, args.ResourceGroup),
 		tag.Insert(r.responseCodeKey, strconv.Itoa(responseCode)),
 		tag.Insert(r.responseCodeClassKey, ResponseCodeClass(responseCode)))
 }
