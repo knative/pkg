@@ -48,6 +48,14 @@ EXTERNAL_INFORMER_PKG="k8s.io/client-go/informers" \
     "apps:v1 autoscaling:v1,v2beta1 batch:v1,v1beta1 core:v1 rbac:v1" \
     --go-header-file ${REPO_ROOT_DIR}/hack/boilerplate/boilerplate.go.txt
 
+OUTPUT_PKG="knative.dev/pkg/injection/apiextensions" \
+VERSIONED_CLIENTSET_PKG="k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset" \
+  ${REPO_ROOT_DIR}/hack/generate-knative.sh "injection" \
+    k8s.io/apiextensions-apiserver/pkg/client \
+    k8s.io/apiextensions-apiserver/pkg/apis \
+    "apiextensions:v1beta1" \
+    --go-header-file ${REPO_ROOT_DIR}/hack/boilerplate/boilerplate.go.txt
+
 # Only deepcopy the Duck types, as they are not real resources.
 ${CODEGEN_PKG}/generate-groups.sh "deepcopy" \
   knative.dev/pkg/client knative.dev/pkg/apis \
