@@ -107,7 +107,7 @@ func Get(ctx context.Context) {{.informersSharedInformerFactory|raw}} {
 	untyped := ctx.Value(Key{})
 	if untyped == nil {
 		{{.loggingFromContext|raw}}(ctx).Fatalf(
-			"Unable to fetch %T from context.", ({{.informersSharedInformerFactory|raw}})(nil))
+			"Unable to fetch {{.informersSharedInformerFactory}} from context.")
 	}
 	return untyped.({{.informersSharedInformerFactory|raw}})
 }

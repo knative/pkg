@@ -46,7 +46,7 @@ func Get(ctx context.Context) v1alpha1.PolicyInformer {
 	untyped := ctx.Value(Key{})
 	if untyped == nil {
 		logging.FromContext(ctx).Fatalf(
-			"Unable to fetch %T from context.", (v1alpha1.PolicyInformer)(nil))
+			"Unable to fetch knative.dev/pkg/client/informers/externalversions/authentication/v1alpha1.PolicyInformer from context.")
 	}
 	return untyped.(v1alpha1.PolicyInformer)
 }

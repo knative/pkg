@@ -95,7 +95,7 @@ func Get(ctx context.Context) {{.clientSetInterface|raw}} {
 	untyped := ctx.Value(Key{})
 	if untyped == nil {
 		{{.loggingFromContext|raw}}(ctx).Fatalf(
-			"Unable to fetch %T from context.", ({{.clientSetInterface|raw}})(nil))
+			"Unable to fetch {{.clientSetInterface}} from context.")
 	}
 	return untyped.({{.clientSetInterface|raw}})
 }

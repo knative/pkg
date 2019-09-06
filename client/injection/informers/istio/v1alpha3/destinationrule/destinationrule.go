@@ -46,7 +46,7 @@ func Get(ctx context.Context) v1alpha3.DestinationRuleInformer {
 	untyped := ctx.Value(Key{})
 	if untyped == nil {
 		logging.FromContext(ctx).Fatalf(
-			"Unable to fetch %T from context.", (v1alpha3.DestinationRuleInformer)(nil))
+			"Unable to fetch knative.dev/pkg/client/informers/externalversions/istio/v1alpha3.DestinationRuleInformer from context.")
 	}
 	return untyped.(v1alpha3.DestinationRuleInformer)
 }
