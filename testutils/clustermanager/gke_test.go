@@ -18,6 +18,8 @@ package clustermanager
 
 import (
 	"fmt"
+	"io/ioutil"
+	"os"
 	"reflect"
 	"strings"
 	"testing"
@@ -88,6 +90,244 @@ func (fgsc *FakeGKESDKClient) get(project, location, cluster string) (*container
 		}
 	}
 	return nil, fmt.Errorf("cluster not found")
+}
+
+func TestSetup(t *testing.T) {
+	numNodesOverride := int64(2)
+	nodeTypeOverride := "foonode"
+	regionOverride := "fooregion"
+	zoneOverride := "foozone"
+	datas := []struct {
+		numNodes                        *int64
+		nodeType, region, zone, project *string
+		regionEnv, backupRegionEnv      string
+		expClusterOperations            *GKECluster
+	}{
+		{
+			// Defaults
+			nil, nil, nil, nil, nil, "", "",
+			&GKECluster{
+				Request: &GKERequest{
+					NumNodes:      1,
+					NodeType:      "n1-standard-4",
+					Region:        "us-central1",
+					Zone:          "",
+					BackupRegions: []string{"us-west1", "us-east1"},
+				},
+			},
+		}, {
+			// Project provided
+			nil, nil, nil, nil, &fakeProj, "", "",
+			&GKECluster{
+				Request: &GKERequest{
+					NumNodes:      1,
+					NodeType:      "n1-standard-4",
+					Region:        "us-central1",
+					Zone:          "",
+					BackupRegions: []string{"us-west1", "us-east1"},
+				},
+				Project:     &fakeProj,
+				NeedCleanup: true,
+			},
+		}, {
+			// Override other parts
+			&numNodesOverride, &nodeTypeOverride, &regionOverride, &zoneOverride, nil, "", "",
+			&GKECluster{
+				Request: &GKERequest{
+					NumNodes:      2,
+					NodeType:      "foonode",
+					Region:        "fooregion",
+					Zone:          "foozone",
+					BackupRegions: []string{},
+				},
+			},
+		}, {
+			// Override other parts but not zone
+			&numNodesOverride, &nodeTypeOverride, &regionOverride, nil, nil, "", "",
+			&GKECluster{
+				Request: &GKERequest{
+					NumNodes:      2,
+					NodeType:      "foonode",
+					Region:        "fooregion",
+					Zone:          "",
+					BackupRegions: []string{"us-west1", "us-east1"},
+				},
+			},
+		}, {
+			// Set env Region
+			nil, nil, nil, nil, nil, "customregion", "",
+			&GKECluster{
+				Request: &GKERequest{
+					NumNodes:      1,
+					NodeType:      "n1-standard-4",
+					Region:        "customregion",
+					Zone:          "",
+					BackupRegions: []string{"us-west1", "us-east1"},
+				},
+			},
+		}, {
+			// Set env backupzone
+			nil, nil, nil, nil, nil, "", "backupregion1 backupregion2",
+			&GKECluster{
+				Request: &GKERequest{
+					NumNodes:      1,
+					NodeType:      "n1-standard-4",
+					Region:        "us-central1",
+					Zone:          "",
+					BackupRegions: []string{"backupregion1", "backupregion2"},
+				},
+			},
+		},
+	}
+
+	// mock GetOSEnv for testing
+	oldEnvFunc := common.GetOSEnv
+	oldExecFunc := common.StandardExec
+	oldDefaultCred := os.Getenv("GOOGLE_APPLICATION_CREDENTIALS")
+	tf, _ := ioutil.TempFile("", "foo")
+	tf.WriteString(`{"type": "service_account"}`)
+	os.Setenv("GOOGLE_APPLICATION_CREDENTIALS", tf.Name())
+	defer func() {
+		// restore
+		common.GetOSEnv = oldEnvFunc
+		common.StandardExec = oldExecFunc
+		os.Setenv("GOOGLE_APPLICATION_CREDENTIALS", oldDefaultCred)
+		os.Remove(tf.Name())
+	}()
+	// mock as kubectl not set and gcloud set as "b", so check environment
+	// return project as "b"
+	common.StandardExec = func(name string, args ...string) ([]byte, error) {
+		var out []byte
+		var err error
+		switch name {
+		case "gcloud":
+			out = []byte("b")
+			err = nil
+		case "kubectl":
+			out = []byte("")
+			err = fmt.Errorf("kubectl not set")
+		default:
+			out, err = oldExecFunc(name)
+		}
+		return out, err
+	}
+
+	for _, data := range datas {
+		common.GetOSEnv = func(s string) string {
+			switch s {
+			case "E2E_CLUSTER_REGION":
+				return data.regionEnv
+			case "E2E_CLUSTER_BACKUP_REGIONS":
+				return data.backupRegionEnv
+			}
+			return oldEnvFunc(s)
+		}
+		c := GKEClient{}
+		co := c.Setup(data.numNodes, data.nodeType, data.region, data.zone, data.project)
+		errPrefix := fmt.Sprintf("testing setup with:\n\tnumNodes: %v\n\tnodeType: %v\n\tregion: %v\n\tone: %v\n\tproject: %v\n\tregionEnv: %v\n\tbackupRegionEnv: %v",
+			data.numNodes, data.nodeType, data.region, data.zone, data.project, data.regionEnv, data.backupRegionEnv)
+		gotCo := co.(*GKECluster)
+		// mock for easier comparison
+		gotCo.operations = nil
+		if !reflect.DeepEqual(co, data.expClusterOperations) {
+			t.Fatalf("%s\nwant GKECluster:\n'%v'\ngot GKECluster:\n'%v'", errPrefix, data.expClusterOperations, co)
+		}
+	}
+}
+
+func TestInitialize(t *testing.T) {
+	customProj := "customproj"
+	datas := []struct {
+		project      *string
+		clusterExist bool
+		gcloudSet    bool
+		expProj      *string
+		expCluster   *container.Cluster
+		expErr       error
+	}{
+		{
+			// User defines project
+			&fakeProj, false, false, &fakeProj, nil, nil,
+		}, {
+			// kubeconfig set
+			nil, true, false, &fakeProj, &container.Cluster{
+				Name:     "d",
+				Location: "c",
+				Status:   "RUNNING",
+			}, nil,
+		}, {
+			// kubeconfig not set and gcloud not set
+			nil, false, true, &customProj, nil, nil,
+		}, {
+			// kubeconfig not set and gcloud set
+			nil, false, false, nil, nil, fmt.Errorf("gcp project must be set"),
+		},
+	}
+
+	oldEnvFunc := common.GetOSEnv
+	oldExecFunc := common.StandardExec
+	defer func() {
+		// restore
+		common.GetOSEnv = oldEnvFunc
+		common.StandardExec = oldExecFunc
+	}()
+
+	// Mock to make IsProw() always return false, otherwise it will actually
+	// acquire a boskos project
+	common.GetOSEnv = func(s string) string {
+		switch s {
+		case "PROW_JOB_ID":
+			return ""
+		}
+		return oldEnvFunc(s)
+	}
+
+	for _, data := range datas {
+		fgc := setupFakeGKECluster()
+		if nil != data.project {
+			fgc.Project = data.project
+		}
+		if data.clusterExist {
+			parts := strings.Split("gke_b_c_d", "_")
+			fgc.operations.create(parts[1], parts[2], &container.CreateClusterRequest{
+				Cluster: &container.Cluster{
+					Name: parts[3],
+				},
+				ProjectId: parts[1],
+			})
+		}
+		// mock for testing
+		common.StandardExec = func(name string, args ...string) ([]byte, error) {
+			var out []byte
+			var err error
+			switch name {
+			case "gcloud":
+				out = []byte("")
+				err = nil
+				if data.gcloudSet {
+					out = []byte(customProj)
+					err = nil
+				}
+			case "kubectl":
+				out = []byte("")
+				err = fmt.Errorf("kubectl not set")
+				if data.clusterExist {
+					out = []byte("gke_b_c_d")
+					err = nil
+				}
+			default:
+				out, err = oldExecFunc(name, args...)
+			}
+			return out, err
+		}
+
+		err := fgc.Initialize()
+		if !reflect.DeepEqual(err, data.expErr) || !reflect.DeepEqual(fgc.Project, data.expProj) || !reflect.DeepEqual(fgc.Cluster, data.expCluster) {
+			t.Errorf("test initialize with:\n\tpreset project: '%v'\n\tkubeconfig set: '%v'\n\tgcloud set: '%v'\n"+
+				"want:\n\tproject - '%v'\n\tcluster - '%v'\n\terr - '%v'\ngot:\n\tproject - '%v'\n\tcluster - '%v'\n\terr - '%v'",
+				data.project, data.clusterExist, data.gcloudSet, data.expProj, data.expCluster, data.expErr, fgc.Project, fgc.Cluster, err)
+		}
+	}
 }
 
 func TestGKECheckEnvironment(t *testing.T) {
