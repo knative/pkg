@@ -32,10 +32,10 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 
 	"go.uber.org/zap"
+	kubeclient "knative.dev/pkg/client/injection/kube/client"
 	"knative.dev/pkg/configmap"
 	"knative.dev/pkg/controller"
 	"knative.dev/pkg/injection"
-	kubeclient "knative.dev/pkg/injection/kube/client"
 	"knative.dev/pkg/logging"
 	"knative.dev/pkg/metrics"
 	"knative.dev/pkg/profiling"

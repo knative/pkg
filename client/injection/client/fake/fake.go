@@ -47,7 +47,7 @@ func With(ctx context.Context, objects ...runtime.Object) (context.Context, *fak
 func Get(ctx context.Context) *fake.Clientset {
 	untyped := ctx.Value(client.Key{})
 	if untyped == nil {
-		logging.FromContext(ctx).Fatalf(
+		logging.FromContext(ctx).Fatal(
 			"Unable to fetch knative.dev/pkg/client/clientset/versioned/fake.Clientset from context.")
 	}
 	return untyped.(*fake.Clientset)

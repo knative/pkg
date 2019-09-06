@@ -45,7 +45,7 @@ func withInformer(ctx context.Context) (context.Context, controller.Informer) {
 func Get(ctx context.Context) v1alpha3.DestinationRuleInformer {
 	untyped := ctx.Value(Key{})
 	if untyped == nil {
-		logging.FromContext(ctx).Fatalf(
+		logging.FromContext(ctx).Fatal(
 			"Unable to fetch knative.dev/pkg/client/informers/externalversions/istio/v1alpha3.DestinationRuleInformer from context.")
 	}
 	return untyped.(v1alpha3.DestinationRuleInformer)
