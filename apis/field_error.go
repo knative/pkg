@@ -312,16 +312,25 @@ func ErrDisallowedUpdateDeprecatedFields(fieldPaths ...string) *FieldError {
 }
 
 // ErrInvalidArrayValue constructs a FieldError for a repetetive `field`
-// at `index` that has received an invalid string value.
+// at `index` that has received an invalid value.
 func ErrInvalidArrayValue(value interface{}, field string, index int) *FieldError {
 	return ErrInvalidValue(value, CurrentField).ViaFieldIndex(field, index)
 }
 
 // ErrInvalidValue constructs a FieldError for a field that has received an
-// invalid string value.
+// invalid value.
 func ErrInvalidValue(value interface{}, fieldPath string) *FieldError {
 	return &FieldError{
 		Message: fmt.Sprintf("invalid value: %v", value),
+		Paths:   []string{fieldPath},
+	}
+}
+
+// ErrInvalidCombination constructs a FieldError for a field that has received an
+// invalid combination of values.
+func ErrInvalidCombination(bad, value interface{}, key, fieldPath string) *FieldError {
+	return &FieldError{
+		Message: fmt.Sprintf("invalid value %v, when %s is %v", bad, key, value),
 		Paths:   []string{fieldPath},
 	}
 }
