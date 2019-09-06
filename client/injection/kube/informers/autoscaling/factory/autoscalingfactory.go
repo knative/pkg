@@ -49,7 +49,7 @@ func withInformerFactory(ctx context.Context) context.Context {
 func Get(ctx context.Context) informers.SharedInformerFactory {
 	untyped := ctx.Value(Key{})
 	if untyped == nil {
-		logging.FromContext(ctx).Fatal(
+		logging.FromContext(ctx).Panic(
 			"Unable to fetch k8s.io/client-go/informers.SharedInformerFactory from context.")
 	}
 	return untyped.(informers.SharedInformerFactory)

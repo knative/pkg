@@ -45,7 +45,7 @@ func withInformer(ctx context.Context) (context.Context, controller.Informer) {
 func Get(ctx context.Context) v1.ServiceInformer {
 	untyped := ctx.Value(Key{})
 	if untyped == nil {
-		logging.FromContext(ctx).Fatal(
+		logging.FromContext(ctx).Panic(
 			"Unable to fetch k8s.io/client-go/informers/core/v1.ServiceInformer from context.")
 	}
 	return untyped.(v1.ServiceInformer)

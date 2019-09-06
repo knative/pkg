@@ -42,7 +42,7 @@ func withClient(ctx context.Context, cfg *rest.Config) context.Context {
 func Get(ctx context.Context) kubernetes.Interface {
 	untyped := ctx.Value(Key{})
 	if untyped == nil {
-		logging.FromContext(ctx).Fatal(
+		logging.FromContext(ctx).Panic(
 			"Unable to fetch k8s.io/client-go/kubernetes.Interface from context.")
 	}
 	return untyped.(kubernetes.Interface)

@@ -106,7 +106,7 @@ func withInformerFactory(ctx context.Context) context.Context {
 func Get(ctx context.Context) {{.informersSharedInformerFactory|raw}} {
 	untyped := ctx.Value(Key{})
 	if untyped == nil {
-		{{.loggingFromContext|raw}}(ctx).Fatal(
+		{{.loggingFromContext|raw}}(ctx).Panic(
 			"Unable to fetch {{.informersSharedInformerFactory}} from context.")
 	}
 	return untyped.({{.informersSharedInformerFactory|raw}})

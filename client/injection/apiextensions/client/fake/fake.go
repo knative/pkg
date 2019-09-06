@@ -47,7 +47,7 @@ func With(ctx context.Context, objects ...runtime.Object) (context.Context, *fak
 func Get(ctx context.Context) *fake.Clientset {
 	untyped := ctx.Value(client.Key{})
 	if untyped == nil {
-		logging.FromContext(ctx).Fatal(
+		logging.FromContext(ctx).Panic(
 			"Unable to fetch k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/fake.Clientset from context.")
 	}
 	return untyped.(*fake.Clientset)

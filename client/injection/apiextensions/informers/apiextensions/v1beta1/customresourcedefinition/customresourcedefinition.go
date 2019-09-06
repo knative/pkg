@@ -45,7 +45,7 @@ func withInformer(ctx context.Context) (context.Context, controller.Informer) {
 func Get(ctx context.Context) v1beta1.CustomResourceDefinitionInformer {
 	untyped := ctx.Value(Key{})
 	if untyped == nil {
-		logging.FromContext(ctx).Fatal(
+		logging.FromContext(ctx).Panic(
 			"Unable to fetch k8s.io/apiextensions-apiserver/pkg/client/informers/externalversions/apiextensions/v1beta1.CustomResourceDefinitionInformer from context.")
 	}
 	return untyped.(v1beta1.CustomResourceDefinitionInformer)

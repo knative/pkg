@@ -45,7 +45,7 @@ func withInformer(ctx context.Context) (context.Context, controller.Informer) {
 func Get(ctx context.Context) v2beta1.HorizontalPodAutoscalerInformer {
 	untyped := ctx.Value(Key{})
 	if untyped == nil {
-		logging.FromContext(ctx).Fatal(
+		logging.FromContext(ctx).Panic(
 			"Unable to fetch k8s.io/client-go/informers/autoscaling/v2beta1.HorizontalPodAutoscalerInformer from context.")
 	}
 	return untyped.(v2beta1.HorizontalPodAutoscalerInformer)

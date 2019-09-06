@@ -94,7 +94,7 @@ func withClient(ctx context.Context, cfg *{{.restConfig|raw}}) context.Context {
 func Get(ctx context.Context) {{.clientSetInterface|raw}} {
 	untyped := ctx.Value(Key{})
 	if untyped == nil {
-		{{.loggingFromContext|raw}}(ctx).Fatal(
+		{{.loggingFromContext|raw}}(ctx).Panic(
 			"Unable to fetch {{.clientSetInterface}} from context.")
 	}
 	return untyped.({{.clientSetInterface|raw}})
