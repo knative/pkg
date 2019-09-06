@@ -133,18 +133,18 @@ func TestHTTPSpanMiddlewareIgnoringPaths(t *testing.T) {
 			var lastWrite []byte
 			fw := fakeWriter{lastWrite: &lastWrite}
 
-			url := url.URL{
+			u := &url.URL{
 				Scheme: "http",
 				Host:   "test.example.com",
 				Path:   tc.path,
 			}
-			req, err := http.NewRequest("GET", url.String(), nil)
+			req, err := http.NewRequest("GET", u.String(), nil)
 			if err != nil {
 				t.Errorf("Failed to make fake request: %v", err)
 			}
 			traceID := "821e0d50d931235a5ba3fa42eddddd8f"
-			req.Header["X-B3-Traceid"] = []string{traceID}
-			req.Header["X-B3-Spanid"] = []string{"b3bd5e1c4318c78a"}
+			req.Header.Set("X-B3-Traceid", traceID)
+			req.Header.Set("X-B3-Spanid", "b3bd5e1c4318c78a")
 
 			middleware.ServeHTTP(fw, req)
 
