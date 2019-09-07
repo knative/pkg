@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v1alpha1
+package v1beta1
 
 import (
 	"context"
@@ -23,63 +23,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"knative.dev/pkg/apis"
 	"knative.dev/pkg/apis/duck/v1"
-	"knative.dev/pkg/apis/duck/v1beta1"
 )
-
-func TestGetURL(t *testing.T) {
-	tests := []struct {
-		name string
-		addr Addressable
-		want apis.URL
-	}{{
-		name: "just hostname",
-		addr: Addressable{
-			Hostname: "foo.com",
-		},
-		want: apis.URL{
-			Scheme: "http",
-			Host:   "foo.com",
-		},
-	}, {
-		name: "just url",
-		addr: Addressable{
-			Addressable: v1beta1.Addressable{
-				URL: &apis.URL{
-					Scheme: "https",
-					Host:   "bar.com",
-				},
-			},
-		},
-		want: apis.URL{
-			Scheme: "https",
-			Host:   "bar.com",
-		},
-	}, {
-		name: "both fields",
-		addr: Addressable{
-			Hostname: "foo.bar.svc.cluster.local",
-			Addressable: v1beta1.Addressable{
-				URL: &apis.URL{
-					Scheme: "https",
-					Host:   "baz.com",
-				},
-			},
-		},
-		want: apis.URL{
-			Scheme: "https",
-			Host:   "baz.com",
-		},
-	}}
-
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			got := test.addr.GetURL()
-			if got.String() != test.want.String() {
-				t.Errorf("GetURL() = %v, wanted %v", got, test.want)
-			}
-		})
-	}
-}
 
 func TestConversion(t *testing.T) {
 	tests := []struct {
@@ -92,11 +36,9 @@ func TestConversion(t *testing.T) {
 	}{{
 		name: "v1",
 		addr: &Addressable{
-			Addressable: v1beta1.Addressable{
-				URL: &apis.URL{
-					Scheme: "https",
-					Host:   "bar.com",
-				},
+			URL: &apis.URL{
+				Scheme: "https",
+				Host:   "bar.com",
 			},
 		},
 		conv:        &v1.Addressable{},
@@ -105,24 +47,9 @@ func TestConversion(t *testing.T) {
 	}, {
 		name: "v1beta1",
 		addr: &Addressable{
-			Addressable: v1beta1.Addressable{
-				URL: &apis.URL{
-					Scheme: "https",
-					Host:   "bar.com",
-				},
-			},
-		},
-		conv:        &v1beta1.Addressable{},
-		wantErrUp:   false,
-		wantErrDown: false,
-	}, {
-		name: "v1alpha1",
-		addr: &Addressable{
-			Addressable: v1beta1.Addressable{
-				URL: &apis.URL{
-					Scheme: "https",
-					Host:   "bar.com",
-				},
+			URL: &apis.URL{
+				Scheme: "https",
+				Host:   "bar.com",
 			},
 		},
 		conv:        &Addressable{},

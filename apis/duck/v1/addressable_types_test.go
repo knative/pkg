@@ -17,104 +17,57 @@ limitations under the License.
 package v1
 
 import (
+	"context"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
 	"knative.dev/pkg/apis"
 )
 
-func TestBetaConversion(t *testing.T) {
+func TestConversion(t *testing.T) {
 	tests := []struct {
-		name string
-		addr Addressable
-		want apis.URL
+		name        string
+		addr        *Addressable
+		conv        apis.Convertible
+		want        string
+		wantErrUp   bool
+		wantErrDown bool
 	}{{
-		name: "just url",
-		addr: Addressable{
+		name: "v1",
+		addr: &Addressable{
 			URL: &apis.URL{
 				Scheme: "https",
 				Host:   "bar.com",
 			},
 		},
-		want: apis.URL{
-			Scheme: "https",
-			Host:   "bar.com",
-		},
-	}, {
-		name: "url with path",
-		addr: Addressable{
-			URL: &apis.URL{
-				Scheme: "https",
-				Host:   "bar.com",
-				Path:   "/v1",
-			},
-		},
-		want: apis.URL{
-			Scheme: "https",
-			Host:   "bar.com",
-			Path:   "/v1",
-		},
+		conv:        &Addressable{},
+		wantErrUp:   true,
+		wantErrDown: true,
 	}}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			beta := test.addr.ToBeta()
-			gotBeta := beta.URL
-			gotRoundtrip := FromBeta(beta).URL
-
-			if test.want.String() != gotBeta.String() {
-				t.Errorf("v1beta1.URL = %v, wanted %v", gotBeta, test.want)
+			conv := test.conv
+			if err := test.addr.ConvertUp(context.Background(), conv); err != nil {
+				if !test.wantErrUp {
+					t.Errorf("ConvertUp() = %v", err)
+				}
+			} else if test.wantErrUp {
+				t.Errorf("ConvertUp() = %#v, wanted error", conv)
 			}
-			if test.want.String() != gotRoundtrip.String() {
-				t.Errorf("rountrip v1.URL = %v, wanted %v", gotRoundtrip, test.want)
+			got := &Addressable{}
+			if err := got.ConvertDown(context.Background(), conv); err != nil {
+				if !test.wantErrDown {
+					t.Errorf("ConvertDown() = %v", err)
+				}
+				return
+			} else if test.wantErrDown {
+				t.Errorf("ConvertDown() = %#v, wanted error", conv)
+				return
 			}
-		})
-	}
-}
 
-func TestAlphaConversion(t *testing.T) {
-	tests := []struct {
-		name string
-		addr Addressable
-		want apis.URL
-	}{{
-		name: "just url",
-		addr: Addressable{
-			URL: &apis.URL{
-				Scheme: "https",
-				Host:   "bar.com",
-			},
-		},
-		want: apis.URL{
-			Scheme: "https",
-			Host:   "bar.com",
-		},
-	}, {
-		name: "url with path",
-		addr: Addressable{
-			URL: &apis.URL{
-				Scheme: "https",
-				Host:   "bar.com",
-				Path:   "/v1",
-			},
-		},
-		want: apis.URL{
-			Scheme: "https",
-			Host:   "bar.com",
-			Path:   "/v1",
-		},
-	}}
-
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			alpha := test.addr.ToAlpha()
-			gotAlpha := alpha.GetURL()
-			gotRoundtrip := FromAlpha(alpha).URL
-
-			if test.want.String() != gotAlpha.String() {
-				t.Errorf("v1alpha1.GetURL() = %v, wanted %v", gotAlpha, test.want)
-			}
-			if test.want.String() != gotRoundtrip.String() {
-				t.Errorf("roundtrip v1.GetURL() = %v, wanted %v", gotRoundtrip, test.want)
+			if diff := cmp.Diff(test.addr, got); diff != "" {
+				t.Errorf("roundtrip (-want, +got) = %v", diff)
 			}
 		})
 	}

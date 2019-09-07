@@ -17,13 +17,14 @@ limitations under the License.
 package v1
 
 import (
+	"context"
+	"fmt"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 
 	"knative.dev/pkg/apis"
 	"knative.dev/pkg/apis/duck"
-	"knative.dev/pkg/apis/duck/v1alpha1"
-	"knative.dev/pkg/apis/duck/v1beta1"
 )
 
 // Addressable provides a generic mechanism for a custom resource
@@ -36,8 +37,12 @@ type Addressable struct {
 	URL *apis.URL `json:"url,omitempty"`
 }
 
-// Addressable is an Implementable "duck type".
-var _ duck.Implementable = (*Addressable)(nil)
+var (
+	// Addressable is an Implementable "duck type".
+	_ duck.Implementable = (*Addressable)(nil)
+	// Addressable is a Convertible type.
+	_ apis.Convertible = (*Addressable)(nil)
+)
 
 // +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -70,32 +75,14 @@ func (*Addressable) GetFullType() duck.Populatable {
 	return &AddressableType{}
 }
 
-// ToBeta returns a new v1beta1 Addressable from this v1 Addressable.
-func (a *Addressable) ToBeta() v1beta1.Addressable {
-	return v1beta1.Addressable{
-		URL: a.URL.DeepCopy(),
-	}
+// ConvertUp implements apis.Convertible
+func (a *Addressable) ConvertUp(ctx context.Context, to apis.Convertible) error {
+	return fmt.Errorf("v1 is the highest known version, got: %T", to)
 }
 
-// FromBeta returns a new v1 Addressable from a v1beta1 Addressable.
-func FromBeta(a v1beta1.Addressable) Addressable {
-	return Addressable{
-		URL: a.URL.DeepCopy(),
-	}
-}
-
-// ToAlpha returns a new v1alpha1 Addressable from this v1 Addressable.
-func (a *Addressable) ToAlpha() v1alpha1.Addressable {
-	return v1alpha1.Addressable{
-		Addressable: a.ToBeta(),
-	}
-}
-
-// FromAlpha returns a new v1 Addressable from a v1alpha1 Addressable.
-func FromAlpha(a v1alpha1.Addressable) Addressable {
-	return Addressable{
-		URL: a.Addressable.URL.DeepCopy(),
-	}
+// ConvertDown implements apis.Convertible
+func (a *Addressable) ConvertDown(ctx context.Context, from apis.Convertible) error {
+	return fmt.Errorf("v1 is the highest known version, got: %T", from)
 }
 
 // Populate implements duck.Populatable
