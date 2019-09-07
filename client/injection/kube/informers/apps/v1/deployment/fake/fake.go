@@ -21,8 +21,8 @@ package fake
 import (
 	"context"
 
-	fake "knative.dev/pkg/client/injection/kube/informers/apps/factory/fake"
 	deployment "knative.dev/pkg/client/injection/kube/informers/apps/v1/deployment"
+	fake "knative.dev/pkg/client/injection/kube/informers/factory/fake"
 	controller "knative.dev/pkg/controller"
 	injection "knative.dev/pkg/injection"
 )

@@ -22,7 +22,7 @@ import (
 	"context"
 
 	v1 "k8s.io/client-go/informers/core/v1"
-	factory "knative.dev/pkg/client/injection/kube/informers/core/factory"
+	factory "knative.dev/pkg/client/injection/kube/informers/factory"
 	controller "knative.dev/pkg/controller"
 	injection "knative.dev/pkg/injection"
 	logging "knative.dev/pkg/logging"

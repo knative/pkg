@@ -22,7 +22,7 @@ import (
 	"context"
 
 	v1alpha1 "knative.dev/pkg/client/informers/externalversions/authentication/v1alpha1"
-	factory "knative.dev/pkg/client/injection/informers/authentication/factory"
+	factory "knative.dev/pkg/client/injection/informers/factory"
 	controller "knative.dev/pkg/controller"
 	injection "knative.dev/pkg/injection"
 	logging "knative.dev/pkg/logging"

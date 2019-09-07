@@ -23,7 +23,7 @@ import (
 
 	informers "k8s.io/client-go/informers"
 	fake "knative.dev/pkg/client/injection/kube/client/fake"
-	factory "knative.dev/pkg/client/injection/kube/informers/autoscaling/factory"
+	factory "knative.dev/pkg/client/injection/kube/informers/factory"
 	controller "knative.dev/pkg/controller"
 	injection "knative.dev/pkg/injection"
 )

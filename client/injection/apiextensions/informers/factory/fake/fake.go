@@ -21,9 +21,9 @@ package fake
 import (
 	"context"
 
-	informers "k8s.io/client-go/informers"
-	fake "knative.dev/pkg/client/injection/kube/client/fake"
-	factory "knative.dev/pkg/client/injection/kube/informers/apps/factory"
+	externalversions "k8s.io/apiextensions-apiserver/pkg/client/informers/externalversions"
+	fake "knative.dev/pkg/client/injection/apiextensions/client/fake"
+	factory "knative.dev/pkg/client/injection/apiextensions/informers/factory"
 	controller "knative.dev/pkg/controller"
 	injection "knative.dev/pkg/injection"
 )
@@ -36,10 +36,10 @@ func init() {
 
 func withInformerFactory(ctx context.Context) context.Context {
 	c := fake.Get(ctx)
-	opts := make([]informers.SharedInformerOption, 0, 1)
+	opts := make([]externalversions.SharedInformerOption, 0, 1)
 	if injection.HasNamespaceScope(ctx) {
-		opts = append(opts, informers.WithNamespace(injection.GetNamespaceScope(ctx)))
+		opts = append(opts, externalversions.WithNamespace(injection.GetNamespaceScope(ctx)))
 	}
 	return context.WithValue(ctx, factory.Key{},
-		informers.NewSharedInformerFactoryWithOptions(c, controller.GetResyncPeriod(ctx), opts...))
+		externalversions.NewSharedInformerFactoryWithOptions(c, controller.GetResyncPeriod(ctx), opts...))
 }

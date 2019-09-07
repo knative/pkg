@@ -21,7 +21,7 @@ package fake
 import (
 	"context"
 
-	fake "knative.dev/pkg/client/injection/kube/informers/rbac/factory/fake"
+	fake "knative.dev/pkg/client/injection/kube/informers/factory/fake"
 	clusterrole "knative.dev/pkg/client/injection/kube/informers/rbac/v1/clusterrole"
 	controller "knative.dev/pkg/controller"
 	injection "knative.dev/pkg/injection"

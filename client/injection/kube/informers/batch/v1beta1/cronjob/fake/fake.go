@@ -21,8 +21,8 @@ package fake
 import (
 	"context"
 
-	fake "knative.dev/pkg/client/injection/kube/informers/batch/factory/fake"
 	cronjob "knative.dev/pkg/client/injection/kube/informers/batch/v1beta1/cronjob"
+	fake "knative.dev/pkg/client/injection/kube/informers/factory/fake"
 	controller "knative.dev/pkg/controller"
 	injection "knative.dev/pkg/injection"
 )

@@ -22,7 +22,7 @@ import (
 	"context"
 
 	v1alpha3 "knative.dev/pkg/client/informers/externalversions/istio/v1alpha3"
-	factory "knative.dev/pkg/client/injection/informers/istio/factory"
+	factory "knative.dev/pkg/client/injection/informers/factory"
 	controller "knative.dev/pkg/controller"
 	injection "knative.dev/pkg/injection"
 	logging "knative.dev/pkg/logging"

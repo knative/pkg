@@ -21,8 +21,8 @@ package fake
 import (
 	"context"
 
-	fake "knative.dev/pkg/client/injection/kube/informers/autoscaling/factory/fake"
 	horizontalpodautoscaler "knative.dev/pkg/client/injection/kube/informers/autoscaling/v1/horizontalpodautoscaler"
+	fake "knative.dev/pkg/client/injection/kube/informers/factory/fake"
 	controller "knative.dev/pkg/controller"
 	injection "knative.dev/pkg/injection"
 )
