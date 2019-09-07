@@ -87,6 +87,7 @@ func (t *AddressableType) Populate() {
 	}
 }
 
+// GetURL returns the URL type for the Addressable.
 func (a Addressable) GetURL() apis.URL {
 	if a.URL != nil {
 		return *a.URL

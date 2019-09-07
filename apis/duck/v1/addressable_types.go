@@ -22,6 +22,8 @@ import (
 
 	"knative.dev/pkg/apis"
 	"knative.dev/pkg/apis/duck"
+	"knative.dev/pkg/apis/duck/v1alpha1"
+	"knative.dev/pkg/apis/duck/v1beta1"
 )
 
 // Addressable provides a generic mechanism for a custom resource
@@ -66,6 +68,34 @@ var (
 // GetFullType implements duck.Implementable
 func (*Addressable) GetFullType() duck.Populatable {
 	return &AddressableType{}
+}
+
+// ToBeta returns a new v1beta1 Addressable from this v1 Addressable.
+func (a *Addressable) ToBeta() v1beta1.Addressable {
+	return v1beta1.Addressable{
+		URL: a.URL.DeepCopy(),
+	}
+}
+
+// FromBeta returns a new v1 Addressable from a v1beta1 Addressable.
+func FromBeta(a v1beta1.Addressable) Addressable {
+	return Addressable{
+		URL: a.URL.DeepCopy(),
+	}
+}
+
+// ToAlpha returns a new v1alpha1 Addressable from this v1 Addressable.
+func (a *Addressable) ToAlpha() v1alpha1.Addressable {
+	return v1alpha1.Addressable{
+		Addressable: a.ToBeta(),
+	}
+}
+
+// FromAlpha returns a new v1 Addressable from a v1alpha1 Addressable.
+func FromAlpha(a v1alpha1.Addressable) Addressable {
+	return Addressable{
+		URL: a.Addressable.URL.DeepCopy(),
+	}
 }
 
 // Populate implements duck.Populatable

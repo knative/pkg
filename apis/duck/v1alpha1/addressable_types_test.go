@@ -72,7 +72,7 @@ func TestGetURL(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			got := test.addr.GetURL()
 			if got.String() != test.want.String() {
-				t.Errorf("GetURL() = %v, wanted %v", test.want, got)
+				t.Errorf("GetURL() = %v, wanted %v", got, test.want)
 			}
 		})
 	}
