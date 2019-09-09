@@ -23,7 +23,7 @@ import (
 	"github.com/google/go-github/github"
 
 	"knative.dev/pkg/test/ghutil"
-	"knative.dev/pkg/test/mako/alerter"
+	"knative.dev/pkg/test/mako/alerter/shared"
 )
 
 const (
@@ -39,14 +39,14 @@ const (
 ### Auto-generated issue tracking performance regression
 * **Test name**: %s`
 
-	// reopenIssueCommentTemplate is a template for the comment of an issue that is reopened
-	reopenIssueCommentTemplate = `
-New regression has been detected, reopening this issue:
-%s`
-
 	// newIssueCommentTemplate is a template for the comment of an issue that has been quiet for a long time
 	newIssueCommentTemplate = `
 A new regression for this test has been detected:
+%s`
+
+	// reopenIssueCommentTemplate is a template for the comment of an issue that is reopened
+	reopenIssueCommentTemplate = `
+New regression has been detected, reopening this issue:
 %s`
 
 	// closeIssueComment is the comment of an issue when we close it
@@ -54,8 +54,8 @@ A new regression for this test has been detected:
 The performance regression goes way for this test, closing this issue.`
 )
 
-// issueHandler handles methods for github issues
-type issueHandler struct {
+// IssueHandler handles methods for github issues
+type IssueHandler struct {
 	client ghutil.GithubOperations
 	config config
 }
@@ -68,17 +68,18 @@ type config struct {
 }
 
 // Setup creates the necessary setup to make calls to work with github issues
-func Setup(githubToken string, config config) (*issueHandler, error) {
-	ghc, err := ghutil.NewGithubClient(githubToken)
+func Setup(org, repo, githubTokenPath string, dryrun bool) (*IssueHandler, error) {
+	ghc, err := ghutil.NewGithubClient(githubTokenPath)
 	if err != nil {
 		return nil, fmt.Errorf("cannot authenticate to github: %v", err)
 	}
-	return &issueHandler{client: ghc, config: config}, nil
+	conf := config{org: org, repo: repo, dryrun: dryrun}
+	return &IssueHandler{client: ghc, config: conf}, nil
 }
 
 // CreateIssueForTest will try to add an issue with the given testName and description.
 // If there is already an issue related to the test, it will try to update that issue.
-func (gih *issueHandler) CreateIssueForTest(testName, desc string) error {
+func (gih *IssueHandler) CreateIssueForTest(testName, desc string) error {
 	org := gih.config.org
 	repo := gih.config.repo
 	dryrun := gih.config.dryrun
@@ -118,9 +119,9 @@ func (gih *issueHandler) CreateIssueForTest(testName, desc string) error {
 }
 
 // createNewIssue will create a new issue, and add perfLabel for it.
-func (gih *issueHandler) createNewIssue(org, repo, title, body string, dryrun bool) error {
+func (gih *IssueHandler) createNewIssue(org, repo, title, body string, dryrun bool) error {
 	var newIssue *github.Issue
-	if err := alerter.Run(
+	if err := shared.Run(
 		"creating issue",
 		func() error {
 			var err error
@@ -131,7 +132,7 @@ func (gih *issueHandler) createNewIssue(org, repo, title, body string, dryrun bo
 	); nil != err {
 		return err
 	}
-	return alerter.Run(
+	return shared.Run(
 		"adding perf label",
 		func() error {
 			return gih.client.AddLabelsToIssue(org, repo, *newIssue.Number, []string{perfLabel})
@@ -142,7 +143,7 @@ func (gih *issueHandler) createNewIssue(org, repo, title, body string, dryrun bo
 
 // CloseIssueForTest will try to close the issue for the given testName.
 // If there is no issue related to the test or the issue is already closed, the function will do nothing.
-func (gih *issueHandler) CloseIssueForTest(testName string) error {
+func (gih *IssueHandler) CloseIssueForTest(testName string) error {
 	org := gih.config.org
 	repo := gih.config.repo
 	dryrun := gih.config.dryrun
@@ -153,7 +154,7 @@ func (gih *issueHandler) CloseIssueForTest(testName string) error {
 	}
 
 	issueNumber := *issue.Number
-	if err := alerter.Run(
+	if err := shared.Run(
 		"add comment for the issue to close",
 		func() error {
 			_, cErr := gih.client.CreateComment(org, repo, issueNumber, closeIssueComment)
@@ -163,7 +164,7 @@ func (gih *issueHandler) CloseIssueForTest(testName string) error {
 	); err != nil {
 		return err
 	}
-	return alerter.Run(
+	return shared.Run(
 		"closing issue",
 		func() error {
 			return gih.client.CloseIssue(org, repo, issueNumber)
@@ -173,8 +174,8 @@ func (gih *issueHandler) CloseIssueForTest(testName string) error {
 }
 
 // reopenIssue will reopen the given issue.
-func (gih *issueHandler) reopenIssue(org, repo string, issueNumber int, dryrun bool) error {
-	return alerter.Run(
+func (gih *IssueHandler) reopenIssue(org, repo string, issueNumber int, dryrun bool) error {
+	return shared.Run(
 		"reopen the issue",
 		func() error {
 			return gih.client.ReopenIssue(org, repo, issueNumber)
@@ -184,9 +185,9 @@ func (gih *issueHandler) reopenIssue(org, repo string, issueNumber int, dryrun b
 }
 
 // findIssue will return the issue in the given repo if it exists.
-func (gih *issueHandler) findIssue(org, repo, title string, dryrun bool) *github.Issue {
+func (gih *IssueHandler) findIssue(org, repo, title string, dryrun bool) *github.Issue {
 	var issues []*github.Issue
-	alerter.Run(
+	shared.Run(
 		"list issues in the repo",
 		func() error {
 			var err error
@@ -204,8 +205,8 @@ func (gih *issueHandler) findIssue(org, repo, title string, dryrun bool) *github
 }
 
 // addComment will add comment for the given issue.
-func (gih *issueHandler) addComment(org, repo string, issueNumber int, commentBody string, dryrun bool) error {
-	return alerter.Run(
+func (gih *IssueHandler) addComment(org, repo string, issueNumber int, commentBody string, dryrun bool) error {
+	return shared.Run(
 		"add comment for issue",
 		func() error {
 			_, err := gih.client.CreateComment(org, repo, issueNumber, commentBody)

@@ -24,10 +24,10 @@ import (
 	"knative.dev/pkg/test/ghutil/fakeghutil"
 )
 
-var gih issueHandler
+var gih IssueHandler
 
 func TestMain(m *testing.M) {
-	gih = issueHandler{
+	gih = IssueHandler{
 		client: fakeghutil.NewFakeGithubClient(),
 		config: config{org: "test_org", repo: "test_repo", dryrun: false},
 	}
