@@ -21,6 +21,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 
 	"go.uber.org/zap"
@@ -32,6 +33,8 @@ import (
 )
 
 const ConfigMapNameEnv = "CONFIG_LOGGING_NAME"
+
+var zapLoggerConfig = "zap-logger-config"
 
 // NewLogger creates a logger with the supplied configuration.
 // In addition to the logger, it returns AtomicLevel that can
@@ -195,4 +198,59 @@ func ConfigMapName() string {
 		return "config-logging"
 	}
 	return cm
+}
+
+// Base64ToLoggingConfig converts a json+base64 string of a logging.Config.
+// Returns a non-nil logging.Config always.
+func Base64ToLoggingConfig(base64 string) (*Config, error) {
+	if base64 == "" {
+		return nil, errors.New("base64 logging string is empty")
+	}
+
+	quoted64 := strconv.Quote(string(base64))
+
+	var bytes []byte
+	if err := json.Unmarshal([]byte(quoted64), &bytes); err != nil {
+		return nil, err
+	}
+
+	var configMap map[string]string
+	if err := json.Unmarshal(bytes, &configMap); err != nil {
+		return nil, err
+	}
+
+	cfg, err := NewConfigFromMap(configMap)
+	if err != nil {
+		// Get the default config from logging package.
+		if cfg, err = NewConfigFromMap(map[string]string{}); err != nil {
+			return nil, err
+		}
+	}
+	return cfg, nil
+}
+
+// LoggingConfigToBase64 converts a logging.Config to a json+base64 string.
+func LoggingConfigToBase64(cfg *Config) (string, error) {
+	if cfg == nil || cfg.LoggingConfig == "" {
+		return "", nil
+	}
+
+	jsonCfg, err := json.Marshal(map[string]string{
+		zapLoggerConfig: cfg.LoggingConfig,
+	})
+	if err != nil {
+		return "", err
+	}
+	// if we json.Marshal a []byte, we will get back a base64 encoded quoted string.
+	base64Cfg, err := json.Marshal(jsonCfg)
+	if err != nil {
+		return "", err
+	}
+
+	// Turn the base64 encoded []byte back into a string.
+	base64, err := strconv.Unquote(string(base64Cfg))
+	if err != nil {
+		return "", err
+	}
+	return base64, nil
 }

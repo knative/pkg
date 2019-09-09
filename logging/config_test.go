@@ -17,6 +17,7 @@ limitations under the License.
 package logging
 
 import (
+	"github.com/google/go-cmp/cmp"
 	"testing"
 
 	"go.uber.org/zap"
@@ -286,5 +287,61 @@ func TestUpdateLevelFromConfigMap(t *testing.T) {
 		if atomicLevel.Level() != tt.wantLevel {
 			t.Errorf("Invalid logging level. want: %v, got: %v", tt.wantLevel, atomicLevel.Level())
 		}
+	}
+}
+
+func TestLoggingConfig(t *testing.T) {
+	testCases := map[string]struct {
+		cfg     *Config
+		want    string
+		wantErr string
+	}{
+		"nil": {
+			cfg:     nil,
+			want:    "",
+			wantErr: "base64 logging string is empty",
+		},
+		"happy": {
+			cfg: &Config{
+				LoggingConfig: "{}",
+				LoggingLevel:  map[string]zapcore.Level{},
+			},
+			want: "eyJ6YXAtbG9nZ2VyLWNvbmZpZyI6Int9In0=",
+		},
+	}
+	for n, tc := range testCases {
+		t.Run(n, func(t *testing.T) {
+			base64, err := LoggingConfigToBase64(tc.cfg)
+			if err != nil {
+				t.Errorf("error while converting logging config to base64: %v", err)
+			}
+			// Test to base64.
+			{
+				want := tc.want
+				got := base64
+				if diff := cmp.Diff(want, got); diff != "" {
+					t.Errorf("unexpected (-want, +got) = %v", diff)
+					t.Log(got)
+				}
+			}
+			// Test to config.
+			if tc.cfg != nil {
+				want := tc.cfg
+				got, gotErr := Base64ToLoggingConfig(base64)
+
+				if gotErr != nil {
+					if diff := cmp.Diff(tc.wantErr, gotErr.Error()); diff != "" {
+						t.Errorf("unexpected err (-want, +got) = %v", diff)
+					}
+				} else if tc.wantErr != "" {
+					t.Errorf("expected err %v", tc.wantErr)
+				}
+
+				if diff := cmp.Diff(want, got); diff != "" {
+					t.Errorf("unexpected (-want, +got) = %v", diff)
+					t.Log(got)
+				}
+			}
+		})
 	}
 }
