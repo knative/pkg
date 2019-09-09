@@ -22,7 +22,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"knative.dev/pkg/apis"
-	"knative.dev/pkg/apis/duck/v1"
+	v1 "knative.dev/pkg/apis/duck/v1"
 )
 
 func TestConversion(t *testing.T) {
