@@ -57,7 +57,7 @@ func (alerter *Alerter) HandleBenchmarkResult(testName string, output qpb.Quicks
 				alerter.githubIssueHandler.CreateIssueForTest(testName, summary)
 			}
 			if alerter.slackMessageHandler != nil {
-				alerter.slackMessageHandler.Post(summary)
+				alerter.slackMessageHandler.SendAlert(summary)
 			}
 		}
 	} else {

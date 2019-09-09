@@ -69,8 +69,8 @@ func Setup(userName, readTokenPath, writeTokenPath, repo string, dryrun bool) (*
 	}, nil
 }
 
-// Post will post the given text to the slack channel(s)
-func (smh *MessageHandler) Post(text string) error {
+// SendAlert will send the alert text to the slack channel(s)
+func (smh *MessageHandler) SendAlert(text string) error {
 	errs := make([]error, 0)
 	channels := smh.config.channels
 	mux := &sync.Mutex{}
