@@ -537,10 +537,10 @@ func TestUpdatingWebhook(t *testing.T) {
 	ac := c.(*ResourceAdmissionController)
 	webhook := &admissionregistrationv1beta1.MutatingWebhookConfiguration{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: ac.options.WebhookName,
+			Name: ac.options.ResourceMutatingWebhookName,
 		},
 		Webhooks: []admissionregistrationv1beta1.Webhook{{
-			Name:         ac.options.WebhookName,
+			Name:         ac.options.ResourceMutatingWebhookName,
 			Rules:        []admissionregistrationv1beta1.RuleWithOperations{{}},
 			ClientConfig: admissionregistrationv1beta1.WebhookClientConfig{},
 		}},
@@ -553,7 +553,7 @@ func TestUpdatingWebhook(t *testing.T) {
 		t.Fatalf("Failed to create webhook: %s", err)
 	}
 
-	currentWebhook, _ := kubeClient.AdmissionregistrationV1beta1().MutatingWebhookConfigurations().Get(ac.options.WebhookName, metav1.GetOptions{})
+	currentWebhook, _ := kubeClient.AdmissionregistrationV1beta1().MutatingWebhookConfigurations().Get(ac.options.ResourceMutatingWebhookName, metav1.GetOptions{})
 	if reflect.DeepEqual(currentWebhook.Webhooks, webhook.Webhooks) {
 		t.Fatalf("Expected webhook to be updated")
 	}

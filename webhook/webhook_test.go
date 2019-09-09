@@ -42,7 +42,7 @@ func newDefaultOptions() ControllerOptions {
 		ServiceName:                     "webhook",
 		Port:                            443,
 		SecretName:                      "webhook-certs",
-		WebhookName:                     "webhook.knative.dev",
+		ResourceMutatingWebhookName:     "webhook.knative.dev",
 		ResourceAdmissionControllerPath: "/",
 	}
 }
@@ -73,11 +73,11 @@ func TestRegistrationStopChanFire(t *testing.T) {
 	kubeClient, ac := newNonRunningTestWebhook(t, opts)
 	webhook := &admissionregistrationv1beta1.MutatingWebhookConfiguration{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: ac.Options.WebhookName,
+			Name: ac.Options.ResourceMutatingWebhookName,
 		},
 		Webhooks: []admissionregistrationv1beta1.Webhook{
 			{
-				Name:         ac.Options.WebhookName,
+				Name:         ac.Options.ResourceMutatingWebhookName,
 				Rules:        []admissionregistrationv1beta1.RuleWithOperations{{}},
 				ClientConfig: admissionregistrationv1beta1.WebhookClientConfig{},
 			},
@@ -108,11 +108,11 @@ func TestRegistrationForAlreadyExistingWebhook(t *testing.T) {
 	kubeClient, ac := newNonRunningTestWebhook(t, newDefaultOptions())
 	webhook := &admissionregistrationv1beta1.MutatingWebhookConfiguration{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: ac.Options.WebhookName,
+			Name: ac.Options.ResourceMutatingWebhookName,
 		},
 		Webhooks: []admissionregistrationv1beta1.Webhook{
 			{
-				Name:         ac.Options.WebhookName,
+				Name:         ac.Options.ResourceMutatingWebhookName,
 				Rules:        []admissionregistrationv1beta1.RuleWithOperations{{}},
 				ClientConfig: admissionregistrationv1beta1.WebhookClientConfig{},
 			},
