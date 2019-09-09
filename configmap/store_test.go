@@ -73,7 +73,6 @@ func TestStoreWatchConfigs(t *testing.T) {
 		return c.Name, nil
 	}
 
-	defer ClearAll()
 	store := NewUntypedStore(
 		"name",
 		TestLogger(t),
