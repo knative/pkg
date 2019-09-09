@@ -27,6 +27,7 @@ import (
 
 	"google.golang.org/api/container/v1"
 
+	boskosFake "knative.dev/pkg/testutils/clustermanager/boskos/fake"
 	"knative.dev/pkg/testutils/common"
 )
 
@@ -38,6 +39,7 @@ var (
 func setupFakeGKECluster() GKECluster {
 	return GKECluster{
 		operations: newFakeGKESDKClient(),
+		boskosOps:  &boskosFake.FakeBoskosClient{},
 	}
 }
 
@@ -229,6 +231,7 @@ func TestSetup(t *testing.T) {
 		gotCo := co.(*GKECluster)
 		// mock for easier comparison
 		gotCo.operations = nil
+		gotCo.boskosOps = nil
 		if !reflect.DeepEqual(co, data.expClusterOperations) {
 			t.Fatalf("%s\nwant GKECluster:\n'%v'\ngot GKECluster:\n'%v'", errPrefix, data.expClusterOperations, co)
 		}
@@ -237,30 +240,42 @@ func TestSetup(t *testing.T) {
 
 func TestInitialize(t *testing.T) {
 	customProj := "customproj"
+	fakeBoskosProj := "fake-boskos-proj-0"
 	datas := []struct {
 		project      *string
 		clusterExist bool
 		gcloudSet    bool
+		isProw       bool
+		boskosProjs  []string
 		expProj      *string
 		expCluster   *container.Cluster
 		expErr       error
 	}{
 		{
 			// User defines project
-			&fakeProj, false, false, &fakeProj, nil, nil,
+			&fakeProj, false, false, false, []string{}, &fakeProj, nil, nil,
 		}, {
 			// kubeconfig set
-			nil, true, false, &fakeProj, &container.Cluster{
+			nil, true, false, false, []string{}, &fakeProj, &container.Cluster{
 				Name:     "d",
 				Location: "c",
 				Status:   "RUNNING",
 			}, nil,
 		}, {
-			// kubeconfig not set and gcloud not set
-			nil, false, true, &customProj, nil, nil,
-		}, {
 			// kubeconfig not set and gcloud set
-			nil, false, false, nil, nil, fmt.Errorf("gcp project must be set"),
+			nil, false, true, false, []string{}, &customProj, nil, nil,
+		}, {
+			// kubeconfig not set and gcloud set, running in Prow and boskos not available
+			nil, false, false, true, []string{}, nil, nil, fmt.Errorf("failed acquire boskos project: 'no GKE project available'"),
+		}, {
+			// kubeconfig not set and gcloud set, running in Prow and boskos available
+			nil, false, false, true, []string{fakeBoskosProj}, &fakeBoskosProj, nil, nil,
+		}, {
+			// kubeconfig not set and gcloud set, not in Prow and boskos not available
+			nil, false, false, false, []string{}, nil, nil, fmt.Errorf("gcp project must be set"),
+		}, {
+			// kubeconfig not set and gcloud set, not in Prow and boskos available
+			nil, false, false, false, []string{fakeBoskosProj}, nil, nil, fmt.Errorf("gcp project must be set"),
 		},
 	}
 
@@ -271,16 +286,6 @@ func TestInitialize(t *testing.T) {
 		common.GetOSEnv = oldEnvFunc
 		common.StandardExec = oldExecFunc
 	}()
-
-	// Mock to make IsProw() always return false, otherwise it will actually
-	// acquire a boskos project
-	common.GetOSEnv = func(s string) string {
-		switch s {
-		case "PROW_JOB_ID":
-			return ""
-		}
-		return oldEnvFunc(s)
-	}
 
 	for _, data := range datas {
 		fgc := setupFakeGKECluster()
@@ -295,6 +300,10 @@ func TestInitialize(t *testing.T) {
 				},
 				ProjectId: parts[1],
 			})
+		}
+		// Set up fake boskos
+		for _, bos := range data.boskosProjs {
+			fgc.boskosOps.(*boskosFake.FakeBoskosClient).NewGKEProject(bos)
 		}
 		// mock for testing
 		common.StandardExec = func(name string, args ...string) ([]byte, error) {
@@ -320,12 +329,25 @@ func TestInitialize(t *testing.T) {
 			}
 			return out, err
 		}
+		// Mock IsProw()
+		common.GetOSEnv = func(s string) string {
+			var res string
+			switch s {
+			case "PROW_JOB_ID":
+				if data.isProw {
+					res = "fake_job_id"
+				}
+			default:
+				res = oldEnvFunc(s)
+			}
+			return res
+		}
 
 		err := fgc.Initialize()
 		if !reflect.DeepEqual(err, data.expErr) || !reflect.DeepEqual(fgc.Project, data.expProj) || !reflect.DeepEqual(fgc.Cluster, data.expCluster) {
-			t.Errorf("test initialize with:\n\tpreset project: '%v'\n\tkubeconfig set: '%v'\n\tgcloud set: '%v'\n"+
+			t.Errorf("test initialize with:\n\tuser defined project: '%v'\n\tkubeconfig set: '%v'\n\tgcloud set: '%v'\n\trunning in prow: '%v'\n\tboskos set: '%v'\n"+
 				"want:\n\tproject - '%v'\n\tcluster - '%v'\n\terr - '%v'\ngot:\n\tproject - '%v'\n\tcluster - '%v'\n\terr - '%v'",
-				data.project, data.clusterExist, data.gcloudSet, data.expProj, data.expCluster, data.expErr, fgc.Project, fgc.Cluster, err)
+				data.project, data.clusterExist, data.gcloudSet, data.isProw, data.boskosProjs, data.expProj, data.expCluster, data.expErr, fgc.Project, fgc.Cluster, err)
 		}
 	}
 }

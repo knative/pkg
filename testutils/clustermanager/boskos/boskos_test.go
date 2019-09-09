@@ -29,7 +29,13 @@ import (
 var (
 	fakeHost = "fakehost"
 	fakeRes  = "{\"name\": \"res\", \"type\": \"t\", \"state\": \"d\"}"
+
+	client Client
 )
+
+func setup() {
+	client = Client{}
+}
 
 // create a fake server as Boskos server, must close() afterwards
 func fakeServer(f func(http.ResponseWriter, *http.Request)) *httptest.Server {
@@ -66,6 +72,7 @@ func TestAcquireGKEProject(t *testing.T) {
 		common.GetOSEnv = oldGetOSEnv
 	}()
 	for _, data := range datas {
+		setup()
 		ts := fakeServer(func(w http.ResponseWriter, r *http.Request) {
 			if data.serverErr {
 				http.Error(w, "", http.StatusBadRequest)
@@ -82,7 +89,7 @@ func TestAcquireGKEProject(t *testing.T) {
 		})
 		defer ts.Close()
 		boskosURI = ts.URL
-		_, err := AcquireGKEProject(data.host)
+		_, err := client.AcquireGKEProject(data.host)
 		if data.expErr && (nil == err) {
 			t.Fatalf("testing acquiring GKE project, want: err, got: no err")
 		}
@@ -123,6 +130,7 @@ func TestReleaseGKEProject(t *testing.T) {
 		common.GetOSEnv = oldGetOSEnv
 	}()
 	for _, data := range datas {
+		setup()
 		ts := fakeServer(func(w http.ResponseWriter, r *http.Request) {
 			if data.serverErr {
 				http.Error(w, "", http.StatusBadRequest)
@@ -134,7 +142,7 @@ func TestReleaseGKEProject(t *testing.T) {
 		})
 		defer ts.Close()
 		boskosURI = ts.URL
-		err := ReleaseGKEProject(data.host, data.resName)
+		err := client.ReleaseGKEProject(data.host, data.resName)
 		if data.expErr && (nil == err) {
 			t.Fatalf("testing acquiring GKE project, want: err, got: no err")
 		}
