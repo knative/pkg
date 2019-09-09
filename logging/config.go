@@ -200,8 +200,8 @@ func ConfigMapName() string {
 	return cm
 }
 
-// Base64ToLoggingConfig converts a json+base64 string of a logging.Config.
-// Returns a non-nil logging.Config always.
+// Base64ToLoggingConfig converts a json+base64 string of a Config.
+// Returns a non-nil Config always.
 func Base64ToLoggingConfig(base64 string) (*Config, error) {
 	if base64 == "" {
 		return nil, errors.New("base64 logging string is empty")
@@ -229,7 +229,7 @@ func Base64ToLoggingConfig(base64 string) (*Config, error) {
 	return cfg, nil
 }
 
-// LoggingConfigToBase64 converts a logging.Config to a json+base64 string.
+// LoggingConfigToBase64 converts a Config to a json+base64 string.
 func LoggingConfigToBase64(cfg *Config) (string, error) {
 	if cfg == nil || cfg.LoggingConfig == "" {
 		return "", nil

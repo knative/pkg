@@ -294,7 +294,7 @@ import (
 }
 
 // Base64ToMetricsOptions converts a json+base64 string of a
-// metrics.ExporterOptions. Returns a non-nil metrics.ExporterOptions always.
+// ExporterOptions. Returns a non-nil ExporterOptions always.
 func Base64ToMetricsOptions(base64 string) (*ExporterOptions, error) {
 	var opts ExporterOptions
 	if base64 == "" {
@@ -315,7 +315,7 @@ func Base64ToMetricsOptions(base64 string) (*ExporterOptions, error) {
 	return &opts, nil
 }
 
-// MetricsOptionsToBase64 converts a metrics.ExporterOptions to a json+base64
+// MetricsOptionsToBase64 converts a ExporterOptions to a json+base64
 // string.
 func MetricsOptionsToBase64(opts *ExporterOptions) (string, error) {
 	if opts == nil {
