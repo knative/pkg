@@ -255,15 +255,19 @@ func (c *Impl) EnqueueLabelOfClusterScopedResource(nameLabel string) func(obj in
 
 // EnqueueKey takes a namespace/name string and puts it onto the work queue.
 func (c *Impl) EnqueueKey(key string) {
-	c.WorkQueue.Add(key)
-	c.logger.Debugf("Adding to queue %s (depth: %d)", key, c.WorkQueue.Len())
+	if !c.WorkQueue.ShuttingDown() {
+		c.WorkQueue.Add(key)
+		c.logger.Debugf("Adding to queue %s (depth: %d)", key, c.WorkQueue.Len())
+	}
 }
 
 // EnqueueKeyAfter takes a namespace/name string and schedules its execution in
 // the work queue after given delay.
 func (c *Impl) EnqueueKeyAfter(key string, delay time.Duration) {
-	c.WorkQueue.AddAfter(key, delay)
-	c.logger.Debugf("Adding to queue %s (delay: %v, depth: %d)", key, delay, c.WorkQueue.Len())
+	if !c.WorkQueue.ShuttingDown() {
+		c.WorkQueue.AddAfter(key, delay)
+		c.logger.Debugf("Adding to queue %s (delay: %v, depth: %d)", key, delay, c.WorkQueue.Len())
+	}
 }
 
 // Run starts the controller's worker threads, the number of which is threadiness.
@@ -350,7 +354,7 @@ func (c *Impl) handleErr(err error, key string) {
 	c.logger.Errorw("Reconcile error", zap.Error(err))
 
 	// Re-queue the key if it's an transient error.
-	if !IsPermanentError(err) {
+	if !IsPermanentError(err) && !c.WorkQueue.ShuttingDown() {
 		c.WorkQueue.AddRateLimited(key)
 		c.logger.Debugf("Requeuing key %s due to non-permanent error (depth: %d)", key, c.WorkQueue.Len())
 		return
