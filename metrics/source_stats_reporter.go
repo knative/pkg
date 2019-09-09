@@ -53,8 +53,8 @@ var _ StatsReporter = (*reporter)(nil)
 // reporter holds cached metric objects to report source metrics.
 type reporter struct {
 	namespaceTagKey           tag.Key
-	eventTypeTagKey           tag.Key
 	eventSourceTagKey         tag.Key
+	eventTypeTagKey           tag.Key
 	sourceNameTagKey          tag.Key
 	sourceResourceGroupTagKey tag.Key
 	responseCodeKey           tag.Key
