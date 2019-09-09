@@ -299,26 +299,26 @@ func TestLoggingConfig(t *testing.T) {
 		"nil": {
 			cfg:     nil,
 			want:    "",
-			wantErr: "base64 logging string is empty",
+			wantErr: "json logging string is empty",
 		},
 		"happy": {
 			cfg: &Config{
 				LoggingConfig: "{}",
 				LoggingLevel:  map[string]zapcore.Level{},
 			},
-			want: "eyJ6YXAtbG9nZ2VyLWNvbmZpZyI6Int9In0=",
+			want: `{"zap-logger-config":"{}"}`,
 		},
 	}
 	for n, tc := range testCases {
 		t.Run(n, func(t *testing.T) {
-			base64, err := LoggingConfigToBase64(tc.cfg)
+			json, err := LoggingConfigToJson(tc.cfg)
 			if err != nil {
-				t.Errorf("error while converting logging config to base64: %v", err)
+				t.Errorf("error while converting logging config to json: %v", err)
 			}
-			// Test to base64.
+			// Test to json.
 			{
 				want := tc.want
-				got := base64
+				got := json
 				if diff := cmp.Diff(want, got); diff != "" {
 					t.Errorf("unexpected (-want, +got) = %v", diff)
 					t.Log(got)
@@ -327,7 +327,7 @@ func TestLoggingConfig(t *testing.T) {
 			// Test to config.
 			if tc.cfg != nil {
 				want := tc.cfg
-				got, gotErr := Base64ToLoggingConfig(base64)
+				got, gotErr := JsonToLoggingConfig(json)
 
 				if gotErr != nil {
 					if diff := cmp.Diff(tc.wantErr, gotErr.Error()); diff != "" {

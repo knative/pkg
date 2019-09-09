@@ -536,7 +536,7 @@ func TestMetricsOptions(t *testing.T) {
 		"nil": {
 			opts:    nil,
 			want:    "",
-			wantErr: "base64 metrics string is empty",
+			wantErr: "json options string is empty",
 		},
 		"happy": {
 			opts: &ExporterOptions{
@@ -548,19 +548,19 @@ func TestMetricsOptions(t *testing.T) {
 					"boosh": "kakow",
 				},
 			},
-			want: "eyJEb21haW4iOiJkb21haW4iLCJDb21wb25lbnQiOiJjb21wb25lbnQiLCJQcm9tZXRoZXVzUG9ydCI6OTA5MCwiQ29uZmlnTWFwIjp7ImJvb3NoIjoia2Frb3ciLCJmb28iOiJiYXIifX0=",
+			want: `{"Domain":"domain","Component":"component","PrometheusPort":9090,"ConfigMap":{"boosh":"kakow","foo":"bar"}}`,
 		},
 	}
 	for n, tc := range testCases {
 		t.Run(n, func(t *testing.T) {
-			base64, err := MetricsOptionsToBase64(tc.opts)
+			jsonOpts, err := MetricsOptionsToJson(tc.opts)
 			if err != nil {
-				t.Errorf("error while converting metrics config to base64: %v", err)
+				t.Errorf("error while converting metrics config to json: %v", err)
 			}
-			// Test to base64.
+			// Test to json.
 			{
 				want := tc.want
-				got := base64
+				got := jsonOpts
 				if diff := cmp.Diff(want, got); diff != "" {
 					t.Errorf("unexpected (-want, +got) = %v", diff)
 					t.Log(got)
@@ -569,7 +569,7 @@ func TestMetricsOptions(t *testing.T) {
 			// Test to options.
 			{
 				want := tc.opts
-				got, gotErr := Base64ToMetricsOptions(base64)
+				got, gotErr := JsonToMetricsOptions(jsonOpts)
 
 				if gotErr != nil {
 					if diff := cmp.Diff(tc.wantErr, gotErr.Error()); diff != "" {

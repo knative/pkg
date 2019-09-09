@@ -293,33 +293,23 @@ import (
 )`, DomainEnv, DomainEnv))
 }
 
-// TODO no need to base64 things.
-
-// Base64ToMetricsOptions converts a json+base64 string of a
+// JsonToMetricsOptions converts a json string of a
 // ExporterOptions. Returns a non-nil ExporterOptions always.
-func Base64ToMetricsOptions(base64 string) (*ExporterOptions, error) {
+func JsonToMetricsOptions(jsonOpts string) (*ExporterOptions, error) {
 	var opts ExporterOptions
-	if base64 == "" {
-		return nil, errors.New("base64 metrics string is empty")
+	if jsonOpts == "" {
+		return nil, errors.New("json options string is empty")
 	}
 
-	quoted64 := strconv.Quote(string(base64))
-
-	var bytes []byte
-	if err := json.Unmarshal([]byte(quoted64), &bytes); err != nil {
-		return nil, err
-	}
-
-	if err := json.Unmarshal(bytes, &opts); err != nil {
+	if err := json.Unmarshal([]byte(jsonOpts), &opts); err != nil {
 		return nil, err
 	}
 
 	return &opts, nil
 }
 
-// MetricsOptionsToBase64 converts a ExporterOptions to a json+base64
-// string.
-func MetricsOptionsToBase64(opts *ExporterOptions) (string, error) {
+// MetricsOptionsToJson converts a ExporterOptions to a json string.
+func MetricsOptionsToJson(opts *ExporterOptions) (string, error) {
 	if opts == nil {
 		return "", nil
 	}
@@ -328,16 +318,6 @@ func MetricsOptionsToBase64(opts *ExporterOptions) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	// if we json.Marshal a []byte, we will get back a base64 encoded quoted string.
-	base64Opts, err := json.Marshal(jsonOpts)
-	if err != nil {
-		return "", err
-	}
 
-	// Turn the base64 encoded []byte back into a string.
-	base64, err := strconv.Unquote(string(base64Opts))
-	if err != nil {
-		return "", err
-	}
-	return base64, nil
+	return string(jsonOpts), nil
 }

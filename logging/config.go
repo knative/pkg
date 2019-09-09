@@ -21,7 +21,6 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"strconv"
 	"strings"
 
 	"go.uber.org/zap"
@@ -202,22 +201,15 @@ func ConfigMapName() string {
 
 // TODO no need to base64 things.
 
-// Base64ToLoggingConfig converts a json+base64 string of a Config.
+// JsonToLoggingConfig converts a json string of a Config.
 // Returns a non-nil Config always.
-func Base64ToLoggingConfig(base64 string) (*Config, error) {
-	if base64 == "" {
-		return nil, errors.New("base64 logging string is empty")
-	}
-
-	quoted64 := strconv.Quote(string(base64))
-
-	var bytes []byte
-	if err := json.Unmarshal([]byte(quoted64), &bytes); err != nil {
-		return nil, err
+func JsonToLoggingConfig(jsonCfg string) (*Config, error) {
+	if jsonCfg == "" {
+		return nil, errors.New("json logging string is empty")
 	}
 
 	var configMap map[string]string
-	if err := json.Unmarshal(bytes, &configMap); err != nil {
+	if err := json.Unmarshal([]byte(jsonCfg), &configMap); err != nil {
 		return nil, err
 	}
 
@@ -231,8 +223,8 @@ func Base64ToLoggingConfig(base64 string) (*Config, error) {
 	return cfg, nil
 }
 
-// LoggingConfigToBase64 converts a Config to a json+base64 string.
-func LoggingConfigToBase64(cfg *Config) (string, error) {
+// LoggingConfigToJson converts a Config to a json string.
+func LoggingConfigToJson(cfg *Config) (string, error) {
 	if cfg == nil || cfg.LoggingConfig == "" {
 		return "", nil
 	}
@@ -243,16 +235,6 @@ func LoggingConfigToBase64(cfg *Config) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	// if we json.Marshal a []byte, we will get back a base64 encoded quoted string.
-	base64Cfg, err := json.Marshal(jsonCfg)
-	if err != nil {
-		return "", err
-	}
 
-	// Turn the base64 encoded []byte back into a string.
-	base64, err := strconv.Unquote(string(base64Cfg))
-	if err != nil {
-		return "", err
-	}
-	return base64, nil
+	return string(jsonCfg), nil
 }
