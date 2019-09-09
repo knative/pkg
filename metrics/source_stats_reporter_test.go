@@ -69,41 +69,6 @@ func TestStatsReporter(t *testing.T) {
 	metricstest.CheckCountData(t, "event_count", wantTags, 2)
 }
 
-func TestReporterFor5xxResponse(t *testing.T) {
-	r, err := NewStatsReporter()
-	defer unregister()
-
-	if err != nil {
-		t.Fatalf("Failed to create a new reporter: %v", err)
-	}
-
-	args := &ReportArgs{
-		Namespace:     "testns",
-		EventType:     "dev.knative.event",
-		EventSource:   "unit-test",
-		Name:          "testimporter",
-		ResourceGroup: "testresourcegroup",
-	}
-
-	wantTags := map[string]string{
-		metricskey.LabelNamespaceName:         "testns",
-		metricskey.LabelEventType:             "dev.knative.event",
-		metricskey.LabelEventSource:           "unit-test",
-		metricskey.LabelImporterName:          "testimporter",
-		metricskey.LabelImporterResourceGroup: "testresourcegroup",
-		metricskey.LabelResponseCode:          "500",
-		metricskey.LabelResponseCodeClass:     "5xx",
-	}
-	// test ReportEventCount
-	expectSuccess(t, func() error {
-		return r.ReportEventCount(args, http.StatusInternalServerError)
-	})
-	expectSuccess(t, func() error {
-		return r.ReportEventCount(args, http.StatusInternalServerError)
-	})
-	metricstest.CheckCountData(t, "event_count", wantTags, 2)
-}
-
 func expectSuccess(t *testing.T, f func() error) {
 	t.Helper()
 	if err := f(); err != nil {
