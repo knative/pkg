@@ -200,6 +200,8 @@ func ConfigMapName() string {
 	return cm
 }
 
+// TODO no need to base64 things.
+
 // Base64ToLoggingConfig converts a json+base64 string of a Config.
 // Returns a non-nil Config always.
 func Base64ToLoggingConfig(base64 string) (*Config, error) {

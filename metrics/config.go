@@ -293,6 +293,8 @@ import (
 )`, DomainEnv, DomainEnv))
 }
 
+// TODO no need to base64 things.
+
 // Base64ToMetricsOptions converts a json+base64 string of a
 // ExporterOptions. Returns a non-nil ExporterOptions always.
 func Base64ToMetricsOptions(base64 string) (*ExporterOptions, error) {
