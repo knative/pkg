@@ -28,8 +28,8 @@ type Alerter struct {
 	slackMessageHandler *slack.MessageHandler
 }
 
-// SetupGithub will setup Github for the alerter.
-func (alerter *Alerter) SetupGithub(org, repo, githubTokenPath string) error {
+// SetupGitHub will setup SetupGitHub for the alerter.
+func (alerter *Alerter) SetupGitHub(org, repo, githubTokenPath string) error {
 	issueHandler, err := github.Setup(org, repo, githubTokenPath, false)
 	if err != nil {
 		return err
@@ -60,9 +60,9 @@ func (alerter *Alerter) HandleBenchmarkResult(testName string, output qpb.Quicks
 				alerter.slackMessageHandler.SendAlert(summary)
 			}
 		}
-	} else {
-		if alerter.githubIssueHandler != nil {
-			alerter.githubIssueHandler.CloseIssueForTest(testName)
-		}
+		return
+	}
+	if alerter.githubIssueHandler != nil {
+		alerter.githubIssueHandler.CloseIssueForTest(testName)
 	}
 }

@@ -47,11 +47,7 @@ func get(url string) ([]byte, error) {
 func handleResponse(resp *http.Response) ([]byte, error) {
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("http response code is not '%d': '%s'", http.StatusOK, string(resp.StatusCode))
+		return nil, fmt.Errorf("http response code is not StatusOK: '%v'", resp.StatusCode)
 	}
-	t, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
-	return t, nil
+	return ioutil.ReadAll(resp.Body)
 }

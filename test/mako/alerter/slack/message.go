@@ -71,30 +71,54 @@ func Setup(userName, readTokenPath, writeTokenPath, repo string, dryrun bool) (*
 
 // SendAlert will send the alert text to the slack channel(s)
 func (smh *MessageHandler) SendAlert(text string) error {
-	errs := make([]error, 0)
+	dryrun := smh.dryrun
 	channels := smh.config.channels
-	mux := &sync.Mutex{}
+	errCh := make(chan error, len(channels))
+	defer close(errCh)
 	var wg sync.WaitGroup
 	for i := range channels {
 		channel := channels[i]
 		wg.Add(1)
 		go func() {
-			defer wg.Done()
+			// get the recent message history in the channel for this user
 			startTime := time.Now().Add(-1 * minInterval)
-			messageHistory, err := smh.readClient.MessageHistory(channel.identity, startTime)
+			var messageHistory []string
+			if err := shared.Run(
+				fmt.Sprintf("retrieving message history in channel '%s'", channel.name),
+				func() error {
+					var err error
+					messageHistory, err = smh.readClient.MessageHistory(channel.identity, startTime)
+					return err
+				},
+				dryrun,
+			); err != nil {
+				errCh <- fmt.Errorf("failed to retrieve message history in channel '%s'", channel.name)
+			}
 			// do not send message again if messages were sent on the same channel a while ago
-			if err == nil && messageHistory != nil && len(messageHistory) != 0 {
+			if messageHistory != nil && len(messageHistory) != 0 {
 				return
 			}
-
+			// send the alert message to the channel
 			message := fmt.Sprintf(messageTemplate, time.Now(), text)
-			if err := smh.writeClient.Post(message, channel.identity); err != nil {
-				mux.Lock()
-				errs = append(errs, fmt.Errorf("failed to send message to channel %v", channel))
-				mux.Unlock()
+			if err := shared.Run(
+				fmt.Sprintf("sending message '%s' to channel '%s'", message, channel.name),
+				func() error {
+					return smh.writeClient.Post(message, channel.identity)
+				},
+				dryrun,
+			); err != nil {
+				errCh <- fmt.Errorf("failed to send message to channel '%s'", channel.name)
 			}
 		}()
 	}
+
+	errs := make([]error, 0)
+	go func() {
+		for err := range errCh {
+			errs = append(errs, err)
+			wg.Done()
+		}
+	}()
 	wg.Wait()
 
 	return shared.CombineErrors(errs)
