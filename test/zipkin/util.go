@@ -138,7 +138,7 @@ func CheckZipkinPortAvailability() error {
 // JSONTrace returns a trace for the given traceId. It will continually try to get the trace. If the
 // trace it gets has the expected number of spans, then it will be returned. If not, it will try
 // again. If it reaches timeout, then it returns everything it has so far with an error.
-func JSONTrace(traceID string, expected int, timeout time.Duration) ([]model.SpanModel, error) {
+func JSONTrace(traceID string, expected int, timeout time.Duration) (tracesSoFar []model.SpanModel, err error) {
 	var traceSoFar []model.SpanModel
 	t := time.After(timeout)
 	for {
