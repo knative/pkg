@@ -1,12 +1,9 @@
 /*
-Copyright 2019 The Knative Authors
-
+Copyright 2018 The Knative Authors.
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
-
     http://www.apache.org/licenses/LICENSE-2.0
-
 Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -16,7 +13,6 @@ limitations under the License.
 package metrics
 
 import (
-	"github.com/google/go-cmp/cmp"
 	"os"
 	"path"
 	"reflect"
@@ -522,67 +518,6 @@ func TestUpdateExporter_doesNotCreateExporter(t *testing.T) {
 			mConfig := getCurMetricsConfig()
 			if mConfig != nil {
 				t.Error("mConfig should not be created")
-			}
-		})
-	}
-}
-
-func TestMetricsOptions(t *testing.T) {
-	testCases := map[string]struct {
-		opts    *ExporterOptions
-		want    string
-		wantErr string
-	}{
-		"nil": {
-			opts:    nil,
-			want:    "",
-			wantErr: "json options string is empty",
-		},
-		"happy": {
-			opts: &ExporterOptions{
-				Domain:         "domain",
-				Component:      "component",
-				PrometheusPort: 9090,
-				ConfigMap: map[string]string{
-					"foo":   "bar",
-					"boosh": "kakow",
-				},
-			},
-			want: `{"Domain":"domain","Component":"component","PrometheusPort":9090,"ConfigMap":{"boosh":"kakow","foo":"bar"}}`,
-		},
-	}
-	for n, tc := range testCases {
-		t.Run(n, func(t *testing.T) {
-			jsonOpts, err := MetricsOptionsToJson(tc.opts)
-			if err != nil {
-				t.Errorf("error while converting metrics config to json: %v", err)
-			}
-			// Test to json.
-			{
-				want := tc.want
-				got := jsonOpts
-				if diff := cmp.Diff(want, got); diff != "" {
-					t.Errorf("unexpected (-want, +got) = %v", diff)
-					t.Log(got)
-				}
-			}
-			// Test to options.
-			{
-				want := tc.opts
-				got, gotErr := JsonToMetricsOptions(jsonOpts)
-
-				if gotErr != nil {
-					if diff := cmp.Diff(tc.wantErr, gotErr.Error()); diff != "" {
-						t.Errorf("unexpected err (-want, +got) = %v", diff)
-					}
-				} else if tc.wantErr != "" {
-					t.Errorf("expected err %v", tc.wantErr)
-				}
-
-				if diff := cmp.Diff(want, got); diff != "" {
-					t.Errorf("unexpected (-want, +got) = %v", diff)
-					t.Log(got)
-				}
 			}
 		})
 	}
