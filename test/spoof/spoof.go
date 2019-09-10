@@ -254,11 +254,8 @@ func (sc *SpoofingClient) logZipkinTrace(spoofResp *Response) {
 	traceID := spoofResp.Header.Get(zipkin.ZipkinTraceIDHeader)
 	sc.logf("Logging Zipkin Trace for: %s", traceID)
 
-	// Sleep to ensure all traces are correctly pushed on the backend.
-	time.Sleep(5 * time.Second)
-
-	json, err := zipkin.JSONTrace(traceID)
-	if err != nil {
+	json, err := zipkin.JSONTrace(traceID, -1, 5 * time.Second)
+	if err != nil && !strings.HasPrefix(err.Error(), "timeout getting JSONTrace"){
 		sc.logf("Error getting zipkin trace: %v", err)
 	}
 
