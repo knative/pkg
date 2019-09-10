@@ -20,7 +20,6 @@ package zipkin
 
 import (
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"net/http"
 	"sync"
@@ -102,13 +101,11 @@ func SetupZipkinTracing(kubeClientset *kubernetes.Clientset, logf logging.Format
 // This should be called exactly once in TestMain. Likely in the form:
 //
 // func TestMain(m *testing.M) {
-//     os.Exit(wrappedMain(m))
-// }
-//
-// func wrappedMain(m *testing.M) {
-//    // Any setup required for the tests.
-//    defer zipkin.CleanupZipkinTracingSetup(logger)
-//    return m.Run()
+//     os.Exit(func() int {
+//       // Any setup required for the tests.
+//       defer zipkin.CleanupZipkinTracingSetup(logger)
+//       return m.Run()
+//     }())
 // }
 func CleanupZipkinTracingSetup(logf logging.FormatLogger) {
 	teardownOnce.Do(func() {
@@ -138,24 +135,27 @@ func CheckZipkinPortAvailability() error {
 // JSONTrace returns a trace for the given traceID. It will continually try to get the trace. If the
 // trace it gets has the expected number of spans, then it will be returned. If not, it will try
 // again. If it reaches timeout, then it returns everything it has so far with an error.
-func JSONTrace(traceID string, expected int, timeout time.Duration) (tracesSoFar []model.SpanModel, err error) {
-	var traceSoFar []model.SpanModel
+func JSONTrace(traceID string, expected int, timeout time.Duration) (trace []model.SpanModel, err error) {
 	t := time.After(timeout)
-	for {
-		if len(traceSoFar) == expected {
-			return traceSoFar, nil
-		}
+	for ; len(trace) != expected; {
 		select {
 		case <-t:
-			return traceSoFar, fmt.Errorf("timeout getting JSONTrace: %+v", traceSoFar)
+			return trace, &TimeoutError{}
 		default:
-			var err error
-			traceSoFar, err = jsonTrace(traceID)
+			trace, err = jsonTrace(traceID)
 			if err != nil {
-				return traceSoFar, err
+				return trace, err
 			}
 		}
 	}
+	return trace, nil
+}
+
+// TimeoutError is an error returned by JSONTrace if it times out before getting the expected number
+// of traces.
+type TimeoutError struct {}
+func (*TimeoutError) Error() string {
+	return "timeout getting JSONTrace"
 }
 
 // jsonTrace gets a trace from Zipkin and returns it.
