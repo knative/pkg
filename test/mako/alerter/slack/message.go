@@ -21,7 +21,7 @@ import (
 	"sync"
 	"time"
 
-	"knative.dev/pkg/test/mako/alerter/shared"
+	"knative.dev/pkg/test/helpers"
 	"knative.dev/pkg/test/slackutil"
 )
 
@@ -73,18 +73,19 @@ func Setup(userName, readTokenPath, writeTokenPath, repo string, dryrun bool) (*
 func (smh *MessageHandler) SendAlert(text string) error {
 	dryrun := smh.dryrun
 	channels := smh.config.channels
-	errCh := make(chan error, len(channels))
+	errCh := make(chan error)
 	defer close(errCh)
 	var wg sync.WaitGroup
 	for i := range channels {
 		channel := channels[i]
 		wg.Add(1)
 		go func() {
+			defer wg.Done()
 			// get the recent message history in the channel for this user
 			startTime := time.Now().Add(-1 * minInterval)
 			var messageHistory []string
-			if err := shared.Run(
-				fmt.Sprintf("retrieving message history in channel '%s'", channel.name),
+			if err := helpers.Run(
+				fmt.Sprintf("retrieving message history in channel %q", channel.name),
 				func() error {
 					var err error
 					messageHistory, err = smh.readClient.MessageHistory(channel.identity, startTime)
@@ -92,22 +93,22 @@ func (smh *MessageHandler) SendAlert(text string) error {
 				},
 				dryrun,
 			); err != nil {
-				errCh <- fmt.Errorf("failed to retrieve message history in channel '%s'", channel.name)
+				errCh <- fmt.Errorf("failed to retrieve message history in channel %q", channel.name)
 			}
-			// do not send message again if messages were sent on the same channel a while ago
-			if messageHistory != nil && len(messageHistory) != 0 {
+			// do not send message again if messages were sent on the same channel a short while ago
+			if len(messageHistory) != 0 {
 				return
 			}
 			// send the alert message to the channel
 			message := fmt.Sprintf(messageTemplate, time.Now(), text)
-			if err := shared.Run(
-				fmt.Sprintf("sending message '%s' to channel '%s'", message, channel.name),
+			if err := helpers.Run(
+				fmt.Sprintf("sending message %q to channel %q", message, channel.name),
 				func() error {
 					return smh.writeClient.Post(message, channel.identity)
 				},
 				dryrun,
 			); err != nil {
-				errCh <- fmt.Errorf("failed to send message to channel '%s'", channel.name)
+				errCh <- fmt.Errorf("failed to send message to channel %q", channel.name)
 			}
 		}()
 	}
@@ -116,10 +117,9 @@ func (smh *MessageHandler) SendAlert(text string) error {
 	go func() {
 		for err := range errCh {
 			errs = append(errs, err)
-			wg.Done()
 		}
 	}()
 	wg.Wait()
 
-	return shared.CombineErrors(errs)
+	return helpers.CombineErrors(errs)
 }

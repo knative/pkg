@@ -23,7 +23,7 @@ import (
 	"github.com/google/go-github/github"
 
 	"knative.dev/pkg/test/ghutil"
-	"knative.dev/pkg/test/mako/alerter/shared"
+	"knative.dev/pkg/test/helpers"
 )
 
 const (
@@ -121,7 +121,7 @@ func (gih *IssueHandler) CreateIssueForTest(testName, desc string) error {
 // createNewIssue will create a new issue, and add perfLabel for it.
 func (gih *IssueHandler) createNewIssue(org, repo, title, body string, dryrun bool) error {
 	var newIssue *github.Issue
-	if err := shared.Run(
+	if err := helpers.Run(
 		"creating issue",
 		func() error {
 			var err error
@@ -132,7 +132,7 @@ func (gih *IssueHandler) createNewIssue(org, repo, title, body string, dryrun bo
 	); nil != err {
 		return err
 	}
-	return shared.Run(
+	return helpers.Run(
 		"adding perf label",
 		func() error {
 			return gih.client.AddLabelsToIssue(org, repo, *newIssue.Number, []string{perfLabel})
@@ -154,7 +154,7 @@ func (gih *IssueHandler) CloseIssueForTest(testName string) error {
 	}
 
 	issueNumber := *issue.Number
-	if err := shared.Run(
+	if err := helpers.Run(
 		"add comment for the issue to close",
 		func() error {
 			_, cErr := gih.client.CreateComment(org, repo, issueNumber, closeIssueComment)
@@ -164,7 +164,7 @@ func (gih *IssueHandler) CloseIssueForTest(testName string) error {
 	); err != nil {
 		return err
 	}
-	return shared.Run(
+	return helpers.Run(
 		"closing issue",
 		func() error {
 			return gih.client.CloseIssue(org, repo, issueNumber)
@@ -175,7 +175,7 @@ func (gih *IssueHandler) CloseIssueForTest(testName string) error {
 
 // reopenIssue will reopen the given issue.
 func (gih *IssueHandler) reopenIssue(org, repo string, issueNumber int, dryrun bool) error {
-	return shared.Run(
+	return helpers.Run(
 		"reopen the issue",
 		func() error {
 			return gih.client.ReopenIssue(org, repo, issueNumber)
@@ -187,7 +187,7 @@ func (gih *IssueHandler) reopenIssue(org, repo string, issueNumber int, dryrun b
 // findIssue will return the issue in the given repo if it exists.
 func (gih *IssueHandler) findIssue(org, repo, title string, dryrun bool) *github.Issue {
 	var issues []*github.Issue
-	shared.Run(
+	helpers.Run(
 		"list issues in the repo",
 		func() error {
 			var err error
@@ -206,7 +206,7 @@ func (gih *IssueHandler) findIssue(org, repo, title string, dryrun bool) *github
 
 // addComment will add comment for the given issue.
 func (gih *IssueHandler) addComment(org, repo string, issueNumber int, commentBody string, dryrun bool) error {
-	return shared.Run(
+	return helpers.Run(
 		"add comment for issue",
 		func() error {
 			_, err := gih.client.CreateComment(org, repo, issueNumber, commentBody)

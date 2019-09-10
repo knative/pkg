@@ -79,9 +79,9 @@ func (c *readClient) MessageHistory(channel string, startTime time.Time) ([]stri
 		return nil, fmt.Errorf("response not ok '%s'", string(content))
 	}
 
-	res := make([]string, 0)
-	for _, message := range r.Messages {
-		res = append(res, message.Text)
+	res := make([]string, len(r.Messages))
+	for i, message := range r.Messages {
+		res[i] = message.Text
 	}
 
 	return res, nil
