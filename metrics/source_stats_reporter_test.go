@@ -39,7 +39,7 @@ func TestStatsReporter(t *testing.T) {
 		Namespace:     "testns",
 		EventType:     "dev.knative.event",
 		EventSource:   "unit-test",
-		Name:          "testimporter",
+		Name:          "testsource",
 		ResourceGroup: "testresourcegroup",
 	}
 
@@ -52,13 +52,13 @@ func TestStatsReporter(t *testing.T) {
 	defer unregister()
 
 	wantTags := map[string]string{
-		metricskey.LabelNamespaceName:         "testns",
-		metricskey.LabelEventType:             "dev.knative.event",
-		metricskey.LabelEventSource:           "unit-test",
-		metricskey.LabelImporterName:          "testimporter",
-		metricskey.LabelImporterResourceGroup: "testresourcegroup",
-		metricskey.LabelResponseCode:          "202",
-		metricskey.LabelResponseCodeClass:     "2xx",
+		metricskey.LabelNamespaceName:       "testns",
+		metricskey.LabelEventType:           "dev.knative.event",
+		metricskey.LabelEventSource:         "unit-test",
+		metricskey.LabelSourceName:          "testsource",
+		metricskey.LabelSourceResourceGroup: "testresourcegroup",
+		metricskey.LabelResponseCode:        "202",
+		metricskey.LabelResponseCodeClass:   "2xx",
 	}
 
 	// test ReportEventCount

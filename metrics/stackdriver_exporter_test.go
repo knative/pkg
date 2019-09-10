@@ -89,15 +89,15 @@ var (
 		metricName: "event_dispatch_latencies",
 	}}
 
-	supportedEventingImporterMetricsTestCases = []struct {
+	supportedEventingSourceMetricsTestCases = []struct {
 		name       string
 		domain     string
 		component  string
 		metricName string
 	}{{
-		name:       "importer metric",
+		name:       "source metric",
 		domain:     eventingDomain,
-		component:  "importer",
+		component:  "source",
 		metricName: "event_count",
 	}}
 
@@ -248,8 +248,8 @@ func TestGetMonitoredResourceFunc_UseKnativeTrigger(t *testing.T) {
 	}
 }
 
-func TestGetMonitoredResourceFunc_UseKnativeImporter(t *testing.T) {
-	for _, testCase := range supportedEventingImporterMetricsTestCases {
+func TestGetMonitoredResourceFunc_UseKnativeSource(t *testing.T) {
+	for _, testCase := range supportedEventingSourceMetricsTestCases {
 		testView = &view.View{
 			Description: "Test View",
 			Measure:     stats.Int64(testCase.metricName, "Test Measure", stats.UnitDimensionless),
@@ -258,9 +258,9 @@ func TestGetMonitoredResourceFunc_UseKnativeImporter(t *testing.T) {
 		}
 		mrf := getMonitoredResourceFunc(path.Join(testCase.domain, testCase.component), &testGcpMetadata)
 
-		newTags, monitoredResource := mrf(testView, importerTestTags)
+		newTags, monitoredResource := mrf(testView, sourceTestTags)
 		gotResType, labels := monitoredResource.MonitoredResource()
-		wantedResType := "knative_importer"
+		wantedResType := "knative_source"
 		if gotResType != wantedResType {
 			t.Fatalf("MonitoredResource=%v, want %v", gotResType, wantedResType)
 		}
@@ -276,13 +276,13 @@ func TestGetMonitoredResourceFunc_UseKnativeImporter(t *testing.T) {
 		if !ok || got != testNS {
 			t.Errorf("expected label %v with value %v, got: %v", metricskey.LabelNamespaceName, testNS, got)
 		}
-		got, ok = labels[metricskey.LabelImporterName]
-		if !ok || got != testImporter {
-			t.Errorf("expected label %v with value %v, got: %v", metricskey.LabelImporterName, testImporter, got)
+		got, ok = labels[metricskey.LabelSourceName]
+		if !ok || got != testSource {
+			t.Errorf("expected label %v with value %v, got: %v", metricskey.LabelSourceName, testSource, got)
 		}
-		got, ok = labels[metricskey.LabelImporterResourceGroup]
-		if !ok || got != testImporterResourceGroup {
-			t.Errorf("expected label %v with value %v, got: %v", metricskey.LabelImporterResourceGroup, testImporterResourceGroup, got)
+		got, ok = labels[metricskey.LabelSourceResourceGroup]
+		if !ok || got != testSourceResourceGroup {
+			t.Errorf("expected label %v with value %v, got: %v", metricskey.LabelSourceResourceGroup, testSourceResourceGroup, got)
 		}
 	}
 }
