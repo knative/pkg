@@ -45,6 +45,7 @@ type ReportArgs struct {
 
 // StatsReporter defines the interface for sending source metrics.
 type StatsReporter interface {
+	// ReportEventCount captures the event count. It records one per call.
 	ReportEventCount(args *ReportArgs, responseCode int) error
 }
 
@@ -123,7 +124,6 @@ func NewStatsReporter() (StatsReporter, error) {
 	return r, nil
 }
 
-// ReportEventCount captures the event count. It records 1 per call.
 func (r *reporter) ReportEventCount(args *ReportArgs, responseCode int) error {
 	ctx, err := r.generateTag(args, responseCode)
 	if err != nil {
