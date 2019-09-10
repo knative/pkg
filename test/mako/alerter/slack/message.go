@@ -17,6 +17,7 @@ limitations under the License.
 package slack
 
 import (
+	"flag"
 	"fmt"
 	"sync"
 	"time"
@@ -25,9 +26,9 @@ import (
 	"knative.dev/pkg/test/slackutil"
 )
 
+var minInterval = flag.Duration("min-alert-interval", 24*time.Hour, "The minimum interval of sending Slack alerts.")
+
 const (
-	// do not send alert on the same channel within 24 hours
-	minInterval     = 24 * time.Hour
 	messageTemplate = `
 As of %s, there is a new performance regression detected from automation test:
 %s`
@@ -74,7 +75,6 @@ func (smh *MessageHandler) SendAlert(text string) error {
 	dryrun := smh.dryrun
 	channels := smh.config.channels
 	errCh := make(chan error)
-	defer close(errCh)
 	var wg sync.WaitGroup
 	for i := range channels {
 		channel := channels[i]
@@ -82,7 +82,7 @@ func (smh *MessageHandler) SendAlert(text string) error {
 		go func() {
 			defer wg.Done()
 			// get the recent message history in the channel for this user
-			startTime := time.Now().Add(-1 * minInterval)
+			startTime := time.Now().Add(-1 * *minInterval)
 			var messageHistory []string
 			if err := helpers.Run(
 				fmt.Sprintf("retrieving message history in channel %q", channel.name),
@@ -113,13 +113,15 @@ func (smh *MessageHandler) SendAlert(text string) error {
 		}()
 	}
 
-	errs := make([]error, 0)
 	go func() {
-		for err := range errCh {
-			errs = append(errs, err)
-		}
+		wg.Wait()
+		close(errCh)
 	}()
-	wg.Wait()
+
+	errs := make([]error, 0)
+	for err := range errCh {
+		errs = append(errs, err)
+	}
 
 	return helpers.CombineErrors(errs)
 }

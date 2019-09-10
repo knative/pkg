@@ -88,7 +88,8 @@ func (gih *IssueHandler) CreateIssueForTest(testName, desc string) error {
 	// If the issue hasn't been created, create one
 	if issue == nil {
 		body := fmt.Sprintf(issueBodyTemplate, testName)
-		if err := gih.createNewIssue(org, repo, title, body, dryrun); err != nil {
+		issue, err := gih.createNewIssue(org, repo, title, body, dryrun)
+		if err != nil {
 			return err
 		}
 		comment := fmt.Sprintf(newIssueCommentTemplate, desc)
@@ -119,7 +120,7 @@ func (gih *IssueHandler) CreateIssueForTest(testName, desc string) error {
 }
 
 // createNewIssue will create a new issue, and add perfLabel for it.
-func (gih *IssueHandler) createNewIssue(org, repo, title, body string, dryrun bool) error {
+func (gih *IssueHandler) createNewIssue(org, repo, title, body string, dryrun bool) (*github.Issue, error) {
 	var newIssue *github.Issue
 	if err := helpers.Run(
 		"creating issue",
@@ -130,15 +131,18 @@ func (gih *IssueHandler) createNewIssue(org, repo, title, body string, dryrun bo
 		},
 		dryrun,
 	); nil != err {
-		return err
+		return nil, err
 	}
-	return helpers.Run(
+	if err := helpers.Run(
 		"adding perf label",
 		func() error {
 			return gih.client.AddLabelsToIssue(org, repo, *newIssue.Number, []string{perfLabel})
 		},
 		dryrun,
-	)
+	); nil != err {
+		return nil, err
+	}
+	return newIssue, nil
 }
 
 // CloseIssueForTest will try to close the issue for the given testName.

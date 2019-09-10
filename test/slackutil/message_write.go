@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// messaging_write.go includes functions to send messages to Slack.
+// message_write.go includes functions to send messages to Slack.
 
 package slackutil
 

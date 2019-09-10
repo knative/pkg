@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// messaging_read.go includes functions to read messages from Slack.
+// message_read.go includes functions to read messages from Slack.
 
 package slackutil
 
