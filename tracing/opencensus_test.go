@@ -49,7 +49,7 @@ func TestOpenCensusTracerGlobalLifecycle(t *testing.T) {
 	otherOCT.Finish()
 }
 
-func TestOpenCensusTrace_ApplyConfig_FailingConfigOption(t *testing.T) {
+func TestOpenCensusTraceApplyConfigFailingConfigOption(t *testing.T) {
 	coErr := errors.New("configOption error")
 	oct := NewOpenCensusTracer(func(c *config.Config) error {
 		if c != nil {
@@ -58,14 +58,14 @@ func TestOpenCensusTrace_ApplyConfig_FailingConfigOption(t *testing.T) {
 		return nil
 	})
 	if err := oct.ApplyConfig(&config.Config{}); err != coErr {
-		t.Errorf("Expected error not seen. Expected %q. Actual %q", coErr, err)
+		t.Errorf("Expected error not seen. Got %q. Want %q", err, coErr)
 	}
 	if err := oct.Finish(); err != nil {
 		t.Errorf("Unexpected error Finishing: %q", err)
 	}
 }
 
-func TestOpenCensusTrace_Finish_FailingConfigOption(t *testing.T) {
+func TestOpenCensusTraceFinishFailingConfigOption(t *testing.T) {
 	coErr := errors.New("configOption error")
 	errToReturn := coErr
 	oct := NewOpenCensusTracer(func(c *config.Config) error {
@@ -82,7 +82,7 @@ func TestOpenCensusTrace_Finish_FailingConfigOption(t *testing.T) {
 		t.Errorf("Unexpected error Applying Config: %q", err)
 	}
 	if err := oct.Finish(); err != coErr {
-		t.Errorf("Expected error not seen. Expected %q. Actual %q", coErr, err)
+		t.Errorf("Expected error not seen. Got %q. Want %q", err, coErr)
 	}
 	if err := oct.Finish(); err != nil {
 		t.Errorf("Unexpected error on second Finish (global state mutated, other tests may fail oddly): %q", err)
