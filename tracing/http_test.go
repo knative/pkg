@@ -18,6 +18,7 @@ package tracing_test
 
 import (
 	"net/http"
+	"net/url"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -92,5 +93,79 @@ func TestHTTPSpanMiddleware(t *testing.T) {
 	}
 	if got := spans[0].TraceID.String(); got != traceID {
 		t.Errorf("spans[0].TraceID = %s, want %s", got, traceID)
+	}
+}
+
+func TestHTTPSpanIgnoringPaths(t *testing.T) {
+	cfg := config.Config{
+		Backend: config.Zipkin,
+		Debug:   true,
+	}
+
+	// Create tracer with reporter recorder
+	reporter, co := FakeZipkinExporter()
+	defer reporter.Close()
+	oct := NewOpenCensusTracer(co)
+	defer oct.Finish()
+
+	if err := oct.ApplyConfig(&cfg); err != nil {
+		t.Errorf("Failed to apply tracer config: %v", err)
+	}
+
+	paths := []string{"/readyz"}
+	middleware := HTTPSpanIgnoringPaths(paths...)(&testHandler{})
+
+	testCases := map[string]struct {
+		path   string
+		traced bool
+	}{
+		"traced": {
+			path:   "/",
+			traced: true,
+		},
+		"ignored": {
+			path:   paths[0],
+			traced: false,
+		},
+	}
+	for n, tc := range testCases {
+		t.Run(n, func(t *testing.T) {
+			var lastWrite []byte
+			fw := fakeWriter{lastWrite: &lastWrite}
+
+			u := &url.URL{
+				Scheme: "http",
+				Host:   "test.example.com",
+				Path:   tc.path,
+			}
+			req, err := http.NewRequest("GET", u.String(), nil)
+			if err != nil {
+				t.Errorf("Failed to make fake request: %v", err)
+			}
+			traceID := "821e0d50d931235a5ba3fa42eddddd8f"
+			req.Header.Set("X-B3-Traceid", traceID)
+			req.Header.Set("X-B3-Spanid", "b3bd5e1c4318c78a")
+
+			middleware.ServeHTTP(fw, req)
+
+			// Assert our next handler was called
+			if diff := cmp.Diff([]byte("fake"), lastWrite); diff != "" {
+				t.Errorf("Got http response (-want, +got) = %v", diff)
+			}
+
+			spans := reporter.Flush()
+			if tc.traced {
+				if len(spans) != 1 {
+					t.Errorf("Got %d spans, expected 1: spans = %v", len(spans), spans)
+				}
+				if got := spans[0].TraceID.String(); got != traceID {
+					t.Errorf("spans[0].TraceID = %s, want %s", got, traceID)
+				}
+			} else {
+				if len(spans) != 0 {
+					t.Errorf("Got %d spans, expected 0: spans = %v", len(spans), spans)
+				}
+			}
+		})
 	}
 }
