@@ -16,12 +16,13 @@ limitations under the License.
 package metrics
 
 import (
-	"github.com/google/go-cmp/cmp"
 	"os"
 	"path"
 	"reflect"
 	"testing"
 	"time"
+
+	"github.com/google/go-cmp/cmp"
 
 	. "knative.dev/pkg/logging/testing"
 )
