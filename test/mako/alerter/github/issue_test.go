@@ -18,19 +18,21 @@ package github
 
 import (
 	"fmt"
+	"os"
 	"testing"
 
 	"knative.dev/pkg/test/ghutil"
 	"knative.dev/pkg/test/ghutil/fakeghutil"
 )
 
-var gih issueHandler
+var gih IssueHandler
 
 func TestMain(m *testing.M) {
-	gih = issueHandler{
+	gih = IssueHandler{
 		client: fakeghutil.NewFakeGithubClient(),
 		config: config{org: "test_org", repo: "test_repo", dryrun: false},
 	}
+	os.Exit(m.Run())
 }
 
 func TestNewIssueWillBeAdded(t *testing.T) {
@@ -70,7 +72,9 @@ func TestIssueCanBeClosed(t *testing.T) {
 	testName := "test closing existed issue"
 	testDesc := "test closing existed issue desc"
 	issueTitle := fmt.Sprintf(issueTitleTemplate, testName)
-	gih.client.CreateIssue(org, repo, issueTitle, testDesc)
+	if err := gih.CreateIssueForTest(testName, testDesc); err != nil {
+		t.Fatalf("expected to create a new issue %v, but failed", testName)
+	}
 
 	if err := gih.CloseIssueForTest(testName); err != nil {
 		t.Fatalf("tried to close the existed issue %v, but got an error %v", testName, err)
