@@ -17,8 +17,9 @@ limitations under the License.
 package logging
 
 import (
-	"github.com/google/go-cmp/cmp"
 	"testing"
+
+	"github.com/google/go-cmp/cmp"
 
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
