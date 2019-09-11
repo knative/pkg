@@ -17,6 +17,7 @@ limitations under the License.
 package clustermanager
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"strings"
@@ -174,12 +175,12 @@ func (gc *GKECluster) Initialize() error {
 		}
 	}
 	if nil == gc.Project || "" == *gc.Project {
-		return fmt.Errorf("gcp project must be set")
+		return errors.New("gcp project must be set")
 	}
 	if !common.IsProw() && nil == gc.Cluster {
 		gc.NeedCleanup = true
 	}
-	log.Printf("use project '%s' for running test", *gc.Project)
+	log.Printf("Using project %q for running test", *gc.Project)
 	return nil
 }
 
@@ -233,7 +234,7 @@ func (gc *GKECluster) Acquire() error {
 		clusterLoc := getClusterLocation(region, gc.Request.Zone)
 		// TODO(chaodaiG): add deleting logic once cluster deletion logic is done
 
-		log.Printf("Creating cluster '%s' in '%s'", clusterName, clusterLoc)
+		log.Printf("Creating cluster %q' in %q", clusterName, clusterLoc)
 		var createOp *container.Operation
 		createOp, err = gc.operations.create(*gc.Project, clusterLoc, rb)
 		if nil == err {
@@ -252,7 +253,7 @@ func (gc *GKECluster) Acquire() error {
 			}
 			log.Printf(errMsg)
 		} else {
-			log.Printf("cluster creation completed")
+			log.Print("Cluster creation completed")
 			gc.Cluster = cluster
 			break
 		}
@@ -264,8 +265,11 @@ func (gc *GKECluster) Acquire() error {
 // wait depends on unique opName(operation ID created by cloud), and waits until
 // it's done
 func (gc *GKECluster) wait(location, opName string, wait time.Duration) error {
-	validStatuses := []string{"PENDING", "RUNNING", "DONE"}
-	doneStatus := "DONE"
+	const (
+		pendingStatus = "PENDING"
+		runningStatus = "RUNNING"
+		doneStatus    = "DONE"
+	)
 	var op *container.Operation
 	var err error
 
@@ -275,26 +279,21 @@ func (gc *GKECluster) wait(location, opName string, wait time.Duration) error {
 		select {
 		// Got a timeout! fail with a timeout error
 		case <-timeout:
-			return fmt.Errorf("timed out waiting")
+			return errors.New("timed out waiting")
 		case <-tick:
 			// Retry 3 times in case of weird network error, or rate limiting
-			r := 0
-			for w := 50 * time.Microsecond; r < 3; w *= 2 {
-				r++
+			for r, w := 0, 50*time.Microsecond; r < 3; r, w = r+1, w*2 {
 				op, err = gc.operations.getOperation(*gc.Project, location, opName)
 				if nil == err {
-					valid := false
-					for _, validStatus := range validStatuses {
-						if op.Status == validStatus {
-							valid = true
-						}
-					}
-					if !valid {
-						err = fmt.Errorf("unexpected operation status: '%s'", op.Status)
-					} else if op.Status == doneStatus {
+					if op.Status == doneStatus {
 						return nil
-					} else { // valid operation, no need to retry
+					} else if op.Status == pendingStatus || op.Status == runningStatus {
+						// Valid operation, no need to retry
 						break
+					} else {
+						// Have seen intermittent error state and fixed itself,
+						// let it retry to avoid too much flakiness
+						err = fmt.Errorf("unexpected operation status: %q", op.Status)
 					}
 				}
 				time.Sleep(w)
@@ -314,14 +313,14 @@ func (gc *GKECluster) ensureProtected() {
 	if nil != gc.Project {
 		for _, pp := range protectedProjects {
 			if *gc.Project == pp {
-				log.Fatalf("project '%s' is protected", *gc.Project)
+				log.Fatalf("project %q is protected", *gc.Project)
 			}
 		}
 	}
 	if nil != gc.Cluster {
 		for _, pc := range protectedClusters {
 			if gc.Cluster.Name == pc {
-				log.Fatalf("cluster '%s' is protected", gc.Cluster.Name)
+				log.Fatalf("cluster %q is protected", gc.Cluster.Name)
 			}
 		}
 	}

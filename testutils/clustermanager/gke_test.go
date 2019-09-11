@@ -441,7 +441,7 @@ func TestGKECheckEnvironment(t *testing.T) {
 		}
 
 		if !reflect.DeepEqual(err, data.expErr) || !reflect.DeepEqual(fgc.Project, data.expProj) || !reflect.DeepEqual(clusterGot, data.expCluster) {
-			t.Errorf("check environment with:\n\tkubectl output: '%s'\n\t\terror: '%v'\n\tgcloud output: '%s'\n\t\t"+
+			t.Errorf("check environment with:\n\tkubectl output: %q\n\t\terror: '%v'\n\tgcloud output: %q\n\t\t"+
 				"error: '%v'\nwant: project - '%v', cluster - '%v', err - '%v'\ngot: project - '%v', cluster - '%v', err - '%v'",
 				data.kubectlOut, data.kubectlErr, data.gcloudOut, data.gcloudErr, data.expProj, data.expCluster, data.expErr, fgc.Project, fgc.Cluster, err)
 		}
@@ -476,7 +476,7 @@ func TestAcquire(t *testing.T) {
 			"", "", fmt.Errorf("timed out waiting"),
 		}, {
 			// cluster creation went bad state
-			nil, []string{"BAD", "BAD", "BAD"}, "", "", fmt.Errorf("unexpected operation status: 'BAD'"),
+			nil, []string{"BAD", "BAD", "BAD"}, "", "", fmt.Errorf("unexpected operation status: %q", "BAD"),
 		},
 	}
 
@@ -525,7 +525,7 @@ func TestAcquire(t *testing.T) {
 			gotLocation = fgc.Cluster.Location
 		}
 		if !reflect.DeepEqual(err, data.expErr) || data.expClusterName != gotName || data.expClusterLocation != gotLocation {
-			t.Errorf("testing acquiring cluster, with:\n\texisting cluster: '%v'\n\tnext operations outcomes: '%v'\nwant: cluster name - '%s', location - '%s', err - '%v'\ngot: cluster name - '%s', location - '%s', err - '%v'",
+			t.Errorf("testing acquiring cluster, with:\n\texisting cluster: '%v'\n\tnext operations outcomes: '%v'\nwant: cluster name - %q, location - %q, err - '%v'\ngot: cluster name - %q, location - %q, err - '%v'",
 				data.existCluster, data.nextOpStatus, data.expClusterName, data.expClusterLocation, data.expErr, gotName, gotLocation, err)
 		}
 	}
