@@ -57,7 +57,7 @@ func (c *CoveragePercentages) GetAndRemoveResourceValue(resource string) float64
 // IsFailedBuild utility method to indicate if CoveragePercentages indicate
 // values of a failed build.
 func (c *CoveragePercentages) IsFailedBuild() bool {
-	return math.Abs(c.ResourceCoverages["Overall"] - 0) == 0
+	return math.Abs(c.ResourceCoverages["Overall"]-0) == 0
 }
 
 // CalculateTypeCoverage calculates aggregate coverage values based on provided []TypeCoverage

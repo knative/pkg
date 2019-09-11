@@ -26,7 +26,7 @@ import (
 // GetCoveragePercentageXMLDisplay is a helper method to write resource coverage
 // percentage values to junit xml file format.
 func GetCoveragePercentageXMLDisplay(
-		percentageCoverages *coveragecalculator.CoveragePercentages) (string, error) {
+	percentageCoverages *coveragecalculator.CoveragePercentages) (string, error) {
 	tmpl, err := template.New("JunitResult").Parse(JunitResultTmpl)
 	if err != nil {
 		return "", err

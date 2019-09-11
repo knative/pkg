@@ -85,13 +85,13 @@ func NewStatsReporter() (StatsReporter, error) {
 	}
 	r.eventTypeTagKey = eventTypeTag
 
-	nameTag, err := tag.NewKey(metricskey.LabelImporterName)
+	nameTag, err := tag.NewKey(metricskey.LabelSourceName)
 	if err != nil {
 		return nil, err
 	}
 	r.sourceNameTagKey = nameTag
 
-	resourceGroupTag, err := tag.NewKey(metricskey.LabelImporterResourceGroup)
+	resourceGroupTag, err := tag.NewKey(metricskey.LabelSourceResourceGroup)
 	if err != nil {
 		return nil, err
 	}
