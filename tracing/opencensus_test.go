@@ -17,6 +17,7 @@ limitations under the License.
 package tracing_test
 
 import (
+	"errors"
 	"testing"
 
 	. "knative.dev/pkg/tracing"
@@ -46,4 +47,44 @@ func TestOpenCensusTracerGlobalLifecycle(t *testing.T) {
 		t.Fatalf("Failed to ApplyConfig on OtherOCT after finishing OCT: %v", err)
 	}
 	otherOCT.Finish()
+}
+
+func TestOpenCensusTraceApplyConfigFailingConfigOption(t *testing.T) {
+	coErr := errors.New("configOption error")
+	oct := NewOpenCensusTracer(func(c *config.Config) error {
+		if c != nil {
+			return coErr
+		}
+		return nil
+	})
+	if err := oct.ApplyConfig(&config.Config{}); err != coErr {
+		t.Errorf("Expected error not seen. Got %q. Want %q", err, coErr)
+	}
+	if err := oct.Finish(); err != nil {
+		t.Errorf("Unexpected error Finishing: %q", err)
+	}
+}
+
+func TestOpenCensusTraceFinishFailingConfigOption(t *testing.T) {
+	coErr := errors.New("configOption error")
+	errToReturn := coErr
+	oct := NewOpenCensusTracer(func(c *config.Config) error {
+		if c == nil {
+			// We need finish to work on the second try, otherwise we have mutated global state. So,
+			// make sure that next run through, the returned error is nil.
+			e := errToReturn
+			errToReturn = nil
+			return e
+		}
+		return nil
+	})
+	if err := oct.ApplyConfig(&config.Config{}); err != nil {
+		t.Errorf("Unexpected error Applying Config: %q", err)
+	}
+	if err := oct.Finish(); err != coErr {
+		t.Errorf("Expected error not seen. Got %q. Want %q", err, coErr)
+	}
+	if err := oct.Finish(); err != nil {
+		t.Errorf("Unexpected error on second Finish (global state mutated, other tests may fail oddly): %q", err)
+	}
 }

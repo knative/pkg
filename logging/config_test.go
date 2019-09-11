@@ -19,6 +19,8 @@ package logging
 import (
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
+
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	corev1 "k8s.io/api/core/v1"
@@ -286,5 +288,61 @@ func TestUpdateLevelFromConfigMap(t *testing.T) {
 		if atomicLevel.Level() != tt.wantLevel {
 			t.Errorf("Invalid logging level. want: %v, got: %v", tt.wantLevel, atomicLevel.Level())
 		}
+	}
+}
+
+func TestLoggingConfig(t *testing.T) {
+	testCases := map[string]struct {
+		cfg     *Config
+		want    string
+		wantErr string
+	}{
+		"nil": {
+			cfg:     nil,
+			want:    "",
+			wantErr: "json logging string is empty",
+		},
+		"happy": {
+			cfg: &Config{
+				LoggingConfig: "{}",
+				LoggingLevel:  map[string]zapcore.Level{},
+			},
+			want: `{"zap-logger-config":"{}"}`,
+		},
+	}
+	for n, tc := range testCases {
+		t.Run(n, func(t *testing.T) {
+			json, err := LoggingConfigToJson(tc.cfg)
+			if err != nil {
+				t.Errorf("error while converting logging config to json: %v", err)
+			}
+			// Test to json.
+			{
+				want := tc.want
+				got := json
+				if diff := cmp.Diff(want, got); diff != "" {
+					t.Errorf("unexpected (-want, +got) = %v", diff)
+					t.Log(got)
+				}
+			}
+			// Test to config.
+			if tc.cfg != nil {
+				want := tc.cfg
+				got, gotErr := JsonToLoggingConfig(json)
+
+				if gotErr != nil {
+					if diff := cmp.Diff(tc.wantErr, gotErr.Error()); diff != "" {
+						t.Errorf("unexpected err (-want, +got) = %v", diff)
+					}
+				} else if tc.wantErr != "" {
+					t.Errorf("expected err %v", tc.wantErr)
+				}
+
+				if diff := cmp.Diff(want, got); diff != "" {
+					t.Errorf("unexpected (-want, +got) = %v", diff)
+					t.Log(got)
+				}
+			}
+		})
 	}
 }
