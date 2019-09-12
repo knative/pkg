@@ -17,17 +17,19 @@ limitations under the License.
 package slack
 
 import (
+	"fmt"
 	"io/ioutil"
-	"log"
+	"os"
+	"path/filepath"
 
 	yaml "gopkg.in/yaml.v2"
 )
 
+const koDataPathEnvName = "KO_DATA_PATH"
+
 // configFile saves all information we need to send slack message to channel(s)
 // when performance regression happens in the automation tests.
-const configFile = "config.yaml"
-
-var repoConfigs []repoConfig
+const configFile = "slack-config.yaml"
 
 // config contains all repo configs for performance regression alerting.
 type config struct {
@@ -46,17 +48,20 @@ type channel struct {
 	identity string `yaml:"identity"`
 }
 
-// init parses config from configFile
-func init() {
-	contents, err := ioutil.ReadFile(configFile)
+// loadConfig parses config from configFile
+func loadConfig() ([]repoConfig, error) {
+	koDataPath := os.Getenv(koDataPathEnvName)
+	if koDataPath == "" {
+		return nil, fmt.Errorf("%q does not exist or is empty", koDataPathEnvName)
+	}
+	fullFilename := filepath.Join(koDataPath, configFile)
+	contents, err := ioutil.ReadFile(fullFilename)
 	if err != nil {
-		log.Printf("Failed to load the config file: %v", err)
-		return
+		return nil, err
 	}
 	config := &config{}
 	if err = yaml.Unmarshal(contents, &config); err != nil {
-		log.Printf("Failed to unmarshal %v", contents)
-	} else {
-		repoConfigs = config.repoConfigs
+		return nil, err
 	}
+	return config.repoConfigs, nil
 }

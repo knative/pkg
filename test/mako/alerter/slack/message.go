@@ -44,6 +44,10 @@ type MessageHandler struct {
 
 // Setup creates the necessary setup to make calls to work with slack
 func Setup(userName, readTokenPath, writeTokenPath, repo string, dryrun bool) (*MessageHandler, error) {
+	repoConfigs, err := loadConfig()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load the slack config: %v", err)
+	}
 	readClient, err := slackutil.NewReadClient(userName, readTokenPath)
 	if err != nil {
 		return nil, fmt.Errorf("cannot authenticate to slack read client: %v", err)
