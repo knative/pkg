@@ -255,6 +255,9 @@ func TestInitialize(t *testing.T) {
 			// User defines project
 			&fakeProj, false, false, false, []string{}, &fakeProj, nil, nil,
 		}, {
+			// User defines project, and running in Prow
+			&fakeProj, false, false, true, []string{}, &fakeProj, nil, nil,
+		}, {
 			// kubeconfig set
 			nil, true, false, false, []string{}, &fakeProj, &container.Cluster{
 				Name:     "d",
