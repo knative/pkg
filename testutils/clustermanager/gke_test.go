@@ -43,15 +43,39 @@ func setupFakeGKECluster() GKECluster {
 
 type FakeGKESDKClient struct {
 	// map of parent: clusters slice
-	clusters     map[string][]*container.Cluster
-	regionStatus map[string]string
+	clusters map[string][]*container.Cluster
+	// map of operationID: operation
+	ops map[string]*container.Operation
+
+	// An incremental number for new ops
+	opNumber int
+	// A lookup table for determining ops statuses
+	opStatus map[string]string
 }
 
 func newFakeGKESDKClient() *FakeGKESDKClient {
 	return &FakeGKESDKClient{
-		clusters:     make(map[string][]*container.Cluster),
-		regionStatus: make(map[string]string),
+		clusters: make(map[string][]*container.Cluster),
+		ops:      make(map[string]*container.Operation),
+		opStatus: make(map[string]string),
 	}
+}
+
+// automatically registers new ops, and mark it "DONE" by default. Update
+// fgsc.opStatus by fgsc.opStatus[string(fgsc.opNumber+1)]="PENDING" to make the
+// next operation pending
+func (fgsc *FakeGKESDKClient) newOp() *container.Operation {
+	opName := string(fgsc.opNumber)
+	op := &container.Operation{
+		Name:   opName,
+		Status: "DONE",
+	}
+	if status, ok := fgsc.opStatus[opName]; ok {
+		op.Status = status
+	}
+	fgsc.opNumber++
+	fgsc.ops[opName] = op
+	return op
 }
 
 // fake create cluster, fail if cluster already exists
@@ -72,12 +96,9 @@ func (fgsc *FakeGKESDKClient) create(project, location string, rb *container.Cre
 		Location: location,
 		Status:   "RUNNING",
 	}
-	if status, ok := fgsc.regionStatus[location]; ok {
-		cluster.Status = status
-	}
 
 	fgsc.clusters[parent] = append(fgsc.clusters[parent], cluster)
-	return nil, nil
+	return fgsc.newOp(), nil
 }
 
 func (fgsc *FakeGKESDKClient) get(project, location, cluster string) (*container.Cluster, error) {
@@ -90,6 +111,13 @@ func (fgsc *FakeGKESDKClient) get(project, location, cluster string) (*container
 		}
 	}
 	return nil, fmt.Errorf("cluster not found")
+}
+
+func (fgsc *FakeGKESDKClient) getOperation(project, location, opName string) (*container.Operation, error) {
+	if op, ok := fgsc.ops[opName]; ok {
+		return op, nil
+	}
+	return nil, fmt.Errorf("op not found")
 }
 
 func TestSetup(t *testing.T) {
@@ -413,7 +441,7 @@ func TestGKECheckEnvironment(t *testing.T) {
 		}
 
 		if !reflect.DeepEqual(err, data.expErr) || !reflect.DeepEqual(fgc.Project, data.expProj) || !reflect.DeepEqual(clusterGot, data.expCluster) {
-			t.Errorf("check environment with:\n\tkubectl output: '%s'\n\t\terror: '%v'\n\tgcloud output: '%s'\n\t\t"+
+			t.Errorf("check environment with:\n\tkubectl output: %q\n\t\terror: '%v'\n\tgcloud output: %q\n\t\t"+
 				"error: '%v'\nwant: project - '%v', cluster - '%v', err - '%v'\ngot: project - '%v', cluster - '%v', err - '%v'",
 				data.kubectlOut, data.kubectlErr, data.gcloudOut, data.gcloudErr, data.expProj, data.expCluster, data.expErr, fgc.Project, fgc.Cluster, err)
 		}
@@ -425,7 +453,7 @@ func TestAcquire(t *testing.T) {
 	fakeBuildID := "1234"
 	datas := []struct {
 		existCluster       *container.Cluster
-		regionStates       map[string]string
+		nextOpStatus       []string
 		expClusterName     string
 		expClusterLocation string
 		expErr             error
@@ -435,20 +463,20 @@ func TestAcquire(t *testing.T) {
 			&container.Cluster{
 				Name:     "customcluster",
 				Location: "us-central1",
-			}, map[string]string{}, "customcluster", "us-central1", nil,
+			}, []string{}, "customcluster", "us-central1", nil,
 		}, {
 			// cluster creation succeeded
-			nil, map[string]string{}, fakeClusterName, "us-central1", nil,
+			nil, []string{}, fakeClusterName, "us-central1", nil,
 		}, {
 			// cluster creation succeeded retry
-			nil, map[string]string{"us-central1": "PROVISIONING"}, fakeClusterName, "us-west1", nil,
+			nil, []string{"PENDING"}, fakeClusterName, "us-west1", nil,
 		}, {
 			// cluster creation failed all retry
-			nil, map[string]string{"us-central1": "PROVISIONING", "us-west1": "PROVISIONING", "us-east1": "PROVISIONING"},
-			"", "", fmt.Errorf("timed out waiting for cluster creation"),
+			nil, []string{"PENDING", "PENDING", "PENDING"},
+			"", "", fmt.Errorf("timed out waiting"),
 		}, {
 			// cluster creation went bad state
-			nil, map[string]string{"us-central1": "BAD", "us-west1": "BAD", "us-east1": "BAD"}, "", "", fmt.Errorf("cluster in bad state: 'BAD'"),
+			nil, []string{"BAD", "BAD", "BAD"}, "", "", fmt.Errorf("unexpected operation status: %q", "BAD"),
 		},
 	}
 
@@ -456,7 +484,8 @@ func TestAcquire(t *testing.T) {
 	oldFunc := common.GetOSEnv
 	// mock timeout so it doesn't run forever
 	oldTimeout := creationTimeout
-	creationTimeout = 100 * time.Millisecond
+	// wait function polls every 500ms, give it 1000 to avoid random timeout
+	creationTimeout = 1000 * time.Millisecond
 	defer func() {
 		// restore
 		common.GetOSEnv = oldFunc
@@ -478,7 +507,9 @@ func TestAcquire(t *testing.T) {
 			fgc.Cluster = data.existCluster
 		}
 		fgc.Project = &fakeProj
-		fgc.operations.(*FakeGKESDKClient).regionStatus = data.regionStates
+		for i, status := range data.nextOpStatus {
+			fgc.operations.(*FakeGKESDKClient).opStatus[string(i)] = status
+		}
 
 		fgc.Request = &GKERequest{
 			NumNodes:      DefaultGKENumNodes,
@@ -494,8 +525,8 @@ func TestAcquire(t *testing.T) {
 			gotLocation = fgc.Cluster.Location
 		}
 		if !reflect.DeepEqual(err, data.expErr) || data.expClusterName != gotName || data.expClusterLocation != gotLocation {
-			t.Errorf("testing acquiring cluster, with:\n\texisting cluster: '%v'\n\tbad regions: '%v'\nwant: cluster name - '%s', location - '%s', err - '%v'\ngot: cluster name - '%s', location - '%s', err - '%v'",
-				data.existCluster, data.regionStates, data.expClusterName, data.expClusterLocation, data.expErr, gotName, gotLocation, err)
+			t.Errorf("testing acquiring cluster, with:\n\texisting cluster: '%v'\n\tnext operations outcomes: '%v'\nwant: cluster name - %q, location - %q, err - '%v'\ngot: cluster name - %q, location - %q, err - '%v'",
+				data.existCluster, data.nextOpStatus, data.expClusterName, data.expClusterLocation, data.expErr, gotName, gotLocation, err)
 		}
 	}
 }
