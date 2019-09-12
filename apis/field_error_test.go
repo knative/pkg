@@ -159,6 +159,11 @@ Body.`,
 		prefixes: [][]string{{"baz"}},
 		want:     `invalid value: 5s: baz.bar`,
 	}, {
+		name:     "invalid value propagation",
+		err:      ErrGeneric("this is a generic error", "foo", "bar"),
+		prefixes: [][]string{{"baz"}},
+		want:     `this is a generic error: baz.bar, baz.foo`,
+	}, {
 		name:     "missing mutually exclusive fields",
 		err:      ErrMissingOneOf("foo", "bar"),
 		prefixes: [][]string{{"baz"}},
