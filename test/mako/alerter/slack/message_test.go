@@ -34,8 +34,8 @@ func TestMain(m *testing.M) {
 		config: repoConfig{
 			repo: "test_repo",
 			channels: []channel{
-				channel{name: "test_channel1", identity: "fsfdsf"},
-				channel{name: "test_channel2", identity: "fdsfhfdh"},
+				{name: "test_channel1", identity: "fsfdsf"},
+				{name: "test_channel2", identity: "fdsfhfdh"},
 			},
 		},
 		dryrun: false,
