@@ -326,12 +326,12 @@ func ErrInvalidValue(value interface{}, fieldPath string) *FieldError {
 	}
 }
 
-// ErrInvalidCombination constructs a FieldError for a field that has received an
-// invalid combination of values.
-func ErrInvalidCombination(bad, value interface{}, key, fieldPath string) *FieldError {
+// ErrGeneric constructs a FieldError to allow for the different error strings for the
+// the different cases.
+func ErrGeneric(diagnostic string, fieldPaths ...string) *FieldError {
 	return &FieldError{
-		Message: fmt.Sprintf("invalid value %v, when %s is %v", bad, key, value),
-		Paths:   []string{fieldPath},
+		Message: diagnostic,
+		Paths:   fieldPaths,
 	}
 }
 
