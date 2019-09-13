@@ -34,7 +34,7 @@ import (
 //      they call this function. Users must ensure metrics config are set before
 //      using this function to get expected behavior.
 //   2) The backend is not Stackdriver.
-//   3) The backend is Stackdriver and it is allowed to use custom metrics.
+//   3) The backend is Stackdriver and it is allowed to use custom metrics (either with a fixed domain or a configured one).
 //   4) The backend is Stackdriver and the metric is one of the built-in metrics: "knative_revision", "knative_broker",
 //      "knative_trigger", "knative_source".
 func Record(ctx context.Context, ms stats.Measurement) {
@@ -47,7 +47,7 @@ func Record(ctx context.Context, ms stats.Measurement) {
 	}
 
 	// Condition 2) and 3)
-	if !mc.isStackdriverBackend || mc.allowStackdriverCustomMetrics {
+	if !mc.isStackdriverBackend || mc.allowStackdriverCustomMetrics || mc.allowStackdriverCustomMetricsDomain {
 		stats.Record(ctx, ms)
 		return
 	}
