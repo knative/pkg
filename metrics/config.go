@@ -119,7 +119,7 @@ type metricsConfig struct {
 	// "knative.dev/serving/activator". Store this in a variable to reduce string
 	// join operations.
 	stackdriverMetricTypePrefix string
-	// stackdriverCustomMetricTypePrefix is "custom.googleapis.com joined with the subdomain and component.
+	// stackdriverCustomMetricTypePrefix is "custom.googleapis.com" joined with the subdomain and component.
 	// E.g., "custom.googleapis.com/<subdomain>/<component>".
 	// Store this in a variable to reduce string join operations.
 	stackdriverCustomMetricTypePrefix string
