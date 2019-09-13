@@ -41,13 +41,13 @@ func TestStatsReporter(t *testing.T) {
 	}
 
 	wantTags := map[string]string{
-		metricskey.LabelNamespaceName:       "testns",
-		metricskey.LabelEventType:           "dev.knative.event",
-		metricskey.LabelEventSource:         "unit-test",
-		metricskey.LabelSourceName:          "testsource",
-		metricskey.LabelSourceResourceGroup: "testresourcegroup",
-		metricskey.LabelResponseCode:        "202",
-		metricskey.LabelResponseCodeClass:   "2xx",
+		metricskey.LabelNamespaceName:     "testns",
+		metricskey.LabelEventType:         "dev.knative.event",
+		metricskey.LabelEventSource:       "unit-test",
+		metricskey.LabelName:              "testsource",
+		metricskey.LabelResourceGroup:     "testresourcegroup",
+		metricskey.LabelResponseCode:      "202",
+		metricskey.LabelResponseCodeClass: "2xx",
 	}
 
 	// test ReportEventCount
