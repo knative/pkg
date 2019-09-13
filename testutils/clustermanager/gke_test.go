@@ -17,16 +17,19 @@ limitations under the License.
 package clustermanager
 
 import (
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
 	"reflect"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
 
 	"google.golang.org/api/container/v1"
 
+	boskoscommon "k8s.io/test-infra/boskos/common"
 	boskosFake "knative.dev/pkg/testutils/clustermanager/boskos/fake"
 	"knative.dev/pkg/testutils/common"
 )
@@ -67,7 +70,7 @@ func newFakeGKESDKClient() *FakeGKESDKClient {
 // fgsc.opStatus by fgsc.opStatus[string(fgsc.opNumber+1)]="PENDING" to make the
 // next operation pending
 func (fgsc *FakeGKESDKClient) newOp() *container.Operation {
-	opName := string(fgsc.opNumber)
+	opName := strconv.Itoa(fgsc.opNumber)
 	op := &container.Operation{
 		Name:   opName,
 		Status: "DONE",
@@ -87,7 +90,7 @@ func (fgsc *FakeGKESDKClient) create(project, location string, rb *container.Cre
 	if cls, ok := fgsc.clusters[parent]; ok {
 		for _, cl := range cls {
 			if cl.Name == name {
-				return nil, fmt.Errorf("cluster already exist")
+				return nil, errors.New("cluster already exist")
 			}
 		}
 	} else {
@@ -100,6 +103,24 @@ func (fgsc *FakeGKESDKClient) create(project, location string, rb *container.Cre
 	}
 
 	fgsc.clusters[parent] = append(fgsc.clusters[parent], cluster)
+	return fgsc.newOp(), nil
+}
+
+func (fgsc *FakeGKESDKClient) delete(project, clusterName, location string) (*container.Operation, error) {
+	parent := fmt.Sprintf("projects/%s/locations/%s", project, location)
+	found := -1
+	if clusters, ok := fgsc.clusters[parent]; ok {
+		for i, cluster := range clusters {
+			if cluster.Name == clusterName {
+				found = i
+			}
+		}
+	}
+	if found == -1 {
+		return nil, fmt.Errorf("cluster %q not found for deletion", clusterName)
+	}
+	// Delete this cluster
+	fgsc.clusters[parent] = append(fgsc.clusters[parent][:found], fgsc.clusters[parent][found+1:]...)
 	return fgsc.newOp(), nil
 }
 
@@ -478,6 +499,7 @@ func TestAcquire(t *testing.T) {
 	fakeBuildID := "1234"
 	datas := []struct {
 		existCluster       *container.Cluster
+		kubeconfigSet      bool
 		nextOpStatus       []string
 		expClusterName     string
 		expClusterLocation string
@@ -488,20 +510,33 @@ func TestAcquire(t *testing.T) {
 			&container.Cluster{
 				Name:     "customcluster",
 				Location: "us-central1",
-			}, []string{}, "customcluster", "us-central1", nil,
+			}, true, []string{}, "customcluster", "us-central1", nil,
+		}, {
+			// cluster exists but not set in kubeconfig, cluster will be deleted
+			// then created
+			&container.Cluster{
+				Name:     fakeClusterName,
+				Location: "us-central1",
+			}, false, []string{}, fakeClusterName, "us-central1", nil,
+		}, {
+			// cluster exists but not set in kubeconfig, cluster deletion
+			// failed, will recreate in us-west1
+			&container.Cluster{
+				Name:     fakeClusterName,
+				Location: "us-central1",
+			}, false, []string{"BAD"}, fakeClusterName, "us-west1", nil,
 		}, {
 			// cluster creation succeeded
-			nil, []string{}, fakeClusterName, "us-central1", nil,
+			nil, false, []string{}, fakeClusterName, "us-central1", nil,
 		}, {
 			// cluster creation succeeded retry
-			nil, []string{"PENDING"}, fakeClusterName, "us-west1", nil,
+			nil, false, []string{"PENDING"}, fakeClusterName, "us-west1", nil,
 		}, {
 			// cluster creation failed all retry
-			nil, []string{"PENDING", "PENDING", "PENDING"},
-			"", "", fmt.Errorf("timed out waiting"),
+			nil, false, []string{"PENDING", "PENDING", "PENDING"}, "", "", fmt.Errorf("timed out waiting"),
 		}, {
 			// cluster creation went bad state
-			nil, []string{"BAD", "BAD", "BAD"}, "", "", fmt.Errorf("unexpected operation status: %q", "BAD"),
+			nil, false, []string{"BAD", "BAD", "BAD"}, "", "", fmt.Errorf("unexpected operation status: %q", "BAD"),
 		},
 	}
 
@@ -528,12 +563,22 @@ func TestAcquire(t *testing.T) {
 			return oldFunc(key)
 		}
 		fgc := setupFakeGKECluster()
+		opCount := 0
 		if nil != data.existCluster {
-			fgc.Cluster = data.existCluster
+			opCount++
+			fgc.operations.create(fakeProj, data.existCluster.Location, &container.CreateClusterRequest{
+				Cluster: &container.Cluster{
+					Name: data.existCluster.Name,
+				},
+				ProjectId: fakeProj,
+			})
+			if data.kubeconfigSet {
+				fgc.Cluster = data.existCluster
+			}
 		}
 		fgc.Project = &fakeProj
 		for i, status := range data.nextOpStatus {
-			fgc.operations.(*FakeGKESDKClient).opStatus[string(i)] = status
+			fgc.operations.(*FakeGKESDKClient).opStatus[strconv.Itoa(opCount+i)] = status
 		}
 
 		fgc.Request = &GKERequest{
@@ -543,6 +588,9 @@ func TestAcquire(t *testing.T) {
 			Zone:          "",
 			BackupRegions: DefaultGKEBackupRegions,
 		}
+		// Set NeedCleanup to false for easier testing, as it launches a
+		// goroutine
+		fgc.NeedCleanup = false
 		err := fgc.Acquire()
 		var gotName, gotLocation string
 		if nil != fgc.Cluster {
@@ -552,6 +600,132 @@ func TestAcquire(t *testing.T) {
 		if !reflect.DeepEqual(err, data.expErr) || data.expClusterName != gotName || data.expClusterLocation != gotLocation {
 			t.Errorf("testing acquiring cluster, with:\n\texisting cluster: '%v'\n\tnext operations outcomes: '%v'\nwant: cluster name - %q, location - %q, err - '%v'\ngot: cluster name - %q, location - %q, err - '%v'",
 				data.existCluster, data.nextOpStatus, data.expClusterName, data.expClusterLocation, data.expErr, gotName, gotLocation, err)
+		}
+	}
+}
+
+func TestDelete(t *testing.T) {
+	datas := []struct {
+		isProw      bool
+		needCleanup bool
+		boskosState []*boskoscommon.Resource
+		cluster     *container.Cluster
+		expBoskos   []*boskoscommon.Resource
+		expCluster  *container.Cluster
+		expErr      error
+	}{
+		{
+			// Not in prow, NeedCleanup is false
+			false,
+			false,
+			[]*boskoscommon.Resource{},
+			&container.Cluster{
+				Name:     "customcluster",
+				Location: "us-central1",
+			},
+			nil,
+			&container.Cluster{
+				Name:     "customcluster",
+				Location: "us-central1",
+				Status:   "RUNNING",
+			},
+			nil,
+		}, {
+			// Not in prow, NeedCleanup is true
+			false,
+			true,
+			[]*boskoscommon.Resource{},
+			&container.Cluster{
+				Name:     "customcluster",
+				Location: "us-central1",
+			},
+			nil,
+			nil,
+			nil,
+		}, {
+			// Not in prow, NeedCleanup is true, but cluster doesn't exist
+			false,
+			true,
+			[]*boskoscommon.Resource{},
+			nil,
+			nil,
+			nil,
+			fmt.Errorf("cluster doesn't exist"),
+		}, {
+			// In prow, only need to release boskos
+			true,
+			true,
+			[]*boskoscommon.Resource{&boskoscommon.Resource{
+				Name: fakeProj,
+			}},
+			&container.Cluster{
+				Name:     "customcluster",
+				Location: "us-central1",
+			},
+			[]*boskoscommon.Resource{&boskoscommon.Resource{
+				Type:  "gke-project",
+				Name:  fakeProj,
+				State: boskoscommon.Free,
+			}},
+			&container.Cluster{
+				Name:     "customcluster",
+				Location: "us-central1",
+				Status:   "RUNNING",
+			},
+			nil,
+		},
+	}
+
+	// mock GetOSEnv for testing
+	oldFunc := common.GetOSEnv
+	// mock timeout so it doesn't run forever
+	oldTimeout := creationTimeout
+	creationTimeout = 100 * time.Millisecond
+	defer func() {
+		// restore
+		common.GetOSEnv = oldFunc
+		creationTimeout = oldTimeout
+	}()
+
+	for _, data := range datas {
+		common.GetOSEnv = func(key string) string {
+			switch key {
+			case "PROW_JOB_ID": // needed to mock IsProw()
+				if data.isProw {
+					return "fake_job_id"
+				}
+				return ""
+			}
+			return oldFunc(key)
+		}
+		fgc := setupFakeGKECluster()
+		fgc.Project = &fakeProj
+		fgc.NeedCleanup = data.needCleanup
+		if nil != data.cluster {
+			fgc.operations.create(fakeProj, data.cluster.Location, &container.CreateClusterRequest{
+				Cluster: &container.Cluster{
+					Name: data.cluster.Name,
+				},
+				ProjectId: fakeProj,
+			})
+			fgc.Cluster = data.cluster
+		}
+		// Set up fake boskos
+		for _, bos := range data.boskosState {
+			fgc.boskosOps.(*boskosFake.FakeBoskosClient).NewGKEProject(bos.Name)
+			// Acquire with default user
+			fgc.boskosOps.(*boskosFake.FakeBoskosClient).AcquireGKEProject(nil)
+		}
+
+		err := fgc.Delete()
+		var clusterGot *container.Cluster
+		if nil != data.cluster {
+			clusterGot, _ = fgc.operations.get(fakeProj, data.cluster.Location, data.cluster.Name)
+		}
+		gotBoskos := fgc.boskosOps.(*boskosFake.FakeBoskosClient).GetResources()
+		if !reflect.DeepEqual(err, data.expErr) || !reflect.DeepEqual(clusterGot, data.expCluster) || !reflect.DeepEqual(gotBoskos, data.expBoskos) {
+			t.Errorf("testing deleting cluster, with:\n\tIs Prow: '%v'\n\texisting cluster: '%v'\n\tboskos state: '%v'\nwant: boskos - '%v', cluster - '%v', err - '%v'\ngot: boskos - '%v', cluster - '%v', err - '%v'",
+				data.isProw, data.cluster, data.boskosState, data.expBoskos, data.expCluster, data.expErr, nil, clusterGot, err)
 		}
 	}
 }
