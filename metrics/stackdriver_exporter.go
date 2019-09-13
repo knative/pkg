@@ -29,10 +29,9 @@ import (
 
 const (
 	customMetricTypePrefix = "custom.googleapis.com"
-	// defaultCustomMetricTypePrefix is the default metric type prefix for unsupported metrics by
-	// monitored resource types. It does not use the metrics domain as part of the prefix.
+	// defaultCustomMetricSubDomain is the default subdomain to use for unsupported metrics by monitored resource types.
 	// See: https://cloud.google.com/monitoring/api/ref_v3/rest/v3/projects.metricDescriptors#MetricDescriptor
-	defaultCustomMetricTypePrefix = customMetricTypePrefix + "/knative.dev"
+	defaultCustomMetricSubDomain = "knative.dev"
 )
 
 var (

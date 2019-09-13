@@ -42,11 +42,11 @@ const (
 	// The following keys are used to configure metrics reporting.
 	// See https://github.com/knative/serving/blob/master/config/config-observability.yaml
 	// for details.
-	AllowStackdriverCustomMetricsKey       = "metrics.allow-stackdriver-custom-metrics"
-	AllowStackdriverCustomMetricsDomainKey = "metrics.allow-stackdriver-custom-metrics-domain"
-	BackendDestinationKey                  = "metrics.backend-destination"
-	ReportingPeriodKey                     = "metrics.reporting-period-seconds"
-	StackdriverProjectIDKey                = "metrics.stackdriver-project-id"
+	AllowStackdriverCustomMetricsKey = "metrics.allow-stackdriver-custom-metrics"
+	BackendDestinationKey            = "metrics.backend-destination"
+	ReportingPeriodKey               = "metrics.reporting-period-seconds"
+	StackdriverProjectIDKey          = "metrics.stackdriver-project-id"
+	StackdriverCustomMetricDomainKey = "metrics.stackdriver-custom-metrics-subdomain"
 
 	// Stackdriver is used for Stackdriver backend
 	Stackdriver metricsBackend = "stackdriver"
@@ -108,13 +108,10 @@ type metricsConfig struct {
 	// flag to "true" could cause extra Stackdriver charge.
 	// If backendDestination is not Stackdriver, this is ignored.
 	allowStackdriverCustomMetrics bool
-	// allowStackdriverCustomMetricsDomain indicates whether it is allowed to send metrics to
-	// Stackdriver using "global" resource type and custom metric type if the
-	// metrics are not supported by the registered monitored resource types. It allows to
-	// also include the configured metrics domain as part of the metric name. Setting this
-	// flag to "true" could cause extra Stackdriver charge.
+	// stackdriverCustomMetricsSubDomain is the subdomain to use when sending custom metrics to StackDriver.
+	// If not specified, the default is `knative.dev`.
 	// If backendDestination is not Stackdriver, this is ignored.
-	allowStackdriverCustomMetricsDomain bool
+	stackdriverCustomMetricsSubDomain string
 	// True if backendDestination equals to "stackdriver". Store this in a variable
 	// to reduce string comparison operations.
 	isStackdriverBackend bool
@@ -122,9 +119,8 @@ type metricsConfig struct {
 	// "knative.dev/serving/activator". Store this in a variable to reduce string
 	// join operations.
 	stackdriverMetricTypePrefix string
-	// stackdriverCustomMetricTypePrefix can be one of:
-	// 1) "custom.googleapis.com/knative.dev" joining the component, e.g., "custom.googleapis.com/knative.dev/<component>".
-	// 2) "custom.googleapis.com" joining the domain and the component, e.g., "custom.googleapis.com/<domain>/<component>".
+	// stackdriverCustomMetricTypePrefix is "custom.googleapis.com joined with the subdomain and component.
+	// E.g., "custom.googleapis.com/<subdomain>/<component>".
 	// Store this in a variable to reduce string join operations.
 	stackdriverCustomMetricTypePrefix string
 }
@@ -182,25 +178,18 @@ func getMetricsConfig(ops ExporterOptions, logger *zap.SugaredLogger) (*metricsC
 		mc.stackdriverProjectID = m[StackdriverProjectIDKey]
 		mc.isStackdriverBackend = true
 		mc.stackdriverMetricTypePrefix = path.Join(mc.domain, mc.component)
-		// Set the default custom metric type prefix.
-		mc.stackdriverCustomMetricTypePrefix = path.Join(defaultCustomMetricTypePrefix, mc.component)
+
+		mc.stackdriverCustomMetricsSubDomain = defaultCustomMetricSubDomain
+		if sdcmd, ok := m[StackdriverCustomMetricDomainKey]; ok && sdcmd != "" {
+			mc.stackdriverCustomMetricsSubDomain = sdcmd
+		}
+		mc.stackdriverCustomMetricTypePrefix = path.Join(customMetricTypePrefix, mc.stackdriverCustomMetricsSubDomain, mc.component)
 		if ascmStr, ok := m[AllowStackdriverCustomMetricsKey]; ok && ascmStr != "" {
 			ascmBool, err := strconv.ParseBool(ascmStr)
 			if err != nil {
 				return nil, fmt.Errorf("invalid %s value %q", AllowStackdriverCustomMetricsKey, ascmStr)
 			}
 			mc.allowStackdriverCustomMetrics = ascmBool
-		}
-		if ascmdStr, ok := m[AllowStackdriverCustomMetricsDomainKey]; ok && ascmdStr != "" {
-			ascmdBool, err := strconv.ParseBool(ascmdStr)
-			if err != nil {
-				return nil, fmt.Errorf("invalid %s value %q", AllowStackdriverCustomMetricsDomainKey, ascmdStr)
-			}
-			mc.allowStackdriverCustomMetricsDomain = ascmdBool
-		}
-		// If allowing custom metrics with domain, then update the custom metrics prefix.
-		if mc.allowStackdriverCustomMetricsDomain {
-			mc.stackdriverCustomMetricTypePrefix = path.Join(customMetricTypePrefix, mc.domain, mc.component)
 		}
 	}
 
