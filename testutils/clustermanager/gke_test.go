@@ -31,6 +31,8 @@ import (
 	boskoscommon "k8s.io/test-infra/boskos/common"
 	boskosFake "knative.dev/pkg/testutils/clustermanager/boskos/fake"
 	"knative.dev/pkg/testutils/common"
+
+	"github.com/google/go-cmp/cmp"
 )
 
 var (
@@ -96,9 +98,10 @@ func (fgsc *FakeGKESDKClient) create(project, location string, rb *container.Cre
 		fgsc.clusters[parent] = make([]*container.Cluster, 0)
 	}
 	cluster := &container.Cluster{
-		Name:     name,
-		Location: location,
-		Status:   "RUNNING",
+		Name:         name,
+		Location:     location,
+		Status:       "RUNNING",
+		AddonsConfig: rb.Cluster.AddonsConfig,
 	}
 
 	fgsc.clusters[parent] = append(fgsc.clusters[parent], cluster)
@@ -147,15 +150,17 @@ func TestSetup(t *testing.T) {
 	nodeTypeOverride := "foonode"
 	regionOverride := "fooregion"
 	zoneOverride := "foozone"
+	fakeAddons := "fake-addon"
 	datas := []struct {
 		numNodes                        *int64
 		nodeType, region, zone, project *string
+		addons                          []string
 		regionEnv, backupRegionEnv      string
 		expClusterOperations            *GKECluster
 	}{
 		{
 			// Defaults
-			nil, nil, nil, nil, nil, "", "",
+			nil, nil, nil, nil, nil, []string{}, "", "",
 			&GKECluster{
 				Request: &GKERequest{
 					NumNodes:      1,
@@ -163,11 +168,12 @@ func TestSetup(t *testing.T) {
 					Region:        "us-central1",
 					Zone:          "",
 					BackupRegions: []string{"us-west1", "us-east1"},
+					Addons:        []string{},
 				},
 			},
 		}, {
 			// Project provided
-			nil, nil, nil, nil, &fakeProj, "", "",
+			nil, nil, nil, nil, &fakeProj, []string{}, "", "",
 			&GKECluster{
 				Request: &GKERequest{
 					NumNodes:      1,
@@ -175,13 +181,14 @@ func TestSetup(t *testing.T) {
 					Region:        "us-central1",
 					Zone:          "",
 					BackupRegions: []string{"us-west1", "us-east1"},
+					Addons:        []string{},
 				},
 				Project:     &fakeProj,
 				NeedCleanup: true,
 			},
 		}, {
 			// Override other parts
-			&numNodesOverride, &nodeTypeOverride, &regionOverride, &zoneOverride, nil, "", "",
+			&numNodesOverride, &nodeTypeOverride, &regionOverride, &zoneOverride, nil, []string{}, "", "",
 			&GKECluster{
 				Request: &GKERequest{
 					NumNodes:      2,
@@ -189,11 +196,12 @@ func TestSetup(t *testing.T) {
 					Region:        "fooregion",
 					Zone:          "foozone",
 					BackupRegions: []string{},
+					Addons:        []string{},
 				},
 			},
 		}, {
 			// Override other parts but not zone
-			&numNodesOverride, &nodeTypeOverride, &regionOverride, nil, nil, "", "",
+			&numNodesOverride, &nodeTypeOverride, &regionOverride, nil, nil, []string{}, "", "",
 			&GKECluster{
 				Request: &GKERequest{
 					NumNodes:      2,
@@ -201,11 +209,12 @@ func TestSetup(t *testing.T) {
 					Region:        "fooregion",
 					Zone:          "",
 					BackupRegions: []string{"us-west1", "us-east1"},
+					Addons:        []string{},
 				},
 			},
 		}, {
 			// Set env Region
-			nil, nil, nil, nil, nil, "customregion", "",
+			nil, nil, nil, nil, nil, []string{}, "customregion", "",
 			&GKECluster{
 				Request: &GKERequest{
 					NumNodes:      1,
@@ -213,11 +222,12 @@ func TestSetup(t *testing.T) {
 					Region:        "customregion",
 					Zone:          "",
 					BackupRegions: []string{"us-west1", "us-east1"},
+					Addons:        []string{},
 				},
 			},
 		}, {
 			// Set env backupzone
-			nil, nil, nil, nil, nil, "", "backupregion1 backupregion2",
+			nil, nil, nil, nil, nil, []string{}, "", "backupregion1 backupregion2",
 			&GKECluster{
 				Request: &GKERequest{
 					NumNodes:      1,
@@ -225,6 +235,20 @@ func TestSetup(t *testing.T) {
 					Region:        "us-central1",
 					Zone:          "",
 					BackupRegions: []string{"backupregion1", "backupregion2"},
+					Addons:        []string{},
+				},
+			},
+		}, {
+			// Set addons
+			nil, nil, nil, nil, nil, []string{fakeAddons}, "", "",
+			&GKECluster{
+				Request: &GKERequest{
+					NumNodes:      1,
+					NodeType:      "n1-standard-4",
+					Region:        "us-central1",
+					Zone:          "",
+					BackupRegions: []string{"us-west1", "us-east1"},
+					Addons:        []string{fakeAddons},
 				},
 			},
 		},
@@ -273,15 +297,15 @@ func TestSetup(t *testing.T) {
 			return oldEnvFunc(s)
 		}
 		c := GKEClient{}
-		co := c.Setup(data.numNodes, data.nodeType, data.region, data.zone, data.project)
-		errPrefix := fmt.Sprintf("testing setup with:\n\tnumNodes: %v\n\tnodeType: %v\n\tregion: %v\n\tone: %v\n\tproject: %v\n\tregionEnv: %v\n\tbackupRegionEnv: %v",
+		co := c.Setup(data.numNodes, data.nodeType, data.region, data.zone, data.project, data.addons)
+		errMsg := fmt.Sprintf("testing setup with:\n\tnumNodes: %v\n\tnodeType: %v\n\tregion: %v\n\tone: %v\n\tproject: %v\n\tregionEnv: %v\n\tbackupRegionEnv: %v",
 			data.numNodes, data.nodeType, data.region, data.zone, data.project, data.regionEnv, data.backupRegionEnv)
 		gotCo := co.(*GKECluster)
 		// mock for easier comparison
 		gotCo.operations = nil
 		gotCo.boskosOps = nil
 		if !reflect.DeepEqual(co, data.expClusterOperations) {
-			t.Fatalf("%s\nwant GKECluster:\n'%v'\ngot GKECluster:\n'%v'", errPrefix, data.expClusterOperations, co)
+			t.Fatalf("%s\nwant GKECluster:\n'%v'\ngot GKECluster:\n'%v'", errMsg, data.expClusterOperations, co)
 		}
 	}
 }
@@ -395,10 +419,16 @@ func TestInitialize(t *testing.T) {
 		}
 
 		err := fgc.Initialize()
-		if !reflect.DeepEqual(err, data.expErr) || !reflect.DeepEqual(fgc.Project, data.expProj) || !reflect.DeepEqual(fgc.Cluster, data.expCluster) {
-			t.Errorf("test initialize with:\n\tuser defined project: '%v'\n\tkubeconfig set: '%v'\n\tgcloud set: '%v'\n\trunning in prow: '%v'\n\tboskos set: '%v'\n"+
-				"want:\n\tproject - '%v'\n\tcluster - '%v'\n\terr - '%v'\ngot:\n\tproject - '%v'\n\tcluster - '%v'\n\terr - '%v'",
-				data.project, data.clusterExist, data.gcloudSet, data.isProw, data.boskosProjs, data.expProj, data.expCluster, data.expErr, fgc.Project, fgc.Cluster, err)
+		errMsg := fmt.Sprintf("test initialize with:\n\tuser defined project: '%v'\n\tkubeconfig set: '%v'\n\tgcloud set: '%v'\n\trunning in prow: '%v'\n\tboskos set: '%v'",
+			data.project, data.clusterExist, data.gcloudSet, data.isProw, data.boskosProjs)
+		if !reflect.DeepEqual(data.expErr, err) {
+			t.Errorf("%s\nerror want: '%v'\nerror got: '%v'", errMsg, err, data.expErr)
+		}
+		if dif := cmp.Diff(data.expCluster, fgc.Cluster); dif != "" {
+			t.Errorf("%s\nCluster got(+) is different from wanted(-)\n%v", errMsg, dif)
+		}
+		if dif := cmp.Diff(data.expProj, fgc.Project); dif != "" {
+			t.Errorf("%s\nProject got(+) is different from wanted(-)\n%v", errMsg, dif)
 		}
 	}
 }
@@ -480,15 +510,27 @@ func TestGKECheckEnvironment(t *testing.T) {
 		}
 
 		err := fgc.checkEnvironment()
-		var clusterGot *string
+		var gotCluster *string
 		if nil != fgc.Cluster {
-			clusterGot = &fgc.Cluster.Name
+			gotCluster = &fgc.Cluster.Name
 		}
 
-		if !reflect.DeepEqual(err, data.expErr) || !reflect.DeepEqual(fgc.Project, data.expProj) || !reflect.DeepEqual(clusterGot, data.expCluster) {
+		if !reflect.DeepEqual(err, data.expErr) || !reflect.DeepEqual(fgc.Project, data.expProj) || !reflect.DeepEqual(gotCluster, data.expCluster) {
 			t.Errorf("check environment with:\n\tkubectl output: %q\n\t\terror: '%v'\n\tgcloud output: %q\n\t\t"+
 				"error: '%v'\nwant: project - '%v', cluster - '%v', err - '%v'\ngot: project - '%v', cluster - '%v', err - '%v'",
 				data.kubectlOut, data.kubectlErr, data.gcloudOut, data.gcloudErr, data.expProj, data.expCluster, data.expErr, fgc.Project, fgc.Cluster, err)
+		}
+
+		errMsg := fmt.Sprintf("check environment with:\n\tkubectl output: %q\n\t\terror: '%v'\n\tgcloud output: %q\n\t\terror: '%v'",
+			data.kubectlOut, data.kubectlErr, data.gcloudOut, data.gcloudErr)
+		if !reflect.DeepEqual(data.expErr, err) {
+			t.Errorf("%s\nerror want: '%v'\nerror got: '%v'", errMsg, err, data.expErr)
+		}
+		if dif := cmp.Diff(data.expCluster, gotCluster); dif != "" {
+			t.Errorf("%s\nCluster got(+) is different from wanted(-)\n%v", errMsg, dif)
+		}
+		if dif := cmp.Diff(data.expProj, fgc.Project); dif != "" {
+			t.Errorf("%s\nProject got(+) is different from wanted(-)\n%v", errMsg, dif)
 		}
 	}
 }
@@ -497,45 +539,84 @@ func TestAcquire(t *testing.T) {
 	fakeClusterName := "kpkg-e2e-cls-1234"
 	fakeBuildID := "1234"
 	datas := []struct {
-		existCluster       *container.Cluster
-		kubeconfigSet      bool
-		nextOpStatus       []string
-		expClusterName     string
-		expClusterLocation string
-		expErr             error
+		existCluster  *container.Cluster
+		kubeconfigSet bool
+		addons        []string
+		nextOpStatus  []string
+		expCluster    *container.Cluster
+		expErr        error
+		expPanic      bool
 	}{
 		{
 			// cluster already found
 			&container.Cluster{
 				Name:     "customcluster",
 				Location: "us-central1",
-			}, true, []string{}, "customcluster", "us-central1", nil,
+			}, true, []string{}, []string{}, &container.Cluster{
+				Name:         "customcluster",
+				Location:     "us-central1",
+				Status:       "RUNNING",
+				AddonsConfig: &container.AddonsConfig{},
+			}, nil, false,
 		}, {
 			// cluster exists but not set in kubeconfig, cluster will be deleted
 			// then created
 			&container.Cluster{
 				Name:     fakeClusterName,
 				Location: "us-central1",
-			}, false, []string{}, fakeClusterName, "us-central1", nil,
+			}, false, []string{}, []string{}, &container.Cluster{
+				Name:         fakeClusterName,
+				Location:     "us-central1",
+				Status:       "RUNNING",
+				AddonsConfig: &container.AddonsConfig{},
+			}, nil, false,
 		}, {
 			// cluster exists but not set in kubeconfig, cluster deletion
 			// failed, will recreate in us-west1
 			&container.Cluster{
 				Name:     fakeClusterName,
 				Location: "us-central1",
-			}, false, []string{"BAD"}, fakeClusterName, "us-west1", nil,
+			}, false, []string{}, []string{"BAD"}, &container.Cluster{
+				Name:         fakeClusterName,
+				Location:     "us-west1",
+				Status:       "RUNNING",
+				AddonsConfig: &container.AddonsConfig{},
+			}, nil, false,
 		}, {
 			// cluster creation succeeded
-			nil, false, []string{}, fakeClusterName, "us-central1", nil,
+			nil, false, []string{}, []string{}, &container.Cluster{
+				Name:         fakeClusterName,
+				Location:     "us-central1",
+				Status:       "RUNNING",
+				AddonsConfig: &container.AddonsConfig{},
+			}, nil, false,
+		}, {
+			// cluster creation succeeded with addon
+			nil, false, []string{"istio"}, []string{}, &container.Cluster{
+				Name:     fakeClusterName,
+				Location: "us-central1",
+				Status:   "RUNNING",
+				AddonsConfig: &container.AddonsConfig{
+					IstioConfig: &container.IstioConfig{Disabled: false},
+				},
+			}, nil, false,
 		}, {
 			// cluster creation succeeded retry
-			nil, false, []string{"PENDING"}, fakeClusterName, "us-west1", nil,
+			nil, false, []string{}, []string{"PENDING"}, &container.Cluster{
+				Name:         fakeClusterName,
+				Location:     "us-west1",
+				Status:       "RUNNING",
+				AddonsConfig: &container.AddonsConfig{},
+			}, nil, false,
 		}, {
 			// cluster creation failed all retry
-			nil, false, []string{"PENDING", "PENDING", "PENDING"}, "", "", fmt.Errorf("timed out waiting"),
+			nil, false, []string{}, []string{"PENDING", "PENDING", "PENDING"}, nil, fmt.Errorf("timed out waiting"), false,
 		}, {
 			// cluster creation went bad state
-			nil, false, []string{"BAD", "BAD", "BAD"}, "", "", fmt.Errorf("unexpected operation status: %q", "BAD"),
+			nil, false, []string{}, []string{"BAD", "BAD", "BAD"}, nil, fmt.Errorf("unexpected operation status: %q", "BAD"), false,
+		}, {
+			// bad addon, should get a panic
+			nil, false, []string{"bad_addon"}, []string{}, nil, nil, true,
 		},
 	}
 
@@ -552,6 +633,11 @@ func TestAcquire(t *testing.T) {
 	}()
 
 	for _, data := range datas {
+		defer func() {
+			if r := recover(); r != nil && !data.expPanic {
+				t.Errorf("got unexpected panic: '%v'", r)
+			}
+		}()
 		common.GetOSEnv = func(key string) string {
 			switch key {
 			case "BUILD_NUMBER":
@@ -565,14 +651,21 @@ func TestAcquire(t *testing.T) {
 		opCount := 0
 		if nil != data.existCluster {
 			opCount++
+			ac := &container.AddonsConfig{}
+			for _, addon := range data.addons {
+				if addon == "istio" {
+					ac.IstioConfig = &container.IstioConfig{Disabled: false}
+				}
+			}
 			fgc.operations.create(fakeProj, data.existCluster.Location, &container.CreateClusterRequest{
 				Cluster: &container.Cluster{
-					Name: data.existCluster.Name,
+					Name:         data.existCluster.Name,
+					AddonsConfig: ac,
 				},
 				ProjectId: fakeProj,
 			})
 			if data.kubeconfigSet {
-				fgc.Cluster = data.existCluster
+				fgc.Cluster, _ = fgc.operations.get(fakeProj, data.existCluster.Location, data.existCluster.Name)
 			}
 		}
 		fgc.Project = &fakeProj
@@ -586,19 +679,19 @@ func TestAcquire(t *testing.T) {
 			Region:        DefaultGKERegion,
 			Zone:          "",
 			BackupRegions: DefaultGKEBackupRegions,
+			Addons:        data.addons,
 		}
 		// Set NeedCleanup to false for easier testing, as it launches a
 		// goroutine
 		fgc.NeedCleanup = false
 		err := fgc.Acquire()
-		var gotName, gotLocation string
-		if nil != fgc.Cluster {
-			gotName = fgc.Cluster.Name
-			gotLocation = fgc.Cluster.Location
+		errMsg := fmt.Sprintf("testing acquiring cluster, with:\n\texisting cluster: '%+v'\n\tnext operations outcomes: '%v'\n\tkubeconfig set: '%v'\n\taddons: '%v'",
+			data.existCluster, data.nextOpStatus, data.kubeconfigSet, data.addons)
+		if !reflect.DeepEqual(err, data.expErr) {
+			t.Errorf("%s\nerror want: '%v'\nerror got: '%v'", errMsg, err, data.expErr)
 		}
-		if !reflect.DeepEqual(err, data.expErr) || data.expClusterName != gotName || data.expClusterLocation != gotLocation {
-			t.Errorf("testing acquiring cluster, with:\n\texisting cluster: '%v'\n\tnext operations outcomes: '%v'\nwant: cluster name - %q, location - %q, err - '%v'\ngot: cluster name - %q, location - %q, err - '%v'",
-				data.existCluster, data.nextOpStatus, data.expClusterName, data.expClusterLocation, data.expErr, gotName, gotLocation, err)
+		if dif := cmp.Diff(data.expCluster, fgc.Cluster); dif != "" {
+			t.Errorf("%s\nCluster got(+) is different from wanted(-)\n%v", errMsg, dif)
 		}
 	}
 }
@@ -717,14 +810,22 @@ func TestDelete(t *testing.T) {
 		}
 
 		err := fgc.Delete()
-		var clusterGot *container.Cluster
+		var gotCluster *container.Cluster
 		if nil != data.cluster {
-			clusterGot, _ = fgc.operations.get(fakeProj, data.cluster.Location, data.cluster.Name)
+			gotCluster, _ = fgc.operations.get(fakeProj, data.cluster.Location, data.cluster.Name)
 		}
 		gotBoskos := fgc.boskosOps.(*boskosFake.FakeBoskosClient).GetResources()
-		if !reflect.DeepEqual(err, data.expErr) || !reflect.DeepEqual(clusterGot, data.expCluster) || !reflect.DeepEqual(gotBoskos, data.expBoskos) {
-			t.Errorf("testing deleting cluster, with:\n\tIs Prow: '%v'\n\texisting cluster: '%v'\n\tboskos state: '%v'\nwant: boskos - '%v', cluster - '%v', err - '%v'\ngot: boskos - '%v', cluster - '%v', err - '%v'",
-				data.isProw, data.cluster, data.boskosState, data.expBoskos, data.expCluster, data.expErr, nil, clusterGot, err)
+		errMsg := fmt.Sprintf("testing deleting cluster, with:\n\tIs Prow: '%v'\n\texisting cluster: '%v'\n\tboskos state: '%v'",
+			data.isProw, data.cluster, data.boskosState)
+		if !reflect.DeepEqual(err, data.expErr) {
+			t.Errorf("%s\nerror want: '%v'\nerror got: '%v'", errMsg, err, data.expErr)
+		}
+		// if !reflect.DeepEqual(data.expCluster, gotCluster) {
+		if dif := cmp.Diff(data.expCluster, gotCluster); dif != "" {
+			t.Errorf("%s\nCluster got(+) is different from wanted(-)\n%v", errMsg, dif)
+		}
+		if dif := cmp.Diff(data.expBoskos, gotBoskos); dif != "" {
+			t.Errorf("%s\nBoskos got(+) is different from wanted(-)\n%v", errMsg, dif)
 		}
 	}
 }
