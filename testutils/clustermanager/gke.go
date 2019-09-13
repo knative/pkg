@@ -267,7 +267,7 @@ func (gc *GKECluster) Acquire() error {
 			}
 		}
 		if nil != err {
-			errMsg := fmt.Sprintf("Error creating cluster: '%v'. ", err)
+			errMsg := fmt.Sprintf("Error during cluster creation: '%v'. ", err)
 			if gc.NeedCleanup { // Delete half created cluster if it's user created
 				errMsg = fmt.Sprintf("%sDeleting cluster %q in %q in background...\n", errMsg, clusterName, clusterLoc)
 				go gc.operations.delete(*gc.Project, clusterName, clusterLoc)

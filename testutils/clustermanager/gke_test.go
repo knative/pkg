@@ -117,7 +117,7 @@ func (fgsc *FakeGKESDKClient) delete(project, clusterName, location string) (*co
 		}
 	}
 	if found == -1 {
-		return nil, errors.New("cluster deletion failed")
+		return nil, fmt.Errorf("cluster %q not found for deletion", clusterName)
 	}
 	// Delete this cluster
 	fgsc.clusters[parent] = append(fgsc.clusters[parent][:found], fgsc.clusters[parent][found+1:]...)
