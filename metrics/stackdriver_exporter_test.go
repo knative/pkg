@@ -323,7 +323,7 @@ func TestGetgetMetricTypeFunc_UseKnativeDomain(t *testing.T) {
 		}
 		mtf := getMetricTypeFunc(
 			path.Join(testCase.domain, testCase.component),
-			path.Join(customMetricTypePrefix, testCase.component))
+			path.Join(defaultCustomMetricSubDomain, testCase.component))
 
 		gotMetricType := mtf(testView)
 		wantedMetricType := path.Join(testCase.domain, testCase.component, testView.Measure.Name())
@@ -343,10 +343,10 @@ func TestGetgetMetricTypeFunc_UseCustomDomain(t *testing.T) {
 		}
 		mtf := getMetricTypeFunc(
 			path.Join(testCase.domain, testCase.component),
-			path.Join(customMetricTypePrefix, testCase.component))
+			path.Join(defaultCustomMetricSubDomain, testCase.component))
 
 		gotMetricType := mtf(testView)
-		wantedMetricType := path.Join(customMetricTypePrefix, testCase.component, testView.Measure.Name())
+		wantedMetricType := path.Join(defaultCustomMetricSubDomain, testCase.component, testView.Measure.Name())
 		if gotMetricType != wantedMetricType {
 			t.Fatalf("getMetricType=%v, want %v", gotMetricType, wantedMetricType)
 		}

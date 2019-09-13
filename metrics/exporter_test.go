@@ -193,7 +193,7 @@ func TestFlushExporter(t *testing.T) {
 		reportingPeriod:                   1 * time.Minute,
 		stackdriverProjectID:              "test",
 		stackdriverMetricTypePrefix:       path.Join(servingDomain, testComponent),
-		stackdriverCustomMetricTypePrefix: path.Join(customMetricTypePrefix, testComponent),
+		stackdriverCustomMetricTypePrefix: path.Join(defaultCustomMetricSubDomain, testComponent),
 	}
 	e, err = newMetricsExporter(c, TestLogger(t))
 	if err != nil {
