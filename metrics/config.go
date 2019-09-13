@@ -42,11 +42,11 @@ const (
 	// The following keys are used to configure metrics reporting.
 	// See https://github.com/knative/serving/blob/master/config/config-observability.yaml
 	// for details.
-	AllowStackdriverCustomMetricsKey = "metrics.allow-stackdriver-custom-metrics"
-	BackendDestinationKey            = "metrics.backend-destination"
-	ReportingPeriodKey               = "metrics.reporting-period-seconds"
-	StackdriverProjectIDKey          = "metrics.stackdriver-project-id"
-	StackdriverCustomMetricDomainKey = "metrics.stackdriver-custom-metrics-subdomain"
+	AllowStackdriverCustomMetricsKey    = "metrics.allow-stackdriver-custom-metrics"
+	BackendDestinationKey               = "metrics.backend-destination"
+	ReportingPeriodKey                  = "metrics.reporting-period-seconds"
+	StackdriverProjectIDKey             = "metrics.stackdriver-project-id"
+	StackdriverCustomMetricSubDomainKey = "metrics.stackdriver-custom-metrics-subdomain"
 
 	// Stackdriver is used for Stackdriver backend
 	Stackdriver metricsBackend = "stackdriver"
@@ -180,7 +180,7 @@ func getMetricsConfig(ops ExporterOptions, logger *zap.SugaredLogger) (*metricsC
 		mc.stackdriverMetricTypePrefix = path.Join(mc.domain, mc.component)
 
 		mc.stackdriverCustomMetricsSubDomain = defaultCustomMetricSubDomain
-		if sdcmd, ok := m[StackdriverCustomMetricDomainKey]; ok && sdcmd != "" {
+		if sdcmd, ok := m[StackdriverCustomMetricSubDomainKey]; ok && sdcmd != "" {
 			mc.stackdriverCustomMetricsSubDomain = sdcmd
 		}
 		mc.stackdriverCustomMetricTypePrefix = path.Join(customMetricTypePrefix, mc.stackdriverCustomMetricsSubDomain, mc.component)
