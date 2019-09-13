@@ -27,8 +27,7 @@ import (
 	"testing"
 	"time"
 
-	"google.golang.org/api/container/v1"
-
+	container "google.golang.org/api/container/v1beta1"
 	boskoscommon "k8s.io/test-infra/boskos/common"
 	boskosFake "knative.dev/pkg/testutils/clustermanager/boskos/fake"
 	"knative.dev/pkg/testutils/common"
