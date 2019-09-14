@@ -17,12 +17,13 @@ limitations under the License.
 package config
 
 import (
+	"fmt"
 	"io/ioutil"
 	"testing"
 )
 
 func TestConfig(t *testing.T) {
-	content, err := ioutil.ReadFile("testdata/config-slack.yaml")
+	content, err := ioutil.ReadFile(fmt.Sprintf("testdata/%s", slackConfigFile))
 	if err != nil {
 		t.Fatalf("failed to read the test config file: %v", err)
 	}

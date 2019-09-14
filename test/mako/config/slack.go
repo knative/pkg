@@ -18,9 +18,9 @@ package config
 
 import yaml "gopkg.in/yaml.v2"
 
-// configFile saves all information we need to send slack message to channel(s)
+// slackConfigFile saves all information we need to send slack message to channel(s)
 // when performance regression happens in the automation tests.
-const configFile = "slack-config.yaml"
+const slackConfigFile = "config-slack.yaml"
 
 // SlackConfig contains all repo configs for performance regression alerting.
 type SlackConfig struct {
@@ -35,7 +35,7 @@ type Channel struct {
 
 // LoadSlackConfig parses config from configFile and return
 func LoadSlackConfig() ([]Channel, error) {
-	content, err := readFileFromKoData(configFile)
+	content, err := readFileFromKoData(slackConfigFile)
 	if err != nil {
 		return nil, err
 	}
