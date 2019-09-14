@@ -14,20 +14,14 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package mako
+package config
 
 import (
-	"fmt"
-	"io/ioutil"
 	"log"
-	"os"
-	"path/filepath"
 
 	"github.com/golang/protobuf/proto"
 	mpb "github.com/google/mako/spec/proto/mako_go_proto"
 )
-
-const koDataPathEnvName = "KO_DATA_PATH"
 
 // MustGetBenchmark wraps getBenchmark in log.Fatalf
 func MustGetBenchmark() *string {
@@ -46,7 +40,7 @@ func getBenchmark() (*string, error) {
 		return nil, err
 	}
 	// Read the Mako config file for this environment.
-	data, err := readConfigFromKoData(env)
+	data, err := readFileFromKoData(env + ".config")
 	if err != nil {
 		return nil, err
 	}
@@ -58,14 +52,4 @@ func getBenchmark() (*string, error) {
 
 	// Return the benchmark_key from this environment's config file.
 	return bi.BenchmarkKey, nil
-}
-
-// readConfigFromKoData reads the named config file from kodata.
-func readConfigFromKoData(environment string) ([]byte, error) {
-	koDataPath := os.Getenv(koDataPathEnvName)
-	if koDataPath == "" {
-		return nil, fmt.Errorf("%q does not exist or is empty", koDataPathEnvName)
-	}
-	fullFilename := filepath.Join(koDataPath, environment+".config")
-	return ioutil.ReadFile(fullFilename)
 }

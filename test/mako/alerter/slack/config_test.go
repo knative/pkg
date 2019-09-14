@@ -1,5 +1,5 @@
 /*
-Copyright 2019 The Knative Authors.
+Copyright 2019 The Knative Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,20 +14,24 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package mako
+package slack
 
 import (
+	"io/ioutil"
 	"testing"
-
-	. "knative.dev/pkg/configmap/testing"
 )
 
-func TestOurConfig(t *testing.T) {
-	cm, example := ConfigMapsFromTestFile(t, ConfigName)
-	if _, err := NewConfigFromConfigMap(cm); err != nil {
-		t.Errorf("NewConfigFromConfigMap(actual) = %v", err)
+func TestConfig(t *testing.T) {
+	content, err := ioutil.ReadFile("testdata/slack-config.yaml")
+	if err != nil {
+		t.Fatalf("failed to read the test config file: %v", err)
 	}
-	if _, err := NewConfigFromConfigMap(example); err != nil {
-		t.Errorf("NewConfigFromConfigMap(example) = %v", err)
+	channels, err := parseConfig(content)
+	if err != nil {
+		t.Fatalf("failed to parse the test config file: %v", err)
+	}
+
+	if len(channels) != 1 || channels[0].Name != "test_channel_name" || channels[0].Identity != "test_channel_identity" {
+		t.Fatalf("the channels parsed from the test config file is not correct: %v", channels)
 	}
 }

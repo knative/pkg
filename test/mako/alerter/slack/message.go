@@ -38,13 +38,13 @@ As of %s, there is a new performance regression detected from automation test:
 type MessageHandler struct {
 	readClient  slackutil.ReadOperations
 	writeClient slackutil.WriteOperations
-	config      repoConfig
+	channels    []Channel
 	dryrun      bool
 }
 
 // Setup creates the necessary setup to make calls to work with slack
 func Setup(userName, readTokenPath, writeTokenPath, repo string, dryrun bool) (*MessageHandler, error) {
-	repoConfigs, err := loadConfig()
+	channels, err := loadConfig()
 	if err != nil {
 		return nil, fmt.Errorf("failed to load the slack config: %v", err)
 	}
@@ -56,20 +56,10 @@ func Setup(userName, readTokenPath, writeTokenPath, repo string, dryrun bool) (*
 	if err != nil {
 		return nil, fmt.Errorf("cannot authenticate to slack write client: %v", err)
 	}
-	var config *repoConfig
-	for _, repoConfig := range repoConfigs {
-		if repoConfig.repo == repo {
-			config = &repoConfig
-			break
-		}
-	}
-	if config == nil {
-		return nil, fmt.Errorf("no channel configuration found for repo %v", repo)
-	}
 	return &MessageHandler{
 		readClient:  readClient,
 		writeClient: writeClient,
-		config:      *config,
+		channels:    channels,
 		dryrun:      dryrun,
 	}, nil
 }
@@ -77,11 +67,10 @@ func Setup(userName, readTokenPath, writeTokenPath, repo string, dryrun bool) (*
 // SendAlert will send the alert text to the slack channel(s)
 func (smh *MessageHandler) SendAlert(text string) error {
 	dryrun := smh.dryrun
-	channels := smh.config.channels
 	errCh := make(chan error)
 	var wg sync.WaitGroup
-	for i := range channels {
-		channel := channels[i]
+	for i := range smh.channels {
+		channel := smh.channels[i]
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
@@ -89,15 +78,15 @@ func (smh *MessageHandler) SendAlert(text string) error {
 			startTime := time.Now().Add(-1 * *minInterval)
 			var messageHistory []string
 			if err := helpers.Run(
-				fmt.Sprintf("retrieving message history in channel %q", channel.name),
+				fmt.Sprintf("retrieving message history in channel %q", channel.Name),
 				func() error {
 					var err error
-					messageHistory, err = smh.readClient.MessageHistory(channel.identity, startTime)
+					messageHistory, err = smh.readClient.MessageHistory(channel.Identity, startTime)
 					return err
 				},
 				dryrun,
 			); err != nil {
-				errCh <- fmt.Errorf("failed to retrieve message history in channel %q", channel.name)
+				errCh <- fmt.Errorf("failed to retrieve message history in channel %q", channel.Name)
 			}
 			// do not send message again if messages were sent on the same channel a short while ago
 			if len(messageHistory) != 0 {
@@ -106,13 +95,13 @@ func (smh *MessageHandler) SendAlert(text string) error {
 			// send the alert message to the channel
 			message := fmt.Sprintf(messageTemplate, time.Now(), text)
 			if err := helpers.Run(
-				fmt.Sprintf("sending message %q to channel %q", message, channel.name),
+				fmt.Sprintf("sending message %q to channel %q", message, channel.Name),
 				func() error {
-					return smh.writeClient.Post(message, channel.identity)
+					return smh.writeClient.Post(message, channel.Identity)
 				},
 				dryrun,
 			); err != nil {
-				errCh <- fmt.Errorf("failed to send message to channel %q", channel.name)
+				errCh <- fmt.Errorf("failed to send message to channel %q", channel.Name)
 			}
 		}()
 	}

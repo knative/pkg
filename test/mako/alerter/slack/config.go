@@ -17,51 +17,34 @@ limitations under the License.
 package slack
 
 import (
-	"fmt"
-	"io/ioutil"
-	"os"
-	"path/filepath"
-
 	yaml "gopkg.in/yaml.v2"
+	configPkg "knative.dev/pkg/test/mako/config"
 )
 
-const koDataPathEnvName = "KO_DATA_PATH"
-
-// configFile saves all information we need to send slack message to channel(s)
-// when performance regression happens in the automation tests.
-const configFile = "slack-config.yaml"
-
-// config contains all repo configs for performance regression alerting.
-type config struct {
-	repoConfigs []repoConfig `yaml:"repoConfigs"`
+// Config contains all repo configs for performance regression alerting.
+type Config struct {
+	Channels []Channel `yaml:"channels"`
 }
 
-// repoConfig is initial configuration for a given repo, defines which channel(s) to alert
-type repoConfig struct {
-	repo     string    `yaml:"repo"` // repository to report issues
-	channels []channel `yaml:"slackChannels,omitempty"`
-}
-
-// channel contains Slack channel's info
-type channel struct {
-	name     string `yaml:"name"`
-	identity string `yaml:"identity"`
+// Channel contains Slack channel's info
+type Channel struct {
+	Name     string `yaml:"name"`
+	Identity string `yaml:"identity"`
 }
 
 // loadConfig parses config from configFile
-func loadConfig() ([]repoConfig, error) {
-	koDataPath := os.Getenv(koDataPathEnvName)
-	if koDataPath == "" {
-		return nil, fmt.Errorf("%q does not exist or is empty", koDataPathEnvName)
-	}
-	fullFilename := filepath.Join(koDataPath, configFile)
-	contents, err := ioutil.ReadFile(fullFilename)
+func loadConfig() ([]Channel, error) {
+	content, err := configPkg.LoadSlackConfig()
 	if err != nil {
 		return nil, err
 	}
-	config := &config{}
-	if err = yaml.Unmarshal(contents, &config); err != nil {
+	return parseConfig(content)
+}
+
+func parseConfig(configYaml []byte) ([]Channel, error) {
+	conf := &Config{}
+	if err := yaml.Unmarshal(configYaml, conf); err != nil {
 		return nil, err
 	}
-	return config.repoConfigs, nil
+	return conf.Channels, nil
 }

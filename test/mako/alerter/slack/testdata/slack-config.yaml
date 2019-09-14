@@ -12,12 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-repoConfigs:
-  - repo: serving
-    slackChannels:
-      - name: performance
-        identity: CBDMABCTF
-  - repo: eventing
-    slackChannels:
-      - name: eventing-perf
-        identity: CMCFFNEFP
+################################
+#                              #
+#    EXAMPLE CONFIGURATION     #
+#                              #
+################################
+
+# This is an example configuration for Slack alert.
+# Each benchmark needs to have such a file in its kodata to enable Slack alert.
+
+channels:
+  - name: test_channel_name
+    identity: test_channel_identity
