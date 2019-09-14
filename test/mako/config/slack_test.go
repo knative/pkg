@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package slack
+package config
 
 import (
 	"io/ioutil"
@@ -22,7 +22,7 @@ import (
 )
 
 func TestConfig(t *testing.T) {
-	content, err := ioutil.ReadFile("testdata/slack-config.yaml")
+	content, err := ioutil.ReadFile("testdata/config-slack.yaml")
 	if err != nil {
 		t.Fatalf("failed to read the test config file: %v", err)
 	}

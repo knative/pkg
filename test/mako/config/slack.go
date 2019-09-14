@@ -16,11 +16,37 @@ limitations under the License.
 
 package config
 
+import yaml "gopkg.in/yaml.v2"
+
 // configFile saves all information we need to send slack message to channel(s)
 // when performance regression happens in the automation tests.
 const configFile = "slack-config.yaml"
 
+// SlackConfig contains all repo configs for performance regression alerting.
+type SlackConfig struct {
+	Channels []Channel `yaml:"channels"`
+}
+
+// Channel contains Slack channel's info
+type Channel struct {
+	Name     string `yaml:"name"`
+	Identity string `yaml:"identity"`
+}
+
 // LoadSlackConfig parses config from configFile and return
-func LoadSlackConfig() ([]byte, error) {
-	return readFileFromKoData(configFile)
+func LoadSlackConfig() ([]Channel, error) {
+	content, err := readFileFromKoData(configFile)
+	if err != nil {
+		return nil, err
+	}
+
+	return parseConfig(content)
+}
+
+func parseConfig(configYaml []byte) ([]Channel, error) {
+	conf := &SlackConfig{}
+	if err := yaml.Unmarshal(configYaml, conf); err != nil {
+		return nil, err
+	}
+	return conf.Channels, nil
 }
