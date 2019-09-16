@@ -655,14 +655,14 @@ func TestDelete(t *testing.T) {
 			// In prow, only need to release boskos
 			true,
 			true,
-			[]*boskoscommon.Resource{&boskoscommon.Resource{
+			[]*boskoscommon.Resource{{
 				Name: fakeProj,
 			}},
 			&container.Cluster{
 				Name:     "customcluster",
 				Location: "us-central1",
 			},
-			[]*boskoscommon.Resource{&boskoscommon.Resource{
+			[]*boskoscommon.Resource{{
 				Type:  "gke-project",
 				Name:  fakeProj,
 				State: boskoscommon.Free,
