@@ -59,19 +59,20 @@ var (
 	routeKey    = tag.Tag{Key: mustNewTagKey(metricskey.LabelRouteName), Value: testRoute}
 	revisionKey = tag.Tag{Key: mustNewTagKey(metricskey.LabelRevisionName), Value: testRevision}
 
-	brokerKey              = tag.Tag{Key: mustNewTagKey(metricskey.LabelBrokerName), Value: testBroker}
-	triggerKey             = tag.Tag{Key: mustNewTagKey(metricskey.LabelTriggerName), Value: testTrigger}
+	brokerKey              = tag.Tag{Key: mustNewTagKey(metricskey.LabelName), Value: testBroker}
+	triggerKey             = tag.Tag{Key: mustNewTagKey(metricskey.LabelName), Value: testTrigger}
+	triggerBrokerKey       = tag.Tag{Key: mustNewTagKey(metricskey.LabelBrokerName), Value: testBroker}
 	filterTypeKey          = tag.Tag{Key: mustNewTagKey(metricskey.LabelFilterType), Value: testFilterType}
 	filterSourceKey        = tag.Tag{Key: mustNewTagKey(metricskey.LabelFilterSource), Value: testFilterSource}
-	sourceKey              = tag.Tag{Key: mustNewTagKey(metricskey.LabelSourceName), Value: testSource}
-	sourceResourceGroupKey = tag.Tag{Key: mustNewTagKey(metricskey.LabelSourceResourceGroup), Value: testSourceResourceGroup}
+	sourceKey              = tag.Tag{Key: mustNewTagKey(metricskey.LabelName), Value: testSource}
+	sourceResourceGroupKey = tag.Tag{Key: mustNewTagKey(metricskey.LabelResourceGroup), Value: testSourceResourceGroup}
 	eventTypeKey           = tag.Tag{Key: mustNewTagKey(metricskey.LabelEventType), Value: testEventType}
 	eventSourceKey         = tag.Tag{Key: mustNewTagKey(metricskey.LabelEventSource), Value: testEventSource}
 
 	revisionTestTags = []tag.Tag{nsKey, serviceKey, routeKey, revisionKey}
 
 	brokerTestTags  = []tag.Tag{nsKey, brokerKey, eventTypeKey, eventSourceKey}
-	triggerTestTags = []tag.Tag{nsKey, triggerKey, brokerKey, filterTypeKey, filterSourceKey}
+	triggerTestTags = []tag.Tag{nsKey, triggerKey, triggerBrokerKey, filterTypeKey, filterSourceKey}
 	sourceTestTags  = []tag.Tag{nsKey, sourceKey, sourceResourceGroupKey, eventTypeKey, eventSourceKey}
 )
 
@@ -192,7 +193,7 @@ func TestFlushExporter(t *testing.T) {
 		reportingPeriod:                   1 * time.Minute,
 		stackdriverProjectID:              "test",
 		stackdriverMetricTypePrefix:       path.Join(servingDomain, testComponent),
-		stackdriverCustomMetricTypePrefix: path.Join(customMetricTypePrefix, testComponent),
+		stackdriverCustomMetricTypePrefix: path.Join(defaultCustomMetricSubDomain, testComponent),
 	}
 	e, err = newMetricsExporter(c, TestLogger(t))
 	if err != nil {

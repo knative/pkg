@@ -31,12 +31,12 @@ import (
 // 	See https://github.com/knative/pkg/issues/608
 
 const (
-	servingDomain  = "knative.dev/serving"
-	eventingDomain = "knative.dev/eventing"
-	badDomain      = "test.domain"
-	testComponent  = "testComponent"
-	testProj       = "test-project"
-	anotherProj    = "another-project"
+	servingDomain   = "knative.dev/serving"
+	eventingDomain  = "knative.dev/eventing"
+	customSubDomain = "test.domain"
+	testComponent   = "testComponent"
+	testProj        = "test-project"
+	anotherProj     = "another-project"
 )
 
 var (
@@ -151,7 +151,8 @@ var (
 				reportingPeriod:                   60 * time.Second,
 				isStackdriverBackend:              true,
 				stackdriverMetricTypePrefix:       path.Join(servingDomain, testComponent),
-				stackdriverCustomMetricTypePrefix: path.Join(customMetricTypePrefix, testComponent),
+				stackdriverCustomMetricTypePrefix: path.Join(customMetricTypePrefix, defaultCustomMetricSubDomain, testComponent),
+				stackdriverCustomMetricsSubDomain: defaultCustomMetricSubDomain,
 			},
 			expectedNewExporter: true,
 		}, {
@@ -187,7 +188,8 @@ var (
 				reportingPeriod:                   60 * time.Second,
 				isStackdriverBackend:              true,
 				stackdriverMetricTypePrefix:       path.Join(servingDomain, testComponent),
-				stackdriverCustomMetricTypePrefix: path.Join(customMetricTypePrefix, testComponent),
+				stackdriverCustomMetricTypePrefix: path.Join(customMetricTypePrefix, defaultCustomMetricSubDomain, testComponent),
+				stackdriverCustomMetricsSubDomain: defaultCustomMetricSubDomain,
 			},
 			expectedNewExporter: true,
 		}, {
@@ -225,7 +227,8 @@ var (
 				reportingPeriod:                   60 * time.Second,
 				isStackdriverBackend:              true,
 				stackdriverMetricTypePrefix:       path.Join(servingDomain, testComponent),
-				stackdriverCustomMetricTypePrefix: path.Join(customMetricTypePrefix, testComponent),
+				stackdriverCustomMetricTypePrefix: path.Join(customMetricTypePrefix, defaultCustomMetricSubDomain, testComponent),
+				stackdriverCustomMetricsSubDomain: defaultCustomMetricSubDomain,
 			},
 			expectedNewExporter: true,
 		}, {
@@ -265,7 +268,8 @@ var (
 				reportingPeriod:                   7 * time.Second,
 				isStackdriverBackend:              true,
 				stackdriverMetricTypePrefix:       path.Join(servingDomain, testComponent),
-				stackdriverCustomMetricTypePrefix: path.Join(customMetricTypePrefix, testComponent),
+				stackdriverCustomMetricTypePrefix: path.Join(customMetricTypePrefix, defaultCustomMetricSubDomain, testComponent),
+				stackdriverCustomMetricsSubDomain: defaultCustomMetricSubDomain,
 			},
 			expectedNewExporter: true,
 		}, {
@@ -287,7 +291,8 @@ var (
 				reportingPeriod:                   3 * time.Second,
 				isStackdriverBackend:              true,
 				stackdriverMetricTypePrefix:       path.Join(servingDomain, testComponent),
-				stackdriverCustomMetricTypePrefix: path.Join(customMetricTypePrefix, testComponent),
+				stackdriverCustomMetricTypePrefix: path.Join(customMetricTypePrefix, defaultCustomMetricSubDomain, testComponent),
+				stackdriverCustomMetricsSubDomain: defaultCustomMetricSubDomain,
 			},
 		}, {
 			name: "emptyReportingPeriodPrometheus",
@@ -326,7 +331,8 @@ var (
 				reportingPeriod:                   60 * time.Second,
 				isStackdriverBackend:              true,
 				stackdriverMetricTypePrefix:       path.Join(servingDomain, testComponent),
-				stackdriverCustomMetricTypePrefix: path.Join(customMetricTypePrefix, testComponent),
+				stackdriverCustomMetricTypePrefix: path.Join(customMetricTypePrefix, defaultCustomMetricSubDomain, testComponent),
+				stackdriverCustomMetricsSubDomain: defaultCustomMetricSubDomain,
 			},
 			expectedNewExporter: true,
 		}, {
@@ -349,8 +355,32 @@ var (
 				reportingPeriod:                   60 * time.Second,
 				isStackdriverBackend:              true,
 				stackdriverMetricTypePrefix:       path.Join(servingDomain, testComponent),
-				stackdriverCustomMetricTypePrefix: path.Join(customMetricTypePrefix, testComponent),
+				stackdriverCustomMetricTypePrefix: path.Join(customMetricTypePrefix, defaultCustomMetricSubDomain, testComponent),
 				allowStackdriverCustomMetrics:     true,
+				stackdriverCustomMetricsSubDomain: defaultCustomMetricSubDomain,
+			},
+		}, {
+			name: "allowStackdriverCustomMetric with subdomain",
+			ops: ExporterOptions{
+				ConfigMap: map[string]string{
+					"metrics.backend-destination":                  "stackdriver",
+					"metrics.stackdriver-project-id":               "test2",
+					"metrics.reporting-period-seconds":             "",
+					"metrics.stackdriver-custom-metrics-subdomain": customSubDomain,
+				},
+				Domain:    servingDomain,
+				Component: testComponent,
+			},
+			expectedConfig: metricsConfig{
+				domain:                            servingDomain,
+				component:                         testComponent,
+				backendDestination:                Stackdriver,
+				stackdriverProjectID:              "test2",
+				reportingPeriod:                   60 * time.Second,
+				isStackdriverBackend:              true,
+				stackdriverMetricTypePrefix:       path.Join(servingDomain, testComponent),
+				stackdriverCustomMetricTypePrefix: path.Join(customMetricTypePrefix, customSubDomain, testComponent),
+				stackdriverCustomMetricsSubDomain: customSubDomain,
 			},
 		}, {
 			name: "overridePrometheusPort",
@@ -390,7 +420,8 @@ var (
 				reportingPeriod:                   60 * time.Second,
 				isStackdriverBackend:              true,
 				stackdriverMetricTypePrefix:       path.Join(servingDomain, testComponent),
-				stackdriverCustomMetricTypePrefix: path.Join(customMetricTypePrefix, testComponent),
+				stackdriverCustomMetricTypePrefix: path.Join(customMetricTypePrefix, defaultCustomMetricSubDomain, testComponent),
+				stackdriverCustomMetricsSubDomain: defaultCustomMetricSubDomain,
 			},
 		}, {
 			name: "validPrometheus",

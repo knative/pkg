@@ -206,7 +206,7 @@ func TestGetMonitoredResourceFunc_UseKnativeBroker(t *testing.T) {
 		if !ok || got != testNS {
 			t.Errorf("expected label %v with value %v, got: %v", metricskey.LabelNamespaceName, testNS, got)
 		}
-		got, ok = labels[metricskey.LabelBrokerName]
+		got, ok = labels[metricskey.LabelName]
 		if !ok || got != testBroker {
 			t.Errorf("expected label %v with value %v, got: %v", metricskey.LabelBrokerName, testBroker, got)
 		}
@@ -276,13 +276,13 @@ func TestGetMonitoredResourceFunc_UseKnativeSource(t *testing.T) {
 		if !ok || got != testNS {
 			t.Errorf("expected label %v with value %v, got: %v", metricskey.LabelNamespaceName, testNS, got)
 		}
-		got, ok = labels[metricskey.LabelSourceName]
+		got, ok = labels[metricskey.LabelName]
 		if !ok || got != testSource {
-			t.Errorf("expected label %v with value %v, got: %v", metricskey.LabelSourceName, testSource, got)
+			t.Errorf("expected label %v with value %v, got: %v", metricskey.LabelName, testSource, got)
 		}
-		got, ok = labels[metricskey.LabelSourceResourceGroup]
+		got, ok = labels[metricskey.LabelResourceGroup]
 		if !ok || got != testSourceResourceGroup {
-			t.Errorf("expected label %v with value %v, got: %v", metricskey.LabelSourceResourceGroup, testSourceResourceGroup, got)
+			t.Errorf("expected label %v with value %v, got: %v", metricskey.LabelResourceGroup, testSourceResourceGroup, got)
 		}
 	}
 }
@@ -323,7 +323,7 @@ func TestGetgetMetricTypeFunc_UseKnativeDomain(t *testing.T) {
 		}
 		mtf := getMetricTypeFunc(
 			path.Join(testCase.domain, testCase.component),
-			path.Join(customMetricTypePrefix, testCase.component))
+			path.Join(defaultCustomMetricSubDomain, testCase.component))
 
 		gotMetricType := mtf(testView)
 		wantedMetricType := path.Join(testCase.domain, testCase.component, testView.Measure.Name())
@@ -343,10 +343,10 @@ func TestGetgetMetricTypeFunc_UseCustomDomain(t *testing.T) {
 		}
 		mtf := getMetricTypeFunc(
 			path.Join(testCase.domain, testCase.component),
-			path.Join(customMetricTypePrefix, testCase.component))
+			path.Join(defaultCustomMetricSubDomain, testCase.component))
 
 		gotMetricType := mtf(testView)
-		wantedMetricType := path.Join(customMetricTypePrefix, testCase.component, testView.Measure.Name())
+		wantedMetricType := path.Join(defaultCustomMetricSubDomain, testCase.component, testView.Measure.Name())
 		if gotMetricType != wantedMetricType {
 			t.Fatalf("getMetricType=%v, want %v", gotMetricType, wantedMetricType)
 		}

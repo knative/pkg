@@ -24,16 +24,8 @@ import (
 	"knative.dev/pkg/metrics/metricstest"
 )
 
-// unregister, ehm, unregisters the metrics that were registered, by
-// virtue of StatsReporter creation.
-// Since golang executes test iterations within the same process, the stats reporter
-// returns an error if the metric is already registered and the test panics.
-func unregister() {
-	metricstest.Unregister("event_count")
-}
-
 func TestStatsReporter(t *testing.T) {
-	t.Skip("Fails in PROW but not locally, possibly due to the webhook stats_reporter test. Needs further investigation.")
+	setup()
 
 	args := &ReportArgs{
 		Namespace:     "testns",
@@ -47,18 +39,15 @@ func TestStatsReporter(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create a new reporter: %v", err)
 	}
-	// Without this `go test ... -count=X`, where X > 1, fails, since
-	// we get an error about view already being registered.
-	defer unregister()
 
 	wantTags := map[string]string{
-		metricskey.LabelNamespaceName:       "testns",
-		metricskey.LabelEventType:           "dev.knative.event",
-		metricskey.LabelEventSource:         "unit-test",
-		metricskey.LabelSourceName:          "testsource",
-		metricskey.LabelSourceResourceGroup: "testresourcegroup",
-		metricskey.LabelResponseCode:        "202",
-		metricskey.LabelResponseCodeClass:   "2xx",
+		metricskey.LabelNamespaceName:     "testns",
+		metricskey.LabelEventType:         "dev.knative.event",
+		metricskey.LabelEventSource:       "unit-test",
+		metricskey.LabelName:              "testsource",
+		metricskey.LabelResourceGroup:     "testresourcegroup",
+		metricskey.LabelResponseCode:      "202",
+		metricskey.LabelResponseCodeClass: "2xx",
 	}
 
 	// test ReportEventCount
@@ -76,4 +65,14 @@ func expectSuccess(t *testing.T, f func() error) {
 	if err := f(); err != nil {
 		t.Errorf("Reporter expected success but got error: %v", err)
 	}
+}
+
+func setup() {
+	resetMetrics()
+}
+
+func resetMetrics() {
+	// OpenCensus metrics carry global state that need to be reset between unit tests.
+	metricstest.Unregister("event_count")
+	register()
 }
