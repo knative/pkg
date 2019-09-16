@@ -18,19 +18,5 @@ limitations under the License.
 Package clustermanager provides support for managing clusters for e2e tests,
 responsible for creating/deleting cluster, and cluster life cycle management if
 running in Prow
-usage example:
-func acquireCluster() {
-    clusterOps := GKEClient{}.Setup(2, "n1-standard-8", "us-east1", "a", "myproject")
-    // Cast to GKEOperation
-    GKEOps := clusterOps.(*GKECluster)
-    if err := GKEOps.Initialize(); err != nil {
-		log.Fatalf("failed initializing GKE Client: '%v'", err)
-	}
-    if err := GKEOps.Acquire(); err != nil {
-        log.Fatalf("failed acquire cluster: '%v'", err)
-    }
-    log.Printf("GKE project is: %s", GKEOps.Project)
-    log.Printf("GKE cluster is: %v", GKEOps.Cluster)
-}
 */
 package clustermanager

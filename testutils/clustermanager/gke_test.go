@@ -298,8 +298,8 @@ func TestSetup(t *testing.T) {
 		}
 		c := GKEClient{}
 		co := c.Setup(data.numNodes, data.nodeType, data.region, data.zone, data.project, data.addons)
-		errMsg := fmt.Sprintf("testing setup with:\n\tnumNodes: %v\n\tnodeType: %v\n\tregion: %v\n\tone: %v\n\tproject: %v\n\tregionEnv: %v\n\tbackupRegionEnv: %v",
-			data.numNodes, data.nodeType, data.region, data.zone, data.project, data.regionEnv, data.backupRegionEnv)
+		errMsg := fmt.Sprintf("testing setup with:\n\tnumNodes: %v\n\tnodeType: %v\n\tregion: %v\n\tzone: %v\n\tproject: %v\n\taddons: %v\n\tregionEnv: %v\n\tbackupRegionEnv: %v",
+			data.numNodes, data.nodeType, data.region, data.zone, data.project, data.addons, data.regionEnv, data.backupRegionEnv)
 		gotCo := co.(*GKECluster)
 		// mock for easier comparison
 		gotCo.operations = nil
@@ -820,7 +820,6 @@ func TestDelete(t *testing.T) {
 		if !reflect.DeepEqual(err, data.expErr) {
 			t.Errorf("%s\nerror want: '%v'\nerror got: '%v'", errMsg, err, data.expErr)
 		}
-		// if !reflect.DeepEqual(data.expCluster, gotCluster) {
 		if dif := cmp.Diff(data.expCluster, gotCluster); dif != "" {
 			t.Errorf("%s\nCluster got(+) is different from wanted(-)\n%v", errMsg, dif)
 		}
