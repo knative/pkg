@@ -18,10 +18,12 @@ package metrics
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
 	"knative.dev/pkg/metrics/metricstest"
 
+	"github.com/google/go-cmp/cmp"
 	"go.opencensus.io/stats"
 	"go.opencensus.io/stats/view"
 )
@@ -131,5 +133,34 @@ func testRecord(t *testing.T, measure *stats.Int64Measure, shouldReportCases []c
 		setCurMetricsConfig(test.metricsConfig)
 		Record(ctx, test.measurement)
 		metricstest.CheckLastValueData(t, test.measurement.Measure().Name(), map[string]string{}, 4) // The value is still the last one of shouldReportCases
+	}
+}
+
+func TestBucketsNBy10(t *testing.T) {
+	tests := []struct {
+		base float64
+		n    int
+		want []float64
+	}{{
+		base: 0.001,
+		n:    5,
+		want: []float64{0.001, 0.01, 0.1, 1, 10},
+	}, {
+		base: 1,
+		n:    2,
+		want: []float64{1, 10},
+	}, {
+		base: 0.5,
+		n:    4,
+		want: []float64{0.5, 5, 50, 500},
+	}}
+
+	for _, test := range tests {
+		t.Run(fmt.Sprintf("base=%f,n=%d", test.base, test.n), func(t *testing.T) {
+			got := BucketsNBy10(test.base, test.n)
+			if diff := cmp.Diff(got, test.want); diff != "" {
+				t.Errorf("BucketsNBy10 (-want, +got) = %s", diff)
+			}
+		})
 	}
 }

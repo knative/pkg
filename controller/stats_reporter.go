@@ -25,6 +25,7 @@ import (
 	"go.opencensus.io/stats/view"
 	"go.opencensus.io/tag"
 	"go.uber.org/zap"
+	"k8s.io/client-go/util/workqueue"
 	"knative.dev/pkg/metrics"
 )
 
@@ -48,28 +49,58 @@ var (
 )
 
 func init() {
+	wp := &metrics.WorkqueueProvider{
+		Adds: stats.Int64(
+			"workqueue_adds_total",
+			"Total number of adds handled by workqueue",
+			stats.UnitNone,
+		),
+		Depth: stats.Int64(
+			"workqueue_depth",
+			"Current depth of workqueue",
+			stats.UnitNone,
+		),
+		Latency: stats.Float64(
+			"workqueue_queue_latency_seconds",
+			"How long in seconds an item stays in workqueue before being requested.",
+			"s",
+		),
+		Retries: stats.Int64(
+			"workqueue_retries_total",
+			"Total number of retries handled by workqueue",
+			"s",
+		),
+		WorkDuration: stats.Float64(
+			"workqueue_work_duration_seconds",
+			"How long in seconds processing an item from workqueue takes.",
+			"s",
+		),
+	}
+	workqueue.SetProvider(wp)
+
 	// Create views to see our measurements. This can return an error if
 	// a previously-registered view has the same name with a different value.
 	// View name defaults to the measure name if unspecified.
 	err := view.Register(
-		&view.View{
-			Description: "Depth of the work queue",
-			Measure:     workQueueDepthStat,
-			Aggregation: view.LastValue(),
-			TagKeys:     []tag.Key{reconcilerTagKey},
-		},
-		&view.View{
-			Description: "Number of reconcile operations",
-			Measure:     reconcileCountStat,
-			Aggregation: view.Count(),
-			TagKeys:     []tag.Key{reconcilerTagKey, keyTagKey, successTagKey},
-		},
-		&view.View{
-			Description: "Latency of reconcile operations",
-			Measure:     reconcileLatencyStat,
-			Aggregation: reconcileDistribution,
-			TagKeys:     []tag.Key{reconcilerTagKey, keyTagKey, successTagKey},
-		},
+		append(wp.DefaultViews(),
+			&view.View{
+				Description: "Depth of the work queue",
+				Measure:     workQueueDepthStat,
+				Aggregation: view.LastValue(),
+				TagKeys:     []tag.Key{reconcilerTagKey},
+			},
+			&view.View{
+				Description: "Number of reconcile operations",
+				Measure:     reconcileCountStat,
+				Aggregation: view.Count(),
+				TagKeys:     []tag.Key{reconcilerTagKey, keyTagKey, successTagKey},
+			},
+			&view.View{
+				Description: "Latency of reconcile operations",
+				Measure:     reconcileLatencyStat,
+				Aggregation: reconcileDistribution,
+				TagKeys:     []tag.Key{reconcilerTagKey, keyTagKey, successTagKey},
+			})...,
 	)
 	if err != nil {
 		panic(err)
