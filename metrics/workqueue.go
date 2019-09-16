@@ -23,12 +23,6 @@ import (
 	"k8s.io/client-go/util/workqueue"
 )
 
-// tagName is used to associate the provided name with each metric created
-// through the WorkqueueProvider's methods to implement workqueue.MetricsProvider.
-// For the kubernetes workqueue implementations this is the queue name provided
-// to the workqueue constructor.
-var tagName = tag.MustNewKey("name")
-
 // WorkqueueProvider implements workqueue.MetricsProvider and may be used with
 // workqueue.SetProvider to have metrics exported to the provided metrics.
 type WorkqueueProvider struct {
@@ -116,16 +110,5 @@ func (wp *WorkqueueProvider) DefaultViews() []*view.View {
 		wp.LatencyView(),
 		wp.RetriesView(),
 		wp.WorkDurationView(),
-	}
-}
-
-// measureView returns a view of the supplied metric.
-func measureView(m stats.Measure, agg *view.Aggregation) *view.View {
-	return &view.View{
-		Name:        m.Name(),
-		Description: m.Description(),
-		Measure:     m,
-		Aggregation: agg,
-		TagKeys:     []tag.Key{tagName},
 	}
 }
