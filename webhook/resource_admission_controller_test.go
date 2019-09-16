@@ -539,7 +539,7 @@ func TestUpdatingWebhook(t *testing.T) {
 		ObjectMeta: metav1.ObjectMeta{
 			Name: ac.options.ResourceMutatingWebhookName,
 		},
-		Webhooks: []admissionregistrationv1beta1.Webhook{{
+		Webhooks: []admissionregistrationv1beta1.MutatingWebhook{{
 			Name:         ac.options.ResourceMutatingWebhookName,
 			Rules:        []admissionregistrationv1beta1.RuleWithOperations{{}},
 			ClientConfig: admissionregistrationv1beta1.WebhookClientConfig{},
@@ -566,7 +566,7 @@ func createDeployment(kubeClient kubernetes.Interface) {
 			Namespace: "knative-something",
 		},
 	}
-	kubeClient.Apps().Deployments("knative-something").Create(deployment)
+	kubeClient.AppsV1().Deployments("knative-something").Create(deployment)
 }
 
 func createWebhook(kubeClient kubernetes.Interface, webhook *admissionregistrationv1beta1.MutatingWebhookConfiguration) {
