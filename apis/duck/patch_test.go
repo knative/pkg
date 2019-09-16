@@ -204,6 +204,28 @@ func TestCreatePatch(t *testing.T) {
 	}}
 
 	for _, test := range tests {
+		t.Run(test.name+" (CreateBytePatch)", func(t *testing.T) {
+			got, err := CreateBytePatch(test.before, test.after)
+			if err != nil {
+				if !test.wantErr {
+					t.Errorf("CreateBytePatch() = %v", err)
+				}
+				return
+			} else if test.wantErr {
+				t.Errorf("CreateBytePatch() = %v, wanted error", got)
+				return
+			}
+
+			want, err := test.want.MarshalJSON()
+			if err != nil {
+				t.Errorf("Error marshaling 'want' condition. want: %v error: %v", want, err)
+			}
+
+			if diff := cmp.Diff(want, got); diff != "" {
+				t.Errorf("CreateBytePatch (-want, +got) = %v", diff)
+			}
+
+		})
 		t.Run(test.name, func(t *testing.T) {
 			got, err := CreatePatch(test.before, test.after)
 			if err != nil {
