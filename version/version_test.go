@@ -18,6 +18,7 @@ package version
 
 import (
 	"errors"
+	"os"
 	"testing"
 
 	"k8s.io/apimachinery/pkg/version"
@@ -34,36 +35,46 @@ func (t *testVersioner) ServerVersion() (*version.Info, error) {
 
 func TestVersionCheck(t *testing.T) {
 	tests := []struct {
-		name          string
-		actualVersion *testVersioner
-		wantError     bool
+		name            string
+		actualVersion   *testVersioner
+		versionOverride string
+		wantError       bool
 	}{{
 		name:          "greater version (patch)",
-		actualVersion: &testVersioner{version: "v1.11.1"},
+		actualVersion: &testVersioner{version: "v1.14.1"},
 	}, {
 		name:          "greater version (minor)",
-		actualVersion: &testVersioner{version: "v1.12.0"},
+		actualVersion: &testVersioner{version: "v1.15.0"},
 	}, {
 		name:          "same version",
-		actualVersion: &testVersioner{version: "v1.11.0"},
+		actualVersion: &testVersioner{version: "v1.14.0"},
 	}, {
 		name:          "smaller version",
-		actualVersion: &testVersioner{version: "v1.10.3"},
+		actualVersion: &testVersioner{version: "v1.13.3"},
 		wantError:     true,
 	}, {
 		name:          "error while fetching",
 		actualVersion: &testVersioner{err: errors.New("random error")},
 		wantError:     true,
+	}, {
+		name:            "smaller version",
+		versionOverride: "v1.13.0",
+		actualVersion:   &testVersioner{version: "v1.13.3"},
 	}}
 
 	for _, test := range tests {
-		err := CheckMinimumVersion(test.actualVersion)
-		if err == nil && test.wantError {
-			t.Errorf("Expected an error for minimum: %q, actual: %v", minimumVersion, test.actualVersion)
-		}
+		t.Run(test.name, func(t *testing.T) {
+			os.Setenv(KubernetesMinVersionKey, test.versionOverride)
+			defer os.Setenv(KubernetesMinVersionKey, "")
 
-		if err != nil && !test.wantError {
-			t.Errorf("Expected no error but got %v for minimum: %q, actual: %v", err, minimumVersion, test.actualVersion)
-		}
+			err := CheckMinimumVersion(test.actualVersion)
+			if err == nil && test.wantError {
+				t.Errorf("Expected an error for minimum: %q, actual: %v", getMinimumVersion(), test.actualVersion)
+			}
+
+			if err != nil && !test.wantError {
+				t.Errorf("Expected no error but got %v for minimum: %q, actual: %v", err, getMinimumVersion(), test.actualVersion)
+			}
+		})
 	}
 }
