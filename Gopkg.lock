@@ -744,10 +744,10 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:bcfc1adc3202f2ff120bc4686c613c8f34af0f9e3de49b55d3bbecd70dc6651b"
+  digest = "1:3b865f5fdc62cc6f52865a3bf29146a384fd5b2f250d8d86c0c2a41a4ffa10c4"
   name = "google.golang.org/api"
   packages = [
-    "container/v1",
+    "container/v1beta1",
     "gensupport",
     "googleapi",
     "googleapi/internal/uritemplates",
@@ -1313,7 +1313,7 @@
     "golang.org/x/oauth2",
     "golang.org/x/oauth2/google",
     "golang.org/x/sync/errgroup",
-    "google.golang.org/api/container/v1",
+    "google.golang.org/api/container/v1beta1",
     "google.golang.org/grpc",
     "gopkg.in/yaml.v2",
     "k8s.io/api/admission/v1beta1",

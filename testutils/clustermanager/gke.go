@@ -28,7 +28,7 @@ import (
 
 	"golang.org/x/net/context"
 	"golang.org/x/oauth2/google"
-	"google.golang.org/api/container/v1"
+	container "google.golang.org/api/container/v1beta1"
 )
 
 const (
