@@ -71,15 +71,24 @@ func TestGenerateNameReactor(t *testing.T) {
 			lastHandlerInvoked := false
 
 			fake := &clientgotesting.Fake{}
+			var mutated *appsv1.Deployment
 			fake.AddReactor("*", "*", func(action clientgotesting.Action) (handled bool, ret runtime.Object, err error) {
+				create, ok := action.(clientgotesting.CreateAction)
+				if !ok {
+					return false, nil, nil
+				}
+				deploy, ok := create.GetObject().(*appsv1.Deployment)
+				if !ok {
+					return false, nil, nil
+				}
 				lastHandlerInvoked = true
+				mutated = deploy
 				return false, nil, nil
 			})
 
 			PrependGenerateNameReactor(fake)
 
-			mutated := tc.deployment.DeepCopy()
-			action := clientgotesting.NewCreateAction(deploymentsResource, "namespace", mutated)
+			action := clientgotesting.NewCreateAction(deploymentsResource, "namespace", tc.deployment)
 
 			fake.Invokes(action, &appsv1.Deployment{})
 
