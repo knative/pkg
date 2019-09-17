@@ -36,8 +36,8 @@ func TestStandardExec(t *testing.T) {
 	for _, data := range datas {
 		data := data
 		out, err := StandardExec(data.cmd, data.args...)
-		if !reflect.DeepEqual(string(out), data.expOut) || (nil == err && nil != data.expErr) || (nil != err && nil == data.expErr) ||
-			(nil != err && nil != data.expErr && err.Error() != data.expErr.Error()) {
+		if !reflect.DeepEqual(string(out), data.expOut) || (err != nil && data.expErr != nil) || (err != nil && data.expErr == nil) ||
+			(err != nil && data.expErr != nil && err.Error() != data.expErr.Error()) {
 			t.Errorf("running cmd: '%v', args: '%v'\nwant: out - '%v', err - '%v'\n got: out - '%s', err - '%v'",
 				data.cmd, data.args, data.expOut, data.expErr, string(out), err)
 		}

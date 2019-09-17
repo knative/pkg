@@ -90,10 +90,10 @@ func TestAcquireGKEProject(t *testing.T) {
 		defer ts.Close()
 		boskosURI = ts.URL
 		_, err := client.AcquireGKEProject(data.host)
-		if data.expErr && (nil == err) {
+		if data.expErr && (err == nil) {
 			t.Fatalf("testing acquiring GKE project, want: err, got: no err")
 		}
-		if !data.expErr && (nil != err) {
+		if !data.expErr && (err != nil) {
 			t.Fatalf("testing acquiring GKE project, want: no err, got: err '%v'", err)
 		}
 	}
@@ -143,10 +143,10 @@ func TestReleaseGKEProject(t *testing.T) {
 		defer ts.Close()
 		boskosURI = ts.URL
 		err := client.ReleaseGKEProject(data.host, data.resName)
-		if data.expErr && (nil == err) {
+		if data.expErr && (err == nil) {
 			t.Fatalf("testing acquiring GKE project, want: err, got: no err")
 		}
-		if !data.expErr && (nil != err) {
+		if !data.expErr && (err != nil) {
 			t.Fatalf("testing acquiring GKE project, want: no err, got: err '%v'", err)
 		}
 	}
