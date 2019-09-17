@@ -79,7 +79,7 @@ func GetLoggingConfig(ctx context.Context) (*logging.Config, error) {
 	loggingConfigMap, err := kubeclient.Get(ctx).CoreV1().ConfigMaps(system.Namespace()).Get(logging.ConfigMapName(), metav1.GetOptions{})
 	if err != nil {
 		if apierrors.IsNotFound(err) {
-			return logging.NewDefaultConfig(), nil
+			return logging.NewConfigFromMap(make(map[string]string))
 		} else {
 			return nil, err
 		}

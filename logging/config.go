@@ -157,14 +157,6 @@ func NewConfigFromMap(data map[string]string) (*Config, error) {
 	return lc, nil
 }
 
-// NewDefaultConfig creates a default LoggingConfig.
-func NewDefaultConfig() (*Config) {
-	return &Config{
-		LoggingConfig: defaultZLC,
-		LoggingLevel:  map[string]zapcore.Level{},
-	}
-}
-
 // NewConfigFromConfigMap creates a LoggingConfig from the supplied ConfigMap,
 // expecting the given list of components.
 func NewConfigFromConfigMap(configMap *corev1.ConfigMap) (*Config, error) {
