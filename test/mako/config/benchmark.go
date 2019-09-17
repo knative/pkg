@@ -17,11 +17,17 @@ limitations under the License.
 package config
 
 import (
+	"fmt"
+	"io/ioutil"
 	"log"
+	"os"
+	"path/filepath"
 
 	"github.com/golang/protobuf/proto"
 	mpb "github.com/google/mako/spec/proto/mako_go_proto"
 )
+
+const koDataPathEnvName = "KO_DATA_PATH"
 
 // MustGetBenchmark wraps getBenchmark in log.Fatalf
 func MustGetBenchmark() *string {
@@ -52,4 +58,14 @@ func getBenchmark() (*string, error) {
 
 	// Return the benchmark_key from this environment's config file.
 	return bi.BenchmarkKey, nil
+}
+
+// readFileFromKoData reads the named file from kodata.
+func readFileFromKoData(name string) ([]byte, error) {
+	koDataPath := os.Getenv(koDataPathEnvName)
+	if koDataPath == "" {
+		return nil, fmt.Errorf("%q does not exist or is empty", koDataPathEnvName)
+	}
+	fullFilename := filepath.Join(koDataPath, name)
+	return ioutil.ReadFile(fullFilename)
 }
