@@ -23,7 +23,6 @@ import (
 	"time"
 
 	"knative.dev/pkg/test/helpers"
-	"knative.dev/pkg/test/mako/config"
 	"knative.dev/pkg/test/slackutil"
 )
 
@@ -35,20 +34,22 @@ As of %s, there is a new performance regression detected from automation test:
 %s`
 )
 
+// Channel contains Slack channel's info
+type Channel struct {
+	Name     string
+	Identity string
+}
+
 // MessageHandler handles methods for slack messages
 type MessageHandler struct {
 	readClient  slackutil.ReadOperations
 	writeClient slackutil.WriteOperations
-	channels    []config.Channel
+	channels    []Channel
 	dryrun      bool
 }
 
 // Setup creates the necessary setup to make calls to work with slack
-func Setup(userName, readTokenPath, writeTokenPath, repo string, dryrun bool) (*MessageHandler, error) {
-	channels, err := config.LoadSlackConfig()
-	if err != nil {
-		return nil, fmt.Errorf("failed to load the slack config: %v", err)
-	}
+func Setup(userName, readTokenPath, writeTokenPath string, channels []Channel, dryrun bool) (*MessageHandler, error) {
 	readClient, err := slackutil.NewReadClient(userName, readTokenPath)
 	if err != nil {
 		return nil, fmt.Errorf("cannot authenticate to slack read client: %v", err)
