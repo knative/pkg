@@ -20,6 +20,7 @@ import (
 	"testing"
 
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/types"
 	clientgotesting "k8s.io/client-go/testing"
 )
 
@@ -100,7 +101,7 @@ func newDeleteAction() clientgotesting.Action {
 }
 
 func newPatchAction() clientgotesting.Action {
-	return clientgotesting.NewPatchAction(schema.GroupVersionResource{}, "namespace", "name", nil)
+	return clientgotesting.NewPatchAction(schema.GroupVersionResource{}, "namespace", "name", types.JSONPatchType, nil)
 }
 
 type fakeRecorder []clientgotesting.Action

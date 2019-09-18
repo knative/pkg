@@ -75,7 +75,7 @@ func TestRegistrationStopChanFire(t *testing.T) {
 		ObjectMeta: metav1.ObjectMeta{
 			Name: ac.Options.ResourceMutatingWebhookName,
 		},
-		Webhooks: []admissionregistrationv1beta1.Webhook{
+		Webhooks: []admissionregistrationv1beta1.MutatingWebhook{
 			{
 				Name:         ac.Options.ResourceMutatingWebhookName,
 				Rules:        []admissionregistrationv1beta1.RuleWithOperations{{}},
@@ -110,7 +110,7 @@ func TestRegistrationForAlreadyExistingWebhook(t *testing.T) {
 		ObjectMeta: metav1.ObjectMeta{
 			Name: ac.Options.ResourceMutatingWebhookName,
 		},
-		Webhooks: []admissionregistrationv1beta1.Webhook{
+		Webhooks: []admissionregistrationv1beta1.MutatingWebhook{
 			{
 				Name:         ac.Options.ResourceMutatingWebhookName,
 				Rules:        []admissionregistrationv1beta1.RuleWithOperations{{}},

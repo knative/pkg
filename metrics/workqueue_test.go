@@ -37,11 +37,13 @@ func newFloat64(name string) *stats.Float64Measure {
 
 func TestWorkqueueMetrics(t *testing.T) {
 	wp := &WorkqueueProvider{
-		Adds:         newInt64("adds"),
-		Depth:        newInt64("depth"),
-		Latency:      newFloat64("latency"),
-		Retries:      newInt64("retries"),
-		WorkDuration: newFloat64("work_duration"),
+		Adds:                           newInt64("adds"),
+		Depth:                          newInt64("depth"),
+		Latency:                        newFloat64("latency"),
+		Retries:                        newInt64("retries"),
+		WorkDuration:                   newFloat64("work_duration"),
+		UnfinishedWorkSeconds:          newFloat64("unfinished_work_seconds"),
+		LongestRunningProcessorSeconds: newFloat64("longest_running_processor_seconds"),
 	}
 	workqueue.SetProvider(wp)
 
@@ -49,7 +51,7 @@ func TestWorkqueueMetrics(t *testing.T) {
 	setCurMetricsConfig(nil)
 
 	views := wp.DefaultViews()
-	if got, want := len(views), 5; got != want {
+	if got, want := len(views), 7; got != want {
 		t.Errorf("len(DefaultViews()) = %d, want %d", got, want)
 	}
 	if err := view.Register(views...); err != nil {
@@ -63,18 +65,21 @@ func TestWorkqueueMetrics(t *testing.T) {
 		queueName,
 	)
 
-	metricstest.CheckStatsNotReported(t, "adds", "depth", "latency", "retries", "work_duration")
+	metricstest.CheckStatsNotReported(t, "adds", "depth", "latency", "retries", "work_duration",
+		"unfinished_work_seconds", "longest_running_processor_seconds")
 
 	wq.Add("foo")
 
 	metricstest.CheckStatsReported(t, "adds", "depth")
-	metricstest.CheckStatsNotReported(t, "latency", "retries", "work_duration")
+	metricstest.CheckStatsNotReported(t, "latency", "retries", "work_duration",
+		"unfinished_work_seconds", "longest_running_processor_seconds")
 	metricstest.CheckCountData(t, "adds", map[string]string{"name": queueName}, 1)
 	metricstest.CheckLastValueData(t, "depth", map[string]string{"name": queueName}, 1)
 
 	wq.Add("bar")
 
-	metricstest.CheckStatsNotReported(t, "latency", "retries", "work_duration")
+	metricstest.CheckStatsNotReported(t, "latency", "retries", "work_duration",
+		"unfinished_work_seconds", "longest_running_processor_seconds")
 	metricstest.CheckCountData(t, "adds", map[string]string{"name": queueName}, 2)
 	metricstest.CheckLastValueData(t, "depth", map[string]string{"name": queueName}, 2)
 
@@ -88,7 +93,8 @@ func TestWorkqueueMetrics(t *testing.T) {
 	}
 
 	metricstest.CheckStatsReported(t, "latency", "work_duration")
-	metricstest.CheckStatsNotReported(t, "retries")
+	metricstest.CheckStatsNotReported(t, "retries",
+		"unfinished_work_seconds", "longest_running_processor_seconds")
 	metricstest.CheckCountData(t, "adds", map[string]string{"name": queueName}, 2)
 
 	if got, shutdown := wq.Get(); shutdown {
@@ -102,6 +108,7 @@ func TestWorkqueueMetrics(t *testing.T) {
 
 	// It should show up as a retry now.
 	metricstest.CheckStatsReported(t, "retries")
+	metricstest.CheckStatsNotReported(t, "unfinished_work_seconds", "longest_running_processor_seconds")
 	metricstest.CheckCountData(t, "retries", map[string]string{"name": queueName}, 1)
 	// It is not added right away.
 	metricstest.CheckCountData(t, "adds", map[string]string{"name": queueName}, 2)
