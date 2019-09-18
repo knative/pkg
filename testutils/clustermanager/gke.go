@@ -48,7 +48,7 @@ var (
 	// These are arbitrary numbers determined based on past experience
 	creationTimeout    = 20 * time.Minute
 	deletionTimeout    = 10 * time.Minute
-	autoscalingTimeout = time.Minute
+	autoscalingTimeout = 1 * time.Minute
 )
 
 // GKEClient implements Client

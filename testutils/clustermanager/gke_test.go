@@ -153,7 +153,6 @@ func (fgsc *FakeGKESDKClient) getOperation(project, location, opName string) (*c
 func (fgsc *FakeGKESDKClient) setAutoscaling(project, clusterName, location, nodepoolName string,
 	rb *container.SetNodePoolAutoscalingRequest) (*container.Operation, error) {
 
-	// parent := fmt.Sprintf("projects/%s/locations/%s/clusters/%s/nodePools/%s", project, location, clusterName, nodepoolName)
 	cluster, err := fgsc.get(project, location, clusterName)
 	if err != nil {
 		return nil, err
@@ -163,10 +162,6 @@ func (fgsc *FakeGKESDKClient) setAutoscaling(project, clusterName, location, nod
 			np.Autoscaling = rb.Autoscaling
 		}
 	}
-	// cluster.NodePools = append([]*container.NodePool{&container.NodePool{
-	// 	Autoscaling: rb.Autoscaling,
-	// 	Name:        nodepoolName,
-	// }}, cluster.NodePools...)
 	return fgsc.newOp(), nil
 }
 
