@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package test
+package imports
 
 import (
 	"fmt"
@@ -43,7 +43,10 @@ var bannedImports = []vbTuple{
 	},
 }
 
-// TestBannedImports run with `go test ./vendor/knative.dev/pkg/test/ -run TestBannedImports`
+// TestBannedImports run with:
+//   go test ./vendor/knative.dev/pkg/test/imports/ -run TestBannedImports
+// Or with test-infra:
+//   report_go_test ${REPO_ROOT_DIR}/vendor/knative.dev/pkg/test/imports/...
 func TestBannedImports(t *testing.T) {
 	_, filename, _, _ := runtime.Caller(0)
 	dir := filepath.Dir(filename)
