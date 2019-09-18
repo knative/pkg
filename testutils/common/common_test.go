@@ -26,20 +26,26 @@ func TestStandardExec(t *testing.T) {
 	datas := []struct {
 		cmd    string
 		args   []string
-		expOut string
+		expOut []byte
 		expErr error
 	}{
-		{"bash", []string{"-c", "echo foo"}, "foo\n", nil},
-		{"cmd_not_exist", []string{"-c", "echo"}, "", fmt.Errorf("exec: \"cmd_not_exist\": executable file not found in $PATH")},
+		{"bash", []string{"-c", "echo foo"}, []byte("foo\n"), nil},
+		{"cmd_not_exist", []string{"-c", "echo"}, []byte{}, fmt.Errorf("exec: \"cmd_not_exist\": executable file not found in $PATH")},
 	}
 
 	for _, data := range datas {
 		data := data
 		out, err := StandardExec(data.cmd, data.args...)
-		if !reflect.DeepEqual(string(out), data.expOut) || (err != nil && data.expErr != nil) || (err != nil && data.expErr == nil) ||
-			(err != nil && data.expErr != nil && err.Error() != data.expErr.Error()) {
-			t.Errorf("running cmd: '%v', args: '%v'\nwant: out - '%v', err - '%v'\n got: out - '%s', err - '%v'",
-				data.cmd, data.args, data.expOut, data.expErr, string(out), err)
+		if err != nil {
+			err = fmt.Errorf(err.Error())
+		}
+		errMsg := fmt.Sprintf("running cmd: '%v', args: '%v'", data.cmd, data.args)
+		if !reflect.DeepEqual(data.expErr, err) {
+			t.Errorf("%s\nerror want: '%v'\nerror got: '%v'", errMsg, err, data.expErr)
+		}
+
+		if !reflect.DeepEqual(string(out), string(data.expOut)) {
+			t.Errorf("%s\noutput want: '%v'\noutput got: '%v'", errMsg, string(data.expOut), string(out))
 		}
 	}
 }
