@@ -24,7 +24,8 @@ import "log"
 // cause `go test` execute this function. See here: https://blog.golang.org/examples
 func Example() {
 	var (
-		numNodes int64 = 2
+		minNodes int64 = 1
+		maxNodes int64 = 3
 		nodeType       = "n1-standard-8"
 		region         = "us-east1"
 		zone           = "a"
@@ -32,7 +33,7 @@ func Example() {
 		addons         = []string{"istio"}
 	)
 	gkeClient := GKEClient{}
-	clusterOps := gkeClient.Setup(&numNodes, &nodeType, &region, &zone, &project, addons)
+	clusterOps := gkeClient.Setup(&minNodes, &maxNodes, &nodeType, &region, &zone, &project, addons)
 	// Cast to GKEOperation
 	gkeOps := clusterOps.(*GKECluster)
 	if err := gkeOps.Initialize(); err != nil {
