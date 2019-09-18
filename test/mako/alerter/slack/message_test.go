@@ -31,12 +31,9 @@ func TestMain(m *testing.M) {
 	mh = MessageHandler{
 		readClient:  client,
 		writeClient: client,
-		config: repoConfig{
-			repo: "test_repo",
-			channels: []channel{
-				{name: "test_channel1", identity: "fsfdsf"},
-				{name: "test_channel2", identity: "fdsfhfdh"},
-			},
+		channels: []Channel{
+			{Name: "test_channel1", Identity: "fsfdsf"},
+			{Name: "test_channel2", Identity: "fdsfhfdh"},
 		},
 		dryrun: false,
 	}
@@ -48,8 +45,8 @@ func TestMessaging(t *testing.T) {
 	if err := mh.SendAlert(firstMsg); err != nil {
 		t.Fatalf("expected to send the message, but failed: %v", err)
 	}
-	for _, channel := range mh.config.channels {
-		history, err := mh.readClient.MessageHistory(channel.identity, time.Now().Add(-1*time.Hour))
+	for _, channel := range mh.channels {
+		history, err := mh.readClient.MessageHistory(channel.Identity, time.Now().Add(-1*time.Hour))
 		if err != nil {
 			t.Fatalf("expected to get the message history, but failed: %v", err)
 		}
@@ -62,8 +59,8 @@ func TestMessaging(t *testing.T) {
 	if err := mh.SendAlert(secondMsg); err != nil {
 		t.Fatalf("expected to send the message, but failed: %v", err)
 	}
-	for _, channel := range mh.config.channels {
-		history, err := mh.readClient.MessageHistory(channel.identity, time.Now().Add(-1*time.Hour))
+	for _, channel := range mh.channels {
+		history, err := mh.readClient.MessageHistory(channel.Identity, time.Now().Add(-1*time.Hour))
 		if err != nil {
 			t.Fatalf("expected to get the message history, but failed: %v", err)
 		}
