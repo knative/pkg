@@ -108,6 +108,11 @@ func (fgsc *FakeGKESDKClient) create(project, location string, rb *container.Cre
 			},
 		},
 	}
+	if rb.Cluster.MasterAuth != nil {
+		cluster.MasterAuth = &container.MasterAuth{
+			Username: rb.Cluster.MasterAuth.Username,
+		}
+	}
 
 	fgsc.clusters[parent] = append(fgsc.clusters[parent], cluster)
 	return fgsc.newOp(), nil
@@ -614,6 +619,9 @@ func TestAcquire(t *testing.T) {
 						Autoscaling: &container.NodePoolAutoscaling{Enabled: true, MaxNodeCount: 3, MinNodeCount: 1},
 					},
 				},
+				MasterAuth: &container.MasterAuth{
+					Username: "admin",
+				},
 			}, nil, false,
 		}, {
 			// cluster exists but not set in kubeconfig, cluster deletion
@@ -632,6 +640,9 @@ func TestAcquire(t *testing.T) {
 						Autoscaling: &container.NodePoolAutoscaling{Enabled: true, MaxNodeCount: 3, MinNodeCount: 1},
 					},
 				},
+				MasterAuth: &container.MasterAuth{
+					Username: "admin",
+				},
 			}, nil, false,
 		}, {
 			// cluster creation succeeded
@@ -645,6 +656,9 @@ func TestAcquire(t *testing.T) {
 						Name:        "default-pool",
 						Autoscaling: &container.NodePoolAutoscaling{Enabled: true, MaxNodeCount: 3, MinNodeCount: 1},
 					},
+				},
+				MasterAuth: &container.MasterAuth{
+					Username: "admin",
 				},
 			}, nil, false,
 		}, {
@@ -662,6 +676,9 @@ func TestAcquire(t *testing.T) {
 						Autoscaling: &container.NodePoolAutoscaling{Enabled: true, MaxNodeCount: 3, MinNodeCount: 1},
 					},
 				},
+				MasterAuth: &container.MasterAuth{
+					Username: "admin",
+				},
 			}, nil, false,
 		}, {
 			// cluster creation succeeded retry
@@ -676,6 +693,9 @@ func TestAcquire(t *testing.T) {
 						Autoscaling: &container.NodePoolAutoscaling{Enabled: true, MaxNodeCount: 3, MinNodeCount: 1},
 					},
 				},
+				MasterAuth: &container.MasterAuth{
+					Username: "admin",
+				},
 			}, nil, false,
 		}, {
 			// cluster creation failed set addon, but succeeded retry
@@ -689,6 +709,9 @@ func TestAcquire(t *testing.T) {
 						Name:        "default-pool",
 						Autoscaling: &container.NodePoolAutoscaling{Enabled: true, MaxNodeCount: 3, MinNodeCount: 1},
 					},
+				},
+				MasterAuth: &container.MasterAuth{
+					Username: "admin",
 				},
 			}, nil, false,
 		}, {
