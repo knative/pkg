@@ -103,7 +103,7 @@ func (fgsc *FakeGKESDKClient) create(project, location string, rb *container.Cre
 		Status:       "RUNNING",
 		AddonsConfig: rb.Cluster.AddonsConfig,
 		NodePools: []*container.NodePool{
-			&container.NodePool{
+			{
 				Name: "default-pool",
 			},
 		},
@@ -365,7 +365,7 @@ func TestInitialize(t *testing.T) {
 				Location: "c",
 				Status:   "RUNNING",
 				NodePools: []*container.NodePool{
-					&container.NodePool{
+					{
 						Name: "default-pool",
 					},
 				},
@@ -592,7 +592,7 @@ func TestAcquire(t *testing.T) {
 				Status:       "RUNNING",
 				AddonsConfig: &container.AddonsConfig{},
 				NodePools: []*container.NodePool{
-					&container.NodePool{
+					{
 						Name: "default-pool",
 					},
 				},
@@ -609,7 +609,7 @@ func TestAcquire(t *testing.T) {
 				Status:       "RUNNING",
 				AddonsConfig: &container.AddonsConfig{},
 				NodePools: []*container.NodePool{
-					&container.NodePool{
+					{
 						Name:        "default-pool",
 						Autoscaling: &container.NodePoolAutoscaling{Enabled: true, MaxNodeCount: 3, MinNodeCount: 1},
 					},
@@ -627,7 +627,7 @@ func TestAcquire(t *testing.T) {
 				Status:       "RUNNING",
 				AddonsConfig: &container.AddonsConfig{},
 				NodePools: []*container.NodePool{
-					&container.NodePool{
+					{
 						Name:        "default-pool",
 						Autoscaling: &container.NodePoolAutoscaling{Enabled: true, MaxNodeCount: 3, MinNodeCount: 1},
 					},
@@ -641,7 +641,7 @@ func TestAcquire(t *testing.T) {
 				Status:       "RUNNING",
 				AddonsConfig: &container.AddonsConfig{},
 				NodePools: []*container.NodePool{
-					&container.NodePool{
+					{
 						Name:        "default-pool",
 						Autoscaling: &container.NodePoolAutoscaling{Enabled: true, MaxNodeCount: 3, MinNodeCount: 1},
 					},
@@ -657,7 +657,7 @@ func TestAcquire(t *testing.T) {
 					IstioConfig: &container.IstioConfig{Disabled: false},
 				},
 				NodePools: []*container.NodePool{
-					&container.NodePool{
+					{
 						Name:        "default-pool",
 						Autoscaling: &container.NodePoolAutoscaling{Enabled: true, MaxNodeCount: 3, MinNodeCount: 1},
 					},
@@ -671,7 +671,7 @@ func TestAcquire(t *testing.T) {
 				Status:       "RUNNING",
 				AddonsConfig: &container.AddonsConfig{},
 				NodePools: []*container.NodePool{
-					&container.NodePool{
+					{
 						Name:        "default-pool",
 						Autoscaling: &container.NodePoolAutoscaling{Enabled: true, MaxNodeCount: 3, MinNodeCount: 1},
 					},
@@ -685,7 +685,7 @@ func TestAcquire(t *testing.T) {
 				Status:       "RUNNING",
 				AddonsConfig: &container.AddonsConfig{},
 				NodePools: []*container.NodePool{
-					&container.NodePool{
+					{
 						Name:        "default-pool",
 						Autoscaling: &container.NodePoolAutoscaling{Enabled: true, MaxNodeCount: 3, MinNodeCount: 1},
 					},
@@ -808,7 +808,7 @@ func TestDelete(t *testing.T) {
 				Location: "us-central1",
 				Status:   "RUNNING",
 				NodePools: []*container.NodePool{
-					&container.NodePool{
+					{
 						Name: "default-pool",
 					},
 				},
@@ -856,7 +856,7 @@ func TestDelete(t *testing.T) {
 				Location: "us-central1",
 				Status:   "RUNNING",
 				NodePools: []*container.NodePool{
-					&container.NodePool{
+					{
 						Name: "default-pool",
 					},
 				},
