@@ -482,6 +482,7 @@ func TestEnqueues(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
+			defer ClearAll()
 			impl := NewImplWithStats(&NopReconciler{}, TestLogger(t), "Testing", &FakeStatsReporter{})
 			test.work(impl)
 
@@ -498,6 +499,7 @@ func TestEnqueues(t *testing.T) {
 }
 
 func TestEnqeueAfter(t *testing.T) {
+	defer ClearAll()
 	impl := NewImplWithStats(&NopReconciler{}, TestLogger(t), "Testing", &FakeStatsReporter{})
 	impl.EnqueueAfter(&Resource{
 		ObjectMeta: metav1.ObjectMeta{
@@ -533,6 +535,7 @@ func TestEnqeueAfter(t *testing.T) {
 }
 
 func TestEnqeueKeyAfter(t *testing.T) {
+	defer ClearAll()
 	impl := NewImplWithStats(&NopReconciler{}, TestLogger(t), "Testing", &FakeStatsReporter{})
 	impl.EnqueueKeyAfter("waiting/for", 5*time.Second)
 	impl.EnqueueKeyAfter("the/waterfall", 500*time.Millisecond)
@@ -565,6 +568,7 @@ func (cr *CountingReconciler) Reconcile(context.Context, string) error {
 }
 
 func TestStartAndShutdown(t *testing.T) {
+	defer ClearAll()
 	r := &CountingReconciler{}
 	impl := NewImplWithStats(r, TestLogger(t), "Testing", &FakeStatsReporter{})
 
@@ -597,6 +601,7 @@ func TestStartAndShutdown(t *testing.T) {
 }
 
 func TestStartAndShutdownWithWork(t *testing.T) {
+	defer ClearAll()
 	r := &CountingReconciler{}
 	reporter := &FakeStatsReporter{}
 	impl := NewImplWithStats(r, TestLogger(t), "Testing", reporter)
@@ -643,6 +648,7 @@ func (er *ErrorReconciler) Reconcile(context.Context, string) error {
 }
 
 func TestStartAndShutdownWithErroringWork(t *testing.T) {
+	defer ClearAll()
 	r := &ErrorReconciler{}
 	reporter := &FakeStatsReporter{}
 	impl := NewImplWithStats(r, TestLogger(t), "Testing", reporter)
@@ -697,6 +703,7 @@ func (er *PermanentErrorReconciler) Reconcile(context.Context, string) error {
 }
 
 func TestStartAndShutdownWithPermanentErroringWork(t *testing.T) {
+	defer ClearAll()
 	r := &PermanentErrorReconciler{}
 	reporter := &FakeStatsReporter{}
 	impl := NewImplWithStats(r, TestLogger(t), "Testing", reporter)
@@ -788,6 +795,7 @@ func (*dummyStore) List() []interface{} {
 }
 
 func TestImplGlobalResync(t *testing.T) {
+	defer ClearAll()
 	r := &CountingReconciler{}
 	impl := NewImplWithStats(r, TestLogger(t), "Testing", &FakeStatsReporter{})
 
