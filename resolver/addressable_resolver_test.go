@@ -25,6 +25,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes/scheme"
 	"knative.dev/pkg/apis"
 	duckv1alpha1 "knative.dev/pkg/apis/duck/v1alpha1"
@@ -160,7 +161,7 @@ func TestGetURI_ObjectReference(t *testing.T) {
 	for n, tc := range tests {
 		t.Run(n, func(t *testing.T) {
 			ctx, _ := fakedynamicclient.With(context.Background(), scheme.Scheme, tc.objects...)
-			r := resolver.NewURIResolver(ctx, func(string) {})
+			r := resolver.NewURIResolver(ctx, func(types.NamespacedName) {})
 
 			// Run it twice since this should be idempotent. URI Resolver should
 			// not modify the cache's copy.
