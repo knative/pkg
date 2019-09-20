@@ -314,7 +314,7 @@ func (c *Impl) processNextWorkItem() bool {
 		return false
 	}
 	key := obj.(types.NamespacedName)
-	fqdn := key.String()
+	keyStr := key.String()
 
 	c.logger.Debugf("Processing from queue %s (depth: %d)", key, c.WorkQueue.Len())
 
@@ -335,17 +335,17 @@ func (c *Impl) processNextWorkItem() bool {
 		if err != nil {
 			status = falseString
 		}
-		c.statsReporter.ReportReconcile(time.Since(startTime), fqdn, status)
+		c.statsReporter.ReportReconcile(time.Since(startTime), keyStr, status)
 	}()
 
 	// Embed the key into the logger and attach that to the context we pass
 	// to the Reconciler.
-	logger := c.logger.With(zap.String(logkey.TraceId, uuid.New().String()), zap.String(logkey.Key, fqdn))
+	logger := c.logger.With(zap.String(logkey.TraceId, uuid.New().String()), zap.String(logkey.Key, keyStr))
 	ctx := logging.WithLogger(context.TODO(), logger)
 
 	// Run Reconcile, passing it the namespace/name string of the
 	// resource to be synced.
-	if err = c.Reconciler.Reconcile(ctx, fqdn); err != nil {
+	if err = c.Reconciler.Reconcile(ctx, keyStr); err != nil {
 		c.handleErr(err, key)
 		logger.Infof("Reconcile failed. Time taken: %v.", time.Since(startTime))
 		return true
