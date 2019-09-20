@@ -23,6 +23,7 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/cache"
 
 	. "knative.dev/pkg/testing"
@@ -30,7 +31,7 @@ import (
 
 func TestHappyPaths(t *testing.T) {
 	calls := 0
-	f := func(key string) {
+	f := func(key types.NamespacedName) {
 		calls = calls + 1
 	}
 
@@ -165,7 +166,7 @@ func TestHappyPaths(t *testing.T) {
 }
 
 func TestAllowedObjectReferences(t *testing.T) {
-	trk := New(func(key string) {}, 10*time.Millisecond)
+	trk := New(func(key types.NamespacedName) {}, 10*time.Millisecond)
 	thing1 := &Resource{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: "ref.knative.dev/v1alpha1",
@@ -231,7 +232,7 @@ func TestAllowedObjectReferences(t *testing.T) {
 }
 
 func TestBadObjectReferences(t *testing.T) {
-	trk := New(func(key string) {}, 10*time.Millisecond)
+	trk := New(func(key types.NamespacedName) {}, 10*time.Millisecond)
 	thing1 := &Resource{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: "ref.knative.dev/v1alpha1",
