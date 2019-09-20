@@ -657,7 +657,7 @@ func TestStartAndShutdownWithErroringWork(t *testing.T) {
 	stopCh := make(chan struct{})
 	doneCh := make(chan struct{})
 
-	impl.EnqueueKey(types.NamespacedName{Namespace: "foo", Name: "bar"})
+	impl.EnqueueKey(types.NamespacedName{Namespace: "", Name: "bar"})
 
 	go func() {
 		defer close(doneCh)
@@ -691,7 +691,7 @@ func TestStartAndShutdownWithErroringWork(t *testing.T) {
 	// As NumRequeues can't fully reflect the real state of queue length.
 	// Here we need to wait for NumRequeues to be more than 1, to ensure
 	// the key get re-queued and reprocessed as expect.
-	if got, wantAtLeast := impl.WorkQueue.NumRequeues(types.NamespacedName{Namespace: "foo", Name: "bar"}), 2; got < wantAtLeast {
+	if got, wantAtLeast := impl.WorkQueue.NumRequeues(types.NamespacedName{Namespace: "", Name: "bar"}), 2; got < wantAtLeast {
 		t.Errorf("Requeue count = %v, wanted at least %v", got, wantAtLeast)
 	}
 }
