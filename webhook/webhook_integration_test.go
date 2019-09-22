@@ -24,6 +24,8 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"net/url"
+	"path"
 	"strings"
 	"testing"
 	"time"
@@ -455,30 +457,178 @@ func TestWebhookClientAuth(t *testing.T) {
 	}
 }
 
-func testSetup(t *testing.T) (*Webhook, string, error) {
-	t.Helper()
-	port, err := newTestPort()
+func TestValidResponseForConfigMap(t *testing.T) {
+	ac, serverURL, err := testSetup(t)
 	if err != nil {
-		return nil, "", err
+		t.Fatalf("testSetup() = %v", err)
 	}
 
-	defaultOpts := newDefaultOptions()
-	defaultOpts.Port = port
-	kubeClient, ac := newNonRunningTestWebhook(t, defaultOpts)
+	stopCh := make(chan struct{})
+	defer close(stopCh)
 
-	nsErr := createNamespace(t, kubeClient, metav1.NamespaceSystem)
-	if nsErr != nil {
-		return nil, "", nsErr
+	go func() {
+		err := ac.Run(stopCh)
+		if err != nil {
+			t.Errorf("Unable to run controller: %s", err)
+		}
+	}()
+
+	pollErr := waitForServerAvailable(t, serverURL, testTimeout)
+	if pollErr != nil {
+		t.Fatalf("waitForServerAvailable() = %v", err)
+	}
+	tlsClient, err := createSecureTLSClient(t, ac.Client, &ac.Options)
+	if err != nil {
+		t.Fatalf("createSecureTLSClient() = %v", err)
 	}
 
-	cMapsErr := createTestConfigMap(t, kubeClient)
-	if cMapsErr != nil {
-		return nil, "", cMapsErr
+	admissionreq := configMapRequest(
+		createValidConfigMap(),
+		admissionv1beta1.Create,
+		authenticationv1.UserInfo{},
+	)
+	rev := &admissionv1beta1.AdmissionReview{
+		Request: admissionreq,
 	}
 
-	createDeployment(kubeClient)
-	resetMetrics()
-	return ac, fmt.Sprintf("0.0.0.0:%d", port), nil
+	reqBuf := new(bytes.Buffer)
+	err = json.NewEncoder(reqBuf).Encode(&rev)
+	if err != nil {
+		t.Fatalf("Failed to marshal admission review: %v", err)
+	}
+
+	u, err := url.Parse(fmt.Sprintf("https://%s", serverURL))
+	if err != nil {
+		t.Fatalf("bad url %v", err)
+	}
+
+	u.Path = path.Join(u.Path, ac.Options.ConfigValidationControllerPath)
+	req, err := http.NewRequest("GET", u.String(), reqBuf)
+	if err != nil {
+		t.Fatalf("http.NewRequest() = %v", err)
+	}
+	req.Header.Add("Content-Type", "application/json")
+
+	response, err := tlsClient.Do(req)
+	if err != nil {
+		t.Fatalf("Failed to get response %v", err)
+	}
+
+	if got, want := response.StatusCode, http.StatusOK; got != want {
+		t.Errorf("Response status code = %v, wanted %v", got, want)
+	}
+
+	defer response.Body.Close()
+	responseBody, err := ioutil.ReadAll(response.Body)
+	if err != nil {
+		t.Fatalf("Failed to read response body %v", err)
+	}
+
+	reviewResponse := admissionv1beta1.AdmissionReview{}
+
+	err = json.NewDecoder(bytes.NewReader(responseBody)).Decode(&reviewResponse)
+	if err != nil {
+		t.Fatalf("Failed to decode response: %v", err)
+	}
+
+	expectAllowed(t, reviewResponse.Response)
+
+	metricstest.CheckStatsReported(t, requestCountName, requestLatenciesName)
+}
+
+func TestInvalidResponseForConfigMap(t *testing.T) {
+	ac, serverURL, err := testSetup(t)
+	if err != nil {
+		t.Fatalf("testSetup() = %v", err)
+	}
+
+	stopCh := make(chan struct{})
+	defer close(stopCh)
+
+	go func() {
+		err := ac.Run(stopCh)
+		if err != nil {
+			t.Errorf("Unable to run controller: %s", err)
+		}
+	}()
+
+	pollErr := waitForServerAvailable(t, serverURL, testTimeout)
+	if pollErr != nil {
+		t.Fatalf("waitForServerAvailable() = %v", err)
+	}
+	tlsClient, err := createSecureTLSClient(t, ac.Client, &ac.Options)
+	if err != nil {
+		t.Fatalf("createSecureTLSClient() = %v", err)
+	}
+
+	admissionreq := configMapRequest(
+		createWrongTypeConfigMap(),
+		admissionv1beta1.Create,
+		authenticationv1.UserInfo{},
+	)
+	rev := &admissionv1beta1.AdmissionReview{
+		Request: admissionreq,
+	}
+
+	reqBuf := new(bytes.Buffer)
+	err = json.NewEncoder(reqBuf).Encode(&rev)
+	if err != nil {
+		t.Fatalf("Failed to marshal admission review: %v", err)
+	}
+
+	u, err := url.Parse(fmt.Sprintf("https://%s", serverURL))
+	if err != nil {
+		t.Fatalf("bad url %v", err)
+	}
+
+	u.Path = path.Join(u.Path, ac.Options.ConfigValidationControllerPath)
+	req, err := http.NewRequest("GET", u.String(), reqBuf)
+	if err != nil {
+		t.Fatalf("http.NewRequest() = %v", err)
+	}
+	req.Header.Add("Content-Type", "application/json")
+
+	response, err := tlsClient.Do(req)
+	if err != nil {
+		t.Fatalf("Failed to receive response %v", err)
+	}
+
+	if got, want := response.StatusCode, http.StatusOK; got != want {
+		t.Errorf("Response status code = %v, wanted %v", got, want)
+	}
+
+	defer response.Body.Close()
+	respBody, err := ioutil.ReadAll(response.Body)
+	if err != nil {
+		t.Fatalf("Failed to read response body %v", err)
+	}
+
+	reviewResponse := admissionv1beta1.AdmissionReview{}
+
+	err = json.NewDecoder(bytes.NewReader(respBody)).Decode(&reviewResponse)
+	if err != nil {
+		t.Fatalf("Failed to decode response: %v", err)
+	}
+
+	var respPatch []jsonpatch.JsonPatchOperation
+	err = json.Unmarshal(reviewResponse.Response.Patch, &respPatch)
+	if err == nil {
+		t.Fatalf("Expected to fail JSON unmarshal of resposnse")
+	}
+
+	if got, want := reviewResponse.Response.Result.Status, "Failure"; got != want {
+		t.Errorf("Response status = %v, wanted %v", got, want)
+	}
+
+	if !strings.Contains(reviewResponse.Response.Result.Message, "invalid syntax") {
+		t.Errorf("Received unexpected response status message %s", reviewResponse.Response.Result.Message)
+	}
+	if !strings.Contains(reviewResponse.Response.Result.Message, "strconv.ParseFloat") {
+		t.Errorf("Received unexpected response status message %s", reviewResponse.Response.Result.Message)
+	}
+
+	// Stats should be reported for requests that have admission disallowed
+	metricstest.CheckStatsReported(t, requestCountName, requestLatenciesName)
 }
 
 func TestSetupWebhookHTTPServerError(t *testing.T) {
@@ -512,4 +662,30 @@ func TestSetupWebhookHTTPServerError(t *testing.T) {
 			t.Error("Expected bootstrap webhook http server failed")
 		}
 	}
+}
+
+func testSetup(t *testing.T) (*Webhook, string, error) {
+	t.Helper()
+	port, err := newTestPort()
+	if err != nil {
+		return nil, "", err
+	}
+
+	defaultOpts := newDefaultOptions()
+	defaultOpts.Port = port
+	kubeClient, ac := newNonRunningTestWebhook(t, defaultOpts)
+
+	nsErr := createNamespace(t, kubeClient, metav1.NamespaceSystem)
+	if nsErr != nil {
+		return nil, "", nsErr
+	}
+
+	cMapsErr := createTestConfigMap(t, kubeClient)
+	if cMapsErr != nil {
+		return nil, "", cMapsErr
+	}
+
+	createDeployment(kubeClient)
+	resetMetrics()
+	return ac, fmt.Sprintf("0.0.0.0:%d", port), nil
 }

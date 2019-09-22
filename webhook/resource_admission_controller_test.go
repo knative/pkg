@@ -522,7 +522,7 @@ func createInnerDefaultResourceWithSpecAndStatus(t *testing.T, spec *InnerDefaul
 	return b
 }
 
-func TestValidWebhook(t *testing.T) {
+func TestValidResourceController(t *testing.T) {
 	kubeClient, ac := newNonRunningTestResourceAdmissionController(t, newDefaultOptions())
 	createDeployment(kubeClient)
 	err := ac.Register(TestContextWithLogger(t), kubeClient, []byte{})
@@ -531,7 +531,7 @@ func TestValidWebhook(t *testing.T) {
 	}
 }
 
-func TestUpdatingWebhook(t *testing.T) {
+func TestUpdatingResourceController(t *testing.T) {
 	kubeClient, c := newNonRunningTestResourceAdmissionController(t, newDefaultOptions())
 
 	ac := c.(*ResourceAdmissionController)
