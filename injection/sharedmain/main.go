@@ -34,8 +34,10 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 
 	"go.uber.org/zap"
+	v1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	kubeclient "knative.dev/pkg/client/injection/kube/client"
+	"knative.dev/pkg/tracing/config"
 	"knative.dev/pkg/configmap"
 	"knative.dev/pkg/controller"
 	"knative.dev/pkg/injection"
@@ -150,12 +152,36 @@ func MainWithConfig(ctx context.Context, component string, cfg *rest.Config, cto
 	profilingHandler := profiling.NewHandler(logger, false)
 
 	// Watch the logging config map and dynamically update logging levels.
-	cmw.Watch(logging.ConfigMapName(), logging.UpdateLevelFromConfigMap(logger, atomicLevel, component))
+	if _, err = kubeclient.Get(ctx).CoreV1().ConfigMaps(system.Namespace()).Get(logging.ConfigMapName(), metav1.GetOptions{}); err != nil {
+		cmw.Watch(logging.ConfigMapName(), logging.UpdateLevelFromConfigMap(logger, atomicLevel, component))
+	} else {
+		configStore := configmap.NewDefaultUntypedStore(
+			component,
+			logger,
+			[]configmap.DefaultConstructor{
+				{
+					Default:     enableZeroSamplingCM(cmw.Namespace, logging.ConfigMapName()),
+					Constructor: config.NewTracingConfigFromConfigMap,
+				},
+			})
+		configStore.WatchConfigs(cmw)
+	}
 
 	// Watch the observability config map
-	cmw.Watch(metrics.ConfigMapName(),
-		metrics.UpdateExporterFromConfigMap(component, logger),
-		profilingHandler.UpdateFromConfigMap)
+	if _, err = kubeclient.Get(ctx).CoreV1().ConfigMaps(system.Namespace()).Get(metrics.ConfigMapName(), metav1.GetOptions{}); err != nil {
+		cmw.Watch(logging.ConfigMapName(), logging.UpdateLevelFromConfigMap(logger, atomicLevel, component))
+	} else {
+		configStore := configmap.NewDefaultUntypedStore(
+			component,
+			logger,
+			[]configmap.DefaultConstructor{
+				{
+					Default:     enableZeroSamplingCM(cmw.Namespace, metrics.ConfigMapName()),
+					Constructor: config.NewTracingConfigFromConfigMap,
+				},
+			})
+		configStore.WatchConfigs(cmw)
+	}
 
 	if err := cmw.Start(ctx.Done()); err != nil {
 		logger.Fatalw("failed to start configuration manager", zap.Error(err))
@@ -190,4 +216,19 @@ func MainWithConfig(ctx context.Context, component string, cfg *rest.Config, cto
 func flush(logger *zap.SugaredLogger) {
 	logger.Sync()
 	metrics.FlushExporter()
+}
+
+func enableZeroSamplingCM(ns string, name string) v1.ConfigMap {
+	return v1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      name,
+			Namespace: ns,
+		},
+		Data: map[string]string{
+			"enable":          "True",
+			"debug":           "False",
+			"sample-rate":     "0",
+			"zipkin-endpoint": "http://zipkin.istio-system.svc.cluster.local:9411/api/v2/spans",
+		},
+	}
 }
