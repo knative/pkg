@@ -22,6 +22,7 @@ import (
 	"context"
 
 	externalversions "k8s.io/apiextensions-apiserver/pkg/client/informers/externalversions"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	client "knative.dev/pkg/client/injection/apiextensions/client"
 	controller "knative.dev/pkg/controller"
 	injection "knative.dev/pkg/injection"
@@ -34,12 +35,35 @@ func init() {
 
 // Key is used as the key for associating information with a context.Context.
 type Key struct{}
+type ListOptionsKey struct{}
+
+func HasListOptionsScope(ctx context.Context) bool {
+	untyped := ctx.Value(ListOptionsKey{})
+	if untyped == nil {
+		logging.FromContext(ctx).Infof(
+			"No define of %T from context.", ListOptionsKey(struct{}{}))
+		return false
+	}
+	return true
+}
+
+func GetListOptionsScope(ctx context.Context) func(*v1.ListOptions) {
+	untyped := ctx.Value(ListOptionsKey{})
+	if untyped == nil {
+		logging.FromContext(ctx).Fatalf(
+			"No define of %T from context.", ListOptionsKey(struct{}{}))
+	}
+	return untyped.(func(*v1.ListOptions))
+}
 
 func withInformerFactory(ctx context.Context) context.Context {
 	c := client.Get(ctx)
 	opts := make([]externalversions.SharedInformerOption, 0, 1)
 	if injection.HasNamespaceScope(ctx) {
 		opts = append(opts, externalversions.WithNamespace(injection.GetNamespaceScope(ctx)))
+	}
+	if HasListOptionsScope(ctx) {
+		opts = append(opts, externalversions.WithTweakListOptions(GetListOptionsScope(ctx)))
 	}
 	return context.WithValue(ctx, Key{},
 		externalversions.NewSharedInformerFactoryWithOptions(c, controller.GetResyncPeriod(ctx), opts...))

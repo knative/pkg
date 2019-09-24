@@ -68,10 +68,13 @@ func (g *fakeFactoryGenerator) GenerateType(c *generator.Context, t *types.Type,
 	m := map[string]interface{}{
 		"factoryKey": c.Universe.Type(types.Name{Package: g.factoryInjectionPkg, Name: "Key"}),
 		"factoryGet": c.Universe.Function(types.Name{Package: g.factoryInjectionPkg, Name: "Get"}),
+		"factoryHasListOptionsScope":c.Universe.Type(types.Name{Package: g.factoryInjectionPkg, Name: "HasListOptionsScope"}),
+		"factoryGetListOptionsScope":c.Universe.Type(types.Name{Package: g.factoryInjectionPkg, Name: "GetListOptionsScope"}),
 		"clientGet":  c.Universe.Function(types.Name{Package: g.fakeClientInjectionPkg, Name: "Get"}),
 		"informersNewSharedInformerFactoryWithOptions": c.Universe.Function(types.Name{Package: g.sharedInformerFactoryPackage, Name: "NewSharedInformerFactoryWithOptions"}),
 		"informersSharedInformerOption":                c.Universe.Function(types.Name{Package: g.sharedInformerFactoryPackage, Name: "SharedInformerOption"}),
 		"informersWithNamespace":                       c.Universe.Function(types.Name{Package: g.sharedInformerFactoryPackage, Name: "WithNamespace"}),
+		"informersWithListOptions":                       c.Universe.Function(types.Name{Package: g.sharedInformerFactoryPackage, Name: "WithTweakListOptions"}),
 		"injectionRegisterInformerFactory": c.Universe.Function(types.Name{
 			Package: "knative.dev/pkg/injection",
 			Name:    "Fake.RegisterInformerFactory",
@@ -98,6 +101,9 @@ func withInformerFactory(ctx context.Context) context.Context {
 	opts := make([]{{.informersSharedInformerOption|raw}}, 0, 1)
 	if {{.injectionHasNamespace|raw}}(ctx) {
 		opts = append(opts, {{.informersWithNamespace|raw}}({{.injectionGetNamespace|raw}}(ctx)))
+	}
+	if {{.factoryHasListOptionsScope|raw}}(ctx) {
+		opts = append(opts, {{.informersWithListOptions|raw}}({{.factoryGetListOptionsScope|raw}}(ctx)))
 	}
 	return context.WithValue(ctx, {{.factoryKey|raw}}{},
 		{{.informersNewSharedInformerFactoryWithOptions|raw}}(c, {{.controllerGetResyncPeriod|raw}}(ctx), opts...))
