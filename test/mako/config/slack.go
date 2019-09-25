@@ -52,6 +52,5 @@ func getSlackChannels(configStr, benchmarkName string) []Channel {
 		return channels
 	}
 
-	// return the defaultChannel if there is no config for the given benchmark
 	return []Channel{defaultChannel}
 }
