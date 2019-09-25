@@ -75,7 +75,7 @@ func EscapeTag(tag string) string {
 // It will add a few common tags and allow each benchmark to add custm tags as well.
 // It returns the mako client handle to store metrics, a method to close the connection
 // to mako server once done and error in case of failures.
-func Setup(ctx context.Context, benchmarkName string, extraTags ...string) (*Client, error) {
+func Setup(ctx context.Context, extraTags ...string) (*Client, error) {
 	tags := append(config.MustGetTags(), extraTags...)
 	// Get the commit of the benchmarks
 	commitID, err := changeset.Get()
@@ -125,9 +125,10 @@ func Setup(ctx context.Context, benchmarkName string, extraTags ...string) (*Cli
 		tags = append(tags, "instanceType="+EscapeTag(parts[3]))
 	}
 
+	benchmarkKey, benchmarkName := config.MustGetBenchmark()
 	// Create a new Quickstore that connects to the microservice
 	qs, qclose, err := quickstore.NewAtAddress(ctx, &qpb.QuickstoreInput{
-		BenchmarkKey: config.MustGetBenchmark(),
+		BenchmarkKey: benchmarkKey,
 		Tags: append(tags,
 			"commit="+commitID,
 			"kubernetes="+EscapeTag(version.String()),
@@ -149,7 +150,7 @@ func Setup(ctx context.Context, benchmarkName string, extraTags ...string) (*Cli
 		slackUserName,
 		tokenPath("slack-read-token"),
 		tokenPath("slack-write-token"),
-		config.GetSlackChannels(benchmarkName),
+		config.GetSlackChannels(*benchmarkName),
 	)
 
 	client := &Client{
@@ -157,7 +158,7 @@ func Setup(ctx context.Context, benchmarkName string, extraTags ...string) (*Cli
 		Context:       ctx,
 		ShutDownFunc:  qclose,
 		alerter:       alerter,
-		benchmarkName: benchmarkName,
+		benchmarkName: *benchmarkName,
 	}
 
 	return client, nil
