@@ -21,6 +21,7 @@ import (
 	"testing"
 	"time"
 
+	"knative.dev/pkg/test/mako/config"
 	"knative.dev/pkg/test/slackutil/fakeslackutil"
 )
 
@@ -31,7 +32,7 @@ func TestMain(m *testing.M) {
 	mh = MessageHandler{
 		readClient:  client,
 		writeClient: client,
-		channels: []Channel{
+		channels: []config.Channel{
 			{Name: "test_channel1", Identity: "fsfdsf"},
 			{Name: "test_channel2", Identity: "fdsfhfdh"},
 		},
