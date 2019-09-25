@@ -28,6 +28,9 @@ func MustGetRepository() string {
 	if err != nil {
 		log.Fatalf("unable to load config from the configmap: %v", err)
 	}
+	if cfg.Repository == "" {
+		log.Fatal("unable to get repository from the configmap")
+	}
 	return cfg.Repository
 }
 

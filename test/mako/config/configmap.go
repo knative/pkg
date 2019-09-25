@@ -17,7 +17,6 @@ limitations under the License.
 package config
 
 import (
-	"errors"
 	"path/filepath"
 	"strings"
 
@@ -56,8 +55,6 @@ func NewConfigFromMap(data map[string]string) (*Config, error) {
 
 	if raw, ok := data["repository"]; ok {
 		lc.Repository = raw
-	} else {
-		return lc, errors.New("repository must be set")
 	}
 	if raw, ok := data["environment"]; ok {
 		lc.Environment = raw

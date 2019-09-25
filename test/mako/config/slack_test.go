@@ -18,7 +18,7 @@ package config
 
 import "testing"
 
-func TestNonDefaultConfig(t *testing.T) {
+func TestNonDefaultSlackChannelsConfig(t *testing.T) {
 	configStr := `
 benchmarkChannels:
   benchmark1:
@@ -49,7 +49,7 @@ benchmarkChannels:
 	}
 }
 
-func TestDefaultConfig(t *testing.T) {
+func TestDefaultSlackChannelsConfig(t *testing.T) {
 	configStr := `
 benchmarkChannels:
   benchmark1:
@@ -59,6 +59,17 @@ benchmarkChannels:
     identity: identity12`
 
 	channels := getSlackChannels(configStr, "non-existing-benchmark-name")
+	if len(channels) != 1 {
+		t.Fatalf("expected to get one default channel but actual is %q", len(channels))
+	}
+	if channels[0].Name != defaultChannel.Name || channels[0].Identity != defaultChannel.Identity {
+		t.Fatalf("expected to get the default channel but actual is %q", channels[0])
+	}
+}
+
+func TestEmptySlackChannelsConfig(t *testing.T) {
+	configStr := ""
+	channels := getSlackChannels(configStr, "channel-name")
 	if len(channels) != 1 {
 		t.Fatalf("expected to get one default channel but actual is %q", len(channels))
 	}
