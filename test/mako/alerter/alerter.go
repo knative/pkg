@@ -54,7 +54,7 @@ func (alerter *Alerter) SetupSlack(userName, readTokenPath, writeTokenPath strin
 func (alerter *Alerter) HandleBenchmarkResult(testName string, output qpb.QuickstoreOutput, err error) error {
 	if err != nil {
 		if output.GetStatus() == qpb.QuickstoreOutput_ANALYSIS_FAIL {
-			errs := make([]error, 0)
+			var errs []error
 			summary := output.GetSummaryOutput()
 			if alerter.githubIssueHandler != nil {
 				if err := alerter.githubIssueHandler.CreateIssueForTest(testName, summary); err != nil {
