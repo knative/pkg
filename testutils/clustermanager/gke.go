@@ -68,7 +68,7 @@ type GKERequest struct {
 	// MinNodes: default to 1 if not provided
 	MinNodes uint64
 
-	// MaxNodes: default to 3 if not provided
+	// MaxNodes: default to max(3, MinNodes) if not provided
 	MaxNodes uint64
 
 	// NodeType: default to n1-standard-4 if not provided
@@ -160,6 +160,10 @@ func (gs *GKEClient) Setup(r GKERequest) ClusterOperations {
 	}
 	if r.MaxNodes == 0 {
 		r.MaxNodes = DefaultGKEMaxNodes
+		// We don't want MaxNodes < MinNodes
+		if r.MinNodes > r.MaxNodes {
+			r.MaxNodes = r.MinNodes
+		}
 	}
 	if r.NodeType == "" {
 		r.NodeType = DefaultGKENodeType
@@ -202,7 +206,7 @@ func (gs *GKEClient) Setup(r GKERequest) ClusterOperations {
 	return gc
 }
 
-// Initialize checks environment for cluster and projects to decide whether use
+// Initialize checks environment for cluster and projects to decide whether using
 // existing cluster/project or creating new ones.
 func (gc *GKECluster) Initialize() error {
 	// Try obtain project name via `kubectl`, `gcloud`
