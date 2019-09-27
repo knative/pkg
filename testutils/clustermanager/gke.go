@@ -57,12 +57,12 @@ type GKEClient struct {
 
 // GKERequest contains all requests collected for cluster creation
 type GKERequest struct {
-	// Project: GKE project, no default. Fall back to get project from kube
-	// config then gcloud config
+	// Project: GKE project, no default. Fall back to get project from kubeconfig
+	// then gcloud config
 	Project string
 
 	// ClusterName: custom cluster name to use. Fall back to cluster set by
-	// kube config, else composed as k[REPO]-cls-e2e-[BUILD_ID]
+	// kubeconfig, else composed as k[REPO]-cls-e2e-[BUILD_ID]
 	ClusterName string
 
 	// MinNodes: default to 1 if not provided
