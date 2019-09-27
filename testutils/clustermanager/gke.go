@@ -66,10 +66,10 @@ type GKERequest struct {
 	ClusterName string
 
 	// MinNodes: default to 1 if not provided
-	MinNodes uint64
+	MinNodes int64
 
 	// MaxNodes: default to max(3, MinNodes) if not provided
-	MaxNodes uint64
+	MaxNodes int64
 
 	// NodeType: default to n1-standard-4 if not provided
 	NodeType string
