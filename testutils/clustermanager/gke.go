@@ -66,10 +66,10 @@ type GKERequest struct {
 	ClusterName string
 
 	// MinNodes: default to 1 if not provided
-	MinNodes int64
+	MinNodes uint64
 
 	// MaxNodes: default to 3 if not provided
-	MaxNodes int64
+	MaxNodes uint64
 
 	// NodeType: default to n1-standard-4 if not provided
 	NodeType string
@@ -145,7 +145,7 @@ func (gsc *GKESDKClient) setAutoscaling(project, clusterName, location, nodepool
 	return gsc.Service.Projects.Locations.Clusters.NodePools.SetAutoscaling(parent, rb).Do()
 }
 
-// Setup sets up a GKECluster client, takes GEKRequst as parameter and applies
+// Setup sets up a GKECluster client, takes GEKRequest as parameter and applies
 // all defaults if not defined.
 func (gs *GKEClient) Setup(r GKERequest) ClusterOperations {
 	gc := &GKECluster{}
