@@ -116,10 +116,9 @@ func New(
 	transport := &http.Transport{
 		DialContext: func(ctx context.Context, network, addr string) (conn net.Conn, e error) {
 			spoofed := addr
-			if i := strings.LastIndex(addr, ":"); i != -1 && domain == addr[:i] {
-				// The original hostname:port is spoofed by replacing the hostname by the value
-				// returned by ResolveEndpoint.
-				spoofed = endpoint + ":" + addr[i+1:]
+			i := strings.LastIndex(addr, ":")
+			if (i == -1 && domain == addr) || (i != -1 && domain == addr[:i]) {
+				spoofed = endpoint
 			}
 			return dialContext(ctx, network, spoofed)
 		},
