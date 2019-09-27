@@ -26,14 +26,21 @@ func Example() {
 	var (
 		minNodes int64 = 1
 		maxNodes int64 = 3
-		nodeType       = "n1-standard-8"
-		region         = "us-east1"
-		zone           = "a"
-		project        = "myGKEproject"
-		addons         = []string{"istio"}
+		nodeType        = "n1-standard-8"
+		region          = "us-east1"
+		zone            = "a"
+		project         = "myGKEproject"
+		addons          = []string{"istio"}
 	)
 	gkeClient := GKEClient{}
-	clusterOps := gkeClient.Setup(&minNodes, &maxNodes, &nodeType, &region, &zone, &project, addons)
+	clusterOps := gkeClient.Setup(GKERequest{
+		MinNodes: minNodes,
+		MaxNodes: maxNodes,
+		NodeType: nodeType,
+		Region:   region,
+		Zone:     zone,
+		Project:  project,
+		Addons:   addons})
 	// Cast to GKEOperation
 	gkeOps := clusterOps.(*GKECluster)
 	if err := gkeOps.Initialize(); err != nil {

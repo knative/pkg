@@ -178,16 +178,14 @@ func TestSetup(t *testing.T) {
 	zoneOverride := "foozone"
 	fakeAddons := "fake-addon"
 	datas := []struct {
-		minNodes                        *int64
-		maxNodes                        *int64
-		nodeType, region, zone, project *string
-		addons                          []string
-		regionEnv, backupRegionEnv      string
-		expClusterOperations            *GKECluster
+		r                          GKERequest
+		regionEnv, backupRegionEnv string
+		expClusterOperations       *GKECluster
 	}{
 		{
 			// Defaults
-			nil, nil, nil, nil, nil, nil, []string{}, "", "",
+			GKERequest{},
+			"", "",
 			&GKECluster{
 				Request: &GKERequest{
 					MinNodes:      1,
@@ -196,28 +194,57 @@ func TestSetup(t *testing.T) {
 					Region:        "us-central1",
 					Zone:          "",
 					BackupRegions: []string{"us-west1", "us-east1"},
-					Addons:        []string{},
+					Addons:        nil,
 				},
 			},
 		}, {
 			// Project provided
-			nil, nil, nil, nil, nil, &fakeProj, []string{}, "", "",
+			GKERequest{
+				Project: fakeProj,
+			},
+			"", "",
 			&GKECluster{
 				Request: &GKERequest{
+					Project:       "b",
 					MinNodes:      1,
 					MaxNodes:      3,
 					NodeType:      "n1-standard-4",
 					Region:        "us-central1",
 					Zone:          "",
 					BackupRegions: []string{"us-west1", "us-east1"},
-					Addons:        []string{},
+					Addons:        nil,
 				},
 				Project:     &fakeProj,
 				NeedCleanup: true,
 			},
 		}, {
+			// Cluster name provided
+			GKERequest{
+				ClusterName: "predefined-cluster-name",
+			},
+			"", "",
+			&GKECluster{
+				Request: &GKERequest{
+					ClusterName:   "predefined-cluster-name",
+					MinNodes:      1,
+					MaxNodes:      3,
+					NodeType:      "n1-standard-4",
+					Region:        "us-central1",
+					Zone:          "",
+					BackupRegions: []string{"us-west1", "us-east1"},
+					Addons:        nil,
+				},
+			},
+		}, {
 			// Override other parts
-			&minNodesOverride, &maxNodesOverride, &nodeTypeOverride, &regionOverride, &zoneOverride, nil, []string{}, "", "",
+			GKERequest{
+				MinNodes: minNodesOverride,
+				MaxNodes: maxNodesOverride,
+				NodeType: nodeTypeOverride,
+				Region:   regionOverride,
+				Zone:     zoneOverride,
+			},
+			"", "",
 			&GKECluster{
 				Request: &GKERequest{
 					MinNodes:      2,
@@ -226,12 +253,18 @@ func TestSetup(t *testing.T) {
 					Region:        "fooregion",
 					Zone:          "foozone",
 					BackupRegions: []string{},
-					Addons:        []string{},
+					Addons:        nil,
 				},
 			},
 		}, {
 			// Override other parts but not zone
-			&minNodesOverride, &maxNodesOverride, &nodeTypeOverride, &regionOverride, nil, nil, []string{}, "", "",
+			GKERequest{
+				MinNodes: minNodesOverride,
+				MaxNodes: maxNodesOverride,
+				NodeType: nodeTypeOverride,
+				Region:   regionOverride,
+			},
+			"", "",
 			&GKECluster{
 				Request: &GKERequest{
 					MinNodes:      2,
@@ -239,13 +272,14 @@ func TestSetup(t *testing.T) {
 					NodeType:      "foonode",
 					Region:        "fooregion",
 					Zone:          "",
-					BackupRegions: []string{"us-west1", "us-east1"},
-					Addons:        []string{},
+					BackupRegions: nil,
+					Addons:        nil,
 				},
 			},
 		}, {
 			// Set env Region
-			nil, nil, nil, nil, nil, nil, []string{}, "customregion", "",
+			GKERequest{},
+			"customregion", "",
 			&GKECluster{
 				Request: &GKERequest{
 					MinNodes:      1,
@@ -254,12 +288,13 @@ func TestSetup(t *testing.T) {
 					Region:        "customregion",
 					Zone:          "",
 					BackupRegions: []string{"us-west1", "us-east1"},
-					Addons:        []string{},
+					Addons:        nil,
 				},
 			},
 		}, {
 			// Set env backupzone
-			nil, nil, nil, nil, nil, nil, []string{}, "", "backupregion1 backupregion2",
+			GKERequest{},
+			"", "backupregion1 backupregion2",
 			&GKECluster{
 				Request: &GKERequest{
 					MinNodes:      1,
@@ -268,12 +303,15 @@ func TestSetup(t *testing.T) {
 					Region:        "us-central1",
 					Zone:          "",
 					BackupRegions: []string{"backupregion1", "backupregion2"},
-					Addons:        []string{},
+					Addons:        nil,
 				},
 			},
 		}, {
 			// Set addons
-			nil, nil, nil, nil, nil, nil, []string{fakeAddons}, "", "",
+			GKERequest{
+				Addons: []string{fakeAddons},
+			},
+			"", "",
 			&GKECluster{
 				Request: &GKERequest{
 					MinNodes:      1,
@@ -331,15 +369,15 @@ func TestSetup(t *testing.T) {
 			return oldEnvFunc(s)
 		}
 		c := GKEClient{}
-		co := c.Setup(data.minNodes, data.maxNodes, data.nodeType, data.region, data.zone, data.project, data.addons)
-		errMsg := fmt.Sprintf("testing setup with:\n\tminNodes: %v\n\tnodeType: %v\n\tregion: %v\n\tzone: %v\n\tproject: %v\n\taddons: %v\n\tregionEnv: %v\n\tbackupRegionEnv: %v",
-			data.minNodes, data.nodeType, data.region, data.zone, data.project, data.addons, data.regionEnv, data.backupRegionEnv)
+		co := c.Setup(data.r)
+		errMsg := fmt.Sprintf("testing setup with:\n\t%+v\n\tregionEnv: %v\n\tbackupRegionEnv: %v",
+			data.r, data.regionEnv, data.backupRegionEnv)
 		gotCo := co.(*GKECluster)
 		// mock for easier comparison
 		gotCo.operations = nil
 		gotCo.boskosOps = nil
-		if !reflect.DeepEqual(co, data.expClusterOperations) {
-			t.Fatalf("%s\nwant GKECluster:\n'%v'\ngot GKECluster:\n'%v'", errMsg, data.expClusterOperations, co)
+		if dif := cmp.Diff(gotCo.Request, data.expClusterOperations.Request); dif != "" {
+			t.Errorf("%s\nRequest got(+) is different from wanted(-)\n%v", errMsg, dif)
 		}
 	}
 }
@@ -575,23 +613,41 @@ func TestGKECheckEnvironment(t *testing.T) {
 }
 
 func TestAcquire(t *testing.T) {
+	predefinedClusterName := "predefined-cluster-name"
 	fakeClusterName := "kpkg-e2e-cls-1234"
 	fakeBuildID := "1234"
 	datas := []struct {
-		existCluster  *container.Cluster
-		kubeconfigSet bool
-		addons        []string
-		nextOpStatus  []string
-		expCluster    *container.Cluster
-		expErr        error
-		expPanic      bool
+		existCluster          *container.Cluster
+		predefinedClusterName string
+		kubeconfigSet         bool
+		addons                []string
+		nextOpStatus          []string
+		expCluster            *container.Cluster
+		expErr                error
+		expPanic              bool
 	}{
 		{
 			// cluster already found
 			&container.Cluster{
 				Name:     "customcluster",
 				Location: "us-central1",
-			}, true, []string{}, []string{}, &container.Cluster{
+			}, "", true, []string{}, []string{}, &container.Cluster{
+				Name:         "customcluster",
+				Location:     "us-central1",
+				Status:       "RUNNING",
+				AddonsConfig: &container.AddonsConfig{},
+				NodePools: []*container.NodePool{
+					{
+						Name: "default-pool",
+					},
+				},
+			}, nil, false,
+		}, {
+			// cluster already found and clustername predefined
+			&container.Cluster{
+				Name:     "customcluster",
+				Location: "us-central1",
+			}, predefinedClusterName, true, []string{}, []string{}, &container.Cluster{
 				Name:         "customcluster",
 				Location:     "us-central1",
 				Status:       "RUNNING",
@@ -608,7 +664,7 @@ func TestAcquire(t *testing.T) {
 			&container.Cluster{
 				Name:     fakeClusterName,
 				Location: "us-central1",
-			}, false, []string{}, []string{}, &container.Cluster{
+			}, "", false, []string{}, []string{}, &container.Cluster{
 				Name:         fakeClusterName,
 				Location:     "us-central1",
 				Status:       "RUNNING",
@@ -629,7 +685,7 @@ func TestAcquire(t *testing.T) {
 			&container.Cluster{
 				Name:     fakeClusterName,
 				Location: "us-central1",
-			}, false, []string{}, []string{"BAD"}, &container.Cluster{
+			}, "", false, []string{}, []string{"BAD"}, &container.Cluster{
 				Name:         fakeClusterName,
 				Location:     "us-west1",
 				Status:       "RUNNING",
@@ -645,8 +701,45 @@ func TestAcquire(t *testing.T) {
 				},
 			}, nil, false,
 		}, {
+			// cluster exists but not set in kubeconfig, clusterName defined
+			&container.Cluster{
+				Name:     fakeClusterName,
+				Location: "us-central1",
+			}, predefinedClusterName, false, []string{}, []string{}, &container.Cluster{
+				Name:         predefinedClusterName,
+				Location:     "us-central1",
+				Status:       "RUNNING",
+				AddonsConfig: &container.AddonsConfig{},
+				NodePools: []*container.NodePool{
+					{
+						Name:        "default-pool",
+						Autoscaling: &container.NodePoolAutoscaling{Enabled: true, MaxNodeCount: 3, MinNodeCount: 1},
+					},
+				},
+				MasterAuth: &container.MasterAuth{
+					Username: "admin",
+				},
+			}, nil, false,
+		}, {
+			// cluster not exist, but clustername defined
+			nil, predefinedClusterName, false, []string{}, []string{}, &container.Cluster{
+				Name:         predefinedClusterName,
+				Location:     "us-central1",
+				Status:       "RUNNING",
+				AddonsConfig: &container.AddonsConfig{},
+				NodePools: []*container.NodePool{
+					{
+						Name:        "default-pool",
+						Autoscaling: &container.NodePoolAutoscaling{Enabled: true, MaxNodeCount: 3, MinNodeCount: 1},
+					},
+				},
+				MasterAuth: &container.MasterAuth{
+					Username: "admin",
+				},
+			}, nil, false,
+		}, {
 			// cluster creation succeeded
-			nil, false, []string{}, []string{}, &container.Cluster{
+			nil, "", false, []string{}, []string{}, &container.Cluster{
 				Name:         fakeClusterName,
 				Location:     "us-central1",
 				Status:       "RUNNING",
@@ -663,7 +756,7 @@ func TestAcquire(t *testing.T) {
 			}, nil, false,
 		}, {
 			// cluster creation succeeded with addon
-			nil, false, []string{"istio"}, []string{}, &container.Cluster{
+			nil, "", false, []string{"istio"}, []string{}, &container.Cluster{
 				Name:     fakeClusterName,
 				Location: "us-central1",
 				Status:   "RUNNING",
@@ -682,7 +775,7 @@ func TestAcquire(t *testing.T) {
 			}, nil, false,
 		}, {
 			// cluster creation succeeded retry
-			nil, false, []string{}, []string{"PENDING"}, &container.Cluster{
+			nil, "", false, []string{}, []string{"PENDING"}, &container.Cluster{
 				Name:         fakeClusterName,
 				Location:     "us-west1",
 				Status:       "RUNNING",
@@ -699,7 +792,7 @@ func TestAcquire(t *testing.T) {
 			}, nil, false,
 		}, {
 			// cluster creation failed set addon, but succeeded retry
-			nil, false, []string{}, []string{"DONE", "PENDING"}, &container.Cluster{
+			nil, "", false, []string{}, []string{"DONE", "PENDING"}, &container.Cluster{
 				Name:         fakeClusterName,
 				Location:     "us-west1",
 				Status:       "RUNNING",
@@ -716,13 +809,13 @@ func TestAcquire(t *testing.T) {
 			}, nil, false,
 		}, {
 			// cluster creation failed all retry
-			nil, false, []string{}, []string{"PENDING", "PENDING", "PENDING"}, nil, fmt.Errorf("timed out waiting"), false,
+			nil, "", false, []string{}, []string{"PENDING", "PENDING", "PENDING"}, nil, fmt.Errorf("timed out waiting"), false,
 		}, {
 			// cluster creation went bad state
-			nil, false, []string{}, []string{"BAD", "BAD", "BAD"}, nil, fmt.Errorf("unexpected operation status: %q", "BAD"), false,
+			nil, "", false, []string{}, []string{"BAD", "BAD", "BAD"}, nil, fmt.Errorf("unexpected operation status: %q", "BAD"), false,
 		}, {
 			// bad addon, should get a panic
-			nil, false, []string{"bad_addon"}, []string{}, nil, nil, true,
+			nil, "", false, []string{"bad_addon"}, []string{}, nil, nil, true,
 		},
 	}
 
@@ -783,6 +876,7 @@ func TestAcquire(t *testing.T) {
 		}
 
 		fgc.Request = &GKERequest{
+			ClusterName:   data.predefinedClusterName,
 			MinNodes:      DefaultGKEMinNodes,
 			MaxNodes:      DefaultGKEMaxNodes,
 			NodeType:      DefaultGKENodeType,
