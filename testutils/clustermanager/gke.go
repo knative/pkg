@@ -39,6 +39,7 @@ const (
 	DefaultGKEZone     = ""
 	regionEnv          = "E2E_CLUSTER_REGION"
 	backupRegionEnv    = "E2E_CLUSTER_BACKUP_REGIONS"
+	defaultGKEVersion  = "latest"
 )
 
 var (
@@ -282,6 +283,9 @@ func (gc *GKECluster) Acquire() error {
 		rb := &container.CreateClusterRequest{
 			Cluster: &container.Cluster{
 				Name: clusterName,
+				// The default cluster version is not latest, has to explicitly
+				// set it as "latest"
+				InitialClusterVersion: defaultGKEVersion,
 				// Installing addons after cluster creation takes at least 5
 				// minutes, so install addons as part of cluster creation, which
 				// doesn't seem to add much time on top of cluster creation
