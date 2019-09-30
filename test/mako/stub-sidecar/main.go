@@ -24,6 +24,7 @@ import (
 	"net"
 	"os"
 	"strings"
+	"sync"
 
 	"github.com/golang/protobuf/jsonpb"
 
@@ -36,7 +37,8 @@ const (
 )
 
 type server struct {
-	stopCh chan struct{}
+	stopOnce sync.Once
+	stopCh   chan struct{}
 }
 
 func (s *server) Store(ctx context.Context, in *qspb.StoreInput) (*qspb.StoreOutput, error) {
@@ -96,7 +98,7 @@ func makeRow(prototype []string, points map[string]string) []string {
 }
 
 func (s *server) ShutdownMicroservice(ctx context.Context, in *qspb.ShutdownInput) (*qspb.ShutdownOutput, error) {
-	close(s.stopCh)
+	s.stopOnce.Do(func() { close(s.stopCh) })
 	return &qspb.ShutdownOutput{}, nil
 }
 
