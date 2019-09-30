@@ -21,7 +21,7 @@ const (
 	sourceName           = "sources.knative.dev/name"
 )
 
-func SourceLabels(name, controllerAgentName string) map[string]string {
+func Labels(name, controllerAgentName string) map[string]string {
 	return map[string]string{
 		sourceControllerName: controllerAgentName,
 		sourceName:           name,

@@ -22,9 +22,9 @@ import (
 	"github.com/google/go-cmp/cmp"
 )
 
-func TestSourceLabels(t *testing.T) {
+func TestLabels(t *testing.T) {
 
-	sourceLables := SourceLabels("foo", "foo-source-controller")
+	sourceLables := Labels("foo", "foo-source-controller")
 
 	wantTags := map[string]string{
 		sourceControllerName: "foo-source-controller",
@@ -33,6 +33,6 @@ func TestSourceLabels(t *testing.T) {
 
 	eq := cmp.Equal(sourceLables, wantTags)
 	if !eq {
-		t.Fatalf("Not equal")
+		t.Fatalf("%v is not equal to %v", sourceLables, wantTags)
 	}
 }
