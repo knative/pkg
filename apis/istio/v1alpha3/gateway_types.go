@@ -329,7 +329,7 @@ const (
 	TLSModeIstioMutual TLSMode = "ISTIO_MUTUAL"
 )
 
-type TLSProtocol int32 
+type TLSProtocol int32
 
 const (
 	TLSAuto TLSProtocol = 0
