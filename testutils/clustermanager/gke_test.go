@@ -119,7 +119,7 @@ func (fgsc *FakeGKESDKClient) create(project, location string, rb *container.Cre
 	return fgsc.newOp(), nil
 }
 
-func (fgsc *FakeGKESDKClient) delete(project, clusterName, location string) (*container.Operation, error) {
+func (fgsc *FakeGKESDKClient) delete(project, location, clusterName string) (*container.Operation, error) {
 	parent := fmt.Sprintf("projects/%s/locations/%s", project, location)
 	found := -1
 	if clusters, ok := fgsc.clusters[parent]; ok {
@@ -154,21 +154,6 @@ func (fgsc *FakeGKESDKClient) getOperation(project, location, opName string) (*c
 		return op, nil
 	}
 	return nil, fmt.Errorf("op not found")
-}
-
-func (fgsc *FakeGKESDKClient) setAutoscaling(project, clusterName, location, nodepoolName string,
-	rb *container.SetNodePoolAutoscalingRequest) (*container.Operation, error) {
-
-	cluster, err := fgsc.get(project, location, clusterName)
-	if err != nil {
-		return nil, err
-	}
-	for _, np := range cluster.NodePools {
-		if np.Name == nodepoolName {
-			np.Autoscaling = rb.Autoscaling
-		}
-	}
-	return fgsc.newOp(), nil
 }
 
 func TestSetup(t *testing.T) {

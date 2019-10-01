@@ -18,6 +18,7 @@ package clustermanager
 
 import (
 	"fmt"
+	"strings"
 
 	"knative.dev/pkg/testutils/common"
 )
@@ -57,4 +58,13 @@ func getClusterLocation(region, zone string) string {
 		region = fmt.Sprintf("%s-%s", region, zone)
 	}
 	return region
+}
+
+func getZoneFromLoc(location string) string {
+	zone := ""
+	parts := strings.Split(location, "_")
+	if len(parts) > 2 {
+		zone = parts[len(parts)-1]
+	}
+	return zone
 }
