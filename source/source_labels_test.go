@@ -24,15 +24,15 @@ import (
 
 func TestLabels(t *testing.T) {
 
-	sourceLables := Labels("foo", "foo-source-controller")
+	sourceLabeles := Labels("foo", "foo-source-controller")
 
 	wantTags := map[string]string{
 		sourceControllerName: "foo-source-controller",
 		sourceName:           "foo",
 	}
 
-	eq := cmp.Equal(sourceLables, wantTags)
+	eq := cmp.Equal(sourceLabeles, wantTags)
 	if !eq {
-		t.Fatalf("%v is not equal to %v", sourceLables, wantTags)
+		t.Fatalf("%v is not equal to %v", sourceLabeles, wantTags)
 	}
 }
