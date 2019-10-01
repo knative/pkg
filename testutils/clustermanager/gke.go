@@ -222,7 +222,7 @@ func (gc *GKECluster) initialize() error {
 		if err := gc.checkEnvironment(); err != nil {
 			return fmt.Errorf("failed checking existing cluster: '%v'", err)
 		} else if gc.Cluster != nil { // Return if Cluster was already set by kubeconfig
-			// If clustername provided is different from kubeconfig, don't use it
+			// If clustername provided and kubeconfig set, ignore kubeconfig
 			if gc.Request != nil && gc.Request.ClusterName != "" && gc.Cluster.Name != gc.Request.ClusterName {
 				gc.Cluster = nil
 			}
