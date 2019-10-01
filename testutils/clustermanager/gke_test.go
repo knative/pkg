@@ -42,6 +42,7 @@ var (
 
 func setupFakeGKECluster() GKECluster {
 	return GKECluster{
+		Request:    &GKERequest{},
 		operations: newFakeGKESDKClient(),
 		boskosOps:  &boskosFake.FakeBoskosClient{},
 	}
@@ -214,8 +215,8 @@ func TestSetup(t *testing.T) {
 					BackupRegions: []string{"us-west1", "us-east1"},
 					Addons:        nil,
 				},
-				Project:     &fakeProj,
-				NeedCleanup: true,
+				Project:      &fakeProj,
+				NeedsCleanup: true,
 			},
 		}, {
 			// Cluster name provided
@@ -495,7 +496,7 @@ func TestInitialize(t *testing.T) {
 			return res
 		}
 
-		err := fgc.Initialize()
+		err := fgc.initialize()
 		errMsg := fmt.Sprintf("test initialize with:\n\tuser defined project: '%v'\n\tkubeconfig set: '%v'\n\tgcloud set: '%v'\n\trunning in prow: '%v'\n\tboskos set: '%v'",
 			data.project, data.clusterExist, data.gcloudSet, data.isProw, data.boskosProjs)
 		if !reflect.DeepEqual(data.expErr, err) {
@@ -622,6 +623,7 @@ func TestAcquire(t *testing.T) {
 		kubeconfigSet         bool
 		addons                []string
 		nextOpStatus          []string
+		skipCreation          bool
 		expCluster            *container.Cluster
 		expErr                error
 		expPanic              bool
@@ -631,7 +633,7 @@ func TestAcquire(t *testing.T) {
 			&container.Cluster{
 				Name:     "customcluster",
 				Location: "us-central1",
-			}, "", true, []string{}, []string{}, &container.Cluster{
+			}, "", true, []string{}, []string{}, false, &container.Cluster{
 				Name:         "customcluster",
 				Location:     "us-central1",
 				Status:       "RUNNING",
@@ -647,7 +649,7 @@ func TestAcquire(t *testing.T) {
 			&container.Cluster{
 				Name:     "customcluster",
 				Location: "us-central1",
-			}, predefinedClusterName, true, []string{}, []string{}, &container.Cluster{
+			}, predefinedClusterName, true, []string{}, []string{}, false, &container.Cluster{
 				Name:         "customcluster",
 				Location:     "us-central1",
 				Status:       "RUNNING",
@@ -664,7 +666,7 @@ func TestAcquire(t *testing.T) {
 			&container.Cluster{
 				Name:     fakeClusterName,
 				Location: "us-central1",
-			}, "", false, []string{}, []string{}, &container.Cluster{
+			}, "", false, []string{}, []string{}, false, &container.Cluster{
 				Name:         fakeClusterName,
 				Location:     "us-central1",
 				Status:       "RUNNING",
@@ -685,7 +687,7 @@ func TestAcquire(t *testing.T) {
 			&container.Cluster{
 				Name:     fakeClusterName,
 				Location: "us-central1",
-			}, "", false, []string{}, []string{"BAD"}, &container.Cluster{
+			}, "", false, []string{}, []string{"BAD"}, false, &container.Cluster{
 				Name:         fakeClusterName,
 				Location:     "us-west1",
 				Status:       "RUNNING",
@@ -705,7 +707,7 @@ func TestAcquire(t *testing.T) {
 			&container.Cluster{
 				Name:     fakeClusterName,
 				Location: "us-central1",
-			}, predefinedClusterName, false, []string{}, []string{}, &container.Cluster{
+			}, predefinedClusterName, false, []string{}, []string{}, false, &container.Cluster{
 				Name:         predefinedClusterName,
 				Location:     "us-central1",
 				Status:       "RUNNING",
@@ -722,7 +724,7 @@ func TestAcquire(t *testing.T) {
 			}, nil, false,
 		}, {
 			// cluster not exist, but clustername defined
-			nil, predefinedClusterName, false, []string{}, []string{}, &container.Cluster{
+			nil, predefinedClusterName, false, []string{}, []string{}, false, &container.Cluster{
 				Name:         predefinedClusterName,
 				Location:     "us-central1",
 				Status:       "RUNNING",
@@ -739,7 +741,10 @@ func TestAcquire(t *testing.T) {
 			}, nil, false,
 		}, {
 			// cluster creation succeeded
-			nil, "", false, []string{}, []string{}, &container.Cluster{
+			nil, "", false, []string{}, []string{}, true, nil, nil, false,
+		}, {
+			// skipped cluster creation as SkipCreation is requested
+			nil, "", false, []string{}, []string{}, false, &container.Cluster{
 				Name:         fakeClusterName,
 				Location:     "us-central1",
 				Status:       "RUNNING",
@@ -756,7 +761,7 @@ func TestAcquire(t *testing.T) {
 			}, nil, false,
 		}, {
 			// cluster creation succeeded with addon
-			nil, "", false, []string{"istio"}, []string{}, &container.Cluster{
+			nil, "", false, []string{"istio"}, []string{}, false, &container.Cluster{
 				Name:     fakeClusterName,
 				Location: "us-central1",
 				Status:   "RUNNING",
@@ -775,7 +780,7 @@ func TestAcquire(t *testing.T) {
 			}, nil, false,
 		}, {
 			// cluster creation succeeded retry
-			nil, "", false, []string{}, []string{"PENDING"}, &container.Cluster{
+			nil, "", false, []string{}, []string{"PENDING"}, false, &container.Cluster{
 				Name:         fakeClusterName,
 				Location:     "us-west1",
 				Status:       "RUNNING",
@@ -792,7 +797,7 @@ func TestAcquire(t *testing.T) {
 			}, nil, false,
 		}, {
 			// cluster creation failed set addon, but succeeded retry
-			nil, "", false, []string{}, []string{"DONE", "PENDING"}, &container.Cluster{
+			nil, "", false, []string{}, []string{"DONE", "PENDING"}, false, &container.Cluster{
 				Name:         fakeClusterName,
 				Location:     "us-west1",
 				Status:       "RUNNING",
@@ -809,13 +814,13 @@ func TestAcquire(t *testing.T) {
 			}, nil, false,
 		}, {
 			// cluster creation failed all retry
-			nil, "", false, []string{}, []string{"PENDING", "PENDING", "PENDING"}, nil, fmt.Errorf("timed out waiting"), false,
+			nil, "", false, []string{}, []string{"PENDING", "PENDING", "PENDING"}, false, nil, fmt.Errorf("timed out waiting"), false,
 		}, {
 			// cluster creation went bad state
-			nil, "", false, []string{}, []string{"BAD", "BAD", "BAD"}, nil, fmt.Errorf("unexpected operation status: %q", "BAD"), false,
+			nil, "", false, []string{}, []string{"BAD", "BAD", "BAD"}, false, nil, fmt.Errorf("unexpected operation status: %q", "BAD"), false,
 		}, {
 			// bad addon, should get a panic
-			nil, "", false, []string{"bad_addon"}, []string{}, nil, nil, true,
+			nil, "", false, []string{"bad_addon"}, []string{}, false, nil, nil, true,
 		},
 	}
 
@@ -885,12 +890,16 @@ func TestAcquire(t *testing.T) {
 			BackupRegions: DefaultGKEBackupRegions,
 			Addons:        data.addons,
 		}
-		// Set NeedCleanup to false for easier testing, as it launches a
+		if data.skipCreation {
+			fgc.Request.SkipCreation = true
+		}
+		// Set NeedsCleanup to false for easier testing, as it launches a
 		// goroutine
-		fgc.NeedCleanup = false
+		fgc.NeedsCleanup = false
 		err := fgc.Acquire()
-		errMsg := fmt.Sprintf("testing acquiring cluster, with:\n\texisting cluster: '%+v'\n\tnext operations outcomes: '%v'\n\tkubeconfig set: '%v'\n\taddons: '%v'",
-			data.existCluster, data.nextOpStatus, data.kubeconfigSet, data.addons)
+		errMsg := fmt.Sprintf("testing acquiring cluster, with:\n\texisting cluster: '%+v'\n\tSkip creation: '%+v'\n\t"+
+			"next operations outcomes: '%v'\n\tkubeconfig set: '%v'\n\taddons: '%v'",
+			data.existCluster, data.skipCreation, data.nextOpStatus, data.kubeconfigSet, data.addons)
 		if !reflect.DeepEqual(err, data.expErr) {
 			t.Errorf("%s\nerror want: '%v'\nerror got: '%v'", errMsg, err, data.expErr)
 		}
@@ -902,16 +911,18 @@ func TestAcquire(t *testing.T) {
 
 func TestDelete(t *testing.T) {
 	datas := []struct {
-		isProw      bool
-		needCleanup bool
-		boskosState []*boskoscommon.Resource
-		cluster     *container.Cluster
-		expBoskos   []*boskoscommon.Resource
-		expCluster  *container.Cluster
-		expErr      error
+		isProw         bool
+		NeedsCleanup   bool
+		requestCleanup bool
+		boskosState    []*boskoscommon.Resource
+		cluster        *container.Cluster
+		expBoskos      []*boskoscommon.Resource
+		expCluster     *container.Cluster
+		expErr         error
 	}{
 		{
-			// Not in prow, NeedCleanup is false
+			// Not in prow, NeedsCleanup is false
+			false,
 			false,
 			false,
 			[]*boskoscommon.Resource{},
@@ -932,7 +943,21 @@ func TestDelete(t *testing.T) {
 			},
 			nil,
 		}, {
-			// Not in prow, NeedCleanup is true
+			// Not in prow, NeedsCleanup is true
+			false,
+			true,
+			false,
+			[]*boskoscommon.Resource{},
+			&container.Cluster{
+				Name:     "customcluster",
+				Location: "us-central1",
+			},
+			nil,
+			nil,
+			nil,
+		}, {
+			// Not in prow, NeedsCleanup is false, requestCleanup is true
+			false,
 			false,
 			true,
 			[]*boskoscommon.Resource{},
@@ -944,9 +969,10 @@ func TestDelete(t *testing.T) {
 			nil,
 			nil,
 		}, {
-			// Not in prow, NeedCleanup is true, but cluster doesn't exist
+			// Not in prow, NeedsCleanup is true, but cluster doesn't exist
 			false,
 			true,
+			false,
 			[]*boskoscommon.Resource{},
 			nil,
 			nil,
@@ -956,6 +982,7 @@ func TestDelete(t *testing.T) {
 			// In prow, only need to release boskos
 			true,
 			true,
+			false,
 			[]*boskoscommon.Resource{{
 				Name: fakeProj,
 			}},
@@ -1006,7 +1033,7 @@ func TestDelete(t *testing.T) {
 		}
 		fgc := setupFakeGKECluster()
 		fgc.Project = &fakeProj
-		fgc.NeedCleanup = data.needCleanup
+		fgc.NeedsCleanup = data.NeedsCleanup
 		if data.cluster != nil {
 			fgc.operations.create(fakeProj, data.cluster.Location, &container.CreateClusterRequest{
 				Cluster: &container.Cluster{
@@ -1022,6 +1049,11 @@ func TestDelete(t *testing.T) {
 			// Acquire with default user
 			fgc.boskosOps.(*boskosFake.FakeBoskosClient).AcquireGKEProject(nil)
 		}
+		if data.requestCleanup {
+			fgc.Request = &GKERequest{
+				NeedsCleanup: true,
+			}
+		}
 
 		err := fgc.Delete()
 		var gotCluster *container.Cluster
@@ -1029,8 +1061,9 @@ func TestDelete(t *testing.T) {
 			gotCluster, _ = fgc.operations.get(fakeProj, data.cluster.Location, data.cluster.Name)
 		}
 		gotBoskos := fgc.boskosOps.(*boskosFake.FakeBoskosClient).GetResources()
-		errMsg := fmt.Sprintf("testing deleting cluster, with:\n\tIs Prow: '%v'\n\texisting cluster: '%v'\n\tboskos state: '%v'",
-			data.isProw, data.cluster, data.boskosState)
+		errMsg := fmt.Sprintf("testing deleting cluster, with:\n\tIs Prow: '%v'\n\tNeed cleanup: '%v'\n\t"+
+			"Request cleanup: '%v'\n\texisting cluster: '%v'\n\tboskos state: '%v'",
+			data.isProw, data.NeedsCleanup, data.requestCleanup, data.cluster, data.boskosState)
 		if !reflect.DeepEqual(err, data.expErr) {
 			t.Errorf("%s\nerror want: '%v'\nerror got: '%v'", errMsg, err, data.expErr)
 		}
