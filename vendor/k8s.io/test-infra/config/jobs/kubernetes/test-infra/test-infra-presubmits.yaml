@@ -1,0 +1,100 @@
+presubmits:
+  kubernetes/test-infra:
+  - name: pull-test-infra-build-smoke
+    agent: knative-build
+    decorate: true
+    build_spec:
+      steps:
+      - name: first
+        image: busybox
+        args: ["echo", "hello"]
+      - name: second
+        image: busybox
+        args: ["echo", "world"]
+      - name: third
+        image: busybox
+        args: ["cat", "config/jobs/kubernetes/test-infra/test-infra-presubmits.yaml"]
+    annotations:
+      testgrid-num-columns-recent: '20'
+      testgrid-create-test-group: 'true'
+  - name: pull-test-infra-build-smoke-fail
+    agent: knative-build
+    decorate: true
+    build_spec:
+      steps:
+      - name: first
+        image: busybox
+        args: ["echo", "hello"]
+      - name: second
+        image: busybox
+        args: ["sleep", "60"]
+      - name: third
+        image: busybox
+        args: ["exit", "1"]
+    annotations:
+      testgrid-num-columns-recent: '20'
+      testgrid-create-test-group: 'true'
+  - name: pull-test-infra-bazel
+    branches:
+    - master
+    always_run: true
+    decorate: true
+    labels:
+      preset-service-account: "true"
+      preset-bazel-scratch-dir: "true"
+    spec:
+      containers:
+      - image: launcher.gcr.io/google/bazel:0.27.0
+        command:
+        - hack/bazel.sh
+        args:
+        - test
+        - --config=ci
+        - --nobuild_tests_only
+        - //...
+    annotations:
+      testgrid-create-test-group: 'true'
+  - name: pull-test-infra-gubernator
+    branches:
+    - master
+    run_if_changed: 'gubernator|prow/config.yaml'
+    decorate: true
+    labels:
+      preset-service-account: "true"
+    spec:
+      containers:
+      - image: gcr.io/k8s-testimages/gubernator:0.4
+        command:
+        - ./gubernator/test-gubernator.sh
+        env:
+        - name: WORKSPACE
+          value: "/workspace"
+    annotations:
+      testgrid-create-test-group: 'true'
+  - name: pull-test-infra-verify-file-perms
+    branches:
+    - master
+    always_run: true
+    decorate: true
+    labels:
+      preset-service-account: "true"
+    spec:
+      containers:
+      - image: gcr.io/k8s-testimages/kubekins-e2e:v20190813-5765933-experimental
+        command:
+        - ./hack/verify-file-perms.sh
+    annotations:
+      testgrid-create-test-group: 'true'
+  - name: pull-test-infra-yamllint
+    always_run: true
+    decorate: true
+    spec:
+      containers:
+      - image: quay.io/kubermatic/yamllint:0.1
+        command:
+        - yamllint
+        - -c
+        - config/jobs/.yamllint.conf
+        - config/jobs
+    annotations:
+      testgrid-create-test-group: 'true'

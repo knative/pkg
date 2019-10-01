@@ -1,0 +1,70 @@
+periodics:
+- interval: 24h
+  name: maintenance-ci-janitor
+  labels:
+    preset-service-account: "true"
+  decorate: true
+  extra_refs:
+  - org: kubernetes
+    repo: test-infra
+    base_ref: master
+    path_alias: k8s.io/test-infra
+  spec:
+    containers:
+    - command:
+      - runner.sh
+      args:
+      - go
+      - run
+      - experiment/ci-janitor/main.go
+      - --config-path=prow/config.yaml
+      - --job-config-path=config/jobs
+      - --janitor-path=boskos/janitor/gcp_janitor.py
+      image: gcr.io/k8s-testimages/kubekins-e2e:v20190813-5765933-master
+      resources:
+        requests:
+          cpu: 5
+          memory: "8Gi"
+
+- interval: 1h
+  name: maintenance-pull-janitor
+  labels:
+    preset-service-account: "true"
+  spec:
+    containers:
+    - args:
+      - --bare
+      - --timeout=30
+      - --service-account=/etc/service-account/service-account.json
+      - --upload=gs://kubernetes-jenkins/logs
+      - --scenario=kubernetes_janitor
+      - --
+      - --mode=pr
+      env:
+      image: gcr.io/k8s-testimages/kubekins-e2e:v20190813-5765933-experimental
+      resources:
+        requests:
+          cpu: 5
+          memory: "8Gi"
+
+- interval: 1h
+  name: maintenance-pull-scale-janitor
+  labels:
+    preset-service-account: "true"
+  spec:
+    containers:
+    - args:
+      - --bare
+      - --timeout=60
+      - --service-account=/etc/service-account/service-account.json
+      - --upload=gs://kubernetes-jenkins/logs
+      - --scenario=kubernetes_janitor
+      - --
+      - --mode=scale
+      - --ratelimit=5
+      env:
+      image: gcr.io/k8s-testimages/kubekins-e2e:v20190813-5765933-experimental
+      resources:
+        requests:
+          cpu: 5
+          memory: "8Gi"

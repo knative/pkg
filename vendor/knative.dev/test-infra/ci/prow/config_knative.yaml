@@ -1,0 +1,353 @@
+# Copyright 2018 The Knative Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+presubmits:
+  knative/serving:
+    - repo-settings:
+      legacy-branches:
+      - release-0.4
+      - release-0.5
+      - release-0.6
+      - release-0.7
+    - build-tests: true
+      resources:
+        requests:
+          memory: 12Gi # Real request for this pod is 16 as sidecar requests 4
+        limits:
+          memory: 16Gi
+    - unit-tests: true
+    - integration-tests: true
+      args:
+      - "--run-test"
+      - "./test/e2e-tests.sh"
+    - custom-test: upgrade-tests
+      args:
+      - "--run-test"
+      - "./test/e2e-upgrade-tests.sh"
+    - custom-test: smoke-tests
+      skip_branches:  # Skip these branches, as test isn't available.
+      - release-0.4
+      - release-0.5
+      - release-0.6
+      args:
+      - "--run-test"
+      - "./test/e2e-smoke-tests.sh"
+    - go-coverage: true
+      go-coverage-threshold: 80
+    - custom-test: perf-tests
+      always_run: false
+      command:
+      - "./test/performance-tests.sh"
+    - custom-test: istio-1.2-mesh
+      always_run: false
+      optional: true
+      full-command: "./test/e2e-tests.sh --istio-version 1.2-latest --mesh"
+    - custom-test: istio-1.2-no-mesh
+      always_run: false
+      optional: true
+      full-command: "./test/e2e-tests.sh --istio-version 1.2-latest --no-mesh"
+    - custom-test: istio-1.3-mesh
+      always_run: false
+      optional: true
+      full-command: "./test/e2e-tests.sh --istio-version 1.3-latest --mesh"
+    - custom-test: istio-1.3-no-mesh
+      always_run: false
+      optional: true
+      full-command: "./test/e2e-tests.sh --istio-version 1.3-latest --no-mesh"
+    - custom-test: gloo-0.17.1
+      always_run: false
+      optional: true
+      full-command: "./test/e2e-tests.sh --gloo-version 0.17.1"
+
+  knative/client:
+    - build-tests: true
+      dot-dev: true
+    - unit-tests: true
+      dot-dev: true
+    - integration-tests: true
+      dot-dev: true
+    - go-coverage: true
+      dot-dev: true
+    - custom-test: integration-tests-latest-release
+      always_run: true
+      command:
+        - "./test/presubmit-integration-tests-latest-release.sh"
+      dot-dev: true
+
+  knative/eventing:
+    - repo-settings:
+      legacy-branches:
+      - release-0.4
+      - release-0.5
+      - release-0.6
+      - release-0.7
+      - release-0.8
+    - build-tests: true
+    - unit-tests: true
+    - integration-tests: true
+    - go-coverage: true
+
+  knative/eventing-contrib:
+    - repo-settings:
+      legacy-branches:
+      - release-0.4
+      - release-0.5
+      - release-0.6
+      - release-0.7
+      - release-0.8
+    - build-tests: true
+    - unit-tests: true
+    - integration-tests: true
+    - go-coverage: true
+
+  knative/docs:
+    - build-tests: true
+    - unit-tests: true
+    - integration-tests: true
+      needs-dind: true
+    - go-coverage: true
+
+  knative/pkg:
+    - build-tests: true
+      dot-dev: true
+    - unit-tests: true
+      dot-dev: true
+    - integration-tests: true
+      dot-dev: true
+    - go-coverage: true
+      dot-dev: true
+
+  knative/test-infra:
+    - build-tests: true
+      dot-dev: true
+    - unit-tests: true
+      dot-dev: true
+    - integration-tests: true
+      dot-dev: true
+
+  knative/caching:
+    - build-tests: true
+      dot-dev: true
+    - unit-tests: true
+      dot-dev: true
+    - integration-tests: true
+      dot-dev: true
+    - go-coverage: true
+      dot-dev: true
+
+  knative/observability:
+    - build-tests: true
+    - unit-tests: true
+    - integration-tests: true
+
+  knative/sample-controller:
+    - build-tests: true
+      dot-dev: true
+    - unit-tests: true
+      dot-dev: true
+
+  google/knative-gcp:
+    - build-tests: true
+    - unit-tests: true
+    - integration-tests: true
+    - go-coverage: true
+
+  knative/serving-operator:
+    - build-tests: true
+      dot-dev: true
+    - unit-tests: true
+      dot-dev: true
+    - integration-tests: true
+      dot-dev: true
+    - go-coverage: true
+      dot-dev: true
+
+  knative/eventing-operator:
+    - build-tests: true
+      dot-dev: true
+    - unit-tests: true
+      dot-dev: true
+    - integration-tests: true
+      dot-dev: true
+    - go-coverage: true
+      dot-dev: true
+
+periodics:
+  knative/serving:
+    - continuous: true
+      timeout: 100
+      dot-dev: true
+      resources:
+        requests:
+          memory: 12Gi
+        limits:
+          memory: 16Gi
+    - branch-ci: true
+      release: "0.4"
+    - branch-ci: true
+      release: "0.5"
+    - branch-ci: true
+      release: "0.6"
+    - branch-ci: true
+      release: "0.7"
+    - branch-ci: true
+      release: "0.8"
+    - custom-job: istio-1.2-mesh
+      full-command: "./test/e2e-tests.sh --istio-version 1.2-latest --mesh"
+      dot-dev: true
+    - custom-job: istio-1.2-no-mesh
+      full-command: "./test/e2e-tests.sh --istio-version 1.2-latest --no-mesh"
+      dot-dev: true
+    - custom-job: istio-1.3-mesh
+      full-command: "./test/e2e-tests.sh --istio-version 1.3-latest --mesh"
+      dot-dev: true
+    - custom-job: istio-1.3-no-mesh
+      full-command: "./test/e2e-tests.sh --istio-version 1.3-latest --no-mesh"
+      dot-dev: true
+    - custom-job: gloo-0.17.1
+      full-command: "./test/e2e-tests.sh --gloo-version 0.17.1"
+      dot-dev: true
+    - nightly: true
+      dot-dev: true
+      resources:
+        requests:
+          memory: 12Gi
+        limits:
+          memory: 16Gi
+    - dot-release: true
+      dot-dev: true
+      resources:
+        requests:
+          memory: 12Gi
+        limits:
+          memory: 16Gi
+    - auto-release: true
+      dot-dev: true
+      resources:
+        requests:
+          memory: 12Gi
+        limits:
+          memory: 16Gi
+    - latency: true
+      dot-dev: true
+    - performance: true
+      dot-dev: true
+    - performance-mesh: true
+      dot-dev: true
+      args:
+      - "--mesh"
+    - webhook-apicoverage: true
+      dot-dev: true
+
+  knative/client:
+    - continuous: true
+      dot-dev: true
+    - nightly: true
+      dot-dev: true
+    - dot-release: true
+      dot-dev: true
+    - auto-release: true
+      dot-dev: true
+
+  knative/docs:
+    - continuous: true
+      needs-dind: true
+
+  knative/eventing:
+    - continuous: true
+      timeout: 90
+      dot-dev: true
+    - branch-ci: true
+      release: "0.5"
+    - branch-ci: true
+      release: "0.6"
+    - branch-ci: true
+      release: "0.7"
+    - branch-ci: true
+      release: "0.8"
+    - nightly: true
+      dot-dev: true
+    - dot-release: true
+      dot-dev: true
+    - auto-release: true
+      dot-dev: true
+    - performance: true
+      dot-dev: true
+
+  knative/eventing-contrib:
+    - continuous: true
+      dot-dev: true
+    - branch-ci: true
+      release: "0.5"
+    - branch-ci: true
+      release: "0.6"
+    - branch-ci: true
+      release: "0.7"
+    - branch-ci: true
+      release: "0.8"
+    - nightly: true
+      dot-dev: true
+    - dot-release: true
+      dot-dev: true
+    - auto-release: true
+      dot-dev: true
+
+  knative/pkg:
+    - continuous: true
+      dot-dev: true
+
+  knative/caching:
+    - continuous: true
+      dot-dev: true
+
+  knative/observability:
+    - continuous: true
+
+  knative/sample-controller:
+    - continuous: true
+      dot-dev: true
+
+  knative/test-infra:
+    - continuous: true
+      dot-dev: true
+
+  knative/serving-operator:
+    - continuous: true
+      dot-dev: true
+    - nightly: true
+      dot-dev: true
+    - dot-release: true
+      dot-dev: true
+    - auto-release: true
+      dot-dev: true
+
+  knative/eventing-operator:
+    - continuous: true
+      dot-dev: true
+    - nightly: true
+      dot-dev: true
+    - dot-release: true
+      dot-dev: true
+    - auto-release: true
+      dot-dev: true
+
+  google/knative-gcp:
+    - continuous: true
+    - nightly: true
+    - dot-release: true
+      env-vars:
+      - ORG_NAME=google
+    - auto-release: true
+      env-vars:
+      - ORG_NAME=google

@@ -1,0 +1,261 @@
+// Copyright 2019 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     https://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// see the license for the specific language governing permissions and
+// limitations under the license.
+
+// -----------------------------------------------------------------------------
+// Two-Sample UTest Analyzer Configuration
+// -----------------------------------------------------------------------------
+//
+// UTest is an A/B analyzer that determines if two distributions have the same
+// "central tendency" within a certain confidence level.
+//
+// Find full documentation at http://go/mako-utest
+
+syntax = "proto2";
+
+package mako.utest_analyzer;
+
+import "spec/proto/mako.proto";
+
+option java_package = "com.google.testing.performance.mako.clients.analyzers";
+option java_outer_classname = "UTestAnalyzerProto";
+
+// Constructor input to UTest analyzer
+message UTestAnalyzerInput {
+  // REQUIRED
+  // Control sample (golden run, historic runs, etc.)
+  optional UTestSample a_sample = 1;
+
+  // REQUIRED
+  // Variation sample (current run, etc.)
+  optional UTestSample b_sample = 2;
+
+  // REQUIRED
+  // Configuration for each UTest you want to run
+  // At least one must be provided
+  repeated UTestConfig config_list = 3;
+
+  // UNCOMMON
+  // Name for this analyzer instance, will be output in
+  // AnalyzerOutput.analyzer_name
+  optional string name = 4;
+}
+
+// Configuration for each UTest the user runs
+// NEXT_ID: 10
+message UTestConfig {
+  // CONDITIONALLY_REQUIRED: a_metric_key or a_data_filter must be provided.
+  // metric_key (BenchmarkInfo.metric_info_list.value_key) for the metric
+  // of sample A on which we will run the test.
+  optional string a_metric_key = 1;
+
+  // CONDITIONALLY_REQUIRED: a_metric_key or a_data_filter must be provided.
+  // Aggregate value selected for sample A of analysis.
+  optional mako.DataFilter a_data_filter = 8;
+
+  // CONDITIONALLY_REQUIRED: b_metric_key or b_data_filter must be provided.
+  // metric_key (BenchmarkInfo.metric_info_list.value_key) for the metric
+  // of sample B on which we will run the test.
+  optional string b_metric_key = 2;
+
+  // CONDITIONALLY_REQUIRED: b_metric_key or b_data_filter must be provided.
+  // Aggregate value selected for sample B of analysis.
+  optional mako.DataFilter b_data_filter = 9;
+
+  // OPTIONAL, but highly recommended. See also relative_shift_value.
+  // Allows you to configure the magnitude of change detected by the UTest.
+  //
+  // Specifies how much to shift the central tendency difference between
+  // sample A and sample B. This value can be positive or negative so you may
+  // need two TTests if you want to allow for small positive and negative
+  // changes: b/79419586.
+  //
+  // It can be thought of as the value by which we shift the sample A
+  // points (sample_a_point += shift_value) before running each u-test.
+  //
+  // This may be useful if you want to report a regression only if the
+  // difference in central tendency of sample A and sample B populations is
+  // exceeded by some threshold. For example, if you want to test against
+  // b_sample_tendency > a_sample_tendency + 5, then the shift_value will
+  // be 5 and set the DirectionBias (discussed further in the doc)
+  // to IGNORE_DECREASE.
+  //
+  // Another use for this may be if we want the two population central
+  // tendencies to differ by a specific constant value. For example, if the
+  // sample B central tendency should be exactly 5 units higher than the
+  // sample A central tendency, shift_value should be set to 5. However,
+  // if the sample A central tendency should be exactly 5 units higher than
+  // the sample B central tendency, the shift_value should be set to -5.
+  //
+  // For a traditional UTest for equal central tendencies, omit this value
+  // or enter 0.
+  //
+  // From a statistical perspective, this can be considered a parameter to the
+  // null hypothesis where the null hypothesis is in the form:
+  // b_sample_tendency - a_sample_tendency = shift_value
+  // We default the shift value to be 0, so the default null hypothesis is
+  // a_sample_tendency = b_sample_tendency.
+  //
+  // At most one of shift_value and relative_shift_value can be specified.
+  optional double shift_value = 3;
+
+  // OPTIONAL, similar to shift_value
+  // Sometimes it is preferable to detect relative changes instead of absolute
+  // ones, and you may want to use relative_shift_value. Since test A is
+  // commonly considered to be the known good test, and test B is where the
+  // potential regression may occur, setting a relative_shift_value is
+  // equivalent to setting shift_value to
+  //
+  //   Mean of sample A x relative_shift_value
+  //
+  // That is, setting relative_shift_value = 0.03 will detect whether there is a
+  // 3% increase in test B comparing to test A.
+  //
+  // At most one of shift_value and relative_shift_value can be specified.
+  optional double relative_shift_value = 7;
+
+  // REQUIRED
+  // Direction bias of the selected data.
+  //
+  // From a statistical perspective, this can be considered the parameter
+  // that decides what the alternative hypothesis for the test is.
+  //
+  // The alternative hypothesis is the scenario that we don't want to happen.
+  // For example, for a latency sample, we might not want the sample B
+  // central tendency to be greater than the sample A central tendency, thus
+  // the alternative hypothesis would be a_sample_tendency < b_sample_tendency
+  // and you would select IGNORE_DECREASE as the direction_bias.
+  //
+  // If our direction_bias is:
+  //  * NO_BIAS
+  //      H_a: a_sample_tendency != b_sample_tendency
+  //      we run a two-tailed test and we will reject the null
+  //      hypothesis if |Z| > z_a,v
+  //  * IGNORE_INCREASE
+  //      H_a: a_sample_tendency > b_sample_tendency
+  //      we run a upper-tailed test and we will reject the null
+  //      hypothesis if Z > z_a,v
+  //  * IGNORE_DECREASE
+  //      H_a: a_sample_tendency < b_sample_tendency
+  //      we run a lower-tailed test and we will reject the null
+  //      hypothesis if Z < z_a,v
+  // where H_a is the alternative hypothesis, Z is the computed z-statistic, and
+  // z_a,v is the critical value computed based on the user's significance level
+  // parameter.
+  enum DirectionBias {
+    NO_BIAS = 0;
+    IGNORE_INCREASE = 1;
+    IGNORE_DECREASE = 2;
+  }
+  optional DirectionBias direction_bias = 4 [default = NO_BIAS];
+
+  // REQUIRED
+  // Specifies the significance level (or alpha value) for the UTest.
+  //
+  // This is the probability that this a difference of at least this magnitude
+  // would arise if the two distributions had no difference in central
+  // tendencies. The lower this value, the larger the difference you're willing
+  // to ignore. For example, if significance_level = 0.05, then we will fail the
+  // test if there is less than a 5% probability that a difference of at least
+  // this magnitude would occur given that the central tendencies of the two
+  // distributions were equal.
+  //
+  // Commonly chosen significance levels are 0.001, 0.01, 0.05 and 0.1.
+  // The most popular choice is 0.05.
+  optional double significance_level = 5;
+
+  // OPTIONAL
+  // Name of this config. This is useful for identifying configs when debugging.
+  // Will be set in UTestConfigResult.config_name if supplied.
+  optional string config_name = 6;
+}
+
+// Defines a sample on which we will run our UTest
+message UTestSample {
+  // CONDITIONALLY REQUIRED
+  // List of RunInfoQueries which result in the data we want to include in our
+  // sample.
+  //
+  // Limitations:
+  //   * Must provide at least one RunInfoQuery if include_current_run is
+  //     not set to true.
+  repeated mako.RunInfoQuery run_query_list = 1;
+
+  // CONDITIONALLY REQUIRED
+  // Boolean to decide whether the current run should be included in the
+  // sample. If this is true, then data points from the current run are
+  // included in the sample. Otherwise, they are not.
+  optional bool include_current_run = 2 [default = false];
+}
+
+// This message will be text (go/textformat) encoded into
+// AnalyzerOutput.output.
+message UTestAnalyzerOutput {
+  // REQUIRED
+  // Summary of analyzer run
+  //   * "okay"
+  //       if no overall regression found
+  //   * "# failed"
+  //       if overall regression found
+  //   * "# failed: conf_1, conf_2"
+  //       if overall regression found and config names specified
+  optional string summary = 1;
+
+  // REQUIRED
+  // A result will be added for each TTestConfig that is run.
+  repeated UTestConfigResult config_result_list = 2;
+}
+
+// Results of each UTestConfig
+// NEXT_ID: 10
+message UTestConfigResult {
+  // REQUIRED
+  optional UTestConfig config = 5;
+
+  // REQUIRED
+  // Human readable label associated with the metric being analyzed for
+  // Sample A.
+  optional string a_metric_label = 6;
+
+  // REQUIRED
+  // Human readable label associated with the metric being analyzed for
+  // Sample B.
+  optional string b_metric_label = 7;
+
+  // REQUIRED
+  // Median of sample A, with no shift values applied.
+  optional double a_median = 8;
+
+  // REQUIRED
+  // Median of sample B.
+  optional double b_median = 9;
+
+  // REQUIRED
+  // Z-Statistic resulting from the test
+  optional double z_statistic = 1;
+
+  // REQUIRED
+  // Probability that the observed difference in distribution central
+  // tendencies was found although a_sample_tendency = b_sample_tendency
+  // (the null hypothesis was true)
+  optional double p_value = 2;
+
+  // REQUIRED
+  // Whether or not a regression was found for this configuration
+  // (the null hypothesis was rejected and the alternative hypothesis was true)
+  optional bool regression_found = 3;
+
+  // OPTIONAL
+  // Set if name was supplied to UTestConfig.config_name
+  optional string config_name = 4;
+}

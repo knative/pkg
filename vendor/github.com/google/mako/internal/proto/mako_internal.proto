@@ -1,0 +1,102 @@
+// Copyright 2019 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     https://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+syntax = "proto2";
+
+package mako_internal;
+
+import "spec/proto/mako.proto";
+
+// -----------------------------------------------------------------------------
+// Common
+// -----------------------------------------------------------------------------
+
+// An enum for aggregate types used in the app server and html template.
+// NEXT_ID: 13
+enum ValueOptType {
+  METRIC = 1;
+  AGG_METRIC_COUNT = 2;
+  AGG_METRIC_MIN = 3;
+  AGG_METRIC_MAX = 4;
+  AGG_METRIC_MEAN = 5;
+  AGG_METRIC_MEDIAN = 6;
+  AGG_METRIC_STDDEV = 7;
+  AGG_METRIC_MAD = 8;
+  AGG_METRIC_PERCENTILE = 9;
+  AGG_CUSTOM = 10;
+  AGG_BENCHMARK_SCORE = 11;
+  AGG_ERROR_COUNT = 12;
+}
+
+// Used when function has no return args.
+message EmptyMessage {}
+
+// Used when function has only an error return value.
+message ErrorMessage {
+  // REQUIRED
+  // Error message, empty mean success.
+  optional string err = 1;
+}
+
+// A storage API request that is handled by the server as if run by another
+// user, as in the *nix "sudo" command. The server is responsible for checking
+// whether the caller can use this feature.
+message SudoStorageRequest {
+  enum Type {
+    NONE = 0;
+
+    CREATE_BENCHMARK_INFO = 1;
+    UPDATE_BENCHMARK_INFO = 2;
+    QUERY_BENCHMARK_INFO = 3;
+    DELETE_BENCHMARK_INFO = 4;
+    COUNT_BENCHMARK_INFO = 5;
+
+    CREATE_RUN_INFO = 6;
+    UPDATE_RUN_INFO = 7;
+    QUERY_RUN_INFO = 8;
+    DELETE_RUN_INFO = 9;
+    COUNT_RUN_INFO = 10;
+
+    CREATE_SAMPLE_BATCH = 11;
+    QUERY_SAMPLE_BATCH = 12;
+    DELETE_SAMPLE_BATCH = 13;
+  }
+  optional Type type = 1;
+  optional string run_as = 2;
+  oneof payload_oneof {
+    mako.BenchmarkInfo benchmark = 3;
+    mako.BenchmarkInfoQuery benchmark_query = 4;
+    mako.RunInfo run = 5;
+    mako.RunInfoQuery run_query = 6;
+    mako.SampleBatch batch = 7;
+    mako.SampleBatchQuery batch_query = 8;
+  }
+}
+
+// Container for passing AnalyzerOutputs via SWIG.
+message AnalyzerOutputs {
+  repeated mako.AnalyzerOutput analyzer_outputs = 1;
+}
+
+// Request to insert a large amount of data. Used for debugging, never on prod.
+message BatchInsertDataRequest {
+  repeated mako.BenchmarkInfo benchmark_info_list = 1;
+  repeated mako.RunInfo run_info_list = 2;
+  repeated mako.SampleBatch sample_batch_list = 3;
+}
+
+message BatchInsertDataResponse {
+  // Number of records that failed to insert
+  optional int64 inserted = 1;
+  optional string error = 2;
+}

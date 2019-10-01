@@ -1,0 +1,134 @@
+// Copyright 2019 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     https://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// see the license for the specific language governing permissions and
+// limitations under the license.
+
+// More information about quickstore: go/mako-quickstore
+syntax = "proto2";
+
+package mako.quickstore;
+
+import "clients/proto/analyzers/threshold_analyzer.proto";
+import "clients/proto/analyzers/utest_analyzer.proto";
+import "clients/proto/analyzers/window_deviation.proto";
+import "spec/proto/mako.proto";
+
+option java_package = "com.google.testing.performance.mako.helpers";
+
+// NEXT_ID: 23
+message QuickstoreInput {
+  // REQUIRED
+  // Associates this data with a benchmark.
+  // Must match an existing BenchmarkInfo benchmark_key.
+  // See https://mako.dev/help?tmpl=storage#bench for information
+  // about creating a benchmark.
+  optional string benchmark_key = 1;
+
+  // OPTIONAL
+  // These fields are optional if you'd like to add more information about the
+  // data that is stored. Each field is duplicated with the same name as
+  // part of the RunInfo message
+  // (https://github.com/google/mako/blob/master/spec/proto/mako.proto
+  // Fields below will be set regardless of analysis status.
+  optional double timestamp_ms = 2;
+  optional int64 build_id = 20;
+  optional double duration_time_ms = 3;
+  repeated string tags = 4;
+  optional string hover_text = 14;
+  optional string description = 6;
+  optional string test_pass_id = 18;
+  repeated mako.RunAnnotation annotation_list = 7;
+  repeated mako.NamedData hyperlink_list = 8;
+  repeated mako.NamedData aux_data = 17;
+  repeated mako.LabeledRange ignore_range_list = 9;
+
+  // OPTIONAL
+  // The path to temporary directory to store pre-downsampled data.
+  optional string temp_dir = 21;
+  // If true, deletes the sample files with pre-downsampled data at the end of
+  // the test run. Otherwise, the files are not deleted.
+  optional bool delete_sample_files = 22 [default = true];
+
+  message ConditionalFields {
+    // Appended to any tags specified by QuickstoreInput.tags
+    repeated string tags = 1;
+  }
+
+  // OPTIONAL
+  // Applied to the run only when analysis passes.
+  // (Also applied when no analyzers have been specified and call was
+  // successful).
+  optional ConditionalFields analysis_pass = 10;
+
+  // OPTIONAL
+  // Applied to the run only when analysis fails.
+  optional ConditionalFields analysis_fail = 11;
+
+  // OPTIONAL
+  // Analyzers to run after data has been uploaded.
+  // See analyzers specific protos for more information.
+  // https://github.com/google/mako/blob/master/clients/proto/analyzers/threshold_analyzer.proto
+  repeated mako.analyzers.threshold_analyzer.ThresholdAnalyzerInput
+      threshold_inputs = 12;
+  // https://github.com/google/mako/blob/master/clients/proto/analyzers/window_deviation.proto
+  repeated mako.window_deviation.WindowDeviationInput wda_inputs = 13;
+  // https://github.com/google/mako/blob/master/clients/proto/analyzers/utest_analyzer.proto
+  repeated mako.utest_analyzer.UTestAnalyzerInput utest_inputs = 16;
+  reserved 15, 19;
+  reserved 5;
+}
+
+message QuickstoreOutput {
+  // ALWAYS POPULATED
+  // Overall status
+  enum Status {
+    SUCCESS = 1;
+    ERROR = 2;
+    // Analysis failure. Set when:
+    //  * at least one analyzer failed to run.
+    //  * at least one analyzer reported a regression.
+    // Iterate through AnalyzerOutput.analyzer_output_list checking
+    // AnalyzerOutput.status.code != SUCCESS (failed to run) and
+    // AnalyzerOutput.regression == True (found a regression) to differentiate
+    // between the two cases.
+    ANALYSIS_FAIL = 4;
+  }
+  optional Status status = 1;
+
+  // CONDITIONALLY POPULATED
+  // Output from analyzers. Populated if analyzers were run.
+  repeated AnalyzerOutput analyzer_output_list = 2;
+
+  // ALWAYS POPULATED
+  // A summary message about the test results.
+  // Will contain:
+  //   - Analysis summaries
+  //   - Error details
+  //   - Warning details
+  optional string summary_output = 3;
+
+  // CONDITIONALLY POPULATED
+  // A dashboard link to the run chart.
+  // Populated if status != ERROR.
+  optional string run_chart_link = 4;
+
+  // CONDITIONALLY POPULATED
+  // The Mako run_key
+  // Populated if status != ERROR.
+  optional string run_key = 5;
+
+  // CONDITIONALLY POPULATED
+  // List of generated sample files.
+  // Populated if QuickstoreInput.temp_dir was provided and
+  // QuickstoreInput.delete_sample_files was false.
+  repeated string generated_sample_files = 6;
+}

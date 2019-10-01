@@ -1,0 +1,360 @@
+/*
+Copyright 2018 The Kubernetes Authors.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
+package prstatus
+
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+	"io"
+	"net/http"
+	"strings"
+	"time"
+
+	"github.com/gorilla/sessions"
+	githubql "github.com/shurcooL/githubv4"
+	"github.com/sirupsen/logrus"
+	"golang.org/x/oauth2"
+
+	"k8s.io/test-infra/prow/config"
+	"k8s.io/test-infra/prow/github"
+)
+
+const (
+	loginSession = "github_login"
+	tokenSession = "access-token-session"
+	tokenKey     = "access-token"
+	loginKey     = "login"
+)
+
+type githubClient interface {
+	Query(context.Context, interface{}, map[string]interface{}) error
+	GetCombinedStatus(org, repo, ref string) (*github.CombinedStatus, error)
+}
+
+// PullRequestQueryHandler defines an interface that query handlers should implement.
+type PullRequestQueryHandler interface {
+	QueryPullRequests(context.Context, githubClient, string) ([]PullRequest, error)
+	GetHeadContexts(ghc githubClient, pr PullRequest) ([]Context, error)
+}
+
+// UserData represents data returned to client request to the endpoint. It has a flag that indicates
+// whether the user has logged in his github or not and list of open pull requests owned by the
+// user.
+type UserData struct {
+	Login                    bool
+	PullRequestsWithContexts []PullRequestWithContexts
+}
+
+// PullRequestWithContexts contains a pull request with its latest commit contexts.
+type PullRequestWithContexts struct {
+	Contexts    []Context
+	PullRequest PullRequest
+}
+
+// DashboardAgent is responsible for handling request to /pr-status endpoint.
+// It will serve a list of open pull requests owned by the user.
+type DashboardAgent struct {
+	repos []string
+	goac  *config.GitHubOAuthConfig
+
+	log *logrus.Entry
+}
+
+// Label represents a GitHub label.
+type Label struct {
+	ID   githubql.ID
+	Name githubql.String
+}
+
+// Context represent a GitHub status check context.
+type Context struct {
+	Context     string
+	Description string
+	State       string
+}
+
+// PullRequest holds the GraphQL response data for a GitHub pull request.
+type PullRequest struct {
+	Number githubql.Int
+	Merged githubql.Boolean
+	Title  githubql.String
+	Author struct {
+		Login githubql.String
+	}
+	BaseRef struct {
+		Name   githubql.String
+		Prefix githubql.String
+	}
+	HeadRefOID githubql.String `graphql:"headRefOid"`
+	Repository struct {
+		Name          githubql.String
+		NameWithOwner githubql.String
+		Owner         struct {
+			Login githubql.String
+		}
+	}
+	Labels struct {
+		Nodes []struct {
+			Label Label `graphql:"... on Label"`
+		}
+	} `graphql:"labels(first: 100)"`
+	Milestone struct {
+		Title githubql.String
+	}
+	Mergeable githubql.MergeableState
+}
+
+// UserLoginQuery holds the GraphQL query for the currently authenticated user.
+type UserLoginQuery struct {
+	Viewer struct {
+		Login githubql.String
+	}
+}
+
+type searchQuery struct {
+	RateLimit struct {
+		Cost      githubql.Int
+		Remaining githubql.Int
+	}
+	Search struct {
+		PageInfo struct {
+			HasNextPage githubql.Boolean
+			EndCursor   githubql.String
+		}
+		Nodes []struct {
+			PullRequest PullRequest `graphql:"... on PullRequest"`
+		}
+	} `graphql:"search(type: ISSUE, first: 100, after: $searchCursor, query: $query)"`
+}
+
+// NewDashboardAgent creates a new user dashboard agent .
+func NewDashboardAgent(repos []string, config *config.GitHubOAuthConfig, log *logrus.Entry) *DashboardAgent {
+	return &DashboardAgent{
+		repos: repos,
+		goac:  config,
+		log:   log,
+	}
+}
+
+func invalidateGitHubSession(w http.ResponseWriter, r *http.Request, session *sessions.Session) error {
+	// Invalidate github login session
+	http.SetCookie(w, &http.Cookie{
+		Name:    loginSession,
+		Path:    "/",
+		Expires: time.Now().Add(-time.Hour * 24),
+		MaxAge:  -1,
+		Secure:  true,
+	})
+
+	// Invalidate access token session
+	session.Options.MaxAge = -1
+	return session.Save(r, w)
+}
+
+// HandlePrStatus returns a http handler function that handles request to /pr-status
+// endpoint. The handler takes user access token stored in the cookie to query to GitHub on behalf
+// of the user and serve the data in return. The Query handler is passed to the method so as it
+// can be mocked in the unit test..
+func (da *DashboardAgent) HandlePrStatus(queryHandler PullRequestQueryHandler) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		serverError := func(action string, err error) {
+			da.log.WithError(err).Errorf("Error %s.", action)
+			msg := fmt.Sprintf("500 Internal server error %s: %v", action, err)
+			http.Error(w, msg, http.StatusInternalServerError)
+		}
+
+		data := UserData{
+			Login: false,
+		}
+
+		// Get existing session. Invalidate everything if we fail and continue as
+		// if not logged in.
+		session, err := da.goac.CookieStore.Get(r, tokenSession)
+		if err != nil {
+			da.log.WithError(err).Info("Failed to get existing session, invalidating GitHub login session")
+			if err := invalidateGitHubSession(w, r, session); err != nil {
+				serverError("Failed to invalidate GitHub session", err)
+				return
+			}
+		}
+
+		// If access token exists, get user login using the access token. This is a
+		// chance to validate whether the access token is consumable or not. If
+		// not, we invalidate the sessions and continue as if not logged in.
+		token, ok := session.Values[tokenKey].(*oauth2.Token)
+		var user *github.User
+		var botName string
+		if ok && token.Valid() {
+			githubClient := github.NewClient(func() []byte { return []byte(token.AccessToken) }, github.DefaultGraphQLEndpoint, github.DefaultAPIEndpoint)
+			var err error
+			botName, err = githubClient.BotName()
+			user = &github.User{Login: botName}
+			if err != nil {
+				if strings.Contains(err.Error(), "401") {
+					da.log.Info("Failed to access GitHub with existing access token, invalidating GitHub login session")
+					if err := invalidateGitHubSession(w, r, session); err != nil {
+						serverError("Failed to invalidate GitHub session", err)
+						return
+					}
+				} else {
+					serverError("Error with getting user login", err)
+					return
+				}
+			}
+		}
+
+		if user != nil {
+			login := user.Login
+			data.Login = true
+			// Saves login. We save the login under 2 cookies. One for the use of client to render the
+			// data and one encoded for server to verify the identity of the authenticated user.
+			http.SetCookie(w, &http.Cookie{
+				Name:    loginSession,
+				Value:   login,
+				Path:    "/",
+				Expires: time.Now().Add(time.Hour * 24 * 30),
+				Secure:  true,
+			})
+			session.Values[loginKey] = login
+			if err := session.Save(r, w); err != nil {
+				serverError("Save oauth session", err)
+				return
+			}
+
+			// Construct query
+			ghc := github.NewClient(func() []byte { return []byte(token.AccessToken) }, github.DefaultGraphQLEndpoint, github.DefaultAPIEndpoint)
+			query := da.ConstructSearchQuery(login)
+			if err := r.ParseForm(); err == nil {
+				if q := r.Form.Get("query"); q != "" {
+					query = q
+				}
+			}
+			// If neither repo nor org is specified in the search query. We limit the search to repos that
+			// are configured with either Prow or Tide.
+			if !queryConstrainsRepos(query) {
+				for _, v := range da.repos {
+					query += fmt.Sprintf(" repo:\"%s\"", v)
+				}
+			}
+			pullRequests, err := queryHandler.QueryPullRequests(context.Background(), ghc, query)
+			if err != nil {
+				serverError("Error with querying user data.", err)
+				return
+			}
+			var pullRequestWithContexts []PullRequestWithContexts
+			for _, pr := range pullRequests {
+				prcontexts, err := queryHandler.GetHeadContexts(ghc, pr)
+				if err != nil {
+					serverError("Error with getting head context of pr", err)
+					continue
+				}
+				pullRequestWithContexts = append(pullRequestWithContexts, PullRequestWithContexts{
+					Contexts:    prcontexts,
+					PullRequest: pr,
+				})
+			}
+
+			data.PullRequestsWithContexts = pullRequestWithContexts
+		}
+
+		marshaledData, err := json.Marshal(data)
+		if err != nil {
+			da.log.WithError(err).Error("Error with marshalling user data.")
+		}
+
+		if v := r.URL.Query().Get("var"); v != "" {
+			fmt.Fprintf(w, "var %s = ", v)
+			w.Write(marshaledData)
+			io.WriteString(w, ";")
+		} else {
+			w.Write(marshaledData)
+		}
+	}
+}
+
+// QueryPullRequests is a query function that returns a list of open pull requests owned by the user whose access token
+// is consumed by the github client.
+func (da *DashboardAgent) QueryPullRequests(ctx context.Context, ghc githubClient, query string) ([]PullRequest, error) {
+	var prs []PullRequest
+	vars := map[string]interface{}{
+		"query":        (githubql.String)(query),
+		"searchCursor": (*githubql.String)(nil),
+	}
+	var totalCost int
+	var remaining int
+	for {
+		sq := searchQuery{}
+		if err := ghc.Query(ctx, &sq, vars); err != nil {
+			return nil, err
+		}
+		totalCost += int(sq.RateLimit.Cost)
+		remaining = int(sq.RateLimit.Remaining)
+		for _, n := range sq.Search.Nodes {
+			prs = append(prs, n.PullRequest)
+		}
+		if !sq.Search.PageInfo.HasNextPage {
+			break
+		}
+		vars["searchCursor"] = githubql.NewString(sq.Search.PageInfo.EndCursor)
+	}
+	da.log.Infof("Search for query \"%s\" cost %d point(s). %d remaining.", query, totalCost, remaining)
+	return prs, nil
+}
+
+// GetHeadContexts returns the status checks' contexts of the head commit of the PR.
+func (da *DashboardAgent) GetHeadContexts(ghc githubClient, pr PullRequest) ([]Context, error) {
+	org := string(pr.Repository.Owner.Login)
+	repo := string(pr.Repository.Name)
+	combined, err := ghc.GetCombinedStatus(org, repo, string(pr.HeadRefOID))
+	if err != nil {
+		return nil, fmt.Errorf("failed to get the combined status: %v", err)
+	}
+	contexts := make([]Context, 0, len(combined.Statuses))
+	for _, status := range combined.Statuses {
+		contexts = append(
+			contexts,
+			Context{
+				Context:     status.Context,
+				Description: status.Description,
+				State:       strings.ToUpper(status.State),
+			},
+		)
+	}
+	return contexts, nil
+}
+
+// ConstructSearchQuery returns the GitHub search query string for PRs that are open and authored
+// by the user passed. The search is scoped to repositories that are configured with either Prow or
+// Tide.
+func (da *DashboardAgent) ConstructSearchQuery(login string) string {
+	tokens := []string{"is:pr", "state:open", "author:" + login}
+	for i := range da.repos {
+		tokens = append(tokens, fmt.Sprintf("repo:\"%s\"", da.repos[i]))
+	}
+	return strings.Join(tokens, " ")
+}
+
+func queryConstrainsRepos(q string) bool {
+	tkns := strings.Split(q, " ")
+	for _, tkn := range tkns {
+		if strings.HasPrefix(tkn, "org:") || strings.HasPrefix(tkn, "repo:") {
+			return true
+		}
+	}
+	return false
+}

@@ -1,0 +1,16 @@
+# See the OWNERS docs at https://go.k8s.io/owners
+
+approvers:
+- amwat # oncall
+# - BenTheElder # emeritus
+- cjwagner # oncall
+- fejta # lead
+- ixdy # oncall
+- Katharine # oncall
+- krzyzacy # oncall
+- michelle192837 # oncall
+- spiffxp # lead
+- stevekuznetsov # lead
+
+labels:
+- sig/testing

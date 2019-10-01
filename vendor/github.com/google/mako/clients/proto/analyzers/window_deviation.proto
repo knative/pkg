@@ -1,0 +1,244 @@
+// Copyright 2019 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     https://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// see the license for the specific language governing permissions and
+// limitations under the license.
+
+// -----------------------------------------------------------------------------
+// Window Deviation Analyzer (WDA) Configuration Protos
+// -----------------------------------------------------------------------------
+//
+// WDA is a trend deviation analyzer that assesses the difference between the
+// recent and historic mean or median values with a user configured tolerance.
+//
+// Find full documentation, including a link to a "playground" to test these
+// parameters, at http://go/mako-wda
+
+syntax = "proto2";
+
+package mako.window_deviation;
+
+import "spec/proto/mako.proto";
+
+option java_package = "com.google.testing.performance.mako.clients.analyzers";
+option java_outer_classname = "WindowDeviationProto";
+
+// Input to WDA constructor.
+// See docs above for detail.
+message WindowDeviationInput {
+  // REQUIRED
+  // Queries for past runs that will be used to retrieve runs prior to the
+  // current run. The benchmark_key, limit, and tags fields are usually set
+  // on these queries.
+  // If the benchmark_key is not set, it will automatically be set to that of
+  // the benchmark owning the run under analysis.
+  // If a query limit is set to N:
+  //   The framework will make a series of queries as needed to attempt
+  //   retrieval of N runs.
+  //   If at least N matching runs exist:
+  //     N runs will be supplied to the analyzer
+  //   Else
+  //     Less than N runs will be supplied to the analyzer.
+  // If a query limit is not set:
+  //   The server default max limit is used, which is guaranteed
+  //   to be no less than 100.
+  // Limitations:
+  //   * All query limit fields must be unset or in range [0,1000]
+  repeated mako.RunInfoQuery run_info_query_list = 1;
+
+  // REQUIRED
+  // The data and associated tolerance parameters.
+  // At least one of these should exist for each aggregate value
+  // being analyzed.
+  // If *any* check reports regression, an overall regression will be reported.
+  repeated ToleranceCheck tolerance_check_list = 2;
+
+  // UNCOMMON
+  // An optional name which is copied to AnalyzerOutput.analyzer_name.
+  // See AnalyzerOutput in mako.proto for more information.
+  optional string name = 3;
+}
+
+// Provides one or more tolerance configurations for a data filter and query.
+// See docs above for detail.
+// NEXT_ID: 7
+message ToleranceCheck {
+  // REQUIRED
+  // Aggregate value selected for analysis.
+  optional mako.DataFilter data_filter = 1;
+
+  // REQUIRED
+  // Size of recent window.
+  // Limits:
+  //   * Must be > 0
+  optional int32 recent_window_size = 2 [default = 1];
+
+  // UNCOMMON
+  // Minimum number of data points in the historical window to evaluate this
+  // ToleranceCheck. If the number of data points in the historical window is
+  // less than minimum_historical_window_size, this check will be SKIPPED.
+  optional int32 minimum_historical_window_size = 6 [default = 3];
+
+  // REQUIRED
+  // Direction bias of the selected data.
+  enum DirectionBias {
+    NO_BIAS = 0;
+    IGNORE_INCREASE = 1;
+    IGNORE_DECREASE = 2;
+  }
+  optional DirectionBias direction_bias = 3 [default = NO_BIAS];
+
+  // REQUIRED
+  // Defines the tolerance parameters for a check.
+  // It is most common to supply either one MeanToleranceParams or one
+  // MedianToleranceParams message for these repeated fields, but multiple
+  // messages can be supplied.
+  //
+  // *Every* ToleranceParams message in the list must cause the tolerance to be
+  // exceeded for a regression to be reported:
+  //
+  // Limits:
+  //   * At least one *ToleranceParams must be supplied
+  repeated MeanToleranceParams mean_tolerance_params_list = 4;
+  repeated MedianToleranceParams median_tolerance_params_list = 5;
+}
+
+// Tolerance parameters for mean delta.
+// See docs above for detail.
+// Limits:
+//   * All parameters must be >= 0
+//   * At least one parameter must be > 0
+message MeanToleranceParams {
+  optional double const_term = 1 [default = 0.0];
+  optional double mean_coeff = 2 [default = 0.0];
+  optional double stddev_coeff = 3 [default = 0.0];
+}
+
+// Tolerance parameters for median delta.
+// See docs above for detail.
+// Limits:
+//   * All parameters must be >= 0
+//   * At least one parameter must be > 0
+message MedianToleranceParams {
+  optional double const_term = 1 [default = 0.0];
+  optional double median_coeff = 2 [default = 0.0];
+  optional double mad_coeff = 3 [default = 0.0];
+}
+
+// Output specific to this analyzer. This message will be ascii encoded
+// into AnalyzerOutput.output, so that field can be parsed as this
+// type of messaage for actionable WDA results.
+// NEXT_ID: 9
+message WindowDeviationOutput {
+  // REQUIRED
+  optional string output_message = 1;
+
+  // REQUIRED
+  // One output will be returned for every ToleranceCheck listed in the input.
+  message ToleranceCheckOutput {
+    // REQUIRED
+    optional ToleranceCheck tolerance_check = 1;
+    // REQUIRED
+    enum CheckResult {
+      UNDEFINED = 0;
+      REGRESSED = 1;
+      SKIPPED = 2;
+      PASSED = 3;
+    }
+    optional CheckResult result = 2 [default = UNDEFINED];
+
+    // REQUIRED
+    // Human readable label associated with the metric being analyzed.
+    optional string metric_label = 3;
+
+    // Conditionally REQUIRED if result is not SKIPPED
+    optional ToleranceCheckStats stats = 4;
+
+    // CONDITIONALLY REQUIRED
+    // Required if the run queries for this WDA instance are sorting by
+    // Timestamp.
+    // Minimum historical window run timestamp. Used to re-create an
+    // approximation of the runs that were used in the historical run window.
+    optional double historical_window_min_timestamp_ms = 5;
+
+    // CONDITIONALLY REQUIRED
+    // Required if the run queries for this WDA instance are sorting by
+    // Timestamp.
+    // Maximum historical window run timestamp. Used to re-create an
+    // approximation of the runs that were used in the historical run window.
+    optional double historical_window_max_timestamp_ms = 6;
+
+    // CONDITIONALLY REQUIRED
+    // Required if the run queries for this WDA instance are sorting by
+    // BuildID.
+    // Minimum historical window run timestamp. Used to re-create an
+    // approximation of the runs that were used in the historical run window.
+    optional double historical_window_min_build_id = 7;
+
+    // CONDITIONALLY REQUIRED
+    // Required if the run queries for this WDA instance are sorting by
+    // BuildID.
+    // Maximum historical window run timestamp. Used to re-create an
+    // approximation of the runs that were used in the historical run window.
+    optional double historical_window_max_build_id = 8;
+  }
+  repeated ToleranceCheckOutput checks = 3;
+
+  // deprecated
+  repeated ToleranceCheck checks_skipped_for_missing_data = 2;
+}
+
+// Statistics computed from the current and historic windows as part of the
+// WDA anomaly detection algorithm. These are compared against the user
+// provided tolerances to determine if WDA should flag a regression.
+message ToleranceCheckStats {
+  optional int32 historic_data_length = 1;
+  optional int32 recent_data_length = 2;
+  optional double historic_mean = 3;
+  optional double historic_median = 4;
+  optional double historic_stddev = 5;
+  optional double historic_mad = 6;
+  optional double recent_mean = 7;
+  optional double recent_median = 8;
+  optional double delta_mean = 9;
+  optional double delta_median = 10;
+
+  repeated MeanToleranceCheckResult mean_tolerance_check_result = 11;
+  repeated MedianToleranceCheckResult median_tolerance_check_result = 12;
+}
+
+message MeanToleranceCheckResult {
+  // Input parameters used to calculate the tolerance value.
+  optional MeanToleranceParams params = 1;
+
+  // The computed tolerance value.
+  optional double tolerance = 2;
+
+  // Whether this check was flagged as having regressed. This will be false
+  // even if tolerance is smaller than the delta_mean value if the WDA input
+  // was configured to ignore changes in a specific direction and this delta
+  // is in that direction (see: ToleranceCheck.direction_bias).
+  optional bool is_regressed = 3;
+}
+
+message MedianToleranceCheckResult {
+  // Input parameters used to calculate the tolerance value.
+  optional MedianToleranceParams params = 1;
+
+  // The computed tolerance value.
+  optional double tolerance = 2;
+
+  // Whether this check was flagged as having regressed. This will be false
+  // even if tolerance is smaller than the delta_median value if the WDA input
+  // was configured to ignore changes in a specific direction and this delta
+  // is in that direction (see: ToleranceCheck.direction_bias).
+  optional bool is_regressed = 3;
+}

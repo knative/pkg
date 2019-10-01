@@ -1,0 +1,66 @@
+package(default_visibility = [
+    "//go/quickstore:__subpackages__",
+    "//helpers/dart/quickstore:__subpackages__",
+    "//helpers/py/quickstore:__subpackages__",
+    "//internal/quickstore_microservice:__pkg__",
+    "//java/com/google/testing/performance/mako/helpers/quickstore:__subpackages__",
+    "//quickstore/cxx:__subpackages__",
+])
+
+licenses(["notice"])
+
+cc_library(
+    name = "store",
+    srcs = ["store.cc"],
+    hdrs = ["store.h"],
+    deps = [
+        "//clients/cxx/aggregator:standard_aggregator",
+        "//clients/cxx/analyzers:threshold_analyzer",
+        "//clients/cxx/analyzers:utest_analyzer",
+        "//clients/cxx/analyzers:window_deviation",
+        "//clients/cxx/dashboard:standard_dashboard",
+        "//clients/cxx/downsampler:standard_downsampler",
+        "//clients/cxx/fileio:memory_fileio",
+        "//clients/cxx/storage:mako_client",
+        "//clients/proto/analyzers:threshold_analyzer_cc_proto",
+        "//clients/proto/analyzers:utest_analyzer_cc_proto",
+        "//clients/proto/analyzers:window_deviation_cc_proto",
+        "//internal/cxx/load/common:run_analyzers",
+        "//proto/quickstore:quickstore_cc_proto",
+        "//spec/cxx:aggregator",
+        "//spec/cxx:analyzer",
+        "//spec/cxx:downsampler",
+        "//spec/cxx:fileio",
+        "//spec/cxx:storage",
+        "//spec/proto:mako_cc_proto",
+        "@com_google_absl//absl/base:core_headers",
+        "@com_google_absl//absl/memory",
+        "@com_google_absl//absl/random",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/synchronization",
+        "@com_google_absl//absl/time",
+        "@com_google_glog//:glog",
+        "@com_google_protobuf//:protobuf",
+    ],
+)
+
+cc_test(
+    name = "store_test",
+    size = "small",
+    srcs = ["store_test.cc"],
+    deps = [
+        ":store",
+        "//clients/cxx/aggregator:standard_aggregator",
+        "//clients/cxx/downsampler:standard_downsampler",
+        "//clients/cxx/fileio:memory_fileio",
+        "//clients/cxx/storage:fake_google3_storage",
+        "//clients/proto/analyzers:threshold_analyzer_cc_proto",
+        "//proto/quickstore:quickstore_cc_proto",
+        "//spec/cxx:fileio",
+        "//spec/proto:mako_cc_proto",
+        "//testing/cxx:protocol-buffer-matchers",
+        "@com_google_absl//absl/memory",
+        "@com_google_glog//:glog",
+        "@com_google_googletest//:gtest_main",
+    ],
+)

@@ -1,0 +1,2052 @@
+// Copyright 2019 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     https://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
+
+// Mako public protobufs
+//
+// These protobufs define all public Mako data supplied by user code,
+// used in interactions with and between mako component implementations,
+// and stored persistenly.
+//
+// Required vs. optional fields:
+//   All fields are declared as "optional", because this makes working with
+//   protocol buffers easier to maintain. However, mako does require some
+//   fields to be set, and consistently uses these comment labels:
+//     * REQUIRED - must be set (either by framework or user)
+//     * CONDITIONALLY_REQUIRED - may need to be set and followed by conditions
+//     * COMMON - is optional and commonly set
+//     * UNCOMMON - is optional and rarely set
+//     * FRAMEWORK_WRITE_ONLY - is only set by framework as needed
+//     * DEPRECATED - no longer used and ignored by the framework
+
+syntax = "proto2";
+
+package mako;
+
+// -----------------------------------------------------------------------------
+// Common - common messages found in many messages below
+// -----------------------------------------------------------------------------
+
+// Used in responses to indicate pass/fail
+message Status {
+  enum Code {
+    SUCCESS = 0;
+    FAIL = 1;
+  }
+
+  // REQUIRED
+  // Request status code
+  optional Code code = 1;
+
+  // CONDITIONALLY_REQUIRED
+  // If failed, contains an error message
+  optional string fail_message = 2;
+
+  // OPTIONAL
+  // Lets the user know if an operation can be retried. Only set on failures.
+  optional bool retry = 3 [default = false];
+
+  // OPTIONAL
+  // Containing any warning messages. Warning messages may be emitted regardless
+  // of the success/failure code.
+  repeated string warning_messages = 4;
+}
+
+// Value (see below) metadata.
+// One of these must be supplied for every value group from one of three
+// types:
+//   input (one ValueInfo)
+//   metric (one ValueInfo for each)
+//   custom aggregate (one ValueInfo for each)
+message ValueInfo {
+  enum Type {
+    // Value is numeric
+    NUMERIC = 1;
+
+    // Value is a unix timestamp in milliseconds.
+    // This type is only valid for input (x-axis) values.
+    // The fractional part of a millisecond value stored as type double is
+    // truncated in all conversions and comparisons. This provides an exact
+    // double representation for all millisecond values up to
+    // 2^53 (year 287396)
+    // http://play.golang.org/p/XQU86TAPuZ
+    TIMESTAMP = 2;
+  }
+
+  // REQUIRED
+  // Uniquely identifies this ValueInfo.
+  //
+  // Limitations:
+  //   * It is repeatedly stored and used as a data lookup key, so for the best
+  //     performance, it should be very short (one or two characters is best).
+  //   * Each value_key used must be unique across all group types (i.e. you
+  //     can't use the same key for an input value, metric, or custom
+  //     aggregate).
+  //   * These are the only legal characters:
+  //       * Letters (A-Z, a-z)
+  //       * Numbers (0-9)
+  optional string value_key = 1;
+
+  // REQUIRED
+  // Provides a user-friendly name for this ValueInfo that gets displayed
+  // on charts. This can be changed at any time without affecting the
+  // charting of historic RunInfo data, because that data only references
+  // the value_key.
+  //
+  // Limitations:
+  //   * This should be relatively short, so it fits well in a chart legend.
+  //   * Like value_key, this label must be unique for each metric.
+  //   * All non-space printable ASCII characters
+  //     (https://en.wikipedia.org/wiki/ASCII#Printable_characters)
+  //     from !(33) to ~(126) are legal except:
+  //       * " (34)
+  //       * & (38)
+  //       * ' (39)
+  //       * , (44)
+  //       * < (60)
+  //       * > (62)
+  //       * \ (92)
+  //       * ` (96)
+  //     Rationale for illegal chars:
+  //       * Space creates undesired label wrapping in some third party
+  //         javascript charting libraries.
+  //       * Chars that need HTML escaping do not work reliably in all
+  //         third party javascript charting libraries.
+  //       * Comma is used for user entry as a delimiter.
+  //       * Backslash is used as an escape char in some contexts.
+  optional string label = 2;
+
+  // Determines the value type. If not set, NUMERIC is assumed.
+  optional Type type = 3;
+}
+
+// Pairs a Value with a ValueInfo
+message KeyedValue {
+  // REQUIRED
+  // Matches a ValueInfo.value_key to associate this value with a supplied
+  // ValueInfo
+  optional string value_key = 1;
+
+  // REQUIRED
+  // Numeric or timestamp value
+  optional double value = 2;
+}
+
+// General purpose name/value string data pair
+message NamedData {
+  // REQUIRED
+  // Name of data
+  optional string name = 1;
+  // REQUIRED
+  // String-serialized data. Format is user-specific.
+  optional string data = 2;
+}
+
+// Value range specifying [start, end]
+// Limitations:
+//   * start must be <= end
+message Range {
+  // REQUIRED
+  optional double start = 1;
+  // REQUIRED
+  optional double end = 2;
+}
+
+// A named value range. The label may get displayed on charts.
+message LabeledRange {
+  // REQUIRED
+  optional string label = 1;
+  // REQUIRED
+  optional Range range = 2;
+}
+
+// Identify a unique set of measurements in Mako framework
+message DataFilter {
+  enum DataType {
+    METRIC_AGGREGATE_COUNT = 11;
+    METRIC_AGGREGATE_MIN = 1;
+    METRIC_AGGREGATE_MAX = 2;
+    METRIC_AGGREGATE_MEAN = 3;
+    METRIC_AGGREGATE_MEDIAN = 4;
+    METRIC_AGGREGATE_STDDEV = 5;
+    METRIC_AGGREGATE_MAD = 12;
+    // Use percentile_milli_rank field below to specify percentile
+    METRIC_AGGREGATE_PERCENTILE = 6;
+    CUSTOM_AGGREGATE = 7;
+    METRIC_SAMPLEPOINTS = 8;
+    BENCHMARK_SCORE = 9;
+    ERROR_COUNT = 10;
+  }
+
+  // REQUIRED
+  // Specify which measurements inside the runs(s) you'd like to extract.
+  optional DataType data_type = 1;
+
+  // CONDITIONALLY_REQUIRED when DataType != BENCHMARK_SCORE or ERROR_COUNT
+  // Specify the ValueInfo.value_key of the measurements that you'd like to
+  // extract (eg. metric, custom aggregate)
+  optional string value_key = 2;
+
+  // CONDITIONALLY_REQUIRED when DataType == METRIC_AGGREGATE_PERCENTILE
+  //
+  // Specify a percentile rank that is also in
+  // Aggregate.percentile_milli_rank_list. Once located in
+  // percentile_milli_rank_list, the corresponding value
+  // will be extracted from Aggregate.MetricAggregate.percentile_list.
+  //
+  // See BenchmarkInfo.percentile_milli_rank_list for full description.
+  optional int32 percentile_milli_rank = 3;
+
+  // OPTIONAL
+  //
+  // By default, a run missing data will be ignored. By setting this flag to
+  // false, when searching for data specified by this filter in a run, it is an
+  // error if the data is missing.
+  //
+  // Warning: If true (default), the consumer of this data (eg. an analyzer)
+  // might not get as much data to operate on as your query specifies.
+  optional bool ignore_missing_data = 4 [default = true];
+}
+
+// Contains all measurements (aggregates via RunInfo and direct measurements via
+// SampleBatches) about a single run.
+message RunBundle {
+  // REQUIRED
+  optional BenchmarkInfo benchmark_info = 1;
+
+  // REQUIRED
+  optional RunInfo run_info = 2;
+
+  // CONDITIONALLY_REQUIRED
+  // Context (eg. only interested in aggregate data) might not require this list
+  // to be populated.
+  repeated SampleBatch batch_list = 3;
+}
+
+// -----------------------------------------------------------------------------
+// Benchmark Metadata
+// -----------------------------------------------------------------------------
+
+// Contains all required information about a benchmark. This data must be
+// written to Mako storage before any run data can be written.
+//
+// This data is normally updated infrequently. It is created once while setting
+// up a new test, and updated later as-needed (e.g. adding new metrics).
+//
+// When first creating a benchmark, the benchmark_key field should be
+// empty. The Storage server will generate and return a unique benchmark_key in
+// the creation response. Save this key for future updates to the benchmark.
+// It's useful to keep a text version of BenchmarkInfo (with benchmark_key set)
+// in source control, so later updates are easy with the Mako command-line
+// tool.
+//
+// NEXT_ID: 14
+message BenchmarkInfo {
+  // CONDITIONALLY_REQUIRED: required for Update
+  // Uniquely identifies this benchmark, and is used as a primary key for
+  // BenchmarkInfo.
+  // This is generated by the Mako storage implementation and should
+  // be hard-coded in your test code or BenchmarkInfo text file.
+  optional string benchmark_key = 1;
+
+  // REQUIRED
+  // User-friendly name for your benchmark. It does not need to be unique,
+  // but you will probably want unique benchmark names across your project.
+  // This gets displayed on charts.
+  // This value can be changed at any time without affecting the Benchmark
+  // or chart dashboard links, because they reference benchmarks by key.
+  //
+  // Limitations:
+  //   * No more than 100 characters
+  //   * These are the only legal characters:
+  //     * Letters (A-Z, a-z)
+  //     * Numbers (0-9)
+  //     * Hyphen (-)
+  //     * Underscore (_)
+  //     * Slash (/)
+  //     * Dot (.)
+  //     * Space ( )
+  optional string benchmark_name = 2;
+
+  // REQUIRED
+  // Your project name. Benchmarks are often queried by project name,
+  // so it's best to use one project name for all benchmarks owned by
+  // your team. Note that any user can use any project name, so it should
+  // be somewhat unique in order to avoid grouping benchmarks from multiple
+  // teams.
+  // This value can be changed at any time without affecting the Benchmark
+  // or chart dashboard links, because they reference benchmarks by key.
+  //
+  // Limitations:
+  //   * No more than 100 characters
+  //   * These are the only legal characters:
+  //     * Letters (A-Z, a-z)
+  //     * Numbers (0-9)
+  //     * Hyphen (-)
+  //     * Underscore (_)
+  //     * Slash (/)
+  //     * Dot (.)
+  //     * Space ( )
+  optional string project_name = 3;
+
+  // REQUIRED
+  // Users that will be able to write to this benchmark.
+  // All users with access to the Mako storage server have read access to
+  // all benchmarks and all data.
+  // Only benchmark owners can create, update, or delete any data associated
+  // with a benchmark.
+  //
+  // To provide write access to a google account, supply the full email address.
+  //   Example: user@google.com
+  //
+  // Limitations:
+  //   * The user making a call to create/update/delete a benchmark must be in
+  //     the list.
+  //   * Each owner must be a legal email address
+  //   * Max owners: 100
+  repeated string owner_list = 4;
+
+  // REQUIRED
+  // Declares value information for:
+  //   * SamplePoint.input_value fields
+  //
+  // Associated input values become x-axis values on run charts.
+  // This field has no effect on aggregate charts which always show
+  // RunInfo.timestamp_ms values on the x-axis.
+  //
+  // For common time-series test runs, where time is on the x-axis for run
+  // charts, ValueInfo.type should be ValueInfo.TIMESTAMP and "t" is a good
+  // choice for ValueInfo.value_key.
+  //
+  // For tests varying a non-time input variable during the test run,
+  // ValueInfo.type should be ValueInfo.NUMERIC and "x" is a good
+  // choice for ValueInfo.value_key.
+  optional ValueInfo input_value_info = 5;
+
+  // COMMON
+  // Declares value information for:
+  //   * SamplePoint.metric_value_list fields
+  //   * MetricAggregate fields
+  //
+  // Associated SamplePoint values become y-axis values on run charts.
+  // Associated MetricAggregate values become y-axis values on aggregate charts.
+  //
+  // Dashboard implementations will use this field to control which metrics are
+  // shown on the charts and the order in which the checkboxes on the aggregate,
+  // compare, and run charts appear.
+  //
+  // If this is not set, the custom aggregates should be set, otherwise,
+  // there will be nothing to chart on aggregate charts.
+  //
+  // Supply one of these for each unique key in SamplePoint and MetricAggregate
+  // fields that will be written during test runs.
+  //
+  // All ValueInfos supplied here will result in selectable controls on both
+  // run and aggregate charts. If no run data is found for a declared key, the
+  // control will be selectable on the chart, but no points will be plotted
+  // for the run. If run data contains a key that is not declared, all data
+  // for that key will be ignored by charts.
+  //
+  // Limitations:
+  //   * See storage server limits for max metric count.
+  repeated ValueInfo metric_info_list = 6;
+
+  // COMMON
+  // Declares value information for:
+  //   * RunInfo.aggregate.run_aggregate.custom_aggregate_list
+  //
+  // Standard aggregate values for metrics are offered by Mako, but users
+  // may add these custom aggregate values as well. Similar to metric
+  // information, these fields supply necessary information about each custom
+  // aggregate.
+  //
+  // All ValueInfos supplied here will result in selectable controls on
+  // aggregate charts. If no run data is found for a declared key, the
+  // control will be selectable on the chart, but no points will be plotted
+  // for the run. If run data contains a key that is not declared, all data
+  // for that key will be ignored by charts.
+  //
+  // Limitations:
+  //   * For best charting performance, use no more than 10 custom aggregates.
+  //   * See storage server limits for max custom aggregates count.
+  repeated ValueInfo custom_aggregation_info_list = 7;
+
+  // COMMON
+  // Detailed description of the benchmark, useful to describe things like:
+  //   SUT
+  //   load profile
+  //   measurement method
+  //   detailed metric information
+  // This gets displayed alongside charts.
+  // This info can not be part of a query.
+  optional string description = 8;
+
+  // UNCOMMON
+  // This field controls which percentiles are shown on the dashboard aggregate
+  // chart, and it is also used by framework aggregators to determine which
+  // percentiles should be computed for a run.
+  //
+  // It is a list of 1000th percentile ranks. For example, these values:
+  //   1000, 99000, 99900
+  // would declare these percentiles:
+  //   1st,  99th,  99.9th
+  //
+  // If this is not set, the default percentile ranks are used:
+  //   1000, 2000, 5000, 10000, 90000, 95000, 98000, 99000
+  //   1st,  2nd,  5th,  10th,  90th,  95th,  98th,  99th
+  //
+  // Limitations:
+  //   * The list must be in ascending order.
+  //   * No more than 15 percentiles can be chosen.
+  //   * Values must be in range [1,99999].
+  repeated int32 percentile_milli_rank_list = 9;
+
+  // UNCOMMON
+  // This field is used to store custom, structured data that can easily
+  // be parsed by user-specific code. The NamedData.name field associates a
+  // human-readable name to data. The NamedData.data field is used to store
+  // user-specific, string-serialized data (e.g. simple ASCII, protobuf
+  // serialized ASCII, or JSON).
+  //
+  // Libraries and services that are creating and managing benchmarks
+  // on behalf of the lib/service users should always set this field.
+  // It can be used to simply verify that the benchmark is managed by the
+  // lib/service. It can also be used as a place for the lib/service to
+  // store important metadata about the managed benchmark.
+  // When used for this purpose, the NamedData.name field
+  // should contain a unique name of your lib/service. This way, multiple
+  // libs/services can all contain data in this list without conflict.
+  // For example, if a benchmark manager library is called
+  // 'zbench', it could set this value in the list:
+  //   aux_data {
+  //     name: "zbench"
+  //     data: "v1"
+  //   }
+  //
+  // Note that the suggestion above does not guarantee that a specific
+  // benchmark is managed by a certain lib/service, as any user can
+  // create aux_data as above. In most cases, this weak verification is
+  // adequate. However, if you require a strong guarantee, you could
+  // choose one of two options:
+  // 1) Persistently store managed benchmark keys
+  //   Store all of the benchmark keys managed by your lib/service, so that
+  //   they can be queried and verified.
+  // 2) Message authentication code (MAC) in data field
+  //   Store a message authentication code (MAC) in the data for your data
+  //   field. For example, your lib/service could use a keyed-hash message
+  //   authentication code (HMAC) algorithm that takes the benchmark key
+  //   (public) and a secret cryptographic key (private) as inputs:
+  //     aux_data {
+  //       name: "zbench"
+  //       data: "version=v1,auth=<HMAC(benchmark_key,secret_key)>"
+  //     }
+  //
+  // Limitations:
+  //   * The total size of a BenchmarkInfo may be limited (See storage system
+  //     limits), so the amount of data here should not cause that limit to be
+  //     exceeded.
+  repeated NamedData aux_data = 10;
+
+  // UNCOMMON
+  // A Mako storage implementation may limit the total number of RunInfos
+  // saved on the server and perform regular cleanup of older runs.
+  // This could cause a problem when using golden runs for analysis if the
+  // golden runs get deleted once they are old. To prevent runs from getting
+  // deleted, apply a tag to the run and specify the tag here. All runs
+  // with this tag will not be automatically deleted as long as the number of
+  // runs with this tag does not exceed 100.
+  //
+  // Limitations:
+  //   * If more than 100 runs have this tag applied, the runs may get deleted.
+  optional string retained_run_tag = 11;
+
+  // UNCOMMON
+  // Human readable name for what the build id represents.
+  // This will be used as the x-axis label when rendering aggregate history
+  // charts ordered by build_id in places where we we want to describe to
+  // a human what the build identifier represents.
+  // Example {build_id: 123, build_id_label: "Changelist"} -> "Changelist: 123"
+  optional string build_id_label = 12 [default = "Changelist"];
+
+  // UNCOMMON
+  // Used to generate links to get more information on the build_id for a Run of
+  // this Benchmark. Only used if the Run has provided a value in the build_id
+  // field.
+  // This is a printf format string which will be evaluated with a single
+  // parameter of the Run's build_id field value (type: int64).
+  optional string build_id_url_format = 13 [default = "http://cl/%d"];
+}
+
+// RunOrder defines how we will sort RunInfos.
+enum RunOrder {
+  UNSPECIFIED = 0;
+
+  // Sort by RunInfo.timestamp_ms
+  TIMESTAMP = 1;
+
+  // Sort by RunInfo.build_id
+  BUILD_ID = 2;
+}
+
+// -----------------------------------------------------------------------------
+// Run Metadata
+// -----------------------------------------------------------------------------
+
+// Annotation data for a run.
+// These are displayed on the aggregate chart and are associated with a run.
+// These are commonly used to identify changes that may impact the results and
+// its useful to have a visual explanation. Examples:
+//   - SUT provisioning/code/dependency change that impacts performance
+//   - Benchmark load profile change
+//   - A bug caused a spike in performance
+message RunAnnotation {
+  // REQUIRED
+  // The value_key that this annotation is associated with.
+  // Aggregate charts will attach the annotation to an aggregate point.
+  // If this is a metric key, it will be attached to the mean value.
+  // If this is a custom metric, it will be attached to that value.
+  optional string value_key = 1;
+
+  // REQUIRED
+  // The short flag label used on the chart, typically seen without hovering.
+  // This must be a single one of these characters:
+  //   - Letters (A-Z, a-z)
+  //   - Numbers (0-9)
+  optional string label = 2;
+
+  // REQUIRED
+  // The full description used for additional info on charts, typically seen
+  // once the annotation is hovered.
+  optional string description = 3;
+}
+
+// Contains all required information about a single test run.
+// This is written twice during a test:
+//
+// 1) Create:
+//    At the start of the test, this is written with only these fields required:
+//      - benchmark_key
+//      - timestamp_ms
+//    The Mako storage library will create and return a run_key that
+//    must be used for any future updates.
+//
+// 2) Update:
+//    At the end of the test, this is written again with all relevant fields
+//    set. Note that the run_key (provided in Create response) must be set.
+// NEXT_ID: 19
+message RunInfo {
+  // REQUIRED
+  // Associates this run with a benchmark.
+  // Must match an existing BenchmarkInfo.benchmark_key
+  optional string benchmark_key = 1;
+
+  // CONDITIONALLY_REQUIRED: required for Update
+  // Uniquely identifies this run, and is used as a primary key for RunInfo.
+  // Generated by the Mako storage system.
+  optional string run_key = 2;
+
+  // REQUIRED
+  // Test run timestamp in unix time milliseconds.
+  // This becomes an x-axis value on aggregate charts when RunOrder is
+  // TIMESTAMP.
+  optional double timestamp_ms = 3;
+
+  // COMMON
+  // Test run build identifier.
+  // This must be a positive non-zero integer value.
+  // This becomes an x-axis value on the aggregate charts when RunOrder is
+  // BUILD_ID.
+  optional int64 build_id = 18;
+
+  // COMMON
+  // Test run duration in milliseconds.
+  //
+  // Limitations:
+  //   * Must be >= 0.
+  optional double duration_time_ms = 4 [default = 0];
+
+  // COMMON
+  // Tags for this run.
+  // These tags are used to filter query results when using the storage
+  // library, dashboard, or analyzers.
+  //
+  // When filtering, query tags are ANDed together. A query supplying tags
+  // returns all runs where the query tags are a subset of the run tags.
+  // Each query tag must be an exact, case-sensitive match of one of the
+  // run tags, and they do not support regular expressions.
+  //
+  // It is conventional for tags to have the form:
+  //   "key=value"
+  // Where "key" is a user-defined name for the individual tag,
+  // and "value" is the tag value for the particular element of data.
+  // However, the "=" sign is not required.
+  //
+  // A server implementation may apply "hidden tags". These tags
+  // all begin with underscore (_). They are not stored in the RunInfo.tags
+  // field, but they may be supplied in all queries involving tags.
+  //
+  // The order of tags is preserved when this proto is stored, making it
+  // possible to order tags such that they are easier to read the same way in
+  // the Mako UI.  Note that this ordering does NOT affect tag querying
+  // behavior.
+  //
+  // Examples:
+  //   * "env=prod"
+  //   * "env=dev"
+  //   * "sys-param-A=X
+  //   * "sys-param-B=Y
+  //   * "CL=123" (If you don't need to query by CL, store it in description)
+  //   * "user=joe"
+  //   * "experiment=use-datastore-instead-of-blobstore-1"
+  //   * "experiment=use-datastore-instead-of-blobstore-2"
+  //   * "experiment=move-filter-to-client"
+  //
+  // Limitations:
+  //   * See the storage server limits for max run tags.
+  //     Never provide more than the max tags for any message. (These tags
+  //     may be used as index keys, so they need to be limited.)
+  //   * These are the only legal characters:
+  //     * Letters (A-Z, a-z)
+  //     * Numbers (0-9)
+  //     * Hyphen (-)
+  //     * Underscore (_) (cannot be first character)
+  //     * Equals sign (=)
+  //     * Period (.)
+  //     * Colon (:)
+  repeated string tags = 5;
+
+  // UNCOMMON
+  // Defines ranges of input values that should be ignored for the purpose
+  // of analysis and aggregation. Ignored points are available on charts,
+  // but are highlighted in some way. These ignored points may be useful when
+  // debugging a performance issue, but not useful when evaluating
+  // system performance.
+  // The range labels may get displayed on charts.
+  repeated LabeledRange ignore_range_list = 6;
+
+  // CONDITIONALLY_REQUIRED: required for Update
+  // The associated aggregate data.
+  // Many of the fields found in aggregate data become y-axis values on
+  // aggregate charts.
+  optional Aggregate aggregate = 7;
+
+  // CONDITIONALLY_REQUIRED: required for run chart to show points
+  // When sample points and/or errors have been collected for a run, this field
+  // is set to the associated SampleBatch keys.
+  //
+  // If only saving aggregate data and run charts are not desired, this
+  // list may be empty.
+  //
+  // NOTE: Although the SampleBatch records could be queried by run_key,
+  //       some storage implementations may have faster lookup time when
+  //       looking up a SampleBatch by batch_key. An implementation may
+  //       also have an eventual consistency model for queries, so having
+  //       direct key access may be important.
+  //
+  repeated string batch_key_list = 8;
+
+  // COMMON
+  // Detailed description of the run. It may be useful to add info here that is
+  // useful for historic or debug reasons. Examples:
+  //   * CL
+  //   * Important SUT configuration info.
+  //   * Important environment info.
+  //   * Important test parameters.
+  //
+  // This is displayed alongside charts.
+  // This info can not be part of a query.
+  optional string description = 9;
+
+  // UNCOMMON
+  // List of annotations applied to the aggregates of this run.
+  // These are shown on aggregate charts.
+  repeated RunAnnotation annotation_list = 10;
+
+  // COMMON
+  // This text will be shown on the aggregate chart when a point is hovered.
+  // This length of this text must be relatively short, so it does not take
+  // up too much screen space. It is typically displayed as a single line
+  // of text that is truncated to fit the screen width.
+  optional string hover_text = 15;
+
+  // COMMON
+  // Test results
+  optional TestOutput test_output = 12;
+
+  // UNCOMMON
+  // Used to create links on run chart pages.
+  // The NamedData.name fields are used as text of <a> elements,
+  // and the NamedData.data fields are used as href attributes.
+  repeated NamedData hyperlink_list = 13;
+
+  // UNCOMMON
+  // This field is used to store custom, structured data that can easily
+  // be parsed by user-specific code. The NamedData.name field associates a
+  // human-readable name to data. The NamedData.data field is used to store
+  // user-specific, string-serialized data (e.g. simple ASCII, protobuf
+  // serialized ASCII, or JSON).
+  //
+  // This field is useful for storing per-run metadata about the environment
+  // or context of the run. Tags can also be used for this purpose, but the
+  // following differences are important:
+  // * aux_data can store more complex data than can be stored using tags.
+  // * aux_data cannot be used for queries.
+  // * While the number of tags may be limited (see the `tags` field above), the
+  //   amount of data stored in aux_data is limited only by the RunInfo size cap
+  //   (see below).
+  //
+  // Limitations:
+  //   * The total size of a RunInfo may be limited, so the amount of data here
+  //     should not cause that limit to be exceeded.
+  repeated NamedData aux_data = 16;
+
+  // UNCOMMON
+  // All runs with the same test_pass_id will be considered one Test Pass.
+  // These runs can come from different Projects or Benchmarks. As such, each
+  // Test Pass is expected to have a globally unique ID. See
+  // TestInput.test_pass for information about this value is set.
+  //
+  optional string test_pass_id = 17;
+
+  // FRAMEWORK_WRITE_ONLY
+  // Copy of TestInput.test_option_list that was initially supplied to test.
+  // TODO(b/20180597) Eventually will be show on run chart.
+  repeated TestOption test_option_list = 14;
+
+  // DEPRECATED
+  reserved 11;
+  reserved "deprecated_analyzer_results", "analyzer_results";
+}
+
+// -----------------------------------------------------------------------------
+// Sample Data
+// -----------------------------------------------------------------------------
+
+// Contains all metric measurements made by a single iteration of one Sampler
+// execution.
+message SamplePoint {
+  // REQUIRED
+  // The single input value associated with these metric measurements.
+  // These values become x-axis values on run charts.
+  optional double input_value = 1;
+
+  // REQUIRED
+  // Metric measurements made.
+  // These values become y-axis values on run charts.
+  // If the values are to be charted on run charts, the value_key fields
+  // should be declared in BenchmarkInfo.metric_info_list.
+  // NOTE: KeyedValues in the list must have unique value_keys.
+  repeated KeyedValue metric_value_list = 2;
+
+  // UNCOMMON.
+  // Allows users to attach a number of annotations (e.g. links, traces,
+  // strings) to a SamplePoint. Annotations will be shown in the UI on run
+  // charts. SamplePoints with annotations will be marked with a dot that can be
+  // clicked on to show the contents of the annotation. These dots will appear
+  // for each metric present in the SamplePoint.
+  repeated SampleAnnotation sample_annotations_list = 3;
+
+  // UNCOMMON.
+  // Allows users to specify additional auxiliary data related to a SamplePoint.
+  // This data will be available in the Master.PreAggregation step, and will be
+  // stripped out before being sent to the server (will not show up in charts).
+  map<string, bytes> aux_data = 4;
+}
+
+// Allows users to add annotations and links to SamplePoints which are shown on
+// Run charts.
+//
+// Annotations should be kept as small as possible as there can be many for a
+// single run and the total size for all annotations is limited.
+//
+// Current limit is 800 KB of annotations per run. If serialized annotations in
+// a run take more than 800 KB of space, the standard downsampler will randomly
+// drop annotations that exceed the limit until the limit is no longer exceeded.
+//
+message SampleAnnotation {
+  // REQUIRED.
+  oneof annotation {
+    // A free-form human readable string. Should be kept short (see
+    // SampleAnnotation for size limits).
+    string text = 1;
+
+    // URL with a description. NamedData.data used as the URL and NamedData.name
+    // is the description.
+    NamedData hyperlink = 2;
+  }
+}
+
+// When an iteration of the Sampler execution gets an error response from the
+// SUT, the Sampler may return one of these.
+message SampleError {
+  // REQUIRED
+  // The single input value associated with these metric measurements.
+  optional double input_value = 1;
+
+  // OPTIONAL
+  // Short identifier of the sampler to help a human debug which Sampler hit
+  // the error. If a sampler_name is not supplied, the Mako framework will
+  // autoassign the sampler_name to be the name of the current sampler.
+  optional string sampler_name = 2;
+
+  // REQUIRED
+  // Short description of error encountered.
+  //
+  // Limitations:
+  //   * This has a max size of 1000 characters, and the framework may truncate
+  //     it before writing to storage.
+  optional string error_message = 3;
+}
+
+// Measurements and SUT errors are written to storage in SampleBatches.
+// Each batch contains many SamplePoints and SampleErrors.
+// Upon update of a RunInfo, the RunInfo.batch_key_list is set to multiple
+// SampleBatch.batch_batch_key values. This associates the run with batches
+// of run data.
+//
+// This batching of run data allows the storage server to query multiple batches
+// in parallel and to uphold potential max blob size limitations of the
+// underlying storage system.
+//
+// Limitations:
+//   * The max size a batch may be limited.
+//   * The max number of batches per run may be limited. See the storage system
+//     limits.
+//   * All SamplePoint objects in a SampleBatch must be sorted in ascending
+//     order
+//     by input value.
+message SampleBatch {
+  // REQUIRED
+  // Associates this data with a benchmark.
+  // Must match an existing BenchmarkInfo.benchmark_key
+  optional string benchmark_key = 1;
+
+  // REQUIRED
+  // Associates this data with a run.
+  // Must match an existing RunInfo.run_key
+  optional string run_key = 2;
+
+  // CONDITIONALLY_REQUIRED: Not required for Create.
+  // Uniquely identifies this batch, and is used as a primary key for
+  // the SampleBatch.
+  // Generated and returned by the Mako storage system for Create requests.
+  // The returned key must be found in final updates of RunInfo.batch_key_list.
+  optional string batch_key = 3;
+
+  // CONDITIONALLY REQUIRED: At least one SamplePoint or SampleError is
+  // required.
+  repeated SamplePoint sample_point_list = 4;
+
+  // CONDITIONALLY REQUIRED: At least one SamplePoint or SampleError is
+  // required.
+  repeated SampleError sample_error_list = 5;
+}
+
+// -----------------------------------------------------------------------------
+// Aggregation of One Run's Data
+// -----------------------------------------------------------------------------
+
+// Aggregate of a single metric’s sample points. Every sample falls into one of
+// three categories: usable, ignore, error. Only usable samples are an input
+// to statistical aggregations.
+// NEXT_ID: 10
+message MetricAggregate {
+  // REQUIRED
+  // Associates this metric aggregate with a particular metric.
+  // If the values are to be charted on aggregate charts, the metric_key field
+  // should be declared in BenchmarkInfo.metric_info_list.
+  optional string metric_key = 1;
+
+  // COMMON
+  // Minimum value in all usable sample points for this metric.
+  optional double min = 2;
+
+  // COMMON
+  // Maximum value in all usable sample points for this metric.
+  optional double max = 3;
+
+  // COMMON
+  // Average of all usable sample points for this metric.
+  optional double mean = 4;
+
+  // COMMON
+  // Median of all usable sample points for this metric.
+  optional double median = 5;
+
+  // COMMON
+  // Standard deviation of all usable sample points for this metric.
+  optional double standard_deviation = 6;
+
+  // COMMON
+  // Median absolute deviation of all usable sample points for this metric.
+  optional double median_absolute_deviation = 9;
+
+  // COMMON
+  // Percentiles for all usable sample points for this metric.
+  // The percentile values here are ordered and correspond to the
+  // ranks found in Aggregate.percentile_milli_rank_list.
+  //
+  // Limitations:
+  //   * Must be the same size as Aggregate.percentile_milli_rank_list.
+  repeated double percentile_list = 7;
+
+  // COMMON
+  // Number of usable sample points for this metric.
+  optional int64 count = 8;
+}
+
+// Aggregates that are not associated with a certain metric but with the entire
+// set of run data.
+message RunAggregate {
+  // REQUIRED
+  // Count of SamplePoints created and not ignored.
+  // If downsampling was applied, this is the count prior to downsampling.
+  optional int64 usable_sample_count = 1;
+
+  // COMMON
+  // Count of SamplePoints created and ignored.
+  // If downsampling was applied, this is the count prior to downsampling.
+  // Only set when using the ignore regions feature.
+  optional int64 ignore_sample_count = 2 [default = 0];
+
+  // COMMON
+  // Count of SampleErrors created.
+  // If downsampling was applied, this is the count prior to downsampling.
+  optional int64 error_sample_count = 3 [default = 0];
+
+  // COMMON
+  // A benchmark score for the results. This helps to simplify the summary
+  // results of a test run by saying benchmark X got score Y today.
+  // For a service, this is often related to the mean response time,
+  // but it can depend on many metrics and aggregates in complex ways.
+  // The owner of the benchmark will be responsible for calculating this number.
+  //
+  // It is advised to use 0 for fatal performance and higher scores for
+  // better performance, so the performance potential is effectively unbounded.
+  optional int32 benchmark_score = 4 [default = 0];
+
+  // CONDITIONALLY_REQUIRED: either this or metric aggregrates must have data.
+  // Custom aggregates for this run.
+  // These values are charted and are useful in either of these two cases:
+  //   * The values are derived from other data.
+  //   * No SampleBatch data exists, and all measurements are single-valued,
+  //     so standard aggregations like min/max/mean are meaningless.
+  //
+  // If the values are to be charted on aggregate charts, the value_key fields
+  // should be declared in BenchmarkInfo.custom_aggregation_info_list.
+  //
+  // Limitations:
+  //   * See the storage server limits for custom aggregate count max.
+  repeated KeyedValue custom_aggregate_list = 5;
+}
+
+// All aggregation data for a run
+message Aggregate {
+  // CONDITIONALLY_REQUIRED: either this or custom aggregrates must have data.
+  // List of metric aggregates.
+  // If this is not set, the custom aggregates in the run_aggregate field
+  // should be set, otherwise, there will be nothing to chart.
+  // Note that not every metric needs aggregates.
+  //
+  // Limitations:
+  //   * For best charting performance, use no more than 25 metrics.
+  //   * See the storage server limits for max metric count.
+  repeated MetricAggregate metric_aggregate_list = 1;
+
+  // REQUIRED
+  // Run aggregate
+  optional RunAggregate run_aggregate = 2;
+
+  // COMMON
+  // This field is similar to BenchmarkInfo.percentile_milli_rank_list,
+  // except it applies to a single run rather than the whole benchmark.
+  // It declares all the percentile ranks used for all percentile lists
+  // found in metric_aggregate_list.
+  //
+  // Limitations:
+  //   * Same limitations as BenchmarkInfo.percentile_milli_rank_list.
+  //   * Upon storage write, it must be the same size as all
+  //     MetricAggregate.percentile_list fields.
+  //   * If this is empty, all percentiles in metric_aggregate_list are ignored.
+  repeated int32 percentile_milli_rank_list = 3;
+}
+
+// -----------------------------------------------------------------------------
+// Inputs and outputs for Mako Storage Libraries
+//
+// Storage request fields have many common names and behaviors, so this header
+// for the messages describes the commonalities.
+//
+// Create and Update
+// -----------------
+//
+// There are no special inputs for these requests, as they only take
+// one relevant input type:
+//
+//   BenchmarkInfo
+//   RunInfo
+//   SampleBatch
+//
+// Querying with and without primary key
+// -------------------------------------
+//
+// Each result type has a primary key and up to 1 alternative key that
+// identifies itself and up to 2 parent keys that identify the parent hierarchy:
+//   * BenchmarkInfo: benchmark_key is primary key.
+//   * RunInfo: run_key is primary key, test_pass_id is the alternative key, and
+//     benchmark_key is parent key.
+//   * SampleBatch: batch_key is primary key, and run_key/benchmark_key are
+//     parent keys.
+//
+// When querying by primary key:
+//   * All other query fields are ignored.
+//   * One item is returned in the results (or error status is returned).
+//   * Performance is optimal.
+//   * Query is strongly consistent.
+//
+// When querying by alternative key:
+//   * All other query fields are ignored.
+//   * Zero or more items are returned in the results (or error status is
+//     returned).
+//   * Performance is not quite as good as a primary key query.
+//   * Query is eventually consistent. This means that there may be a short
+//     period of time between a storage write and availabiliy of that data
+//     for querying. For most storage systems, this delay is on the order
+//     of milliseconds, but may be on the order of minutes in rare cases.
+//
+// When querying without a primary or alternate key:
+//   * All parent keys must be supplied or explicitly set to "*".
+//   * Zero or more items are returned in the results.
+//   * Performance is not quite as good as a primary key query.
+//   * Query is eventually consistent. This means that there may be a short
+//     period of time between a storage write and availabiliy of that data
+//     for querying. For most storage systems, this delay is on the order
+//     of milliseconds, but may be on the order of minutes in rare cases.
+//
+// Querying with and without limits and cursors
+// --------------------------------------------
+//
+// Each query message below has limit and cursor fields.
+//
+//   limit:
+//     * The max number of items that will be returned by a single query
+//       execution. A common use case is to set limit to N for a RunInfoQuery,
+//       and the result set will contain the N latest runs (less if N
+//       matching runs do not exist or the server max is reached - see below)
+//     * The server has an internally defined max limit that is guaranteed
+//       to be no less than 100.
+//     * If the user supplied limit is not set, is <= 0, or is greater than
+//       the server max, the server max will be used.
+//
+//   cursor:
+//     * Only used when querying for large (>100 items) result sets
+//       by making a series of query calls.
+//     * The first query in the series leaves this field empty.
+//     * In the result of the nth query call, the server supplies a cursor to be
+//       used as an input to the (n+1)th query call. If no more data exists,
+//       the response contains an empty cursor.
+//     * The series of query calls ends once either the desired number of
+//       results have been returned (as determined by the client)
+//       or the cursor in the server response is empty.
+//     * It's common for each query in the series to set the limit to the
+//       desired remaining count. For example if 350 results are desired,
+//       more than 350 exist, and the server's default max limit is 100,
+//       the series of queries/responses would be:
+//         1) query:    limit = 350,  cursor = ""
+//            response: cursor = "A", result count = 100
+//         2) query:    limit = 250,  cursor = "A"
+//            response: cursor = "B", result count = 100
+//         3) query:    limit = 150,  cursor = "B"
+//            response: cursor = "C", result count = 100
+//         4) query:    limit = 50,   cursor = "C"
+//            response: cursor = "D", result count = 50
+//       Note that the final cursor is not used, since the client
+//       has retrieved the desired number of items.
+//
+// Counting results without fetching data
+// --------------------------------------------
+//
+// Some data types have a Count request used to count the results
+// of a query without actually fetching the results. This performs much
+// better than a typical query.
+//
+// A Count request accepts the same query message used for normal queries
+// and returns a CountResponse.
+//
+// The limit and cursor fields of the query have a special meaning for
+// Count requests:
+//
+//   limit:
+//     * The max number of items that should be counted.
+//     * If set, the value should be > 0, and no more than limit will be
+//       returned by Count.
+//     * If not set, the total number of matching results will be returned.
+//     * Smaller limit values perform much better than larger or unset
+//       limit values.
+//       If you only need to know if the actual count satisfies:
+//         0 <= count < N
+//       and you don't need the actual count when:
+//         count >= N
+//       set the limit to N.
+//       If result count < N:
+//         result count == actual count.
+//       If result count == N:
+//         actual count >= N.
+//
+//   cursor:
+//     * Ignored for count requests.
+//
+// Deletions
+// ---------
+//
+// Delete requests use the same query messages as normal queries to identify
+// data that should be deleted.
+// Deletions follow the same strong/eventual consistency rules as queries.
+// Note the following differences with normal queries:
+//
+//    benchmark_key: To avoid accidental deletion of large quantities of data,
+//                   the benchmark_key must be set on the query message for all
+//                   Delete requests. Thus when deleting benchmarks only the
+//                   benchmark_key is needed.
+//    limit:         The limit field is ignored for all Delete requests.
+//    cursor:        The cursor field is ignored for all Delete requests.
+//
+// -----------------------------------------------------------------------------
+
+// Input for Storage.QueryBenchmarkInfo(), Storage.DeleteBenchmarkInfo(),
+// and Storage.CountBenchmarkInfo().
+message BenchmarkInfoQuery {
+  // COMMON
+  // See "Querying with and without limits and cursors" above,
+  // ignored for deletion and count requests
+  optional string cursor = 1;
+
+  // COMMON
+  // See "Querying with and without limits and cursors" and
+  // "Counting results without fetching data" above.
+  // Ignored for deletion requests.
+  optional int32 limit = 2;
+
+  // COMMON
+  // Exact match of BenchmarkInfo.benchmark_key,
+  // see "Querying with and without primary key" above
+  optional string benchmark_key = 3;
+
+  // COMMON
+  // Exact match of BenchmarkInfo.benchmark_name
+  optional string benchmark_name = 4;
+
+  // COMMON
+  // Exact match of BenchmarkInfo.project_name
+  optional string project_name = 5;
+
+  // COMMON
+  // Exact match of BenchmarkInfo.owner_list
+  optional string owner = 6;
+}
+
+// Output for Storage.QueryBenchmarkInfo()
+message BenchmarkInfoQueryResponse {
+  // REQUIRED
+  // Response status
+  optional Status status = 1;
+
+  // CONDITIONALLY_REQUIRED - set when more data exists
+  // See "Querying with and without limits and cursors" above.
+  optional string cursor = 2;
+
+  // CONDITIONALLY_REQUIRED - set when results exist
+  // Results in no particular order
+  repeated BenchmarkInfo benchmark_info_list = 4;
+}
+
+// Input for Storage.QueryRunInfo(), Storage.DeleteRunInfo(),
+// and Storage.CountRunInfo().
+//
+// NEXT_ID: 13
+message RunInfoQuery {
+  // COMMON
+  // See "Querying with and without limits and cursors" above,
+  // ignored for deletion or count requests
+  optional string cursor = 1;
+
+  // COMMON
+  // See "Querying with and without limits and cursors" and
+  // "Counting results without fetching data" above.
+  // Ignored for deletion requests.
+  optional int32 limit = 2;
+
+  // CONDITIONALLY_REQUIRED - benchmark_key or run_key or test_pass_id
+  // must be set.
+  // Matches RunInfo.benchmark_key,
+  // see "Querying with and without primary key" above
+  optional string benchmark_key = 3;
+
+  // CONDITIONALLY_REQUIRED - benchmark_key or run_key or test_pass_id
+  // must be set.
+  // Exact match of RunInfo.run_key,
+  // see "Querying with and without primary key" above
+  optional string run_key = 4;
+
+  // CONDITIONALLY_REQUIRED - benchmark_key or run_key or test_pass_id
+  // must be set.
+  // Exact match of RunInfo.test_pass_id.
+  // Fields test_pass_id and run_key are mutually exclusive.
+  // see "Querying with and without primary key" above
+  optional string test_pass_id = 11;
+
+  // UNCOMMON
+  // How we will sort runs fetched by this query.
+  //
+  // For performance reasons, the following filtering fields will be
+  // conditionally applied to the query based on the value of run_order:
+  //
+  //   1) min_timestamp_ms (if run_order = TIMESTAMP)
+  //   2) max_timestamp_ms (if run_order = TIMESTAMP)
+  //   3) min_build_id (if run_order = BUILD_ID)
+  //   4) max_build_id (if run_order = BUILD_ID)
+  //
+  // TODO(b/110881071): lift these restrictions on which fields we filter on.
+  //
+  // In order to prevent mistakes, it is an error to set the above fields when
+  // run_order is not set accordingly.
+  optional RunOrder run_order = 8 [default = TIMESTAMP];
+
+  // CONDITIONALLY_COMMON if run_order = TIMESTAMP
+  // Min time for RunInfo.timestamp_ms.
+  //
+  // Due to performance limitations of our storage implementation, it is an
+  // error to set this field if run_order != TIMESTAMP.
+  optional double min_timestamp_ms = 5;
+
+  // CONDITIONALLY_COMMON if run_order = TIMESTAMP
+  // Max time for RunInfo.timestamp_ms.
+  //
+  // Due to performance limitations of our storage implementation, it is an
+  // error to set this field if run_order != TIMESTAMP.
+  optional double max_timestamp_ms = 6;
+
+  // CONDITIONALLY_UNCOMMON if run_order = BUILD_ID
+  // Min value for RunInfo.build_id.
+  //
+  // Due to performance limitations of our storage implementation, it is an
+  // error to set this field if run_order != BUILD_ID.
+  optional int64 min_build_id = 9;
+
+  // CONDITIONALLY_UNCOMMON if run_order = BUILD_ID
+  // Max value for RunInfo.build_id.
+  //
+  // Due to performance limitations of our storage implementation, it is an
+  // error to set this field if run_order != BUILD_ID.
+  optional int64 max_build_id = 10;
+
+  // COMMON
+  // Matches all runs where tags is a subset of RunInfo.tags
+  repeated string tags = 7;
+
+  // UNCOMMON
+  // Return only these fields from the full RunInfo. This is intended to reduce
+  // bandwidth, and is not usually needed unless directed by the Mako team.
+  // Fields are specified by names with recursion specified by periods.
+  // Only fields that match at least one of the specifiers will be returned.
+  //
+  // Examples:
+  // ["timestamp_ms", "tags", "aggregate.metric_aggregate_list"]
+  // ["test_output.analyzer_output_list.regression",
+  //  "test_output.analyzer_output_list.analyzer_name"]
+  repeated string fields = 12;
+}
+
+// Output for Storage.QueryRunInfo()
+message RunInfoQueryResponse {
+  // REQUIRED
+  // Response status
+  optional Status status = 1;
+
+  // CONDITIONALLY_REQUIRED - set when more data exists
+  // See "Querying with and without limits and cursors" above
+  optional string cursor = 2;
+
+  // CONDITIONALLY_REQUIRED - set when results exist
+  // Results in descending RunInfo.timestamp_ms order
+  repeated RunInfo run_info_list = 4;
+}
+
+// Input for Storage.QuerySampleBatch() and Storage.DeleteSampleBatch()
+message SampleBatchQuery {
+  // COMMON
+  // See "Querying with and without limits and cursors" above,
+  // ignored for deletion or count requests
+  optional string cursor = 1;
+
+  // COMMON
+  // See "Querying with and without limits and cursors" and
+  // "Counting results without fetching data" above.
+  // Ignored for deletion requests.
+  optional int32 limit = 2;
+
+  // CONDITIONALLY_REQUIRED - (benchmark_key AND run_key) OR (batch_key)
+  // must be set.
+  // Exact match of SampleBatch.benchmark_key.
+  // See "Querying with and without primary key" above.
+  optional string benchmark_key = 3;
+
+  // CONDITIONALLY_REQUIRED - (benchmark_key AND run_key) OR (batch_key)
+  // must be set.
+  // Exact match of SampleBatch.run_key.
+  // see "Querying with and without primary key" above.
+  optional string run_key = 4;
+
+  // CONDITIONALLY_REQUIRED - (benchmark_key AND run_key) OR (batch_key)
+  // must be set.
+  // Exact match of SampleBatch.batch_key,
+  // see "Querying with and without primary key" above
+  optional string batch_key = 5;
+}
+
+// Output for Storage.QuerySampleBatch()
+message SampleBatchQueryResponse {
+  // REQUIRED
+  // Response status
+  optional Status status = 1;
+
+  // CONDITIONALLY_REQUIRED - set when more data exists
+  // See "Querying with and without limits and cursors" above
+  optional string cursor = 2;
+
+  // CONDITIONALLY_REQUIRED - set when results exist
+  // Results are in no particular order
+  repeated SampleBatch sample_batch_list = 4;
+}
+
+// Output for Storage.Create*
+message CreationResponse {
+  // Response status
+  optional Status status = 1;
+  // Primary key for created data
+  optional string key = 2;
+}
+
+// Output for Storage.Update* and Storage.Delete*
+message ModificationResponse {
+  // Response status
+  optional Status status = 1;
+  // Number of items modified or deleted
+  optional int64 count = 2;
+}
+
+// Output for Storage.Count
+message CountResponse {
+  // Response status
+  optional Status status = 1;
+  // Number of items found
+  optional int64 count = 2;
+}
+
+// -----------------------------------------------------------------------------
+//
+// Arguments for Mako Secondary Storage Libraries
+//
+// Secondary storage provides users an optional method of exporting data
+// generated during a Mako run into another storage system (e.g. Perfkit).
+//
+// -----------------------------------------------------------------------------
+
+// Input argument to SecondaryStorage.Write()
+message SecondaryStorageWriteInput {
+  // REQUIRED
+  // Contains all measurements (aggregates and raw measurements) for a run.
+  // All keys must first be set (benchmark_key, run_key, and batch_key).
+  optional RunBundle bundle = 1;
+}
+
+// Output argument to SecondaryStorage.Write()
+message SecondaryStorageWriteOutput {
+  optional Status status = 1;
+
+  // Links associated with this particular run, such as a link to a dashboard
+  // with the run's aggregate or raw data.
+  repeated NamedData links = 2;
+}
+
+// -----------------------------------------------------------------------------
+//
+// Arguments for Mako Aggregator Libraries
+//
+// -----------------------------------------------------------------------------
+
+// Input argument to Aggregator.Aggregate()
+message AggregatorInput {
+  // REQUIRED
+  // The BenchmarkInfo, so aggregation can access the default percentiles.
+  optional BenchmarkInfo benchmark_info = 1;
+
+  // REQUIRED
+  // The RunInfo, so aggregation can take ignore regions into account.
+  optional RunInfo run_info = 2;
+
+  // CONDITIONALLY_REQUIRED
+  // A list of sample files.
+  // The format of these files is defined by the Load implementation.
+  repeated SampleFile sample_file_list = 3;
+}
+
+// Output argument to Aggregator.Aggregate()
+message AggregatorOutput {
+  // REQUIRED
+  // Standard run and metric aggregates that include all aggregates except:
+  //   * benchmark_score
+  //   * custom_aggregate_list
+  // Remaining aggregates are custom and will get set by Master.PreAnalysis().
+  optional Aggregate aggregate = 1;
+}
+
+// -----------------------------------------------------------------------------
+//
+// Arguments for Mako Downsampler Libraries
+//
+// -----------------------------------------------------------------------------
+
+// Input argument for Downsampler.Downsample().
+message DownsamplerInput {
+  // REQUIRED
+  // The RunInfo used to get benchmark and run keys.
+  optional RunInfo run_info = 1;
+
+  // CONDITIONALLY_REQUIRED - must be set if any records are saved
+  // A list of files that contain raw SampleRecords.
+  repeated SampleFile sample_file_list = 2;
+
+  // REQUIRED
+  // The max metric value count that can be saved by the storage system for a
+  // run.
+  optional int64 metric_value_count_max = 6;
+
+  // REQUIRED
+  // The max sample error count that can be saved by the storage system for a
+  // run.
+  optional int64 sample_error_count_max = 4;
+
+  // REQUIRED
+  // The max binary size (in bytes) of a SampleBatch that can be saved
+  // by the storage system.
+  optional int64 batch_size_max = 5;
+}
+
+// Output argument for Downsampler.Downsample().
+message DownsamplerOutput {
+  // REQUIRED
+  // The resulting sample batches that should be written to storage.
+  repeated SampleBatch sample_batch_list = 1;
+}
+
+// -----------------------------------------------------------------------------
+//
+// Arguments for Mako Analyzer Libraries
+//
+// -----------------------------------------------------------------------------
+
+// Passed to Analyzer.GetHistoricQuery().
+// Values are mostly used to formulate an AnalyzerHistoricQueryOutput response.
+message AnalyzerHistoricQueryInput {
+  // REQUIRED
+  // BenchmarkInfo and RunInfo from the run under analysis.
+  optional BenchmarkInfo benchmark_info = 1;
+
+  // REQUIRED
+  optional RunInfo run_info = 2;
+}
+
+// Returned from Analyzer.GetHistoricQuery().
+// Describes the data that should be passed into Analyzer.Analyze() as
+// historical data.
+message AnalyzerHistoricQueryOutput {
+  // REQUIRED
+  // Status of the attempt to prepare queries (not actually running them).
+  optional Status status = 1;
+
+  // CONDITIONALLY REQUIRED (either this or run_info_query_map must not be
+  // empty) Each of these queries must be executed while preparing historic
+  // data. Each query may result in multiple RunInfos, so the resulting RunInfo
+  // list may be larger than this list.
+  repeated RunInfoQuery run_info_query_list = 2;
+
+  // REQUIRED
+  // If true, AnalyzerInput will be populated with SampleBatches from the
+  // historic runs requested. If the analyzer is operating on aggregate data
+  // (which is attached to a RunInfo) then this can be set to false.
+  optional bool get_batches = 3 [default = true];
+
+  message RunInfoQueries {
+    repeated RunInfoQuery run_info_query_list = 1;
+  }
+  // CONDITIONALLY REQUIRED (either this or run_info_query_list must not be
+  // empty.) Its function is similar to that of run_info_query_list, but each
+  // map key is a string that represents a sample. For instance, in regard to
+  // A/B sampling, {"a": <RunInfoQueries>, "b": <RunInfoQueries>}.
+  map<string, RunInfoQueries> run_info_query_map = 4;
+}
+
+// Passed into Analyzer.Analyze()
+// Contains all data that Analyzer will analyze.
+message AnalyzerInput {
+  // COMMON
+  // Contains all data about the run to be analyzed.
+  //
+  // Not required when a single run is not the subject of analysis.
+  optional RunBundle run_to_be_analyzed = 1;
+
+  // Some analyzers will need historical data to compare against.
+  // run_info_query_list in Analyzer AnalyzerHistoricQueryOutput will dictate
+  // what data is passed here.
+  repeated RunBundle historical_run_list = 2;
+
+  message RunBundles {
+    repeated RunBundle historical_run_list = 1;
+  }
+  // CONDITIONALLY REQUIRED (if run_info_query_map in
+  // Analyzer AnalyzerHistoricQueryOutput is not empty.) Its function is similar
+  // to that of historical_run_list, but each map key is a string that
+  // represents a sample. For instance, in regard to A/B sampling, {"a":
+  // <RunBundles>, "b": <RunBundles>}.
+  map<string, RunBundles> historical_run_map = 3;
+}
+
+// Returned form Analyzer.Analyze() with results of analysis.
+// NEXT_ID: 13
+message AnalyzerOutput {
+  // REQUIRED
+  // Did the Analyzer run to completion.
+  // If status.code != SUCCESS then only analyzer_type is guaranteed to be
+  // populated. Analyzer_name will be populated if user provided a name to the
+  // analyzer instance.
+  optional Status status = 1;
+
+  // REQUIRED
+  // Whether the Analyzer found anything to warrant failing the test.
+  optional bool regression = 2;
+
+  // REQUIRED
+  // Identifies the run being analyzed, and is used as a primary key for
+  // RunInfo.
+  optional string run_key = 7;
+
+  // REQUIRED
+  // Identifies this specific execution of an analyzer.
+  optional string analysis_key = 8;
+
+  // COMMON
+  // Populated if this regression has been investigated and additional metadata
+  // has been attached to it by the benchmark consumer such as whether it is a
+  // real/false regression or it has a work item associated with it.
+  optional AnalysisTriageInfo analysis_triage_info = 10;
+
+  // COMMON
+  // Optionally populated with a text serialization of the Analyzer's input
+  // configuration. Used by humans to understand what analysis was run
+  // posthumously.
+  optional string input_config = 6;
+
+  // COMMON
+  // Optionally populated with a binary serialization of the Analyzer's input
+  // configuration. Used for programmatic processing of the Analyzer's logic by
+  // clients such as the Mako server's analysis visualizations.
+  //
+  // We use binary serialization instead of text serialization in order to
+  // support backwards/forwards compatibility as fields are added/removed from
+  // the Analyzer's input message schema.
+  // TODO(b/78477129): This field is not populated.
+  optional bytes serialized_input_config = 11;
+
+  // CONDITIONALLY_REQUIRED
+  // Optional information output by the Analyzer.
+  //
+  // Only guaranteed to be populated when status is successful.
+  //
+  // Used by humans to understand the Analyzer's results. Usually populated with
+  // a text formatted protobuf. See analyzer implementation for details on the
+  // contents of this field.
+  optional string output = 3;
+
+  // COMMON
+  // Optionally populated with a binary serialization of the AnalyzerOutput
+  // output by the Analyzer.
+  //
+  // Only guaranteed to be populated when status is successful.
+  //
+  // Used for programmatic processing of the Analyzer's logic by
+  // clients such as the Mako server's analysis visualizations.
+  //
+  // We use binary serialization instead of text serialization in order to
+  // support backwards/forwards compatibility as fields are added/removed from
+  // the AnalyzerOutput message schema.
+  // TODO(b/78477129): This field is not populated.
+  optional bytes serialized_output = 12;
+
+  // REQUIRED
+  // The type of analyzer which performed this analysis (eg. 'Threshold')
+  // If not set by Analyzer.Analyze() the framework will set this by calling
+  // Analyzer.GetAnalyzerType().
+  optional string analyzer_type = 4;
+
+  // COMMON
+  // Optional name given to the analyzer instance
+  // (eg. 'ThresholdAnalyzerForMetricXYZ')
+  //
+  // User of the analyzer class sets this indirectly via analyzer construction.
+  //
+  // If not set by Analyzer.Analyze() the framework will set this by calling
+  // Analyzer.GetAnalyzerName().
+  optional string analyzer_name = 5;
+
+  // DEPRECATED
+  reserved 9;
+  reserved "changepoint_run_keys";
+}
+
+// Holds annotations about whether the Analyzer output regression value was
+// accurate and potentially links to follow up information such as buganizer
+// work items. Typically populated by a human through the Mako Web UI.
+// NEXT ID: 7
+message AnalysisTriageInfo {
+  // NEXT ID: 5
+  enum AnalysisTriageType {
+    NONE = 0;
+    // Real performance degradation/change which should be fixed in the product.
+    REGRESSION = 1;
+    // Real performance degradation/change which will not be fixed.
+    IGNORE = 2;
+    // Not a real performance degradation in the product. Caused by an
+    // ephemeral performance degradation in some part of the system under test,
+    // mis-configured analyzer or other flaw in the benchmark.
+    FALSE_POSITIVE = 3;
+    // Has been triaged (possibly with metadata attached), but the category of
+    // the failure is unknown.
+    UNKNOWN = 4;
+  }
+
+  // REQUIRED
+  // User response after evaluating the analysis.
+  optional AnalysisTriageType analysis_state = 1;
+
+  // NEXT ID: 4
+  enum EnvironmentType {
+    UNSPECIFIED = 0;
+    // Found in presubmit testing environments.
+    PRESUBMIT = 1;
+    // Found in postsubmit testing environments.
+    POSTSUBMIT = 2;
+    // Found in the live product environment.
+    PRODUCTION = 3;
+  }
+
+  // OPTIONAL
+  // User-supplied environment where the test was run.
+  optional EnvironmentType environment = 2;
+
+  // OPTIONAL
+  // User explanation of triage.
+  optional string comment = 3;
+
+  // OPTIONAL
+  // Identifier of Buganizer issue created to track this analysis.
+  optional string buganizer_id = 4;
+
+  // REQUIRED
+  // Key of the RunInfo containing this analysis.
+  // Warning: For internal use only. Will be deprecated and removed in the
+  // future. Consumers should use run_key from the containing RunInfo message.
+  optional string run_key = 5;
+
+  // REQUIRED
+  // Key pointing to a AnalyzerOutput that this analysis is associated with.
+  // Warning: For internal use only. Will be deprecated and removed in the
+  // future. Consumers should use analysis_key from the containing
+  // AnalyzerOutput message.
+  optional string analysis_key = 6;
+}
+
+// -----------------------------------------------------------------------------
+//
+// Arguments for Mako Dashboard libraries
+//
+// -----------------------------------------------------------------------------
+
+// Provided to Dashboard.AggregateChart()
+// NEXT_ID: 11
+message DashboardAggregateChartInput {
+  // REQUIRED
+  // Matches RunInfo.benchmark_key
+  optional string benchmark_key = 1;
+
+  // COMMON
+  // The data values selected. The DataFilter.ignore_missing_data field is not
+  // relevant, but all other fields may apply.
+  repeated DataFilter value_selections = 2;
+
+  // COMMON
+  // Matches all runs where tags is a subset of RunInfo.tags
+  repeated string tags = 3;
+
+  // UNCOMMON
+  // How we will sort runs fetched by this query.
+  //
+  // For performance reasons, the following filtering fields will be
+  // conditionally applied to the query based on the value of run_order:
+  //
+  //   1) min_timestamp_ms (if run_order = TIMESTAMP)
+  //   2) max_timestamp_ms (if run_order = TIMESTAMP)
+  //   3) min_build_id (if run_order = BUILD_ID)
+  //   4) max_build_id (if run_order = BUILD_ID)
+  //
+  // TODO(b/110881071): lift these restrictions on which fields we filter on.
+  //
+  // In order to prevent mistakes, it is an error to set the above fields when
+  // run_order is not set accordingly.
+  optional RunOrder run_order = 8 [default = TIMESTAMP];
+
+  // CONDITIONALLY_COMMON if run_order = TIMESTAMP
+  // Min time for RunInfo.timestamp_ms.
+  //
+  // Due to performance limitations of our storage implementation, it is an
+  // error to set this field if run_order != TIMESTAMP.
+  optional double min_timestamp_ms = 4;
+
+  // CONDITIONALLY_COMMON if run_order = TIMESTAMP
+  // Max time for RunInfo.timestamp_ms.
+  //
+  // Due to performance limitations of our storage implementation, it is an
+  // error to set this field if run_order != TIMESTAMP.
+  optional double max_timestamp_ms = 5;
+
+  // CONDITIONALLY_UNCOMMON if run_order = BUILD_ID
+  // Min value for RunInfo.build_id.
+  //
+  // Due to performance limitations of our storage implementation, it is an
+  // error to set this field if run_order != BUILD_ID.
+  optional int64 min_build_id = 9;
+
+  // CONDITIONALLY_UNCOMMON if run_order = BUILD_ID
+  // Max value for RunInfo.build_id.
+  //
+  // Due to performance limitations of our storage implementation, it is an
+  // error to set this field if run_order != BUILD_ID.
+  optional int64 max_build_id = 10;
+
+  // COMMON
+  // Max runs loaded for chart. The server has an implementation-specific
+  // default for this value.
+  optional int32 max_runs = 6;
+
+  // Whether to highlights a series upon hover.
+  //
+  // TODO(b/62142037): In addition to being a visual styling feature, this
+  // appears to change the chart's point selection behavior to be nearest (x,y)
+  // vs. nearest (x), thus improving point selectability when series don't have
+  // the same x values.
+  optional bool highlight_series_on_hover = 7;
+}
+
+// Provided to Dashboard.RunChart()
+// NEXT_ID: 4
+message DashboardRunChartInput {
+  // REQUIRED
+  // Matches RunInfo.run_key
+  optional string run_key = 1;
+
+  // COMMON
+  // The data values selected.
+  repeated string metric_keys = 2;
+
+  // Whether to highlights a series upon hover.
+  //
+  // TODO(b/62142037): In addition to being a visual styling feature, this
+  // appears to change the chart's point selection behavior to be nearest (x,y)
+  // vs. nearest (x), thus improving point selectability when series don't have
+  // the same x values.
+  optional bool highlight_series_on_hover = 3;
+}
+
+// Provided to Dashboard.CompareAggregateChart
+// NEXT_ID: 6
+message DashboardCompareAggregateChartInput {
+  // REQUIRED
+  // The series list. The server may have a max series count.
+  message Series {
+    // REQUIRED
+    // The desired label for the charted series
+    optional string series_label = 1;
+
+    // REQUIRED
+    // Matches RunInfo.benchmark_key
+    optional string benchmark_key = 2;
+
+    // REQUIRED
+    // The data values selected. The DataFilter.ignore_missing_data field is not
+    // relevant, but all other fields may apply.
+    optional DataFilter value_selection = 3;
+
+    // COMMON
+    // Matches all runs where tags is a subset of RunInfo.tags
+    repeated string tags = 4;
+  }
+  repeated Series series_list = 1;
+
+  // COMMON
+  // Min time for RunInfo.timestamp_ms.
+  optional double min_timestamp_ms = 2;
+
+  // COMMON
+  // Max time for RunInfo.timestamp_ms.
+  optional double max_timestamp_ms = 3;
+
+  // COMMON
+  // Max runs loaded for chart. The server has an implementation-specific
+  // default for this value.
+  optional int32 max_runs = 4;
+
+  // Whether to highlights a series upon hover.
+  //
+  // TODO(b/62142037): In addition to being a visual styling feature, this
+  // appears to change the chart's point selection behavior to be nearest (x,y)
+  // vs. nearest (x), thus improving point selectability when series don't have
+  // the same x values.
+  optional bool highlight_series_on_hover = 5;
+}
+
+// Provided to Dashboard.CompareRunChart
+// NEXT_ID: 4
+message DashboardCompareRunChartInput {
+  // REQUIRED
+  // Matches RunInfo.run_key. The server may have a max run count.
+  repeated string run_keys = 1;
+
+  // COMMON
+  // The data values selected.
+  repeated string metric_keys = 2;
+
+  // Whether to highlights a series upon hover.
+  //
+  // TODO(b/62142037): In addition to being a visual styling feature, this
+  // appears to change the chart's point selection behavior to be nearest (x,y)
+  // vs. nearest (x), thus improving point selectability when series don't have
+  // the same x values.
+  optional bool highlight_series_on_hover = 3;
+}
+
+// Provided to Dashboard.VisualizeAnalysis
+// NEXT_ID: 3
+message DashboardVisualizeAnalysisInput {
+  // REQUIRED
+  // Identifies the RunInfo which was analyzed. The visualization will show
+  // all analysis done for this run.
+  optional string run_key = 1;
+
+  // COMMON
+  // Used to find the appropriate AnalysisOutput message attached to the
+  // RunInfo whose analysis_key matches this key. If provided we will anchor
+  // visualization on this analysis in the run. Other analysis will still be
+  // rendered on the screen. If not provided, all analysis in the run will be
+  // rendered with no anchoring to a specific analyzer output.
+  optional string analysis_key = 2;
+}
+
+// -----------------------------------------------------------------------------
+//
+// Arguments for Mako Load Libraries
+//
+// -----------------------------------------------------------------------------
+
+// A test option that may come from test command line flags,
+// environment variables, and/or test input files.
+message TestOption {
+  // REQUIRED
+  // Option name
+  optional string name = 1;
+
+  // REQUIRED
+  // Option value
+  optional string value = 2;
+}
+
+// Test inputs that will be provided to framework, Master, and Samplers.
+// NEXT_ID: 11
+message TestInput {
+  // REQUIRED
+  // The benchmark key for this test run.
+  // This is used by the framework when performing storage writes.
+  optional string benchmark_key = 1;
+
+  // REQUIRED
+  // The path to a temporary directory for storing pre-downsampled data.
+  // The framework will create files in this directory named like:
+  //   mako-<benchmark_key>-<run key>-*
+  // The framework will attempt to delete these files at the end of the test,
+  // but it cannot guarantee deletion in the event of crashes.
+  //
+  // These temporary files contain all data measured by all samplers,
+  // so very large tests should ensure there is enough quota.
+  // Small, single process tests should just use local disk.
+  // Large tests must use a distributed filesystem, so that tasks
+  // running on multiple machines can all access the files.
+  //
+  // Each implementation of the Mako Load component will describe
+  // the filesystems it supports and provide constructors that allow a user
+  // to provide credentials that may be needed in order to write to the
+  // filesystem.
+  optional string temp_dir = 2;
+
+  // REQUIRED
+  // The time duration in seconds at which the framework will
+  // fail the test. The test may take a little longer to timeout than
+  // this amount, because the framework will attempt to shutdown
+  // tasks in a certain order, and each step will take some time.
+  optional double timeout_sec = 3;
+
+  // COMMON
+  // This is useful when your Master and/or Samplers are parameterized
+  // to handle a variety of loads.
+  repeated TestOption test_option_list = 4;
+
+  // COMMON
+  // Tags which should unconditionally be applied to this benchmark run.
+  // For applying tags dynamically see the Master::Complete() method.
+  repeated string tags = 6;
+
+  // UNCOMMON
+  // A unique identifier used to group multiple runs into a single Test Pass.
+  // Users can set this manually for custom grouping behavior. If manually
+  // setting test_pass_id, include a GUID to prevent collisions with other
+  // Test Passes from the same or other Mako Projects.
+
+  // If this value is not manually set, the Mako Load framework and
+  // Quickstore will attempt to detect and use meaningful Test Pass environment
+  // variables from common test executor infrastructure.
+  optional string test_pass_id = 7;
+
+  // COMMON
+  // The RunInfo.build_id value that will be created for this load test.
+  // This must be a positive non-zero integer value.
+  optional int64 build_id = 8;
+
+  // FRAMEWORK_WRITE_ONLY
+  // Internal options that need to be forwarded on to the rest of the
+  // framework.
+  // Example usage would be flags that need to be passed from the Test Case to
+  // the Master and Sampler jobs in a Large Load test.
+  map<string, string> internal_test_options = 10;
+
+  // DEPRECATED
+  reserved 5;
+  reserved "start_time_sec";
+}
+
+// Test output that summarizes test run results.
+message TestOutput {
+  // REQUIRED
+  // Overall test status
+  enum TestStatus {
+    // test pass
+    PASS = 1;
+    // failed to maintain desired execution rate (applies to data queue as well)
+    RATE_FAIL = 2;
+    // crashes, fatal errors, or timeout occurred.
+    FATAL_FAIL = 3;
+    // Analysis failure. Set when:
+    //  * at least one analyzer failed to run.
+    //  * at least one analyzer reported a regression.
+    // Iterate through AnalyzerOutput.analyzer_output_list checking
+    // AnalyzerOutput.status.code != SUCCESS (failed to run) and
+    // AnalyzerOutput.regression == True (found a regression) to differentiate
+    // between the two cases.
+    ANALYSIS_FAIL = 4;
+    // test still in progress
+    IN_PROGRESS = 5;
+  }
+  optional TestStatus test_status = 1;
+
+  // COMMON
+  // Output from analyzers
+  repeated AnalyzerOutput analyzer_output_list = 2;
+
+  // COMMON
+  // A summary message about the test results.
+  // Will contain:
+  //   - Analysis summaries
+  //   - Error details
+  //   - Warning details
+  optional string summary_output = 3;
+
+  // COMMON
+  // A dashboard link to the run chart
+  // Only guaranteed to be populated when test_status is PASS or ANALYSIS_FAIL.
+  optional string run_chart_link = 4;
+
+  // COMMON
+  // The RunInfo key associated with this test run.
+  // Can be used to avoid eventual consistency issues when looking up results
+  // directly after test completion.
+  // Only guaranteed to be populated when test_status is PASS or ANALYSIS_FAIL.
+  optional string run_key = 5;
+
+  // The failure types that have been identified as potentially transient and
+  // thus retryable. This is not intended to be comprehensive of all transient
+  // failures.
+  enum RetryableFailureType {
+    UNKNOWN_OR_UNSET_TYPE = 0;
+    MASTER_RESTART = 1;
+    JOB_MANAGER_RESTART = 2;
+    // When the number of sampler restarts exceeds the allowed limit for one
+    // or more sampler tasks as configured by MultiSamplerTask.allowed_crashes.
+    SAMPLER_RESTART = 3;
+  }
+
+  // COMMON
+  // Only set when there is a non-PASS test_status and the failure is
+  // identified as one that might make sense to retry. Today this field allows
+  // users to better understand why a test failed and potentially retry a test
+  // themselves.
+  //
+  optional RetryableFailureType retryable_failure_type = 6;
+}
+
+// One measurement/error pair produced by a Sampler. It is typical
+// for only one to be set, but setting both is okay.
+// Either sample_point or sample_error or both must be set.
+message SampleRecord {
+  // CONDITIONALLY_REQUIRED - see above
+  // A sample point taken by a Sampler
+  optional SamplePoint sample_point = 1;
+
+  // CONDITIONALLY_REQUIRED - see above
+  // A SUT error that occurred while Sampler was executing an operation
+  optional SampleError sample_error = 2;
+}
+
+// Each Sampler will write all of its data to a single file,
+// and this describes that file.
+// The file format and path description is specific to the Load implemenation.
+// Load, Aggregator, and Downsampler implementations must all use the same
+// format.
+message SampleFile {
+  // REQUIRED
+  // The name of the Sampler that created this file
+  // as defined by Master.
+  // If empty string, data was created by Master itself.
+  optional string sampler_name = 1;
+
+  // REQUIRED
+  // The path to a file that contains raw SampleRecords.
+  optional string file_path = 2;
+}

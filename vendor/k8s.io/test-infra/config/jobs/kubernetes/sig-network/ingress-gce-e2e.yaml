@@ -1,0 +1,254 @@
+presets:
+- labels:
+    preset-ingress-master-yaml: "true"
+  env:
+  - name: CUSTOM_INGRESS_YAML
+    # we want to keep extra spaces for the yaml file.
+    value: |2+
+        apiVersion: v1
+        kind: Pod
+        metadata:
+          name: l7-lb-controller
+          namespace: kube-system
+          annotations:
+            scheduler.alpha.kubernetes.io/critical-pod: ""
+            seccomp.security.alpha.kubernetes.io/pod: "docker/default"
+          labels:
+            k8s-app: gcp-lb-controller
+            kubernetes.io/name: "GLBC"
+        spec:
+          terminationGracePeriodSeconds: 600
+          hostNetwork: true
+          containers:
+            # HEAD is used unless otherwised specified by each individual job.
+          - image: k8s.gcr.io/ingress-gce-glbc-amd64:master
+            livenessProbe:
+              httpGet:
+                path: /healthz
+                port: 8086
+                scheme: HTTP
+              initialDelaySeconds: 30
+              # healthz reaches out to GCE
+              periodSeconds: 30
+              timeoutSeconds: 15
+              successThreshold: 1
+              failureThreshold: 5
+            name: l7-lb-controller
+            volumeMounts:
+            - mountPath: /etc/gce.conf
+              name: cloudconfig
+              readOnly: true
+            - mountPath: /var/log/glbc.log
+              name: logfile
+              readOnly: false
+            - mountPath: /etc/srv/kubernetes/l7-lb-controller
+              name: srvkube
+              readOnly: true
+            resources:
+              requests:
+                cpu: 10m
+                memory: 50Mi
+            args:
+            - --v=3
+            - --logtostderr=false
+            - --log_file=/var/log/glbc.log
+            - --enable-finalizer-remove
+            - --default-backend-service=kube-system/default-http-backend
+            - --kubeconfig=/etc/srv/kubernetes/l7-lb-controller/kubeconfig
+            - --sync-period=600s
+            - --running-in-cluster=false
+            - --config-file-path=/etc/gce.conf
+            - --healthz-port=8086
+            - --gce-ratelimit=ga.Operations.Get,qps,10,100
+            - --gce-ratelimit=alpha.Operations.Get,qps,10,100
+            - --gce-ratelimit=ga.BackendServices.Get,qps,1.8,1
+            - --gce-ratelimit=ga.HealthChecks.Get,qps,1.8,1
+            - --gce-ratelimit=alpha.HealthChecks.Get,qps,1.8,1
+            - --gce-ratelimit=beta.NetworkEndpointGroups.Get,qps,1.8,1
+            - --gce-ratelimit=beta.NetworkEndpointGroups.AttachNetworkEndpoints,qps,1.8,1
+            - --gce-ratelimit=beta.NetworkEndpointGroups.DetachNetworkEndpoints,qps,1.8,1
+            - --gce-ratelimit=beta.NetworkEndpointGroups.ListNetworkEndpoints,qps,1.8,1
+          volumes:
+          - hostPath:
+              path: /etc/gce.conf
+              type: FileOrCreate
+            name: cloudconfig
+          - hostPath:
+              path: /var/log/glbc.log
+              type: FileOrCreate
+            name: logfile
+          - name: srvkube
+            hostPath:
+              path: /etc/srv/kubernetes/l7-lb-controller
+
+presubmits:
+  kubernetes/ingress-gce:
+  - name: pull-ingress-gce-test
+    always_run: true
+    labels:
+      preset-service-account: "true"
+      preset-k8s-ssh: "true"
+      preset-dind-enabled: "true"
+    spec:
+      containers:
+      - image: gcr.io/k8s-testimages/kubekins-e2e:v20190813-5765933-master
+        args:
+        - --repo=k8s.io/ingress-gce=$(PULL_REFS)
+        - --root=/go/src/
+        - --upload=gs://kubernetes-jenkins/pr-logs
+        - --scenario=execute
+        - --
+        - make
+        - test
+        # docker-in-docker needs privileged mode
+        securityContext:
+          privileged: true
+
+postsubmits:
+  kubernetes/ingress-gce:
+  - name: ci-ingress-gce-image-push
+    labels:
+      preset-service-account: "true"
+      preset-k8s-ssh: "true"
+      preset-dind-enabled: "true"
+    spec:
+      containers:
+      - image: gcr.io/k8s-testimages/kubekins-e2e:v20190813-5765933-master
+        args:
+        - --repo=k8s.io/ingress-gce=$(PULL_REFS)
+        - --root=/go/src/
+        - --timeout=320
+        - --scenario=execute
+        - --
+        - --env=VERSION=$(PULL_BASE_REF)
+        - --env=REGISTRY=gcr.io/k8s-ingress-image-push
+        - make
+        - push-e2e
+        # docker-in-docker needs privileged mode
+        securityContext:
+          privileged: true
+
+    annotations:
+      testgrid-dashboards: sig-network-ingress-gce-e2e
+      testgrid-tab-name: ingress-gce-image-push
+      testgrid-alert-email: kubernetes-sig-network-test-failures@googlegroups.com
+periodics:
+- name: ci-ingress-gce-e2e
+  interval: 60m
+  labels:
+    preset-service-account: "true"
+    preset-k8s-ssh: "true"
+    preset-ingress-master-yaml: "true"
+  spec:
+    containers:
+    - image: gcr.io/k8s-testimages/kubekins-e2e:v20190813-5765933-master
+      args:
+      - --timeout=340
+      - --bare
+      - --scenario=kubernetes_e2e
+      - --
+      - --check-leaked-resources
+      - --cluster=
+      - --env=GCE_GLBC_IMAGE=gcr.io/k8s-ingress-image-push/ingress-gce-glbc-amd64:master
+      - --env=GCE_ALPHA_FEATURES=NetworkEndpointGroup
+      - --env=KUBE_GCE_ENABLE_IP_ALIASES=true
+      - --extract=ci/latest
+      - --gcp-project-type=ingress-project
+      - --gcp-zone=asia-southeast1-a
+      - --ginkgo-parallel=1
+      - --provider=gce
+      - --test_args=--ginkgo.focus=\[Feature:Ingress\]|\[Feature:NEG\]
+      - --timeout=320m
+
+  annotations:
+    testgrid-dashboards: sig-network-ingress-gce-e2e
+    testgrid-tab-name: ingress-gce-e2e
+    testgrid-alert-email: kubernetes-sig-network-test-failures@googlegroups.com
+- name: ci-ingress-gce-e2e-multi-zone
+  interval: 3h
+  labels:
+    preset-service-account: "true"
+    preset-k8s-ssh: "true"
+    preset-ingress-master-yaml: "true"
+  spec:
+    containers:
+    - image: gcr.io/k8s-testimages/kubekins-e2e:v20190813-5765933-master
+      args:
+      - --timeout=340
+      - --bare
+      - --scenario=kubernetes_e2e
+      - --
+      - --check-leaked-resources
+      - --cluster=
+      - --env=MULTIZONE=true
+      # Where the nodes reside.  Master is in the first one.
+      - --env=E2E_ZONES=us-central1-a us-central1-b us-central1-f
+      - --env=GCE_GLBC_IMAGE=gcr.io/k8s-ingress-image-push/ingress-gce-glbc-amd64:master
+      - --extract=ci/latest
+      - --gcp-project-type=ingress-project
+      - --gcp-zone=us-central1-a
+      - --ginkgo-parallel=1
+      - --provider=gce
+      - --test_args=--ginkgo.focus=\[Feature:Ingress\]
+      - --timeout=320m
+
+  annotations:
+    testgrid-dashboards: sig-network-ingress-gce-e2e
+    testgrid-tab-name: ingress-gce-e2e-multi-zone
+    testgrid-alert-email: kubernetes-sig-network-test-failures@googlegroups.com
+- name: ci-ingress-gce-e2e-release-1-6
+  interval: 90m
+  labels:
+    preset-service-account: "true"
+    preset-k8s-ssh: "true"
+    preset-ingress-master-yaml: "true"
+  spec:
+    containers:
+    - image: gcr.io/k8s-testimages/kubekins-e2e:v20190813-5765933-master
+      args:
+      - --timeout=340
+      - --bare
+      - --scenario=kubernetes_e2e
+      - --
+      - --check-leaked-resources
+      - --cluster=
+      - --env=GCE_GLBC_IMAGE=gcr.io/k8s-ingress-image-push/ingress-gce-glbc-amd64:release-1.6
+      - --extract=ci/latest
+      - --gcp-project-type=ingress-project
+      - --ginkgo-parallel=1
+      - --provider=gce
+      - --test_args=--ginkgo.focus=\[Feature:Ingress\]
+      - --timeout=320m
+
+  annotations:
+    testgrid-dashboards: sig-network-ingress-gce-e2e
+    testgrid-tab-name: ingress-gce-e2e-release-1.6
+    testgrid-alert-email: kubernetes-sig-network-test-failures@googlegroups.com
+- name: ci-ingress-gce-e2e-scale
+  interval: 6h
+  labels:
+    preset-service-account: "true"
+    preset-k8s-ssh: "true"
+    preset-ingress-master-yaml: "true"
+  spec:
+    containers:
+    - image: gcr.io/k8s-testimages/kubekins-e2e:v20190813-5765933-master
+      args:
+      - --timeout=340
+      - --bare
+      - --scenario=kubernetes_e2e
+      - --
+      - --check-leaked-resources
+      - --cluster=
+      - --env=GCE_GLBC_IMAGE=gcr.io/k8s-ingress-image-push/ingress-gce-glbc-amd64:master
+      - --extract=ci/latest
+      - --gcp-project=k8s-ingress-e2e-scale-backup
+      - --gcp-zone=us-west1-b
+      - --ginkgo-parallel=1
+      - --provider=gce
+      - --test_args=--ginkgo.focus=\[Feature:IngressScale\]
+      - --timeout=320m
+  annotations:
+    testgrid-dashboards: sig-network-ingress-gce-e2e
+    testgrid-tab-name: ingress-gce-e2e-scale
+    testgrid-alert-email: kubernetes-sig-network-test-failures@googlegroups.com

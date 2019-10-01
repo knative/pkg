@@ -1,0 +1,50 @@
+package(default_visibility = ["//visibility:public"])
+
+sh_binary(
+    name = "mkpj",
+    srcs = ["mkpj_binary"],
+    args = [
+        "--config-path=$(location //prow:config.yaml)",
+        "--job-config-path=config/jobs",
+    ],
+    data = [
+        ":prowjobs",
+        "//prow:config.yaml",
+    ],
+)
+
+alias(
+    name = "mkpj_binary",
+    actual = "//prow/cmd/mkpj:mkpj",
+)
+
+filegroup(
+    name = "prowjobs",
+    srcs = glob([
+        "jobs/**/*.yaml",
+    ]) + ["//config/jobs/kubernetes-security:generated-jobs"],
+)
+
+filegroup(
+    name = "testgrids",
+    srcs = glob([
+        "testgrids/**/*.yaml",
+    ]),
+)
+
+filegroup(
+    name = "package-srcs",
+    srcs = glob(["**"]),
+    tags = ["automanaged"],
+    visibility = ["//visibility:private"],
+)
+
+filegroup(
+    name = "all-srcs",
+    srcs = [
+        ":package-srcs",
+        "//config/jobs/kubernetes-security:all-srcs",
+        "//config/tests/jobs:all-srcs",
+    ],
+    tags = ["automanaged"],
+)

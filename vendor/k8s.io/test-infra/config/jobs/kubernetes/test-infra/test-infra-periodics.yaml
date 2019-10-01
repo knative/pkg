@@ -1,0 +1,137 @@
+periodics:
+- name: ci-test-infra-build-smoke
+  interval: 2h
+  agent: knative-build
+  decorate: true
+  extra_refs:
+  - org: kubernetes
+    repo: test-infra
+    base_ref: master
+  build_spec:
+    steps:
+    - name: first
+      image: busybox
+      args: ["echo", "hello"]
+    - name: second
+      image: busybox
+      args: ["echo", "world"]
+    - name: third
+      image: busybox
+      args: ["cat", "config/jobs/kubernetes/test-infra/test-infra-periodics.yaml"]
+- name: ci-test-infra-bazel
+  decorate: true
+  extra_refs:
+  - org: kubernetes
+    repo: test-infra
+    base_ref: master
+  interval: 1h
+  labels:
+    preset-service-account: "true"
+    preset-bazel-scratch-dir: "true"
+  spec:
+    containers:
+    - image: launcher.gcr.io/google/bazel:0.27.0
+      command:
+      - hack/bazel.sh
+      args:
+      - test
+      - --config=ci
+      - --nobuild_tests_only
+      - //...
+
+- name: ci-test-infra-triage
+  decorate: true
+  interval: 40m
+  spec:
+    containers:
+    - image: gcr.io/k8s-testimages/triage:latest
+      imagePullPolicy: Always
+      env:
+      - name: GOOGLE_APPLICATION_CREDENTIALS
+        value: /etc/service-account/service-account.json
+      command:
+      - "timeout"
+      args:
+      - "-t"
+      - "10800"
+      - "/update_summaries.sh"
+      volumeMounts:
+      - name: service
+        mountPath: /etc/service-account
+        readOnly: true
+    volumes:
+    - name: service
+      secret:
+        secretName: triage-service-account
+  annotations:
+    testgrid-num-failures-to-alert: '18'
+    testgrid-alert-stale-results-hours: '12'
+- name: metrics-bigquery
+  interval: 24h
+  spec:
+    containers:
+    - image: gcr.io/k8s-testimages/bigquery:v20180330-f723e8d3f
+      args:
+      - --scenario=execute
+      - --
+      - test-infra/metrics/bigquery.py
+      - --
+      - --bucket=gs://k8s-metrics
+      - --backfill-days=90
+      env:
+      - name: GOOGLE_APPLICATION_CREDENTIALS
+        value: /etc/service-account/service-account.json
+      - name: VELODROME_INFLUXDB_CONFIG
+        value: /etc/velodrome-influxdb/config.json
+      volumeMounts:
+      - name: service
+        mountPath: /etc/service-account
+        readOnly: true
+      - name: influxdb
+        mountPath: /etc/velodrome-influxdb
+        readOnly: true
+    volumes:
+    - name: service
+      secret:
+        secretName: triage-service-account
+    - name: influxdb
+      secret:
+        secretName: velodrome-influxdb
+
+- name: metrics-kettle
+  interval: 1h
+  spec:
+    containers:
+    - image: gcr.io/k8s-testimages/bigquery:v20180330-f723e8d3f
+      args:
+      - --scenario=execute
+      - --
+      - test-infra/kettle/monitor.py
+      - --
+      - --stale=6
+      - --table
+      - k8s-gubernator:build.all
+      - k8s-gubernator:build.week
+      - k8s-gubernator:build.day
+      env:
+      - name: GOOGLE_APPLICATION_CREDENTIALS
+        value: /etc/service-account/service-account.json
+      - name: VELODROME_INFLUXDB_CONFIG
+        value: /etc/velodrome-influxdb/config.json
+      volumeMounts:
+      - name: service
+        mountPath: /etc/service-account
+        readOnly: true
+      - name: influxdb
+        mountPath: /etc/velodrome-influxdb
+        readOnly: true
+    volumes:
+    - name: service
+      secret:
+        secretName: triage-service-account
+    - name: influxdb
+      secret:
+        secretName: velodrome-influxdb
+  annotations:
+    testgrid-num-failures-to-alert: '6'
+    testgrid-alert-stale-results-hours: '12'

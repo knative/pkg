@@ -1,0 +1,51 @@
+{
+  "metadata": {
+    "git_hash": "43bf39d0a2c36583aed1c346a2e5b958ab379718",
+    "run_timestamp": 1316713628128,
+    "run_duration_ms": 2438,
+    "tags": ["environment=continuous_integration", "branch=master"]
+  },
+  "counters": {
+    "throughput": 4312.84,
+    "branch_miss_percentage": 1.048,
+    "page_faults": 42383
+  },
+  "samples": [
+    {
+      "timestamp": 1316713628128,
+      "write_latency": 258,
+      "read_latency": null,
+      "cpu_load": 0.13
+    },
+    {
+      "timestamp": 1316713628386,
+      "write_latency": null,
+      "read_latency": 737,
+      "cpu_load": 0.19
+    },
+    {
+      "timestamp": 1316713629123,
+      "write_latency": 1256,
+      "read_latency": null,
+      "cpu_load": 0.28
+    },
+    {
+      "timestamp": 1316713870379,
+      "write_latency": null,
+      "read_latency": 455,
+      "cpu_load": 0.34
+    },
+    {
+      "timestamp": 1316713870834,
+      "write_latency": 279,
+      "read_latency": null,
+      "cpu_load": 0.38
+    },
+    {
+      "timestamp": 1316713871834,
+      "write_latency": null,
+      "read_latency": 383,
+      "cpu_load": 0.51
+    }
+  ]
+}

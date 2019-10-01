@@ -1,0 +1,216 @@
+// Copyright 2019 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     https://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// see the license for the specific language governing permissions and
+// limitations under the license.
+
+// Threshold analyzer determines if data is within threshold bounds.
+//
+// The threshold values are configured via the ThresholdConfig protobuff message
+// and passed into constructor. This allows you to analyze multiple metrics of a
+// run with a single call to Analyze().
+//
+// For more information about mako see go/mako. For analyzer specific
+// information see go/mako-analyzer.
+//
+// AnalyzerOutput.analyzer_type is set to 'Threshold'.
+
+syntax = "proto2";
+
+package mako.analyzers.threshold_analyzer;
+
+import "spec/proto/mako.proto";
+
+// Specify the threshold values for a particular type of data (metric samples,
+// metric aggregate, etc.)
+// NEXT ID: 6
+message ThresholdConfig {
+  // CONDITIONALLY_REQUIRED
+  // At least one of either min or max must be set.
+  //
+  // Min expected value of data.
+  optional double min = 1;
+
+  // CONDITIONALLY_REQUIRED
+  // At least one of either min or max must be set.
+  //
+  // Max expected value of data.
+  optional double max = 2;
+
+  // CONDITIONALLY_REQUIRED
+  // Percent of measurements that can exist outside the min/max range specified
+  // above before failing analysis.
+  //
+  // Not required if data being analyzed is a single value (eg. a run
+  // aggregate, error count, benchmark score)
+  //
+  // Value is percent (eg. 51 for 51%)
+  optional double outlier_percent_max = 3;
+
+  // REQUIRED
+  // Data that threshold will be applied to.
+  optional mako.DataFilter data_filter = 4;
+
+  // OPTIONAL
+  // Name of this config. Will be set in ThresholdConfigResult.config_name if
+  // supplied.
+  optional string config_name = 5;
+}
+
+// Specify behavior of checking whether the benchmark is out of tolerance
+// across multiple runs to avoid failing due to outliers and ephemeral
+// performance changes.
+//
+// When the ThresholdConfig's DataFilter.DataType is METRIC_SAMPLEPOINTS this
+// will combine the current run's sample points with the sample points from all
+// historic runs and then execute the threshold analyzer over the results.
+//
+// When the ThresholdConfig's DataFilter.DataType is not METRIC_SAMPLEPOINTS
+// it will use the median of the pre-computed aggregates for the
+// specified DataFilter in each run from the set of historical runs and the
+// current run being analyzed.
+//
+// NEXT ID: 4
+message CrossRunConfig {
+  // REQUIRED
+  // Queries for past runs that will be used to retrieve runs prior to the
+  // current run. The benchmark_key, limit, and tags fields are usually set
+  // on these queries.
+  // If the benchmark_key is not set, it will automatically be set to that of
+  // the benchmark owning the run under analysis.
+  // If a query limit is set to N:
+  //   The framework will make a series of queries as needed to attempt
+  //   retrieval of N runs.
+  //   If at least N matching runs exist:
+  //     N runs will be supplied to the analyzer
+  //   Else
+  //     Less than N runs will be supplied to the analyzer.
+  // If a query limit is not set:
+  //   The server default max limit is used, which is guaranteed
+  //   to be no less than 100.
+  // Limitations:
+  //   * All query limit fields must be unset or in range [0,1000]
+  repeated mako.RunInfoQuery run_info_query_list = 1;
+
+  // OPTIONAL
+  // Will skip analysis if the number of returned historical runs is less than
+  // min_run_count. This can happen for new benchmarks that don't have history
+  // yet or if the benchmark has not run recently due to a breakage or other
+  // issue.
+  //
+  // If not populated, will always run analysis on whatever historical runs
+  // were returned.
+  optional int32 min_run_count = 3;
+
+  reserved 2;
+}
+
+// Constructor input to threshold analyzer
+// NEXT ID: 5
+message ThresholdAnalyzerInput {
+  // REQUIRED
+  repeated ThresholdConfig configs = 1;
+
+  // UNCOMMON
+  // Name for this analyzer instance, will be output in
+  // AnalyzerOutput.analyzer_name
+  optional string name = 2;
+
+  // OPTIONAL
+  // Tags to filter runs that provide historical context for this analyzer.
+  // These do NOT affect the analysis itself.
+  repeated string historical_context_tags = 3;
+
+  // OPTIONAL
+  // TODO(b/139077091): NOT IMPLEMENTED YET
+  //
+  // When populated and the current run is a regression for this config, instead
+  // of just returning a regression we will first check whether this was
+  // a sustained regression across multiple runs using the config in this
+  // message.
+  optional CrossRunConfig cross_run_config = 4;
+}
+
+// This message will be text (go/textformat) encoded into
+// AnalyzerOutput.output.
+// NEXT ID: 6
+message ThresholdAnalyzerOutput {
+  // REQUIRED
+  // A result will be added for each evaluated ThresholdConfig.
+  repeated ThresholdConfigResult config_results = 1;
+
+  // CONDITIONALLY REQUIRED
+  // Required if cross_run_config is populated and the run queries are sorting
+  // by Timestamp.
+  // Minimum historical window run timestamp. Used to re-create an
+  // approximation of the runs that were used in the historical run window.
+  optional double min_timestamp_ms = 2;
+
+  // CONDITIONALLY REQUIRED
+  // Required if cross_run_config is populated and the run queries are sorting
+  // by Timestamp.
+  // Maximum historical window run timestamp. Used to re-create an
+  // approximation of the runs that were used in the historical run window.
+  optional double max_timestamp_ms = 3;
+
+  // CONDITIONALLY REQUIRED
+  // Required if cross_run_config is populated and the run queries are sorting
+  // by BuildID.
+  // Minimum historical window run timestamp. Used to re-create an
+  // approximation of the runs that were used in the historical run window.
+  optional double min_build_id = 4;
+
+  // CONDITIONALLY REQUIRED
+  // Required if cross_run_config is populated and the run queries are sorting
+  // by BuildID.
+  // Maximum historical window run timestamp. Used to re-create an
+  // approximation of the runs that were used in the historical run window.
+  optional double max_build_id = 5;
+}
+
+// Results of each ThresholdConfig
+// NEXT ID: 8
+message ThresholdConfigResult {
+  // REQUIRED
+  // Percent of points that were above the max (eg. 51 => 51%)
+  optional double percent_above_max = 1;
+
+  // REQUIRED
+  // Percent of points that were below the min (eg. 51 => 51%)
+  optional double percent_below_min = 2;
+
+  // OPTIONAL
+  // Populated whenever analyzing an aggregate or other single value.
+  optional double value_outside_threshold = 3;
+
+  // REQUIRED
+  // Human readable label associated with the metric being analyzed.
+  optional string metric_label = 4;
+
+  // REQUIRED
+  // The configuration used in analysis that provided this result.
+  optional ThresholdConfig config = 5;
+
+  // REQUIRED
+  // Whether this config evaluation resulted in a regression being flagged.
+  optional bool regression = 6;
+
+  // REQUIRED
+  // Set to true when:
+  // 1) The current run is a regression for this config
+  // 2) ThresholdAnalyzerInput.cross_run_config was populated and therefore
+  //    used to ensure that this was a sustained regression across multiple
+  //    runs.
+  //
+  // This is used when explaining the logical steps taken during Analyzer
+  // evaluation for features such as visualization.
+  optional bool cross_run_config_exercised = 7 [default = false];
+}

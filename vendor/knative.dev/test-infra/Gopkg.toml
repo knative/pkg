@@ -1,0 +1,37 @@
+# Refer to https://golang.github.io/dep/docs/Gopkg.toml.html
+# for detailed Gopkg.toml documentation.
+
+required = [  
+]
+
+[[override]]
+  name = "k8s.io/api"
+  version = "kubernetes-1.12.6"
+
+[[override]]
+  name = "k8s.io/apimachinery"
+  version = "kubernetes-1.12.6"
+
+[[override]]
+  name = "k8s.io/code-generator"
+  version = "kubernetes-1.12.6"
+
+[[override]]
+  name = "k8s.io/client-go"
+  version = "kubernetes-1.12.6"
+
+[[override]]
+  name = "knative.dev/pkg"
+  branch = "master"
+
+# TODO(mattmoor): Find a way to bundle the licenseclassifier's
+# license database, so folks don't have to go get it.
+
+[prune]
+  go-tests = true
+  unused-packages = true
+  non-go = true
+
+[[prune.project]]
+  name = "github.com/google/licenseclassifier"
+  non-go = false

@@ -280,6 +280,31 @@ type TLSOptions struct {
 	// A list of alternate names to verify the subject identity in the
 	// certificate presented by the client.
 	SubjectAltNames []string `json:"subjectAltNames"`
+
+	// An optional list of base64-encoded SHA-256 hashes of the SKPIs of
+	// authorized client certificates.
+	// Note: When both verify_certificate_hash and verify_certificate_spki
+	// are specified, a hash matching either value will result in the
+	// certificate being accepted.
+	VerifyCertificateSpki []string `json:"verify_certificate_spki,omitempty"`
+
+	// An optional list of hex-encoded SHA-256 hashes of the
+	// authorized client certificates. Both simple and colon separated
+	// formats are acceptable.
+	// Note: When both verify_certificate_hash and verify_certificate_spki
+	// are specified, a hash matching either value will result in the
+	// certificate being accepted.
+	VerifyCertificateHash []string `json:"verify_certificate_hash,omitempty"`
+
+	// Optional: Minimum TLS protocol version.
+	MinProtocolVersion TLSProtocol `json:"min_protocol_version,omitempty"`
+
+	// Optional: Maximum TLS protocol version.
+	MaxProtocolVersion TLSProtocol `json:"max_protocol_version,omitempty"`
+
+	// Optional: If specified, only support the specified cipher list.
+	// Otherwise default to the default cipher list supported by Envoy.
+	CipherSuites         []string `json:"cipher_suites,omitempty"`
 }
 
 // TLS modes enforced by the proxy
@@ -299,6 +324,19 @@ const (
 	// upstream using mutual TLS by presenting client certificates for
 	// authentication.
 	TLSModeMutual TLSMode = "MUTUAL"
+
+	TLSModeAutoPassthrough TLSMode = "AUTO_PASSTHROUGH"
+	TLSModeIstioMutual TLSMode = "ISTIO_MUTUAL"
+)
+
+type TLSProtocol int32 
+
+const (
+	TLSAuto TLSProtocol = 0
+	TLSV1_0 TLSProtocol = 1
+	TLSV1_1 TLSProtocol = 2
+	TLSV1_2 TLSProtocol = 3
+	TLSV1_3 TLSProtocol = 4
 )
 
 // Port describes the properties of a specific port of a service.

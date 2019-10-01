@@ -1,0 +1,257 @@
+postsubmits:
+  kubeflow/examples:
+  - name: kubeflow-examples-postsubmit
+    branches:
+    - master
+    labels:
+      preset-service-account: "true"
+    spec:
+      containers:
+      - image: gcr.io/kubeflow-ci/test-worker:latest
+        imagePullPolicy: Always
+
+    annotations:
+      testgrid-dashboards: sig-big-data
+      description: Postsubmit kubeflow/examples.
+  kubeflow/kubeflow:
+  - name: kubeflow-postsubmit
+    labels:
+      preset-service-account: "true"
+    spec:
+      containers:
+      - image: gcr.io/kubeflow-ci/test-worker:latest
+        imagePullPolicy: Always
+
+    annotations:
+      testgrid-dashboards: sig-big-data
+      description: Postsubmit tests for Kubeflow.
+  kubeflow/kfctl:
+  - name: kubeflow-kfctl-postsubmit
+    labels:
+      preset-service-account: "true"
+    spec:
+      containers:
+      - image: gcr.io/kubeflow-ci/test-worker:latest
+        imagePullPolicy: Always
+
+    annotations:
+      testgrid-dashboards: sig-big-data
+      description: Postsubmit tests for kubeflow/kfctl.
+  kubeflow/pytorch-operator:
+  - name: kubeflow-pytorch-operator-postsubmit
+    branches:
+    - master
+    labels:
+      preset-service-account: "true"
+    spec:
+      containers:
+      - image: gcr.io/kubeflow-ci/test-worker:latest
+        imagePullPolicy: Always
+
+    annotations:
+      testgrid-dashboards: sig-big-data
+      description: Postsubmit kubeflow/pytorch-operator.
+  kubeflow/reporting:
+  - name: kubeflow-reporting-postsubmit
+    branches:
+    - master
+    labels:
+      preset-service-account: "true"
+    spec:
+      containers:
+      - image: gcr.io/kubeflow-ci/test-worker:latest
+        imagePullPolicy: Always
+
+    annotations:
+      testgrid-dashboards: sig-big-data
+      description: Postsubmit kubeflow/reporting.
+  kubeflow/website:
+  - name: kubeflow-website-postsubmit
+    labels:
+      preset-service-account: "true"
+    spec:
+      containers:
+      - image: gcr.io/kubeflow-ci/test-worker:latest
+        imagePullPolicy: Always
+
+    annotations:
+      testgrid-dashboards: sig-big-data
+      description: Postsubmit kubeflow/website.
+  kubeflow/testing:
+  - name: kubeflow-testing-postsubmit
+    branches:
+    - master
+    labels:
+      preset-service-account: "true"
+    spec:
+      containers:
+      - image: gcr.io/kubeflow-ci/test-worker:latest
+        imagePullPolicy: Always
+
+    annotations:
+      testgrid-dashboards: sig-big-data
+      description: Postsubmit kubeflow/testing.
+  kubeflow/tf-operator:
+  - name: kubeflow-tf-operator-postsubmit
+    labels:
+      preset-service-account: "true"
+    spec:
+      containers:
+      - image: gcr.io/kubeflow-ci/test-worker:latest
+        imagePullPolicy: Always
+
+    annotations:
+      testgrid-dashboards: sig-big-data
+      description: Postsubmit kubeflow/tf-operator.
+  kubeflow/katib:
+  - name: kubeflow-katib-postsubmit
+    labels:
+      preset-service-account: "true"
+    spec:
+      containers:
+      - image: gcr.io/kubeflow-ci/test-worker:latest
+        imagePullPolicy: Always
+
+    annotations:
+      testgrid-dashboards: sig-big-data
+      description: Postsubmit kubeflow/katib.
+  kubeflow/experimental-kvc:
+  - name: kubeflow-experimental-kvc-postsubmit
+    labels:
+      preset-service-account: "true"
+    spec:
+      containers:
+      - image: gcr.io/kubeflow-ci/test-worker:latest
+        imagePullPolicy: Always
+
+    annotations:
+      testgrid-dashboards: sig-big-data
+      description: Postsubmit kubeflow/experimental-kvc.
+  kubeflow/experimental-seldon:
+  - name: kubeflow-experimental-seldon-postsubmit
+    labels:
+      preset-service-account: "true"
+    spec:
+      containers:
+      - image: gcr.io/kubeflow-ci/test-worker:latest
+        imagePullPolicy: Always
+
+    annotations:
+      testgrid-dashboards: sig-big-data
+      description: Postsubmit kubeflow/experimental-seldon.
+  kubeflow/experimental-beagle:
+  - name: kubeflow-experimental-beagle-postsubmit
+    labels:
+      preset-service-account: "true"
+    spec:
+      containers:
+      - image: gcr.io/kubeflow-ci/test-worker:latest
+        imagePullPolicy: Always
+
+    annotations:
+      testgrid-dashboards: sig-big-data
+      description: Postsubmit kubeflow/experimental-beagle.
+  kubeflow/caffe2-operator:
+  - name: kubeflow-caffe2-operator-postsubmit
+    labels:
+      preset-service-account: "true"
+    spec:
+      containers:
+      - image: gcr.io/kubeflow-ci/test-worker:latest
+        imagePullPolicy: Always
+
+    annotations:
+      testgrid-dashboards: sig-big-data
+      description: Postsubmit kubeflow/caffe2-operator.
+  kubeflow/kubebench:
+  - name: kubeflow-kubebench-postsubmit
+    branches:
+    - master
+    labels:
+      preset-service-account: "true"
+    spec:
+      containers:
+      - image: gcr.io/kubeflow-ci/test-worker:latest
+        imagePullPolicy: Always
+
+    annotations:
+      testgrid-dashboards: sig-big-data
+      description: Postsubmit tests for kubeflow/kubebench.
+  kubeflow/mpi-operator:
+  - name: kubeflow-mpi-operator-postsubmit
+    branches:
+    - master
+    labels:
+      preset-service-account: "true"
+    spec:
+      containers:
+      - image: gcr.io/kubeflow-ci/test-worker:latest
+        imagePullPolicy: Always
+
+    annotations:
+      testgrid-dashboards: sig-big-data
+      description: Postsubmit tests for kubeflow/mpi-operator.
+  kubeflow/chainer-operator:
+  - name: kubeflow-chainer-operator-postsubmit
+    branches:
+    - master
+    labels:
+      preset-service-account: "true"
+    spec:
+      containers:
+      - image: gcr.io/kubeflow-ci/test-worker:latest
+        imagePullPolicy: Always
+
+    annotations:
+      testgrid-dashboards: sig-big-data
+      description: Postsubmit tests for kubeflow/chainer-operator.
+  kubeflow/mxnet-operator:
+  - name: kubeflow-mxnet-operator-postsubmit
+    branches:
+    - master
+    labels:
+      preset-service-account: "true"
+    spec:
+      containers:
+      - image: gcr.io/kubeflow-ci/test-worker:latest
+        imagePullPolicy: Always
+
+    annotations:
+      testgrid-dashboards: sig-big-data
+      description: Postsubmit kubeflow/mxnet-operator.
+  kubeflow/arena:
+  - name: kubeflow-arena-postsubmit
+    branches:
+    - master
+    labels:
+      preset-service-account: "true"
+    spec:
+      containers:
+      - image: gcr.io/kubeflow-ci/test-worker:latest
+        imagePullPolicy: Always
+
+    annotations:
+      testgrid-dashboards: sig-big-data
+      description: Postsubmit tests for kubeflow/arena.
+  kubeflow/pipelines:
+  - name: kubeflow-pipeline-postsubmit
+    decorate: true
+    branches:
+    - master
+    labels:
+      preset-service-account: "true"
+    spec:
+      containers:
+      - image: gcr.io/k8s-testimages/kubekins-e2e:v20190813-5765933-master
+        command:
+        - ./test/postsubmit-tests-with-pipeline-deployment.sh
+        args:
+        - --workflow_file
+        - component_test.yaml
+        - --test_result_folder
+        - sample_test
+        - --timeout
+        - "7200"
+    annotations:
+      testgrid-dashboards: sig-big-data
+      description: Postsubmit tests for kubeflow/pipeline.
