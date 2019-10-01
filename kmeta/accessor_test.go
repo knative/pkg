@@ -20,6 +20,8 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/tools/cache"
 
 	. "knative.dev/pkg/testing"
@@ -72,5 +74,29 @@ func TestAccessor(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+func TestObjectReference(t *testing.T) {
+	r := &Resource{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "king",
+			APIVersion: "some.api.version/v1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "name",
+			Namespace: "namespace",
+		},
+	}
+
+	want := corev1.ObjectReference{
+		APIVersion: "some.api.version/v1",
+		Kind:       "king",
+		Name:       "name",
+		Namespace:  "namespace",
+	}
+
+	if diff := cmp.Diff(want, ObjectReference(r)); diff != "" {
+		t.Errorf("Unexpected ObjectReference (-want, +got) %s", diff)
 	}
 }

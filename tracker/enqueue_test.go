@@ -26,6 +26,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/cache"
 
+	"knative.dev/pkg/kmeta"
 	. "knative.dev/pkg/testing"
 )
 
@@ -47,7 +48,7 @@ func TestHappyPaths(t *testing.T) {
 			Name:      "foo",
 		},
 	}
-	objRef := objectReference(thing1)
+	objRef := kmeta.ObjectReference(thing1)
 
 	thing2 := &Resource{
 		TypeMeta: metav1.TypeMeta{

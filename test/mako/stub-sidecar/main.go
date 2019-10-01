@@ -34,6 +34,8 @@ import (
 
 const (
 	port = ":9813"
+	// A 10 minutes run at 1000 rps of eventing perf tests is usually ~= 70 MBi, so 100MBi is reasonable
+	defaultServerMaxReceiveMessageSize = 1024 * 1024 * 100
 )
 
 type server struct {
@@ -107,7 +109,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("failed to listen: %v", err)
 	}
-	s := grpc.NewServer()
+	s := grpc.NewServer(grpc.MaxRecvMsgSize(defaultServerMaxReceiveMessageSize))
 	stopCh := make(chan struct{})
 	go func() {
 		qspb.RegisterQuickstoreServer(s, &server{stopCh: stopCh})
