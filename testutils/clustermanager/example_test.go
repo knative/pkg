@@ -43,9 +43,6 @@ func Example() {
 		Addons:   addons})
 	// Cast to GKEOperation
 	gkeOps := clusterOps.(*GKECluster)
-	if err := gkeOps.Initialize(); err != nil {
-		log.Fatalf("failed initializing GKE Client: '%v'", err)
-	}
 	if err := gkeOps.Acquire(); err != nil {
 		log.Fatalf("failed acquire cluster: '%v'", err)
 	}
