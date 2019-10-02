@@ -109,6 +109,9 @@ func (fgsc *FakeGKESDKClient) create(project, location string, rb *container.Cre
 			},
 		},
 	}
+	if rb.Cluster.NodePools != nil {
+		cluster.NodePools = rb.Cluster.NodePools
+	}
 	if rb.Cluster.MasterAuth != nil {
 		cluster.MasterAuth = &container.MasterAuth{
 			Username: rb.Cluster.MasterAuth.Username,
@@ -659,6 +662,7 @@ func TestAcquire(t *testing.T) {
 				NodePools: []*container.NodePool{
 					{
 						Name:        "default-pool",
+						Config:      &container.NodeConfig{MachineType: "n1-standard-4"},
 						Autoscaling: &container.NodePoolAutoscaling{Enabled: true, MaxNodeCount: 3, MinNodeCount: 1},
 					},
 				},
@@ -680,6 +684,7 @@ func TestAcquire(t *testing.T) {
 				NodePools: []*container.NodePool{
 					{
 						Name:        "default-pool",
+						Config:      &container.NodeConfig{MachineType: "n1-standard-4"},
 						Autoscaling: &container.NodePoolAutoscaling{Enabled: true, MaxNodeCount: 3, MinNodeCount: 1},
 					},
 				},
@@ -700,6 +705,7 @@ func TestAcquire(t *testing.T) {
 				NodePools: []*container.NodePool{
 					{
 						Name:        "default-pool",
+						Config:      &container.NodeConfig{MachineType: "n1-standard-4"},
 						Autoscaling: &container.NodePoolAutoscaling{Enabled: true, MaxNodeCount: 3, MinNodeCount: 1},
 					},
 				},
@@ -717,6 +723,7 @@ func TestAcquire(t *testing.T) {
 				NodePools: []*container.NodePool{
 					{
 						Name:        "default-pool",
+						Config:      &container.NodeConfig{MachineType: "n1-standard-4"},
 						Autoscaling: &container.NodePoolAutoscaling{Enabled: true, MaxNodeCount: 3, MinNodeCount: 1},
 					},
 				},
@@ -737,6 +744,7 @@ func TestAcquire(t *testing.T) {
 				NodePools: []*container.NodePool{
 					{
 						Name:        "default-pool",
+						Config:      &container.NodeConfig{MachineType: "n1-standard-4"},
 						Autoscaling: &container.NodePoolAutoscaling{Enabled: true, MaxNodeCount: 3, MinNodeCount: 1},
 					},
 				},
@@ -756,6 +764,7 @@ func TestAcquire(t *testing.T) {
 				NodePools: []*container.NodePool{
 					{
 						Name:        "default-pool",
+						Config:      &container.NodeConfig{MachineType: "n1-standard-4"},
 						Autoscaling: &container.NodePoolAutoscaling{Enabled: true, MaxNodeCount: 3, MinNodeCount: 1},
 					},
 				},
@@ -773,23 +782,7 @@ func TestAcquire(t *testing.T) {
 				NodePools: []*container.NodePool{
 					{
 						Name:        "default-pool",
-						Autoscaling: &container.NodePoolAutoscaling{Enabled: true, MaxNodeCount: 3, MinNodeCount: 1},
-					},
-				},
-				MasterAuth: &container.MasterAuth{
-					Username: "admin",
-				},
-			}, nil, false,
-		}, {
-			// cluster creation failed set addon, but succeeded retry
-			nil, "", false, []string{}, []string{"DONE", "PENDING"}, false, &container.Cluster{
-				Name:         fakeClusterName,
-				Location:     "us-west1",
-				Status:       "RUNNING",
-				AddonsConfig: &container.AddonsConfig{},
-				NodePools: []*container.NodePool{
-					{
-						Name:        "default-pool",
+						Config:      &container.NodeConfig{MachineType: "n1-standard-4"},
 						Autoscaling: &container.NodePoolAutoscaling{Enabled: true, MaxNodeCount: 3, MinNodeCount: 1},
 					},
 				},
@@ -813,15 +806,12 @@ func TestAcquire(t *testing.T) {
 	oldFunc := common.GetOSEnv
 	// mock timeout so it doesn't run forever
 	oldCreationTimeout := creationTimeout
-	oldAutoscalingTimeout := autoscalingTimeout
 	// wait function polls every 500ms, give it 1000 to avoid random timeout
 	creationTimeout = 1000 * time.Millisecond
-	autoscalingTimeout = 1000 * time.Millisecond
 	defer func() {
 		// restore
 		common.GetOSEnv = oldFunc
 		creationTimeout = oldCreationTimeout
-		autoscalingTimeout = oldAutoscalingTimeout
 	}()
 
 	for _, data := range datas {

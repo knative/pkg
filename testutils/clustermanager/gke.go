@@ -47,9 +47,8 @@ var (
 	protectedProjects       = []string{"knative-tests"}
 	protectedClusters       = []string{"knative-prow"}
 	// These are arbitrary numbers determined based on past experience
-	creationTimeout    = 20 * time.Minute
-	deletionTimeout    = 10 * time.Minute
-	autoscalingTimeout = 5 * time.Minute
+	creationTimeout = 20 * time.Minute
+	deletionTimeout = 10 * time.Minute
 )
 
 // GKEClient implements Client
@@ -310,7 +309,6 @@ func (gc *GKECluster) Acquire() error {
 							MinNodeCount: gc.Request.MinNodes,
 							MaxNodeCount: gc.Request.MaxNodes,
 						},
-						InitialNodeCount: gc.Request.MinNodes,
 						Config: &container.NodeConfig{
 							MachineType: gc.Request.NodeType,
 						},
