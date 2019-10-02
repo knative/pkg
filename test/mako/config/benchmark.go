@@ -18,10 +18,12 @@ package config
 
 import (
 	"fmt"
+	"github.com/kelseyhightower/envconfig"
 	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
+	"reflect"
 
 	"github.com/golang/protobuf/proto"
 	mpb "github.com/google/mako/spec/proto/mako_go_proto"
@@ -38,12 +40,37 @@ func MustGetBenchmark() (*string, *string) {
 	return benchmarkKey, benchmarkName
 }
 
+type BenchmarkEnv struct {
+	DevKey   string `envconfig:"BENCHMARK_KEY_DEV"`
+	DevName  string `envconfig:"BENCHMARK_NAME_DEV"`
+	ProdKey  string `envconfig:"BENCHMARK_KEY_PROD"`
+	ProdName string `envconfig:"BENCHMARK_NAME_PROD"`
+}
+
 // getBenchmark fetches the appropriate benchmark_key for this configured environment.
 func getBenchmark() (*string, *string, error) {
 	// Figure out what environment we're running in from the Mako configmap.
 	env, err := getEnvironment()
 	if err != nil {
 		return nil, nil, err
+	}
+	// If pod has benchmark related env
+	benchmarkEnv := BenchmarkEnv{}
+	if err := envconfig.Process("", &benchmarkEnv); err != nil {
+		return nil, nil, err
+	}
+	if !reflect.DeepEqual(benchmarkEnv, BenchmarkEnv{}) {
+		if env == "dev" {
+			if len(benchmarkEnv.DevKey) != 0 && len(benchmarkEnv.DevName) != 0 {
+				return &benchmarkEnv.DevKey, &benchmarkEnv.DevName, nil
+			}
+			return nil, nil, fmt.Errorf(("not enough env in aggregator container to define a benchmark"))
+		} else if env == "prod" {
+			if len(benchmarkEnv.ProdKey) != 0 && len(benchmarkEnv.ProdName) != 0 {
+				return &benchmarkEnv.ProdKey, &benchmarkEnv.ProdName, nil
+			}
+			return nil, nil, fmt.Errorf(("not enough env in aggregator container to define a benchmark"))
+		}
 	}
 	// Read the Mako config file for this environment.
 	data, err := readFileFromKoData(env + ".config")
@@ -55,7 +82,6 @@ func getBenchmark() (*string, *string, error) {
 	if err := proto.UnmarshalText(string(data), bi); err != nil {
 		return nil, nil, err
 	}
-
 	// Return the benchmark_key from this environment's config file.
 	return bi.BenchmarkKey, bi.BenchmarkName, nil
 }
