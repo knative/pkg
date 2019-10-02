@@ -109,6 +109,9 @@ func (fgsc *FakeGKESDKClient) create(project, location string, rb *container.Cre
 			},
 		},
 	}
+	if rb.Cluster.NodePools != nil {
+		cluster.NodePools = rb.Cluster.NodePools
+	}
 	if rb.Cluster.MasterAuth != nil {
 		cluster.MasterAuth = &container.MasterAuth{
 			Username: rb.Cluster.MasterAuth.Username,
@@ -119,7 +122,7 @@ func (fgsc *FakeGKESDKClient) create(project, location string, rb *container.Cre
 	return fgsc.newOp(), nil
 }
 
-func (fgsc *FakeGKESDKClient) delete(project, clusterName, location string) (*container.Operation, error) {
+func (fgsc *FakeGKESDKClient) delete(project, location, clusterName string) (*container.Operation, error) {
 	parent := fmt.Sprintf("projects/%s/locations/%s", project, location)
 	found := -1
 	if clusters, ok := fgsc.clusters[parent]; ok {
@@ -154,21 +157,6 @@ func (fgsc *FakeGKESDKClient) getOperation(project, location, opName string) (*c
 		return op, nil
 	}
 	return nil, fmt.Errorf("op not found")
-}
-
-func (fgsc *FakeGKESDKClient) setAutoscaling(project, clusterName, location, nodepoolName string,
-	rb *container.SetNodePoolAutoscalingRequest) (*container.Operation, error) {
-
-	cluster, err := fgsc.get(project, location, clusterName)
-	if err != nil {
-		return nil, err
-	}
-	for _, np := range cluster.NodePools {
-		if np.Name == nodepoolName {
-			np.Autoscaling = rb.Autoscaling
-		}
-	}
-	return fgsc.newOp(), nil
 }
 
 func TestSetup(t *testing.T) {
@@ -500,7 +488,7 @@ func TestInitialize(t *testing.T) {
 		errMsg := fmt.Sprintf("test initialize with:\n\tuser defined project: '%v'\n\tkubeconfig set: '%v'\n\tgcloud set: '%v'\n\trunning in prow: '%v'\n\tboskos set: '%v'",
 			data.project, data.clusterExist, data.gcloudSet, data.isProw, data.boskosProjs)
 		if !reflect.DeepEqual(data.expErr, err) {
-			t.Errorf("%s\nerror want: '%v'\nerror got: '%v'", errMsg, err, data.expErr)
+			t.Errorf("%s\nerror got: '%v'\nerror want: '%v'", errMsg, data.expErr, err)
 		}
 		if dif := cmp.Diff(data.expCluster, fgc.Cluster); dif != "" {
 			t.Errorf("%s\nCluster got(+) is different from wanted(-)\n%v", errMsg, dif)
@@ -595,14 +583,14 @@ func TestGKECheckEnvironment(t *testing.T) {
 
 		if !reflect.DeepEqual(err, data.expErr) || !reflect.DeepEqual(fgc.Project, data.expProj) || !reflect.DeepEqual(gotCluster, data.expCluster) {
 			t.Errorf("check environment with:\n\tkubectl output: %q\n\t\terror: '%v'\n\tgcloud output: %q\n\t\t"+
-				"error: '%v'\nwant: project - '%v', cluster - '%v', err - '%v'\ngot: project - '%v', cluster - '%v', err - '%v'",
-				data.kubectlOut, data.kubectlErr, data.gcloudOut, data.gcloudErr, data.expProj, data.expCluster, data.expErr, fgc.Project, fgc.Cluster, err)
+				"error: '%v'\ngot: project - '%v', cluster - '%v', err - '%v'\nwant: project - '%v', cluster - '%v', err - '%v'",
+				data.kubectlOut, data.kubectlErr, data.gcloudOut, data.gcloudErr, fgc.Project, fgc.Cluster, err, data.expProj, data.expCluster, data.expErr)
 		}
 
 		errMsg := fmt.Sprintf("check environment with:\n\tkubectl output: %q\n\t\terror: '%v'\n\tgcloud output: %q\n\t\terror: '%v'",
 			data.kubectlOut, data.kubectlErr, data.gcloudOut, data.gcloudErr)
 		if !reflect.DeepEqual(data.expErr, err) {
-			t.Errorf("%s\nerror want: '%v'\nerror got: '%v'", errMsg, err, data.expErr)
+			t.Errorf("%s\nerror got: '%v'\nerror want: '%v'", errMsg, data.expErr, err)
 		}
 		if dif := cmp.Diff(data.expCluster, gotCluster); dif != "" {
 			t.Errorf("%s\nCluster got(+) is different from wanted(-)\n%v", errMsg, dif)
@@ -674,6 +662,7 @@ func TestAcquire(t *testing.T) {
 				NodePools: []*container.NodePool{
 					{
 						Name:        "default-pool",
+						Config:      &container.NodeConfig{MachineType: "n1-standard-4"},
 						Autoscaling: &container.NodePoolAutoscaling{Enabled: true, MaxNodeCount: 3, MinNodeCount: 1},
 					},
 				},
@@ -695,6 +684,7 @@ func TestAcquire(t *testing.T) {
 				NodePools: []*container.NodePool{
 					{
 						Name:        "default-pool",
+						Config:      &container.NodeConfig{MachineType: "n1-standard-4"},
 						Autoscaling: &container.NodePoolAutoscaling{Enabled: true, MaxNodeCount: 3, MinNodeCount: 1},
 					},
 				},
@@ -715,6 +705,7 @@ func TestAcquire(t *testing.T) {
 				NodePools: []*container.NodePool{
 					{
 						Name:        "default-pool",
+						Config:      &container.NodeConfig{MachineType: "n1-standard-4"},
 						Autoscaling: &container.NodePoolAutoscaling{Enabled: true, MaxNodeCount: 3, MinNodeCount: 1},
 					},
 				},
@@ -732,6 +723,7 @@ func TestAcquire(t *testing.T) {
 				NodePools: []*container.NodePool{
 					{
 						Name:        "default-pool",
+						Config:      &container.NodeConfig{MachineType: "n1-standard-4"},
 						Autoscaling: &container.NodePoolAutoscaling{Enabled: true, MaxNodeCount: 3, MinNodeCount: 1},
 					},
 				},
@@ -752,6 +744,7 @@ func TestAcquire(t *testing.T) {
 				NodePools: []*container.NodePool{
 					{
 						Name:        "default-pool",
+						Config:      &container.NodeConfig{MachineType: "n1-standard-4"},
 						Autoscaling: &container.NodePoolAutoscaling{Enabled: true, MaxNodeCount: 3, MinNodeCount: 1},
 					},
 				},
@@ -771,6 +764,7 @@ func TestAcquire(t *testing.T) {
 				NodePools: []*container.NodePool{
 					{
 						Name:        "default-pool",
+						Config:      &container.NodeConfig{MachineType: "n1-standard-4"},
 						Autoscaling: &container.NodePoolAutoscaling{Enabled: true, MaxNodeCount: 3, MinNodeCount: 1},
 					},
 				},
@@ -788,23 +782,7 @@ func TestAcquire(t *testing.T) {
 				NodePools: []*container.NodePool{
 					{
 						Name:        "default-pool",
-						Autoscaling: &container.NodePoolAutoscaling{Enabled: true, MaxNodeCount: 3, MinNodeCount: 1},
-					},
-				},
-				MasterAuth: &container.MasterAuth{
-					Username: "admin",
-				},
-			}, nil, false,
-		}, {
-			// cluster creation failed set addon, but succeeded retry
-			nil, "", false, []string{}, []string{"DONE", "PENDING"}, false, &container.Cluster{
-				Name:         fakeClusterName,
-				Location:     "us-west1",
-				Status:       "RUNNING",
-				AddonsConfig: &container.AddonsConfig{},
-				NodePools: []*container.NodePool{
-					{
-						Name:        "default-pool",
+						Config:      &container.NodeConfig{MachineType: "n1-standard-4"},
 						Autoscaling: &container.NodePoolAutoscaling{Enabled: true, MaxNodeCount: 3, MinNodeCount: 1},
 					},
 				},
@@ -828,15 +806,12 @@ func TestAcquire(t *testing.T) {
 	oldFunc := common.GetOSEnv
 	// mock timeout so it doesn't run forever
 	oldCreationTimeout := creationTimeout
-	oldAutoscalingTimeout := autoscalingTimeout
 	// wait function polls every 500ms, give it 1000 to avoid random timeout
 	creationTimeout = 1000 * time.Millisecond
-	autoscalingTimeout = 1000 * time.Millisecond
 	defer func() {
 		// restore
 		common.GetOSEnv = oldFunc
 		creationTimeout = oldCreationTimeout
-		autoscalingTimeout = oldAutoscalingTimeout
 	}()
 
 	for _, data := range datas {
@@ -901,7 +876,7 @@ func TestAcquire(t *testing.T) {
 			"next operations outcomes: '%v'\n\tkubeconfig set: '%v'\n\taddons: '%v'",
 			data.existCluster, data.skipCreation, data.nextOpStatus, data.kubeconfigSet, data.addons)
 		if !reflect.DeepEqual(err, data.expErr) {
-			t.Errorf("%s\nerror want: '%v'\nerror got: '%v'", errMsg, err, data.expErr)
+			t.Errorf("%s\nerror got: '%v'\nerror want: '%v'", errMsg, data.expErr, err)
 		}
 		if dif := cmp.Diff(data.expCluster, fgc.Cluster); dif != "" {
 			t.Errorf("%s\nCluster got(+) is different from wanted(-)\n%v", errMsg, dif)
@@ -1065,7 +1040,7 @@ func TestDelete(t *testing.T) {
 			"Request cleanup: '%v'\n\texisting cluster: '%v'\n\tboskos state: '%v'",
 			data.isProw, data.NeedsCleanup, data.requestCleanup, data.cluster, data.boskosState)
 		if !reflect.DeepEqual(err, data.expErr) {
-			t.Errorf("%s\nerror want: '%v'\nerror got: '%v'", errMsg, err, data.expErr)
+			t.Errorf("%s\nerror got: '%v'\nerror want: '%v'", errMsg, data.expErr, err)
 		}
 		if dif := cmp.Diff(data.expCluster, gotCluster); dif != "" {
 			t.Errorf("%s\nCluster got(+) is different from wanted(-)\n%v", errMsg, dif)
