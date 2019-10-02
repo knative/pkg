@@ -71,8 +71,8 @@ func TestGetClusterLocation(t *testing.T) {
 	}
 	for _, data := range datas {
 		if got := getClusterLocation(data.region, data.zone); got != data.want {
-			t.Errorf("getting cluster location with region %q and zone %q, want: %q, got: %q",
-				data.region, data.zone, data.want, got)
+			t.Errorf("Cluster location with region %q and zone %q = %q, want: %q",
+				data.region, data.zone, got, data.want)
 		}
 	}
 }
@@ -89,8 +89,8 @@ func TestZoneFromLoc(t *testing.T) {
 	}
 	for _, data := range datas {
 		if got := zoneFromLoc(data.loc); got != data.want {
-			t.Errorf("getting cluster zone from location %q, want: %q, got: %q",
-				data.loc, data.want, got)
+			t.Errorf("Cluster zone from location %q = %q, want: %q",
+				data.loc, got, data.want)
 		}
 	}
 }
