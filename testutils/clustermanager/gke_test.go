@@ -17,7 +17,6 @@ limitations under the License.
 package clustermanager
 
 import (
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -31,6 +30,7 @@ import (
 	boskoscommon "k8s.io/test-infra/boskos/common"
 	boskosFake "knative.dev/pkg/testutils/clustermanager/boskos/fake"
 	"knative.dev/pkg/testutils/common"
+	gkeFake "knative.dev/pkg/testutils/gke/fake"
 
 	"github.com/google/go-cmp/cmp"
 )
@@ -43,132 +43,9 @@ var (
 func setupFakeGKECluster() GKECluster {
 	return GKECluster{
 		Request:    &GKERequest{},
-		operations: newFakeGKESDKClient(),
+		operations: gkeFake.NewGKESDKClient(),
 		boskosOps:  &boskosFake.FakeBoskosClient{},
 	}
-}
-
-type FakeGKESDKClient struct {
-	// map of parent: clusters slice
-	clusters map[string][]*container.Cluster
-	// map of operationID: operation
-	ops map[string]*container.Operation
-
-	// An incremental number for new ops
-	opNumber int
-	// A lookup table for determining ops statuses
-	opStatus map[string]string
-}
-
-func newFakeGKESDKClient() *FakeGKESDKClient {
-	return &FakeGKESDKClient{
-		clusters: make(map[string][]*container.Cluster),
-		ops:      make(map[string]*container.Operation),
-		opStatus: make(map[string]string),
-	}
-}
-
-// automatically registers new ops, and mark it "DONE" by default. Update
-// fgsc.opStatus by fgsc.opStatus[string(fgsc.opNumber+1)]="PENDING" to make the
-// next operation pending
-func (fgsc *FakeGKESDKClient) newOp() *container.Operation {
-	opName := strconv.Itoa(fgsc.opNumber)
-	op := &container.Operation{
-		Name:   opName,
-		Status: "DONE",
-	}
-	if status, ok := fgsc.opStatus[opName]; ok {
-		op.Status = status
-	}
-	fgsc.opNumber++
-	fgsc.ops[opName] = op
-	return op
-}
-
-// fake create cluster, fail if cluster already exists
-func (fgsc *FakeGKESDKClient) create(project, location string, rb *container.CreateClusterRequest) (*container.Operation, error) {
-	parent := fmt.Sprintf("projects/%s/locations/%s", project, location)
-	name := rb.Cluster.Name
-	if cls, ok := fgsc.clusters[parent]; ok {
-		for _, cl := range cls {
-			if cl.Name == name {
-				return nil, errors.New("cluster already exist")
-			}
-		}
-	} else {
-		fgsc.clusters[parent] = make([]*container.Cluster, 0)
-	}
-	cluster := &container.Cluster{
-		Name:         name,
-		Location:     location,
-		Status:       "RUNNING",
-		AddonsConfig: rb.Cluster.AddonsConfig,
-		NodePools: []*container.NodePool{
-			{
-				Name: "default-pool",
-			},
-		},
-	}
-	if rb.Cluster.MasterAuth != nil {
-		cluster.MasterAuth = &container.MasterAuth{
-			Username: rb.Cluster.MasterAuth.Username,
-		}
-	}
-
-	fgsc.clusters[parent] = append(fgsc.clusters[parent], cluster)
-	return fgsc.newOp(), nil
-}
-
-func (fgsc *FakeGKESDKClient) delete(project, clusterName, location string) (*container.Operation, error) {
-	parent := fmt.Sprintf("projects/%s/locations/%s", project, location)
-	found := -1
-	if clusters, ok := fgsc.clusters[parent]; ok {
-		for i, cluster := range clusters {
-			if cluster.Name == clusterName {
-				found = i
-			}
-		}
-	}
-	if found == -1 {
-		return nil, fmt.Errorf("cluster %q not found for deletion", clusterName)
-	}
-	// Delete this cluster
-	fgsc.clusters[parent] = append(fgsc.clusters[parent][:found], fgsc.clusters[parent][found+1:]...)
-	return fgsc.newOp(), nil
-}
-
-func (fgsc *FakeGKESDKClient) get(project, location, cluster string) (*container.Cluster, error) {
-	parent := fmt.Sprintf("projects/%s/locations/%s", project, location)
-	if cls, ok := fgsc.clusters[parent]; ok {
-		for _, cl := range cls {
-			if cl.Name == cluster {
-				return cl, nil
-			}
-		}
-	}
-	return nil, fmt.Errorf("cluster not found")
-}
-
-func (fgsc *FakeGKESDKClient) getOperation(project, location, opName string) (*container.Operation, error) {
-	if op, ok := fgsc.ops[opName]; ok {
-		return op, nil
-	}
-	return nil, fmt.Errorf("op not found")
-}
-
-func (fgsc *FakeGKESDKClient) setAutoscaling(project, clusterName, location, nodepoolName string,
-	rb *container.SetNodePoolAutoscalingRequest) (*container.Operation, error) {
-
-	cluster, err := fgsc.get(project, location, clusterName)
-	if err != nil {
-		return nil, err
-	}
-	for _, np := range cluster.NodePools {
-		if np.Name == nodepoolName {
-			np.Autoscaling = rb.Autoscaling
-		}
-	}
-	return fgsc.newOp(), nil
 }
 
 func TestSetup(t *testing.T) {
@@ -447,7 +324,7 @@ func TestInitialize(t *testing.T) {
 		}
 		if data.clusterExist {
 			parts := strings.Split("gke_b_c_d", "_")
-			fgc.operations.create(parts[1], parts[2], &container.CreateClusterRequest{
+			fgc.operations.CreateCluster(parts[1], parts[2], &container.CreateClusterRequest{
 				Cluster: &container.Cluster{
 					Name: parts[3],
 				},
@@ -565,7 +442,7 @@ func TestGKECheckEnvironment(t *testing.T) {
 		fgc := setupFakeGKECluster()
 		if data.clusterExist {
 			parts := strings.Split(data.kubectlOut, "_")
-			fgc.operations.create(parts[1], parts[2], &container.CreateClusterRequest{
+			fgc.operations.CreateCluster(parts[1], parts[2], &container.CreateClusterRequest{
 				Cluster: &container.Cluster{
 					Name: parts[3],
 				},
@@ -864,7 +741,7 @@ func TestAcquire(t *testing.T) {
 					ac.IstioConfig = &container.IstioConfig{Disabled: false}
 				}
 			}
-			fgc.operations.create(fakeProj, data.existCluster.Location, &container.CreateClusterRequest{
+			fgc.operations.CreateCluster(fakeProj, data.existCluster.Location, &container.CreateClusterRequest{
 				Cluster: &container.Cluster{
 					Name:         data.existCluster.Name,
 					AddonsConfig: ac,
@@ -872,12 +749,12 @@ func TestAcquire(t *testing.T) {
 				ProjectId: fakeProj,
 			})
 			if data.kubeconfigSet {
-				fgc.Cluster, _ = fgc.operations.get(fakeProj, data.existCluster.Location, data.existCluster.Name)
+				fgc.Cluster, _ = fgc.operations.GetCluster(fakeProj, data.existCluster.Location, data.existCluster.Name)
 			}
 		}
 		fgc.Project = &fakeProj
 		for i, status := range data.nextOpStatus {
-			fgc.operations.(*FakeGKESDKClient).opStatus[strconv.Itoa(opCount+i)] = status
+			fgc.operations.(*gkeFake.GKESDKClient).OpStatus[strconv.Itoa(opCount+i)] = status
 		}
 
 		fgc.Request = &GKERequest{
@@ -1035,7 +912,7 @@ func TestDelete(t *testing.T) {
 		fgc.Project = &fakeProj
 		fgc.NeedsCleanup = data.NeedsCleanup
 		if data.cluster != nil {
-			fgc.operations.create(fakeProj, data.cluster.Location, &container.CreateClusterRequest{
+			fgc.operations.CreateCluster(fakeProj, data.cluster.Location, &container.CreateClusterRequest{
 				Cluster: &container.Cluster{
 					Name: data.cluster.Name,
 				},
@@ -1058,7 +935,7 @@ func TestDelete(t *testing.T) {
 		err := fgc.Delete()
 		var gotCluster *container.Cluster
 		if data.cluster != nil {
-			gotCluster, _ = fgc.operations.get(fakeProj, data.cluster.Location, data.cluster.Name)
+			gotCluster, _ = fgc.operations.GetCluster(fakeProj, data.cluster.Location, data.cluster.Name)
 		}
 		gotBoskos := fgc.boskosOps.(*boskosFake.FakeBoskosClient).GetResources()
 		errMsg := fmt.Sprintf("testing deleting cluster, with:\n\tIs Prow: '%v'\n\tNeed cleanup: '%v'\n\t"+
