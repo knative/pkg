@@ -22,6 +22,21 @@ import (
 
 // TODO: perhaps cache the loaded CM.
 
+const defaultOrg = "knative"
+
+// GetOrganization returns the organization from the configmap.
+// It will return the defaultOrg if any error happens or it's empty.
+func GetOrganization() string {
+	cfg, err := loadConfig()
+	if err != nil {
+		return defaultOrg
+	}
+	if cfg.Organization == "" {
+		return defaultOrg
+	}
+	return cfg.Organization
+}
+
 // GetRepository returns the repository from the configmap.
 // It will return an empty string if any error happens.
 func GetRepository() string {
