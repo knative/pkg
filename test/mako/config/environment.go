@@ -22,14 +22,12 @@ import (
 
 // TODO: perhaps cache the loaded CM.
 
-// MustGetRepository returns the repository from the configmap, or dies.
-func MustGetRepository() string {
+// GetRepository returns the repository from the configmap.
+// It will return an empty string if any error happens.
+func GetRepository() string {
 	cfg, err := loadConfig()
 	if err != nil {
-		log.Fatalf("unable to load config from the configmap: %v", err)
-	}
-	if cfg.Repository == "" {
-		log.Fatal("unable to get repository from the configmap")
+		return ""
 	}
 	return cfg.Repository
 }
