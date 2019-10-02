@@ -242,6 +242,7 @@ func (gc *GKECluster) Acquire() error {
 		}
 	}
 	var cluster *container.Cluster
+	var op *container.Operation
 	for i, region := range regions {
 		// Restore innocence
 		err = nil
@@ -274,12 +275,18 @@ func (gc *GKECluster) Acquire() error {
 		existingCluster, _ := gc.operations.GetCluster(*gc.Project, clusterLoc, clusterName)
 		if existingCluster != nil {
 			log.Printf("Cluster %q already exists in %q. Deleting...", clusterName, clusterLoc)
-			_, err = gc.operations.DeleteCluster(*gc.Project, clusterLoc, clusterName)
+			op, err = gc.operations.DeleteCluster(*gc.Project, clusterLoc, clusterName)
+			if err == nil {
+				err = gc.wait(clusterLoc, op.Name, deletionTimeout)
+			}
 		}
 		// Creating cluster only if previous step succeeded
 		if err == nil {
 			log.Printf("Creating cluster %q in %q with:\n%+v", clusterName, clusterLoc, gc.Request)
-			_, err = gc.operations.CreateCluster(*gc.Project, clusterLoc, rb)
+			op, err = gc.operations.CreateCluster(*gc.Project, clusterLoc, rb)
+			if err == nil {
+				err = gc.wait(clusterLoc, op.Name, creationTimeout)
+			}
 			if err == nil { // Enable autoscaling and set limits
 				arb := &container.SetNodePoolAutoscalingRequest{
 					Autoscaling: &container.NodePoolAutoscaling{
@@ -289,7 +296,10 @@ func (gc *GKECluster) Acquire() error {
 					},
 				}
 
-				_, err = gc.operations.SetAutoscaling(*gc.Project, clusterLoc, clusterName, "default-pool", arb)
+				op, err = gc.operations.SetAutoscaling(*gc.Project, clusterName, clusterLoc, "default-pool", arb)
+				if err == nil {
+					err = gc.wait(clusterLoc, op.Name, autoscalingTimeout)
+				}
 			}
 			if err == nil { // Get cluster at last
 				cluster, err = gc.operations.GetCluster(*gc.Project, clusterLoc, rb.Cluster.Name)
@@ -343,7 +353,10 @@ func (gc *GKECluster) Delete() error {
 	}
 
 	log.Printf("Deleting cluster %q in %q", gc.Cluster.Name, gc.Cluster.Location)
-	_, err := gc.operations.DeleteCluster(*gc.Project, gc.Cluster.Location, gc.Cluster.Name)
+	op, err := gc.operations.DeleteCluster(*gc.Project, gc.Cluster.Name, gc.Cluster.Location)
+	if err == nil {
+		err = gc.wait(gc.Cluster.Location, op.Name, deletionTimeout)
+	}
 	if err != nil {
 		return fmt.Errorf("failed deleting cluster: '%v'", err)
 	}
@@ -430,4 +443,46 @@ func (gc *GKECluster) checkEnvironment() error {
 	}
 
 	return nil
+}
+
+func (gc *GKECluster) wait(location, opName string, wait time.Duration) error {
+	const (
+		pendingStatus = "PENDING"
+		runningStatus = "RUNNING"
+		doneStatus    = "DONE"
+	)
+	var op *container.Operation
+	var err error
+
+	timeout := time.After(wait)
+	tick := time.Tick(500 * time.Millisecond)
+	for {
+		select {
+		// Got a timeout! fail with a timeout error
+		case <-timeout:
+			return errors.New("timed out waiting")
+		case <-tick:
+			// Retry 3 times in case of weird network error, or rate limiting
+			for r, w := 0, 50*time.Microsecond; r < 3; r, w = r+1, w*2 {
+				op, err = gc.operations.GetOperation(*gc.Project, location, opName)
+				if err == nil {
+					if op.Status == doneStatus {
+						return nil
+					} else if op.Status == pendingStatus || op.Status == runningStatus {
+						// Valid operation, no need to retry
+						break
+					} else {
+						// Have seen intermittent error state and fixed itself,
+						// let it retry to avoid too much flakiness
+						err = fmt.Errorf("unexpected operation status: %q", op.Status)
+					}
+				}
+				time.Sleep(w)
+			}
+			// If err still persist after retries, exit
+			if err != nil {
+				return err
+			}
+		}
+	}
 }

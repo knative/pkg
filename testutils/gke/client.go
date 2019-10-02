@@ -57,21 +57,13 @@ func NewSDKClient() (SDKOperations, error) {
 // CreateCluster creates a new GKE cluster, and wait until it finishes or timeout or there is an error.
 func (gsc *sdkClient) CreateCluster(project, location string, rb *container.CreateClusterRequest) (*container.Operation, error) {
 	parent := fmt.Sprintf("projects/%s/locations/%s", project, location)
-	op, err := gsc.Projects.Locations.Clusters.Create(parent, rb).Context(context.Background()).Do()
-	if err != nil {
-		return op, err
-	}
-	return op, gsc.wait(project, location, op.Name, creationTimeout)
+	return gsc.Projects.Locations.Clusters.Create(parent, rb).Context(context.Background()).Do()
 }
 
 // DeleteCluster deletes GKE cluster, and wait until it finishes or timeout or there is an error.
 func (gsc *sdkClient) DeleteCluster(project, location, clusterName string) (*container.Operation, error) {
 	parent := fmt.Sprintf("projects/%s/locations/%s/clusters/%s", project, location, clusterName)
-	op, err := gsc.Projects.Locations.Clusters.Delete(parent).Context(context.Background()).Do()
-	if err != nil {
-		return op, err
-	}
-	return op, gsc.wait(project, location, op.Name, deletionTimeout)
+	return gsc.Projects.Locations.Clusters.Delete(parent).Context(context.Background()).Do()
 }
 
 // GetCluster gets the GKE cluster with the given cluster name.
@@ -92,9 +84,5 @@ func (gsc *sdkClient) GetOperation(project, location, opName string) (*container
 func (gsc *sdkClient) SetAutoscaling(project, location, clusterName, nodepoolName string,
 	rb *container.SetNodePoolAutoscalingRequest) (*container.Operation, error) {
 	parent := fmt.Sprintf("projects/%s/locations/%s/clusters/%s/nodePools/%s", project, location, clusterName, nodepoolName)
-	op, err := gsc.Service.Projects.Locations.Clusters.NodePools.SetAutoscaling(parent, rb).Do()
-	if err != nil {
-		return op, err
-	}
-	return op, gsc.wait(project, location, op.Name, autoscalingTimeout)
+	return gsc.Service.Projects.Locations.Clusters.NodePools.SetAutoscaling(parent, rb).Do()
 }
