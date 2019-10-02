@@ -41,10 +41,10 @@ func MustGetBenchmark() (*string, *string) {
 }
 
 type BenchmarkEnv struct {
-	DevKey   string `envconfig:"BENCHMARK_KEY_DEV"`
-	DevName  string `envconfig:"BENCHMARK_NAME_DEV"`
-	ProdKey  string `envconfig:"BENCHMARK_KEY_PROD"`
-	ProdName string `envconfig:"BENCHMARK_NAME_PROD"`
+	DevKey   string `envconfig:"DEV_BENCHMARK_KEY"`
+	DevName  string `envconfig:"DEV_BENCHMARK_NAME"`
+	ProdKey  string `envconfig:"PROD_BENCHMARK_KEY"`
+	ProdName string `envconfig:"PROD_BENCHMARK_NAME"`
 }
 
 // getBenchmark fetches the appropriate benchmark_key for this configured environment.
@@ -64,12 +64,12 @@ func getBenchmark() (*string, *string, error) {
 			if len(benchmarkEnv.DevKey) != 0 && len(benchmarkEnv.DevName) != 0 {
 				return &benchmarkEnv.DevKey, &benchmarkEnv.DevName, nil
 			}
-			return nil, nil, fmt.Errorf(("not enough env in aggregator container to define a benchmark"))
+			return nil, nil, fmt.Errorf(("not enough env in aggregator"))
 		} else if env == "prod" {
 			if len(benchmarkEnv.ProdKey) != 0 && len(benchmarkEnv.ProdName) != 0 {
 				return &benchmarkEnv.ProdKey, &benchmarkEnv.ProdName, nil
 			}
-			return nil, nil, fmt.Errorf(("not enough env in aggregator container to define a benchmark"))
+			return nil, nil, fmt.Errorf(("not enough env in aggregator"))
 		}
 	}
 	// Read the Mako config file for this environment.
