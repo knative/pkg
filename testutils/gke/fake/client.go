@@ -20,8 +20,17 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
+	"time"
 
 	container "google.golang.org/api/container/v1beta1"
+	"knative.dev/pkg/testutils/gke"
+)
+
+// Timeout for fake client.
+// Need to be changed dynamically in the tests, so make them public.
+var (
+	CreationTimeout = 100 * time.Millisecond
+	DeletionTimeout = 10 * time.Minute
 )
 
 // GKESDKClient is a fake client for unit tests.
@@ -64,7 +73,11 @@ func (fgsc *GKESDKClient) newOp() *container.Operation {
 }
 
 // CreateCluster creates a new cluster, fail if cluster already exists.
-func (fgsc *GKESDKClient) CreateCluster(project, location string, rb *container.CreateClusterRequest) (*container.Operation, error) {
+func (fgsc *GKESDKClient) CreateCluster(
+	project, location string,
+	rb *container.CreateClusterRequest,
+	waitUntilDone bool,
+) (*container.Operation, error) {
 	parent := fmt.Sprintf("projects/%s/locations/%s", project, location)
 	name := rb.Cluster.Name
 	if cls, ok := fgsc.clusters[parent]; ok {
@@ -97,11 +110,18 @@ func (fgsc *GKESDKClient) CreateCluster(project, location string, rb *container.
 	}
 
 	fgsc.clusters[parent] = append(fgsc.clusters[parent], cluster)
-	return fgsc.newOp(), nil
+	op := fgsc.newOp()
+	if waitUntilDone {
+		return op, gke.Wait(fgsc, project, location, op.Name, CreationTimeout)
+	}
+	return op, nil
 }
 
 // DeleteCluster deletes the cluster with the given settings.
-func (fgsc *GKESDKClient) DeleteCluster(project, location, clusterName string) (*container.Operation, error) {
+func (fgsc *GKESDKClient) DeleteCluster(
+	project, location, clusterName string,
+	waitUntilDone bool,
+) (*container.Operation, error) {
 	parent := fmt.Sprintf("projects/%s/locations/%s", project, location)
 	found := -1
 	if clusters, ok := fgsc.clusters[parent]; ok {
@@ -116,7 +136,11 @@ func (fgsc *GKESDKClient) DeleteCluster(project, location, clusterName string) (
 	}
 	// Delete this cluster
 	fgsc.clusters[parent] = append(fgsc.clusters[parent][:found], fgsc.clusters[parent][found+1:]...)
-	return fgsc.newOp(), nil
+	op := fgsc.newOp()
+	if waitUntilDone {
+		return op, gke.Wait(fgsc, project, location, op.Name, DeletionTimeout)
+	}
+	return op, nil
 }
 
 // GetCluster gets the cluster with the given settings.

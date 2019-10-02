@@ -218,7 +218,6 @@ func (gc *GKECluster) Acquire() error {
 		}
 	}
 	var cluster *container.Cluster
-	var op *container.Operation
 	for i, region := range regions {
 		// Restore innocence
 		err = nil
@@ -234,18 +233,12 @@ func (gc *GKECluster) Acquire() error {
 		existingCluster, _ := gc.operations.GetCluster(*gc.Project, clusterLoc, clusterName)
 		if existingCluster != nil {
 			log.Printf("Cluster %q already exists in %q. Deleting...", clusterName, clusterLoc)
-			op, err = gc.operations.DeleteCluster(*gc.Project, clusterLoc, clusterName)
-			if err == nil {
-				err = gke.WaitUntilDone(gc.operations, *gc.Project, clusterLoc, op.Name, gke.DeletionTimeout)
-			}
+			_, err = gc.operations.DeleteCluster(*gc.Project, clusterLoc, clusterName, true)
 		}
 		// Creating cluster only if previous step succeeded
 		if err == nil {
 			log.Printf("Creating cluster %q in %q with:\n%+v", clusterName, clusterLoc, gc.Request)
-			op, err = gc.operations.CreateCluster(*gc.Project, clusterLoc, rb)
-			if err == nil {
-				err = gke.WaitUntilDone(gc.operations, *gc.Project, clusterLoc, op.Name, gke.CreationTimeout)
-			}
+			_, err = gc.operations.CreateCluster(*gc.Project, clusterLoc, rb, true)
 			if err == nil { // Get cluster at last
 				cluster, err = gc.operations.GetCluster(*gc.Project, clusterLoc, rb.Cluster.Name)
 			}
@@ -254,7 +247,7 @@ func (gc *GKECluster) Acquire() error {
 			errMsg := fmt.Sprintf("Error during cluster creation: '%v'. ", err)
 			if gc.NeedsCleanup { // Delete half created cluster if it's user created
 				errMsg = fmt.Sprintf("%sDeleting cluster %q in %q in background...\n", errMsg, clusterName, clusterLoc)
-				go gc.operations.DeleteCluster(*gc.Project, clusterLoc, clusterName)
+				go gc.operations.DeleteCluster(*gc.Project, clusterLoc, clusterName, false)
 			}
 			// Retry another region if cluster creation failed.
 			// TODO(chaodaiG): catch specific errors as we know what the error look like for stockout etc.
@@ -298,10 +291,7 @@ func (gc *GKECluster) Delete() error {
 	}
 
 	log.Printf("Deleting cluster %q in %q", gc.Cluster.Name, gc.Cluster.Location)
-	op, err := gc.operations.DeleteCluster(*gc.Project, gc.Cluster.Location, gc.Cluster.Name)
-	if err == nil {
-		err = gke.WaitUntilDone(gc.operations, *gc.Project, gc.Cluster.Location, op.Name, gke.DeletionTimeout)
-	}
+	_, err := gc.operations.DeleteCluster(*gc.Project, gc.Cluster.Location, gc.Cluster.Name, true)
 	if err != nil {
 		return fmt.Errorf("failed deleting cluster: '%v'", err)
 	}

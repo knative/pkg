@@ -356,7 +356,7 @@ func TestInitialize(t *testing.T) {
 					Name: parts[3],
 				},
 				ProjectId: parts[1],
-			})
+			}, false)
 		}
 		// Set up fake boskos
 		for _, bos := range data.boskosProjs {
@@ -474,7 +474,7 @@ func TestGKECheckEnvironment(t *testing.T) {
 					Name: parts[3],
 				},
 				ProjectId: parts[1],
-			})
+			}, false)
 		}
 		// mock for testing
 		common.StandardExec = func(name string, args ...string) ([]byte, error) {
@@ -721,13 +721,13 @@ func TestAcquire(t *testing.T) {
 	// mock GetOSEnv for testing
 	oldFunc := common.GetOSEnv
 	// mock timeout so it doesn't run forever
-	oldCreationTimeout := gke.CreationTimeout
+	oldCreationTimeout := gkeFake.CreationTimeout
 	// wait function polls every 500ms, give it 1000 to avoid random timeout
-	gke.CreationTimeout = 1000 * time.Millisecond
+	gkeFake.CreationTimeout = 1000 * time.Millisecond
 	defer func() {
 		// restore
 		common.GetOSEnv = oldFunc
-		gke.CreationTimeout = oldCreationTimeout
+		gkeFake.CreationTimeout = oldCreationTimeout
 	}()
 
 	for _, data := range datas {
@@ -761,7 +761,7 @@ func TestAcquire(t *testing.T) {
 					AddonsConfig: ac,
 				},
 				ProjectId: fakeProj,
-			})
+			}, false)
 			if data.kubeconfigSet {
 				fgc.Cluster, _ = fgc.operations.GetCluster(fakeProj, data.existCluster.Location, data.existCluster.Name)
 			}
@@ -904,13 +904,13 @@ func TestDelete(t *testing.T) {
 
 	// mock GetOSEnv for testing
 	oldFunc := common.GetOSEnv
-	// mock timeout so it doesn't run forever
-	oldCreationTimeout := gke.CreationTimeout
-	gke.CreationTimeout = 100 * time.Millisecond
+	// mock timeout to make it run faster
+	oldCreationTimeout := gkeFake.CreationTimeout
+	gkeFake.CreationTimeout = 100 * time.Millisecond
 	defer func() {
 		// restore
 		common.GetOSEnv = oldFunc
-		gke.CreationTimeout = oldCreationTimeout
+		gkeFake.CreationTimeout = oldCreationTimeout
 	}()
 
 	for _, data := range datas {
@@ -933,7 +933,7 @@ func TestDelete(t *testing.T) {
 					Name: data.cluster.Name,
 				},
 				ProjectId: fakeProj,
-			})
+			}, false)
 			fgc.Cluster = data.cluster
 		}
 		// Set up fake boskos

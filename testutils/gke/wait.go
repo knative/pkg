@@ -26,8 +26,8 @@ import (
 
 // These are arbitrary numbers determined based on past experience
 var (
-	CreationTimeout = 20 * time.Minute
-	DeletionTimeout = 10 * time.Minute
+	creationTimeout = 20 * time.Minute
+	deletionTimeout = 10 * time.Minute
 )
 
 const (
@@ -36,9 +36,9 @@ const (
 	doneStatus    = "DONE"
 )
 
-// WaitUntilDone depends on unique opName(operation ID created by cloud), and waits until
+// Wait depends on unique opName(operation ID created by cloud), and waits until
 // it's done
-func WaitUntilDone(gsc SDKOperations, project, location, opName string, wait time.Duration) error {
+func Wait(gsc SDKOperations, project, location, opName string, wait time.Duration) error {
 	var op *container.Operation
 	var err error
 
