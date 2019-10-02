@@ -26,9 +26,8 @@ import (
 
 // These are arbitrary numbers determined based on past experience
 var (
-	CreationTimeout    = 20 * time.Minute
-	DeletionTimeout    = 10 * time.Minute
-	AutoscalingTimeout = 1 * time.Minute
+	CreationTimeout = 20 * time.Minute
+	DeletionTimeout = 10 * time.Minute
 )
 
 const (

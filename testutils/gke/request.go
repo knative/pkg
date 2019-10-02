@@ -91,7 +91,8 @@ func NewCreateClusterRequest(request *Request) (*container.CreateClusterRequest,
 					},
 				},
 			},
-			Name: request.ClusterName,
+			Name:             request.ClusterName,
+			InitialNodeCount: request.MinNodes,
 			// The default cluster version is not latest, has to explicitly
 			// set it as "latest"
 			InitialClusterVersion: request.GKEVersion,
