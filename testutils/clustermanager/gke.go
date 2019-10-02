@@ -255,7 +255,7 @@ func (gc *GKECluster) Acquire() error {
 				// Installing addons after cluster creation takes at least 5
 				// minutes, so install addons as part of cluster creation, which
 				// doesn't seem to add much time on top of cluster creation
-				AddonsConfig: gc.getAddonsConfig(),
+				AddonsConfig: gke.GetAddonsConfig(gc.Request.Addons),
 				// Equivalent to --enable-basic-auth, so that user:pass can be
 				// later on retrieved for setting up cluster roles. Use the
 				// default username from gcloud command, the password will be
@@ -296,7 +296,7 @@ func (gc *GKECluster) Acquire() error {
 					},
 				}
 
-				op, err = gc.operations.SetAutoscaling(*gc.Project, clusterName, clusterLoc, "default-pool", arb)
+				op, err = gc.operations.SetAutoscaling(*gc.Project, clusterLoc, clusterName, "default-pool", arb)
 				if err == nil {
 					err = gc.wait(clusterLoc, op.Name, autoscalingTimeout)
 				}
@@ -353,7 +353,7 @@ func (gc *GKECluster) Delete() error {
 	}
 
 	log.Printf("Deleting cluster %q in %q", gc.Cluster.Name, gc.Cluster.Location)
-	op, err := gc.operations.DeleteCluster(*gc.Project, gc.Cluster.Name, gc.Cluster.Location)
+	op, err := gc.operations.DeleteCluster(*gc.Project, gc.Cluster.Location, gc.Cluster.Name)
 	if err == nil {
 		err = gc.wait(gc.Cluster.Location, op.Name, deletionTimeout)
 	}
@@ -363,25 +363,48 @@ func (gc *GKECluster) Delete() error {
 	return nil
 }
 
-// getAddonsConfig gets AddonsConfig from Request, contains the logic of
-// converting string argument to typed AddonsConfig, for example `IstioConfig`.
-// Currently supports istio
-func (gc *GKECluster) getAddonsConfig() *container.AddonsConfig {
+// wait depends on unique opName(operation ID created by cloud), and waits until
+// it's done
+func (gc *GKECluster) wait(location, opName string, wait time.Duration) error {
 	const (
-		// Define all supported addons here
-		istio = "istio"
+		pendingStatus = "PENDING"
+		runningStatus = "RUNNING"
+		doneStatus    = "DONE"
 	)
-	ac := &container.AddonsConfig{}
-	for _, name := range gc.Request.Addons {
-		switch strings.ToLower(name) {
-		case istio:
-			ac.IstioConfig = &container.IstioConfig{Disabled: false}
-		default:
-			panic(fmt.Sprintf("addon type %q not supported. Has to be one of: %q", name, istio))
+	var op *container.Operation
+	var err error
+
+	timeout := time.After(wait)
+	tick := time.Tick(500 * time.Millisecond)
+	for {
+		select {
+		// Got a timeout! fail with a timeout error
+		case <-timeout:
+			return errors.New("timed out waiting")
+		case <-tick:
+			// Retry 3 times in case of weird network error, or rate limiting
+			for r, w := 0, 50*time.Microsecond; r < 3; r, w = r+1, w*2 {
+				op, err = gc.operations.GetOperation(*gc.Project, location, opName)
+				if err == nil {
+					if op.Status == doneStatus {
+						return nil
+					} else if op.Status == pendingStatus || op.Status == runningStatus {
+						// Valid operation, no need to retry
+						break
+					} else {
+						// Have seen intermittent error state and fixed itself,
+						// let it retry to avoid too much flakiness
+						err = fmt.Errorf("unexpected operation status: %q", op.Status)
+					}
+				}
+				time.Sleep(w)
+			}
+			// If err still persist after retries, exit
+			if err != nil {
+				return err
+			}
 		}
 	}
-
-	return ac
 }
 
 // ensureProtected ensures not operating on protected project/cluster
@@ -443,46 +466,4 @@ func (gc *GKECluster) checkEnvironment() error {
 	}
 
 	return nil
-}
-
-func (gc *GKECluster) wait(location, opName string, wait time.Duration) error {
-	const (
-		pendingStatus = "PENDING"
-		runningStatus = "RUNNING"
-		doneStatus    = "DONE"
-	)
-	var op *container.Operation
-	var err error
-
-	timeout := time.After(wait)
-	tick := time.Tick(500 * time.Millisecond)
-	for {
-		select {
-		// Got a timeout! fail with a timeout error
-		case <-timeout:
-			return errors.New("timed out waiting")
-		case <-tick:
-			// Retry 3 times in case of weird network error, or rate limiting
-			for r, w := 0, 50*time.Microsecond; r < 3; r, w = r+1, w*2 {
-				op, err = gc.operations.GetOperation(*gc.Project, location, opName)
-				if err == nil {
-					if op.Status == doneStatus {
-						return nil
-					} else if op.Status == pendingStatus || op.Status == runningStatus {
-						// Valid operation, no need to retry
-						break
-					} else {
-						// Have seen intermittent error state and fixed itself,
-						// let it retry to avoid too much flakiness
-						err = fmt.Errorf("unexpected operation status: %q", op.Status)
-					}
-				}
-				time.Sleep(w)
-			}
-			// If err still persist after retries, exit
-			if err != nil {
-				return err
-			}
-		}
-	}
 }
