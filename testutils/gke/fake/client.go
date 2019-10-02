@@ -21,8 +21,6 @@ import (
 	"fmt"
 	"strconv"
 
-	"knative.dev/pkg/testutils/gke"
-
 	container "google.golang.org/api/container/v1beta1"
 )
 
@@ -40,7 +38,7 @@ type GKESDKClient struct {
 }
 
 // NewGKESDKClient returns a new fake gkeSDKClient that can be used in unit tests.
-func NewGKESDKClient() gke.SDKOperations {
+func NewGKESDKClient() *GKESDKClient {
 	return &GKESDKClient{
 		clusters: make(map[string][]*container.Cluster),
 		ops:      make(map[string]*container.Operation),
@@ -88,6 +86,9 @@ func (fgsc *GKESDKClient) CreateCluster(project, location string, rb *container.
 				Name: "default-pool",
 			},
 		},
+	}
+	if rb.Cluster.NodePools != nil {
+		cluster.NodePools = rb.Cluster.NodePools
 	}
 	if rb.Cluster.MasterAuth != nil {
 		cluster.MasterAuth = &container.MasterAuth{
@@ -137,20 +138,4 @@ func (fgsc *GKESDKClient) GetOperation(project, location, opName string) (*conta
 		return op, nil
 	}
 	return nil, fmt.Errorf("op not found")
-}
-
-// SetAutoscaling sets autoscale for the given nodepool.
-func (fgsc *GKESDKClient) SetAutoscaling(project, location, clusterName, nodepoolName string,
-	rb *container.SetNodePoolAutoscalingRequest) (*container.Operation, error) {
-
-	cluster, err := fgsc.GetCluster(project, location, clusterName)
-	if err != nil {
-		return nil, err
-	}
-	for _, np := range cluster.NodePools {
-		if np.Name == nodepoolName {
-			np.Autoscaling = rb.Autoscaling
-		}
-	}
-	return fgsc.newOp(), nil
 }

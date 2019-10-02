@@ -67,31 +67,37 @@ func TestSetup(t *testing.T) {
 			"", "",
 			&GKECluster{
 				Request: &GKERequest{
-					MinNodes:      1,
-					MaxNodes:      3,
-					NodeType:      "n1-standard-4",
-					Region:        "us-central1",
-					Zone:          "",
+					Request: gke.Request{
+						MinNodes: 1,
+						MaxNodes: 3,
+						NodeType: "n1-standard-4",
+						Region:   "us-central1",
+						Zone:     "",
+						Addons:   nil,
+					},
 					BackupRegions: []string{"us-west1", "us-east1"},
-					Addons:        nil,
 				},
 			},
 		}, {
 			// Project provided
 			GKERequest{
-				Project: fakeProj,
+				Request: gke.Request{
+					Project: fakeProj,
+				},
 			},
 			"", "",
 			&GKECluster{
 				Request: &GKERequest{
-					Project:       "b",
-					MinNodes:      1,
-					MaxNodes:      3,
-					NodeType:      "n1-standard-4",
-					Region:        "us-central1",
-					Zone:          "",
+					Request: gke.Request{
+						Project:  "b",
+						MinNodes: 1,
+						MaxNodes: 3,
+						NodeType: "n1-standard-4",
+						Region:   "us-central1",
+						Zone:     "",
+						Addons:   nil,
+					},
 					BackupRegions: []string{"us-west1", "us-east1"},
-					Addons:        nil,
 				},
 				Project:      &fakeProj,
 				NeedsCleanup: true,
@@ -99,60 +105,72 @@ func TestSetup(t *testing.T) {
 		}, {
 			// Cluster name provided
 			GKERequest{
-				ClusterName: "predefined-cluster-name",
+				Request: gke.Request{
+					ClusterName: "predefined-cluster-name",
+				},
 			},
 			"", "",
 			&GKECluster{
 				Request: &GKERequest{
-					ClusterName:   "predefined-cluster-name",
-					MinNodes:      1,
-					MaxNodes:      3,
-					NodeType:      "n1-standard-4",
-					Region:        "us-central1",
-					Zone:          "",
+					Request: gke.Request{
+						ClusterName: "predefined-cluster-name",
+						MinNodes:    1,
+						MaxNodes:    3,
+						NodeType:    "n1-standard-4",
+						Region:      "us-central1",
+						Zone:        "",
+						Addons:      nil,
+					},
 					BackupRegions: []string{"us-west1", "us-east1"},
-					Addons:        nil,
 				},
 			},
 		}, {
 			// Override other parts
 			GKERequest{
-				MinNodes: minNodesOverride,
-				MaxNodes: maxNodesOverride,
-				NodeType: nodeTypeOverride,
-				Region:   regionOverride,
-				Zone:     zoneOverride,
+				Request: gke.Request{
+					MinNodes: minNodesOverride,
+					MaxNodes: maxNodesOverride,
+					NodeType: nodeTypeOverride,
+					Region:   regionOverride,
+					Zone:     zoneOverride,
+				},
 			},
 			"", "",
 			&GKECluster{
 				Request: &GKERequest{
-					MinNodes:      2,
-					MaxNodes:      4,
-					NodeType:      "foonode",
-					Region:        "fooregion",
-					Zone:          "foozone",
+					Request: gke.Request{
+						MinNodes: 2,
+						MaxNodes: 4,
+						NodeType: "foonode",
+						Region:   "fooregion",
+						Zone:     "foozone",
+						Addons:   nil,
+					},
 					BackupRegions: []string{},
-					Addons:        nil,
 				},
 			},
 		}, {
 			// Override other parts but not zone
 			GKERequest{
-				MinNodes: minNodesOverride,
-				MaxNodes: maxNodesOverride,
-				NodeType: nodeTypeOverride,
-				Region:   regionOverride,
+				Request: gke.Request{
+					MinNodes: minNodesOverride,
+					MaxNodes: maxNodesOverride,
+					NodeType: nodeTypeOverride,
+					Region:   regionOverride,
+				},
 			},
 			"", "",
 			&GKECluster{
 				Request: &GKERequest{
-					MinNodes:      2,
-					MaxNodes:      4,
-					NodeType:      "foonode",
-					Region:        "fooregion",
-					Zone:          "",
+					Request: gke.Request{
+						MinNodes: 2,
+						MaxNodes: 4,
+						NodeType: "foonode",
+						Region:   "fooregion",
+						Zone:     "",
+						Addons:   nil,
+					},
 					BackupRegions: nil,
-					Addons:        nil,
 				},
 			},
 		}, {
@@ -161,13 +179,15 @@ func TestSetup(t *testing.T) {
 			"customregion", "",
 			&GKECluster{
 				Request: &GKERequest{
-					MinNodes:      1,
-					MaxNodes:      3,
-					NodeType:      "n1-standard-4",
-					Region:        "customregion",
-					Zone:          "",
+					Request: gke.Request{
+						MinNodes: 1,
+						MaxNodes: 3,
+						NodeType: "n1-standard-4",
+						Region:   "customregion",
+						Zone:     "",
+						Addons:   nil,
+					},
 					BackupRegions: []string{"us-west1", "us-east1"},
-					Addons:        nil,
 				},
 			},
 		}, {
@@ -176,30 +196,36 @@ func TestSetup(t *testing.T) {
 			"", "backupregion1 backupregion2",
 			&GKECluster{
 				Request: &GKERequest{
-					MinNodes:      1,
-					MaxNodes:      3,
-					NodeType:      "n1-standard-4",
-					Region:        "us-central1",
-					Zone:          "",
+					Request: gke.Request{
+						MinNodes: 1,
+						MaxNodes: 3,
+						NodeType: "n1-standard-4",
+						Region:   "us-central1",
+						Zone:     "",
+						Addons:   nil,
+					},
 					BackupRegions: []string{"backupregion1", "backupregion2"},
-					Addons:        nil,
 				},
 			},
 		}, {
 			// Set addons
 			GKERequest{
-				Addons: []string{fakeAddons},
+				Request: gke.Request{
+					Addons: []string{fakeAddons},
+				},
 			},
 			"", "",
 			&GKECluster{
 				Request: &GKERequest{
-					MinNodes:      1,
-					MaxNodes:      3,
-					NodeType:      "n1-standard-4",
-					Region:        "us-central1",
-					Zone:          "",
+					Request: gke.Request{
+						MinNodes: 1,
+						MaxNodes: 3,
+						NodeType: "n1-standard-4",
+						Region:   "us-central1",
+						Zone:     "",
+						Addons:   []string{fakeAddons},
+					},
 					BackupRegions: []string{"us-west1", "us-east1"},
-					Addons:        []string{fakeAddons},
 				},
 			},
 		},
@@ -378,7 +404,7 @@ func TestInitialize(t *testing.T) {
 		errMsg := fmt.Sprintf("test initialize with:\n\tuser defined project: '%v'\n\tkubeconfig set: '%v'\n\tgcloud set: '%v'\n\trunning in prow: '%v'\n\tboskos set: '%v'",
 			data.project, data.clusterExist, data.gcloudSet, data.isProw, data.boskosProjs)
 		if !reflect.DeepEqual(data.expErr, err) {
-			t.Errorf("%s\nerror want: '%v'\nerror got: '%v'", errMsg, err, data.expErr)
+			t.Errorf("%s\nerror got: '%v'\nerror want: '%v'", errMsg, data.expErr, err)
 		}
 		if dif := cmp.Diff(data.expCluster, fgc.Cluster); dif != "" {
 			t.Errorf("%s\nCluster got(+) is different from wanted(-)\n%v", errMsg, dif)
@@ -473,14 +499,14 @@ func TestGKECheckEnvironment(t *testing.T) {
 
 		if !reflect.DeepEqual(err, data.expErr) || !reflect.DeepEqual(fgc.Project, data.expProj) || !reflect.DeepEqual(gotCluster, data.expCluster) {
 			t.Errorf("check environment with:\n\tkubectl output: %q\n\t\terror: '%v'\n\tgcloud output: %q\n\t\t"+
-				"error: '%v'\nwant: project - '%v', cluster - '%v', err - '%v'\ngot: project - '%v', cluster - '%v', err - '%v'",
-				data.kubectlOut, data.kubectlErr, data.gcloudOut, data.gcloudErr, data.expProj, data.expCluster, data.expErr, fgc.Project, fgc.Cluster, err)
+				"error: '%v'\ngot: project - '%v', cluster - '%v', err - '%v'\nwant: project - '%v', cluster - '%v', err - '%v'",
+				data.kubectlOut, data.kubectlErr, data.gcloudOut, data.gcloudErr, fgc.Project, fgc.Cluster, err, data.expProj, data.expCluster, data.expErr)
 		}
 
 		errMsg := fmt.Sprintf("check environment with:\n\tkubectl output: %q\n\t\terror: '%v'\n\tgcloud output: %q\n\t\terror: '%v'",
 			data.kubectlOut, data.kubectlErr, data.gcloudOut, data.gcloudErr)
 		if !reflect.DeepEqual(data.expErr, err) {
-			t.Errorf("%s\nerror want: '%v'\nerror got: '%v'", errMsg, err, data.expErr)
+			t.Errorf("%s\nerror got: '%v'\nerror want: '%v'", errMsg, data.expErr, err)
 		}
 		if dif := cmp.Diff(data.expCluster, gotCluster); dif != "" {
 			t.Errorf("%s\nCluster got(+) is different from wanted(-)\n%v", errMsg, dif)
@@ -552,6 +578,7 @@ func TestAcquire(t *testing.T) {
 				NodePools: []*container.NodePool{
 					{
 						Name:        "default-pool",
+						Config:      &container.NodeConfig{MachineType: "n1-standard-4"},
 						Autoscaling: &container.NodePoolAutoscaling{Enabled: true, MaxNodeCount: 3, MinNodeCount: 1},
 					},
 				},
@@ -573,6 +600,7 @@ func TestAcquire(t *testing.T) {
 				NodePools: []*container.NodePool{
 					{
 						Name:        "default-pool",
+						Config:      &container.NodeConfig{MachineType: "n1-standard-4"},
 						Autoscaling: &container.NodePoolAutoscaling{Enabled: true, MaxNodeCount: 3, MinNodeCount: 1},
 					},
 				},
@@ -593,6 +621,7 @@ func TestAcquire(t *testing.T) {
 				NodePools: []*container.NodePool{
 					{
 						Name:        "default-pool",
+						Config:      &container.NodeConfig{MachineType: "n1-standard-4"},
 						Autoscaling: &container.NodePoolAutoscaling{Enabled: true, MaxNodeCount: 3, MinNodeCount: 1},
 					},
 				},
@@ -610,6 +639,7 @@ func TestAcquire(t *testing.T) {
 				NodePools: []*container.NodePool{
 					{
 						Name:        "default-pool",
+						Config:      &container.NodeConfig{MachineType: "n1-standard-4"},
 						Autoscaling: &container.NodePoolAutoscaling{Enabled: true, MaxNodeCount: 3, MinNodeCount: 1},
 					},
 				},
@@ -630,6 +660,7 @@ func TestAcquire(t *testing.T) {
 				NodePools: []*container.NodePool{
 					{
 						Name:        "default-pool",
+						Config:      &container.NodeConfig{MachineType: "n1-standard-4"},
 						Autoscaling: &container.NodePoolAutoscaling{Enabled: true, MaxNodeCount: 3, MinNodeCount: 1},
 					},
 				},
@@ -649,6 +680,7 @@ func TestAcquire(t *testing.T) {
 				NodePools: []*container.NodePool{
 					{
 						Name:        "default-pool",
+						Config:      &container.NodeConfig{MachineType: "n1-standard-4"},
 						Autoscaling: &container.NodePoolAutoscaling{Enabled: true, MaxNodeCount: 3, MinNodeCount: 1},
 					},
 				},
@@ -666,23 +698,7 @@ func TestAcquire(t *testing.T) {
 				NodePools: []*container.NodePool{
 					{
 						Name:        "default-pool",
-						Autoscaling: &container.NodePoolAutoscaling{Enabled: true, MaxNodeCount: 3, MinNodeCount: 1},
-					},
-				},
-				MasterAuth: &container.MasterAuth{
-					Username: "admin",
-				},
-			}, nil, false,
-		}, {
-			// cluster creation failed set addon, but succeeded retry
-			nil, "", false, []string{}, []string{"DONE", "PENDING"}, false, &container.Cluster{
-				Name:         fakeClusterName,
-				Location:     "us-west1",
-				Status:       "RUNNING",
-				AddonsConfig: &container.AddonsConfig{},
-				NodePools: []*container.NodePool{
-					{
-						Name:        "default-pool",
+						Config:      &container.NodeConfig{MachineType: "n1-standard-4"},
 						Autoscaling: &container.NodePoolAutoscaling{Enabled: true, MaxNodeCount: 3, MinNodeCount: 1},
 					},
 				},
@@ -706,15 +722,12 @@ func TestAcquire(t *testing.T) {
 	oldFunc := common.GetOSEnv
 	// mock timeout so it doesn't run forever
 	oldCreationTimeout := gke.CreationTimeout
-	oldAutoscalingTimeout := gke.AutoscalingTimeout
 	// wait function polls every 500ms, give it 1000 to avoid random timeout
 	gke.CreationTimeout = 1000 * time.Millisecond
-	gke.AutoscalingTimeout = 1000 * time.Millisecond
 	defer func() {
 		// restore
 		common.GetOSEnv = oldFunc
 		gke.CreationTimeout = oldCreationTimeout
-		gke.AutoscalingTimeout = oldAutoscalingTimeout
 	}()
 
 	for _, data := range datas {
@@ -759,14 +772,16 @@ func TestAcquire(t *testing.T) {
 		}
 
 		fgc.Request = &GKERequest{
-			ClusterName:   data.predefinedClusterName,
-			MinNodes:      DefaultGKEMinNodes,
-			MaxNodes:      DefaultGKEMaxNodes,
-			NodeType:      DefaultGKENodeType,
-			Region:        DefaultGKERegion,
-			Zone:          "",
+			Request: gke.Request{
+				ClusterName: data.predefinedClusterName,
+				MinNodes:    DefaultGKEMinNodes,
+				MaxNodes:    DefaultGKEMaxNodes,
+				NodeType:    DefaultGKENodeType,
+				Region:      DefaultGKERegion,
+				Zone:        "",
+				Addons:      data.addons,
+			},
 			BackupRegions: DefaultGKEBackupRegions,
-			Addons:        data.addons,
 		}
 		if data.skipCreation {
 			fgc.Request.SkipCreation = true
@@ -779,7 +794,7 @@ func TestAcquire(t *testing.T) {
 			"next operations outcomes: '%v'\n\tkubeconfig set: '%v'\n\taddons: '%v'",
 			data.existCluster, data.skipCreation, data.nextOpStatus, data.kubeconfigSet, data.addons)
 		if !reflect.DeepEqual(err, data.expErr) {
-			t.Errorf("%s\nerror want: '%v'\nerror got: '%v'", errMsg, err, data.expErr)
+			t.Errorf("%s\nerror got: '%v'\nerror want: '%v'", errMsg, data.expErr, err)
 		}
 		if dif := cmp.Diff(data.expCluster, fgc.Cluster); dif != "" {
 			t.Errorf("%s\nCluster got(+) is different from wanted(-)\n%v", errMsg, dif)
@@ -943,7 +958,7 @@ func TestDelete(t *testing.T) {
 			"Request cleanup: '%v'\n\texisting cluster: '%v'\n\tboskos state: '%v'",
 			data.isProw, data.NeedsCleanup, data.requestCleanup, data.cluster, data.boskosState)
 		if !reflect.DeepEqual(err, data.expErr) {
-			t.Errorf("%s\nerror want: '%v'\nerror got: '%v'", errMsg, err, data.expErr)
+			t.Errorf("%s\nerror got: '%v'\nerror want: '%v'", errMsg, data.expErr, err)
 		}
 		if dif := cmp.Diff(data.expCluster, gotCluster); dif != "" {
 			t.Errorf("%s\nCluster got(+) is different from wanted(-)\n%v", errMsg, dif)

@@ -16,7 +16,11 @@ limitations under the License.
 
 package clustermanager
 
-import "log"
+import (
+	"log"
+
+	"knative.dev/pkg/testutils/gke"
+)
 
 // This is not a real test, it's for documenting purpose, showcasing the usage
 // of entire clustermanager package
@@ -34,13 +38,15 @@ func Example() {
 	)
 	gkeClient := GKEClient{}
 	clusterOps := gkeClient.Setup(GKERequest{
-		MinNodes: minNodes,
-		MaxNodes: maxNodes,
-		NodeType: nodeType,
-		Region:   region,
-		Zone:     zone,
-		Project:  project,
-		Addons:   addons})
+		Request: gke.Request{
+			MinNodes: minNodes,
+			MaxNodes: maxNodes,
+			NodeType: nodeType,
+			Region:   region,
+			Zone:     zone,
+			Project:  project,
+			Addons:   addons,
+		}})
 	// Cast to GKEOperation
 	gkeOps := clusterOps.(*GKECluster)
 	if err := gkeOps.Acquire(); err != nil {

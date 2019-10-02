@@ -16,7 +16,10 @@ limitations under the License.
 
 package gke
 
-import "fmt"
+import (
+	"fmt"
+	"strings"
+)
 
 // GetClusterLocation returns the location used in GKE operations, given the region and zone.
 func GetClusterLocation(region, zone string) string {
@@ -24,4 +27,16 @@ func GetClusterLocation(region, zone string) string {
 		region = fmt.Sprintf("%s-%s", region, zone)
 	}
 	return region
+}
+
+// ZoneFromLoc returns the zone, given the location.
+func ZoneFromLoc(location string) string {
+	parts := strings.Split(location, "-")
+	// zonal location is the form of us-central1-a, and this pattern is
+	// consistent in all available GCP locations so far, so we are looking for
+	// location with more than 2 "-"
+	if len(parts) > 2 {
+		return parts[len(parts)-1]
+	}
+	return ""
 }

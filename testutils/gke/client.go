@@ -31,7 +31,6 @@ type SDKOperations interface {
 	DeleteCluster(string, string, string) (*container.Operation, error)
 	GetCluster(string, string, string) (*container.Cluster, error)
 	GetOperation(string, string, string) (*container.Operation, error)
-	SetAutoscaling(string, string, string, string, *container.SetNodePoolAutoscalingRequest) (*container.Operation, error)
 }
 
 // sdkClient Implement SDKOperations
@@ -76,13 +75,4 @@ func (gsc *sdkClient) GetCluster(project, location, clusterName string) (*contai
 func (gsc *sdkClient) GetOperation(project, location, opName string) (*container.Operation, error) {
 	name := fmt.Sprintf("projects/%s/locations/%s/operations/%s", project, location, opName)
 	return gsc.Service.Projects.Locations.Operations.Get(name).Do()
-}
-
-// SetAutoscaling sets up autoscaling for a nodepool, and wait until it finishes or timeout or there is an error.
-// This function is not covered by either `Clusters.Update` or `NodePools.Update`, so can not really
-// make it as generic as the others.
-func (gsc *sdkClient) SetAutoscaling(project, location, clusterName, nodepoolName string,
-	rb *container.SetNodePoolAutoscalingRequest) (*container.Operation, error) {
-	parent := fmt.Sprintf("projects/%s/locations/%s/clusters/%s/nodePools/%s", project, location, clusterName, nodepoolName)
-	return gsc.Service.Projects.Locations.Clusters.NodePools.SetAutoscaling(parent, rb).Do()
 }

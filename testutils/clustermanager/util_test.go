@@ -53,10 +53,10 @@ func TestGetResourceName(t *testing.T) {
 
 		out, err := getResourceName(ClusterResource)
 		if err != nil {
-			t.Fatalf("getting resource name for cluster, wanted: 'no error', got: '%v'", err)
+			t.Fatalf("getting resource name for cluster, want: 'no error', got: '%v'", err)
 		}
 		if out != data.exp {
-			t.Fatalf("getting resource name for cluster, wanted: '%s', got: '%s'", data.exp, out)
+			t.Fatalf("getting resource name for cluster, want: '%s', got: '%s'", data.exp, out)
 		}
 	}
 }
