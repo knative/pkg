@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"log"
 	"strings"
-	"time"
 
 	container "google.golang.org/api/container/v1beta1"
 	"knative.dev/pkg/testutils/clustermanager/boskos"
@@ -44,10 +43,6 @@ var (
 	DefaultGKEBackupRegions = []string{"us-west1", "us-east1"}
 	protectedProjects       = []string{"knative-tests"}
 	protectedClusters       = []string{"knative-prow"}
-	// These are arbitrary numbers determined based on past experience
-	creationTimeout    = 20 * time.Minute
-	deletionTimeout    = 10 * time.Minute
-	autoscalingTimeout = 1 * time.Minute
 )
 
 // GKEClient implements Client
@@ -277,7 +272,7 @@ func (gc *GKECluster) Acquire() error {
 			log.Printf("Cluster %q already exists in %q. Deleting...", clusterName, clusterLoc)
 			op, err = gc.operations.DeleteCluster(*gc.Project, clusterLoc, clusterName)
 			if err == nil {
-				err = gc.wait(clusterLoc, op.Name, deletionTimeout)
+				err = gke.WaitUntilDone(gc.operations, *gc.Project, clusterLoc, op.Name, gke.DeletionTimeout)
 			}
 		}
 		// Creating cluster only if previous step succeeded
@@ -285,7 +280,7 @@ func (gc *GKECluster) Acquire() error {
 			log.Printf("Creating cluster %q in %q with:\n%+v", clusterName, clusterLoc, gc.Request)
 			op, err = gc.operations.CreateCluster(*gc.Project, clusterLoc, rb)
 			if err == nil {
-				err = gc.wait(clusterLoc, op.Name, creationTimeout)
+				err = gke.WaitUntilDone(gc.operations, *gc.Project, clusterLoc, op.Name, gke.CreationTimeout)
 			}
 			if err == nil { // Enable autoscaling and set limits
 				arb := &container.SetNodePoolAutoscalingRequest{
@@ -298,7 +293,7 @@ func (gc *GKECluster) Acquire() error {
 
 				op, err = gc.operations.SetAutoscaling(*gc.Project, clusterLoc, clusterName, "default-pool", arb)
 				if err == nil {
-					err = gc.wait(clusterLoc, op.Name, autoscalingTimeout)
+					err = gke.WaitUntilDone(gc.operations, *gc.Project, clusterLoc, op.Name, gke.AutoscalingTimeout)
 				}
 			}
 			if err == nil { // Get cluster at last
@@ -355,56 +350,12 @@ func (gc *GKECluster) Delete() error {
 	log.Printf("Deleting cluster %q in %q", gc.Cluster.Name, gc.Cluster.Location)
 	op, err := gc.operations.DeleteCluster(*gc.Project, gc.Cluster.Location, gc.Cluster.Name)
 	if err == nil {
-		err = gc.wait(gc.Cluster.Location, op.Name, deletionTimeout)
+		err = gke.WaitUntilDone(gc.operations, *gc.Project, gc.Cluster.Location, op.Name, gke.DeletionTimeout)
 	}
 	if err != nil {
 		return fmt.Errorf("failed deleting cluster: '%v'", err)
 	}
 	return nil
-}
-
-// wait depends on unique opName(operation ID created by cloud), and waits until
-// it's done
-func (gc *GKECluster) wait(location, opName string, wait time.Duration) error {
-	const (
-		pendingStatus = "PENDING"
-		runningStatus = "RUNNING"
-		doneStatus    = "DONE"
-	)
-	var op *container.Operation
-	var err error
-
-	timeout := time.After(wait)
-	tick := time.Tick(500 * time.Millisecond)
-	for {
-		select {
-		// Got a timeout! fail with a timeout error
-		case <-timeout:
-			return errors.New("timed out waiting")
-		case <-tick:
-			// Retry 3 times in case of weird network error, or rate limiting
-			for r, w := 0, 50*time.Microsecond; r < 3; r, w = r+1, w*2 {
-				op, err = gc.operations.GetOperation(*gc.Project, location, opName)
-				if err == nil {
-					if op.Status == doneStatus {
-						return nil
-					} else if op.Status == pendingStatus || op.Status == runningStatus {
-						// Valid operation, no need to retry
-						break
-					} else {
-						// Have seen intermittent error state and fixed itself,
-						// let it retry to avoid too much flakiness
-						err = fmt.Errorf("unexpected operation status: %q", op.Status)
-					}
-				}
-				time.Sleep(w)
-			}
-			// If err still persist after retries, exit
-			if err != nil {
-				return err
-			}
-		}
-	}
 }
 
 // ensureProtected ensures not operating on protected project/cluster
@@ -442,9 +393,10 @@ func (gc *GKECluster) checkEnvironment() error {
 			} else {
 				log.Printf("kubeconfig isn't empty, uses this cluster for running tests: %s", currentContext)
 				gc.Project = &parts[1]
-				gc.Cluster, err = gc.operations.GetCluster(*gc.Project, parts[2], parts[3])
+				location, clusterName := parts[2], parts[3]
+				gc.Cluster, err = gc.operations.GetCluster(*gc.Project, location, clusterName)
 				if err != nil {
-					return fmt.Errorf("couldn't find cluster %s in %s in %s, does it exist? %v", parts[3], parts[1], parts[2], err)
+					return fmt.Errorf("couldn't find cluster %s in %s in %s, does it exist? %v", clusterName, *gc.Project, location, err)
 				}
 				return nil
 			}

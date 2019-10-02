@@ -30,6 +30,7 @@ import (
 	boskoscommon "k8s.io/test-infra/boskos/common"
 	boskosFake "knative.dev/pkg/testutils/clustermanager/boskos/fake"
 	"knative.dev/pkg/testutils/common"
+	"knative.dev/pkg/testutils/gke"
 	gkeFake "knative.dev/pkg/testutils/gke/fake"
 
 	"github.com/google/go-cmp/cmp"
@@ -704,16 +705,16 @@ func TestAcquire(t *testing.T) {
 	// mock GetOSEnv for testing
 	oldFunc := common.GetOSEnv
 	// mock timeout so it doesn't run forever
-	oldCreationTimeout := creationTimeout
-	oldAutoscalingTimeout := autoscalingTimeout
+	oldCreationTimeout := gke.CreationTimeout
+	oldAutoscalingTimeout := gke.AutoscalingTimeout
 	// wait function polls every 500ms, give it 1000 to avoid random timeout
-	creationTimeout = 1000 * time.Millisecond
-	autoscalingTimeout = 1000 * time.Millisecond
+	gke.CreationTimeout = 1000 * time.Millisecond
+	gke.AutoscalingTimeout = 1000 * time.Millisecond
 	defer func() {
 		// restore
 		common.GetOSEnv = oldFunc
-		creationTimeout = oldCreationTimeout
-		autoscalingTimeout = oldAutoscalingTimeout
+		gke.CreationTimeout = oldCreationTimeout
+		gke.AutoscalingTimeout = oldAutoscalingTimeout
 	}()
 
 	for _, data := range datas {
@@ -889,12 +890,12 @@ func TestDelete(t *testing.T) {
 	// mock GetOSEnv for testing
 	oldFunc := common.GetOSEnv
 	// mock timeout so it doesn't run forever
-	oldCreationTimeout := creationTimeout
-	creationTimeout = 100 * time.Millisecond
+	oldCreationTimeout := gke.CreationTimeout
+	gke.CreationTimeout = 100 * time.Millisecond
 	defer func() {
 		// restore
 		common.GetOSEnv = oldFunc
-		creationTimeout = oldCreationTimeout
+		gke.CreationTimeout = oldCreationTimeout
 	}()
 
 	for _, data := range datas {
