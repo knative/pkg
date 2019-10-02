@@ -488,7 +488,7 @@ func TestInitialize(t *testing.T) {
 		errMsg := fmt.Sprintf("test initialize with:\n\tuser defined project: '%v'\n\tkubeconfig set: '%v'\n\tgcloud set: '%v'\n\trunning in prow: '%v'\n\tboskos set: '%v'",
 			data.project, data.clusterExist, data.gcloudSet, data.isProw, data.boskosProjs)
 		if !reflect.DeepEqual(data.expErr, err) {
-			t.Errorf("%s\nerror want: '%v'\nerror got: '%v'", errMsg, err, data.expErr)
+			t.Errorf("%s\nerror got: '%v'\nerror want: '%v'", errMsg, data.expErr, err)
 		}
 		if dif := cmp.Diff(data.expCluster, fgc.Cluster); dif != "" {
 			t.Errorf("%s\nCluster got(+) is different from wanted(-)\n%v", errMsg, dif)
@@ -583,14 +583,14 @@ func TestGKECheckEnvironment(t *testing.T) {
 
 		if !reflect.DeepEqual(err, data.expErr) || !reflect.DeepEqual(fgc.Project, data.expProj) || !reflect.DeepEqual(gotCluster, data.expCluster) {
 			t.Errorf("check environment with:\n\tkubectl output: %q\n\t\terror: '%v'\n\tgcloud output: %q\n\t\t"+
-				"error: '%v'\nwant: project - '%v', cluster - '%v', err - '%v'\ngot: project - '%v', cluster - '%v', err - '%v'",
-				data.kubectlOut, data.kubectlErr, data.gcloudOut, data.gcloudErr, data.expProj, data.expCluster, data.expErr, fgc.Project, fgc.Cluster, err)
+				"error: '%v'\ngot: project - '%v', cluster - '%v', err - '%v'\nwant: project - '%v', cluster - '%v', err - '%v'",
+				data.kubectlOut, data.kubectlErr, data.gcloudOut, data.gcloudErr, fgc.Project, fgc.Cluster, err, data.expProj, data.expCluster, data.expErr)
 		}
 
 		errMsg := fmt.Sprintf("check environment with:\n\tkubectl output: %q\n\t\terror: '%v'\n\tgcloud output: %q\n\t\terror: '%v'",
 			data.kubectlOut, data.kubectlErr, data.gcloudOut, data.gcloudErr)
 		if !reflect.DeepEqual(data.expErr, err) {
-			t.Errorf("%s\nerror want: '%v'\nerror got: '%v'", errMsg, err, data.expErr)
+			t.Errorf("%s\nerror got: '%v'\nerror want: '%v'", errMsg, data.expErr, err)
 		}
 		if dif := cmp.Diff(data.expCluster, gotCluster); dif != "" {
 			t.Errorf("%s\nCluster got(+) is different from wanted(-)\n%v", errMsg, dif)
@@ -876,7 +876,7 @@ func TestAcquire(t *testing.T) {
 			"next operations outcomes: '%v'\n\tkubeconfig set: '%v'\n\taddons: '%v'",
 			data.existCluster, data.skipCreation, data.nextOpStatus, data.kubeconfigSet, data.addons)
 		if !reflect.DeepEqual(err, data.expErr) {
-			t.Errorf("%s\nerror want: '%v'\nerror got: '%v'", errMsg, err, data.expErr)
+			t.Errorf("%s\nerror got: '%v'\nerror want: '%v'", errMsg, data.expErr, err)
 		}
 		if dif := cmp.Diff(data.expCluster, fgc.Cluster); dif != "" {
 			t.Errorf("%s\nCluster got(+) is different from wanted(-)\n%v", errMsg, dif)
@@ -1040,7 +1040,7 @@ func TestDelete(t *testing.T) {
 			"Request cleanup: '%v'\n\texisting cluster: '%v'\n\tboskos state: '%v'",
 			data.isProw, data.NeedsCleanup, data.requestCleanup, data.cluster, data.boskosState)
 		if !reflect.DeepEqual(err, data.expErr) {
-			t.Errorf("%s\nerror want: '%v'\nerror got: '%v'", errMsg, err, data.expErr)
+			t.Errorf("%s\nerror got: '%v'\nerror want: '%v'", errMsg, data.expErr, err)
 		}
 		if dif := cmp.Diff(data.expCluster, gotCluster); dif != "" {
 			t.Errorf("%s\nCluster got(+) is different from wanted(-)\n%v", errMsg, dif)

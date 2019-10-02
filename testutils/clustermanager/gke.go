@@ -122,35 +122,35 @@ type GKESDKClient struct {
 }
 
 func (gsc *GKESDKClient) create(project, location string, rb *container.CreateClusterRequest) (*container.Operation, error) {
-	parent := fmt.Sprintf("projects/%s/locations/%s", project, location)
 	if zoneFromLoc(location) != "" {
 		return gsc.Projects.Zones.Clusters.Create(project, location, rb).Context(context.Background()).Do()
 	}
+	parent := fmt.Sprintf("projects/%s/locations/%s", project, location)
 	return gsc.Projects.Locations.Clusters.Create(parent, rb).Context(context.Background()).Do()
 }
 
 // delete deletes GKE cluster and waits until completion
 func (gsc *GKESDKClient) delete(project, location, clusterName string) (*container.Operation, error) {
-	parent := fmt.Sprintf("projects/%s/locations/%s/clusters/%s", project, location, clusterName)
 	if zoneFromLoc(location) != "" {
 		return gsc.Projects.Zones.Clusters.Delete(project, location, clusterName).Context(context.Background()).Do()
 	}
+	parent := fmt.Sprintf("projects/%s/locations/%s/clusters/%s", project, location, clusterName)
 	return gsc.Projects.Locations.Clusters.Delete(parent).Context(context.Background()).Do()
 }
 
 func (gsc *GKESDKClient) get(project, location, clusterName string) (*container.Cluster, error) {
-	clusterFullPath := fmt.Sprintf("projects/%s/locations/%s/clusters/%s", project, location, clusterName)
 	if zoneFromLoc(location) != "" {
 		return gsc.Projects.Zones.Clusters.Get(project, location, clusterName).Context(context.Background()).Do()
 	}
+	clusterFullPath := fmt.Sprintf("projects/%s/locations/%s/clusters/%s", project, location, clusterName)
 	return gsc.Projects.Locations.Clusters.Get(clusterFullPath).Context(context.Background()).Do()
 }
 
 func (gsc *GKESDKClient) getOperation(project, location, opName string) (*container.Operation, error) {
-	name := fmt.Sprintf("projects/%s/locations/%s/operations/%s", project, location, opName)
 	if zoneFromLoc(location) != "" {
-		return gsc.Service.Projects.Zones.Operations.Get(project, location, name).Do()
+		return gsc.Service.Projects.Zones.Operations.Get(project, location, opName).Do()
 	}
+	name := fmt.Sprintf("projects/%s/locations/%s/operations/%s", project, location, opName)
 	return gsc.Service.Projects.Locations.Operations.Get(name).Do()
 }
 
