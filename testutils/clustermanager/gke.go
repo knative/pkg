@@ -201,6 +201,9 @@ func (gc *GKECluster) Acquire() error {
 		}
 		gc.Request.ClusterName = clusterName
 	}
+	if gc.Request.Project == "" {
+		gc.Request.Project = *gc.Project
+	}
 
 	regions := []string{gc.Request.Region}
 	for _, br := range gc.Request.BackupRegions {
