@@ -24,7 +24,7 @@ import (
 
 const defaultGKEVersion = "latest"
 
-// Request contains all requests collected for cluster creation
+// Request contains all settings collected for cluster creation
 type Request struct {
 	// Project: name of the gcloud project for the cluster
 	Project string
@@ -95,7 +95,8 @@ func NewCreateClusterRequest(request *Request) (*container.CreateClusterRequest,
 		Cluster: &container.Cluster{
 			NodePools: []*container.NodePool{
 				{
-					Name: "default-pool",
+					Name:             "default-pool",
+					InitialNodeCount: request.MinNodes,
 					Autoscaling: &container.NodePoolAutoscaling{
 						Enabled:      true,
 						MinNodeCount: request.MinNodes,
@@ -106,8 +107,7 @@ func NewCreateClusterRequest(request *Request) (*container.CreateClusterRequest,
 					},
 				},
 			},
-			Name:             request.ClusterName,
-			InitialNodeCount: request.MinNodes,
+			Name: request.ClusterName,
 			// The default cluster version is not latest, has to explicitly
 			// set it as "latest"
 			InitialClusterVersion: request.GKEVersion,

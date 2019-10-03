@@ -14,4 +14,24 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package gke
+package fake
+
+import (
+	"fmt"
+	"testing"
+
+	"knative.dev/pkg/testutils/gke"
+)
+
+func TestWait(t *testing.T) {
+	client := NewGKESDKClient()
+	request, _ := gke.NewCreateClusterRequest(&gke.Request{
+		Project:     "test-project",
+		ClusterName: "test-cluster-name",
+		MinNodes:    1,
+		MaxNodes:    1,
+		NodeType:    "n1-standard-4",
+	})
+	err := client.CreateCluster("test-project", "test-region", request)
+	fmt.Printf("error is %v", err)
+}

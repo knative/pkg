@@ -29,7 +29,7 @@ import (
 // Timeout for fake client.
 // Need to be changed dynamically in the tests, so make them public.
 var (
-	CreationTimeout = 100 * time.Millisecond
+	CreationTimeout = 1000 * time.Millisecond
 	DeletionTimeout = 10 * time.Minute
 )
 
