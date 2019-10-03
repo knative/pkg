@@ -143,7 +143,7 @@ func Setup(ctx context.Context, extraTags ...string) (*Client, error) {
 	alerter := &alerter.Alerter{}
 	alerter.SetupGitHub(
 		org,
-		config.MustGetRepository(),
+		config.GetRepository(),
 		tokenPath("github-token"),
 	)
 	alerter.SetupSlack(
