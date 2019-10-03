@@ -323,7 +323,7 @@ func TestInitialize(t *testing.T) {
 			nil, false, true, false, []string{}, &customProj, nil, nil,
 		}, {
 			// kubeconfig not set and gcloud set, running in Prow and boskos not available
-			nil, false, false, true, []string{}, nil, nil, fmt.Errorf("failed acquire boskos project: 'no GKE project available'"),
+			nil, false, false, true, []string{}, nil, nil, fmt.Errorf("failed acquiring boskos project: 'no GKE project available'"),
 		}, {
 			// kubeconfig not set and gcloud set, running in Prow and boskos available
 			nil, false, false, true, []string{fakeBoskosProj}, &fakeBoskosProj, nil, nil,

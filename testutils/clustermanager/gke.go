@@ -155,7 +155,7 @@ func (gc *GKECluster) initialize() error {
 	if gc.Project == nil && common.IsProw() {
 		project, err := gc.boskosOps.AcquireGKEProject(nil)
 		if err != nil {
-			return fmt.Errorf("failed acquire boskos project: '%v'", err)
+			return fmt.Errorf("failed acquiring boskos project: '%v'", err)
 		}
 		gc.Project = &project.Name
 	}
@@ -182,7 +182,7 @@ func (gc *GKECluster) Acquire() error {
 	// Make a deep copy of the request struct, since the original request is supposed to be immutable
 	request := gc.Request.DeepCopy()
 	if err := gc.initialize(); err != nil {
-		return fmt.Errorf("failed initialing with environment: '%v'", err)
+		return fmt.Errorf("failed initializing with environment: '%v'", err)
 	}
 	gc.ensureProtected()
 	clusterName := request.ClusterName
@@ -220,17 +220,16 @@ func (gc *GKECluster) Acquire() error {
 		}
 	}
 	var cluster *container.Cluster
+	var rb *container.CreateClusterRequest
+	rb, err = gke.NewCreateClusterRequest(request)
+	if err != nil {
+		return fmt.Errorf("failed building the CreateClusterRequest: '%v'", err)
+	}
 	for i, region := range regions {
 		// Restore innocence
 		err = nil
-		var rb *container.CreateClusterRequest
-		rb, err = gke.NewCreateClusterRequest(request)
-		if err != nil {
-			break
-		}
 
 		clusterLoc := gke.GetClusterLocation(region, request.Zone)
-
 		// Deleting cluster if it already exists
 		existingCluster, _ := gc.operations.GetCluster(*gc.Project, clusterLoc, clusterName)
 		if existingCluster != nil {
@@ -271,7 +270,7 @@ func (gc *GKECluster) Acquire() error {
 // Prow, otherwise deletes the cluster if marked NeedsCleanup
 func (gc *GKECluster) Delete() error {
 	if err := gc.initialize(); err != nil {
-		return fmt.Errorf("failed initialing with environment: '%v'", err)
+		return fmt.Errorf("failed initializing with environment: '%v'", err)
 	}
 	gc.ensureProtected()
 	// Release Boskos if running in Prow, will let Janitor taking care of
