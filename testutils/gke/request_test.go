@@ -24,15 +24,6 @@ func TestNewCreateClusterRequest(t *testing.T) {
 		errorExpected bool
 	}{{
 		req: &Request{
-			GKEVersion:  "1-2-3",
-			ClusterName: "name-a",
-			MinNodes:    1,
-			MaxNodes:    1,
-			NodeType:    "n1-standard-4",
-		},
-		errorExpected: true,
-	}, {
-		req: &Request{
 			Project:     "project-b",
 			ClusterName: "name-b",
 			MinNodes:    1,
