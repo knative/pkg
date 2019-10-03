@@ -61,15 +61,15 @@ func getBenchmark() (*string, *string, error) {
 	}
 	if !reflect.DeepEqual(benchmarkEnv, BenchmarkEnv{}) {
 		if env == "dev" {
-			if len(benchmarkEnv.DevKey) != 0 && len(benchmarkEnv.DevName) != 0 {
+			if benchmarkEnv.DevKey != "" && benchmarkEnv.DevName != "" {
 				return &benchmarkEnv.DevKey, &benchmarkEnv.DevName, nil
 			}
-			return nil, nil, fmt.Errorf(("not enough env in aggregator"))
+			return nil, nil, fmt.Errorf("failed to get benchmark config from environment variables")
 		} else if env == "prod" {
-			if len(benchmarkEnv.ProdKey) != 0 && len(benchmarkEnv.ProdName) != 0 {
+			if benchmarkEnv.ProdKey != "" && benchmarkEnv.ProdName != "" {
 				return &benchmarkEnv.ProdKey, &benchmarkEnv.ProdName, nil
 			}
-			return nil, nil, fmt.Errorf(("not enough env in aggregator"))
+			return nil, nil, fmt.Errorf("failed to get benchmark config from environment variables")
 		}
 	}
 	// Read the Mako config file for this environment.
