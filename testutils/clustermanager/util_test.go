@@ -60,37 +60,3 @@ func TestGetResourceName(t *testing.T) {
 		}
 	}
 }
-
-func TestGetClusterLocation(t *testing.T) {
-	datas := []struct {
-		region, zone string
-		want         string
-	}{
-		{"a", "b", "a-b"},
-		{"a", "", "a"},
-	}
-	for _, data := range datas {
-		if got := getClusterLocation(data.region, data.zone); got != data.want {
-			t.Errorf("Cluster location with region %q and zone %q = %q, want: %q",
-				data.region, data.zone, got, data.want)
-		}
-	}
-}
-
-func TestZoneFromLoc(t *testing.T) {
-	datas := []struct {
-		loc  string
-		want string
-	}{
-		{"a-b-c", "c"},
-		{"a-b", ""},
-		{"a", ""},
-		{"", ""},
-	}
-	for _, data := range datas {
-		if got := zoneFromLoc(data.loc); got != data.want {
-			t.Errorf("Cluster zone from location %q = %q, want: %q",
-				data.loc, got, data.want)
-		}
-	}
-}

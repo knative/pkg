@@ -17,7 +17,6 @@ limitations under the License.
 package clustermanager
 
 import (
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -31,6 +30,8 @@ import (
 	boskoscommon "k8s.io/test-infra/boskos/common"
 	boskosFake "knative.dev/pkg/testutils/clustermanager/boskos/fake"
 	"knative.dev/pkg/testutils/common"
+	"knative.dev/pkg/testutils/gke"
+	gkeFake "knative.dev/pkg/testutils/gke/fake"
 
 	"github.com/google/go-cmp/cmp"
 )
@@ -43,120 +44,9 @@ var (
 func setupFakeGKECluster() GKECluster {
 	return GKECluster{
 		Request:    &GKERequest{},
-		operations: newFakeGKESDKClient(),
+		operations: gkeFake.NewGKESDKClient(),
 		boskosOps:  &boskosFake.FakeBoskosClient{},
 	}
-}
-
-type FakeGKESDKClient struct {
-	// map of parent: clusters slice
-	clusters map[string][]*container.Cluster
-	// map of operationID: operation
-	ops map[string]*container.Operation
-
-	// An incremental number for new ops
-	opNumber int
-	// A lookup table for determining ops statuses
-	opStatus map[string]string
-}
-
-func newFakeGKESDKClient() *FakeGKESDKClient {
-	return &FakeGKESDKClient{
-		clusters: make(map[string][]*container.Cluster),
-		ops:      make(map[string]*container.Operation),
-		opStatus: make(map[string]string),
-	}
-}
-
-// automatically registers new ops, and mark it "DONE" by default. Update
-// fgsc.opStatus by fgsc.opStatus[string(fgsc.opNumber+1)]="PENDING" to make the
-// next operation pending
-func (fgsc *FakeGKESDKClient) newOp() *container.Operation {
-	opName := strconv.Itoa(fgsc.opNumber)
-	op := &container.Operation{
-		Name:   opName,
-		Status: "DONE",
-	}
-	if status, ok := fgsc.opStatus[opName]; ok {
-		op.Status = status
-	}
-	fgsc.opNumber++
-	fgsc.ops[opName] = op
-	return op
-}
-
-// fake create cluster, fail if cluster already exists
-func (fgsc *FakeGKESDKClient) create(project, location string, rb *container.CreateClusterRequest) (*container.Operation, error) {
-	parent := fmt.Sprintf("projects/%s/locations/%s", project, location)
-	name := rb.Cluster.Name
-	if cls, ok := fgsc.clusters[parent]; ok {
-		for _, cl := range cls {
-			if cl.Name == name {
-				return nil, errors.New("cluster already exist")
-			}
-		}
-	} else {
-		fgsc.clusters[parent] = make([]*container.Cluster, 0)
-	}
-	cluster := &container.Cluster{
-		Name:         name,
-		Location:     location,
-		Status:       "RUNNING",
-		AddonsConfig: rb.Cluster.AddonsConfig,
-		NodePools: []*container.NodePool{
-			{
-				Name: "default-pool",
-			},
-		},
-	}
-	if rb.Cluster.NodePools != nil {
-		cluster.NodePools = rb.Cluster.NodePools
-	}
-	if rb.Cluster.MasterAuth != nil {
-		cluster.MasterAuth = &container.MasterAuth{
-			Username: rb.Cluster.MasterAuth.Username,
-		}
-	}
-
-	fgsc.clusters[parent] = append(fgsc.clusters[parent], cluster)
-	return fgsc.newOp(), nil
-}
-
-func (fgsc *FakeGKESDKClient) delete(project, location, clusterName string) (*container.Operation, error) {
-	parent := fmt.Sprintf("projects/%s/locations/%s", project, location)
-	found := -1
-	if clusters, ok := fgsc.clusters[parent]; ok {
-		for i, cluster := range clusters {
-			if cluster.Name == clusterName {
-				found = i
-			}
-		}
-	}
-	if found == -1 {
-		return nil, fmt.Errorf("cluster %q not found for deletion", clusterName)
-	}
-	// Delete this cluster
-	fgsc.clusters[parent] = append(fgsc.clusters[parent][:found], fgsc.clusters[parent][found+1:]...)
-	return fgsc.newOp(), nil
-}
-
-func (fgsc *FakeGKESDKClient) get(project, location, cluster string) (*container.Cluster, error) {
-	parent := fmt.Sprintf("projects/%s/locations/%s", project, location)
-	if cls, ok := fgsc.clusters[parent]; ok {
-		for _, cl := range cls {
-			if cl.Name == cluster {
-				return cl, nil
-			}
-		}
-	}
-	return nil, fmt.Errorf("cluster not found")
-}
-
-func (fgsc *FakeGKESDKClient) getOperation(project, location, opName string) (*container.Operation, error) {
-	if op, ok := fgsc.ops[opName]; ok {
-		return op, nil
-	}
-	return nil, fmt.Errorf("op not found")
 }
 
 func TestSetup(t *testing.T) {
@@ -177,31 +67,37 @@ func TestSetup(t *testing.T) {
 			"", "",
 			&GKECluster{
 				Request: &GKERequest{
-					MinNodes:      1,
-					MaxNodes:      3,
-					NodeType:      "n1-standard-4",
-					Region:        "us-central1",
-					Zone:          "",
+					Request: gke.Request{
+						MinNodes: 1,
+						MaxNodes: 3,
+						NodeType: "n1-standard-4",
+						Region:   "us-central1",
+						Zone:     "",
+						Addons:   nil,
+					},
 					BackupRegions: []string{"us-west1", "us-east1"},
-					Addons:        nil,
 				},
 			},
 		}, {
 			// Project provided
 			GKERequest{
-				Project: fakeProj,
+				Request: gke.Request{
+					Project: fakeProj,
+				},
 			},
 			"", "",
 			&GKECluster{
 				Request: &GKERequest{
-					Project:       "b",
-					MinNodes:      1,
-					MaxNodes:      3,
-					NodeType:      "n1-standard-4",
-					Region:        "us-central1",
-					Zone:          "",
+					Request: gke.Request{
+						Project:  "b",
+						MinNodes: 1,
+						MaxNodes: 3,
+						NodeType: "n1-standard-4",
+						Region:   "us-central1",
+						Zone:     "",
+						Addons:   nil,
+					},
 					BackupRegions: []string{"us-west1", "us-east1"},
-					Addons:        nil,
 				},
 				Project:      &fakeProj,
 				NeedsCleanup: true,
@@ -209,60 +105,72 @@ func TestSetup(t *testing.T) {
 		}, {
 			// Cluster name provided
 			GKERequest{
-				ClusterName: "predefined-cluster-name",
+				Request: gke.Request{
+					ClusterName: "predefined-cluster-name",
+				},
 			},
 			"", "",
 			&GKECluster{
 				Request: &GKERequest{
-					ClusterName:   "predefined-cluster-name",
-					MinNodes:      1,
-					MaxNodes:      3,
-					NodeType:      "n1-standard-4",
-					Region:        "us-central1",
-					Zone:          "",
+					Request: gke.Request{
+						ClusterName: "predefined-cluster-name",
+						MinNodes:    1,
+						MaxNodes:    3,
+						NodeType:    "n1-standard-4",
+						Region:      "us-central1",
+						Zone:        "",
+						Addons:      nil,
+					},
 					BackupRegions: []string{"us-west1", "us-east1"},
-					Addons:        nil,
 				},
 			},
 		}, {
 			// Override other parts
 			GKERequest{
-				MinNodes: minNodesOverride,
-				MaxNodes: maxNodesOverride,
-				NodeType: nodeTypeOverride,
-				Region:   regionOverride,
-				Zone:     zoneOverride,
+				Request: gke.Request{
+					MinNodes: minNodesOverride,
+					MaxNodes: maxNodesOverride,
+					NodeType: nodeTypeOverride,
+					Region:   regionOverride,
+					Zone:     zoneOverride,
+				},
 			},
 			"", "",
 			&GKECluster{
 				Request: &GKERequest{
-					MinNodes:      2,
-					MaxNodes:      4,
-					NodeType:      "foonode",
-					Region:        "fooregion",
-					Zone:          "foozone",
+					Request: gke.Request{
+						MinNodes: 2,
+						MaxNodes: 4,
+						NodeType: "foonode",
+						Region:   "fooregion",
+						Zone:     "foozone",
+						Addons:   nil,
+					},
 					BackupRegions: []string{},
-					Addons:        nil,
 				},
 			},
 		}, {
 			// Override other parts but not zone
 			GKERequest{
-				MinNodes: minNodesOverride,
-				MaxNodes: maxNodesOverride,
-				NodeType: nodeTypeOverride,
-				Region:   regionOverride,
+				Request: gke.Request{
+					MinNodes: minNodesOverride,
+					MaxNodes: maxNodesOverride,
+					NodeType: nodeTypeOverride,
+					Region:   regionOverride,
+				},
 			},
 			"", "",
 			&GKECluster{
 				Request: &GKERequest{
-					MinNodes:      2,
-					MaxNodes:      4,
-					NodeType:      "foonode",
-					Region:        "fooregion",
-					Zone:          "",
+					Request: gke.Request{
+						MinNodes: 2,
+						MaxNodes: 4,
+						NodeType: "foonode",
+						Region:   "fooregion",
+						Zone:     "",
+						Addons:   nil,
+					},
 					BackupRegions: nil,
-					Addons:        nil,
 				},
 			},
 		}, {
@@ -271,13 +179,15 @@ func TestSetup(t *testing.T) {
 			"customregion", "",
 			&GKECluster{
 				Request: &GKERequest{
-					MinNodes:      1,
-					MaxNodes:      3,
-					NodeType:      "n1-standard-4",
-					Region:        "customregion",
-					Zone:          "",
+					Request: gke.Request{
+						MinNodes: 1,
+						MaxNodes: 3,
+						NodeType: "n1-standard-4",
+						Region:   "customregion",
+						Zone:     "",
+						Addons:   nil,
+					},
 					BackupRegions: []string{"us-west1", "us-east1"},
-					Addons:        nil,
 				},
 			},
 		}, {
@@ -286,30 +196,36 @@ func TestSetup(t *testing.T) {
 			"", "backupregion1 backupregion2",
 			&GKECluster{
 				Request: &GKERequest{
-					MinNodes:      1,
-					MaxNodes:      3,
-					NodeType:      "n1-standard-4",
-					Region:        "us-central1",
-					Zone:          "",
+					Request: gke.Request{
+						MinNodes: 1,
+						MaxNodes: 3,
+						NodeType: "n1-standard-4",
+						Region:   "us-central1",
+						Zone:     "",
+						Addons:   nil,
+					},
 					BackupRegions: []string{"backupregion1", "backupregion2"},
-					Addons:        nil,
 				},
 			},
 		}, {
 			// Set addons
 			GKERequest{
-				Addons: []string{fakeAddons},
+				Request: gke.Request{
+					Addons: []string{fakeAddons},
+				},
 			},
 			"", "",
 			&GKECluster{
 				Request: &GKERequest{
-					MinNodes:      1,
-					MaxNodes:      3,
-					NodeType:      "n1-standard-4",
-					Region:        "us-central1",
-					Zone:          "",
+					Request: gke.Request{
+						MinNodes: 1,
+						MaxNodes: 3,
+						NodeType: "n1-standard-4",
+						Region:   "us-central1",
+						Zone:     "",
+						Addons:   []string{fakeAddons},
+					},
 					BackupRegions: []string{"us-west1", "us-east1"},
-					Addons:        []string{fakeAddons},
 				},
 			},
 		},
@@ -407,7 +323,7 @@ func TestInitialize(t *testing.T) {
 			nil, false, true, false, []string{}, &customProj, nil, nil,
 		}, {
 			// kubeconfig not set and gcloud set, running in Prow and boskos not available
-			nil, false, false, true, []string{}, nil, nil, fmt.Errorf("failed acquire boskos project: 'no GKE project available'"),
+			nil, false, false, true, []string{}, nil, nil, fmt.Errorf("failed acquiring boskos project: 'no GKE project available'"),
 		}, {
 			// kubeconfig not set and gcloud set, running in Prow and boskos available
 			nil, false, false, true, []string{fakeBoskosProj}, &fakeBoskosProj, nil, nil,
@@ -435,7 +351,7 @@ func TestInitialize(t *testing.T) {
 		}
 		if data.clusterExist {
 			parts := strings.Split("gke_b_c_d", "_")
-			fgc.operations.create(parts[1], parts[2], &container.CreateClusterRequest{
+			fgc.operations.CreateClusterAsync(parts[1], parts[2], "", &container.CreateClusterRequest{
 				Cluster: &container.Cluster{
 					Name: parts[3],
 				},
@@ -488,7 +404,7 @@ func TestInitialize(t *testing.T) {
 		errMsg := fmt.Sprintf("test initialize with:\n\tuser defined project: '%v'\n\tkubeconfig set: '%v'\n\tgcloud set: '%v'\n\trunning in prow: '%v'\n\tboskos set: '%v'",
 			data.project, data.clusterExist, data.gcloudSet, data.isProw, data.boskosProjs)
 		if !reflect.DeepEqual(data.expErr, err) {
-			t.Errorf("%s\nerror got: '%v'\nerror want: '%v'", errMsg, data.expErr, err)
+			t.Errorf("%s\nerror got: '%v'\nerror want: '%v'", errMsg, err, data.expErr)
 		}
 		if dif := cmp.Diff(data.expCluster, fgc.Cluster); dif != "" {
 			t.Errorf("%s\nCluster got(+) is different from wanted(-)\n%v", errMsg, dif)
@@ -553,7 +469,7 @@ func TestGKECheckEnvironment(t *testing.T) {
 		fgc := setupFakeGKECluster()
 		if data.clusterExist {
 			parts := strings.Split(data.kubectlOut, "_")
-			fgc.operations.create(parts[1], parts[2], &container.CreateClusterRequest{
+			fgc.operations.CreateClusterAsync(parts[1], parts[2], "", &container.CreateClusterRequest{
 				Cluster: &container.Cluster{
 					Name: parts[3],
 				},
@@ -661,9 +577,10 @@ func TestAcquire(t *testing.T) {
 				AddonsConfig: &container.AddonsConfig{},
 				NodePools: []*container.NodePool{
 					{
-						Name:        "default-pool",
-						Config:      &container.NodeConfig{MachineType: "n1-standard-4"},
-						Autoscaling: &container.NodePoolAutoscaling{Enabled: true, MaxNodeCount: 3, MinNodeCount: 1},
+						Name:             "default-pool",
+						InitialNodeCount: DefaultGKEMinNodes,
+						Config:           &container.NodeConfig{MachineType: "n1-standard-4"},
+						Autoscaling:      &container.NodePoolAutoscaling{Enabled: true, MaxNodeCount: 3, MinNodeCount: 1},
 					},
 				},
 				MasterAuth: &container.MasterAuth{
@@ -683,9 +600,10 @@ func TestAcquire(t *testing.T) {
 				AddonsConfig: &container.AddonsConfig{},
 				NodePools: []*container.NodePool{
 					{
-						Name:        "default-pool",
-						Config:      &container.NodeConfig{MachineType: "n1-standard-4"},
-						Autoscaling: &container.NodePoolAutoscaling{Enabled: true, MaxNodeCount: 3, MinNodeCount: 1},
+						Name:             "default-pool",
+						InitialNodeCount: DefaultGKEMinNodes,
+						Config:           &container.NodeConfig{MachineType: "n1-standard-4"},
+						Autoscaling:      &container.NodePoolAutoscaling{Enabled: true, MaxNodeCount: 3, MinNodeCount: 1},
 					},
 				},
 				MasterAuth: &container.MasterAuth{
@@ -704,9 +622,10 @@ func TestAcquire(t *testing.T) {
 				AddonsConfig: &container.AddonsConfig{},
 				NodePools: []*container.NodePool{
 					{
-						Name:        "default-pool",
-						Config:      &container.NodeConfig{MachineType: "n1-standard-4"},
-						Autoscaling: &container.NodePoolAutoscaling{Enabled: true, MaxNodeCount: 3, MinNodeCount: 1},
+						Name:             "default-pool",
+						InitialNodeCount: DefaultGKEMinNodes,
+						Config:           &container.NodeConfig{MachineType: "n1-standard-4"},
+						Autoscaling:      &container.NodePoolAutoscaling{Enabled: true, MaxNodeCount: 3, MinNodeCount: 1},
 					},
 				},
 				MasterAuth: &container.MasterAuth{
@@ -722,9 +641,10 @@ func TestAcquire(t *testing.T) {
 				AddonsConfig: &container.AddonsConfig{},
 				NodePools: []*container.NodePool{
 					{
-						Name:        "default-pool",
-						Config:      &container.NodeConfig{MachineType: "n1-standard-4"},
-						Autoscaling: &container.NodePoolAutoscaling{Enabled: true, MaxNodeCount: 3, MinNodeCount: 1},
+						Name:             "default-pool",
+						InitialNodeCount: DefaultGKEMinNodes,
+						Config:           &container.NodeConfig{MachineType: "n1-standard-4"},
+						Autoscaling:      &container.NodePoolAutoscaling{Enabled: true, MaxNodeCount: 3, MinNodeCount: 1},
 					},
 				},
 				MasterAuth: &container.MasterAuth{
@@ -743,9 +663,10 @@ func TestAcquire(t *testing.T) {
 				AddonsConfig: &container.AddonsConfig{},
 				NodePools: []*container.NodePool{
 					{
-						Name:        "default-pool",
-						Config:      &container.NodeConfig{MachineType: "n1-standard-4"},
-						Autoscaling: &container.NodePoolAutoscaling{Enabled: true, MaxNodeCount: 3, MinNodeCount: 1},
+						Name:             "default-pool",
+						InitialNodeCount: DefaultGKEMinNodes,
+						Config:           &container.NodeConfig{MachineType: "n1-standard-4"},
+						Autoscaling:      &container.NodePoolAutoscaling{Enabled: true, MaxNodeCount: 3, MinNodeCount: 1},
 					},
 				},
 				MasterAuth: &container.MasterAuth{
@@ -763,9 +684,10 @@ func TestAcquire(t *testing.T) {
 				},
 				NodePools: []*container.NodePool{
 					{
-						Name:        "default-pool",
-						Config:      &container.NodeConfig{MachineType: "n1-standard-4"},
-						Autoscaling: &container.NodePoolAutoscaling{Enabled: true, MaxNodeCount: 3, MinNodeCount: 1},
+						Name:             "default-pool",
+						InitialNodeCount: DefaultGKEMinNodes,
+						Config:           &container.NodeConfig{MachineType: "n1-standard-4"},
+						Autoscaling:      &container.NodePoolAutoscaling{Enabled: true, MaxNodeCount: 3, MinNodeCount: 1},
 					},
 				},
 				MasterAuth: &container.MasterAuth{
@@ -781,9 +703,10 @@ func TestAcquire(t *testing.T) {
 				AddonsConfig: &container.AddonsConfig{},
 				NodePools: []*container.NodePool{
 					{
-						Name:        "default-pool",
-						Config:      &container.NodeConfig{MachineType: "n1-standard-4"},
-						Autoscaling: &container.NodePoolAutoscaling{Enabled: true, MaxNodeCount: 3, MinNodeCount: 1},
+						Name:             "default-pool",
+						InitialNodeCount: DefaultGKEMinNodes,
+						Config:           &container.NodeConfig{MachineType: "n1-standard-4"},
+						Autoscaling:      &container.NodePoolAutoscaling{Enabled: true, MaxNodeCount: 3, MinNodeCount: 1},
 					},
 				},
 				MasterAuth: &container.MasterAuth{
@@ -805,13 +728,13 @@ func TestAcquire(t *testing.T) {
 	// mock GetOSEnv for testing
 	oldFunc := common.GetOSEnv
 	// mock timeout so it doesn't run forever
-	oldCreationTimeout := creationTimeout
+	oldCreationTimeout := gkeFake.CreationTimeout
 	// wait function polls every 500ms, give it 1000 to avoid random timeout
-	creationTimeout = 1000 * time.Millisecond
+	gkeFake.CreationTimeout = 1000 * time.Millisecond
 	defer func() {
 		// restore
 		common.GetOSEnv = oldFunc
-		creationTimeout = oldCreationTimeout
+		gkeFake.CreationTimeout = oldCreationTimeout
 	}()
 
 	for _, data := range datas {
@@ -839,7 +762,7 @@ func TestAcquire(t *testing.T) {
 					ac.IstioConfig = &container.IstioConfig{Disabled: false}
 				}
 			}
-			fgc.operations.create(fakeProj, data.existCluster.Location, &container.CreateClusterRequest{
+			fgc.operations.CreateClusterAsync(fakeProj, data.existCluster.Location, "", &container.CreateClusterRequest{
 				Cluster: &container.Cluster{
 					Name:         data.existCluster.Name,
 					AddonsConfig: ac,
@@ -847,23 +770,25 @@ func TestAcquire(t *testing.T) {
 				ProjectId: fakeProj,
 			})
 			if data.kubeconfigSet {
-				fgc.Cluster, _ = fgc.operations.get(fakeProj, data.existCluster.Location, data.existCluster.Name)
+				fgc.Cluster, _ = fgc.operations.GetCluster(fakeProj, data.existCluster.Location, "", data.existCluster.Name)
 			}
 		}
 		fgc.Project = &fakeProj
 		for i, status := range data.nextOpStatus {
-			fgc.operations.(*FakeGKESDKClient).opStatus[strconv.Itoa(opCount+i)] = status
+			fgc.operations.(*gkeFake.GKESDKClient).OpStatus[strconv.Itoa(opCount+i)] = status
 		}
 
 		fgc.Request = &GKERequest{
-			ClusterName:   data.predefinedClusterName,
-			MinNodes:      DefaultGKEMinNodes,
-			MaxNodes:      DefaultGKEMaxNodes,
-			NodeType:      DefaultGKENodeType,
-			Region:        DefaultGKERegion,
-			Zone:          "",
+			Request: gke.Request{
+				ClusterName: data.predefinedClusterName,
+				MinNodes:    DefaultGKEMinNodes,
+				MaxNodes:    DefaultGKEMaxNodes,
+				NodeType:    DefaultGKENodeType,
+				Region:      DefaultGKERegion,
+				Zone:        "",
+				Addons:      data.addons,
+			},
 			BackupRegions: DefaultGKEBackupRegions,
-			Addons:        data.addons,
 		}
 		if data.skipCreation {
 			fgc.Request.SkipCreation = true
@@ -986,13 +911,13 @@ func TestDelete(t *testing.T) {
 
 	// mock GetOSEnv for testing
 	oldFunc := common.GetOSEnv
-	// mock timeout so it doesn't run forever
-	oldCreationTimeout := creationTimeout
-	creationTimeout = 100 * time.Millisecond
+	// mock timeout to make it run faster
+	oldCreationTimeout := gkeFake.CreationTimeout
+	gkeFake.CreationTimeout = 100 * time.Millisecond
 	defer func() {
 		// restore
 		common.GetOSEnv = oldFunc
-		creationTimeout = oldCreationTimeout
+		gkeFake.CreationTimeout = oldCreationTimeout
 	}()
 
 	for _, data := range datas {
@@ -1010,7 +935,7 @@ func TestDelete(t *testing.T) {
 		fgc.Project = &fakeProj
 		fgc.NeedsCleanup = data.NeedsCleanup
 		if data.cluster != nil {
-			fgc.operations.create(fakeProj, data.cluster.Location, &container.CreateClusterRequest{
+			fgc.operations.CreateClusterAsync(fakeProj, data.cluster.Location, "", &container.CreateClusterRequest{
 				Cluster: &container.Cluster{
 					Name: data.cluster.Name,
 				},
@@ -1033,7 +958,7 @@ func TestDelete(t *testing.T) {
 		err := fgc.Delete()
 		var gotCluster *container.Cluster
 		if data.cluster != nil {
-			gotCluster, _ = fgc.operations.get(fakeProj, data.cluster.Location, data.cluster.Name)
+			gotCluster, _ = fgc.operations.GetCluster(fakeProj, data.cluster.Location, "", data.cluster.Name)
 		}
 		gotBoskos := fgc.boskosOps.(*boskosFake.FakeBoskosClient).GetResources()
 		errMsg := fmt.Sprintf("testing deleting cluster, with:\n\tIs Prow: '%v'\n\tNeed cleanup: '%v'\n\t"+
