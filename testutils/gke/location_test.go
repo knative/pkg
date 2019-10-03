@@ -34,20 +34,26 @@ func TestGetClusterLocation(t *testing.T) {
 	}
 }
 
-func TestZoneFromLoc(t *testing.T) {
+func TestRegionZoneFromLoc(t *testing.T) {
 	datas := []struct {
-		loc  string
-		want string
+		loc        string
+		wantRegion string
+		wantZone   string
 	}{
-		{"a-b-c", "c"},
-		{"a-b", ""},
-		{"a", ""},
-		{"", ""},
+		{"a-b-c", "a-b", "c"},
+		{"a-b", "", ""},
+		{"a", "", ""},
+		{"", "", ""},
 	}
 	for _, data := range datas {
-		if got := ZoneFromLoc(data.loc); got != data.want {
+		gotRegion, gotZone := RegionZoneFromLoc(data.loc)
+		if gotRegion != data.wantRegion {
+			t.Errorf("Cluster region from location %q = %q, want: %q",
+				data.loc, gotRegion, data.wantRegion)
+		}
+		if gotZone != data.wantZone {
 			t.Errorf("Cluster zone from location %q = %q, want: %q",
-				data.loc, got, data.want)
+				data.loc, gotZone, data.wantZone)
 		}
 	}
 }

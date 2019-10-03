@@ -29,14 +29,16 @@ func GetClusterLocation(region, zone string) string {
 	return region
 }
 
-// ZoneFromLoc returns the zone, given the location.
-func ZoneFromLoc(location string) string {
+// RegionZoneFromLoc returns the region and the zone, given the location.
+func RegionZoneFromLoc(location string) (string, string) {
 	parts := strings.Split(location, "-")
 	// zonal location is the form of us-central1-a, and this pattern is
 	// consistent in all available GCP locations so far, so we are looking for
 	// location with more than 2 "-"
 	if len(parts) > 2 {
-		return parts[len(parts)-1]
+		zone := parts[len(parts)-1]
+		region := strings.TrimRight(location, "-"+zone)
+		return region, zone
 	}
-	return ""
+	return location, ""
 }

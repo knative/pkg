@@ -27,12 +27,12 @@ import (
 
 // SDKOperations wraps GKE SDK related functions
 type SDKOperations interface {
-	CreateCluster(string, string, *container.CreateClusterRequest) error
-	CreateClusterAsync(string, string, *container.CreateClusterRequest) (*container.Operation, error)
-	DeleteCluster(string, string, string) error
-	DeleteClusterAsync(string, string, string) (*container.Operation, error)
-	GetCluster(string, string, string) (*container.Cluster, error)
-	GetOperation(string, string, string) (*container.Operation, error)
+	CreateCluster(string, string, string, *container.CreateClusterRequest) error
+	CreateClusterAsync(string, string, string, *container.CreateClusterRequest) (*container.Operation, error)
+	DeleteCluster(string, string, string, string) error
+	DeleteClusterAsync(string, string, string, string) (*container.Operation, error)
+	GetCluster(string, string, string, string) (*container.Cluster, error)
+	GetOperation(string, string, string, string) (*container.Operation, error)
 }
 
 // sdkClient Implement SDKOperations
@@ -57,22 +57,23 @@ func NewSDKClient() (SDKOperations, error) {
 
 // CreateCluster creates a new GKE cluster, and wait until it finishes or timeout or there is an error.
 func (gsc *sdkClient) CreateCluster(
-	project, location string,
+	project, region, zone string,
 	rb *container.CreateClusterRequest,
 ) error {
-	op, err := gsc.CreateClusterAsync(project, location, rb)
+	op, err := gsc.CreateClusterAsync(project, region, zone, rb)
 	if err == nil {
-		err = Wait(gsc, project, location, op.Name, creationTimeout)
+		err = Wait(gsc, project, region, zone, op.Name, creationTimeout)
 	}
 	return err
 }
 
 // CreateClusterAsync creates a new GKE cluster asynchronously.
 func (gsc *sdkClient) CreateClusterAsync(
-	project, location string,
+	project, region, zone string,
 	rb *container.CreateClusterRequest,
 ) (*container.Operation, error) {
-	if ZoneFromLoc(location) != "" {
+	location := GetClusterLocation(region, zone)
+	if zone != "" {
 		return gsc.Projects.Zones.Clusters.Create(project, location, rb).Context(context.Background()).Do()
 	}
 	parent := fmt.Sprintf("projects/%s/locations/%s", project, location)
@@ -80,17 +81,18 @@ func (gsc *sdkClient) CreateClusterAsync(
 }
 
 // DeleteCluster deletes the GKE cluster, and wait until it finishes or timeout or there is an error.
-func (gsc *sdkClient) DeleteCluster(project, location, clusterName string) error {
-	op, err := gsc.DeleteClusterAsync(project, location, clusterName)
+func (gsc *sdkClient) DeleteCluster(project, region, zone, clusterName string) error {
+	op, err := gsc.DeleteClusterAsync(project, region, zone, clusterName)
 	if err == nil {
-		err = Wait(gsc, project, location, op.Name, deletionTimeout)
+		err = Wait(gsc, project, region, zone, op.Name, deletionTimeout)
 	}
 	return err
 }
 
 // DeleteClusterAsync deletes the GKE cluster asynchronously.
-func (gsc *sdkClient) DeleteClusterAsync(project, location, clusterName string) (*container.Operation, error) {
-	if ZoneFromLoc(location) != "" {
+func (gsc *sdkClient) DeleteClusterAsync(project, region, zone, clusterName string) (*container.Operation, error) {
+	location := GetClusterLocation(region, zone)
+	if zone != "" {
 		return gsc.Projects.Zones.Clusters.Delete(project, location, clusterName).Context(context.Background()).Do()
 	}
 	parent := fmt.Sprintf("projects/%s/locations/%s/clusters/%s", project, location, clusterName)
@@ -98,8 +100,9 @@ func (gsc *sdkClient) DeleteClusterAsync(project, location, clusterName string) 
 }
 
 // GetCluster gets the GKE cluster with the given cluster name.
-func (gsc *sdkClient) GetCluster(project, location, clusterName string) (*container.Cluster, error) {
-	if ZoneFromLoc(location) != "" {
+func (gsc *sdkClient) GetCluster(project, region, zone, clusterName string) (*container.Cluster, error) {
+	location := GetClusterLocation(region, zone)
+	if zone != "" {
 		return gsc.Projects.Zones.Clusters.Get(project, location, clusterName).Context(context.Background()).Do()
 	}
 	clusterFullPath := fmt.Sprintf("projects/%s/locations/%s/clusters/%s", project, location, clusterName)
@@ -107,8 +110,9 @@ func (gsc *sdkClient) GetCluster(project, location, clusterName string) (*contai
 }
 
 // GetOperation gets the operation ref with the given operation name.
-func (gsc *sdkClient) GetOperation(project, location, opName string) (*container.Operation, error) {
-	if ZoneFromLoc(location) != "" {
+func (gsc *sdkClient) GetOperation(project, region, zone, opName string) (*container.Operation, error) {
+	location := GetClusterLocation(region, zone)
+	if zone != "" {
 		return gsc.Service.Projects.Zones.Operations.Get(project, location, opName).Do()
 	}
 	name := fmt.Sprintf("projects/%s/locations/%s/operations/%s", project, location, opName)

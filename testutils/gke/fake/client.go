@@ -74,21 +74,22 @@ func (fgsc *GKESDKClient) newOp() *container.Operation {
 
 // CreateCluster creates a new cluster, and wait until it finishes or timeout or there is an error.
 func (fgsc *GKESDKClient) CreateCluster(
-	project, location string,
+	project, region, zone string,
 	rb *container.CreateClusterRequest,
 ) error {
-	op, err := fgsc.CreateClusterAsync(project, location, rb)
+	op, err := fgsc.CreateClusterAsync(project, region, zone, rb)
 	if err == nil {
-		err = gke.Wait(fgsc, project, location, op.Name, CreationTimeout)
+		err = gke.Wait(fgsc, project, region, zone, op.Name, CreationTimeout)
 	}
 	return err
 }
 
 // CreateClusterAsync creates a new cluster asynchronously.
 func (fgsc *GKESDKClient) CreateClusterAsync(
-	project, location string,
+	project, region, zone string,
 	rb *container.CreateClusterRequest,
 ) (*container.Operation, error) {
+	location := gke.GetClusterLocation(region, zone)
 	parent := fmt.Sprintf("projects/%s/locations/%s", project, location)
 	name := rb.Cluster.Name
 	if cls, ok := fgsc.clusters[parent]; ok {
@@ -126,19 +127,20 @@ func (fgsc *GKESDKClient) CreateClusterAsync(
 
 // DeleteCluster deletes the cluster, and wait until it finishes or timeout or there is an error.
 func (fgsc *GKESDKClient) DeleteCluster(
-	project, location, clusterName string,
+	project, region, zone, clusterName string,
 ) error {
-	op, err := fgsc.DeleteClusterAsync(project, location, clusterName)
+	op, err := fgsc.DeleteClusterAsync(project, region, zone, clusterName)
 	if err == nil {
-		err = gke.Wait(fgsc, project, location, op.Name, DeletionTimeout)
+		err = gke.Wait(fgsc, project, region, zone, op.Name, DeletionTimeout)
 	}
 	return err
 }
 
 // DeleteClusterAsync deletes the cluster asynchronously.
 func (fgsc *GKESDKClient) DeleteClusterAsync(
-	project, location, clusterName string,
+	project, region, zone, clusterName string,
 ) (*container.Operation, error) {
+	location := gke.GetClusterLocation(region, zone)
 	parent := fmt.Sprintf("projects/%s/locations/%s", project, location)
 	found := -1
 	if clusters, ok := fgsc.clusters[parent]; ok {
@@ -157,7 +159,8 @@ func (fgsc *GKESDKClient) DeleteClusterAsync(
 }
 
 // GetCluster gets the cluster with the given settings.
-func (fgsc *GKESDKClient) GetCluster(project, location, cluster string) (*container.Cluster, error) {
+func (fgsc *GKESDKClient) GetCluster(project, region, zone, cluster string) (*container.Cluster, error) {
+	location := gke.GetClusterLocation(region, zone)
 	parent := fmt.Sprintf("projects/%s/locations/%s", project, location)
 	if cls, ok := fgsc.clusters[parent]; ok {
 		for _, cl := range cls {
@@ -170,7 +173,7 @@ func (fgsc *GKESDKClient) GetCluster(project, location, cluster string) (*contai
 }
 
 // GetOperation gets the operation with the given settings.
-func (fgsc *GKESDKClient) GetOperation(project, location, opName string) (*container.Operation, error) {
+func (fgsc *GKESDKClient) GetOperation(project, region, zone, opName string) (*container.Operation, error) {
 	if op, ok := fgsc.ops[opName]; ok {
 		return op, nil
 	}

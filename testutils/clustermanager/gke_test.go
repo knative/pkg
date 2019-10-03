@@ -351,7 +351,7 @@ func TestInitialize(t *testing.T) {
 		}
 		if data.clusterExist {
 			parts := strings.Split("gke_b_c_d", "_")
-			fgc.operations.CreateClusterAsync(parts[1], parts[2], &container.CreateClusterRequest{
+			fgc.operations.CreateClusterAsync(parts[1], parts[2], "", &container.CreateClusterRequest{
 				Cluster: &container.Cluster{
 					Name: parts[3],
 				},
@@ -404,7 +404,7 @@ func TestInitialize(t *testing.T) {
 		errMsg := fmt.Sprintf("test initialize with:\n\tuser defined project: '%v'\n\tkubeconfig set: '%v'\n\tgcloud set: '%v'\n\trunning in prow: '%v'\n\tboskos set: '%v'",
 			data.project, data.clusterExist, data.gcloudSet, data.isProw, data.boskosProjs)
 		if !reflect.DeepEqual(data.expErr, err) {
-			t.Errorf("%s\nerror got: '%v'\nerror want: '%v'", errMsg, data.expErr, err)
+			t.Errorf("%s\nerror got: '%v'\nerror want: '%v'", errMsg, err, data.expErr)
 		}
 		if dif := cmp.Diff(data.expCluster, fgc.Cluster); dif != "" {
 			t.Errorf("%s\nCluster got(+) is different from wanted(-)\n%v", errMsg, dif)
@@ -469,7 +469,7 @@ func TestGKECheckEnvironment(t *testing.T) {
 		fgc := setupFakeGKECluster()
 		if data.clusterExist {
 			parts := strings.Split(data.kubectlOut, "_")
-			fgc.operations.CreateClusterAsync(parts[1], parts[2], &container.CreateClusterRequest{
+			fgc.operations.CreateClusterAsync(parts[1], parts[2], "", &container.CreateClusterRequest{
 				Cluster: &container.Cluster{
 					Name: parts[3],
 				},
@@ -762,7 +762,7 @@ func TestAcquire(t *testing.T) {
 					ac.IstioConfig = &container.IstioConfig{Disabled: false}
 				}
 			}
-			fgc.operations.CreateClusterAsync(fakeProj, data.existCluster.Location, &container.CreateClusterRequest{
+			fgc.operations.CreateClusterAsync(fakeProj, data.existCluster.Location, "", &container.CreateClusterRequest{
 				Cluster: &container.Cluster{
 					Name:         data.existCluster.Name,
 					AddonsConfig: ac,
@@ -770,7 +770,7 @@ func TestAcquire(t *testing.T) {
 				ProjectId: fakeProj,
 			})
 			if data.kubeconfigSet {
-				fgc.Cluster, _ = fgc.operations.GetCluster(fakeProj, data.existCluster.Location, data.existCluster.Name)
+				fgc.Cluster, _ = fgc.operations.GetCluster(fakeProj, data.existCluster.Location, "", data.existCluster.Name)
 			}
 		}
 		fgc.Project = &fakeProj
@@ -935,7 +935,7 @@ func TestDelete(t *testing.T) {
 		fgc.Project = &fakeProj
 		fgc.NeedsCleanup = data.NeedsCleanup
 		if data.cluster != nil {
-			fgc.operations.CreateClusterAsync(fakeProj, data.cluster.Location, &container.CreateClusterRequest{
+			fgc.operations.CreateClusterAsync(fakeProj, data.cluster.Location, "", &container.CreateClusterRequest{
 				Cluster: &container.Cluster{
 					Name: data.cluster.Name,
 				},
@@ -958,7 +958,7 @@ func TestDelete(t *testing.T) {
 		err := fgc.Delete()
 		var gotCluster *container.Cluster
 		if data.cluster != nil {
-			gotCluster, _ = fgc.operations.GetCluster(fakeProj, data.cluster.Location, data.cluster.Name)
+			gotCluster, _ = fgc.operations.GetCluster(fakeProj, data.cluster.Location, "", data.cluster.Name)
 		}
 		gotBoskos := fgc.boskosOps.(*boskosFake.FakeBoskosClient).GetResources()
 		errMsg := fmt.Sprintf("testing deleting cluster, with:\n\tIs Prow: '%v'\n\tNeed cleanup: '%v'\n\t"+

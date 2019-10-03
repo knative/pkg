@@ -38,7 +38,7 @@ const (
 
 // Wait depends on unique opName(operation ID created by cloud), and waits until
 // it's done
-func Wait(gsc SDKOperations, project, location, opName string, wait time.Duration) error {
+func Wait(gsc SDKOperations, project, region, zone, opName string, wait time.Duration) error {
 	var op *container.Operation
 	var err error
 
@@ -52,7 +52,7 @@ func Wait(gsc SDKOperations, project, location, opName string, wait time.Duratio
 		case <-tick:
 			// Retry 3 times in case of weird network error, or rate limiting
 			for r, w := 0, 50*time.Microsecond; r < 3; r, w = r+1, w*2 {
-				op, err = gsc.GetOperation(project, location, opName)
+				op, err = gsc.GetOperation(project, region, zone, opName)
 				if err == nil {
 					if op.Status == doneStatus {
 						return nil
