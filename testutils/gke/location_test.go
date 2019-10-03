@@ -41,8 +41,8 @@ func TestRegionZoneFromLoc(t *testing.T) {
 		wantZone   string
 	}{
 		{"a-b-c", "a-b", "c"},
-		{"a-b", "", ""},
-		{"a", "", ""},
+		{"a-b", "a-b", ""},
+		{"a", "a", ""},
 		{"", "", ""},
 	}
 	for _, data := range datas {
