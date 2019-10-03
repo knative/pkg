@@ -54,6 +54,21 @@ type Request struct {
 	Addons []string
 }
 
+// DeepCopy will make a deepcopy of the request struct.
+func (r *Request) DeepCopy() *Request {
+	return &Request{
+		Project:     r.Project,
+		GKEVersion:  r.GKEVersion,
+		ClusterName: r.ClusterName,
+		MinNodes:    r.MinNodes,
+		MaxNodes:    r.MaxNodes,
+		NodeType:    r.NodeType,
+		Region:      r.Region,
+		Zone:        r.Zone,
+		Addons:      r.Addons,
+	}
+}
+
 // NewCreateClusterRequest returns a new CreateClusterRequest that can be used in gcloud SDK.
 func NewCreateClusterRequest(request *Request) (*container.CreateClusterRequest, error) {
 	if request.Project == "" {

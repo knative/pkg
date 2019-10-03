@@ -179,11 +179,13 @@ func (gc *GKECluster) Provider() string {
 // in us-central1, and default BackupRegions are us-west1 and us-east1. If
 // Region or Zone is provided then there is no retries
 func (gc *GKECluster) Acquire() error {
+	// Make a deep copy of the request struct, since the original request is supposed to be immutable
+	request := gc.Request.DeepCopy()
 	if err := gc.initialize(); err != nil {
 		return fmt.Errorf("failed initialing with environment: '%v'", err)
 	}
 	gc.ensureProtected()
-	clusterName := gc.Request.ClusterName
+	clusterName := request.ClusterName
 	var err error
 	// Check if using existing cluster
 	if gc.Cluster != nil {
@@ -194,18 +196,18 @@ func (gc *GKECluster) Acquire() error {
 		return nil
 	}
 	// Perform GKE specific cluster creation logics
-	if gc.Request.ClusterName == "" {
+	if request.ClusterName == "" {
 		clusterName, err = getResourceName(ClusterResource)
 		if err != nil {
 			return fmt.Errorf("failed getting cluster name: '%v'", err)
 		}
-		gc.Request.ClusterName = clusterName
+		request.ClusterName = clusterName
 	}
-	if gc.Request.Project == "" {
-		gc.Request.Project = *gc.Project
+	if request.Project == "" {
+		request.Project = *gc.Project
 	}
 
-	regions := []string{gc.Request.Region}
+	regions := []string{request.Region}
 	for _, br := range gc.Request.BackupRegions {
 		exist := false
 		for _, region := range regions {
@@ -222,23 +224,23 @@ func (gc *GKECluster) Acquire() error {
 		// Restore innocence
 		err = nil
 		var rb *container.CreateClusterRequest
-		rb, err = gke.NewCreateClusterRequest(&gc.Request.Request)
+		rb, err = gke.NewCreateClusterRequest(request)
 		if err != nil {
 			break
 		}
 
-		clusterLoc := gke.GetClusterLocation(region, gc.Request.Zone)
+		clusterLoc := gke.GetClusterLocation(region, request.Zone)
 
 		// Deleting cluster if it already exists
 		existingCluster, _ := gc.operations.GetCluster(*gc.Project, clusterLoc, clusterName)
 		if existingCluster != nil {
 			log.Printf("Cluster %q already exists in %q. Deleting...", clusterName, clusterLoc)
-			_, err = gc.operations.DeleteCluster(*gc.Project, clusterLoc, clusterName, true)
+			err = gc.operations.DeleteCluster(*gc.Project, clusterLoc, clusterName)
 		}
 		// Creating cluster only if previous step succeeded
 		if err == nil {
 			log.Printf("Creating cluster %q in %q with:\n%+v", clusterName, clusterLoc, gc.Request)
-			_, err = gc.operations.CreateCluster(*gc.Project, clusterLoc, rb, true)
+			err = gc.operations.CreateCluster(*gc.Project, clusterLoc, rb)
 			if err == nil { // Get cluster at last
 				cluster, err = gc.operations.GetCluster(*gc.Project, clusterLoc, rb.Cluster.Name)
 			}
@@ -247,7 +249,7 @@ func (gc *GKECluster) Acquire() error {
 			errMsg := fmt.Sprintf("Error during cluster creation: '%v'. ", err)
 			if gc.NeedsCleanup { // Delete half created cluster if it's user created
 				errMsg = fmt.Sprintf("%sDeleting cluster %q in %q in background...\n", errMsg, clusterName, clusterLoc)
-				go gc.operations.DeleteCluster(*gc.Project, clusterLoc, clusterName, false)
+				go gc.operations.DeleteClusterAsync(*gc.Project, clusterLoc, clusterName)
 			}
 			// Retry another region if cluster creation failed.
 			// TODO(chaodaiG): catch specific errors as we know what the error look like for stockout etc.
@@ -291,7 +293,7 @@ func (gc *GKECluster) Delete() error {
 	}
 
 	log.Printf("Deleting cluster %q in %q", gc.Cluster.Name, gc.Cluster.Location)
-	_, err := gc.operations.DeleteCluster(*gc.Project, gc.Cluster.Location, gc.Cluster.Name, true)
+	err := gc.operations.DeleteCluster(*gc.Project, gc.Cluster.Location, gc.Cluster.Name)
 	if err != nil {
 		return fmt.Errorf("failed deleting cluster: '%v'", err)
 	}

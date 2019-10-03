@@ -351,12 +351,12 @@ func TestInitialize(t *testing.T) {
 		}
 		if data.clusterExist {
 			parts := strings.Split("gke_b_c_d", "_")
-			fgc.operations.CreateCluster(parts[1], parts[2], &container.CreateClusterRequest{
+			fgc.operations.CreateClusterAsync(parts[1], parts[2], &container.CreateClusterRequest{
 				Cluster: &container.Cluster{
 					Name: parts[3],
 				},
 				ProjectId: parts[1],
-			}, false)
+			})
 		}
 		// Set up fake boskos
 		for _, bos := range data.boskosProjs {
@@ -469,12 +469,12 @@ func TestGKECheckEnvironment(t *testing.T) {
 		fgc := setupFakeGKECluster()
 		if data.clusterExist {
 			parts := strings.Split(data.kubectlOut, "_")
-			fgc.operations.CreateCluster(parts[1], parts[2], &container.CreateClusterRequest{
+			fgc.operations.CreateClusterAsync(parts[1], parts[2], &container.CreateClusterRequest{
 				Cluster: &container.Cluster{
 					Name: parts[3],
 				},
 				ProjectId: parts[1],
-			}, false)
+			})
 		}
 		// mock for testing
 		common.StandardExec = func(name string, args ...string) ([]byte, error) {
@@ -755,13 +755,13 @@ func TestAcquire(t *testing.T) {
 					ac.IstioConfig = &container.IstioConfig{Disabled: false}
 				}
 			}
-			fgc.operations.CreateCluster(fakeProj, data.existCluster.Location, &container.CreateClusterRequest{
+			fgc.operations.CreateClusterAsync(fakeProj, data.existCluster.Location, &container.CreateClusterRequest{
 				Cluster: &container.Cluster{
 					Name:         data.existCluster.Name,
 					AddonsConfig: ac,
 				},
 				ProjectId: fakeProj,
-			}, false)
+			})
 			if data.kubeconfigSet {
 				fgc.Cluster, _ = fgc.operations.GetCluster(fakeProj, data.existCluster.Location, data.existCluster.Name)
 			}
@@ -928,12 +928,12 @@ func TestDelete(t *testing.T) {
 		fgc.Project = &fakeProj
 		fgc.NeedsCleanup = data.NeedsCleanup
 		if data.cluster != nil {
-			fgc.operations.CreateCluster(fakeProj, data.cluster.Location, &container.CreateClusterRequest{
+			fgc.operations.CreateClusterAsync(fakeProj, data.cluster.Location, &container.CreateClusterRequest{
 				Cluster: &container.Cluster{
 					Name: data.cluster.Name,
 				},
 				ProjectId: fakeProj,
-			}, false)
+			})
 			fgc.Cluster = data.cluster
 		}
 		// Set up fake boskos

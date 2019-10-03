@@ -27,8 +27,10 @@ import (
 
 // SDKOperations wraps GKE SDK related functions
 type SDKOperations interface {
-	CreateCluster(string, string, *container.CreateClusterRequest, bool) (*container.Operation, error)
-	DeleteCluster(string, string, string, bool) (*container.Operation, error)
+	CreateCluster(string, string, *container.CreateClusterRequest) error
+	CreateClusterAsync(string, string, *container.CreateClusterRequest) (*container.Operation, error)
+	DeleteCluster(string, string, string) error
+	DeleteClusterAsync(string, string, string) (*container.Operation, error)
 	GetCluster(string, string, string) (*container.Cluster, error)
 	GetOperation(string, string, string) (*container.Operation, error)
 }
@@ -57,27 +59,36 @@ func NewSDKClient() (SDKOperations, error) {
 func (gsc *sdkClient) CreateCluster(
 	project, location string,
 	rb *container.CreateClusterRequest,
-	waitUntilDone bool,
-) (*container.Operation, error) {
-	parent := fmt.Sprintf("projects/%s/locations/%s", project, location)
-	op, err := gsc.Projects.Locations.Clusters.Create(parent, rb).Context(context.Background()).Do()
-	if err == nil && waitUntilDone {
+) error {
+	op, err := gsc.CreateClusterAsync(project, location, rb)
+	if err == nil {
 		err = Wait(gsc, project, location, op.Name, creationTimeout)
 	}
-	return op, err
+	return err
 }
 
-// DeleteCluster deletes GKE cluster, and wait until it finishes or timeout or there is an error.
-func (gsc *sdkClient) DeleteCluster(
-	project, location, clusterName string,
-	waitUntilDone bool,
+// CreateClusterAsync creates a new GKE cluster asynchronously.
+func (gsc *sdkClient) CreateClusterAsync(
+	project, location string,
+	rb *container.CreateClusterRequest,
 ) (*container.Operation, error) {
-	parent := fmt.Sprintf("projects/%s/locations/%s/clusters/%s", project, location, clusterName)
-	op, err := gsc.Projects.Locations.Clusters.Delete(parent).Context(context.Background()).Do()
-	if err == nil && waitUntilDone {
+	parent := fmt.Sprintf("projects/%s/locations/%s", project, location)
+	return gsc.Projects.Locations.Clusters.Create(parent, rb).Context(context.Background()).Do()
+}
+
+// DeleteCluster deletes the GKE cluster, and wait until it finishes or timeout or there is an error.
+func (gsc *sdkClient) DeleteCluster(project, location, clusterName string) error {
+	op, err := gsc.DeleteClusterAsync(project, location, clusterName)
+	if err == nil {
 		err = Wait(gsc, project, location, op.Name, deletionTimeout)
 	}
-	return op, err
+	return err
+}
+
+// DeleteClusterAsync deletes the GKE cluster asynchronously.
+func (gsc *sdkClient) DeleteClusterAsync(project, location, clusterName string) (*container.Operation, error) {
+	parent := fmt.Sprintf("projects/%s/locations/%s/clusters/%s", project, location, clusterName)
+	return gsc.Projects.Locations.Clusters.Delete(parent).Context(context.Background()).Do()
 }
 
 // GetCluster gets the GKE cluster with the given cluster name.
