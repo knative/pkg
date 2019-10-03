@@ -38,6 +38,7 @@ func TestNewCreateClusterRequest(t *testing.T) {
 			MinNodes:    1,
 			MaxNodes:    1,
 			NodeType:    "n1-standard-4",
+			Addons:      []string{"istio"},
 		},
 		errorExpected: false,
 	}, {
