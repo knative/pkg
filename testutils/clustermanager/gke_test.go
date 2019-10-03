@@ -577,9 +577,10 @@ func TestAcquire(t *testing.T) {
 				AddonsConfig: &container.AddonsConfig{},
 				NodePools: []*container.NodePool{
 					{
-						Name:        "default-pool",
-						Config:      &container.NodeConfig{MachineType: "n1-standard-4"},
-						Autoscaling: &container.NodePoolAutoscaling{Enabled: true, MaxNodeCount: 3, MinNodeCount: 1},
+						Name:             "default-pool",
+						InitialNodeCount: DefaultGKEMinNodes,
+						Config:           &container.NodeConfig{MachineType: "n1-standard-4"},
+						Autoscaling:      &container.NodePoolAutoscaling{Enabled: true, MaxNodeCount: 3, MinNodeCount: 1},
 					},
 				},
 				MasterAuth: &container.MasterAuth{
@@ -599,9 +600,10 @@ func TestAcquire(t *testing.T) {
 				AddonsConfig: &container.AddonsConfig{},
 				NodePools: []*container.NodePool{
 					{
-						Name:        "default-pool",
-						Config:      &container.NodeConfig{MachineType: "n1-standard-4"},
-						Autoscaling: &container.NodePoolAutoscaling{Enabled: true, MaxNodeCount: 3, MinNodeCount: 1},
+						Name:             "default-pool",
+						InitialNodeCount: DefaultGKEMinNodes,
+						Config:           &container.NodeConfig{MachineType: "n1-standard-4"},
+						Autoscaling:      &container.NodePoolAutoscaling{Enabled: true, MaxNodeCount: 3, MinNodeCount: 1},
 					},
 				},
 				MasterAuth: &container.MasterAuth{
@@ -620,9 +622,10 @@ func TestAcquire(t *testing.T) {
 				AddonsConfig: &container.AddonsConfig{},
 				NodePools: []*container.NodePool{
 					{
-						Name:        "default-pool",
-						Config:      &container.NodeConfig{MachineType: "n1-standard-4"},
-						Autoscaling: &container.NodePoolAutoscaling{Enabled: true, MaxNodeCount: 3, MinNodeCount: 1},
+						Name:             "default-pool",
+						InitialNodeCount: DefaultGKEMinNodes,
+						Config:           &container.NodeConfig{MachineType: "n1-standard-4"},
+						Autoscaling:      &container.NodePoolAutoscaling{Enabled: true, MaxNodeCount: 3, MinNodeCount: 1},
 					},
 				},
 				MasterAuth: &container.MasterAuth{
@@ -638,9 +641,10 @@ func TestAcquire(t *testing.T) {
 				AddonsConfig: &container.AddonsConfig{},
 				NodePools: []*container.NodePool{
 					{
-						Name:        "default-pool",
-						Config:      &container.NodeConfig{MachineType: "n1-standard-4"},
-						Autoscaling: &container.NodePoolAutoscaling{Enabled: true, MaxNodeCount: 3, MinNodeCount: 1},
+						Name:             "default-pool",
+						InitialNodeCount: DefaultGKEMinNodes,
+						Config:           &container.NodeConfig{MachineType: "n1-standard-4"},
+						Autoscaling:      &container.NodePoolAutoscaling{Enabled: true, MaxNodeCount: 3, MinNodeCount: 1},
 					},
 				},
 				MasterAuth: &container.MasterAuth{
@@ -659,9 +663,10 @@ func TestAcquire(t *testing.T) {
 				AddonsConfig: &container.AddonsConfig{},
 				NodePools: []*container.NodePool{
 					{
-						Name:        "default-pool",
-						Config:      &container.NodeConfig{MachineType: "n1-standard-4"},
-						Autoscaling: &container.NodePoolAutoscaling{Enabled: true, MaxNodeCount: 3, MinNodeCount: 1},
+						Name:             "default-pool",
+						InitialNodeCount: DefaultGKEMinNodes,
+						Config:           &container.NodeConfig{MachineType: "n1-standard-4"},
+						Autoscaling:      &container.NodePoolAutoscaling{Enabled: true, MaxNodeCount: 3, MinNodeCount: 1},
 					},
 				},
 				MasterAuth: &container.MasterAuth{
@@ -679,9 +684,10 @@ func TestAcquire(t *testing.T) {
 				},
 				NodePools: []*container.NodePool{
 					{
-						Name:        "default-pool",
-						Config:      &container.NodeConfig{MachineType: "n1-standard-4"},
-						Autoscaling: &container.NodePoolAutoscaling{Enabled: true, MaxNodeCount: 3, MinNodeCount: 1},
+						Name:             "default-pool",
+						InitialNodeCount: DefaultGKEMinNodes,
+						Config:           &container.NodeConfig{MachineType: "n1-standard-4"},
+						Autoscaling:      &container.NodePoolAutoscaling{Enabled: true, MaxNodeCount: 3, MinNodeCount: 1},
 					},
 				},
 				MasterAuth: &container.MasterAuth{
@@ -697,9 +703,10 @@ func TestAcquire(t *testing.T) {
 				AddonsConfig: &container.AddonsConfig{},
 				NodePools: []*container.NodePool{
 					{
-						Name:        "default-pool",
-						Config:      &container.NodeConfig{MachineType: "n1-standard-4"},
-						Autoscaling: &container.NodePoolAutoscaling{Enabled: true, MaxNodeCount: 3, MinNodeCount: 1},
+						Name:             "default-pool",
+						InitialNodeCount: DefaultGKEMinNodes,
+						Config:           &container.NodeConfig{MachineType: "n1-standard-4"},
+						Autoscaling:      &container.NodePoolAutoscaling{Enabled: true, MaxNodeCount: 3, MinNodeCount: 1},
 					},
 				},
 				MasterAuth: &container.MasterAuth{
