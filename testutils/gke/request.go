@@ -71,9 +71,6 @@ func (r *Request) DeepCopy() *Request {
 
 // NewCreateClusterRequest returns a new CreateClusterRequest that can be used in gcloud SDK.
 func NewCreateClusterRequest(request *Request) (*container.CreateClusterRequest, error) {
-	if request.Project == "" {
-		return nil, errors.New("project name cannot be empty")
-	}
 	if request.ClusterName == "" {
 		return nil, errors.New("cluster name cannot be empty")
 	}
