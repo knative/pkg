@@ -19,6 +19,7 @@ limitations under the License.
 package spoof
 
 import (
+	"errors"
 	"net/http"
 	"testing"
 )
@@ -57,31 +58,57 @@ func TestDNSError(t *testing.T) {
 	}
 }
 
-func TestTCPConnectRefuse(t *testing.T) {
+func TestConnectionRefused(t *testing.T) {
 	client := &http.Client{}
 
 	for _, tt := range []struct {
-		name      string
-		url       string
-		tcpRefuse bool
+		name        string
+		url         string
+		connRefused bool
 	}{{
-		name:      "nothing listening",
-		url:       "http://localhost:60001",
-		tcpRefuse: true,
+		name:        "nothing listening",
+		url:         "http://localhost:60001",
+		connRefused: true,
 	}, {
-		name:      "dns error",
-		url:       "http://this.url.does.not.exist",
-		tcpRefuse: false,
+		name:        "dns error",
+		url:         "http://this.url.does.not.exist",
+		connRefused: false,
 	}, {
-		name:      "google.com",
-		url:       "https://google.com",
-		tcpRefuse: false,
+		name:        "google.com",
+		url:         "https://google.com",
+		connRefused: false,
 	}} {
 		t.Run(tt.name, func(t *testing.T) {
 			req, _ := http.NewRequest("GET", tt.url, nil)
 			_, err := client.Do(req)
-			if tcpRefuse := isTCPConnectRefuse(err); tt.tcpRefuse != tcpRefuse {
-				t.Errorf("Expected tcpRefuse=%v, got %v", tt.tcpRefuse, tcpRefuse)
+			if connRefused := isConnectionRefused(err); tt.connRefused != connRefused {
+				t.Errorf("Expected connRefused=%v, got %v", tt.connRefused, connRefused)
+			}
+		})
+	}
+}
+
+func TestConnectionReset(t *testing.T) {
+	for _, tt := range []struct {
+		name      string
+		err       error
+		connReset bool
+	}{{
+		name:      "error matching",
+		err:       errors.New("read tcp 10.60.2.57:47882->104.154.144.94:80: read: connection reset by peer"),
+		connReset: true,
+	}, {
+		name:      "error not matching",
+		err:       errors.New("dial tcp: lookup this.url.does.not.exist on 127.0.0.1:53: no such host"),
+		connReset: false,
+	}, {
+		name:      "nil error",
+		err:       nil,
+		connReset: false,
+	}} {
+		t.Run(tt.name, func(t *testing.T) {
+			if connReset := isConnectionReset(tt.err); tt.connReset != connReset {
+				t.Errorf("Expected connReset=%v, got %v", tt.connReset, connReset)
 			}
 		})
 	}
