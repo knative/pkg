@@ -80,11 +80,11 @@ func EscapeTag(tag string) string {
 	return strings.ReplaceAll(tag, ".", "_")
 }
 
-// Setup sets up the mako client for the provided benchmarkKey.
+// SetupHelper sets up the mako client for the provided benchmarkKey.
 // It will add a few common tags and allow each benchmark to add custm tags as well.
 // It returns the mako client handle to store metrics, a method to close the connection
 // to mako server once done and error in case of failures.
-func Setup(ctx context.Context, extraTags ...string) (*Client, error) {
+func SetupHelper(ctx context.Context, benchmarkKey *string, benchmarkName *string, extraTags ...string) (*Client, error) {
 	tags := append(config.MustGetTags(), extraTags...)
 	// Get the commit of the benchmarks
 	commitID, err := changeset.Get()
@@ -134,7 +134,6 @@ func Setup(ctx context.Context, extraTags ...string) (*Client, error) {
 		tags = append(tags, "instanceType="+EscapeTag(parts[3]))
 	}
 
-	benchmarkKey, benchmarkName := config.MustGetBenchmark()
 	// Create a new Quickstore that connects to the microservice
 	qs, qclose, err := quickstore.NewAtAddress(ctx, &qpb.QuickstoreInput{
 		BenchmarkKey: benchmarkKey,
@@ -171,6 +170,15 @@ func Setup(ctx context.Context, extraTags ...string) (*Client, error) {
 	}
 
 	return client, nil
+}
+
+func Setup(ctx context.Context, extraTags ...string) (*Client, error) {
+	benchmarkKey, benchmarkName := config.MustGetBenchmark()
+	return SetupHelper(ctx, benchmarkKey, benchmarkName, extraTags...)
+}
+
+func SetupWithBenchmarkConfig(ctx context.Context, benchmarkKey *string, benchmarkName *string, extraTags ...string) (*Client, error) {
+	return SetupHelper(ctx, benchmarkKey, benchmarkName, extraTags...)
 }
 
 func tokenPath(token string) string {
