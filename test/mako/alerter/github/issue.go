@@ -98,37 +98,40 @@ func (gih *IssueHandler) CreateIssueForTest(testName, desc string) error {
 		commentBody := fmt.Sprintf(issueBodyTemplate, testName, gih.config.repo)
 		issue, err := gih.createNewIssue(title, commentBody)
 		if err != nil {
-			return fmt.Errorf("failed to create a new issue for test %q", testName)
+			return fmt.Errorf("failed to create a new issue for test %q: %w", testName, err)
 		}
 		commentBody = fmt.Sprintf(issueSummaryCommentTemplate, desc)
 		if err := gih.addComment(*issue.Number, commentBody); err != nil {
-			return fmt.Errorf("failed to add comment for new issue %d", *issue.Number)
+			return fmt.Errorf("failed to add comment for new issue %d: %w", *issue.Number, err)
 		}
-	} else {
-		issueNumber := *issue.Number
-		// If the issue has been closed, reopen it
-		if *issue.State == string(ghutil.IssueCloseState) {
-			if err := gih.reopenIssue(issueNumber); err != nil {
-				return fmt.Errorf("failed to reopen issue %d", issueNumber)
-			}
-			commentBody := fmt.Sprintf(reopenIssueCommentTemplate, desc)
-			if err := gih.addComment(issueNumber, commentBody); err != nil {
-				return fmt.Errorf("failed to add comment for reopened issue %d", issueNumber)
-			}
-		}
+		return nil
+	}
 
-		// Edit the old comment
-		comments, err := gih.getComments(issueNumber)
-		if err != nil {
-			return fmt.Errorf("failed to get comments from issue %d", issueNumber)
+	// If the issue has been created, edit it
+	issueNumber := *issue.Number
+
+	// If the issue has been closed, reopen it
+	if *issue.State == string(ghutil.IssueCloseState) {
+		if err := gih.reopenIssue(issueNumber); err != nil {
+			return fmt.Errorf("failed to reopen issue %d: %w", issueNumber, err)
 		}
-		if len(comments) < 2 {
-			return fmt.Errorf("existing issue %d is malformed, cannot update", issueNumber)
+		commentBody := fmt.Sprintf(reopenIssueCommentTemplate, desc)
+		if err := gih.addComment(issueNumber, commentBody); err != nil {
+			return fmt.Errorf("failed to add comment for reopened issue %d: %w", issueNumber, err)
 		}
-		commentBody := fmt.Sprintf(issueSummaryCommentTemplate, desc)
-		if err := gih.editComment(issueNumber, *comments[1].ID, commentBody); err != nil {
-			return fmt.Errorf("failed to edit the comment for issue %d", issueNumber)
-		}
+	}
+
+	// Edit the old comment
+	comments, err := gih.getComments(issueNumber)
+	if err != nil {
+		return fmt.Errorf("failed to get comments from issue %d: %w", issueNumber, err)
+	}
+	if len(comments) < 2 {
+		return fmt.Errorf("existing issue %d is malformed, cannot update", issueNumber)
+	}
+	commentBody := fmt.Sprintf(issueSummaryCommentTemplate, desc)
+	if err := gih.editComment(issueNumber, *comments[1].ID, commentBody); err != nil {
+		return fmt.Errorf("failed to edit the comment for issue %d: %w", issueNumber, err)
 	}
 
 	return nil
@@ -172,10 +175,10 @@ func (gih *IssueHandler) CloseIssueForTest(testName string) error {
 
 	issueNumber := *issue.Number
 	if err := gih.addComment(issueNumber, closeIssueComment); err != nil {
-		return fmt.Errorf("failed to add comment for the issue %d to close", issueNumber)
+		return fmt.Errorf("failed to add comment for the issue %d to close: %w", issueNumber, err)
 	}
 	if err := gih.closeIssue(issueNumber); err != nil {
-		return fmt.Errorf("failed to close the issue %d", issueNumber)
+		return fmt.Errorf("failed to close the issue %d: %w", issueNumber, err)
 	}
 	return nil
 }
