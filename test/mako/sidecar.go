@@ -70,9 +70,9 @@ type Client struct {
 }
 
 // StoreAndHandleResult stores the benchmarking data and handles the result.
-func (c *Client) StoreAndHandleResult() (qpb.QuickstoreOutput, error) {
+func (c *Client) StoreAndHandleResult() error {
 	out, err := c.Quickstore.Store()
-	return out, c.alerter.HandleBenchmarkResult(c.benchmarkName, out, err)
+	return c.alerter.HandleBenchmarkResult(c.benchmarkName, out, err)
 }
 
 // EscapeTag replaces characters that Mako doesn't accept with ones it does.
