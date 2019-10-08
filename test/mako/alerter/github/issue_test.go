@@ -42,8 +42,8 @@ func TestNewIssueWillBeAdded(t *testing.T) {
 		t.Fatalf("expected to create a new issue %v, but failed", testName)
 	}
 	issueTitle := fmt.Sprintf(issueTitleTemplate, testName)
-	issueFound := gih.findIssue(gih.config.org, gih.config.repo, issueTitle, false)
-	if issueFound == nil {
+	issueFound, err := gih.findIssue(issueTitle)
+	if issueFound == nil || err != nil {
 		t.Fatalf("expected to find the new created issue %v, but failed to", testName)
 	}
 }
@@ -60,27 +60,20 @@ func TestClosedIssueWillBeReopened(t *testing.T) {
 	if err := gih.CreateIssueForTest(testName, testDesc); err != nil {
 		t.Fatalf("expected to update the existed issue %v, but failed", testName)
 	}
-	updatedIssue := gih.findIssue(org, repo, issueTitle, gih.config.dryrun)
-	if updatedIssue == nil || *updatedIssue.State != string(ghutil.IssueOpenState) {
+	updatedIssue, err := gih.findIssue(issueTitle)
+	if updatedIssue == nil || err != nil || *updatedIssue.State != string(ghutil.IssueOpenState) {
 		t.Fatalf("expected to reopen the closed issue %v, but failed", testName)
 	}
 }
 
 func TestIssueCanBeClosed(t *testing.T) {
-	org := gih.config.org
-	repo := gih.config.repo
 	testName := "test closing existed issue"
 	testDesc := "test closing existed issue desc"
-	issueTitle := fmt.Sprintf(issueTitleTemplate, testName)
 	if err := gih.CreateIssueForTest(testName, testDesc); err != nil {
 		t.Fatalf("expected to create a new issue %v, but failed", testName)
 	}
 
 	if err := gih.CloseIssueForTest(testName); err != nil {
 		t.Fatalf("tried to close the existed issue %v, but got an error %v", testName, err)
-	}
-	updatedIssue := gih.findIssue(org, repo, issueTitle, gih.config.dryrun)
-	if updatedIssue == nil || *updatedIssue.State != string(ghutil.IssueCloseState) {
-		t.Fatalf("expected to close the issue %v, but failed", testName)
 	}
 }
