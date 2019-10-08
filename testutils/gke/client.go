@@ -96,8 +96,8 @@ func (gsc *sdkClient) DeleteClusterAsync(project, region, zone, clusterName stri
 	if zone != "" {
 		return gsc.Projects.Zones.Clusters.Delete(project, location, clusterName).Context(context.Background()).Do()
 	}
-	opsFullPath := fmt.Sprintf("projects/%s/locations/%s/clusters/%s", project, location, clusterName)
-	return gsc.Projects.Locations.Clusters.Delete(opsFullPath).Context(context.Background()).Do()
+	clusterFullPath := fmt.Sprintf("projects/%s/locations/%s/clusters/%s", project, location, clusterName)
+	return gsc.Projects.Locations.Clusters.Delete(clusterFullPath).Context(context.Background()).Do()
 }
 
 // GetCluster gets the GKE cluster with the given cluster name.
@@ -106,15 +106,15 @@ func (gsc *sdkClient) GetCluster(project, region, zone, clusterName string) (*co
 	if zone != "" {
 		return gsc.Projects.Zones.Clusters.Get(project, location, clusterName).Context(context.Background()).Do()
 	}
-	opsFullPath := fmt.Sprintf("projects/%s/locations/%s/clusters/%s", project, location, clusterName)
-	return gsc.Projects.Locations.Clusters.Get(opsFullPath).Context(context.Background()).Do()
+	clusterFullPath := fmt.Sprintf("projects/%s/locations/%s/clusters/%s", project, location, clusterName)
+	return gsc.Projects.Locations.Clusters.Get(clusterFullPath).Context(context.Background()).Do()
 }
 
 // ListClustersInProject lists all the GKE clusters created in the given project.
 func (gsc *sdkClient) ListClustersInProject(project string) ([]*container.Cluster, error) {
 	var clusters []*container.Cluster
-	projectPath := fmt.Sprintf("projects/%s/locations/-", project)
-	resp, err := gsc.Projects.Locations.Clusters.List(projectPath).Do()
+	projectFullPath := fmt.Sprintf("projects/%s/locations/-", project)
+	resp, err := gsc.Projects.Locations.Clusters.List(projectFullPath).Do()
 	if err != nil {
 		return clusters, fmt.Errorf("failed to list clusters under project %s: %v", project, err)
 	}
