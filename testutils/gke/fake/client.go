@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"strconv"
 	"time"
+	"strings"
 
 	container "google.golang.org/api/container/v1beta1"
 	"knative.dev/pkg/testutils/gke"
@@ -170,6 +171,19 @@ func (fgsc *GKESDKClient) GetCluster(project, region, zone, cluster string) (*co
 		}
 	}
 	return nil, fmt.Errorf("cluster not found")
+}
+
+// ListClustersInProject lists all the GKE clusters created in the given project.
+func (fgsc *GKESDKClient) ListClustersInProject(project string) ([]*container.Cluster, error) {
+	allClusters := make([]*container.Cluster, 0)
+	projectPath := fmt.Sprintf("projects/%s", project)
+	for location, cls := range fgsc.clusters {
+		// If the clusters are under this project
+		if strings.HasPrefix(location, projectPath) {
+			allClusters = append(allClusters, cls...)
+		}
+	}
+	return allClusters, nil
 }
 
 // GetOperation gets the operation with the given settings.
