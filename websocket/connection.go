@@ -20,7 +20,6 @@ import (
 	"bytes"
 	"encoding/gob"
 	"errors"
-	"fmt"
 	"io"
 	"io/ioutil"
 	"sync"
@@ -127,12 +126,12 @@ func NewDurableConnection(target string, messageChan chan []byte, logger *zap.Su
 			default:
 				logger.Infof("Connecting to %s", target)
 				if err := c.connect(); err != nil {
-					logger.Errorw(fmt.Sprintf("Connecting to %s failed", target), zap.Error(err))
+					logger.With(zap.Error(err)).Errorf("Connecting to %s failed", target)
 					continue
 				}
-				logger.Infof("Connected to %s", target)
+				logger.Debugf("Connected to %s", target)
 				if err := c.keepalive(); err != nil {
-					logger.Errorw(fmt.Sprintf("Connection to %s broke down, reconnecting...", target), zap.Error(err))
+					logger.With(zap.Error(err)).Errorf("Connection to %s broke down, reconnecting...", target)
 				}
 				if err := c.closeConnection(); err != nil {
 					logger.Errorw("Failed to close the connection after crashing", zap.Error(err))
