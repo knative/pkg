@@ -177,7 +177,7 @@ func (gc *GKECluster) Acquire() error {
 
 	// Get project name from boskos if running in Prow, otherwise it should fail
 	// since we don't know which project to use
-	if gc.Project == nil || common.IsProw() {
+	if common.IsProw() {
 		project, err := gc.boskosOps.AcquireGKEProject(nil)
 		if err != nil {
 			return fmt.Errorf("failed acquiring boskos project: '%v'", err)
@@ -304,14 +304,11 @@ func (gc *GKECluster) ensureProtected() {
 //
 // checks for existing cluster by looking at kubeconfig, if kubeconfig is set:
 // 	- If it exists in GKE:
-//		- If Request doesn't contain project/clustername/region:
+//		- If Request doesn't contain project/clustername:
 //			- Use it
-//		- If Request contains any of project/clustername/region:
+//		- If Request contains any of project/clustername:
 //			- If the cluster matches with them:
 //				- Use it
-//	- If it doesn't exist in GKE:
-//		- If Request doesn't contain project/clustername:
-//			- Fail it
 // If cluster isn't discovered above, try to get project from gcloud
 func (gc *GKECluster) checkEnvironment() error {
 	output, err := common.StandardExec("kubectl", "config", "current-context")
@@ -329,10 +326,10 @@ func (gc *GKECluster) checkEnvironment() error {
 				location, clusterName := parts[2], parts[3]
 				region, zone := gke.RegionZoneFromLoc(location)
 				// Use the cluster only if project and clustername match
-				if (gc.Request.Project == "" || gc.Request.Project == project) && gc.Request.ClusterName == clusterName {
+				if (gc.Request.Project == "" || gc.Request.Project == project) && (gc.Request.ClusterName == "" || gc.Request.ClusterName == clusterName) {
 					cluster, err := gc.operations.GetCluster(project, region, zone, clusterName)
 					if err != nil {
-						return fmt.Errorf("couldn't find cluster %s in %s in %s, does it exist? %v", clusterName, *gc.Project, location, err)
+						return fmt.Errorf("couldn't find cluster %s in %s in %s, does it exist? %v", clusterName, project, location, err)
 					}
 					gc.Cluster = cluster
 					gc.Project = &project
@@ -344,7 +341,7 @@ func (gc *GKECluster) checkEnvironment() error {
 	// When kubeconfig isn't set, the err isn't nil and output should be empty.
 	// If output isn't empty then this is unexpected error, should shout out
 	// directly
-	if len(output) > 0 {
+	if err != nil && len(output) > 0 {
 		return fmt.Errorf("failed running kubectl config current-context: '%s'", string(output))
 	}
 

@@ -106,11 +106,7 @@ func (fgsc *GKESDKClient) CreateClusterAsync(
 		Location:     location,
 		Status:       "RUNNING",
 		AddonsConfig: rb.Cluster.AddonsConfig,
-		NodePools: []*container.NodePool{
-			{
-				Name: "default-pool",
-			},
-		},
+		NodePools:    rb.Cluster.NodePools,
 	}
 	if rb.Cluster.NodePools != nil {
 		cluster.NodePools = rb.Cluster.NodePools
