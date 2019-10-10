@@ -109,14 +109,14 @@ func TestGetURI_ObjectReference(t *testing.T) {
 		objects: []runtime.Object{
 			getAddressable(),
 		},
-		dest:    apisv1alpha1.Destination{ObjectReference: getAddressableRef()},
+		dest:    apisv1alpha1.Destination{Ref: getAddressableRef()},
 		wantURI: addressableDNS,
 	}, "object ref with path": {
 		objects: []runtime.Object{
 			getAddressable(),
 		},
 		dest: apisv1alpha1.Destination{
-			ObjectReference: getAddressableRef(),
+			Ref: getAddressableRef(),
 			Path:            ptr.String("/foo"),
 		},
 		wantURI: addressableDNS + "/foo",
@@ -125,7 +125,7 @@ func TestGetURI_ObjectReference(t *testing.T) {
 			getAddressable(),
 		},
 		dest: apisv1alpha1.Destination{
-			ObjectReference: getAddressableRef(),
+			Ref: getAddressableRef(),
 			Path:            ptr.String("foo"),
 		},
 		wantURI: addressableDNS + "/foo",
@@ -133,28 +133,28 @@ func TestGetURI_ObjectReference(t *testing.T) {
 		objects: []runtime.Object{
 			getAddressableNilURL(),
 		},
-		dest:    apisv1alpha1.Destination{ObjectReference: getUnaddressableRef()},
+		dest:    apisv1alpha1.Destination{Ref: getUnaddressableRef()},
 		wantErr: fmt.Errorf(`url missing in address of %+v`, getUnaddressableRef()),
 	}, "nil address": {
 		objects: []runtime.Object{
 			getAddressableNilAddress(),
 		},
-		dest:    apisv1alpha1.Destination{ObjectReference: getUnaddressableRef()},
+		dest:    apisv1alpha1.Destination{Ref: getUnaddressableRef()},
 		wantErr: fmt.Errorf(`address not set for %+v`, getUnaddressableRef()),
 	}, "missing host": {
 		objects: []runtime.Object{
 			getAddressableNoHostURL(),
 		},
-		dest:    apisv1alpha1.Destination{ObjectReference: getUnaddressableRef()},
+		dest:    apisv1alpha1.Destination{Ref: getUnaddressableRef()},
 		wantErr: fmt.Errorf(`hostname missing in address of %+v`, getUnaddressableRef()),
 	}, "missing status": {
 		objects: []runtime.Object{
 			getAddressableNoStatus(),
 		},
-		dest:    apisv1alpha1.Destination{ObjectReference: getUnaddressableRef()},
+		dest:    apisv1alpha1.Destination{Ref: getUnaddressableRef()},
 		wantErr: fmt.Errorf(`address not set for %+v`, getUnaddressableRef()),
 	}, "notFound": {
-		dest:    apisv1alpha1.Destination{ObjectReference: getUnaddressableRef()},
+		dest:    apisv1alpha1.Destination{Ref: getUnaddressableRef()},
 		wantErr: fmt.Errorf(`failed to get ref %+v: %s "%s" not found`, getUnaddressableRef(), unaddressableResource, unaddressableName),
 	}}
 

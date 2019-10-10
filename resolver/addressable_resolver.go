@@ -66,8 +66,8 @@ func NewURIResolver(ctx context.Context, callback func(types.NamespacedName)) *U
 // URIFromDestination resolves a Destination into a URI string.
 func (r *URIResolver) URIFromDestination(dest apisv1alpha1.Destination, parent interface{}) (string, error) {
 	// Prefer resolved object reference + path, then try URI + path, honoring the Destination documentation
-	if dest.ObjectReference != nil {
-		url, err := r.URIFromObjectReference(dest.ObjectReference, parent)
+	if dest.Ref != nil {
+		url, err := r.URIFromObjectReference(dest.Ref, parent)
 		if err != nil {
 			return "", err
 		}

@@ -31,7 +31,7 @@ import (
 // Destination represents a target of an invocation over HTTP.
 type Destination struct {
 	// ObjectReference points to an Addressable.
-	*corev1.ObjectReference `json:",inline"`
+	Ref *corev1.ObjectReference `json:",inline"`
 
 	// URI is for direct URI Designations.
 	URI *apis.URL `json:"uri,omitempty"`
@@ -45,7 +45,7 @@ type Destination struct {
 // NewDestination constructs a Destination from an object reference as a convenience.
 func NewDestination(obj *corev1.ObjectReference, paths ...string) (*Destination, error) {
 	dest := &Destination{
-		ObjectReference: obj,
+		Ref: obj,
 	}
 	err := dest.AppendPath(paths...)
 	if err != nil {
@@ -118,16 +118,16 @@ func (current *Destination) Validate(ctx context.Context) *apis.FieldError {
 
 func validateDestination(dest Destination) *apis.FieldError {
 	if dest.URI != nil {
-		if dest.ObjectReference != nil {
+		if dest.Ref != nil {
 			return apis.ErrMultipleOneOf("uri", "[apiVersion, kind, name]")
 		}
 		if dest.URI.Host == "" || dest.URI.Scheme == "" {
 			return apis.ErrInvalidValue(dest.URI.String(), "uri")
 		}
-	} else if dest.ObjectReference == nil {
+	} else if dest.Ref == nil {
 		return apis.ErrMissingOneOf("uri", "[apiVersion, kind, name]")
 	} else {
-		return validateDestinationRef(*dest.ObjectReference)
+		return validateDestinationRef(*dest.Ref)
 	}
 	return nil
 }

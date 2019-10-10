@@ -50,12 +50,12 @@ func TestValidateDestination(t *testing.T) {
 		},
 		"valid ref": {
 			dest: &Destination{
-				ObjectReference: &validRef,
+				Ref: &validRef,
 			},
 		},
 		"invalid ref, missing name": {
 			dest: &Destination{
-				ObjectReference: &corev1.ObjectReference{
+				Ref: &corev1.ObjectReference{
 					Kind:       "SomeKind",
 					APIVersion: "v1mega1",
 				},
@@ -64,7 +64,7 @@ func TestValidateDestination(t *testing.T) {
 		},
 		"invalid ref, missing api version": {
 			dest: &Destination{
-				ObjectReference: &corev1.ObjectReference{
+				Ref: &corev1.ObjectReference{
 					Kind: "SomeKind",
 					Name: "a-name",
 				},
@@ -73,7 +73,7 @@ func TestValidateDestination(t *testing.T) {
 		},
 		"invalid ref, missing kind": {
 			dest: &Destination{
-				ObjectReference: &corev1.ObjectReference{
+				Ref: &corev1.ObjectReference{
 					APIVersion: "v1mega1",
 					Name:       "a-name",
 				},
@@ -82,7 +82,7 @@ func TestValidateDestination(t *testing.T) {
 		},
 		"valid ref with path": {
 			dest: &Destination{
-				ObjectReference: &validRef,
+				Ref: &validRef,
 				Path:            ptr.String("/a-path"),
 			},
 		},
@@ -116,7 +116,7 @@ func TestValidateDestination(t *testing.T) {
 		"invalid, both uri and ref": {
 			dest: &Destination{
 				URI:             &validURL,
-				ObjectReference: &validRef,
+				Ref: &validRef,
 			},
 			want: "expected exactly one, got both: [apiVersion, kind, name], uri",
 		},
@@ -142,7 +142,7 @@ invalid value: /path?query: path`,
 		},
 		"invalid, ref and path as uri": {
 			dest: &Destination{
-				ObjectReference: &validRef,
+				Ref: &validRef,
 				Path:            ptr.String("http://host/path"),
 			},
 			want: "invalid value: http://host/path: path",
