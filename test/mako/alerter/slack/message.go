@@ -90,7 +90,7 @@ func (smh *MessageHandler) SendAlert(text string) error {
 				return
 			}
 			// send the alert message to the channel
-			message := fmt.Sprintf(messageTemplate, time.Now(), text)
+			message := fmt.Sprintf(messageTemplate, time.Now().UTC(), text)
 			if err := helpers.Run(
 				fmt.Sprintf("sending message %q to channel %q", message, channel.Name),
 				func() error {
