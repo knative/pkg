@@ -219,7 +219,7 @@ func (gc *GKECluster) Acquire() error {
 		}
 		// Creating cluster
 		log.Printf("Creating cluster %q in region %q zone %q with:\n%+v", clusterName, region, request.Zone, gc.Request)
-		err := gc.operations.CreateCluster(*gc.Project, region, request.Zone, rb)
+		err = gc.operations.CreateCluster(*gc.Project, region, request.Zone, rb)
 		if err == nil {
 			cluster, err = gc.operations.GetCluster(*gc.Project, region, request.Zone, rb.Cluster.Name)
 		}

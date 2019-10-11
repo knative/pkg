@@ -562,10 +562,10 @@ func TestAcquire(t *testing.T) {
 			}, nil, false,
 		}, {
 			// project not set, not in Prow and boskos not available
-			false, nil, nil, []string{}, []string{}, []string{}, false, nil, fmt.Errorf("gcp project must be set"), false,
+			false, nil, nil, []string{}, []string{}, []string{}, false, nil, fmt.Errorf("GCP project must be set"), false,
 		}, {
 			// project not set, not in Prow and boskos available
-			false, nil, nil, []string{}, []string{}, []string{fakeBoskosProj}, false, nil, fmt.Errorf("gcp project must be set"), false,
+			false, nil, nil, []string{}, []string{}, []string{fakeBoskosProj}, false, nil, fmt.Errorf("GCP project must be set"), false,
 		}, {
 			// cluster exists, project set, running in Prow
 			true, &fakeProj, &container.Cluster{
