@@ -56,14 +56,17 @@ func TestSetup(t *testing.T) {
 	regionOverride := "fooregion"
 	zoneOverride := "foozone"
 	fakeAddons := "fake-addon"
+	fakeBuildID := "1234"
 	datas := []struct {
 		r                          GKERequest
+		isProw                     bool
 		regionEnv, backupRegionEnv string
 		expClusterOperations       *GKECluster
 	}{
 		{
-			// Defaults
+			// Defaults, not running in Prow
 			GKERequest{},
+			false,
 			"", "",
 			&GKECluster{
 				Request: &GKERequest{
@@ -80,12 +83,32 @@ func TestSetup(t *testing.T) {
 				},
 			},
 		}, {
-			// Project provided
+			// Defaults, running in Prow
+			GKERequest{},
+			true,
+			"", "",
+			&GKECluster{
+				Request: &GKERequest{
+					Request: gke.Request{
+						ClusterName: "kpkg-e2e-cls-1234",
+						MinNodes:    1,
+						MaxNodes:    3,
+						NodeType:    "n1-standard-4",
+						Region:      "us-central1",
+						Zone:        "",
+						Addons:      nil,
+					},
+					BackupRegions: []string{"us-west1", "us-east1"},
+				},
+			},
+		}, {
+			// Project provided, not running in Prow
 			GKERequest{
 				Request: gke.Request{
 					Project: fakeProj,
 				},
 			},
+			false,
 			"", "",
 			&GKECluster{
 				Request: &GKERequest{
@@ -105,12 +128,62 @@ func TestSetup(t *testing.T) {
 				NeedsCleanup: true,
 			},
 		}, {
-			// Cluster name provided
+			// Project provided, running in Prow
+			GKERequest{
+				Request: gke.Request{
+					Project: fakeProj,
+				},
+			},
+			true,
+			"", "",
+			&GKECluster{
+				Request: &GKERequest{
+					Request: gke.Request{
+						ClusterName: "kpkg-e2e-cls-1234",
+						Project:     "b",
+						MinNodes:    1,
+						MaxNodes:    3,
+						NodeType:    "n1-standard-4",
+						Region:      "us-central1",
+						Zone:        "",
+						Addons:      nil,
+					},
+					BackupRegions: []string{"us-west1", "us-east1"},
+				},
+				Project:      &fakeProj,
+				NeedsCleanup: true,
+			},
+		}, {
+			// Cluster name provided, not running in Prow
 			GKERequest{
 				Request: gke.Request{
 					ClusterName: "predefined-cluster-name",
 				},
 			},
+			false,
+			"", "",
+			&GKECluster{
+				Request: &GKERequest{
+					Request: gke.Request{
+						ClusterName: "predefined-cluster-name",
+						MinNodes:    1,
+						MaxNodes:    3,
+						NodeType:    "n1-standard-4",
+						Region:      "us-central1",
+						Zone:        "",
+						Addons:      nil,
+					},
+					BackupRegions: []string{"us-west1", "us-east1"},
+				},
+			},
+		}, {
+			// Cluster name provided, running in Prow
+			GKERequest{
+				Request: gke.Request{
+					ClusterName: "predefined-cluster-name",
+				},
+			},
+			false,
 			"", "",
 			&GKECluster{
 				Request: &GKERequest{
@@ -137,6 +210,7 @@ func TestSetup(t *testing.T) {
 					Zone:     zoneOverride,
 				},
 			},
+			false,
 			"", "",
 			&GKECluster{
 				Request: &GKERequest{
@@ -162,6 +236,7 @@ func TestSetup(t *testing.T) {
 					Region:   regionOverride,
 				},
 			},
+			false,
 			"", "",
 			&GKECluster{
 				Request: &GKERequest{
@@ -180,6 +255,7 @@ func TestSetup(t *testing.T) {
 		}, {
 			// Set env Region
 			GKERequest{},
+			false,
 			"customregion", "",
 			&GKECluster{
 				Request: &GKERequest{
@@ -198,6 +274,7 @@ func TestSetup(t *testing.T) {
 		}, {
 			// Set env backupzone
 			GKERequest{},
+			false,
 			"", "backupregion1 backupregion2",
 			&GKECluster{
 				Request: &GKERequest{
@@ -220,6 +297,7 @@ func TestSetup(t *testing.T) {
 					Addons: []string{fakeAddons},
 				},
 			},
+			false,
 			"", "",
 			&GKECluster{
 				Request: &GKERequest{
@@ -269,7 +347,6 @@ func TestSetup(t *testing.T) {
 		}
 		return out, err
 	}
-
 	for _, data := range datas {
 		common.GetOSEnv = func(s string) string {
 			switch s {
@@ -277,6 +354,13 @@ func TestSetup(t *testing.T) {
 				return data.regionEnv
 			case "E2E_CLUSTER_BACKUP_REGIONS":
 				return data.backupRegionEnv
+			case "BUILD_NUMBER":
+				return fakeBuildID
+			case "PROW_JOB_ID": // needed to mock IsProw()
+				if data.isProw {
+					return "fake_job_id"
+				}
+				return ""
 			}
 			return oldEnvFunc(s)
 		}
@@ -404,8 +488,6 @@ func TestGKECheckEnvironment(t *testing.T) {
 				errMsg, fgc.Project, fgc.Cluster, err, data.expProj, data.expCluster, data.expErr)
 		}
 
-		// errMsg := fmt.Sprintf("check environment with:\n\tkubectl output: %q\n\t\terror: '%v'\n\tgcloud output: %q\n\t\terror: '%v'",
-		// 	data.kubectlOut, data.kubectlErr, data.gcloudOut, data.gcloudErr)
 		if !reflect.DeepEqual(data.expErr, err) {
 			t.Errorf("%s\nerror got: '%v'\nerror want: '%v'", errMsg, data.expErr, err)
 		}
@@ -574,10 +656,10 @@ func TestAcquire(t *testing.T) {
 			}, nil, false,
 		}, {
 			// cluster not exist, not running in Prow and skip creation
-			false, &fakeProj, nil, []string{}, []string{}, []string{fakeBoskosProj}, true, nil, fmt.Errorf("failed acquiring existing cluster"), false,
+			false, &fakeProj, nil, []string{}, []string{}, []string{fakeBoskosProj}, true, nil, fmt.Errorf("cannot acquire cluster if SkipCreation is set"), false,
 		}, {
 			// cluster not exist, running in Prow and skip creation
-			true, &fakeProj, nil, []string{}, []string{}, []string{fakeBoskosProj}, true, nil, fmt.Errorf("failed acquiring existing cluster"), false,
+			true, &fakeProj, nil, []string{}, []string{}, []string{fakeBoskosProj}, true, nil, fmt.Errorf("cannot acquire cluster if SkipCreation is set"), false,
 		}, {
 			// skipped cluster creation as SkipCreation is requested
 			true, &fakeProj, nil, []string{}, []string{}, []string{fakeBoskosProj}, false, &container.Cluster{

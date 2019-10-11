@@ -95,7 +95,7 @@ func (gs *GKEClient) Setup(r GKERequest) ClusterOperations {
 		var err error
 		r.ClusterName, err = getResourceName(ClusterResource)
 		if err != nil {
-			log.Fatalf("failed getting cluster name: '%v'", err)
+			log.Fatalf("Failed getting cluster name: '%v'", err)
 		}
 	}
 
@@ -164,16 +164,14 @@ func (gc *GKECluster) Acquire() error {
 		return nil
 	}
 	if gc.Request.SkipCreation {
-		return errors.New("failed acquiring existing cluster")
+		return errors.New("cannot acquire cluster if SkipCreation is set")
 	}
 
 	// If comes here we are very likely going to create a cluster, unless
 	// the cluster already exists
 
 	// Cleanup if cluster is created by this client
-	if !common.IsProw() {
-		gc.NeedsCleanup = true
-	}
+	gc.NeedsCleanup = !common.IsProw()
 
 	// Get project name from boskos if running in Prow, otherwise it should fail
 	// since we don't know which project to use
@@ -185,15 +183,14 @@ func (gc *GKECluster) Acquire() error {
 		gc.Project = &project.Name
 	}
 	if gc.Project == nil {
-		return errors.New("gcp project must be set")
+		return errors.New("GCP project must be set")
 	}
 	gc.ensureProtected()
 	log.Printf("Identified project %s for cluster creation", *gc.Project)
 
-	var err error
 	// Make a deep copy of the request struct, since the original request is supposed to be immutable
 	request := gc.Request.DeepCopy()
-	// We are going to use request for creating cluster, set it's Project
+	// We are going to use request for creating cluster, set its Project
 	request.Project = *gc.Project
 
 	// Combine Region with BackupRegions, these will be the regions used for
@@ -205,8 +202,7 @@ func (gc *GKECluster) Acquire() error {
 		}
 	}
 	var cluster *container.Cluster
-	var rb *container.CreateClusterRequest
-	rb, err = gke.NewCreateClusterRequest(request)
+	rb, err := gke.NewCreateClusterRequest(request)
 	if err != nil {
 		return fmt.Errorf("failed building the CreateClusterRequest: '%v'", err)
 	}
@@ -215,7 +211,7 @@ func (gc *GKECluster) Acquire() error {
 		err = nil
 
 		clusterName := request.ClusterName
-		// Use cluster it already exists and running
+		// Use cluster if it already exists and running
 		existingCluster, _ := gc.operations.GetCluster(*gc.Project, region, request.Zone, clusterName)
 		if existingCluster != nil && existingCluster.Status == ClusterRunning {
 			gc.Cluster = existingCluster
@@ -223,8 +219,8 @@ func (gc *GKECluster) Acquire() error {
 		}
 		// Creating cluster
 		log.Printf("Creating cluster %q in region %q zone %q with:\n%+v", clusterName, region, request.Zone, gc.Request)
-		err = gc.operations.CreateCluster(*gc.Project, region, request.Zone, rb)
-		if err == nil { // Get cluster at last
+		err := gc.operations.CreateCluster(*gc.Project, region, request.Zone, rb)
+		if err == nil {
 			cluster, err = gc.operations.GetCluster(*gc.Project, region, request.Zone, rb.Cluster.Name)
 		}
 		if err != nil {
@@ -299,8 +295,8 @@ func (gc *GKECluster) ensureProtected() {
 	}
 }
 
-// checkEnvironment checks environment set for kubeconfig and glcoud, and try to
-// idefity existing project/cluster if they are not set
+// checkEnvironment checks environment set for kubeconfig and gcloud, and try to
+// identify existing project/cluster if they are not set
 //
 // checks for existing cluster by looking at kubeconfig, if kubeconfig is set:
 // 	- If it exists in GKE:
@@ -315,13 +311,13 @@ func (gc *GKECluster) checkEnvironment() error {
 	// if kubeconfig is configured, try to use it
 	if err == nil {
 		currentContext := strings.TrimSpace(string(output))
+		log.Printf("kubeconfig is: %q", currentContext)
 		if strings.HasPrefix(currentContext, "gke_") {
 			// output should be in the form of gke_PROJECT_REGION_CLUSTER
 			parts := strings.Split(currentContext, "_")
 			if len(parts) != 4 { // fall through with warning
 				log.Printf("WARNING: ignoring kubectl current-context since it's malformed: %q", currentContext)
 			} else {
-				log.Printf("kubeconfig is: %q", currentContext)
 				project := parts[1]
 				location, clusterName := parts[2], parts[3]
 				region, zone := gke.RegionZoneFromLoc(location)
