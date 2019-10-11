@@ -72,7 +72,7 @@ type GKERequest struct {
 type GKECluster struct {
 	Request *GKERequest
 	// Project might be GKE specific, so put it here
-	Project *string
+	Project string
 	// NeedsCleanup tells whether the cluster needs to be deleted afterwards
 	// This probably should be part of task wrapper's logic
 	NeedsCleanup bool
@@ -87,7 +87,7 @@ func (gs *GKEClient) Setup(r GKERequest) ClusterOperations {
 	gc := &GKECluster{}
 
 	if r.Project != "" { // use provided project and create cluster
-		gc.Project = &r.Project
+		gc.Project = r.Project
 		gc.NeedsCleanup = true
 	}
 
@@ -180,18 +180,18 @@ func (gc *GKECluster) Acquire() error {
 		if err != nil {
 			return fmt.Errorf("failed acquiring boskos project: '%v'", err)
 		}
-		gc.Project = &project.Name
+		gc.Project = project.Name
 	}
-	if gc.Project == nil {
+	if gc.Project == "" {
 		return errors.New("GCP project must be set")
 	}
 	gc.ensureProtected()
-	log.Printf("Identified project %s for cluster creation", *gc.Project)
+	log.Printf("Identified project %s for cluster creation", gc.Project)
 
 	// Make a deep copy of the request struct, since the original request is supposed to be immutable
 	request := gc.Request.DeepCopy()
 	// We are going to use request for creating cluster, set its Project
-	request.Project = *gc.Project
+	request.Project = gc.Project
 
 	// Combine Region with BackupRegions, these will be the regions used for
 	// retrying creation logic
@@ -212,22 +212,22 @@ func (gc *GKECluster) Acquire() error {
 
 		clusterName := request.ClusterName
 		// Use cluster if it already exists and running
-		existingCluster, _ := gc.operations.GetCluster(*gc.Project, region, request.Zone, clusterName)
+		existingCluster, _ := gc.operations.GetCluster(gc.Project, region, request.Zone, clusterName)
 		if existingCluster != nil && existingCluster.Status == ClusterRunning {
 			gc.Cluster = existingCluster
 			return nil
 		}
 		// Creating cluster
 		log.Printf("Creating cluster %q in region %q zone %q with:\n%+v", clusterName, region, request.Zone, gc.Request)
-		err = gc.operations.CreateCluster(*gc.Project, region, request.Zone, rb)
+		err = gc.operations.CreateCluster(gc.Project, region, request.Zone, rb)
 		if err == nil {
-			cluster, err = gc.operations.GetCluster(*gc.Project, region, request.Zone, rb.Cluster.Name)
+			cluster, err = gc.operations.GetCluster(gc.Project, region, request.Zone, rb.Cluster.Name)
 		}
 		if err != nil {
 			errMsg := fmt.Sprintf("Error during cluster creation: '%v'. ", err)
 			if gc.NeedsCleanup { // Delete half created cluster if it's user created
 				errMsg = fmt.Sprintf("%sDeleting cluster %q in region %q zone %q in background...\n", errMsg, clusterName, region, request.Zone)
-				gc.operations.DeleteClusterAsync(*gc.Project, region, request.Zone, clusterName)
+				gc.operations.DeleteClusterAsync(gc.Project, region, request.Zone, clusterName)
 			}
 			// Retry another region if cluster creation failed.
 			// TODO(chaodaiG): catch specific errors as we know what the error look like for stockout etc.
@@ -255,8 +255,8 @@ func (gc *GKECluster) Delete() error {
 	// Release Boskos if running in Prow, will let Janitor taking care of
 	// clusters deleting
 	if common.IsProw() {
-		log.Printf("Releasing Boskos resource: '%v'", *gc.Project)
-		return gc.boskosOps.ReleaseGKEProject(nil, *gc.Project)
+		log.Printf("Releasing Boskos resource: '%v'", gc.Project)
+		return gc.boskosOps.ReleaseGKEProject(nil, gc.Project)
 	}
 
 	// NeedsCleanup is only true if running locally and cluster created by the
@@ -271,7 +271,7 @@ func (gc *GKECluster) Delete() error {
 	}
 	log.Printf("Deleting cluster %q in %q", gc.Cluster.Name, gc.Cluster.Location)
 	region, zone := gke.RegionZoneFromLoc(gc.Cluster.Location)
-	if err := gc.operations.DeleteCluster(*gc.Project, region, zone, gc.Cluster.Name); err != nil {
+	if err := gc.operations.DeleteCluster(gc.Project, region, zone, gc.Cluster.Name); err != nil {
 		return fmt.Errorf("failed deleting cluster: '%v'", err)
 	}
 	return nil
@@ -279,10 +279,10 @@ func (gc *GKECluster) Delete() error {
 
 // ensureProtected ensures not operating on protected project/cluster
 func (gc *GKECluster) ensureProtected() {
-	if gc.Project != nil {
+	if gc.Project != "" {
 		for _, pp := range protectedProjects {
-			if *gc.Project == pp {
-				log.Fatalf("project %q is protected", *gc.Project)
+			if gc.Project == pp {
+				log.Fatalf("project %q is protected", gc.Project)
 			}
 		}
 	}
@@ -328,7 +328,7 @@ func (gc *GKECluster) checkEnvironment() error {
 						return fmt.Errorf("couldn't find cluster %s in %s in %s, does it exist? %v", clusterName, project, location, err)
 					}
 					gc.Cluster = cluster
-					gc.Project = &project
+					gc.Project = project
 				}
 				return nil
 			}
@@ -341,7 +341,7 @@ func (gc *GKECluster) checkEnvironment() error {
 		return fmt.Errorf("failed running kubectl config current-context: '%s'", string(output))
 	}
 
-	if gc.Project != nil {
+	if gc.Project != "" {
 		return nil
 	}
 
@@ -352,7 +352,7 @@ func (gc *GKECluster) checkEnvironment() error {
 	}
 	if string(output) != "" {
 		project := strings.Trim(strings.TrimSpace(string(output)), "\n\r")
-		gc.Project = &project
+		gc.Project = project
 	}
 	return nil
 }

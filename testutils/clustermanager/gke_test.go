@@ -124,7 +124,7 @@ func TestSetup(t *testing.T) {
 					},
 					BackupRegions: []string{"us-west1", "us-east1"},
 				},
-				Project:      &fakeProj,
+				Project:      fakeProj,
 				NeedsCleanup: true,
 			},
 		}, {
@@ -150,7 +150,7 @@ func TestSetup(t *testing.T) {
 					},
 					BackupRegions: []string{"us-west1", "us-east1"},
 				},
-				Project:      &fakeProj,
+				Project:      fakeProj,
 				NeedsCleanup: true,
 			},
 		}, {
@@ -387,55 +387,55 @@ func TestGKECheckEnvironment(t *testing.T) {
 		clusterExist       bool
 		requestClusterName string
 		requestProject     string
-		expProj            *string
+		expProj            string
 		expCluster         *string
 		expErr             error
 	}{
 		{
 			// Base condition, kubectl shouldn't return empty string if there is no error
-			"", nil, "", nil, false, "", "", nil, nil, nil,
+			"", nil, "", nil, false, "", "", "", nil, nil,
 		}, {
 			// kubeconfig not set and gcloud not set
-			"", fmt.Errorf("kubectl not set"), "", nil, false, "", "", nil, nil, nil,
+			"", fmt.Errorf("kubectl not set"), "", nil, false, "", "", "", nil, nil,
 		}, {
 			// kubeconfig failed
-			"failed", fmt.Errorf("kubectl other err"), "", nil, false, "", "", nil, nil, fmt.Errorf("failed running kubectl config current-context: 'failed'"),
+			"failed", fmt.Errorf("kubectl other err"), "", nil, false, "", "", "", nil, fmt.Errorf("failed running kubectl config current-context: 'failed'"),
 		}, {
 			// kubeconfig returned something other than "gke_PROJECT_REGION_CLUSTER"
-			"gke_b_c", nil, "", nil, false, "", "", nil, nil, nil,
+			"gke_b_c", nil, "", nil, false, "", "", "", nil, nil,
 		}, {
 			// kubeconfig returned something other than "gke_PROJECT_REGION_CLUSTER"
-			"gke_b_c_d_e", nil, "", nil, false, "", "", nil, nil, nil,
+			"gke_b_c_d_e", nil, "", nil, false, "", "", "", nil, nil,
 		}, {
 			// kubeconfig correctly set and cluster exist
-			"gke_b_c_d", nil, "", nil, true, "d", "b", &fakeProj, &fakeCluster, nil,
+			"gke_b_c_d", nil, "", nil, true, "d", "b", fakeProj, &fakeCluster, nil,
 		}, {
 			// kubeconfig correctly set and cluster exist, project wasn't requested
-			"gke_b_c_d", nil, "", nil, true, "d", "", &fakeProj, &fakeCluster, nil,
+			"gke_b_c_d", nil, "", nil, true, "d", "", fakeProj, &fakeCluster, nil,
 		}, {
 			// kubeconfig correctly set and cluster exist, project doesn't match
-			"gke_b_c_d", nil, "", nil, true, "d", "doesntexist", nil, nil, nil,
+			"gke_b_c_d", nil, "", nil, true, "d", "doesntexist", "", nil, nil,
 		}, {
 			// kubeconfig correctly set and cluster exist, cluster wasn't requested
-			"gke_b_c_d", nil, "", nil, true, "", "b", &fakeProj, &fakeCluster, nil,
+			"gke_b_c_d", nil, "", nil, true, "", "b", fakeProj, &fakeCluster, nil,
 		}, {
 			// kubeconfig correctly set and cluster exist, cluster doesn't match
-			"gke_b_c_d", nil, "", nil, true, "doesntexist", "b", nil, nil, nil,
+			"gke_b_c_d", nil, "", nil, true, "doesntexist", "b", "", nil, nil,
 		}, {
 			// kubeconfig correctly set and cluster exist, none of project/cluster requested
-			"gke_b_c_d", nil, "", nil, true, "", "", &fakeProj, &fakeCluster, nil,
+			"gke_b_c_d", nil, "", nil, true, "", "", fakeProj, &fakeCluster, nil,
 		}, {
 			// kubeconfig correctly set, but cluster doesn't exist
-			"gke_b_c_d", nil, "", nil, false, "d", "", nil, nil, fmt.Errorf("couldn't find cluster d in b in c, does it exist? cluster not found"),
+			"gke_b_c_d", nil, "", nil, false, "d", "", "", nil, fmt.Errorf("couldn't find cluster d in b in c, does it exist? cluster not found"),
 		}, {
 			// kubeconfig not set and gcloud failed
-			"", fmt.Errorf("kubectl not set"), "", fmt.Errorf("gcloud failed"), false, "", "", nil, nil, fmt.Errorf("failed getting gcloud project: 'gcloud failed'"),
+			"", fmt.Errorf("kubectl not set"), "", fmt.Errorf("gcloud failed"), false, "", "", "", nil, fmt.Errorf("failed getting gcloud project: 'gcloud failed'"),
 		}, {
 			// kubeconfig not set and gcloud not set
-			"", fmt.Errorf("kubectl not set"), "", nil, false, "", "", nil, nil, nil,
+			"", fmt.Errorf("kubectl not set"), "", nil, false, "", "", "", nil, nil,
 		}, {
 			// kubeconfig not set and gcloud set
-			"", fmt.Errorf("kubectl not set"), "b", nil, false, "", "", &fakeProj, nil, nil,
+			"", fmt.Errorf("kubectl not set"), "b", nil, false, "", "", fakeProj, nil, nil,
 		},
 	}
 
@@ -484,7 +484,7 @@ func TestGKECheckEnvironment(t *testing.T) {
 			data.kubectlOut, data.kubectlErr, data.gcloudOut, data.gcloudErr, data.requestClusterName, data.requestProject)
 
 		if !reflect.DeepEqual(err, data.expErr) || !reflect.DeepEqual(fgc.Project, data.expProj) || !reflect.DeepEqual(gotCluster, data.expCluster) {
-			t.Errorf("%s\ngot: project - '%v', cluster - '%v', err - '%v'\nwant: project - '%v', cluster - '%v', err - '%v'",
+			t.Errorf("%s\ngot: project - %q, cluster - '%v', err - '%v'\nwant: project - '%v', cluster - '%v', err - '%v'",
 				errMsg, fgc.Project, fgc.Cluster, err, data.expProj, data.expCluster, data.expErr)
 		}
 
@@ -506,7 +506,7 @@ func TestAcquire(t *testing.T) {
 	fakeBuildID := "1234"
 	datas := []struct {
 		isProw       bool
-		project      *string
+		project      string
 		existCluster *container.Cluster
 		addons       []string
 		nextOpStatus []string
@@ -518,10 +518,10 @@ func TestAcquire(t *testing.T) {
 	}{
 		{
 			// cluster not exist, running in Prow and boskos not available
-			true, &fakeProj, nil, []string{}, []string{}, []string{}, false, nil, fmt.Errorf("failed acquiring boskos project: 'no GKE project available'"), false,
+			true, fakeProj, nil, []string{}, []string{}, []string{}, false, nil, fmt.Errorf("failed acquiring boskos project: 'no GKE project available'"), false,
 		}, {
 			// cluster not exist, running in Prow and boskos available
-			true, &fakeProj, nil, []string{}, []string{}, []string{fakeBoskosProj}, false, &container.Cluster{
+			true, fakeProj, nil, []string{}, []string{}, []string{fakeBoskosProj}, false, &container.Cluster{
 				Name:         predefinedClusterName,
 				Location:     "us-central1",
 				Status:       "RUNNING",
@@ -540,10 +540,10 @@ func TestAcquire(t *testing.T) {
 			}, nil, false,
 		}, {
 			// cluster not exist, project not set, running in Prow and boskos not available
-			true, nil, nil, []string{}, []string{}, []string{}, false, nil, fmt.Errorf("failed acquiring boskos project: 'no GKE project available'"), false,
+			true, "", nil, []string{}, []string{}, []string{}, false, nil, fmt.Errorf("failed acquiring boskos project: 'no GKE project available'"), false,
 		}, {
 			// cluster not exist, project not set, running in Prow and boskos available
-			true, nil, nil, []string{}, []string{}, []string{fakeBoskosProj}, false, &container.Cluster{
+			true, "", nil, []string{}, []string{}, []string{fakeBoskosProj}, false, &container.Cluster{
 				Name:         predefinedClusterName,
 				Location:     "us-central1",
 				Status:       "RUNNING",
@@ -562,13 +562,13 @@ func TestAcquire(t *testing.T) {
 			}, nil, false,
 		}, {
 			// project not set, not in Prow and boskos not available
-			false, nil, nil, []string{}, []string{}, []string{}, false, nil, fmt.Errorf("GCP project must be set"), false,
+			false, "", nil, []string{}, []string{}, []string{}, false, nil, fmt.Errorf("GCP project must be set"), false,
 		}, {
 			// project not set, not in Prow and boskos available
-			false, nil, nil, []string{}, []string{}, []string{fakeBoskosProj}, false, nil, fmt.Errorf("GCP project must be set"), false,
+			false, "", nil, []string{}, []string{}, []string{fakeBoskosProj}, false, nil, fmt.Errorf("GCP project must be set"), false,
 		}, {
 			// cluster exists, project set, running in Prow
-			true, &fakeProj, &container.Cluster{
+			true, fakeProj, &container.Cluster{
 				Name:     "customcluster",
 				Location: "us-central1",
 			}, []string{}, []string{}, []string{fakeBoskosProj}, false, &container.Cluster{
@@ -590,7 +590,7 @@ func TestAcquire(t *testing.T) {
 			}, nil, false,
 		}, {
 			// cluster exists, project set and not running in Prow
-			false, &fakeProj, &container.Cluster{
+			false, fakeProj, &container.Cluster{
 				Name:     "customcluster",
 				Location: "us-central1",
 			}, []string{}, []string{}, []string{fakeBoskosProj}, false, &container.Cluster{
@@ -612,7 +612,7 @@ func TestAcquire(t *testing.T) {
 			}, nil, false,
 		}, {
 			// cluster exist, not running in Prow and skip creation
-			false, &fakeProj, &container.Cluster{
+			false, fakeProj, &container.Cluster{
 				Name:     "customcluster",
 				Location: "us-central1",
 			}, []string{}, []string{}, []string{fakeBoskosProj}, false, &container.Cluster{
@@ -634,7 +634,7 @@ func TestAcquire(t *testing.T) {
 			}, nil, false,
 		}, {
 			// cluster exist, running in Prow and skip creation
-			true, &fakeProj, &container.Cluster{
+			true, fakeProj, &container.Cluster{
 				Name:     "customcluster",
 				Location: "us-central1",
 			}, []string{}, []string{}, []string{fakeBoskosProj}, false, &container.Cluster{
@@ -656,13 +656,13 @@ func TestAcquire(t *testing.T) {
 			}, nil, false,
 		}, {
 			// cluster not exist, not running in Prow and skip creation
-			false, &fakeProj, nil, []string{}, []string{}, []string{fakeBoskosProj}, true, nil, fmt.Errorf("cannot acquire cluster if SkipCreation is set"), false,
+			false, fakeProj, nil, []string{}, []string{}, []string{fakeBoskosProj}, true, nil, fmt.Errorf("cannot acquire cluster if SkipCreation is set"), false,
 		}, {
 			// cluster not exist, running in Prow and skip creation
-			true, &fakeProj, nil, []string{}, []string{}, []string{fakeBoskosProj}, true, nil, fmt.Errorf("cannot acquire cluster if SkipCreation is set"), false,
+			true, fakeProj, nil, []string{}, []string{}, []string{fakeBoskosProj}, true, nil, fmt.Errorf("cannot acquire cluster if SkipCreation is set"), false,
 		}, {
 			// skipped cluster creation as SkipCreation is requested
-			true, &fakeProj, nil, []string{}, []string{}, []string{fakeBoskosProj}, false, &container.Cluster{
+			true, fakeProj, nil, []string{}, []string{}, []string{fakeBoskosProj}, false, &container.Cluster{
 				Name:         predefinedClusterName,
 				Location:     "us-central1",
 				Status:       "RUNNING",
@@ -681,7 +681,7 @@ func TestAcquire(t *testing.T) {
 			}, nil, false,
 		}, {
 			// cluster creation succeeded with addon
-			true, &fakeProj, nil, []string{"istio"}, []string{}, []string{fakeBoskosProj}, false, &container.Cluster{
+			true, fakeProj, nil, []string{"istio"}, []string{}, []string{fakeBoskosProj}, false, &container.Cluster{
 				Name:     predefinedClusterName,
 				Location: "us-central1",
 				Status:   "RUNNING",
@@ -702,7 +702,7 @@ func TestAcquire(t *testing.T) {
 			}, nil, false,
 		}, {
 			// cluster creation succeeded retry
-			true, &fakeProj, nil, []string{}, []string{"PENDING"}, []string{fakeBoskosProj}, false, &container.Cluster{
+			true, fakeProj, nil, []string{}, []string{"PENDING"}, []string{fakeBoskosProj}, false, &container.Cluster{
 				Name:         predefinedClusterName,
 				Location:     "us-west1",
 				Status:       "RUNNING",
@@ -721,13 +721,13 @@ func TestAcquire(t *testing.T) {
 			}, nil, false,
 		}, {
 			// cluster creation failed all retry
-			true, &fakeProj, nil, []string{}, []string{"PENDING", "PENDING", "PENDING"}, []string{fakeBoskosProj}, false, nil, fmt.Errorf("timed out waiting"), false,
+			true, fakeProj, nil, []string{}, []string{"PENDING", "PENDING", "PENDING"}, []string{fakeBoskosProj}, false, nil, fmt.Errorf("timed out waiting"), false,
 		}, {
 			// cluster creation went bad state
-			true, &fakeProj, nil, []string{}, []string{"BAD", "BAD", "BAD"}, []string{fakeBoskosProj}, false, nil, fmt.Errorf("unexpected operation status: %q", "BAD"), false,
+			true, fakeProj, nil, []string{}, []string{"BAD", "BAD", "BAD"}, []string{fakeBoskosProj}, false, nil, fmt.Errorf("unexpected operation status: %q", "BAD"), false,
 		}, {
 			// bad addon, should get a panic
-			true, &fakeProj, nil, []string{"bad_addon"}, []string{}, []string{fakeBoskosProj}, false, nil, nil, true,
+			true, fakeProj, nil, []string{"bad_addon"}, []string{}, []string{fakeBoskosProj}, false, nil, nil, true,
 		},
 	}
 
@@ -758,15 +758,15 @@ func TestAcquire(t *testing.T) {
 			case "gcloud":
 				out = []byte("")
 				err = nil
-				if data.project != nil {
-					out = []byte(*data.project)
+				if data.project != "" {
+					out = []byte(data.project)
 					err = nil
 				}
 			case "kubectl":
 				out = []byte("")
 				err = fmt.Errorf("kubectl not set")
 				if data.existCluster != nil {
-					context := fmt.Sprintf("gke_%s_%s_%s", *data.project, data.existCluster.Location, data.existCluster.Name)
+					context := fmt.Sprintf("gke_%s_%s_%s", data.project, data.existCluster.Location, data.existCluster.Name)
 					out = []byte(context)
 					err = nil
 				}
@@ -809,8 +809,8 @@ func TestAcquire(t *testing.T) {
 			opCount++
 			fgc.Request.ClusterName = data.existCluster.Name
 			rb, _ := gke.NewCreateClusterRequest(&fgc.Request.Request)
-			fgc.operations.CreateClusterAsync(*data.project, data.existCluster.Location, "", rb)
-			fgc.Cluster, _ = fgc.operations.GetCluster(*data.project, data.existCluster.Location, "", data.existCluster.Name)
+			fgc.operations.CreateClusterAsync(data.project, data.existCluster.Location, "", rb)
+			fgc.Cluster, _ = fgc.operations.GetCluster(data.project, data.existCluster.Location, "", data.existCluster.Name)
 		}
 
 		fgc.Project = data.project
@@ -974,7 +974,7 @@ func TestDelete(t *testing.T) {
 			return oldFunc(key)
 		}
 		fgc := setupFakeGKECluster()
-		fgc.Project = &fakeProj
+		fgc.Project = fakeProj
 		fgc.NeedsCleanup = data.NeedsCleanup
 		fgc.Request = &GKERequest{
 			Request: gke.Request{
