@@ -105,10 +105,14 @@ func (current *Destination) AppendPath(paths ...string) error {
 }
 
 func (current *Destination) Validate(ctx context.Context) *apis.FieldError {
-	if current != nil {
-		errs := validateDestination(*current).ViaField(apis.CurrentField)
-		if current.Path != nil {
-			errs = errs.Also(validateDestinationPath(*current.Path).ViaField("path"))
+	return ValidateDestination(current)
+}
+
+func ValidateDestination(dest *Destination) *apis.FieldError {
+	if dest != nil {
+		errs := validateDestinationRefAndURI(*dest).ViaField(apis.CurrentField)
+		if dest.Path != nil {
+			errs = errs.Also(validateDestinationPath(*dest.Path).ViaField("path"))
 		}
 		return errs
 	} else {
@@ -116,7 +120,7 @@ func (current *Destination) Validate(ctx context.Context) *apis.FieldError {
 	}
 }
 
-func validateDestination(dest Destination) *apis.FieldError {
+func validateDestinationRefAndURI(dest Destination) *apis.FieldError {
 	if dest.URI != nil {
 		if dest.Ref != nil {
 			return apis.ErrMultipleOneOf("uri", "[apiVersion, kind, name]")
