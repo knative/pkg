@@ -32,7 +32,9 @@ const (
 	perfLabel = "auto:perf"
 	// number of days for an issue to be considered old
 	daysConsideredOld = 30
-	// to avoid frequent open/close actions, only automatically close an issue if there is no activity
+
+	// number of days for an issue to be considered active
+	// To avoid frequent open/close actions, only automatically close an issue if there is no activity
 	// (update, comment, etc.) on it for a specified time
 	daysConsideredActive = 3
 
