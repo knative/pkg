@@ -238,7 +238,7 @@ func (gih *IssueHandler) findIssue(title string) (*github.Issue, error) {
 			}
 
 			// If there are multiple issues, return the one that was created most recently.
-			if existingIssue == nil || issue.CreatedAt.Before(*existingIssue.CreatedAt) {
+			if existingIssue == nil || issue.CreatedAt.After(*existingIssue.CreatedAt) {
 				existingIssue = issue
 			}
 		}
