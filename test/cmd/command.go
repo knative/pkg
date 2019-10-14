@@ -58,9 +58,9 @@ func RunBatchSequentially(cmdLines ...string) (string, error) {
 	return combineOutputs(outputs), nil
 }
 
-// RunBatchParallelly will run the commands in parallel.
+// RunBatchParallel will run the commands in parallel.
 // It will always finish running all commands, and return all standard output and errors together.
-func RunBatchParallelly(cmdLines ...string) (string, error) {
+func RunBatchParallel(cmdLines ...string) (string, error) {
 	errCh := make(chan error)
 	outputCh := make(chan string)
 	wg := sync.WaitGroup{}
