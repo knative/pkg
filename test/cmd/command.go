@@ -44,7 +44,7 @@ func Run(cmdLine string) (string, error) {
 	return string(cmdOut), nil
 }
 
-// RunBatchSequentially will run the command sequentially.
+// RunBatchSequentially will run the commands sequentially.
 // If there is an error when running a command, it will return directly with all standard output so far and the error.
 func RunBatchSequentially(cmdLines ...string) (string, error) {
 	var outputs []string
@@ -58,7 +58,7 @@ func RunBatchSequentially(cmdLines ...string) (string, error) {
 	return combineOutputs(outputs), nil
 }
 
-// RunBatchParallelly will run the command in parallel.
+// RunBatchParallelly will run the commands in parallel.
 // It will always finish running all commands, and return all standard output and errors together.
 func RunBatchParallelly(cmdLines ...string) (string, error) {
 	errCh := make(chan error)
@@ -99,7 +99,6 @@ func RunBatchParallelly(cmdLines ...string) (string, error) {
 func combineOutputs(outputs []string) string {
 	var sb strings.Builder
 	for _, output := range outputs {
-		sb.WriteString("===================================")
 		sb.WriteString(output)
 		sb.WriteRune('\n')
 	}
