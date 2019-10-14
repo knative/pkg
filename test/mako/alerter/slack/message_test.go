@@ -43,7 +43,7 @@ func TestMain(m *testing.M) {
 
 func TestMessaging(t *testing.T) {
 	firstMsg := "first message"
-	if err := mh.SendAlert(firstMsg); err != nil {
+	if err := mh.SendAlert("test name", firstMsg); err != nil {
 		t.Fatalf("expected to send the message, but failed: %v", err)
 	}
 	for _, channel := range mh.channels {
@@ -57,7 +57,7 @@ func TestMessaging(t *testing.T) {
 	}
 
 	secondMsg := "second message"
-	if err := mh.SendAlert(secondMsg); err != nil {
+	if err := mh.SendAlert("test name", secondMsg); err != nil {
 		t.Fatalf("expected to send the message, but failed: %v", err)
 	}
 	for _, channel := range mh.channels {
