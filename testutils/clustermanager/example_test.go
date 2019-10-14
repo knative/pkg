@@ -52,6 +52,6 @@ func Example() {
 	if err := gkeOps.Acquire(); err != nil {
 		log.Fatalf("failed acquire cluster: '%v'", err)
 	}
-	log.Printf("GKE project is: %s", *gkeOps.Project)
+	log.Printf("GKE project is: %q", gkeOps.Project)
 	log.Printf("GKE cluster is: %v", gkeOps.Cluster)
 }
