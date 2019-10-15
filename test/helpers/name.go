@@ -32,6 +32,7 @@ const (
 )
 
 func init() {
+	// Seed with the current nanoseconds, so each program execution will start with a different random sequence.
 	rand.Seed(time.Now().UTC().UnixNano())
 }
 
@@ -50,7 +51,6 @@ func ObjectNameForTest(t *testing.T) string {
 // time against the same environment without conflicting.
 // This method will use "-" as the separator between the prefix and
 // the random suffix.
-// This method will seed rand with the current time when the package is initialized.
 func AppendRandomString(prefix string) string {
 	suffix := make([]byte, randSuffixLen)
 
