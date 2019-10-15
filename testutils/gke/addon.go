@@ -26,9 +26,9 @@ import (
 const (
 	// Define all supported addons here
 	istio    = "istio"
-	hpa      = "horizontalPodAutoscaling"
-	hlb      = "httpLoadBalancing"
-	cloudRun = "cloudRun"
+	hpa      = "horizontalpodautoscaling"
+	hlb      = "httploadbalancing"
+	cloudRun = "cloudrun"
 )
 
 // GetAddonsConfig gets AddonsConfig from a slice of addon names, contains the logic of

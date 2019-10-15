@@ -29,7 +29,7 @@ func TestNewCreateClusterRequest(t *testing.T) {
 			MinNodes:    1,
 			MaxNodes:    1,
 			NodeType:    "n1-standard-4",
-			Addons:      []string{"istio"},
+			Addons:      []string{"Istio"},
 		},
 		errorExpected: false,
 	}, {
@@ -39,7 +39,7 @@ func TestNewCreateClusterRequest(t *testing.T) {
 			MinNodes:    10,
 			MaxNodes:    10,
 			NodeType:    "n1-standard-8",
-			Addons:      []string{"horizontalPodAutoscaling", "httpLoadBalancing", "cloudRun"},
+			Addons:      []string{"HorizontalPodAutoscaling", "HttpLoadBalancing", "CloudRun"},
 		},
 		errorExpected: false,
 	}, {
