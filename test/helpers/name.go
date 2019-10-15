@@ -83,7 +83,11 @@ func MakeK8sNamePrefix(s string) string {
 // GetBaseFuncName returns the baseFuncName parsed from the fullFuncName.
 // eg. test/e2e.TestMain will return TestMain.
 func GetBaseFuncName(fullFuncName string) string {
-	baseFuncName := fullFuncName[strings.LastIndex(fullFuncName, "/")+1:]
-	baseFuncName = baseFuncName[strings.LastIndex(baseFuncName, ".")+1:]
-	return baseFuncName
+	name := fullFuncName
+	// Possibly there is no parent package, so only remove it from the name if '/' exists
+	if strings.ContainsRune(name, '/') {
+		name = name[strings.LastIndex(name, "/")+1:]
+	}
+	name = name[strings.LastIndex(name, ".")+1:]
+	return name
 }
