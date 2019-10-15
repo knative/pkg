@@ -24,12 +24,22 @@ func TestNewCreateClusterRequest(t *testing.T) {
 		errorExpected bool
 	}{{
 		req: &Request{
-			Project:     "project-b",
-			ClusterName: "name-b",
+			Project:     "project-a",
+			ClusterName: "name-a",
 			MinNodes:    1,
 			MaxNodes:    1,
 			NodeType:    "n1-standard-4",
-			Addons:      []string{"istio"},
+			Addons:      []string{"Istio"},
+		},
+		errorExpected: false,
+	}, {
+		req: &Request{
+			Project:     "project-b",
+			ClusterName: "name-b",
+			MinNodes:    10,
+			MaxNodes:    10,
+			NodeType:    "n1-standard-8",
+			Addons:      []string{"HorizontalPodAutoscaling", "HttpLoadBalancing", "CloudRun"},
 		},
 		errorExpected: false,
 	}, {
