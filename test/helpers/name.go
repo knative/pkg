@@ -33,6 +33,8 @@ const (
 
 func init() {
 	// Seed with the current nanoseconds, so each program execution will start with a different random sequence.
+	// This is important, since if a new test is run before the last one is finished, the two tests will not
+	// conflict with each other because the random suffix we add for their resource names will be different.
 	rand.Seed(time.Now().UTC().UnixNano())
 }
 
