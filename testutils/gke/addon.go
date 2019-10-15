@@ -33,7 +33,7 @@ const (
 
 // GetAddonsConfig gets AddonsConfig from a slice of addon names, contains the logic of
 // converting string argument to typed AddonsConfig, for example `IstioConfig`.
-// Currently supports istio, HorizontalPodAutoscaling and HttpLoadBalancing
+// Currently supports Istio, HorizontalPodAutoscaling, HttpLoadBalancing and CloudRun.
 func GetAddonsConfig(addons []string) *container.AddonsConfig {
 	ac := &container.AddonsConfig{}
 	for _, name := range addons {
