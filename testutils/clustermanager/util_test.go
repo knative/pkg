@@ -19,7 +19,7 @@ package clustermanager
 import (
 	"testing"
 
-	"knative.dev/pkg/testutils/common"
+	"knative.dev/pkg/test/common"
 )
 
 func TestGetResourceName(t *testing.T) {

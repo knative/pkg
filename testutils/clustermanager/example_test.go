@@ -19,7 +19,7 @@ package clustermanager
 import (
 	"log"
 
-	"knative.dev/pkg/testutils/gke"
+	"knative.dev/pkg/test/gke"
 )
 
 // This is not a real test, it's for documenting purpose, showcasing the usage
