@@ -31,7 +31,7 @@ import (
 	"knative.dev/pkg/testutils/common"
 	"knative.dev/pkg/test/gke"
 	gkeFake "knative.dev/pkg/test/gke/fake"
-	boskosFake "knative.dev/pkg/testutils/clustermanager/boskos/fake"
+	boskosFake "knative.dev/pkg/testutils/prow/clustermanager/boskos/fake"
 
 	"github.com/google/go-cmp/cmp"
 )

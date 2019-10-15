@@ -24,7 +24,7 @@ import (
 
 	container "google.golang.org/api/container/v1beta1"
 	"knative.dev/pkg/test/gke"
-	"knative.dev/pkg/testutils/clustermanager/boskos"
+	"knative.dev/pkg/testutils/prow/clustermanager/boskos"
 	"knative.dev/pkg/testutils/common"
 )
 
