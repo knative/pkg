@@ -28,10 +28,10 @@ import (
 
 	container "google.golang.org/api/container/v1beta1"
 	boskoscommon "k8s.io/test-infra/boskos/common"
-	"knative.dev/pkg/testutils/common"
+	"knative.dev/pkg/testutils/clustermanager/e2e-tests/common"
 	"knative.dev/pkg/test/gke"
 	gkeFake "knative.dev/pkg/test/gke/fake"
-	boskosFake "knative.dev/pkg/testutils/prow/clustermanager/boskos/fake"
+	boskosFake "knative.dev/pkg/testutils/clustermanager/e2e-tests/boskos/fake"
 
 	"github.com/google/go-cmp/cmp"
 )
