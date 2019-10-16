@@ -17,6 +17,7 @@ limitations under the License.
 package helpers
 
 import (
+	"log"
 	"math/rand"
 	"strings"
 	"testing"
@@ -32,10 +33,12 @@ const (
 )
 
 func init() {
-	// Seed with the current nanoseconds, so each program execution will start with a different random sequence.
-	// This is important, since if a new test is run before the last one is finished, the two tests will not
-	// conflict with each other because the random suffix we add for their resource names will be different.
-	rand.Seed(time.Now().UTC().UnixNano())
+	// Properly seed the random number generator so AppendRandomString() is actually random.
+	// Otherwise, rerunning tests will generate the same names for the test resources, causing conflicts with
+	// already existing resources.
+	seed := time.Now().UTC().UnixNano()
+	log.Printf("Using '%d' to seed the random number generator", seed)
+	rand.Seed(seed)
 }
 
 // ObjectPrefixForTest returns the name prefix for this test's random names.
