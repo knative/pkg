@@ -20,11 +20,11 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
-	"time"
 	"strings"
+	"time"
 
 	container "google.golang.org/api/container/v1beta1"
-	"knative.dev/pkg/testutils/gke"
+	"knative.dev/pkg/test/gke"
 )
 
 // Timeout for fake client.
