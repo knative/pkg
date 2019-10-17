@@ -19,6 +19,7 @@ import (
 
 	"go.opencensus.io/stats/view"
 	"go.uber.org/zap"
+	corev1 "k8s.io/api/core/v1"
 )
 
 var (
@@ -32,11 +33,107 @@ type flushable interface {
 	Flush()
 }
 
+// ExporterOptions contains options for configuring the exporter.
+type ExporterOptions struct {
+	// Domain is the metrics domain. e.g. "knative.dev". Must be present.
+	//
+	// Stackdriver uses the following format to construct full metric name:
+	//    <domain>/<component>/<metric name from View>
+	// Prometheus uses the following format to construct full metric name:
+	//    <component>_<metric name from View>
+	// Domain is actually not used if metrics backend is Prometheus.
+	Domain string
+
+	// Component is the name of the component that emits the metrics. e.g.
+	// "activator", "queue_proxy". Should only contains alphabets and underscore.
+	// Must be present.
+	Component string
+
+	// PrometheusPort is the port to expose metrics if metrics backend is Prometheus.
+	// It should be between maxPrometheusPort and maxPrometheusPort. 0 value means
+	// using the default 9090 value. If is ignored if metrics backend is not
+	// Prometheus.
+	PrometheusPort int
+
+	// ConfigMap is the data from config map config-observability. Must be present.
+	// See https://github.com/knative/serving/blob/master/config/config-observability.yaml
+	// for details.
+	ConfigMap map[string]string
+}
+
+// UpdateExporterFromConfigMap returns a helper func that can be used to update the exporter
+// when a config map is updated.
+func UpdateExporterFromConfigMap(component string, logger *zap.SugaredLogger) func(configMap *corev1.ConfigMap) {
+	domain := Domain()
+	return func(configMap *corev1.ConfigMap) {
+		UpdateExporter(ExporterOptions{
+			Domain:    domain,
+			Component: component,
+			ConfigMap: configMap.Data,
+		}, logger)
+	}
+}
+
+// UpdateExporter updates the exporter based on the given ExporterOptions.
+func UpdateExporter(ops ExporterOptions, logger *zap.SugaredLogger) error {
+	metricsMux.Lock()
+	defer metricsMux.Unlock()
+
+	newConfig, err := createMetricsConfig(ops, logger)
+	if err != nil {
+		if curMetricsExporter == nil {
+			// Fail the process if there doesn't exist an exporter.
+			logger.Errorw("Failed to get a valid metrics config", zap.Error(err))
+		} else {
+			logger.Errorw("Failed to get a valid metrics config; Skip updating the metrics exporter", zap.Error(err))
+		}
+		return err
+	}
+
+	if isNewExporterRequiredHelper(newConfig, curMetricsConfig) {
+		logger.Info("Flushing the existing exporter before setting up the new exporter.")
+		flushExporterHelper(curMetricsExporter)
+		e, err := newMetricsExporterHelper(newConfig, curMetricsExporter, logger)
+		if err != nil {
+			logger.Errorf("Failed to update a new metrics exporter based on metric config %v. error: %v", newConfig, err)
+			return err
+		}
+		existingConfig := curMetricsConfig
+		setCurMetricsExporterUnlocked(e)
+		logger.Infof("Successfully updated the metrics exporter; old config: %v; new config %v", existingConfig, newConfig)
+	}
+
+	setCurMetricsConfigUnlocked(newConfig)
+	return nil
+}
+
+// isNewExporterRequired compares the non-nil newConfig against curMetricsConfig. When backend changes,
+// or stackdriver project ID changes for stackdriver backend, we need to update the metrics exporter.
+func isNewExporterRequired(newConfig *metricsConfig) bool {
+	cc := getCurMetricsConfig()
+	return isNewExporterRequiredHelper(newConfig, cc)
+}
+
+func isNewExporterRequiredHelper(newConfig *metricsConfig, cc *metricsConfig) bool {
+	if cc == nil || newConfig.backendDestination != cc.backendDestination {
+		return true
+	} else if newConfig.backendDestination == Stackdriver && newConfig.stackdriverProjectID != cc.stackdriverProjectID {
+		return true
+	}
+
+	return false
+}
+
 // newMetricsExporter gets a metrics exporter based on the config.
 func newMetricsExporter(config *metricsConfig, logger *zap.SugaredLogger) (view.Exporter, error) {
+	ce := getCurMetricsExporter()
+	return newMetricsExporterHelper(config, ce, logger)
+}
+
+func newMetricsExporterHelper(config *metricsConfig, ce view.Exporter, logger *zap.SugaredLogger) (view.Exporter, error) {
 	// If there is a Prometheus Exporter server running, stop it.
 	resetCurPromSrv()
-	ce := getCurMetricsExporter()
+
 	if ce != nil {
 		// UnregisterExporter is idempotent and it can be called multiple times for the same exporter
 		// without side effects.
@@ -67,6 +164,10 @@ func getCurMetricsExporter() view.Exporter {
 func setCurMetricsExporter(e view.Exporter) {
 	metricsMux.Lock()
 	defer metricsMux.Unlock()
+	setCurMetricsExporterUnlocked(e)
+}
+
+func setCurMetricsExporterUnlocked(e view.Exporter) {
 	view.RegisterExporter(e)
 	curMetricsExporter = e
 }
@@ -80,6 +181,10 @@ func getCurMetricsConfig() *metricsConfig {
 func setCurMetricsConfig(c *metricsConfig) {
 	metricsMux.Lock()
 	defer metricsMux.Unlock()
+	setCurMetricsConfigUnlocked(c)
+}
+
+func setCurMetricsConfigUnlocked(c *metricsConfig) {
 	if c != nil {
 		view.SetReportingPeriod(c.reportingPeriod)
 	} else {
@@ -94,6 +199,10 @@ func setCurMetricsConfig(c *metricsConfig) {
 // Return value indicates whether the exporter is flushable or not.
 func FlushExporter() bool {
 	e := getCurMetricsExporter()
+	return flushExporterHelper(e)
+}
+
+func flushExporterHelper(e view.Exporter) bool {
 	if e == nil {
 		return false
 	}
