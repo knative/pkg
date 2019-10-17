@@ -117,11 +117,9 @@ func isNewExporterRequired(newConfig *metricsConfig) bool {
 func isNewExporterRequiredHelper(newConfig *metricsConfig, cc *metricsConfig) bool {
 	if cc == nil || newConfig.backendDestination != cc.backendDestination {
 		return true
-	} else if newConfig.backendDestination == Stackdriver && newConfig.stackdriverProjectID != cc.stackdriverProjectID {
-		return true
 	}
 
-	return false
+	return newConfig.backendDestination == Stackdriver && newConfig.stackdriverProjectID != cc.stackdriverProjectID
 }
 
 // newMetricsExporter gets a metrics exporter based on the config.
