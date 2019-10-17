@@ -23,7 +23,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 
 	"knative.dev/pkg/apis"
-	"knative.dev/pkg/ptr"
 )
 
 func TestValidateDestination(t *testing.T) {
@@ -50,12 +49,12 @@ func TestValidateDestination(t *testing.T) {
 		},
 		"valid ref": {
 			dest: &Destination{
-				ObjectReference: &validRef,
+				Ref: &validRef,
 			},
 		},
 		"invalid ref, missing name": {
 			dest: &Destination{
-				ObjectReference: &corev1.ObjectReference{
+				Ref: &corev1.ObjectReference{
 					Kind:       "SomeKind",
 					APIVersion: "v1mega1",
 				},
@@ -64,7 +63,7 @@ func TestValidateDestination(t *testing.T) {
 		},
 		"invalid ref, missing api version": {
 			dest: &Destination{
-				ObjectReference: &corev1.ObjectReference{
+				Ref: &corev1.ObjectReference{
 					Kind: "SomeKind",
 					Name: "a-name",
 				},
@@ -73,18 +72,12 @@ func TestValidateDestination(t *testing.T) {
 		},
 		"invalid ref, missing kind": {
 			dest: &Destination{
-				ObjectReference: &corev1.ObjectReference{
+				Ref: &corev1.ObjectReference{
 					APIVersion: "v1mega1",
 					Name:       "a-name",
 				},
 			},
 			want: "missing field(s): kind",
-		},
-		"valid ref with path": {
-			dest: &Destination{
-				ObjectReference: &validRef,
-				Path:            ptr.String("/a-path"),
-			},
 		},
 		"valid uri": {
 			dest: &Destination{
@@ -99,7 +92,7 @@ func TestValidateDestination(t *testing.T) {
 			},
 			want: "invalid value: http:: uri",
 		},
-		"invalid, uri has no scheme": {
+		"invalid, uri is not absolute url": {
 			dest: &Destination{
 				URI: &apis.URL{
 					Host: "host",
@@ -107,66 +100,25 @@ func TestValidateDestination(t *testing.T) {
 			},
 			want: "invalid value: //host: uri",
 		},
-		"valid uri with path": {
+		"invalid, both uri and ref, uri is absolute URL": {
 			dest: &Destination{
-				URI:  &validURL,
-				Path: ptr.String("/a-path"),
+				URI: &validURL,
+				Ref: &validRef,
 			},
+			want: "URI with absolute URL is not allowed when Ref exists: [apiVersion, kind, name], uri",
 		},
-		"invalid, both uri and ref": {
+		"invalid, both uri and ref are nil": {
 			dest: &Destination{
-				URI:             &validURL,
-				ObjectReference: &validRef,
 			},
-			want: "expected exactly one, got both: [apiVersion, kind, name], uri",
+			want: "expected at least one, got neither: [apiVersion, kind, name], uri",
 		},
-		"invalid, just path": {
+		"valid, both uri and ref, uri is not a absolute URL": {
 			dest: &Destination{
-				Path: ptr.String("/a-path"),
+				URI:  &apis.URL{
+					Path: "/handler",
+				},
+				Ref: &validRef,
 			},
-			want: "expected exactly one, got neither: [apiVersion, kind, name], uri",
-		},
-		"invalid, path without leading slash": {
-			dest: &Destination{
-				Path: ptr.String("a-path"),
-			},
-			want: `expected exactly one, got neither: [apiVersion, kind, name], uri
-invalid value: a-path: path`,
-		},
-		"invalid, ref and path with query": {
-			dest: &Destination{
-				Path: ptr.String("/path?query"),
-			},
-			want: `expected exactly one, got neither: [apiVersion, kind, name], uri
-invalid value: /path?query: path`,
-		},
-		"invalid, ref and path as uri": {
-			dest: &Destination{
-				ObjectReference: &validRef,
-				Path:            ptr.String("http://host/path"),
-			},
-			want: "invalid value: http://host/path: path",
-		},
-		"invalid, uri and path with query": {
-			dest: &Destination{
-				URI:  &validURL,
-				Path: ptr.String("/path?query"),
-			},
-			want: "invalid value: /path?query: path",
-		},
-		"invalid, uri and path as uri": {
-			dest: &Destination{
-				URI:  &validURL,
-				Path: ptr.String("http://host/path"),
-			},
-			want: "invalid value: http://host/path: path",
-		},
-		"invalid, path with %": {
-			dest: &Destination{
-				URI:  &validURL,
-				Path: ptr.String("/%"),
-			},
-			want: "invalid value: /%: path",
 		},
 	}
 
@@ -185,74 +137,3 @@ invalid value: /path?query: path`,
 	}
 }
 
-func TestDestinationWithPath(t *testing.T) {
-	tests := []struct {
-		name     string
-		base     string
-		paths    []string
-		wantpath *string
-	}{{
-		name:     "no path",
-		base:     "http://example.com/",
-		paths:    []string{},
-		wantpath: nil,
-	}, {
-		name:     "path in base",
-		base:     "http://example.com/foo",
-		paths:    []string{},
-		wantpath: nil,
-	}, {
-		name:     "extra path",
-		base:     "http://example.com/foo",
-		paths:    []string{"bar"},
-		wantpath: ptr.String("/bar"),
-	}, {
-		name:     "many paths",
-		base:     "http://example.com/",
-		paths:    []string{"foo", "bar", "baz"},
-		wantpath: ptr.String("/foo/bar/baz"),
-	}, {
-		name:     "badly formatted paths",
-		base:     "http://example.com/",
-		paths:    []string{"////foo/////", "//bar///baz//", "///////"},
-		wantpath: ptr.String("/foo/bar/baz"),
-	}, {
-		name:     "empty string path",
-		base:     "http://example.com/",
-		paths:    []string{""},
-		wantpath: nil,
-	}, {
-		name:     "path with arguments",
-		base:     "https://tableflip.dev/",
-		paths:    []string{"?flip=scott"},
-		wantpath: nil,
-	}, {
-		name:     "path with lots of garbage",
-		base:     "https://example.com/",
-		paths:    []string{"/foo", "bar", "myblog#HowToWriteTests", "%2e", "/?q=knative"},
-		wantpath: ptr.String("/foo/bar/myblog"),
-	}}
-
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			uri, err := apis.ParseURL(test.base)
-			if err != nil {
-				t.Errorf("Could not parse URI: %v", err)
-				return
-			}
-			dest, err := NewDestinationURI(uri, test.paths...)
-			if err != nil {
-				t.Errorf("Could not create destination: %v", err)
-				return
-			}
-			if dest.Path == nil {
-				if test.wantpath != nil {
-					t.Errorf("Destination path is nil, but wanted %q", *test.wantpath)
-					return
-				}
-			} else if *dest.Path != *test.wantpath {
-				t.Errorf("Got %q, wanted %q", *dest.Path, *test.wantpath)
-			}
-		})
-	}
-}

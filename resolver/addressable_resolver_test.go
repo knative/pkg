@@ -32,7 +32,6 @@ import (
 	duckv1beta1 "knative.dev/pkg/apis/duck/v1beta1"
 	apisv1alpha1 "knative.dev/pkg/apis/v1alpha1"
 	fakedynamicclient "knative.dev/pkg/injection/clients/dynamicclient/fake"
-	"knative.dev/pkg/ptr"
 	"knative.dev/pkg/resolver"
 )
 
@@ -64,97 +63,99 @@ func TestGetURI_ObjectReference(t *testing.T) {
 		wantURI string
 		wantErr error
 	}{"nil everything": {
-		wantErr: fmt.Errorf("destination missing ObjectReference and URI, expected exactly one"),
-	}, "URI with path": {
+		wantErr: fmt.Errorf("destination missing Ref and URI, expected at least one"),
+	}, "Happy URI with path": {
 		dest: apisv1alpha1.Destination{
 			URI: &apis.URL{
 				Scheme: "http",
 				Host:   "example.com",
 				Path:   "/foo",
 			},
-			Path: ptr.String("/bar"),
-		},
-		wantURI: "http://example.com/foo/bar",
-	}, "URI with path without leading slash": {
-		dest: apisv1alpha1.Destination{
-			URI: &apis.URL{
-				Scheme: "http",
-				Host:   "example.com",
-				Path:   "/foo",
-			},
-			Path: ptr.String("bar"),
-		},
-		wantURI: "http://example.com/foo/bar",
-	}, "URI with garbage path": {
-		dest: apisv1alpha1.Destination{
-			URI: &apis.URL{
-				Scheme: "http",
-				Host:   "example.com",
-				Path:   "/foo",
-			},
-			Path: ptr.String("////bar///"),
-		},
-		wantURI: "http://example.com/foo/bar",
-	}, "URI with nil path": {
-		dest: apisv1alpha1.Destination{
-			URI: &apis.URL{
-				Scheme: "http",
-				Host:   "example.com",
-				Path:   "/foo",
-			},
-			Path: nil,
 		},
 		wantURI: "http://example.com/foo",
-	}, "happy objectref": {
+	}, "URI is not absolute URL": {
+		dest: apisv1alpha1.Destination{
+			URI: &apis.URL{
+				Host:   "example.com",
+			},
+		},
+		wantErr: fmt.Errorf("invalid URI: %v", "//example.com"),
+	}, "URI with no host": {
+			dest: apisv1alpha1.Destination{
+				URI: &apis.URL{
+					Scheme: "http",
+				},
+			},
+			wantErr: fmt.Errorf("invalid URI: %v", "http:"),
+		},
+		"happy ref": {
 		objects: []runtime.Object{
 			getAddressable(),
 		},
-		dest:    apisv1alpha1.Destination{ObjectReference: getAddressableRef()},
+		dest:    apisv1alpha1.Destination{Ref: getAddressableRef()},
 		wantURI: addressableDNS,
-	}, "object ref with path": {
+	}, "ref with relative uri": {
 		objects: []runtime.Object{
 			getAddressable(),
 		},
 		dest: apisv1alpha1.Destination{
-			ObjectReference: getAddressableRef(),
-			Path:            ptr.String("/foo"),
+			Ref: getAddressableRef(),
+			URI: &apis.URL{
+			Path:   "/foo",
+		},
 		},
 		wantURI: addressableDNS + "/foo",
-	}, "object ref with path without leading slash": {
+	}, "ref with relative URI without leading slash": {
 		objects: []runtime.Object{
 			getAddressable(),
 		},
 		dest: apisv1alpha1.Destination{
-			ObjectReference: getAddressableRef(),
-			Path:            ptr.String("foo"),
+			Ref: getAddressableRef(),
+			URI: &apis.URL{
+				Path:   "foo",
+			},
 		},
 		wantURI: addressableDNS + "/foo",
-	}, "nil url": {
+	}, "ref with URI which is absolute URL": {
+			objects: []runtime.Object{
+				getAddressable(),
+			},
+			dest: apisv1alpha1.Destination{
+				Ref: getAddressableRef(),
+				URI: &apis.URL{
+					Scheme: "http",
+					Host:   "example.com",
+					Path:   "/foo",
+				},
+			},
+			wantErr:  fmt.Errorf("absolute URI is not allowed when Ref exists"),
+		},
+		"nil url": {
 		objects: []runtime.Object{
 			getAddressableNilURL(),
 		},
-		dest:    apisv1alpha1.Destination{ObjectReference: getUnaddressableRef()},
+		dest:    apisv1alpha1.Destination{Ref: getUnaddressableRef()},
 		wantErr: fmt.Errorf(`url missing in address of %+v`, getUnaddressableRef()),
 	}, "nil address": {
 		objects: []runtime.Object{
 			getAddressableNilAddress(),
 		},
-		dest:    apisv1alpha1.Destination{ObjectReference: getUnaddressableRef()},
+		dest:    apisv1alpha1.Destination{Ref: getUnaddressableRef()},
 		wantErr: fmt.Errorf(`address not set for %+v`, getUnaddressableRef()),
 	}, "missing host": {
 		objects: []runtime.Object{
 			getAddressableNoHostURL(),
 		},
-		dest:    apisv1alpha1.Destination{ObjectReference: getUnaddressableRef()},
+		dest:    apisv1alpha1.Destination{Ref: getUnaddressableRef()},
 		wantErr: fmt.Errorf(`hostname missing in address of %+v`, getUnaddressableRef()),
 	}, "missing status": {
 		objects: []runtime.Object{
 			getAddressableNoStatus(),
 		},
-		dest:    apisv1alpha1.Destination{ObjectReference: getUnaddressableRef()},
+		dest:    apisv1alpha1.Destination{Ref: getUnaddressableRef()},
 		wantErr: fmt.Errorf(`address not set for %+v`, getUnaddressableRef()),
 	}, "notFound": {
-		dest:    apisv1alpha1.Destination{ObjectReference: getUnaddressableRef()},
+		dest:    apisv1alpha1.Destination{Ref: getUnaddressableRef()},
 		wantErr: fmt.Errorf(`failed to get ref %+v: %s "%s" not found`, getUnaddressableRef(), unaddressableResource, unaddressableName),
 	}}
 

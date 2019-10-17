@@ -18,132 +18,60 @@ package v1alpha1
 
 import (
 	"context"
-	"net/url"
-	"path"
-	"strings"
-
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/equality"
-
 	"knative.dev/pkg/apis"
 )
 
 // Destination represents a target of an invocation over HTTP.
 type Destination struct {
-	// ObjectReference points to an Addressable.
-	*corev1.ObjectReference `json:",inline"`
+	// Ref points to an Addressable.
+	// +optional
+	Ref *corev1.ObjectReference `json:"ref,omitempty"`
 
-	// URI is for direct URI Designations.
+	// URI can be a absolute URI which points to the URI designation or it can be a relative URI will be merged to the URI retrieved from Ref.
+	// +optional
 	URI *apis.URL `json:"uri,omitempty"`
-
-	// Path is used with the resulting URL from Addressable ObjectReference or URI. Must start
-	// with `/`. An empty path should be represented as the nil value, not `` or `/`.  Will be
-	// appended to the path of the resulting URL from the Addressable, or URI.
-	Path *string `json:"path,omitempty"`
 }
 
 // NewDestination constructs a Destination from an object reference as a convenience.
-func NewDestination(obj *corev1.ObjectReference, paths ...string) (*Destination, error) {
-	dest := &Destination{
-		ObjectReference: obj,
-	}
-	err := dest.AppendPath(paths...)
-	if err != nil {
-		return nil, err
-	}
-	return dest, nil
+func NewDestination(obj *corev1.ObjectReference) (*Destination, error) {
+	return &Destination{
+		Ref: obj,
+	}, nil
 }
 
 // NewDestinationURI constructs a Destination from a URI.
-func NewDestinationURI(uri *apis.URL, paths ...string) (*Destination, error) {
-	dest := &Destination{
+func NewDestinationURI(uri *apis.URL) (*Destination, error) {
+	return &Destination{
 		URI: uri,
-	}
-	err := dest.AppendPath(paths...)
-	if err != nil {
-		return nil, err
-	}
-	return dest, nil
+	}, nil
 }
 
-// AppendPath iteratively appends paths to the Destination.
-// The path will always begin with "/" unless it is empty.
-// An empty path ("" or "/") will always resolve to nil.
-func (current *Destination) AppendPath(paths ...string) error {
-	// Start with empty string or existing path
-	var fullpath string
-	if current.Path != nil {
-		fullpath = *current.Path
-	}
-
-	// Intelligently join all the paths provided
-	fullpath = path.Join("/", fullpath, path.Join(paths...))
-
-	// Parse the URL to trim garbage
-	urlpath, err := apis.ParseURL(fullpath)
-	if err != nil {
-		return err
-	}
-
-	// apis.ParseURL returns nil if our path was empty, then our path
-	// should reflect that it is not set.
-	if urlpath == nil {
-		current.Path = nil
-		return nil
-	}
-
-	// A path of "/" adds no information, just toss it
-	// Note that urlpath.Path == "" is always false here (joined with "/" above).
-	if urlpath.Path == "/" {
-		current.Path = nil
-		return nil
-	}
-
-	// Only use the plain path from the URL
-	current.Path = &urlpath.Path
-	return nil
-}
 
 func (current *Destination) Validate(ctx context.Context) *apis.FieldError {
 	if current != nil {
-		errs := validateDestination(*current).ViaField(apis.CurrentField)
-		if current.Path != nil {
-			errs = errs.Also(validateDestinationPath(*current.Path).ViaField("path"))
-		}
-		return errs
+		return validateDestination(*current).ViaField(apis.CurrentField)
 	} else {
 		return nil
 	}
 }
 
 func validateDestination(dest Destination) *apis.FieldError {
-	if dest.URI != nil {
-		if dest.ObjectReference != nil {
-			return apis.ErrMultipleOneOf("uri", "[apiVersion, kind, name]")
-		}
-		if dest.URI.Host == "" || dest.URI.Scheme == "" {
+	if dest.Ref == nil && dest.URI == nil {
+		return apis.ErrGeneric("expected at least one, got neither", "uri", "[apiVersion, kind, name]")
+	}
+	if dest.Ref != nil && dest.URI != nil && dest.URI.URL().IsAbs() {
+		return apis.ErrGeneric("URI with absolute URL is not allowed when Ref exists", "uri", "[apiVersion, kind, name]")
+	}
+	if dest.Ref != nil && dest.URI == nil{
+		return validateDestinationRef(*dest.Ref)
+	}
+	if dest.Ref == nil && dest.URI != nil && (!dest.URI.URL().IsAbs() || dest.URI.Host == "") {
 			return apis.ErrInvalidValue(dest.URI.String(), "uri")
 		}
-	} else if dest.ObjectReference == nil {
-		return apis.ErrMissingOneOf("uri", "[apiVersion, kind, name]")
-	} else {
-		return validateDestinationRef(*dest.ObjectReference)
-	}
 	return nil
 }
 
-func validateDestinationPath(path string) *apis.FieldError {
-	if strings.HasPrefix(path, "/") {
-		if pu, err := url.Parse(path); err != nil {
-			return apis.ErrInvalidValue(path, apis.CurrentField)
-		} else if !equality.Semantic.DeepEqual(pu, &url.URL{Path: pu.Path}) {
-			return apis.ErrInvalidValue(path, apis.CurrentField)
-		}
-	} else {
-		return apis.ErrInvalidValue(path, apis.CurrentField)
-	}
-	return nil
-}
 
 func validateDestinationRef(ref corev1.ObjectReference) *apis.FieldError {
 	// Check the object.
