@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	container "google.golang.org/api/container/v1beta1"
@@ -45,6 +46,8 @@ type GKESDKClient struct {
 	opNumber int
 	// A lookup table for determining ops statuses
 	OpStatus map[string]string
+
+	mutex sync.Mutex
 }
 
 // NewGKESDKClient returns a new fake gkeSDKClient that can be used in unit tests.
@@ -90,6 +93,7 @@ func (fgsc *GKESDKClient) CreateClusterAsync(
 	project, region, zone string,
 	rb *container.CreateClusterRequest,
 ) (*container.Operation, error) {
+	fgsc.mutex.Lock()
 	location := gke.GetClusterLocation(region, zone)
 	parent := fmt.Sprintf("projects/%s/locations/%s", project, location)
 	name := rb.Cluster.Name
@@ -119,7 +123,9 @@ func (fgsc *GKESDKClient) CreateClusterAsync(
 	}
 
 	fgsc.clusters[parent] = append(fgsc.clusters[parent], cluster)
-	return fgsc.newOp(), nil
+	op := fgsc.newOp()
+	fgsc.mutex.Unlock()
+	return op, nil
 }
 
 // DeleteCluster deletes the cluster, and wait until it finishes or timeout or there is an error.
@@ -137,6 +143,7 @@ func (fgsc *GKESDKClient) DeleteCluster(
 func (fgsc *GKESDKClient) DeleteClusterAsync(
 	project, region, zone, clusterName string,
 ) (*container.Operation, error) {
+	fgsc.mutex.Lock()
 	location := gke.GetClusterLocation(region, zone)
 	parent := fmt.Sprintf("projects/%s/locations/%s", project, location)
 	found := -1
@@ -152,7 +159,9 @@ func (fgsc *GKESDKClient) DeleteClusterAsync(
 	}
 	// Delete this cluster
 	fgsc.clusters[parent] = append(fgsc.clusters[parent][:found], fgsc.clusters[parent][found+1:]...)
-	return fgsc.newOp(), nil
+	op := fgsc.newOp()
+	fgsc.mutex.Lock()
+	return op, nil
 }
 
 // GetCluster gets the cluster with the given settings.
@@ -184,7 +193,10 @@ func (fgsc *GKESDKClient) ListClustersInProject(project string) ([]*container.Cl
 
 // GetOperation gets the operation with the given settings.
 func (fgsc *GKESDKClient) GetOperation(project, region, zone, opName string) (*container.Operation, error) {
-	if op, ok := fgsc.ops[opName]; ok {
+	fgsc.mutex.Lock()
+	op, ok := fgsc.ops[opName]
+	fgsc.mutex.Unlock()
+	if ok {
 		return op, nil
 	}
 	return nil, fmt.Errorf("op not found")
