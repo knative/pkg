@@ -50,13 +50,13 @@ func NewDestinationURI(uri *apis.URL) (*Destination, error) {
 
 func (current *Destination) Validate(ctx context.Context) *apis.FieldError {
 	if current != nil {
-		return validateDestination(*current).ViaField(apis.CurrentField)
+		return ValidateDestination(*current).ViaField(apis.CurrentField)
 	} else {
 		return nil
 	}
 }
 
-func validateDestination(dest Destination) *apis.FieldError {
+func ValidateDestination(dest Destination) *apis.FieldError {
 	if dest.Ref == nil && dest.URI == nil {
 		return apis.ErrGeneric("expected at least one, got neither", "uri", "[apiVersion, kind, name]")
 	}
