@@ -90,10 +90,10 @@ func UpdateExporter(ops ExporterOptions, logger *zap.SugaredLogger) error {
 		return err
 	}
 
-	if isNewExporterRequiredHelper(newConfig, curMetricsConfig) {
+	if isNewExporterRequired(newConfig) {
 		logger.Info("Flushing the existing exporter before setting up the new exporter.")
 		flushExporterHelper(curMetricsExporter)
-		e, err := newMetricsExporterHelper(newConfig, curMetricsExporter, logger)
+		e, err := newMetricsExporter(newConfig, logger)
 		if err != nil {
 			logger.Errorf("Failed to update a new metrics exporter based on metric config %v. error: %v", newConfig, err)
 			return err
@@ -109,12 +109,9 @@ func UpdateExporter(ops ExporterOptions, logger *zap.SugaredLogger) error {
 
 // isNewExporterRequired compares the non-nil newConfig against curMetricsConfig. When backend changes,
 // or stackdriver project ID changes for stackdriver backend, we need to update the metrics exporter.
+// This function is not implicitly thread-safe.
 func isNewExporterRequired(newConfig *metricsConfig) bool {
-	cc := getCurMetricsConfig()
-	return isNewExporterRequiredHelper(newConfig, cc)
-}
-
-func isNewExporterRequiredHelper(newConfig *metricsConfig, cc *metricsConfig) bool {
+	cc := curMetricsConfig
 	if cc == nil || newConfig.backendDestination != cc.backendDestination {
 		return true
 	}
@@ -123,12 +120,9 @@ func isNewExporterRequiredHelper(newConfig *metricsConfig, cc *metricsConfig) bo
 }
 
 // newMetricsExporter gets a metrics exporter based on the config.
+// This function is not implicitly thread-safe.
 func newMetricsExporter(config *metricsConfig, logger *zap.SugaredLogger) (view.Exporter, error) {
-	ce := getCurMetricsExporter()
-	return newMetricsExporterHelper(config, ce, logger)
-}
-
-func newMetricsExporterHelper(config *metricsConfig, ce view.Exporter, logger *zap.SugaredLogger) (view.Exporter, error) {
+	ce := curMetricsExporter
 	// If there is a Prometheus Exporter server running, stop it.
 	resetCurPromSrv()
 
