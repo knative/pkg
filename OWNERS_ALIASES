@@ -45,6 +45,7 @@ aliases:
   metrics-approvers:
   - mdemirhan
   - yanweiguo
+  - anniefu
 
   network-approvers:
   - markusthoemmes
