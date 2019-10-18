@@ -95,7 +95,7 @@ func UpdateExporter(ops ExporterOptions, logger *zap.SugaredLogger) error {
 
 	if isNewExporterRequired(newConfig) {
 		logger.Info("Flushing the existing exporter before setting up the new exporter.")
-		flushExporterHelper(curMetricsExporter)
+		flushExporterUnlocked(curMetricsExporter)
 		e, err := newMetricsExporter(newConfig, logger)
 		if err != nil {
 			logger.Errorf("Failed to update a new metrics exporter based on metric config %v. error: %v", newConfig, err)
@@ -194,10 +194,10 @@ func setCurMetricsConfigUnlocked(c *metricsConfig) {
 // Return value indicates whether the exporter is flushable or not.
 func FlushExporter() bool {
 	e := getCurMetricsExporter()
-	return flushExporterHelper(e)
+	return flushExporterUnlocked(e)
 }
 
-func flushExporterHelper(e view.Exporter) bool {
+func flushExporterUnlocked(e view.Exporter) bool {
 	if e == nil {
 		return false
 	}
