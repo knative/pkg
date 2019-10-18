@@ -43,18 +43,18 @@ func (current *Destination) Validate(ctx context.Context) *apis.FieldError {
 
 func ValidateDestination(dest Destination) *apis.FieldError {
 	if dest.Ref == nil && dest.URI == nil {
-		return apis.ErrGeneric("expected at least one, got neither", "uri", "[apiVersion, kind, name]")
+		return apis.ErrGeneric("expected at least one, got neither", "ref", "uri")
 	}
 	if dest.Ref != nil && dest.URI != nil && dest.URI.URL().IsAbs() {
-		return apis.ErrGeneric("URI with absolute URL is not allowed when Ref exists", "uri", "[apiVersion, kind, name]")
-	}
-	if dest.Ref != nil && dest.URI == nil{
-		return validateDestinationRef(*dest.Ref)
+		return apis.ErrGeneric("Absolute URI is not allowed when Ref is present", "ref", "uri")
 	}
 	// IsAbs check whether the URL has a non-empty scheme. Besides the non non-empty scheme, we also require dest.URI has a non-empty host
 	if dest.Ref == nil && dest.URI != nil && (!dest.URI.URL().IsAbs() || dest.URI.Host == "") {
-			return apis.ErrInvalidValue("URI with Relative URL is not allowed when Ref is absent", "uri")
+			return apis.ErrInvalidValue("Relative URI is not allowed when Ref is absent",  "uri")
 		}
+	if dest.Ref != nil && dest.URI == nil{
+		return validateDestinationRef(*dest.Ref)
+	}
 	return nil
 }
 
