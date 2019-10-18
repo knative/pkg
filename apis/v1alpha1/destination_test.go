@@ -51,6 +51,7 @@ func TestValidateDestination(t *testing.T) {
 			dest: &Destination{
 				Ref: &validRef,
 			},
+			want:"",
 		},
 		"invalid ref, missing name": {
 			dest: &Destination{
@@ -59,7 +60,7 @@ func TestValidateDestination(t *testing.T) {
 					APIVersion: "v1mega1",
 				},
 			},
-			want: "missing field(s): name",
+			want: "missing field(s): ref.name",
 		},
 		"invalid ref, missing api version": {
 			dest: &Destination{
@@ -68,7 +69,7 @@ func TestValidateDestination(t *testing.T) {
 					Name: "a-name",
 				},
 			},
-			want: "missing field(s): apiVersion",
+			want: "missing field(s): ref.apiVersion",
 		},
 		"invalid ref, missing kind": {
 			dest: &Destination{
@@ -77,7 +78,7 @@ func TestValidateDestination(t *testing.T) {
 					Name:       "a-name",
 				},
 			},
-			want: "missing field(s): kind",
+			want: "missing field(s): ref.kind",
 		},
 		"valid uri": {
 			dest: &Destination{

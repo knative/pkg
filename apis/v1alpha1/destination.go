@@ -53,7 +53,7 @@ func ValidateDestination(dest Destination) *apis.FieldError {
 			return apis.ErrInvalidValue("Relative URI is not allowed when Ref is absent",  "uri")
 		}
 	if dest.Ref != nil && dest.URI == nil{
-		return validateDestinationRef(*dest.Ref)
+		return validateDestinationRef(*dest.Ref).ViaField("ref")
 	}
 	return nil
 }
