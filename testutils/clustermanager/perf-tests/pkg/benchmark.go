@@ -25,7 +25,6 @@ import (
 	"strings"
 
 	yaml "gopkg.in/yaml.v2"
-	"knative.dev/test-infra/shared/common"
 )
 
 const (
@@ -109,7 +108,7 @@ func clusterConfigForBenchmark(benchmarkName, benchmarkRoot string) ClusterConfi
 	}
 
 	configFile := filepath.Join(benchmarkRoot, benchmarkName, clusterConfigFile)
-	if common.FileExists(configFile) {
+	if fileExists(configFile) {
 		contents, err := ioutil.ReadFile(configFile)
 		if err == nil {
 			if err := yaml.Unmarshal(contents, &gkeCluster); err != nil {
