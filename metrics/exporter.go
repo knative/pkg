@@ -25,7 +25,7 @@ import (
 var (
 	curMetricsExporter view.Exporter
 	curMetricsConfig   *metricsConfig
-	metricsMux         sync.Mutex
+	metricsMux         sync.RWMutex
 )
 
 type flushable interface {
@@ -75,6 +75,9 @@ func UpdateExporterFromConfigMap(component string, logger *zap.SugaredLogger) fu
 }
 
 // UpdateExporter updates the exporter based on the given ExporterOptions.
+// This is a thread-safe function. The entire series of operations is locked
+// to prevent a race condition between reading the current configuration
+// and updating the current exporter.
 func UpdateExporter(ops ExporterOptions, logger *zap.SugaredLogger) error {
 	metricsMux.Lock()
 	defer metricsMux.Unlock()
@@ -148,8 +151,8 @@ func newMetricsExporter(config *metricsConfig, logger *zap.SugaredLogger) (view.
 }
 
 func getCurMetricsExporter() view.Exporter {
-	metricsMux.Lock()
-	defer metricsMux.Unlock()
+	metricsMux.RLock()
+	defer metricsMux.RUnlock()
 	return curMetricsExporter
 }
 
@@ -165,8 +168,8 @@ func setCurMetricsExporterUnlocked(e view.Exporter) {
 }
 
 func getCurMetricsConfig() *metricsConfig {
-	metricsMux.Lock()
-	defer metricsMux.Unlock()
+	metricsMux.RLock()
+	defer metricsMux.RUnlock()
 	return curMetricsConfig
 }
 
