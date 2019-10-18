@@ -79,8 +79,9 @@ func (r *URIResolver) URIFromDestination(dest apisv1alpha1.Destination, parent i
 	}
 
 	if dest.URI != nil {
+		// IsAbs check whether the URL has a non-empty scheme. Besides the non non-empty scheme, we also require dest.URI has a non-empty host
 		if !dest.URI.URL().IsAbs() || dest.URI.Host == "" {
-			return "", fmt.Errorf("invalid URI: %v", dest.URI.String())
+			return "", fmt.Errorf("URI is not absolute(both scheme and host should be non-empty): %v", dest.URI.String())
 		}
 		return dest.URI.String(), nil
 	}

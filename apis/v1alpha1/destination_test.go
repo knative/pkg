@@ -90,7 +90,7 @@ func TestValidateDestination(t *testing.T) {
 					Scheme: "http",
 				},
 			},
-			want: "invalid value: http:: uri",
+			want: "invalid value: URI with Relative URL is not allowed when Ref is absent: uri",
 		},
 		"invalid, uri is not absolute url": {
 			dest: &Destination{
@@ -98,7 +98,7 @@ func TestValidateDestination(t *testing.T) {
 					Host: "host",
 				},
 			},
-			want: "invalid value: //host: uri",
+			want: "invalid value: URI with Relative URL is not allowed when Ref is absent: uri",
 		},
 		"invalid, both uri and ref, uri is absolute URL": {
 			dest: &Destination{

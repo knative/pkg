@@ -36,7 +36,9 @@ import (
 )
 
 var (
-	addressableDNS = "http://addressable.sink.svc.cluster.local"
+	addressableDNS                         = "http://addressable.sink.svc.cluster.local"
+	addressableDNSWithPathAndTrailingSlash = "http://addressable.sink.svc.cluster.local/bar/"
+	addressableDNSWithPathAndNoTrailingSlash = "http://addressable.sink.svc.cluster.local/bar"
 
 	addressableName       = "testsink"
 	addressableKind       = "Sink"
@@ -79,14 +81,14 @@ func TestGetURI_ObjectReference(t *testing.T) {
 				Host:   "example.com",
 			},
 		},
-		wantErr: fmt.Errorf("invalid URI: %v", "//example.com"),
+		wantErr: fmt.Errorf("URI is not absolute(both scheme and host should be non-empty): %v", "//example.com"),
 	}, "URI with no host": {
 			dest: apisv1alpha1.Destination{
 				URI: &apis.URL{
 					Scheme: "http",
 				},
 			},
-			wantErr: fmt.Errorf("invalid URI: %v", "http:"),
+			wantErr: fmt.Errorf("URI is not absolute(both scheme and host should be non-empty): %v", "http:"),
 		},
 		"happy ref": {
 		objects: []runtime.Object{
@@ -102,19 +104,63 @@ func TestGetURI_ObjectReference(t *testing.T) {
 			Ref: getAddressableRef(),
 			URI: &apis.URL{
 			Path:   "/foo",
-		},
+			},
 		},
 		wantURI: addressableDNS + "/foo",
 	}, "ref with relative URI without leading slash": {
-		objects: []runtime.Object{
-			getAddressable(),
-		},
-		dest: apisv1alpha1.Destination{
-			Ref: getAddressableRef(),
-			URI: &apis.URL{
-				Path:   "foo",
+			objects: []runtime.Object{
+				getAddressable(),
 			},
+			dest: apisv1alpha1.Destination{
+				Ref: getAddressableRef(),
+				URI: &apis.URL{
+					Path:   "foo",
+				},
+			},
+			wantURI: addressableDNS + "/foo",
+		}, "ref ends with path and trailing slash and relative URI without leading slash ": {
+			objects: []runtime.Object{
+				getAddressableWithPathAndTrailingSlash(),
+			},
+			dest: apisv1alpha1.Destination{
+				Ref: getAddressableRef(),
+				URI: &apis.URL{
+					Path:   "foo",
+				},
+			},
+			wantURI: addressableDNSWithPathAndTrailingSlash + "foo",
+		}, "ref ends with path and trailing slash and relative URI with leading slash ": {
+			objects: []runtime.Object{
+				getAddressableWithPathAndTrailingSlash(),
+			},
+			dest: apisv1alpha1.Destination{
+				Ref: getAddressableRef(),
+				URI: &apis.URL{
+					Path:   "/foo",
+				},
+			},
+			wantURI: addressableDNS + "/foo",
+		}, "ref ends with path and no trailing slash and relative URI without leading slash ": {
+		objects: []runtime.Object{
+		getAddressableWithPathAndNoTrailingSlash(),
+	},
+		dest: apisv1alpha1.Destination{
+		Ref: getAddressableRef(),
+		URI: &apis.URL{
+		Path:   "foo",
 		},
+	},
+		wantURI: addressableDNS + "/foo",
+	}, "ref ends with path and no trailing slash and relative URI with leading slash ": {
+		objects: []runtime.Object{
+		getAddressableWithPathAndNoTrailingSlash(),
+	},
+		dest: apisv1alpha1.Destination{
+		Ref: getAddressableRef(),
+		URI: &apis.URL{
+		Path:   "/foo",
+		},
+	},
 		wantURI: addressableDNS + "/foo",
 	}, "ref with URI which is absolute URL": {
 			objects: []runtime.Object{
@@ -200,6 +246,42 @@ func getAddressable() *unstructured.Unstructured {
 			"status": map[string]interface{}{
 				"address": map[string]interface{}{
 					"url": addressableDNS,
+				},
+			},
+		},
+	}
+}
+
+func getAddressableWithPathAndTrailingSlash() *unstructured.Unstructured {
+	return &unstructured.Unstructured{
+		Object: map[string]interface{}{
+			"apiVersion": addressableAPIVersion,
+			"kind":       addressableKind,
+			"metadata": map[string]interface{}{
+				"namespace": testNS,
+				"name":      addressableName,
+			},
+			"status": map[string]interface{}{
+				"address": map[string]interface{}{
+					"url": addressableDNSWithPathAndTrailingSlash,
+				},
+			},
+		},
+	}
+}
+
+func getAddressableWithPathAndNoTrailingSlash() *unstructured.Unstructured {
+	return &unstructured.Unstructured{
+		Object: map[string]interface{}{
+			"apiVersion": addressableAPIVersion,
+			"kind":       addressableKind,
+			"metadata": map[string]interface{}{
+				"namespace": testNS,
+				"name":      addressableName,
+			},
+			"status": map[string]interface{}{
+				"address": map[string]interface{}{
+					"url": addressableDNSWithPathAndNoTrailingSlash,
 				},
 			},
 		},

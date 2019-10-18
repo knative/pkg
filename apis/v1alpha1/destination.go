@@ -28,25 +28,10 @@ type Destination struct {
 	// +optional
 	Ref *corev1.ObjectReference `json:"ref,omitempty"`
 
-	// URI can be a absolute URI which points to the URI designation or it can be a relative URI will be merged to the URI retrieved from Ref.
+	// URI can be an absolute URL(non-empty scheme and non-empty host) pointing to the target or a relative URI. Relative URIs will be resolved using the base URI retrieved from Ref.
 	// +optional
 	URI *apis.URL `json:"uri,omitempty"`
 }
-
-// NewDestination constructs a Destination from an object reference as a convenience.
-func NewDestination(obj *corev1.ObjectReference) (*Destination, error) {
-	return &Destination{
-		Ref: obj,
-	}, nil
-}
-
-// NewDestinationURI constructs a Destination from a URI.
-func NewDestinationURI(uri *apis.URL) (*Destination, error) {
-	return &Destination{
-		URI: uri,
-	}, nil
-}
-
 
 func (current *Destination) Validate(ctx context.Context) *apis.FieldError {
 	if current != nil {
@@ -66,8 +51,9 @@ func ValidateDestination(dest Destination) *apis.FieldError {
 	if dest.Ref != nil && dest.URI == nil{
 		return validateDestinationRef(*dest.Ref)
 	}
+	// IsAbs check whether the URL has a non-empty scheme. Besides the non non-empty scheme, we also require dest.URI has a non-empty host
 	if dest.Ref == nil && dest.URI != nil && (!dest.URI.URL().IsAbs() || dest.URI.Host == "") {
-			return apis.ErrInvalidValue(dest.URI.String(), "uri")
+			return apis.ErrInvalidValue("URI with Relative URL is not allowed when Ref is absent", "uri")
 		}
 	return nil
 }
