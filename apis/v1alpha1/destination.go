@@ -48,7 +48,7 @@ func ValidateDestination(dest Destination) *apis.FieldError {
 	if dest.Ref != nil && dest.URI != nil && dest.URI.URL().IsAbs() {
 		return apis.ErrGeneric("Absolute URI is not allowed when Ref is present", "ref", "uri")
 	}
-	// IsAbs check whether the URL has a non-empty scheme. Besides the non non-empty scheme, we also require dest.URI has a non-empty host
+	// IsAbs() check whether the URL has a non-empty scheme. Besides the non-empty scheme, we also require dest.URI has a non-empty host
 	if dest.Ref == nil && dest.URI != nil && (!dest.URI.URL().IsAbs() || dest.URI.Host == "") {
 			return apis.ErrInvalidValue("Relative URI is not allowed when Ref is absent",  "uri")
 		}
