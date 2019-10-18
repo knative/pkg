@@ -444,7 +444,7 @@ func TestGetMetricsConfig(t *testing.T) {
 	for _, test := range errorTests {
 		t.Run(test.name, func(t *testing.T) {
 			defer ClearAll()
-			_, err := getMetricsConfig(test.ops, TestLogger(t))
+			_, err := createMetricsConfig(test.ops, TestLogger(t))
 			if err.Error() != test.expectedErr {
 				t.Errorf("Wanted err: %v, got: %v", test.expectedErr, err)
 			}
@@ -454,7 +454,7 @@ func TestGetMetricsConfig(t *testing.T) {
 	for _, test := range successTests {
 		t.Run(test.name, func(t *testing.T) {
 			defer ClearAll()
-			mc, err := getMetricsConfig(test.ops, TestLogger(t))
+			mc, err := createMetricsConfig(test.ops, TestLogger(t))
 			if err != nil {
 				t.Errorf("Wanted valid config %v, got error %v", test.expectedConfig, err)
 			}
@@ -470,7 +470,7 @@ func TestGetMetricsConfig_fromEnv(t *testing.T) {
 	for _, test := range envTests {
 		t.Run(test.name, func(t *testing.T) {
 			defer ClearAll()
-			mc, err := getMetricsConfig(test.ops, TestLogger(t))
+			mc, err := createMetricsConfig(test.ops, TestLogger(t))
 			if err != nil {
 				t.Errorf("Wanted valid config %v, got error %v", test.expectedConfig, err)
 			}
@@ -487,7 +487,7 @@ func TestIsNewExporterRequired(t *testing.T) {
 	for _, test := range successTests {
 		t.Run(test.name, func(t *testing.T) {
 			defer ClearAll()
-			mc, err := getMetricsConfig(test.ops, TestLogger(t))
+			mc, err := createMetricsConfig(test.ops, TestLogger(t))
 			if err != nil {
 				t.Errorf("Wanted valid config %v, got error %v", test.expectedConfig, err)
 			}
