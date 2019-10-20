@@ -91,11 +91,22 @@ func GetLoggingConfig(ctx context.Context) (*logging.Config, error) {
 }
 
 func Main(component string, ctors ...injection.ControllerConstructor) {
-	// Set up signals so we handle the first shutdown signal gracefully.
-	MainWithContext(signals.NewContext(), component, ctors...)
+	MainWithMetricName(component, "", ctors...)
 }
 
-func MainWithContext(ctx context.Context, component string, ctors ...injection.ControllerConstructor) {
+func MainWithMetricName(component, metricsName string, ctors ...injection.ControllerConstructor) {
+	if metricsName == "" {
+		metricsName = component
+	}
+	// Set up signals so we handle the first shutdown signal gracefully.
+	MainWithContext(signals.NewContext(), component, metricsName, ctors...)
+}
+
+func MainWithConfig(ctx context.Context, component string, cfg *rest.Config, ctors ...injection.ControllerConstructor) {
+	main(ctx, component, component, cfg, ctors...)
+}
+
+func MainWithContext(ctx context.Context, component, metricsName string, ctors ...injection.ControllerConstructor) {
 	var (
 		masterURL  = flag.String("master", "", "The address of the Kubernetes API server. Overrides any value in kubeconfig. Only required if out-of-cluster.")
 		kubeconfig = flag.String("kubeconfig", "", "Path to a kubeconfig. Only required if out-of-cluster.")
@@ -106,10 +117,10 @@ func MainWithContext(ctx context.Context, component string, ctors ...injection.C
 	if err != nil {
 		log.Fatal("Error building kubeconfig", err)
 	}
-	MainWithConfig(ctx, component, cfg, ctors...)
+	main(ctx, component, metricsName, cfg, ctors...)
 }
 
-func MainWithConfig(ctx context.Context, component string, cfg *rest.Config, ctors ...injection.ControllerConstructor) {
+func main(ctx context.Context, component, metricsName string, cfg *rest.Config, ctors ...injection.ControllerConstructor) {
 	log.Printf("Registering %d clients", len(injection.Default.GetClients()))
 	log.Printf("Registering %d informer factories", len(injection.Default.GetInformerFactories()))
 	log.Printf("Registering %d informers", len(injection.Default.GetInformers()))
@@ -154,7 +165,7 @@ func MainWithConfig(ctx context.Context, component string, cfg *rest.Config, cto
 
 	// Watch the observability config map
 	cmw.Watch(metrics.ConfigMapName(),
-		metrics.UpdateExporterFromConfigMap(component, logger),
+		metrics.UpdateExporterFromConfigMap(metricsName, logger),
 		profilingHandler.UpdateFromConfigMap)
 
 	if err := cmw.Start(ctx.Done()); err != nil {
