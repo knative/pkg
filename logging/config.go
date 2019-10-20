@@ -204,7 +204,6 @@ func UpdateLevelFromConfigMap(logger *zap.SugaredLogger, atomicLevel zap.AtomicL
 		level, defined := config.LoggingLevel[levelKey]
 		if !defined {
 			// reset to global level
-
 			loggingCfg, err := zapConfigFromJSON(config.LoggingConfig)
 			switch {
 			case err == emptyLoggerConfigError:
