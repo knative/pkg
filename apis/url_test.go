@@ -24,48 +24,42 @@ import (
 
 func TestParseURL(t *testing.T) {
 	testCases := map[string]struct {
-		t       string
-		want    *URL
-		nonEmpty bool
-		wantErr bool
+		t         string
+		want      *URL
+		wantEmpty bool
+		wantErr   bool
 	}{
-		"empty": {
-			want: nil,
-		},
 		"empty string": {
-			t:    "",
-			want: nil,
+			want:      nil,
+			wantEmpty: true,
 		},
 		"invalid format": {
-			t:       "💩://error",
-			want:    nil,
-			wantErr: true,
+			t:         "💩://error",
+			want:      nil,
+			wantEmpty: true,
+			wantErr:   true,
 		},
 		"relative": {
 			t: "/path/to/something",
 			want: &URL{
-					Path: "/path/to/something",
-				},
-			nonEmpty: true,
+				Path: "/path/to/something",
+			},
 		},
 		"url": {
 			t: "http://path/to/something",
 			want: &URL{
 				Scheme: "http",
-				Host: "path",
-				Path: "/to/something",
+				Host:   "path",
+				Path:   "/to/something",
 			},
-			nonEmpty: true,
 		},
 		"simplehttp": {
-			t: "http://foo",
+			t:    "http://foo",
 			want: HTTP("foo"),
-			nonEmpty: true,
 		},
 		"simplehttps": {
-			t: "https://foo",
+			t:    "https://foo",
 			want: HTTPS("foo"),
-			nonEmpty: true,
 		},
 	}
 	for n, tc := range testCases {
@@ -81,13 +75,13 @@ func TestParseURL(t *testing.T) {
 				t.Fatalf("ParseURL() = %v, wanted error", got)
 			}
 
-			if tc.nonEmpty {
-				if got.IsEmpty() {
-					t.Errorf("Expected non-empty for %q", tc.t)
-				}
-			} else {
+			if tc.wantEmpty {
 				if !got.IsEmpty() {
 					t.Errorf("Expected empty for %q, got %v", tc.t, got)
+				}
+			} else {
+				if got.IsEmpty() {
+					t.Errorf("Expected non-empty for %q", tc.t)
 				}
 			}
 
@@ -159,8 +153,8 @@ func TestJsonUnmarshalURL(t *testing.T) {
 			b: []byte(`"http://path/to/something"`),
 			want: &URL{
 				Scheme: "http",
-				Host: "path",
-				Path: "/to/something",
+				Host:   "path",
+				Path:   "/to/something",
 			},
 		},
 	}
@@ -207,14 +201,14 @@ func TestJsonMarshalURLAsMember(t *testing.T) {
 			want: []byte(`{"url":""}`),
 		},
 		"relative": {
-			obj: &objectType{URL: URL{Path: "/path/to/something"}},
+			obj:  &objectType{URL: URL{Path: "/path/to/something"}},
 			want: []byte(`{"url":"/path/to/something"}`),
 		},
 		"url": {
-			obj: &objectType {URL: URL{
+			obj: &objectType{URL: URL{
 				Scheme: "http",
-				Host: "path",
-				Path: "/to/something",
+				Host:   "path",
+				Path:   "/to/something",
 			}},
 			want: []byte(`{"url":"http://path/to/something"}`),
 		},
@@ -266,14 +260,14 @@ func TestJsonMarshalURLAsPointerMember(t *testing.T) {
 			want: []byte(`{}`),
 		},
 		"relative": {
-			obj: &objectType{URL: &URL{Path: "/path/to/something"}},
+			obj:  &objectType{URL: &URL{Path: "/path/to/something"}},
 			want: []byte(`{"url":"/path/to/something"}`),
 		},
 		"url": {
 			obj: &objectType{URL: &URL{
 				Scheme: "http",
-				Host: "path",
-				Path: "/to/something",
+				Host:   "path",
+				Path:   "/to/something",
 			}},
 			want: []byte(`{"url":"http://path/to/something"}`),
 		},
@@ -329,15 +323,15 @@ func TestJsonUnmarshalURLAsMember(t *testing.T) {
 			wantErr: `parse %: invalid URL escape "%"`,
 		},
 		"relative": {
-			b: []byte(`{"url":"/path/to/something"}`),
+			b:    []byte(`{"url":"/path/to/something"}`),
 			want: &objectType{URL: URL{Path: "/path/to/something"}},
 		},
 		"url": {
 			b: []byte(`{"url":"http://path/to/something"}`),
-			want: &objectType {URL: URL{
+			want: &objectType{URL: URL{
 				Scheme: "http",
-				Host: "path",
-				Path: "/to/something",
+				Host:   "path",
+				Path:   "/to/something",
 			}},
 		},
 		"empty url": {
@@ -392,15 +386,15 @@ func TestJsonUnmarshalURLAsMemberPointer(t *testing.T) {
 			wantErr: `parse %: invalid URL escape "%"`,
 		},
 		"relative": {
-			b: []byte(`{"url":"/path/to/something"}`),
-			want: &objectType {URL: &URL{Path: "/path/to/something"}},
+			b:    []byte(`{"url":"/path/to/something"}`),
+			want: &objectType{URL: &URL{Path: "/path/to/something"}},
 		},
 		"url": {
 			b: []byte(`{"url":"http://path/to/something"}`),
-			want: &objectType {URL: &URL{
+			want: &objectType{URL: &URL{
 				Scheme: "http",
-				Host: "path",
-				Path: "/to/something",
+				Host:   "path",
+				Path:   "/to/something",
 			}},
 		},
 		"empty url": {
