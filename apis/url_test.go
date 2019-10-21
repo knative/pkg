@@ -27,6 +27,7 @@ func TestParseURL(t *testing.T) {
 	testCases := map[string]struct {
 		t       string
 		want    *URL
+		nonEmpty bool
 		wantErr bool
 	}{
 		"empty": {
@@ -43,19 +44,29 @@ func TestParseURL(t *testing.T) {
 		},
 		"relative": {
 			t: "/path/to/something",
-			want: func() *URL {
-				uu, _ := url.Parse("/path/to/something")
-				u := URL(*uu)
-				return &u
-			}(),
+			want: &URL{
+					Path: "/path/to/something",
+				},
+			nonEmpty: true,
 		},
 		"url": {
 			t: "http://path/to/something",
-			want: func() *URL {
-				uu, _ := url.Parse("http://path/to/something")
-				u := URL(*uu)
-				return &u
-			}(),
+			want: &URL{
+				Scheme: "http",
+				Host: "path",
+				Path: "/to/something",
+			},
+			nonEmpty: true,
+		},
+		"simplehttp": {
+			t: "http://foo",
+			want: HTTP("foo"),
+			nonEmpty: true,
+		},
+		"simplehttps": {
+			t: "https://foo",
+			want: HTTPS("foo"),
+			nonEmpty: true,
 		},
 	}
 	for n, tc := range testCases {
@@ -69,6 +80,16 @@ func TestParseURL(t *testing.T) {
 				return
 			} else if tc.wantErr {
 				t.Fatalf("ParseURL() = %v, wanted error", got)
+			}
+
+			if tc.nonEmpty {
+				if got.IsEmpty() {
+					t.Errorf("Expected non-empty for %q", tc.t)
+				}
+			} else {
+				if !got.IsEmpty() {
+					t.Errorf("Expected empty for %q, got %v", tc.t, got)
+				}
 			}
 
 			if diff := cmp.Diff(tc.want, got); diff != "" {
