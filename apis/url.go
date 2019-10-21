@@ -103,6 +103,9 @@ func (u *URL) String() string {
 
 // URL returns the URL as a url.URL.
 func (u *URL) URL() *url.URL {
+	if u == nil {
+		return &url.URL{}
+	}
 	url := url.URL(*u)
 	return &url
 }

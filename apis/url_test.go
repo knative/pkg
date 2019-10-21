@@ -75,14 +75,8 @@ func TestParseURL(t *testing.T) {
 				t.Fatalf("ParseURL() = %v, wanted error", got)
 			}
 
-			if tc.wantEmpty {
-				if !got.IsEmpty() {
-					t.Errorf("Expected empty for %q, got %v", tc.t, got)
-				}
-			} else {
-				if got.IsEmpty() {
-					t.Errorf("Expected non-empty for %q", tc.t)
-				}
+			if tc.wantEmpty != got.IsEmpty() {
+				t.Errorf("IsEmpty(%v) = %t, wanted %t", got, got.IsEmpty(), tc.wantEmpty)
 			}
 
 			if diff := cmp.Diff(tc.want, got); diff != "" {
@@ -428,33 +422,40 @@ func TestJsonUnmarshalURLAsMemberPointer(t *testing.T) {
 
 func TestURLString(t *testing.T) {
 	testCases := map[string]struct {
-		t    string
+		t    *URL
 		want string
 	}{
+		"nil": {},
 		"empty": {
+			t: &URL{},
 			want: "",
 		},
 		"relative": {
-			t:    "/path/to/something",
+			t:    &URL{Path: "/path/to/something"},
 			want: "/path/to/something",
 		},
-		"url": {
-			t:    "http://path/to/something",
+		"nopath": {
+			t: HTTPS("foo"),
+			want:"https://foo",
+		},
+		"absolute": {
+			t:    &URL{
+				Scheme: "http",
+				Host: "path",
+				Path: "/to/something",
+			},
 			want: "http://path/to/something",
 		},
 	}
 	for n, tc := range testCases {
 		t.Run(n, func(t *testing.T) {
+			got := tc.t
 
-			tt, err := ParseURL(tc.t)
-			if err != nil {
-				t.Fatalf("ParseURL() = %v", err)
-			}
-			got := tt.String()
-
-			if diff := cmp.Diff(tc.want, got); diff != "" {
-				t.Logf("got: %s", string(got))
+			if diff := cmp.Diff(tc.want, got.String()); diff != "" {
 				t.Errorf("unexpected string (-want, +got) = %v", diff)
+			}
+			if diff := cmp.Diff(tc.want, got.URL().String()); diff != "" {
+				t.Errorf("unexpected URL (-want, +got) = %v", diff)
 			}
 		})
 	}
