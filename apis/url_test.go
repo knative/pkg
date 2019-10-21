@@ -17,7 +17,6 @@ package apis
 
 import (
 	"encoding/json"
-	"net/url"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -152,19 +151,17 @@ func TestJsonUnmarshalURL(t *testing.T) {
 		},
 		"relative": {
 			b: []byte(`"/path/to/something"`),
-			want: func() *URL {
-				uu, _ := url.Parse("/path/to/something")
-				u := URL(*uu)
-				return &u
-			}(),
+			want: &URL{
+				Path: "/path/to/something",
+			},
 		},
 		"url": {
 			b: []byte(`"http://path/to/something"`),
-			want: func() *URL {
-				uu, _ := url.Parse("http://path/to/something")
-				u := URL(*uu)
-				return &u
-			}(),
+			want: &URL{
+				Scheme: "http",
+				Host: "path",
+				Path: "/to/something",
+			},
 		},
 	}
 	for n, tc := range testCases {
@@ -210,19 +207,15 @@ func TestJsonMarshalURLAsMember(t *testing.T) {
 			want: []byte(`{"url":""}`),
 		},
 		"relative": {
-			obj: func() *objectType {
-				uu, _ := url.Parse("/path/to/something")
-				u := URL(*uu)
-				return &objectType{URL: u}
-			}(),
+			obj: &objectType{URL: URL{Path: "/path/to/something"}},
 			want: []byte(`{"url":"/path/to/something"}`),
 		},
 		"url": {
-			obj: func() *objectType {
-				uu, _ := url.Parse("http://path/to/something")
-				u := URL(*uu)
-				return &objectType{URL: u}
-			}(),
+			obj: &objectType {URL: URL{
+				Scheme: "http",
+				Host: "path",
+				Path: "/to/something",
+			}},
 			want: []byte(`{"url":"http://path/to/something"}`),
 		},
 		"empty url": {
@@ -273,19 +266,15 @@ func TestJsonMarshalURLAsPointerMember(t *testing.T) {
 			want: []byte(`{}`),
 		},
 		"relative": {
-			obj: func() *objectType {
-				uu, _ := url.Parse("/path/to/something")
-				u := URL(*uu)
-				return &objectType{URL: &u}
-			}(),
+			obj: &objectType{URL: &URL{Path: "/path/to/something"}},
 			want: []byte(`{"url":"/path/to/something"}`),
 		},
 		"url": {
-			obj: func() *objectType {
-				uu, _ := url.Parse("http://path/to/something")
-				u := URL(*uu)
-				return &objectType{URL: &u}
-			}(),
+			obj: &objectType{URL: &URL{
+				Scheme: "http",
+				Host: "path",
+				Path: "/to/something",
+			}},
 			want: []byte(`{"url":"http://path/to/something"}`),
 		},
 		"empty url": {
@@ -341,19 +330,15 @@ func TestJsonUnmarshalURLAsMember(t *testing.T) {
 		},
 		"relative": {
 			b: []byte(`{"url":"/path/to/something"}`),
-			want: func() *objectType {
-				uu, _ := url.Parse("/path/to/something")
-				u := URL(*uu)
-				return &objectType{URL: u}
-			}(),
+			want: &objectType{URL: URL{Path: "/path/to/something"}},
 		},
 		"url": {
 			b: []byte(`{"url":"http://path/to/something"}`),
-			want: func() *objectType {
-				uu, _ := url.Parse("http://path/to/something")
-				u := URL(*uu)
-				return &objectType{URL: u}
-			}(),
+			want: &objectType {URL: URL{
+				Scheme: "http",
+				Host: "path",
+				Path: "/to/something",
+			}},
 		},
 		"empty url": {
 			b:    []byte(`{"url":""}`),
@@ -408,19 +393,15 @@ func TestJsonUnmarshalURLAsMemberPointer(t *testing.T) {
 		},
 		"relative": {
 			b: []byte(`{"url":"/path/to/something"}`),
-			want: func() *objectType {
-				uu, _ := url.Parse("/path/to/something")
-				u := URL(*uu)
-				return &objectType{URL: &u}
-			}(),
+			want: &objectType {URL: &URL{Path: "/path/to/something"}},
 		},
 		"url": {
 			b: []byte(`{"url":"http://path/to/something"}`),
-			want: func() *objectType {
-				uu, _ := url.Parse("http://path/to/something")
-				u := URL(*uu)
-				return &objectType{URL: &u}
-			}(),
+			want: &objectType {URL: &URL{
+				Scheme: "http",
+				Host: "path",
+				Path: "/to/something",
+			}},
 		},
 		"empty url": {
 			b:    []byte(`{"url":""}`),
