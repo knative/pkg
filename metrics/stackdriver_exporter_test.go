@@ -20,6 +20,7 @@ import (
 	"errors"
 	"path"
 	"testing"
+	"time"
 
 	"contrib.go.opencensus.io/exporter/stackdriver"
 	"go.opencensus.io/stats"
@@ -135,6 +136,96 @@ var (
 		component:  "broker",
 		metricName: "unsupported",
 	}}
+
+	newStackdriverExporterTests = []struct {
+		name          string
+		config        *metricsConfig
+		expectSuccess bool
+	}{
+		{
+			name: "standardCase",
+			config: &metricsConfig{
+				domain:               servingDomain,
+				component:            "autoscaler",
+				backendDestination:   Stackdriver,
+				stackdriverProjectID: testProj,
+			},
+			expectSuccess: true,
+		},
+		{
+			name: "stackdriverConfigOnly",
+			config: &metricsConfig{
+				stackdriverConfig: sdconfig.Config{
+					ProjectID:          "project",
+					GCPLocation:        "us-west1",
+					ClusterName:        "cluster",
+					GCPSecretName:      "secret",
+					GCPSecretNamespace: "secret-ns",
+				},
+			},
+			expectSuccess: true,
+		},
+		{
+			name: "fullValidConfig",
+			config: &metricsConfig{
+				domain:                            servingDomain,
+				component:                         testComponent,
+				backendDestination:                Stackdriver,
+				stackdriverProjectID:              anotherProj,
+				reportingPeriod:                   60 * time.Second,
+				isStackdriverBackend:              true,
+				stackdriverMetricTypePrefix:       path.Join(servingDomain, testComponent),
+				stackdriverCustomMetricTypePrefix: path.Join(customMetricTypePrefix, defaultCustomMetricSubDomain, testComponent),
+				stackdriverCustomMetricsSubDomain: defaultCustomMetricSubDomain,
+				stackdriverConfig: sdconfig.Config{
+					ProjectID:          "project",
+					GCPLocation:        "us-west1",
+					ClusterName:        "cluster",
+					GCPSecretName:      "secret",
+					GCPSecretNamespace: "secret-ns",
+				},
+			},
+			expectSuccess: true,
+		},
+		{
+			name: "invalidStackdriverGcpLocation",
+			config: &metricsConfig{
+				domain:                            servingDomain,
+				component:                         testComponent,
+				backendDestination:                Stackdriver,
+				reportingPeriod:                   60 * time.Second,
+				isStackdriverBackend:              true,
+				stackdriverMetricTypePrefix:       path.Join(servingDomain, testComponent),
+				stackdriverCustomMetricTypePrefix: path.Join(customMetricTypePrefix, defaultCustomMetricSubDomain, testComponent),
+				stackdriverCustomMetricsSubDomain: defaultCustomMetricSubDomain,
+				stackdriverConfig: sdconfig.Config{
+					ProjectID:          "project",
+					GCPLocation:        "narnia",
+					ClusterName:        "cluster",
+					GCPSecretName:      "secret",
+					GCPSecretNamespace: "secret-ns",
+				},
+			},
+			expectSuccess: true,
+		},
+		{
+			name: "partialStackdriverConfig",
+			config: &metricsConfig{
+				domain:                            servingDomain,
+				component:                         testComponent,
+				backendDestination:                Stackdriver,
+				reportingPeriod:                   60 * time.Second,
+				isStackdriverBackend:              true,
+				stackdriverMetricTypePrefix:       path.Join(servingDomain, testComponent),
+				stackdriverCustomMetricTypePrefix: path.Join(customMetricTypePrefix, defaultCustomMetricSubDomain, testComponent),
+				stackdriverCustomMetricsSubDomain: defaultCustomMetricSubDomain,
+				stackdriverConfig: sdconfig.Config{
+					ProjectID: "project",
+				},
+			},
+			expectSuccess: true,
+		},
+	}
 )
 
 func fakeGcpMetadataFun() *gcpMetadata {
@@ -361,15 +452,15 @@ func TestGetgetMetricTypeFunc_UseCustomDomain(t *testing.T) {
 }
 
 func TestNewStackdriverExporterWithMetadata(t *testing.T) {
-	e, err := newStackdriverExporter(&metricsConfig{
-		domain:               servingDomain,
-		component:            "autoscaler",
-		backendDestination:   Stackdriver,
-		stackdriverProjectID: testProj}, TestLogger(t))
-	if err != nil {
-		t.Error(err)
-	}
-	if e == nil {
-		t.Error("expected a non-nil metrics exporter")
+	getStackdriverSecretFunc = fakeGetStackdriverSecret
+	for _, test := range newStackdriverExporterTests {
+		t.Run(test.name, func(t *testing.T) {
+			e, err := newStackdriverExporter(test.config, TestLogger(t))
+
+			succeeded := e != nil && err == nil
+			if test.expectSuccess != succeeded {
+				t.Errorf("Unexpected test result. Expected success? [%v]. Error: [%v]", test.expectSuccess, err)
+			}
+		})
 	}
 }
