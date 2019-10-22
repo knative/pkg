@@ -16,17 +16,19 @@ func TestNewStackdriverConfigFromConfigMap(t *testing.T) {
 			name: "fullSdConfig",
 			configMap: &corev1.ConfigMap{
 				Data: map[string]string{
-					"project-id":      "project",
-					"gcp-location":    "us-west1",
-					"cluster-name":    "cluster",
-					"gcp-secret-name": "secret",
+					"project-id":           "project",
+					"gcp-location":         "us-west1",
+					"cluster-name":         "cluster",
+					"gcp-secret-name":      "secret",
+					"gcp-secret-namespace": "non-default",
 				},
 			},
 			expectedConfig: Config{
-				ProjectID:     "project",
-				GcpLocation:   "us-west1",
-				ClusterName:   "cluster",
-				GcpSecretName: "secret",
+				ProjectID:          "project",
+				GCPLocation:        "us-west1",
+				ClusterName:        "cluster",
+				GCPSecretName:      "secret",
+				GCPSecretNamespace: "non-default",
 			},
 		},
 		{
@@ -45,19 +47,8 @@ func TestNewStackdriverConfigFromConfigMap(t *testing.T) {
 			},
 			expectedConfig: Config{
 				ProjectID:   "project",
-				GcpLocation: "us-west1",
+				GCPLocation: "us-west1",
 				ClusterName: "cluster",
-			},
-		},
-		{
-			name: "invalidGcpLocation",
-			configMap: &corev1.ConfigMap{
-				Data: map[string]string{
-					"gcp-location": "narnia",
-				},
-			},
-			expectedConfig: Config{
-				GcpLocation: "narnia",
 			},
 		},
 		{
@@ -82,16 +73,24 @@ func TestNewStackdriverConfigFromConfigMap(t *testing.T) {
 
 // This test ensures that ensureKubeClient completes. Errors are expected, but ok.
 func TestEnsureKubeClientNoDeadlock(t *testing.T) {
+	done := make(chan bool)
 	for i := 0; i < 10; i++ {
-		go testKubeclient(t)
+		go testKubeclient(t, done)
+	}
+
+	// Wait for 10 responses
+	for i := 0; i < 10; i++ {
+		<-done
 	}
 }
 
-func testKubeclient(t *testing.T) {
+func testKubeclient(t *testing.T, doneCh chan bool) {
 	defer func() {
 		if recover() == nil {
 			t.Error("Expected ensureKubeclient to panic due to not being in a Kubernetes cluster. Did the function run?.")
 		}
+
+		doneCh <- true
 	}()
 
 	ensureKubeclient()
