@@ -30,6 +30,9 @@ import (
 
 var (
 	mtx sync.RWMutex
+
+	// kubeclient is the in-cluster Kubernetes kubeclient.
+	kubeclient *kubernetes.Clientset
 )
 
 const (
@@ -43,15 +46,15 @@ const (
 	// service account key to use.
 	secretDataFieldKey = "key.json"
 
-	// ProjectIDKey is the name of the ConfigMap field for ProjectID.
+	// ProjectIDKey is the map key for Config.ProjectID.
 	ProjectIDKey = "project-id"
-	// GcpLocationKey is name of the ConfigMap field for GcpLocation.
+	// GcpLocationKey is the map key for Config.GCPLocation.
 	GcpLocationKey = "gcp-location"
-	// ClusterNameKey is the name of the ConfigMap field for ClusterName.
+	// ClusterNameKey is the map key for Config.ClusterName.
 	ClusterNameKey = "cluster-name"
-	// GcpSecretNameKey is the name of the ConfigMap field for GcpSecretName.
+	// GcpSecretNameKey is the map key for GCPSecretName.
 	GcpSecretNameKey = "gcp-secret-name"
-	// GcpSecretNamespaceKey is the name of the ConfigMap field for GcpSecretNamespace.
+	// GcpSecretNamespaceKey is the map key for GCPSecretNamespace.
 	GcpSecretNamespaceKey = "gcp-secret-namespace"
 )
 
@@ -61,21 +64,21 @@ type Config struct {
 	// This is not necessarily the GCP project ID where the Kubernetes cluster is hosted.
 	// Required when the Kubernetes cluster is not hosted on GCE.
 	ProjectID string
-	// GcpLocation is the GCP region or zone to which data is uploaded.
+	// GCPLocation is the GCP region or zone to which data is uploaded.
 	// This is not necessarily the GCP project ID where the Kubernetes cluster is hosted.
 	// Required when the Kubernetes cluster is not hosted on GCE.
-	GcpLocation string
+	GCPLocation string
 	// ClusterName is the cluster name with which the data will be associated in Stackdriver.
 	// Required when the Kubernetes cluster is not hosted on GCE.
 	ClusterName string
-	// GcpSecretName is the optional GCP service account key which will be used to
+	// GCPSecretName is the optional GCP service account key which will be used to
 	// authenticate with Stackdriver. If not provided, Google Application Default Credentials
 	// will be used (https://cloud.google.com/docs/authentication/production).
-	GcpSecretName string
-	// GcpSecretNamespace is the Kubernetes namespace where GcpSecretName is located.
+	GCPSecretName string
+	// GCPSecretNamespace is the Kubernetes namespace where GcpSecretName is located.
 	// The Kubernetes ServiceAccount used by the pod that is exporting data to
 	// Stackdriver should have access to Secrets in this namespace.
-	GcpSecretNamespace string
+	GCPSecretNamespace string
 }
 
 // NewStackdriverConfigFromConfigMap returns a Config for the given configmap
@@ -95,7 +98,7 @@ func NewStackdriverConfigFromMap(config map[string]string) (*Config, error) {
 	}
 
 	if gl, ok := config[GcpLocationKey]; ok {
-		sc.GcpLocation = gl
+		sc.GCPLocation = gl
 	}
 
 	if cn, ok := config[ClusterNameKey]; ok {
@@ -103,30 +106,25 @@ func NewStackdriverConfigFromMap(config map[string]string) (*Config, error) {
 	}
 
 	if gsn, ok := config[GcpSecretNameKey]; ok {
-		sc.GcpSecretName = gsn
+		sc.GCPSecretName = gsn
 	}
 
 	if gsns, ok := config[GcpSecretNamespaceKey]; ok {
-		sc.GcpSecretNamespace = gsns
+		sc.GCPSecretNamespace = gsns
 	}
 
 	return sc, nil
 }
 
-var (
-	// kubeclient is the in-cluster Kubernetes kubeclient.
-	kubeclient *kubernetes.Clientset
-)
-
 // GetStackdriverSecret returns the Kubernetes Secret specified in the given config.
 func GetStackdriverSecret(config *Config) (*v1.Secret, error) {
 	ensureKubeclient()
 	ns := secretNamespaceDefault
-	if config.GcpSecretNamespace != "" {
-		ns = config.GcpSecretNamespace
+	if config.GCPSecretNamespace != "" {
+		ns = config.GCPSecretNamespace
 	}
 
-	return kubeclient.CoreV1().Secrets(ns).Get(config.GcpSecretName, metav1.GetOptions{})
+	return kubeclient.CoreV1().Secrets(ns).Get(config.GCPSecretName, metav1.GetOptions{})
 }
 
 // ConvertSecretToExporterOption converts a Kubernetes Secret to an OpenCensus Stackdriver Exporter Option.

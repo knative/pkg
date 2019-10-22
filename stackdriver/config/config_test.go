@@ -25,10 +25,10 @@ func TestNewStackdriverConfigFromConfigMap(t *testing.T) {
 			},
 			expectedConfig: Config{
 				ProjectID:          "project",
-				GcpLocation:        "us-west1",
+				GCPLocation:        "us-west1",
 				ClusterName:        "cluster",
-				GcpSecretName:      "secret",
-				GcpSecretNamespace: "non-default",
+				GCPSecretName:      "secret",
+				GCPSecretNamespace: "non-default",
 			},
 		},
 		{
@@ -47,19 +47,8 @@ func TestNewStackdriverConfigFromConfigMap(t *testing.T) {
 			},
 			expectedConfig: Config{
 				ProjectID:   "project",
-				GcpLocation: "us-west1",
+				GCPLocation: "us-west1",
 				ClusterName: "cluster",
-			},
-		},
-		{
-			name: "invalidGcpLocation",
-			configMap: &corev1.ConfigMap{
-				Data: map[string]string{
-					"gcp-location": "narnia",
-				},
-			},
-			expectedConfig: Config{
-				GcpLocation: "narnia",
 			},
 		},
 		{
