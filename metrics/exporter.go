@@ -157,8 +157,6 @@ func UpdateExporter(ops ExporterOptions, logger *zap.SugaredLogger) error {
 		}
 		existingConfig := curMetricsConfig
 		setCurMetricsExporterUnlocked(e)
-		logger.Infof("; new exp %v", curMetricsExporter)
-
 		logger.Infof("Successfully updated the metrics exporter; old config: %v; new config %v", existingConfig, newConfig)
 	}
 
