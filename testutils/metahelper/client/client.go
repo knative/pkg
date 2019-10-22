@@ -25,9 +25,7 @@ import (
 	"os"
 	"path"
 
-	// TODO(chaodaiG): use prow from pkg once
-	// https://github.com/knative/pkg/pull/750 is merged
-	"knative.dev/test-infra/shared/prow"
+	"knative.dev/pkg/test/prow"
 )
 
 const (
