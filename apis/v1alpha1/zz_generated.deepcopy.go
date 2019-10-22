@@ -33,6 +33,11 @@ func (in *Destination) DeepCopyInto(out *Destination) {
 		*out = new(v1.ObjectReference)
 		**out = **in
 	}
+	if in.DeprecatedObjectReference != nil {
+		in, out := &in.DeprecatedObjectReference, &out.DeprecatedObjectReference
+		*out = new(v1.ObjectReference)
+		**out = **in
+	}
 	if in.URI != nil {
 		in, out := &in.URI, &out.URI
 		*out = new(apis.URL)
