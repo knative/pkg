@@ -64,14 +64,23 @@ func NewURIResolver(ctx context.Context, callback func(types.NamespacedName)) *U
 
 // URIFromDestination resolves a Destination into a URI string.
 func (r *URIResolver) URIFromDestination(dest apisv1alpha1.Destination, parent interface{}) (string, error) {
+	if dest.Ref != nil && dest.DeprecatedObjectReference != nil {
+		return "", fmt.Errorf("ref and DeprecatedObjectReference can't be both present")
+	}
+	var ref *corev1.ObjectReference
 	if dest.Ref != nil {
-		url, err := r.URIFromObjectReference(dest.Ref, parent)
+		ref = dest.Ref
+	} else {
+		ref = dest.DeprecatedObjectReference
+	}
+	if ref != nil {
+		url, err := r.URIFromObjectReference(ref, parent)
 		if err != nil {
 			return "", err
 		}
 		if dest.URI != nil {
 			if dest.URI.URL().IsAbs() {
-				return "", fmt.Errorf("absolute URI is not allowed when Ref exists")
+				return "", fmt.Errorf("absolute URI is not allowed when Ref or DeprecatedObjectReference exists")
 			}
 			return url.URL().ResolveReference(dest.URI.URL()).String(), nil
 		}
@@ -86,7 +95,7 @@ func (r *URIResolver) URIFromDestination(dest apisv1alpha1.Destination, parent i
 		return dest.URI.String(), nil
 	}
 
-	return "", fmt.Errorf("destination missing Ref and URI, expected at least one")
+	return "", fmt.Errorf("destination missing Ref, DeprecatedObjectReference and URI, expected at least one")
 }
 
 // URIFromObjectReference resolves an ObjectReference to a URI string.

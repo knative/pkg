@@ -80,6 +80,42 @@ func TestValidateDestination(t *testing.T) {
 			},
 			want: "missing field(s): ref.kind",
 		},
+		"valid DeprecatedObjectReference": {
+			dest: &Destination{
+				DeprecatedObjectReference:&corev1.ObjectReference{
+					APIVersion: "v1mega1",
+					Name:       "a-name",
+				},
+			},
+			want: "missing field(s): kind",
+		},
+		"invalid DeprecatedObjectReference, missing name": {
+			dest: &Destination{
+				DeprecatedObjectReference: &corev1.ObjectReference{
+					Kind:       "SomeKind",
+					APIVersion: "v1mega1",
+				},
+			},
+			want: "missing field(s): name",
+		},
+		"invalid DeprecatedObjectReference, missing api version": {
+			dest: &Destination{
+				DeprecatedObjectReference: &corev1.ObjectReference{
+					Kind: "SomeKind",
+					Name: "a-name",
+				},
+			},
+			want: "missing field(s): apiVersion",
+		},
+		"invalid DeprecatedObjectReference, missing kind": {
+			dest: &Destination{
+				DeprecatedObjectReference: &corev1.ObjectReference{
+					APIVersion: "v1mega1",
+					Name:       "a-name",
+				},
+			},
+			want: "missing field(s): kind",
+		},
 		"valid uri": {
 			dest: &Destination{
 				URI: &validURL,
@@ -91,7 +127,7 @@ func TestValidateDestination(t *testing.T) {
 					Scheme: "http",
 				},
 			},
-			want: "invalid value: Relative URI is not allowed when Ref is absent: uri",
+			want: "invalid value: Relative URI is not allowed when Ref and [apiVersion, kind, name] is absent: uri",
 		},
 		"invalid, uri is not absolute url": {
 			dest: &Destination{
@@ -99,20 +135,42 @@ func TestValidateDestination(t *testing.T) {
 					Host: "host",
 				},
 			},
-			want: "invalid value: Relative URI is not allowed when Ref is absent: uri",
+			want: "invalid value: Relative URI is not allowed when Ref and [apiVersion, kind, name] is absent: uri",
 
 		},
+		"invalid, both ref and DeprecatedObjectReference are present ": {
+			dest: &Destination{
+					Ref: &corev1.ObjectReference{
+						Kind:       "SomeKind",
+						APIVersion: "v1mega1",
+						Name:       "a-name",
+					},
+				DeprecatedObjectReference: &corev1.ObjectReference{
+					Kind:       "SomeKind",
+					APIVersion: "v1mega1",
+					Name:       "a-name",
+				},
+				},
+			want: "Ref and [apiVersion, kind, name] can't be both present: [apiVersion, kind, name], ref",
+			},
 		"invalid, both uri and ref, uri is absolute URL": {
 			dest: &Destination{
 				URI: &validURL,
 				Ref: &validRef,
 			},
-			want: "Absolute URI is not allowed when Ref is present: ref, uri",
+			want: "Absolute URI is not allowed when Ref or [apiVersion, kind, name] is present: [apiVersion, kind, name], ref, uri",
 		},
-		"invalid, both uri and ref are nil": {
+		"invalid, both uri and [apiVersion, kind, name], uri is absolute URL": {
+			dest: &Destination{
+				URI: &validURL,
+				DeprecatedObjectReference: &validRef,
+			},
+			want: "Absolute URI is not allowed when Ref or [apiVersion, kind, name] is present: [apiVersion, kind, name], ref, uri",
+		},
+		"invalid, both ref, [apiVersion, kind, name] and uri  are nil": {
 			dest: &Destination{
 			},
-			want: "expected at least one, got neither: ref, uri",
+			want: "expected at least one, got none: [apiVersion, kind, name], ref, uri",
 		},
 		"valid, both uri and ref, uri is not a absolute URL": {
 			dest: &Destination{
@@ -120,6 +178,14 @@ func TestValidateDestination(t *testing.T) {
 					Path: "/handler",
 				},
 				Ref: &validRef,
+			},
+		},
+		"valid, both uri and [apiVersion, kind, name], uri is not a absolute URL": {
+			dest: &Destination{
+				URI:  &apis.URL{
+					Path: "/handler",
+				},
+				DeprecatedObjectReference: &validRef,
 			},
 		},
 	}

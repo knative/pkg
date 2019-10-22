@@ -28,6 +28,9 @@ type Destination struct {
 	// +optional
 	Ref *corev1.ObjectReference `json:"ref,omitempty"`
 
+	// +optional
+	DeprecatedObjectReference *corev1.ObjectReference `json:",inline"`
+
 	// URI can be an absolute URL(non-empty scheme and non-empty host) pointing to the target or a relative URI. Relative URIs will be resolved using the base URI retrieved from Ref.
 	// +optional
 	URI *apis.URL `json:"uri,omitempty"`
@@ -42,18 +45,33 @@ func (current *Destination) Validate(ctx context.Context) *apis.FieldError {
 }
 
 func ValidateDestination(dest Destination) *apis.FieldError {
-	if dest.Ref == nil && dest.URI == nil {
-		return apis.ErrGeneric("expected at least one, got neither", "ref", "uri")
+	if dest.Ref != nil && dest.DeprecatedObjectReference != nil {
+		return apis.ErrGeneric("Ref and [apiVersion, kind, name] can't be both present", "[apiVersion, kind, name]", "ref")
 	}
-	if dest.Ref != nil && dest.URI != nil && dest.URI.URL().IsAbs() {
-		return apis.ErrGeneric("Absolute URI is not allowed when Ref is present", "ref", "uri")
+
+	var ref *corev1.ObjectReference
+	if dest.Ref != nil {
+		ref = dest.Ref
+	} else {
+		ref = dest.DeprecatedObjectReference
+	}
+	if ref == nil && dest.URI == nil {
+		return apis.ErrGeneric("expected at least one, got none", "[apiVersion, kind, name]", "ref", "uri")
+	}
+
+	if ref != nil && dest.URI != nil && dest.URI.URL().IsAbs() {
+		return apis.ErrGeneric("Absolute URI is not allowed when Ref or [apiVersion, kind, name] is present", "[apiVersion, kind, name]", "ref", "uri")
 	}
 	// IsAbs() check whether the URL has a non-empty scheme. Besides the non-empty scheme, we also require dest.URI has a non-empty host
-	if dest.Ref == nil && dest.URI != nil && (!dest.URI.URL().IsAbs() || dest.URI.Host == "") {
-			return apis.ErrInvalidValue("Relative URI is not allowed when Ref is absent",  "uri")
+	if ref == nil && dest.URI != nil && (!dest.URI.URL().IsAbs() || dest.URI.Host == "") {
+			return apis.ErrInvalidValue("Relative URI is not allowed when Ref and [apiVersion, kind, name] is absent",  "uri")
 		}
-	if dest.Ref != nil && dest.URI == nil{
-		return validateDestinationRef(*dest.Ref).ViaField("ref")
+	if ref != nil && dest.URI == nil{
+		if dest.Ref != nil {
+			return validateDestinationRef(*ref).ViaField("ref")
+		} else {
+			return validateDestinationRef(*ref)
+		}
 	}
 	return nil
 }
