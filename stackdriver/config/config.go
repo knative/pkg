@@ -17,6 +17,8 @@ limitations under the License.
 package config
 
 import (
+	"sync"
+
 	"google.golang.org/api/option"
 
 	corev1 "k8s.io/api/core/v1"
@@ -24,6 +26,10 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
+)
+
+var (
+	mtx sync.RWMutex
 )
 
 const (
@@ -68,6 +74,9 @@ type Config struct {
 
 // NewStackdriverConfigFromConfigMap returns a Config for the given configmap
 func NewStackdriverConfigFromConfigMap(config *corev1.ConfigMap) (*Config, error) {
+	if config == nil {
+		return &Config{}, nil
+	}
 	return NewStackdriverConfigFromMap(config.Data)
 }
 
@@ -110,7 +119,21 @@ func ConvertSecretToExporterOption(secret *v1.Secret) option.ClientOption {
 	return option.WithCredentialsJSON(secret.Data[secretDataFieldKey])
 }
 
+func isKubeclientInitialized() bool {
+	mtx.RLock()
+	defer mtx.Unlock()
+
+	return kubeclient != nil
+}
+
 func ensureKubeclient() {
+	if isKubeclientInitialized() {
+		return
+	}
+
+	mtx.Lock()
+	defer mtx.Unlock()
+
 	if kubeclient != nil {
 		return
 	}
