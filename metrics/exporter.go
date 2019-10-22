@@ -20,12 +20,15 @@ import (
 	"go.opencensus.io/stats/view"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
+	sdconfig "knative.dev/pkg/stackdriver/config"
 )
 
 var (
-	curMetricsExporter view.Exporter
-	curMetricsConfig   *metricsConfig
-	metricsMux         sync.RWMutex
+	curMetricsExporter   view.Exporter
+	curMetricsConfig     *metricsConfig
+	curStackdriverConfig *sdconfig.Config
+
+	metricsMux sync.RWMutex
 )
 
 type flushable interface {
@@ -57,12 +60,22 @@ type ExporterOptions struct {
 
 	// ConfigMap is the data from config map config-observability. Must be present.
 	// See https://github.com/knative/serving/blob/master/config/config-observability.yaml
-	// for details.
+	// for details. This contains configuration specific to metrics.
 	ConfigMap map[string]string
+
+	// StackdriverConfigMap is the data from a config map which configures where metrics are sent
+	// when using Stackdriver. Providing values for this config map is optional.
+	// When absent, Google Application Default Credentials will be used.
+	// The map fields are defined in "knative.dev/pkg/stackdriver/config/config.go".
+	StackdriverConfigMap map[string]string
+}
+
+func init() {
+	curStackdriverConfig = &sdconfig.Config{}
 }
 
 // UpdateExporterFromConfigMap returns a helper func that can be used to update the exporter
-// when a config map is updated.
+// when the config map that populates ExporterOptions.ConfigMap is updated.
 func UpdateExporterFromConfigMap(component string, logger *zap.SugaredLogger) func(configMap *corev1.ConfigMap) {
 	domain := Domain()
 	return func(configMap *corev1.ConfigMap) {
@@ -70,6 +83,16 @@ func UpdateExporterFromConfigMap(component string, logger *zap.SugaredLogger) fu
 			Domain:    domain,
 			Component: component,
 			ConfigMap: configMap.Data,
+		}, logger)
+	}
+}
+
+// UpdateExporterFromStackdriverConfigMap returns a helper func that can be used to update the exporter
+// when the config map that populates ExporterOptions.StackdriverConfigMap is updated.
+func UpdateExporterFromStackdriverConfigMap(logger *zap.SugaredLogger) func(configMap *corev1.ConfigMap) {
+	return func(configMap *corev1.ConfigMap) {
+		UpdateExporter(ExporterOptions{
+			StackdriverConfigMap: configMap.Data,
 		}, logger)
 	}
 }
@@ -82,16 +105,47 @@ func UpdateExporter(ops ExporterOptions, logger *zap.SugaredLogger) error {
 	metricsMux.Lock()
 	defer metricsMux.Unlock()
 
-	newConfig, err := createMetricsConfig(ops, logger)
-	if err != nil {
-		if curMetricsExporter == nil {
-			// Fail the process if there doesn't exist an exporter.
-			logger.Errorw("Failed to get a valid metrics config", zap.Error(err))
-		} else {
-			logger.Errorw("Failed to get a valid metrics config; Skip updating the metrics exporter", zap.Error(err))
+	if ops.StackdriverConfigMap != nil {
+		sc, sErr := sdconfig.NewStackdriverConfigFromMap(ops.StackdriverConfigMap)
+		if sErr != nil {
+			logger.Warnw("Failed to get a valid Stackdriver config", zap.Error(sErr))
 		}
-		return err
+
+		// Always store updates from Stackdriver config map, even if exporter
+		// itself cannot be updated yet.
+		curStackdriverConfig = sc
 	}
+
+	// The stackdriver config alone is not sufficient to create a metrics exporter.
+	// Wait for the first update to ExporterOptions.ConfigMap to update the exporter.
+	if ops.ConfigMap == nil && curMetricsConfig == nil {
+		return nil
+	}
+
+	var newConfig *metricsConfig
+	if ops.ConfigMap != nil {
+		// If there's an updated config map, build a new config from scratch.
+		nc, err := createMetricsConfig(ops, logger)
+		if err != nil {
+			if curMetricsExporter == nil {
+				// Fail the process if there doesn't exist an exporter.
+				logger.Errorw("Failed to get a valid metrics config", zap.Error(err))
+			} else {
+				logger.Errorw("Failed to get a valid metrics config; Skip updating the metrics exporter", zap.Error(err))
+			}
+			return err
+		}
+
+		newConfig = nc
+	} else {
+		// Otherwise, build off copy of the current config.
+		// It is always true that curMetricsConfig is non-nil to reach here.
+		newConfig = new(metricsConfig)
+		*newConfig = *curMetricsConfig
+	}
+
+	// Add the Stackdriver config from any previous config map update.
+	newConfig.stackdriverConfig = *curStackdriverConfig
 
 	if isNewExporterRequired(newConfig) {
 		logger.Info("Flushing the existing exporter before setting up the new exporter.")
@@ -103,6 +157,8 @@ func UpdateExporter(ops ExporterOptions, logger *zap.SugaredLogger) error {
 		}
 		existingConfig := curMetricsConfig
 		setCurMetricsExporterUnlocked(e)
+		logger.Infof("; new exp %v", curMetricsExporter)
+
 		logger.Infof("Successfully updated the metrics exporter; old config: %v; new config %v", existingConfig, newConfig)
 	}
 
@@ -119,7 +175,11 @@ func isNewExporterRequired(newConfig *metricsConfig) bool {
 		return true
 	}
 
-	return newConfig.backendDestination == Stackdriver && newConfig.stackdriverProjectID != cc.stackdriverProjectID
+	if newConfig.backendDestination == Stackdriver {
+		return newConfig.stackdriverProjectID != cc.stackdriverProjectID || newConfig.stackdriverConfig != cc.stackdriverConfig
+	}
+
+	return false
 }
 
 // newMetricsExporter gets a metrics exporter based on the config.

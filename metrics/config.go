@@ -26,6 +26,8 @@ import (
 	"strings"
 	"time"
 
+	sdconfig "knative.dev/pkg/stackdriver/config"
+
 	"go.uber.org/zap"
 )
 
@@ -100,10 +102,12 @@ type metricsConfig struct {
 	// E.g., "custom.googleapis.com/<subdomain>/<component>".
 	// Store this in a variable to reduce string join operations.
 	stackdriverCustomMetricTypePrefix string
+	// stackdriverConfig contains metadata to configure the Stackdriver client.
+	stackdriverConfig sdconfig.Config
 }
 
 func createMetricsConfig(ops ExporterOptions, logger *zap.SugaredLogger) (*metricsConfig, error) {
-	var mc metricsConfig
+	mc := metricsConfig{stackdriverConfig: sdconfig.Config{}}
 
 	if ops.Domain == "" {
 		return nil, errors.New("metrics domain cannot be empty")

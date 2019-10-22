@@ -16,6 +16,7 @@ limitations under the License.
 package metrics
 
 import (
+	"fmt"
 	"os"
 	"path"
 	"reflect"
@@ -23,8 +24,12 @@ import (
 	"time"
 
 	"github.com/google/go-cmp/cmp"
+	"go.opencensus.io/stats/view"
+
+	corev1 "k8s.io/api/core/v1"
 
 	. "knative.dev/pkg/logging/testing"
+	sdconfig "knative.dev/pkg/stackdriver/config"
 )
 
 // TODO UTs should move to eventing and serving, as appropriate.
@@ -45,7 +50,7 @@ var (
 		ops         ExporterOptions
 		expectedErr string
 	}{{
-		name: "empty config",
+		name: "emptyConfig",
 		ops: ExporterOptions{
 			Domain:    servingDomain,
 			Component: testComponent,
@@ -438,7 +443,392 @@ var (
 				prometheusPort:     defaultPrometheusPort,
 			},
 		}}
+
+	sdConfigUpdate = ExporterOptions{
+		StackdriverConfigMap: map[string]string{
+			"project-id":      "project",
+			"gcp-location":    "us-west1",
+			"cluster-name":    "cluster",
+			"gcp-secret-name": "secret",
+		},
+	}
+
+	partialSdConfigUpdate = ExporterOptions{
+		StackdriverConfigMap: map[string]string{
+			"project-id":   "partial-project",
+			"cluster-name": "partial-cluster",
+		},
+	}
+
+	prometheusBackendOption = ExporterOptions{
+		ConfigMap: map[string]string{
+			"metrics.backend-destination": "prometheus",
+		},
+		Domain:    servingDomain,
+		Component: testComponent,
+	}
+
+	sdBackendOption = ExporterOptions{
+		ConfigMap: map[string]string{
+			"metrics.backend-destination": "stackdriver",
+		},
+		Domain:    servingDomain,
+		Component: testComponent,
+	}
+
+	modifyBothMapsInOneUpdate = ExporterOptions{
+		ConfigMap: map[string]string{
+			"metrics.backend-destination": "stackdriver",
+		},
+		Domain:    servingDomain,
+		Component: testComponent,
+		StackdriverConfigMap: map[string]string{
+			"project-id":      "project",
+			"gcp-location":    "us-west1",
+			"cluster-name":    "cluster",
+			"gcp-secret-name": "secret",
+		},
+	}
+
+	// These tests require modifying two config maps which both
+	// influence the state of the Stackdriver metrics exporter.
+	stackdriverTests = []struct {
+		name                      string
+		updateList                []ExporterOptions
+		expectedMetricsConfig     *metricsConfig
+		expectedStackdriverConfig *sdconfig.Config
+		expectedNewExporter       bool
+	}{
+		{
+			name: "updateStackdriverConfigOnly",
+			updateList: []ExporterOptions{
+				sdConfigUpdate,
+			},
+			expectedMetricsConfig: nil,
+			expectedNewExporter:   false,
+		},
+		{
+			name: "backendPrometheusUpdateSdConfigFirst",
+			updateList: []ExporterOptions{
+				sdConfigUpdate,
+				prometheusBackendOption,
+			},
+			expectedMetricsConfig: &metricsConfig{
+				domain:             servingDomain,
+				component:          testComponent,
+				backendDestination: Prometheus,
+				reportingPeriod:    5 * time.Second,
+				prometheusPort:     defaultPrometheusPort,
+				stackdriverConfig: sdconfig.Config{
+					ProjectID:     "project",
+					GcpLocation:   "us-west1",
+					ClusterName:   "cluster",
+					GcpSecretName: "secret",
+				},
+			},
+			expectedNewExporter: true,
+		},
+		{
+			name: "backendPrometheusUpdateSdConfigSecond",
+			updateList: []ExporterOptions{
+				prometheusBackendOption,
+				sdConfigUpdate,
+			},
+			expectedMetricsConfig: &metricsConfig{
+				domain:             servingDomain,
+				component:          testComponent,
+				backendDestination: Prometheus,
+				reportingPeriod:    5 * time.Second,
+				prometheusPort:     defaultPrometheusPort,
+				stackdriverConfig: sdconfig.Config{
+					ProjectID:     "project",
+					GcpLocation:   "us-west1",
+					ClusterName:   "cluster",
+					GcpSecretName: "secret",
+				},
+			},
+			expectedNewExporter: true,
+		},
+		{
+			name: "backendSdUpdateSdConfigFirst",
+			updateList: []ExporterOptions{
+				sdBackendOption,
+				sdConfigUpdate,
+			},
+			expectedMetricsConfig: &metricsConfig{
+				domain:                            servingDomain,
+				component:                         testComponent,
+				backendDestination:                Stackdriver,
+				reportingPeriod:                   60 * time.Second,
+				isStackdriverBackend:              true,
+				stackdriverMetricTypePrefix:       path.Join(servingDomain, testComponent),
+				stackdriverCustomMetricTypePrefix: path.Join(customMetricTypePrefix, defaultCustomMetricSubDomain, testComponent),
+				stackdriverCustomMetricsSubDomain: defaultCustomMetricSubDomain,
+				stackdriverConfig: sdconfig.Config{
+					ProjectID:     "project",
+					GcpLocation:   "us-west1",
+					ClusterName:   "cluster",
+					GcpSecretName: "secret",
+				},
+			},
+			expectedNewExporter: true,
+		},
+		{
+			name: "backendSdUpdateSdConfigSecond",
+			updateList: []ExporterOptions{
+				sdConfigUpdate,
+				sdBackendOption,
+			},
+			expectedMetricsConfig: &metricsConfig{
+				domain:                            servingDomain,
+				component:                         testComponent,
+				backendDestination:                Stackdriver,
+				reportingPeriod:                   60 * time.Second,
+				isStackdriverBackend:              true,
+				stackdriverMetricTypePrefix:       path.Join(servingDomain, testComponent),
+				stackdriverCustomMetricTypePrefix: path.Join(customMetricTypePrefix, defaultCustomMetricSubDomain, testComponent),
+				stackdriverCustomMetricsSubDomain: defaultCustomMetricSubDomain,
+				stackdriverConfig: sdconfig.Config{
+					ProjectID:     "project",
+					GcpLocation:   "us-west1",
+					ClusterName:   "cluster",
+					GcpSecretName: "secret",
+				},
+			},
+			expectedNewExporter: true,
+		},
+		{
+			name: "partialSdConfig",
+			updateList: []ExporterOptions{
+				sdBackendOption,
+				partialSdConfigUpdate,
+			},
+			expectedMetricsConfig: &metricsConfig{
+				domain:                            servingDomain,
+				component:                         testComponent,
+				backendDestination:                Stackdriver,
+				reportingPeriod:                   60 * time.Second,
+				isStackdriverBackend:              true,
+				stackdriverMetricTypePrefix:       path.Join(servingDomain, testComponent),
+				stackdriverCustomMetricTypePrefix: path.Join(customMetricTypePrefix, defaultCustomMetricSubDomain, testComponent),
+				stackdriverCustomMetricsSubDomain: defaultCustomMetricSubDomain,
+				stackdriverConfig: sdconfig.Config{
+					ProjectID:   "partial-project",
+					ClusterName: "partial-cluster",
+				},
+			},
+			expectedNewExporter: true,
+		},
+		{
+			name: "updateToNewestSdConfig",
+			updateList: []ExporterOptions{
+				sdBackendOption,
+				sdConfigUpdate,
+				partialSdConfigUpdate,
+			},
+			expectedMetricsConfig: &metricsConfig{
+				domain:                            servingDomain,
+				component:                         testComponent,
+				backendDestination:                Stackdriver,
+				reportingPeriod:                   60 * time.Second,
+				isStackdriverBackend:              true,
+				stackdriverMetricTypePrefix:       path.Join(servingDomain, testComponent),
+				stackdriverCustomMetricTypePrefix: path.Join(customMetricTypePrefix, defaultCustomMetricSubDomain, testComponent),
+				stackdriverCustomMetricsSubDomain: defaultCustomMetricSubDomain,
+				stackdriverConfig: sdconfig.Config{
+					ProjectID:   "partial-project",
+					ClusterName: "partial-cluster",
+				},
+			},
+			expectedNewExporter: true,
+		},
+		{
+			name: "bothConfigMaps",
+			updateList: []ExporterOptions{
+				modifyBothMapsInOneUpdate,
+			},
+			expectedMetricsConfig: &metricsConfig{
+				domain:                            servingDomain,
+				component:                         testComponent,
+				backendDestination:                Stackdriver,
+				reportingPeriod:                   60 * time.Second,
+				isStackdriverBackend:              true,
+				stackdriverMetricTypePrefix:       path.Join(servingDomain, testComponent),
+				stackdriverCustomMetricTypePrefix: path.Join(customMetricTypePrefix, defaultCustomMetricSubDomain, testComponent),
+				stackdriverCustomMetricsSubDomain: defaultCustomMetricSubDomain,
+				stackdriverConfig: sdconfig.Config{
+					ProjectID:     "project",
+					GcpLocation:   "us-west1",
+					ClusterName:   "cluster",
+					GcpSecretName: "secret",
+				},
+			},
+			expectedNewExporter: true,
+		},
+		{
+			name: "invalidGcpLocation",
+			updateList: []ExporterOptions{
+				sdBackendOption,
+				ExporterOptions{
+					StackdriverConfigMap: map[string]string{
+						"gcp-location": "narnia",
+					},
+				},
+			},
+			expectedMetricsConfig: &metricsConfig{
+				domain:                            servingDomain,
+				component:                         testComponent,
+				backendDestination:                Stackdriver,
+				reportingPeriod:                   60 * time.Second,
+				isStackdriverBackend:              true,
+				stackdriverMetricTypePrefix:       path.Join(servingDomain, testComponent),
+				stackdriverCustomMetricTypePrefix: path.Join(customMetricTypePrefix, defaultCustomMetricSubDomain, testComponent),
+				stackdriverCustomMetricsSubDomain: defaultCustomMetricSubDomain,
+				stackdriverConfig: sdconfig.Config{
+					GcpLocation: "narnia",
+				},
+			},
+			expectedNewExporter: true,
+		},
+	}
+
+	updateExporterFromStackdriverConfigMapTests = []struct {
+		name             string
+		config           corev1.ConfigMap
+		expectedSdConfig sdconfig.Config
+	}{
+		{
+			name: "fullSdConfig",
+			config: corev1.ConfigMap{
+				Data: map[string]string{
+					"project-id":      "project",
+					"gcp-location":    "us-west1",
+					"cluster-name":    "cluster",
+					"gcp-secret-name": "secret",
+				},
+			},
+			expectedSdConfig: sdconfig.Config{
+				ProjectID:     "project",
+				GcpLocation:   "us-west1",
+				ClusterName:   "cluster",
+				GcpSecretName: "secret",
+			},
+		},
+		{
+			name:             "emptySdConfig",
+			config:           corev1.ConfigMap{},
+			expectedSdConfig: sdconfig.Config{},
+		},
+		{
+			name: "partialSdConfig",
+			config: corev1.ConfigMap{
+				Data: map[string]string{
+					"project-id":   "project",
+					"gcp-location": "us-west1",
+					"cluster-name": "cluster",
+				},
+			},
+			expectedSdConfig: sdconfig.Config{
+				ProjectID:   "project",
+				GcpLocation: "us-west1",
+				ClusterName: "cluster",
+			},
+		},
+		{
+			name: "invalidGcpLocation",
+			config: corev1.ConfigMap{
+				Data: map[string]string{
+					"gcp-location": "narnia",
+				},
+			},
+			expectedSdConfig: sdconfig.Config{
+				GcpLocation: "narnia",
+			},
+		},
+	}
 )
+
+func TestUpdateExporterFromStackdriverConfigMap(t *testing.T) {
+	for _, test := range updateExporterFromStackdriverConfigMapTests {
+		t.Run(test.name, func(t *testing.T) {
+			resetState()
+			updateFunc := UpdateExporterFromStackdriverConfigMap(TestLogger(t))
+			updateFunc(&test.config)
+
+			cc := curStackdriverConfig
+			if test.expectedSdConfig != *cc {
+				t.Errorf("Incorrect stackdriver config. Expected: [%v], Got: [%v]", test.expectedSdConfig, *cc)
+			}
+		})
+	}
+
+	resetState()
+}
+
+func resetState() {
+	curMetricsConfig = nil
+	view.UnregisterExporter(curMetricsExporter)
+	curMetricsExporter = nil
+	curStackdriverConfig = &sdconfig.Config{}
+}
+
+func TestStackdriverConfigChangeCreatesNewExporter(t *testing.T) {
+	getStackdriverSecretFunc = fakeGetStackdriverSecret
+	logger := TestLogger(t)
+	UpdateExporter(sdBackendOption, logger)
+	c1 := getCurMetricsConfig()
+
+	old := c1
+
+	updates := []ExporterOptions{sdConfigUpdate, partialSdConfigUpdate}
+	for _, update := range updates {
+		UpdateExporter(update, logger)
+		new := getCurMetricsConfig()
+
+		setCurMetricsConfig(old)
+		if !isNewExporterRequired(new) {
+			t.Errorf("Stackdriver config change should have created a new exporter. Old config [%v]. New config [%v].", old, new)
+		}
+
+		old = new
+	}
+}
+
+func TestStackdriverConfig(t *testing.T) {
+	getStackdriverSecretFunc = fakeGetStackdriverSecret
+	for _, test := range stackdriverTests {
+		t.Run(test.name, func(t *testing.T) {
+			// clean slate for test
+			resetState()
+
+			for _, op := range test.updateList {
+				UpdateExporter(op, TestLogger(t))
+			}
+			mc := getCurMetricsConfig()
+
+			mismatch := false
+			if test.expectedMetricsConfig != nil && mc != nil {
+				fmt.Println(test.name)
+				if *test.expectedMetricsConfig != *mc {
+					mismatch = true
+				}
+			} else if test.expectedMetricsConfig != mc {
+				mismatch = true
+			}
+
+			if mismatch {
+				t.Errorf("Incorrect metrics config. Expected config: [%v], Got: [%v]", test.expectedMetricsConfig, mc)
+			}
+
+			ne := getCurMetricsExporter()
+			if test.expectedNewExporter != (ne != nil) {
+				t.Errorf("Unexpected exporter state. Expected new exporter? [%v], got [%v]", test.expectedNewExporter, ne)
+			}
+		})
+	}
+
+	resetState()
+}
 
 func TestGetMetricsConfig(t *testing.T) {
 	for _, test := range errorTests {
@@ -536,9 +926,12 @@ func TestUpdateExporter(t *testing.T) {
 	for _, test := range errorTests {
 		t.Run(test.name, func(t *testing.T) {
 			defer ClearAll()
-			UpdateExporter(test.ops, TestLogger(t))
+			err := UpdateExporter(test.ops, TestLogger(t))
+			if err != nil {
+				fmt.Println(err)
+			}
 			mConfig := getCurMetricsConfig()
-			if mConfig != oldConfig {
+			if *mConfig != *oldConfig {
 				t.Error("mConfig should not change")
 			}
 		})
@@ -559,7 +952,7 @@ func TestUpdateExporter_doesNotCreateExporter(t *testing.T) {
 	}
 }
 
-func TestMetricsOptions(t *testing.T) {
+func TestMetricsOptionsToJson(t *testing.T) {
 	testCases := map[string]struct {
 		opts    *ExporterOptions
 		want    string
@@ -570,7 +963,7 @@ func TestMetricsOptions(t *testing.T) {
 			want:    "",
 			wantErr: "json options string is empty",
 		},
-		"happy": {
+		"standardConfig": {
 			opts: &ExporterOptions{
 				Domain:         "domain",
 				Component:      "component",
@@ -580,7 +973,35 @@ func TestMetricsOptions(t *testing.T) {
 					"boosh": "kakow",
 				},
 			},
-			want: `{"Domain":"domain","Component":"component","PrometheusPort":9090,"ConfigMap":{"boosh":"kakow","foo":"bar"}}`,
+			want: `{"Domain":"domain","Component":"component","PrometheusPort":9090,"ConfigMap":{"boosh":"kakow","foo":"bar"},"StackdriverConfigMap":null}`,
+		},
+		"stackdriverConfig": {
+			opts: &ExporterOptions{
+				Domain:         "domain",
+				Component:      "component",
+				PrometheusPort: 9090,
+				StackdriverConfigMap: map[string]string{
+					"foo":   "bar",
+					"boosh": "kakow",
+				},
+			},
+			want: `{"Domain":"domain","Component":"component","PrometheusPort":9090,"ConfigMap":null,"StackdriverConfigMap":{"boosh":"kakow","foo":"bar"}}`,
+		},
+		"allConfig": {
+			opts: &ExporterOptions{
+				Domain:         "domain",
+				Component:      "component",
+				PrometheusPort: 9090,
+				ConfigMap: map[string]string{
+					"apple":  "orange",
+					"banana": "pear",
+				},
+				StackdriverConfigMap: map[string]string{
+					"foo":   "bar",
+					"boosh": "kakow",
+				},
+			},
+			want: `{"Domain":"domain","Component":"component","PrometheusPort":9090,"ConfigMap":{"apple":"orange","banana":"pear"},"StackdriverConfigMap":{"boosh":"kakow","foo":"bar"}}`,
 		},
 	}
 	for n, tc := range testCases {

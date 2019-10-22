@@ -17,6 +17,7 @@ limitations under the License.
 package metrics
 
 import (
+	"errors"
 	"path"
 	"testing"
 
@@ -24,8 +25,10 @@ import (
 	"go.opencensus.io/stats"
 	"go.opencensus.io/stats/view"
 	"go.opencensus.io/tag"
+	v1 "k8s.io/api/core/v1"
 	. "knative.dev/pkg/logging/testing"
 	"knative.dev/pkg/metrics/metricskey"
+	sdconfig "knative.dev/pkg/stackdriver/config"
 )
 
 // TODO UTs should move to eventing and serving, as appropriate.
@@ -136,6 +139,10 @@ var (
 
 func fakeGcpMetadataFun() *gcpMetadata {
 	return &testGcpMetadata
+}
+
+func fakeGetStackdriverSecret(config *sdconfig.Config) (*v1.Secret, error) {
+	return nil, errors.New("tests do no have access to Kubernetes client to retrieve Kubernetes Secrets")
 }
 
 type fakeExporter struct{}

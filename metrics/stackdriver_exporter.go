@@ -24,7 +24,11 @@ import (
 	"go.opencensus.io/stats/view"
 	"go.opencensus.io/tag"
 	"go.uber.org/zap"
+	"google.golang.org/api/option"
+	v1 "k8s.io/api/core/v1"
+
 	"knative.dev/pkg/metrics/metricskey"
+	sdconfig "knative.dev/pkg/stackdriver/config"
 )
 
 const (
@@ -47,6 +51,12 @@ var (
 	// In unit tests this is set to a fake one to avoid calling actual Google API
 	// service.
 	newStackdriverExporterFunc func(stackdriver.Options) (view.Exporter, error)
+
+	// getStackdriverSecretFunc is the function used to create read a Kubernetes
+	// secret for Stackdriver credentials into memory.
+	// In product usage, this is always set to function sdconfig.getStackdriverSecret.
+	// In unit tests this is set to a fake one because an in-cluster kubeclient is required.
+	getStackdriverSecretFunc func(config *sdconfig.Config) (*v1.Secret, error)
 )
 
 func init() {
@@ -54,6 +64,8 @@ func init() {
 	gcpMetadataFunc = retrieveGCPMetadata
 
 	newStackdriverExporterFunc = newOpencensusSDExporter
+
+	getStackdriverSecretFunc = sdconfig.GetStackdriverSecret
 }
 
 func newOpencensusSDExporter(o stackdriver.Options) (view.Exporter, error) {
@@ -63,10 +75,31 @@ func newOpencensusSDExporter(o stackdriver.Options) (view.Exporter, error) {
 // TODO should be properly refactored to be able to inject the getMonitoredResourceFunc function.
 // 	See https://github.com/knative/pkg/issues/608
 func newStackdriverExporter(config *metricsConfig, logger *zap.SugaredLogger) (view.Exporter, error) {
-	gm := gcpMetadataFunc()
+	gm := getGcpMetadata(config)
 	mtf := getMetricTypeFunc(config.stackdriverMetricTypePrefix, config.stackdriverCustomMetricTypePrefix)
+
+	proj := config.stackdriverProjectID
+	if config.stackdriverConfig.ProjectID != "" {
+		proj = config.stackdriverConfig.ProjectID
+	}
+
+	var co []option.ClientOption
+	if config.stackdriverConfig.GcpSecretName != "" {
+		secret, err := getStackdriverSecretFunc(&config.stackdriverConfig)
+
+		if err == nil {
+			co = []option.ClientOption{sdconfig.ConvertSecretToExporterOption(secret)}
+		} else {
+			logger.Errorf("Failed to retrieve Secret for authenticating with Stackdriver: ", zap.Error(err))
+			// Automatically fall back on Google application default credentials
+		}
+	}
+
 	e, err := newStackdriverExporterFunc(stackdriver.Options{
-		ProjectID:               config.stackdriverProjectID,
+		ProjectID:               proj,
+		Location:                config.stackdriverConfig.GcpLocation,
+		MonitoringClientOptions: co,
+		TraceClientOptions:      co,
 		GetMetricDisplayName:    mtf, // Use metric type for display name for custom metrics. No impact on built-in metrics.
 		GetMetricType:           mtf,
 		GetMonitoredResource:    getMonitoredResourceFunc(config.stackdriverMetricTypePrefix, gm),
@@ -78,6 +111,25 @@ func newStackdriverExporter(config *metricsConfig, logger *zap.SugaredLogger) (v
 	}
 	logger.Infof("Created Opencensus Stackdriver exporter with config %v", config)
 	return e, nil
+}
+
+// getGcpMetadata returns GCP metadata required to export metrics
+// to Stackdriver. Values explicitly set in the config take the highest precedent.
+func getGcpMetadata(config *metricsConfig) *gcpMetadata {
+	gm := gcpMetadataFunc()
+	if config.stackdriverConfig.ProjectID != "" {
+		gm.project = config.stackdriverConfig.ProjectID
+	}
+
+	if config.stackdriverConfig.GcpLocation != "" {
+		gm.location = config.stackdriverConfig.GcpLocation
+	}
+
+	if config.stackdriverConfig.ClusterName != "" {
+		gm.cluster = config.stackdriverConfig.ClusterName
+	}
+
+	return gm
 }
 
 func getMonitoredResourceFunc(metricTypePrefix string, gm *gcpMetadata) func(v *view.View, tags []tag.Tag) ([]tag.Tag, monitoredresource.Interface) {
