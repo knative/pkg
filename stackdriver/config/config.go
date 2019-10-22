@@ -36,9 +36,9 @@ const (
 	// ConfigMapNameEnv is the name of the environment variable that contains the name of
 	// the ConfigMap for stackdriver configuration.
 	ConfigMapNameEnv = "CONFIG_STACKDRIVER_NAME"
-	// secretNamespace is the namespace in which secrets for authenticating with Stackdriver
+	// secretNamespaceDefault is the namespace in which secrets for authenticating with Stackdriver
 	// should be stored.
-	secretNamespace = "knative-serving"
+	secretNamespaceDefault = "default"
 	// secretDataFieldKey is key of the Kubernetes Secret Data field that contains the GCP
 	// service account key to use.
 	secretDataFieldKey = "key.json"
@@ -51,6 +51,8 @@ const (
 	ClusterNameKey = "cluster-name"
 	// GcpSecretNameKey is the name of the ConfigMap field for GcpSecretName.
 	GcpSecretNameKey = "gcp-secret-name"
+	// GcpSecretNamespaceKey is the name of the ConfigMap field for GcpSecretNamespace.
+	GcpSecretNamespaceKey = "gcp-secret-namespace"
 )
 
 // Config encapsulates the metadata required to configure a Stackdriver client.
@@ -70,6 +72,10 @@ type Config struct {
 	// authenticate with Stackdriver. If not provided, Google Application Default Credentials
 	// will be used (https://cloud.google.com/docs/authentication/production).
 	GcpSecretName string
+	// GcpSecretNamespace is the Kubernetes namespace where GcpSecretName is located.
+	// The Kubernetes ServiceAccount used by the pod that is exporting data to
+	// Stackdriver should have access to Secrets in this namespace.
+	GcpSecretNamespace string
 }
 
 // NewStackdriverConfigFromConfigMap returns a Config for the given configmap
@@ -111,7 +117,12 @@ var (
 // GetStackdriverSecret returns the Kubernetes Secret specified in the given config.
 func GetStackdriverSecret(config *Config) (*v1.Secret, error) {
 	ensureKubeclient()
-	return kubeclient.CoreV1().Secrets(secretNamespace).Get(config.GcpSecretName, metav1.GetOptions{})
+	ns := secretNamespaceDefault
+	if config.GcpSecretNamespace != "" {
+		ns = config.GcpSecretNamespace
+	}
+
+	return kubeclient.CoreV1().Secrets(ns).Get(config.GcpSecretName, metav1.GetOptions{})
 }
 
 // ConvertSecretToExporterOption converts a Kubernetes Secret to an OpenCensus Stackdriver Exporter Option.

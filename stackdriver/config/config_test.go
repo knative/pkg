@@ -16,17 +16,19 @@ func TestNewStackdriverConfigFromConfigMap(t *testing.T) {
 			name: "fullSdConfig",
 			configMap: &corev1.ConfigMap{
 				Data: map[string]string{
-					"project-id":      "project",
-					"gcp-location":    "us-west1",
-					"cluster-name":    "cluster",
-					"gcp-secret-name": "secret",
+					"project-id":           "project",
+					"gcp-location":         "us-west1",
+					"cluster-name":         "cluster",
+					"gcp-secret-name":      "secret",
+					"gcp-secret-namespace": "non-default",
 				},
 			},
 			expectedConfig: Config{
-				ProjectID:     "project",
-				GcpLocation:   "us-west1",
-				ClusterName:   "cluster",
-				GcpSecretName: "secret",
+				ProjectID:          "project",
+				GcpLocation:        "us-west1",
+				ClusterName:        "cluster",
+				GcpSecretName:      "secret",
+				GcpSecretNamespace: "non-default",
 			},
 		},
 		{
