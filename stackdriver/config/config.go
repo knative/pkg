@@ -134,7 +134,7 @@ func ConvertSecretToExporterOption(secret *v1.Secret) option.ClientOption {
 
 func isKubeclientInitialized() bool {
 	mtx.RLock()
-	defer mtx.Unlock()
+	defer mtx.RUnlock()
 
 	return kubeclient != nil
 }
