@@ -95,6 +95,7 @@ func newStackdriverExporter(config *metricsConfig, logger *zap.SugaredLogger) (v
 		}
 	}
 
+	// If ProjectID or Location are empty, Stackdriver will automatically attempt to use Google Application Default Credentials.
 	e, err := newStackdriverExporterFunc(stackdriver.Options{
 		ProjectID:               proj,
 		Location:                config.stackdriverConfig.GCPLocation,

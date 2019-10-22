@@ -132,6 +132,8 @@ func ConvertSecretToExporterOption(secret *v1.Secret) option.ClientOption {
 	return option.WithCredentialsJSON(secret.Data[secretDataFieldKey])
 }
 
+// isKubeclientInitialized is a thread-safe check to see if the kubeclient is initialzed.
+// A reader-lock is used to make the check as efficient as possible.
 func isKubeclientInitialized() bool {
 	mtx.RLock()
 	defer mtx.RUnlock()
@@ -147,6 +149,8 @@ func ensureKubeclient() {
 	mtx.Lock()
 	defer mtx.Unlock()
 
+	// Multiple readers can read the kubeclient as nil before reaching
+	// the writer lock, so double check the value is not nil.
 	if kubeclient != nil {
 		return
 	}
