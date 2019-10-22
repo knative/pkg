@@ -106,6 +106,10 @@ func NewStackdriverConfigFromMap(config map[string]string) (*Config, error) {
 		sc.GcpSecretName = gsn
 	}
 
+	if gsns, ok := config[GcpSecretNamespaceKey]; ok {
+		sc.GcpSecretNamespace = gsns
+	}
+
 	return sc, nil
 }
 
