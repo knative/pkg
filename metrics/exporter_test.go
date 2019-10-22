@@ -101,6 +101,23 @@ func TestMain(m *testing.M) {
 	os.Exit(m.Run())
 }
 
+var (
+	newMetricExporterTests = []struct {
+		config       *metricsConfig
+		expectSuccess bool
+	}{
+		{
+			config: &metricsConfig{
+				domain:               servingDomain,
+				component:            testComponent,
+				backendDestination:   "unsupported",
+				stackdriverProjectID: "",
+			},
+			expectSuccess: ,
+		}
+	}
+)
+
 func TestMetricsExporter(t *testing.T) {
 	_, err := newMetricsExporter(&metricsConfig{
 		domain:               servingDomain,
