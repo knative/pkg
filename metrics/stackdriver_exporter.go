@@ -75,7 +75,7 @@ func newOpencensusSDExporter(o stackdriver.Options) (view.Exporter, error) {
 // TODO should be properly refactored to be able to inject the getMonitoredResourceFunc function.
 // 	See https://github.com/knative/pkg/issues/608
 func newStackdriverExporter(config *metricsConfig, logger *zap.SugaredLogger) (view.Exporter, error) {
-	gm := getGcpMetadata(config)
+	gm := getGCPMetadata(config)
 	mtf := getMetricTypeFunc(config.stackdriverMetricTypePrefix, config.stackdriverCustomMetricTypePrefix)
 
 	proj := config.stackdriverProjectID
@@ -84,7 +84,7 @@ func newStackdriverExporter(config *metricsConfig, logger *zap.SugaredLogger) (v
 	}
 
 	var co []option.ClientOption
-	if config.stackdriverConfig.GcpSecretName != "" {
+	if config.stackdriverConfig.GCPSecretName != "" {
 		secret, err := getStackdriverSecretFunc(&config.stackdriverConfig)
 
 		if err == nil {
@@ -97,7 +97,7 @@ func newStackdriverExporter(config *metricsConfig, logger *zap.SugaredLogger) (v
 
 	e, err := newStackdriverExporterFunc(stackdriver.Options{
 		ProjectID:               proj,
-		Location:                config.stackdriverConfig.GcpLocation,
+		Location:                config.stackdriverConfig.GCPLocation,
 		MonitoringClientOptions: co,
 		TraceClientOptions:      co,
 		GetMetricDisplayName:    mtf, // Use metric type for display name for custom metrics. No impact on built-in metrics.
@@ -113,16 +113,16 @@ func newStackdriverExporter(config *metricsConfig, logger *zap.SugaredLogger) (v
 	return e, nil
 }
 
-// getGcpMetadata returns GCP metadata required to export metrics
+// getGCPMetadata returns GCP metadata required to export metrics
 // to Stackdriver. Values explicitly set in the config take the highest precedent.
-func getGcpMetadata(config *metricsConfig) *gcpMetadata {
+func getGCPMetadata(config *metricsConfig) *gcpMetadata {
 	gm := gcpMetadataFunc()
 	if config.stackdriverConfig.ProjectID != "" {
 		gm.project = config.stackdriverConfig.ProjectID
 	}
 
-	if config.stackdriverConfig.GcpLocation != "" {
-		gm.location = config.stackdriverConfig.GcpLocation
+	if config.stackdriverConfig.GCPLocation != "" {
+		gm.location = config.stackdriverConfig.GCPLocation
 	}
 
 	if config.stackdriverConfig.ClusterName != "" {

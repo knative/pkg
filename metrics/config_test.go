@@ -446,10 +446,11 @@ var (
 
 	sdConfigUpdate = ExporterOptions{
 		StackdriverConfigMap: map[string]string{
-			"project-id":      "project",
-			"gcp-location":    "us-west1",
-			"cluster-name":    "cluster",
-			"gcp-secret-name": "secret",
+			"project-id":           "project",
+			"gcp-location":         "us-west1",
+			"cluster-name":         "cluster",
+			"gcp-secret-name":      "secret",
+			"gcp-secret-namespace": "secret-ns",
 		},
 	}
 
@@ -483,10 +484,11 @@ var (
 		Domain:    servingDomain,
 		Component: testComponent,
 		StackdriverConfigMap: map[string]string{
-			"project-id":      "project",
-			"gcp-location":    "us-west1",
-			"cluster-name":    "cluster",
-			"gcp-secret-name": "secret",
+			"project-id":           "project",
+			"gcp-location":         "us-west1",
+			"cluster-name":         "cluster",
+			"gcp-secret-name":      "secret",
+			"gcp-secret-namespace": "secret-ns",
 		},
 	}
 
@@ -520,10 +522,11 @@ var (
 				reportingPeriod:    5 * time.Second,
 				prometheusPort:     defaultPrometheusPort,
 				stackdriverConfig: sdconfig.Config{
-					ProjectID:     "project",
-					GcpLocation:   "us-west1",
-					ClusterName:   "cluster",
-					GcpSecretName: "secret",
+					ProjectID:          "project",
+					GCPLocation:        "us-west1",
+					ClusterName:        "cluster",
+					GCPSecretName:      "secret",
+					GCPSecretNamespace: "secret-ns",
 				},
 			},
 			expectedNewExporter: true,
@@ -541,10 +544,11 @@ var (
 				reportingPeriod:    5 * time.Second,
 				prometheusPort:     defaultPrometheusPort,
 				stackdriverConfig: sdconfig.Config{
-					ProjectID:     "project",
-					GcpLocation:   "us-west1",
-					ClusterName:   "cluster",
-					GcpSecretName: "secret",
+					ProjectID:          "project",
+					GCPLocation:        "us-west1",
+					ClusterName:        "cluster",
+					GCPSecretName:      "secret",
+					GCPSecretNamespace: "secret-ns",
 				},
 			},
 			expectedNewExporter: true,
@@ -565,10 +569,11 @@ var (
 				stackdriverCustomMetricTypePrefix: path.Join(customMetricTypePrefix, defaultCustomMetricSubDomain, testComponent),
 				stackdriverCustomMetricsSubDomain: defaultCustomMetricSubDomain,
 				stackdriverConfig: sdconfig.Config{
-					ProjectID:     "project",
-					GcpLocation:   "us-west1",
-					ClusterName:   "cluster",
-					GcpSecretName: "secret",
+					ProjectID:          "project",
+					GCPLocation:        "us-west1",
+					ClusterName:        "cluster",
+					GCPSecretName:      "secret",
+					GCPSecretNamespace: "secret-ns",
 				},
 			},
 			expectedNewExporter: true,
@@ -589,10 +594,11 @@ var (
 				stackdriverCustomMetricTypePrefix: path.Join(customMetricTypePrefix, defaultCustomMetricSubDomain, testComponent),
 				stackdriverCustomMetricsSubDomain: defaultCustomMetricSubDomain,
 				stackdriverConfig: sdconfig.Config{
-					ProjectID:     "project",
-					GcpLocation:   "us-west1",
-					ClusterName:   "cluster",
-					GcpSecretName: "secret",
+					ProjectID:          "project",
+					GCPLocation:        "us-west1",
+					ClusterName:        "cluster",
+					GCPSecretName:      "secret",
+					GCPSecretNamespace: "secret-ns",
 				},
 			},
 			expectedNewExporter: true,
@@ -657,16 +663,17 @@ var (
 				stackdriverCustomMetricTypePrefix: path.Join(customMetricTypePrefix, defaultCustomMetricSubDomain, testComponent),
 				stackdriverCustomMetricsSubDomain: defaultCustomMetricSubDomain,
 				stackdriverConfig: sdconfig.Config{
-					ProjectID:     "project",
-					GcpLocation:   "us-west1",
-					ClusterName:   "cluster",
-					GcpSecretName: "secret",
+					ProjectID:          "project",
+					GCPLocation:        "us-west1",
+					ClusterName:        "cluster",
+					GCPSecretName:      "secret",
+					GCPSecretNamespace: "secret-ns",
 				},
 			},
 			expectedNewExporter: true,
 		},
 		{
-			name: "invalidGcpLocation",
+			name: "invalidGCPLocation",
 			updateList: []ExporterOptions{
 				sdBackendOption,
 				ExporterOptions{
@@ -685,7 +692,7 @@ var (
 				stackdriverCustomMetricTypePrefix: path.Join(customMetricTypePrefix, defaultCustomMetricSubDomain, testComponent),
 				stackdriverCustomMetricsSubDomain: defaultCustomMetricSubDomain,
 				stackdriverConfig: sdconfig.Config{
-					GcpLocation: "narnia",
+					GCPLocation: "narnia",
 				},
 			},
 			expectedNewExporter: true,
@@ -701,17 +708,19 @@ var (
 			name: "fullSdConfig",
 			config: corev1.ConfigMap{
 				Data: map[string]string{
-					"project-id":      "project",
-					"gcp-location":    "us-west1",
-					"cluster-name":    "cluster",
-					"gcp-secret-name": "secret",
+					"project-id":           "project",
+					"gcp-location":         "us-west1",
+					"cluster-name":         "cluster",
+					"gcp-secret-name":      "secret",
+					"gcp-secret-namespace": "secret-ns",
 				},
 			},
 			expectedSdConfig: sdconfig.Config{
-				ProjectID:     "project",
-				GcpLocation:   "us-west1",
-				ClusterName:   "cluster",
-				GcpSecretName: "secret",
+				ProjectID:          "project",
+				GCPLocation:        "us-west1",
+				ClusterName:        "cluster",
+				GCPSecretName:      "secret",
+				GCPSecretNamespace: "secret-ns",
 			},
 		},
 		{
@@ -730,19 +739,19 @@ var (
 			},
 			expectedSdConfig: sdconfig.Config{
 				ProjectID:   "project",
-				GcpLocation: "us-west1",
+				GCPLocation: "us-west1",
 				ClusterName: "cluster",
 			},
 		},
 		{
-			name: "invalidGcpLocation",
+			name: "invalidGCPLocation",
 			config: corev1.ConfigMap{
 				Data: map[string]string{
 					"gcp-location": "narnia",
 				},
 			},
 			expectedSdConfig: sdconfig.Config{
-				GcpLocation: "narnia",
+				GCPLocation: "narnia",
 			},
 		},
 	}
@@ -808,7 +817,6 @@ func TestStackdriverConfig(t *testing.T) {
 
 			mismatch := false
 			if test.expectedMetricsConfig != nil && mc != nil {
-				fmt.Println(test.name)
 				if *test.expectedMetricsConfig != *mc {
 					mismatch = true
 				}
