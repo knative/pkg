@@ -293,6 +293,8 @@ func TestInterlevedExporters(t *testing.T) {
 }
 
 func TestFlushExporter(t *testing.T) {
+	// Capture this to reset it at the end of test so that other tests are not impacted.
+	tmpFunc := newStackdriverExporterFunc
 	// No exporter - no action should be taken
 	setCurMetricsConfig(nil)
 	if want, got := false, FlushExporter(); got != want {
@@ -353,4 +355,6 @@ func TestFlushExporter(t *testing.T) {
 			t.Errorf("Expected %v, got %v.", want, got)
 		}
 	}
+
+	newStackdriverExporterFunc = tmpFunc
 }

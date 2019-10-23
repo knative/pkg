@@ -446,7 +446,7 @@ func TestNewStackdriverExporterWithMetadata(t *testing.T) {
 				GCPSecretNamespace: "secret-ns",
 			},
 		},
-		expectSuccess: false,
+		expectSuccess: true,
 	}, {
 		name: "partialStackdriverConfig",
 		config: &metricsConfig{
