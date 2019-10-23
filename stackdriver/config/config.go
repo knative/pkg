@@ -65,7 +65,7 @@ type Config struct {
 	// Required when the Kubernetes cluster is not hosted on GCE.
 	ProjectID string
 	// GCPLocation is the GCP region or zone to which data is uploaded.
-	// This is not necessarily the GCP project ID where the Kubernetes cluster is hosted.
+	// This is not necessarily the GCP location where the Kubernetes cluster is hosted.
 	// Required when the Kubernetes cluster is not hosted on GCE.
 	GCPLocation string
 	// ClusterName is the cluster name with which the data will be associated in Stackdriver.
