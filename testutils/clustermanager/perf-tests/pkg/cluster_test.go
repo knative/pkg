@@ -58,14 +58,14 @@ func TestRecreateClusters(t *testing.T) {
 			testName:      "clusters that do not belong to this repo will not be touched",
 			benchmarkRoot: testBenchmarkRoot,
 			precreatedClusters: map[string]ClusterConfig{
-				"unrelated-cluster": ClusterConfig{
+				"unrelated-cluster": {
 					Location:  "us-central1",
 					NodeCount: 3,
 					NodeType:  "n1-standard-4",
 				},
 			},
 			expectedClusters: map[string]ClusterConfig{
-				"unrelated-cluster": ClusterConfig{
+				"unrelated-cluster": {
 					Location:  "us-central1",
 					NodeCount: 3,
 					NodeType:  "n1-standard-4",
@@ -77,7 +77,7 @@ func TestRecreateClusters(t *testing.T) {
 			testName:      "clusters that belong to this repo, but have no corresponding benchmark, will be deleted",
 			benchmarkRoot: testBenchmarkRoot,
 			precreatedClusters: map[string]ClusterConfig{
-				clusterNameForBenchmark("random-cluster", fakeRepository): ClusterConfig{
+				clusterNameForBenchmark("random-cluster", fakeRepository): {
 					Location:  "us-central1",
 					NodeCount: 3,
 					NodeType:  "n1-standard-4",
@@ -90,7 +90,7 @@ func TestRecreateClusters(t *testing.T) {
 			testName:      "clusters that belong to this repo, and have corresponding benchmark, will be recreated with the new config",
 			benchmarkRoot: testBenchmarkRoot,
 			precreatedClusters: map[string]ClusterConfig{
-				clusterNameForBenchmark("test-benchmark1", fakeRepository): ClusterConfig{
+				clusterNameForBenchmark("test-benchmark1", fakeRepository): {
 					Location:  "us-central1",
 					NodeCount: 2,
 					NodeType:  "n1-standard-4",
@@ -105,12 +105,12 @@ func TestRecreateClusters(t *testing.T) {
 			testName:      "multiple different clusters can be all handled in one single function call",
 			benchmarkRoot: testBenchmarkRoot,
 			precreatedClusters: map[string]ClusterConfig{
-				clusterNameForBenchmark("test-benchmark1", fakeRepository): ClusterConfig{
+				clusterNameForBenchmark("test-benchmark1", fakeRepository): {
 					Location:  "us-central1",
 					NodeCount: 2,
 					NodeType:  "n1-standard-4",
 				},
-				clusterNameForBenchmark("test-benchmark2", fakeRepository): ClusterConfig{
+				clusterNameForBenchmark("test-benchmark2", fakeRepository): {
 					Location:  "us-west1",
 					NodeCount: 2,
 					NodeType:  "n1-standard-8",
@@ -188,14 +188,14 @@ func TestReconcileClusters(t *testing.T) {
 			testName:      "clusters that do not belong to this repo will not be touched",
 			benchmarkRoot: testBenchmarkRoot,
 			precreatedClusters: map[string]ClusterConfig{
-				"unrelated-cluster": ClusterConfig{
+				"unrelated-cluster": {
 					Location:  "us-central1",
 					NodeCount: 3,
 					NodeType:  "n1-standard-4",
 				},
 			},
 			expectedClusters: combineClusterMaps(map[string]ClusterConfig{
-				"unrelated-cluster": ClusterConfig{
+				"unrelated-cluster": {
 					Location:  "us-central1",
 					NodeCount: 3,
 					NodeType:  "n1-standard-4",
@@ -207,7 +207,7 @@ func TestReconcileClusters(t *testing.T) {
 			testName:      "clusters that belong to this repo, but have no corresponding benchmark, will be deleted",
 			benchmarkRoot: testBenchmarkRoot,
 			precreatedClusters: map[string]ClusterConfig{
-				clusterNameForBenchmark("random-cluster", fakeRepository): ClusterConfig{
+				clusterNameForBenchmark("random-cluster", fakeRepository): {
 					Location:  "us-central1",
 					NodeCount: 3,
 					NodeType:  "n1-standard-4",
@@ -220,7 +220,7 @@ func TestReconcileClusters(t *testing.T) {
 			testName:      "clusters that belong to this repo, and have corresponding benchmark, will be recreated with the new config",
 			benchmarkRoot: testBenchmarkRoot,
 			precreatedClusters: map[string]ClusterConfig{
-				clusterNameForBenchmark("test-benchmark1", fakeRepository): ClusterConfig{
+				clusterNameForBenchmark("test-benchmark1", fakeRepository): {
 					Location:  "us-central1",
 					NodeCount: 2,
 					NodeType:  "n1-standard-4",
@@ -233,17 +233,17 @@ func TestReconcileClusters(t *testing.T) {
 			testName:      "multiple different clusters can be all handled in one single function call",
 			benchmarkRoot: testBenchmarkRoot,
 			precreatedClusters: map[string]ClusterConfig{
-				clusterNameForBenchmark("test-benchmark1", fakeRepository): ClusterConfig{
+				clusterNameForBenchmark("test-benchmark1", fakeRepository): {
 					Location:  "us-central1",
 					NodeCount: 2,
 					NodeType:  "n1-standard-4",
 				},
-				clusterNameForBenchmark("test-benchmark2", fakeRepository): ClusterConfig{
+				clusterNameForBenchmark("test-benchmark2", fakeRepository): {
 					Location:  "us-west1",
 					NodeCount: 2,
 					NodeType:  "n1-standard-8",
 				},
-				clusterNameForBenchmark("random-cluster", fakeRepository): ClusterConfig{
+				clusterNameForBenchmark("random-cluster", fakeRepository): {
 					Location:  "us-west1",
 					NodeCount: 2,
 					NodeType:  "n1-standard-8",

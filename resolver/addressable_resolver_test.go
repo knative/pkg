@@ -36,8 +36,8 @@ import (
 )
 
 var (
-	addressableDNS                         = "http://addressable.sink.svc.cluster.local"
-	addressableDNSWithPathAndTrailingSlash = "http://addressable.sink.svc.cluster.local/bar/"
+	addressableDNS                           = "http://addressable.sink.svc.cluster.local"
+	addressableDNSWithPathAndTrailingSlash   = "http://addressable.sink.svc.cluster.local/bar/"
 	addressableDNSWithPathAndNoTrailingSlash = "http://addressable.sink.svc.cluster.local/bar"
 
 	addressableName       = "testsink"
@@ -78,43 +78,43 @@ func TestGetURI_ObjectReference(t *testing.T) {
 	}, "URI is not absolute URL": {
 		dest: apisv1alpha1.Destination{
 			URI: &apis.URL{
-				Host:   "example.com",
+				Host: "example.com",
 			},
 		},
 		wantErr: fmt.Errorf("URI is not absolute(both scheme and host should be non-empty): %v", "//example.com"),
 	}, "URI with no host": {
-			dest: apisv1alpha1.Destination{
-				URI: &apis.URL{
-					Scheme: "http",
-				},
-			},
-			wantErr: fmt.Errorf("URI is not absolute(both scheme and host should be non-empty): %v", "http:"),
-		},
-		"happy ref": {
-		objects: []runtime.Object{
-			getAddressable(),
-		},
-		dest:    apisv1alpha1.Destination{Ref: getAddressableRef()},
-		wantURI: addressableDNS,
-	}, "ref with relative uri": {
-		objects: []runtime.Object{
-			getAddressable(),
-		},
 		dest: apisv1alpha1.Destination{
-			Ref: getAddressableRef(),
 			URI: &apis.URL{
-			Path:   "/foo",
+				Scheme: "http",
 			},
 		},
-		wantURI: addressableDNS + "/foo",
-	}, "ref with relative URI without leading slash": {
+		wantErr: fmt.Errorf("URI is not absolute(both scheme and host should be non-empty): %v", "http:"),
+	},
+		"happy ref": {
+			objects: []runtime.Object{
+				getAddressable(),
+			},
+			dest:    apisv1alpha1.Destination{Ref: getAddressableRef()},
+			wantURI: addressableDNS,
+		}, "ref with relative uri": {
 			objects: []runtime.Object{
 				getAddressable(),
 			},
 			dest: apisv1alpha1.Destination{
 				Ref: getAddressableRef(),
 				URI: &apis.URL{
-					Path:   "foo",
+					Path: "/foo",
+				},
+			},
+			wantURI: addressableDNS + "/foo",
+		}, "ref with relative URI without leading slash": {
+			objects: []runtime.Object{
+				getAddressable(),
+			},
+			dest: apisv1alpha1.Destination{
+				Ref: getAddressableRef(),
+				URI: &apis.URL{
+					Path: "foo",
 				},
 			},
 			wantURI: addressableDNS + "/foo",
@@ -125,7 +125,7 @@ func TestGetURI_ObjectReference(t *testing.T) {
 			dest: apisv1alpha1.Destination{
 				Ref: getAddressableRef(),
 				URI: &apis.URL{
-					Path:   "foo",
+					Path: "foo",
 				},
 			},
 			wantURI: addressableDNSWithPathAndTrailingSlash + "foo",
@@ -136,33 +136,33 @@ func TestGetURI_ObjectReference(t *testing.T) {
 			dest: apisv1alpha1.Destination{
 				Ref: getAddressableRef(),
 				URI: &apis.URL{
-					Path:   "/foo",
+					Path: "/foo",
 				},
 			},
 			wantURI: addressableDNS + "/foo",
 		}, "ref ends with path and no trailing slash and relative URI without leading slash ": {
-		objects: []runtime.Object{
-		getAddressableWithPathAndNoTrailingSlash(),
-	},
-		dest: apisv1alpha1.Destination{
-		Ref: getAddressableRef(),
-		URI: &apis.URL{
-		Path:   "foo",
-		},
-	},
-		wantURI: addressableDNS + "/foo",
-	}, "ref ends with path and no trailing slash and relative URI with leading slash ": {
-		objects: []runtime.Object{
-		getAddressableWithPathAndNoTrailingSlash(),
-	},
-		dest: apisv1alpha1.Destination{
-		Ref: getAddressableRef(),
-		URI: &apis.URL{
-		Path:   "/foo",
-		},
-	},
-		wantURI: addressableDNS + "/foo",
-	}, "ref with URI which is absolute URL": {
+			objects: []runtime.Object{
+				getAddressableWithPathAndNoTrailingSlash(),
+			},
+			dest: apisv1alpha1.Destination{
+				Ref: getAddressableRef(),
+				URI: &apis.URL{
+					Path: "foo",
+				},
+			},
+			wantURI: addressableDNS + "/foo",
+		}, "ref ends with path and no trailing slash and relative URI with leading slash ": {
+			objects: []runtime.Object{
+				getAddressableWithPathAndNoTrailingSlash(),
+			},
+			dest: apisv1alpha1.Destination{
+				Ref: getAddressableRef(),
+				URI: &apis.URL{
+					Path: "/foo",
+				},
+			},
+			wantURI: addressableDNS + "/foo",
+		}, "ref with URI which is absolute URL": {
 			objects: []runtime.Object{
 				getAddressable(),
 			},
@@ -174,36 +174,36 @@ func TestGetURI_ObjectReference(t *testing.T) {
 					Path:   "/foo",
 				},
 			},
-			wantErr:  fmt.Errorf("absolute URI is not allowed when Ref exists"),
+			wantErr: fmt.Errorf("absolute URI is not allowed when Ref exists"),
 		},
 		"nil url": {
-		objects: []runtime.Object{
-			getAddressableNilURL(),
-		},
-		dest:    apisv1alpha1.Destination{Ref: getUnaddressableRef()},
-		wantErr: fmt.Errorf(`url missing in address of %+v`, getUnaddressableRef()),
-	}, "nil address": {
-		objects: []runtime.Object{
-			getAddressableNilAddress(),
-		},
-		dest:    apisv1alpha1.Destination{Ref: getUnaddressableRef()},
-		wantErr: fmt.Errorf(`address not set for %+v`, getUnaddressableRef()),
-	}, "missing host": {
-		objects: []runtime.Object{
-			getAddressableNoHostURL(),
-		},
-		dest:    apisv1alpha1.Destination{Ref: getUnaddressableRef()},
-		wantErr: fmt.Errorf(`hostname missing in address of %+v`, getUnaddressableRef()),
-	}, "missing status": {
-		objects: []runtime.Object{
-			getAddressableNoStatus(),
-		},
-		dest:    apisv1alpha1.Destination{Ref: getUnaddressableRef()},
-		wantErr: fmt.Errorf(`address not set for %+v`, getUnaddressableRef()),
-	}, "notFound": {
-		dest:    apisv1alpha1.Destination{Ref: getUnaddressableRef()},
-		wantErr: fmt.Errorf(`failed to get ref %+v: %s "%s" not found`, getUnaddressableRef(), unaddressableResource, unaddressableName),
-	}}
+			objects: []runtime.Object{
+				getAddressableNilURL(),
+			},
+			dest:    apisv1alpha1.Destination{Ref: getUnaddressableRef()},
+			wantErr: fmt.Errorf(`url missing in address of %+v`, getUnaddressableRef()),
+		}, "nil address": {
+			objects: []runtime.Object{
+				getAddressableNilAddress(),
+			},
+			dest:    apisv1alpha1.Destination{Ref: getUnaddressableRef()},
+			wantErr: fmt.Errorf(`address not set for %+v`, getUnaddressableRef()),
+		}, "missing host": {
+			objects: []runtime.Object{
+				getAddressableNoHostURL(),
+			},
+			dest:    apisv1alpha1.Destination{Ref: getUnaddressableRef()},
+			wantErr: fmt.Errorf(`hostname missing in address of %+v`, getUnaddressableRef()),
+		}, "missing status": {
+			objects: []runtime.Object{
+				getAddressableNoStatus(),
+			},
+			dest:    apisv1alpha1.Destination{Ref: getUnaddressableRef()},
+			wantErr: fmt.Errorf(`address not set for %+v`, getUnaddressableRef()),
+		}, "notFound": {
+			dest:    apisv1alpha1.Destination{Ref: getUnaddressableRef()},
+			wantErr: fmt.Errorf(`failed to get ref %+v: %s "%s" not found`, getUnaddressableRef(), unaddressableResource, unaddressableName),
+		}}
 
 	for n, tc := range tests {
 		t.Run(n, func(t *testing.T) {

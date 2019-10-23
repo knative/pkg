@@ -51,7 +51,7 @@ func TestValidateDestination(t *testing.T) {
 			dest: &Destination{
 				Ref: &validRef,
 			},
-			want:"",
+			want: "",
 		},
 		"invalid ref, missing name": {
 			dest: &Destination{
@@ -100,7 +100,6 @@ func TestValidateDestination(t *testing.T) {
 				},
 			},
 			want: "invalid value: Relative URI is not allowed when Ref is absent: uri",
-
 		},
 		"invalid, both uri and ref, uri is absolute URL": {
 			dest: &Destination{
@@ -110,13 +109,12 @@ func TestValidateDestination(t *testing.T) {
 			want: "Absolute URI is not allowed when Ref is present: ref, uri",
 		},
 		"invalid, both uri and ref are nil": {
-			dest: &Destination{
-			},
+			dest: &Destination{},
 			want: "expected at least one, got neither: ref, uri",
 		},
 		"valid, both uri and ref, uri is not a absolute URL": {
 			dest: &Destination{
-				URI:  &apis.URL{
+				URI: &apis.URL{
 					Path: "/handler",
 				},
 				Ref: &validRef,
@@ -138,4 +136,3 @@ func TestValidateDestination(t *testing.T) {
 		})
 	}
 }
-
