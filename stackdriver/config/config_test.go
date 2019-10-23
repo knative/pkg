@@ -71,26 +71,11 @@ func TestNewStackdriverConfigFromConfigMap(t *testing.T) {
 	}
 }
 
-// This test ensures that ensureKubeClient completes. Errors are expected, but ok.
-func TestEnsureKubeclientNoDeadlock(t *testing.T) {
-	done := make(chan bool)
-	for i := 0; i < 10; i++ {
-		go testKubeclient(t, done)
-	}
-
-	// Wait for 10 responses
-	for i := 0; i < 10; i++ {
-		<-done
-	}
-}
-
-func testKubeclient(t *testing.T, doneCh chan bool) {
+func TestEnsureKubeClient(t *testing.T) {
 	defer func() {
 		if recover() == nil {
 			t.Error("Expected ensureKubeclient to panic due to not being in a Kubernetes cluster. Did the function run?")
 		}
-
-		doneCh <- true
 	}()
 
 	ensureKubeclient()

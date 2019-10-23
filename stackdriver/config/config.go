@@ -29,10 +29,10 @@ import (
 )
 
 var (
-	mtx sync.RWMutex
 
 	// kubeclient is the in-cluster Kubernetes kubeclient.
-	kubeclient *kubernetes.Clientset
+	kubeclient     *kubernetes.Clientset
+	initClientOnce sync.Once
 )
 
 const (
@@ -48,14 +48,14 @@ const (
 
 	// ProjectIDKey is the map key for Config.ProjectID.
 	ProjectIDKey = "project-id"
-	// GcpLocationKey is the map key for Config.GCPLocation.
-	GcpLocationKey = "gcp-location"
+	// GCPLocationKey is the map key for Config.GCPLocation.
+	GCPLocationKey = "gcp-location"
 	// ClusterNameKey is the map key for Config.ClusterName.
 	ClusterNameKey = "cluster-name"
-	// GcpSecretNameKey is the map key for GCPSecretName.
-	GcpSecretNameKey = "gcp-secret-name"
-	// GcpSecretNamespaceKey is the map key for GCPSecretNamespace.
-	GcpSecretNamespaceKey = "gcp-secret-namespace"
+	// GCPSecretNameKey is the map key for GCPSecretName.
+	GCPSecretNameKey = "gcp-secret-name"
+	// GCPSecretNamespaceKey is the map key for GCPSecretNamespace.
+	GCPSecretNamespaceKey = "gcp-secret-namespace"
 )
 
 // Config encapsulates the metadata required to configure a Stackdriver client.
@@ -75,7 +75,7 @@ type Config struct {
 	// authenticate with Stackdriver. If not provided, Google Application Default Credentials
 	// will be used (https://cloud.google.com/docs/authentication/production).
 	GCPSecretName string
-	// GCPSecretNamespace is the Kubernetes namespace where GcpSecretName is located.
+	// GCPSecretNamespace is the Kubernetes namespace where GCPSecretName is located.
 	// The Kubernetes ServiceAccount used by the pod that is exporting data to
 	// Stackdriver should have access to Secrets in this namespace.
 	GCPSecretNamespace string
@@ -97,7 +97,7 @@ func NewStackdriverConfigFromMap(config map[string]string) (*Config, error) {
 		sc.ProjectID = pi
 	}
 
-	if gl, ok := config[GcpLocationKey]; ok {
+	if gl, ok := config[GCPLocationKey]; ok {
 		sc.GCPLocation = gl
 	}
 
@@ -105,11 +105,11 @@ func NewStackdriverConfigFromMap(config map[string]string) (*Config, error) {
 		sc.ClusterName = cn
 	}
 
-	if gsn, ok := config[GcpSecretNameKey]; ok {
+	if gsn, ok := config[GCPSecretNameKey]; ok {
 		sc.GCPSecretName = gsn
 	}
 
-	if gsns, ok := config[GcpSecretNamespaceKey]; ok {
+	if gsns, ok := config[GCPSecretNamespaceKey]; ok {
 		sc.GCPSecretNamespace = gsns
 	}
 
@@ -132,37 +132,18 @@ func ConvertSecretToExporterOption(secret *v1.Secret) option.ClientOption {
 	return option.WithCredentialsJSON(secret.Data[secretDataFieldKey])
 }
 
-// isKubeclientInitialized is a thread-safe check to see if the kubeclient is initialzed.
-// A reader-lock is used to make the check as efficient as possible.
-func isKubeclientInitialized() bool {
-	mtx.RLock()
-	defer mtx.RUnlock()
-
-	return kubeclient != nil
-}
-
 func ensureKubeclient() {
-	if isKubeclientInitialized() {
-		return
-	}
+	initClientOnce.Do(func() {
+		config, err := rest.InClusterConfig()
+		if err != nil {
+			panic(err.Error())
+		}
 
-	mtx.Lock()
-	defer mtx.Unlock()
+		cs, err := kubernetes.NewForConfig(config)
+		if err != nil {
+			panic(err.Error())
+		}
+		kubeclient = cs
 
-	// Multiple readers can read the kubeclient as nil before reaching
-	// the writer lock, so double check the value is not nil.
-	if kubeclient != nil {
-		return
-	}
-
-	config, err := rest.InClusterConfig()
-	if err != nil {
-		panic(err.Error())
-	}
-
-	cs, err := kubernetes.NewForConfig(config)
-	if err != nil {
-		panic(err.Error())
-	}
-	kubeclient = cs
+	})
 }
