@@ -17,13 +17,16 @@ limitations under the License.
 package metrics
 
 import (
+	"errors"
 	"path"
 	"testing"
+	"time"
 
 	"contrib.go.opencensus.io/exporter/stackdriver"
 	"go.opencensus.io/stats"
 	"go.opencensus.io/stats/view"
 	"go.opencensus.io/tag"
+	corev1 "k8s.io/api/core/v1"
 	. "knative.dev/pkg/logging/testing"
 	"knative.dev/pkg/metrics/metricskey"
 )
@@ -136,6 +139,10 @@ var (
 
 func fakeGcpMetadataFun() *gcpMetadata {
 	return &testGcpMetadata
+}
+
+func fakeGetStackdriverSecret(config *stackdriverClientConfig) (*corev1.Secret, error) {
+	return nil, errors.New("tests do no have access to Kubernetes client to retrieve Kubernetes Secrets")
 }
 
 type fakeExporter struct{}
@@ -354,15 +361,129 @@ func TestGetgetMetricTypeFunc_UseCustomDomain(t *testing.T) {
 }
 
 func TestNewStackdriverExporterWithMetadata(t *testing.T) {
-	e, err := newStackdriverExporter(&metricsConfig{
-		domain:               servingDomain,
-		component:            "autoscaler",
-		backendDestination:   Stackdriver,
-		stackdriverProjectID: testProj}, TestLogger(t))
-	if err != nil {
-		t.Error(err)
+	tests := []struct {
+		name          string
+		config        *metricsConfig
+		expectSuccess bool
+	}{{
+		name: "standardCase",
+		config: &metricsConfig{
+			domain:             servingDomain,
+			component:          "autoscaler",
+			backendDestination: Stackdriver,
+			stackdriverClientConfig: stackdriverClientConfig{
+				ProjectID: testProj,
+			},
+		},
+		expectSuccess: true,
+	}, {
+		name: "stackdriverClientConfigOnly",
+		config: &metricsConfig{
+			stackdriverClientConfig: stackdriverClientConfig{
+				ProjectID:          "project",
+				GCPLocation:        "us-west1",
+				ClusterName:        "cluster",
+				GCPSecretName:      "secret",
+				GCPSecretNamespace: "secret-ns",
+			},
+		},
+		expectSuccess: true,
+	}, {
+		name: "fullValidConfig",
+		config: &metricsConfig{
+			domain:                            servingDomain,
+			component:                         testComponent,
+			backendDestination:                Stackdriver,
+			reportingPeriod:                   60 * time.Second,
+			isStackdriverBackend:              true,
+			stackdriverMetricTypePrefix:       path.Join(servingDomain, testComponent),
+			stackdriverCustomMetricTypePrefix: path.Join(customMetricTypePrefix, defaultCustomMetricSubDomain, testComponent),
+			stackdriverCustomMetricsSubDomain: defaultCustomMetricSubDomain,
+			stackdriverClientConfig: stackdriverClientConfig{
+				ProjectID:          "project",
+				GCPLocation:        "us-west1",
+				ClusterName:        "cluster",
+				GCPSecretName:      "secret",
+				GCPSecretNamespace: "secret-ns",
+			},
+		},
+		expectSuccess: true,
+	}, {
+		name: "invalidStackdriverGcpLocation",
+		config: &metricsConfig{
+			domain:                            servingDomain,
+			component:                         testComponent,
+			backendDestination:                Stackdriver,
+			reportingPeriod:                   60 * time.Second,
+			isStackdriverBackend:              true,
+			stackdriverMetricTypePrefix:       path.Join(servingDomain, testComponent),
+			stackdriverCustomMetricTypePrefix: path.Join(customMetricTypePrefix, defaultCustomMetricSubDomain, testComponent),
+			stackdriverCustomMetricsSubDomain: defaultCustomMetricSubDomain,
+			stackdriverClientConfig: stackdriverClientConfig{
+				ProjectID:          "project",
+				GCPLocation:        "narnia",
+				ClusterName:        "cluster",
+				GCPSecretName:      "secret",
+				GCPSecretNamespace: "secret-ns",
+			},
+		},
+		expectSuccess: true,
+	}, {
+		name: "missingProjectID",
+		config: &metricsConfig{
+			domain:                            servingDomain,
+			component:                         testComponent,
+			backendDestination:                Stackdriver,
+			reportingPeriod:                   60 * time.Second,
+			isStackdriverBackend:              true,
+			stackdriverMetricTypePrefix:       path.Join(servingDomain, testComponent),
+			stackdriverCustomMetricTypePrefix: path.Join(customMetricTypePrefix, defaultCustomMetricSubDomain, testComponent),
+			stackdriverCustomMetricsSubDomain: defaultCustomMetricSubDomain,
+			stackdriverClientConfig: stackdriverClientConfig{
+				GCPLocation:        "narnia",
+				ClusterName:        "cluster",
+				GCPSecretName:      "secret",
+				GCPSecretNamespace: "secret-ns",
+			},
+		},
+		expectSuccess: false,
+	}, {
+		name: "partialStackdriverConfig",
+		config: &metricsConfig{
+			domain:                            servingDomain,
+			component:                         testComponent,
+			backendDestination:                Stackdriver,
+			reportingPeriod:                   60 * time.Second,
+			isStackdriverBackend:              true,
+			stackdriverMetricTypePrefix:       path.Join(servingDomain, testComponent),
+			stackdriverCustomMetricTypePrefix: path.Join(customMetricTypePrefix, defaultCustomMetricSubDomain, testComponent),
+			stackdriverCustomMetricsSubDomain: defaultCustomMetricSubDomain,
+			stackdriverClientConfig: stackdriverClientConfig{
+				ProjectID: "project",
+			},
+		},
+		expectSuccess: true,
+	}}
+
+	getStackdriverSecretFunc = fakeGetStackdriverSecret
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			e, err := newStackdriverExporter(test.config, TestLogger(t))
+
+			succeeded := e != nil && err == nil
+			if test.expectSuccess != succeeded {
+				t.Errorf("Unexpected test result. Expected success? [%v]. Error: [%v]", test.expectSuccess, err)
+			}
+		})
 	}
-	if e == nil {
-		t.Error("expected a non-nil metrics exporter")
+}
+
+func TestEnsureKubeClient(t *testing.T) {
+	// Even though ensureKubeclient uses sync.Once, make sure if the first run failed, it returns an error on subsequent calls.
+	for i := 0; i < 3; i++ {
+		err := ensureKubeclient()
+		if err == nil {
+			t.Error("Expected ensureKubeclient to fail due to not being in a Kubernetes cluster. Did the function run?")
+		}
 	}
 }

@@ -13,6 +13,7 @@ limitations under the License.
 package metrics
 
 import (
+	"fmt"
 	"os"
 	"path"
 	"testing"
@@ -102,22 +103,150 @@ func TestMain(m *testing.M) {
 }
 
 func TestMetricsExporter(t *testing.T) {
-	_, err := newMetricsExporter(&metricsConfig{
-		domain:               servingDomain,
-		component:            testComponent,
-		backendDestination:   "unsupported",
-		stackdriverProjectID: ""}, TestLogger(t))
-	if err == nil {
-		t.Errorf("Expected an error for unsupported backend %v", err)
-	}
+	tests := []struct {
+		name          string
+		config        *metricsConfig
+		expectSuccess bool
+	}{{
+		name: "unsupportedBackend",
+		config: &metricsConfig{
+			domain:             servingDomain,
+			component:          testComponent,
+			backendDestination: "unsupported",
+			stackdriverClientConfig: stackdriverClientConfig{
+				ProjectID: "",
+			},
+		},
+		expectSuccess: false,
+	}, {
+		name: "validConfig",
+		config: &metricsConfig{
+			domain:             servingDomain,
+			component:          testComponent,
+			backendDestination: Stackdriver,
+			stackdriverClientConfig: stackdriverClientConfig{
+				ProjectID: "testProj",
+			},
+		},
+		expectSuccess: true,
+	}, {
+		name: "stackdriverConfigOnly",
+		config: &metricsConfig{
+			backendDestination: Stackdriver,
+			stackdriverClientConfig: stackdriverClientConfig{
+				ProjectID:          "project",
+				GCPLocation:        "us-west1",
+				ClusterName:        "cluster",
+				GCPSecretName:      "secret",
+				GCPSecretNamespace: "secret-ns",
+			},
+		},
+		expectSuccess: true,
+	}, {
+		name: "fullValidConfig",
+		config: &metricsConfig{
+			domain:                            servingDomain,
+			component:                         testComponent,
+			backendDestination:                Stackdriver,
+			reportingPeriod:                   60 * time.Second,
+			isStackdriverBackend:              true,
+			stackdriverMetricTypePrefix:       path.Join(servingDomain, testComponent),
+			stackdriverCustomMetricTypePrefix: path.Join(customMetricTypePrefix, defaultCustomMetricSubDomain, testComponent),
+			stackdriverCustomMetricsSubDomain: defaultCustomMetricSubDomain,
+			stackdriverClientConfig: stackdriverClientConfig{
+				ProjectID:          "project",
+				GCPLocation:        "us-west1",
+				ClusterName:        "cluster",
+				GCPSecretName:      "secret",
+				GCPSecretNamespace: "secret-ns",
+			},
+		},
+		expectSuccess: true,
+	}, {
+		name: "prometheusBackendWithStackdriverConfig",
+		config: &metricsConfig{
+			domain:             servingDomain,
+			component:          testComponent,
+			backendDestination: Prometheus,
+			reportingPeriod:    5 * time.Second,
+			prometheusPort:     defaultPrometheusPort,
+			stackdriverClientConfig: stackdriverClientConfig{
+				ProjectID:          "project",
+				GCPLocation:        "us-west1",
+				ClusterName:        "cluster",
+				GCPSecretName:      "secret",
+				GCPSecretNamespace: "secret-ns",
+			},
+		},
+		expectSuccess: true,
+	}, {
+		name: "invalidStackdriverGcpLocation",
+		config: &metricsConfig{
+			domain:                            servingDomain,
+			component:                         testComponent,
+			backendDestination:                Stackdriver,
+			reportingPeriod:                   60 * time.Second,
+			isStackdriverBackend:              true,
+			stackdriverMetricTypePrefix:       path.Join(servingDomain, testComponent),
+			stackdriverCustomMetricTypePrefix: path.Join(customMetricTypePrefix, defaultCustomMetricSubDomain, testComponent),
+			stackdriverCustomMetricsSubDomain: defaultCustomMetricSubDomain,
+			stackdriverClientConfig: stackdriverClientConfig{
+				ProjectID:          "project",
+				GCPLocation:        "narnia",
+				ClusterName:        "cluster",
+				GCPSecretName:      "secret",
+				GCPSecretNamespace: "secret-ns",
+			},
+		},
+		expectSuccess: true,
+	}, {
+		name: "missingProjectID",
+		config: &metricsConfig{
+			domain:                            servingDomain,
+			component:                         testComponent,
+			backendDestination:                Stackdriver,
+			reportingPeriod:                   60 * time.Second,
+			isStackdriverBackend:              true,
+			stackdriverMetricTypePrefix:       path.Join(servingDomain, testComponent),
+			stackdriverCustomMetricTypePrefix: path.Join(customMetricTypePrefix, defaultCustomMetricSubDomain, testComponent),
+			stackdriverCustomMetricsSubDomain: defaultCustomMetricSubDomain,
+			stackdriverClientConfig: stackdriverClientConfig{
+				GCPLocation:        "narnia",
+				ClusterName:        "cluster",
+				GCPSecretName:      "secret",
+				GCPSecretNamespace: "secret-ns",
+			},
+		},
+		expectSuccess: true,
+	}, {
+		name: "partialStackdriverConfig",
+		config: &metricsConfig{
+			domain:                            servingDomain,
+			component:                         testComponent,
+			backendDestination:                Stackdriver,
+			reportingPeriod:                   60 * time.Second,
+			isStackdriverBackend:              true,
+			stackdriverMetricTypePrefix:       path.Join(servingDomain, testComponent),
+			stackdriverCustomMetricTypePrefix: path.Join(customMetricTypePrefix, defaultCustomMetricSubDomain, testComponent),
+			stackdriverCustomMetricsSubDomain: defaultCustomMetricSubDomain,
+			stackdriverClientConfig: stackdriverClientConfig{
+				ProjectID: "project",
+			},
+		},
+		expectSuccess: true,
+	}}
 
-	_, err = newMetricsExporter(&metricsConfig{
-		domain:               servingDomain,
-		component:            testComponent,
-		backendDestination:   Stackdriver,
-		stackdriverProjectID: testProj}, TestLogger(t))
-	if err != nil {
-		t.Error(err)
+	getStackdriverSecretFunc = fakeGetStackdriverSecret
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			fmt.Println(test.name)
+			e, err := newMetricsExporter(test.config, TestLogger(t))
+
+			succeeded := e != nil && err == nil
+			if test.expectSuccess != succeeded {
+				t.Errorf("Unexpected test result. Expected success? [%v]. Error: [%v]", test.expectSuccess, err)
+			}
+		})
 	}
 }
 
@@ -128,10 +257,13 @@ func TestInterlevedExporters(t *testing.T) {
 
 	// First create a stackdriver exporter
 	_, err := newMetricsExporter(&metricsConfig{
-		domain:               servingDomain,
-		component:            testComponent,
-		backendDestination:   Stackdriver,
-		stackdriverProjectID: testProj}, TestLogger(t))
+		domain:             servingDomain,
+		component:          testComponent,
+		backendDestination: Stackdriver,
+		stackdriverClientConfig: stackdriverClientConfig{
+			ProjectID: testProj,
+		},
+	}, TestLogger(t))
 	if err != nil {
 		t.Error(err)
 	}
@@ -148,10 +280,13 @@ func TestInterlevedExporters(t *testing.T) {
 	expectPromSrv(t, ":9090")
 	// Finally switch to stackdriver exporter
 	_, err = newMetricsExporter(&metricsConfig{
-		domain:               servingDomain,
-		component:            testComponent,
-		backendDestination:   Stackdriver,
-		stackdriverProjectID: testProj}, TestLogger(t))
+		domain:             servingDomain,
+		component:          testComponent,
+		backendDestination: Stackdriver,
+		stackdriverClientConfig: stackdriverClientConfig{
+			ProjectID: testProj,
+		},
+	}, TestLogger(t))
 	if err != nil {
 		t.Error(err)
 	}
@@ -191,9 +326,11 @@ func TestFlushExporter(t *testing.T) {
 		allowStackdriverCustomMetrics:     true,
 		isStackdriverBackend:              true,
 		reportingPeriod:                   1 * time.Minute,
-		stackdriverProjectID:              "test",
 		stackdriverMetricTypePrefix:       path.Join(servingDomain, testComponent),
 		stackdriverCustomMetricTypePrefix: path.Join(defaultCustomMetricSubDomain, testComponent),
+		stackdriverClientConfig: stackdriverClientConfig{
+			ProjectID: testProj,
+		},
 	}
 	e, err = newMetricsExporter(c, TestLogger(t))
 	if err != nil {
