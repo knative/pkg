@@ -46,11 +46,11 @@ const (
 	ReportingPeriodKey                  = "metrics.reporting-period-seconds"
 	StackdriverCustomMetricSubDomainKey = "metrics.stackdriver-custom-metrics-subdomain"
 	// Stackdriver client configuration keys
-	StackdriverProjectIDKey          = "metrics.stackdriver-project-id"
-	StackdriverGCPLocationKey        = "metrics.stackdriver-gcp-location"
-	StackdriverClusterNameKey        = "metrics.stackdriver-cluster-name"
-	StackdriverGCPSecretNameKey      = "metrics.stackdriver-gcp-secret-name"
-	StackdriverGCPSecretNamespaceKey = "metrics.stackdriver-gcp-secret-namespace"
+	stackdriverProjectIDKey          = "metrics.stackdriver-project-id"
+	stackdriverGCPLocationKey        = "metrics.stackdriver-gcp-location"
+	stackdriverClusterNameKey        = "metrics.stackdriver-cluster-name"
+	stackdriverGCPSecretNameKey      = "metrics.stackdriver-gcp-secret-name"
+	stackdriverGCPSecretNamespaceKey = "metrics.stackdriver-gcp-secret-namespace"
 
 	// Stackdriver is used for Stackdriver backend
 	Stackdriver metricsBackend = "stackdriver"
@@ -131,17 +131,17 @@ type stackdriverClientConfig struct {
 
 // newStackdriverClientConfigFromMap creates a stackdriverClientConfig from the given map
 func newStackdriverClientConfigFromMap(config map[string]string) *stackdriverClientConfig {
-	sc := &stackdriverClientConfig{}
-	sc.ProjectID = config[StackdriverProjectIDKey]
-	sc.GCPLocation = config[StackdriverGCPLocationKey]
-	sc.ClusterName = config[StackdriverClusterNameKey]
-	sc.GCPSecretName = config[StackdriverGCPSecretNameKey]
-	sc.GCPSecretNamespace = config[StackdriverGCPSecretNamespaceKey]
-	return sc
+	return &stackdriverClientConfig{
+		ProjectID:          config[stackdriverProjectIDKey],
+		GCPLocation:        config[stackdriverGCPLocationKey],
+		ClusterName:        config[stackdriverClusterNameKey],
+		GCPSecretName:      config[stackdriverGCPSecretNameKey],
+		GCPSecretNamespace: config[stackdriverGCPSecretNamespaceKey],
+	}
 }
 
 func createMetricsConfig(ops ExporterOptions, logger *zap.SugaredLogger) (*metricsConfig, error) {
-	mc := metricsConfig{stackdriverClientConfig: stackdriverClientConfig{}}
+	var mc metricsConfig
 
 	if ops.Domain == "" {
 		return nil, errors.New("metrics domain cannot be empty")

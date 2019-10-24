@@ -180,6 +180,8 @@ func TestMetricsExporter(t *testing.T) {
 		},
 		expectSuccess: true,
 	}, {
+		// GCP specifies a list of valid locations, check the exporter can be created
+		// even if an invalid location is passed in.
 		name: "invalidStackdriverGcpLocation",
 		config: &metricsConfig{
 			domain:                            servingDomain,
