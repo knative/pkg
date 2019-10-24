@@ -46,12 +46,6 @@ const (
 )
 
 var (
-	// gcpMetadataFunc is the function used to fetch GCP metadata.
-	// In product usage, this is always set to function retrieveGCPMetadata.
-	// In unit tests this is set to a fake one to avoid calling GCP metadata
-	// service.
-	gcpMetadataFunc func() *gcpMetadata
-
 	// kubeclient is the in-cluster Kubernetes kubeclient, which is lazy-initialized on first use.
 	kubeclient *kubernetes.Clientset
 	// initClientOnce is the lazy initializer for kubeclient.
@@ -61,9 +55,6 @@ var (
 )
 
 func init() {
-	// Set gcpMetadataFunc to call GCP metadata service.
-	gcpMetadataFunc = retrieveGCPMetadata
-
 	kubeclientInitErr = nil
 }
 
@@ -118,7 +109,7 @@ func getStackdriverExporterClientOptions(sdconfig *stackdriverClientConfig) ([]o
 // getGCPMetadata returns GCP metadata required to export metrics
 // to Stackdriver. Values explicitly set in the config take the highest precedent.
 func getGCPMetadata(config *metricsConfig) *gcpMetadata {
-	gm := gcpMetadataFunc()
+	gm := retrieveGCPMetadata()
 	if config.stackdriverClientConfig.ProjectID != "" {
 		gm.project = config.stackdriverClientConfig.ProjectID
 	}

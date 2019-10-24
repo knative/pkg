@@ -95,13 +95,7 @@ func getResourceLabelValue(key string, tags []tag.Tag) string {
 
 func TestMain(m *testing.M) {
 	resetCurPromSrv()
-	// Set gcpMetadataFunc for testing
-	gcpMetadataFunc = emptyGcpMetadataFunc
 	os.Exit(m.Run())
-}
-
-func emptyGcpMetadataFunc() *gcpMetadata {
-	return &gcpMetadata{}
 }
 
 func TestMetricsExporter(t *testing.T) {
@@ -221,7 +215,7 @@ func TestMetricsExporter(t *testing.T) {
 				GCPSecretNamespace: "secret-ns",
 			},
 		},
-		expectSuccess: false,
+		expectSuccess: true,
 	}, {
 		name: "partialStackdriverConfig",
 		config: &metricsConfig{
