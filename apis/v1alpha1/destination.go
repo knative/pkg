@@ -50,10 +50,38 @@ func (dest *Destination) Validate(ctx context.Context) *apis.FieldError {
 	if dest == nil {
 		return nil
 	}
-	return ValidateDestination(*dest).ViaField(apis.CurrentField)
+	return ValidateDestination(*dest, true).ViaField(apis.CurrentField)
 }
 
-func ValidateDestination(dest Destination) *apis.FieldError {
+func (dest *Destination) ValidateDisallowDeprecated(ctx context.Context) *apis.FieldError {
+	if dest == nil {
+		return nil
+	}
+	return ValidateDestination(*dest, false).ViaField(apis.CurrentField)
+}
+
+// ValidateDestination validates Destination and either allows or disallows
+// Deprecated* fields depending on the flag.
+func ValidateDestination(dest Destination, allowDeprecatedFields bool) *apis.FieldError {
+	if !allowDeprecatedFields {
+		var errs *apis.FieldError
+		if dest.DeprecatedAPIVersion != "" {
+			errs = errs.Also(apis.ErrInvalidValue("apiVersion is not allowed here, it's a deprecated value", "apiVersion"))
+		}
+		if dest.DeprecatedKind != "" {
+			errs = errs.Also(apis.ErrInvalidValue("kind is not allowed here, it's a deprecated value", "kind"))
+		}
+		if dest.DeprecatedName != "" {
+			errs = errs.Also(apis.ErrInvalidValue("name is not allowed here, it's a deprecated value", "name"))
+		}
+		if dest.DeprecatedNamespace != "" {
+			errs = errs.Also(apis.ErrInvalidValue("namespace is not allowed here, it's a deprecated value", "namespace"))
+		}
+		if errs != nil {
+			return errs
+		}
+	}
+
 	deprecatedObjectReference := dest.deprecatedObjectReference()
 	if dest.Ref != nil && deprecatedObjectReference != nil {
 		return apis.ErrGeneric("Ref and [apiVersion, kind, name] can't be both present", "[apiVersion, kind, name]", "ref")
