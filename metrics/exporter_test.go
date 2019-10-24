@@ -13,7 +13,6 @@ limitations under the License.
 package metrics
 
 import (
-	"fmt"
 	"os"
 	"path"
 	"testing"
@@ -96,10 +95,13 @@ func getResourceLabelValue(key string, tags []tag.Tag) string {
 
 func TestMain(m *testing.M) {
 	resetCurPromSrv()
-	// Set gcpMetadataFunc and newStackdriverExporterFunc for testing
-	gcpMetadataFunc = fakeGcpMetadataFun
-	newStackdriverExporterFunc = newFakeExporter
+	// Set gcpMetadataFunc for testing
+	gcpMetadataFunc = emptyGcpMetadataFunc
 	os.Exit(m.Run())
+}
+
+func emptyGcpMetadataFunc() *gcpMetadata {
+	return &gcpMetadata{}
 }
 
 func TestMetricsExporter(t *testing.T) {
@@ -219,7 +221,7 @@ func TestMetricsExporter(t *testing.T) {
 				GCPSecretNamespace: "secret-ns",
 			},
 		},
-		expectSuccess: true,
+		expectSuccess: false,
 	}, {
 		name: "partialStackdriverConfig",
 		config: &metricsConfig{
@@ -238,10 +240,9 @@ func TestMetricsExporter(t *testing.T) {
 		expectSuccess: true,
 	}}
 
-	getStackdriverSecretFunc = fakeGetStackdriverSecret
+	// getStackdriverSecretFunc = fakeGetStackdriverSecret
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			fmt.Println(test.name)
 			e, err := newMetricsExporter(test.config, TestLogger(t))
 
 			succeeded := e != nil && err == nil
@@ -295,8 +296,6 @@ func TestInterlevedExporters(t *testing.T) {
 }
 
 func TestFlushExporter(t *testing.T) {
-	// Capture this to reset it at the end of test so that other tests are not impacted.
-	tmpFunc := newStackdriverExporterFunc
 	// No exporter - no action should be taken
 	setCurMetricsConfig(nil)
 	if want, got := false, FlushExporter(); got != want {
@@ -321,8 +320,6 @@ func TestFlushExporter(t *testing.T) {
 		}
 	}
 
-	// Fake Stackdriver exporter should export
-	newStackdriverExporterFunc = newFakeExporter
 	c = &metricsConfig{
 		domain:                            servingDomain,
 		component:                         testComponent,
@@ -336,6 +333,7 @@ func TestFlushExporter(t *testing.T) {
 			ProjectID: testProj,
 		},
 	}
+
 	e, err = newMetricsExporter(c, TestLogger(t))
 	if err != nil {
 		t.Errorf("Expected no error. got %v", err)
@@ -345,18 +343,4 @@ func TestFlushExporter(t *testing.T) {
 			t.Errorf("Expected %v, got %v.", want, got)
 		}
 	}
-
-	// Real Stackdriver exporter should export as well.
-	newStackdriverExporterFunc = newOpencensusSDExporter
-	e, err = newMetricsExporter(c, TestLogger(t))
-	if err != nil {
-		t.Errorf("Expected no error. got %v", err)
-	} else {
-		setCurMetricsExporter(e)
-		if want, got := true, FlushExporter(); got != want {
-			t.Errorf("Expected %v, got %v.", want, got)
-		}
-	}
-
-	newStackdriverExporterFunc = tmpFunc
 }

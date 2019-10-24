@@ -207,6 +207,7 @@ var (
 			ops: ExporterOptions{
 				ConfigMap: map[string]string{
 					"metrics.backend-destination":      "stackdriver",
+					"metrics.stackdriver-project-id":   anotherProj,
 					"metrics.stackdriver-gcp-location": "us-west1",
 					"metrics.stackdriver-cluster-name": "cluster",
 				},
@@ -223,6 +224,7 @@ var (
 				stackdriverCustomMetricTypePrefix: path.Join(customMetricTypePrefix, defaultCustomMetricSubDomain, testComponent),
 				stackdriverCustomMetricsSubDomain: defaultCustomMetricSubDomain,
 				stackdriverClientConfig: stackdriverClientConfig{
+					ProjectID:   anotherProj,
 					GCPLocation: "us-west1",
 					ClusterName: "cluster",
 				},
@@ -659,7 +661,6 @@ func TestIsNewExporterRequired(t *testing.T) {
 }
 
 func TestUpdateExporter(t *testing.T) {
-	getStackdriverSecretFunc = fakeGetStackdriverSecret
 	setCurMetricsConfig(nil)
 	oldConfig := getCurMetricsConfig()
 	for _, test := range successTests[1:] {

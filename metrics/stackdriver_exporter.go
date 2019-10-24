@@ -52,19 +52,6 @@ var (
 	// service.
 	gcpMetadataFunc func() *gcpMetadata
 
-	// newStackdriverExporterFunc is the function used to create new stackdriver
-	// exporter.
-	// In product usage, this is always set to function newOpencensusSDExporter.
-	// In unit tests this is set to a fake one to avoid calling actual Google API
-	// service.
-	newStackdriverExporterFunc func(stackdriver.Options) (view.Exporter, error)
-
-	// getStackdriverSecretFunc is the function used to create read a Kubernetes
-	// secret for Stackdriver credentials into memory.
-	// In product usage, this is always set to function sdconfig.getStackdriverSecret.
-	// In unit tests this is set to a fake one because an in-cluster kubeclient is required.
-	getStackdriverSecretFunc func(config *stackdriverClientConfig) (*corev1.Secret, error)
-
 	// kubeclient is the in-cluster Kubernetes kubeclient, which is lazy-initialized on first use.
 	kubeclient *kubernetes.Clientset
 	// initClientOnce is the lazy initializer for kubeclient.
@@ -76,10 +63,6 @@ var (
 func init() {
 	// Set gcpMetadataFunc to call GCP metadata service.
 	gcpMetadataFunc = retrieveGCPMetadata
-
-	newStackdriverExporterFunc = newOpencensusSDExporter
-
-	getStackdriverSecretFunc = getStackdriverSecret
 
 	kubeclientInitErr = nil
 }
@@ -98,7 +81,7 @@ func newStackdriverExporter(config *metricsConfig, logger *zap.SugaredLogger) (v
 		logger.Warnw("Issue configuring Stackdriver exporter client options, no additional client options will be used: ", zap.Error(err))
 	}
 	// Automatically fall back on Google application default credentials
-	e, err := newStackdriverExporterFunc(stackdriver.Options{
+	e, err := newOpencensusSDExporter(stackdriver.Options{
 		ProjectID:               gm.project,
 		Location:                gm.location,
 		MonitoringClientOptions: co,
@@ -121,7 +104,7 @@ func newStackdriverExporter(config *metricsConfig, logger *zap.SugaredLogger) (v
 func getStackdriverExporterClientOptions(sdconfig *stackdriverClientConfig) ([]option.ClientOption, error) {
 	var co []option.ClientOption
 	if sdconfig.GCPSecretName != "" {
-		secret, err := getStackdriverSecretFunc(sdconfig)
+		secret, err := getStackdriverSecret(sdconfig)
 		if err != nil {
 			return co, err
 		}

@@ -17,16 +17,13 @@ limitations under the License.
 package metrics
 
 import (
-	"errors"
 	"path"
 	"testing"
 	"time"
 
-	"contrib.go.opencensus.io/exporter/stackdriver"
 	"go.opencensus.io/stats"
 	"go.opencensus.io/stats/view"
 	"go.opencensus.io/tag"
-	corev1 "k8s.io/api/core/v1"
 	. "knative.dev/pkg/logging/testing"
 	"knative.dev/pkg/metrics/metricskey"
 )
@@ -136,23 +133,6 @@ var (
 		metricName: "unsupported",
 	}}
 )
-
-func fakeGcpMetadataFun() *gcpMetadata {
-	return &testGcpMetadata
-}
-
-func fakeGetStackdriverSecret(config *stackdriverClientConfig) (*corev1.Secret, error) {
-	return nil, errors.New("tests do no have access to Kubernetes client to retrieve Kubernetes Secrets")
-}
-
-type fakeExporter struct{}
-
-func (fe *fakeExporter) ExportView(vd *view.Data) {}
-func (fe *fakeExporter) Flush()                   {}
-
-func newFakeExporter(o stackdriver.Options) (view.Exporter, error) {
-	return &fakeExporter{}, nil
-}
 
 func TestGetMonitoredResourceFunc_UseKnativeRevision(t *testing.T) {
 	for _, testCase := range supportedServingMetricsTestCases {
@@ -446,7 +426,7 @@ func TestNewStackdriverExporterWithMetadata(t *testing.T) {
 				GCPSecretNamespace: "secret-ns",
 			},
 		},
-		expectSuccess: true,
+		expectSuccess: false,
 	}, {
 		name: "partialStackdriverConfig",
 		config: &metricsConfig{
@@ -465,7 +445,6 @@ func TestNewStackdriverExporterWithMetadata(t *testing.T) {
 		expectSuccess: true,
 	}}
 
-	getStackdriverSecretFunc = fakeGetStackdriverSecret
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			e, err := newStackdriverExporter(test.config, TestLogger(t))
