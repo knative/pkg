@@ -17,6 +17,7 @@ limitations under the License.
 package metrics
 
 import (
+	"fmt"
 	"path"
 	"sync"
 
@@ -65,7 +66,7 @@ func newOpencensusSDExporter(o stackdriver.Options) (view.Exporter, error) {
 // TODO should be properly refactored to be able to inject the getMonitoredResourceFunc function.
 // 	See https://github.com/knative/pkg/issues/608
 func newStackdriverExporter(config *metricsConfig, logger *zap.SugaredLogger) (view.Exporter, error) {
-	gm := getGCPMetadata(config)
+	gm := getMergedGCPMetadata(config)
 	mtf := getMetricTypeFunc(config.stackdriverMetricTypePrefix, config.stackdriverCustomMetricTypePrefix)
 	co, err := getStackdriverExporterClientOptions(&config.stackdriverClientConfig)
 	if err != nil {
@@ -106,9 +107,10 @@ func getStackdriverExporterClientOptions(sdconfig *stackdriverClientConfig) ([]o
 	return co, nil
 }
 
-// getGCPMetadata returns GCP metadata required to export metrics
-// to Stackdriver. Values explicitly set in the config take the highest precedent.
-func getGCPMetadata(config *metricsConfig) *gcpMetadata {
+// getMergedGCPMetadata returns GCP metadata required to export metrics
+// to Stackdriver. Values can come from the GCE metadata server or the config.
+//  Values explicitly set in the config take the highest precedent.
+func getMergedGCPMetadata(config *metricsConfig) *gcpMetadata {
 	gm := retrieveGCPMetadata()
 	if config.stackdriverClientConfig.ProjectID != "" {
 		gm.project = config.stackdriverClientConfig.ProjectID
@@ -173,7 +175,13 @@ func getStackdriverSecret(sdconfig *stackdriverClientConfig) (*corev1.Secret, er
 		ns = sdconfig.GCPSecretNamespace
 	}
 
-	return kubeclient.CoreV1().Secrets(ns).Get(sdconfig.GCPSecretName, metav1.GetOptions{})
+	sec, secErr := kubeclient.CoreV1().Secrets(ns).Get(sdconfig.GCPSecretName, metav1.GetOptions{})
+
+	if secErr != nil {
+		return nil, fmt.Errorf("Error getting Secret [%v] in namespace [%v]: %v", sdconfig.GCPSecretName, sdconfig.GCPSecretNamespace, secErr)
+	}
+
+	return sec, nil
 }
 
 // convertSecretToExporterOption converts a Kubernetes Secret to an OpenCensus Stackdriver Exporter Option.
