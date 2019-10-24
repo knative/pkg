@@ -114,10 +114,7 @@ func ValidateDestination(dest Destination, allowDeprecatedFields bool) *apis.Fie
 	return nil
 }
 
-func (dest *Destination) deprecatedObjectReference() *corev1.ObjectReference {
-	if dest == nil {
-		return nil
-	}
+func (dest Destination) deprecatedObjectReference() *corev1.ObjectReference {
 	if dest.DeprecatedAPIVersion == "" && dest.DeprecatedKind == "" && dest.DeprecatedName == "" && dest.DeprecatedNamespace == "" {
 		return nil
 	}
