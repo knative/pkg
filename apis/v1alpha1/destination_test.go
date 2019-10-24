@@ -20,8 +20,8 @@ import (
 	"context"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
 	corev1 "k8s.io/api/core/v1"
-
 	"knative.dev/pkg/apis"
 )
 
@@ -166,8 +166,7 @@ func TestValidateDestination(t *testing.T) {
 			want: "Absolute URI is not allowed when Ref or [apiVersion, kind, name] is present: [apiVersion, kind, name], ref, uri",
 		},
 		"invalid, both ref, [apiVersion, kind, name] and uri  are nil": {
-			dest: &Destination{
-			},
+			dest: &Destination{},
 			want: "expected at least one, got none: [apiVersion, kind, name], ref, uri",
 		},
 		"valid, both uri and ref, uri is not a absolute URL": {
@@ -200,6 +199,54 @@ func TestValidateDestination(t *testing.T) {
 				}
 			} else if gotErr != nil {
 				t.Errorf("%s: Validate() = %v, wanted nil", name, gotErr)
+			}
+		})
+	}
+}
+
+func TestDestination_GetRef(t *testing.T) {
+	ref := &corev1.ObjectReference{
+		APIVersion: apiVersion,
+		Kind:       kind,
+		Name:       name,
+	}
+	tests := map[string]struct {
+		dest *Destination
+		want *corev1.ObjectReference
+	}{
+		"nil destination": {
+			dest: nil,
+			want: nil,
+		},
+		"uri": {
+			dest: &Destination{
+				URI: &apis.URL{
+					Host: "foo",
+				},
+			},
+			want: nil,
+		},
+		"ref": {
+			dest: &Destination{
+				Ref: ref,
+			},
+			want: ref,
+		},
+		"deprecated ref": {
+			dest: &Destination{
+				DeprecatedAPIVersion: ref.APIVersion,
+				DeprecatedKind:       ref.Kind,
+				DeprecatedName:       ref.Name,
+			},
+			want: ref,
+		},
+	}
+
+	for n, tc := range tests {
+		t.Run(n, func(t *testing.T) {
+			got := tc.dest.GetRef()
+			if diff := cmp.Diff(tc.want, got); diff != "" {
+				t.Errorf("Unexpected result (-want +got): %s", diff)
 			}
 		})
 	}
