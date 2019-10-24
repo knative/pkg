@@ -65,7 +65,7 @@ func TestGetURI_ObjectReference(t *testing.T) {
 		wantURI string
 		wantErr error
 	}{"nil everything": {
-		wantErr: fmt.Errorf("destination missing Ref and URI, expected at least one"),
+		wantErr: fmt.Errorf("destination missing Ref, [apiVersion, kind, name] and URI, expected at least one"),
 	}, "Happy URI with path": {
 		dest: apisv1alpha1.Destination{
 			URI: &apis.URL{
@@ -90,24 +90,36 @@ func TestGetURI_ObjectReference(t *testing.T) {
 		},
 		wantErr: fmt.Errorf("URI is not absolute(both scheme and host should be non-empty): %v", "http:"),
 	},
+		"Ref and [apiVersion, kind, name] both exists": {
+			objects: []runtime.Object{
+				getAddressable(),
+			},
+			dest: apisv1alpha1.Destination{Ref: getAddressableRef(),
+				DeprecatedKind:       addressableKind,
+				DeprecatedName:       addressableName,
+				DeprecatedAPIVersion: addressableAPIVersion,
+				DeprecatedNamespace:  testNS,
+			},
+			wantErr: fmt.Errorf("ref and [apiVersion, kind, name] can't be both present"),
+		},
 		"happy ref": {
-			objects: []runtime.Object{
-				getAddressable(),
+		objects: []runtime.Object{
+			getAddressable(),
+		},
+		dest:    apisv1alpha1.Destination{Ref: getAddressableRef()},
+		wantURI: addressableDNS,
+	}, "ref with relative uri": {
+		objects: []runtime.Object{
+			getAddressable(),
+		},
+		dest: apisv1alpha1.Destination{
+			Ref: getAddressableRef(),
+			URI: &apis.URL{
+			Path:   "/foo",
 			},
-			dest:    apisv1alpha1.Destination{Ref: getAddressableRef()},
-			wantURI: addressableDNS,
-		}, "ref with relative uri": {
-			objects: []runtime.Object{
-				getAddressable(),
-			},
-			dest: apisv1alpha1.Destination{
-				Ref: getAddressableRef(),
-				URI: &apis.URL{
-					Path: "/foo",
-				},
-			},
-			wantURI: addressableDNS + "/foo",
-		}, "ref with relative URI without leading slash": {
+		},
+		wantURI: addressableDNS + "/foo",
+	}, "ref with relative URI without leading slash": {
 			objects: []runtime.Object{
 				getAddressable(),
 			},
@@ -174,7 +186,119 @@ func TestGetURI_ObjectReference(t *testing.T) {
 					Path:   "/foo",
 				},
 			},
-			wantErr: fmt.Errorf("absolute URI is not allowed when Ref exists"),
+			wantErr: fmt.Errorf("absolute URI is not allowed when Ref or [apiVersion, kind, name] exists"),
+		},
+		"happy [apiVersion, kind, name]": {
+			objects: []runtime.Object{
+				getAddressable(),
+			},
+			dest:    apisv1alpha1.Destination{
+				DeprecatedKind:       addressableKind,
+				DeprecatedName:       addressableName,
+				DeprecatedAPIVersion: addressableAPIVersion,
+				DeprecatedNamespace:  testNS,},
+			wantURI: addressableDNS,
+		},
+		"[apiVersion, kind, name] with relative uri": {
+			objects: []runtime.Object{
+				getAddressable(),
+			},
+			dest: apisv1alpha1.Destination{
+				DeprecatedKind:       addressableKind,
+				DeprecatedName:       addressableName,
+				DeprecatedAPIVersion: addressableAPIVersion,
+				DeprecatedNamespace:  testNS,
+				URI: &apis.URL{
+					Path: "/foo",
+				},
+			},
+			wantURI: addressableDNS + "/foo",
+		}, "[apiVersion, kind, name] with relative URI without leading slash": {
+			objects: []runtime.Object{
+				getAddressable(),
+			},
+			dest: apisv1alpha1.Destination{
+				DeprecatedKind:       addressableKind,
+				DeprecatedName:       addressableName,
+				DeprecatedAPIVersion: addressableAPIVersion,
+				DeprecatedNamespace:  testNS,
+				URI: &apis.URL{
+					Path: "foo",
+				},
+			},
+			wantURI: addressableDNS + "/foo",
+		}, "[apiVersion, kind, name] ends with path and trailing slash and relative URI without leading slash ": {
+			objects: []runtime.Object{
+				getAddressableWithPathAndTrailingSlash(),
+			},
+			dest: apisv1alpha1.Destination{
+				DeprecatedKind:       addressableKind,
+				DeprecatedName:       addressableName,
+				DeprecatedAPIVersion: addressableAPIVersion,
+				DeprecatedNamespace:  testNS,
+				URI: &apis.URL{
+					Path: "foo",
+				},
+			},
+			wantURI: addressableDNSWithPathAndTrailingSlash + "foo",
+		}, "[apiVersion, kind, name] ends with path and trailing slash and relative URI with leading slash ": {
+			objects: []runtime.Object{
+				getAddressableWithPathAndTrailingSlash(),
+			},
+			dest: apisv1alpha1.Destination{
+				DeprecatedKind:       addressableKind,
+				DeprecatedName:       addressableName,
+				DeprecatedAPIVersion: addressableAPIVersion,
+				DeprecatedNamespace:  testNS,
+				URI: &apis.URL{
+					Path: "/foo",
+				},
+			},
+			wantURI: addressableDNS + "/foo",
+		}, "[apiVersion, kind, name] ends with path and no trailing slash and relative URI without leading slash ": {
+			objects: []runtime.Object{
+				getAddressableWithPathAndNoTrailingSlash(),
+			},
+			dest: apisv1alpha1.Destination{
+				DeprecatedKind:       addressableKind,
+				DeprecatedName:       addressableName,
+				DeprecatedAPIVersion: addressableAPIVersion,
+				DeprecatedNamespace:  testNS,
+				URI: &apis.URL{
+					Path: "foo",
+				},
+			},
+			wantURI: addressableDNS + "/foo",
+		}, "[apiVersion, kind, name] ends with path and no trailing slash and relative URI with leading slash ": {
+			objects: []runtime.Object{
+				getAddressableWithPathAndNoTrailingSlash(),
+			},
+			dest: apisv1alpha1.Destination{
+				DeprecatedKind:       addressableKind,
+				DeprecatedName:       addressableName,
+				DeprecatedAPIVersion: addressableAPIVersion,
+				DeprecatedNamespace:  testNS,
+				URI: &apis.URL{
+					Path: "/foo",
+				},
+			},
+			wantURI: addressableDNS + "/foo",
+		}, "[apiVersion, kind, name] with URI which is absolute URL": {
+			objects: []runtime.Object{
+				getAddressable(),
+			},
+			dest: apisv1alpha1.Destination{
+				DeprecatedKind:       addressableKind,
+				DeprecatedName:       addressableName,
+				DeprecatedAPIVersion: addressableAPIVersion,
+				DeprecatedNamespace:  testNS,
+				URI: &apis.URL{
+					Scheme: "http",
+					Host:   "example.com",
+					Path:   "/foo",
+				},
+			},
+			wantErr: fmt.Errorf("absolute URI is not allowed when Ref or [apiVersion, kind, name] exists"),
 		},
 		"nil url": {
 			objects: []runtime.Object{
@@ -182,7 +306,8 @@ func TestGetURI_ObjectReference(t *testing.T) {
 			},
 			dest:    apisv1alpha1.Destination{Ref: getUnaddressableRef()},
 			wantErr: fmt.Errorf(`url missing in address of %+v`, getUnaddressableRef()),
-		}, "nil address": {
+		},
+		"nil address": {
 			objects: []runtime.Object{
 				getAddressableNilAddress(),
 			},

@@ -25,13 +25,19 @@ import (
 	"knative.dev/pkg/apis"
 )
 
+const (
+	kind       = "SomeKind"
+	apiVersion = "v1mega1"
+	name       = "a-name"
+)
+
 func TestValidateDestination(t *testing.T) {
 	ctx := context.TODO()
 
 	validRef := corev1.ObjectReference{
-		Kind:       "SomeKind",
-		APIVersion: "v1mega1",
-		Name:       "a-name",
+		Kind:       kind,
+		APIVersion: apiVersion,
+		Name:       name,
 	}
 
 	validURL := apis.URL{
@@ -56,8 +62,8 @@ func TestValidateDestination(t *testing.T) {
 		"invalid ref, missing name": {
 			dest: &Destination{
 				Ref: &corev1.ObjectReference{
-					Kind:       "SomeKind",
-					APIVersion: "v1mega1",
+					Kind:       kind,
+					APIVersion: apiVersion,
 				},
 			},
 			want: "missing field(s): ref.name",
@@ -65,8 +71,8 @@ func TestValidateDestination(t *testing.T) {
 		"invalid ref, missing api version": {
 			dest: &Destination{
 				Ref: &corev1.ObjectReference{
-					Kind: "SomeKind",
-					Name: "a-name",
+					Kind: kind,
+					Name: apiVersion,
 				},
 			},
 			want: "missing field(s): ref.apiVersion",
@@ -74,11 +80,40 @@ func TestValidateDestination(t *testing.T) {
 		"invalid ref, missing kind": {
 			dest: &Destination{
 				Ref: &corev1.ObjectReference{
-					APIVersion: "v1mega1",
-					Name:       "a-name",
+					APIVersion: apiVersion,
+					Name:       name,
 				},
 			},
 			want: "missing field(s): ref.kind",
+		},
+		"valid [apiVersion, kind, name]": {
+			dest: &Destination{
+				DeprecatedKind:       kind,
+				DeprecatedAPIVersion: apiVersion,
+				DeprecatedName:       name,
+			},
+			want: "",
+		},
+		"invalid [apiVersion, kind, name], missing name": {
+			dest: &Destination{
+				DeprecatedKind:       kind,
+				DeprecatedAPIVersion: apiVersion,
+			},
+			want: "missing field(s): name",
+		},
+		"invalid [apiVersion, kind, name], missing api version": {
+			dest: &Destination{
+				DeprecatedKind: kind,
+				DeprecatedName: name,
+			},
+			want: "missing field(s): apiVersion",
+		},
+		"invalid [apiVersion, kind, name], missing kind": {
+			dest: &Destination{
+				DeprecatedAPIVersion: apiVersion,
+				DeprecatedName:       name,
+			},
+			want: "missing field(s): kind",
 		},
 		"valid uri": {
 			dest: &Destination{
@@ -91,7 +126,7 @@ func TestValidateDestination(t *testing.T) {
 					Scheme: "http",
 				},
 			},
-			want: "invalid value: Relative URI is not allowed when Ref is absent: uri",
+			want: "invalid value: Relative URI is not allowed when Ref and [apiVersion, kind, name] is absent: uri",
 		},
 		"invalid, uri is not absolute url": {
 			dest: &Destination{
@@ -99,18 +134,41 @@ func TestValidateDestination(t *testing.T) {
 					Host: "host",
 				},
 			},
-			want: "invalid value: Relative URI is not allowed when Ref is absent: uri",
+			want: "invalid value: Relative URI is not allowed when Ref and [apiVersion, kind, name] is absent: uri",
+		},
+		"invalid, both ref and [apiVersion, kind, name] are present ": {
+			dest: &Destination{
+				Ref: &corev1.ObjectReference{
+					Kind:       "SomeKind",
+					APIVersion: "v1mega1",
+					Name:       "a-name",
+				},
+				DeprecatedKind:       kind,
+				DeprecatedAPIVersion: apiVersion,
+				DeprecatedName:       name,
+			},
+			want: "Ref and [apiVersion, kind, name] can't be both present: [apiVersion, kind, name], ref",
 		},
 		"invalid, both uri and ref, uri is absolute URL": {
 			dest: &Destination{
 				URI: &validURL,
 				Ref: &validRef,
 			},
-			want: "Absolute URI is not allowed when Ref is present: ref, uri",
+			want: "Absolute URI is not allowed when Ref or [apiVersion, kind, name] is present: [apiVersion, kind, name], ref, uri",
 		},
-		"invalid, both uri and ref are nil": {
-			dest: &Destination{},
-			want: "expected at least one, got neither: ref, uri",
+		"invalid, both uri and [apiVersion, kind, name], uri is absolute URL": {
+			dest: &Destination{
+				URI:                  &validURL,
+				DeprecatedKind:       kind,
+				DeprecatedAPIVersion: apiVersion,
+				DeprecatedName:       name,
+			},
+			want: "Absolute URI is not allowed when Ref or [apiVersion, kind, name] is present: [apiVersion, kind, name], ref, uri",
+		},
+		"invalid, both ref, [apiVersion, kind, name] and uri  are nil": {
+			dest: &Destination{
+			},
+			want: "expected at least one, got none: [apiVersion, kind, name], ref, uri",
 		},
 		"valid, both uri and ref, uri is not a absolute URL": {
 			dest: &Destination{
@@ -118,6 +176,16 @@ func TestValidateDestination(t *testing.T) {
 					Path: "/handler",
 				},
 				Ref: &validRef,
+			},
+		},
+		"valid, both uri and [apiVersion, kind, name], uri is not a absolute URL": {
+			dest: &Destination{
+				URI: &apis.URL{
+					Path: "/handler",
+				},
+				DeprecatedKind:       kind,
+				DeprecatedAPIVersion: apiVersion,
+				DeprecatedName:       name,
 			},
 		},
 	}
