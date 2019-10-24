@@ -130,30 +130,14 @@ type stackdriverClientConfig struct {
 }
 
 // newStackdriverClientConfigFromMap creates a stackdriverClientConfig from the given map
-func newStackdriverClientConfigFromMap(config map[string]string) (*stackdriverClientConfig, error) {
+func newStackdriverClientConfigFromMap(config map[string]string) *stackdriverClientConfig {
 	sc := &stackdriverClientConfig{}
-
-	if pi, ok := config[StackdriverProjectIDKey]; ok {
-		sc.ProjectID = pi
-	}
-
-	if gl, ok := config[StackdriverGCPLocationKey]; ok {
-		sc.GCPLocation = gl
-	}
-
-	if cn, ok := config[StackdriverClusterNameKey]; ok {
-		sc.ClusterName = cn
-	}
-
-	if gsn, ok := config[StackdriverGCPSecretNameKey]; ok {
-		sc.GCPSecretName = gsn
-	}
-
-	if gsns, ok := config[StackdriverGCPSecretNamespaceKey]; ok {
-		sc.GCPSecretNamespace = gsns
-	}
-
-	return sc, nil
+	sc.ProjectID = config[StackdriverProjectIDKey]
+	sc.GCPLocation = config[StackdriverGCPLocationKey]
+	sc.ClusterName = config[StackdriverClusterNameKey]
+	sc.GCPSecretName = config[StackdriverGCPSecretNameKey]
+	sc.GCPSecretNamespace = config[StackdriverGCPSecretNamespaceKey]
+	return sc
 }
 
 func createMetricsConfig(ops ExporterOptions, logger *zap.SugaredLogger) (*metricsConfig, error) {
@@ -206,10 +190,7 @@ func createMetricsConfig(ops ExporterOptions, logger *zap.SugaredLogger) (*metri
 	// use the application default credentials. If that is not available, Opencensus would fail to create the
 	// metrics exporter.
 	if mc.backendDestination == Stackdriver {
-		scc, err := newStackdriverClientConfigFromMap(m)
-		if err != nil {
-			return nil, err
-		}
+		scc := newStackdriverClientConfigFromMap(m)
 		mc.stackdriverClientConfig = *scc
 		mc.isStackdriverBackend = true
 		mc.stackdriverMetricTypePrefix = path.Join(mc.domain, mc.component)

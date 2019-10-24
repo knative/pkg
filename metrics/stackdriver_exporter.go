@@ -93,14 +93,14 @@ func newOpencensusSDExporter(o stackdriver.Options) (view.Exporter, error) {
 func newStackdriverExporter(config *metricsConfig, logger *zap.SugaredLogger) (view.Exporter, error) {
 	gm := getGCPMetadata(config)
 	mtf := getMetricTypeFunc(config.stackdriverMetricTypePrefix, config.stackdriverCustomMetricTypePrefix)
-	co, err := getStackdriverExporterOptions(&config.stackdriverClientConfig)
+	co, err := getStackdriverExporterClientOptions(&config.stackdriverClientConfig)
 	if err != nil {
 		logger.Warnw("Issue configuring Stackdriver exporter client options, no additional client options will be used: ", zap.Error(err))
 	}
 	// Automatically fall back on Google application default credentials
 	e, err := newStackdriverExporterFunc(stackdriver.Options{
-		ProjectID:               config.stackdriverClientConfig.ProjectID,
-		Location:                config.stackdriverClientConfig.GCPLocation,
+		ProjectID:               gm.project,
+		Location:                gm.location,
 		MonitoringClientOptions: co,
 		TraceClientOptions:      co,
 		GetMetricDisplayName:    mtf, // Use metric type for display name for custom metrics. No impact on built-in metrics.
@@ -116,9 +116,9 @@ func newStackdriverExporter(config *metricsConfig, logger *zap.SugaredLogger) (v
 	return e, nil
 }
 
-// getStackdriverExporterOptions creates client options for the opencensus Stackdriver exporter from the given stackdriverClientConfig.
+// getStackdriverExporterClientOptions creates client options for the opencensus Stackdriver exporter from the given stackdriverClientConfig.
 // On error, an empty array of client options is returned.
-func getStackdriverExporterOptions(sdconfig *stackdriverClientConfig) ([]option.ClientOption, error) {
+func getStackdriverExporterClientOptions(sdconfig *stackdriverClientConfig) ([]option.ClientOption, error) {
 	var co []option.ClientOption
 	if sdconfig.GCPSecretName != "" {
 		secret, err := getStackdriverSecretFunc(sdconfig)
