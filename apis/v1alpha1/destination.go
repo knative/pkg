@@ -47,22 +47,51 @@ type Destination struct {
 
 func (current *Destination) Validate(ctx context.Context) *apis.FieldError {
 	if current != nil {
-		return ValidateDestination(*current).ViaField(apis.CurrentField)
+		return ValidateDestination(*current, true).ViaField(apis.CurrentField)
 	} else {
 		return nil
 	}
 }
 
-func ValidateDestination(dest Destination) *apis.FieldError {
+func (current *Destination) ValidateDisallowDeprecated(ctx context.Context) *apis.FieldError {
+	if current != nil {
+		return ValidateDestination(*current, false).ViaField(apis.CurrentField)
+	} else {
+		return nil
+	}
+}
+
+// ValidateDestination validates Destination and either allows or disallows
+// Deprecated* fields depending on the flag.
+func ValidateDestination(dest Destination, allowDeprecatedFields bool) *apis.FieldError {
+	if !allowDeprecatedFields {
+		var errs *apis.FieldError
+		if dest.DeprecatedAPIVersion != "" {
+			errs = errs.Also(apis.ErrInvalidValue("apiVersion is not allowed here, it's a deprecated value", "apiVersion"))
+		}
+		if dest.DeprecatedKind != "" {
+			errs = errs.Also(apis.ErrInvalidValue("kind is not allowed here, it's a deprecated value", "kind"))
+		}
+		if dest.DeprecatedName != "" {
+			errs = errs.Also(apis.ErrInvalidValue("name is not allowed here, it's a deprecated value", "name"))
+		}
+		if dest.DeprecatedNamespace != "" {
+			errs = errs.Also(apis.ErrInvalidValue("namespace is not allowed here, it's a deprecated value", "namespace"))
+		}
+		if errs != nil {
+			return errs
+		}
+	}
+
 	var deprecatedObjectReference *corev1.ObjectReference
 	if dest.DeprecatedAPIVersion == "" && dest.DeprecatedKind == "" && dest.DeprecatedName == "" && dest.DeprecatedNamespace == "" {
 		deprecatedObjectReference = nil
 	} else {
 		deprecatedObjectReference = &corev1.ObjectReference{
-			Kind:            dest.DeprecatedKind,
-			APIVersion:       dest.DeprecatedAPIVersion,
-			Name:            dest.DeprecatedName,
-			Namespace:       dest.DeprecatedNamespace,
+			Kind:       dest.DeprecatedKind,
+			APIVersion: dest.DeprecatedAPIVersion,
+			Name:       dest.DeprecatedName,
+			Namespace:  dest.DeprecatedNamespace,
 		}
 	}
 	if dest.Ref != nil && deprecatedObjectReference != nil {
@@ -84,9 +113,9 @@ func ValidateDestination(dest Destination) *apis.FieldError {
 	}
 	// IsAbs() check whether the URL has a non-empty scheme. Besides the non-empty scheme, we also require dest.URI has a non-empty host
 	if ref == nil && dest.URI != nil && (!dest.URI.URL().IsAbs() || dest.URI.Host == "") {
-			return apis.ErrInvalidValue("Relative URI is not allowed when Ref and [apiVersion, kind, name] is absent",  "uri")
-		}
-	if ref != nil && dest.URI == nil{
+		return apis.ErrInvalidValue("Relative URI is not allowed when Ref and [apiVersion, kind, name] is absent", "uri")
+	}
+	if ref != nil && dest.URI == nil {
 		if dest.Ref != nil {
 			return validateDestinationRef(*ref).ViaField("ref")
 		} else {
@@ -95,7 +124,6 @@ func ValidateDestination(dest Destination) *apis.FieldError {
 	}
 	return nil
 }
-
 
 func validateDestinationRef(ref corev1.ObjectReference) *apis.FieldError {
 	// Check the object.
