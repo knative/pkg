@@ -150,8 +150,7 @@ func checkExactlyOneRow(t *testing.T, name string) *view.Row {
 
 func checkRowTags(t *testing.T, row *view.Row, name string, wantTags map[string]string) {
 	t.Helper()
-	gotlen := len(row.Tags)
-	if wantlen := len(wantTags); gotlen != wantlen {
+	if wantlen, gotlen := len(wantTags), len(row.Tags); gotlen != wantlen {
 		t.Errorf("For metric %s: Reporter got %v tags while want %v", name, gotlen, wantlen)
 	}
 	for _, got := range row.Tags {
