@@ -100,7 +100,7 @@ func (gih *IssueHandler) CreateIssueForTest(testName, desc string) error {
 	}
 	// If the issue hasn't been created, create one
 	if issue == nil {
-		commentBody := fmt.Sprintf(issueBodyTemplate, testName, gih.config.repo)
+		commentBody := fmt.Sprintf(issueBodyTemplate, gih.config.repo, testName)
 		issue, err := gih.createNewIssue(title, commentBody)
 		if err != nil {
 			return fmt.Errorf("failed to create a new issue for test %q: %v", testName, err)
@@ -134,7 +134,7 @@ func (gih *IssueHandler) CreateIssueForTest(testName, desc string) error {
 		return fmt.Errorf("existing issue %d is malformed, cannot update", issueNumber)
 	}
 	commentBody := fmt.Sprintf(issueSummaryCommentTemplate, desc)
-	if err := gih.editComment(issueNumber, *comments[1].ID, commentBody); err != nil {
+	if err := gih.editComment(issueNumber, *comments[0].ID, commentBody); err != nil {
 		return fmt.Errorf("failed to edit the comment for issue %d: %v", issueNumber, err)
 	}
 
