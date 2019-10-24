@@ -18,6 +18,7 @@ package v1alpha1
 
 import (
 	"context"
+
 	corev1 "k8s.io/api/core/v1"
 	"knative.dev/pkg/apis"
 )
@@ -45,20 +46,18 @@ type Destination struct {
 	URI *apis.URL `json:"uri,omitempty"`
 }
 
-func (current *Destination) Validate(ctx context.Context) *apis.FieldError {
-	if current != nil {
-		return ValidateDestination(*current, true).ViaField(apis.CurrentField)
-	} else {
+func (dest *Destination) Validate(ctx context.Context) *apis.FieldError {
+	if dest == nil {
 		return nil
 	}
+	return ValidateDestination(*dest, true).ViaField(apis.CurrentField)
 }
 
-func (current *Destination) ValidateDisallowDeprecated(ctx context.Context) *apis.FieldError {
-	if current != nil {
-		return ValidateDestination(*current, false).ViaField(apis.CurrentField)
-	} else {
+func (dest *Destination) ValidateDisallowDeprecated(ctx context.Context) *apis.FieldError {
+	if dest == nil {
 		return nil
 	}
+	return ValidateDestination(*dest, false).ViaField(apis.CurrentField)
 }
 
 // ValidateDestination validates Destination and either allows or disallows
@@ -83,17 +82,7 @@ func ValidateDestination(dest Destination, allowDeprecatedFields bool) *apis.Fie
 		}
 	}
 
-	var deprecatedObjectReference *corev1.ObjectReference
-	if dest.DeprecatedAPIVersion == "" && dest.DeprecatedKind == "" && dest.DeprecatedName == "" && dest.DeprecatedNamespace == "" {
-		deprecatedObjectReference = nil
-	} else {
-		deprecatedObjectReference = &corev1.ObjectReference{
-			Kind:       dest.DeprecatedKind,
-			APIVersion: dest.DeprecatedAPIVersion,
-			Name:       dest.DeprecatedName,
-			Namespace:  dest.DeprecatedNamespace,
-		}
-	}
+	deprecatedObjectReference := dest.deprecatedObjectReference()
 	if dest.Ref != nil && deprecatedObjectReference != nil {
 		return apis.ErrGeneric("Ref and [apiVersion, kind, name] can't be both present", "[apiVersion, kind, name]", "ref")
 	}
@@ -121,6 +110,35 @@ func ValidateDestination(dest Destination, allowDeprecatedFields bool) *apis.Fie
 		} else {
 			return validateDestinationRef(*ref)
 		}
+	}
+	return nil
+}
+
+func (dest Destination) deprecatedObjectReference() *corev1.ObjectReference {
+	if dest.DeprecatedAPIVersion == "" && dest.DeprecatedKind == "" && dest.DeprecatedName == "" && dest.DeprecatedNamespace == "" {
+		return nil
+	}
+	return &corev1.ObjectReference{
+		Kind:       dest.DeprecatedKind,
+		APIVersion: dest.DeprecatedAPIVersion,
+		Name:       dest.DeprecatedName,
+		Namespace:  dest.DeprecatedNamespace,
+	}
+}
+
+// GetRef gets the ObjectReference from this Destination, if one is present. If no ref is present,
+// then nil is returned.
+// Note: this mostly exists to abstract away the deprecated ObjectReference fields. Once they are
+// removed, then this method should probably be removed too.
+func (dest *Destination) GetRef() *corev1.ObjectReference {
+	if dest == nil {
+		return nil
+	}
+	if dest.Ref != nil {
+		return dest.Ref
+	}
+	if ref := dest.deprecatedObjectReference(); ref != nil {
+		return ref
 	}
 	return nil
 }
