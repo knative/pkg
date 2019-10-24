@@ -65,7 +65,7 @@ func TestGetURI_ObjectReference(t *testing.T) {
 		wantURI string
 		wantErr error
 	}{"nil everything": {
-		wantErr: fmt.Errorf("destination missing Ref, DeprecatedObjectReference and URI, expected at least one"),
+		wantErr: fmt.Errorf("destination missing Ref, [apiVersion, kind, name] and URI, expected at least one"),
 	}, "Happy URI with path": {
 		dest: apisv1alpha1.Destination{
 			URI: &apis.URL{
@@ -94,13 +94,13 @@ func TestGetURI_ObjectReference(t *testing.T) {
 			objects: []runtime.Object{
 				getAddressable(),
 			},
-			dest: apisv1alpha1.Destination{Ref: getAddressableRef(), DeprecatedObjectReference: &corev1.ObjectReference{
-				Kind:       addressableKind,
-				Name:       addressableName,
-				APIVersion: addressableAPIVersion,
-				Namespace:  testNS,
-			}},
-			wantErr: fmt.Errorf("ref and DeprecatedObjectReference can't be both present"),
+			dest: apisv1alpha1.Destination{Ref: getAddressableRef(),
+				DeprecatedKind:       addressableKind,
+				DeprecatedName:       addressableName,
+				DeprecatedAPIVersion: addressableAPIVersion,
+				DeprecatedNamespace:  testNS,
+			},
+			wantErr: fmt.Errorf("ref and [apiVersion, kind, name] can't be both present"),
 		},
 		"happy ref": {
 			objects: []runtime.Object{
@@ -192,7 +192,11 @@ func TestGetURI_ObjectReference(t *testing.T) {
 			objects: []runtime.Object{
 				getAddressable(),
 			},
-			dest:    apisv1alpha1.Destination{DeprecatedObjectReference: getAddressableRef()},
+			dest:    apisv1alpha1.Destination{
+				DeprecatedKind:       addressableKind,
+				DeprecatedName:       addressableName,
+				DeprecatedAPIVersion: addressableAPIVersion,
+				DeprecatedNamespace:  testNS,},
 			wantURI: addressableDNS,
 		},
 		"DeprecatedObjectReference with relative uri": {
@@ -200,7 +204,10 @@ func TestGetURI_ObjectReference(t *testing.T) {
 				getAddressable(),
 			},
 			dest: apisv1alpha1.Destination{
-				DeprecatedObjectReference: getAddressableRef(),
+				DeprecatedKind:       addressableKind,
+				DeprecatedName:       addressableName,
+				DeprecatedAPIVersion: addressableAPIVersion,
+				DeprecatedNamespace:  testNS,
 				URI: &apis.URL{
 					Path: "/foo",
 				},
@@ -211,7 +218,10 @@ func TestGetURI_ObjectReference(t *testing.T) {
 				getAddressable(),
 			},
 			dest: apisv1alpha1.Destination{
-				DeprecatedObjectReference: getAddressableRef(),
+				DeprecatedKind:       addressableKind,
+				DeprecatedName:       addressableName,
+				DeprecatedAPIVersion: addressableAPIVersion,
+				DeprecatedNamespace:  testNS,
 				URI: &apis.URL{
 					Path: "foo",
 				},
@@ -222,7 +232,10 @@ func TestGetURI_ObjectReference(t *testing.T) {
 				getAddressableWithPathAndTrailingSlash(),
 			},
 			dest: apisv1alpha1.Destination{
-				DeprecatedObjectReference: getAddressableRef(),
+				DeprecatedKind:       addressableKind,
+				DeprecatedName:       addressableName,
+				DeprecatedAPIVersion: addressableAPIVersion,
+				DeprecatedNamespace:  testNS,
 				URI: &apis.URL{
 					Path: "foo",
 				},
@@ -233,7 +246,10 @@ func TestGetURI_ObjectReference(t *testing.T) {
 				getAddressableWithPathAndTrailingSlash(),
 			},
 			dest: apisv1alpha1.Destination{
-				DeprecatedObjectReference: getAddressableRef(),
+				DeprecatedKind:       addressableKind,
+				DeprecatedName:       addressableName,
+				DeprecatedAPIVersion: addressableAPIVersion,
+				DeprecatedNamespace:  testNS,
 				URI: &apis.URL{
 					Path: "/foo",
 				},
@@ -244,7 +260,10 @@ func TestGetURI_ObjectReference(t *testing.T) {
 				getAddressableWithPathAndNoTrailingSlash(),
 			},
 			dest: apisv1alpha1.Destination{
-				DeprecatedObjectReference: getAddressableRef(),
+				DeprecatedKind:       addressableKind,
+				DeprecatedName:       addressableName,
+				DeprecatedAPIVersion: addressableAPIVersion,
+				DeprecatedNamespace:  testNS,
 				URI: &apis.URL{
 					Path: "foo",
 				},
@@ -255,7 +274,10 @@ func TestGetURI_ObjectReference(t *testing.T) {
 				getAddressableWithPathAndNoTrailingSlash(),
 			},
 			dest: apisv1alpha1.Destination{
-				DeprecatedObjectReference: getAddressableRef(),
+				DeprecatedKind:       addressableKind,
+				DeprecatedName:       addressableName,
+				DeprecatedAPIVersion: addressableAPIVersion,
+				DeprecatedNamespace:  testNS,
 				URI: &apis.URL{
 					Path: "/foo",
 				},
@@ -266,7 +288,10 @@ func TestGetURI_ObjectReference(t *testing.T) {
 				getAddressable(),
 			},
 			dest: apisv1alpha1.Destination{
-				DeprecatedObjectReference: getAddressableRef(),
+				DeprecatedKind:       addressableKind,
+				DeprecatedName:       addressableName,
+				DeprecatedAPIVersion: addressableAPIVersion,
+				DeprecatedNamespace:  testNS,
 				URI: &apis.URL{
 					Scheme: "http",
 					Host:   "example.com",

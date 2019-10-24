@@ -29,7 +29,16 @@ type Destination struct {
 	Ref *corev1.ObjectReference `json:"ref,omitempty"`
 
 	// +optional
-	DeprecatedObjectReference *corev1.ObjectReference `json:",inline"`
+	DeprecatedAPIVersion string `json:"apiVersion,omitempty"`
+
+	// +optional
+	DeprecatedKind string `json:"kind,omitempty"`
+
+	// +optional
+	DeprecatedName string `json:"name,omitempty"`
+
+	// +optional
+	DeprecatedNamespace string `json:"namespace,omitempty"`
 
 	// URI can be an absolute URL(non-empty scheme and non-empty host) pointing to the target or a relative URI. Relative URIs will be resolved using the base URI retrieved from Ref.
 	// +optional
@@ -45,7 +54,18 @@ func (current *Destination) Validate(ctx context.Context) *apis.FieldError {
 }
 
 func ValidateDestination(dest Destination) *apis.FieldError {
-	if dest.Ref != nil && dest.DeprecatedObjectReference != nil {
+	var deprecatedObjectReference *corev1.ObjectReference
+	if dest.DeprecatedAPIVersion == "" && dest.DeprecatedKind == "" && dest.DeprecatedName == "" && dest.DeprecatedNamespace == "" {
+		deprecatedObjectReference = nil
+	} else {
+		deprecatedObjectReference = &corev1.ObjectReference{
+			Kind:            dest.DeprecatedKind,
+			APIVersion:       dest.DeprecatedAPIVersion,
+			Name:            dest.DeprecatedName,
+			Namespace:       dest.DeprecatedNamespace,
+		}
+	}
+	if dest.Ref != nil && deprecatedObjectReference != nil {
 		return apis.ErrGeneric("Ref and [apiVersion, kind, name] can't be both present", "[apiVersion, kind, name]", "ref")
 	}
 
@@ -53,7 +73,7 @@ func ValidateDestination(dest Destination) *apis.FieldError {
 	if dest.Ref != nil {
 		ref = dest.Ref
 	} else {
-		ref = dest.DeprecatedObjectReference
+		ref = deprecatedObjectReference
 	}
 	if ref == nil && dest.URI == nil {
 		return apis.ErrGeneric("expected at least one, got none", "[apiVersion, kind, name]", "ref", "uri")
