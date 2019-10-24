@@ -21,14 +21,12 @@ import (
 	"encoding/pem"
 	"fmt"
 	"net"
-	"strings"
 	"testing"
 	"time"
 
 	"github.com/google/go-cmp/cmp"
 	"go.uber.org/zap"
 	"golang.org/x/sync/errgroup"
-	admissionregistrationv1beta1 "k8s.io/api/admissionregistration/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	fakekubeclientset "k8s.io/client-go/kubernetes/fake"
@@ -62,7 +60,7 @@ func newNonRunningTestWebhook(t *testing.T, options ControllerOptions) (
 	ac *Webhook) {
 	t.Helper()
 	// Create fake clients
-	kubeClient = fakekubeclientset.NewSimpleClientset()
+	kubeClient = fakekubeclientset.NewSimpleClientset(initialConfigWebhook, initialResourceWebhook)
 
 	ac, err := NewTestWebhook(kubeClient, options, TestLogger(t))
 	if err != nil {
@@ -73,20 +71,7 @@ func newNonRunningTestWebhook(t *testing.T, options ControllerOptions) (
 
 func TestRegistrationStopChanFire(t *testing.T) {
 	opts := newDefaultOptions()
-	kubeClient, ac := newNonRunningTestWebhook(t, opts)
-	webhook := &admissionregistrationv1beta1.MutatingWebhookConfiguration{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: ac.Options.ResourceMutatingWebhookName,
-		},
-		Webhooks: []admissionregistrationv1beta1.MutatingWebhook{
-			{
-				Name:         ac.Options.ResourceMutatingWebhookName,
-				Rules:        []admissionregistrationv1beta1.RuleWithOperations{{}},
-				ClientConfig: admissionregistrationv1beta1.WebhookClientConfig{},
-			},
-		},
-	}
-	createWebhook(kubeClient, webhook)
+	_, ac := newNonRunningTestWebhook(t, opts)
 
 	ac.Options.RegistrationDelay = 1 * time.Minute
 	stopCh := make(chan struct{})
@@ -104,72 +89,6 @@ func TestRegistrationStopChanFire(t *testing.T) {
 	if err == nil {
 		conn.Close()
 		t.Errorf("Unexpected success to dial to port %d", opts.Port)
-	}
-}
-
-func TestRegistrationForAlreadyExistingResourceController(t *testing.T) {
-	kubeClient, ac := newNonRunningTestWebhook(t, newDefaultOptions())
-	webhook := &admissionregistrationv1beta1.MutatingWebhookConfiguration{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: ac.Options.ResourceMutatingWebhookName,
-		},
-		Webhooks: []admissionregistrationv1beta1.MutatingWebhook{
-			{
-				Name:         ac.Options.ResourceMutatingWebhookName,
-				Rules:        []admissionregistrationv1beta1.RuleWithOperations{{}},
-				ClientConfig: admissionregistrationv1beta1.WebhookClientConfig{},
-			},
-		},
-	}
-	createWebhook(kubeClient, webhook)
-
-	ac.Options.RegistrationDelay = 1 * time.Millisecond
-	stopCh := make(chan struct{})
-
-	var g errgroup.Group
-	g.Go(func() error {
-		return ac.Run(stopCh)
-	})
-	err := g.Wait()
-	if err == nil {
-		t.Fatal("Expected webhook controller to fail")
-	}
-
-	if ac.Options.ClientAuth >= tls.VerifyClientCertIfGiven && !strings.Contains(err.Error(), "configmaps") {
-		t.Fatal("Expected error msg to contain configmap key missing error")
-	}
-}
-
-func TestRegistrationForAlreadyExistingConfigValidationController(t *testing.T) {
-	kubeClient, ac := newNonRunningTestWebhook(t, newDefaultOptions())
-	webhook := &admissionregistrationv1beta1.ValidatingWebhookConfiguration{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: ac.Options.ConfigValidationWebhookName,
-		},
-		Webhooks: []admissionregistrationv1beta1.ValidatingWebhook{
-			{
-				Name:         ac.Options.ConfigValidationWebhookName,
-				Rules:        []admissionregistrationv1beta1.RuleWithOperations{{}},
-				ClientConfig: admissionregistrationv1beta1.WebhookClientConfig{},
-			},
-		},
-	}
-	createConfigValidationWebhook(kubeClient, webhook)
-
-	ac.Options.RegistrationDelay = 1 * time.Millisecond
-	stopCh := make(chan struct{})
-
-	var g errgroup.Group
-	g.Go(func() error {
-		return ac.Run(stopCh)
-	})
-	err := g.Wait()
-	if err == nil {
-		t.Fatal("Expected webhook controller to fail")
-	}
-
-	if ac.Options.ClientAuth >= tls.VerifyClientCertIfGiven && !strings.Contains(err.Error(), "configmaps") {
-		t.Fatal("Expected error msg to contain configmap key missing error")
 	}
 }
 
@@ -260,11 +179,10 @@ func TestSettingWebhookClientAuth(t *testing.T) {
 }
 
 func NewTestWebhook(client kubernetes.Interface, options ControllerOptions, logger *zap.SugaredLogger) (*Webhook, error) {
-	resourceHandlers := newResourceHandlers()
 	validations := configmap.Constructors{"test-config": newConfigFromConfigMap}
 
 	admissionControllers := map[string]AdmissionController{
-		options.ResourceAdmissionControllerPath: NewResourceAdmissionController(resourceHandlers, options, true),
+		options.ResourceAdmissionControllerPath: NewResourceAdmissionController(handlers, options, true),
 		options.ConfigValidationControllerPath:  NewConfigValidationController(validations, options),
 	}
 	return New(client, options, admissionControllers, logger, nil)

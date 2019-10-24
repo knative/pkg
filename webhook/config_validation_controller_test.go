@@ -29,12 +29,37 @@ import (
 	authenticationv1 "k8s.io/api/authentication/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes"
 	fakekubeclientset "k8s.io/client-go/kubernetes/fake"
-
 	"knative.dev/pkg/apis"
 	"knative.dev/pkg/configmap"
+	"knative.dev/pkg/system"
+
+	_ "knative.dev/pkg/system/testing"
+
 	. "knative.dev/pkg/logging/testing"
+)
+
+var (
+	initialConfigWebhook = &admissionregistrationv1beta1.ValidatingWebhookConfiguration{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "configmap.webhook.knative.dev",
+		},
+		Webhooks: []admissionregistrationv1beta1.ValidatingWebhook{{
+			Name: "configmap.webhook.knative.dev",
+			ClientConfig: admissionregistrationv1beta1.WebhookClientConfig{
+				Service: &admissionregistrationv1beta1.ServiceReference{
+					Namespace: system.Namespace(),
+					Name:      "webhook",
+				},
+			},
+			NamespaceSelector: &metav1.LabelSelector{
+				MatchExpressions: []metav1.LabelSelectorRequirement{{
+					Key:      "pkg.knative.dev/release",
+					Operator: metav1.LabelSelectorOpExists,
+				}},
+			},
+		}},
+	}
 )
 
 func newNonRunningTestConfigValidationController(t *testing.T, options ControllerOptions) (
@@ -42,7 +67,7 @@ func newNonRunningTestConfigValidationController(t *testing.T, options Controlle
 	ac AdmissionController) {
 	t.Helper()
 	// Create fake clients
-	kubeClient = fakekubeclientset.NewSimpleClientset()
+	kubeClient = fakekubeclientset.NewSimpleClientset(initialConfigWebhook)
 
 	ac = NewTestConfigValidationController(options)
 	return
@@ -53,40 +78,22 @@ func NewTestConfigValidationController(options ControllerOptions) AdmissionContr
 	return NewConfigValidationController(validations, options)
 }
 
-func TestValidConfigValidationController(t *testing.T) {
-	kubeClient, ac := newNonRunningTestConfigValidationController(t, newDefaultOptions())
-	createDeployment(kubeClient)
-	err := ac.Register(TestContextWithLogger(t), kubeClient, []byte{})
-	if err != nil {
-		t.Fatalf("Failed to create webhook: %s", err)
-	}
-}
-
 func TestUpdatingConfigValidationController(t *testing.T) {
-	kubeClient, c := newNonRunningTestConfigValidationController(t, newDefaultOptions())
-
-	ac := c.(*ConfigValidationController)
-	webhook := &admissionregistrationv1beta1.ValidatingWebhookConfiguration{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: ac.options.ConfigValidationWebhookName,
-		},
-		Webhooks: []admissionregistrationv1beta1.ValidatingWebhook{{
-			Name:         ac.options.ConfigValidationWebhookName,
-			Rules:        []admissionregistrationv1beta1.RuleWithOperations{{}},
-			ClientConfig: admissionregistrationv1beta1.WebhookClientConfig{},
-		}},
-	}
+	kubeClient, ac := newNonRunningTestConfigValidationController(t, newDefaultOptions())
 
 	createDeployment(kubeClient)
-	createConfigValidationWebhook(kubeClient, webhook)
 	err := ac.Register(TestContextWithLogger(t), kubeClient, []byte{})
 	if err != nil {
 		t.Fatalf("Failed to create webhook: %s", err)
 	}
 
-	currentWebhook, _ := kubeClient.AdmissionregistrationV1beta1().ValidatingWebhookConfigurations().Get(ac.options.ConfigValidationWebhookName, metav1.GetOptions{})
-	if reflect.DeepEqual(currentWebhook.Webhooks, webhook.Webhooks) {
+	currentWebhook, _ := kubeClient.AdmissionregistrationV1beta1().ValidatingWebhookConfigurations().Get(initialConfigWebhook.Name, metav1.GetOptions{})
+	if reflect.DeepEqual(currentWebhook.Webhooks, initialConfigWebhook.Webhooks) {
 		t.Fatalf("Expected webhook to be updated")
+	}
+
+	if len(currentWebhook.OwnerReferences) > 0 {
+		t.Errorf("Expected no OwnerReferences, got %d", len(currentWebhook.OwnerReferences))
 	}
 }
 
@@ -206,14 +213,6 @@ func TestDenyInvalidUpdateConfigMapOutOfRange(t *testing.T) {
 	resp := ac.Admit(ctx, createCreateConfigMapRequest(ctx, r))
 
 	expectFailsWith(t, resp, "out of range")
-}
-
-func createConfigValidationWebhook(kubeClient kubernetes.Interface, webhook *admissionregistrationv1beta1.ValidatingWebhookConfiguration) {
-	client := kubeClient.AdmissionregistrationV1beta1().ValidatingWebhookConfigurations()
-	_, err := client.Create(webhook)
-	if err != nil {
-		panic(fmt.Sprintf("failed to create test webhook: %s", err))
-	}
 }
 
 type config struct {
