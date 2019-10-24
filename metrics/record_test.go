@@ -47,7 +47,7 @@ func TestRecordServing(t *testing.T) {
 			name: "stackdriver backend with supported metric",
 			metricsConfig: &metricsConfig{
 				isStackdriverBackend:        true,
-				stackdriverMetricTypePrefix: "knative.dev/serving/activator",
+				stackdriverMetricTypePrefix: "knative.dev/internal/serving/activator",
 			},
 			measurement: measure.M(2),
 		}, {

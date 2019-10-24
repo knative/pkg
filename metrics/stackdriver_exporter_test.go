@@ -45,7 +45,7 @@ var (
 		metricName string
 	}{{
 		name:       "activator metric",
-		domain:     servingDomain,
+		domain:     internalServingDomain,
 		component:  "activator",
 		metricName: "request_count",
 	}, {
@@ -313,7 +313,7 @@ func TestGetMonitoredResourceFunc_UseGlobal(t *testing.T) {
 	}
 }
 
-func TestGetgetMetricTypeFunc_UseKnativeDomain(t *testing.T) {
+func TestGetMetricTypeFunc_UseKnativeDomain(t *testing.T) {
 	for _, testCase := range supportedServingMetricsTestCases {
 		testView = &view.View{
 			Description: "Test View",
