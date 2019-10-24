@@ -52,10 +52,9 @@ const (
 A new regression for this test has been detected:
 %s`
 
-	// reopenIssueCommentTemplate is a template for the comment of an issue that is reopened
-	reopenIssueCommentTemplate = `
-New regression has been detected, reopening this issue:
-%s`
+	// reopenIssueComment is the comment of an issue when it is reopened
+	reopenIssueComment = `
+New regression has been detected, reopening this issue.`
 
 	// closeIssueComment is the comment of an issue when it is closed
 	closeIssueComment = `
@@ -121,8 +120,7 @@ func (gih *IssueHandler) CreateIssueForTest(testName, desc string) error {
 		if err := gih.reopenIssue(issueNumber); err != nil {
 			return fmt.Errorf("failed to reopen issue %d: %v", issueNumber, err)
 		}
-		commentBody := fmt.Sprintf(reopenIssueCommentTemplate, desc)
-		if err := gih.addComment(issueNumber, commentBody); err != nil {
+		if err := gih.addComment(issueNumber, reopenIssueComment); err != nil {
 			return fmt.Errorf("failed to add comment for reopened issue %d: %v", issueNumber, err)
 		}
 	}
@@ -132,7 +130,7 @@ func (gih *IssueHandler) CreateIssueForTest(testName, desc string) error {
 	if err != nil {
 		return fmt.Errorf("failed to get comments from issue %d: %v", issueNumber, err)
 	}
-	if len(comments) < 2 {
+	if len(comments) < 1 {
 		return fmt.Errorf("existing issue %d is malformed, cannot update", issueNumber)
 	}
 	commentBody := fmt.Sprintf(issueSummaryCommentTemplate, desc)
