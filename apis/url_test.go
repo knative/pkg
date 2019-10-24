@@ -427,7 +427,7 @@ func TestURLString(t *testing.T) {
 	}{
 		"nil": {},
 		"empty": {
-			t: &URL{},
+			t:    &URL{},
 			want: "",
 		},
 		"relative": {
@@ -435,14 +435,14 @@ func TestURLString(t *testing.T) {
 			want: "/path/to/something",
 		},
 		"nopath": {
-			t: HTTPS("foo"),
-			want:"https://foo",
+			t:    HTTPS("foo"),
+			want: "https://foo",
 		},
 		"absolute": {
-			t:    &URL{
+			t: &URL{
 				Scheme: "http",
-				Host: "path",
-				Path: "/to/something",
+				Host:   "path",
+				Path:   "/to/something",
 			},
 			want: "http://path/to/something",
 		},

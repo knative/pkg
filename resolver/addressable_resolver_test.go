@@ -90,7 +90,7 @@ func TestGetURI_ObjectReference(t *testing.T) {
 		},
 		wantErr: fmt.Errorf("URI is not absolute(both scheme and host should be non-empty): %v", "http:"),
 	},
-		"Ref and DeprecatedObjectReference both exists": {
+		"Ref and [apiVersion, kind, name] both exists": {
 			objects: []runtime.Object{
 				getAddressable(),
 			},
@@ -103,23 +103,23 @@ func TestGetURI_ObjectReference(t *testing.T) {
 			wantErr: fmt.Errorf("ref and [apiVersion, kind, name] can't be both present"),
 		},
 		"happy ref": {
-			objects: []runtime.Object{
-				getAddressable(),
+		objects: []runtime.Object{
+			getAddressable(),
+		},
+		dest:    apisv1alpha1.Destination{Ref: getAddressableRef()},
+		wantURI: addressableDNS,
+	}, "ref with relative uri": {
+		objects: []runtime.Object{
+			getAddressable(),
+		},
+		dest: apisv1alpha1.Destination{
+			Ref: getAddressableRef(),
+			URI: &apis.URL{
+			Path:   "/foo",
 			},
-			dest:    apisv1alpha1.Destination{Ref: getAddressableRef()},
-			wantURI: addressableDNS,
-		}, "ref with relative uri": {
-			objects: []runtime.Object{
-				getAddressable(),
-			},
-			dest: apisv1alpha1.Destination{
-				Ref: getAddressableRef(),
-				URI: &apis.URL{
-					Path: "/foo",
-				},
-			},
-			wantURI: addressableDNS + "/foo",
-		}, "ref with relative URI without leading slash": {
+		},
+		wantURI: addressableDNS + "/foo",
+	}, "ref with relative URI without leading slash": {
 			objects: []runtime.Object{
 				getAddressable(),
 			},
@@ -186,9 +186,9 @@ func TestGetURI_ObjectReference(t *testing.T) {
 					Path:   "/foo",
 				},
 			},
-			wantErr: fmt.Errorf("absolute URI is not allowed when Ref or DeprecatedObjectReference exists"),
+			wantErr: fmt.Errorf("absolute URI is not allowed when Ref or [apiVersion, kind, name] exists"),
 		},
-		"happy DeprecatedObjectReference": {
+		"happy [apiVersion, kind, name]": {
 			objects: []runtime.Object{
 				getAddressable(),
 			},
@@ -199,7 +199,7 @@ func TestGetURI_ObjectReference(t *testing.T) {
 				DeprecatedNamespace:  testNS,},
 			wantURI: addressableDNS,
 		},
-		"DeprecatedObjectReference with relative uri": {
+		"[apiVersion, kind, name] with relative uri": {
 			objects: []runtime.Object{
 				getAddressable(),
 			},
@@ -213,7 +213,7 @@ func TestGetURI_ObjectReference(t *testing.T) {
 				},
 			},
 			wantURI: addressableDNS + "/foo",
-		}, "DeprecatedObjectReference with relative URI without leading slash": {
+		}, "[apiVersion, kind, name] with relative URI without leading slash": {
 			objects: []runtime.Object{
 				getAddressable(),
 			},
@@ -227,7 +227,7 @@ func TestGetURI_ObjectReference(t *testing.T) {
 				},
 			},
 			wantURI: addressableDNS + "/foo",
-		}, "DeprecatedObjectReference ends with path and trailing slash and relative URI without leading slash ": {
+		}, "[apiVersion, kind, name] ends with path and trailing slash and relative URI without leading slash ": {
 			objects: []runtime.Object{
 				getAddressableWithPathAndTrailingSlash(),
 			},
@@ -241,7 +241,7 @@ func TestGetURI_ObjectReference(t *testing.T) {
 				},
 			},
 			wantURI: addressableDNSWithPathAndTrailingSlash + "foo",
-		}, "DeprecatedObjectReference ends with path and trailing slash and relative URI with leading slash ": {
+		}, "[apiVersion, kind, name] ends with path and trailing slash and relative URI with leading slash ": {
 			objects: []runtime.Object{
 				getAddressableWithPathAndTrailingSlash(),
 			},
@@ -255,7 +255,7 @@ func TestGetURI_ObjectReference(t *testing.T) {
 				},
 			},
 			wantURI: addressableDNS + "/foo",
-		}, "DeprecatedObjectReference ends with path and no trailing slash and relative URI without leading slash ": {
+		}, "[apiVersion, kind, name] ends with path and no trailing slash and relative URI without leading slash ": {
 			objects: []runtime.Object{
 				getAddressableWithPathAndNoTrailingSlash(),
 			},
@@ -269,7 +269,7 @@ func TestGetURI_ObjectReference(t *testing.T) {
 				},
 			},
 			wantURI: addressableDNS + "/foo",
-		}, "DeprecatedObjectReference ends with path and no trailing slash and relative URI with leading slash ": {
+		}, "[apiVersion, kind, name] ends with path and no trailing slash and relative URI with leading slash ": {
 			objects: []runtime.Object{
 				getAddressableWithPathAndNoTrailingSlash(),
 			},
@@ -283,7 +283,7 @@ func TestGetURI_ObjectReference(t *testing.T) {
 				},
 			},
 			wantURI: addressableDNS + "/foo",
-		}, "DeprecatedObjectReference with URI which is absolute URL": {
+		}, "[apiVersion, kind, name] with URI which is absolute URL": {
 			objects: []runtime.Object{
 				getAddressable(),
 			},
@@ -298,7 +298,7 @@ func TestGetURI_ObjectReference(t *testing.T) {
 					Path:   "/foo",
 				},
 			},
-			wantErr: fmt.Errorf("absolute URI is not allowed when Ref or DeprecatedObjectReference exists"),
+			wantErr: fmt.Errorf("absolute URI is not allowed when Ref or [apiVersion, kind, name] exists"),
 		},
 		"nil url": {
 			objects: []runtime.Object{

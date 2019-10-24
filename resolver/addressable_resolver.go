@@ -91,7 +91,7 @@ func (r *URIResolver) URIFromDestination(dest apisv1alpha1.Destination, parent i
 		}
 		if dest.URI != nil {
 			if dest.URI.URL().IsAbs() {
-				return "", fmt.Errorf("absolute URI is not allowed when Ref or DeprecatedObjectReference exists")
+				return "", fmt.Errorf("absolute URI is not allowed when Ref or [apiVersion, kind, name] exists")
 			}
 			return url.URL().ResolveReference(dest.URI.URL()).String(), nil
 		}
