@@ -31,12 +31,13 @@ import (
 // 	See https://github.com/knative/pkg/issues/608
 
 const (
-	servingDomain   = "knative.dev/serving"
-	eventingDomain  = "knative.dev/eventing"
-	customSubDomain = "test.domain"
-	testComponent   = "testComponent"
-	testProj        = "test-project"
-	anotherProj     = "another-project"
+	servingDomain         = "knative.dev/serving"
+	internalServingDomain = "knative.dev/internal/serving"
+	eventingDomain        = "knative.dev/eventing"
+	customSubDomain       = "test.domain"
+	testComponent         = "testComponent"
+	testProj              = "test-project"
+	anotherProj           = "another-project"
 )
 
 var (
