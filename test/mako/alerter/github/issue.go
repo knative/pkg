@@ -44,8 +44,8 @@ const (
 	// issueBodyTemplate is a template for issue body
 	issueBodyTemplate = `
 ### Auto-generated issue tracking performance regression
-* **Test name**: %s
-* **Repository name**: %s`
+* **Repository name**: %s
+* **Test name**: %s`
 
 	// issueSummaryCommentTemplate is a template for the summary of an issue
 	issueSummaryCommentTemplate = `
