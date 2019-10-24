@@ -166,8 +166,7 @@ func TestValidateDestination(t *testing.T) {
 			want: "Absolute URI is not allowed when Ref or [apiVersion, kind, name] is present: [apiVersion, kind, name], ref, uri",
 		},
 		"invalid, both ref, [apiVersion, kind, name] and uri  are nil": {
-			dest: &Destination{
-			},
+			dest: &Destination{},
 			want: "expected at least one, got none: [apiVersion, kind, name], ref, uri",
 		},
 		"valid, both uri and ref, uri is not a absolute URL": {
@@ -193,6 +192,180 @@ func TestValidateDestination(t *testing.T) {
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
 			gotErr := tc.dest.Validate(ctx)
+
+			if tc.want != "" {
+				if got, want := gotErr.Error(), tc.want; got != want {
+					t.Errorf("%s: Error() = %v, wanted %v", name, got, want)
+				}
+			} else if gotErr != nil {
+				t.Errorf("%s: Validate() = %v, wanted nil", name, gotErr)
+			}
+		})
+	}
+}
+
+func TestValidateDestinationDisallowDeprecated(t *testing.T) {
+	ctx := context.TODO()
+
+	validRef := corev1.ObjectReference{
+		Kind:       kind,
+		APIVersion: apiVersion,
+		Name:       name,
+	}
+
+	validURL := apis.URL{
+		Scheme: "http",
+		Host:   "host",
+	}
+
+	tests := map[string]struct {
+		dest *Destination
+		want string
+	}{
+		"nil valid": {
+			dest: nil,
+			want: "",
+		},
+		"valid ref": {
+			dest: &Destination{
+				Ref: &validRef,
+			},
+			want: "",
+		},
+		"invalid ref, missing name": {
+			dest: &Destination{
+				Ref: &corev1.ObjectReference{
+					Kind:       kind,
+					APIVersion: apiVersion,
+				},
+			},
+			want: "missing field(s): ref.name",
+		},
+		"invalid ref, missing api version": {
+			dest: &Destination{
+				Ref: &corev1.ObjectReference{
+					Kind: kind,
+					Name: apiVersion,
+				},
+			},
+			want: "missing field(s): ref.apiVersion",
+		},
+		"invalid ref, missing kind": {
+			dest: &Destination{
+				Ref: &corev1.ObjectReference{
+					APIVersion: apiVersion,
+					Name:       name,
+				},
+			},
+			want: "missing field(s): ref.kind",
+		},
+		"invalid deprecated [apiVersion, kind, name]": {
+			dest: &Destination{
+				DeprecatedKind:       kind,
+				DeprecatedAPIVersion: apiVersion,
+				DeprecatedName:       name,
+			},
+			want: "invalid value: apiVersion is not allowed here, it's a deprecated value: apiVersion\ninvalid value: kind is not allowed here, it's a deprecated value: kind\ninvalid value: name is not allowed here, it's a deprecated value: name",
+		},
+		"invalid deprecated [apiVersion, kind]": {
+			dest: &Destination{
+				DeprecatedKind:       kind,
+				DeprecatedAPIVersion: apiVersion,
+			},
+			want: "invalid value: apiVersion is not allowed here, it's a deprecated value: apiVersion\ninvalid value: kind is not allowed here, it's a deprecated value: kind",
+		},
+		"invalid deprecated [kind, name]": {
+			dest: &Destination{
+				DeprecatedKind: kind,
+				DeprecatedName: name,
+			},
+			want: "invalid value: kind is not allowed here, it's a deprecated value: kind\ninvalid value: name is not allowed here, it's a deprecated value: name",
+		},
+		"invalid deprecated [apiVersion, name]": {
+			dest: &Destination{
+				DeprecatedAPIVersion: apiVersion,
+				DeprecatedName:       name,
+			},
+			want: "invalid value: apiVersion is not allowed here, it's a deprecated value: apiVersion\ninvalid value: name is not allowed here, it's a deprecated value: name",
+		},
+		"valid uri": {
+			dest: &Destination{
+				URI: &validURL,
+			},
+		},
+		"invalid, uri has no host": {
+			dest: &Destination{
+				URI: &apis.URL{
+					Scheme: "http",
+				},
+			},
+			want: "invalid value: Relative URI is not allowed when Ref and [apiVersion, kind, name] is absent: uri",
+		},
+		"invalid, uri is not absolute url": {
+			dest: &Destination{
+				URI: &apis.URL{
+					Host: "host",
+				},
+			},
+			want: "invalid value: Relative URI is not allowed when Ref and [apiVersion, kind, name] is absent: uri",
+		},
+		"invalid deprecated, both ref and [apiVersion, kind, name] are present ": {
+			dest: &Destination{
+				Ref: &corev1.ObjectReference{
+					Kind:       "SomeKind",
+					APIVersion: "v1mega1",
+					Name:       "a-name",
+				},
+				DeprecatedKind:       kind,
+				DeprecatedAPIVersion: apiVersion,
+				DeprecatedName:       name,
+			},
+			want: "invalid value: apiVersion is not allowed here, it's a deprecated value: apiVersion\ninvalid value: kind is not allowed here, it's a deprecated value: kind\ninvalid value: name is not allowed here, it's a deprecated value: name",
+		},
+		"invalid, both uri and ref, uri is absolute URL": {
+			dest: &Destination{
+				URI: &validURL,
+				Ref: &validRef,
+			},
+			want: "Absolute URI is not allowed when Ref or [apiVersion, kind, name] is present: [apiVersion, kind, name], ref, uri",
+		},
+		"invalid, both uri and [apiVersion, kind, name], uri is absolute URL": {
+			dest: &Destination{
+				URI:                  &validURL,
+				DeprecatedKind:       kind,
+				DeprecatedAPIVersion: apiVersion,
+				DeprecatedName:       name,
+			},
+			want: "invalid value: apiVersion is not allowed here, it's a deprecated value: apiVersion\ninvalid value: kind is not allowed here, it's a deprecated value: kind\ninvalid value: name is not allowed here, it's a deprecated value: name",
+		},
+		"invalid, both ref, [apiVersion, kind, name] and uri  are nil": {
+			dest: &Destination{},
+			want: "expected at least one, got none: [apiVersion, kind, name], ref, uri",
+		},
+		"valid, both uri and ref, uri is not a absolute URL": {
+			dest: &Destination{
+				URI: &apis.URL{
+					Path: "/handler",
+				},
+				Ref: &validRef,
+			},
+		},
+		"invalid deprecated, both uri and [apiVersion, kind, name], uri is not a absolute URL": {
+			dest: &Destination{
+				URI: &apis.URL{
+					Path: "/handler",
+				},
+				DeprecatedKind:       kind,
+				DeprecatedAPIVersion: apiVersion,
+				DeprecatedName:       name,
+			},
+			want: "invalid value: apiVersion is not allowed here, it's a deprecated value: apiVersion\ninvalid value: kind is not allowed here, it's a deprecated value: kind\ninvalid value: name is not allowed here, it's a deprecated value: name",
+		},
+	}
+
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			gotErr := tc.dest.ValidateDisallowDeprecated(ctx)
 
 			if tc.want != "" {
 				if got, want := gotErr.Error(), tc.want; got != want {
