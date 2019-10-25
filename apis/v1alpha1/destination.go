@@ -114,6 +114,8 @@ func ValidateDestination(dest Destination, allowDeprecatedFields bool) *apis.Fie
 	return nil
 }
 
+// deprecatedObjectReference returns an ObjectReference composed from the
+// deprecated ObjectReference fields, or nil if those fields are empty.
 func (dest Destination) deprecatedObjectReference() *corev1.ObjectReference {
 	if dest.DeprecatedAPIVersion == "" && dest.DeprecatedKind == "" && dest.DeprecatedName == "" && dest.DeprecatedNamespace == "" {
 		return nil
@@ -126,10 +128,14 @@ func (dest Destination) deprecatedObjectReference() *corev1.ObjectReference {
 	}
 }
 
-// GetRef gets the ObjectReference from this Destination, if one is present. If no ref is present,
-// then nil is returned.
-// Note: this mostly exists to abstract away the deprecated ObjectReference fields. Once they are
-// removed, then this method should probably be removed too.
+// GetRef gets the ObjectReference from this Destination, if one is present. If
+// the Ref field is present, that's returned. If the Ref field isn't present but
+// the deprecated fields are present, then an ObjectReference is built from the
+// deprecated fields and returned, If neither Ref nor deprecated fields are
+// present, then nil is returned.
+// Note: this mostly exists to abstract away the deprecated ObjectReference
+// fields. Once they are removed, then this method should probably be removed
+// too.
 func (dest *Destination) GetRef() *corev1.ObjectReference {
 	if dest == nil {
 		return nil
@@ -141,6 +147,25 @@ func (dest *Destination) GetRef() *corev1.ObjectReference {
 		return ref
 	}
 	return nil
+}
+
+// NormalizeDeprecatedObjectReference copies the deprecated ObjectReference
+// fields to the Ref field and clears the deprecated fields. It uses the same
+// precedence rules as GetRef(). Use this to normalize code to use the Ref field
+// when deprecated fields may exist.
+// This method should be removed when the deprecated ObjectReference fields are
+// removed.
+func (dest *Destination) NormalizeDeprecatedObjectReference() {
+	if dest == nil {
+		return
+	}
+	if ref := dest.GetRef(); ref != nil {
+		dest.Ref = ref
+	}
+	dest.DeprecatedAPIVersion = ""
+	dest.DeprecatedKind = ""
+	dest.DeprecatedName = ""
+	dest.DeprecatedNamespace = ""
 }
 
 func validateDestinationRef(ref corev1.ObjectReference) *apis.FieldError {

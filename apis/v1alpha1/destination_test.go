@@ -425,3 +425,73 @@ func TestDestination_GetRef(t *testing.T) {
 		})
 	}
 }
+
+func TestDestination_NormalizeDeprecatedObjectReference(t *testing.T) {
+	tests := map[string]struct {
+		dest *Destination
+		want *Destination
+	}{
+		"nil destination": {
+			dest: nil,
+			want: nil,
+		},
+		"contains deprecated fields": {
+			dest: &Destination{
+				DeprecatedAPIVersion: apiVersion,
+				DeprecatedKind:       kind,
+				DeprecatedName:       name,
+			},
+			want: &Destination{
+				Ref: &corev1.ObjectReference{
+					APIVersion: apiVersion,
+					Kind:       kind,
+					Name:       name,
+				},
+			},
+		},
+		"contains deprecated fields and ref": {
+			dest: &Destination{
+				DeprecatedAPIVersion: "depapiVersion",
+				DeprecatedKind:       "depKind",
+				DeprecatedName:       "depName",
+				Ref: &corev1.ObjectReference{
+					APIVersion: apiVersion,
+					Kind:       kind,
+					Name:       name,
+				},
+			},
+			want: &Destination{
+				Ref: &corev1.ObjectReference{
+					APIVersion: apiVersion,
+					Kind:       kind,
+					Name:       name,
+				},
+			},
+		},
+		"no deprecated fields": {
+			dest: &Destination{
+				Ref: &corev1.ObjectReference{
+					APIVersion: apiVersion,
+					Kind:       kind,
+					Name:       name,
+				},
+			},
+			want: &Destination{
+				Ref: &corev1.ObjectReference{
+					APIVersion: apiVersion,
+					Kind:       kind,
+					Name:       name,
+				},
+			},
+		},
+	}
+
+	for n, tc := range tests {
+		t.Run(n, func(t *testing.T) {
+			tc.dest.NormalizeDeprecatedObjectReference()
+			if diff := cmp.Diff(tc.want, tc.dest); diff != "" {
+				t.Errorf("Unexpected result (-want +got): %s", diff)
+			}
+		})
+	}
+}

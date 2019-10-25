@@ -62,7 +62,10 @@ func NewURIResolver(ctx context.Context, callback func(types.NamespacedName)) *U
 	return ret
 }
 
-// URIFromDestination resolves a Destination into a URI string.
+// URIFromDestination resolves a Destination into a URI string. If an
+// ObjectReference is present, its Addressable URI is resolved. If a URI is
+// also present, it's resolved as a URI reference with the Addressable URI as
+// base. If no ObjectReference is present, the Destination's URI is returned.
 func (r *URIResolver) URIFromDestination(dest apisv1alpha1.Destination, parent interface{}) (string, error) {
 	var deprecatedObjectReference *corev1.ObjectReference
 	if dest.DeprecatedAPIVersion == "" && dest.DeprecatedKind == "" && dest.DeprecatedName == "" && dest.DeprecatedNamespace == "" {
