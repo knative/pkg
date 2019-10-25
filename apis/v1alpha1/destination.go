@@ -80,7 +80,7 @@ func ValidateDestination(dest Destination, allowDeprecatedFields bool) *apis.Fie
 
 	deprecatedObjectReference := dest.deprecatedObjectReference()
 	if dest.Ref != nil && deprecatedObjectReference != nil {
-		return apis.ErrGeneric("Ref and [apiVersion, kind, name] can't be both present", "[apiVersion, kind, name]", "ref")
+		return apis.ErrGeneric("ref and [apiVersion, kind, name] can't be both present", "[apiVersion, kind, name]", "ref")
 	}
 
 	var ref *corev1.ObjectReference
@@ -94,11 +94,11 @@ func ValidateDestination(dest Destination, allowDeprecatedFields bool) *apis.Fie
 	}
 
 	if ref != nil && dest.URI != nil && dest.URI.URL().IsAbs() {
-		return apis.ErrGeneric("Absolute URI is not allowed when Ref or [apiVersion, kind, name] is present", "[apiVersion, kind, name]", "ref", "uri")
+		return apis.ErrGeneric("absolute URI is not allowed when Ref or [apiVersion, kind, name] is present", "[apiVersion, kind, name]", "ref", "uri")
 	}
 	// IsAbs() check whether the URL has a non-empty scheme. Besides the non-empty scheme, we also require dest.URI has a non-empty host
 	if ref == nil && dest.URI != nil && (!dest.URI.URL().IsAbs() || dest.URI.Host == "") {
-		return apis.ErrInvalidValue("Relative URI is not allowed when Ref and [apiVersion, kind, name] is absent", "uri")
+		return apis.ErrInvalidValue("relative URI is not allowed when Ref and [apiVersion, kind, name] is absent", "uri")
 	}
 	if ref != nil && dest.URI == nil {
 		if dest.Ref != nil {

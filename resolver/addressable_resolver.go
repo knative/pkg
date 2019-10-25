@@ -63,50 +63,31 @@ func NewURIResolver(ctx context.Context, callback func(types.NamespacedName)) *U
 }
 
 // URIFromDestination resolves a Destination into a URI string.
-func (r *URIResolver) URIFromDestination(dest apisv1alpha1.Destination, parent interface{}) (string, error) {
-	var deprecatedObjectReference *corev1.ObjectReference
-	if dest.DeprecatedAPIVersion == "" && dest.DeprecatedKind == "" && dest.DeprecatedName == "" && dest.DeprecatedNamespace == "" {
-		deprecatedObjectReference = nil
-	} else {
-		deprecatedObjectReference = &corev1.ObjectReference{
-			Kind:       dest.DeprecatedKind,
-			APIVersion: dest.DeprecatedAPIVersion,
-			Name:       dest.DeprecatedName,
-			Namespace:  dest.DeprecatedNamespace,
-		}
+func (r *URIResolver) URIFromDestination(ctx context.Context, namespace string, dest apisv1alpha1.Destination, parent interface{}) (string, error) {
+	err := dest.Validate(ctx)
+	if err != nil {
+		return "", errors.New(err.Error())
 	}
-	if dest.Ref != nil && deprecatedObjectReference != nil {
-		return "", fmt.Errorf("ref and [apiVersion, kind, name] can't be both present")
-	}
-	var ref *corev1.ObjectReference
-	if dest.Ref != nil {
-		ref = dest.Ref
-	} else {
-		ref = deprecatedObjectReference
-	}
+	ref := dest.GetRef()
 	if ref != nil {
+		// Do not modify original copy w/o namespace.
+		ref = ref.DeepCopy()
+		ref.Namespace = namespace
 		url, err := r.URIFromObjectReference(ref, parent)
 		if err != nil {
 			return "", err
 		}
 		if dest.URI != nil {
-			if dest.URI.URL().IsAbs() {
-				return "", fmt.Errorf("absolute URI is not allowed when Ref or [apiVersion, kind, name] exists")
-			}
 			return url.URL().ResolveReference(dest.URI.URL()).String(), nil
 		}
 		return url.URL().String(), nil
 	}
 
 	if dest.URI != nil {
-		// IsAbs check whether the URL has a non-empty scheme. Besides the non non-empty scheme, we also require dest.URI has a non-empty host
-		if !dest.URI.URL().IsAbs() || dest.URI.Host == "" {
-			return "", fmt.Errorf("URI is not absolute(both scheme and host should be non-empty): %v", dest.URI.String())
-		}
 		return dest.URI.String(), nil
 	}
 
-	return "", fmt.Errorf("destination missing Ref, [apiVersion, kind, name] and URI, expected at least one")
+	return "", fmt.Errorf("cannot resolve uri from destination: %v", dest)
 }
 
 // URIFromObjectReference resolves an ObjectReference to a URI string.

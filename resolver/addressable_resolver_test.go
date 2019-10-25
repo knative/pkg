@@ -65,7 +65,7 @@ func TestGetURI_ObjectReference(t *testing.T) {
 		wantURI string
 		wantErr error
 	}{"nil everything": {
-		wantErr: fmt.Errorf("destination missing Ref, [apiVersion, kind, name] and URI, expected at least one"),
+		wantErr: fmt.Errorf("expected at least one, got none: [apiVersion, kind, name], ref, uri"),
 	}, "Happy URI with path": {
 		dest: apisv1alpha1.Destination{
 			URI: &apis.URL{
@@ -81,14 +81,14 @@ func TestGetURI_ObjectReference(t *testing.T) {
 				Host: "example.com",
 			},
 		},
-		wantErr: fmt.Errorf("URI is not absolute(both scheme and host should be non-empty): %v", "//example.com"),
+		wantErr: fmt.Errorf("invalid value: relative URI is not allowed when Ref and [apiVersion, kind, name] is absent: %s", "uri"),
 	}, "URI with no host": {
 		dest: apisv1alpha1.Destination{
 			URI: &apis.URL{
 				Scheme: "http",
 			},
 		},
-		wantErr: fmt.Errorf("URI is not absolute(both scheme and host should be non-empty): %v", "http:"),
+		wantErr: fmt.Errorf("invalid value: relative URI is not allowed when Ref and [apiVersion, kind, name] is absent: %s", "uri"),
 	},
 		"Ref and [apiVersion, kind, name] both exists": {
 			objects: []runtime.Object{
@@ -98,9 +98,8 @@ func TestGetURI_ObjectReference(t *testing.T) {
 				DeprecatedKind:       addressableKind,
 				DeprecatedName:       addressableName,
 				DeprecatedAPIVersion: addressableAPIVersion,
-				DeprecatedNamespace:  testNS,
 			},
-			wantErr: fmt.Errorf("ref and [apiVersion, kind, name] can't be both present"),
+			wantErr: fmt.Errorf("ref and [apiVersion, kind, name] can't be both present: [apiVersion, kind, name], ref"),
 		},
 		"happy ref": {
 			objects: []runtime.Object{
@@ -186,7 +185,7 @@ func TestGetURI_ObjectReference(t *testing.T) {
 					Path:   "/foo",
 				},
 			},
-			wantErr: fmt.Errorf("absolute URI is not allowed when Ref or [apiVersion, kind, name] exists"),
+			wantErr: fmt.Errorf("absolute URI is not allowed when Ref or [apiVersion, kind, name] is present: %s", "[apiVersion, kind, name], ref, uri"),
 		},
 		"happy [apiVersion, kind, name]": {
 			objects: []runtime.Object{
@@ -196,7 +195,7 @@ func TestGetURI_ObjectReference(t *testing.T) {
 				DeprecatedKind:       addressableKind,
 				DeprecatedName:       addressableName,
 				DeprecatedAPIVersion: addressableAPIVersion,
-				DeprecatedNamespace:  testNS},
+			},
 			wantURI: addressableDNS,
 		},
 		"[apiVersion, kind, name] with relative uri": {
@@ -207,7 +206,6 @@ func TestGetURI_ObjectReference(t *testing.T) {
 				DeprecatedKind:       addressableKind,
 				DeprecatedName:       addressableName,
 				DeprecatedAPIVersion: addressableAPIVersion,
-				DeprecatedNamespace:  testNS,
 				URI: &apis.URL{
 					Path: "/foo",
 				},
@@ -221,7 +219,6 @@ func TestGetURI_ObjectReference(t *testing.T) {
 				DeprecatedKind:       addressableKind,
 				DeprecatedName:       addressableName,
 				DeprecatedAPIVersion: addressableAPIVersion,
-				DeprecatedNamespace:  testNS,
 				URI: &apis.URL{
 					Path: "foo",
 				},
@@ -235,7 +232,6 @@ func TestGetURI_ObjectReference(t *testing.T) {
 				DeprecatedKind:       addressableKind,
 				DeprecatedName:       addressableName,
 				DeprecatedAPIVersion: addressableAPIVersion,
-				DeprecatedNamespace:  testNS,
 				URI: &apis.URL{
 					Path: "foo",
 				},
@@ -249,7 +245,6 @@ func TestGetURI_ObjectReference(t *testing.T) {
 				DeprecatedKind:       addressableKind,
 				DeprecatedName:       addressableName,
 				DeprecatedAPIVersion: addressableAPIVersion,
-				DeprecatedNamespace:  testNS,
 				URI: &apis.URL{
 					Path: "/foo",
 				},
@@ -263,7 +258,6 @@ func TestGetURI_ObjectReference(t *testing.T) {
 				DeprecatedKind:       addressableKind,
 				DeprecatedName:       addressableName,
 				DeprecatedAPIVersion: addressableAPIVersion,
-				DeprecatedNamespace:  testNS,
 				URI: &apis.URL{
 					Path: "foo",
 				},
@@ -277,7 +271,6 @@ func TestGetURI_ObjectReference(t *testing.T) {
 				DeprecatedKind:       addressableKind,
 				DeprecatedName:       addressableName,
 				DeprecatedAPIVersion: addressableAPIVersion,
-				DeprecatedNamespace:  testNS,
 				URI: &apis.URL{
 					Path: "/foo",
 				},
@@ -291,43 +284,42 @@ func TestGetURI_ObjectReference(t *testing.T) {
 				DeprecatedKind:       addressableKind,
 				DeprecatedName:       addressableName,
 				DeprecatedAPIVersion: addressableAPIVersion,
-				DeprecatedNamespace:  testNS,
 				URI: &apis.URL{
 					Scheme: "http",
 					Host:   "example.com",
 					Path:   "/foo",
 				},
 			},
-			wantErr: fmt.Errorf("absolute URI is not allowed when Ref or [apiVersion, kind, name] exists"),
+			wantErr: fmt.Errorf("absolute URI is not allowed when Ref or [apiVersion, kind, name] is present: %s", "[apiVersion, kind, name], ref, uri"),
 		},
 		"nil url": {
 			objects: []runtime.Object{
 				getAddressableNilURL(),
 			},
 			dest:    apisv1alpha1.Destination{Ref: getUnaddressableRef()},
-			wantErr: fmt.Errorf(`url missing in address of %+v`, getUnaddressableRef()),
+			wantErr: fmt.Errorf(`url missing in address of %+v`, getUnAddressableRefWithNamespace()),
 		},
 		"nil address": {
 			objects: []runtime.Object{
 				getAddressableNilAddress(),
 			},
 			dest:    apisv1alpha1.Destination{Ref: getUnaddressableRef()},
-			wantErr: fmt.Errorf(`address not set for %+v`, getUnaddressableRef()),
+			wantErr: fmt.Errorf(`address not set for %+v`, getUnAddressableRefWithNamespace()),
 		}, "missing host": {
 			objects: []runtime.Object{
 				getAddressableNoHostURL(),
 			},
 			dest:    apisv1alpha1.Destination{Ref: getUnaddressableRef()},
-			wantErr: fmt.Errorf(`hostname missing in address of %+v`, getUnaddressableRef()),
+			wantErr: fmt.Errorf(`hostname missing in address of %+v`, getUnAddressableRefWithNamespace()),
 		}, "missing status": {
 			objects: []runtime.Object{
 				getAddressableNoStatus(),
 			},
 			dest:    apisv1alpha1.Destination{Ref: getUnaddressableRef()},
-			wantErr: fmt.Errorf(`address not set for %+v`, getUnaddressableRef()),
+			wantErr: fmt.Errorf(`address not set for %+v`, getUnAddressableRefWithNamespace()),
 		}, "notFound": {
 			dest:    apisv1alpha1.Destination{Ref: getUnaddressableRef()},
-			wantErr: fmt.Errorf(`failed to get ref %+v: %s "%s" not found`, getUnaddressableRef(), unaddressableResource, unaddressableName),
+			wantErr: fmt.Errorf(`failed to get ref %+v: %s "%s" not found`, getUnAddressableRefWithNamespace(), unaddressableResource, unaddressableName),
 		}}
 
 	for n, tc := range tests {
@@ -337,8 +329,8 @@ func TestGetURI_ObjectReference(t *testing.T) {
 
 			// Run it twice since this should be idempotent. URI Resolver should
 			// not modify the cache's copy.
-			_, _ = r.URIFromDestination(tc.dest, getAddressable())
-			uri, gotErr := r.URIFromDestination(tc.dest, getAddressable())
+			_, _ = r.URIFromDestination(ctx, testNS, tc.dest, getAddressable())
+			uri, gotErr := r.URIFromDestination(ctx, testNS, tc.dest, getAddressable())
 
 			if gotErr != nil {
 				if tc.wantErr != nil {
@@ -365,8 +357,8 @@ func getAddressable() *unstructured.Unstructured {
 			"apiVersion": addressableAPIVersion,
 			"kind":       addressableKind,
 			"metadata": map[string]interface{}{
-				"namespace": testNS,
 				"name":      addressableName,
+				"namespace": testNS,
 			},
 			"status": map[string]interface{}{
 				"address": map[string]interface{}{
@@ -419,8 +411,8 @@ func getAddressableNoStatus() *unstructured.Unstructured {
 			"apiVersion": unaddressableAPIVersion,
 			"kind":       unaddressableKind,
 			"metadata": map[string]interface{}{
-				"namespace": testNS,
 				"name":      unaddressableName,
+				"namespace": testNS,
 			},
 		},
 	}
@@ -432,8 +424,8 @@ func getAddressableNilAddress() *unstructured.Unstructured {
 			"apiVersion": unaddressableAPIVersion,
 			"kind":       unaddressableKind,
 			"metadata": map[string]interface{}{
-				"namespace": testNS,
 				"name":      unaddressableName,
+				"namespace": testNS,
 			},
 			"status": map[string]interface{}{
 				"address": map[string]interface{}(nil),
@@ -448,8 +440,8 @@ func getAddressableNilURL() *unstructured.Unstructured {
 			"apiVersion": unaddressableAPIVersion,
 			"kind":       unaddressableKind,
 			"metadata": map[string]interface{}{
-				"namespace": testNS,
 				"name":      unaddressableName,
+				"namespace": testNS,
 			},
 			"status": map[string]interface{}{
 				"address": map[string]interface{}{
@@ -466,8 +458,8 @@ func getAddressableNoHostURL() *unstructured.Unstructured {
 			"apiVersion": unaddressableAPIVersion,
 			"kind":       unaddressableKind,
 			"metadata": map[string]interface{}{
-				"namespace": testNS,
 				"name":      unaddressableName,
+				"namespace": testNS,
 			},
 			"status": map[string]interface{}{
 				"address": map[string]interface{}{
@@ -483,8 +475,13 @@ func getAddressableRef() *corev1.ObjectReference {
 		Kind:       addressableKind,
 		Name:       addressableName,
 		APIVersion: addressableAPIVersion,
-		Namespace:  testNS,
 	}
+}
+
+func getAddressableRefWithNamespace() *corev1.ObjectReference {
+	ref := getAddressableRef()
+	ref.Namespace = testNS
+	return ref
 }
 
 func getUnaddressableRef() *corev1.ObjectReference {
@@ -492,6 +489,11 @@ func getUnaddressableRef() *corev1.ObjectReference {
 		Kind:       unaddressableKind,
 		Name:       unaddressableName,
 		APIVersion: unaddressableAPIVersion,
-		Namespace:  testNS,
 	}
+}
+
+func getUnAddressableRefWithNamespace() *corev1.ObjectReference {
+	ref := getUnaddressableRef()
+	ref.Namespace = testNS
+	return ref
 }
