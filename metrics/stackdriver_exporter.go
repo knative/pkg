@@ -101,7 +101,7 @@ func getStackdriverExporterClientOptions(sdconfig *stackdriverClientConfig) ([]o
 			return co, err
 		}
 
-		co = []option.ClientOption{convertSecretToExporterOption(secret)}
+		co = append(co, convertSecretToExporterOption(secret))
 	}
 
 	return co, nil
@@ -165,14 +165,13 @@ func getMetricTypeFunc(metricTypePrefix, customMetricTypePrefix string) func(vie
 
 // getStackdriverSecret returns the Kubernetes Secret specified in the given config.
 func getStackdriverSecret(sdconfig *stackdriverClientConfig) (*corev1.Secret, error) {
-	err := ensureKubeclient()
-	if err != nil {
+	if err := ensureKubeclient(); err != nil {
 		return nil, err
 	}
 
-	ns := secretNamespaceDefault
-	if sdconfig.GCPSecretNamespace != "" {
-		ns = sdconfig.GCPSecretNamespace
+	ns := sdconfig.GCPSecretNamespace
+	if ns == "" {
+		ns = secretNamespaceDefault
 	}
 
 	sec, secErr := kubeclient.CoreV1().Secrets(ns).Get(sdconfig.GCPSecretName, metav1.GetOptions{})
