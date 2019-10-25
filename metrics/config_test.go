@@ -18,11 +18,11 @@ package metrics
 import (
 	"os"
 	"path"
-	"reflect"
 	"testing"
 	"time"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 
 	. "knative.dev/pkg/logging/testing"
 )
@@ -153,7 +153,6 @@ var (
 				isStackdriverBackend:              true,
 				stackdriverMetricTypePrefix:       path.Join(servingDomain, testComponent),
 				stackdriverCustomMetricTypePrefix: path.Join(customMetricTypePrefix, defaultCustomMetricSubDomain, testComponent),
-				stackdriverCustomMetricsSubDomain: defaultCustomMetricSubDomain,
 			},
 			expectedNewExporter: true,
 		}, {
@@ -193,7 +192,6 @@ var (
 				isStackdriverBackend:              true,
 				stackdriverMetricTypePrefix:       path.Join(servingDomain, testComponent),
 				stackdriverCustomMetricTypePrefix: path.Join(customMetricTypePrefix, defaultCustomMetricSubDomain, testComponent),
-				stackdriverCustomMetricsSubDomain: defaultCustomMetricSubDomain,
 				stackdriverClientConfig: stackdriverClientConfig{
 					ProjectID:          anotherProj,
 					GCPLocation:        "us-west1",
@@ -223,7 +221,6 @@ var (
 				isStackdriverBackend:              true,
 				stackdriverMetricTypePrefix:       path.Join(servingDomain, testComponent),
 				stackdriverCustomMetricTypePrefix: path.Join(customMetricTypePrefix, defaultCustomMetricSubDomain, testComponent),
-				stackdriverCustomMetricsSubDomain: defaultCustomMetricSubDomain,
 				stackdriverClientConfig: stackdriverClientConfig{
 					ProjectID:   anotherProj,
 					GCPLocation: "us-west1",
@@ -266,7 +263,6 @@ var (
 				isStackdriverBackend:              true,
 				stackdriverMetricTypePrefix:       path.Join(servingDomain, testComponent),
 				stackdriverCustomMetricTypePrefix: path.Join(customMetricTypePrefix, defaultCustomMetricSubDomain, testComponent),
-				stackdriverCustomMetricsSubDomain: defaultCustomMetricSubDomain,
 				stackdriverClientConfig: stackdriverClientConfig{
 					ProjectID: testProj,
 				},
@@ -309,7 +305,6 @@ var (
 				isStackdriverBackend:              true,
 				stackdriverMetricTypePrefix:       path.Join(servingDomain, testComponent),
 				stackdriverCustomMetricTypePrefix: path.Join(customMetricTypePrefix, defaultCustomMetricSubDomain, testComponent),
-				stackdriverCustomMetricsSubDomain: defaultCustomMetricSubDomain,
 				stackdriverClientConfig: stackdriverClientConfig{
 					ProjectID: "test2",
 				},
@@ -334,7 +329,6 @@ var (
 				isStackdriverBackend:              true,
 				stackdriverMetricTypePrefix:       path.Join(servingDomain, testComponent),
 				stackdriverCustomMetricTypePrefix: path.Join(customMetricTypePrefix, defaultCustomMetricSubDomain, testComponent),
-				stackdriverCustomMetricsSubDomain: defaultCustomMetricSubDomain,
 				stackdriverClientConfig: stackdriverClientConfig{
 					ProjectID: "test2",
 				},
@@ -376,7 +370,6 @@ var (
 				isStackdriverBackend:              true,
 				stackdriverMetricTypePrefix:       path.Join(servingDomain, testComponent),
 				stackdriverCustomMetricTypePrefix: path.Join(customMetricTypePrefix, defaultCustomMetricSubDomain, testComponent),
-				stackdriverCustomMetricsSubDomain: defaultCustomMetricSubDomain,
 				stackdriverClientConfig: stackdriverClientConfig{
 					ProjectID: "test2",
 				},
@@ -402,8 +395,6 @@ var (
 				isStackdriverBackend:              true,
 				stackdriverMetricTypePrefix:       path.Join(servingDomain, testComponent),
 				stackdriverCustomMetricTypePrefix: path.Join(customMetricTypePrefix, defaultCustomMetricSubDomain, testComponent),
-				allowStackdriverCustomMetrics:     true,
-				stackdriverCustomMetricsSubDomain: defaultCustomMetricSubDomain,
 				stackdriverClientConfig: stackdriverClientConfig{
 					ProjectID: "test2",
 				},
@@ -428,7 +419,6 @@ var (
 				isStackdriverBackend:              true,
 				stackdriverMetricTypePrefix:       path.Join(servingDomain, testComponent),
 				stackdriverCustomMetricTypePrefix: path.Join(customMetricTypePrefix, customSubDomain, testComponent),
-				stackdriverCustomMetricsSubDomain: customSubDomain,
 				stackdriverClientConfig: stackdriverClientConfig{
 					ProjectID: "test2",
 				},
@@ -472,7 +462,6 @@ var (
 				isStackdriverBackend:              true,
 				stackdriverMetricTypePrefix:       path.Join(servingDomain, testComponent),
 				stackdriverCustomMetricTypePrefix: path.Join(customMetricTypePrefix, defaultCustomMetricSubDomain, testComponent),
-				stackdriverCustomMetricsSubDomain: defaultCustomMetricSubDomain,
 			},
 		}, {
 			name: "validPrometheus",
@@ -509,8 +498,8 @@ func TestGetMetricsConfig(t *testing.T) {
 			if err != nil {
 				t.Errorf("Wanted valid config %v, got error %v", test.expectedConfig, err)
 			}
-			if !reflect.DeepEqual(*mc, test.expectedConfig) {
-				t.Errorf("Wanted config %v, got config %v", test.expectedConfig, *mc)
+			if diff := cmp.Diff(test.expectedConfig, *mc, cmp.AllowUnexported(*mc), cmpopts.IgnoreTypes(mc.recorder)); diff != "" {
+				t.Errorf("Invalid config (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -525,8 +514,8 @@ func TestGetMetricsConfig_fromEnv(t *testing.T) {
 			if err != nil {
 				t.Errorf("Wanted valid config %v, got error %v", test.expectedConfig, err)
 			}
-			if !reflect.DeepEqual(*mc, test.expectedConfig) {
-				t.Errorf("Wanted config %v, got config %v", test.expectedConfig, *mc)
+			if diff := cmp.Diff(test.expectedConfig, *mc, cmp.AllowUnexported(*mc), cmpopts.IgnoreTypes(mc.recorder)); diff != "" {
+				t.Errorf("Invalid config (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -584,7 +573,6 @@ func TestIsNewExporterRequired(t *testing.T) {
 			isStackdriverBackend:              true,
 			stackdriverMetricTypePrefix:       path.Join(servingDomain, testComponent),
 			stackdriverCustomMetricTypePrefix: path.Join(customMetricTypePrefix, defaultCustomMetricSubDomain, testComponent),
-			stackdriverCustomMetricsSubDomain: defaultCustomMetricSubDomain,
 		},
 		newConfig: metricsConfig{
 			domain:                            servingDomain,
@@ -594,7 +582,6 @@ func TestIsNewExporterRequired(t *testing.T) {
 			isStackdriverBackend:              true,
 			stackdriverMetricTypePrefix:       path.Join(servingDomain, testComponent),
 			stackdriverCustomMetricTypePrefix: path.Join(customMetricTypePrefix, defaultCustomMetricSubDomain, testComponent),
-			stackdriverCustomMetricsSubDomain: defaultCustomMetricSubDomain,
 		},
 		newExporterRequired: true,
 	}, {
@@ -672,8 +659,8 @@ func TestUpdateExporter(t *testing.T) {
 			if mConfig == oldConfig {
 				t.Error("Expected metrics config change")
 			}
-			if !reflect.DeepEqual(*mConfig, test.expectedConfig) {
-				t.Errorf("Expected config: %v; got config %v", test.expectedConfig, mConfig)
+			if diff := cmp.Diff(test.expectedConfig, *mConfig, cmp.AllowUnexported(*mConfig), cmpopts.IgnoreTypes(mConfig.recorder)); diff != "" {
+				t.Errorf("Invalid config (-want +got):\n%s", diff)
 			}
 			oldConfig = mConfig
 		})
