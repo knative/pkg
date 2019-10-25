@@ -349,7 +349,7 @@ func TestValidateDestinationDisallowDeprecated(t *testing.T) {
 				URI: &validURL,
 				Ref: &validRef,
 			},
-			want: "Absolute URI is not allowed when Ref or [apiVersion, kind, name] is present: [apiVersion, kind, name], ref, uri",
+			want: "absolute URI is not allowed when Ref or [apiVersion, kind, name] is present: [apiVersion, kind, name], ref, uri",
 		},
 		"invalid, both uri and [apiVersion, kind, name], uri is absolute URL": {
 			dest: &Destination{
