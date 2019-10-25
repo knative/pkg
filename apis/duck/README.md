@@ -49,8 +49,7 @@ status:
   conditions:
     - type: Ready
       status: "True"
-  address:
-    sinkUri: http://host
+  sinkUri: http://host
 ```
 
 (with uri sink)
@@ -69,8 +68,7 @@ status:
   conditions:
     - type: Ready
       status: "True"
-  address:
-    sinkUri: http://host/path?query
+  sinkUri: http://host/path?query
 ```
 
 (with ref and uri sink)
@@ -93,6 +91,5 @@ status:
   conditions:
     - type: Ready
       status: "True"
-  address:
-    sinkUri: http://host/path?query
+  sinkUri: http://host/path?query
 ```
