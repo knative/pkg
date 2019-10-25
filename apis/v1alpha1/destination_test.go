@@ -426,7 +426,7 @@ func TestDestination_GetRef(t *testing.T) {
 	}
 }
 
-func TestDestination_NormalizeDeprecatedObjectReference(t *testing.T) {
+func TestDestination_NormalizeObjectReference(t *testing.T) {
 	tests := map[string]struct {
 		dest *Destination
 		want *Destination
@@ -488,7 +488,7 @@ func TestDestination_NormalizeDeprecatedObjectReference(t *testing.T) {
 
 	for n, tc := range tests {
 		t.Run(n, func(t *testing.T) {
-			tc.dest.NormalizeDeprecatedObjectReference()
+			tc.dest.NormalizeObjectReference()
 			if diff := cmp.Diff(tc.want, tc.dest); diff != "" {
 				t.Errorf("Unexpected result (-want +got): %s", diff)
 			}
