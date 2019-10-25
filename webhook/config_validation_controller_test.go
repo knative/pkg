@@ -20,7 +20,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"reflect"
 	"strconv"
 	"testing"
 
@@ -32,6 +31,7 @@ import (
 	fakekubeclientset "k8s.io/client-go/kubernetes/fake"
 	"knative.dev/pkg/apis"
 	"knative.dev/pkg/configmap"
+	"knative.dev/pkg/kmp"
 	"knative.dev/pkg/system"
 
 	_ "knative.dev/pkg/system/testing"
@@ -88,8 +88,8 @@ func TestUpdatingConfigValidationController(t *testing.T) {
 	}
 
 	currentWebhook, _ := kubeClient.AdmissionregistrationV1beta1().ValidatingWebhookConfigurations().Get(initialConfigWebhook.Name, metav1.GetOptions{})
-	if reflect.DeepEqual(currentWebhook.Webhooks, initialConfigWebhook.Webhooks) {
-		t.Fatalf("Expected webhook to be updated")
+	if ok, err := kmp.SafeEqual(currentWebhook.Webhooks, initialConfigWebhook.Webhooks); ok || err != nil {
+		t.Fatalf("Expected webhook to be updated: %v", err)
 	}
 
 	if len(currentWebhook.OwnerReferences) > 0 {

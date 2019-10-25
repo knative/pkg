@@ -20,12 +20,9 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"reflect"
-	"strings"
 
-	"github.com/markbates/inflect"
 	admissionv1beta1 "k8s.io/api/admission/v1beta1"
 	admissionregistrationv1beta1 "k8s.io/api/admissionregistration/v1beta1"
 	corev1 "k8s.io/api/core/v1"
@@ -83,23 +80,19 @@ func (ac *ConfigValidationController) Register(ctx context.Context, kubeClient k
 	client := kubeClient.AdmissionregistrationV1beta1().ValidatingWebhookConfigurations()
 	logger := logging.FromContext(ctx)
 
-	resourceGVK := corev1.SchemeGroupVersion.WithKind("ConfigMap")
-	var rules []admissionregistrationv1beta1.RuleWithOperations
-	plural := strings.ToLower(inflect.Pluralize(resourceGVK.Kind))
-
 	ruleScope := admissionregistrationv1beta1.NamespacedScope
-	rules = append(rules, admissionregistrationv1beta1.RuleWithOperations{
+	rules := []admissionregistrationv1beta1.RuleWithOperations{{
 		Operations: []admissionregistrationv1beta1.OperationType{
 			admissionregistrationv1beta1.Create,
 			admissionregistrationv1beta1.Update,
 		},
 		Rule: admissionregistrationv1beta1.Rule{
-			APIGroups:   []string{resourceGVK.Group},
-			APIVersions: []string{resourceGVK.Version},
-			Resources:   []string{plural + "/*"},
+			APIGroups:   []string{""},
+			APIVersions: []string{"v1"},
+			Resources:   []string{"configmaps/*"},
 			Scope:       &ruleScope,
 		},
-	})
+	}}
 
 	configuredWebhook, err := client.Get(ac.options.ConfigValidationWebhookName, metav1.GetOptions{})
 	if err != nil {
@@ -107,16 +100,22 @@ func (ac *ConfigValidationController) Register(ctx context.Context, kubeClient k
 	}
 
 	webhook := configuredWebhook.DeepCopy()
-	if len(webhook.Webhooks) != 1 {
-		return fmt.Errorf("unexpected number of webhook entries: %d", len(webhook.Webhooks))
-	}
+
+	// Clear out any previous (bad) OwnerReferences.
+	// See: https://github.com/knative/serving/issues/5845
 	webhook.OwnerReferences = nil
-	webhook.Webhooks[0].Rules = rules
-	webhook.Webhooks[0].ClientConfig.CABundle = caCert
-	if webhook.Webhooks[0].ClientConfig.Service == nil {
-		return errors.New("missing service reference")
+
+	for i, wh := range webhook.Webhooks {
+		if wh.Name != webhook.Name {
+			continue
+		}
+		webhook.Webhooks[i].Rules = rules
+		webhook.Webhooks[i].ClientConfig.CABundle = caCert
+		if webhook.Webhooks[i].ClientConfig.Service == nil {
+			return fmt.Errorf("missing service reference for webhook: %s", wh.Name)
+		}
+		webhook.Webhooks[i].ClientConfig.Service.Path = ptr.String(ac.options.ConfigValidationControllerPath)
 	}
-	webhook.Webhooks[0].ClientConfig.Service.Path = ptr.String(ac.options.ConfigValidationControllerPath)
 
 	if ok, err := kmp.SafeEqual(configuredWebhook, webhook); err != nil {
 		return fmt.Errorf("error diffing webhooks: %v", err)

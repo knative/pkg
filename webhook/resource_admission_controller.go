@@ -20,7 +20,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"sort"
 	"strings"
@@ -145,16 +144,23 @@ func (ac *ResourceAdmissionController) Register(ctx context.Context, kubeClient 
 	}
 
 	webhook := configuredWebhook.DeepCopy()
-	if len(webhook.Webhooks) != 1 {
-		return fmt.Errorf("unexpected number of webhook entries: %d", len(webhook.Webhooks))
-	}
+
+	// Clear out any previous (bad) OwnerReferences.
+	// See: https://github.com/knative/serving/issues/5845
 	webhook.OwnerReferences = nil
-	webhook.Webhooks[0].Rules = rules
-	webhook.Webhooks[0].ClientConfig.CABundle = caCert
-	if webhook.Webhooks[0].ClientConfig.Service == nil {
-		return errors.New("missing service reference")
+
+	for i, wh := range webhook.Webhooks {
+		if wh.Name != webhook.Name {
+			continue
+		}
+		webhook.Webhooks[i].Rules = rules
+		webhook.Webhooks[i].ClientConfig.CABundle = caCert
+		if webhook.Webhooks[i].ClientConfig.Service == nil {
+			return fmt.Errorf("missing service reference for webhook: %s", wh.Name)
+		}
+		webhook.Webhooks[i].ClientConfig.Service.Path = ptr.String(
+			ac.options.ResourceAdmissionControllerPath)
 	}
-	webhook.Webhooks[0].ClientConfig.Service.Path = ptr.String(ac.options.ResourceAdmissionControllerPath)
 
 	if ok, err := kmp.SafeEqual(configuredWebhook, webhook); err != nil {
 		return fmt.Errorf("error diffing webhooks: %v", err)
@@ -164,7 +170,7 @@ func (ac *ResourceAdmissionController) Register(ctx context.Context, kubeClient 
 			return fmt.Errorf("failed to update webhook: %v", err)
 		}
 	} else {
-		logger.Info("Webhook is already valid")
+		logger.Info("Webhook is valid")
 	}
 	return nil
 }
