@@ -103,23 +103,23 @@ func TestGetURI_ObjectReference(t *testing.T) {
 			wantErr: fmt.Errorf("ref and [apiVersion, kind, name] can't be both present"),
 		},
 		"happy ref": {
-		objects: []runtime.Object{
-			getAddressable(),
-		},
-		dest:    apisv1alpha1.Destination{Ref: getAddressableRef()},
-		wantURI: addressableDNS,
-	}, "ref with relative uri": {
-		objects: []runtime.Object{
-			getAddressable(),
-		},
-		dest: apisv1alpha1.Destination{
-			Ref: getAddressableRef(),
-			URI: &apis.URL{
-			Path:   "/foo",
+			objects: []runtime.Object{
+				getAddressable(),
 			},
-		},
-		wantURI: addressableDNS + "/foo",
-	}, "ref with relative URI without leading slash": {
+			dest:    apisv1alpha1.Destination{Ref: getAddressableRef()},
+			wantURI: addressableDNS,
+		}, "ref with relative uri": {
+			objects: []runtime.Object{
+				getAddressable(),
+			},
+			dest: apisv1alpha1.Destination{
+				Ref: getAddressableRef(),
+				URI: &apis.URL{
+					Path: "/foo",
+				},
+			},
+			wantURI: addressableDNS + "/foo",
+		}, "ref with relative URI without leading slash": {
 			objects: []runtime.Object{
 				getAddressable(),
 			},
@@ -192,11 +192,11 @@ func TestGetURI_ObjectReference(t *testing.T) {
 			objects: []runtime.Object{
 				getAddressable(),
 			},
-			dest:    apisv1alpha1.Destination{
+			dest: apisv1alpha1.Destination{
 				DeprecatedKind:       addressableKind,
 				DeprecatedName:       addressableName,
 				DeprecatedAPIVersion: addressableAPIVersion,
-				DeprecatedNamespace:  testNS,},
+				DeprecatedNamespace:  testNS},
 			wantURI: addressableDNS,
 		},
 		"[apiVersion, kind, name] with relative uri": {
