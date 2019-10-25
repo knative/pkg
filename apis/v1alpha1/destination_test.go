@@ -86,6 +86,17 @@ func TestValidateDestination(t *testing.T) {
 			},
 			want: "missing field(s): ref.kind",
 		},
+		"invalid ref, extra namespace": {
+			dest: &Destination{
+				Ref: &corev1.ObjectReference{
+					Kind:       kind,
+					APIVersion: apiVersion,
+					Name:       name,
+					Namespace:  "invalid",
+				},
+			},
+			want: "must not set the field(s): ref.Namespace\nonly name, apiVersion and kind are supported fields",
+		},
 		"valid [apiVersion, kind, name]": {
 			dest: &Destination{
 				DeprecatedKind:       kind,
@@ -258,6 +269,17 @@ func TestValidateDestinationDisallowDeprecated(t *testing.T) {
 				},
 			},
 			want: "missing field(s): ref.kind",
+		},
+		"invalid ref, extra namespace": {
+			dest: &Destination{
+				Ref: &corev1.ObjectReference{
+					Kind:       kind,
+					APIVersion: apiVersion,
+					Name:       name,
+					Namespace:  "invalid",
+				},
+			},
+			want: "must not set the field(s): ref.Namespace\nonly name, apiVersion and kind are supported fields",
 		},
 		"invalid deprecated [apiVersion, kind, name]": {
 			dest: &Destination{

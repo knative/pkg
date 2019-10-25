@@ -18,7 +18,9 @@ package v1alpha1
 
 import (
 	"context"
+	"reflect"
 
+	"github.com/google/go-cmp/cmp"
 	corev1 "k8s.io/api/core/v1"
 	"knative.dev/pkg/apis"
 )
@@ -37,9 +39,6 @@ type Destination struct {
 
 	// +optional
 	DeprecatedName string `json:"name,omitempty"`
-
-	// +optional
-	DeprecatedNamespace string `json:"namespace,omitempty"`
 
 	// URI can be an absolute URL(non-empty scheme and non-empty host) pointing to the target or a relative URI. Relative URIs will be resolved using the base URI retrieved from Ref.
 	// +optional
@@ -74,9 +73,6 @@ func ValidateDestination(dest Destination, allowDeprecatedFields bool) *apis.Fie
 		if dest.DeprecatedName != "" {
 			errs = errs.Also(apis.ErrInvalidValue("name is not allowed here, it's a deprecated value", "name"))
 		}
-		if dest.DeprecatedNamespace != "" {
-			errs = errs.Also(apis.ErrInvalidValue("namespace is not allowed here, it's a deprecated value", "namespace"))
-		}
 		if errs != nil {
 			return errs
 		}
@@ -106,23 +102,22 @@ func ValidateDestination(dest Destination, allowDeprecatedFields bool) *apis.Fie
 	}
 	if ref != nil && dest.URI == nil {
 		if dest.Ref != nil {
-			return validateDestinationRef(*ref).ViaField("ref")
+			return IsValidObjectReference(*ref).ViaField("ref")
 		} else {
-			return validateDestinationRef(*ref)
+			return IsValidObjectReference(*ref)
 		}
 	}
 	return nil
 }
 
 func (dest Destination) deprecatedObjectReference() *corev1.ObjectReference {
-	if dest.DeprecatedAPIVersion == "" && dest.DeprecatedKind == "" && dest.DeprecatedName == "" && dest.DeprecatedNamespace == "" {
+	if dest.DeprecatedAPIVersion == "" && dest.DeprecatedKind == "" && dest.DeprecatedName == "" {
 		return nil
 	}
 	return &corev1.ObjectReference{
 		Kind:       dest.DeprecatedKind,
 		APIVersion: dest.DeprecatedAPIVersion,
 		Name:       dest.DeprecatedName,
-		Namespace:  dest.DeprecatedNamespace,
 	}
 }
 
@@ -143,19 +138,51 @@ func (dest *Destination) GetRef() *corev1.ObjectReference {
 	return nil
 }
 
-func validateDestinationRef(ref corev1.ObjectReference) *apis.FieldError {
-	// Check the object.
+func IsValidObjectReference(f corev1.ObjectReference) *apis.FieldError {
+	return checkRequiredObjectReferenceFields(f).
+		Also(checkDisallowedObjectReferenceFields(f))
+}
+
+// Check the corev1.ObjectReference to make sure it has the required fields. They
+// are not checked for anything more except that they are set.
+func checkRequiredObjectReferenceFields(f corev1.ObjectReference) *apis.FieldError {
 	var errs *apis.FieldError
-	// Required Fields
-	if ref.Name == "" {
+	if f.Name == "" {
 		errs = errs.Also(apis.ErrMissingField("name"))
 	}
-	if ref.APIVersion == "" {
+	if f.APIVersion == "" {
 		errs = errs.Also(apis.ErrMissingField("apiVersion"))
 	}
-	if ref.Kind == "" {
+	if f.Kind == "" {
 		errs = errs.Also(apis.ErrMissingField("kind"))
 	}
-
 	return errs
+}
+
+// Check the corev1.ObjectReference to make sure it only has the following fields set:
+// Name, Kind, APIVersion
+// If any other fields are set and is not the Zero value, returns an apis.FieldError
+// with the fieldpaths for all those fields.
+func checkDisallowedObjectReferenceFields(f corev1.ObjectReference) *apis.FieldError {
+	disallowedFields := []string{}
+	// See if there are any fields that have been set that should not be.
+	s := reflect.ValueOf(f)
+	typeOf := s.Type()
+	for i := 0; i < s.NumField(); i++ {
+		field := s.Field(i)
+		fieldName := typeOf.Field(i).Name
+		if fieldName == "Name" || fieldName == "Kind" || fieldName == "APIVersion" {
+			continue
+		}
+		if !cmp.Equal(field.Interface(), reflect.Zero(field.Type()).Interface()) {
+			disallowedFields = append(disallowedFields, fieldName)
+		}
+	}
+	if len(disallowedFields) > 0 {
+		fe := apis.ErrDisallowedFields(disallowedFields...)
+		fe.Details = "only name, apiVersion and kind are supported fields"
+		return fe
+	}
+	return nil
+
 }
