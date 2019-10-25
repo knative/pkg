@@ -149,16 +149,17 @@ func (dest *Destination) GetRef() *corev1.ObjectReference {
 	return nil
 }
 
-// NormalizeObjectReference copies the deprecated ObjectReference
-// fields to the Ref field and clears the deprecated fields. It uses the same
-// precedence rules as GetRef(). Use this to normalize code to use the Ref field
-// when deprecated fields may exist.
+// NormalizeDestinationObjectReference returns a new Destination with the
+// deprecated ObjectReference fields copied to the Ref field and cleared. It
+// uses the same precedence rules as GetRef(). Use this to normalize code to use
+// the Ref field when deprecated fields may exist.
 // This method should be removed when the deprecated ObjectReference fields are
 // removed.
-func (dest *Destination) NormalizeObjectReference() {
-	if dest == nil {
-		return
+func NormalizeDestinationObjectReference(in *Destination) *Destination {
+	if in == nil {
+		return nil
 	}
+	dest := in.DeepCopy()
 	if ref := dest.GetRef(); ref != nil {
 		dest.Ref = ref
 	}
@@ -166,6 +167,7 @@ func (dest *Destination) NormalizeObjectReference() {
 	dest.DeprecatedKind = ""
 	dest.DeprecatedName = ""
 	dest.DeprecatedNamespace = ""
+	return dest
 }
 
 func validateDestinationRef(ref corev1.ObjectReference) *apis.FieldError {

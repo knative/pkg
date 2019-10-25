@@ -426,7 +426,15 @@ func TestDestination_GetRef(t *testing.T) {
 	}
 }
 
-func TestDestination_NormalizeObjectReference(t *testing.T) {
+func TestNormalizeDestinationObjectReference(t *testing.T) {
+
+	namespace := "a-namespace"
+
+	validURL := apis.URL{
+		Scheme: "http",
+		Host:   "host",
+	}
+
 	tests := map[string]struct {
 		dest *Destination
 		want *Destination
@@ -440,12 +448,14 @@ func TestDestination_NormalizeObjectReference(t *testing.T) {
 				DeprecatedAPIVersion: apiVersion,
 				DeprecatedKind:       kind,
 				DeprecatedName:       name,
+				DeprecatedNamespace:  namespace,
 			},
 			want: &Destination{
 				Ref: &corev1.ObjectReference{
 					APIVersion: apiVersion,
 					Kind:       kind,
 					Name:       name,
+					Namespace:  namespace,
 				},
 			},
 		},
@@ -454,6 +464,7 @@ func TestDestination_NormalizeObjectReference(t *testing.T) {
 				DeprecatedAPIVersion: "depapiVersion",
 				DeprecatedKind:       "depKind",
 				DeprecatedName:       "depName",
+				DeprecatedNamespace:  "depNamespace",
 				Ref: &corev1.ObjectReference{
 					APIVersion: apiVersion,
 					Kind:       kind,
@@ -484,14 +495,74 @@ func TestDestination_NormalizeObjectReference(t *testing.T) {
 				},
 			},
 		},
+		"contains deprecated fields with uri": {
+			dest: &Destination{
+				DeprecatedAPIVersion: apiVersion,
+				DeprecatedKind:       kind,
+				DeprecatedName:       name,
+				URI:                  &validURL,
+			},
+			want: &Destination{
+				Ref: &corev1.ObjectReference{
+					APIVersion: apiVersion,
+					Kind:       kind,
+					Name:       name,
+				},
+				URI: &validURL,
+			},
+		},
+		"contains deprecated fields and ref with uri": {
+			dest: &Destination{
+				DeprecatedAPIVersion: "depapiVersion",
+				DeprecatedKind:       "depKind",
+				DeprecatedName:       "depName",
+				Ref: &corev1.ObjectReference{
+					APIVersion: apiVersion,
+					Kind:       kind,
+					Name:       name,
+				},
+				URI: &validURL,
+			},
+			want: &Destination{
+				Ref: &corev1.ObjectReference{
+					APIVersion: apiVersion,
+					Kind:       kind,
+					Name:       name,
+				},
+				URI: &validURL,
+			},
+		},
+		"no deprecated fields with uri": {
+			dest: &Destination{
+				Ref: &corev1.ObjectReference{
+					APIVersion: apiVersion,
+					Kind:       kind,
+					Name:       name,
+				},
+				URI: &validURL,
+			},
+			want: &Destination{
+				Ref: &corev1.ObjectReference{
+					APIVersion: apiVersion,
+					Kind:       kind,
+					Name:       name,
+				},
+				URI: &validURL,
+			},
+		},
 	}
 
 	for n, tc := range tests {
 		t.Run(n, func(t *testing.T) {
-			tc.dest.NormalizeObjectReference()
-			if diff := cmp.Diff(tc.want, tc.dest); diff != "" {
+			orig := tc.dest.DeepCopy()
+			got := NormalizeDestinationObjectReference(tc.dest)
+			if diff := cmp.Diff(orig, tc.dest); diff != "" {
+				t.Errorf("Argument was changed (-want +got): %s", diff)
+			}
+			if diff := cmp.Diff(tc.want, got); diff != "" {
 				t.Errorf("Unexpected result (-want +got): %s", diff)
 			}
+
 		})
 	}
 }
