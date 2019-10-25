@@ -137,7 +137,7 @@ func TestValidateDestination(t *testing.T) {
 					Scheme: "http",
 				},
 			},
-			want: "invalid value: Relative URI is not allowed when Ref and [apiVersion, kind, name] is absent: uri",
+			want: "invalid value: relative URI is not allowed when Ref and [apiVersion, kind, name] is absent: uri",
 		},
 		"invalid, uri is not absolute url": {
 			dest: &Destination{
@@ -145,7 +145,7 @@ func TestValidateDestination(t *testing.T) {
 					Host: "host",
 				},
 			},
-			want: "invalid value: Relative URI is not allowed when Ref and [apiVersion, kind, name] is absent: uri",
+			want: "invalid value: relative URI is not allowed when Ref and [apiVersion, kind, name] is absent: uri",
 		},
 		"invalid, both ref and [apiVersion, kind, name] are present ": {
 			dest: &Destination{
@@ -158,14 +158,14 @@ func TestValidateDestination(t *testing.T) {
 				DeprecatedAPIVersion: apiVersion,
 				DeprecatedName:       name,
 			},
-			want: "Ref and [apiVersion, kind, name] can't be both present: [apiVersion, kind, name], ref",
+			want: "ref and [apiVersion, kind, name] can't be both present: [apiVersion, kind, name], ref",
 		},
 		"invalid, both uri and ref, uri is absolute URL": {
 			dest: &Destination{
 				URI: &validURL,
 				Ref: &validRef,
 			},
-			want: "Absolute URI is not allowed when Ref or [apiVersion, kind, name] is present: [apiVersion, kind, name], ref, uri",
+			want: "absolute URI is not allowed when Ref or [apiVersion, kind, name] is present: [apiVersion, kind, name], ref, uri",
 		},
 		"invalid, both uri and [apiVersion, kind, name], uri is absolute URL": {
 			dest: &Destination{
@@ -174,7 +174,7 @@ func TestValidateDestination(t *testing.T) {
 				DeprecatedAPIVersion: apiVersion,
 				DeprecatedName:       name,
 			},
-			want: "Absolute URI is not allowed when Ref or [apiVersion, kind, name] is present: [apiVersion, kind, name], ref, uri",
+			want: "absolute URI is not allowed when Ref or [apiVersion, kind, name] is present: [apiVersion, kind, name], ref, uri",
 		},
 		"invalid, both ref, [apiVersion, kind, name] and uri  are nil": {
 			dest: &Destination{},
@@ -321,7 +321,7 @@ func TestValidateDestinationDisallowDeprecated(t *testing.T) {
 					Scheme: "http",
 				},
 			},
-			want: "invalid value: Relative URI is not allowed when Ref and [apiVersion, kind, name] is absent: uri",
+			want: "invalid value: relative URI is not allowed when Ref and [apiVersion, kind, name] is absent: uri",
 		},
 		"invalid, uri is not absolute url": {
 			dest: &Destination{
@@ -329,7 +329,7 @@ func TestValidateDestinationDisallowDeprecated(t *testing.T) {
 					Host: "host",
 				},
 			},
-			want: "invalid value: Relative URI is not allowed when Ref and [apiVersion, kind, name] is absent: uri",
+			want: "invalid value: relative URI is not allowed when Ref and [apiVersion, kind, name] is absent: uri",
 		},
 		"invalid deprecated, both ref and [apiVersion, kind, name] are present ": {
 			dest: &Destination{
