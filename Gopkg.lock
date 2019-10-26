@@ -1370,6 +1370,7 @@
     "k8s.io/client-go/dynamic",
     "k8s.io/client-go/dynamic/fake",
     "k8s.io/client-go/informers",
+    "k8s.io/client-go/informers/admissionregistration/v1beta1",
     "k8s.io/client-go/informers/apps/v1",
     "k8s.io/client-go/informers/autoscaling/v1",
     "k8s.io/client-go/informers/autoscaling/v2beta1",
