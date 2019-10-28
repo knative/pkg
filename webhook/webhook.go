@@ -30,6 +30,7 @@ import (
 	"golang.org/x/sync/errgroup"
 	"knative.dev/pkg/logging"
 	"knative.dev/pkg/logging/logkey"
+	"knative.dev/pkg/system"
 
 	admissionv1beta1 "k8s.io/api/admission/v1beta1"
 	corev1 "k8s.io/api/core/v1"
@@ -67,9 +68,6 @@ type ControllerOptions struct {
 	// is provided to k8s apiserver during admission controller
 	// registration.
 	SecretName string
-
-	// Namespace is the namespace in which everything above lives.
-	Namespace string
 
 	// Port where the webhook is served. Per k8s admission
 	// registration requirements this should be 443 unless there is
@@ -302,7 +300,7 @@ func makeTLSConfig(serverCert, serverKey, caCert []byte, clientAuthType tls.Clie
 func getOrGenerateKeyCertsFromSecret(ctx context.Context, client kubernetes.Interface,
 	options *ControllerOptions) (serverKey, serverCert, caCert []byte, err error) {
 	logger := logging.FromContext(ctx)
-	secret, err := client.CoreV1().Secrets(options.Namespace).Get(options.SecretName, metav1.GetOptions{})
+	secret, err := client.CoreV1().Secrets(system.Namespace()).Get(options.SecretName, metav1.GetOptions{})
 	if err != nil {
 		if !apierrors.IsNotFound(err) {
 			return nil, nil, nil, err
@@ -318,7 +316,7 @@ func getOrGenerateKeyCertsFromSecret(ctx context.Context, client kubernetes.Inte
 				return nil, nil, nil, err
 			}
 			// OK, so something else might have created, try fetching it instead.
-			secret, err = client.CoreV1().Secrets(options.Namespace).Get(options.SecretName, metav1.GetOptions{})
+			secret, err = client.CoreV1().Secrets(system.Namespace()).Get(options.SecretName, metav1.GetOptions{})
 			if err != nil {
 				return nil, nil, nil, err
 			}
@@ -368,14 +366,14 @@ func makeErrorStatus(reason string, args ...interface{}) *admissionv1beta1.Admis
 }
 
 func generateSecret(ctx context.Context, options *ControllerOptions) (*corev1.Secret, error) {
-	serverKey, serverCert, caCert, err := CreateCerts(ctx, options.ServiceName, options.Namespace)
+	serverKey, serverCert, caCert, err := CreateCerts(ctx, options.ServiceName, system.Namespace())
 	if err != nil {
 		return nil, err
 	}
 	return &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      options.SecretName,
-			Namespace: options.Namespace,
+			Namespace: system.Namespace(),
 		},
 		Data: map[string][]byte{
 			secretServerKey:  serverKey,

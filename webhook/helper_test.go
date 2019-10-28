@@ -31,6 +31,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 
 	. "knative.dev/pkg/logging/testing"
+	"knative.dev/pkg/system"
 	. "knative.dev/pkg/testing"
 )
 
@@ -108,7 +109,7 @@ func createSecureTLSClient(t *testing.T, kubeClient kubernetes.Interface, acOpts
 
 	tlsClientConfig := &tls.Config{
 		// Add knative namespace as CN
-		ServerName:   "webhook.knative-something",
+		ServerName:   "webhook." + system.Namespace(),
 		RootCAs:      pool,
 		Certificates: tlsServerConfig.Certificates,
 	}
