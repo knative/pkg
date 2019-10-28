@@ -39,13 +39,9 @@ import (
 
 func newDefaultOptions() ControllerOptions {
 	return ControllerOptions{
-		ServiceName:                     "webhook",
-		Port:                            443,
-		SecretName:                      "webhook-certs",
-		ResourceMutatingWebhookName:     "webhook.knative.dev",
-		ResourceAdmissionControllerPath: "/",
-		ConfigValidationWebhookName:     "configmap.webhook.knative.dev",
-		ConfigValidationControllerPath:  "/config-validation",
+		ServiceName: "webhook",
+		Port:        443,
+		SecretName:  "webhook-certs",
 	}
 }
 
@@ -180,8 +176,10 @@ func NewTestWebhook(client kubernetes.Interface, options ControllerOptions, logg
 	validations := configmap.Constructors{"test-config": newConfigFromConfigMap}
 
 	admissionControllers := map[string]AdmissionController{
-		options.ResourceAdmissionControllerPath: NewResourceAdmissionController(handlers, options, true),
-		options.ConfigValidationControllerPath:  NewConfigValidationController(validations, options),
+		testResourceValidationPath: NewResourceAdmissionController(
+			testResourceValidationName, testResourceValidationPath, handlers, true),
+		testConfigValidationPath: NewConfigValidationController(
+			testConfigValidationName, testConfigValidationPath, validations),
 	}
 	return New(client, options, admissionControllers, logger, nil)
 }

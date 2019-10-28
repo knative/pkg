@@ -39,13 +39,18 @@ import (
 	. "knative.dev/pkg/logging/testing"
 )
 
+const (
+	testConfigValidationName = "configmap.webhook.knative.dev"
+	testConfigValidationPath = "/cm"
+)
+
 var (
 	initialConfigWebhook = &admissionregistrationv1beta1.ValidatingWebhookConfiguration{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: "configmap.webhook.knative.dev",
+			Name: testConfigValidationName,
 		},
 		Webhooks: []admissionregistrationv1beta1.ValidatingWebhook{{
-			Name: "configmap.webhook.knative.dev",
+			Name: testConfigValidationName,
 			ClientConfig: admissionregistrationv1beta1.WebhookClientConfig{
 				Service: &admissionregistrationv1beta1.ServiceReference{
 					Namespace: system.Namespace(),
@@ -62,24 +67,24 @@ var (
 	}
 )
 
-func newNonRunningTestConfigValidationController(t *testing.T, options ControllerOptions) (
+func newNonRunningTestConfigValidationController(t *testing.T) (
 	kubeClient *fakekubeclientset.Clientset,
 	ac AdmissionController) {
 	t.Helper()
 	// Create fake clients
 	kubeClient = fakekubeclientset.NewSimpleClientset(initialConfigWebhook)
 
-	ac = NewTestConfigValidationController(options)
+	ac = NewTestConfigValidationController()
 	return
 }
 
-func NewTestConfigValidationController(options ControllerOptions) AdmissionController {
+func NewTestConfigValidationController() AdmissionController {
 	validations := configmap.Constructors{"test-config": newConfigFromConfigMap}
-	return NewConfigValidationController(validations, options)
+	return NewConfigValidationController(testConfigValidationName, testConfigValidationPath, validations)
 }
 
 func TestUpdatingConfigValidationController(t *testing.T) {
-	kubeClient, ac := newNonRunningTestConfigValidationController(t, newDefaultOptions())
+	kubeClient, ac := newNonRunningTestConfigValidationController(t)
 
 	createDeployment(kubeClient)
 	err := ac.Register(TestContextWithLogger(t), kubeClient, []byte{})
@@ -98,7 +103,7 @@ func TestUpdatingConfigValidationController(t *testing.T) {
 }
 
 func TestDeleteAllowedForConfigMap(t *testing.T) {
-	_, ac := newNonRunningTestConfigValidationController(t, newDefaultOptions())
+	_, ac := newNonRunningTestConfigValidationController(t)
 
 	req := &admissionv1beta1.AdmissionRequest{
 		Operation: admissionv1beta1.Delete,
@@ -110,7 +115,7 @@ func TestDeleteAllowedForConfigMap(t *testing.T) {
 }
 
 func TestConnectAllowedForConfigMap(t *testing.T) {
-	_, ac := newNonRunningTestConfigValidationController(t, newDefaultOptions())
+	_, ac := newNonRunningTestConfigValidationController(t)
 
 	req := &admissionv1beta1.AdmissionRequest{
 		Operation: admissionv1beta1.Connect,
@@ -123,7 +128,7 @@ func TestConnectAllowedForConfigMap(t *testing.T) {
 }
 
 func TestNonConfigMapKindFails(t *testing.T) {
-	_, ac := newNonRunningTestConfigValidationController(t, newDefaultOptions())
+	_, ac := newNonRunningTestConfigValidationController(t)
 
 	req := &admissionv1beta1.AdmissionRequest{
 		Operation: admissionv1beta1.Create,
@@ -138,7 +143,7 @@ func TestNonConfigMapKindFails(t *testing.T) {
 }
 
 func TestAdmitCreateValidConfigMap(t *testing.T) {
-	_, ac := newNonRunningTestConfigValidationController(t, newDefaultOptions())
+	_, ac := newNonRunningTestConfigValidationController(t)
 
 	r := createValidConfigMap()
 	ctx := apis.WithinCreate(apis.WithUserInfo(
@@ -151,7 +156,7 @@ func TestAdmitCreateValidConfigMap(t *testing.T) {
 }
 
 func TestDenyInvalidCreateConfigMapWithWrongType(t *testing.T) {
-	_, ac := newNonRunningTestConfigValidationController(t, newDefaultOptions())
+	_, ac := newNonRunningTestConfigValidationController(t)
 
 	r := createWrongTypeConfigMap()
 	ctx := apis.WithinCreate(apis.WithUserInfo(
@@ -164,7 +169,7 @@ func TestDenyInvalidCreateConfigMapWithWrongType(t *testing.T) {
 }
 
 func TestDenyInvalidCreateConfigMapOutOfRange(t *testing.T) {
-	_, ac := newNonRunningTestConfigValidationController(t, newDefaultOptions())
+	_, ac := newNonRunningTestConfigValidationController(t)
 
 	r := createWrongValueConfigMap()
 	ctx := apis.WithinCreate(apis.WithUserInfo(
@@ -177,7 +182,7 @@ func TestDenyInvalidCreateConfigMapOutOfRange(t *testing.T) {
 }
 
 func TestAdmitUpdateValidConfigMap(t *testing.T) {
-	_, ac := newNonRunningTestConfigValidationController(t, newDefaultOptions())
+	_, ac := newNonRunningTestConfigValidationController(t)
 
 	r := createValidConfigMap()
 	ctx := apis.WithinCreate(apis.WithUserInfo(
@@ -190,7 +195,7 @@ func TestAdmitUpdateValidConfigMap(t *testing.T) {
 }
 
 func TestDenyInvalidUpdateConfigMapWithWrongType(t *testing.T) {
-	_, ac := newNonRunningTestConfigValidationController(t, newDefaultOptions())
+	_, ac := newNonRunningTestConfigValidationController(t)
 
 	r := createWrongTypeConfigMap()
 	ctx := apis.WithinCreate(apis.WithUserInfo(
@@ -203,7 +208,7 @@ func TestDenyInvalidUpdateConfigMapWithWrongType(t *testing.T) {
 }
 
 func TestDenyInvalidUpdateConfigMapOutOfRange(t *testing.T) {
-	_, ac := newNonRunningTestConfigValidationController(t, newDefaultOptions())
+	_, ac := newNonRunningTestConfigValidationController(t)
 
 	r := createWrongValueConfigMap()
 	ctx := apis.WithinCreate(apis.WithUserInfo(
