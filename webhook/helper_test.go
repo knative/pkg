@@ -99,19 +99,27 @@ func createTestConfigMap(t *testing.T, kubeClient kubernetes.Interface) error {
 
 func createSecureTLSClient(t *testing.T, kubeClient kubernetes.Interface, acOpts *Options) (*http.Client, error) {
 	t.Helper()
-	tlsServerConfig, caCert, err := configureCerts(TestContextWithLogger(t), kubeClient, acOpts)
+	ctx := TestContextWithLogger(t)
+	serverKey, serverCert, caCert, err := getOrGenerateKeyCertsFromSecret(ctx, kubeClient, acOpts)
 	if err != nil {
 		return nil, err
 	}
+
 	// Build cert pool with CA Cert
 	pool := x509.NewCertPool()
 	pool.AppendCertsFromPEM(caCert)
+
+	// Build key pair
+	cert, err := tls.X509KeyPair(serverCert, serverKey)
+	if err != nil {
+		return nil, err
+	}
 
 	tlsClientConfig := &tls.Config{
 		// Add knative namespace as CN
 		ServerName:   "webhook." + system.Namespace(),
 		RootCAs:      pool,
-		Certificates: tlsServerConfig.Certificates,
+		Certificates: []tls.Certificate{cert},
 	}
 	return &http.Client{
 		Transport: &http.Transport{
