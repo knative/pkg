@@ -19,7 +19,6 @@ package webhook
 import (
 	"context"
 	"crypto/tls"
-	"crypto/x509"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -74,11 +73,6 @@ type Options struct {
 	// potential races where registration completes and k8s apiserver
 	// invokes the webhook before the HTTP server is started.
 	RegistrationDelay time.Duration
-
-	// ClientAuthType declares the policy the webhook server will follow for
-	// TLS Client Authentication.
-	// The default value is tls.NoClientCert.
-	ClientAuth tls.ClientAuthType
 
 	// StatsReporter reports metrics about the webhook.
 	// This will be automatically initialized by the constructor if left uninitialized.
@@ -262,37 +256,15 @@ func (ac *Webhook) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// GetAPIServerExtensionCACert gets the Kubernetes aggregate apiserver
-// client CA cert used by validator.
-//
-// NOTE: this certificate is provided kubernetes. We do not control
-// its name or location.
-func getAPIServerExtensionCACert(cl kubernetes.Interface) ([]byte, error) {
-	const name = "extension-apiserver-authentication"
-	c, err := cl.CoreV1().ConfigMaps(metav1.NamespaceSystem).Get(name, metav1.GetOptions{})
-	if err != nil {
-		return nil, err
-	}
-	const caFileName = "requestheader-client-ca-file"
-	pem, ok := c.Data[caFileName]
-	if !ok {
-		return nil, fmt.Errorf("cannot find %s in ConfigMap %s: ConfigMap.Data is %#v", caFileName, name, c.Data)
-	}
-	return []byte(pem), nil
-}
-
 // MakeTLSConfig makes a TLS configuration suitable for use with the server
-func makeTLSConfig(serverCert, serverKey, caCert []byte, clientAuthType tls.ClientAuthType) (*tls.Config, error) {
-	caCertPool := x509.NewCertPool()
-	caCertPool.AppendCertsFromPEM(caCert)
+func makeTLSConfig(serverCert, serverKey []byte) (*tls.Config, error) {
 	cert, err := tls.X509KeyPair(serverCert, serverKey)
 	if err != nil {
 		return nil, err
 	}
 	return &tls.Config{
 		Certificates: []tls.Certificate{cert},
-		ClientCAs:    caCertPool,
-		ClientAuth:   clientAuthType,
+		ClientAuth:   tls.NoClientCert,
 	}, nil
 }
 
@@ -336,20 +308,11 @@ func getOrGenerateKeyCertsFromSecret(ctx context.Context, client kubernetes.Inte
 }
 
 func configureCerts(ctx context.Context, client kubernetes.Interface, options *Options) (*tls.Config, []byte, error) {
-	var apiServerCACert []byte
-	if options.ClientAuth >= tls.VerifyClientCertIfGiven {
-		var err error
-		apiServerCACert, err = getAPIServerExtensionCACert(client)
-		if err != nil {
-			return nil, nil, err
-		}
-	}
-
 	serverKey, serverCert, caCert, err := getOrGenerateKeyCertsFromSecret(ctx, client, options)
 	if err != nil {
 		return nil, nil, err
 	}
-	tlsConfig, err := makeTLSConfig(serverCert, serverKey, apiServerCACert, options.ClientAuth)
+	tlsConfig, err := makeTLSConfig(serverCert, serverKey)
 	if err != nil {
 		return nil, nil, err
 	}
