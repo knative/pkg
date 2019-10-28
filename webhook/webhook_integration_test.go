@@ -197,7 +197,14 @@ func TestValidResponseForResource(t *testing.T) {
 		t.Fatalf("Failed to marshal admission review: %v", err)
 	}
 
-	req, err := http.NewRequest("GET", fmt.Sprintf("https://%s", serverURL), reqBuf)
+	u, err := url.Parse(fmt.Sprintf("https://%s", serverURL))
+	if err != nil {
+		t.Fatalf("bad url %v", err)
+	}
+
+	u.Path = path.Join(u.Path, testResourceValidationPath)
+
+	req, err := http.NewRequest("GET", u.String(), reqBuf)
 	if err != nil {
 		t.Fatalf("http.NewRequest() = %v", err)
 	}
@@ -283,7 +290,14 @@ func TestValidResponseForResourceWithContextDefault(t *testing.T) {
 		t.Fatalf("Failed to marshal admission review: %v", err)
 	}
 
-	req, err := http.NewRequest("GET", fmt.Sprintf("https://%s", serverURL), reqBuf)
+	u, err := url.Parse(fmt.Sprintf("https://%s", serverURL))
+	if err != nil {
+		t.Fatalf("bad url %v", err)
+	}
+
+	u.Path = path.Join(u.Path, testResourceValidationPath)
+
+	req, err := http.NewRequest("GET", u.String(), reqBuf)
 	if err != nil {
 		t.Fatalf("http.NewRequest() = %v", err)
 	}
@@ -384,7 +398,14 @@ func TestInvalidResponseForResource(t *testing.T) {
 		t.Fatalf("Failed to marshal admission review: %v", err)
 	}
 
-	req, err := http.NewRequest("GET", fmt.Sprintf("https://%s", serverURL), reqBuf)
+	u, err := url.Parse(fmt.Sprintf("https://%s", serverURL))
+	if err != nil {
+		t.Fatalf("bad url %v", err)
+	}
+
+	u.Path = path.Join(u.Path, testResourceValidationPath)
+
+	req, err := http.NewRequest("GET", u.String(), reqBuf)
 	if err != nil {
 		t.Fatalf("http.NewRequest() = %v", err)
 	}
@@ -502,7 +523,7 @@ func TestValidResponseForConfigMap(t *testing.T) {
 		t.Fatalf("bad url %v", err)
 	}
 
-	u.Path = path.Join(u.Path, ac.Options.ConfigValidationControllerPath)
+	u.Path = path.Join(u.Path, testConfigValidationPath)
 	req, err := http.NewRequest("GET", u.String(), reqBuf)
 	if err != nil {
 		t.Fatalf("http.NewRequest() = %v", err)
@@ -581,7 +602,7 @@ func TestInvalidResponseForConfigMap(t *testing.T) {
 		t.Fatalf("bad url %v", err)
 	}
 
-	u.Path = path.Join(u.Path, ac.Options.ConfigValidationControllerPath)
+	u.Path = path.Join(u.Path, testConfigValidationPath)
 	req, err := http.NewRequest("GET", u.String(), reqBuf)
 	if err != nil {
 		t.Fatalf("http.NewRequest() = %v", err)

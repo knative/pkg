@@ -51,14 +51,6 @@ var (
 
 // ControllerOptions contains the configuration for the webhook
 type ControllerOptions struct {
-	// ResourceMutatingWebhookName is the name of the webhook we create to handle
-	// mutations before they get stored in the storage.
-	ResourceMutatingWebhookName string
-
-	// ConfigValidationWebhookName is the name of the webhook we create to handle
-	// mutations before they get stored in the storage.
-	ConfigValidationWebhookName string
-
 	// ServiceName is the service name of the webhook.
 	ServiceName string
 
@@ -88,14 +80,6 @@ type ControllerOptions struct {
 	// StatsReporter reports metrics about the webhook.
 	// This will be automatically initialized by the constructor if left uninitialized.
 	StatsReporter StatsReporter
-
-	// Service path for ResourceAdmissionController webhook
-	// Default is "/" for backward compatibility and is set by the constructor
-	ResourceAdmissionControllerPath string
-
-	// Service path for ConfigValidationController webhook
-	// Default is "/config-validation" and is set by the constructor
-	ConfigValidationControllerPath string
 }
 
 // AdmissionController provides the interface for different admission controllers

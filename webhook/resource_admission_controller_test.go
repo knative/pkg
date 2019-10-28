@@ -44,6 +44,11 @@ import (
 	. "knative.dev/pkg/testing"
 )
 
+const (
+	testResourceValidationPath = "/foo"
+	testResourceValidationName = "webhook.knative.dev"
+)
+
 var (
 	handlers = map[schema.GroupVersionKind]GenericCRD{
 		{
@@ -87,7 +92,7 @@ var (
 	}
 )
 
-func newNonRunningTestResourceAdmissionController(t *testing.T, options ControllerOptions) (
+func newNonRunningTestResourceAdmissionController(t *testing.T) (
 	kubeClient *fakekubeclientset.Clientset,
 	ac AdmissionController) {
 
@@ -95,12 +100,12 @@ func newNonRunningTestResourceAdmissionController(t *testing.T, options Controll
 	// Create fake clients
 	kubeClient = fakekubeclientset.NewSimpleClientset(initialResourceWebhook)
 
-	ac = NewTestResourceAdmissionController(options)
+	ac = NewTestResourceAdmissionController()
 	return
 }
 
 func TestDeleteAllowed(t *testing.T) {
-	_, ac := newNonRunningTestResourceAdmissionController(t, newDefaultOptions())
+	_, ac := newNonRunningTestResourceAdmissionController(t)
 
 	req := &admissionv1beta1.AdmissionRequest{
 		Operation: admissionv1beta1.Delete,
@@ -112,7 +117,7 @@ func TestDeleteAllowed(t *testing.T) {
 }
 
 func TestConnectAllowed(t *testing.T) {
-	_, ac := newNonRunningTestResourceAdmissionController(t, newDefaultOptions())
+	_, ac := newNonRunningTestResourceAdmissionController(t)
 
 	req := &admissionv1beta1.AdmissionRequest{
 		Operation: admissionv1beta1.Connect,
@@ -125,7 +130,7 @@ func TestConnectAllowed(t *testing.T) {
 }
 
 func TestUnknownKindFails(t *testing.T) {
-	_, ac := newNonRunningTestResourceAdmissionController(t, newDefaultOptions())
+	_, ac := newNonRunningTestResourceAdmissionController(t)
 
 	req := &admissionv1beta1.AdmissionRequest{
 		Operation: admissionv1beta1.Create,
@@ -140,7 +145,7 @@ func TestUnknownKindFails(t *testing.T) {
 }
 
 func TestUnknownVersionFails(t *testing.T) {
-	_, ac := newNonRunningTestResourceAdmissionController(t, newDefaultOptions())
+	_, ac := newNonRunningTestResourceAdmissionController(t)
 	req := &admissionv1beta1.AdmissionRequest{
 		Operation: admissionv1beta1.Create,
 		Kind: metav1.GroupVersionKind{
@@ -153,7 +158,7 @@ func TestUnknownVersionFails(t *testing.T) {
 }
 
 func TestUnknownFieldFails(t *testing.T) {
-	_, ac := newNonRunningTestResourceAdmissionController(t, newDefaultOptions())
+	_, ac := newNonRunningTestResourceAdmissionController(t)
 	req := &admissionv1beta1.AdmissionRequest{
 		Operation: admissionv1beta1.Create,
 		Kind: metav1.GroupVersionKind{
@@ -303,7 +308,7 @@ func TestAdmitCreates(t *testing.T) {
 			// Setup the resource.
 			tc.setup(ctx, r)
 
-			_, ac := newNonRunningTestResourceAdmissionController(t, newDefaultOptions())
+			_, ac := newNonRunningTestResourceAdmissionController(t)
 			resp := ac.Admit(ctx, createCreateResource(ctx, r))
 
 			if tc.rejection == "" {
@@ -430,7 +435,7 @@ func TestAdmitUpdates(t *testing.T) {
 				&authenticationv1.UserInfo{Username: user2})
 			tc.mutate(ctx, new)
 
-			_, ac := newNonRunningTestResourceAdmissionController(t, newDefaultOptions())
+			_, ac := newNonRunningTestResourceAdmissionController(t)
 			resp := ac.Admit(ctx, createUpdateResource(ctx, old, new))
 
 			if tc.rejection == "" {
@@ -478,7 +483,7 @@ func TestValidCreateResourceSucceedsWithRoundTripAndDefaultPatch(t *testing.T) {
 	}
 	req.Object.Raw = createInnerDefaultResourceWithoutSpec(t)
 
-	_, ac := newNonRunningTestResourceAdmissionController(t, newDefaultOptions())
+	_, ac := newNonRunningTestResourceAdmissionController(t)
 	resp := ac.Admit(TestContextWithLogger(t), req)
 	expectAllowed(t, resp)
 	expectPatches(t, resp.Patch, []jsonpatch.JsonPatchOperation{{
@@ -541,7 +546,7 @@ func createInnerDefaultResourceWithSpecAndStatus(t *testing.T, spec *InnerDefaul
 }
 
 func TestUpdatingResourceController(t *testing.T) {
-	kubeClient, ac := newNonRunningTestResourceAdmissionController(t, newDefaultOptions())
+	kubeClient, ac := newNonRunningTestResourceAdmissionController(t)
 
 	createDeployment(kubeClient)
 	err := ac.Register(TestContextWithLogger(t), kubeClient, []byte{})
@@ -636,6 +641,7 @@ func setUserAnnotation(userC, userU string) jsonpatch.JsonPatchOperation {
 	}
 }
 
-func NewTestResourceAdmissionController(options ControllerOptions) AdmissionController {
-	return NewResourceAdmissionController(handlers, options, true)
+func NewTestResourceAdmissionController() AdmissionController {
+	return NewResourceAdmissionController(testResourceValidationName, testResourceValidationPath,
+		handlers, true)
 }

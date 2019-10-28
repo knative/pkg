@@ -504,7 +504,7 @@ func TestStrictValidation(t *testing.T) {
 				ctx = apis.DisallowDeprecated(ctx)
 			}
 
-			_, ac := newNonRunningTestResourceAdmissionController(t, newDefaultOptions())
+			_, ac := newNonRunningTestResourceAdmissionController(t)
 			resp := ac.Admit(ctx, tc.req)
 
 			if len(tc.wantErrs) > 0 {
@@ -534,7 +534,7 @@ func TestStrictValidation_Spec_Create(t *testing.T) {
 
 	ctx := apis.DisallowDeprecated(TestContextWithLogger(t))
 
-	_, ac := newNonRunningTestResourceAdmissionController(t, newDefaultOptions())
+	_, ac := newNonRunningTestResourceAdmissionController(t)
 	resp := ac.Admit(ctx, req)
 
 	expectFailsWith(t, resp, "must not set")
@@ -558,7 +558,7 @@ func TestStrictValidation_Spec_Update(t *testing.T) {
 
 	ctx := apis.DisallowDeprecated(TestContextWithLogger(t))
 
-	_, ac := newNonRunningTestResourceAdmissionController(t, newDefaultOptions())
+	_, ac := newNonRunningTestResourceAdmissionController(t)
 	resp := ac.Admit(ctx, req)
 
 	expectFailsWith(t, resp, "must not update")

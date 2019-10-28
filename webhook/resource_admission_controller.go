@@ -42,16 +42,6 @@ import (
 	"knative.dev/pkg/ptr"
 )
 
-// ResourceCallback defines a signature for resource specific (Route, Configuration, etc.)
-// handlers that can validate and mutate an object. If non-nil error is returned, object mutation
-// is denied. Mutations should be appended to the patches operations.
-type ResourceCallback func(patches *[]jsonpatch.JsonPatchOperation, old GenericCRD, new GenericCRD) error
-
-// ResourceDefaulter defines a signature for resource specific (Route, Configuration, etc.)
-// handlers that can set defaults on an object. If non-nil error is returned, object mutation
-// is denied. Mutations should be appended to the patches operations.
-type ResourceDefaulter func(patches *[]jsonpatch.JsonPatchOperation, crd GenericCRD) error
-
 // GenericCRD is the interface definition that allows us to perform the generic
 // CRD actions like deciding whether to increment generation and so forth.
 type GenericCRD interface {
@@ -62,20 +52,24 @@ type GenericCRD interface {
 
 // ResourceAdmissionController implements the AdmissionController for resources
 type ResourceAdmissionController struct {
+	// name of the MutatingWebhookConfiguration
+	name string
+	// path that the webhook should serve on
+	path     string
 	handlers map[schema.GroupVersionKind]GenericCRD
-	options  ControllerOptions
 
 	disallowUnknownFields bool
 }
 
 // NewResourceAdmissionController constructs a ResourceAdmissionController
 func NewResourceAdmissionController(
+	name, path string,
 	handlers map[schema.GroupVersionKind]GenericCRD,
-	opts ControllerOptions,
 	disallowUnknownFields bool) AdmissionController {
 	return &ResourceAdmissionController{
+		name:                  name,
+		path:                  path,
 		handlers:              handlers,
-		options:               opts,
 		disallowUnknownFields: disallowUnknownFields,
 	}
 }
@@ -138,7 +132,7 @@ func (ac *ResourceAdmissionController) Register(ctx context.Context, kubeClient 
 		return lhs.Resources[0] < rhs.Resources[0]
 	})
 
-	configuredWebhook, err := client.Get(ac.options.ResourceMutatingWebhookName, metav1.GetOptions{})
+	configuredWebhook, err := client.Get(ac.name, metav1.GetOptions{})
 	if err != nil {
 		return fmt.Errorf("error retrieving webhook: %v", err)
 	}
@@ -158,8 +152,7 @@ func (ac *ResourceAdmissionController) Register(ctx context.Context, kubeClient 
 		if webhook.Webhooks[i].ClientConfig.Service == nil {
 			return fmt.Errorf("missing service reference for webhook: %s", wh.Name)
 		}
-		webhook.Webhooks[i].ClientConfig.Service.Path = ptr.String(
-			ac.options.ResourceAdmissionControllerPath)
+		webhook.Webhooks[i].ClientConfig.Service.Path = ptr.String(ac.path)
 	}
 
 	if ok, err := kmp.SafeEqual(configuredWebhook, webhook); err != nil {
