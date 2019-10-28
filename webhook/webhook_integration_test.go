@@ -19,7 +19,6 @@ package webhook
 import (
 	"bytes"
 	"context"
-	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -455,29 +454,6 @@ func TestInvalidResponseForResource(t *testing.T) {
 
 	// Stats should be reported for requests that have admission disallowed
 	metricstest.CheckStatsReported(t, requestCountName, requestLatenciesName)
-}
-
-func TestWebhookClientAuth(t *testing.T) {
-	ac, serverURL, err := testSetup(t)
-	if err != nil {
-		t.Fatalf("testSetup() = %v", err)
-	}
-	ac.Options.ClientAuth = tls.RequireAndVerifyClientCert
-
-	stopCh := make(chan struct{})
-	defer close(stopCh)
-
-	go func() {
-		err := ac.Run(stopCh)
-		if err != nil {
-			t.Errorf("Unable to run controller: %s", err)
-		}
-	}()
-
-	pollErr := waitForServerAvailable(t, serverURL, testTimeout)
-	if pollErr != nil {
-		t.Fatalf("waitForServerAvailable() = %v", err)
-	}
 }
 
 func TestValidResponseForConfigMap(t *testing.T) {

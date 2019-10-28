@@ -167,14 +167,6 @@ func TestCertConfigurationForGeneratedSecret(t *testing.T) {
 	}
 }
 
-func TestSettingWebhookClientAuth(t *testing.T) {
-	opts := newDefaultOptions()
-	if opts.ClientAuth != tls.NoClientCert {
-		t.Fatalf("Expected default ClientAuth to be NoClientCert (%v) but got (%v)",
-			tls.NoClientCert, opts.ClientAuth)
-	}
-}
-
 func NewTestWebhook(ctx context.Context) (*Webhook, error) {
 	validations := configmap.Constructors{"test-config": newConfigFromConfigMap}
 
