@@ -175,10 +175,10 @@ func TestSettingWebhookClientAuth(t *testing.T) {
 func NewTestWebhook(client kubernetes.Interface, options ControllerOptions, logger *zap.SugaredLogger) (*Webhook, error) {
 	validations := configmap.Constructors{"test-config": newConfigFromConfigMap}
 
-	admissionControllers := map[string]AdmissionController{
-		testResourceValidationPath: NewResourceAdmissionController(
+	admissionControllers := []AdmissionController{
+		NewResourceAdmissionController(
 			testResourceValidationName, testResourceValidationPath, handlers, true),
-		testConfigValidationPath: NewConfigValidationController(
+		NewConfigValidationController(
 			testConfigValidationName, testConfigValidationPath, validations),
 	}
 	return New(client, options, admissionControllers, logger, nil)

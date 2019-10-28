@@ -74,6 +74,12 @@ func NewResourceAdmissionController(
 	}
 }
 
+// Path implements AdmissionController
+func (ac *ResourceAdmissionController) Path() string {
+	return ac.path
+}
+
+// Admit implements AdmissionController
 func (ac *ResourceAdmissionController) Admit(ctx context.Context, request *admissionv1beta1.AdmissionRequest) *admissionv1beta1.AdmissionResponse {
 	logger := logging.FromContext(ctx)
 	switch request.Operation {
@@ -99,6 +105,7 @@ func (ac *ResourceAdmissionController) Admit(ctx context.Context, request *admis
 	}
 }
 
+// Register implements AdmissionController
 func (ac *ResourceAdmissionController) Register(ctx context.Context, kubeClient kubernetes.Interface, caCert []byte) error {
 	client := kubeClient.AdmissionregistrationV1beta1().MutatingWebhookConfigurations()
 	logger := logging.FromContext(ctx)

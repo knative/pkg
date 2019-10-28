@@ -84,7 +84,14 @@ type ControllerOptions struct {
 
 // AdmissionController provides the interface for different admission controllers
 type AdmissionController interface {
+	// Path returns the path that this particular admission controller serves on.
+	Path() string
+
+	// Admit is the callback which is invoked when an HTTPS request comes in on Path().
 	Admit(context.Context, *admissionv1beta1.AdmissionRequest) *admissionv1beta1.AdmissionResponse
+
+	// Register is called at startup to give the AdmissionController a chance to
+	// register with the API Server.
 	Register(context.Context, kubernetes.Interface, []byte) error
 }
 
@@ -103,7 +110,7 @@ type Webhook struct {
 func New(
 	client kubernetes.Interface,
 	opts ControllerOptions,
-	admissionControllers map[string]AdmissionController,
+	admissionControllers []AdmissionController,
 	logger *zap.SugaredLogger,
 	ctx func(context.Context) context.Context,
 ) (*Webhook, error) {
@@ -116,10 +123,18 @@ func New(
 		opts.StatsReporter = reporter
 	}
 
+	acs := make(map[string]AdmissionController, len(admissionControllers))
+	for _, ac := range admissionControllers {
+		if _, ok := acs[ac.Path()]; ok {
+			return nil, fmt.Errorf("admission controller with conflicting path: %q", ac.Path())
+		}
+		acs[ac.Path()] = ac
+	}
+
 	return &Webhook{
 		Client:               client,
 		Options:              opts,
-		admissionControllers: admissionControllers,
+		admissionControllers: acs,
 		Logger:               logger,
 		WithContext:          ctx,
 	}, nil
