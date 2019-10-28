@@ -240,8 +240,10 @@ func TestValidResponseForResourceWithContextDefault(t *testing.T) {
 	if err != nil {
 		t.Fatalf("testSetup() = %v", err)
 	}
+
 	theDefault := "Some default value"
-	ac.WithContext = func(ctx context.Context) context.Context {
+	rac := ac.admissionControllers[testResourceValidationPath].(*ResourceAdmissionController)
+	rac.WithContext = func(ctx context.Context) context.Context {
 		return WithValue(ctx, theDefault)
 	}
 

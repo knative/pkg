@@ -102,8 +102,6 @@ type Webhook struct {
 	Options              ControllerOptions
 	Logger               *zap.SugaredLogger
 	admissionControllers map[string]AdmissionController
-
-	WithContext func(context.Context) context.Context
 }
 
 // New constructs a Webhook
@@ -112,7 +110,6 @@ func New(
 	opts ControllerOptions,
 	admissionControllers []AdmissionController,
 	logger *zap.SugaredLogger,
-	ctx func(context.Context) context.Context,
 ) (*Webhook, error) {
 
 	if opts.StatsReporter == nil {
@@ -136,7 +133,6 @@ func New(
 		Options:              opts,
 		admissionControllers: acs,
 		Logger:               logger,
-		WithContext:          ctx,
 	}, nil
 }
 
@@ -230,10 +226,6 @@ func (ac *Webhook) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		zap.String(logkey.SubResource, fmt.Sprint(review.Request.SubResource)),
 		zap.String(logkey.UserInfo, fmt.Sprint(review.Request.UserInfo)))
 	ctx := logging.WithLogger(r.Context(), logger)
-
-	if ac.WithContext != nil {
-		ctx = ac.WithContext(ctx)
-	}
 
 	if _, ok := ac.admissionControllers[r.URL.Path]; !ok {
 		http.Error(w, fmt.Sprintf("no admission controller registered for: %s", r.URL.Path), http.StatusBadRequest)

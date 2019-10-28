@@ -17,6 +17,7 @@ limitations under the License.
 package webhook
 
 import (
+	"context"
 	"crypto/tls"
 	"encoding/pem"
 	"fmt"
@@ -177,9 +178,12 @@ func NewTestWebhook(client kubernetes.Interface, options ControllerOptions, logg
 
 	admissionControllers := []AdmissionController{
 		NewResourceAdmissionController(
-			testResourceValidationName, testResourceValidationPath, handlers, true),
+			testResourceValidationName, testResourceValidationPath, handlers, true,
+			func(ctx context.Context) context.Context {
+				return ctx
+			}),
 		NewConfigValidationController(
 			testConfigValidationName, testConfigValidationPath, validations),
 	}
-	return New(client, options, admissionControllers, logger, nil)
+	return New(client, options, admissionControllers, logger)
 }

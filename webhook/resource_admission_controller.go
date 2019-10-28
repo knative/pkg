@@ -59,18 +59,24 @@ type ResourceAdmissionController struct {
 	handlers map[schema.GroupVersionKind]GenericCRD
 
 	disallowUnknownFields bool
+
+	// WithContext is public for testing.
+	WithContext func(context.Context) context.Context
 }
 
 // NewResourceAdmissionController constructs a ResourceAdmissionController
 func NewResourceAdmissionController(
 	name, path string,
 	handlers map[schema.GroupVersionKind]GenericCRD,
-	disallowUnknownFields bool) AdmissionController {
+	disallowUnknownFields bool,
+	withContext func(context.Context) context.Context,
+) AdmissionController {
 	return &ResourceAdmissionController{
 		name:                  name,
 		path:                  path,
 		handlers:              handlers,
 		disallowUnknownFields: disallowUnknownFields,
+		WithContext:           withContext,
 	}
 }
 
@@ -82,6 +88,11 @@ func (ac *ResourceAdmissionController) Path() string {
 // Admit implements AdmissionController
 func (ac *ResourceAdmissionController) Admit(ctx context.Context, request *admissionv1beta1.AdmissionRequest) *admissionv1beta1.AdmissionResponse {
 	logger := logging.FromContext(ctx)
+
+	if ac.WithContext != nil {
+		ctx = ac.WithContext(ctx)
+	}
+
 	switch request.Operation {
 	case admissionv1beta1.Create, admissionv1beta1.Update:
 	default:
