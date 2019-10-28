@@ -97,7 +97,7 @@ func createTestConfigMap(t *testing.T, kubeClient kubernetes.Interface) error {
 	return nil
 }
 
-func createSecureTLSClient(t *testing.T, kubeClient kubernetes.Interface, acOpts *ControllerOptions) (*http.Client, error) {
+func createSecureTLSClient(t *testing.T, kubeClient kubernetes.Interface, acOpts *Options) (*http.Client, error) {
 	t.Helper()
 	tlsServerConfig, caCert, err := configureCerts(TestContextWithLogger(t), kubeClient, acOpts)
 	if err != nil {

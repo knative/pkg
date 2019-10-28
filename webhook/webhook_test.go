@@ -26,11 +26,10 @@ import (
 	"time"
 
 	"github.com/google/go-cmp/cmp"
-	"go.uber.org/zap"
 	"golang.org/x/sync/errgroup"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes"
 	fakekubeclientset "k8s.io/client-go/kubernetes/fake"
+	fakekc "knative.dev/pkg/client/injection/kube/client/fake"
 
 	"knative.dev/pkg/configmap"
 	. "knative.dev/pkg/logging/testing"
@@ -38,8 +37,8 @@ import (
 	_ "knative.dev/pkg/system/testing"
 )
 
-func newDefaultOptions() ControllerOptions {
-	return ControllerOptions{
+func newDefaultOptions() Options {
+	return Options{
 		ServiceName: "webhook",
 		Port:        443,
 		SecretName:  "webhook-certs",
@@ -53,14 +52,17 @@ const (
 	user2            = "arrabbiato@knative.dev"
 )
 
-func newNonRunningTestWebhook(t *testing.T, options ControllerOptions) (
+func newNonRunningTestWebhook(t *testing.T, options Options) (
 	kubeClient *fakekubeclientset.Clientset,
 	ac *Webhook) {
 	t.Helper()
-	// Create fake clients
-	kubeClient = fakekubeclientset.NewSimpleClientset(initialConfigWebhook, initialResourceWebhook)
 
-	ac, err := NewTestWebhook(kubeClient, options, TestLogger(t))
+	// Create fake clients
+	ctx := TestContextWithLogger(t)
+	ctx, kubeClient = fakekc.With(ctx, initialConfigWebhook, initialResourceWebhook)
+	ctx = WithOptions(ctx, options)
+
+	ac, err := NewTestWebhook(ctx)
 	if err != nil {
 		t.Fatalf("Failed to create new admission controller: %v", err)
 	}
@@ -173,7 +175,7 @@ func TestSettingWebhookClientAuth(t *testing.T) {
 	}
 }
 
-func NewTestWebhook(client kubernetes.Interface, options ControllerOptions, logger *zap.SugaredLogger) (*Webhook, error) {
+func NewTestWebhook(ctx context.Context) (*Webhook, error) {
 	validations := configmap.Constructors{"test-config": newConfigFromConfigMap}
 
 	admissionControllers := []AdmissionController{
@@ -185,5 +187,5 @@ func NewTestWebhook(client kubernetes.Interface, options ControllerOptions, logg
 		NewConfigValidationController(
 			testConfigValidationName, testConfigValidationPath, validations),
 	}
-	return New(client, options, admissionControllers, logger)
+	return New(ctx, admissionControllers)
 }

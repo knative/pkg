@@ -26,6 +26,9 @@ import (
 	"net/http"
 	"time"
 
+	// Injection stuff
+	kubeclient "knative.dev/pkg/client/injection/kube/client"
+
 	"go.uber.org/zap"
 	"golang.org/x/sync/errgroup"
 	"knative.dev/pkg/logging"
@@ -49,8 +52,8 @@ var (
 	errMissingNewObject = errors.New("the new object may not be nil")
 )
 
-// ControllerOptions contains the configuration for the webhook
-type ControllerOptions struct {
+// Options contains the configuration for the webhook
+type Options struct {
 	// ServiceName is the service name of the webhook.
 	ServiceName string
 
@@ -99,18 +102,23 @@ type AdmissionController interface {
 // resources and configuration.
 type Webhook struct {
 	Client               kubernetes.Interface
-	Options              ControllerOptions
+	Options              Options
 	Logger               *zap.SugaredLogger
 	admissionControllers map[string]AdmissionController
 }
 
 // New constructs a Webhook
 func New(
-	client kubernetes.Interface,
-	opts ControllerOptions,
+	ctx context.Context,
 	admissionControllers []AdmissionController,
-	logger *zap.SugaredLogger,
 ) (*Webhook, error) {
+
+	client := kubeclient.Get(ctx)
+	opts := GetOptions(ctx)
+	if opts == nil {
+		return nil, errors.New("context must have Options specified")
+	}
+	logger := logging.FromContext(ctx)
 
 	if opts.StatsReporter == nil {
 		reporter, err := NewStatsReporter()
@@ -130,7 +138,7 @@ func New(
 
 	return &Webhook{
 		Client:               client,
-		Options:              opts,
+		Options:              *opts,
 		admissionControllers: acs,
 		Logger:               logger,
 	}, nil
@@ -289,7 +297,7 @@ func makeTLSConfig(serverCert, serverKey, caCert []byte, clientAuthType tls.Clie
 }
 
 func getOrGenerateKeyCertsFromSecret(ctx context.Context, client kubernetes.Interface,
-	options *ControllerOptions) (serverKey, serverCert, caCert []byte, err error) {
+	options *Options) (serverKey, serverCert, caCert []byte, err error) {
 	logger := logging.FromContext(ctx)
 	secret, err := client.CoreV1().Secrets(system.Namespace()).Get(options.SecretName, metav1.GetOptions{})
 	if err != nil {
@@ -327,7 +335,7 @@ func getOrGenerateKeyCertsFromSecret(ctx context.Context, client kubernetes.Inte
 	return serverKey, serverCert, caCert, nil
 }
 
-func configureCerts(ctx context.Context, client kubernetes.Interface, options *ControllerOptions) (*tls.Config, []byte, error) {
+func configureCerts(ctx context.Context, client kubernetes.Interface, options *Options) (*tls.Config, []byte, error) {
 	var apiServerCACert []byte
 	if options.ClientAuth >= tls.VerifyClientCertIfGiven {
 		var err error
@@ -356,7 +364,7 @@ func makeErrorStatus(reason string, args ...interface{}) *admissionv1beta1.Admis
 	}
 }
 
-func generateSecret(ctx context.Context, options *ControllerOptions) (*corev1.Secret, error) {
+func generateSecret(ctx context.Context, options *Options) (*corev1.Secret, error) {
 	serverKey, serverCert, caCert, err := CreateCerts(ctx, options.ServiceName, system.Namespace())
 	if err != nil {
 		return nil, err
