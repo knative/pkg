@@ -62,6 +62,12 @@ func NewConfigValidationController(
 	return cfgValidations
 }
 
+// Path implements AdmissionController
+func (ac *ConfigValidationController) Path() string {
+	return ac.path
+}
+
+// Admit implements AdmissionController
 func (ac *ConfigValidationController) Admit(ctx context.Context, request *admissionv1beta1.AdmissionRequest) *admissionv1beta1.AdmissionResponse {
 	logger := logging.FromContext(ctx)
 	switch request.Operation {
@@ -80,6 +86,7 @@ func (ac *ConfigValidationController) Admit(ctx context.Context, request *admiss
 	}
 }
 
+// Register implements AdmissionController
 func (ac *ConfigValidationController) Register(ctx context.Context, kubeClient kubernetes.Interface, caCert []byte) error {
 	client := kubeClient.AdmissionregistrationV1beta1().ValidatingWebhookConfigurations()
 	logger := logging.FromContext(ctx)
