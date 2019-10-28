@@ -16,6 +16,7 @@ limitations under the License.
 package metrics
 
 import (
+	"context"
 	"os"
 	"path"
 	"testing"
@@ -24,7 +25,11 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 
+	"go.opencensus.io/stats"
+	"go.opencensus.io/stats/view"
+
 	. "knative.dev/pkg/logging/testing"
+	"knative.dev/pkg/metrics/metricstest"
 )
 
 // TODO UTs should move to eventing and serving, as appropriate.
@@ -801,6 +806,79 @@ func TestNewStackdriverConfigFromMap(t *testing.T) {
 			c := newStackdriverClientConfigFromMap(test.stringMap)
 			if test.expectedConfig != *c {
 				t.Errorf("Incorrect stackdriver config. Expected: [%v], Got: [%v]", test.expectedConfig, *c)
+			}
+		})
+	}
+}
+
+// TODO(evankanderson): Move the Stackdriver / Record patching out of config.go
+func TestStackdriverRecord(t *testing.T) {
+	testCases := map[string]struct {
+		opts map[string]string
+		servedCounter int64
+		statCounter int64
+	}{
+		"non-stackdriver": {
+			opts: map[string]string{
+				"metrics.backend-destination": "prometheus",
+			},
+			servedCounter: 1,
+			statCounter: 1,
+		},
+		"stackdriver with custom metrics": {
+			opts:  map[string]string{
+				"metrics.backend-destination": "stackdriver",
+				"metrics.allow-stackdriver-custom-metrics": "true",
+			},
+			servedCounter: 1,
+			statCounter: 1,
+		},
+		"stackdriver no custom metrics": {
+			opts: map[string]string{
+				"metrics.backend-destination": "stackdriver",
+			},
+			servedCounter: 1,
+			statCounter: 0,
+		},
+	}
+
+	servedCount := stats.Int64("request_count", "Number of requests", stats.UnitNone)
+	statCount := stats.Int64("stat_errors", "Number of errors calling stat", stats.UnitNone)
+	emptyTags := map[string]string{}
+
+	for name, data := range(testCases) {
+		t.Run(name, func(t *testing.T){
+			defer ClearAll()
+			opts := ExporterOptions{
+				ConfigMap: data.opts,
+				Domain: "knative.dev/internal/serving",
+				Component: "activator",
+			}
+			mc, err := createMetricsConfig(opts, TestLogger(t))
+			if err != nil {
+				t.Errorf("Expected valid config %+v, got error: %v\n", opts, err)
+			}
+			setCurMetricsConfig(mc)
+			ctx := context.Background()
+			v := []*view.View{
+				&view.View{Measure: servedCount, Aggregation: view.Count()},
+				&view.View{Measure: statCount, Aggregation: view.Count()},
+			}
+			err = view.Register(v...)
+			if err != nil {
+				t.Errorf("Failed to register %+v in stats backend: %v", v, err)
+			}
+			defer view.Unregister(v...)
+
+			// Try recording each metric and checking the result.
+			Record(ctx, servedCount.M(1))
+			metricstest.CheckCountData(t, servedCount.Name(), emptyTags, data.servedCounter)
+
+			Record(ctx, statCount.M(1))
+			if data.statCounter != 0 {
+				metricstest.CheckCountData(t, statCount.Name(), emptyTags, data.statCounter)
+			} else {
+				metricstest.CheckStatsNotReported(t, statCount.Name())
 			}
 		})
 	}

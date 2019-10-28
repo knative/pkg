@@ -77,7 +77,7 @@ type metricsConfig struct {
 	// reportingPeriod specifies the interval between reporting aggregated views.
 	// If duration is less than or equal to zero, it enables the default behavior.
 	reportingPeriod time.Duration
-	
+
 	// recorder provides a hook for performing custom transformations before
 	// writing the metrics to the stats.RecordWithOptions interface.
 	recorder func(context.Context, stats.Measurement, ...stats.Options) error
@@ -137,10 +137,11 @@ func newStackdriverClientConfigFromMap(config map[string]string) *stackdriverCli
 	}
 }
 
+// Record applies the `ros` Options to `ms` and then records the resulting
+// measurements in the metricsConfig's designated backend.
 func (mc *metricsConfig) Record(ctx context.Context, ms stats.Measurement, ros ...stats.Options) error {
 	if mc == nil || mc.recorder == nil {
-		ros = append(ros, stats.WithMeasurements(ms))
-		return stats.RecordWithOptions(ctx, ros...)
+		return stats.RecordWithOptions(ctx, append(ros, stats.WithMeasurements(ms))...)
 	}
 	return mc.recorder(ctx, ms, ros...)
 }
@@ -214,16 +215,14 @@ func createMetricsConfig(ops ExporterOptions, logger *zap.SugaredLogger) (*metri
 			}
 		}
 
-		if mc.isStackdriverBackend && !allowCustomMetrics {
+		if !allowCustomMetrics {
+			servingOrEventing := metricskey.KnativeRevisionMetrics.Union(
+				metricskey.KnativeTriggerMetrics)
 			mc.recorder = func(ctx context.Context, ms stats.Measurement, ros... stats.Options) error {
 				metricType := path.Join(mc.stackdriverMetricTypePrefix, ms.Measure().Name())
-				isServingBuiltIn := metricskey.KnativeRevisionMetrics.Has(metricType)
-				isEventingBuiltIn := metricskey.KnativeTriggerMetrics.Has(metricType)
 
-				if isServingBuiltIn || isEventingBuiltIn {
-					ros = append(ros, stats.WithMeasurements(ms))
-
-					return stats.RecordWithOptions(ctx, ros...)
+				if servingOrEventing.Has(metricType) {
+					return stats.RecordWithOptions(ctx, append(ros, stats.WithMeasurements(ms))...)
 				}
 				// Otherwise, skip (because it won't be accepted)
 				return nil
