@@ -643,5 +643,7 @@ func setUserAnnotation(userC, userU string) jsonpatch.JsonPatchOperation {
 
 func NewTestResourceAdmissionController() AdmissionController {
 	return NewResourceAdmissionController(testResourceValidationName, testResourceValidationPath,
-		handlers, true)
+		handlers, true, func(ctx context.Context) context.Context {
+			return ctx
+		})
 }
