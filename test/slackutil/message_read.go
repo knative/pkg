@@ -58,7 +58,6 @@ func NewReadClient(userName, tokenPath string) (ReadOperations, error) {
 func (c *readClient) MessageHistory(channel string, startTime time.Time) ([]string, error) {
 	u, _ := url.Parse(conversationHistoryURL)
 	q := u.Query()
-	q.Add("username", c.userName)
 	q.Add("token", c.tokenStr)
 	q.Add("channel", channel)
 	q.Add("oldest", strconv.FormatInt(startTime.Unix(), 10))

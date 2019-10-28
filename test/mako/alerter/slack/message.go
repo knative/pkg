@@ -19,6 +19,7 @@ package slack
 import (
 	"flag"
 	"fmt"
+	"strings"
 	"sync"
 	"time"
 
@@ -31,7 +32,7 @@ var minInterval = flag.Duration("min-alert-interval", 24*time.Hour, "The minimum
 
 const (
 	messageTemplate = `
-As of %s, there is a new performance regression detected from test automation for **%s**:
+As of %s, there is a new performance regression detected from test automation for *%s*:
 %s`
 )
 
@@ -85,10 +86,14 @@ func (smh *MessageHandler) SendAlert(testName, summary string) error {
 			); err != nil {
 				errCh <- fmt.Errorf("failed to retrieve message history in channel %q", channel.Name)
 			}
-			// do not send message again if messages were sent on the same channel a short while ago
-			if len(messageHistory) != 0 {
-				return
+			// do not send message again if alert for this test has been sent to
+			// the channel a short while ago
+			for _, message := range messageHistory {
+				if strings.Contains(message, testName) {
+					return
+				}
 			}
+
 			// send the alert message to the channel
 			message := fmt.Sprintf(messageTemplate, time.Now().UTC(), testName, summary)
 			if err := helpers.Run(
