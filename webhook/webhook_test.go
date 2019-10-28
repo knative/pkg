@@ -33,11 +33,12 @@ import (
 
 	"knative.dev/pkg/configmap"
 	. "knative.dev/pkg/logging/testing"
+	"knative.dev/pkg/system"
+	_ "knative.dev/pkg/system/testing"
 )
 
 func newDefaultOptions() ControllerOptions {
 	return ControllerOptions{
-		Namespace:                       "knative-something",
 		ServiceName:                     "webhook",
 		Port:                            443,
 		SecretName:                      "webhook-certs",
@@ -94,10 +95,9 @@ func TestRegistrationStopChanFire(t *testing.T) {
 
 func TestCertConfigurationForAlreadyGeneratedSecret(t *testing.T) {
 	secretName := "test-secret"
-	ns := "test-namespace"
+	ns := system.Namespace()
 	opts := newDefaultOptions()
 	opts.SecretName = secretName
-	opts.Namespace = ns
 	kubeClient, ac := newNonRunningTestWebhook(t, opts)
 
 	ctx := TestContextWithLogger(t)
@@ -139,10 +139,8 @@ func TestCertConfigurationForAlreadyGeneratedSecret(t *testing.T) {
 
 func TestCertConfigurationForGeneratedSecret(t *testing.T) {
 	secretName := "test-secret"
-	ns := "test-namespace"
 	opts := newDefaultOptions()
 	opts.SecretName = secretName
-	opts.Namespace = ns
 	kubeClient, ac := newNonRunningTestWebhook(t, opts)
 
 	ctx := TestContextWithLogger(t)
