@@ -30,6 +30,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	fakekc "knative.dev/pkg/client/injection/kube/client/fake"
 	kubeclient "knative.dev/pkg/client/injection/kube/client/fake"
+	certresources "knative.dev/pkg/webhook/certificates/resources"
 
 	"knative.dev/pkg/configmap"
 	"knative.dev/pkg/controller"
@@ -117,7 +118,8 @@ func TestCertConfigurationForAlreadyGeneratedSecret(t *testing.T) {
 	defer cancel()
 	kubeClient := fakekc.Get(ctx)
 
-	newSecret, err := generateSecret(ctx, &opts)
+	newSecret, err := certresources.MakeSecret(
+		ctx, opts.SecretName, system.Namespace(), opts.ServiceName)
 	if err != nil {
 		t.Fatalf("Failed to generate secret: %v", err)
 	}
@@ -129,7 +131,7 @@ func TestCertConfigurationForAlreadyGeneratedSecret(t *testing.T) {
 	createNamespace(t, kubeClient, metav1.NamespaceSystem)
 	createTestConfigMap(t, kubeClient)
 
-	expectedCert, err := tls.X509KeyPair(newSecret.Data[secretServerCert], newSecret.Data[secretServerKey])
+	expectedCert, err := tls.X509KeyPair(newSecret.Data[certresources.ServerCert], newSecret.Data[certresources.ServerKey])
 	if err != nil {
 		t.Fatalf("Failed to create cert from x509 key pair: %v", err)
 	}
@@ -146,7 +148,7 @@ func TestCertConfigurationForAlreadyGeneratedSecret(t *testing.T) {
 	if diff := cmp.Diff(expectedCert.Certificate, cert.Certificate, cmp.AllowUnexported()); diff != "" {
 		t.Fatalf("Unexpected cert diff (-want, +got) %v", diff)
 	}
-	if diff := cmp.Diff(newSecret.Data[secretCACert], caCert, cmp.AllowUnexported()); diff != "" {
+	if diff := cmp.Diff(newSecret.Data[certresources.CACert], caCert, cmp.AllowUnexported()); diff != "" {
 		t.Fatalf("Unexpected CA cert diff (-want, +got) %v", diff)
 	}
 }
