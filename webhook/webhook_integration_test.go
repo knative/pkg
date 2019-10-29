@@ -37,7 +37,9 @@ import (
 	authenticationv1 "k8s.io/api/authentication/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"knative.dev/pkg/metrics/metricstest"
+
 	. "knative.dev/pkg/testing"
+	. "knative.dev/pkg/webhook/testing"
 )
 
 const testTimeout = time.Duration(10 * time.Second)
@@ -184,7 +186,7 @@ func TestValidResponseForResource(t *testing.T) {
 			Kind:    "Resource",
 		},
 	}
-	testRev := createResource("testrev")
+	testRev := CreateResource("testrev")
 	marshaled, err := json.Marshal(testRev)
 	if err != nil {
 		t.Fatalf("Failed to marshal resource: %s", err)
@@ -280,7 +282,7 @@ func TestValidResponseForResourceWithContextDefault(t *testing.T) {
 			Kind:    "Resource",
 		},
 	}
-	testRev := createResource("testrev")
+	testRev := CreateResource("testrev")
 	marshaled, err := json.Marshal(testRev)
 	if err != nil {
 		t.Fatalf("Failed to marshal resource: %s", err)
@@ -333,7 +335,7 @@ func TestValidResponseForResourceWithContextDefault(t *testing.T) {
 		t.Fatalf("Failed to decode response: %v", err)
 	}
 
-	expectPatches(t, reviewResponse.Response.Patch, []jsonpatch.JsonPatchOperation{{
+	ExpectPatches(t, reviewResponse.Response.Patch, []jsonpatch.JsonPatchOperation{{
 		Operation: "add",
 		Path:      "/spec/fieldThatsImmutableWithDefault",
 		Value:     "this is another default value",
@@ -375,7 +377,7 @@ func TestInvalidResponseForResource(t *testing.T) {
 		t.Fatalf("createSecureTLSClient() = %v", err)
 	}
 
-	resource := createResource(testResourceName)
+	resource := CreateResource(testResourceName)
 
 	resource.Spec.FieldWithValidation = "not the right value"
 	marshaled, err := json.Marshal(resource)
@@ -539,7 +541,7 @@ func TestValidResponseForConfigMap(t *testing.T) {
 		t.Fatalf("Failed to decode response: %v", err)
 	}
 
-	expectAllowed(t, reviewResponse.Response)
+	ExpectAllowed(t, reviewResponse.Response)
 
 	metricstest.CheckStatsReported(t, requestCountName, requestLatenciesName)
 }

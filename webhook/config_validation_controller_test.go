@@ -37,6 +37,7 @@ import (
 	_ "knative.dev/pkg/system/testing"
 
 	. "knative.dev/pkg/logging/testing"
+	. "knative.dev/pkg/webhook/testing"
 )
 
 const (
@@ -138,7 +139,7 @@ func TestNonConfigMapKindFails(t *testing.T) {
 		},
 	}
 
-	expectFailsWith(t, ac.Admit(TestContextWithLogger(t), req), "unhandled kind")
+	ExpectFailsWith(t, ac.Admit(TestContextWithLogger(t), req), "unhandled kind")
 }
 
 func TestAdmitCreateValidConfigMap(t *testing.T) {
@@ -151,7 +152,7 @@ func TestAdmitCreateValidConfigMap(t *testing.T) {
 
 	resp := ac.Admit(ctx, createCreateConfigMapRequest(ctx, r))
 
-	expectAllowed(t, resp)
+	ExpectAllowed(t, resp)
 }
 
 func TestDenyInvalidCreateConfigMapWithWrongType(t *testing.T) {
@@ -164,7 +165,7 @@ func TestDenyInvalidCreateConfigMapWithWrongType(t *testing.T) {
 
 	resp := ac.Admit(ctx, createCreateConfigMapRequest(ctx, r))
 
-	expectFailsWith(t, resp, "invalid syntax")
+	ExpectFailsWith(t, resp, "invalid syntax")
 }
 
 func TestDenyInvalidCreateConfigMapOutOfRange(t *testing.T) {
@@ -177,7 +178,7 @@ func TestDenyInvalidCreateConfigMapOutOfRange(t *testing.T) {
 
 	resp := ac.Admit(ctx, createCreateConfigMapRequest(ctx, r))
 
-	expectFailsWith(t, resp, "out of range")
+	ExpectFailsWith(t, resp, "out of range")
 }
 
 func TestAdmitUpdateValidConfigMap(t *testing.T) {
@@ -190,7 +191,7 @@ func TestAdmitUpdateValidConfigMap(t *testing.T) {
 
 	resp := ac.Admit(ctx, updateCreateConfigMapRequest(ctx, r))
 
-	expectAllowed(t, resp)
+	ExpectAllowed(t, resp)
 }
 
 func TestDenyInvalidUpdateConfigMapWithWrongType(t *testing.T) {
@@ -203,7 +204,7 @@ func TestDenyInvalidUpdateConfigMapWithWrongType(t *testing.T) {
 
 	resp := ac.Admit(ctx, createCreateConfigMapRequest(ctx, r))
 
-	expectFailsWith(t, resp, "invalid syntax")
+	ExpectFailsWith(t, resp, "invalid syntax")
 }
 
 func TestDenyInvalidUpdateConfigMapOutOfRange(t *testing.T) {
@@ -216,7 +217,7 @@ func TestDenyInvalidUpdateConfigMapOutOfRange(t *testing.T) {
 
 	resp := ac.Admit(ctx, createCreateConfigMapRequest(ctx, r))
 
-	expectFailsWith(t, resp, "out of range")
+	ExpectFailsWith(t, resp, "out of range")
 }
 
 type config struct {
