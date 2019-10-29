@@ -29,11 +29,9 @@ import (
 	"github.com/mattbaird/jsonpatch"
 	admissionv1beta1 "k8s.io/api/admission/v1beta1"
 	admissionregistrationv1beta1 "k8s.io/api/admissionregistration/v1beta1"
-	appsv1 "k8s.io/api/apps/v1"
 	authenticationv1 "k8s.io/api/authentication/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/client-go/kubernetes"
 	fakekubeclientset "k8s.io/client-go/kubernetes/fake"
 	"knative.dev/pkg/apis"
 	"knative.dev/pkg/system"
@@ -548,7 +546,6 @@ func createInnerDefaultResourceWithSpecAndStatus(t *testing.T, spec *InnerDefaul
 func TestUpdatingResourceController(t *testing.T) {
 	kubeClient, ac := newNonRunningTestResourceAdmissionController(t)
 
-	createDeployment(kubeClient)
 	err := ac.Register(TestContextWithLogger(t), kubeClient, []byte{})
 	if err != nil {
 		t.Fatalf("Failed to create webhook: %s", err)
@@ -562,16 +559,6 @@ func TestUpdatingResourceController(t *testing.T) {
 	if len(currentWebhook.OwnerReferences) > 0 {
 		t.Errorf("Expected no OwnerReferences, got %d", len(currentWebhook.OwnerReferences))
 	}
-}
-
-func createDeployment(kubeClient kubernetes.Interface) {
-	deployment := &appsv1.Deployment{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "whatever",
-			Namespace: "knative-something",
-		},
-	}
-	kubeClient.AppsV1().Deployments("knative-something").Create(deployment)
 }
 
 func expectAllowed(t *testing.T, resp *admissionv1beta1.AdmissionResponse) {

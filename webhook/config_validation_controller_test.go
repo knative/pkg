@@ -86,7 +86,6 @@ func NewTestConfigValidationController() AdmissionController {
 func TestUpdatingConfigValidationController(t *testing.T) {
 	kubeClient, ac := newNonRunningTestConfigValidationController(t)
 
-	createDeployment(kubeClient)
 	err := ac.Register(TestContextWithLogger(t), kubeClient, []byte{})
 	if err != nil {
 		t.Fatalf("Failed to create webhook: %s", err)
