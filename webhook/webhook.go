@@ -142,16 +142,26 @@ func New(
 func (ac *Webhook) Run(stop <-chan struct{}) error {
 	logger := ac.Logger
 	ctx := logging.WithLogger(context.TODO(), logger)
-	tlsConfig, caCert, err := configureCerts(ctx, ac.Client, &ac.Options)
+
+	// TODO(mattmoor): Separate out the certificate creation process and use listers
+	// to fetch this from the secret below.
+	serverKey, serverCert, caCert, err := getOrGenerateKeyCertsFromSecret(ctx, ac.Client, &ac.Options)
 	if err != nil {
-		logger.Errorw("could not configure admission webhook certs", zap.Error(err))
 		return err
 	}
 
 	server := &http.Server{
-		Handler:   ac,
-		Addr:      fmt.Sprintf(":%v", ac.Options.Port),
-		TLSConfig: tlsConfig,
+		Handler: ac,
+		Addr:    fmt.Sprintf(":%v", ac.Options.Port),
+		TLSConfig: &tls.Config{
+			GetCertificate: func(*tls.ClientHelloInfo) (*tls.Certificate, error) {
+				cert, err := tls.X509KeyPair(serverCert, serverKey)
+				if err != nil {
+					return nil, err
+				}
+				return &cert, nil
+			},
+		},
 	}
 
 	logger.Info("Found certificates for webhook...")
@@ -256,18 +266,6 @@ func (ac *Webhook) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// MakeTLSConfig makes a TLS configuration suitable for use with the server
-func makeTLSConfig(serverCert, serverKey []byte) (*tls.Config, error) {
-	cert, err := tls.X509KeyPair(serverCert, serverKey)
-	if err != nil {
-		return nil, err
-	}
-	return &tls.Config{
-		Certificates: []tls.Certificate{cert},
-		ClientAuth:   tls.NoClientCert,
-	}, nil
-}
-
 func getOrGenerateKeyCertsFromSecret(ctx context.Context, client kubernetes.Interface,
 	options *Options) (serverKey, serverCert, caCert []byte, err error) {
 	logger := logging.FromContext(ctx)
@@ -305,18 +303,6 @@ func getOrGenerateKeyCertsFromSecret(ctx context.Context, client kubernetes.Inte
 		return nil, nil, nil, errors.New("ca cert missing")
 	}
 	return serverKey, serverCert, caCert, nil
-}
-
-func configureCerts(ctx context.Context, client kubernetes.Interface, options *Options) (*tls.Config, []byte, error) {
-	serverKey, serverCert, caCert, err := getOrGenerateKeyCertsFromSecret(ctx, client, options)
-	if err != nil {
-		return nil, nil, err
-	}
-	tlsConfig, err := makeTLSConfig(serverCert, serverKey)
-	if err != nil {
-		return nil, nil, err
-	}
-	return tlsConfig, caCert, nil
 }
 
 func makeErrorStatus(reason string, args ...interface{}) *admissionv1beta1.AdmissionResponse {

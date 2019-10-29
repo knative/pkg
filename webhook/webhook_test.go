@@ -112,23 +112,21 @@ func TestCertConfigurationForAlreadyGeneratedSecret(t *testing.T) {
 	createNamespace(t, kubeClient, metav1.NamespaceSystem)
 	createTestConfigMap(t, kubeClient)
 
-	tlsConfig, caCert, err := configureCerts(ctx, kubeClient, &ac.Options)
-	if err != nil {
-		t.Fatalf("Failed to configure secret: %v", err)
-	}
 	expectedCert, err := tls.X509KeyPair(newSecret.Data[secretServerCert], newSecret.Data[secretServerKey])
 	if err != nil {
 		t.Fatalf("Failed to create cert from x509 key pair: %v", err)
 	}
 
-	if tlsConfig == nil {
-		t.Fatal("Expected TLS config not to be nil")
+	serverKey, serverCert, caCert, err := getOrGenerateKeyCertsFromSecret(ctx, kubeClient, &ac.Options)
+	if err != nil {
+		t.Fatalf("Failed to configure secret: %v", err)
 	}
-	if len(tlsConfig.Certificates) < 1 {
-		t.Fatalf("Expected TLS Config Cert to be set")
+	cert, err := tls.X509KeyPair(serverCert, serverKey)
+	if err != nil {
+		t.Fatalf("Expected to build key pair: %v", err)
 	}
 
-	if diff := cmp.Diff(expectedCert.Certificate, tlsConfig.Certificates[0].Certificate, cmp.AllowUnexported()); diff != "" {
+	if diff := cmp.Diff(expectedCert.Certificate, cert.Certificate, cmp.AllowUnexported()); diff != "" {
 		t.Fatalf("Unexpected cert diff (-want, +got) %v", diff)
 	}
 	if diff := cmp.Diff(newSecret.Data[secretCACert], caCert, cmp.AllowUnexported()); diff != "" {
@@ -146,16 +144,9 @@ func TestCertConfigurationForGeneratedSecret(t *testing.T) {
 	createNamespace(t, kubeClient, metav1.NamespaceSystem)
 	createTestConfigMap(t, kubeClient)
 
-	tlsConfig, caCert, err := configureCerts(ctx, kubeClient, &ac.Options)
+	_, _, caCert, err := getOrGenerateKeyCertsFromSecret(ctx, kubeClient, &ac.Options)
 	if err != nil {
-		t.Fatalf("Failed to configure certificates: %v", err)
-	}
-
-	if tlsConfig == nil {
-		t.Fatal("Expected TLS config not to be nil")
-	}
-	if len(tlsConfig.Certificates) < 1 {
-		t.Fatalf("Expected TLS Certfificate to be set on webhook server")
+		t.Fatalf("Failed to configure secret: %v", err)
 	}
 
 	p, _ := pem.Decode(caCert)
