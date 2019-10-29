@@ -643,7 +643,6 @@ func TestSetupWebhookHTTPServerError(t *testing.T) {
 	if cMapsErr != nil {
 		t.Fatalf("testSetup() = %v", cMapsErr)
 	}
-	createDeployment(kubeClient)
 
 	stopCh := make(chan struct{})
 	errCh := make(chan error)
@@ -684,7 +683,6 @@ func testSetup(t *testing.T) (*Webhook, string, error) {
 		return nil, "", cMapsErr
 	}
 
-	createDeployment(kubeClient)
 	resetMetrics()
 	return ac, fmt.Sprintf("0.0.0.0:%d", port), nil
 }
