@@ -20,12 +20,8 @@ import (
 	"context"
 	"encoding/json"
 	"reflect"
-	"sort"
-	"strings"
 	"testing"
 
-	"github.com/google/go-cmp/cmp"
-	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/mattbaird/jsonpatch"
 	admissionv1beta1 "k8s.io/api/admission/v1beta1"
 	admissionregistrationv1beta1 "k8s.io/api/admissionregistration/v1beta1"
@@ -40,6 +36,7 @@ import (
 
 	. "knative.dev/pkg/logging/testing"
 	. "knative.dev/pkg/testing"
+	. "knative.dev/pkg/webhook/testing"
 )
 
 const (
@@ -139,7 +136,7 @@ func TestUnknownKindFails(t *testing.T) {
 		},
 	}
 
-	expectFailsWith(t, ac.Admit(TestContextWithLogger(t), req), "unhandled kind")
+	ExpectFailsWith(t, ac.Admit(TestContextWithLogger(t), req), "unhandled kind")
 }
 
 func TestUnknownVersionFails(t *testing.T) {
@@ -152,7 +149,7 @@ func TestUnknownVersionFails(t *testing.T) {
 			Kind:    "Resource",
 		},
 	}
-	expectFailsWith(t, ac.Admit(TestContextWithLogger(t), req), "unhandled kind")
+	ExpectFailsWith(t, ac.Admit(TestContextWithLogger(t), req), "unhandled kind")
 }
 
 func TestUnknownFieldFails(t *testing.T) {
@@ -176,7 +173,7 @@ func TestUnknownFieldFails(t *testing.T) {
 	}
 	req.Object.Raw = marshaled
 
-	expectFailsWith(t, ac.Admit(TestContextWithLogger(t), req),
+	ExpectFailsWith(t, ac.Admit(TestContextWithLogger(t), req),
 		`mutation failed: cannot decode incoming new object: json: unknown field "foo"`)
 }
 
@@ -298,7 +295,7 @@ func TestAdmitCreates(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			r := createResource("a name")
+			r := CreateResource("a name")
 			ctx := apis.WithinCreate(apis.WithUserInfo(
 				TestContextWithLogger(t),
 				&authenticationv1.UserInfo{Username: user1}))
@@ -310,10 +307,10 @@ func TestAdmitCreates(t *testing.T) {
 			resp := ac.Admit(ctx, createCreateResource(ctx, r))
 
 			if tc.rejection == "" {
-				expectAllowed(t, resp)
-				expectPatches(t, resp.Patch, tc.patches)
+				ExpectAllowed(t, resp)
+				ExpectPatches(t, resp.Patch, tc.patches)
 			} else {
-				expectFailsWith(t, resp, tc.rejection)
+				ExpectFailsWith(t, resp, tc.rejection)
 			}
 		})
 	}
@@ -416,7 +413,7 @@ func TestAdmitUpdates(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			old := createResource("a name")
+			old := CreateResource("a name")
 			ctx := TestContextWithLogger(t)
 
 			old.Annotations = map[string]string{
@@ -437,10 +434,10 @@ func TestAdmitUpdates(t *testing.T) {
 			resp := ac.Admit(ctx, createUpdateResource(ctx, old, new))
 
 			if tc.rejection == "" {
-				expectAllowed(t, resp)
-				expectPatches(t, resp.Patch, tc.patches)
+				ExpectAllowed(t, resp)
+				ExpectPatches(t, resp.Patch, tc.patches)
 			} else {
-				expectFailsWith(t, resp, tc.rejection)
+				ExpectFailsWith(t, resp, tc.rejection)
 			}
 		})
 	}
@@ -483,8 +480,8 @@ func TestValidCreateResourceSucceedsWithRoundTripAndDefaultPatch(t *testing.T) {
 
 	_, ac := newNonRunningTestResourceAdmissionController(t)
 	resp := ac.Admit(TestContextWithLogger(t), req)
-	expectAllowed(t, resp)
-	expectPatches(t, resp.Patch, []jsonpatch.JsonPatchOperation{{
+	ExpectAllowed(t, resp)
+	ExpectPatches(t, resp.Patch, []jsonpatch.JsonPatchOperation{{
 		Operation: "add",
 		Path:      "/spec",
 		Value:     map[string]interface{}{},
@@ -558,62 +555,6 @@ func TestUpdatingResourceController(t *testing.T) {
 
 	if len(currentWebhook.OwnerReferences) > 0 {
 		t.Errorf("Expected no OwnerReferences, got %d", len(currentWebhook.OwnerReferences))
-	}
-}
-
-func expectAllowed(t *testing.T, resp *admissionv1beta1.AdmissionResponse) {
-	t.Helper()
-	if !resp.Allowed {
-		t.Errorf("Expected allowed, but failed with %+v", resp.Result)
-	}
-}
-
-func expectFailsWith(t *testing.T, resp *admissionv1beta1.AdmissionResponse, contains string) {
-	t.Helper()
-	if resp.Allowed {
-		t.Error("Expected denial, got allowed")
-		return
-	}
-	if !strings.Contains(resp.Result.Message, contains) {
-		t.Errorf("Expected failure containing %q got %q", contains, resp.Result.Message)
-	}
-}
-
-func expectPatches(t *testing.T, a []byte, e []jsonpatch.JsonPatchOperation) {
-	t.Helper()
-	var got []jsonpatch.JsonPatchOperation
-
-	err := json.Unmarshal(a, &got)
-	if err != nil {
-		t.Errorf("Failed to unmarshal patches: %s", err)
-		return
-	}
-
-	// Give the patch a deterministic ordering.
-	// Technically this can change the meaning, but the ordering is otherwise unstable
-	// and difficult to test.
-	sort.Slice(e, func(i, j int) bool {
-		lhs, rhs := e[i], e[j]
-		if lhs.Operation != rhs.Operation {
-			return lhs.Operation < rhs.Operation
-		}
-		return lhs.Path < rhs.Path
-	})
-	sort.Slice(got, func(i, j int) bool {
-		lhs, rhs := got[i], got[j]
-		if lhs.Operation != rhs.Operation {
-			return lhs.Operation < rhs.Operation
-		}
-		return lhs.Path < rhs.Path
-	})
-
-	// Even though diff is useful, seeing the whole objects
-	// one under another helps a lot.
-	t.Logf("Got Patches:  %#v", got)
-	t.Logf("Want Patches: %#v", e)
-	if diff := cmp.Diff(e, got, cmpopts.EquateEmpty()); diff != "" {
-		t.Logf("diff Patches: %v", diff)
-		t.Errorf("expectPatches (-want, +got) = %s", diff)
 	}
 }
 

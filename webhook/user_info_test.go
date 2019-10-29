@@ -27,6 +27,7 @@ import (
 	"knative.dev/pkg/apis"
 	. "knative.dev/pkg/logging/testing"
 	. "knative.dev/pkg/testing"
+	. "knative.dev/pkg/webhook/testing"
 )
 
 func TestSetUserInfoAnnotationsWhenWithinCreate(t *testing.T) {
@@ -74,7 +75,7 @@ func TestSetUserInfoAnnotationsWhenWithinCreate(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			r := createResource("a name")
+			r := CreateResource("a name")
 
 			ctx := tc.configureContext(TestContextWithLogger(t))
 
@@ -156,7 +157,7 @@ func TestSetUserInfoAnnotationsWhenWithinUpdate(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			r := createResource("a name")
+			r := CreateResource("a name")
 
 			ctx := tc.configureContext(TestContextWithLogger(t), r)
 
