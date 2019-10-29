@@ -27,6 +27,7 @@ import (
 
 	// Injection stuff
 	kubeclient "knative.dev/pkg/client/injection/kube/client"
+	secretinformer "knative.dev/pkg/client/injection/kube/informers/core/v1/secret"
 
 	"go.uber.org/zap"
 	"golang.org/x/sync/errgroup"
@@ -39,6 +40,7 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
+	corelisters "k8s.io/client-go/listers/core/v1"
 )
 
 const (
@@ -99,6 +101,7 @@ type Webhook struct {
 	Options              Options
 	Logger               *zap.SugaredLogger
 	admissionControllers map[string]AdmissionController
+	secretlister         corelisters.SecretLister
 }
 
 // New constructs a Webhook
@@ -108,6 +111,7 @@ func New(
 ) (*Webhook, error) {
 
 	client := kubeclient.Get(ctx)
+	secretInformer := secretinformer.Get(ctx)
 	opts := GetOptions(ctx)
 	if opts == nil {
 		return nil, errors.New("context must have Options specified")
@@ -133,6 +137,7 @@ func New(
 	return &Webhook{
 		Client:               client,
 		Options:              *opts,
+		secretlister:         secretInformer.Lister(),
 		admissionControllers: acs,
 		Logger:               logger,
 	}, nil
@@ -145,7 +150,7 @@ func (ac *Webhook) Run(stop <-chan struct{}) error {
 
 	// TODO(mattmoor): Separate out the certificate creation process and use listers
 	// to fetch this from the secret below.
-	serverKey, serverCert, caCert, err := getOrGenerateKeyCertsFromSecret(ctx, ac.Client, &ac.Options)
+	_, _, caCert, err := getOrGenerateKeyCertsFromSecret(ctx, ac.Client, &ac.Options)
 	if err != nil {
 		return err
 	}
@@ -155,6 +160,19 @@ func (ac *Webhook) Run(stop <-chan struct{}) error {
 		Addr:    fmt.Sprintf(":%v", ac.Options.Port),
 		TLSConfig: &tls.Config{
 			GetCertificate: func(*tls.ClientHelloInfo) (*tls.Certificate, error) {
+				secret, err := ac.secretlister.Secrets(system.Namespace()).Get(ac.Options.SecretName)
+				if err != nil {
+					return nil, err
+				}
+
+				serverKey, ok := secret.Data[secretServerKey]
+				if !ok {
+					return nil, errors.New("server key missing")
+				}
+				serverCert, ok := secret.Data[secretServerCert]
+				if !ok {
+					return nil, errors.New("server cert missing")
+				}
 				cert, err := tls.X509KeyPair(serverCert, serverKey)
 				if err != nil {
 					return nil, err
@@ -205,7 +223,7 @@ func (ac *Webhook) Run(stop <-chan struct{}) error {
 	case <-stop:
 		return server.Close()
 	case <-ctx.Done():
-		return fmt.Errorf("webhook server bootstrap failed %v", err)
+		return fmt.Errorf("webhook server bootstrap failed %v", ctx.Err())
 	}
 }
 

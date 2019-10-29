@@ -29,6 +29,9 @@ import (
 	"testing"
 	"time"
 
+	kubeclient "knative.dev/pkg/client/injection/kube/client/fake"
+	_ "knative.dev/pkg/client/injection/kube/informers/core/v1/secret/fake"
+
 	"github.com/mattbaird/jsonpatch"
 	admissionv1beta1 "k8s.io/api/admission/v1beta1"
 	authenticationv1 "k8s.io/api/authentication/v1"
@@ -40,10 +43,11 @@ import (
 const testTimeout = time.Duration(10 * time.Second)
 
 func TestMissingContentType(t *testing.T) {
-	ac, serverURL, err := testSetup(t)
+	ac, serverURL, cancel, err := testSetup(t)
 	if err != nil {
 		t.Fatalf("testSetup() = %v", err)
 	}
+	defer cancel()
 	stopCh := make(chan struct{})
 	defer close(stopCh)
 
@@ -93,10 +97,11 @@ func TestMissingContentType(t *testing.T) {
 }
 
 func TestEmptyRequestBody(t *testing.T) {
-	ac, serverURL, err := testSetup(t)
+	ac, serverURL, cancel, err := testSetup(t)
 	if err != nil {
 		t.Fatalf("testSetup() = %v", err)
 	}
+	defer cancel()
 
 	stopCh := make(chan struct{})
 
@@ -146,10 +151,11 @@ func TestEmptyRequestBody(t *testing.T) {
 }
 
 func TestValidResponseForResource(t *testing.T) {
-	ac, serverURL, err := testSetup(t)
+	ac, serverURL, cancel, err := testSetup(t)
 	if err != nil {
 		t.Fatalf("testSetup() = %v", err)
 	}
+	defer cancel()
 
 	stopCh := make(chan struct{})
 	defer close(stopCh)
@@ -235,10 +241,11 @@ func TestValidResponseForResource(t *testing.T) {
 }
 
 func TestValidResponseForResourceWithContextDefault(t *testing.T) {
-	ac, serverURL, err := testSetup(t)
+	ac, serverURL, cancel, err := testSetup(t)
 	if err != nil {
 		t.Fatalf("testSetup() = %v", err)
 	}
+	defer cancel()
 
 	theDefault := "Some default value"
 	rac := ac.admissionControllers[testResourceValidationPath].(*ResourceAdmissionController)
@@ -343,10 +350,11 @@ func TestValidResponseForResourceWithContextDefault(t *testing.T) {
 }
 
 func TestInvalidResponseForResource(t *testing.T) {
-	ac, serverURL, err := testSetup(t)
+	ac, serverURL, cancel, err := testSetup(t)
 	if err != nil {
 		t.Fatalf("testSetup() = %v", err)
 	}
+	defer cancel()
 
 	stopCh := make(chan struct{})
 	defer close(stopCh)
@@ -457,10 +465,11 @@ func TestInvalidResponseForResource(t *testing.T) {
 }
 
 func TestValidResponseForConfigMap(t *testing.T) {
-	ac, serverURL, err := testSetup(t)
+	ac, serverURL, cancel, err := testSetup(t)
 	if err != nil {
 		t.Fatalf("testSetup() = %v", err)
 	}
+	defer cancel()
 
 	stopCh := make(chan struct{})
 	defer close(stopCh)
@@ -536,10 +545,11 @@ func TestValidResponseForConfigMap(t *testing.T) {
 }
 
 func TestInvalidResponseForConfigMap(t *testing.T) {
-	ac, serverURL, err := testSetup(t)
+	ac, serverURL, cancel, err := testSetup(t)
 	if err != nil {
 		t.Fatalf("testSetup() = %v", err)
 	}
+	defer cancel()
 
 	stopCh := make(chan struct{})
 	defer close(stopCh)
@@ -633,7 +643,9 @@ func TestInvalidResponseForConfigMap(t *testing.T) {
 func TestSetupWebhookHTTPServerError(t *testing.T) {
 	defaultOpts := newDefaultOptions()
 	defaultOpts.Port = -1 // invalid port
-	kubeClient, ac := newNonRunningTestWebhook(t, defaultOpts)
+	ctx, ac, cancel := newNonRunningTestWebhook(t, defaultOpts)
+	defer cancel()
+	kubeClient := kubeclient.Get(ctx)
 
 	nsErr := createNamespace(t, kubeClient, metav1.NamespaceSystem)
 	if nsErr != nil {
@@ -663,28 +675,29 @@ func TestSetupWebhookHTTPServerError(t *testing.T) {
 	}
 }
 
-func testSetup(t *testing.T) (*Webhook, string, error) {
+func testSetup(t *testing.T) (*Webhook, string, context.CancelFunc, error) {
 	t.Helper()
 	port, err := newTestPort()
 	if err != nil {
-		return nil, "", err
+		return nil, "", nil, err
 	}
 
 	defaultOpts := newDefaultOptions()
 	defaultOpts.Port = port
-	kubeClient, ac := newNonRunningTestWebhook(t, defaultOpts)
+	ctx, ac, cancel := newNonRunningTestWebhook(t, defaultOpts)
+	kubeClient := kubeclient.Get(ctx)
 
 	nsErr := createNamespace(t, kubeClient, metav1.NamespaceSystem)
 	if nsErr != nil {
-		return nil, "", nsErr
+		return nil, "", nil, nsErr
 	}
 
 	cMapsErr := createTestConfigMap(t, kubeClient)
 	if cMapsErr != nil {
-		return nil, "", cMapsErr
+		return nil, "", nil, cMapsErr
 	}
 
 	createDeployment(kubeClient)
 	resetMetrics()
-	return ac, fmt.Sprintf("0.0.0.0:%d", port), nil
+	return ac, fmt.Sprintf("0.0.0.0:%d", port), cancel, nil
 }
