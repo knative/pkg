@@ -28,11 +28,12 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"golang.org/x/sync/errgroup"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	fakekubeclientset "k8s.io/client-go/kubernetes/fake"
 	fakekc "knative.dev/pkg/client/injection/kube/client/fake"
+	kubeclient "knative.dev/pkg/client/injection/kube/client/fake"
 
 	"knative.dev/pkg/configmap"
-	. "knative.dev/pkg/logging/testing"
+	"knative.dev/pkg/controller"
+	. "knative.dev/pkg/reconciler/testing"
 	"knative.dev/pkg/system"
 	_ "knative.dev/pkg/system/testing"
 )
@@ -53,16 +54,30 @@ const (
 )
 
 func newNonRunningTestWebhook(t *testing.T, options Options) (
-	kubeClient *fakekubeclientset.Clientset,
-	ac *Webhook) {
+	ctx context.Context, ac *Webhook, cancel context.CancelFunc) {
 	t.Helper()
 
 	// Create fake clients
-	ctx := TestContextWithLogger(t)
-	ctx, kubeClient = fakekc.With(ctx, initialConfigWebhook, initialResourceWebhook)
+	ctx, cancel, informers := SetupFakeContextWithCancel(t)
 	ctx = WithOptions(ctx, options)
 
-	ac, err := NewTestWebhook(ctx)
+	if err := controller.StartInformers(ctx.Done(), informers...); err != nil {
+		t.Fatalf("StartInformers() = %v", err)
+	}
+	kc := kubeclient.Get(ctx)
+
+	_, err := kc.AdmissionregistrationV1beta1().MutatingWebhookConfigurations().Create(
+		initialResourceWebhook)
+	if err != nil {
+		t.Errorf("Unable to create %q: %v", initialResourceWebhook.Name, err)
+	}
+	_, err = kc.AdmissionregistrationV1beta1().ValidatingWebhookConfigurations().Create(
+		initialConfigWebhook)
+	if err != nil {
+		t.Errorf("Unable to create %q: %v", initialConfigWebhook.Name, err)
+	}
+
+	ac, err = NewTestWebhook(ctx)
 	if err != nil {
 		t.Fatalf("Failed to create new admission controller: %v", err)
 	}
@@ -71,7 +86,8 @@ func newNonRunningTestWebhook(t *testing.T, options Options) (
 
 func TestRegistrationStopChanFire(t *testing.T) {
 	opts := newDefaultOptions()
-	_, ac := newNonRunningTestWebhook(t, opts)
+	_, ac, cancel := newNonRunningTestWebhook(t, opts)
+	defer cancel()
 
 	ac.Options.RegistrationDelay = 1 * time.Minute
 	stopCh := make(chan struct{})
@@ -97,9 +113,10 @@ func TestCertConfigurationForAlreadyGeneratedSecret(t *testing.T) {
 	ns := system.Namespace()
 	opts := newDefaultOptions()
 	opts.SecretName = secretName
-	kubeClient, ac := newNonRunningTestWebhook(t, opts)
+	ctx, ac, cancel := newNonRunningTestWebhook(t, opts)
+	defer cancel()
+	kubeClient := fakekc.Get(ctx)
 
-	ctx := TestContextWithLogger(t)
 	newSecret, err := generateSecret(ctx, &opts)
 	if err != nil {
 		t.Fatalf("Failed to generate secret: %v", err)
@@ -138,9 +155,10 @@ func TestCertConfigurationForGeneratedSecret(t *testing.T) {
 	secretName := "test-secret"
 	opts := newDefaultOptions()
 	opts.SecretName = secretName
-	kubeClient, ac := newNonRunningTestWebhook(t, opts)
+	ctx, ac, cancel := newNonRunningTestWebhook(t, opts)
+	defer cancel()
+	kubeClient := fakekc.Get(ctx)
 
-	ctx := TestContextWithLogger(t)
 	createNamespace(t, kubeClient, metav1.NamespaceSystem)
 	createTestConfigMap(t, kubeClient)
 
