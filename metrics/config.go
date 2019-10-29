@@ -46,11 +46,10 @@ const (
 	ReportingPeriodKey                  = "metrics.reporting-period-seconds"
 	StackdriverCustomMetricSubDomainKey = "metrics.stackdriver-custom-metrics-subdomain"
 	// Stackdriver client configuration keys
-	stackdriverProjectIDKey          = "metrics.stackdriver-project-id"
-	stackdriverGCPLocationKey        = "metrics.stackdriver-gcp-location"
-	stackdriverClusterNameKey        = "metrics.stackdriver-cluster-name"
-	stackdriverGCPSecretNameKey      = "metrics.stackdriver-gcp-secret-name"
-	stackdriverGCPSecretNamespaceKey = "metrics.stackdriver-gcp-secret-namespace"
+	stackdriverProjectIDKey   = "metrics.stackdriver-project-id"
+	stackdriverGCPLocationKey = "metrics.stackdriver-gcp-location"
+	stackdriverClusterNameKey = "metrics.stackdriver-cluster-name"
+	stackdriverUseSecretKey   = "metrics.stackdriver-use-secret"
 
 	// Stackdriver is used for Stackdriver backend
 	Stackdriver metricsBackend = "stackdriver"
@@ -119,24 +118,21 @@ type stackdriverClientConfig struct {
 	// ClusterName is the cluster name with which the data will be associated in Stackdriver.
 	// Required when the Kubernetes cluster is not hosted on GCE.
 	ClusterName string
-	// GCPSecretName is the optional GCP service account key which will be used to
-	// authenticate with Stackdriver. If not provided, Google Application Default Credentials
+	// UseSecret is whether the credentials stored in a Kubernetes Secret should be used to
+	// authenticate with Stackdriver. The Secret name and namespace can be specified by calling
+	// metrics.SetStackdriverSecretLocation.
+	// If UseSecret is false, Google Application Default Credentials
 	// will be used (https://cloud.google.com/docs/authentication/production).
-	GCPSecretName string
-	// GCPSecretNamespace is the Kubernetes namespace where GCPSecretName is located.
-	// The Kubernetes ServiceAccount used by the pod that is exporting data to
-	// Stackdriver should have access to Secrets in this namespace.
-	GCPSecretNamespace string
+	UseSecret bool
 }
 
 // newStackdriverClientConfigFromMap creates a stackdriverClientConfig from the given map
 func newStackdriverClientConfigFromMap(config map[string]string) *stackdriverClientConfig {
 	return &stackdriverClientConfig{
-		ProjectID:          config[stackdriverProjectIDKey],
-		GCPLocation:        config[stackdriverGCPLocationKey],
-		ClusterName:        config[stackdriverClusterNameKey],
-		GCPSecretName:      config[stackdriverGCPSecretNameKey],
-		GCPSecretNamespace: config[stackdriverGCPSecretNamespaceKey],
+		ProjectID:   config[stackdriverProjectIDKey],
+		GCPLocation: config[stackdriverGCPLocationKey],
+		ClusterName: config[stackdriverClusterNameKey],
+		UseSecret:   strings.EqualFold(config[stackdriverUseSecretKey], "true"),
 	}
 }
 

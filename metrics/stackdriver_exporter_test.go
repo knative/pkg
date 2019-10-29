@@ -360,11 +360,10 @@ func TestNewStackdriverExporterWithMetadata(t *testing.T) {
 		name: "stackdriverClientConfigOnly",
 		config: &metricsConfig{
 			stackdriverClientConfig: stackdriverClientConfig{
-				ProjectID:          "project",
-				GCPLocation:        "us-west1",
-				ClusterName:        "cluster",
-				GCPSecretName:      "secret",
-				GCPSecretNamespace: "secret-ns",
+				ProjectID:   "project",
+				GCPLocation: "us-west1",
+				ClusterName: "cluster",
+				UseSecret:   true,
 			},
 		},
 		expectSuccess: true,
@@ -380,11 +379,10 @@ func TestNewStackdriverExporterWithMetadata(t *testing.T) {
 			stackdriverCustomMetricTypePrefix: path.Join(customMetricTypePrefix, defaultCustomMetricSubDomain, testComponent),
 			stackdriverCustomMetricsSubDomain: defaultCustomMetricSubDomain,
 			stackdriverClientConfig: stackdriverClientConfig{
-				ProjectID:          "project",
-				GCPLocation:        "us-west1",
-				ClusterName:        "cluster",
-				GCPSecretName:      "secret",
-				GCPSecretNamespace: "secret-ns",
+				ProjectID:   "project",
+				GCPLocation: "us-west1",
+				ClusterName: "cluster",
+				UseSecret:   true,
 			},
 		},
 		expectSuccess: true,
@@ -400,11 +398,10 @@ func TestNewStackdriverExporterWithMetadata(t *testing.T) {
 			stackdriverCustomMetricTypePrefix: path.Join(customMetricTypePrefix, defaultCustomMetricSubDomain, testComponent),
 			stackdriverCustomMetricsSubDomain: defaultCustomMetricSubDomain,
 			stackdriverClientConfig: stackdriverClientConfig{
-				ProjectID:          "project",
-				GCPLocation:        "narnia",
-				ClusterName:        "cluster",
-				GCPSecretName:      "secret",
-				GCPSecretNamespace: "secret-ns",
+				ProjectID:   "project",
+				GCPLocation: "narnia",
+				ClusterName: "cluster",
+				UseSecret:   true,
 			},
 		},
 		expectSuccess: true,
@@ -420,10 +417,9 @@ func TestNewStackdriverExporterWithMetadata(t *testing.T) {
 			stackdriverCustomMetricTypePrefix: path.Join(customMetricTypePrefix, defaultCustomMetricSubDomain, testComponent),
 			stackdriverCustomMetricsSubDomain: defaultCustomMetricSubDomain,
 			stackdriverClientConfig: stackdriverClientConfig{
-				GCPLocation:        "narnia",
-				ClusterName:        "cluster",
-				GCPSecretName:      "secret",
-				GCPSecretNamespace: "secret-ns",
+				GCPLocation: "narnia",
+				ClusterName: "cluster",
+				UseSecret:   true,
 			},
 		},
 		expectSuccess: true,
@@ -465,4 +461,33 @@ func TestEnsureKubeClient(t *testing.T) {
 			t.Error("Expected ensureKubeclient to fail due to not being in a Kubernetes cluster. Did the function run?")
 		}
 	}
+}
+
+func assertStringsEqual(t *testing.T, description string, expected string, actual string) {
+	if expected != actual {
+		t.Errorf("Expected %v to be set correctly. Want [%v], Got [%v]", description, expected, actual)
+	}
+}
+
+func TestSetStackdriverSecretLocation(t *testing.T) {
+	// Reset global state after test
+	defer func() {
+		secretName = DefaultSecretName
+		secretNamespace = DefaultSecretNamespace
+	}()
+
+	// Sanity checks
+	assertStringsEqual(t, "DefaultSecretName", secretName, DefaultSecretName)
+	assertStringsEqual(t, "DefaultSecretNamespace", secretNamespace, DefaultSecretNamespace)
+
+	testName, testNamespace := "test-name", "test-namespace"
+	SetStackdriverSecretLocation("test-name", "test-namespace")
+
+	assertStringsEqual(t, "secretName", secretName, testName)
+	assertStringsEqual(t, "secretNamespace", secretNamespace, testNamespace)
+
+	// Check name and namespace can only be set once
+	SetStackdriverSecretLocation("random-name", "random-namespace")
+	assertStringsEqual(t, "secretName", secretName, testName)
+	assertStringsEqual(t, "secretNamespace", secretNamespace, testNamespace)
 }

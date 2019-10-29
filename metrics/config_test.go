@@ -175,42 +175,11 @@ var (
 			name: "validStackdriver",
 			ops: ExporterOptions{
 				ConfigMap: map[string]string{
-					"metrics.backend-destination":              "stackdriver",
-					"metrics.stackdriver-project-id":           anotherProj,
-					"metrics.stackdriver-gcp-location":         "us-west1",
-					"metrics.stackdriver-cluster-name":         "cluster",
-					"metrics.stackdriver-gcp-secret-name":      "secret",
-					"metrics.stackdriver-gcp-secret-namespace": "secret-ns",
-				},
-				Domain:    servingDomain,
-				Component: testComponent,
-			},
-			expectedConfig: metricsConfig{
-				domain:                            servingDomain,
-				component:                         testComponent,
-				backendDestination:                Stackdriver,
-				reportingPeriod:                   60 * time.Second,
-				isStackdriverBackend:              true,
-				stackdriverMetricTypePrefix:       path.Join(servingDomain, testComponent),
-				stackdriverCustomMetricTypePrefix: path.Join(customMetricTypePrefix, defaultCustomMetricSubDomain, testComponent),
-				stackdriverCustomMetricsSubDomain: defaultCustomMetricSubDomain,
-				stackdriverClientConfig: stackdriverClientConfig{
-					ProjectID:          anotherProj,
-					GCPLocation:        "us-west1",
-					ClusterName:        "cluster",
-					GCPSecretName:      "secret",
-					GCPSecretNamespace: "secret-ns",
-				},
-			},
-			expectedNewExporter: true,
-		}, {
-			name: "validPartialStackdriver",
-			ops: ExporterOptions{
-				ConfigMap: map[string]string{
 					"metrics.backend-destination":      "stackdriver",
 					"metrics.stackdriver-project-id":   anotherProj,
 					"metrics.stackdriver-gcp-location": "us-west1",
 					"metrics.stackdriver-cluster-name": "cluster",
+					"metrics.stackdriver-use-secret":   "true",
 				},
 				Domain:    servingDomain,
 				Component: testComponent,
@@ -227,6 +196,33 @@ var (
 				stackdriverClientConfig: stackdriverClientConfig{
 					ProjectID:   anotherProj,
 					GCPLocation: "us-west1",
+					ClusterName: "cluster",
+					UseSecret:   true,
+				},
+			},
+			expectedNewExporter: true,
+		}, {
+			name: "validPartialStackdriver",
+			ops: ExporterOptions{
+				ConfigMap: map[string]string{
+					"metrics.backend-destination":      "stackdriver",
+					"metrics.stackdriver-project-id":   anotherProj,
+					"metrics.stackdriver-cluster-name": "cluster",
+				},
+				Domain:    servingDomain,
+				Component: testComponent,
+			},
+			expectedConfig: metricsConfig{
+				domain:                            servingDomain,
+				component:                         testComponent,
+				backendDestination:                Stackdriver,
+				reportingPeriod:                   60 * time.Second,
+				isStackdriverBackend:              true,
+				stackdriverMetricTypePrefix:       path.Join(servingDomain, testComponent),
+				stackdriverCustomMetricTypePrefix: path.Join(customMetricTypePrefix, defaultCustomMetricSubDomain, testComponent),
+				stackdriverCustomMetricsSubDomain: defaultCustomMetricSubDomain,
+				stackdriverClientConfig: stackdriverClientConfig{
+					ProjectID:   anotherProj,
 					ClusterName: "cluster",
 				},
 			},
@@ -774,18 +770,16 @@ func TestNewStackdriverConfigFromMap(t *testing.T) {
 	}{{
 		name: "fullSdConfig",
 		stringMap: map[string]string{
-			"metrics.stackdriver-project-id":           "project",
-			"metrics.stackdriver-gcp-location":         "us-west1",
-			"metrics.stackdriver-cluster-name":         "cluster",
-			"metrics.stackdriver-gcp-secret-name":      "secret",
-			"metrics.stackdriver-gcp-secret-namespace": "non-default",
+			"metrics.stackdriver-project-id":   "project",
+			"metrics.stackdriver-gcp-location": "us-west1",
+			"metrics.stackdriver-cluster-name": "cluster",
+			"metrics.stackdriver-use-secret":   "true",
 		},
 		expectedConfig: stackdriverClientConfig{
-			ProjectID:          "project",
-			GCPLocation:        "us-west1",
-			ClusterName:        "cluster",
-			GCPSecretName:      "secret",
-			GCPSecretNamespace: "non-default",
+			ProjectID:   "project",
+			GCPLocation: "us-west1",
+			ClusterName: "cluster",
+			UseSecret:   true,
 		},
 	}, {
 		name:           "emptySdConfig",
@@ -802,6 +796,7 @@ func TestNewStackdriverConfigFromMap(t *testing.T) {
 			ProjectID:   "project",
 			GCPLocation: "us-west1",
 			ClusterName: "cluster",
+			UseSecret:   false,
 		},
 	}, {
 		name:           "nil",
