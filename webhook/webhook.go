@@ -34,19 +34,13 @@ import (
 	"knative.dev/pkg/logging"
 	"knative.dev/pkg/logging/logkey"
 	"knative.dev/pkg/system"
+	certresources "knative.dev/pkg/webhook/certificates/resources"
 
 	admissionv1beta1 "k8s.io/api/admission/v1beta1"
-	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	corelisters "k8s.io/client-go/listers/core/v1"
-)
-
-const (
-	secretServerKey  = "server-key.pem"
-	secretServerCert = "server-cert.pem"
-	secretCACert     = "ca-cert.pem"
 )
 
 var (
@@ -165,11 +159,11 @@ func (ac *Webhook) Run(stop <-chan struct{}) error {
 					return nil, err
 				}
 
-				serverKey, ok := secret.Data[secretServerKey]
+				serverKey, ok := secret.Data[certresources.ServerKey]
 				if !ok {
 					return nil, errors.New("server key missing")
 				}
-				serverCert, ok := secret.Data[secretServerCert]
+				serverCert, ok := secret.Data[certresources.ServerCert]
 				if !ok {
 					return nil, errors.New("server cert missing")
 				}
@@ -293,7 +287,8 @@ func getOrGenerateKeyCertsFromSecret(ctx context.Context, client kubernetes.Inte
 			return nil, nil, nil, err
 		}
 		logger.Info("Did not find existing secret, creating one")
-		newSecret, err := generateSecret(ctx, options)
+		newSecret, err := certresources.MakeSecret(
+			ctx, options.SecretName, system.Namespace(), options.ServiceName)
 		if err != nil {
 			return nil, nil, nil, err
 		}
@@ -311,13 +306,13 @@ func getOrGenerateKeyCertsFromSecret(ctx context.Context, client kubernetes.Inte
 	}
 
 	var ok bool
-	if serverKey, ok = secret.Data[secretServerKey]; !ok {
+	if serverKey, ok = secret.Data[certresources.ServerKey]; !ok {
 		return nil, nil, nil, errors.New("server key missing")
 	}
-	if serverCert, ok = secret.Data[secretServerCert]; !ok {
+	if serverCert, ok = secret.Data[certresources.ServerCert]; !ok {
 		return nil, nil, nil, errors.New("server cert missing")
 	}
-	if caCert, ok = secret.Data[secretCACert]; !ok {
+	if caCert, ok = secret.Data[certresources.CACert]; !ok {
 		return nil, nil, nil, errors.New("ca cert missing")
 	}
 	return serverKey, serverCert, caCert, nil
@@ -329,22 +324,4 @@ func makeErrorStatus(reason string, args ...interface{}) *admissionv1beta1.Admis
 		Result:  &result,
 		Allowed: false,
 	}
-}
-
-func generateSecret(ctx context.Context, options *Options) (*corev1.Secret, error) {
-	serverKey, serverCert, caCert, err := CreateCerts(ctx, options.ServiceName, system.Namespace())
-	if err != nil {
-		return nil, err
-	}
-	return &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      options.SecretName,
-			Namespace: system.Namespace(),
-		},
-		Data: map[string][]byte{
-			secretServerKey:  serverKey,
-			secretServerCert: serverCert,
-			secretCACert:     caCert,
-		},
-	}, nil
 }
