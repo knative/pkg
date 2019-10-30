@@ -57,7 +57,7 @@ var (
 	kubeclientInitErr error
 
 	// stackdriverMtx protects setting secretNamespace and secretName
-	stackdriverMtx sync.Mutex
+	stackdriverMtx sync.RWMutex
 	// secretName is the name of the k8s Secret to pass to Stackdriver client to authenticate with Stackdriver.
 	secretName = StackdriverSecretNameDefault
 	// secretNamespace is the namespace to search for a k8s Secret to pass to Stackdriver client to authenticate with Stackdriver.
@@ -192,6 +192,9 @@ func getStackdriverSecret(sdconfig *stackdriverClientConfig) (*corev1.Secret, er
 	if err := ensureKubeclient(); err != nil {
 		return nil, err
 	}
+
+	stackdriverMtx.RLock()
+	defer stackdriverMtx.RUnlock()
 
 	sec, secErr := kubeclient.CoreV1().Secrets(secretNamespace).Get(secretName, metav1.GetOptions{})
 
