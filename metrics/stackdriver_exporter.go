@@ -40,10 +40,10 @@ const (
 	// defaultCustomMetricSubDomain is the default subdomain to use for unsupported metrics by monitored resource types.
 	// See: https://cloud.google.com/monitoring/api/ref_v3/rest/v3/projects.metricDescriptors#MetricDescriptor
 	defaultCustomMetricSubDomain = "knative.dev"
-	// DefaultSecretNamespace is the default namespace to search for a k8s Secret to pass to Stackdriver client to authenticate with Stackdriver.
-	DefaultSecretNamespace = "default"
-	// DefaultSecretName is the default name of the k8s Secret to pass to Stackdriver client to authenticate with Stackdriver.
-	DefaultSecretName = "stackdriver-service-account-key"
+	// StackdriverSecretNamespaceDefault is the default namespace to search for a k8s Secret to pass to Stackdriver client to authenticate with Stackdriver.
+	StackdriverSecretNamespaceDefault = "default"
+	// StackdriverSecretNameDefault is the default name of the k8s Secret to pass to Stackdriver client to authenticate with Stackdriver.
+	StackdriverSecretNameDefault = "stackdriver-service-account-key"
 	// secretDataFieldKey is the name of the k8s Secret field that contains the Secret's key.
 	secretDataFieldKey = "key.json"
 )
@@ -56,12 +56,12 @@ var (
 	// kubeclientInitErr capture an error during initClientOnce
 	kubeclientInitErr error
 
-	// setStackdriverSecretLocation protects setting secretNamespace and secretName
-	setStackdriverSecretLocation sync.Once
+	// stackdriverMtx protects setting secretNamespace and secretName
+	stackdriverMtx sync.Mutex
 	// secretName is the name of the k8s Secret to pass to Stackdriver client to authenticate with Stackdriver.
-	secretName = DefaultSecretName
+	secretName = StackdriverSecretNameDefault
 	// secretNamespace is the namespace to search for a k8s Secret to pass to Stackdriver client to authenticate with Stackdriver.
-	secretNamespace = DefaultSecretNamespace
+	secretNamespace = StackdriverSecretNamespaceDefault
 )
 
 // SetStackdriverSecretLocation allows setting non-default values for the name and namespace of
@@ -69,10 +69,10 @@ var (
 // The Secret is only used if metricsConfig.stackdriverClientConfig.UseSecret is true.
 // This can only be called once.
 func SetStackdriverSecretLocation(name string, namespace string) {
-	setStackdriverSecretLocation.Do(func() {
-		secretName = name
-		secretNamespace = namespace
-	})
+	stackdriverMtx.Lock()
+	defer stackdriverMtx.Unlock()
+	secretName = name
+	secretNamespace = namespace
 }
 
 func init() {
@@ -121,7 +121,11 @@ func getStackdriverExporterClientOptions(sdconfig *stackdriverClientConfig) ([]o
 			return co, err
 		}
 
-		co = append(co, convertSecretToExporterOption(secret))
+		if opt, err := convertSecretToExporterOption(secret); err == nil {
+			co = append(co, opt)
+		} else {
+			return co, err
+		}
 	}
 
 	return co, nil
@@ -199,8 +203,11 @@ func getStackdriverSecret(sdconfig *stackdriverClientConfig) (*corev1.Secret, er
 }
 
 // convertSecretToExporterOption converts a Kubernetes Secret to an OpenCensus Stackdriver Exporter Option.
-func convertSecretToExporterOption(secret *corev1.Secret) option.ClientOption {
-	return option.WithCredentialsJSON(secret.Data[secretDataFieldKey])
+func convertSecretToExporterOption(secret *corev1.Secret) (option.ClientOption, error) {
+	if data, ok := secret.Data[secretDataFieldKey]; ok {
+		return option.WithCredentialsJSON(data), nil
+	}
+	return nil, fmt.Errorf("Expected Secret to store key in data field named [%v]", secretDataFieldKey)
 }
 
 // ensureKubeclient is the lazy initializer for kubeclient.

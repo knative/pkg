@@ -472,13 +472,13 @@ func assertStringsEqual(t *testing.T, description string, expected string, actua
 func TestSetStackdriverSecretLocation(t *testing.T) {
 	// Reset global state after test
 	defer func() {
-		secretName = DefaultSecretName
-		secretNamespace = DefaultSecretNamespace
+		secretName = StackdriverSecretNameDefault
+		secretNamespace = StackdriverSecretNamespaceDefault
 	}()
 
 	// Sanity checks
-	assertStringsEqual(t, "DefaultSecretName", secretName, DefaultSecretName)
-	assertStringsEqual(t, "DefaultSecretNamespace", secretNamespace, DefaultSecretNamespace)
+	assertStringsEqual(t, "DefaultSecretName", secretName, StackdriverSecretNameDefault)
+	assertStringsEqual(t, "DefaultSecretNamespace", secretNamespace, StackdriverSecretNamespaceDefault)
 
 	testName, testNamespace := "test-name", "test-namespace"
 	SetStackdriverSecretLocation("test-name", "test-namespace")
@@ -486,8 +486,8 @@ func TestSetStackdriverSecretLocation(t *testing.T) {
 	assertStringsEqual(t, "secretName", secretName, testName)
 	assertStringsEqual(t, "secretNamespace", secretNamespace, testNamespace)
 
-	// Check name and namespace can only be set once
-	SetStackdriverSecretLocation("random-name", "random-namespace")
-	assertStringsEqual(t, "secretName", secretName, testName)
-	assertStringsEqual(t, "secretNamespace", secretNamespace, testNamespace)
+	randomName, randomNamespace := "random-name", "random-namespace"
+	SetStackdriverSecretLocation(randomName, randomNamespace)
+	assertStringsEqual(t, "secretName", secretName, randomName)
+	assertStringsEqual(t, "secretNamespace", secretNamespace, randomNamespace)
 }
