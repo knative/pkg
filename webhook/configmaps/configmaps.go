@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package webhook
+package configmaps
 
 import (
 	"bytes"
@@ -26,49 +26,62 @@ import (
 	admissionv1beta1 "k8s.io/api/admission/v1beta1"
 	admissionregistrationv1beta1 "k8s.io/api/admissionregistration/v1beta1"
 	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/kubernetes"
+	admissionlisters "k8s.io/client-go/listers/admissionregistration/v1beta1"
+	corelisters "k8s.io/client-go/listers/core/v1"
 
 	"knative.dev/pkg/configmap"
+	"knative.dev/pkg/controller"
 	"knative.dev/pkg/kmp"
 	"knative.dev/pkg/logging"
 	"knative.dev/pkg/ptr"
+	"knative.dev/pkg/system"
+	"knative.dev/pkg/webhook"
+	certresources "knative.dev/pkg/webhook/certificates/resources"
 )
 
-// ConfigValidationController implements the AdmissionController for ConfigMaps
-type ConfigValidationController struct {
-	// name of the ValidatingWebhookConfiguration
-	name string
-	// path that the webhook should serve on
+// reconciler implements the AdmissionController for ConfigMaps
+type reconciler struct {
+	name         string
 	path         string
 	constructors map[string]reflect.Value
+
+	client       kubernetes.Interface
+	vwhlister    admissionlisters.ValidatingWebhookConfigurationLister
+	secretlister corelisters.SecretLister
+
+	secretName string
 }
 
-// NewConfigValidationController constructs a ConfigValidationController
-func NewConfigValidationController(
-	name, path string,
-	constructors configmap.Constructors) AdmissionController {
-	cfgValidations := &ConfigValidationController{
-		name:         name,
-		path:         path,
-		constructors: make(map[string]reflect.Value),
+var _ controller.Reconciler = (*reconciler)(nil)
+var _ webhook.AdmissionController = (*reconciler)(nil)
+
+// Reconcile implements controller.Reconciler
+func (ac *reconciler) Reconcile(ctx context.Context, key string) error {
+	logger := logging.FromContext(ctx)
+
+	secret, err := ac.secretlister.Secrets(system.Namespace()).Get(ac.secretName)
+	if err != nil {
+		logger.Errorf("Error fetching secret: %v", err)
+		return err
 	}
 
-	for configName, constructor := range constructors {
-		cfgValidations.registerConfig(configName, constructor)
+	caCert, ok := secret.Data[certresources.CACert]
+	if !ok {
+		return fmt.Errorf("secret %q is missing %q key", ac.secretName, certresources.CACert)
 	}
 
-	return cfgValidations
+	return ac.reconcileValidatingWebhook(ctx, caCert)
 }
 
 // Path implements AdmissionController
-func (ac *ConfigValidationController) Path() string {
+func (ac *reconciler) Path() string {
 	return ac.path
 }
 
 // Admit implements AdmissionController
-func (ac *ConfigValidationController) Admit(ctx context.Context, request *admissionv1beta1.AdmissionRequest) *admissionv1beta1.AdmissionResponse {
+func (ac *reconciler) Admit(ctx context.Context, request *admissionv1beta1.AdmissionRequest) *admissionv1beta1.AdmissionResponse {
 	logger := logging.FromContext(ctx)
 	switch request.Operation {
 	case admissionv1beta1.Create, admissionv1beta1.Update:
@@ -78,7 +91,7 @@ func (ac *ConfigValidationController) Admit(ctx context.Context, request *admiss
 	}
 
 	if err := ac.validate(ctx, request); err != nil {
-		return makeErrorStatus("validation failed: %v", err)
+		return webhook.MakeErrorStatus("validation failed: %v", err)
 	}
 
 	return &admissionv1beta1.AdmissionResponse{
@@ -86,9 +99,7 @@ func (ac *ConfigValidationController) Admit(ctx context.Context, request *admiss
 	}
 }
 
-// Register implements AdmissionController
-func (ac *ConfigValidationController) Register(ctx context.Context, kubeClient kubernetes.Interface, caCert []byte) error {
-	client := kubeClient.AdmissionregistrationV1beta1().ValidatingWebhookConfigurations()
+func (ac *reconciler) reconcileValidatingWebhook(ctx context.Context, caCert []byte) error {
 	logger := logging.FromContext(ctx)
 
 	ruleScope := admissionregistrationv1beta1.NamespacedScope
@@ -105,7 +116,7 @@ func (ac *ConfigValidationController) Register(ctx context.Context, kubeClient k
 		},
 	}}
 
-	configuredWebhook, err := client.Get(ac.name, metav1.GetOptions{})
+	configuredWebhook, err := ac.vwhlister.Get(ac.name)
 	if err != nil {
 		return fmt.Errorf("error retrieving webhook: %v", err)
 	}
@@ -125,14 +136,15 @@ func (ac *ConfigValidationController) Register(ctx context.Context, kubeClient k
 		if webhook.Webhooks[i].ClientConfig.Service == nil {
 			return fmt.Errorf("missing service reference for webhook: %s", wh.Name)
 		}
-		webhook.Webhooks[i].ClientConfig.Service.Path = ptr.String(ac.path)
+		webhook.Webhooks[i].ClientConfig.Service.Path = ptr.String(ac.Path())
 	}
 
 	if ok, err := kmp.SafeEqual(configuredWebhook, webhook); err != nil {
 		return fmt.Errorf("error diffing webhooks: %v", err)
 	} else if !ok {
 		logger.Info("Updating webhook")
-		if _, err := client.Update(webhook); err != nil {
+		vwhclient := ac.client.AdmissionregistrationV1beta1().ValidatingWebhookConfigurations()
+		if _, err := vwhclient.Update(webhook); err != nil {
 			return fmt.Errorf("failed to update webhook: %v", err)
 		}
 	} else {
@@ -142,7 +154,7 @@ func (ac *ConfigValidationController) Register(ctx context.Context, kubeClient k
 	return nil
 }
 
-func (ac *ConfigValidationController) validate(ctx context.Context, req *admissionv1beta1.AdmissionRequest) error {
+func (ac *reconciler) validate(ctx context.Context, req *admissionv1beta1.AdmissionRequest) error {
 	logger := logging.FromContext(ctx)
 	kind := req.Kind
 	newBytes := req.Object.Raw
@@ -186,7 +198,7 @@ func (ac *ConfigValidationController) validate(ctx context.Context, req *admissi
 	return err
 }
 
-func (ac *ConfigValidationController) registerConfig(name string, constructor interface{}) {
+func (ac *reconciler) registerConfig(name string, constructor interface{}) {
 	if err := configmap.ValidateConstructor(constructor); err != nil {
 		panic(err)
 	}
