@@ -35,7 +35,11 @@ const (
 
 // MakeSecret synthesizes a Kubernetes Secret object with the keys specified by
 // ServerKey, ServerCert, and CACert populated with a fresh certificate.
-func MakeSecret(ctx context.Context, name, namespace, serviceName string) (*corev1.Secret, error) {
+// This is mutable to make deterministic testing possible.
+var MakeSecret = MakeSecretInternal
+
+// MakeSecretInternal is only public so MakeSecret can be restored in testing.  Use MakeSecret.
+func MakeSecretInternal(ctx context.Context, name, namespace, serviceName string) (*corev1.Secret, error) {
 	serverKey, serverCert, caCert, err := CreateCerts(ctx, serviceName, namespace)
 	if err != nil {
 		return nil, err
