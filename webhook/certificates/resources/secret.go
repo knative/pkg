@@ -38,6 +38,7 @@ const (
 // This is mutable to make deterministic testing possible.
 var MakeSecret = MakeSecretInternal
 
+// MakeSecretInternal is only public so MakeSecret can be restored in testing.  Use MakeSecret.
 func MakeSecretInternal(ctx context.Context, name, namespace, serviceName string) (*corev1.Secret, error) {
 	serverKey, serverCert, caCert, err := CreateCerts(ctx, serviceName, namespace)
 	if err != nil {

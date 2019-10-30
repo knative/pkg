@@ -28,21 +28,21 @@ import (
 	certresources "knative.dev/pkg/webhook/certificates/resources"
 )
 
-type Reconciler struct {
+type reconciler struct {
 	client       kubernetes.Interface
 	secretlister corelisters.SecretLister
 	secretName   string
 	serviceName  string
 }
 
-var _ controller.Reconciler = (*Reconciler)(nil)
+var _ controller.Reconciler = (*reconciler)(nil)
 
 // Reconcile implements controller.Reconciler
-func (r *Reconciler) Reconcile(ctx context.Context, key string) error {
+func (r *reconciler) Reconcile(ctx context.Context, key string) error {
 	return r.reconcileCertificate(ctx)
 }
 
-func (r *Reconciler) reconcileCertificate(ctx context.Context) error {
+func (r *reconciler) reconcileCertificate(ctx context.Context) error {
 	logger := logging.FromContext(ctx)
 
 	secret, err := r.secretlister.Secrets(system.Namespace()).Get(r.secretName)
@@ -61,11 +61,11 @@ func (r *Reconciler) reconcileCertificate(ctx context.Context) error {
 	}
 
 	if _, haskey := secret.Data[certresources.ServerKey]; !haskey {
-		logger.Infof("certificate secret %q is missing key %q", r.secretName, certresources.ServerKey)
+		logger.Infof("Certificate secret %q is missing key %q", r.secretName, certresources.ServerKey)
 	} else if _, haskey := secret.Data[certresources.ServerCert]; !haskey {
-		logger.Infof("certificate secret %q is missing key %q", r.secretName, certresources.ServerCert)
+		logger.Infof("Certificate secret %q is missing key %q", r.secretName, certresources.ServerCert)
 	} else if _, haskey := secret.Data[certresources.CACert]; !haskey {
-		logger.Infof("certificate secret %q is missing key %q", r.secretName, certresources.CACert)
+		logger.Infof("Certificate secret %q is missing key %q", r.secretName, certresources.CACert)
 	} else {
 		// It has all of the keys, it's good.
 		return nil

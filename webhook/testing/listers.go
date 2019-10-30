@@ -38,10 +38,12 @@ var clientSetSchemes = []func(*runtime.Scheme) error{
 	autoscalingv2beta1.AddToScheme,
 }
 
+// Listers is used to synthesize informer-style Listers from fixed lists of resources in tests.
 type Listers struct {
 	sorter testing.ObjectSorter
 }
 
+// NewListers constructs a Listers from a collection of objects.
 func NewListers(objs []runtime.Object) Listers {
 	scheme := NewScheme()
 
@@ -54,6 +56,7 @@ func NewListers(objs []runtime.Object) Listers {
 	return ls
 }
 
+// NewScheme constructs a scheme from the set of client schemes supported by this package.
 func NewScheme() *runtime.Scheme {
 	scheme := runtime.NewScheme()
 
@@ -63,6 +66,7 @@ func NewScheme() *runtime.Scheme {
 	return scheme
 }
 
+// NewScheme constructs a scheme from the set of client schemes supported by this lister.
 func (*Listers) NewScheme() *runtime.Scheme {
 	return NewScheme()
 }
@@ -72,10 +76,12 @@ func (l *Listers) IndexerFor(obj runtime.Object) cache.Indexer {
 	return l.sorter.IndexerForObjectType(obj)
 }
 
+// GetKubeObjects filters the Listers initial list of objects to built-in types
 func (l *Listers) GetKubeObjects() []runtime.Object {
 	return l.sorter.ObjectsForSchemeFunc(fakekubeclientset.AddToScheme)
 }
 
+// GetSharedObjects filters the Listers initial list of objects to types defined in knative/pkg
 func (l *Listers) GetSharedObjects() []runtime.Object {
 	return l.sorter.ObjectsForSchemeFunc(fakesharedclientset.AddToScheme)
 }
@@ -85,6 +91,7 @@ func (l *Listers) GetHorizontalPodAutoscalerLister() autoscalingv2beta1listers.H
 	return autoscalingv2beta1listers.NewHorizontalPodAutoscalerLister(l.IndexerFor(&autoscalingv2beta1.HorizontalPodAutoscaler{}))
 }
 
+// GetVirtualServiceLister gets lister for Istio VirtualService resource.
 func (l *Listers) GetVirtualServiceLister() istiolisters.VirtualServiceLister {
 	return istiolisters.NewVirtualServiceLister(l.IndexerFor(&istiov1alpha3.VirtualService{}))
 }
@@ -94,22 +101,27 @@ func (l *Listers) GetGatewayLister() istiolisters.GatewayLister {
 	return istiolisters.NewGatewayLister(l.IndexerFor(&istiov1alpha3.Gateway{}))
 }
 
+// GetDeploymentLister gets lister for K8s Deployment resource.
 func (l *Listers) GetDeploymentLister() appsv1listers.DeploymentLister {
 	return appsv1listers.NewDeploymentLister(l.IndexerFor(&appsv1.Deployment{}))
 }
 
+// GetK8sServiceLister gets lister for K8s Service resource.
 func (l *Listers) GetK8sServiceLister() corev1listers.ServiceLister {
 	return corev1listers.NewServiceLister(l.IndexerFor(&corev1.Service{}))
 }
 
+// GetEndpointsLister gets lister for K8s Endpoints resource.
 func (l *Listers) GetEndpointsLister() corev1listers.EndpointsLister {
 	return corev1listers.NewEndpointsLister(l.IndexerFor(&corev1.Endpoints{}))
 }
 
+// GetSecretLister gets lister for K8s Secret resource.
 func (l *Listers) GetSecretLister() corev1listers.SecretLister {
 	return corev1listers.NewSecretLister(l.IndexerFor(&corev1.Secret{}))
 }
 
+// GetConfigMapLister gets lister for K8s ConfigMap resource.
 func (l *Listers) GetConfigMapLister() corev1listers.ConfigMapLister {
 	return corev1listers.NewConfigMapLister(l.IndexerFor(&corev1.ConfigMap{}))
 }

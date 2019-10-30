@@ -44,7 +44,7 @@ func NewController(
 	secretInformer := secretinformer.Get(ctx)
 	options := webhook.GetOptions(ctx)
 
-	wh := &Reconciler{
+	wh := &reconciler{
 		secretName:  options.SecretName,
 		serviceName: options.ServiceName,
 

@@ -21,7 +21,6 @@ import (
 	"errors"
 	"testing"
 
-	// Fake injection stuff
 	kubeclient "knative.dev/pkg/client/injection/kube/client/fake"
 	_ "knative.dev/pkg/client/injection/kube/informers/core/v1/secret/fake"
 
@@ -129,7 +128,7 @@ func TestReconcile(t *testing.T) {
 	}}
 
 	table.Test(t, MakeFactory(func(ctx context.Context, listers *Listers, cmw configmap.Watcher) controller.Reconciler {
-		return &Reconciler{
+		return &reconciler{
 			client:       kubeclient.Get(ctx),
 			secretlister: listers.GetSecretLister(),
 			secretName:   secretName,
@@ -184,7 +183,7 @@ func TestReconcileMakeSecretFailure(t *testing.T) {
 	}}
 
 	table.Test(t, MakeFactory(func(ctx context.Context, listers *Listers, cmw configmap.Watcher) controller.Reconciler {
-		return &Reconciler{
+		return &reconciler{
 			client:       kubeclient.Get(ctx),
 			secretlister: listers.GetSecretLister(),
 			secretName:   secretName,
