@@ -29,9 +29,10 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
+	"knative.dev/pkg/system"
+	certresources "knative.dev/pkg/webhook/certificates/resources"
 
 	. "knative.dev/pkg/logging/testing"
-	"knative.dev/pkg/system"
 )
 
 func waitForServerAvailable(t *testing.T, serverURL string, timeout time.Duration) error {
@@ -99,10 +100,17 @@ func createTestConfigMap(t *testing.T, kubeClient kubernetes.Interface) error {
 func createSecureTLSClient(t *testing.T, kubeClient kubernetes.Interface, acOpts *Options) (*http.Client, error) {
 	t.Helper()
 	ctx := TestContextWithLogger(t)
-	serverKey, serverCert, caCert, err := getOrGenerateKeyCertsFromSecret(ctx, kubeClient, acOpts)
+	secret, err := certresources.MakeSecret(ctx, acOpts.SecretName, system.Namespace(), acOpts.ServiceName)
 	if err != nil {
 		return nil, err
 	}
+	if _, err := kubeClient.CoreV1().Secrets(secret.Namespace).Create(secret); err != nil {
+		return nil, err
+	}
+
+	serverKey := secret.Data[certresources.ServerKey]
+	serverCert := secret.Data[certresources.ServerCert]
+	caCert := secret.Data[certresources.CACert]
 
 	// Build cert pool with CA Cert
 	pool := x509.NewCertPool()

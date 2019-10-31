@@ -17,11 +17,13 @@ limitations under the License.
 package testing
 
 import (
+	admissionregistrationv1beta1 "k8s.io/api/admissionregistration/v1beta1"
 	appsv1 "k8s.io/api/apps/v1"
 	autoscalingv2beta1 "k8s.io/api/autoscaling/v2beta1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	fakekubeclientset "k8s.io/client-go/kubernetes/fake"
+	admissionlisters "k8s.io/client-go/listers/admissionregistration/v1beta1"
 	appsv1listers "k8s.io/client-go/listers/apps/v1"
 	autoscalingv2beta1listers "k8s.io/client-go/listers/autoscaling/v2beta1"
 	corev1listers "k8s.io/client-go/listers/core/v1"
@@ -129,4 +131,14 @@ func (l *Listers) GetConfigMapLister() corev1listers.ConfigMapLister {
 // GetNamespaceLister gets lister for Namespace resource.
 func (l *Listers) GetNamespaceLister() corev1listers.NamespaceLister {
 	return corev1listers.NewNamespaceLister(l.IndexerFor(&corev1.Namespace{}))
+}
+
+// GetMutatingWebhookConfigurationLister gets lister for K8s MutatingWebhookConfiguration resource.
+func (l *Listers) GetMutatingWebhookConfigurationLister() admissionlisters.MutatingWebhookConfigurationLister {
+	return admissionlisters.NewMutatingWebhookConfigurationLister(l.IndexerFor(&admissionregistrationv1beta1.MutatingWebhookConfiguration{}))
+}
+
+// GetValidatingWebhookConfigurationLister gets lister for K8s ValidatingWebhookConfiguration resource.
+func (l *Listers) GetValidatingWebhookConfigurationLister() admissionlisters.ValidatingWebhookConfigurationLister {
+	return admissionlisters.NewValidatingWebhookConfigurationLister(l.IndexerFor(&admissionregistrationv1beta1.ValidatingWebhookConfiguration{}))
 }

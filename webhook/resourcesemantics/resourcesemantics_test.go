@@ -14,13 +14,17 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package webhook
+package resourcesemantics
 
 import (
 	"context"
 	"encoding/json"
-	"reflect"
 	"testing"
+
+	// Injection stuff
+	_ "knative.dev/pkg/client/injection/kube/client/fake"
+	_ "knative.dev/pkg/client/injection/kube/informers/admissionregistration/v1beta1/mutatingwebhookconfiguration/fake"
+	_ "knative.dev/pkg/client/injection/kube/informers/core/v1/secret/fake"
 
 	"github.com/mattbaird/jsonpatch"
 	admissionv1beta1 "k8s.io/api/admission/v1beta1"
@@ -31,10 +35,12 @@ import (
 	fakekubeclientset "k8s.io/client-go/kubernetes/fake"
 	"knative.dev/pkg/apis"
 	"knative.dev/pkg/system"
+	"knative.dev/pkg/webhook"
 
 	_ "knative.dev/pkg/system/testing"
 
 	. "knative.dev/pkg/logging/testing"
+	. "knative.dev/pkg/reconciler/testing"
 	. "knative.dev/pkg/testing"
 	. "knative.dev/pkg/webhook/testing"
 )
@@ -42,6 +48,8 @@ import (
 const (
 	testResourceValidationPath = "/foo"
 	testResourceValidationName = "webhook.knative.dev"
+	user1                      = "brutto@knative.dev"
+	user2                      = "arrabbiato@knative.dev"
 )
 
 var (
@@ -89,13 +97,13 @@ var (
 
 func newNonRunningTestResourceAdmissionController(t *testing.T) (
 	kubeClient *fakekubeclientset.Clientset,
-	ac AdmissionController) {
+	ac *reconciler) {
 
 	t.Helper()
 	// Create fake clients
 	kubeClient = fakekubeclientset.NewSimpleClientset(initialResourceWebhook)
 
-	ac = NewTestResourceAdmissionController()
+	ac = NewTestResourceAdmissionController(t)
 	return
 }
 
@@ -496,7 +504,7 @@ func createInnerDefaultResourceWithoutSpec(t *testing.T) []byte {
 	t.Helper()
 	r := InnerDefaultResource{
 		ObjectMeta: metav1.ObjectMeta{
-			Namespace: testNamespace,
+			Namespace: system.Namespace(),
 			Name:      "a name",
 		},
 	}
@@ -522,7 +530,7 @@ func createInnerDefaultResourceWithSpecAndStatus(t *testing.T, spec *InnerDefaul
 	t.Helper()
 	r := InnerDefaultResource{
 		ObjectMeta: metav1.ObjectMeta{
-			Namespace: testNamespace,
+			Namespace: system.Namespace(),
 			Name:      "a name",
 		},
 	}
@@ -540,24 +548,6 @@ func createInnerDefaultResourceWithSpecAndStatus(t *testing.T, spec *InnerDefaul
 	return b
 }
 
-func TestUpdatingResourceController(t *testing.T) {
-	kubeClient, ac := newNonRunningTestResourceAdmissionController(t)
-
-	err := ac.Register(TestContextWithLogger(t), kubeClient, []byte{})
-	if err != nil {
-		t.Fatalf("Failed to create webhook: %s", err)
-	}
-
-	currentWebhook, _ := kubeClient.AdmissionregistrationV1beta1().MutatingWebhookConfigurations().Get(initialResourceWebhook.Name, metav1.GetOptions{})
-	if reflect.DeepEqual(currentWebhook, initialResourceWebhook) {
-		t.Fatalf("Expected webhook to be updated")
-	}
-
-	if len(currentWebhook.OwnerReferences) > 0 {
-		t.Errorf("Expected no OwnerReferences, got %d", len(currentWebhook.OwnerReferences))
-	}
-}
-
 func setUserAnnotation(userC, userU string) jsonpatch.JsonPatchOperation {
 	return jsonpatch.JsonPatchOperation{
 		Operation: "add",
@@ -569,9 +559,14 @@ func setUserAnnotation(userC, userU string) jsonpatch.JsonPatchOperation {
 	}
 }
 
-func NewTestResourceAdmissionController() AdmissionController {
-	return NewResourceAdmissionController(testResourceValidationName, testResourceValidationPath,
-		handlers, true, func(ctx context.Context) context.Context {
+func NewTestResourceAdmissionController(t *testing.T) *reconciler {
+	ctx, _ := SetupFakeContext(t)
+	ctx = webhook.WithOptions(ctx, webhook.Options{
+		SecretName: "webhook-secret",
+	})
+	return NewAdmissionController(
+		ctx, testResourceValidationName, testResourceValidationPath,
+		handlers, func(ctx context.Context) context.Context {
 			return ctx
-		})
+		}, true).Reconciler.(*reconciler)
 }
