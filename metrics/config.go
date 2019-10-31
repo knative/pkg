@@ -46,10 +46,10 @@ const (
 	ReportingPeriodKey                  = "metrics.reporting-period-seconds"
 	StackdriverCustomMetricSubDomainKey = "metrics.stackdriver-custom-metrics-subdomain"
 	// Stackdriver client configuration keys
-	stackdriverProjectIDKey   = "metrics.stackdriver-project-id"
-	stackdriverGCPLocationKey = "metrics.stackdriver-gcp-location"
-	stackdriverClusterNameKey = "metrics.stackdriver-cluster-name"
-	stackdriverUseSecretKey   = "metrics.stackdriver-use-secret"
+	StackdriverProjectIDKey   = "metrics.stackdriver-project-id"
+	StackdriverGCPLocationKey = "metrics.stackdriver-gcp-location"
+	StackdriverClusterNameKey = "metrics.stackdriver-cluster-name"
+	StackdriverUseSecretKey   = "metrics.stackdriver-use-secret"
 
 	// Stackdriver is used for Stackdriver backend
 	Stackdriver metricsBackend = "stackdriver"
@@ -126,13 +126,13 @@ type StackdriverClientConfig struct {
 	UseSecret bool
 }
 
-// newStackdriverClientConfigFromMap creates a stackdriverClientConfig from the given map
-func newStackdriverClientConfigFromMap(config map[string]string) *StackdriverClientConfig {
+// NewStackdriverClientConfigFromMap creates a stackdriverClientConfig from the given map
+func NewStackdriverClientConfigFromMap(config map[string]string) *StackdriverClientConfig {
 	return &StackdriverClientConfig{
-		ProjectID:   config[stackdriverProjectIDKey],
-		GCPLocation: config[stackdriverGCPLocationKey],
-		ClusterName: config[stackdriverClusterNameKey],
-		UseSecret:   strings.EqualFold(config[stackdriverUseSecretKey], "true"),
+		ProjectID:   config[StackdriverProjectIDKey],
+		GCPLocation: config[StackdriverGCPLocationKey],
+		ClusterName: config[StackdriverClusterNameKey],
+		UseSecret:   strings.EqualFold(config[StackdriverUseSecretKey], "true"),
 	}
 }
 
@@ -186,7 +186,7 @@ func createMetricsConfig(ops ExporterOptions, logger *zap.SugaredLogger) (*metri
 	// use the application default credentials. If that is not available, Opencensus would fail to create the
 	// metrics exporter.
 	if mc.backendDestination == Stackdriver {
-		scc := newStackdriverClientConfigFromMap(m)
+		scc := NewStackdriverClientConfigFromMap(m)
 		mc.stackdriverClientConfig = *scc
 		mc.isStackdriverBackend = true
 		mc.stackdriverMetricTypePrefix = path.Join(mc.domain, mc.component)

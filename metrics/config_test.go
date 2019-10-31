@@ -806,7 +806,7 @@ func TestNewStackdriverConfigFromMap(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			c := newStackdriverClientConfigFromMap(test.stringMap)
+			c := NewStackdriverClientConfigFromMap(test.stringMap)
 			if test.expectedConfig != *c {
 				t.Errorf("Incorrect stackdriver config. Expected: [%v], Got: [%v]", test.expectedConfig, *c)
 			}
