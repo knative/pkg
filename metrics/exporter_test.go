@@ -109,7 +109,7 @@ func TestMetricsExporter(t *testing.T) {
 			domain:             servingDomain,
 			component:          testComponent,
 			backendDestination: "unsupported",
-			stackdriverClientConfig: stackdriverClientConfig{
+			stackdriverClientConfig: StackdriverClientConfig{
 				ProjectID: "",
 			},
 		},
@@ -120,7 +120,7 @@ func TestMetricsExporter(t *testing.T) {
 			domain:             servingDomain,
 			component:          testComponent,
 			backendDestination: Stackdriver,
-			stackdriverClientConfig: stackdriverClientConfig{
+			stackdriverClientConfig: StackdriverClientConfig{
 				ProjectID: "testProj",
 			},
 		},
@@ -129,7 +129,7 @@ func TestMetricsExporter(t *testing.T) {
 		name: "stackdriverConfigOnly",
 		config: &metricsConfig{
 			backendDestination: Stackdriver,
-			stackdriverClientConfig: stackdriverClientConfig{
+			stackdriverClientConfig: StackdriverClientConfig{
 				ProjectID:   "project",
 				GCPLocation: "us-west1",
 				ClusterName: "cluster",
@@ -148,7 +148,7 @@ func TestMetricsExporter(t *testing.T) {
 			stackdriverMetricTypePrefix:       path.Join(servingDomain, testComponent),
 			stackdriverCustomMetricTypePrefix: path.Join(customMetricTypePrefix, defaultCustomMetricSubDomain, testComponent),
 			stackdriverCustomMetricsSubDomain: defaultCustomMetricSubDomain,
-			stackdriverClientConfig: stackdriverClientConfig{
+			stackdriverClientConfig: StackdriverClientConfig{
 				ProjectID:   "project",
 				GCPLocation: "us-west1",
 				ClusterName: "cluster",
@@ -164,7 +164,7 @@ func TestMetricsExporter(t *testing.T) {
 			backendDestination: Prometheus,
 			reportingPeriod:    5 * time.Second,
 			prometheusPort:     defaultPrometheusPort,
-			stackdriverClientConfig: stackdriverClientConfig{
+			stackdriverClientConfig: StackdriverClientConfig{
 				ProjectID:   "project",
 				GCPLocation: "us-west1",
 				ClusterName: "cluster",
@@ -185,7 +185,7 @@ func TestMetricsExporter(t *testing.T) {
 			stackdriverMetricTypePrefix:       path.Join(servingDomain, testComponent),
 			stackdriverCustomMetricTypePrefix: path.Join(customMetricTypePrefix, defaultCustomMetricSubDomain, testComponent),
 			stackdriverCustomMetricsSubDomain: defaultCustomMetricSubDomain,
-			stackdriverClientConfig: stackdriverClientConfig{
+			stackdriverClientConfig: StackdriverClientConfig{
 				ProjectID:   "project",
 				GCPLocation: "narnia",
 				ClusterName: "cluster",
@@ -204,7 +204,7 @@ func TestMetricsExporter(t *testing.T) {
 			stackdriverMetricTypePrefix:       path.Join(servingDomain, testComponent),
 			stackdriverCustomMetricTypePrefix: path.Join(customMetricTypePrefix, defaultCustomMetricSubDomain, testComponent),
 			stackdriverCustomMetricsSubDomain: defaultCustomMetricSubDomain,
-			stackdriverClientConfig: stackdriverClientConfig{
+			stackdriverClientConfig: StackdriverClientConfig{
 				GCPLocation: "narnia",
 				ClusterName: "cluster",
 				UseSecret:   true,
@@ -222,7 +222,7 @@ func TestMetricsExporter(t *testing.T) {
 			stackdriverMetricTypePrefix:       path.Join(servingDomain, testComponent),
 			stackdriverCustomMetricTypePrefix: path.Join(customMetricTypePrefix, defaultCustomMetricSubDomain, testComponent),
 			stackdriverCustomMetricsSubDomain: defaultCustomMetricSubDomain,
-			stackdriverClientConfig: stackdriverClientConfig{
+			stackdriverClientConfig: StackdriverClientConfig{
 				ProjectID: "project",
 			},
 		},
@@ -252,7 +252,7 @@ func TestInterlevedExporters(t *testing.T) {
 		domain:             servingDomain,
 		component:          testComponent,
 		backendDestination: Stackdriver,
-		stackdriverClientConfig: stackdriverClientConfig{
+		stackdriverClientConfig: StackdriverClientConfig{
 			ProjectID: testProj,
 		},
 	}, TestLogger(t))
@@ -275,7 +275,7 @@ func TestInterlevedExporters(t *testing.T) {
 		domain:             servingDomain,
 		component:          testComponent,
 		backendDestination: Stackdriver,
-		stackdriverClientConfig: stackdriverClientConfig{
+		stackdriverClientConfig: StackdriverClientConfig{
 			ProjectID: testProj,
 		},
 	}, TestLogger(t))
@@ -318,7 +318,7 @@ func TestFlushExporter(t *testing.T) {
 		reportingPeriod:                   1 * time.Minute,
 		stackdriverMetricTypePrefix:       path.Join(servingDomain, testComponent),
 		stackdriverCustomMetricTypePrefix: path.Join(defaultCustomMetricSubDomain, testComponent),
-		stackdriverClientConfig: stackdriverClientConfig{
+		stackdriverClientConfig: StackdriverClientConfig{
 			ProjectID: testProj,
 		},
 	}

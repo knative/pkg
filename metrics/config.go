@@ -102,11 +102,11 @@ type metricsConfig struct {
 	// Store this in a variable to reduce string join operations.
 	stackdriverCustomMetricTypePrefix string
 	// stackdriverClientConfig is the metadata to configure the metrics exporter's Stackdriver client.
-	stackdriverClientConfig stackdriverClientConfig
+	stackdriverClientConfig StackdriverClientConfig
 }
 
-// stackdriverClientConfig encapsulates the metadata required to configure a Stackdriver client.
-type stackdriverClientConfig struct {
+// StackdriverClientConfig encapsulates the metadata required to configure a Stackdriver client.
+type StackdriverClientConfig struct {
 	// ProjectID is the stackdriver project ID to which data is uploaded.
 	// This is not necessarily the GCP project ID where the Kubernetes cluster is hosted.
 	// Required when the Kubernetes cluster is not hosted on GCE.
@@ -127,8 +127,8 @@ type stackdriverClientConfig struct {
 }
 
 // newStackdriverClientConfigFromMap creates a stackdriverClientConfig from the given map
-func newStackdriverClientConfigFromMap(config map[string]string) *stackdriverClientConfig {
-	return &stackdriverClientConfig{
+func newStackdriverClientConfigFromMap(config map[string]string) *StackdriverClientConfig {
+	return &StackdriverClientConfig{
 		ProjectID:   config[stackdriverProjectIDKey],
 		GCPLocation: config[stackdriverGCPLocationKey],
 		ClusterName: config[stackdriverClusterNameKey],

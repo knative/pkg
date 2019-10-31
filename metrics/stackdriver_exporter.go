@@ -113,7 +113,7 @@ func newStackdriverExporter(config *metricsConfig, logger *zap.SugaredLogger) (v
 
 // getStackdriverExporterClientOptions creates client options for the opencensus Stackdriver exporter from the given stackdriverClientConfig.
 // On error, an empty array of client options is returned.
-func getStackdriverExporterClientOptions(sdconfig *stackdriverClientConfig) ([]option.ClientOption, error) {
+func getStackdriverExporterClientOptions(sdconfig *StackdriverClientConfig) ([]option.ClientOption, error) {
 	var co []option.ClientOption
 	if sdconfig.UseSecret {
 		secret, err := getStackdriverSecret(sdconfig)
@@ -188,7 +188,7 @@ func getMetricTypeFunc(metricTypePrefix, customMetricTypePrefix string) func(vie
 }
 
 // getStackdriverSecret returns the Kubernetes Secret specified in the given config.
-func getStackdriverSecret(sdconfig *stackdriverClientConfig) (*corev1.Secret, error) {
+func getStackdriverSecret(sdconfig *StackdriverClientConfig) (*corev1.Secret, error) {
 	if err := ensureKubeclient(); err != nil {
 		return nil, err
 	}

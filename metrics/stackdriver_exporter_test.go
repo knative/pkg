@@ -351,7 +351,7 @@ func TestNewStackdriverExporterWithMetadata(t *testing.T) {
 			domain:             servingDomain,
 			component:          "autoscaler",
 			backendDestination: Stackdriver,
-			stackdriverClientConfig: stackdriverClientConfig{
+			stackdriverClientConfig: StackdriverClientConfig{
 				ProjectID: testProj,
 			},
 		},
@@ -359,7 +359,7 @@ func TestNewStackdriverExporterWithMetadata(t *testing.T) {
 	}, {
 		name: "stackdriverClientConfigOnly",
 		config: &metricsConfig{
-			stackdriverClientConfig: stackdriverClientConfig{
+			stackdriverClientConfig: StackdriverClientConfig{
 				ProjectID:   "project",
 				GCPLocation: "us-west1",
 				ClusterName: "cluster",
@@ -378,7 +378,7 @@ func TestNewStackdriverExporterWithMetadata(t *testing.T) {
 			stackdriverMetricTypePrefix:       path.Join(servingDomain, testComponent),
 			stackdriverCustomMetricTypePrefix: path.Join(customMetricTypePrefix, defaultCustomMetricSubDomain, testComponent),
 			stackdriverCustomMetricsSubDomain: defaultCustomMetricSubDomain,
-			stackdriverClientConfig: stackdriverClientConfig{
+			stackdriverClientConfig: StackdriverClientConfig{
 				ProjectID:   "project",
 				GCPLocation: "us-west1",
 				ClusterName: "cluster",
@@ -397,7 +397,7 @@ func TestNewStackdriverExporterWithMetadata(t *testing.T) {
 			stackdriverMetricTypePrefix:       path.Join(servingDomain, testComponent),
 			stackdriverCustomMetricTypePrefix: path.Join(customMetricTypePrefix, defaultCustomMetricSubDomain, testComponent),
 			stackdriverCustomMetricsSubDomain: defaultCustomMetricSubDomain,
-			stackdriverClientConfig: stackdriverClientConfig{
+			stackdriverClientConfig: StackdriverClientConfig{
 				ProjectID:   "project",
 				GCPLocation: "narnia",
 				ClusterName: "cluster",
@@ -416,7 +416,7 @@ func TestNewStackdriverExporterWithMetadata(t *testing.T) {
 			stackdriverMetricTypePrefix:       path.Join(servingDomain, testComponent),
 			stackdriverCustomMetricTypePrefix: path.Join(customMetricTypePrefix, defaultCustomMetricSubDomain, testComponent),
 			stackdriverCustomMetricsSubDomain: defaultCustomMetricSubDomain,
-			stackdriverClientConfig: stackdriverClientConfig{
+			stackdriverClientConfig: StackdriverClientConfig{
 				GCPLocation: "narnia",
 				ClusterName: "cluster",
 				UseSecret:   true,
@@ -434,7 +434,7 @@ func TestNewStackdriverExporterWithMetadata(t *testing.T) {
 			stackdriverMetricTypePrefix:       path.Join(servingDomain, testComponent),
 			stackdriverCustomMetricTypePrefix: path.Join(customMetricTypePrefix, defaultCustomMetricSubDomain, testComponent),
 			stackdriverCustomMetricsSubDomain: defaultCustomMetricSubDomain,
-			stackdriverClientConfig: stackdriverClientConfig{
+			stackdriverClientConfig: StackdriverClientConfig{
 				ProjectID: "project",
 			},
 		},

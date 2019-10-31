@@ -193,7 +193,7 @@ var (
 				stackdriverMetricTypePrefix:       path.Join(servingDomain, testComponent),
 				stackdriverCustomMetricTypePrefix: path.Join(customMetricTypePrefix, defaultCustomMetricSubDomain, testComponent),
 				stackdriverCustomMetricsSubDomain: defaultCustomMetricSubDomain,
-				stackdriverClientConfig: stackdriverClientConfig{
+				stackdriverClientConfig: StackdriverClientConfig{
 					ProjectID:   anotherProj,
 					GCPLocation: "us-west1",
 					ClusterName: "cluster",
@@ -221,7 +221,7 @@ var (
 				stackdriverMetricTypePrefix:       path.Join(servingDomain, testComponent),
 				stackdriverCustomMetricTypePrefix: path.Join(customMetricTypePrefix, defaultCustomMetricSubDomain, testComponent),
 				stackdriverCustomMetricsSubDomain: defaultCustomMetricSubDomain,
-				stackdriverClientConfig: stackdriverClientConfig{
+				stackdriverClientConfig: StackdriverClientConfig{
 					ProjectID:   anotherProj,
 					ClusterName: "cluster",
 				},
@@ -263,7 +263,7 @@ var (
 				stackdriverMetricTypePrefix:       path.Join(servingDomain, testComponent),
 				stackdriverCustomMetricTypePrefix: path.Join(customMetricTypePrefix, defaultCustomMetricSubDomain, testComponent),
 				stackdriverCustomMetricsSubDomain: defaultCustomMetricSubDomain,
-				stackdriverClientConfig: stackdriverClientConfig{
+				stackdriverClientConfig: StackdriverClientConfig{
 					ProjectID: testProj,
 				},
 			},
@@ -306,7 +306,7 @@ var (
 				stackdriverMetricTypePrefix:       path.Join(servingDomain, testComponent),
 				stackdriverCustomMetricTypePrefix: path.Join(customMetricTypePrefix, defaultCustomMetricSubDomain, testComponent),
 				stackdriverCustomMetricsSubDomain: defaultCustomMetricSubDomain,
-				stackdriverClientConfig: stackdriverClientConfig{
+				stackdriverClientConfig: StackdriverClientConfig{
 					ProjectID: "test2",
 				},
 			},
@@ -331,7 +331,7 @@ var (
 				stackdriverMetricTypePrefix:       path.Join(servingDomain, testComponent),
 				stackdriverCustomMetricTypePrefix: path.Join(customMetricTypePrefix, defaultCustomMetricSubDomain, testComponent),
 				stackdriverCustomMetricsSubDomain: defaultCustomMetricSubDomain,
-				stackdriverClientConfig: stackdriverClientConfig{
+				stackdriverClientConfig: StackdriverClientConfig{
 					ProjectID: "test2",
 				},
 			},
@@ -373,7 +373,7 @@ var (
 				stackdriverMetricTypePrefix:       path.Join(servingDomain, testComponent),
 				stackdriverCustomMetricTypePrefix: path.Join(customMetricTypePrefix, defaultCustomMetricSubDomain, testComponent),
 				stackdriverCustomMetricsSubDomain: defaultCustomMetricSubDomain,
-				stackdriverClientConfig: stackdriverClientConfig{
+				stackdriverClientConfig: StackdriverClientConfig{
 					ProjectID: "test2",
 				},
 			},
@@ -400,7 +400,7 @@ var (
 				stackdriverCustomMetricTypePrefix: path.Join(customMetricTypePrefix, defaultCustomMetricSubDomain, testComponent),
 				allowStackdriverCustomMetrics:     true,
 				stackdriverCustomMetricsSubDomain: defaultCustomMetricSubDomain,
-				stackdriverClientConfig: stackdriverClientConfig{
+				stackdriverClientConfig: StackdriverClientConfig{
 					ProjectID: "test2",
 				},
 			},
@@ -425,7 +425,7 @@ var (
 				stackdriverMetricTypePrefix:       path.Join(servingDomain, testComponent),
 				stackdriverCustomMetricTypePrefix: path.Join(customMetricTypePrefix, customSubDomain, testComponent),
 				stackdriverCustomMetricsSubDomain: customSubDomain,
-				stackdriverClientConfig: stackdriverClientConfig{
+				stackdriverClientConfig: StackdriverClientConfig{
 					ProjectID: "test2",
 				},
 			},
@@ -564,7 +564,7 @@ func TestIsNewExporterRequired(t *testing.T) {
 			domain:             servingDomain,
 			component:          testComponent,
 			backendDestination: Prometheus,
-			stackdriverClientConfig: stackdriverClientConfig{
+			stackdriverClientConfig: StackdriverClientConfig{
 				ProjectID:   testProj,
 				ClusterName: "cluster",
 			},
@@ -610,7 +610,7 @@ func TestIsNewExporterRequired(t *testing.T) {
 			domain:             servingDomain,
 			component:          testComponent,
 			backendDestination: Stackdriver,
-			stackdriverClientConfig: stackdriverClientConfig{
+			stackdriverClientConfig: StackdriverClientConfig{
 				ProjectID: "proj1",
 			},
 		},
@@ -618,7 +618,7 @@ func TestIsNewExporterRequired(t *testing.T) {
 			domain:             servingDomain,
 			component:          testComponent,
 			backendDestination: Stackdriver,
-			stackdriverClientConfig: stackdriverClientConfig{
+			stackdriverClientConfig: StackdriverClientConfig{
 				ProjectID: "proj2",
 			},
 		},
@@ -629,7 +629,7 @@ func TestIsNewExporterRequired(t *testing.T) {
 			domain:             servingDomain,
 			component:          testComponent,
 			backendDestination: Stackdriver,
-			stackdriverClientConfig: stackdriverClientConfig{
+			stackdriverClientConfig: StackdriverClientConfig{
 				ProjectID:   testProj,
 				ClusterName: "cluster1",
 			},
@@ -638,7 +638,7 @@ func TestIsNewExporterRequired(t *testing.T) {
 			domain:             servingDomain,
 			component:          testComponent,
 			backendDestination: Stackdriver,
-			stackdriverClientConfig: stackdriverClientConfig{
+			stackdriverClientConfig: StackdriverClientConfig{
 				ProjectID:   testProj,
 				ClusterName: "cluster2",
 			},
@@ -766,7 +766,7 @@ func TestNewStackdriverConfigFromMap(t *testing.T) {
 	tests := []struct {
 		name           string
 		stringMap      map[string]string
-		expectedConfig stackdriverClientConfig
+		expectedConfig StackdriverClientConfig
 	}{{
 		name: "fullSdConfig",
 		stringMap: map[string]string{
@@ -775,7 +775,7 @@ func TestNewStackdriverConfigFromMap(t *testing.T) {
 			"metrics.stackdriver-cluster-name": "cluster",
 			"metrics.stackdriver-use-secret":   "true",
 		},
-		expectedConfig: stackdriverClientConfig{
+		expectedConfig: StackdriverClientConfig{
 			ProjectID:   "project",
 			GCPLocation: "us-west1",
 			ClusterName: "cluster",
@@ -784,7 +784,7 @@ func TestNewStackdriverConfigFromMap(t *testing.T) {
 	}, {
 		name:           "emptySdConfig",
 		stringMap:      map[string]string{},
-		expectedConfig: stackdriverClientConfig{},
+		expectedConfig: StackdriverClientConfig{},
 	}, {
 		name: "partialSdConfig",
 		stringMap: map[string]string{
@@ -792,7 +792,7 @@ func TestNewStackdriverConfigFromMap(t *testing.T) {
 			"metrics.stackdriver-gcp-location": "us-west1",
 			"metrics.stackdriver-cluster-name": "cluster",
 		},
-		expectedConfig: stackdriverClientConfig{
+		expectedConfig: StackdriverClientConfig{
 			ProjectID:   "project",
 			GCPLocation: "us-west1",
 			ClusterName: "cluster",
@@ -801,7 +801,7 @@ func TestNewStackdriverConfigFromMap(t *testing.T) {
 	}, {
 		name:           "nil",
 		stringMap:      nil,
-		expectedConfig: stackdriverClientConfig{},
+		expectedConfig: StackdriverClientConfig{},
 	}}
 
 	for _, test := range tests {
