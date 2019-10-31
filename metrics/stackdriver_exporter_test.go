@@ -476,18 +476,42 @@ func TestSetStackdriverSecretLocation(t *testing.T) {
 		secretNamespace = StackdriverSecretNamespaceDefault
 	}()
 
+	sdConfig := &StackdriverClientConfig{
+		ProjectID:   "project",
+		GCPLocation: "us-west2",
+		ClusterName: "cluster",
+		UseSecret:   false,
+	}
+
 	// Sanity checks
 	assertStringsEqual(t, "DefaultSecretName", secretName, StackdriverSecretNameDefault)
 	assertStringsEqual(t, "DefaultSecretNamespace", secretNamespace, StackdriverSecretNamespaceDefault)
+	if _, err := getStackdriverExporterClientOptions(sdConfig); err != nil {
+		t.Errorf("Got unexpected error when creating exporter client options: [%v]", err)
+	}
+
+	// Check configuration's UseSecret value is ignored until the consuming package calls SetStackdriverSecretLocation
+	// If an attempt to read a Secret was made, there should be an error because there's no valid in-cluster kubeclient.
+	sdConfig.UseSecret = true
+	if _, e1 := getStackdriverExporterClientOptions(sdConfig); e1 != nil {
+		t.Errorf("Got unexpected error when creating exporter client options: [%v]", e1)
+	}
 
 	testName, testNamespace := "test-name", "test-namespace"
+	// SetStackdriverSecretLocation has been called & config's UseSecret value is set
+	// There should be an attempt to read the Secret, and an error because there's no valid in-cluster kubeclient.
 	SetStackdriverSecretLocation("test-name", "test-namespace")
-
+	if _, e1 := getStackdriverExporterClientOptions(sdConfig); e1 == nil {
+		t.Errorf("Expected a known error when getting exporter options with Secrets enabled (cannot create valid kubeclient in tests). Did the function run as expected?")
+	}
 	assertStringsEqual(t, "secretName", secretName, testName)
 	assertStringsEqual(t, "secretNamespace", secretNamespace, testNamespace)
 
 	randomName, randomNamespace := "random-name", "random-namespace"
 	SetStackdriverSecretLocation(randomName, randomNamespace)
+	if _, e1 := getStackdriverExporterClientOptions(sdConfig); e1 == nil {
+		t.Errorf("Expected a known error when getting exporter options with Secrets enabled (cannot create valid kubeclient in tests). Did the function run as expected?")
+	}
 	assertStringsEqual(t, "secretName", secretName, randomName)
 	assertStringsEqual(t, "secretNamespace", secretNamespace, randomNamespace)
 }

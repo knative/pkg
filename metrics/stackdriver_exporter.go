@@ -56,23 +56,27 @@ var (
 	// kubeclientInitErr capture an error during initClientOnce
 	kubeclientInitErr error
 
-	// stackdriverMtx protects setting secretNamespace and secretName
+	// stackdriverMtx protects setting secretNamespace and secretName and useStackdriverSecretEnabled
 	stackdriverMtx sync.RWMutex
 	// secretName is the name of the k8s Secret to pass to Stackdriver client to authenticate with Stackdriver.
 	secretName = StackdriverSecretNameDefault
 	// secretNamespace is the namespace to search for a k8s Secret to pass to Stackdriver client to authenticate with Stackdriver.
 	secretNamespace = StackdriverSecretNamespaceDefault
+	// useStackdriverSecretEnabled specifies whether or not the exporter can be configured with a Secret.
+	// Consuming packages must do explicitly enable this by calling SetStackdriverSecretLocation.
+	useStackdriverSecretEnabled = false
 )
 
-// SetStackdriverSecretLocation allows setting non-default values for the name and namespace of
-// the Secret that can be used to authenticate with Stackdriver.
-// The Secret is only used if metricsConfig.stackdriverClientConfig.UseSecret is true.
-// This can only be called once.
+// SetStackdriverSecretLocation sets the name and namespace of the Secret that can be used to authenticate with Stackdriver.
+// The Secret is only used if both:
+// 1. This function has been explicitly called to set the name and namespace
+// 2. Users set metricsConfig.stackdriverClientConfig.UseSecret to "true"
 func SetStackdriverSecretLocation(name string, namespace string) {
 	stackdriverMtx.Lock()
 	defer stackdriverMtx.Unlock()
 	secretName = name
 	secretNamespace = namespace
+	useStackdriverSecretEnabled = true
 }
 
 func init() {
@@ -115,7 +119,7 @@ func newStackdriverExporter(config *metricsConfig, logger *zap.SugaredLogger) (v
 // On error, an empty array of client options is returned.
 func getStackdriverExporterClientOptions(sdconfig *StackdriverClientConfig) ([]option.ClientOption, error) {
 	var co []option.ClientOption
-	if sdconfig.UseSecret {
+	if sdconfig.UseSecret && useStackdriverSecretEnabled {
 		secret, err := getStackdriverSecret(sdconfig)
 		if err != nil {
 			return co, err
