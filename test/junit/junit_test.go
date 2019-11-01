@@ -144,7 +144,7 @@ func TestAddTestSuite(t *testing.T) {
 		t.Fatalf("Expected '', actual '%v'", err)
 	}
 
-	if 2 != len(testSuites.Suites) {
+	if len(testSuites.Suites) != 2 {
 		t.Fatalf("Expected 2, actual %d", len(testSuites.Suites))
 	}
 }
