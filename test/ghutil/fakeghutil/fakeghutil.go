@@ -349,7 +349,7 @@ func (fgc *FakeGithubClient) AddFileToCommit(org, repo, SHA, filename, patch str
 		Patch:    &patch,
 	}
 	if _, ok := fgc.CommitFiles[SHA]; !ok {
-		fgc.CommitFiles[SHA] = make([]*github.CommitFile, 0, 0)
+		fgc.CommitFiles[SHA] = make([]*github.CommitFile, 0)
 	}
 	fgc.CommitFiles[SHA] = append(fgc.CommitFiles[SHA], f)
 	return nil
@@ -366,7 +366,7 @@ func (fgc *FakeGithubClient) AddCommitToPullRequest(org, repo string, ID int, SH
 		return fmt.Errorf("Pull Request %d not exist", ID)
 	}
 	if _, ok = fgc.PRCommits[ID]; !ok {
-		fgc.PRCommits[ID] = make([]*github.RepositoryCommit, 0, 0)
+		fgc.PRCommits[ID] = make([]*github.RepositoryCommit, 0)
 	}
 	fgc.PRCommits[ID] = append(fgc.PRCommits[ID], &github.RepositoryCommit{SHA: &SHA})
 	return nil
