@@ -19,7 +19,6 @@ package duck
 import (
 	"context"
 	"fmt"
-	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -30,7 +29,7 @@ import (
 )
 
 type BlockingInformerFactory struct {
-	lock    sync.Mutex
+	block   chan struct{}
 	getting int32
 }
 
@@ -39,16 +38,12 @@ var _ InformerFactory = (*BlockingInformerFactory)(nil)
 func (bif *BlockingInformerFactory) Get(gvr schema.GroupVersionResource) (cache.SharedIndexInformer, cache.GenericLister, error) {
 	atomic.AddInt32(&bif.getting, 1)
 	// Wait here until we can acquire the lock!
-	bif.lock.Lock()
-	bif.lock.Unlock()
+	<-bif.block
 	return nil, nil, nil
 }
 
 func TestSameGVR(t *testing.T) {
-	bif := &BlockingInformerFactory{}
-
-	// Suspend progress.
-	bif.lock.Lock()
+	bif := &BlockingInformerFactory{block: make(chan struct{})}
 
 	cif := &CachedInformerFactory{
 		Delegate: bif,
@@ -85,7 +80,7 @@ func TestSameGVR(t *testing.T) {
 	}
 
 	// Allow the Get calls to proceed.
-	bif.lock.Unlock()
+	close(bif.block)
 
 	if err := grp.Wait(); err != nil {
 		t.Errorf("Wait() = %v", err)
@@ -93,10 +88,7 @@ func TestSameGVR(t *testing.T) {
 }
 
 func TestDifferentGVRs(t *testing.T) {
-	bif := &BlockingInformerFactory{}
-
-	// Suspend progress.
-	bif.lock.Lock()
+	bif := &BlockingInformerFactory{block: make(chan struct{})}
 
 	cif := &CachedInformerFactory{
 		Delegate: bif,
@@ -132,7 +124,7 @@ func TestDifferentGVRs(t *testing.T) {
 	}
 
 	// Allow the Get calls to proceed.
-	bif.lock.Unlock()
+	close(bif.block)
 
 	if err := grp.Wait(); err != nil {
 		t.Errorf("Wait() = %v", err)
