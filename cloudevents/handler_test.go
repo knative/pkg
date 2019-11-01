@@ -62,7 +62,7 @@ func TestHandlerTypeErrors(t *testing.T) {
 		},
 		{
 			name: "wrong return count",
-			param: func() (interface{}, cloudevents.EventContext, error, interface{}) {
+			param: func() (interface{}, cloudevents.EventContext, interface{}, error) {
 				return nil, cloudevents.EventContext{}, nil, nil
 			},
 			err: "Expected a function returning either nothing, an error, (any, error), or (any, SendContext, error); function has too many return types (4)",
