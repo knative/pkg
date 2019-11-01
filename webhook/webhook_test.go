@@ -44,12 +44,6 @@ const (
 	testResourceName = "test-resource"
 	user1            = "brutto@knative.dev"
 	user2            = "arrabbiato@knative.dev"
-
-	testResourceValidationPath = "/foo"
-	testResourceValidationName = "webhook.knative.dev"
-
-	testConfigValidationName = "configmap.webhook.knative.dev"
-	testConfigValidationPath = "/cm"
 )
 
 func newNonRunningTestWebhook(t *testing.T, options Options, acs ...AdmissionController) (

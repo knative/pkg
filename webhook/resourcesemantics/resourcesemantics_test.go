@@ -548,17 +548,6 @@ func createInnerDefaultResourceWithSpecAndStatus(t *testing.T, spec *InnerDefaul
 	return b
 }
 
-func setUserAnnotation(userC, userU string) jsonpatch.JsonPatchOperation {
-	return jsonpatch.JsonPatchOperation{
-		Operation: "add",
-		Path:      "/metadata/annotations",
-		Value: map[string]interface{}{
-			"pkg.knative.dev/creator":      userC,
-			"pkg.knative.dev/lastModifier": userU,
-		},
-	}
-}
-
 func NewTestResourceAdmissionController(t *testing.T) *reconciler {
 	ctx, _ := SetupFakeContext(t)
 	ctx = webhook.WithOptions(ctx, webhook.Options{
