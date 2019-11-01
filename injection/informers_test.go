@@ -61,8 +61,8 @@ func TestRegisterInformersAndSetup(t *testing.T) {
 	i.RegisterInformer(injectFooInformer)
 	i.RegisterInformer(injectBarInformer)
 
-	ctx, infs := context.Background(), []controller.Informer{}
-	ctx, infs = i.SetupInformers(ctx, &rest.Config{})
+	ctx, _ := context.Background(), []controller.Informer{}
+	_, infs := i.SetupInformers(ctx, &rest.Config{})
 
 	if want, got := 2, len(infs); got != want {
 		t.Errorf("SetupInformers() = %d, wanted %d", want, got)
