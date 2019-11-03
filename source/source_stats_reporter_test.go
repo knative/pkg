@@ -30,7 +30,6 @@ func TestStatsReporter(t *testing.T) {
 	args := &ReportArgs{
 		Namespace:     "testns",
 		EventType:     "dev.knative.event",
-		EventSource:   "unit-test",
 		Name:          "testsource",
 		ResourceGroup: "testresourcegroup",
 	}

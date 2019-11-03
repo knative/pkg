@@ -52,7 +52,6 @@ var (
 type ReportArgs struct {
 	Namespace     string
 	EventType     string
-	EventSource   string
 	Name          string
 	ResourceGroup string
 }
