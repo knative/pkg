@@ -42,9 +42,8 @@ var (
 	// - length between 1 and 255 inclusive
 	// - characters are printable US-ASCII
 	namespaceKey           = tag.MustNewKey(metricskey.LabelNamespaceName)
-	eventSourceKey         = tag.MustNewKey(metricskey.LabelEventSource)
 	eventTypeKey           = tag.MustNewKey(metricskey.LabelEventType)
-	sourceNameKey          = tag.MustNewKey(metricskey.LabelName)
+	sourceNameKey          = tag.MustNewKey(metricskey.LabelSourceName)
 	sourceResourceGroupKey = tag.MustNewKey(metricskey.LabelResourceGroup)
 	responseCodeKey        = tag.MustNewKey(metricskey.LabelResponseCode)
 	responseCodeClassKey   = tag.MustNewKey(metricskey.LabelResponseCodeClass)
@@ -99,7 +98,6 @@ func (r *reporter) generateTag(args *ReportArgs, responseCode int) (context.Cont
 	return tag.New(
 		r.ctx,
 		tag.Insert(namespaceKey, args.Namespace),
-		tag.Insert(eventSourceKey, args.EventSource),
 		tag.Insert(eventTypeKey, args.EventType),
 		tag.Insert(sourceNameKey, args.Name),
 		tag.Insert(sourceResourceGroupKey, args.ResourceGroup),
@@ -110,7 +108,6 @@ func (r *reporter) generateTag(args *ReportArgs, responseCode int) (context.Cont
 func register() {
 	tagKeys := []tag.Key{
 		namespaceKey,
-		eventSourceKey,
 		eventTypeKey,
 		sourceNameKey,
 		sourceResourceGroupKey,

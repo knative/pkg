@@ -43,8 +43,7 @@ func TestStatsReporter(t *testing.T) {
 	wantTags := map[string]string{
 		metricskey.LabelNamespaceName:     "testns",
 		metricskey.LabelEventType:         "dev.knative.event",
-		metricskey.LabelEventSource:       "unit-test",
-		metricskey.LabelName:              "testsource",
+		metricskey.LabelSourceName:        "testsource",
 		metricskey.LabelResourceGroup:     "testresourcegroup",
 		metricskey.LabelResponseCode:      "202",
 		metricskey.LabelResponseCodeClass: "2xx",
