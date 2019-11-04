@@ -192,6 +192,7 @@ func getMetricTypeFunc(metricTypePrefix, customMetricTypePrefix string) func(vie
 }
 
 // getStackdriverSecret returns the Kubernetes Secret specified in the given config.
+// TODO(anniefu): Update exporter if Secret changes (https://github.com/knative/pkg/issues/842)
 func getStackdriverSecret(sdconfig *StackdriverClientConfig) (*corev1.Secret, error) {
 	if err := ensureKubeclient(); err != nil {
 		return nil, err
