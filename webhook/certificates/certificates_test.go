@@ -20,6 +20,7 @@ import (
 	"context"
 	"errors"
 	"testing"
+	"time"
 
 	kubeclient "knative.dev/pkg/client/injection/kube/client/fake"
 	_ "knative.dev/pkg/client/injection/kube/informers/core/v1/secret/fake"
@@ -37,6 +38,21 @@ import (
 	. "knative.dev/pkg/reconciler/testing"
 	. "knative.dev/pkg/webhook/testing"
 )
+
+var blockingFinished = []func(*testing.T, *TableRow){
+	func(t *testing.T, _ *TableRow) {
+		if s := webhook.SecretsReconciled; s != nil {
+			// We expect webhook.SecretsReconciled to be set to `nil` after
+			// reconciliation, so this should be the main case.
+			select {
+			case _ = <- webhook.SecretsReconciled:
+				// Expected, webhook.SecretsReconciled is closed or nil.
+			case <-time.After(10 * time.Millisecond):
+				t.Errorf("webhook.SecretsReconciled blocked unexpectedly: %+v", webhook.SecretsReconciled)
+			}
+		}
+	},
+}
 
 func TestReconcile(t *testing.T) {
 	secretName, serviceName := "webhook-secret", "webhook-service"
@@ -62,10 +78,12 @@ func TestReconcile(t *testing.T) {
 		Name:    "well formed secret exists",
 		Key:     key,
 		Objects: []runtime.Object{secret},
+		PostConditions: blockingFinished,
 	}, {
 		Name:        "secret does not exist",
 		Key:         key,
 		WantCreates: []runtime.Object{secret},
+		PostConditions: blockingFinished,
 	}, {
 		Name:    "secret does not exist, create error",
 		Key:     key,
@@ -74,6 +92,7 @@ func TestReconcile(t *testing.T) {
 			InduceFailure("create", "secrets"),
 		},
 		WantCreates: []runtime.Object{secret},
+		PostConditions: blockingFinished,
 	}, {
 		Name: "missing server key",
 		Key:  key,
@@ -91,6 +110,7 @@ func TestReconcile(t *testing.T) {
 		WantUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: secret,
 		}},
+		PostConditions: blockingFinished,
 	}, {
 		Name: "missing server cert",
 		Key:  key,
@@ -108,6 +128,7 @@ func TestReconcile(t *testing.T) {
 		WantUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: secret,
 		}},
+		PostConditions: blockingFinished,
 	}, {
 		Name: "missing CA cert",
 		Key:  key,
@@ -125,6 +146,7 @@ func TestReconcile(t *testing.T) {
 		WantUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: secret,
 		}},
+		PostConditions: blockingFinished,
 	}}
 
 	table.Test(t, MakeFactory(func(ctx context.Context, listers *Listers, cmw configmap.Watcher) controller.Reconciler {
@@ -161,10 +183,12 @@ func TestReconcileMakeSecretFailure(t *testing.T) {
 		Name:    "would return error, but not called",
 		Key:     key,
 		Objects: []runtime.Object{secret},
+		PostConditions: blockingFinished,
 	}, {
 		Name:    "secret does not exist",
 		Key:     key,
 		WantErr: true,
+		PostConditions: blockingFinished,
 	}, {
 		Name: "missing server key",
 		Key:  key,
@@ -180,6 +204,7 @@ func TestReconcileMakeSecretFailure(t *testing.T) {
 			},
 		}},
 		WantErr: true,
+		PostConditions: blockingFinished,
 	}}
 
 	table.Test(t, MakeFactory(func(ctx context.Context, listers *Listers, cmw configmap.Watcher) controller.Reconciler {
