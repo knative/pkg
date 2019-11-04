@@ -46,11 +46,10 @@ const (
 	ReportingPeriodKey                  = "metrics.reporting-period-seconds"
 	StackdriverCustomMetricSubDomainKey = "metrics.stackdriver-custom-metrics-subdomain"
 	// Stackdriver client configuration keys
-	stackdriverProjectIDKey          = "metrics.stackdriver-project-id"
-	stackdriverGCPLocationKey        = "metrics.stackdriver-gcp-location"
-	stackdriverClusterNameKey        = "metrics.stackdriver-cluster-name"
-	stackdriverGCPSecretNameKey      = "metrics.stackdriver-gcp-secret-name"
-	stackdriverGCPSecretNamespaceKey = "metrics.stackdriver-gcp-secret-namespace"
+	StackdriverProjectIDKey   = "metrics.stackdriver-project-id"
+	StackdriverGCPLocationKey = "metrics.stackdriver-gcp-location"
+	StackdriverClusterNameKey = "metrics.stackdriver-cluster-name"
+	StackdriverUseSecretKey   = "metrics.stackdriver-use-secret"
 
 	// Stackdriver is used for Stackdriver backend
 	Stackdriver metricsBackend = "stackdriver"
@@ -103,11 +102,11 @@ type metricsConfig struct {
 	// Store this in a variable to reduce string join operations.
 	stackdriverCustomMetricTypePrefix string
 	// stackdriverClientConfig is the metadata to configure the metrics exporter's Stackdriver client.
-	stackdriverClientConfig stackdriverClientConfig
+	stackdriverClientConfig StackdriverClientConfig
 }
 
-// stackdriverClientConfig encapsulates the metadata required to configure a Stackdriver client.
-type stackdriverClientConfig struct {
+// StackdriverClientConfig encapsulates the metadata required to configure a Stackdriver client.
+type StackdriverClientConfig struct {
 	// ProjectID is the stackdriver project ID to which data is uploaded.
 	// This is not necessarily the GCP project ID where the Kubernetes cluster is hosted.
 	// Required when the Kubernetes cluster is not hosted on GCE.
@@ -119,24 +118,21 @@ type stackdriverClientConfig struct {
 	// ClusterName is the cluster name with which the data will be associated in Stackdriver.
 	// Required when the Kubernetes cluster is not hosted on GCE.
 	ClusterName string
-	// GCPSecretName is the optional GCP service account key which will be used to
-	// authenticate with Stackdriver. If not provided, Google Application Default Credentials
+	// UseSecret is whether the credentials stored in a Kubernetes Secret should be used to
+	// authenticate with Stackdriver. The Secret name and namespace can be specified by calling
+	// metrics.SetStackdriverSecretLocation.
+	// If UseSecret is false, Google Application Default Credentials
 	// will be used (https://cloud.google.com/docs/authentication/production).
-	GCPSecretName string
-	// GCPSecretNamespace is the Kubernetes namespace where GCPSecretName is located.
-	// The Kubernetes ServiceAccount used by the pod that is exporting data to
-	// Stackdriver should have access to Secrets in this namespace.
-	GCPSecretNamespace string
+	UseSecret bool
 }
 
-// newStackdriverClientConfigFromMap creates a stackdriverClientConfig from the given map
-func newStackdriverClientConfigFromMap(config map[string]string) *stackdriverClientConfig {
-	return &stackdriverClientConfig{
-		ProjectID:          config[stackdriverProjectIDKey],
-		GCPLocation:        config[stackdriverGCPLocationKey],
-		ClusterName:        config[stackdriverClusterNameKey],
-		GCPSecretName:      config[stackdriverGCPSecretNameKey],
-		GCPSecretNamespace: config[stackdriverGCPSecretNamespaceKey],
+// NewStackdriverClientConfigFromMap creates a stackdriverClientConfig from the given map
+func NewStackdriverClientConfigFromMap(config map[string]string) *StackdriverClientConfig {
+	return &StackdriverClientConfig{
+		ProjectID:   config[StackdriverProjectIDKey],
+		GCPLocation: config[StackdriverGCPLocationKey],
+		ClusterName: config[StackdriverClusterNameKey],
+		UseSecret:   strings.EqualFold(config[StackdriverUseSecretKey], "true"),
 	}
 }
 
@@ -190,7 +186,7 @@ func createMetricsConfig(ops ExporterOptions, logger *zap.SugaredLogger) (*metri
 	// use the application default credentials. If that is not available, Opencensus would fail to create the
 	// metrics exporter.
 	if mc.backendDestination == Stackdriver {
-		scc := newStackdriverClientConfigFromMap(m)
+		scc := NewStackdriverClientConfigFromMap(m)
 		mc.stackdriverClientConfig = *scc
 		mc.isStackdriverBackend = true
 		mc.stackdriverMetricTypePrefix = path.Join(mc.domain, mc.component)
