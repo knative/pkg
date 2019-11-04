@@ -135,6 +135,69 @@ func TestFilterWithNameAndNamespace(t *testing.T) {
 	}
 }
 
+func TestFilterWithName(t *testing.T) {
+	filter := FilterWithName("test-name")
+
+	tests := []struct {
+		name  string
+		input interface{}
+		want  bool
+	}{{
+		name:  "not a metav1.Object",
+		input: "foo",
+		want:  false,
+	}, {
+		name:  "nil",
+		input: nil,
+		want:  false,
+	}, {
+		name: "name matches, namespace does not",
+		input: &Resource{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "test-name",
+				Namespace: "wrong-namespace",
+			},
+		},
+		want: true, // Unlike FilterWithNameAndNamespace this passes
+	}, {
+		name: "namespace matches, name does not",
+		input: &Resource{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "wrong-name",
+				Namespace: "test-namespace",
+			},
+		},
+		want: false,
+	}, {
+		name: "neither matches",
+		input: &Resource{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "wrong-name",
+				Namespace: "wrong-namespace",
+			},
+		},
+		want: false,
+	}, {
+		name: "matches",
+		input: &Resource{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "test-name",
+				Namespace: "test-namespace",
+			},
+		},
+		want: true,
+	}}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			got := filter(test.input)
+			if test.want != got {
+				t.Errorf("FilterWithNameAndNamespace() = %v, wanted %v", got, test.want)
+			}
+		})
+	}
+}
+
 func TestFilter(t *testing.T) {
 	filter := Filter(gvk)
 

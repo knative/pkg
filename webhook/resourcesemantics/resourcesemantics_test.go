@@ -14,34 +14,42 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package webhook
+package resourcesemantics
 
 import (
 	"context"
 	"encoding/json"
-	"reflect"
-	"sort"
-	"strings"
 	"testing"
 
-	"github.com/google/go-cmp/cmp"
-	"github.com/google/go-cmp/cmp/cmpopts"
+	// Injection stuff
+	_ "knative.dev/pkg/client/injection/kube/client/fake"
+	_ "knative.dev/pkg/client/injection/kube/informers/admissionregistration/v1beta1/mutatingwebhookconfiguration/fake"
+	_ "knative.dev/pkg/client/injection/kube/informers/core/v1/secret/fake"
+
 	"github.com/mattbaird/jsonpatch"
 	admissionv1beta1 "k8s.io/api/admission/v1beta1"
 	admissionregistrationv1beta1 "k8s.io/api/admissionregistration/v1beta1"
-	appsv1 "k8s.io/api/apps/v1"
 	authenticationv1 "k8s.io/api/authentication/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/client-go/kubernetes"
 	fakekubeclientset "k8s.io/client-go/kubernetes/fake"
 	"knative.dev/pkg/apis"
 	"knative.dev/pkg/system"
+	"knative.dev/pkg/webhook"
 
 	_ "knative.dev/pkg/system/testing"
 
 	. "knative.dev/pkg/logging/testing"
+	. "knative.dev/pkg/reconciler/testing"
 	. "knative.dev/pkg/testing"
+	. "knative.dev/pkg/webhook/testing"
+)
+
+const (
+	testResourceValidationPath = "/foo"
+	testResourceValidationName = "webhook.knative.dev"
+	user1                      = "brutto@knative.dev"
+	user2                      = "arrabbiato@knative.dev"
 )
 
 var (
@@ -87,20 +95,20 @@ var (
 	}
 )
 
-func newNonRunningTestResourceAdmissionController(t *testing.T, options ControllerOptions) (
+func newNonRunningTestResourceAdmissionController(t *testing.T) (
 	kubeClient *fakekubeclientset.Clientset,
-	ac AdmissionController) {
+	ac *reconciler) {
 
 	t.Helper()
 	// Create fake clients
 	kubeClient = fakekubeclientset.NewSimpleClientset(initialResourceWebhook)
 
-	ac = NewTestResourceAdmissionController(options)
+	ac = NewTestResourceAdmissionController(t)
 	return
 }
 
 func TestDeleteAllowed(t *testing.T) {
-	_, ac := newNonRunningTestResourceAdmissionController(t, newDefaultOptions())
+	_, ac := newNonRunningTestResourceAdmissionController(t)
 
 	req := &admissionv1beta1.AdmissionRequest{
 		Operation: admissionv1beta1.Delete,
@@ -112,7 +120,7 @@ func TestDeleteAllowed(t *testing.T) {
 }
 
 func TestConnectAllowed(t *testing.T) {
-	_, ac := newNonRunningTestResourceAdmissionController(t, newDefaultOptions())
+	_, ac := newNonRunningTestResourceAdmissionController(t)
 
 	req := &admissionv1beta1.AdmissionRequest{
 		Operation: admissionv1beta1.Connect,
@@ -125,7 +133,7 @@ func TestConnectAllowed(t *testing.T) {
 }
 
 func TestUnknownKindFails(t *testing.T) {
-	_, ac := newNonRunningTestResourceAdmissionController(t, newDefaultOptions())
+	_, ac := newNonRunningTestResourceAdmissionController(t)
 
 	req := &admissionv1beta1.AdmissionRequest{
 		Operation: admissionv1beta1.Create,
@@ -136,11 +144,11 @@ func TestUnknownKindFails(t *testing.T) {
 		},
 	}
 
-	expectFailsWith(t, ac.Admit(TestContextWithLogger(t), req), "unhandled kind")
+	ExpectFailsWith(t, ac.Admit(TestContextWithLogger(t), req), "unhandled kind")
 }
 
 func TestUnknownVersionFails(t *testing.T) {
-	_, ac := newNonRunningTestResourceAdmissionController(t, newDefaultOptions())
+	_, ac := newNonRunningTestResourceAdmissionController(t)
 	req := &admissionv1beta1.AdmissionRequest{
 		Operation: admissionv1beta1.Create,
 		Kind: metav1.GroupVersionKind{
@@ -149,11 +157,11 @@ func TestUnknownVersionFails(t *testing.T) {
 			Kind:    "Resource",
 		},
 	}
-	expectFailsWith(t, ac.Admit(TestContextWithLogger(t), req), "unhandled kind")
+	ExpectFailsWith(t, ac.Admit(TestContextWithLogger(t), req), "unhandled kind")
 }
 
 func TestUnknownFieldFails(t *testing.T) {
-	_, ac := newNonRunningTestResourceAdmissionController(t, newDefaultOptions())
+	_, ac := newNonRunningTestResourceAdmissionController(t)
 	req := &admissionv1beta1.AdmissionRequest{
 		Operation: admissionv1beta1.Create,
 		Kind: metav1.GroupVersionKind{
@@ -173,7 +181,7 @@ func TestUnknownFieldFails(t *testing.T) {
 	}
 	req.Object.Raw = marshaled
 
-	expectFailsWith(t, ac.Admit(TestContextWithLogger(t), req),
+	ExpectFailsWith(t, ac.Admit(TestContextWithLogger(t), req),
 		`mutation failed: cannot decode incoming new object: json: unknown field "foo"`)
 }
 
@@ -295,7 +303,7 @@ func TestAdmitCreates(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			r := createResource("a name")
+			r := CreateResource("a name")
 			ctx := apis.WithinCreate(apis.WithUserInfo(
 				TestContextWithLogger(t),
 				&authenticationv1.UserInfo{Username: user1}))
@@ -303,14 +311,14 @@ func TestAdmitCreates(t *testing.T) {
 			// Setup the resource.
 			tc.setup(ctx, r)
 
-			_, ac := newNonRunningTestResourceAdmissionController(t, newDefaultOptions())
+			_, ac := newNonRunningTestResourceAdmissionController(t)
 			resp := ac.Admit(ctx, createCreateResource(ctx, r))
 
 			if tc.rejection == "" {
-				expectAllowed(t, resp)
-				expectPatches(t, resp.Patch, tc.patches)
+				ExpectAllowed(t, resp)
+				ExpectPatches(t, resp.Patch, tc.patches)
 			} else {
-				expectFailsWith(t, resp, tc.rejection)
+				ExpectFailsWith(t, resp, tc.rejection)
 			}
 		})
 	}
@@ -413,7 +421,7 @@ func TestAdmitUpdates(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			old := createResource("a name")
+			old := CreateResource("a name")
 			ctx := TestContextWithLogger(t)
 
 			old.Annotations = map[string]string{
@@ -430,14 +438,14 @@ func TestAdmitUpdates(t *testing.T) {
 				&authenticationv1.UserInfo{Username: user2})
 			tc.mutate(ctx, new)
 
-			_, ac := newNonRunningTestResourceAdmissionController(t, newDefaultOptions())
+			_, ac := newNonRunningTestResourceAdmissionController(t)
 			resp := ac.Admit(ctx, createUpdateResource(ctx, old, new))
 
 			if tc.rejection == "" {
-				expectAllowed(t, resp)
-				expectPatches(t, resp.Patch, tc.patches)
+				ExpectAllowed(t, resp)
+				ExpectPatches(t, resp.Patch, tc.patches)
 			} else {
-				expectFailsWith(t, resp, tc.rejection)
+				ExpectFailsWith(t, resp, tc.rejection)
 			}
 		})
 	}
@@ -478,10 +486,10 @@ func TestValidCreateResourceSucceedsWithRoundTripAndDefaultPatch(t *testing.T) {
 	}
 	req.Object.Raw = createInnerDefaultResourceWithoutSpec(t)
 
-	_, ac := newNonRunningTestResourceAdmissionController(t, newDefaultOptions())
+	_, ac := newNonRunningTestResourceAdmissionController(t)
 	resp := ac.Admit(TestContextWithLogger(t), req)
-	expectAllowed(t, resp)
-	expectPatches(t, resp.Patch, []jsonpatch.JsonPatchOperation{{
+	ExpectAllowed(t, resp)
+	ExpectPatches(t, resp.Patch, []jsonpatch.JsonPatchOperation{{
 		Operation: "add",
 		Path:      "/spec",
 		Value:     map[string]interface{}{},
@@ -496,7 +504,7 @@ func createInnerDefaultResourceWithoutSpec(t *testing.T) []byte {
 	t.Helper()
 	r := InnerDefaultResource{
 		ObjectMeta: metav1.ObjectMeta{
-			Namespace: testNamespace,
+			Namespace: system.Namespace(),
 			Name:      "a name",
 		},
 	}
@@ -522,7 +530,7 @@ func createInnerDefaultResourceWithSpecAndStatus(t *testing.T, spec *InnerDefaul
 	t.Helper()
 	r := InnerDefaultResource{
 		ObjectMeta: metav1.ObjectMeta{
-			Namespace: testNamespace,
+			Namespace: system.Namespace(),
 			Name:      "a name",
 		},
 	}
@@ -540,102 +548,14 @@ func createInnerDefaultResourceWithSpecAndStatus(t *testing.T, spec *InnerDefaul
 	return b
 }
 
-func TestUpdatingResourceController(t *testing.T) {
-	kubeClient, ac := newNonRunningTestResourceAdmissionController(t, newDefaultOptions())
-
-	createDeployment(kubeClient)
-	err := ac.Register(TestContextWithLogger(t), kubeClient, []byte{})
-	if err != nil {
-		t.Fatalf("Failed to create webhook: %s", err)
-	}
-
-	currentWebhook, _ := kubeClient.AdmissionregistrationV1beta1().MutatingWebhookConfigurations().Get(initialResourceWebhook.Name, metav1.GetOptions{})
-	if reflect.DeepEqual(currentWebhook, initialResourceWebhook) {
-		t.Fatalf("Expected webhook to be updated")
-	}
-
-	if len(currentWebhook.OwnerReferences) > 0 {
-		t.Errorf("Expected no OwnerReferences, got %d", len(currentWebhook.OwnerReferences))
-	}
-}
-
-func createDeployment(kubeClient kubernetes.Interface) {
-	deployment := &appsv1.Deployment{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "whatever",
-			Namespace: "knative-something",
-		},
-	}
-	kubeClient.AppsV1().Deployments("knative-something").Create(deployment)
-}
-
-func expectAllowed(t *testing.T, resp *admissionv1beta1.AdmissionResponse) {
-	t.Helper()
-	if !resp.Allowed {
-		t.Errorf("Expected allowed, but failed with %+v", resp.Result)
-	}
-}
-
-func expectFailsWith(t *testing.T, resp *admissionv1beta1.AdmissionResponse, contains string) {
-	t.Helper()
-	if resp.Allowed {
-		t.Error("Expected denial, got allowed")
-		return
-	}
-	if !strings.Contains(resp.Result.Message, contains) {
-		t.Errorf("Expected failure containing %q got %q", contains, resp.Result.Message)
-	}
-}
-
-func expectPatches(t *testing.T, a []byte, e []jsonpatch.JsonPatchOperation) {
-	t.Helper()
-	var got []jsonpatch.JsonPatchOperation
-
-	err := json.Unmarshal(a, &got)
-	if err != nil {
-		t.Errorf("Failed to unmarshal patches: %s", err)
-		return
-	}
-
-	// Give the patch a deterministic ordering.
-	// Technically this can change the meaning, but the ordering is otherwise unstable
-	// and difficult to test.
-	sort.Slice(e, func(i, j int) bool {
-		lhs, rhs := e[i], e[j]
-		if lhs.Operation != rhs.Operation {
-			return lhs.Operation < rhs.Operation
-		}
-		return lhs.Path < rhs.Path
+func NewTestResourceAdmissionController(t *testing.T) *reconciler {
+	ctx, _ := SetupFakeContext(t)
+	ctx = webhook.WithOptions(ctx, webhook.Options{
+		SecretName: "webhook-secret",
 	})
-	sort.Slice(got, func(i, j int) bool {
-		lhs, rhs := got[i], got[j]
-		if lhs.Operation != rhs.Operation {
-			return lhs.Operation < rhs.Operation
-		}
-		return lhs.Path < rhs.Path
-	})
-
-	// Even though diff is useful, seeing the whole objects
-	// one under another helps a lot.
-	t.Logf("Got Patches:  %#v", got)
-	t.Logf("Want Patches: %#v", e)
-	if diff := cmp.Diff(e, got, cmpopts.EquateEmpty()); diff != "" {
-		t.Logf("diff Patches: %v", diff)
-		t.Errorf("expectPatches (-want, +got) = %s", diff)
-	}
-}
-
-func setUserAnnotation(userC, userU string) jsonpatch.JsonPatchOperation {
-	return jsonpatch.JsonPatchOperation{
-		Operation: "add",
-		Path:      "/metadata/annotations",
-		Value: map[string]interface{}{
-			"pkg.knative.dev/creator":      userC,
-			"pkg.knative.dev/lastModifier": userU,
-		},
-	}
-}
-
-func NewTestResourceAdmissionController(options ControllerOptions) AdmissionController {
-	return NewResourceAdmissionController(handlers, options, true)
+	return NewAdmissionController(
+		ctx, testResourceValidationName, testResourceValidationPath,
+		handlers, func(ctx context.Context) context.Context {
+			return ctx
+		}, true).Reconciler.(*reconciler)
 }

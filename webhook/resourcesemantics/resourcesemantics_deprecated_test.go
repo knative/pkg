@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package webhook
+package resourcesemantics
 
 import (
 	"testing"
@@ -22,9 +22,11 @@ import (
 	admissionv1beta1 "k8s.io/api/admission/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"knative.dev/pkg/apis"
-	. "knative.dev/pkg/logging/testing"
 	"knative.dev/pkg/ptr"
+
+	. "knative.dev/pkg/logging/testing"
 	. "knative.dev/pkg/testing"
+	. "knative.dev/pkg/webhook/testing"
 )
 
 // In strict mode, you are not allowed to set a deprecated filed when doing a Create.
@@ -504,15 +506,15 @@ func TestStrictValidation(t *testing.T) {
 				ctx = apis.DisallowDeprecated(ctx)
 			}
 
-			_, ac := newNonRunningTestResourceAdmissionController(t, newDefaultOptions())
+			_, ac := newNonRunningTestResourceAdmissionController(t)
 			resp := ac.Admit(ctx, tc.req)
 
 			if len(tc.wantErrs) > 0 {
 				for _, err := range tc.wantErrs {
-					expectFailsWith(t, resp, err)
+					ExpectFailsWith(t, resp, err)
 				}
 			} else {
-				expectAllowed(t, resp)
+				ExpectAllowed(t, resp)
 			}
 		})
 	}
@@ -534,11 +536,11 @@ func TestStrictValidation_Spec_Create(t *testing.T) {
 
 	ctx := apis.DisallowDeprecated(TestContextWithLogger(t))
 
-	_, ac := newNonRunningTestResourceAdmissionController(t, newDefaultOptions())
+	_, ac := newNonRunningTestResourceAdmissionController(t)
 	resp := ac.Admit(ctx, req)
 
-	expectFailsWith(t, resp, "must not set")
-	expectFailsWith(t, resp, "spec.field")
+	ExpectFailsWith(t, resp, "must not set")
+	ExpectFailsWith(t, resp, "spec.field")
 }
 
 // In strict mode, you are not allowed to update a deprecated filed when doing a Update.
@@ -558,10 +560,10 @@ func TestStrictValidation_Spec_Update(t *testing.T) {
 
 	ctx := apis.DisallowDeprecated(TestContextWithLogger(t))
 
-	_, ac := newNonRunningTestResourceAdmissionController(t, newDefaultOptions())
+	_, ac := newNonRunningTestResourceAdmissionController(t)
 	resp := ac.Admit(ctx, req)
 
-	expectFailsWith(t, resp, "must not update")
-	expectFailsWith(t, resp, "spec.field")
+	ExpectFailsWith(t, resp, "must not update")
+	ExpectFailsWith(t, resp, "spec.field")
 
 }

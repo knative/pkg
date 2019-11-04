@@ -19,7 +19,6 @@ package webhook
 import (
 	"bytes"
 	"context"
-	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -30,26 +29,46 @@ import (
 	"testing"
 	"time"
 
+	kubeclient "knative.dev/pkg/client/injection/kube/client/fake"
+	_ "knative.dev/pkg/client/injection/kube/informers/core/v1/secret/fake"
+
 	"github.com/mattbaird/jsonpatch"
 	admissionv1beta1 "k8s.io/api/admission/v1beta1"
 	authenticationv1 "k8s.io/api/authentication/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"knative.dev/pkg/metrics/metricstest"
-	. "knative.dev/pkg/testing"
+
+	. "knative.dev/pkg/webhook/testing"
 )
 
 const testTimeout = time.Duration(10 * time.Second)
 
+type fixedAdmissionController struct {
+	path     string
+	response *admissionv1beta1.AdmissionResponse
+}
+
+var _ AdmissionController = (*fixedAdmissionController)(nil)
+
+func (fac *fixedAdmissionController) Path() string {
+	return fac.path
+}
+
+func (fac *fixedAdmissionController) Admit(ctx context.Context, req *admissionv1beta1.AdmissionRequest) *admissionv1beta1.AdmissionResponse {
+	return fac.response
+}
+
 func TestMissingContentType(t *testing.T) {
-	ac, serverURL, err := testSetup(t)
+	wh, serverURL, cancel, err := testSetup(t)
 	if err != nil {
 		t.Fatalf("testSetup() = %v", err)
 	}
+	defer cancel()
 	stopCh := make(chan struct{})
 	defer close(stopCh)
 
 	go func() {
-		err := ac.Run(stopCh)
+		err := wh.Run(stopCh)
 		if err != nil {
 			t.Errorf("Unable to run controller: %s", err)
 		}
@@ -60,7 +79,7 @@ func TestMissingContentType(t *testing.T) {
 		t.Fatalf("waitForServerAvailable() = %v", err)
 	}
 
-	tlsClient, err := createSecureTLSClient(t, ac.Client, &ac.Options)
+	tlsClient, err := createSecureTLSClient(t, wh.Client, &wh.Options)
 	if err != nil {
 		t.Fatalf("createSecureTLSClient() = %v", err)
 	}
@@ -94,15 +113,16 @@ func TestMissingContentType(t *testing.T) {
 }
 
 func TestEmptyRequestBody(t *testing.T) {
-	ac, serverURL, err := testSetup(t)
+	wh, serverURL, cancel, err := testSetup(t)
 	if err != nil {
 		t.Fatalf("testSetup() = %v", err)
 	}
+	defer cancel()
 
 	stopCh := make(chan struct{})
 
 	go func() {
-		err := ac.Run(stopCh)
+		err := wh.Run(stopCh)
 		if err != nil {
 			t.Errorf("Unable to run controller: %s", err)
 		}
@@ -114,7 +134,7 @@ func TestEmptyRequestBody(t *testing.T) {
 		t.Fatalf("waitForServerAvailable() = %v", err)
 	}
 
-	tlsClient, err := createSecureTLSClient(t, ac.Client, &ac.Options)
+	tlsClient, err := createSecureTLSClient(t, wh.Client, &wh.Options)
 	if err != nil {
 		t.Fatalf("createSecureTLSClient() = %v", err)
 	}
@@ -147,16 +167,21 @@ func TestEmptyRequestBody(t *testing.T) {
 }
 
 func TestValidResponseForResource(t *testing.T) {
-	ac, serverURL, err := testSetup(t)
+	ac := &fixedAdmissionController{
+		path:     "/bazinga",
+		response: &admissionv1beta1.AdmissionResponse{},
+	}
+	wh, serverURL, cancel, err := testSetup(t, ac)
 	if err != nil {
 		t.Fatalf("testSetup() = %v", err)
 	}
+	defer cancel()
 
 	stopCh := make(chan struct{})
 	defer close(stopCh)
 
 	go func() {
-		err := ac.Run(stopCh)
+		err := wh.Run(stopCh)
 		if err != nil {
 			t.Errorf("Unable to run controller: %s", err)
 		}
@@ -166,7 +191,7 @@ func TestValidResponseForResource(t *testing.T) {
 	if pollErr != nil {
 		t.Fatalf("waitForServerAvailable() = %v", err)
 	}
-	tlsClient, err := createSecureTLSClient(t, ac.Client, &ac.Options)
+	tlsClient, err := createSecureTLSClient(t, wh.Client, &wh.Options)
 	if err != nil {
 		t.Fatalf("createSecureTLSClient() = %v", err)
 	}
@@ -179,7 +204,7 @@ func TestValidResponseForResource(t *testing.T) {
 			Kind:    "Resource",
 		},
 	}
-	testRev := createResource("testrev")
+	testRev := CreateResource("testrev")
 	marshaled, err := json.Marshal(testRev)
 	if err != nil {
 		t.Fatalf("Failed to marshal resource: %s", err)
@@ -197,7 +222,14 @@ func TestValidResponseForResource(t *testing.T) {
 		t.Fatalf("Failed to marshal admission review: %v", err)
 	}
 
-	req, err := http.NewRequest("GET", fmt.Sprintf("https://%s", serverURL), reqBuf)
+	u, err := url.Parse(fmt.Sprintf("https://%s", serverURL))
+	if err != nil {
+		t.Fatalf("bad url %v", err)
+	}
+
+	u.Path = path.Join(u.Path, ac.Path())
+
+	req, err := http.NewRequest("GET", u.String(), reqBuf)
 	if err != nil {
 		t.Fatalf("http.NewRequest() = %v", err)
 	}
@@ -228,116 +260,23 @@ func TestValidResponseForResource(t *testing.T) {
 	metricstest.CheckStatsReported(t, requestCountName, requestLatenciesName)
 }
 
-func TestValidResponseForResourceWithContextDefault(t *testing.T) {
-	ac, serverURL, err := testSetup(t)
-	if err != nil {
-		t.Fatalf("testSetup() = %v", err)
-	}
-	theDefault := "Some default value"
-	ac.WithContext = func(ctx context.Context) context.Context {
-		return WithValue(ctx, theDefault)
-	}
-
-	stopCh := make(chan struct{})
-	defer close(stopCh)
-
-	go func() {
-		err := ac.Run(stopCh)
-		if err != nil {
-			t.Errorf("Unable to run controller: %s", err)
-		}
-	}()
-
-	pollErr := waitForServerAvailable(t, serverURL, testTimeout)
-	if pollErr != nil {
-		t.Fatalf("waitForServerAvailable() = %v", err)
-	}
-	tlsClient, err := createSecureTLSClient(t, ac.Client, &ac.Options)
-	if err != nil {
-		t.Fatalf("createSecureTLSClient() = %v", err)
-	}
-
-	admissionreq := &admissionv1beta1.AdmissionRequest{
-		Operation: admissionv1beta1.Create,
-		Kind: metav1.GroupVersionKind{
-			Group:   "pkg.knative.dev",
-			Version: "v1alpha1",
-			Kind:    "Resource",
-		},
-	}
-	testRev := createResource("testrev")
-	marshaled, err := json.Marshal(testRev)
-	if err != nil {
-		t.Fatalf("Failed to marshal resource: %s", err)
-	}
-
-	admissionreq.Resource.Group = "pkg.knative.dev"
-	admissionreq.Object.Raw = marshaled
-	rev := &admissionv1beta1.AdmissionReview{
-		Request: admissionreq,
-	}
-
-	reqBuf := new(bytes.Buffer)
-	err = json.NewEncoder(reqBuf).Encode(&rev)
-	if err != nil {
-		t.Fatalf("Failed to marshal admission review: %v", err)
-	}
-
-	req, err := http.NewRequest("GET", fmt.Sprintf("https://%s", serverURL), reqBuf)
-	if err != nil {
-		t.Fatalf("http.NewRequest() = %v", err)
-	}
-	req.Header.Add("Content-Type", "application/json")
-
-	response, err := tlsClient.Do(req)
-	if err != nil {
-		t.Fatalf("Failed to get response %v", err)
-	}
-
-	if got, want := response.StatusCode, http.StatusOK; got != want {
-		t.Errorf("Response status code = %v, wanted %v", got, want)
-	}
-
-	defer response.Body.Close()
-	responseBody, err := ioutil.ReadAll(response.Body)
-	if err != nil {
-		t.Fatalf("Failed to read response body %v", err)
-	}
-
-	reviewResponse := admissionv1beta1.AdmissionReview{}
-
-	err = json.NewDecoder(bytes.NewReader(responseBody)).Decode(&reviewResponse)
-	if err != nil {
-		t.Fatalf("Failed to decode response: %v", err)
-	}
-
-	expectPatches(t, reviewResponse.Response.Patch, []jsonpatch.JsonPatchOperation{{
-		Operation: "add",
-		Path:      "/spec/fieldThatsImmutableWithDefault",
-		Value:     "this is another default value",
-	}, {
-		Operation: "add",
-		Path:      "/spec/fieldWithDefault",
-		Value:     "I'm a default.",
-	}, {
-		Operation: "add",
-		Path:      "/spec/fieldWithContextDefault",
-		Value:     theDefault,
-	}, setUserAnnotation("", ""),
-	})
-}
-
 func TestInvalidResponseForResource(t *testing.T) {
-	ac, serverURL, err := testSetup(t)
+	expectedError := "everything is fine."
+	ac := &fixedAdmissionController{
+		path:     "/booger",
+		response: MakeErrorStatus(expectedError),
+	}
+	wh, serverURL, cancel, err := testSetup(t, ac)
 	if err != nil {
 		t.Fatalf("testSetup() = %v", err)
 	}
+	defer cancel()
 
 	stopCh := make(chan struct{})
 	defer close(stopCh)
 
 	go func() {
-		err := ac.Run(stopCh)
+		err := wh.Run(stopCh)
 		if err != nil {
 			t.Errorf("Unable to run controller: %s", err)
 		}
@@ -347,12 +286,12 @@ func TestInvalidResponseForResource(t *testing.T) {
 	if pollErr != nil {
 		t.Fatalf("waitForServerAvailable() = %v", err)
 	}
-	tlsClient, err := createSecureTLSClient(t, ac.Client, &ac.Options)
+	tlsClient, err := createSecureTLSClient(t, wh.Client, &wh.Options)
 	if err != nil {
 		t.Fatalf("createSecureTLSClient() = %v", err)
 	}
 
-	resource := createResource(testResourceName)
+	resource := CreateResource(testResourceName)
 
 	resource.Spec.FieldWithValidation = "not the right value"
 	marshaled, err := json.Marshal(resource)
@@ -384,7 +323,14 @@ func TestInvalidResponseForResource(t *testing.T) {
 		t.Fatalf("Failed to marshal admission review: %v", err)
 	}
 
-	req, err := http.NewRequest("GET", fmt.Sprintf("https://%s", serverURL), reqBuf)
+	u, err := url.Parse(fmt.Sprintf("https://%s", serverURL))
+	if err != nil {
+		t.Fatalf("bad url %v", err)
+	}
+
+	u.Path = path.Join(u.Path, ac.Path())
+
+	req, err := http.NewRequest("GET", u.String(), reqBuf)
 	if err != nil {
 		t.Fatalf("http.NewRequest() = %v", err)
 	}
@@ -423,207 +369,7 @@ func TestInvalidResponseForResource(t *testing.T) {
 		t.Errorf("Response status = %v, wanted %v", got, want)
 	}
 
-	if !strings.Contains(reviewResponse.Response.Result.Message, "invalid value") {
-		t.Errorf("Received unexpected response status message %s", reviewResponse.Response.Result.Message)
-	}
-	if !strings.Contains(reviewResponse.Response.Result.Message, "spec.fieldWithValidation") {
-		t.Errorf("Received unexpected response status message %s", reviewResponse.Response.Result.Message)
-	}
-
-	// Stats should be reported for requests that have admission disallowed
-	metricstest.CheckStatsReported(t, requestCountName, requestLatenciesName)
-}
-
-func TestWebhookClientAuth(t *testing.T) {
-	ac, serverURL, err := testSetup(t)
-	if err != nil {
-		t.Fatalf("testSetup() = %v", err)
-	}
-	ac.Options.ClientAuth = tls.RequireAndVerifyClientCert
-
-	stopCh := make(chan struct{})
-	defer close(stopCh)
-
-	go func() {
-		err := ac.Run(stopCh)
-		if err != nil {
-			t.Errorf("Unable to run controller: %s", err)
-		}
-	}()
-
-	pollErr := waitForServerAvailable(t, serverURL, testTimeout)
-	if pollErr != nil {
-		t.Fatalf("waitForServerAvailable() = %v", err)
-	}
-}
-
-func TestValidResponseForConfigMap(t *testing.T) {
-	ac, serverURL, err := testSetup(t)
-	if err != nil {
-		t.Fatalf("testSetup() = %v", err)
-	}
-
-	stopCh := make(chan struct{})
-	defer close(stopCh)
-
-	go func() {
-		err := ac.Run(stopCh)
-		if err != nil {
-			t.Errorf("Unable to run controller: %s", err)
-		}
-	}()
-
-	pollErr := waitForServerAvailable(t, serverURL, testTimeout)
-	if pollErr != nil {
-		t.Fatalf("waitForServerAvailable() = %v", err)
-	}
-	tlsClient, err := createSecureTLSClient(t, ac.Client, &ac.Options)
-	if err != nil {
-		t.Fatalf("createSecureTLSClient() = %v", err)
-	}
-
-	admissionreq := configMapRequest(
-		createValidConfigMap(),
-		admissionv1beta1.Create,
-		authenticationv1.UserInfo{},
-	)
-	rev := &admissionv1beta1.AdmissionReview{
-		Request: admissionreq,
-	}
-
-	reqBuf := new(bytes.Buffer)
-	err = json.NewEncoder(reqBuf).Encode(&rev)
-	if err != nil {
-		t.Fatalf("Failed to marshal admission review: %v", err)
-	}
-
-	u, err := url.Parse(fmt.Sprintf("https://%s", serverURL))
-	if err != nil {
-		t.Fatalf("bad url %v", err)
-	}
-
-	u.Path = path.Join(u.Path, ac.Options.ConfigValidationControllerPath)
-	req, err := http.NewRequest("GET", u.String(), reqBuf)
-	if err != nil {
-		t.Fatalf("http.NewRequest() = %v", err)
-	}
-	req.Header.Add("Content-Type", "application/json")
-
-	response, err := tlsClient.Do(req)
-	if err != nil {
-		t.Fatalf("Failed to get response %v", err)
-	}
-
-	if got, want := response.StatusCode, http.StatusOK; got != want {
-		t.Errorf("Response status code = %v, wanted %v", got, want)
-	}
-
-	defer response.Body.Close()
-	responseBody, err := ioutil.ReadAll(response.Body)
-	if err != nil {
-		t.Fatalf("Failed to read response body %v", err)
-	}
-
-	reviewResponse := admissionv1beta1.AdmissionReview{}
-
-	err = json.NewDecoder(bytes.NewReader(responseBody)).Decode(&reviewResponse)
-	if err != nil {
-		t.Fatalf("Failed to decode response: %v", err)
-	}
-
-	expectAllowed(t, reviewResponse.Response)
-
-	metricstest.CheckStatsReported(t, requestCountName, requestLatenciesName)
-}
-
-func TestInvalidResponseForConfigMap(t *testing.T) {
-	ac, serverURL, err := testSetup(t)
-	if err != nil {
-		t.Fatalf("testSetup() = %v", err)
-	}
-
-	stopCh := make(chan struct{})
-	defer close(stopCh)
-
-	go func() {
-		err := ac.Run(stopCh)
-		if err != nil {
-			t.Errorf("Unable to run controller: %s", err)
-		}
-	}()
-
-	pollErr := waitForServerAvailable(t, serverURL, testTimeout)
-	if pollErr != nil {
-		t.Fatalf("waitForServerAvailable() = %v", err)
-	}
-	tlsClient, err := createSecureTLSClient(t, ac.Client, &ac.Options)
-	if err != nil {
-		t.Fatalf("createSecureTLSClient() = %v", err)
-	}
-
-	admissionreq := configMapRequest(
-		createWrongTypeConfigMap(),
-		admissionv1beta1.Create,
-		authenticationv1.UserInfo{},
-	)
-	rev := &admissionv1beta1.AdmissionReview{
-		Request: admissionreq,
-	}
-
-	reqBuf := new(bytes.Buffer)
-	err = json.NewEncoder(reqBuf).Encode(&rev)
-	if err != nil {
-		t.Fatalf("Failed to marshal admission review: %v", err)
-	}
-
-	u, err := url.Parse(fmt.Sprintf("https://%s", serverURL))
-	if err != nil {
-		t.Fatalf("bad url %v", err)
-	}
-
-	u.Path = path.Join(u.Path, ac.Options.ConfigValidationControllerPath)
-	req, err := http.NewRequest("GET", u.String(), reqBuf)
-	if err != nil {
-		t.Fatalf("http.NewRequest() = %v", err)
-	}
-	req.Header.Add("Content-Type", "application/json")
-
-	response, err := tlsClient.Do(req)
-	if err != nil {
-		t.Fatalf("Failed to receive response %v", err)
-	}
-
-	if got, want := response.StatusCode, http.StatusOK; got != want {
-		t.Errorf("Response status code = %v, wanted %v", got, want)
-	}
-
-	defer response.Body.Close()
-	respBody, err := ioutil.ReadAll(response.Body)
-	if err != nil {
-		t.Fatalf("Failed to read response body %v", err)
-	}
-
-	reviewResponse := admissionv1beta1.AdmissionReview{}
-
-	err = json.NewDecoder(bytes.NewReader(respBody)).Decode(&reviewResponse)
-	if err != nil {
-		t.Fatalf("Failed to decode response: %v", err)
-	}
-
-	var respPatch []jsonpatch.JsonPatchOperation
-	err = json.Unmarshal(reviewResponse.Response.Patch, &respPatch)
-	if err == nil {
-		t.Fatalf("Expected to fail JSON unmarshal of resposnse")
-	}
-
-	if got, want := reviewResponse.Response.Result.Status, "Failure"; got != want {
-		t.Errorf("Response status = %v, wanted %v", got, want)
-	}
-
-	if !strings.Contains(reviewResponse.Response.Result.Message, "invalid syntax") {
-		t.Errorf("Received unexpected response status message %s", reviewResponse.Response.Result.Message)
-	}
-	if !strings.Contains(reviewResponse.Response.Result.Message, "strconv.ParseFloat") {
+	if !strings.Contains(reviewResponse.Response.Result.Message, expectedError) {
 		t.Errorf("Received unexpected response status message %s", reviewResponse.Response.Result.Message)
 	}
 
@@ -634,7 +380,9 @@ func TestInvalidResponseForConfigMap(t *testing.T) {
 func TestSetupWebhookHTTPServerError(t *testing.T) {
 	defaultOpts := newDefaultOptions()
 	defaultOpts.Port = -1 // invalid port
-	kubeClient, ac := newNonRunningTestWebhook(t, defaultOpts)
+	ctx, wh, cancel := newNonRunningTestWebhook(t, defaultOpts)
+	defer cancel()
+	kubeClient := kubeclient.Get(ctx)
 
 	nsErr := createNamespace(t, kubeClient, metav1.NamespaceSystem)
 	if nsErr != nil {
@@ -644,12 +392,11 @@ func TestSetupWebhookHTTPServerError(t *testing.T) {
 	if cMapsErr != nil {
 		t.Fatalf("testSetup() = %v", cMapsErr)
 	}
-	createDeployment(kubeClient)
 
 	stopCh := make(chan struct{})
 	errCh := make(chan error)
 	go func() {
-		if err := ac.Run(stopCh); err != nil {
+		if err := wh.Run(stopCh); err != nil {
 			errCh <- err
 		}
 	}()
@@ -664,28 +411,17 @@ func TestSetupWebhookHTTPServerError(t *testing.T) {
 	}
 }
 
-func testSetup(t *testing.T) (*Webhook, string, error) {
+func testSetup(t *testing.T, acs ...AdmissionController) (*Webhook, string, context.CancelFunc, error) {
 	t.Helper()
 	port, err := newTestPort()
 	if err != nil {
-		return nil, "", err
+		return nil, "", nil, err
 	}
 
 	defaultOpts := newDefaultOptions()
 	defaultOpts.Port = port
-	kubeClient, ac := newNonRunningTestWebhook(t, defaultOpts)
+	_, wh, cancel := newNonRunningTestWebhook(t, defaultOpts, acs...)
 
-	nsErr := createNamespace(t, kubeClient, metav1.NamespaceSystem)
-	if nsErr != nil {
-		return nil, "", nsErr
-	}
-
-	cMapsErr := createTestConfigMap(t, kubeClient)
-	if cMapsErr != nil {
-		return nil, "", cMapsErr
-	}
-
-	createDeployment(kubeClient)
 	resetMetrics()
-	return ac, fmt.Sprintf("0.0.0.0:%d", port), nil
+	return wh, fmt.Sprintf("0.0.0.0:%d", port), cancel, nil
 }

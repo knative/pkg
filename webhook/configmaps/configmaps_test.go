@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package webhook
+package configmaps
 
 import (
 	"context"
@@ -23,29 +23,43 @@ import (
 	"strconv"
 	"testing"
 
+	// Injection stuff
+	_ "knative.dev/pkg/client/injection/kube/client/fake"
+	_ "knative.dev/pkg/client/injection/kube/informers/admissionregistration/v1beta1/validatingwebhookconfiguration/fake"
+	_ "knative.dev/pkg/client/injection/kube/informers/core/v1/secret/fake"
+
 	admissionv1beta1 "k8s.io/api/admission/v1beta1"
 	admissionregistrationv1beta1 "k8s.io/api/admissionregistration/v1beta1"
 	authenticationv1 "k8s.io/api/authentication/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	fakekubeclientset "k8s.io/client-go/kubernetes/fake"
-	"knative.dev/pkg/apis"
 	"knative.dev/pkg/configmap"
-	"knative.dev/pkg/kmp"
 	"knative.dev/pkg/system"
+	"knative.dev/pkg/webhook"
 
 	_ "knative.dev/pkg/system/testing"
 
 	. "knative.dev/pkg/logging/testing"
+	. "knative.dev/pkg/reconciler/testing"
+	. "knative.dev/pkg/webhook/testing"
+)
+
+const (
+	testConfigValidationName = "configmap.webhook.knative.dev"
+	testConfigValidationPath = "/cm"
 )
 
 var (
+	validations = configmap.Constructors{
+		"test-config": newConfigFromConfigMap,
+	}
 	initialConfigWebhook = &admissionregistrationv1beta1.ValidatingWebhookConfiguration{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: "configmap.webhook.knative.dev",
+			Name: testConfigValidationName,
 		},
 		Webhooks: []admissionregistrationv1beta1.ValidatingWebhook{{
-			Name: "configmap.webhook.knative.dev",
+			Name: testConfigValidationName,
 			ClientConfig: admissionregistrationv1beta1.WebhookClientConfig{
 				Service: &admissionregistrationv1beta1.ServiceReference{
 					Namespace: system.Namespace(),
@@ -62,43 +76,28 @@ var (
 	}
 )
 
-func newNonRunningTestConfigValidationController(t *testing.T, options ControllerOptions) (
+func newNonRunningTestConfigValidationController(t *testing.T) (
 	kubeClient *fakekubeclientset.Clientset,
-	ac AdmissionController) {
+	ac *reconciler) {
 	t.Helper()
 	// Create fake clients
 	kubeClient = fakekubeclientset.NewSimpleClientset(initialConfigWebhook)
 
-	ac = NewTestConfigValidationController(options)
+	ac = NewTestConfigValidationController(t)
 	return
 }
 
-func NewTestConfigValidationController(options ControllerOptions) AdmissionController {
-	validations := configmap.Constructors{"test-config": newConfigFromConfigMap}
-	return NewConfigValidationController(validations, options)
-}
-
-func TestUpdatingConfigValidationController(t *testing.T) {
-	kubeClient, ac := newNonRunningTestConfigValidationController(t, newDefaultOptions())
-
-	createDeployment(kubeClient)
-	err := ac.Register(TestContextWithLogger(t), kubeClient, []byte{})
-	if err != nil {
-		t.Fatalf("Failed to create webhook: %s", err)
-	}
-
-	currentWebhook, _ := kubeClient.AdmissionregistrationV1beta1().ValidatingWebhookConfigurations().Get(initialConfigWebhook.Name, metav1.GetOptions{})
-	if ok, err := kmp.SafeEqual(currentWebhook.Webhooks, initialConfigWebhook.Webhooks); ok || err != nil {
-		t.Fatalf("Expected webhook to be updated: %v", err)
-	}
-
-	if len(currentWebhook.OwnerReferences) > 0 {
-		t.Errorf("Expected no OwnerReferences, got %d", len(currentWebhook.OwnerReferences))
-	}
+func NewTestConfigValidationController(t *testing.T) *reconciler {
+	ctx, _ := SetupFakeContext(t)
+	ctx = webhook.WithOptions(ctx, webhook.Options{
+		SecretName: "webhook-secret",
+	})
+	return NewAdmissionController(ctx, testConfigValidationName, testConfigValidationPath,
+		validations).Reconciler.(*reconciler)
 }
 
 func TestDeleteAllowedForConfigMap(t *testing.T) {
-	_, ac := newNonRunningTestConfigValidationController(t, newDefaultOptions())
+	_, ac := newNonRunningTestConfigValidationController(t)
 
 	req := &admissionv1beta1.AdmissionRequest{
 		Operation: admissionv1beta1.Delete,
@@ -110,7 +109,7 @@ func TestDeleteAllowedForConfigMap(t *testing.T) {
 }
 
 func TestConnectAllowedForConfigMap(t *testing.T) {
-	_, ac := newNonRunningTestConfigValidationController(t, newDefaultOptions())
+	_, ac := newNonRunningTestConfigValidationController(t)
 
 	req := &admissionv1beta1.AdmissionRequest{
 		Operation: admissionv1beta1.Connect,
@@ -123,7 +122,7 @@ func TestConnectAllowedForConfigMap(t *testing.T) {
 }
 
 func TestNonConfigMapKindFails(t *testing.T) {
-	_, ac := newNonRunningTestConfigValidationController(t, newDefaultOptions())
+	_, ac := newNonRunningTestConfigValidationController(t)
 
 	req := &admissionv1beta1.AdmissionRequest{
 		Operation: admissionv1beta1.Create,
@@ -134,85 +133,73 @@ func TestNonConfigMapKindFails(t *testing.T) {
 		},
 	}
 
-	expectFailsWith(t, ac.Admit(TestContextWithLogger(t), req), "unhandled kind")
+	ExpectFailsWith(t, ac.Admit(TestContextWithLogger(t), req), "unhandled kind")
 }
 
 func TestAdmitCreateValidConfigMap(t *testing.T) {
-	_, ac := newNonRunningTestConfigValidationController(t, newDefaultOptions())
+	_, ac := newNonRunningTestConfigValidationController(t)
 
 	r := createValidConfigMap()
-	ctx := apis.WithinCreate(apis.WithUserInfo(
-		TestContextWithLogger(t),
-		&authenticationv1.UserInfo{Username: user1}))
+	ctx := TestContextWithLogger(t)
 
 	resp := ac.Admit(ctx, createCreateConfigMapRequest(ctx, r))
 
-	expectAllowed(t, resp)
+	ExpectAllowed(t, resp)
 }
 
 func TestDenyInvalidCreateConfigMapWithWrongType(t *testing.T) {
-	_, ac := newNonRunningTestConfigValidationController(t, newDefaultOptions())
+	_, ac := newNonRunningTestConfigValidationController(t)
 
 	r := createWrongTypeConfigMap()
-	ctx := apis.WithinCreate(apis.WithUserInfo(
-		TestContextWithLogger(t),
-		&authenticationv1.UserInfo{Username: user1}))
+	ctx := TestContextWithLogger(t)
 
 	resp := ac.Admit(ctx, createCreateConfigMapRequest(ctx, r))
 
-	expectFailsWith(t, resp, "invalid syntax")
+	ExpectFailsWith(t, resp, "invalid syntax")
 }
 
 func TestDenyInvalidCreateConfigMapOutOfRange(t *testing.T) {
-	_, ac := newNonRunningTestConfigValidationController(t, newDefaultOptions())
+	_, ac := newNonRunningTestConfigValidationController(t)
 
 	r := createWrongValueConfigMap()
-	ctx := apis.WithinCreate(apis.WithUserInfo(
-		TestContextWithLogger(t),
-		&authenticationv1.UserInfo{Username: user1}))
+	ctx := TestContextWithLogger(t)
 
 	resp := ac.Admit(ctx, createCreateConfigMapRequest(ctx, r))
 
-	expectFailsWith(t, resp, "out of range")
+	ExpectFailsWith(t, resp, "out of range")
 }
 
 func TestAdmitUpdateValidConfigMap(t *testing.T) {
-	_, ac := newNonRunningTestConfigValidationController(t, newDefaultOptions())
+	_, ac := newNonRunningTestConfigValidationController(t)
 
 	r := createValidConfigMap()
-	ctx := apis.WithinCreate(apis.WithUserInfo(
-		TestContextWithLogger(t),
-		&authenticationv1.UserInfo{Username: user1}))
+	ctx := TestContextWithLogger(t)
 
 	resp := ac.Admit(ctx, updateCreateConfigMapRequest(ctx, r))
 
-	expectAllowed(t, resp)
+	ExpectAllowed(t, resp)
 }
 
 func TestDenyInvalidUpdateConfigMapWithWrongType(t *testing.T) {
-	_, ac := newNonRunningTestConfigValidationController(t, newDefaultOptions())
+	_, ac := newNonRunningTestConfigValidationController(t)
 
 	r := createWrongTypeConfigMap()
-	ctx := apis.WithinCreate(apis.WithUserInfo(
-		TestContextWithLogger(t),
-		&authenticationv1.UserInfo{Username: user1}))
+	ctx := TestContextWithLogger(t)
 
 	resp := ac.Admit(ctx, createCreateConfigMapRequest(ctx, r))
 
-	expectFailsWith(t, resp, "invalid syntax")
+	ExpectFailsWith(t, resp, "invalid syntax")
 }
 
 func TestDenyInvalidUpdateConfigMapOutOfRange(t *testing.T) {
-	_, ac := newNonRunningTestConfigValidationController(t, newDefaultOptions())
+	_, ac := newNonRunningTestConfigValidationController(t)
 
 	r := createWrongValueConfigMap()
-	ctx := apis.WithinCreate(apis.WithUserInfo(
-		TestContextWithLogger(t),
-		&authenticationv1.UserInfo{Username: user1}))
+	ctx := TestContextWithLogger(t)
 
 	resp := ac.Admit(ctx, createCreateConfigMapRequest(ctx, r))
 
-	expectFailsWith(t, resp, "out of range")
+	ExpectFailsWith(t, resp, "out of range")
 }
 
 type config struct {
@@ -261,7 +248,7 @@ func createWrongValueConfigMap() *corev1.ConfigMap {
 func createConfigMap(value string) *corev1.ConfigMap {
 	return &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
-			Namespace: testNamespace,
+			Namespace: system.Namespace(),
 			Name:      "test-config",
 		},
 		Data: map[string]string{
@@ -271,17 +258,16 @@ func createConfigMap(value string) *corev1.ConfigMap {
 }
 
 func createCreateConfigMapRequest(ctx context.Context, r *corev1.ConfigMap) *admissionv1beta1.AdmissionRequest {
-	return configMapRequest(r, admissionv1beta1.Create, *apis.GetUserInfo(ctx))
+	return configMapRequest(r, admissionv1beta1.Create)
 }
 
 func updateCreateConfigMapRequest(ctx context.Context, r *corev1.ConfigMap) *admissionv1beta1.AdmissionRequest {
-	return configMapRequest(r, admissionv1beta1.Update, *apis.GetUserInfo(ctx))
+	return configMapRequest(r, admissionv1beta1.Update)
 }
 
 func configMapRequest(
 	r *corev1.ConfigMap,
 	o admissionv1beta1.Operation,
-	u authenticationv1.UserInfo,
 ) *admissionv1beta1.AdmissionRequest {
 	req := &admissionv1beta1.AdmissionRequest{
 		Operation: o,
@@ -290,7 +276,7 @@ func configMapRequest(
 			Version: "v1",
 			Kind:    "ConfigMap",
 		},
-		UserInfo: u,
+		UserInfo: authenticationv1.UserInfo{Username: "mattmoor"},
 	}
 	marshaled, err := json.Marshal(r)
 	if err != nil {
