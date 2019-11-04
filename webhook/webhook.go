@@ -84,6 +84,12 @@ type Webhook struct {
 	secretlister         corelisters.SecretLister
 }
 
+// SecretsReconciled, if non-`nil`, may be used to block until the controller
+// has run at least once. Until NewController is called, this channel will be
+// `nil`, so be careful of initialization order (typically not a problem if
+// you're using this with sharedmain after the constructor phase.)
+var SecretsReconciled chan struct{}
+
 // New constructs a Webhook
 func New(
 	ctx context.Context,
@@ -135,6 +141,14 @@ func New(
 func (ac *Webhook) Run(stop <-chan struct{}) error {
 	logger := ac.Logger
 	ctx := logging.WithLogger(context.Background(), logger)
+
+	// If certificates are being populated, make sure that the certificate
+	// controller has had at least one chance to reconcile before starting the
+	// HTTP server with a cert that might not yet exist.
+	// Note that we use the assignment version of `if` to avoid a double-read.
+	if s := SecretsReconciled; s != nil {
+		_ = <- s
+	}
 
 	server := &http.Server{
 		Handler: ac,

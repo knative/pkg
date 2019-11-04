@@ -40,6 +40,7 @@ func NewController(
 	cmw configmap.Watcher,
 ) *controller.Impl {
 
+	webhook.SecretsReconciled = make(chan struct{}, 1)
 	client := kubeclient.Get(ctx)
 	secretInformer := secretinformer.Get(ctx)
 	options := webhook.GetOptions(ctx)

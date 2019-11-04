@@ -25,6 +25,7 @@ import (
 	"knative.dev/pkg/controller"
 	"knative.dev/pkg/logging"
 	"knative.dev/pkg/system"
+	"knative.dev/pkg/webhook"
 	certresources "knative.dev/pkg/webhook/certificates/resources"
 )
 
@@ -39,6 +40,13 @@ var _ controller.Reconciler = (*reconciler)(nil)
 
 // Reconcile implements controller.Reconciler
 func (r *reconciler) Reconcile(ctx context.Context, key string) error {
+	defer func() {
+		s := webhook.SecretsReconciled
+		webhook.SecretsReconciled = nil
+		if s != nil {
+			close(s)  // Notify current listeners that the channel is closed.
+		}
+	}()
 	return r.reconcileCertificate(ctx)
 }
 
