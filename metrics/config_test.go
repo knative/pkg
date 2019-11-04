@@ -809,31 +809,31 @@ func TestNewStackdriverConfigFromMap(t *testing.T) {
 // TODO(evankanderson): Move the Stackdriver / Record patching out of config.go
 func TestStackdriverRecord(t *testing.T) {
 	testCases := map[string]struct {
-		opts map[string]string
+		opts          map[string]string
 		servedCounter int64
-		statCounter int64
+		statCounter   int64
 	}{
 		"non-stackdriver": {
 			opts: map[string]string{
 				"metrics.backend-destination": "prometheus",
 			},
 			servedCounter: 1,
-			statCounter: 1,
+			statCounter:   1,
 		},
 		"stackdriver with custom metrics": {
-			opts:  map[string]string{
-				"metrics.backend-destination": "stackdriver",
+			opts: map[string]string{
+				"metrics.backend-destination":              "stackdriver",
 				"metrics.allow-stackdriver-custom-metrics": "true",
 			},
 			servedCounter: 1,
-			statCounter: 1,
+			statCounter:   1,
 		},
 		"stackdriver no custom metrics": {
 			opts: map[string]string{
 				"metrics.backend-destination": "stackdriver",
 			},
 			servedCounter: 1,
-			statCounter: 0,
+			statCounter:   0,
 		},
 	}
 
@@ -841,12 +841,12 @@ func TestStackdriverRecord(t *testing.T) {
 	statCount := stats.Int64("stat_errors", "Number of errors calling stat", stats.UnitNone)
 	emptyTags := map[string]string{}
 
-	for name, data := range(testCases) {
-		t.Run(name, func(t *testing.T){
+	for name, data := range testCases {
+		t.Run(name, func(t *testing.T) {
 			defer ClearAll()
 			opts := ExporterOptions{
 				ConfigMap: data.opts,
-				Domain: "knative.dev/internal/serving",
+				Domain:    "knative.dev/internal/serving",
 				Component: "activator",
 			}
 			mc, err := createMetricsConfig(opts, TestLogger(t))
