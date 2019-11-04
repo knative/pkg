@@ -200,4 +200,8 @@ func TestNew(t *testing.T) {
 	if c == nil {
 		t.Fatal("Expected NewController to return a non-nil value")
 	}
+
+	if webhook.SecretsReconciled == nil {
+		t.Fatal("Expected NewController to initialize webhook.SecretsReconciled")
+	}
 }
