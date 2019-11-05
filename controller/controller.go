@@ -189,7 +189,7 @@ func (c *Impl) Enqueue(obj interface{}) {
 // EnqueueSentinel returns a Enqueue method which will always enqueue a
 // predefined key instead of the object key.
 func (c *Impl) EnqueueSentinel(k types.NamespacedName) func(interface{}) {
-	return func(_ interface{}) {
+	return func(interface{}) {
 		c.EnqueueKey(k)
 	}
 }
