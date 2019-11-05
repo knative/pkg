@@ -135,7 +135,7 @@ var (
 	}}
 )
 
-func fakeGcpMetadataFun() *gcpMetadata {
+func fakeGcpMetadataFunc() *gcpMetadata {
 	return &testGcpMetadata
 }
 
