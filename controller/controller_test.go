@@ -337,6 +337,36 @@ func TestEnqueues(t *testing.T) {
 		},
 		wantQueue: []types.NamespacedName{{Namespace: "bar", Name: "foo"}},
 	}, {
+		name: "enqueue sentinel resource",
+		work: func(impl *Impl) {
+			e := impl.EnqueueSentinel(types.NamespacedName{Namespace: "foo", Name: "bar"})
+			e(&Resource{
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace: "foo",
+					Name:      "baz",
+				},
+			})
+		},
+		wantQueue: []types.NamespacedName{{Namespace: "foo", Name: "bar"}},
+	}, {
+		name: "enqueue duplicate sentinel resource",
+		work: func(impl *Impl) {
+			e := impl.EnqueueSentinel(types.NamespacedName{Namespace: "foo", Name: "bar"})
+			e(&Resource{
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace: "foo",
+					Name:      "baz-1",
+				},
+			})
+			e(&Resource{
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace: "foo",
+					Name:      "baz-2",
+				},
+			})
+		},
+		wantQueue: []types.NamespacedName{{Namespace: "foo", Name: "bar"}},
+	}, {
 		name: "enqueue bad resource",
 		work: func(impl *Impl) {
 			impl.Enqueue("baz/blah")
