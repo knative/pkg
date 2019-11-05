@@ -19,11 +19,6 @@ aliases:
   - vaikas-google
   - vaikas
 
-  cloudevents-approvers:
-  - n3wscott
-  - vaikas-google
-  - vaikas
-
   configmap-approvers:
   - mattmoor
   - mdemirhan
