@@ -147,7 +147,6 @@ func TestMetricsExporter(t *testing.T) {
 			isStackdriverBackend:              true,
 			stackdriverMetricTypePrefix:       path.Join(servingDomain, testComponent),
 			stackdriverCustomMetricTypePrefix: path.Join(customMetricTypePrefix, defaultCustomMetricSubDomain, testComponent),
-			stackdriverCustomMetricsSubDomain: defaultCustomMetricSubDomain,
 			stackdriverClientConfig: StackdriverClientConfig{
 				ProjectID:   "project",
 				GCPLocation: "us-west1",
@@ -184,7 +183,6 @@ func TestMetricsExporter(t *testing.T) {
 			isStackdriverBackend:              true,
 			stackdriverMetricTypePrefix:       path.Join(servingDomain, testComponent),
 			stackdriverCustomMetricTypePrefix: path.Join(customMetricTypePrefix, defaultCustomMetricSubDomain, testComponent),
-			stackdriverCustomMetricsSubDomain: defaultCustomMetricSubDomain,
 			stackdriverClientConfig: StackdriverClientConfig{
 				ProjectID:   "project",
 				GCPLocation: "narnia",
@@ -203,7 +201,6 @@ func TestMetricsExporter(t *testing.T) {
 			isStackdriverBackend:              true,
 			stackdriverMetricTypePrefix:       path.Join(servingDomain, testComponent),
 			stackdriverCustomMetricTypePrefix: path.Join(customMetricTypePrefix, defaultCustomMetricSubDomain, testComponent),
-			stackdriverCustomMetricsSubDomain: defaultCustomMetricSubDomain,
 			stackdriverClientConfig: StackdriverClientConfig{
 				GCPLocation: "narnia",
 				ClusterName: "cluster",
@@ -221,7 +218,6 @@ func TestMetricsExporter(t *testing.T) {
 			isStackdriverBackend:              true,
 			stackdriverMetricTypePrefix:       path.Join(servingDomain, testComponent),
 			stackdriverCustomMetricTypePrefix: path.Join(customMetricTypePrefix, defaultCustomMetricSubDomain, testComponent),
-			stackdriverCustomMetricsSubDomain: defaultCustomMetricSubDomain,
 			stackdriverClientConfig: StackdriverClientConfig{
 				ProjectID: "project",
 			},
@@ -313,7 +309,6 @@ func TestFlushExporter(t *testing.T) {
 		domain:                            servingDomain,
 		component:                         testComponent,
 		backendDestination:                Stackdriver,
-		allowStackdriverCustomMetrics:     true,
 		isStackdriverBackend:              true,
 		reportingPeriod:                   1 * time.Minute,
 		stackdriverMetricTypePrefix:       path.Join(servingDomain, testComponent),

@@ -17,6 +17,7 @@ limitations under the License.
 package metrics
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -27,6 +28,8 @@ import (
 	"time"
 
 	"go.uber.org/zap"
+	"go.opencensus.io/stats"
+	"knative.dev/pkg/metrics/metricskey"
 )
 
 const (
@@ -74,22 +77,16 @@ type metricsConfig struct {
 	// If duration is less than or equal to zero, it enables the default behavior.
 	reportingPeriod time.Duration
 
+	// recorder provides a hook for performing custom transformations before
+	// writing the metrics to the stats.RecordWithOptions interface.
+	recorder func(context.Context, stats.Measurement, ...stats.Options) error
+
 	// ---- Prometheus specific below ----
 	// prometheusPort is the port where metrics are exposed in Prometheus
 	// format. It defaults to 9090.
 	prometheusPort int
 
 	// ---- Stackdriver specific below ----
-	// allowStackdriverCustomMetrics indicates whether it is allowed to send metrics to
-	// Stackdriver using "global" resource type and custom metric type if the
-	// metrics are not supported by the registered monitored resource types. Setting this
-	// flag to "true" could cause extra Stackdriver charge.
-	// If backendDestination is not Stackdriver, this is ignored.
-	allowStackdriverCustomMetrics bool
-	// stackdriverCustomMetricsSubDomain is the subdomain to use when sending custom metrics to StackDriver.
-	// If not specified, the default is `knative.dev`.
-	// If backendDestination is not Stackdriver, this is ignored.
-	stackdriverCustomMetricsSubDomain string
 	// True if backendDestination equals to "stackdriver". Store this in a variable
 	// to reduce string comparison operations.
 	isStackdriverBackend bool
@@ -134,6 +131,15 @@ func NewStackdriverClientConfigFromMap(config map[string]string) *StackdriverCli
 		ClusterName: config[StackdriverClusterNameKey],
 		UseSecret:   strings.EqualFold(config[StackdriverUseSecretKey], "true"),
 	}
+}
+
+// Record applies the `ros` Options to `ms` and then records the resulting
+// measurements in the metricsConfig's designated backend.
+func (mc *metricsConfig) Record(ctx context.Context, ms stats.Measurement, ros ...stats.Options) error {
+	if mc == nil || mc.recorder == nil {
+		return stats.RecordWithOptions(ctx, append(ros, stats.WithMeasurements(ms))...)
+	}
+	return mc.recorder(ctx, ms, ros...)
 }
 
 func createMetricsConfig(ops ExporterOptions, logger *zap.SugaredLogger) (*metricsConfig, error) {
@@ -189,19 +195,34 @@ func createMetricsConfig(ops ExporterOptions, logger *zap.SugaredLogger) (*metri
 		scc := NewStackdriverClientConfigFromMap(m)
 		mc.stackdriverClientConfig = *scc
 		mc.isStackdriverBackend = true
+		var allowCustomMetrics bool
+		var err error
 		mc.stackdriverMetricTypePrefix = path.Join(mc.domain, mc.component)
 
-		mc.stackdriverCustomMetricsSubDomain = defaultCustomMetricSubDomain
-		if sdcmd, ok := m[StackdriverCustomMetricSubDomainKey]; ok && sdcmd != "" {
-			mc.stackdriverCustomMetricsSubDomain = sdcmd
+		customMetricsSubDomain := m[StackdriverCustomMetricSubDomainKey]
+		if customMetricsSubDomain == "" {
+			customMetricsSubDomain = defaultCustomMetricSubDomain
 		}
-		mc.stackdriverCustomMetricTypePrefix = path.Join(customMetricTypePrefix, mc.stackdriverCustomMetricsSubDomain, mc.component)
-		if ascmStr, ok := m[AllowStackdriverCustomMetricsKey]; ok && ascmStr != "" {
-			ascmBool, err := strconv.ParseBool(ascmStr)
+		mc.stackdriverCustomMetricTypePrefix = path.Join(customMetricTypePrefix, customMetricsSubDomain, mc.component)
+		if ascmStr := m[AllowStackdriverCustomMetricsKey]; ascmStr != "" {
+			allowCustomMetrics, err = strconv.ParseBool(ascmStr)
 			if err != nil {
 				return nil, fmt.Errorf("invalid %s value %q", AllowStackdriverCustomMetricsKey, ascmStr)
 			}
-			mc.allowStackdriverCustomMetrics = ascmBool
+		}
+
+		if !allowCustomMetrics {
+			servingOrEventing := metricskey.KnativeRevisionMetrics.Union(
+				metricskey.KnativeTriggerMetrics)
+			mc.recorder = func(ctx context.Context, ms stats.Measurement, ros... stats.Options) error {
+				metricType := path.Join(mc.stackdriverMetricTypePrefix, ms.Measure().Name())
+
+				if servingOrEventing.Has(metricType) {
+					return stats.RecordWithOptions(ctx, append(ros, stats.WithMeasurements(ms))...)
+				}
+				// Otherwise, skip (because it won't be accepted)
+				return nil
+			}
 		}
 	}
 
