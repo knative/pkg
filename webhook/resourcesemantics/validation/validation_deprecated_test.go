@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package resourcesemantics
+package validation
 
 import (
 	"testing"
@@ -178,18 +178,6 @@ func TestStrictValidation(t *testing.T) {
 			},
 		},
 
-		"update, strict": {
-			strict: true,
-			req: newUpdateReq(
-				createInnerDefaultResourceWithoutSpec(t),
-				createInnerDefaultResourceWithSpecAndStatus(t, &InnerDefaultSpec{
-					DeprecatedField: "fail setting.",
-				}, nil)),
-			wantErrs: []string{
-				"must not update",
-				"spec.field",
-			},
-		},
 		"update strict, spec.sub.string": {
 			strict: true,
 			req: newUpdateReq(
@@ -498,6 +486,7 @@ func TestStrictValidation(t *testing.T) {
 				}, nil)),
 		},
 	}
+
 	for n, tc := range testCases {
 		t.Run(n, func(t *testing.T) {
 			defer ClearAll()
@@ -541,29 +530,4 @@ func TestStrictValidation_Spec_Create(t *testing.T) {
 
 	ExpectFailsWith(t, resp, "must not set")
 	ExpectFailsWith(t, resp, "spec.field")
-}
-
-// In strict mode, you are not allowed to update a deprecated filed when doing a Update.
-func TestStrictValidation_Spec_Update(t *testing.T) {
-	req := &admissionv1beta1.AdmissionRequest{
-		Operation: admissionv1beta1.Update,
-		Kind: metav1.GroupVersionKind{
-			Group:   "pkg.knative.dev",
-			Version: "v1alpha1",
-			Kind:    "InnerDefaultResource",
-		},
-	}
-	req.OldObject.Raw = createInnerDefaultResourceWithoutSpec(t)
-	req.Object.Raw = createInnerDefaultResourceWithSpecAndStatus(t, &InnerDefaultSpec{
-		DeprecatedField: "fail setting.",
-	}, nil)
-
-	ctx := apis.DisallowDeprecated(TestContextWithLogger(t))
-
-	_, ac := newNonRunningTestResourceAdmissionController(t)
-	resp := ac.Admit(ctx, req)
-
-	ExpectFailsWith(t, resp, "must not update")
-	ExpectFailsWith(t, resp, "spec.field")
-
 }
