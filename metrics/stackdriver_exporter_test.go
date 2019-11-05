@@ -21,6 +21,7 @@ import (
 	"testing"
 	"time"
 
+	"contrib.go.opencensus.io/exporter/stackdriver"
 	"go.opencensus.io/stats"
 	"go.opencensus.io/stats/view"
 	"go.opencensus.io/tag"
@@ -133,6 +134,19 @@ var (
 		metricName: "unsupported",
 	}}
 )
+
+func fakeGcpMetadataFun() *gcpMetadata {
+	return &testGcpMetadata
+}
+
+type fakeExporter struct{}
+
+func (fe *fakeExporter) ExportView(vd *view.Data) {}
+func (fe *fakeExporter) Flush()                   {}
+
+func newFakeExporter(o stackdriver.Options) (view.Exporter, error) {
+	return &fakeExporter{}, nil
+}
 
 func TestGetMonitoredResourceFunc_UseKnativeRevision(t *testing.T) {
 	for _, testCase := range supportedServingMetricsTestCases {
