@@ -76,10 +76,6 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func readProfilingFlag(configMap *corev1.ConfigMap) (bool, error) {
-	return ReadProfilingFlag(configMap.Data)
-}
-
 func ReadProfilingFlag(config map[string]string) (bool, error) {
 	profiling, ok := config[profilingKey]
 	if !ok {
@@ -95,7 +91,7 @@ func ReadProfilingFlag(config map[string]string) (bool, error) {
 // UpdateFromConfigMap modifies the Enabled flag in the Handler
 // according to the value in the given ConfigMap
 func (h *Handler) UpdateFromConfigMap(configMap *corev1.ConfigMap) {
-	enabled, err := readProfilingFlag(configMap)
+	enabled, err := ReadProfilingFlag(configMap.Data)
 	if err != nil {
 		h.log.Errorw("Failed to update the profiling flag", zap.Error(err))
 		return
