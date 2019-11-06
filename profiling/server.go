@@ -77,7 +77,11 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func readProfilingFlag(configMap *corev1.ConfigMap) (bool, error) {
-	profiling, ok := configMap.Data[profilingKey]
+	return ReadProfilingFlag(configMap.Data)
+}
+
+func ReadProfilingFlag(config map[string]string) (bool, error) {
+	profiling, ok := config[profilingKey]
 	if !ok {
 		return false, nil
 	}
