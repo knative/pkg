@@ -63,7 +63,7 @@ var (
 		metricName string
 	}{{
 		name:       "broker metric",
-		domain:     eventingDomain,
+		domain:     internalEventingDomain,
 		component:  "broker",
 		metricName: "event_count",
 	}}
@@ -75,17 +75,17 @@ var (
 		metricName string
 	}{{
 		name:       "trigger metric",
-		domain:     eventingDomain,
+		domain:     internalEventingDomain,
 		component:  "trigger",
 		metricName: "event_count",
 	}, {
 		name:       "trigger metric",
-		domain:     eventingDomain,
+		domain:     internalEventingDomain,
 		component:  "trigger",
 		metricName: "event_processing_latencies",
 	}, {
 		name:       "trigger metric",
-		domain:     eventingDomain,
+		domain:     internalEventingDomain,
 		component:  "trigger",
 		metricName: "event_dispatch_latencies",
 	}}
@@ -124,12 +124,12 @@ var (
 		metricName: "unsupported",
 	}, {
 		name:       "unsupported component",
-		domain:     eventingDomain,
+		domain:     internalEventingDomain,
 		component:  "unsupported",
 		metricName: "event_count",
 	}, {
 		name:       "unsupported metric",
-		domain:     eventingDomain,
+		domain:     internalEventingDomain,
 		component:  "broker",
 		metricName: "unsupported",
 	}}
@@ -199,15 +199,11 @@ func TestGetMonitoredResourceFunc_UseKnativeBroker(t *testing.T) {
 		if got != testEventType {
 			t.Errorf("expected new tag: %v, got: %v", eventTypeKey, newTags)
 		}
-		got = getResourceLabelValue(metricskey.LabelEventSource, newTags)
-		if got != testEventSource {
-			t.Errorf("expected new tag: %v, got: %v", eventSourceKey, newTags)
-		}
 		got, ok := labels[metricskey.LabelNamespaceName]
 		if !ok || got != testNS {
 			t.Errorf("expected label %v with value %v, got: %v", metricskey.LabelNamespaceName, testNS, got)
 		}
-		got, ok = labels[metricskey.LabelName]
+		got, ok = labels[metricskey.LabelBrokerName]
 		if !ok || got != testBroker {
 			t.Errorf("expected label %v with value %v, got: %v", metricskey.LabelBrokerName, testBroker, got)
 		}
@@ -233,10 +229,6 @@ func TestGetMonitoredResourceFunc_UseKnativeTrigger(t *testing.T) {
 		got := getResourceLabelValue(metricskey.LabelFilterType, newTags)
 		if got != testFilterType {
 			t.Errorf("expected new tag: %v, got: %v", filterTypeKey, newTags)
-		}
-		got = getResourceLabelValue(metricskey.LabelFilterSource, newTags)
-		if got != testFilterSource {
-			t.Errorf("expected new tag: %v, got: %v", filterSourceKey, newTags)
 		}
 		got, ok := labels[metricskey.LabelNamespaceName]
 		if !ok || got != testNS {
