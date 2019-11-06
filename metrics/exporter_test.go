@@ -37,6 +37,7 @@ const (
 
 	testBroker              = "test-broker"
 	testEventType           = "test-eventtype"
+	testEventSource         = "test-eventsource"
 	testTrigger             = "test-trigger"
 	testFilterType          = "test-filtertype"
 	testSource              = "test-source"
@@ -63,12 +64,13 @@ var (
 	sourceKey              = tag.Tag{Key: mustNewTagKey(metricskey.LabelName), Value: testSource}
 	sourceResourceGroupKey = tag.Tag{Key: mustNewTagKey(metricskey.LabelResourceGroup), Value: testSourceResourceGroup}
 	eventTypeKey           = tag.Tag{Key: mustNewTagKey(metricskey.LabelEventType), Value: testEventType}
+	eventSourceKey         = tag.Tag{Key: mustNewTagKey(metricskey.LabelEventSource), Value: testEventSource}
 
 	revisionTestTags = []tag.Tag{nsKey, serviceKey, routeKey, revisionKey}
 
 	brokerTestTags  = []tag.Tag{nsKey, brokerKey, eventTypeKey}
 	triggerTestTags = []tag.Tag{nsKey, triggerKey, brokerKey, filterTypeKey}
-	sourceTestTags  = []tag.Tag{nsKey, sourceKey, sourceResourceGroupKey, eventTypeKey}
+	sourceTestTags  = []tag.Tag{nsKey, sourceKey, sourceResourceGroupKey, eventTypeKey, eventSourceKey}
 )
 
 func mustNewTagKey(s string) tag.Key {

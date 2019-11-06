@@ -247,6 +247,10 @@ func TestGetMonitoredResourceFunc_UseKnativeSource(t *testing.T) {
 		if got != testEventType {
 			t.Errorf("expected new tag: %v, got: %v", eventTypeKey, newTags)
 		}
+		got = getResourceLabelValue(metricskey.LabelEventSource, newTags)
+		if got != testEventSource {
+			t.Errorf("expected new tag: %v, got: %v", eventSourceKey, newTags)
+		}
 		got, ok := labels[metricskey.LabelNamespaceName]
 		if !ok || got != testNS {
 			t.Errorf("expected label %v with value %v, got: %v", metricskey.LabelNamespaceName, testNS, got)
