@@ -146,9 +146,9 @@ func GetKnativeSourceMonitoredResource(
 		Location:    gm.location,
 		ClusterName: gm.cluster,
 		// The rest resource labels are from metrics labels.
-		SourceResourceGroup: valueOrUnknown(metricskey.LabelResourceGroup, tagsMap),
 		NamespaceName:       valueOrUnknown(metricskey.LabelNamespaceName, tagsMap),
 		SourceName:          valueOrUnknown(metricskey.LabelName, tagsMap),
+		SourceResourceGroup: valueOrUnknown(metricskey.LabelResourceGroup, tagsMap),
 	}
 
 	var newTags []tag.Tag
