@@ -38,6 +38,7 @@ import (
 const (
 	servingDomain          = "knative.dev/serving"
 	internalServingDomain  = "knative.dev/internal/serving"
+	eventingDomain         = "knative.dev/eventing"
 	internalEventingDomain = "knative.dev/internal/eventing"
 	customSubDomain        = "test.domain"
 	testComponent          = "testComponent"

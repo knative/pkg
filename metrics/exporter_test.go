@@ -60,7 +60,7 @@ var (
 	brokerKey              = tag.Tag{Key: mustNewTagKey(metricskey.LabelBrokerName), Value: testBroker}
 	triggerKey             = tag.Tag{Key: mustNewTagKey(metricskey.LabelTriggerName), Value: testTrigger}
 	filterTypeKey          = tag.Tag{Key: mustNewTagKey(metricskey.LabelFilterType), Value: testFilterType}
-	sourceKey              = tag.Tag{Key: mustNewTagKey(metricskey.LabelSourceName), Value: testSource}
+	sourceKey              = tag.Tag{Key: mustNewTagKey(metricskey.LabelName), Value: testSource}
 	sourceResourceGroupKey = tag.Tag{Key: mustNewTagKey(metricskey.LabelResourceGroup), Value: testSourceResourceGroup}
 	eventTypeKey           = tag.Tag{Key: mustNewTagKey(metricskey.LabelEventType), Value: testEventType}
 

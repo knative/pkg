@@ -96,7 +96,7 @@ var (
 		metricName string
 	}{{
 		name:       "source metric",
-		domain:     internalEventingDomain,
+		domain:     eventingDomain,
 		component:  "source",
 		metricName: "event_count",
 	}}
@@ -251,9 +251,9 @@ func TestGetMonitoredResourceFunc_UseKnativeSource(t *testing.T) {
 		if !ok || got != testNS {
 			t.Errorf("expected label %v with value %v, got: %v", metricskey.LabelNamespaceName, testNS, got)
 		}
-		got, ok = labels[metricskey.LabelSourceName]
+		got, ok = labels[metricskey.LabelName]
 		if !ok || got != testSource {
-			t.Errorf("expected label %v with value %v, got: %v", metricskey.LabelSourceName, testSource, got)
+			t.Errorf("expected label %v with value %v, got: %v", metricskey.LabelName, testSource, got)
 		}
 		got, ok = labels[metricskey.LabelResourceGroup]
 		if !ok || got != testSourceResourceGroup {
