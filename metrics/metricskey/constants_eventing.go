@@ -91,9 +91,9 @@ var (
 		LabelProject,
 		LabelLocation,
 		LabelClusterName,
-		LabelResourceGroup,
 		LabelNamespaceName,
 		LabelName,
+		LabelResourceGroup,
 	)
 
 	// KnativeSourceMetrics stores a set of metric types which are supported
