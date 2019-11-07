@@ -971,12 +971,14 @@
   version = "kubernetes-1.15.3"
 
 [[projects]]
-  digest = "1:f3d53e8c6ee1c0312bbf66e5a98aee44288388a19e8dc164d8beeeae0b32a925"
+  digest = "1:fa459fee806b391b93a4599d1a317265b13ef5dde2ea6020622ee44e4cd21103"
   name = "k8s.io/client-go"
   packages = [
     "discovery",
     "discovery/fake",
     "dynamic",
+    "dynamic/dynamicinformer",
+    "dynamic/dynamiclister",
     "dynamic/fake",
     "informers",
     "informers/admissionregistration",
@@ -1368,6 +1370,7 @@
     "k8s.io/client-go/discovery",
     "k8s.io/client-go/discovery/fake",
     "k8s.io/client-go/dynamic",
+    "k8s.io/client-go/dynamic/dynamicinformer",
     "k8s.io/client-go/dynamic/fake",
     "k8s.io/client-go/informers",
     "k8s.io/client-go/informers/admissionregistration/v1beta1",
