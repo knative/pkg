@@ -79,7 +79,7 @@ func TestRecordEventing(t *testing.T) {
 			name: "stackdriver backend with supported metric",
 			metricsConfig: &metricsConfig{
 				isStackdriverBackend:        true,
-				stackdriverMetricTypePrefix: "knative.dev/eventing/broker",
+				stackdriverMetricTypePrefix: "knative.dev/internal/eventing/broker",
 			},
 			measurement: measure.M(5),
 		}, {
