@@ -60,9 +60,7 @@ required = [
 
 [[constraint]]
   name = "contrib.go.opencensus.io/exporter/stackdriver"
-  # The build fails against 0.12.6 and newer because
-  # stackdriver.Options.GetMonitoredResource was removed.
-  version = "<=v0.12.5"
+  version = "v0.12.8"
 
 [[constraint]]
   name = "github.com/google/mako"

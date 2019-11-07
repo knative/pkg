@@ -23,8 +23,8 @@ import (
 
 	"contrib.go.opencensus.io/exporter/stackdriver"
 	"contrib.go.opencensus.io/exporter/stackdriver/monitoredresource"
+	"go.opencensus.io/metric/metricdata"
 	"go.opencensus.io/stats/view"
-	"go.opencensus.io/tag"
 	"go.uber.org/zap"
 	"google.golang.org/api/option"
 	"knative.dev/pkg/metrics/metricskey"
@@ -101,10 +101,14 @@ func init() {
 }
 
 func newOpencensusSDExporter(o stackdriver.Options) (view.Exporter, error) {
+	e, err := stackdriver.NewExporter(o)
+	if err == nil {
+		e.StartMetricsExporter()
+	}
 	return stackdriver.NewExporter(o)
 }
 
-// TODO should be properly refactored to be able to inject the getMonitoredResourceFunc function.
+// TODO should be properly refactored to be able to inject the getResourceByDescriptorFunc function.
 // 	See https://github.com/knative/pkg/issues/608
 func newStackdriverExporter(config *metricsConfig, logger *zap.SugaredLogger) (view.Exporter, error) {
 	gm := getMergedGCPMetadata(config)
@@ -121,7 +125,8 @@ func newStackdriverExporter(config *metricsConfig, logger *zap.SugaredLogger) (v
 		TraceClientOptions:      co,
 		GetMetricDisplayName:    mtf, // Use metric type for display name for custom metrics. No impact on built-in metrics.
 		GetMetricType:           mtf,
-		GetMonitoredResource:    getMonitoredResourceFunc(config.stackdriverMetricTypePrefix, gm),
+		ResourceByDescriptor:    getResourceByDescriptorFunc(config.stackdriverMetricTypePrefix, gm),
+		ReportingInterval:       config.reportingPeriod,
 		DefaultMonitoringLabels: &stackdriver.Labels{},
 	})
 	if err != nil {
@@ -172,24 +177,25 @@ func getMergedGCPMetadata(config *metricsConfig) *gcpMetadata {
 	return gm
 }
 
-func getMonitoredResourceFunc(metricTypePrefix string, gm *gcpMetadata) func(v *view.View, tags []tag.Tag) ([]tag.Tag, monitoredresource.Interface) {
-	return func(view *view.View, tags []tag.Tag) ([]tag.Tag, monitoredresource.Interface) {
-		metricType := path.Join(metricTypePrefix, view.Measure.Name())
+func getResourceByDescriptorFunc(metricTypePrefix string, gm *gcpMetadata) func(*metricdata.Descriptor, map[string]string) (map[string]string, monitoredresource.Interface) {
+	return func(des *metricdata.Descriptor, tags map[string]string) (map[string]string, monitoredresource.Interface) {
+		metricType := path.Join(metricTypePrefix, des.Name)
 		if metricskey.KnativeRevisionMetrics.Has(metricType) {
-			return GetKnativeRevisionMonitoredResource(view, tags, gm)
-		} else if metricskey.KnativeBrokerMetrics.Has(metricType) {
-			return GetKnativeBrokerMonitoredResource(view, tags, gm)
-		} else if metricskey.KnativeTriggerMetrics.Has(metricType) {
-			return GetKnativeTriggerMonitoredResource(view, tags, gm)
-		} else if metricskey.KnativeSourceMetrics.Has(metricType) {
-			return GetKnativeSourceMonitoredResource(view, tags, gm)
+			return GetKnativeRevisionMonitoredResource(des, tags, gm)
 		}
+		// else if metricskey.KnativeBrokerMetrics.Has(metricType) {
+		// 	return GetKnativeBrokerMonitoredResource(view, tags, gm)
+		// } else if metricskey.KnativeTriggerMetrics.Has(metricType) {
+		// 	return GetKnativeTriggerMonitoredResource(view, tags, gm)
+		// } else if metricskey.KnativeSourceMetrics.Has(metricType) {
+		// 	return GetKnativeSourceMonitoredResource(view, tags, gm)
+		// }
 		// Unsupported metric by knative_revision, knative_broker, knative_trigger, and knative_source, use "global" resource type.
-		return getGlobalMonitoredResource(view, tags)
+		return getGlobalMonitoredResource(des, tags)
 	}
 }
 
-func getGlobalMonitoredResource(v *view.View, tags []tag.Tag) ([]tag.Tag, monitoredresource.Interface) {
+func getGlobalMonitoredResource(des *metricdata.Descriptor, tags map[string]string) (map[string]string, monitoredresource.Interface) {
 	return tags, &Global{}
 }
 
