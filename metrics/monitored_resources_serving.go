@@ -61,13 +61,13 @@ func GetKnativeRevisionMonitoredResource(
 		RevisionName:      valueOrUnknown(metricskey.LabelRevisionName, tags),
 	}
 
-	var newTags map[string]string
+	metricLabels := map[string]string{}
 	for k, v := range tags {
 		// Keep the metrics labels that are not resource labels
 		if !metricskey.KnativeRevisionLabels.Has(k) {
-			newTags[k] = v
+			metricLabels[k] = v
 		}
 	}
 
-	return newTags, kr
+	return metricLabels, kr
 }

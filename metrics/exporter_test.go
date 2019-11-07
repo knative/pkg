@@ -18,11 +18,8 @@ import (
 	"testing"
 	"time"
 
-	"go.opencensus.io/stats"
-	"go.opencensus.io/stats/view"
 	"go.opencensus.io/tag"
 	. "knative.dev/pkg/logging/testing"
-	"knative.dev/pkg/metrics/metricskey"
 )
 
 // TODO UTs should move to eventing and serving, as appropriate.
@@ -44,50 +41,12 @@ const (
 	testSourceResourceGroup = "test-source-rg"
 )
 
-var (
-	testView = &view.View{
-		Description: "Test View",
-		Measure:     stats.Int64("test", "Test Measure", stats.UnitNone),
-		Aggregation: view.LastValue(),
-		TagKeys:     []tag.Key{},
-	}
-
-	nsKey = tag.Tag{Key: mustNewTagKey(metricskey.LabelNamespaceName), Value: testNS}
-
-	serviceKey  = tag.Tag{Key: mustNewTagKey(metricskey.LabelServiceName), Value: testService}
-	routeKey    = tag.Tag{Key: mustNewTagKey(metricskey.LabelRouteName), Value: testRoute}
-	revisionKey = tag.Tag{Key: mustNewTagKey(metricskey.LabelRevisionName), Value: testRevision}
-
-	brokerKey              = tag.Tag{Key: mustNewTagKey(metricskey.LabelBrokerName), Value: testBroker}
-	triggerKey             = tag.Tag{Key: mustNewTagKey(metricskey.LabelTriggerName), Value: testTrigger}
-	filterTypeKey          = tag.Tag{Key: mustNewTagKey(metricskey.LabelFilterType), Value: testFilterType}
-	sourceKey              = tag.Tag{Key: mustNewTagKey(metricskey.LabelName), Value: testSource}
-	sourceResourceGroupKey = tag.Tag{Key: mustNewTagKey(metricskey.LabelResourceGroup), Value: testSourceResourceGroup}
-	eventTypeKey           = tag.Tag{Key: mustNewTagKey(metricskey.LabelEventType), Value: testEventType}
-	eventSourceKey         = tag.Tag{Key: mustNewTagKey(metricskey.LabelEventSource), Value: testEventSource}
-
-	revisionTestTags = []tag.Tag{nsKey, serviceKey, routeKey, revisionKey}
-
-	brokerTestTags  = []tag.Tag{nsKey, brokerKey, eventTypeKey}
-	triggerTestTags = []tag.Tag{nsKey, triggerKey, brokerKey, filterTypeKey}
-	sourceTestTags  = []tag.Tag{nsKey, sourceKey, sourceResourceGroupKey, eventTypeKey, eventSourceKey}
-)
-
 func mustNewTagKey(s string) tag.Key {
 	tagKey, err := tag.NewKey(s)
 	if err != nil {
 		panic(err)
 	}
 	return tagKey
-}
-
-func getResourceLabelValue(key string, tags []tag.Tag) string {
-	for _, t := range tags {
-		if t.Key.Name() == key {
-			return t.Value
-		}
-	}
-	return ""
 }
 
 func TestMain(m *testing.M) {
