@@ -40,7 +40,6 @@ const (
 	testEventSource         = "test-eventsource"
 	testTrigger             = "test-trigger"
 	testFilterType          = "test-filtertype"
-	testFilterSource        = "test-filtersource"
 	testSource              = "test-source"
 	testSourceResourceGroup = "test-source-rg"
 )
@@ -59,11 +58,9 @@ var (
 	routeKey    = tag.Tag{Key: mustNewTagKey(metricskey.LabelRouteName), Value: testRoute}
 	revisionKey = tag.Tag{Key: mustNewTagKey(metricskey.LabelRevisionName), Value: testRevision}
 
-	brokerKey              = tag.Tag{Key: mustNewTagKey(metricskey.LabelName), Value: testBroker}
-	triggerKey             = tag.Tag{Key: mustNewTagKey(metricskey.LabelName), Value: testTrigger}
-	triggerBrokerKey       = tag.Tag{Key: mustNewTagKey(metricskey.LabelBrokerName), Value: testBroker}
+	brokerKey              = tag.Tag{Key: mustNewTagKey(metricskey.LabelBrokerName), Value: testBroker}
+	triggerKey             = tag.Tag{Key: mustNewTagKey(metricskey.LabelTriggerName), Value: testTrigger}
 	filterTypeKey          = tag.Tag{Key: mustNewTagKey(metricskey.LabelFilterType), Value: testFilterType}
-	filterSourceKey        = tag.Tag{Key: mustNewTagKey(metricskey.LabelFilterSource), Value: testFilterSource}
 	sourceKey              = tag.Tag{Key: mustNewTagKey(metricskey.LabelName), Value: testSource}
 	sourceResourceGroupKey = tag.Tag{Key: mustNewTagKey(metricskey.LabelResourceGroup), Value: testSourceResourceGroup}
 	eventTypeKey           = tag.Tag{Key: mustNewTagKey(metricskey.LabelEventType), Value: testEventType}
@@ -71,8 +68,8 @@ var (
 
 	revisionTestTags = []tag.Tag{nsKey, serviceKey, routeKey, revisionKey}
 
-	brokerTestTags  = []tag.Tag{nsKey, brokerKey, eventTypeKey, eventSourceKey}
-	triggerTestTags = []tag.Tag{nsKey, triggerKey, triggerBrokerKey, filterTypeKey, filterSourceKey}
+	brokerTestTags  = []tag.Tag{nsKey, brokerKey, eventTypeKey}
+	triggerTestTags = []tag.Tag{nsKey, triggerKey, brokerKey, filterTypeKey}
 	sourceTestTags  = []tag.Tag{nsKey, sourceKey, sourceResourceGroupKey, eventTypeKey, eventSourceKey}
 )
 
