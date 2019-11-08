@@ -721,7 +721,7 @@ func TestAcquire(t *testing.T) {
 			}, nil, false,
 		}, {
 			// cluster creation failed all retry
-			true, fakeProj, nil, []string{}, []string{"PENDING", "PENDING", "PENDING"}, []string{fakeBoskosProj}, false, nil, fmt.Errorf("timed out waiting"), false,
+			true, fakeProj, nil, []string{}, []string{"PENDING", "PENDING", "PENDING"}, []string{fakeBoskosProj}, false, nil, fmt.Errorf("got time out waiting"), false,
 		}, {
 			// cluster creation went bad state
 			true, fakeProj, nil, []string{}, []string{"BAD", "BAD", "BAD"}, []string{fakeBoskosProj}, false, nil, fmt.Errorf("unexpected operation status: %q", "BAD"), false,
