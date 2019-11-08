@@ -51,14 +51,19 @@ func newNonRunningTestWebhook(t *testing.T, options Options, acs ...AdmissionCon
 	t.Helper()
 
 	// Create fake clients
-	ctx, cancel, informers := SetupFakeContextWithCancel(t)
+	ctx, ctxCancel, informers := SetupFakeContextWithCancel(t)
 	ctx = WithOptions(ctx, options)
 
-	if err := controller.StartInformers(ctx.Done(), informers...); err != nil {
+	stopCb, err := controller.RunInformers(ctx.Done(), informers...)
+	if err != nil {
 		t.Fatalf("StartInformers() = %v", err)
 	}
+	cancel = func() {
+		ctxCancel()
+		stopCb()
+	}
 
-	ac, err := New(ctx, acs)
+	ac, err = New(ctx, acs)
 	if err != nil {
 		t.Fatalf("Failed to create new admission controller: %v", err)
 	}
