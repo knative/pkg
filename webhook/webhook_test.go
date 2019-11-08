@@ -17,34 +17,25 @@ limitations under the License.
 package webhook
 
 import (
-	"crypto/tls"
-	"encoding/pem"
+	"context"
 	"fmt"
 	"net"
 	"testing"
-	"time"
 
-	"github.com/google/go-cmp/cmp"
-	"go.uber.org/zap"
 	"golang.org/x/sync/errgroup"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes"
-	fakekubeclientset "k8s.io/client-go/kubernetes/fake"
+	"knative.dev/pkg/controller"
 
-	"knative.dev/pkg/configmap"
-	. "knative.dev/pkg/logging/testing"
+	// Make system.Namespace() work in tests.
+	_ "knative.dev/pkg/system/testing"
+
+	. "knative.dev/pkg/reconciler/testing"
 )
 
-func newDefaultOptions() ControllerOptions {
-	return ControllerOptions{
-		Namespace:                       "knative-something",
-		ServiceName:                     "webhook",
-		Port:                            443,
-		SecretName:                      "webhook-certs",
-		ResourceMutatingWebhookName:     "webhook.knative.dev",
-		ResourceAdmissionControllerPath: "/",
-		ConfigValidationWebhookName:     "configmap.webhook.knative.dev",
-		ConfigValidationControllerPath:  "/config-validation",
+func newDefaultOptions() Options {
+	return Options{
+		ServiceName: "webhook",
+		Port:        443,
+		SecretName:  "webhook-certs",
 	}
 }
 
@@ -55,14 +46,19 @@ const (
 	user2            = "arrabbiato@knative.dev"
 )
 
-func newNonRunningTestWebhook(t *testing.T, options ControllerOptions) (
-	kubeClient *fakekubeclientset.Clientset,
-	ac *Webhook) {
+func newNonRunningTestWebhook(t *testing.T, options Options, acs ...AdmissionController) (
+	ctx context.Context, ac *Webhook, cancel context.CancelFunc) {
 	t.Helper()
-	// Create fake clients
-	kubeClient = fakekubeclientset.NewSimpleClientset(initialConfigWebhook, initialResourceWebhook)
 
-	ac, err := NewTestWebhook(kubeClient, options, TestLogger(t))
+	// Create fake clients
+	ctx, cancel, informers := SetupFakeContextWithCancel(t)
+	ctx = WithOptions(ctx, options)
+
+	if err := controller.StartInformers(ctx.Done(), informers...); err != nil {
+		t.Fatalf("StartInformers() = %v", err)
+	}
+
+	ac, err := New(ctx, acs)
 	if err != nil {
 		t.Fatalf("Failed to create new admission controller: %v", err)
 	}
@@ -71,9 +67,9 @@ func newNonRunningTestWebhook(t *testing.T, options ControllerOptions) (
 
 func TestRegistrationStopChanFire(t *testing.T) {
 	opts := newDefaultOptions()
-	_, ac := newNonRunningTestWebhook(t, opts)
+	_, ac, cancel := newNonRunningTestWebhook(t, opts)
+	defer cancel()
 
-	ac.Options.RegistrationDelay = 1 * time.Minute
 	stopCh := make(chan struct{})
 
 	var g errgroup.Group
@@ -90,100 +86,4 @@ func TestRegistrationStopChanFire(t *testing.T) {
 		conn.Close()
 		t.Errorf("Unexpected success to dial to port %d", opts.Port)
 	}
-}
-
-func TestCertConfigurationForAlreadyGeneratedSecret(t *testing.T) {
-	secretName := "test-secret"
-	ns := "test-namespace"
-	opts := newDefaultOptions()
-	opts.SecretName = secretName
-	opts.Namespace = ns
-	kubeClient, ac := newNonRunningTestWebhook(t, opts)
-
-	ctx := TestContextWithLogger(t)
-	newSecret, err := generateSecret(ctx, &opts)
-	if err != nil {
-		t.Fatalf("Failed to generate secret: %v", err)
-	}
-	_, err = kubeClient.CoreV1().Secrets(ns).Create(newSecret)
-	if err != nil {
-		t.Fatalf("Failed to create secret: %v", err)
-	}
-
-	createNamespace(t, kubeClient, metav1.NamespaceSystem)
-	createTestConfigMap(t, kubeClient)
-
-	tlsConfig, caCert, err := configureCerts(ctx, kubeClient, &ac.Options)
-	if err != nil {
-		t.Fatalf("Failed to configure secret: %v", err)
-	}
-	expectedCert, err := tls.X509KeyPair(newSecret.Data[secretServerCert], newSecret.Data[secretServerKey])
-	if err != nil {
-		t.Fatalf("Failed to create cert from x509 key pair: %v", err)
-	}
-
-	if tlsConfig == nil {
-		t.Fatal("Expected TLS config not to be nil")
-	}
-	if len(tlsConfig.Certificates) < 1 {
-		t.Fatalf("Expected TLS Config Cert to be set")
-	}
-
-	if diff := cmp.Diff(expectedCert.Certificate, tlsConfig.Certificates[0].Certificate, cmp.AllowUnexported()); diff != "" {
-		t.Fatalf("Unexpected cert diff (-want, +got) %v", diff)
-	}
-	if diff := cmp.Diff(newSecret.Data[secretCACert], caCert, cmp.AllowUnexported()); diff != "" {
-		t.Fatalf("Unexpected CA cert diff (-want, +got) %v", diff)
-	}
-}
-
-func TestCertConfigurationForGeneratedSecret(t *testing.T) {
-	secretName := "test-secret"
-	ns := "test-namespace"
-	opts := newDefaultOptions()
-	opts.SecretName = secretName
-	opts.Namespace = ns
-	kubeClient, ac := newNonRunningTestWebhook(t, opts)
-
-	ctx := TestContextWithLogger(t)
-	createNamespace(t, kubeClient, metav1.NamespaceSystem)
-	createTestConfigMap(t, kubeClient)
-
-	tlsConfig, caCert, err := configureCerts(ctx, kubeClient, &ac.Options)
-	if err != nil {
-		t.Fatalf("Failed to configure certificates: %v", err)
-	}
-
-	if tlsConfig == nil {
-		t.Fatal("Expected TLS config not to be nil")
-	}
-	if len(tlsConfig.Certificates) < 1 {
-		t.Fatalf("Expected TLS Certfificate to be set on webhook server")
-	}
-
-	p, _ := pem.Decode(caCert)
-	if p == nil {
-		t.Fatalf("Expected PEM encoded CA cert ")
-	}
-	if p.Type != "CERTIFICATE" {
-		t.Fatalf("Expectet type to be CERTIFICATE but got %s", string(p.Type))
-	}
-}
-
-func TestSettingWebhookClientAuth(t *testing.T) {
-	opts := newDefaultOptions()
-	if opts.ClientAuth != tls.NoClientCert {
-		t.Fatalf("Expected default ClientAuth to be NoClientCert (%v) but got (%v)",
-			tls.NoClientCert, opts.ClientAuth)
-	}
-}
-
-func NewTestWebhook(client kubernetes.Interface, options ControllerOptions, logger *zap.SugaredLogger) (*Webhook, error) {
-	validations := configmap.Constructors{"test-config": newConfigFromConfigMap}
-
-	admissionControllers := map[string]AdmissionController{
-		options.ResourceAdmissionControllerPath: NewResourceAdmissionController(handlers, options, true),
-		options.ConfigValidationControllerPath:  NewConfigValidationController(validations, options),
-	}
-	return New(client, options, admissionControllers, logger, nil)
 }

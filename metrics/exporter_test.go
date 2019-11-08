@@ -40,7 +40,6 @@ const (
 	testEventSource         = "test-eventsource"
 	testTrigger             = "test-trigger"
 	testFilterType          = "test-filtertype"
-	testFilterSource        = "test-filtersource"
 	testSource              = "test-source"
 	testSourceResourceGroup = "test-source-rg"
 )
@@ -59,11 +58,9 @@ var (
 	routeKey    = tag.Tag{Key: mustNewTagKey(metricskey.LabelRouteName), Value: testRoute}
 	revisionKey = tag.Tag{Key: mustNewTagKey(metricskey.LabelRevisionName), Value: testRevision}
 
-	brokerKey              = tag.Tag{Key: mustNewTagKey(metricskey.LabelName), Value: testBroker}
-	triggerKey             = tag.Tag{Key: mustNewTagKey(metricskey.LabelName), Value: testTrigger}
-	triggerBrokerKey       = tag.Tag{Key: mustNewTagKey(metricskey.LabelBrokerName), Value: testBroker}
+	brokerKey              = tag.Tag{Key: mustNewTagKey(metricskey.LabelBrokerName), Value: testBroker}
+	triggerKey             = tag.Tag{Key: mustNewTagKey(metricskey.LabelTriggerName), Value: testTrigger}
 	filterTypeKey          = tag.Tag{Key: mustNewTagKey(metricskey.LabelFilterType), Value: testFilterType}
-	filterSourceKey        = tag.Tag{Key: mustNewTagKey(metricskey.LabelFilterSource), Value: testFilterSource}
 	sourceKey              = tag.Tag{Key: mustNewTagKey(metricskey.LabelName), Value: testSource}
 	sourceResourceGroupKey = tag.Tag{Key: mustNewTagKey(metricskey.LabelResourceGroup), Value: testSourceResourceGroup}
 	eventTypeKey           = tag.Tag{Key: mustNewTagKey(metricskey.LabelEventType), Value: testEventType}
@@ -71,8 +68,8 @@ var (
 
 	revisionTestTags = []tag.Tag{nsKey, serviceKey, routeKey, revisionKey}
 
-	brokerTestTags  = []tag.Tag{nsKey, brokerKey, eventTypeKey, eventSourceKey}
-	triggerTestTags = []tag.Tag{nsKey, triggerKey, triggerBrokerKey, filterTypeKey, filterSourceKey}
+	brokerTestTags  = []tag.Tag{nsKey, brokerKey, eventTypeKey}
+	triggerTestTags = []tag.Tag{nsKey, triggerKey, brokerKey, filterTypeKey}
 	sourceTestTags  = []tag.Tag{nsKey, sourceKey, sourceResourceGroupKey, eventTypeKey, eventSourceKey}
 )
 
@@ -95,6 +92,9 @@ func getResourceLabelValue(key string, tags []tag.Tag) string {
 
 func TestMain(m *testing.M) {
 	resetCurPromSrv()
+	// Set gcpMetadataFunc and newStackdriverExporterFunc for testing
+	gcpMetadataFunc = fakeGcpMetadataFunc
+	newStackdriverExporterFunc = newFakeExporter
 	os.Exit(m.Run())
 }
 
@@ -109,7 +109,7 @@ func TestMetricsExporter(t *testing.T) {
 			domain:             servingDomain,
 			component:          testComponent,
 			backendDestination: "unsupported",
-			stackdriverClientConfig: stackdriverClientConfig{
+			stackdriverClientConfig: StackdriverClientConfig{
 				ProjectID: "",
 			},
 		},
@@ -120,7 +120,7 @@ func TestMetricsExporter(t *testing.T) {
 			domain:             servingDomain,
 			component:          testComponent,
 			backendDestination: Stackdriver,
-			stackdriverClientConfig: stackdriverClientConfig{
+			stackdriverClientConfig: StackdriverClientConfig{
 				ProjectID: "testProj",
 			},
 		},
@@ -129,12 +129,11 @@ func TestMetricsExporter(t *testing.T) {
 		name: "stackdriverConfigOnly",
 		config: &metricsConfig{
 			backendDestination: Stackdriver,
-			stackdriverClientConfig: stackdriverClientConfig{
-				ProjectID:          "project",
-				GCPLocation:        "us-west1",
-				ClusterName:        "cluster",
-				GCPSecretName:      "secret",
-				GCPSecretNamespace: "secret-ns",
+			stackdriverClientConfig: StackdriverClientConfig{
+				ProjectID:   "project",
+				GCPLocation: "us-west1",
+				ClusterName: "cluster",
+				UseSecret:   true,
 			},
 		},
 		expectSuccess: true,
@@ -148,13 +147,11 @@ func TestMetricsExporter(t *testing.T) {
 			isStackdriverBackend:              true,
 			stackdriverMetricTypePrefix:       path.Join(servingDomain, testComponent),
 			stackdriverCustomMetricTypePrefix: path.Join(customMetricTypePrefix, defaultCustomMetricSubDomain, testComponent),
-			stackdriverCustomMetricsSubDomain: defaultCustomMetricSubDomain,
-			stackdriverClientConfig: stackdriverClientConfig{
-				ProjectID:          "project",
-				GCPLocation:        "us-west1",
-				ClusterName:        "cluster",
-				GCPSecretName:      "secret",
-				GCPSecretNamespace: "secret-ns",
+			stackdriverClientConfig: StackdriverClientConfig{
+				ProjectID:   "project",
+				GCPLocation: "us-west1",
+				ClusterName: "cluster",
+				UseSecret:   true,
 			},
 		},
 		expectSuccess: true,
@@ -166,12 +163,11 @@ func TestMetricsExporter(t *testing.T) {
 			backendDestination: Prometheus,
 			reportingPeriod:    5 * time.Second,
 			prometheusPort:     defaultPrometheusPort,
-			stackdriverClientConfig: stackdriverClientConfig{
-				ProjectID:          "project",
-				GCPLocation:        "us-west1",
-				ClusterName:        "cluster",
-				GCPSecretName:      "secret",
-				GCPSecretNamespace: "secret-ns",
+			stackdriverClientConfig: StackdriverClientConfig{
+				ProjectID:   "project",
+				GCPLocation: "us-west1",
+				ClusterName: "cluster",
+				UseSecret:   true,
 			},
 		},
 		expectSuccess: true,
@@ -187,13 +183,11 @@ func TestMetricsExporter(t *testing.T) {
 			isStackdriverBackend:              true,
 			stackdriverMetricTypePrefix:       path.Join(servingDomain, testComponent),
 			stackdriverCustomMetricTypePrefix: path.Join(customMetricTypePrefix, defaultCustomMetricSubDomain, testComponent),
-			stackdriverCustomMetricsSubDomain: defaultCustomMetricSubDomain,
-			stackdriverClientConfig: stackdriverClientConfig{
-				ProjectID:          "project",
-				GCPLocation:        "narnia",
-				ClusterName:        "cluster",
-				GCPSecretName:      "secret",
-				GCPSecretNamespace: "secret-ns",
+			stackdriverClientConfig: StackdriverClientConfig{
+				ProjectID:   "project",
+				GCPLocation: "narnia",
+				ClusterName: "cluster",
+				UseSecret:   true,
 			},
 		},
 		expectSuccess: true,
@@ -207,12 +201,10 @@ func TestMetricsExporter(t *testing.T) {
 			isStackdriverBackend:              true,
 			stackdriverMetricTypePrefix:       path.Join(servingDomain, testComponent),
 			stackdriverCustomMetricTypePrefix: path.Join(customMetricTypePrefix, defaultCustomMetricSubDomain, testComponent),
-			stackdriverCustomMetricsSubDomain: defaultCustomMetricSubDomain,
-			stackdriverClientConfig: stackdriverClientConfig{
-				GCPLocation:        "narnia",
-				ClusterName:        "cluster",
-				GCPSecretName:      "secret",
-				GCPSecretNamespace: "secret-ns",
+			stackdriverClientConfig: StackdriverClientConfig{
+				GCPLocation: "narnia",
+				ClusterName: "cluster",
+				UseSecret:   true,
 			},
 		},
 		expectSuccess: true,
@@ -226,8 +218,7 @@ func TestMetricsExporter(t *testing.T) {
 			isStackdriverBackend:              true,
 			stackdriverMetricTypePrefix:       path.Join(servingDomain, testComponent),
 			stackdriverCustomMetricTypePrefix: path.Join(customMetricTypePrefix, defaultCustomMetricSubDomain, testComponent),
-			stackdriverCustomMetricsSubDomain: defaultCustomMetricSubDomain,
-			stackdriverClientConfig: stackdriverClientConfig{
+			stackdriverClientConfig: StackdriverClientConfig{
 				ProjectID: "project",
 			},
 		},
@@ -257,7 +248,7 @@ func TestInterlevedExporters(t *testing.T) {
 		domain:             servingDomain,
 		component:          testComponent,
 		backendDestination: Stackdriver,
-		stackdriverClientConfig: stackdriverClientConfig{
+		stackdriverClientConfig: StackdriverClientConfig{
 			ProjectID: testProj,
 		},
 	}, TestLogger(t))
@@ -280,7 +271,7 @@ func TestInterlevedExporters(t *testing.T) {
 		domain:             servingDomain,
 		component:          testComponent,
 		backendDestination: Stackdriver,
-		stackdriverClientConfig: stackdriverClientConfig{
+		stackdriverClientConfig: StackdriverClientConfig{
 			ProjectID: testProj,
 		},
 	}, TestLogger(t))
@@ -318,12 +309,11 @@ func TestFlushExporter(t *testing.T) {
 		domain:                            servingDomain,
 		component:                         testComponent,
 		backendDestination:                Stackdriver,
-		allowStackdriverCustomMetrics:     true,
 		isStackdriverBackend:              true,
 		reportingPeriod:                   1 * time.Minute,
 		stackdriverMetricTypePrefix:       path.Join(servingDomain, testComponent),
 		stackdriverCustomMetricTypePrefix: path.Join(defaultCustomMetricSubDomain, testComponent),
-		stackdriverClientConfig: stackdriverClientConfig{
+		stackdriverClientConfig: StackdriverClientConfig{
 			ProjectID: testProj,
 		},
 	}

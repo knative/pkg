@@ -29,9 +29,10 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
+	"knative.dev/pkg/system"
+	certresources "knative.dev/pkg/webhook/certificates/resources"
 
 	. "knative.dev/pkg/logging/testing"
-	. "knative.dev/pkg/testing"
 )
 
 func waitForServerAvailable(t *testing.T, serverURL string, timeout time.Duration) error {
@@ -96,37 +97,40 @@ func createTestConfigMap(t *testing.T, kubeClient kubernetes.Interface) error {
 	return nil
 }
 
-func createSecureTLSClient(t *testing.T, kubeClient kubernetes.Interface, acOpts *ControllerOptions) (*http.Client, error) {
+func createSecureTLSClient(t *testing.T, kubeClient kubernetes.Interface, acOpts *Options) (*http.Client, error) {
 	t.Helper()
-	tlsServerConfig, caCert, err := configureCerts(TestContextWithLogger(t), kubeClient, acOpts)
+	ctx := TestContextWithLogger(t)
+	secret, err := certresources.MakeSecret(ctx, acOpts.SecretName, system.Namespace(), acOpts.ServiceName)
 	if err != nil {
 		return nil, err
 	}
+	if _, err := kubeClient.CoreV1().Secrets(secret.Namespace).Create(secret); err != nil {
+		return nil, err
+	}
+
+	serverKey := secret.Data[certresources.ServerKey]
+	serverCert := secret.Data[certresources.ServerCert]
+	caCert := secret.Data[certresources.CACert]
+
 	// Build cert pool with CA Cert
 	pool := x509.NewCertPool()
 	pool.AppendCertsFromPEM(caCert)
 
+	// Build key pair
+	cert, err := tls.X509KeyPair(serverCert, serverKey)
+	if err != nil {
+		return nil, err
+	}
+
 	tlsClientConfig := &tls.Config{
 		// Add knative namespace as CN
-		ServerName:   "webhook.knative-something",
+		ServerName:   "webhook." + system.Namespace(),
 		RootCAs:      pool,
-		Certificates: tlsServerConfig.Certificates,
+		Certificates: []tls.Certificate{cert},
 	}
 	return &http.Client{
 		Transport: &http.Transport{
 			TLSClientConfig: tlsClientConfig,
 		},
 	}, nil
-}
-
-func createResource(name string) *Resource {
-	return &Resource{
-		ObjectMeta: metav1.ObjectMeta{
-			Namespace: testNamespace,
-			Name:      name,
-		},
-		Spec: ResourceSpec{
-			FieldWithValidation: "magic value",
-		},
-	}
 }

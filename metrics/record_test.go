@@ -19,9 +19,11 @@ package metrics
 import (
 	"context"
 	"fmt"
+	"path"
 	"testing"
 
 	"knative.dev/pkg/metrics/metricstest"
+	"knative.dev/pkg/metrics/metricskey"
 
 	"github.com/google/go-cmp/cmp"
 	"go.opencensus.io/stats"
@@ -55,7 +57,6 @@ func TestRecordServing(t *testing.T) {
 			metricsConfig: &metricsConfig{
 				isStackdriverBackend:          true,
 				stackdriverMetricTypePrefix:   "knative.dev/unsupported",
-				allowStackdriverCustomMetrics: true,
 			},
 			measurement: measure.M(3),
 		}, {
@@ -87,7 +88,6 @@ func TestRecordEventing(t *testing.T) {
 			metricsConfig: &metricsConfig{
 				isStackdriverBackend:          true,
 				stackdriverMetricTypePrefix:   "knative.dev/unsupported",
-				allowStackdriverCustomMetrics: true,
 			},
 			measurement: measure.M(3),
 		}, {
@@ -124,6 +124,14 @@ func testRecord(t *testing.T, measure *stats.Int64Measure, shouldReportCases []c
 			metricsConfig: &metricsConfig{
 				isStackdriverBackend:        true,
 				stackdriverMetricTypePrefix: "knative.dev/unsupported",
+				recorder: func(ctx context.Context, ms stats.Measurement, ros ...stats.Options) error {
+					metricType := path.Join("knative.dev/unsupported", ms.Measure().Name())
+					if metricskey.KnativeRevisionMetrics.Has(metricType) || metricskey.KnativeTriggerMetrics.Has(metricType) {
+						ros = append(ros, stats.WithMeasurements(ms))
+						return stats.RecordWithOptions(ctx, ros...)
+					}
+					return nil
+				},
 			},
 			measurement: measure.M(5),
 		},

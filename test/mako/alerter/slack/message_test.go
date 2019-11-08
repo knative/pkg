@@ -70,3 +70,19 @@ func TestMessaging(t *testing.T) {
 		}
 	}
 }
+
+func TestDecoratedName(t *testing.T) {
+	testCases := []struct {
+		name           string
+		expectedResult string
+	}{
+		{"demo test1", "[demo test1]"},
+		{"[demo test2]", "[[demo test2]]"},
+	}
+	for _, tc := range testCases {
+		actualResult := decoratedName(tc.name)
+		if tc.expectedResult != actualResult {
+			t.Fatalf("expected to get %q for decoratedName(%s), but got %q", tc.expectedResult, tc.name, actualResult)
+		}
+	}
+}

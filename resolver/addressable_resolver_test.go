@@ -30,7 +30,6 @@ import (
 	"knative.dev/pkg/apis"
 	duckv1alpha1 "knative.dev/pkg/apis/duck/v1alpha1"
 	duckv1beta1 "knative.dev/pkg/apis/duck/v1beta1"
-	apisv1alpha1 "knative.dev/pkg/apis/v1alpha1"
 	fakedynamicclient "knative.dev/pkg/injection/clients/dynamicclient/fake"
 	"knative.dev/pkg/resolver"
 )
@@ -61,13 +60,13 @@ func init() {
 func TestGetURI_ObjectReference(t *testing.T) {
 	tests := map[string]struct {
 		objects []runtime.Object
-		dest    apisv1alpha1.Destination
+		dest    duckv1beta1.Destination
 		wantURI string
 		wantErr error
 	}{"nil everything": {
 		wantErr: fmt.Errorf("destination missing Ref, [apiVersion, kind, name] and URI, expected at least one"),
 	}, "Happy URI with path": {
-		dest: apisv1alpha1.Destination{
+		dest: duckv1beta1.Destination{
 			URI: &apis.URL{
 				Scheme: "http",
 				Host:   "example.com",
@@ -76,14 +75,14 @@ func TestGetURI_ObjectReference(t *testing.T) {
 		},
 		wantURI: "http://example.com/foo",
 	}, "URI is not absolute URL": {
-		dest: apisv1alpha1.Destination{
+		dest: duckv1beta1.Destination{
 			URI: &apis.URL{
 				Host: "example.com",
 			},
 		},
 		wantErr: fmt.Errorf("URI is not absolute(both scheme and host should be non-empty): %v", "//example.com"),
 	}, "URI with no host": {
-		dest: apisv1alpha1.Destination{
+		dest: duckv1beta1.Destination{
 			URI: &apis.URL{
 				Scheme: "http",
 			},
@@ -94,7 +93,7 @@ func TestGetURI_ObjectReference(t *testing.T) {
 			objects: []runtime.Object{
 				getAddressable(),
 			},
-			dest: apisv1alpha1.Destination{Ref: getAddressableRef(),
+			dest: duckv1beta1.Destination{Ref: getAddressableRef(),
 				DeprecatedKind:       addressableKind,
 				DeprecatedName:       addressableName,
 				DeprecatedAPIVersion: addressableAPIVersion,
@@ -106,13 +105,13 @@ func TestGetURI_ObjectReference(t *testing.T) {
 			objects: []runtime.Object{
 				getAddressable(),
 			},
-			dest:    apisv1alpha1.Destination{Ref: getAddressableRef()},
+			dest:    duckv1beta1.Destination{Ref: getAddressableRef()},
 			wantURI: addressableDNS,
 		}, "ref with relative uri": {
 			objects: []runtime.Object{
 				getAddressable(),
 			},
-			dest: apisv1alpha1.Destination{
+			dest: duckv1beta1.Destination{
 				Ref: getAddressableRef(),
 				URI: &apis.URL{
 					Path: "/foo",
@@ -123,7 +122,7 @@ func TestGetURI_ObjectReference(t *testing.T) {
 			objects: []runtime.Object{
 				getAddressable(),
 			},
-			dest: apisv1alpha1.Destination{
+			dest: duckv1beta1.Destination{
 				Ref: getAddressableRef(),
 				URI: &apis.URL{
 					Path: "foo",
@@ -134,7 +133,7 @@ func TestGetURI_ObjectReference(t *testing.T) {
 			objects: []runtime.Object{
 				getAddressableWithPathAndTrailingSlash(),
 			},
-			dest: apisv1alpha1.Destination{
+			dest: duckv1beta1.Destination{
 				Ref: getAddressableRef(),
 				URI: &apis.URL{
 					Path: "foo",
@@ -145,7 +144,7 @@ func TestGetURI_ObjectReference(t *testing.T) {
 			objects: []runtime.Object{
 				getAddressableWithPathAndTrailingSlash(),
 			},
-			dest: apisv1alpha1.Destination{
+			dest: duckv1beta1.Destination{
 				Ref: getAddressableRef(),
 				URI: &apis.URL{
 					Path: "/foo",
@@ -156,7 +155,7 @@ func TestGetURI_ObjectReference(t *testing.T) {
 			objects: []runtime.Object{
 				getAddressableWithPathAndNoTrailingSlash(),
 			},
-			dest: apisv1alpha1.Destination{
+			dest: duckv1beta1.Destination{
 				Ref: getAddressableRef(),
 				URI: &apis.URL{
 					Path: "foo",
@@ -167,7 +166,7 @@ func TestGetURI_ObjectReference(t *testing.T) {
 			objects: []runtime.Object{
 				getAddressableWithPathAndNoTrailingSlash(),
 			},
-			dest: apisv1alpha1.Destination{
+			dest: duckv1beta1.Destination{
 				Ref: getAddressableRef(),
 				URI: &apis.URL{
 					Path: "/foo",
@@ -178,7 +177,7 @@ func TestGetURI_ObjectReference(t *testing.T) {
 			objects: []runtime.Object{
 				getAddressable(),
 			},
-			dest: apisv1alpha1.Destination{
+			dest: duckv1beta1.Destination{
 				Ref: getAddressableRef(),
 				URI: &apis.URL{
 					Scheme: "http",
@@ -192,7 +191,7 @@ func TestGetURI_ObjectReference(t *testing.T) {
 			objects: []runtime.Object{
 				getAddressable(),
 			},
-			dest: apisv1alpha1.Destination{
+			dest: duckv1beta1.Destination{
 				DeprecatedKind:       addressableKind,
 				DeprecatedName:       addressableName,
 				DeprecatedAPIVersion: addressableAPIVersion,
@@ -203,7 +202,7 @@ func TestGetURI_ObjectReference(t *testing.T) {
 			objects: []runtime.Object{
 				getAddressable(),
 			},
-			dest: apisv1alpha1.Destination{
+			dest: duckv1beta1.Destination{
 				DeprecatedKind:       addressableKind,
 				DeprecatedName:       addressableName,
 				DeprecatedAPIVersion: addressableAPIVersion,
@@ -217,7 +216,7 @@ func TestGetURI_ObjectReference(t *testing.T) {
 			objects: []runtime.Object{
 				getAddressable(),
 			},
-			dest: apisv1alpha1.Destination{
+			dest: duckv1beta1.Destination{
 				DeprecatedKind:       addressableKind,
 				DeprecatedName:       addressableName,
 				DeprecatedAPIVersion: addressableAPIVersion,
@@ -231,7 +230,7 @@ func TestGetURI_ObjectReference(t *testing.T) {
 			objects: []runtime.Object{
 				getAddressableWithPathAndTrailingSlash(),
 			},
-			dest: apisv1alpha1.Destination{
+			dest: duckv1beta1.Destination{
 				DeprecatedKind:       addressableKind,
 				DeprecatedName:       addressableName,
 				DeprecatedAPIVersion: addressableAPIVersion,
@@ -245,7 +244,7 @@ func TestGetURI_ObjectReference(t *testing.T) {
 			objects: []runtime.Object{
 				getAddressableWithPathAndTrailingSlash(),
 			},
-			dest: apisv1alpha1.Destination{
+			dest: duckv1beta1.Destination{
 				DeprecatedKind:       addressableKind,
 				DeprecatedName:       addressableName,
 				DeprecatedAPIVersion: addressableAPIVersion,
@@ -259,7 +258,7 @@ func TestGetURI_ObjectReference(t *testing.T) {
 			objects: []runtime.Object{
 				getAddressableWithPathAndNoTrailingSlash(),
 			},
-			dest: apisv1alpha1.Destination{
+			dest: duckv1beta1.Destination{
 				DeprecatedKind:       addressableKind,
 				DeprecatedName:       addressableName,
 				DeprecatedAPIVersion: addressableAPIVersion,
@@ -273,7 +272,7 @@ func TestGetURI_ObjectReference(t *testing.T) {
 			objects: []runtime.Object{
 				getAddressableWithPathAndNoTrailingSlash(),
 			},
-			dest: apisv1alpha1.Destination{
+			dest: duckv1beta1.Destination{
 				DeprecatedKind:       addressableKind,
 				DeprecatedName:       addressableName,
 				DeprecatedAPIVersion: addressableAPIVersion,
@@ -287,7 +286,7 @@ func TestGetURI_ObjectReference(t *testing.T) {
 			objects: []runtime.Object{
 				getAddressable(),
 			},
-			dest: apisv1alpha1.Destination{
+			dest: duckv1beta1.Destination{
 				DeprecatedKind:       addressableKind,
 				DeprecatedName:       addressableName,
 				DeprecatedAPIVersion: addressableAPIVersion,
@@ -304,29 +303,29 @@ func TestGetURI_ObjectReference(t *testing.T) {
 			objects: []runtime.Object{
 				getAddressableNilURL(),
 			},
-			dest:    apisv1alpha1.Destination{Ref: getUnaddressableRef()},
+			dest:    duckv1beta1.Destination{Ref: getUnaddressableRef()},
 			wantErr: fmt.Errorf(`url missing in address of %+v`, getUnaddressableRef()),
 		},
 		"nil address": {
 			objects: []runtime.Object{
 				getAddressableNilAddress(),
 			},
-			dest:    apisv1alpha1.Destination{Ref: getUnaddressableRef()},
+			dest:    duckv1beta1.Destination{Ref: getUnaddressableRef()},
 			wantErr: fmt.Errorf(`address not set for %+v`, getUnaddressableRef()),
 		}, "missing host": {
 			objects: []runtime.Object{
 				getAddressableNoHostURL(),
 			},
-			dest:    apisv1alpha1.Destination{Ref: getUnaddressableRef()},
+			dest:    duckv1beta1.Destination{Ref: getUnaddressableRef()},
 			wantErr: fmt.Errorf(`hostname missing in address of %+v`, getUnaddressableRef()),
 		}, "missing status": {
 			objects: []runtime.Object{
 				getAddressableNoStatus(),
 			},
-			dest:    apisv1alpha1.Destination{Ref: getUnaddressableRef()},
+			dest:    duckv1beta1.Destination{Ref: getUnaddressableRef()},
 			wantErr: fmt.Errorf(`address not set for %+v`, getUnaddressableRef()),
 		}, "notFound": {
-			dest:    apisv1alpha1.Destination{Ref: getUnaddressableRef()},
+			dest:    duckv1beta1.Destination{Ref: getUnaddressableRef()},
 			wantErr: fmt.Errorf(`failed to get ref %+v: %s "%s" not found`, getUnaddressableRef(), unaddressableResource, unaddressableName),
 		}}
 

@@ -16,28 +16,34 @@ limitations under the License.
 package metrics
 
 import (
+	"context"
 	"os"
 	"path"
-	"reflect"
 	"testing"
 	"time"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
+
+	"go.opencensus.io/stats"
+	"go.opencensus.io/stats/view"
 
 	. "knative.dev/pkg/logging/testing"
+	"knative.dev/pkg/metrics/metricstest"
 )
 
 // TODO UTs should move to eventing and serving, as appropriate.
 // 	See https://github.com/knative/pkg/issues/608
 
 const (
-	servingDomain         = "knative.dev/serving"
-	internalServingDomain = "knative.dev/internal/serving"
-	eventingDomain        = "knative.dev/eventing"
-	customSubDomain       = "test.domain"
-	testComponent         = "testComponent"
-	testProj              = "test-project"
-	anotherProj           = "another-project"
+	servingDomain          = "knative.dev/serving"
+	internalServingDomain  = "knative.dev/internal/serving"
+	eventingDomain         = "knative.dev/eventing"
+	internalEventingDomain = "knative.dev/internal/eventing"
+	customSubDomain        = "test.domain"
+	testComponent          = "testComponent"
+	testProj               = "test-project"
+	anotherProj            = "another-project"
 )
 
 var (
@@ -153,7 +159,6 @@ var (
 				isStackdriverBackend:              true,
 				stackdriverMetricTypePrefix:       path.Join(servingDomain, testComponent),
 				stackdriverCustomMetricTypePrefix: path.Join(customMetricTypePrefix, defaultCustomMetricSubDomain, testComponent),
-				stackdriverCustomMetricsSubDomain: defaultCustomMetricSubDomain,
 			},
 			expectedNewExporter: true,
 		}, {
@@ -175,12 +180,11 @@ var (
 			name: "validStackdriver",
 			ops: ExporterOptions{
 				ConfigMap: map[string]string{
-					"metrics.backend-destination":              "stackdriver",
-					"metrics.stackdriver-project-id":           anotherProj,
-					"metrics.stackdriver-gcp-location":         "us-west1",
-					"metrics.stackdriver-cluster-name":         "cluster",
-					"metrics.stackdriver-gcp-secret-name":      "secret",
-					"metrics.stackdriver-gcp-secret-namespace": "secret-ns",
+					"metrics.backend-destination":      "stackdriver",
+					"metrics.stackdriver-project-id":   anotherProj,
+					"metrics.stackdriver-gcp-location": "us-west1",
+					"metrics.stackdriver-cluster-name": "cluster",
+					"metrics.stackdriver-use-secret":   "true",
 				},
 				Domain:    servingDomain,
 				Component: testComponent,
@@ -193,13 +197,11 @@ var (
 				isStackdriverBackend:              true,
 				stackdriverMetricTypePrefix:       path.Join(servingDomain, testComponent),
 				stackdriverCustomMetricTypePrefix: path.Join(customMetricTypePrefix, defaultCustomMetricSubDomain, testComponent),
-				stackdriverCustomMetricsSubDomain: defaultCustomMetricSubDomain,
-				stackdriverClientConfig: stackdriverClientConfig{
-					ProjectID:          anotherProj,
-					GCPLocation:        "us-west1",
-					ClusterName:        "cluster",
-					GCPSecretName:      "secret",
-					GCPSecretNamespace: "secret-ns",
+				stackdriverClientConfig: StackdriverClientConfig{
+					ProjectID:   anotherProj,
+					GCPLocation: "us-west1",
+					ClusterName: "cluster",
+					UseSecret:   true,
 				},
 			},
 			expectedNewExporter: true,
@@ -209,7 +211,6 @@ var (
 				ConfigMap: map[string]string{
 					"metrics.backend-destination":      "stackdriver",
 					"metrics.stackdriver-project-id":   anotherProj,
-					"metrics.stackdriver-gcp-location": "us-west1",
 					"metrics.stackdriver-cluster-name": "cluster",
 				},
 				Domain:    servingDomain,
@@ -223,10 +224,8 @@ var (
 				isStackdriverBackend:              true,
 				stackdriverMetricTypePrefix:       path.Join(servingDomain, testComponent),
 				stackdriverCustomMetricTypePrefix: path.Join(customMetricTypePrefix, defaultCustomMetricSubDomain, testComponent),
-				stackdriverCustomMetricsSubDomain: defaultCustomMetricSubDomain,
-				stackdriverClientConfig: stackdriverClientConfig{
+				stackdriverClientConfig: StackdriverClientConfig{
 					ProjectID:   anotherProj,
-					GCPLocation: "us-west1",
 					ClusterName: "cluster",
 				},
 			},
@@ -266,8 +265,7 @@ var (
 				isStackdriverBackend:              true,
 				stackdriverMetricTypePrefix:       path.Join(servingDomain, testComponent),
 				stackdriverCustomMetricTypePrefix: path.Join(customMetricTypePrefix, defaultCustomMetricSubDomain, testComponent),
-				stackdriverCustomMetricsSubDomain: defaultCustomMetricSubDomain,
-				stackdriverClientConfig: stackdriverClientConfig{
+				stackdriverClientConfig: StackdriverClientConfig{
 					ProjectID: testProj,
 				},
 			},
@@ -309,8 +307,7 @@ var (
 				isStackdriverBackend:              true,
 				stackdriverMetricTypePrefix:       path.Join(servingDomain, testComponent),
 				stackdriverCustomMetricTypePrefix: path.Join(customMetricTypePrefix, defaultCustomMetricSubDomain, testComponent),
-				stackdriverCustomMetricsSubDomain: defaultCustomMetricSubDomain,
-				stackdriverClientConfig: stackdriverClientConfig{
+				stackdriverClientConfig: StackdriverClientConfig{
 					ProjectID: "test2",
 				},
 			},
@@ -334,8 +331,7 @@ var (
 				isStackdriverBackend:              true,
 				stackdriverMetricTypePrefix:       path.Join(servingDomain, testComponent),
 				stackdriverCustomMetricTypePrefix: path.Join(customMetricTypePrefix, defaultCustomMetricSubDomain, testComponent),
-				stackdriverCustomMetricsSubDomain: defaultCustomMetricSubDomain,
-				stackdriverClientConfig: stackdriverClientConfig{
+				stackdriverClientConfig: StackdriverClientConfig{
 					ProjectID: "test2",
 				},
 			},
@@ -376,8 +372,7 @@ var (
 				isStackdriverBackend:              true,
 				stackdriverMetricTypePrefix:       path.Join(servingDomain, testComponent),
 				stackdriverCustomMetricTypePrefix: path.Join(customMetricTypePrefix, defaultCustomMetricSubDomain, testComponent),
-				stackdriverCustomMetricsSubDomain: defaultCustomMetricSubDomain,
-				stackdriverClientConfig: stackdriverClientConfig{
+				stackdriverClientConfig: StackdriverClientConfig{
 					ProjectID: "test2",
 				},
 			},
@@ -402,9 +397,7 @@ var (
 				isStackdriverBackend:              true,
 				stackdriverMetricTypePrefix:       path.Join(servingDomain, testComponent),
 				stackdriverCustomMetricTypePrefix: path.Join(customMetricTypePrefix, defaultCustomMetricSubDomain, testComponent),
-				allowStackdriverCustomMetrics:     true,
-				stackdriverCustomMetricsSubDomain: defaultCustomMetricSubDomain,
-				stackdriverClientConfig: stackdriverClientConfig{
+				stackdriverClientConfig: StackdriverClientConfig{
 					ProjectID: "test2",
 				},
 			},
@@ -428,8 +421,7 @@ var (
 				isStackdriverBackend:              true,
 				stackdriverMetricTypePrefix:       path.Join(servingDomain, testComponent),
 				stackdriverCustomMetricTypePrefix: path.Join(customMetricTypePrefix, customSubDomain, testComponent),
-				stackdriverCustomMetricsSubDomain: customSubDomain,
-				stackdriverClientConfig: stackdriverClientConfig{
+				stackdriverClientConfig: StackdriverClientConfig{
 					ProjectID: "test2",
 				},
 			},
@@ -472,7 +464,6 @@ var (
 				isStackdriverBackend:              true,
 				stackdriverMetricTypePrefix:       path.Join(servingDomain, testComponent),
 				stackdriverCustomMetricTypePrefix: path.Join(customMetricTypePrefix, defaultCustomMetricSubDomain, testComponent),
-				stackdriverCustomMetricsSubDomain: defaultCustomMetricSubDomain,
 			},
 		}, {
 			name: "validPrometheus",
@@ -509,8 +500,8 @@ func TestGetMetricsConfig(t *testing.T) {
 			if err != nil {
 				t.Errorf("Wanted valid config %v, got error %v", test.expectedConfig, err)
 			}
-			if !reflect.DeepEqual(*mc, test.expectedConfig) {
-				t.Errorf("Wanted config %v, got config %v", test.expectedConfig, *mc)
+			if diff := cmp.Diff(test.expectedConfig, *mc, cmp.AllowUnexported(*mc), cmpopts.IgnoreTypes(mc.recorder)); diff != "" {
+				t.Errorf("Invalid config (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -525,8 +516,8 @@ func TestGetMetricsConfig_fromEnv(t *testing.T) {
 			if err != nil {
 				t.Errorf("Wanted valid config %v, got error %v", test.expectedConfig, err)
 			}
-			if !reflect.DeepEqual(*mc, test.expectedConfig) {
-				t.Errorf("Wanted config %v, got config %v", test.expectedConfig, *mc)
+			if diff := cmp.Diff(test.expectedConfig, *mc, cmp.AllowUnexported(*mc), cmpopts.IgnoreTypes(mc.recorder)); diff != "" {
+				t.Errorf("Invalid config (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -568,7 +559,7 @@ func TestIsNewExporterRequired(t *testing.T) {
 			domain:             servingDomain,
 			component:          testComponent,
 			backendDestination: Prometheus,
-			stackdriverClientConfig: stackdriverClientConfig{
+			stackdriverClientConfig: StackdriverClientConfig{
 				ProjectID:   testProj,
 				ClusterName: "cluster",
 			},
@@ -584,7 +575,6 @@ func TestIsNewExporterRequired(t *testing.T) {
 			isStackdriverBackend:              true,
 			stackdriverMetricTypePrefix:       path.Join(servingDomain, testComponent),
 			stackdriverCustomMetricTypePrefix: path.Join(customMetricTypePrefix, defaultCustomMetricSubDomain, testComponent),
-			stackdriverCustomMetricsSubDomain: defaultCustomMetricSubDomain,
 		},
 		newConfig: metricsConfig{
 			domain:                            servingDomain,
@@ -594,7 +584,6 @@ func TestIsNewExporterRequired(t *testing.T) {
 			isStackdriverBackend:              true,
 			stackdriverMetricTypePrefix:       path.Join(servingDomain, testComponent),
 			stackdriverCustomMetricTypePrefix: path.Join(customMetricTypePrefix, defaultCustomMetricSubDomain, testComponent),
-			stackdriverCustomMetricsSubDomain: defaultCustomMetricSubDomain,
 		},
 		newExporterRequired: true,
 	}, {
@@ -614,7 +603,7 @@ func TestIsNewExporterRequired(t *testing.T) {
 			domain:             servingDomain,
 			component:          testComponent,
 			backendDestination: Stackdriver,
-			stackdriverClientConfig: stackdriverClientConfig{
+			stackdriverClientConfig: StackdriverClientConfig{
 				ProjectID: "proj1",
 			},
 		},
@@ -622,7 +611,7 @@ func TestIsNewExporterRequired(t *testing.T) {
 			domain:             servingDomain,
 			component:          testComponent,
 			backendDestination: Stackdriver,
-			stackdriverClientConfig: stackdriverClientConfig{
+			stackdriverClientConfig: StackdriverClientConfig{
 				ProjectID: "proj2",
 			},
 		},
@@ -633,7 +622,7 @@ func TestIsNewExporterRequired(t *testing.T) {
 			domain:             servingDomain,
 			component:          testComponent,
 			backendDestination: Stackdriver,
-			stackdriverClientConfig: stackdriverClientConfig{
+			stackdriverClientConfig: StackdriverClientConfig{
 				ProjectID:   testProj,
 				ClusterName: "cluster1",
 			},
@@ -642,7 +631,7 @@ func TestIsNewExporterRequired(t *testing.T) {
 			domain:             servingDomain,
 			component:          testComponent,
 			backendDestination: Stackdriver,
-			stackdriverClientConfig: stackdriverClientConfig{
+			stackdriverClientConfig: StackdriverClientConfig{
 				ProjectID:   testProj,
 				ClusterName: "cluster2",
 			},
@@ -672,8 +661,8 @@ func TestUpdateExporter(t *testing.T) {
 			if mConfig == oldConfig {
 				t.Error("Expected metrics config change")
 			}
-			if !reflect.DeepEqual(*mConfig, test.expectedConfig) {
-				t.Errorf("Expected config: %v; got config %v", test.expectedConfig, mConfig)
+			if diff := cmp.Diff(test.expectedConfig, *mConfig, cmp.AllowUnexported(*mConfig), cmpopts.IgnoreTypes(mConfig.recorder)); diff != "" {
+				t.Errorf("Invalid config (-want +got):\n%s", diff)
 			}
 			oldConfig = mConfig
 		})
@@ -770,27 +759,25 @@ func TestNewStackdriverConfigFromMap(t *testing.T) {
 	tests := []struct {
 		name           string
 		stringMap      map[string]string
-		expectedConfig stackdriverClientConfig
+		expectedConfig StackdriverClientConfig
 	}{{
 		name: "fullSdConfig",
 		stringMap: map[string]string{
-			"metrics.stackdriver-project-id":           "project",
-			"metrics.stackdriver-gcp-location":         "us-west1",
-			"metrics.stackdriver-cluster-name":         "cluster",
-			"metrics.stackdriver-gcp-secret-name":      "secret",
-			"metrics.stackdriver-gcp-secret-namespace": "non-default",
+			"metrics.stackdriver-project-id":   "project",
+			"metrics.stackdriver-gcp-location": "us-west1",
+			"metrics.stackdriver-cluster-name": "cluster",
+			"metrics.stackdriver-use-secret":   "true",
 		},
-		expectedConfig: stackdriverClientConfig{
-			ProjectID:          "project",
-			GCPLocation:        "us-west1",
-			ClusterName:        "cluster",
-			GCPSecretName:      "secret",
-			GCPSecretNamespace: "non-default",
+		expectedConfig: StackdriverClientConfig{
+			ProjectID:   "project",
+			GCPLocation: "us-west1",
+			ClusterName: "cluster",
+			UseSecret:   true,
 		},
 	}, {
 		name:           "emptySdConfig",
 		stringMap:      map[string]string{},
-		expectedConfig: stackdriverClientConfig{},
+		expectedConfig: StackdriverClientConfig{},
 	}, {
 		name: "partialSdConfig",
 		stringMap: map[string]string{
@@ -798,22 +785,96 @@ func TestNewStackdriverConfigFromMap(t *testing.T) {
 			"metrics.stackdriver-gcp-location": "us-west1",
 			"metrics.stackdriver-cluster-name": "cluster",
 		},
-		expectedConfig: stackdriverClientConfig{
+		expectedConfig: StackdriverClientConfig{
 			ProjectID:   "project",
 			GCPLocation: "us-west1",
 			ClusterName: "cluster",
+			UseSecret:   false,
 		},
 	}, {
 		name:           "nil",
 		stringMap:      nil,
-		expectedConfig: stackdriverClientConfig{},
+		expectedConfig: StackdriverClientConfig{},
 	}}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			c := newStackdriverClientConfigFromMap(test.stringMap)
+			c := NewStackdriverClientConfigFromMap(test.stringMap)
 			if test.expectedConfig != *c {
 				t.Errorf("Incorrect stackdriver config. Expected: [%v], Got: [%v]", test.expectedConfig, *c)
+			}
+		})
+	}
+}
+
+// TODO(evankanderson): Move the Stackdriver / Record patching out of config.go
+func TestStackdriverRecord(t *testing.T) {
+	testCases := map[string]struct {
+		opts          map[string]string
+		servedCounter int64
+		statCounter   int64
+	}{
+		"non-stackdriver": {
+			opts: map[string]string{
+				"metrics.backend-destination": "prometheus",
+			},
+			servedCounter: 1,
+			statCounter:   1,
+		},
+		"stackdriver with custom metrics": {
+			opts: map[string]string{
+				"metrics.backend-destination":              "stackdriver",
+				"metrics.allow-stackdriver-custom-metrics": "true",
+			},
+			servedCounter: 1,
+			statCounter:   1,
+		},
+		"stackdriver no custom metrics": {
+			opts: map[string]string{
+				"metrics.backend-destination": "stackdriver",
+			},
+			servedCounter: 1,
+			statCounter:   0,
+		},
+	}
+
+	servedCount := stats.Int64("request_count", "Number of requests", stats.UnitNone)
+	statCount := stats.Int64("stat_errors", "Number of errors calling stat", stats.UnitNone)
+	emptyTags := map[string]string{}
+
+	for name, data := range testCases {
+		t.Run(name, func(t *testing.T) {
+			defer ClearAll()
+			opts := ExporterOptions{
+				ConfigMap: data.opts,
+				Domain:    "knative.dev/internal/serving",
+				Component: "activator",
+			}
+			mc, err := createMetricsConfig(opts, TestLogger(t))
+			if err != nil {
+				t.Errorf("Expected valid config %+v, got error: %v\n", opts, err)
+			}
+			setCurMetricsConfig(mc)
+			ctx := context.Background()
+			v := []*view.View{
+				&view.View{Measure: servedCount, Aggregation: view.Count()},
+				&view.View{Measure: statCount, Aggregation: view.Count()},
+			}
+			err = view.Register(v...)
+			if err != nil {
+				t.Errorf("Failed to register %+v in stats backend: %v", v, err)
+			}
+			defer view.Unregister(v...)
+
+			// Try recording each metric and checking the result.
+			Record(ctx, servedCount.M(1))
+			metricstest.CheckCountData(t, servedCount.Name(), emptyTags, data.servedCounter)
+
+			Record(ctx, statCount.M(1))
+			if data.statCounter != 0 {
+				metricstest.CheckCountData(t, statCount.Name(), emptyTags, data.statCounter)
+			} else {
+				metricstest.CheckStatsNotReported(t, statCount.Name())
 			}
 		})
 	}
