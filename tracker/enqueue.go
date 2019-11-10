@@ -24,6 +24,8 @@ import (
 	"time"
 
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/validation"
 
@@ -47,9 +49,11 @@ func New(callback func(types.NamespacedName), lease time.Duration) Interface {
 
 type impl struct {
 	m sync.Mutex
-	// mapping maps from an object reference to the set of
+	// exact maps from an object reference to the set of
 	// keys for objects watching it.
-	mapping map[Reference]set
+	exact map[Reference]set
+
+	inexact map[Reference]matchers
 
 	// The amount of time that an object may watch another
 	// before having to renew the lease.
@@ -63,6 +67,18 @@ var _ Interface = (*impl)(nil)
 
 // set is a map from keys to expirations
 type set map[types.NamespacedName]time.Time
+
+// matchers maps the tracker's key to the matcher.
+type matchers map[types.NamespacedName]matcher
+
+// matcher holds the selector and expiry for matching tracked objects.
+type matcher struct {
+	// The selector to complete the match.
+	selector labels.Selector
+
+	// When this lease expires.
+	expiry time.Time
+}
 
 // Track implements Interface.
 func (i *impl) Track(ref corev1.ObjectReference, obj interface{}) error {
@@ -79,9 +95,23 @@ func (i *impl) TrackReference(ref Reference, obj interface{}) error {
 		"APIVersion": validation.IsQualifiedName(ref.APIVersion),
 		"Kind":       validation.IsCIdentifier(ref.Kind),
 		"Namespace":  validation.IsDNS1123Label(ref.Namespace),
-		"Name":       validation.IsDNS1123Subdomain(ref.Name),
 	}
+	var selector labels.Selector
 	fieldErrors := []string{}
+	switch {
+	case ref.Selector != nil && ref.Name != "":
+		fieldErrors = append(fieldErrors, "cannot provide both Name and Selector")
+	case ref.Name != "":
+		invalidFields["Name"] = validation.IsDNS1123Subdomain(ref.Name)
+	case ref.Selector != nil:
+		ls, err := metav1.LabelSelectorAsSelector(ref.Selector)
+		if err != nil {
+			invalidFields["Selector"] = []string{err.Error()}
+		}
+		selector = ls
+	default:
+		fieldErrors = append(fieldErrors, "must provide either Name or Selector")
+	}
 	for k, v := range invalidFields {
 		for _, msg := range v {
 			fieldErrors = append(fieldErrors, fmt.Sprintf("%s: %s", k, msg))
@@ -89,27 +119,66 @@ func (i *impl) TrackReference(ref Reference, obj interface{}) error {
 	}
 	if len(fieldErrors) > 0 {
 		sort.Strings(fieldErrors)
-		return fmt.Errorf("invalid ObjectReference:\n%s", strings.Join(fieldErrors, "\n"))
+		return fmt.Errorf("invalid Reference:\n%s", strings.Join(fieldErrors, "\n"))
 	}
 
+	// Determine the key of the object tracking this reference.
 	object, err := kmeta.DeletionHandlingAccessor(obj)
 	if err != nil {
 		return err
 	}
-
 	key := types.NamespacedName{Namespace: object.GetNamespace(), Name: object.GetName()}
 
 	i.m.Lock()
 	defer i.m.Unlock()
-	if i.mapping == nil {
-		i.mapping = make(map[Reference]set)
+	if i.exact == nil {
+		i.exact = make(map[Reference]set)
+	}
+	if i.inexact == nil {
+		i.inexact = make(map[Reference]matchers)
 	}
 
-	l, ok := i.mapping[ref]
-	if !ok {
-		l = set{}
+	// If the reference uses Name then it is an exact match.
+	if selector == nil {
+		l, ok := i.exact[ref]
+		if !ok {
+			l = set{}
+		}
+
+		if expiry, ok := l[key]; !ok || isExpired(expiry) {
+			// When covering an uncovered key, immediately call the
+			// registered callback to ensure that the following pattern
+			// doesn't create problems:
+			//    foo, err := lister.Get(key)
+			//    // Later...
+			//    err := tracker.Track(fooRef, parent)
+			// In this example, "Later" represents a window where "foo" may
+			// have changed or been created while the Track is not active.
+			// The simplest way of eliminating such a window is to call the
+			// callback to "catch up" immediately following new
+			// registrations.
+			i.cb(key)
+		}
+		// Overwrite the key with a new expiration.
+		l[key] = time.Now().Add(i.leaseDuration)
+
+		i.exact[ref] = l
+		return nil
 	}
-	if expiry, ok := l[key]; !ok || isExpired(expiry) {
+
+	// Otherwise, it is an inexact match by selector.
+	partialRef := Reference{
+		APIVersion: ref.APIVersion,
+		Kind:       ref.Kind,
+		Namespace:  ref.Namespace,
+		// Exclude the selector.
+	}
+	l, ok := i.inexact[partialRef]
+	if !ok {
+		l = matchers{}
+	}
+
+	if m, ok := l[key]; !ok || isExpired(m.expiry) {
 		// When covering an uncovered key, immediately call the
 		// registered callback to ensure that the following pattern
 		// doesn't create problems:
@@ -124,9 +193,12 @@ func (i *impl) TrackReference(ref Reference, obj interface{}) error {
 		i.cb(key)
 	}
 	// Overwrite the key with a new expiration.
-	l[key] = time.Now().Add(i.leaseDuration)
+	l[key] = matcher{
+		selector: selector,
+		expiry:   time.Now().Add(i.leaseDuration),
+	}
 
-	i.mapping[ref] = l
+	i.inexact[partialRef] = l
 	return nil
 }
 
@@ -138,7 +210,6 @@ func isExpired(expiry time.Time) bool {
 func (i *impl) OnChanged(obj interface{}) {
 	item, err := kmeta.DeletionHandlingAccessor(obj)
 	if err != nil {
-		// TODO(mattmoor): We should consider logging here.
 		return
 	}
 
@@ -150,26 +221,42 @@ func (i *impl) OnChanged(obj interface{}) {
 		Name:       or.Name,
 	}
 
-	// TODO(mattmoor): Consider locking the mapping (global) for a
-	// smaller scope and leveraging a per-set lock to guard its access.
 	i.m.Lock()
 	defer i.m.Unlock()
-	s, ok := i.mapping[ref]
-	if !ok {
-		// TODO(mattmoor): We should consider logging here.
-		return
-	}
 
-	for key, expiry := range s {
-		// If the expiration has lapsed, then delete the key.
-		if isExpired(expiry) {
-			delete(s, key)
-			continue
+	// Handle exact matches.
+	s, ok := i.exact[ref]
+	if ok {
+		for key, expiry := range s {
+			// If the expiration has lapsed, then delete the key.
+			if isExpired(expiry) {
+				delete(s, key)
+				continue
+			}
+			i.cb(key)
 		}
-		i.cb(key)
+		if len(s) == 0 {
+			delete(i.exact, ref)
+		}
 	}
 
-	if len(s) == 0 {
-		delete(i.mapping, ref)
+	// Handle inexact matches.
+	ref.Name = ""
+	ms, ok := i.inexact[ref]
+	if ok {
+		ls := labels.Set(item.GetLabels())
+		for key, m := range ms {
+			// If the expiration has lapsed, then delete the key.
+			if isExpired(m.expiry) {
+				delete(ms, key)
+				continue
+			}
+			if m.selector.Matches(ls) {
+				i.cb(key)
+			}
+		}
+		if len(s) == 0 {
+			delete(i.exact, ref)
+		}
 	}
 }
