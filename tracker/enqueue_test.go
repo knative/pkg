@@ -48,7 +48,13 @@ func TestHappyPaths(t *testing.T) {
 			Name:      "foo",
 		},
 	}
-	objRef := kmeta.ObjectReference(thing1)
+	or := kmeta.ObjectReference(thing1)
+	ref := Reference{
+		APIVersion: or.APIVersion,
+		Kind:       or.Kind,
+		Namespace:  or.Namespace,
+		Name:       or.Name,
+	}
 
 	thing2 := &Resource{
 		TypeMeta: metav1.TypeMeta{
@@ -71,7 +77,7 @@ func TestHappyPaths(t *testing.T) {
 
 	// Tracked gets called
 	{
-		if err := trk.Track(objRef, thing2); err != nil {
+		if err := trk.Track(ref.ObjectReference(), thing2); err != nil {
 			t.Errorf("Track() = %v", err)
 		}
 		// New registrations should result in an immediate callback.
@@ -100,14 +106,14 @@ func TestHappyPaths(t *testing.T) {
 		if got, want := calls, 3; got != want {
 			t.Errorf("OnChanged() = %v, wanted %v", got, want)
 		}
-		if _, stillThere := trk.(*impl).mapping[objRef]; stillThere {
+		if _, stillThere := trk.(*impl).mapping[ref]; stillThere {
 			t.Error("Timeout passed, but mapping for objectReference is still there")
 		}
 	}
 
 	// Starts getting called again
 	{
-		if err := trk.Track(objRef, thing2); err != nil {
+		if err := trk.Track(ref.ObjectReference(), thing2); err != nil {
 			t.Errorf("Track() = %v", err)
 		}
 		// New registrations should result in an immediate callback.
@@ -160,7 +166,7 @@ func TestHappyPaths(t *testing.T) {
 
 	// Track bad object
 	{
-		if err := trk.Track(objRef, struct{}{}); err == nil {
+		if err := trk.Track(ref.ObjectReference(), struct{}{}); err == nil {
 			t.Error("Track() = nil, wanted error")
 		}
 	}

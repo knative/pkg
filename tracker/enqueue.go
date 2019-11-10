@@ -49,7 +49,7 @@ type impl struct {
 	m sync.Mutex
 	// mapping maps from an object reference to the set of
 	// keys for objects watching it.
-	mapping map[corev1.ObjectReference]set
+	mapping map[Reference]set
 
 	// The amount of time that an object may watch another
 	// before having to renew the lease.
@@ -66,6 +66,15 @@ type set map[types.NamespacedName]time.Time
 
 // Track implements Interface.
 func (i *impl) Track(ref corev1.ObjectReference, obj interface{}) error {
+	return i.TrackReference(Reference{
+		APIVersion: ref.APIVersion,
+		Kind:       ref.Kind,
+		Namespace:  ref.Namespace,
+		Name:       ref.Name,
+	}, obj)
+}
+
+func (i *impl) TrackReference(ref Reference, obj interface{}) error {
 	invalidFields := map[string][]string{
 		"APIVersion": validation.IsQualifiedName(ref.APIVersion),
 		"Kind":       validation.IsCIdentifier(ref.Kind),
@@ -93,7 +102,7 @@ func (i *impl) Track(ref corev1.ObjectReference, obj interface{}) error {
 	i.m.Lock()
 	defer i.m.Unlock()
 	if i.mapping == nil {
-		i.mapping = make(map[corev1.ObjectReference]set)
+		i.mapping = make(map[Reference]set)
 	}
 
 	l, ok := i.mapping[ref]
@@ -134,12 +143,18 @@ func (i *impl) OnChanged(obj interface{}) {
 	}
 
 	or := kmeta.ObjectReference(item)
+	ref := Reference{
+		APIVersion: or.APIVersion,
+		Kind:       or.Kind,
+		Namespace:  or.Namespace,
+		Name:       or.Name,
+	}
 
 	// TODO(mattmoor): Consider locking the mapping (global) for a
 	// smaller scope and leveraging a per-set lock to guard its access.
 	i.m.Lock()
 	defer i.m.Unlock()
-	s, ok := i.mapping[or]
+	s, ok := i.mapping[ref]
 	if !ok {
 		// TODO(mattmoor): We should consider logging here.
 		return
@@ -155,6 +170,6 @@ func (i *impl) OnChanged(obj interface{}) {
 	}
 
 	if len(s) == 0 {
-		delete(i.mapping, or)
+		delete(i.mapping, ref)
 	}
 }
