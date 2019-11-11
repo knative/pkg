@@ -22,6 +22,7 @@ directly to Stackdriver Metrics.
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes/any"
@@ -72,6 +73,8 @@ func (se *statsExporter) uploadMetrics(metrics []*metricdata.Metric) error {
 	ctx, cancel := newContextWithTimeout(se.o.Context, se.o.Timeout)
 	defer cancel()
 
+	var errors []error
+
 	ctx, span := trace.StartSpan(
 		ctx,
 		"contrib.go.opencensus.io/exporter/stackdriver.uploadMetrics",
@@ -83,7 +86,7 @@ func (se *statsExporter) uploadMetrics(metrics []*metricdata.Metric) error {
 		// Now create the metric descriptor remotely.
 		if err := se.createMetricDescriptorFromMetric(ctx, metric); err != nil {
 			span.SetStatus(trace.Status{Code: trace.StatusCodeUnknown, Message: err.Error()})
-			//TODO: [rghetia] record error metrics.
+			errors = append(errors, err)
 			continue
 		}
 	}
@@ -93,7 +96,7 @@ func (se *statsExporter) uploadMetrics(metrics []*metricdata.Metric) error {
 		tsl, err := se.metricToMpbTs(ctx, metric)
 		if err != nil {
 			span.SetStatus(trace.Status{Code: trace.StatusCodeUnknown, Message: err.Error()})
-			//TODO: [rghetia] record error metrics.
+			errors = append(errors, err)
 			continue
 		}
 		if tsl != nil {
@@ -112,13 +115,22 @@ func (se *statsExporter) uploadMetrics(metrics []*metricdata.Metric) error {
 		for _, ctsreq := range ctsreql {
 			if err := createTimeSeries(ctx, se.c, ctsreq); err != nil {
 				span.SetStatus(trace.Status{Code: trace.StatusCodeUnknown, Message: err.Error()})
-				// TODO(@rghetia): record error metrics
-				// return err
+				errors = append(errors, err)
 			}
 		}
 	}
 
-	return nil
+	numErrors := len(errors)
+	if numErrors == 0 {
+		return nil
+	} else if numErrors == 1 {
+		return errors[0]
+	}
+	errMsgs := make([]string, 0, numErrors)
+	for _, err := range errors {
+		errMsgs = append(errMsgs, err.Error())
+	}
+	return fmt.Errorf("[%s]", strings.Join(errMsgs, "; "))
 }
 
 // metricToMpbTs converts a metric into a list of Stackdriver Monitoring v3 API TimeSeries

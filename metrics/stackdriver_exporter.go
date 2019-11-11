@@ -112,7 +112,7 @@ func newOpencensusSDExporter(o stackdriver.Options) (view.Exporter, error) {
 // 	See https://github.com/knative/pkg/issues/608
 func newStackdriverExporter(config *metricsConfig, logger *zap.SugaredLogger) (view.Exporter, error) {
 	gm := getMergedGCPMetadata(config)
-	mtf := getMetricTypeFunc(config.stackdriverMetricTypePrefix, config.stackdriverCustomMetricTypePrefix)
+	mpf := getMetricPrefixFunc(config.stackdriverMetricTypePrefix, config.stackdriverCustomMetricTypePrefix)
 	co, err := getStackdriverExporterClientOptions(&config.stackdriverClientConfig)
 	if err != nil {
 		logger.Warnw("Issue configuring Stackdriver exporter client options, no additional client options will be used: ", zap.Error(err))
@@ -123,8 +123,7 @@ func newStackdriverExporter(config *metricsConfig, logger *zap.SugaredLogger) (v
 		Location:                gm.location,
 		MonitoringClientOptions: co,
 		TraceClientOptions:      co,
-		GetMetricDisplayName:    mtf, // Use metric type for display name for custom metrics. No impact on built-in metrics.
-		GetMetricType:           mtf,
+		GetMetricPrefix:         mpf,
 		ResourceByDescriptor:    getResourceByDescriptorFunc(config.stackdriverMetricTypePrefix, gm),
 		ReportingInterval:       config.reportingPeriod,
 		DefaultMonitoringLabels: &stackdriver.Labels{},
@@ -199,18 +198,18 @@ func getGlobalMonitoredResource(des *metricdata.Descriptor, tags map[string]stri
 	return tags, &Global{}
 }
 
-func getMetricTypeFunc(metricTypePrefix, customMetricTypePrefix string) func(view *view.View) string {
-	return func(view *view.View) string {
-		metricType := path.Join(metricTypePrefix, view.Measure.Name())
+func getMetricPrefixFunc(metricTypePrefix, customMetricTypePrefix string) func(name string) string {
+	return func(name string) string {
+		metricType := path.Join(metricTypePrefix, name)
 		inServing := metricskey.KnativeRevisionMetrics.Has(metricType)
 		inEventing := metricskey.KnativeBrokerMetrics.Has(metricType) ||
 			metricskey.KnativeTriggerMetrics.Has(metricType) ||
 			metricskey.KnativeSourceMetrics.Has(metricType)
 		if inServing || inEventing {
-			return metricType
+			return metricTypePrefix
 		}
 		// Unsupported metric by knative_revision, use custom domain.
-		return path.Join(customMetricTypePrefix, view.Measure.Name())
+		return customMetricTypePrefix
 	}
 }
 

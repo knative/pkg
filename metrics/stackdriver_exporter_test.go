@@ -335,42 +335,26 @@ func TestGetResourceByDescriptorFunc_UseGlobal(t *testing.T) {
 	}
 }
 
-func TestGetMetricTypeFunc_UseKnativeDomain(t *testing.T) {
+func TestGetMetricPrefixFunc_UseKnativeDomain(t *testing.T) {
 	for _, testCase := range supportedServingMetricsTestCases {
-		testView = &view.View{
-			Description: "Test View",
-			Measure:     stats.Int64(testCase.metricName, "Test Measure", stats.UnitNone),
-			Aggregation: view.LastValue(),
-			TagKeys:     []tag.Key{},
-		}
-		mtf := getMetricTypeFunc(
-			path.Join(testCase.domain, testCase.component),
-			path.Join(defaultCustomMetricSubDomain, testCase.component))
+		knativePrefix := path.Join(testCase.domain, testCase.component)
+		customPrefix := path.Join(defaultCustomMetricSubDomain, testCase.component)
+		mpf := getMetricPrefixFunc(knativePrefix, customPrefix)
 
-		gotMetricType := mtf(testView)
-		wantedMetricType := path.Join(testCase.domain, testCase.component, testView.Measure.Name())
-		if gotMetricType != wantedMetricType {
-			t.Fatalf("getMetricType=%v, want %v", gotMetricType, wantedMetricType)
+		if got, want := mpf(testCase.metricName), knativePrefix; got != want {
+			t.Fatalf("getMetricPrefixFunc=%v, want %v", got, want)
 		}
 	}
 }
 
-func TestGetMetricTypeFunc_UseCustomDomain(t *testing.T) {
+func TestGetMetricPrefixFunc_UseCustomDomain(t *testing.T) {
 	for _, testCase := range unsupportedMetricsTestCases {
-		testView = &view.View{
-			Description: "Test View",
-			Measure:     stats.Int64(testCase.metricName, "Test Measure", stats.UnitNone),
-			Aggregation: view.LastValue(),
-			TagKeys:     []tag.Key{},
-		}
-		mtf := getMetricTypeFunc(
-			path.Join(testCase.domain, testCase.component),
-			path.Join(defaultCustomMetricSubDomain, testCase.component))
+		knativePrefix := path.Join(testCase.domain, testCase.component)
+		customPrefix := path.Join(defaultCustomMetricSubDomain, testCase.component)
+		mpf := getMetricPrefixFunc(knativePrefix, customPrefix)
 
-		gotMetricType := mtf(testView)
-		wantedMetricType := path.Join(defaultCustomMetricSubDomain, testCase.component, testView.Measure.Name())
-		if gotMetricType != wantedMetricType {
-			t.Fatalf("getMetricType=%v, want %v", gotMetricType, wantedMetricType)
+		if got, want := mpf(testCase.metricName), customPrefix; got != want {
+			t.Fatalf("getMetricPrefixFunc=%v, want %v", got, want)
 		}
 	}
 }

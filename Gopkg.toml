@@ -60,7 +60,7 @@ required = [
 
 [[constraint]]
   name = "contrib.go.opencensus.io/exporter/stackdriver"
-  version = "v0.12.8"
+  revision = "59d068f8d8ff5b653916aa30cdc4e13c7f15d56e"
 
 [[constraint]]
   name = "github.com/google/mako"

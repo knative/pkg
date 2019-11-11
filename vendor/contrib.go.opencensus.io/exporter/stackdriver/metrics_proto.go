@@ -45,7 +45,7 @@ var percentileLabelKey = &metricspb.LabelKey{
 	Description: "the value at a given percentile of a distribution",
 }
 var globalResource = &resource.Resource{Type: "global"}
-var domains = []string{"googleapis.com", "kubernetes.io", "istio.io"}
+var domains = []string{"googleapis.com", "kubernetes.io", "istio.io", "knative.dev"}
 
 // PushMetricsProto exports OpenCensus Metrics Proto to Stackdriver Monitoring synchronously,
 // without de-duping or adding proto metrics to the bundler.
@@ -410,8 +410,11 @@ func labelDescriptorsFromProto(defaults map[string]labelValue, protoLabelKeys []
 
 func (se *statsExporter) metricTypeFromProto(name string) string {
 	prefix := se.o.MetricPrefix
+	if se.o.GetMetricPrefix != nil {
+		prefix = se.o.GetMetricPrefix(name)
+	}
 	if prefix != "" {
-		name = prefix + name
+		name = path.Join(prefix, name)
 	}
 	if !hasDomain(name) {
 		// Still needed because the name may or may not have a "/" at the beginning.

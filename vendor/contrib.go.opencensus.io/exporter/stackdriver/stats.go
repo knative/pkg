@@ -365,11 +365,7 @@ func (e *statsExporter) createMetricDescriptorFromView(ctx context.Context, v *v
 }
 
 func (e *statsExporter) displayName(suffix string) string {
-	displayNamePrefix := defaultDisplayNamePrefix
-	if e.o.MetricPrefix != "" {
-		displayNamePrefix = e.o.MetricPrefix
-	}
-	return path.Join(displayNamePrefix, suffix)
+	return path.Join(defaultDisplayNamePrefix, suffix)
 }
 
 func (e *statsExporter) combineTimeSeriesToCreateTimeSeriesRequest(ts []*monitoringpb.TimeSeries) (ctsreql []*monitoringpb.CreateTimeSeriesRequest) {
