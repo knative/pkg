@@ -104,10 +104,10 @@ func newOpencensusSDExporter(o stackdriver.Options) (view.Exporter, error) {
 	e, err := stackdriver.NewExporter(o)
 	if err == nil {
 		// Start the exporter.
-		// TODO(yanweiguo): Move this to an interface.
+		// TODO(https://github.com/knative/pkg/issues/866): Move this to an interface.
 		e.StartMetricsExporter()
 	}
-	return stackdriver.NewExporter(o)
+	return e, nil
 }
 
 // TODO should be properly refactored to be able to inject the getResourceByDescriptorFunc function.

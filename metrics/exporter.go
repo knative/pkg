@@ -33,7 +33,7 @@ type flushable interface {
 	Flush()
 }
 
-type stopable interface {
+type stoppable interface {
 	// StopMetricsExporter stops the exporter
 	StopMetricsExporter()
 }
@@ -131,8 +131,9 @@ func newMetricsExporter(config *metricsConfig, logger *zap.SugaredLogger) (view.
 	// If there is a Prometheus Exporter server running, stop it.
 	resetCurPromSrv()
 
-	// TODO: Move Stackdriver and Promethus operations before stoping to an interface.
-	if se, ok := ce.(stopable); ok {
+	// TODO(https://github.com/knative/pkg/issues/866): Move Stackdriver and Promethus
+	// operations before stopping to an interface.
+	if se, ok := ce.(stoppable); ok {
 		se.StopMetricsExporter()
 	}
 
