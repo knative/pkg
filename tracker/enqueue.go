@@ -52,7 +52,8 @@ type impl struct {
 	// exact maps from an object reference to the set of
 	// keys for objects watching it.
 	exact map[Reference]set
-
+	// inexact maps from a partial object reference (no name/selector) to
+	// a map from watcher keys to the compiled selector and expiry.
 	inexact map[Reference]matchers
 
 	// The amount of time that an object may watch another
