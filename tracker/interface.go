@@ -21,6 +21,7 @@ import (
 	"strings"
 
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/validation"
 
@@ -44,8 +45,14 @@ type Reference struct {
 	Namespace string `json:"namespace,omitempty"`
 
 	// Name of the referent.
+	// Mutually exclusive with Selector.
 	// +optional
 	Name string `json:"name,omitempty"`
+
+	// Selector of the referents.
+	// Mutually exclusive with Name.
+	// +optional
+	Selector *metav1.LabelSelector `json:"selector,omitempty"`
 }
 
 // Interface defines the interface through which an object can register
@@ -113,7 +120,51 @@ func (ref *Reference) ValidateObjectReference(ctx context.Context) *apis.FieldEr
 		errs = errs.Also(apis.ErrInvalidValue(strings.Join(verrs, ", "), "namespace"))
 	}
 
-	// TODO(mattmoor): Add disallowed fields here
+	// Disallowed fields in ObjectReference-compatible context.
+	if ref.Selector != nil {
+		errs = errs.Also(apis.ErrDisallowedFields("selector"))
+	}
 
 	return errs
+}
+
+func (ref *Reference) Validate(ctx context.Context) *apis.FieldError {
+	var errs *apis.FieldError
+
+	// Required fields
+	if ref.APIVersion == "" {
+		errs = errs.Also(apis.ErrMissingField("apiVersion"))
+	} else if verrs := validation.IsQualifiedName(ref.APIVersion); len(verrs) != 0 {
+		errs = errs.Also(apis.ErrInvalidValue(strings.Join(verrs, ", "), "apiVersion"))
+	}
+	if ref.Kind == "" {
+		errs = errs.Also(apis.ErrMissingField("kind"))
+	} else if verrs := validation.IsCIdentifier(ref.Kind); len(verrs) != 0 {
+		errs = errs.Also(apis.ErrInvalidValue(strings.Join(verrs, ", "), "kind"))
+	}
+	if ref.Namespace == "" {
+		errs = errs.Also(apis.ErrMissingField("namespace"))
+	} else if verrs := validation.IsDNS1123Label(ref.Namespace); len(verrs) != 0 {
+		errs = errs.Also(apis.ErrInvalidValue(strings.Join(verrs, ", "), "namespace"))
+	}
+
+	switch {
+	case ref.Selector != nil && ref.Name != "":
+		errs = errs.Also(apis.ErrMultipleOneOf("selector", "name"))
+	case ref.Selector != nil:
+		_, err := metav1.LabelSelectorAsSelector(ref.Selector)
+		if err != nil {
+			errs = errs.Also(apis.ErrInvalidValue(err.Error(), "selector"))
+		}
+
+	case ref.Name != "":
+		if verrs := validation.IsDNS1123Label(ref.Name); len(verrs) != 0 {
+			errs = errs.Also(apis.ErrInvalidValue(strings.Join(verrs, ", "), "name"))
+		}
+	default:
+		errs = errs.Also(apis.ErrMissingOneOf("selector", "name"))
+	}
+
+	return errs
+
 }
