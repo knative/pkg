@@ -103,6 +103,8 @@ func init() {
 func newOpencensusSDExporter(o stackdriver.Options) (view.Exporter, error) {
 	e, err := stackdriver.NewExporter(o)
 	if err == nil {
+		// Start the exporter.
+		// TODO(yanweiguo): Move this to an interface.
 		e.StartMetricsExporter()
 	}
 	return stackdriver.NewExporter(o)
