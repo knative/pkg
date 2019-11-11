@@ -181,14 +181,13 @@ func getResourceByDescriptorFunc(metricTypePrefix string, gm *gcpMetadata) func(
 		metricType := path.Join(metricTypePrefix, des.Name)
 		if metricskey.KnativeRevisionMetrics.Has(metricType) {
 			return GetKnativeRevisionMonitoredResource(des, tags, gm)
+		} else if metricskey.KnativeBrokerMetrics.Has(metricType) {
+			return GetKnativeBrokerMonitoredResource(des, tags, gm)
+		} else if metricskey.KnativeTriggerMetrics.Has(metricType) {
+			return GetKnativeTriggerMonitoredResource(des, tags, gm)
+		} else if metricskey.KnativeSourceMetrics.Has(metricType) {
+			return GetKnativeSourceMonitoredResource(des, tags, gm)
 		}
-		// else if metricskey.KnativeBrokerMetrics.Has(metricType) {
-		// 	return GetKnativeBrokerMonitoredResource(view, tags, gm)
-		// } else if metricskey.KnativeTriggerMetrics.Has(metricType) {
-		// 	return GetKnativeTriggerMonitoredResource(view, tags, gm)
-		// } else if metricskey.KnativeSourceMetrics.Has(metricType) {
-		// 	return GetKnativeSourceMonitoredResource(view, tags, gm)
-		// }
 		// Unsupported metric by knative_revision, knative_broker, knative_trigger, and knative_source, use "global" resource type.
 		return getGlobalMonitoredResource(des, tags)
 	}

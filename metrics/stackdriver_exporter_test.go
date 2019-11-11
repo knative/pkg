@@ -23,9 +23,7 @@ import (
 
 	"contrib.go.opencensus.io/exporter/stackdriver"
 	"go.opencensus.io/metric/metricdata"
-	"go.opencensus.io/stats"
 	"go.opencensus.io/stats/view"
-	"go.opencensus.io/tag"
 	. "knative.dev/pkg/logging/testing"
 	"knative.dev/pkg/metrics/metricskey"
 )
@@ -34,37 +32,30 @@ import (
 // 	See https://github.com/knative/pkg/issues/608
 
 var (
-	testView = &view.View{
-		Description: "Test View",
-		Measure:     stats.Int64("test", "Test Measure", stats.UnitNone),
-		Aggregation: view.LastValue(),
-		TagKeys:     []tag.Key{},
-	}
-
-	nsKey = tag.Tag{Key: mustNewTagKey(metricskey.LabelNamespaceName), Value: testNS}
-
-	brokerKey              = tag.Tag{Key: mustNewTagKey(metricskey.LabelBrokerName), Value: testBroker}
-	triggerKey             = tag.Tag{Key: mustNewTagKey(metricskey.LabelTriggerName), Value: testTrigger}
-	filterTypeKey          = tag.Tag{Key: mustNewTagKey(metricskey.LabelFilterType), Value: testFilterType}
-	sourceKey              = tag.Tag{Key: mustNewTagKey(metricskey.LabelName), Value: testSource}
-	sourceResourceGroupKey = tag.Tag{Key: mustNewTagKey(metricskey.LabelResourceGroup), Value: testSourceResourceGroup}
-	eventTypeKey           = tag.Tag{Key: mustNewTagKey(metricskey.LabelEventType), Value: testEventType}
-	eventSourceKey         = tag.Tag{Key: mustNewTagKey(metricskey.LabelEventSource), Value: testEventSource}
-
 	revisionTestTags = map[string]string{
 		metricskey.LabelNamespaceName: testNS,
 		metricskey.LabelServiceName:   testService,
+		metricskey.LabelRouteName:     testRoute, // Not a label key for knative_revision resource
 		metricskey.LabelRevisionName:  testRevision,
-		"foo":                         "bar",
 	}
-
 	brokerTestTags = map[string]string{
 		metricskey.LabelNamespaceName: testNS,
-		metricskey.LabelServiceName:   testService,
-		metricskey.LabelRevisionName:  testRevision,
+		metricskey.LabelBrokerName:    testBroker,
+		metricskey.LabelEventType:     testEventType, // Not a label key for knative_broker resource
 	}
-	triggerTestTags = []tag.Tag{nsKey, triggerKey, brokerKey, filterTypeKey}
-	sourceTestTags  = []tag.Tag{nsKey, sourceKey, sourceResourceGroupKey, eventTypeKey, eventSourceKey}
+	triggerTestTags = map[string]string{
+		metricskey.LabelNamespaceName: testNS,
+		metricskey.LabelTriggerName:   testTrigger,
+		metricskey.LabelBrokerName:    testBroker,
+		metricskey.LabelFilterType:    testFilterType, // Not a label key for knative_trigger resource
+	}
+	sourceTestTags = map[string]string{
+		metricskey.LabelNamespaceName: testNS,
+		metricskey.LabelName:          testSource,
+		metricskey.LabelResourceGroup: testSourceResourceGroup,
+		metricskey.LabelEventType:     testEventType,   // Not a label key for knative_source resource
+		metricskey.LabelEventSource:   testEventSource, // Not a label key for knative_source resource
+	}
 
 	testGcpMetadata = gcpMetadata{
 		project:  "test-project",
@@ -189,126 +180,121 @@ func TestGetResourceByDescriptorFunc_UseKnativeRevision(t *testing.T) {
 			Type:        metricdata.TypeGaugeInt64,
 			Unit:        metricdata.UnitDimensionless,
 		}
-		mrf := getResourceByDescriptorFunc(path.Join(testCase.domain, testCase.component), &testGcpMetadata)
+		rbd := getResourceByDescriptorFunc(path.Join(testCase.domain, testCase.component), &testGcpMetadata)
 
-		metricLabels, monitoredResource := mrf(testDescriptor, revisionTestTags)
+		metricLabels, monitoredResource := rbd(testDescriptor, revisionTestTags)
 		gotResType, resourceLabels := monitoredResource.MonitoredResource()
 		wantedResType := "knative_revision"
 		if gotResType != wantedResType {
 			t.Fatalf("MonitoredResource=%v, want %v", gotResType, wantedResType)
 		}
-		if got := metricLabels["foo"]; got != "bar" {
-			t.Errorf("expected new tag: `bar` got: %v", got)
+		// revisionTestTags includes route_name, which is not a key for knative_revision resource.
+		if got := metricLabels[metricskey.LabelRouteName]; got != testRoute {
+			t.Errorf("expected metrics label: %v, got: %v", testRoute, got)
 		}
 		if got := resourceLabels[metricskey.LabelNamespaceName]; got != testNS {
-			t.Errorf("expected label %v with value %v, got: %v", metricskey.LabelNamespaceName, testNS, got)
+			t.Errorf("expected resource label %v with value %v, got: %v", metricskey.LabelNamespaceName, testNS, got)
 		}
+		// configuration_name is a key required by knative_revision but missed in revisionTestTags
 		if got := resourceLabels[metricskey.LabelConfigurationName]; got != metricskey.ValueUnknown {
-			t.Errorf("expected label %v with value %v, got: %v", metricskey.LabelConfigurationName, metricskey.ValueUnknown, got)
+			t.Errorf("expected resource label %v with value %v, got: %v", metricskey.LabelConfigurationName, metricskey.ValueUnknown, got)
 		}
 	}
 }
 
-// func TestGetResourceByDescriptorFunc_UseKnativeBroker(t *testing.T) {
-// 	for _, testCase := range supportedEventingBrokerMetricsTestCases {
-// 		testView = &view.View{
-// 			Description: "Test View",
-// 			Measure:     stats.Int64(testCase.metricName, "Test Measure", stats.UnitDimensionless),
-// 			Aggregation: view.LastValue(),
-// 			TagKeys:     []tag.Key{},
-// 		}
-// 		mrf := getResourceByDescriptorFunc(path.Join(testCase.domain, testCase.component), &testGcpMetadata)
+func TestGetResourceByDescriptorFunc_UseKnativeBroker(t *testing.T) {
+	for _, testCase := range supportedEventingBrokerMetricsTestCases {
+		testDescriptor := &metricdata.Descriptor{
+			Name:        testCase.metricName,
+			Description: "Test View",
+			Type:        metricdata.TypeGaugeInt64,
+			Unit:        metricdata.UnitDimensionless,
+		}
+		rbd := getResourceByDescriptorFunc(path.Join(testCase.domain, testCase.component), &testGcpMetadata)
 
-// 		newTags, monitoredResource := mrf(testView, brokerTestTags)
-// 		gotResType, labels := monitoredResource.MonitoredResource()
-// 		wantedResType := "knative_broker"
-// 		if gotResType != wantedResType {
-// 			t.Fatalf("MonitoredResource=%v, want %v", gotResType, wantedResType)
-// 		}
-// 		got := getResourceLabelValue(metricskey.LabelEventType, newTags)
-// 		if got != testEventType {
-// 			t.Errorf("expected new tag: %v, got: %v", eventTypeKey, newTags)
-// 		}
-// 		got, ok := labels[metricskey.LabelNamespaceName]
-// 		if !ok || got != testNS {
-// 			t.Errorf("expected label %v with value %v, got: %v", metricskey.LabelNamespaceName, testNS, got)
-// 		}
-// 		got, ok = labels[metricskey.LabelBrokerName]
-// 		if !ok || got != testBroker {
-// 			t.Errorf("expected label %v with value %v, got: %v", metricskey.LabelBrokerName, testBroker, got)
-// 		}
-// 	}
-// }
+		metricLabels, monitoredResource := rbd(testDescriptor, brokerTestTags)
+		gotResType, resourceLabels := monitoredResource.MonitoredResource()
+		wantedResType := "knative_broker"
+		if gotResType != wantedResType {
+			t.Fatalf("MonitoredResource=%v, want %v", gotResType, wantedResType)
+		}
+		// brokerTestTags includes event_type, which is not a key for knative_broker resource.
+		if got := metricLabels[metricskey.LabelEventType]; got != testEventType {
+			t.Errorf("expected metrics label: %v, got: %v", testEventType, got)
+		}
+		if got := resourceLabels[metricskey.LabelNamespaceName]; got != testNS {
+			t.Errorf("expected resource label %v with value %v, got: %v", metricskey.LabelNamespaceName, testNS, got)
+		}
+		if got := resourceLabels[metricskey.LabelBrokerName]; got != testBroker {
+			t.Errorf("expected resource label %v with value %v, got: %v", metricskey.LabelBrokerName, testBroker, got)
+		}
+	}
+}
 
-// func TestGetResourceByDescriptorFunc_UseKnativeTrigger(t *testing.T) {
-// 	for _, testCase := range supportedEventingTriggerMetricsTestCases {
-// 		testView = &view.View{
-// 			Description: "Test View",
-// 			Measure:     stats.Int64(testCase.metricName, "Test Measure", stats.UnitDimensionless),
-// 			Aggregation: view.LastValue(),
-// 			TagKeys:     []tag.Key{},
-// 		}
-// 		mrf := getResourceByDescriptorFunc(path.Join(testCase.domain, testCase.component), &testGcpMetadata)
+func TestGetResourceByDescriptorFunc_UseKnativeTrigger(t *testing.T) {
+	for _, testCase := range supportedEventingTriggerMetricsTestCases {
+		testDescriptor := &metricdata.Descriptor{
+			Name:        testCase.metricName,
+			Description: "Test View",
+			Type:        metricdata.TypeGaugeInt64,
+			Unit:        metricdata.UnitDimensionless,
+		}
+		rbd := getResourceByDescriptorFunc(path.Join(testCase.domain, testCase.component), &testGcpMetadata)
 
-// 		newTags, monitoredResource := mrf(testView, triggerTestTags)
-// 		gotResType, labels := monitoredResource.MonitoredResource()
-// 		wantedResType := "knative_trigger"
-// 		if gotResType != wantedResType {
-// 			t.Fatalf("MonitoredResource=%v, want %v", gotResType, wantedResType)
-// 		}
-// 		got := getResourceLabelValue(metricskey.LabelFilterType, newTags)
-// 		if got != testFilterType {
-// 			t.Errorf("expected new tag: %v, got: %v", filterTypeKey, newTags)
-// 		}
-// 		got, ok := labels[metricskey.LabelNamespaceName]
-// 		if !ok || got != testNS {
-// 			t.Errorf("expected label %v with value %v, got: %v", metricskey.LabelNamespaceName, testNS, got)
-// 		}
-// 		got, ok = labels[metricskey.LabelBrokerName]
-// 		if !ok || got != testBroker {
-// 			t.Errorf("expected label %v with value %v, got: %v", metricskey.LabelBrokerName, testBroker, got)
-// 		}
-// 	}
-// }
+		metricLabels, monitoredResource := rbd(testDescriptor, triggerTestTags)
+		gotResType, resourceLabels := monitoredResource.MonitoredResource()
+		wantedResType := "knative_trigger"
+		if gotResType != wantedResType {
+			t.Fatalf("MonitoredResource=%v, want %v", gotResType, wantedResType)
+		}
+		// triggerTestTags includes filter_type, which is not a key for knative_trigger resource.
+		if got := metricLabels[metricskey.LabelFilterType]; got != testFilterType {
+			t.Errorf("expected metrics label: %v, got: %v", testFilterType, got)
+		}
+		if got := resourceLabels[metricskey.LabelNamespaceName]; got != testNS {
+			t.Errorf("expected resource label %v with value %v, got: %v", metricskey.LabelNamespaceName, testNS, got)
+		}
+		if got := resourceLabels[metricskey.LabelBrokerName]; got != testBroker {
+			t.Errorf("expected resource label %v with value %v, got: %v", metricskey.LabelBrokerName, testBroker, got)
+		}
+	}
+}
 
-// func TestGetResourceByDescriptorFunc_UseKnativeSource(t *testing.T) {
-// 	for _, testCase := range supportedEventingSourceMetricsTestCases {
-// 		testView = &view.View{
-// 			Description: "Test View",
-// 			Measure:     stats.Int64(testCase.metricName, "Test Measure", stats.UnitDimensionless),
-// 			Aggregation: view.LastValue(),
-// 			TagKeys:     []tag.Key{},
-// 		}
-// 		mrf := getResourceByDescriptorFunc(path.Join(testCase.domain, testCase.component), &testGcpMetadata)
+func TestGetResourceByDescriptorFunc_UseKnativeSource(t *testing.T) {
+	for _, testCase := range supportedEventingSourceMetricsTestCases {
+		testDescriptor := &metricdata.Descriptor{
+			Name:        testCase.metricName,
+			Description: "Test View",
+			Type:        metricdata.TypeGaugeInt64,
+			Unit:        metricdata.UnitDimensionless,
+		}
+		rbd := getResourceByDescriptorFunc(path.Join(testCase.domain, testCase.component), &testGcpMetadata)
 
-// 		newTags, monitoredResource := mrf(testView, sourceTestTags)
-// 		gotResType, labels := monitoredResource.MonitoredResource()
-// 		wantedResType := "knative_source"
-// 		if gotResType != wantedResType {
-// 			t.Fatalf("MonitoredResource=%v, want %v", gotResType, wantedResType)
-// 		}
-// 		got := getResourceLabelValue(metricskey.LabelEventType, newTags)
-// 		if got != testEventType {
-// 			t.Errorf("expected new tag: %v, got: %v", eventTypeKey, newTags)
-// 		}
-// 		got = getResourceLabelValue(metricskey.LabelEventSource, newTags)
-// 		if got != testEventSource {
-// 			t.Errorf("expected new tag: %v, got: %v", eventSourceKey, newTags)
-// 		}
-// 		got, ok := labels[metricskey.LabelNamespaceName]
-// 		if !ok || got != testNS {
-// 			t.Errorf("expected label %v with value %v, got: %v", metricskey.LabelNamespaceName, testNS, got)
-// 		}
-// 		got, ok = labels[metricskey.LabelName]
-// 		if !ok || got != testSource {
-// 			t.Errorf("expected label %v with value %v, got: %v", metricskey.LabelName, testSource, got)
-// 		}
-// 		got, ok = labels[metricskey.LabelResourceGroup]
-// 		if !ok || got != testSourceResourceGroup {
-// 			t.Errorf("expected label %v with value %v, got: %v", metricskey.LabelResourceGroup, testSourceResourceGroup, got)
-// 		}
-// 	}
-// }
+		metricLabels, monitoredResource := rbd(testDescriptor, sourceTestTags)
+		gotResType, resourceLabels := monitoredResource.MonitoredResource()
+		wantedResType := "knative_source"
+		if gotResType != wantedResType {
+			t.Fatalf("MonitoredResource=%v, want %v", gotResType, wantedResType)
+		}
+		// sourceTestTags includes event_type, which is not a key for knative_trigger resource.
+		if got := metricLabels[metricskey.LabelEventType]; got != testEventType {
+			t.Errorf("expected metrics label: %v, got: %v", testEventType, got)
+		}
+		// sourceTestTags includes event_source, which is not a key for knative_trigger resource.
+		if got := metricLabels[metricskey.LabelEventSource]; got != testEventSource {
+			t.Errorf("expected metrics label: %v, got: %v", testEventSource, got)
+		}
+		if got := resourceLabels[metricskey.LabelNamespaceName]; got != testNS {
+			t.Errorf("expected resource label %v with value %v, got: %v", metricskey.LabelNamespaceName, testNS, got)
+		}
+		if got := resourceLabels[metricskey.LabelName]; got != testSource {
+			t.Errorf("expected resource label %v with value %v, got: %v", metricskey.LabelName, testSource, got)
+		}
+		if got := resourceLabels[metricskey.LabelResourceGroup]; got != testSourceResourceGroup {
+			t.Errorf("expected resource label %v with value %v, got: %v", metricskey.LabelResourceGroup, testSourceResourceGroup, got)
+		}
+	}
+}
 
 func TestGetResourceByDescriptorFunc_UseGlobal(t *testing.T) {
 	for _, testCase := range unsupportedMetricsTestCases {
