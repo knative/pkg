@@ -25,6 +25,7 @@ import (
 	"os"
 	"os/user"
 	"path/filepath"
+	"regexp"
 	"time"
 
 	"go.opencensus.io/stats/view"
@@ -116,6 +117,10 @@ func MainWithConfig(ctx context.Context, component string, cfg *rest.Config, cto
 	log.Printf("Registering %d informer factories", len(injection.Default.GetInformerFactories()))
 	log.Printf("Registering %d informers", len(injection.Default.GetInformers()))
 	log.Printf("Registering %d controllers", len(ctors))
+
+	if !isComponentNameValid(component) {
+		log.Fatalf("Error validating component name: %s against spec :'%s'", component, componentNameRegex)
+	}
 
 	// Report stats on Go memory usage every 30 seconds.
 	msp := metrics.NewMemStatsAll()
@@ -219,4 +224,17 @@ func MainWithConfig(ctx context.Context, component string, cfg *rest.Config, cto
 func flush(logger *zap.SugaredLogger) {
 	logger.Sync()
 	metrics.FlushExporter()
+}
+
+// Components should match this regex from the Prometheus documentation
+// https://prometheus.io/docs/concepts/data_model/#metric-names-and-labels
+const componentNameRegex = "^[a-zA-Z_:]([a-zA-Z0-9_:])*$"
+
+var (
+	componentNameValiditor = regexp.MustCompile(componentNameRegex)
+)
+
+// isComponentNameValid returns true if valid, false otherwise
+func isComponentNameValid(name string) bool {
+	return componentNameValiditor.MatchString(name)
 }
