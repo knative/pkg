@@ -21,6 +21,7 @@ package junit
 import (
 	"encoding/xml"
 	"fmt"
+	"math"
 )
 
 // TestStatusEnum is a enum for test result status
@@ -33,6 +34,9 @@ const (
 	Skipped TestStatusEnum = "skipped"
 	// Passed means junit test passed
 	Passed TestStatusEnum = "passed"
+
+	// acceptedFloatError is the maximum error between float type in the struct to be considered as equal.
+	acceptedFloatError = 0.00001
 )
 
 // TestSuites holds a <testSuites/> list of TestSuite results
@@ -76,21 +80,59 @@ type TestProperty struct {
 }
 
 // GetTestStatus returns the test status as a string
-func (testCase *TestCase) GetTestStatus() TestStatusEnum {
+func (tc *TestCase) GetTestStatus() TestStatusEnum {
 	testStatus := Passed
 	switch {
-	case testCase.Failure != nil:
+	case tc.Failure != nil:
 		testStatus = Failed
-	case testCase.Skipped != nil:
+	case tc.Skipped != nil:
 		testStatus = Skipped
 	}
 	return testStatus
 }
 
 // AddProperty adds property to testcase
-func (testCase *TestCase) AddProperty(name, val string) {
+func (tc *TestCase) AddProperty(name, val string) {
 	property := TestProperty{Name: name, Value: val}
-	testCase.Properties.Properties = append(testCase.Properties.Properties, property)
+	tc.Properties.Properties = append(tc.Properties.Properties, property)
+}
+
+// Equal returns true if two TestCase are equal.
+func (tc TestCase) Equal(tc2 TestCase) bool {
+	return tc.Name == tc2.Name &&
+		math.Abs(tc.Time-tc2.Time) < acceptedFloatError &&
+		tc.ClassName == tc2.ClassName &&
+		(tc.Failure == nil && tc2.Failure == nil || tc.Failure != nil && tc2.Failure != nil && *tc.Failure == *tc2.Failure) &&
+		(tc.Output == nil && tc2.Output == nil || tc.Output != nil && tc2.Output != nil && *tc.Output == *tc2.Output) &&
+		(tc.Error == nil && tc2.Error == nil || tc.Error != nil && tc2.Error != nil && *tc.Error == *tc2.Error) &&
+		(tc.Skipped == nil && tc2.Skipped == nil || tc.Skipped != nil && tc2.Skipped != nil && *tc.Skipped == *tc2.Skipped) &&
+		tc.Properties.Equal(tc2.Properties)
+}
+
+// Equal returns true if Two TestProperties are equal.
+func (tps TestProperties) Equal(tps2 TestProperties) bool {
+	if tps.Properties == nil && tps2.Properties == nil {
+		return true
+	}
+
+	if tps.Properties == nil || tps2.Properties == nil || len(tps.Properties) != len(tps2.Properties) {
+		return false
+	}
+
+	for i := range tps.Properties {
+		tp := tps.Properties[i]
+		tp2 := tps2.Properties[i]
+		if !tp.Equal(tp2) {
+			return false
+		}
+	}
+	return true
+}
+
+// Equal returns true if two TestProperty are equal.
+func (tp TestProperty) Equal(tp2 TestProperty) bool {
+	return tp.Name == tp2.Name &&
+		tp.Value == tp2.Value
 }
 
 // AddTestCase adds a testcase to the testsuite

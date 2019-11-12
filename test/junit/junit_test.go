@@ -148,3 +148,208 @@ func TestAddTestSuite(t *testing.T) {
 		t.Fatalf("Expected 2, actual %d", len(testSuites.Suites))
 	}
 }
+
+func TestTestCaseEqual(t *testing.T) {
+	failMsg1 := "failure"
+	failMsg2 := "failure"
+	diffFailMsg := "not-the-same-failure"
+
+	type args struct {
+		tc1 *TestCase
+		tc2 *TestCase
+	}
+	tests := []struct {
+		name string
+		args *args
+		want bool
+	}{
+		{
+			name: "default struct is equal",
+			args: &args{tc1: &TestCase{}, tc2: &TestCase{}},
+			want: true,
+		},
+		{
+			name: "accepted float difference and different pointer address, same value result in same struct",
+			args: &args{
+				tc1: &TestCase{
+					Name:      "dummy case",
+					Time:      0,
+					ClassName: "classname",
+					Failure:   &failMsg1,
+					Output:    &failMsg1,
+					Error:     &failMsg1,
+					Skipped:   &failMsg1,
+					Properties: TestProperties{
+						Properties: []TestProperty{{Name: "Random property", Value: "Random Value"}},
+					},
+				},
+				tc2: &TestCase{
+					Name:      "dummy case",
+					Time:      0.000000000000001,
+					ClassName: "classname",
+					Failure:   &failMsg2,
+					Output:    &failMsg2,
+					Error:     &failMsg2,
+					Skipped:   &failMsg2,
+					Properties: TestProperties{
+						Properties: []TestProperty{{Name: "Random property", Value: "Random Value"}},
+					},
+				},
+			},
+			want: true,
+		},
+		{
+			name: "Different Name is not equal",
+			args: &args{tc1: &TestCase{Name: "test1"}, tc2: &TestCase{Name: "test2"}},
+			want: false,
+		},
+		{
+			name: "Different time is not equal",
+			args: &args{tc1: &TestCase{Time: 1}, tc2: &TestCase{Time: 200}},
+			want: false,
+		},
+		{
+			name: "Different ClaseName is not equal",
+			args: &args{tc1: &TestCase{ClassName: "test1"}, tc2: &TestCase{ClassName: "test2"}},
+			want: false,
+		},
+		{
+			name: "Different Failure is not equal",
+			args: &args{tc1: &TestCase{Failure: &failMsg1}, tc2: &TestCase{Failure: &diffFailMsg}},
+			want: false,
+		},
+		{
+			name: "Different Output is not equal",
+			args: &args{tc1: &TestCase{Output: &failMsg1}, tc2: &TestCase{Output: &diffFailMsg}},
+			want: false,
+		},
+		{
+			name: "Different Error is not equal",
+			args: &args{tc1: &TestCase{Error: &failMsg1}, tc2: &TestCase{Error: &diffFailMsg}},
+			want: false,
+		},
+		{
+			name: "Different Skipped is not equal",
+			args: &args{tc1: &TestCase{Skipped: &failMsg1}, tc2: &TestCase{Skipped: &diffFailMsg}},
+			want: false,
+		},
+		{
+			name: "Different TestProperties is not equal",
+			args: &args{
+				tc1: &TestCase{Properties: TestProperties{
+					Properties: []TestProperty{{Name: "Random property", Value: "Random Value"}},
+				}},
+				tc2: &TestCase{Properties: TestProperties{
+					Properties: []TestProperty{{Name: "Another", Value: "Random Value"}},
+				}},
+			},
+			want: false,
+		},
+		{
+			name: "Different fields is not equal",
+			args: &args{tc1: &TestCase{Name: "test"}, tc2: &TestCase{ClassName: "test"}},
+			want: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.args.tc1.Equal(*tt.args.tc2); got != tt.want {
+				t.Errorf("TestCase.Equal() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestTestProperties_Equal(t *testing.T) {
+	type args struct {
+		tps1 TestProperties
+		tps2 TestProperties
+	}
+	tests := []struct {
+		name string
+		args args
+		want bool
+	}{
+		{
+			name: "Both nil properties is equal",
+			args: args{
+				tps1: TestProperties{},
+				tps2: TestProperties{},
+			},
+			want: true,
+		},
+		{
+			name: "Both properties with values is equal",
+			args: args{
+				tps1: TestProperties{
+					Properties: []TestProperty{
+						{Name: "Random property", Value: "Random Value"},
+						{Name: "Another property", Value: "Another Random Value"},
+					},
+				},
+				tps2: TestProperties{
+					Properties: []TestProperty{
+						{Name: "Random property", Value: "Random Value"},
+						{Name: "Another property", Value: "Another Random Value"},
+					},
+				},
+			},
+			want: true,
+		},
+		{
+			name: "Single nil returns false (LHS)",
+			args: args{
+				tps1: TestProperties{
+					Properties: nil,
+				},
+				tps2: TestProperties{
+					Properties: []TestProperty{
+						{Name: "Random property", Value: "Random Value"},
+						{Name: "Another property", Value: "Another Random Value"},
+					},
+				},
+			},
+			want: false,
+		},
+		{
+			name: "Single nil returns false (RHS)",
+			args: args{
+				tps1: TestProperties{
+					Properties: []TestProperty{
+						{Name: "Random property", Value: "Random Value"},
+						{Name: "Another property", Value: "Another Random Value"},
+					},
+				},
+				tps2: TestProperties{
+					Properties: nil,
+				},
+			},
+			want: false,
+		},
+		{
+			name: "Both properties with diff values is non-equal",
+			args: args{
+				tps1: TestProperties{
+					Properties: []TestProperty{
+						{Name: "Random property", Value: "Random Value"},
+						{Name: "Another property", Value: "Another Random Value"},
+					},
+				},
+				tps2: TestProperties{
+					Properties: []TestProperty{
+						{Name: "Random property", Value: "Random Value"},
+						{Name: "Another property", Value: "Another Random UNIQUE Value"},
+					},
+				},
+			},
+			want: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.args.tps1.Equal(tt.args.tps2); got != tt.want {
+				t.Errorf("TestProperties.Equal() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
