@@ -119,7 +119,7 @@ func MainWithConfig(ctx context.Context, component string, cfg *rest.Config, cto
 	log.Printf("Registering %d controllers", len(ctors))
 
 	if !isComponentNameValid(component) {
-		log.Fatalf("Error validating component name: %s against spec :'%s'", component, componentNameRegex)
+		log.Fatalf("Error validating component name: %s against spec :%q", component, componentNameRegex)
 	}
 
 	// Report stats on Go memory usage every 30 seconds.
