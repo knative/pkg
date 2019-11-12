@@ -350,6 +350,20 @@ type HTTPMatchRequest struct {
 	// at the top of the VirtualService (if any) are overridden. The gateway match is
 	// independent of sourceLabels.
 	Gateways []string `json:"gateways,omitempty"`
+
+	// Query parameters for matching.
+	//
+	// Ex:
+	// - For a query parameter like "?key=true", the map key would be "key" and
+	//   the string match could be defined as `exact: "true"`.
+	// - For a query parameter like "?key", the map key would be "key" and the
+	//   string match could be defined as `exact: ""`.
+	// - For a query parameter like "?key=123", the map key would be "key" and the
+	//   string match could be defined as `regex: "\d+$"`. Note that this
+	//   configuration will only match values like "123" but not "a123" or "123a".
+	//
+	// **Note:** `prefix` matching is currently not supported.
+	QueryParams map[string]v1alpha1.StringMatch `json:"queryParams,omitempty"`
 }
 
 type HTTPRouteDestination struct {

@@ -392,6 +392,13 @@ func (in *HTTPMatchRequest) DeepCopyInto(out *HTTPMatchRequest) {
 		*out = make([]string, len(*in))
 		copy(*out, *in)
 	}
+	if in.QueryParams != nil {
+		in, out := &in.QueryParams, &out.QueryParams
+		*out = make(map[string]v1alpha1.StringMatch, len(*in))
+		for key, val := range *in {
+			(*out)[key] = val
+		}
+	}
 	return
 }
 
