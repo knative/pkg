@@ -176,8 +176,8 @@ func SetupHelper(ctx context.Context, benchmarkKey *string, benchmarkName *strin
 }
 
 func Setup(ctx context.Context, extraTags ...string) (*Client, error) {
-	benchmarkKey, benchmarkName := config.MustGetBenchmark()
-	return SetupHelper(ctx, benchmarkKey, benchmarkName, extraTags...)
+	bench := config.MustGetBenchmark()
+	return SetupHelper(ctx, bench.BenchmarkKey, bench.BenchmarkName, extraTags...)
 }
 
 func SetupWithBenchmarkConfig(ctx context.Context, benchmarkKey *string, benchmarkName *string, extraTags ...string) (*Client, error) {
