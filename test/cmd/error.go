@@ -22,9 +22,9 @@ import "fmt"
 type CommandLineError struct {
 	Command     string
 	ErrorCode   int
-	ErrorOutput string
+	ErrorOutput []byte
 }
 
 func (c CommandLineError) Error() string {
-	return fmt.Sprintf("[%d]running %q got error: %q", c.ErrorCode, c.Command, c.ErrorOutput)
+	return fmt.Sprintf("error %d when running %q: %q", c.ErrorCode, c.Command, c.ErrorOutput)
 }

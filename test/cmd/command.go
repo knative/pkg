@@ -17,6 +17,8 @@ limitations under the License.
 package cmd
 
 import (
+	"bytes"
+	"errors"
 	"fmt"
 	"os/exec"
 	"strings"
@@ -25,87 +27,77 @@ import (
 	"knative.dev/pkg/test/helpers"
 )
 
-// Run will run the command and return the standard output, plus error if there is one.
-func Run(cmdLine string) (string, error) {
+// RunCommand will run the command and return the standard output, plus error if there is one.
+func RunCommand(cmdLine string) (string, error) {
 	cmdSplit := strings.Fields(cmdLine)
 	if len(cmdSplit) == 0 {
-		return "", fmt.Errorf("the command line %q cannot be empty", cmdLine)
+		return "", errors.New("the command line cannot be empty")
 	}
 
-	cmd := cmdSplit[0]
+	cmdName := cmdSplit[0]
 	args := cmdSplit[1:]
-	cmdOut, err := exec.Command(cmd, args...).Output()
+	cmd := exec.Command(cmdName, args...)
+	var eb bytes.Buffer
+	cmd.Stderr = &eb
+
+	out, err := cmd.Output()
 	if err != nil {
 		errorCode := getErrorCode(err)
-		commandLineErr := CommandLineError{Command: cmdLine, ErrorOutput: err.Error(), ErrorCode: errorCode}
-		return string(cmdOut), commandLineErr
+		commandLineErr := CommandLineError{Command: cmdLine, ErrorOutput: eb.Bytes(), ErrorCode: errorCode}
+		return string(out), commandLineErr
 	}
 
-	return string(cmdOut), nil
+	return string(out), nil
 }
 
-// RunBatchSequentially will run the commands sequentially.
+// RunCommands will run the commands sequentially.
 // If there is an error when running a command, it will return directly with all standard output so far and the error.
-func RunBatchSequentially(cmdLines ...string) (string, error) {
+func RunCommands(cmdLines ...string) (string, error) {
 	var outputs []string
 	for _, cmdLine := range cmdLines {
-		output, err := Run(cmdLine)
+		output, err := RunCommand(cmdLine)
 		outputs = append(outputs, output)
 		if err != nil {
-			return combineOutputs(outputs), fmt.Errorf("error happened when running %q: %v", cmdLine, err)
+			return strings.Join(outputs, "\n"), fmt.Errorf("error running %q: %v", cmdLine, err)
 		}
 	}
-	return combineOutputs(outputs), nil
+	return strings.Join(outputs, "\n"), nil
 }
 
-// RunBatchParallel will run the commands in parallel.
+// RunCommandsInParallel will run the commands in parallel.
 // It will always finish running all commands, and return all standard output and errors together.
-func RunBatchParallel(cmdLines ...string) (string, error) {
-	errCh := make(chan error)
-	outputCh := make(chan string)
+func RunCommandsInParallel(cmdLines ...string) (string, error) {
+	errCh := make(chan error, len(cmdLines))
+	outputCh := make(chan string, len(cmdLines))
 	wg := sync.WaitGroup{}
 	for i := range cmdLines {
 		cmdLine := cmdLines[i]
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			output, err := Run(cmdLine)
+			output, err := RunCommand(cmdLine)
 			outputCh <- output
-			if err != nil {
-				errCh <- err
-			}
+			errCh <- err
 		}()
 	}
 
-	go func() {
-		wg.Wait()
-		close(outputCh)
-		close(errCh)
-	}()
+	wg.Wait()
+	close(outputCh)
+	close(errCh)
 
-	outputs := make([]string, 0)
-	errs := make([]error, 0)
-	for output := range outputCh {
-		outputs = append(outputs, output)
+	os := make([]string, 0, len(cmdLines))
+	es := make([]error, 0, len(cmdLines))
+	for o := range outputCh {
+		os = append(os, o)
 	}
-	for err := range errCh {
-		errs = append(errs, err)
+	for e := range errCh {
+		es = append(es, e)
 	}
 
-	return combineOutputs(outputs), helpers.CombineErrors(errs)
+	return strings.Join(os, "\n"), helpers.CombineErrors(es)
 }
 
-// combineOutputs will combine the slice of output strings to a single string
-func combineOutputs(outputs []string) string {
-	var sb strings.Builder
-	for _, output := range outputs {
-		sb.WriteString(output)
-		sb.WriteRune('\n')
-	}
-	return strings.TrimRight(sb.String(), "\n")
-}
-
-// getErrorCode returns the exit code of the command run
+// getErrorCode extracts the exit code of an *ExitError type
 func getErrorCode(err error) int {
 	errorCode := -1
 	if exitError, ok := err.(*exec.ExitError); ok {
