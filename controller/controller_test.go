@@ -135,6 +135,69 @@ func TestFilterWithNameAndNamespace(t *testing.T) {
 	}
 }
 
+func TestFilterWithName(t *testing.T) {
+	filter := FilterWithName("test-name")
+
+	tests := []struct {
+		name  string
+		input interface{}
+		want  bool
+	}{{
+		name:  "not a metav1.Object",
+		input: "foo",
+		want:  false,
+	}, {
+		name:  "nil",
+		input: nil,
+		want:  false,
+	}, {
+		name: "name matches, namespace does not",
+		input: &Resource{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "test-name",
+				Namespace: "wrong-namespace",
+			},
+		},
+		want: true, // Unlike FilterWithNameAndNamespace this passes
+	}, {
+		name: "namespace matches, name does not",
+		input: &Resource{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "wrong-name",
+				Namespace: "test-namespace",
+			},
+		},
+		want: false,
+	}, {
+		name: "neither matches",
+		input: &Resource{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "wrong-name",
+				Namespace: "wrong-namespace",
+			},
+		},
+		want: false,
+	}, {
+		name: "matches",
+		input: &Resource{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "test-name",
+				Namespace: "test-namespace",
+			},
+		},
+		want: true,
+	}}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			got := filter(test.input)
+			if test.want != got {
+				t.Errorf("FilterWithNameAndNamespace() = %v, wanted %v", got, test.want)
+			}
+		})
+	}
+}
+
 func TestFilter(t *testing.T) {
 	filter := Filter(gvk)
 
@@ -273,6 +336,36 @@ func TestEnqueues(t *testing.T) {
 			})
 		},
 		wantQueue: []types.NamespacedName{{Namespace: "bar", Name: "foo"}},
+	}, {
+		name: "enqueue sentinel resource",
+		work: func(impl *Impl) {
+			e := impl.EnqueueSentinel(types.NamespacedName{Namespace: "foo", Name: "bar"})
+			e(&Resource{
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace: "foo",
+					Name:      "baz",
+				},
+			})
+		},
+		wantQueue: []types.NamespacedName{{Namespace: "foo", Name: "bar"}},
+	}, {
+		name: "enqueue duplicate sentinel resource",
+		work: func(impl *Impl) {
+			e := impl.EnqueueSentinel(types.NamespacedName{Namespace: "foo", Name: "bar"})
+			e(&Resource{
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace: "foo",
+					Name:      "baz-1",
+				},
+			})
+			e(&Resource{
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace: "foo",
+					Name:      "baz-2",
+				},
+			})
+		},
+		wantQueue: []types.NamespacedName{{Namespace: "foo", Name: "bar"}},
 	}, {
 		name: "enqueue bad resource",
 		work: func(impl *Impl) {
@@ -852,11 +945,19 @@ func checkStats(t *testing.T, r *FakeStatsReporter, reportCount, lastQueueDepth,
 type fixedInformer struct {
 	m    sync.Mutex
 	sunk bool
+	done bool
 }
 
 var _ Informer = (*fixedInformer)(nil)
 
-func (fi *fixedInformer) Run(<-chan struct{}) {}
+func (fi *fixedInformer) Run(stopCh <-chan struct{}) {
+	<-stopCh
+
+	fi.m.Lock()
+	defer fi.m.Unlock()
+	fi.done = true
+}
+
 func (fi *fixedInformer) HasSynced() bool {
 	fi.m.Lock()
 	defer fi.m.Unlock()
@@ -867,6 +968,12 @@ func (fi *fixedInformer) ToggleSynced(b bool) {
 	fi.m.Lock()
 	defer fi.m.Unlock()
 	fi.sunk = b
+}
+
+func (fi *fixedInformer) Done() bool {
+	fi.m.Lock()
+	defer fi.m.Unlock()
+	return fi.done
 }
 
 func TestStartInformersSuccess(t *testing.T) {
@@ -951,6 +1058,126 @@ func TestStartInformersFailure(t *testing.T) {
 		}
 	case <-time.After(1 * time.Second):
 		t.Error("Timed out waiting for informers to sync.")
+	}
+}
+
+func TestRunInformersSuccess(t *testing.T) {
+	errCh := make(chan error)
+	defer close(errCh)
+
+	fi := &fixedInformer{sunk: true}
+
+	stopCh := make(chan struct{})
+	go func() {
+		_, err := RunInformers(stopCh, fi)
+		errCh <- err
+	}()
+
+	select {
+	case err := <-errCh:
+		if err != nil {
+			t.Fatalf("Unexpected error: %v", err)
+		}
+	case <-time.After(1 * time.Second):
+		t.Fatal("Timed out waiting for informers to sync.")
+	}
+
+	close(stopCh)
+}
+
+func TestRunInformersEventualSuccess(t *testing.T) {
+	errCh := make(chan error)
+	defer close(errCh)
+
+	fi := &fixedInformer{sunk: false}
+
+	stopCh := make(chan struct{})
+	go func() {
+		_, err := RunInformers(stopCh, fi)
+		errCh <- err
+	}()
+
+	select {
+	case err := <-errCh:
+		t.Fatalf("Unexpected send on errCh: %v", err)
+	case <-time.After(1 * time.Second):
+		// Wait a brief period to ensure nothing is sent.
+	}
+
+	// Let the Sync complete.
+	fi.ToggleSynced(true)
+
+	select {
+	case err := <-errCh:
+		if err != nil {
+			t.Fatalf("Unexpected error: %v", err)
+		}
+	case <-time.After(1 * time.Second):
+		t.Fatal("Timed out waiting for informers to sync.")
+	}
+
+	close(stopCh)
+}
+
+func TestRunInformersFailure(t *testing.T) {
+	errCh := make(chan error)
+	defer close(errCh)
+
+	fi := &fixedInformer{sunk: false}
+
+	stopCh := make(chan struct{})
+	go func() {
+		_, err := RunInformers(stopCh, fi)
+		errCh <- err
+	}()
+
+	select {
+	case err := <-errCh:
+		t.Errorf("Unexpected send on errCh: %v", err)
+	case <-time.After(1 * time.Second):
+		// Wait a brief period to ensure nothing is sent.
+	}
+
+	// Now close the stopCh and we should see an error sent.
+	close(stopCh)
+
+	select {
+	case err := <-errCh:
+		if err == nil {
+			t.Fatal("Unexpected success syncing informers after stopCh closed.")
+		}
+	case <-time.After(1 * time.Second):
+		t.Fatal("Timed out waiting for informers to sync.")
+	}
+}
+
+func TestRunInformersFinished(t *testing.T) {
+	fi := &fixedInformer{sunk: true}
+	defer func() {
+		if !fi.Done() {
+			t.Fatalf("Test didn't wait for informers to finish")
+		}
+	}()
+
+	ctx, cancel := context.WithCancel(TestContextWithLogger(t))
+
+	waitInformers, err := RunInformers(ctx.Done(), fi)
+	if err != nil {
+		t.Fatalf("Failed to start informers: %v", err)
+	}
+
+	cancel()
+
+	ch := make(chan struct{})
+	go func() {
+		waitInformers()
+		ch <- struct{}{}
+	}()
+
+	select {
+	case <-ch:
+	case <-time.After(1 * time.Second):
+		t.Fatal("Timed out waiting for informers to finish.")
 	}
 }
 

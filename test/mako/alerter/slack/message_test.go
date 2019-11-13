@@ -43,7 +43,7 @@ func TestMain(m *testing.M) {
 
 func TestMessaging(t *testing.T) {
 	firstMsg := "first message"
-	if err := mh.SendAlert(firstMsg); err != nil {
+	if err := mh.SendAlert("test name", firstMsg); err != nil {
 		t.Fatalf("expected to send the message, but failed: %v", err)
 	}
 	for _, channel := range mh.channels {
@@ -57,7 +57,7 @@ func TestMessaging(t *testing.T) {
 	}
 
 	secondMsg := "second message"
-	if err := mh.SendAlert(secondMsg); err != nil {
+	if err := mh.SendAlert("test name", secondMsg); err != nil {
 		t.Fatalf("expected to send the message, but failed: %v", err)
 	}
 	for _, channel := range mh.channels {
@@ -67,6 +67,22 @@ func TestMessaging(t *testing.T) {
 		}
 		if len(history) != 1 {
 			t.Fatalf("the message history is expected to still be 1, but now it's: %d", len(history))
+		}
+	}
+}
+
+func TestDecoratedName(t *testing.T) {
+	testCases := []struct {
+		name           string
+		expectedResult string
+	}{
+		{"demo test1", "[demo test1]"},
+		{"[demo test2]", "[[demo test2]]"},
+	}
+	for _, tc := range testCases {
+		actualResult := decoratedName(tc.name)
+		if tc.expectedResult != actualResult {
+			t.Fatalf("expected to get %q for decoratedName(%s), but got %q", tc.expectedResult, tc.name, actualResult)
 		}
 	}
 }

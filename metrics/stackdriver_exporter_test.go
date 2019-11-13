@@ -19,6 +19,7 @@ package metrics
 import (
 	"path"
 	"testing"
+	"time"
 
 	"contrib.go.opencensus.io/exporter/stackdriver"
 	"go.opencensus.io/stats"
@@ -45,7 +46,7 @@ var (
 		metricName string
 	}{{
 		name:       "activator metric",
-		domain:     servingDomain,
+		domain:     internalServingDomain,
 		component:  "activator",
 		metricName: "request_count",
 	}, {
@@ -62,7 +63,7 @@ var (
 		metricName string
 	}{{
 		name:       "broker metric",
-		domain:     eventingDomain,
+		domain:     internalEventingDomain,
 		component:  "broker",
 		metricName: "event_count",
 	}}
@@ -74,17 +75,17 @@ var (
 		metricName string
 	}{{
 		name:       "trigger metric",
-		domain:     eventingDomain,
+		domain:     internalEventingDomain,
 		component:  "trigger",
 		metricName: "event_count",
 	}, {
 		name:       "trigger metric",
-		domain:     eventingDomain,
+		domain:     internalEventingDomain,
 		component:  "trigger",
 		metricName: "event_processing_latencies",
 	}, {
 		name:       "trigger metric",
-		domain:     eventingDomain,
+		domain:     internalEventingDomain,
 		component:  "trigger",
 		metricName: "event_dispatch_latencies",
 	}}
@@ -123,18 +124,18 @@ var (
 		metricName: "unsupported",
 	}, {
 		name:       "unsupported component",
-		domain:     eventingDomain,
+		domain:     internalEventingDomain,
 		component:  "unsupported",
 		metricName: "event_count",
 	}, {
 		name:       "unsupported metric",
-		domain:     eventingDomain,
+		domain:     internalEventingDomain,
 		component:  "broker",
 		metricName: "unsupported",
 	}}
 )
 
-func fakeGcpMetadataFun() *gcpMetadata {
+func fakeGcpMetadataFunc() *gcpMetadata {
 	return &testGcpMetadata
 }
 
@@ -198,15 +199,11 @@ func TestGetMonitoredResourceFunc_UseKnativeBroker(t *testing.T) {
 		if got != testEventType {
 			t.Errorf("expected new tag: %v, got: %v", eventTypeKey, newTags)
 		}
-		got = getResourceLabelValue(metricskey.LabelEventSource, newTags)
-		if got != testEventSource {
-			t.Errorf("expected new tag: %v, got: %v", eventSourceKey, newTags)
-		}
 		got, ok := labels[metricskey.LabelNamespaceName]
 		if !ok || got != testNS {
 			t.Errorf("expected label %v with value %v, got: %v", metricskey.LabelNamespaceName, testNS, got)
 		}
-		got, ok = labels[metricskey.LabelName]
+		got, ok = labels[metricskey.LabelBrokerName]
 		if !ok || got != testBroker {
 			t.Errorf("expected label %v with value %v, got: %v", metricskey.LabelBrokerName, testBroker, got)
 		}
@@ -232,10 +229,6 @@ func TestGetMonitoredResourceFunc_UseKnativeTrigger(t *testing.T) {
 		got := getResourceLabelValue(metricskey.LabelFilterType, newTags)
 		if got != testFilterType {
 			t.Errorf("expected new tag: %v, got: %v", filterTypeKey, newTags)
-		}
-		got = getResourceLabelValue(metricskey.LabelFilterSource, newTags)
-		if got != testFilterSource {
-			t.Errorf("expected new tag: %v, got: %v", filterSourceKey, newTags)
 		}
 		got, ok := labels[metricskey.LabelNamespaceName]
 		if !ok || got != testNS {
@@ -313,7 +306,7 @@ func TestGetMonitoredResourceFunc_UseGlobal(t *testing.T) {
 	}
 }
 
-func TestGetgetMetricTypeFunc_UseKnativeDomain(t *testing.T) {
+func TestGetMetricTypeFunc_UseKnativeDomain(t *testing.T) {
 	for _, testCase := range supportedServingMetricsTestCases {
 		testView = &view.View{
 			Description: "Test View",
@@ -354,15 +347,173 @@ func TestGetgetMetricTypeFunc_UseCustomDomain(t *testing.T) {
 }
 
 func TestNewStackdriverExporterWithMetadata(t *testing.T) {
-	e, err := newStackdriverExporter(&metricsConfig{
-		domain:               servingDomain,
-		component:            "autoscaler",
-		backendDestination:   Stackdriver,
-		stackdriverProjectID: testProj}, TestLogger(t))
-	if err != nil {
-		t.Error(err)
+	tests := []struct {
+		name          string
+		config        *metricsConfig
+		expectSuccess bool
+	}{{
+		name: "standardCase",
+		config: &metricsConfig{
+			domain:             servingDomain,
+			component:          "autoscaler",
+			backendDestination: Stackdriver,
+			stackdriverClientConfig: StackdriverClientConfig{
+				ProjectID: testProj,
+			},
+		},
+		expectSuccess: true,
+	}, {
+		name: "stackdriverClientConfigOnly",
+		config: &metricsConfig{
+			stackdriverClientConfig: StackdriverClientConfig{
+				ProjectID:   "project",
+				GCPLocation: "us-west1",
+				ClusterName: "cluster",
+				UseSecret:   true,
+			},
+		},
+		expectSuccess: true,
+	}, {
+		name: "fullValidConfig",
+		config: &metricsConfig{
+			domain:                            servingDomain,
+			component:                         testComponent,
+			backendDestination:                Stackdriver,
+			reportingPeriod:                   60 * time.Second,
+			isStackdriverBackend:              true,
+			stackdriverMetricTypePrefix:       path.Join(servingDomain, testComponent),
+			stackdriverCustomMetricTypePrefix: path.Join(customMetricTypePrefix, defaultCustomMetricSubDomain, testComponent),
+			stackdriverClientConfig: StackdriverClientConfig{
+				ProjectID:   "project",
+				GCPLocation: "us-west1",
+				ClusterName: "cluster",
+				UseSecret:   true,
+			},
+		},
+		expectSuccess: true,
+	}, {
+		name: "invalidStackdriverGcpLocation",
+		config: &metricsConfig{
+			domain:                            servingDomain,
+			component:                         testComponent,
+			backendDestination:                Stackdriver,
+			reportingPeriod:                   60 * time.Second,
+			isStackdriverBackend:              true,
+			stackdriverMetricTypePrefix:       path.Join(servingDomain, testComponent),
+			stackdriverCustomMetricTypePrefix: path.Join(customMetricTypePrefix, defaultCustomMetricSubDomain, testComponent),
+			stackdriverClientConfig: StackdriverClientConfig{
+				ProjectID:   "project",
+				GCPLocation: "narnia",
+				ClusterName: "cluster",
+				UseSecret:   true,
+			},
+		},
+		expectSuccess: true,
+	}, {
+		name: "missingProjectID",
+		config: &metricsConfig{
+			domain:                            servingDomain,
+			component:                         testComponent,
+			backendDestination:                Stackdriver,
+			reportingPeriod:                   60 * time.Second,
+			isStackdriverBackend:              true,
+			stackdriverMetricTypePrefix:       path.Join(servingDomain, testComponent),
+			stackdriverCustomMetricTypePrefix: path.Join(customMetricTypePrefix, defaultCustomMetricSubDomain, testComponent),
+			stackdriverClientConfig: StackdriverClientConfig{
+				GCPLocation: "narnia",
+				ClusterName: "cluster",
+				UseSecret:   true,
+			},
+		},
+		expectSuccess: true,
+	}, {
+		name: "partialStackdriverConfig",
+		config: &metricsConfig{
+			domain:                            servingDomain,
+			component:                         testComponent,
+			backendDestination:                Stackdriver,
+			reportingPeriod:                   60 * time.Second,
+			isStackdriverBackend:              true,
+			stackdriverMetricTypePrefix:       path.Join(servingDomain, testComponent),
+			stackdriverCustomMetricTypePrefix: path.Join(customMetricTypePrefix, defaultCustomMetricSubDomain, testComponent),
+			stackdriverClientConfig: StackdriverClientConfig{
+				ProjectID: "project",
+			},
+		},
+		expectSuccess: true,
+	}}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			e, err := newStackdriverExporter(test.config, TestLogger(t))
+
+			succeeded := e != nil && err == nil
+			if test.expectSuccess != succeeded {
+				t.Errorf("Unexpected test result. Expected success? [%v]. Error: [%v]", test.expectSuccess, err)
+			}
+		})
 	}
-	if e == nil {
-		t.Error("expected a non-nil metrics exporter")
+}
+
+func TestEnsureKubeClient(t *testing.T) {
+	// Even though ensureKubeclient uses sync.Once, make sure if the first run failed, it returns an error on subsequent calls.
+	for i := 0; i < 3; i++ {
+		err := ensureKubeclient()
+		if err == nil {
+			t.Error("Expected ensureKubeclient to fail due to not being in a Kubernetes cluster. Did the function run?")
+		}
 	}
+}
+
+func assertStringsEqual(t *testing.T, description string, expected string, actual string) {
+	if expected != actual {
+		t.Errorf("Expected %v to be set correctly. Want [%v], Got [%v]", description, expected, actual)
+	}
+}
+
+func TestSetStackdriverSecretLocation(t *testing.T) {
+	// Reset global state after test
+	defer func() {
+		secretName = StackdriverSecretNameDefault
+		secretNamespace = StackdriverSecretNamespaceDefault
+	}()
+
+	sdConfig := &StackdriverClientConfig{
+		ProjectID:   "project",
+		GCPLocation: "us-west2",
+		ClusterName: "cluster",
+		UseSecret:   false,
+	}
+
+	// Sanity checks
+	assertStringsEqual(t, "DefaultSecretName", secretName, StackdriverSecretNameDefault)
+	assertStringsEqual(t, "DefaultSecretNamespace", secretNamespace, StackdriverSecretNamespaceDefault)
+	if _, err := getStackdriverExporterClientOptions(sdConfig); err != nil {
+		t.Errorf("Got unexpected error when creating exporter client options: [%v]", err)
+	}
+
+	// Check configuration's UseSecret value is ignored until the consuming package calls SetStackdriverSecretLocation
+	// If an attempt to read a Secret was made, there should be an error because there's no valid in-cluster kubeclient.
+	sdConfig.UseSecret = true
+	if _, e1 := getStackdriverExporterClientOptions(sdConfig); e1 != nil {
+		t.Errorf("Got unexpected error when creating exporter client options: [%v]", e1)
+	}
+
+	testName, testNamespace := "test-name", "test-namespace"
+	// SetStackdriverSecretLocation has been called & config's UseSecret value is set
+	// There should be an attempt to read the Secret, and an error because there's no valid in-cluster kubeclient.
+	SetStackdriverSecretLocation("test-name", "test-namespace")
+	if _, e1 := getStackdriverExporterClientOptions(sdConfig); e1 == nil {
+		t.Errorf("Expected a known error when getting exporter options with Secrets enabled (cannot create valid kubeclient in tests). Did the function run as expected?")
+	}
+	assertStringsEqual(t, "secretName", secretName, testName)
+	assertStringsEqual(t, "secretNamespace", secretNamespace, testNamespace)
+
+	randomName, randomNamespace := "random-name", "random-namespace"
+	SetStackdriverSecretLocation(randomName, randomNamespace)
+	if _, e1 := getStackdriverExporterClientOptions(sdConfig); e1 == nil {
+		t.Errorf("Expected a known error when getting exporter options with Secrets enabled (cannot create valid kubeclient in tests). Did the function run as expected?")
+	}
+	assertStringsEqual(t, "secretName", secretName, randomName)
+	assertStringsEqual(t, "secretNamespace", secretNamespace, randomNamespace)
 }

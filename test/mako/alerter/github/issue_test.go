@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"os"
 	"testing"
+	"time"
 
 	"knative.dev/pkg/test/ghutil"
 	"knative.dev/pkg/test/ghutil/fakeghutil"
@@ -48,6 +49,23 @@ func TestNewIssueWillBeAdded(t *testing.T) {
 	}
 }
 
+func TestOldIssueWillBeEdited(t *testing.T) {
+	testName := "test old issue will be edited"
+	testDesc := "test old issue will be edited desc"
+	if err := gih.CreateIssueForTest(testName, testDesc); err != nil {
+		t.Fatalf("expected to create a new issue %v, but failed", testName)
+	}
+	newTestDesc := "test old issue will be edited new desc"
+	if err := gih.CreateIssueForTest(testName, newTestDesc); err != nil {
+		t.Fatalf("expected to edit the old issue %v, but failed", testName)
+	}
+	issueTitle := fmt.Sprintf(issueTitleTemplate, testName)
+	issueFound, err := gih.findIssue(issueTitle)
+	if issueFound == nil || err != nil {
+		t.Fatalf("expected to find the edited issue %v, but failed to", testName)
+	}
+}
+
 func TestClosedIssueWillBeReopened(t *testing.T) {
 	org := gih.config.org
 	repo := gih.config.repo
@@ -55,7 +73,12 @@ func TestClosedIssueWillBeReopened(t *testing.T) {
 	testDesc := "test reopening close issue desc"
 	issueTitle := fmt.Sprintf(issueTitleTemplate, testName)
 	issue, _ := gih.client.CreateIssue(org, repo, issueTitle, testDesc)
+	gih.client.AddLabelsToIssue(org, repo, *issue.Number, []string{perfLabel})
 	gih.client.CloseIssue(org, repo, *issue.Number)
+	createTime := time.Now().Add(-20 * time.Hour)
+	issue.CreatedAt = &createTime
+	updateTime := time.Now().Add(-10 * time.Hour)
+	issue.UpdatedAt = &updateTime
 
 	if err := gih.CreateIssueForTest(testName, testDesc); err != nil {
 		t.Fatalf("expected to update the existed issue %v, but failed", testName)

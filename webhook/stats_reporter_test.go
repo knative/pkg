@@ -72,5 +72,5 @@ func setup() {
 // opencensus metrics carry global state that need to be reset between unit tests
 func resetMetrics() {
 	metricstest.Unregister(requestCountName, requestLatenciesName)
-	register()
+	RegisterMetrics()
 }

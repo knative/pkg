@@ -17,7 +17,6 @@ package apis
 
 import (
 	"encoding/json"
-	"net/url"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -25,37 +24,42 @@ import (
 
 func TestParseURL(t *testing.T) {
 	testCases := map[string]struct {
-		t       string
-		want    *URL
-		wantErr bool
+		t         string
+		want      *URL
+		wantEmpty bool
+		wantErr   bool
 	}{
-		"empty": {
-			want: nil,
-		},
 		"empty string": {
-			t:    "",
-			want: nil,
+			want:      nil,
+			wantEmpty: true,
 		},
 		"invalid format": {
-			t:       "💩://error",
-			want:    nil,
-			wantErr: true,
+			t:         "💩://error",
+			want:      nil,
+			wantEmpty: true,
+			wantErr:   true,
 		},
 		"relative": {
 			t: "/path/to/something",
-			want: func() *URL {
-				uu, _ := url.Parse("/path/to/something")
-				u := URL(*uu)
-				return &u
-			}(),
+			want: &URL{
+				Path: "/path/to/something",
+			},
 		},
 		"url": {
 			t: "http://path/to/something",
-			want: func() *URL {
-				uu, _ := url.Parse("http://path/to/something")
-				u := URL(*uu)
-				return &u
-			}(),
+			want: &URL{
+				Scheme: "http",
+				Host:   "path",
+				Path:   "/to/something",
+			},
+		},
+		"simplehttp": {
+			t:    "http://foo",
+			want: HTTP("foo"),
+		},
+		"simplehttps": {
+			t:    "https://foo",
+			want: HTTPS("foo"),
 		},
 	}
 	for n, tc := range testCases {
@@ -69,6 +73,10 @@ func TestParseURL(t *testing.T) {
 				return
 			} else if tc.wantErr {
 				t.Fatalf("ParseURL() = %v, wanted error", got)
+			}
+
+			if tc.wantEmpty != got.IsEmpty() {
+				t.Errorf("IsEmpty(%v) = %t, wanted %t", got, got.IsEmpty(), tc.wantEmpty)
 			}
 
 			if diff := cmp.Diff(tc.want, got); diff != "" {
@@ -131,19 +139,17 @@ func TestJsonUnmarshalURL(t *testing.T) {
 		},
 		"relative": {
 			b: []byte(`"/path/to/something"`),
-			want: func() *URL {
-				uu, _ := url.Parse("/path/to/something")
-				u := URL(*uu)
-				return &u
-			}(),
+			want: &URL{
+				Path: "/path/to/something",
+			},
 		},
 		"url": {
 			b: []byte(`"http://path/to/something"`),
-			want: func() *URL {
-				uu, _ := url.Parse("http://path/to/something")
-				u := URL(*uu)
-				return &u
-			}(),
+			want: &URL{
+				Scheme: "http",
+				Host:   "path",
+				Path:   "/to/something",
+			},
 		},
 	}
 	for n, tc := range testCases {
@@ -189,19 +195,15 @@ func TestJsonMarshalURLAsMember(t *testing.T) {
 			want: []byte(`{"url":""}`),
 		},
 		"relative": {
-			obj: func() *objectType {
-				uu, _ := url.Parse("/path/to/something")
-				u := URL(*uu)
-				return &objectType{URL: u}
-			}(),
+			obj:  &objectType{URL: URL{Path: "/path/to/something"}},
 			want: []byte(`{"url":"/path/to/something"}`),
 		},
 		"url": {
-			obj: func() *objectType {
-				uu, _ := url.Parse("http://path/to/something")
-				u := URL(*uu)
-				return &objectType{URL: u}
-			}(),
+			obj: &objectType{URL: URL{
+				Scheme: "http",
+				Host:   "path",
+				Path:   "/to/something",
+			}},
 			want: []byte(`{"url":"http://path/to/something"}`),
 		},
 		"empty url": {
@@ -252,19 +254,15 @@ func TestJsonMarshalURLAsPointerMember(t *testing.T) {
 			want: []byte(`{}`),
 		},
 		"relative": {
-			obj: func() *objectType {
-				uu, _ := url.Parse("/path/to/something")
-				u := URL(*uu)
-				return &objectType{URL: &u}
-			}(),
+			obj:  &objectType{URL: &URL{Path: "/path/to/something"}},
 			want: []byte(`{"url":"/path/to/something"}`),
 		},
 		"url": {
-			obj: func() *objectType {
-				uu, _ := url.Parse("http://path/to/something")
-				u := URL(*uu)
-				return &objectType{URL: &u}
-			}(),
+			obj: &objectType{URL: &URL{
+				Scheme: "http",
+				Host:   "path",
+				Path:   "/to/something",
+			}},
 			want: []byte(`{"url":"http://path/to/something"}`),
 		},
 		"empty url": {
@@ -319,20 +317,16 @@ func TestJsonUnmarshalURLAsMember(t *testing.T) {
 			wantErr: `parse %: invalid URL escape "%"`,
 		},
 		"relative": {
-			b: []byte(`{"url":"/path/to/something"}`),
-			want: func() *objectType {
-				uu, _ := url.Parse("/path/to/something")
-				u := URL(*uu)
-				return &objectType{URL: u}
-			}(),
+			b:    []byte(`{"url":"/path/to/something"}`),
+			want: &objectType{URL: URL{Path: "/path/to/something"}},
 		},
 		"url": {
 			b: []byte(`{"url":"http://path/to/something"}`),
-			want: func() *objectType {
-				uu, _ := url.Parse("http://path/to/something")
-				u := URL(*uu)
-				return &objectType{URL: u}
-			}(),
+			want: &objectType{URL: URL{
+				Scheme: "http",
+				Host:   "path",
+				Path:   "/to/something",
+			}},
 		},
 		"empty url": {
 			b:    []byte(`{"url":""}`),
@@ -386,20 +380,16 @@ func TestJsonUnmarshalURLAsMemberPointer(t *testing.T) {
 			wantErr: `parse %: invalid URL escape "%"`,
 		},
 		"relative": {
-			b: []byte(`{"url":"/path/to/something"}`),
-			want: func() *objectType {
-				uu, _ := url.Parse("/path/to/something")
-				u := URL(*uu)
-				return &objectType{URL: &u}
-			}(),
+			b:    []byte(`{"url":"/path/to/something"}`),
+			want: &objectType{URL: &URL{Path: "/path/to/something"}},
 		},
 		"url": {
 			b: []byte(`{"url":"http://path/to/something"}`),
-			want: func() *objectType {
-				uu, _ := url.Parse("http://path/to/something")
-				u := URL(*uu)
-				return &objectType{URL: &u}
-			}(),
+			want: &objectType{URL: &URL{
+				Scheme: "http",
+				Host:   "path",
+				Path:   "/to/something",
+			}},
 		},
 		"empty url": {
 			b:    []byte(`{"url":""}`),
@@ -432,33 +422,40 @@ func TestJsonUnmarshalURLAsMemberPointer(t *testing.T) {
 
 func TestURLString(t *testing.T) {
 	testCases := map[string]struct {
-		t    string
+		t    *URL
 		want string
 	}{
+		"nil": {},
 		"empty": {
+			t:    &URL{},
 			want: "",
 		},
 		"relative": {
-			t:    "/path/to/something",
+			t:    &URL{Path: "/path/to/something"},
 			want: "/path/to/something",
 		},
-		"url": {
-			t:    "http://path/to/something",
+		"nopath": {
+			t:    HTTPS("foo"),
+			want: "https://foo",
+		},
+		"absolute": {
+			t: &URL{
+				Scheme: "http",
+				Host:   "path",
+				Path:   "/to/something",
+			},
 			want: "http://path/to/something",
 		},
 	}
 	for n, tc := range testCases {
 		t.Run(n, func(t *testing.T) {
+			got := tc.t
 
-			tt, err := ParseURL(tc.t)
-			if err != nil {
-				t.Fatalf("ParseURL() = %v", err)
-			}
-			got := tt.String()
-
-			if diff := cmp.Diff(tc.want, got); diff != "" {
-				t.Logf("got: %s", string(got))
+			if diff := cmp.Diff(tc.want, got.String()); diff != "" {
 				t.Errorf("unexpected string (-want, +got) = %v", diff)
+			}
+			if diff := cmp.Diff(tc.want, got.URL().String()); diff != "" {
+				t.Errorf("unexpected URL (-want, +got) = %v", diff)
 			}
 		})
 	}

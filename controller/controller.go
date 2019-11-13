@@ -98,6 +98,17 @@ func Filter(gvk schema.GroupVersionKind) func(obj interface{}) bool {
 	}
 }
 
+// FilterWithName makes it simple to create FilterFunc's for use with
+// cache.FilteringResourceEventHandler that filter based on a name.
+func FilterWithName(name string) func(obj interface{}) bool {
+	return func(obj interface{}) bool {
+		if object, ok := obj.(metav1.Object); ok {
+			return name == object.GetName()
+		}
+		return false
+	}
+}
+
 // FilterWithNameAndNamespace makes it simple to create FilterFunc's for use with
 // cache.FilteringResourceEventHandler that filter based on a namespace and a name.
 func FilterWithNameAndNamespace(namespace, name string) func(obj interface{}) bool {
@@ -173,6 +184,14 @@ func (c *Impl) Enqueue(obj interface{}) {
 		return
 	}
 	c.EnqueueKey(types.NamespacedName{Namespace: object.GetNamespace(), Name: object.GetName()})
+}
+
+// EnqueueSentinel returns a Enqueue method which will always enqueue a
+// predefined key instead of the object key.
+func (c *Impl) EnqueueSentinel(k types.NamespacedName) func(interface{}) {
+	return func(interface{}) {
+		c.EnqueueKey(k)
+	}
 }
 
 // EnqueueControllerOf takes a resource, identifies its controller resource,
@@ -443,6 +462,27 @@ func StartInformers(stopCh <-chan struct{}, informers ...Informer) error {
 		}
 	}
 	return nil
+}
+
+// RunInformers kicks off all of the passed informers and then waits for all of
+// them to synchronize. Returned function will wait for all informers to finish.
+func RunInformers(stopCh <-chan struct{}, informers ...Informer) (func(), error) {
+	var wg sync.WaitGroup
+	wg.Add(len(informers))
+	for _, informer := range informers {
+		informer := informer
+		go func() {
+			defer wg.Done()
+			informer.Run(stopCh)
+		}()
+	}
+
+	for i, informer := range informers {
+		if ok := cache.WaitForCacheSync(stopCh, informer.HasSynced); !ok {
+			return wg.Wait, fmt.Errorf("failed to wait for cache at index %d to sync", i)
+		}
+	}
+	return wg.Wait, nil
 }
 
 // StartAll kicks off all of the passed controllers with DefaultThreadsPerController.
