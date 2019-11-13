@@ -18,13 +18,14 @@ package gke
 
 import (
 	"testing"
+
 	option "google.golang.org/api/option"
 )
 
 // func NewSDKClient(opts ...option.ClientOption) (SDKOperations, error) {
 func TestNewSDKClient(t *testing.T) {
 	datas := []struct {
-		req           option.ClientOption
+		req option.ClientOption
 	}{{
 		// No options.
 		nil,
