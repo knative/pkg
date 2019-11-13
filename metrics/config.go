@@ -33,8 +33,7 @@ import (
 )
 
 const (
-	DomainEnv        = "METRICS_DOMAIN"
-	ConfigMapNameEnv = "CONFIG_OBSERVABILITY_NAME"
+	DomainEnv = "METRICS_DOMAIN"
 )
 
 // metricsBackend specifies the backend to use for metrics
@@ -246,15 +245,6 @@ func createMetricsConfig(ops ExporterOptions, logger *zap.SugaredLogger) (*metri
 	}
 
 	return &mc, nil
-}
-
-// ConfigMapName gets the name of the metrics ConfigMap
-func ConfigMapName() string {
-	cm := os.Getenv(ConfigMapNameEnv)
-	if cm == "" {
-		return "config-observability"
-	}
-	return cm
 }
 
 // Domain holds the metrics domain to use for surfacing metrics.
