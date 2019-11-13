@@ -27,8 +27,8 @@ import (
 	"strings"
 	"time"
 
-	"go.uber.org/zap"
 	"go.opencensus.io/stats"
+	"go.uber.org/zap"
 	"knative.dev/pkg/metrics/metricskey"
 )
 
@@ -213,7 +213,7 @@ func createMetricsConfig(ops ExporterOptions, logger *zap.SugaredLogger) (*metri
 		if !allowCustomMetrics {
 			servingOrEventing := metricskey.KnativeRevisionMetrics.Union(
 				metricskey.KnativeTriggerMetrics)
-			mc.recorder = func(ctx context.Context, ms stats.Measurement, ros... stats.Options) error {
+			mc.recorder = func(ctx context.Context, ms stats.Measurement, ros ...stats.Options) error {
 				metricType := path.Join(mc.stackdriverMetricTypePrefix, ms.Measure().Name())
 
 				if servingOrEventing.Has(metricType) {
