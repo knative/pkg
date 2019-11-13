@@ -20,6 +20,7 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	v1 "k8s.io/api/core/v1"
 	"log"
 	"net/http"
 	"os"
@@ -131,6 +132,10 @@ func MainWithConfig(ctx context.Context, component string, cfg *rest.Config, cto
 
 	ctx, informers := injection.Default.SetupInformers(ctx, cfg)
 
+	// Create the config maps of config-logging and config-observability, if they are missing.
+	createConfigMap(ctx, logging.ConfigMapName())
+	createConfigMap(ctx, metrics.ConfigMapName())
+
 	// Set up our logger.
 	loggingConfig, err := GetLoggingConfig(ctx)
 	if err != nil {
@@ -219,4 +224,32 @@ func MainWithConfig(ctx context.Context, component string, cfg *rest.Config, cto
 func flush(logger *zap.SugaredLogger) {
 	logger.Sync()
 	metrics.FlushExporter()
+}
+
+func createConfigMap(ctx context.Context, name string) (error) {
+	_, err := kubeclient.Get(ctx).CoreV1().ConfigMaps(system.Namespace()).Get(name, metav1.GetOptions{})
+	if err != nil {
+		if apierrors.IsNotFound(err) {
+			// Create the ConfigMap for logging, if it is unavailable.
+			cm := v1.ConfigMap{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      name,
+					Namespace: system.Namespace(),
+					Labels:  map[string]string{
+						"serving.knative.dev/release": "devel",
+					},
+				},
+				Data:  map[string]string{
+					"default": "default",
+				},
+			}
+			_, err := kubeclient.Get(ctx).CoreV1().ConfigMaps(system.Namespace()).Create(&cm)
+			if err != nil {
+				return err
+			}
+		} else {
+			return err
+		}
+	}
+	return nil
 }
