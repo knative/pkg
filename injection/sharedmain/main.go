@@ -164,12 +164,17 @@ func MainWithConfig(ctx context.Context, component string, cfg *rest.Config, cto
 	profilingHandler := profiling.NewHandler(logger, false)
 
 	// Watch the logging config map and dynamically update logging levels.
-	cmw.Watch(logging.ConfigMapName(), logging.UpdateLevelFromConfigMap(logger, atomicLevel, component))
-
+	if _, err := kubeclient.Get(ctx).CoreV1().ConfigMaps(system.Namespace()).Get(logging.ConfigMapName(),
+		metav1.GetOptions{}); err == nil {
+		cmw.Watch(logging.ConfigMapName(), logging.UpdateLevelFromConfigMap(logger, atomicLevel, component))
+	}
 	// Watch the observability config map
-	cmw.Watch(metrics.ConfigMapName(),
-		metrics.UpdateExporterFromConfigMap(component, logger),
-		profilingHandler.UpdateFromConfigMap)
+	if _, err := kubeclient.Get(ctx).CoreV1().ConfigMaps(system.Namespace()).Get(metrics.ConfigMapName(),
+		metav1.GetOptions{}); err == nil {
+		cmw.Watch(metrics.ConfigMapName(),
+			metrics.UpdateExporterFromConfigMap(component, logger),
+			profilingHandler.UpdateFromConfigMap)
+	}
 
 	if err := cmw.Start(ctx.Done()); err != nil {
 		logger.Fatalw("failed to start configuration manager", zap.Error(err))
