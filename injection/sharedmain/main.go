@@ -168,7 +168,7 @@ func MainWithConfig(ctx context.Context, component string, cfg *rest.Config, cto
 		metav1.GetOptions{}); err == nil {
 		cmw.Watch(logging.ConfigMapName(), logging.UpdateLevelFromConfigMap(logger, atomicLevel, component))
 	} else if !apierrors.IsNotFound(err) {
-		logger.Fatalw("Error reading ConfigMap: " + logging.ConfigMapName(), zap.Error(err))
+		logger.Fatalw("Error reading ConfigMap: "+logging.ConfigMapName(), zap.Error(err))
 	}
 
 	// Watch the observability config map
@@ -178,7 +178,7 @@ func MainWithConfig(ctx context.Context, component string, cfg *rest.Config, cto
 			metrics.UpdateExporterFromConfigMap(component, logger),
 			profilingHandler.UpdateFromConfigMap)
 	} else if !apierrors.IsNotFound(err) {
-		logger.Fatalw("Error reading ConfigMap: " + metrics.ConfigMapName(), zap.Error(err))
+		logger.Fatalw("Error reading ConfigMap: "+metrics.ConfigMapName(), zap.Error(err))
 	}
 
 	if err := cmw.Start(ctx.Done()); err != nil {
