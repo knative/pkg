@@ -21,15 +21,14 @@ import (
 	"encoding/csv"
 	"flag"
 	"fmt"
+	"net/http"
 	"strings"
-	"time"
 
 	"github.com/golang/protobuf/jsonpb"
 	mako "github.com/google/mako/spec/proto/mako_go_proto"
 
 	"log"
 	"net"
-	"os"
 	"sync"
 
 	"google.golang.org/grpc"
@@ -41,27 +40,30 @@ import (
 const (
 	port = ":9813"
 	// A 10 minutes run at 1000 rps of eventing perf tests is usually ~= 70 MBi, so 100MBi is reasonable
-	defaultServerMaxReceiveMessageSize = 1024 * 1024 * 100
+	defaultServerMaxReceiveMessageSize = 1024 * 1024 * 1024
 )
 
 type server struct {
 	info     *mako.BenchmarkInfo
 	stopOnce sync.Once
 	stopCh   chan struct{}
+	sb       *strings.Builder
 }
 
 func (s *server) Store(ctx context.Context, in *qspb.StoreInput) (*qspb.StoreOutput, error) {
 	m := jsonpb.Marshaler{}
 	qi, _ := m.MarshalToString(in.GetQuickstoreInput())
-	fmt.Printf("# %s\n", qi)
-	writer := csv.NewWriter(os.Stdout)
+	fmt.Printf("# Received input")
+
+	fmt.Fprintf(s.sb, "# %s\n", qi)
+	writer := csv.NewWriter(s.sb)
 
 	kv := calculateKeyIndexColumnsMap(s.info)
 	cols := make([]string, len(kv))
 	for k, i := range kv {
 		cols[i] = k
 	}
-	fmt.Printf("# %s\n", strings.Join(cols, ","))
+	fmt.Fprintf(s.sb, "# %s\n", strings.Join(cols, ","))
 
 	for _, sp := range in.GetSamplePoints() {
 		for _, mv := range sp.GetMetricValueList() {
@@ -83,7 +85,8 @@ func (s *server) Store(ctx context.Context, in *qspb.StoreInput) (*qspb.StoreOut
 
 	writer.Flush()
 
-	fmt.Printf("# CSV end\n")
+	fmt.Fprintf(s.sb, "# CSV end\n")
+	fmt.Printf("# Input completed")
 
 	return &qspb.StoreOutput{}, nil
 }
@@ -111,10 +114,10 @@ func (s *server) ShutdownMicroservice(ctx context.Context, in *qspb.ShutdownInpu
 	return &qspb.ShutdownOutput{}, nil
 }
 
-var waitTimeBeforeEnd int
+var httpPort int
 
 func init() {
-	flag.IntVar(&waitTimeBeforeEnd, "w", 0, "Wait time in seconds before tear down")
+	flag.IntVar(&httpPort, "p", 0, "Port to use for using stub in HTTP mode. 0 means print to logs and quit")
 }
 
 func main() {
@@ -127,9 +130,12 @@ func main() {
 	s := grpc.NewServer(grpc.MaxRecvMsgSize(defaultServerMaxReceiveMessageSize))
 	stopCh := make(chan struct{})
 	info := config.MustGetBenchmark()
-	fmt.Printf("# Benchmark %s - %s/n", *info.BenchmarkKey, *info.BenchmarkName)
+	var sb strings.Builder
+
+	fmt.Fprintf(&sb, "# Benchmark %s - %s\n", *info.BenchmarkKey, *info.BenchmarkName)
+
 	go func() {
-		qspb.RegisterQuickstoreServer(s, &server{info: info, stopCh: stopCh})
+		qspb.RegisterQuickstoreServer(s, &server{info: info, stopCh: stopCh, sb: &sb})
 		if err := s.Serve(lis); err != nil {
 			log.Fatalf("failed to serve: %v", err)
 		}
@@ -137,5 +143,27 @@ func main() {
 	<-stopCh
 	s.GracefulStop()
 
-	time.Sleep(time.Second * time.Duration(waitTimeBeforeEnd))
+	results := sb.String()
+
+	if httpPort != 0 {
+		m := http.NewServeMux()
+		s := http.Server{Addr: fmt.Sprintf(":%d", httpPort), Handler: m}
+
+		m.HandleFunc("/results", func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("content-type", "text/csv")
+			_, err := fmt.Fprint(w, results)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+			}
+		})
+		m.HandleFunc("/close", func(writer http.ResponseWriter, request *http.Request) {
+			s.Shutdown(context.Background())
+		})
+		if err := s.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Fatal(err)
+		}
+		fmt.Print("Successfully served the results")
+	} else {
+		fmt.Print(sb.String())
+	}
 }
