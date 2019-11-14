@@ -57,13 +57,43 @@ func (dif *TypedInformerFactory) Get(gvr schema.GroupVersionResource) (cache.Sha
 
 	lister := cache.NewGenericLister(inf.GetIndexer(), gvr.GroupResource())
 
-	go inf.Run(dif.StopChannel)
+	infChannel := make(chan struct{})
+	errorChannel := make(chan error)
 
-	if ok := cache.WaitForCacheSync(dif.StopChannel, inf.HasSynced); !ok {
-		return nil, nil, fmt.Errorf("failed starting shared index informer for %v with type %T", gvr, dif.Type)
+	go inf.Run(infChannel)
+
+	go func() {
+		if ok := cache.WaitForCacheSync(infChannel, inf.HasSynced); !ok {
+			errorChannel <- fmt.Errorf("failed starting shared index informer for %v with type %T", gvr, dif.Type)
+		} else {
+			errorChannel <- nil
+		}
+	}()
+
+	timer := time.NewTimer(time.Second * time.Duration(30))
+	defer timer.Stop()
+
+	go func() {
+		<-timer.C
+		// Close infChannel if the informer hasn't synced
+		if !inf.HasSynced() {
+			close(infChannel)
+		}
+	}()
+
+	// If StopChannel closed, infChannel should close too
+	go func() {
+		<-dif.StopChannel
+		if _, ok := <-infChannel; !ok {
+			close(infChannel)
+		}
+	}()
+
+	err := <-errorChannel
+	if err != nil {
+		return nil, nil, err
 	}
-
-	return inf, lister, nil
+	return inf, lister, err
 }
 
 type unstructuredLister func(metav1.ListOptions) (*unstructured.UnstructuredList, error)
