@@ -33,6 +33,7 @@ func TestTypesImplements(t *testing.T) {
 		{instance: &KResource{}, iface: &Conditions{}},
 		{instance: &LegacyTarget{}, iface: &LegacyTargetable{}},
 		{instance: &Target{}, iface: &Targetable{}},
+		{instance: &Binding{}, iface: &Binding{}},
 	}
 	for _, tc := range testCases {
 		if err := duck.VerifyType(tc.instance, tc.iface); err != nil {
