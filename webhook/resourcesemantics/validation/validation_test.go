@@ -1,5 +1,5 @@
 /*
-Copyright 2017 The Knative Authors
+Copyright 2019 The Knative Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package resourcesemantics
+package validation
 
 import (
 	"context"
@@ -23,10 +23,9 @@ import (
 
 	// Injection stuff
 	_ "knative.dev/pkg/client/injection/kube/client/fake"
-	_ "knative.dev/pkg/client/injection/kube/informers/admissionregistration/v1beta1/mutatingwebhookconfiguration/fake"
+	_ "knative.dev/pkg/client/injection/kube/informers/admissionregistration/v1beta1/validatingwebhookconfiguration/fake"
 	_ "knative.dev/pkg/client/injection/kube/informers/core/v1/secret/fake"
 
-	"github.com/mattbaird/jsonpatch"
 	admissionv1beta1 "k8s.io/api/admission/v1beta1"
 	admissionregistrationv1beta1 "k8s.io/api/admissionregistration/v1beta1"
 	authenticationv1 "k8s.io/api/authentication/v1"
@@ -42,6 +41,7 @@ import (
 	. "knative.dev/pkg/logging/testing"
 	. "knative.dev/pkg/reconciler/testing"
 	. "knative.dev/pkg/testing"
+	"knative.dev/pkg/webhook/resourcesemantics"
 	. "knative.dev/pkg/webhook/testing"
 )
 
@@ -53,7 +53,7 @@ const (
 )
 
 var (
-	handlers = map[schema.GroupVersionKind]GenericCRD{
+	handlers = map[schema.GroupVersionKind]resourcesemantics.GenericCRD{
 		{
 			Group:   "pkg.knative.dev",
 			Version: "v1alpha1",
@@ -76,14 +76,14 @@ var (
 		}: &InnerDefaultResource{},
 	}
 
-	initialResourceWebhook = &admissionregistrationv1beta1.MutatingWebhookConfiguration{
+	initialResourceWebhook = &admissionregistrationv1beta1.ValidatingWebhookConfiguration{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "webhook.knative.dev",
 			OwnerReferences: []metav1.OwnerReference{{
 				Name: "asdf",
 			}},
 		},
-		Webhooks: []admissionregistrationv1beta1.MutatingWebhook{{
+		Webhooks: []admissionregistrationv1beta1.ValidatingWebhook{{
 			Name: "webhook.knative.dev",
 			ClientConfig: admissionregistrationv1beta1.WebhookClientConfig{
 				Service: &admissionregistrationv1beta1.ServiceReference{
@@ -182,7 +182,7 @@ func TestUnknownFieldFails(t *testing.T) {
 	req.Object.Raw = marshaled
 
 	ExpectFailsWith(t, ac.Admit(TestContextWithLogger(t), req),
-		`mutation failed: cannot decode incoming new object: json: unknown field "foo"`)
+		`validation failed: cannot decode incoming new object: json: unknown field "foo"`)
 }
 
 func TestAdmitCreates(t *testing.T) {
@@ -190,7 +190,6 @@ func TestAdmitCreates(t *testing.T) {
 		name      string
 		setup     func(context.Context, *Resource)
 		rejection string
-		patches   []jsonpatch.JsonPatchOperation
 	}{{
 		name: "test simple creation (alpha, no diff)",
 		setup: func(ctx context.Context, r *Resource) {
@@ -201,7 +200,6 @@ func TestAdmitCreates(t *testing.T) {
 				"pkg.knative.dev/lastModifier": user1,
 			}
 		},
-		patches: []jsonpatch.JsonPatchOperation{},
 	}, {
 		name: "test simple creation (beta, no diff)",
 		setup: func(ctx context.Context, r *Resource) {
@@ -212,86 +210,6 @@ func TestAdmitCreates(t *testing.T) {
 				"pkg.knative.dev/lastModifier": user1,
 			}
 		},
-		patches: []jsonpatch.JsonPatchOperation{},
-	}, {
-		name: "test simple creation (with defaults)",
-		setup: func(ctx context.Context, r *Resource) {
-		},
-		patches: []jsonpatch.JsonPatchOperation{{
-			Operation: "add",
-			Path:      "/metadata/annotations",
-			Value: map[string]interface{}{
-				"pkg.knative.dev/creator":      user1,
-				"pkg.knative.dev/lastModifier": user1,
-			},
-		}, {
-			Operation: "add",
-			Path:      "/spec/fieldThatsImmutableWithDefault",
-			Value:     "this is another default value",
-		}, {
-			Operation: "add",
-			Path:      "/spec/fieldWithDefault",
-			Value:     "I'm a default.",
-		}},
-	}, {
-		name: "test simple creation (with defaults around annotations)",
-		setup: func(ctx context.Context, r *Resource) {
-			r.Annotations = map[string]string{
-				"foo": "bar",
-			}
-		},
-		patches: []jsonpatch.JsonPatchOperation{{
-			Operation: "add",
-			Path:      "/metadata/annotations/pkg.knative.dev~1creator",
-			Value:     user1,
-		}, {
-			Operation: "add",
-			Path:      "/metadata/annotations/pkg.knative.dev~1lastModifier",
-			Value:     user1,
-		}, {
-			Operation: "add",
-			Path:      "/spec/fieldThatsImmutableWithDefault",
-			Value:     "this is another default value",
-		}, {
-			Operation: "add",
-			Path:      "/spec/fieldWithDefault",
-			Value:     "I'm a default.",
-		}},
-	}, {
-		name: "test simple creation (with partially overridden defaults)",
-		setup: func(ctx context.Context, r *Resource) {
-			r.Spec.FieldThatsImmutableWithDefault = "not the default"
-		},
-		patches: []jsonpatch.JsonPatchOperation{{
-			Operation: "add",
-			Path:      "/metadata/annotations",
-			Value: map[string]interface{}{
-				"pkg.knative.dev/creator":      user1,
-				"pkg.knative.dev/lastModifier": user1,
-			},
-		}, {
-			Operation: "add",
-			Path:      "/spec/fieldWithDefault",
-			Value:     "I'm a default.",
-		}},
-	}, {
-		name: "test simple creation (webhook corrects user annotation)",
-		setup: func(ctx context.Context, r *Resource) {
-			r.SetDefaults(ctx)
-			// THIS IS NOT WHO IS CREATING IT, IT IS LIES!
-			r.Annotations = map[string]string{
-				"pkg.knative.dev/lastModifier": user2,
-			}
-		},
-		patches: []jsonpatch.JsonPatchOperation{{
-			Operation: "replace",
-			Path:      "/metadata/annotations/pkg.knative.dev~1lastModifier",
-			Value:     user1,
-		}, {
-			Operation: "add",
-			Path:      "/metadata/annotations/pkg.knative.dev~1creator",
-			Value:     user1,
-		}},
 	}, {
 		name: "with bad field",
 		setup: func(ctx context.Context, r *Resource) {
@@ -316,7 +234,6 @@ func TestAdmitCreates(t *testing.T) {
 
 			if tc.rejection == "" {
 				ExpectAllowed(t, resp)
-				ExpectPatches(t, resp.Patch, tc.patches)
 			} else {
 				ExpectFailsWith(t, resp, tc.rejection)
 			}
@@ -349,7 +266,6 @@ func TestAdmitUpdates(t *testing.T) {
 		setup     func(context.Context, *Resource)
 		mutate    func(context.Context, *Resource)
 		rejection string
-		patches   []jsonpatch.JsonPatchOperation
 	}{{
 		name: "test simple update (no diff)",
 		setup: func(ctx context.Context, r *Resource) {
@@ -359,46 +275,6 @@ func TestAdmitUpdates(t *testing.T) {
 			// If we don't change anything, the updater
 			// annotation doesn't change.
 		},
-		patches: []jsonpatch.JsonPatchOperation{},
-	}, {
-		name: "test simple update (update updater annotation)",
-		setup: func(ctx context.Context, r *Resource) {
-			r.SetDefaults(ctx)
-		},
-		mutate: func(ctx context.Context, r *Resource) {
-			// When we change the spec, the updater
-			// annotation changes.
-			r.Spec.FieldWithDefault = "not the default"
-		},
-		patches: []jsonpatch.JsonPatchOperation{{
-			Operation: "replace",
-			Path:      "/metadata/annotations/pkg.knative.dev~1lastModifier",
-			Value:     user2,
-		}},
-	}, {
-		name: "test simple update (annotation change doesn't change updater)",
-		setup: func(ctx context.Context, r *Resource) {
-			r.SetDefaults(ctx)
-		},
-		mutate: func(ctx context.Context, r *Resource) {
-			// When we change an annotation, the updater doesn't change.
-			r.Annotations["foo"] = "bar"
-		},
-		patches: []jsonpatch.JsonPatchOperation{},
-	}, {
-		name: "test that updates dropping immutable defaults are filled back in",
-		setup: func(ctx context.Context, r *Resource) {
-			r.SetDefaults(ctx)
-			r.Spec.FieldThatsImmutableWithDefault = ""
-		},
-		mutate: func(ctx context.Context, r *Resource) {
-			r.Spec.FieldThatsImmutableWithDefault = ""
-		},
-		patches: []jsonpatch.JsonPatchOperation{{
-			Operation: "add",
-			Path:      "/spec/fieldThatsImmutableWithDefault",
-			Value:     "this is another default value",
-		}},
 	}, {
 		name: "bad mutation (immutable)",
 		setup: func(ctx context.Context, r *Resource) {
@@ -443,7 +319,6 @@ func TestAdmitUpdates(t *testing.T) {
 
 			if tc.rejection == "" {
 				ExpectAllowed(t, resp)
-				ExpectPatches(t, resp.Patch, tc.patches)
 			} else {
 				ExpectFailsWith(t, resp, tc.rejection)
 			}
@@ -473,31 +348,6 @@ func createUpdateResource(ctx context.Context, old, new *Resource) *admissionv1b
 	req.OldObject.Raw = marshaledOld
 	req.Resource.Group = "pkg.knative.dev"
 	return req
-}
-
-func TestValidCreateResourceSucceedsWithRoundTripAndDefaultPatch(t *testing.T) {
-	req := &admissionv1beta1.AdmissionRequest{
-		Operation: admissionv1beta1.Create,
-		Kind: metav1.GroupVersionKind{
-			Group:   "pkg.knative.dev",
-			Version: "v1alpha1",
-			Kind:    "InnerDefaultResource",
-		},
-	}
-	req.Object.Raw = createInnerDefaultResourceWithoutSpec(t)
-
-	_, ac := newNonRunningTestResourceAdmissionController(t)
-	resp := ac.Admit(TestContextWithLogger(t), req)
-	ExpectAllowed(t, resp)
-	ExpectPatches(t, resp.Patch, []jsonpatch.JsonPatchOperation{{
-		Operation: "add",
-		Path:      "/spec",
-		Value:     map[string]interface{}{},
-	}, {
-		Operation: "add",
-		Path:      "/spec/fieldWithDefault",
-		Value:     "I'm a default.",
-	}})
 }
 
 func createInnerDefaultResourceWithoutSpec(t *testing.T) []byte {

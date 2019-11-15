@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package resourcesemantics
+package defaulting
 
 import (
 	"context"
@@ -35,6 +35,7 @@ import (
 	"knative.dev/pkg/system"
 	"knative.dev/pkg/webhook"
 	certresources "knative.dev/pkg/webhook/certificates/resources"
+	"knative.dev/pkg/webhook/resourcesemantics"
 
 	. "knative.dev/pkg/reconciler/testing"
 	. "knative.dev/pkg/webhook/testing"
@@ -330,7 +331,7 @@ func TestNew(t *testing.T) {
 	ctx = webhook.WithOptions(ctx, webhook.Options{})
 
 	c := NewAdmissionController(ctx, "foo", "/bar",
-		map[schema.GroupVersionKind]GenericCRD{},
+		map[schema.GroupVersionKind]resourcesemantics.GenericCRD{},
 		func(ctx context.Context) context.Context {
 			return ctx
 		}, true /* disallow unknown field */)
