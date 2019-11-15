@@ -22,8 +22,8 @@ import (
 	"path"
 	"testing"
 
-	"knative.dev/pkg/metrics/metricstest"
 	"knative.dev/pkg/metrics/metricskey"
+	"knative.dev/pkg/metrics/metricstest"
 
 	"github.com/google/go-cmp/cmp"
 	"go.opencensus.io/stats"
@@ -55,8 +55,8 @@ func TestRecordServing(t *testing.T) {
 		}, {
 			name: "stackdriver backend with unsupported metric and allow custom metric",
 			metricsConfig: &metricsConfig{
-				isStackdriverBackend:          true,
-				stackdriverMetricTypePrefix:   "knative.dev/unsupported",
+				isStackdriverBackend:        true,
+				stackdriverMetricTypePrefix: "knative.dev/unsupported",
 			},
 			measurement: measure.M(3),
 		}, {
@@ -86,8 +86,8 @@ func TestRecordEventing(t *testing.T) {
 		}, {
 			name: "stackdriver backend with unsupported metric and allow custom metric",
 			metricsConfig: &metricsConfig{
-				isStackdriverBackend:          true,
-				stackdriverMetricTypePrefix:   "knative.dev/unsupported",
+				isStackdriverBackend:        true,
+				stackdriverMetricTypePrefix: "knative.dev/unsupported",
 			},
 			measurement: measure.M(3),
 		}, {

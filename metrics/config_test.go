@@ -857,8 +857,8 @@ func TestStackdriverRecord(t *testing.T) {
 			setCurMetricsConfig(mc)
 			ctx := context.Background()
 			v := []*view.View{
-				&view.View{Measure: servedCount, Aggregation: view.Count()},
-				&view.View{Measure: statCount, Aggregation: view.Count()},
+				{Measure: servedCount, Aggregation: view.Count()},
+				{Measure: statCount, Aggregation: view.Count()},
 			}
 			err = view.Register(v...)
 			if err != nil {
