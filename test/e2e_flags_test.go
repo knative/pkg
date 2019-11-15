@@ -25,6 +25,7 @@ import (
 func TestE2eFlags(t *testing.T) {
 	v := flag.Lookup("v")
 	if v == nil {
+		printFlags()
 		t.Fatal("Could not find 'v' flag; klog was not init-ed")
 	}
 	if v.Value.String() != klogDefaultLogLevel {
@@ -78,7 +79,7 @@ func TestE2eFlags(t *testing.T) {
 				flag.Set("v", tc.nonDefaultV)
 			}
 			SetupLoggingFlags()
-			v := flag.Lookup("v").Value.String()
+			v := klogFlags.Lookup("v").Value.String()
 			if tc.expectedV != v {
 				t.Errorf("v = '%s', want: '%s'\n", v, tc.expectedV)
 			}
