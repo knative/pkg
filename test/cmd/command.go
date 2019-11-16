@@ -26,9 +26,9 @@ import (
 )
 
 const (
-	EmptyCommandErrMsg = "command cannot be empty"
-	DefaultErrCode = 1
-	Separator = "\n"
+	emptyCommandErrMsg = "command cannot be empty"
+	defaultErrCode = 1
+	separator = "\n"
 )
 
 // RunCommand will run the command and return the standard output, plus error if there is one.
@@ -37,8 +37,8 @@ func RunCommand(cmdLine string) (string, error) {
 	if len(cmdSplit) == 0 {
 		return "", &CommandLineError{
 			Command: cmdLine,
-			ErrorOutput: []byte(EmptyCommandErrMsg),
-			ErrorCode: DefaultErrCode,
+			ErrorOutput: []byte(emptyCommandErrMsg),
+			ErrorCode: defaultErrCode,
 		}
 	}
 
@@ -68,10 +68,10 @@ func RunCommands(cmdLines ...string) (string, error) {
 		output, err := RunCommand(cmdLine)
 		outputs = append(outputs, output)
 		if err != nil {
-			return strings.Join(outputs, Separator), err
+			return strings.Join(outputs, separator), err
 		}
 	}
-	return strings.Join(outputs, Separator), nil
+	return strings.Join(outputs, separator), nil
 }
 
 // RunCommandsInParallel will run the commands in parallel.
@@ -107,12 +107,12 @@ func RunCommandsInParallel(cmdLines ...string) (string, error) {
 		es = append(es, e)
 	}
 
-	return strings.Join(os, Separator), helpers.CombineErrors(es)
+	return strings.Join(os, separator), helpers.CombineErrors(es)
 }
 
 // getErrorCode extracts the exit code of an *ExitError type
 func getErrorCode(err error) int {
-	errorCode := DefaultErrCode
+	errorCode := defaultErrCode
 	if exitError, ok := err.(*exec.ExitError); ok {
 		errorCode = exitError.ExitCode()
 	}
