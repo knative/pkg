@@ -29,7 +29,7 @@ func TestRunCommand(t *testing.T) {
 		expectedOutput string
 		expectedErrorCode int
 	}{
-		{"ls -D", "", 1},
+		{"", "", 1},
 		{"   ", "", 1},
 		{"echo hello, world", "hello, world\n", 0},
 		{"unknowncommand", "", 1},
