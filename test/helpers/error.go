@@ -28,17 +28,14 @@ func CombineErrors(errs []error) error {
 	if len(errs) == 0 {
 		return nil
 	}
-	isErr := false
-	var sb strings.Builder
+	msgs := make([]string, 0)
 	for _, err := range errs {
 		if err != nil {
-			isErr = true
-			sb.WriteString(err.Error())
-			sb.WriteString("\n")
+			msgs = append(msgs, err.Error())
 		}
 	}
-	if !isErr {
+	if len(msgs) == 0 {
 		return nil
 	}
-	return errors.New(strings.Trim(sb.String(), "\n"))
+	return errors.New(strings.Join(msgs, "\n"))
 }

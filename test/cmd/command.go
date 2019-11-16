@@ -18,8 +18,6 @@ package cmd
 
 import (
 	"bytes"
-	"errors"
-	"fmt"
 	"os/exec"
 	"strings"
 	"sync"
@@ -27,11 +25,21 @@ import (
 	"knative.dev/pkg/test/helpers"
 )
 
+const (
+	EmptyCommandErrMsg = "command cannot be empty"
+	DefaultErrCode = 1
+	Separator = "\n"
+)
+
 // RunCommand will run the command and return the standard output, plus error if there is one.
 func RunCommand(cmdLine string) (string, error) {
 	cmdSplit := strings.Fields(cmdLine)
 	if len(cmdSplit) == 0 {
-		return "", errors.New("the command line cannot be empty")
+		return "", &CommandLineError{
+			Command: cmdLine,
+			ErrorOutput: []byte(EmptyCommandErrMsg),
+			ErrorCode: DefaultErrCode,
+		}
 	}
 
 	cmdName := cmdSplit[0]
@@ -42,12 +50,14 @@ func RunCommand(cmdLine string) (string, error) {
 
 	out, err := cmd.Output()
 	if err != nil {
-		errorCode := getErrorCode(err)
-		commandLineErr := CommandLineError{Command: cmdLine, ErrorOutput: eb.Bytes(), ErrorCode: errorCode}
-		return string(out), commandLineErr
+		err = &CommandLineError{
+			Command: cmdLine,
+			ErrorOutput: eb.Bytes(),
+			ErrorCode: getErrorCode(err),
+		}
 	}
 
-	return string(out), nil
+	return string(out), err
 }
 
 // RunCommands will run the commands sequentially.
@@ -58,10 +68,10 @@ func RunCommands(cmdLines ...string) (string, error) {
 		output, err := RunCommand(cmdLine)
 		outputs = append(outputs, output)
 		if err != nil {
-			return strings.Join(outputs, "\n"), fmt.Errorf("error running %q: %v", cmdLine, err)
+			return strings.Join(outputs, Separator), err
 		}
 	}
-	return strings.Join(outputs, "\n"), nil
+	return strings.Join(outputs, Separator), nil
 }
 
 // RunCommandsInParallel will run the commands in parallel.
@@ -69,6 +79,7 @@ func RunCommands(cmdLines ...string) (string, error) {
 func RunCommandsInParallel(cmdLines ...string) (string, error) {
 	errCh := make(chan error, len(cmdLines))
 	outputCh := make(chan string, len(cmdLines))
+	mx := sync.Mutex{}
 	wg := sync.WaitGroup{}
 	for i := range cmdLines {
 		cmdLine := cmdLines[i]
@@ -76,8 +87,10 @@ func RunCommandsInParallel(cmdLines ...string) (string, error) {
 		go func() {
 			defer wg.Done()
 			output, err := RunCommand(cmdLine)
+			mx.Lock()
 			outputCh <- output
 			errCh <- err
+			mx.Unlock()
 		}()
 	}
 
@@ -94,12 +107,12 @@ func RunCommandsInParallel(cmdLines ...string) (string, error) {
 		es = append(es, e)
 	}
 
-	return strings.Join(os, "\n"), helpers.CombineErrors(es)
+	return strings.Join(os, Separator), helpers.CombineErrors(es)
 }
 
 // getErrorCode extracts the exit code of an *ExitError type
 func getErrorCode(err error) int {
-	errorCode := -1
+	errorCode := DefaultErrCode
 	if exitError, ok := err.(*exec.ExitError); ok {
 		errorCode = exitError.ExitCode()
 	}

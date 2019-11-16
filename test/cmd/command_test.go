@@ -17,6 +17,7 @@ limitations under the License.
 package cmd
 
 import (
+	"reflect"
 	"testing"
 
 	"k8s.io/apimachinery/pkg/util/sets"
@@ -26,23 +27,30 @@ func TestRunCommand(t *testing.T) {
 	testCases := []struct {
 		command string
 		expectedOutput string
-		shouldGetError bool
+		expectedErrorCode int
 	}{
-		{"", "", true},
-		{"   ", "", true},
-		{"echo hello, world", "hello, world\n", false},
-		{"unknowncommand", "", true},
+		{"ls -D", "", 1},
+		{"   ", "", 1},
+		{"echo hello, world", "hello, world\n", 0},
+		{"unknowncommand", "", 1},
 	}
 	for _, c := range testCases {
 		out, err := RunCommand(c.command)
 		if c.expectedOutput != out {
 			t.Fatalf("Expect %q but actual is %q", c.expectedOutput, out)
 		}
-		if err == nil && c.shouldGetError {
-			t.Fatal("Expect to get an error but got nil")
-		}
-		if err != nil && !c.shouldGetError {
-			t.Fatalf("Got an error %v but should get nil", err)
+		if err != nil {
+			if ce, ok := err.(*CommandLineError); ok {
+				if ce.ErrorCode != c.expectedErrorCode {
+					t.Fatalf("Expect to get error code %d but got %d", c.expectedErrorCode, ce.ErrorCode)
+				}
+			} else {
+				t.Fatalf("Expect to get a CommandLineError but got %s", reflect.TypeOf(err))
+			}
+		} else {
+			if c.expectedErrorCode != 0 {
+				t.Fatalf("Expect to get an error code %d but got no error", c.expectedErrorCode)
+			}
 		}
 	}
 }
@@ -51,27 +59,32 @@ func TestRunCommands(t *testing.T) {
 	testCases := []struct {
 		commands []string
 		expectedOutput string
-		shouldGetError bool
+		expectedErrorCode  int
 	}{
 		{
 			[]string{"echo 123", "echo 234", "echo 345"},
 			"123\n\n234\n\n345\n",
-			false,
+			0,
 		},
 		{
 			[]string{"   ", "echo 123"},
 			"",
-			true,
+			1,
 		},
 		{
 			[]string{"echo 123", "", "echo 234"},
 			"123\n\n",
-			true,
+			1,
 		},
 		{
 			[]string{"unknowncommand"},
 			"",
-			true,
+			1,
+		},
+		{
+			[]string{"unknowncommand", "echo 123"},
+			"",
+			1,
 		},
 	}
 	for _, c := range testCases {
@@ -79,11 +92,18 @@ func TestRunCommands(t *testing.T) {
 		if c.expectedOutput != out {
 			t.Fatalf("Expect %q but actual is %q", c.expectedOutput, out)
 		}
-		if err == nil && c.shouldGetError {
-			t.Fatal("Expect to get an error but got nil")
-		}
-		if err != nil && !c.shouldGetError {
-			t.Fatalf("Got an error %v but should get nil", err)
+		if err != nil {
+			if ce, ok := err.(*CommandLineError); ok {
+				if ce.ErrorCode != c.expectedErrorCode {
+					t.Fatalf("Expect to get error code %d but got %d", c.expectedErrorCode, ce.ErrorCode)
+				}
+			} else {
+				t.Fatalf("Expect to get a CommandLineError but got %s", reflect.TypeOf(err))
+			}
+		} else {
+			if c.expectedErrorCode != 0 {
+				t.Fatalf("Expect to get an error code %d but got no error", c.expectedErrorCode)
+			}
 		}
 	}
 }
