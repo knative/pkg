@@ -19,6 +19,9 @@ package v1
 import (
 	"testing"
 
+	appsv1 "k8s.io/api/apps/v1"
+	batchv1 "k8s.io/api/batch/v1"
+
 	"knative.dev/pkg/apis/duck"
 )
 
@@ -32,6 +35,22 @@ func TestTypesImplements(t *testing.T) {
 	}
 	for _, tc := range testCases {
 		if err := duck.VerifyType(tc.instance, tc.iface); err != nil {
+			t.Error(err)
+		}
+	}
+}
+
+func TestImplementsPodSpecable(t *testing.T) {
+	instances := []interface{}{
+		&WithPod{},
+		&appsv1.ReplicaSet{},
+		&appsv1.Deployment{},
+		&appsv1.StatefulSet{},
+		&appsv1.DaemonSet{},
+		&batchv1.Job{},
+	}
+	for _, instance := range instances {
+		if err := duck.VerifyType(instance, &PodSpecable{}); err != nil {
 			t.Error(err)
 		}
 	}
