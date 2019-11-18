@@ -38,8 +38,7 @@ import (
 )
 
 const (
-	port = ":9813"
-	// A 10 minutes run at 1000 rps of eventing perf tests is usually ~= 70 MBi, so 100MBi is reasonable
+	port                               = ":9813"
 	defaultServerMaxReceiveMessageSize = 1024 * 1024 * 1024
 )
 

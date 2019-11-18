@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright 2018 The Knative Authors
+# Copyright 2019 The Knative Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -18,9 +18,8 @@
 
 check_command_exists() {
   CMD_NAME=$1
-  CMD_INSTALL_WITH=$([ -z "$2" ] && echo "" || printf "\nInstall using '%s'" "$2")
   command -v "$CMD_NAME" > /dev/null || {
-    echo "Command $CMD_NAME not exists$CMD_INSTALL_WITH"
+    echo "Command $CMD_NAME does not exists"
     exit 1
   }
 }
@@ -28,7 +27,7 @@ check_command_exists() {
 check_command_exists kubectl
 check_command_exists curl
 
-if [[ $# -lt 3 ]]
+if [[ $# -lt 7 ]]
 then
   echo "Usage: $0 <mako_stub_pod_name> <mako_stub_namespace> <mako_stub_port> <timeout> <retries> <retries_interval> <out_file>"
   exit 1
@@ -52,34 +51,24 @@ while [[ -n "$isfree" ]]; do
   isfree=$(netstat -tapln | grep $port)
 done
 
-kubectl port-forward -n "$MAKO_STUB_NAMESPACE" "$MAKO_STUB_POD_NAME" $port:$MAKO_STUB_PORT &
-PORT_FORWARD_PID=$!
+for i in $(seq $RETRIES); do
+  kubectl port-forward -n "$MAKO_STUB_NAMESPACE" "$MAKO_STUB_POD_NAME" $port:$MAKO_STUB_PORT &
+  PORT_FORWARD_PID=$!
 
-curl --connect-timeout $TIMEOUT \
-    --max-time $TIMEOUT \
-    --retry $RETRIES \
-    --retry-connrefused \
-    --retry-delay $RETRIES_INTERVAL \
-    "http://localhost:$port/results" > $OUTPUT_FILE
+  sleep 10
 
-curl_exit_status=$?
+  curl --connect-timeout $TIMEOUT "http://localhost:$port/results" > $OUTPUT_FILE
+  curl_exit_status=$?
 
-out_code=0
+  kill $PORT_FORWARD_PID
+  wait $PORT_FORWARD_PID 2>/dev/null
 
-if [ 0 -eq $curl_exit_status ]; then
-  curl --connect-timeout $TIMEOUT \
-    --max-time $TIMEOUT \
-    --retry $RETRIES \
-    --retry-connrefused \
-    --retry-delay $RETRIES_INTERVAL \
-    "http://localhost:$port/close"
-  echo "Succesfully transfered results into $OUTPUT_FILE and closed the mako-stub"
-else
-  echo "Cannot retrieve results, curl exit status code $curl_exit_status"
-  out_code=1
-fi
+  if [ 0 -eq $curl_exit_status ]; then
+    exit 0
+  else
+    sleep $RETRIES_INTERVAL
+  fi
 
-kill $PORT_FORWARD_PID
-wait $PORT_FORWARD_PID 2>/dev/null
+done
 
-exit $out_code
+exit 1
