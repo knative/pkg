@@ -14,16 +14,14 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package duck_test
+package v1
 
 import (
-	"testing"
-
-	appsv1 "k8s.io/api/apps/v1"
-	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 
+	"knative.dev/pkg/apis"
 	"knative.dev/pkg/apis/duck"
 )
 
@@ -31,6 +29,11 @@ import (
 // in the manner of ReplicaSet, Deployment, DaemonSet, StatefulSet.
 type PodSpecable corev1.PodTemplateSpec
 
+// +genclient
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+
+// WithPod is the shell that demonstrates how PodSpecable types wrap
+// a PodSpec.
 type WithPod struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
@@ -38,13 +41,17 @@ type WithPod struct {
 	Spec WithPodSpec `json:"spec,omitempty"`
 }
 
+// WithPodSpec is the shell around the PodSpecable within WithPod.
 type WithPodSpec struct {
 	Template PodSpecable `json:"template,omitempty"`
 }
 
+// Assert that we implement the interfaces necessary to
+// use duck.VerifyType.
 var (
 	_ duck.Populatable   = (*WithPod)(nil)
 	_ duck.Implementable = (*PodSpecable)(nil)
+	_ apis.Listable      = (*WithPod)(nil)
 )
 
 // GetFullType implements duck.Implementable
@@ -69,18 +76,17 @@ func (t *WithPod) Populate() {
 	}
 }
 
-func TestImplementsPodSpecable(t *testing.T) {
-	instances := []interface{}{
-		&WithPod{},
-		&appsv1.ReplicaSet{},
-		&appsv1.Deployment{},
-		&appsv1.StatefulSet{},
-		&appsv1.DaemonSet{},
-		&batchv1.Job{},
-	}
-	for _, instance := range instances {
-		if err := duck.VerifyType(instance, &PodSpecable{}); err != nil {
-			t.Error(err)
-		}
-	}
+// GetListType implements apis.Listable
+func (*WithPod) GetListType() runtime.Object {
+	return &WithPodList{}
+}
+
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+
+// WithPodList is a list of WithPod resources
+type WithPodList struct {
+	metav1.TypeMeta `json:",inline"`
+	metav1.ListMeta `json:"metadata"`
+
+	Items []WithPod `json:"items"`
 }
