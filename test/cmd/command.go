@@ -22,22 +22,24 @@ import (
 	"strings"
 	"sync"
 
+	shell "github.com/kballard/go-shellquote"
+
 	"knative.dev/pkg/test/helpers"
 )
 
 const (
-	emptyCommandErrMsg = "command cannot be empty"
+	invalidInputErrorPrefix = "invalid input: "
 	defaultErrCode = 1
 	separator = "\n"
 )
 
 // RunCommand will run the command and return the standard output, plus error if there is one.
 func RunCommand(cmdLine string) (string, error) {
-	cmdSplit := strings.Fields(cmdLine)
-	if len(cmdSplit) == 0 {
+	cmdSplit, err := shell.Split(cmdLine)
+	if len(cmdSplit) == 0 || err != nil {
 		return "", &CommandLineError{
 			Command: cmdLine,
-			ErrorOutput: []byte(emptyCommandErrMsg),
+			ErrorOutput: []byte(invalidInputErrorPrefix + cmdLine),
 			ErrorCode: defaultErrCode,
 		}
 	}

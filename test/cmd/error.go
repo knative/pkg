@@ -16,8 +16,6 @@ limitations under the License.
 
 package cmd
 
-import "fmt"
-
 // CommandLineError is a custom error we use for errors got from running commands
 type CommandLineError struct {
 	Command     string
@@ -26,5 +24,5 @@ type CommandLineError struct {
 }
 
 func (c CommandLineError) Error() string {
-	return fmt.Sprintf("error %d when running %q: %q", c.ErrorCode, c.Command, c.ErrorOutput)
+	return string(c.ErrorOutput)
 }
