@@ -52,14 +52,14 @@ func RunCommand(cmdLine string) (string, error) {
 
 	out, err := cmd.Output()
 	if err != nil {
-		err = &CommandLineError{
+		return string(out), &CommandLineError{
 			Command: cmdLine,
 			ErrorOutput: eb.Bytes(),
 			ErrorCode: getErrorCode(err),
 		}
 	}
 
-	return string(out), err
+	return string(out), nil
 }
 
 // RunCommands will run the commands sequentially.
