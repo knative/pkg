@@ -19,7 +19,7 @@
 check_command_exists() {
   CMD_NAME=$1
   command -v "$CMD_NAME" > /dev/null || {
-    echo "Command $CMD_NAME does not exists"
+    echo "Command $CMD_NAME does not exist"
     exit 1
   }
 }

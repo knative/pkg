@@ -180,10 +180,6 @@ func Setup(ctx context.Context, extraTags ...string) (*Client, error) {
 	return SetupHelper(ctx, bench.BenchmarkKey, bench.BenchmarkName, extraTags...)
 }
 
-func SetupWithBenchmarkConfig(ctx context.Context, benchmarkKey *string, benchmarkName *string, extraTags ...string) (*Client, error) {
-	return SetupHelper(ctx, benchmarkKey, benchmarkName, extraTags...)
-}
-
 func tokenPath(token string) string {
 	return filepath.Join(tokenFolder, token)
 }

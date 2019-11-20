@@ -25,7 +25,6 @@ import (
 
 	"github.com/golang/protobuf/proto"
 	mpb "github.com/google/mako/spec/proto/mako_go_proto"
-	"github.com/pkg/errors"
 )
 
 const koDataPathEnvName = "KO_DATA_PATH"
@@ -48,11 +47,11 @@ func getBenchmark() (*mpb.BenchmarkInfo, error) {
 		return nil, err
 	}
 	// Read the Mako config file for this environment.
-	data, err := readFileFromKoData(env + ".config")
-	if err != nil {
+	data, koerr := readFileFromKoData(env + ".config")
+	if koerr != nil {
 		data, err = ioutil.ReadFile(filepath.Join(configMako, env+".config"))
 		if err != nil {
-			return nil, errors.Wrap(err, "cannot load both from kodata and from config mako config map")
+			return nil, fmt.Errorf("cannot load both from kodata and from config mako config map: %s, %s", koerr.Error(), err.Error())
 		}
 	}
 	// Parse the Mako config file.
