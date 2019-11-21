@@ -23,10 +23,10 @@ import (
 
 func TestRunCommand(t *testing.T) {
 	testCases := []struct {
-		command string
-		expectedOutput string
+		command             string
+		expectedOutput      string
 		expectedErrorOutput string
-		expectedErrorCode int
+		expectedErrorCode   int
 	}{
 		{"", "", invalidInputErrorPrefix + "", 1},
 		{" ", "", invalidInputErrorPrefix + " ", 1},
@@ -62,10 +62,10 @@ func TestRunCommand(t *testing.T) {
 
 func TestRunCommands(t *testing.T) {
 	testCases := []struct {
-		commands []string
-		expectedOutput string
+		commands            []string
+		expectedOutput      string
 		expectedErrorOutput string
-		expectedErrorCode int
+		expectedErrorCode   int
 	}{
 		{
 			[]string{"echo 123", "echo 234", "echo 345"},
@@ -127,8 +127,8 @@ func TestRunCommands(t *testing.T) {
 
 func TestRunCommandsInParallel(t *testing.T) {
 	testCases := []struct {
-		commands []string
-		possibleOutput []string
+		commands            []string
+		possibleOutput      []string
 		possibleErrorOutput []string
 	}{
 		{
@@ -151,7 +151,7 @@ func TestRunCommandsInParallel(t *testing.T) {
 		out, err := RunCommandsInParallel(c.commands...)
 
 		idx := -1
-		for i := range c.possibleOutput  {
+		for i := range c.possibleOutput {
 			if c.possibleOutput[i] == out {
 				idx = i
 				break
