@@ -83,6 +83,9 @@ func writeMetaData(cluster *container.Cluster, project string) {
 
 func Create(o *options.RequestWrapper) {
 	o.Prep()
+	if !o.Request.SkipCreation {
+		o.Request = clm.ApplyDefaults(o.Request)
+	}
 
 	gkeClient := clm.GKEClient{}
 	clusterOps := gkeClient.Setup(o.Request)

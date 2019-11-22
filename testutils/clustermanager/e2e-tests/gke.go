@@ -81,8 +81,7 @@ type GKECluster struct {
 	boskosOps    boskos.Operation
 }
 
-// Setup sets up a GKECluster client, takes GEKRequest as parameter and applies
-// all defaults if not defined.
+// Setup sets up a GKECluster client
 func (gs *GKEClient) Setup(r GKERequest) ClusterOperations {
 	gc := &GKECluster{}
 
@@ -91,6 +90,21 @@ func (gs *GKEClient) Setup(r GKERequest) ClusterOperations {
 		gc.NeedsCleanup = true
 	}
 
+	gc.Request = &r
+
+	client, err := gke.NewSDKClient()
+	if err != nil {
+		log.Fatalf("failed to create GKE SDK client: '%v'", err)
+	}
+	gc.operations = client
+
+	gc.boskosOps = &boskos.Client{}
+
+	return gc
+}
+
+// ApplyDefaults applies defaults values in GKERequest if not defined.
+func ApplyDefaults(r GKERequest) GKERequest {
 	if r.ClusterName == "" {
 		var err error
 		r.ClusterName, err = getResourceName(ClusterResource)
@@ -131,17 +145,7 @@ func (gs *GKEClient) Setup(r GKERequest) ClusterOperations {
 		r.BackupRegions = make([]string, 0)
 	}
 
-	gc.Request = &r
-
-	client, err := gke.NewSDKClient()
-	if err != nil {
-		log.Fatalf("failed to create GKE SDK client: '%v'", err)
-	}
-	gc.operations = client
-
-	gc.boskosOps = &boskos.Client{}
-
-	return gc
+	return r
 }
 
 // Provider returns gke
@@ -329,6 +333,11 @@ func (gc *GKECluster) checkEnvironment() error {
 					}
 					gc.Cluster = cluster
 					gc.Project = project
+				} else {
+					log.Printf(`WARNING: ignore kubectl current index because project and/or cluster name does not match.
+Request.Project: %q, current-context project: %q,
+Request.ClusterName: %q, current-context clusterName: %q`,
+						gc.Request.Project, project, gc.Request.ClusterName, clusterName)
 				}
 				return nil
 			}

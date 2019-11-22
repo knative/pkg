@@ -365,7 +365,7 @@ func TestSetup(t *testing.T) {
 			return oldEnvFunc(s)
 		}
 		c := GKEClient{}
-		co := c.Setup(data.r)
+		co := c.Setup(ApplyDefaults(data.r))
 		errMsg := fmt.Sprintf("testing setup with:\n\t%+v\n\tregionEnv: %v\n\tbackupRegionEnv: %v",
 			data.r, data.regionEnv, data.backupRegionEnv)
 		gotCo := co.(*GKECluster)
@@ -1003,6 +1003,8 @@ func TestDelete(t *testing.T) {
 			}
 		}
 
+		r := ApplyDefaults(*fgc.Request)
+		fgc.Request = &r
 		err := fgc.Delete()
 		var gotCluster *container.Cluster
 		if data.cluster != nil {

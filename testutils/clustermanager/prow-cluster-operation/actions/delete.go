@@ -28,7 +28,7 @@ func Delete(o *options.RequestWrapper) {
 	o.Request.SkipCreation = true
 
 	gkeClient := clm.GKEClient{}
-	clusterOps := gkeClient.Setup(o.Request)
+	clusterOps := gkeClient.Setup(clm.ApplyDefaults(o.Request))
 	gkeOps := clusterOps.(*clm.GKECluster)
 	if err := gkeOps.Acquire(); err != nil || gkeOps.Cluster == nil {
 		log.Fatalf("Failed identifying cluster for cleanup: '%v'", err)
