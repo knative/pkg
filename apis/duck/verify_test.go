@@ -19,6 +19,9 @@ package duck
 import (
 	"errors"
 	"testing"
+
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 func TestMatches(t *testing.T) {
@@ -224,6 +227,18 @@ type FooStatus struct {
 var _ Implementable = (*Fooable)(nil)
 var _ Populatable = (*Foo)(nil)
 
+func (*Foo) GetObjectKind() schema.ObjectKind {
+	return nil // not used
+}
+
+func (p *Foo) DeepCopyObject() runtime.Object {
+	return nil // not used
+}
+
+func (p *Foo) GetListType() runtime.Object {
+	return nil // not used
+}
+
 func (*Fooable) GetFullType() Populatable {
 	return &Foo{}
 }
@@ -250,6 +265,18 @@ type BarStatus struct {
 
 var _ Implementable = (*Barable)(nil)
 var _ Populatable = (*Bar)(nil)
+
+func (*Bar) GetObjectKind() schema.ObjectKind {
+	return nil // not used
+}
+
+func (p *Bar) DeepCopyObject() runtime.Object {
+	return nil // not used
+}
+
+func (p *Bar) GetListType() runtime.Object {
+	return nil // not used
+}
 
 func (*Barable) GetFullType() Populatable {
 	return &Bar{}
@@ -278,6 +305,18 @@ type SliceStatus struct {
 var _ Implementable = (*Sliceable)(nil)
 var _ Populatable = (*Slice)(nil)
 
+func (*Slice) GetObjectKind() schema.ObjectKind {
+	return nil // not used
+}
+
+func (p *Slice) DeepCopyObject() runtime.Object {
+	return nil // not used
+}
+
+func (p *Slice) GetListType() runtime.Object {
+	return nil // not used
+}
+
 func (*Sliceable) GetFullType() Populatable {
 	return &Slice{}
 }
@@ -298,6 +337,18 @@ type StringStatus struct {
 var _ Implementable = (*Stringable)(nil)
 var _ Populatable = (*String)(nil)
 
+func (*String) GetObjectKind() schema.ObjectKind {
+	return nil // not used
+}
+
+func (p *String) DeepCopyObject() runtime.Object {
+	return nil // not used
+}
+
+func (p *String) GetListType() runtime.Object {
+	return nil // not used
+}
+
 func (*Stringable) GetFullType() Populatable {
 	return &String{}
 }
@@ -316,6 +367,18 @@ type UnableToMarshal struct{}
 var _ Implementable = (*UnableToMarshal)(nil)
 var _ Populatable = (*UnableToMarshal)(nil)
 
+func (*UnableToMarshal) GetObjectKind() schema.ObjectKind {
+	return nil // not used
+}
+
+func (p *UnableToMarshal) DeepCopyObject() runtime.Object {
+	return nil // not used
+}
+
+func (p *UnableToMarshal) GetListType() runtime.Object {
+	return nil // not used
+}
+
 func (u *UnableToMarshal) GetFullType() Populatable {
 	return u
 }
@@ -333,6 +396,18 @@ type UnableToUnmarshal struct{}
 
 var _ Implementable = (*UnableToUnmarshal)(nil)
 var _ Populatable = (*UnableToUnmarshal)(nil)
+
+func (*UnableToUnmarshal) GetObjectKind() schema.ObjectKind {
+	return nil // not used
+}
+
+func (p *UnableToUnmarshal) DeepCopyObject() runtime.Object {
+	return nil // not used
+}
+
+func (p *UnableToUnmarshal) GetListType() runtime.Object {
+	return nil // not used
+}
 
 func (u *UnableToUnmarshal) GetFullType() Populatable {
 	return u
@@ -353,6 +428,18 @@ type UnexportedFields struct {
 
 var _ Implementable = (*UnexportedFields)(nil)
 var _ Populatable = (*UnexportedFields)(nil)
+
+func (*UnexportedFields) GetObjectKind() schema.ObjectKind {
+	return nil // not used
+}
+
+func (p *UnexportedFields) DeepCopyObject() runtime.Object {
+	return nil // not used
+}
+
+func (p *UnexportedFields) GetListType() runtime.Object {
+	return nil // not used
+}
 
 func (u *UnexportedFields) GetFullType() Populatable {
 	return &UnexportedFields{}

@@ -30,6 +30,7 @@ import (
 	"knative.dev/pkg/apis"
 	duckv1alpha1 "knative.dev/pkg/apis/duck/v1alpha1"
 	duckv1beta1 "knative.dev/pkg/apis/duck/v1beta1"
+	"knative.dev/pkg/client/injection/ducks/duck/v1beta1/addressable"
 	fakedynamicclient "knative.dev/pkg/injection/clients/dynamicclient/fake"
 	"knative.dev/pkg/resolver"
 )
@@ -332,6 +333,7 @@ func TestGetURI_ObjectReference(t *testing.T) {
 	for n, tc := range tests {
 		t.Run(n, func(t *testing.T) {
 			ctx, _ := fakedynamicclient.With(context.Background(), scheme.Scheme, tc.objects...)
+			ctx = addressable.WithDuck(ctx)
 			r := resolver.NewURIResolver(ctx, func(types.NamespacedName) {})
 
 			// Run it twice since this should be idempotent. URI Resolver should

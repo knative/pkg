@@ -22,6 +22,8 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 func TestCreateMergePatch(t *testing.T) {
@@ -291,6 +293,18 @@ type PatchSpec struct {
 
 var _ Implementable = (*Patchable)(nil)
 var _ Populatable = (*Patch)(nil)
+
+func (*Patch) GetObjectKind() schema.ObjectKind {
+	return nil // not used
+}
+
+func (p *Patch) DeepCopyObject() runtime.Object {
+	return nil // not used
+}
+
+func (p *Patch) GetListType() runtime.Object {
+	return nil // not used
+}
 
 func (*Patchable) GetFullType() Populatable {
 	return &Patch{}

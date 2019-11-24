@@ -21,6 +21,8 @@ import (
 
 	appsv1 "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	"knative.dev/pkg/apis/duck"
 )
@@ -46,6 +48,18 @@ var (
 	_ duck.Populatable   = (*Scalable)(nil)
 	_ duck.Implementable = (*Scalable)(nil)
 )
+
+func (*Scalable) GetObjectKind() schema.ObjectKind {
+	return nil // not used
+}
+
+func (p *Scalable) DeepCopyObject() runtime.Object {
+	return nil // not used
+}
+
+func (p *Scalable) GetListType() runtime.Object {
+	return nil // not used
+}
 
 // GetFullType implements duck.Implementable
 func (*Scalable) GetFullType() duck.Populatable {
