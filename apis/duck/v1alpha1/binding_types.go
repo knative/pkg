@@ -34,7 +34,7 @@ type Binding struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec BindingSpec `json:"status"`
+	Spec BindingSpec `json:"spec"`
 }
 
 // Verify that Binding implements the appropriate interfaces.
