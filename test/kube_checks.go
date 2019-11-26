@@ -81,13 +81,13 @@ func WaitForPodListState(client *KubeClient, inState func(p *corev1.PodList) (bo
 // that is emitted to track how long it took to get into the state checked by inState.
 func WaitForPodState(client *KubeClient, inState func(p *corev1.Pod) (bool, error), name string, namespace string) error {
 	p := client.Kube.CoreV1().Pods(namespace)
-	span := logging.GetEmitableSpan(context.Background(), fmt.Sprintf("WaitForPodState/%s", name))
+	span := logging.GetEmitableSpan(context.Background(), "WaitForPodState/"+name)
 	defer span.End()
 
 	return wait.PollImmediate(interval, podTimeout, func() (bool, error) {
 		p, err := p.Get(name, metav1.GetOptions{})
 		if err != nil {
-			return true, err
+			return false, err
 		}
 		return inState(p)
 	})
@@ -97,19 +97,17 @@ func WaitForPodState(client *KubeClient, inState func(p *corev1.Pod) (bool, erro
 // from client every interval until number of service endpoints = numOfEndpoints
 func WaitForServiceEndpoints(client *KubeClient, svcName string, svcNamespace string, numOfEndpoints int) error {
 	endpointsService := client.Kube.CoreV1().Endpoints(svcNamespace)
-	span := logging.GetEmitableSpan(context.Background(), fmt.Sprintf("WaitForServiceHasAtLeastOneEndpoint/%s", svcName))
+	span := logging.GetEmitableSpan(context.Background(), "WaitForServiceHasAtLeastOneEndpoint/"+svcName)
 	defer span.End()
 
 	return wait.PollImmediate(interval, podTimeout, func() (bool, error) {
-		endpoints, err := endpointsService.List(metav1.ListOptions{})
+		endpoint, err := endpointsService.Get(svcName, metav1.GetOptions{})
 		if err != nil {
-			return true, err
+			return false, err
 		}
 
-		for _, e := range endpoints.Items {
-			if e.Name == svcName && countEndpointsNum(&e) == numOfEndpoints {
-				return true, nil
-			}
+		if countEndpointsNum(endpoint) == numOfEndpoints {
+			return true, nil
 		}
 
 		return false, nil
@@ -117,6 +115,9 @@ func WaitForServiceEndpoints(client *KubeClient, svcName string, svcNamespace st
 }
 
 func countEndpointsNum(e *corev1.Endpoints) int {
+	if e == nil || e.Subsets == nil {
+		return 0
+	}
 	num := 0
 	for _, sub := range e.Subsets {
 		num += len(sub.Addresses)
