@@ -142,7 +142,7 @@ func TestAdmitCreateValidConfigMap(t *testing.T) {
 	r := createValidConfigMap()
 	ctx := TestContextWithLogger(t)
 
-	resp := ac.Admit(ctx, createCreateConfigMapRequest(ctx, r))
+	resp := ac.Admit(ctx, createCreateConfigMapRequest(ctx, t, r))
 
 	ExpectAllowed(t, resp)
 }
@@ -153,7 +153,7 @@ func TestDenyInvalidCreateConfigMapWithWrongType(t *testing.T) {
 	r := createWrongTypeConfigMap()
 	ctx := TestContextWithLogger(t)
 
-	resp := ac.Admit(ctx, createCreateConfigMapRequest(ctx, r))
+	resp := ac.Admit(ctx, createCreateConfigMapRequest(ctx, t, r))
 
 	ExpectFailsWith(t, resp, "invalid syntax")
 }
@@ -164,7 +164,7 @@ func TestDenyInvalidCreateConfigMapOutOfRange(t *testing.T) {
 	r := createWrongValueConfigMap()
 	ctx := TestContextWithLogger(t)
 
-	resp := ac.Admit(ctx, createCreateConfigMapRequest(ctx, r))
+	resp := ac.Admit(ctx, createCreateConfigMapRequest(ctx, t, r))
 
 	ExpectFailsWith(t, resp, "out of range")
 }
@@ -175,7 +175,7 @@ func TestAdmitUpdateValidConfigMap(t *testing.T) {
 	r := createValidConfigMap()
 	ctx := TestContextWithLogger(t)
 
-	resp := ac.Admit(ctx, updateCreateConfigMapRequest(ctx, r))
+	resp := ac.Admit(ctx, updateCreateConfigMapRequest(ctx, t, r))
 
 	ExpectAllowed(t, resp)
 }
@@ -186,7 +186,7 @@ func TestDenyInvalidUpdateConfigMapWithWrongType(t *testing.T) {
 	r := createWrongTypeConfigMap()
 	ctx := TestContextWithLogger(t)
 
-	resp := ac.Admit(ctx, createCreateConfigMapRequest(ctx, r))
+	resp := ac.Admit(ctx, createCreateConfigMapRequest(ctx, t, r))
 
 	ExpectFailsWith(t, resp, "invalid syntax")
 }
@@ -197,7 +197,7 @@ func TestDenyInvalidUpdateConfigMapOutOfRange(t *testing.T) {
 	r := createWrongValueConfigMap()
 	ctx := TestContextWithLogger(t)
 
-	resp := ac.Admit(ctx, createCreateConfigMapRequest(ctx, r))
+	resp := ac.Admit(ctx, createCreateConfigMapRequest(ctx, t, r))
 
 	ExpectFailsWith(t, resp, "out of range")
 }
@@ -257,18 +257,20 @@ func createConfigMap(value string) *corev1.ConfigMap {
 	}
 }
 
-func createCreateConfigMapRequest(ctx context.Context, r *corev1.ConfigMap) *admissionv1beta1.AdmissionRequest {
-	return configMapRequest(r, admissionv1beta1.Create)
+func createCreateConfigMapRequest(ctx context.Context, t *testing.T, r *corev1.ConfigMap) *admissionv1beta1.AdmissionRequest {
+	return configMapRequest(t, r, admissionv1beta1.Create)
 }
 
-func updateCreateConfigMapRequest(ctx context.Context, r *corev1.ConfigMap) *admissionv1beta1.AdmissionRequest {
-	return configMapRequest(r, admissionv1beta1.Update)
+func updateCreateConfigMapRequest(ctx context.Context, t *testing.T, r *corev1.ConfigMap) *admissionv1beta1.AdmissionRequest {
+	return configMapRequest(t, r, admissionv1beta1.Update)
 }
 
 func configMapRequest(
+	t *testing.T,
 	r *corev1.ConfigMap,
 	o admissionv1beta1.Operation,
 ) *admissionv1beta1.AdmissionRequest {
+	t.Helper()
 	req := &admissionv1beta1.AdmissionRequest{
 		Operation: o,
 		Kind: metav1.GroupVersionKind{
@@ -280,7 +282,7 @@ func configMapRequest(
 	}
 	marshaled, err := json.Marshal(r)
 	if err != nil {
-		panic("failed to marshal resource")
+		t.Fatalf("Failed to marshal resource: %v", err)
 	}
 	req.Object.Raw = marshaled
 	req.Resource.Group = ""

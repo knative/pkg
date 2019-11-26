@@ -33,6 +33,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	fakekubeclientset "k8s.io/client-go/kubernetes/fake"
+
 	"knative.dev/pkg/apis"
 	"knative.dev/pkg/system"
 	"knative.dev/pkg/webhook"
@@ -178,7 +179,7 @@ func TestUnknownFieldFails(t *testing.T) {
 		},
 	})
 	if err != nil {
-		panic("failed to marshal resource")
+		t.Fatalf("Failed to marshal resource: %v", err)
 	}
 	req.Object.Raw = marshaled
 
@@ -306,7 +307,7 @@ func TestAdmitCreates(t *testing.T) {
 			tc.setup(ctx, r)
 
 			_, ac := newNonRunningTestResourceAdmissionController(t)
-			resp := ac.Admit(ctx, createCreateResource(ctx, r))
+			resp := ac.Admit(ctx, createCreateResource(ctx, t, r))
 
 			if tc.rejection == "" {
 				ExpectAllowed(t, resp)
@@ -318,7 +319,8 @@ func TestAdmitCreates(t *testing.T) {
 	}
 }
 
-func createCreateResource(ctx context.Context, r *Resource) *admissionv1beta1.AdmissionRequest {
+func createCreateResource(ctx context.Context, t *testing.T, r *Resource) *admissionv1beta1.AdmissionRequest {
+	t.Helper()
 	req := &admissionv1beta1.AdmissionRequest{
 		Operation: admissionv1beta1.Create,
 		Kind: metav1.GroupVersionKind{
@@ -330,7 +332,7 @@ func createCreateResource(ctx context.Context, r *Resource) *admissionv1beta1.Ad
 	}
 	marshaled, err := json.Marshal(r)
 	if err != nil {
-		panic("failed to marshal resource")
+		t.Fatalf("Failed to marshal resource: %v", err)
 	}
 	req.Object.Raw = marshaled
 	req.Resource.Group = "pkg.knative.dev"
@@ -415,7 +417,7 @@ func TestAdmitUpdates(t *testing.T) {
 			tc.mutate(ctx, new)
 
 			_, ac := newNonRunningTestResourceAdmissionController(t)
-			resp := ac.Admit(ctx, createUpdateResource(ctx, old, new))
+			resp := ac.Admit(ctx, createUpdateResource(ctx, t, old, new))
 
 			if tc.rejection == "" {
 				ExpectAllowed(t, resp)
@@ -427,7 +429,8 @@ func TestAdmitUpdates(t *testing.T) {
 	}
 }
 
-func createUpdateResource(ctx context.Context, old, new *Resource) *admissionv1beta1.AdmissionRequest {
+func createUpdateResource(ctx context.Context, t *testing.T, old, new *Resource) *admissionv1beta1.AdmissionRequest {
+	t.Helper()
 	req := &admissionv1beta1.AdmissionRequest{
 		Operation: admissionv1beta1.Update,
 		Kind: metav1.GroupVersionKind{
@@ -439,12 +442,12 @@ func createUpdateResource(ctx context.Context, old, new *Resource) *admissionv1b
 	}
 	marshaled, err := json.Marshal(new)
 	if err != nil {
-		panic("failed to marshal resource")
+		t.Errorf("Failed to marshal resource: %v", err)
 	}
 	req.Object.Raw = marshaled
 	marshaledOld, err := json.Marshal(old)
 	if err != nil {
-		panic("failed to marshal resource")
+		t.Errorf("Failed to marshal resource: %v", err)
 	}
 	req.OldObject.Raw = marshaledOld
 	req.Resource.Group = "pkg.knative.dev"
