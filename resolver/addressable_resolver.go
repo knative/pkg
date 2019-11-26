@@ -50,15 +50,7 @@ func NewURIResolver(ctx context.Context, callback func(types.NamespacedName)) *U
 	ret.tracker = tracker.New(callback, controller.GetTrackerLease(ctx))
 	ret.informerFactory = &pkgapisduck.CachedInformerFactory{
 		Delegate: &pkgapisduck.EnqueueInformerFactory{
-			Delegate: addressable.Get(ctx),
-			/*
-				Delegate: &pkgapisduck.TypedInformerFactory{
-					Client:       dynamicclient.Get(ctx),
-					Type:         &duckv1.AddressableType{},
-					ResyncPeriod: controller.GetResyncPeriod(ctx),
-					StopChannel:  ctx.Done(),
-				},
-			*/
+			Delegate:     addressable.Get(ctx),
 			EventHandler: controller.HandleAll(ret.tracker.OnChanged),
 		},
 	}
