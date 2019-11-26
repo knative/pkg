@@ -33,7 +33,7 @@ import (
 	"knative.dev/pkg/network"
 	"knative.dev/pkg/tracker"
 
-	"knative.dev/pkg/client/injection/ducks/duck/v1beta1/addressable"
+	"knative.dev/pkg/client/injection/ducks/duck/v1/addressable"
 )
 
 // URIResolver resolves Destinations and ObjectReferences into a URI.
