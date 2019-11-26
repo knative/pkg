@@ -17,18 +17,20 @@ limitations under the License.
 package duck
 
 import (
-	"reflect"
 	"testing"
 
 	"encoding/json"
 
+	"github.com/google/go-cmp/cmp"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	. "knative.dev/pkg/testing"
 )
 
 func TestFromUnstructuredFooable(t *testing.T) {
 	tcs := []struct {
 		name      string
-		in        Marshalable
+		in        json.Marshaler
 		want      FooStatus
 		wantError error
 	}{{
@@ -70,23 +72,86 @@ func TestFromUnstructuredFooable(t *testing.T) {
 		want:      FooStatus{},
 		wantError: nil,
 	}}
+
 	for _, tc := range tcs {
-		raw, err := json.Marshal(tc.in)
-		if err != nil {
-			panic("failed to marshal")
-		}
+		t.Run(tc.name, func(t *testing.T) {
+			raw, err := json.Marshal(tc.in)
+			if err != nil {
+				t.Fatalf("failed to marshal: %v", err)
+			}
 
-		t.Logf("Marshalled : %s", string(raw))
+			t.Logf("Marshalled: %s", string(raw))
 
-		got := Foo{}
-		err = FromUnstructured(tc.in, &got)
-		if err != tc.wantError {
-			t.Errorf("Unexpected error for %q: %v", string(tc.name), err)
-			continue
-		}
+			got := Foo{}
+			if err := FromUnstructured(tc.in, &got); err != tc.wantError {
+				t.Fatalf("FromUnstructured() = %v", err)
+			}
 
-		if !reflect.DeepEqual(tc.want, got.Status) {
-			t.Errorf("Decode(%q) want: %+v\ngot: %+v", string(tc.name), tc.want, got)
-		}
+			if !cmp.Equal(tc.want, got.Status) {
+				t.Errorf("ToUnstructured (-want, +got) = %s", cmp.Diff(tc.want, got.Status))
+			}
+		})
+	}
+}
+
+func TestToUnstructured(t *testing.T) {
+	tests := []struct {
+		name      string
+		in        OneOfOurs
+		want      *unstructured.Unstructured
+		wantError error
+	}{{
+		name: "missing TypeMeta",
+		in: &Resource{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "blah",
+			},
+		},
+		want: &unstructured.Unstructured{
+			Object: map[string]interface{}{
+				"apiVersion": "pkg.knative.dev/v2",
+				"kind":       "Resource",
+				"metadata": map[string]interface{}{
+					"creationTimestamp": nil,
+					"name":              "blah",
+				},
+				"spec": map[string]interface{}{},
+			},
+		},
+	}, {
+		name: "with TypeMeta",
+		in: &Resource{
+			TypeMeta: metav1.TypeMeta{
+				APIVersion: "apps/v1",
+				Kind:       "Deployment",
+			},
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "blah",
+			},
+		},
+		want: &unstructured.Unstructured{
+			Object: map[string]interface{}{
+				"apiVersion": "apps/v1",
+				"kind":       "Deployment",
+				"metadata": map[string]interface{}{
+					"creationTimestamp": nil,
+					"name":              "blah",
+				},
+				"spec": map[string]interface{}{},
+			},
+		},
+	}}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			got, err := ToUnstructured(tc.in)
+			if err != tc.wantError {
+				t.Fatalf("ToUnstructured() = %v", err)
+			}
+
+			if !cmp.Equal(tc.want, got) {
+				t.Errorf("ToUnstructured (-want, +got) = %s", cmp.Diff(tc.want, got))
+			}
+		})
 	}
 }
