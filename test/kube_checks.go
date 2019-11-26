@@ -75,6 +75,24 @@ func WaitForPodListState(client *KubeClient, inState func(p *corev1.PodList) (bo
 	})
 }
 
+// WaitForPodState polls the status of the specified Pod
+// from client every interval until inState returns `true` indicating it
+// is done, returns an error or timeout. desc will be used to name the metric
+// that is emitted to track how long it took to get into the state checked by inState.
+func WaitForPodState(client *KubeClient, inState func(p *corev1.Pod) (bool, error), name string, namespace string) error {
+	p := client.Kube.CoreV1().Pods(namespace)
+	span := logging.GetEmitableSpan(context.Background(), fmt.Sprintf("WaitForPodState/%s", name))
+	defer span.End()
+
+	return wait.PollImmediate(interval, podTimeout, func() (bool, error) {
+		p, err := p.Get(name, metav1.GetOptions{})
+		if err != nil {
+			return true, err
+		}
+		return inState(p)
+	})
+}
+
 // GetConfigMap gets the configmaps for a given namespace
 func GetConfigMap(client *KubeClient, namespace string) k8styped.ConfigMapInterface {
 	return client.Kube.CoreV1().ConfigMaps(namespace)
