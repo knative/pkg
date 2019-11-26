@@ -110,7 +110,7 @@ func TestInvalidResource(t *testing.T) {
 	_, _, got := tif.Get(SchemeGroupVersion.WithResource("resources"))
 
 	if got != testErr {
-		t.Errorf("Didn't see expected error message. Got: %v, wanted: %v", got, testErr)
+		t.Errorf("Error = %v, want: %v", got, testErr)
 	}
 }
 
