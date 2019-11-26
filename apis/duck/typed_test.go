@@ -28,6 +28,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/watch"
+	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/dynamic/fake"
 
 	"knative.dev/pkg/apis/duck"
@@ -92,6 +93,25 @@ func TestSimpleList(t *testing.T) {
 	}
 
 	// TODO(mattmoor): Access through informer
+}
+
+func TestInvalidResource(t *testing.T) {
+	client := &invalidResourceClient{}
+	stopCh := make(chan struct{})
+	defer close(stopCh)
+
+	tif := &duck.TypedInformerFactory{
+		Client:       client,
+		Type:         &duckv1alpha1.AddressableType{},
+		ResyncPeriod: 1 * time.Second,
+		StopChannel:  stopCh,
+	}
+
+	_, _, got := tif.Get(SchemeGroupVersion.WithResource("resources"))
+
+	if got != testErr {
+		t.Errorf("Error = %v, want: %v", got, testErr)
+	}
 }
 
 func TestAsStructuredWatcherNestedError(t *testing.T) {
@@ -274,4 +294,22 @@ func (bo *badObject) GetObjectKind() schema.ObjectKind {
 
 func (bo *badObject) DeepCopyObject() runtime.Object {
 	return &badObject{}
+}
+
+var testErr = errors.New("failed to get list")
+
+type invalidResourceClient struct {
+	*fake.FakeDynamicClient
+}
+
+func (*invalidResourceClient) Resource(resource schema.GroupVersionResource) dynamic.NamespaceableResourceInterface {
+	return &invalidResource{}
+}
+
+type invalidResource struct {
+	dynamic.NamespaceableResourceInterface
+}
+
+func (*invalidResource) List(options metav1.ListOptions) (*unstructured.UnstructuredList, error) {
+	return nil, testErr
 }
