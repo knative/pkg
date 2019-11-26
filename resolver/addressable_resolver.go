@@ -72,7 +72,7 @@ func (r *URIResolver) URIFromDestination(dest duckv1beta1.Destination, parent in
 		}
 	}
 	if dest.Ref != nil && deprecatedObjectReference != nil {
-		return "", fmt.Errorf("ref and [apiVersion, kind, name] can't be both present")
+		return "", errors.New("ref and [apiVersion, kind, name] can't be both present")
 	}
 	var ref *corev1.ObjectReference
 	if dest.Ref != nil {
@@ -87,7 +87,7 @@ func (r *URIResolver) URIFromDestination(dest duckv1beta1.Destination, parent in
 		}
 		if dest.URI != nil {
 			if dest.URI.URL().IsAbs() {
-				return "", fmt.Errorf("absolute URI is not allowed when Ref or [apiVersion, kind, name] exists")
+				return "", errors.New("absolute URI is not allowed when Ref or [apiVersion, kind, name] exists")
 			}
 			return url.URL().ResolveReference(dest.URI.URL()).String(), nil
 		}
@@ -102,7 +102,7 @@ func (r *URIResolver) URIFromDestination(dest duckv1beta1.Destination, parent in
 		return dest.URI.String(), nil
 	}
 
-	return "", fmt.Errorf("destination missing Ref, [apiVersion, kind, name] and URI, expected at least one")
+	return "", errors.New("destination missing Ref, [apiVersion, kind, name] and URI, expected at least one")
 }
 
 // URIFromDestinationV1 resolves a v1.Destination into a URI string.
@@ -114,7 +114,7 @@ func (r *URIResolver) URIFromDestinationV1(dest duckv1.Destination, parent inter
 		}
 		if dest.URI != nil {
 			if dest.URI.URL().IsAbs() {
-				return "", fmt.Errorf("absolute URI is not allowed when Ref or [apiVersion, kind, name] exists")
+				return "", errors.New("absolute URI is not allowed when Ref or [apiVersion, kind, name] exists")
 			}
 			return url.URL().ResolveReference(dest.URI.URL()).String(), nil
 		}
@@ -129,7 +129,7 @@ func (r *URIResolver) URIFromDestinationV1(dest duckv1.Destination, parent inter
 		return dest.URI.String(), nil
 	}
 
-	return "", fmt.Errorf("destination missing Ref and URI, expected at least one")
+	return "", errors.New("destination missing Ref and URI, expected at least one")
 }
 
 // URIFromObjectReference resolves an ObjectReference to a URI string.
