@@ -27,6 +27,7 @@ import (
 
 	"knative.dev/pkg/apis"
 	pkgapisduck "knative.dev/pkg/apis/duck"
+	duckv1 "knative.dev/pkg/apis/duck/v1"
 	duckv1beta1 "knative.dev/pkg/apis/duck/v1beta1"
 	"knative.dev/pkg/controller"
 	"knative.dev/pkg/network"
@@ -41,14 +42,23 @@ type URIResolver struct {
 	informerFactory pkgapisduck.InformerFactory
 }
 
-// NewURIResolver constructs a new URIResolver with context and a callback passed to the URIResolver's tracker.
+// NewURIResolver constructs a new URIResolver with context and a callback
+// for a given listableType (Listable) passed to the URIResolver's tracker.
 func NewURIResolver(ctx context.Context, callback func(types.NamespacedName)) *URIResolver {
 	ret := &URIResolver{}
 
 	ret.tracker = tracker.New(callback, controller.GetTrackerLease(ctx))
 	ret.informerFactory = &pkgapisduck.CachedInformerFactory{
 		Delegate: &pkgapisduck.EnqueueInformerFactory{
-			Delegate:     addressable.Get(ctx),
+			Delegate: addressable.Get(ctx),
+			/*
+				Delegate: &pkgapisduck.TypedInformerFactory{
+					Client:       dynamicclient.Get(ctx),
+					Type:         &duckv1.AddressableType{},
+					ResyncPeriod: controller.GetResyncPeriod(ctx),
+					StopChannel:  ctx.Done(),
+				},
+			*/
 			EventHandler: controller.HandleAll(ret.tracker.OnChanged),
 		},
 	}
@@ -56,7 +66,7 @@ func NewURIResolver(ctx context.Context, callback func(types.NamespacedName)) *U
 	return ret
 }
 
-// URIFromDestination resolves a Destination into a URI string.
+// URIFromDestination resolves a v1beta1.Destination into a URI string.
 func (r *URIResolver) URIFromDestination(dest duckv1beta1.Destination, parent interface{}) (string, error) {
 	var deprecatedObjectReference *corev1.ObjectReference
 	if dest.DeprecatedAPIVersion == "" && dest.DeprecatedKind == "" && dest.DeprecatedName == "" && dest.DeprecatedNamespace == "" {
@@ -103,6 +113,33 @@ func (r *URIResolver) URIFromDestination(dest duckv1beta1.Destination, parent in
 	return "", fmt.Errorf("destination missing Ref, [apiVersion, kind, name] and URI, expected at least one")
 }
 
+// URIFromDestinationV1 resolves a v1.Destination into a URI string.
+func (r *URIResolver) URIFromDestinationV1(dest duckv1.Destination, parent interface{}) (string, error) {
+	if dest.Ref != nil {
+		url, err := r.URIFromObjectReference(dest.Ref, parent)
+		if err != nil {
+			return "", err
+		}
+		if dest.URI != nil {
+			if dest.URI.URL().IsAbs() {
+				return "", fmt.Errorf("absolute URI is not allowed when Ref or [apiVersion, kind, name] exists")
+			}
+			return url.URL().ResolveReference(dest.URI.URL()).String(), nil
+		}
+		return url.URL().String(), nil
+	}
+
+	if dest.URI != nil {
+		// IsAbs check whether the URL has a non-empty scheme. Besides the non non-empty scheme, we also require dest.URI has a non-empty host
+		if !dest.URI.URL().IsAbs() || dest.URI.Host == "" {
+			return "", fmt.Errorf("URI is not absolute(both scheme and host should be non-empty): %v", dest.URI.String())
+		}
+		return dest.URI.String(), nil
+	}
+
+	return "", fmt.Errorf("destination missing Ref and URI, expected at least one")
+}
+
 // URIFromObjectReference resolves an ObjectReference to a URI string.
 func (r *URIResolver) URIFromObjectReference(ref *corev1.ObjectReference, parent interface{}) (*apis.URL, error) {
 	if ref == nil {
@@ -136,7 +173,7 @@ func (r *URIResolver) URIFromObjectReference(ref *corev1.ObjectReference, parent
 		return nil, fmt.Errorf("failed to get ref %+v: %v", ref, err)
 	}
 
-	addressable, ok := obj.(*duckv1beta1.AddressableType)
+	addressable, ok := obj.(*duckv1.AddressableType)
 	if !ok {
 		return nil, fmt.Errorf("%+v is not an AddressableType", ref)
 	}

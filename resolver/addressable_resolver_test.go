@@ -28,6 +28,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes/scheme"
 	"knative.dev/pkg/apis"
+	duckv1 "knative.dev/pkg/apis/duck/v1"
 	duckv1alpha1 "knative.dev/pkg/apis/duck/v1alpha1"
 	duckv1beta1 "knative.dev/pkg/apis/duck/v1beta1"
 	"knative.dev/pkg/client/injection/ducks/duck/v1beta1/addressable"
@@ -42,7 +43,7 @@ var (
 
 	addressableName       = "testsink"
 	addressableKind       = "Sink"
-	addressableAPIVersion = "duck.knative.dev/v1alpha1"
+	addressableAPIVersion = "duck.knative.dev/v1"
 
 	unaddressableName       = "testunaddressable"
 	unaddressableKind       = "KResource"
@@ -58,7 +59,7 @@ func init() {
 	duckv1beta1.AddToScheme(scheme.Scheme)
 }
 
-func TestGetURI_ObjectReference(t *testing.T) {
+func TestGetURI_DestinationV1Beta1(t *testing.T) {
 	tests := map[string]struct {
 		objects []runtime.Object
 		dest    duckv1beta1.Destination
@@ -360,6 +361,231 @@ func TestGetURI_ObjectReference(t *testing.T) {
 	}
 }
 
+func TestGetURI_DestinationV1(t *testing.T) {
+	tests := map[string]struct {
+		objects []runtime.Object
+		dest    duckv1.Destination
+		wantURI string
+		wantErr error
+	}{"nil everything": {
+		wantErr: fmt.Errorf("destination missing Ref and URI, expected at least one"),
+	}, "Happy URI with path": {
+		dest: duckv1.Destination{
+			URI: &apis.URL{
+				Scheme: "http",
+				Host:   "example.com",
+				Path:   "/foo",
+			},
+		},
+		wantURI: "http://example.com/foo",
+	}, "URI is not absolute URL": {
+		dest: duckv1.Destination{
+			URI: &apis.URL{
+				Host: "example.com",
+			},
+		},
+		wantErr: fmt.Errorf("URI is not absolute(both scheme and host should be non-empty): %v", "//example.com"),
+	}, "URI with no host": {
+		dest: duckv1.Destination{
+			URI: &apis.URL{
+				Scheme: "http",
+			},
+		},
+		wantErr: fmt.Errorf("URI is not absolute(both scheme and host should be non-empty): %v", "http:"),
+	},
+		"happy ref": {
+			objects: []runtime.Object{
+				getAddressable(),
+			},
+			dest:    duckv1.Destination{Ref: getAddressableRef()},
+			wantURI: addressableDNS,
+		}, "happy ref to k8s service": {
+			objects: []runtime.Object{
+				getAddressable(),
+			},
+			dest:    duckv1.Destination{Ref: getK8SServiceRef()},
+			wantURI: "http://testsink.testnamespace.svc.cluster.local/",
+		}, "ref with relative uri": {
+			objects: []runtime.Object{
+				getAddressable(),
+			},
+			dest: duckv1.Destination{
+				Ref: getAddressableRef(),
+				URI: &apis.URL{
+					Path: "/foo",
+				},
+			},
+			wantURI: addressableDNS + "/foo",
+		}, "ref with relative URI without leading slash": {
+			objects: []runtime.Object{
+				getAddressable(),
+			},
+			dest: duckv1.Destination{
+				Ref: getAddressableRef(),
+				URI: &apis.URL{
+					Path: "foo",
+				},
+			},
+			wantURI: addressableDNS + "/foo",
+		}, "ref ends with path and trailing slash and relative URI without leading slash ": {
+			objects: []runtime.Object{
+				getAddressableWithPathAndTrailingSlash(),
+			},
+			dest: duckv1.Destination{
+				Ref: getAddressableRef(),
+				URI: &apis.URL{
+					Path: "foo",
+				},
+			},
+			wantURI: addressableDNSWithPathAndTrailingSlash + "foo",
+		}, "ref ends with path and trailing slash and relative URI with leading slash ": {
+			objects: []runtime.Object{
+				getAddressableWithPathAndTrailingSlash(),
+			},
+			dest: duckv1.Destination{
+				Ref: getAddressableRef(),
+				URI: &apis.URL{
+					Path: "/foo",
+				},
+			},
+			wantURI: addressableDNS + "/foo",
+		}, "ref ends with path and no trailing slash and relative URI without leading slash ": {
+			objects: []runtime.Object{
+				getAddressableWithPathAndNoTrailingSlash(),
+			},
+			dest: duckv1.Destination{
+				Ref: getAddressableRef(),
+				URI: &apis.URL{
+					Path: "foo",
+				},
+			},
+			wantURI: addressableDNS + "/foo",
+		}, "ref ends with path and no trailing slash and relative URI with leading slash ": {
+			objects: []runtime.Object{
+				getAddressableWithPathAndNoTrailingSlash(),
+			},
+			dest: duckv1.Destination{
+				Ref: getAddressableRef(),
+				URI: &apis.URL{
+					Path: "/foo",
+				},
+			},
+			wantURI: addressableDNS + "/foo",
+		}, "ref with URI which is absolute URL": {
+			objects: []runtime.Object{
+				getAddressable(),
+			},
+			dest: duckv1.Destination{
+				Ref: getAddressableRef(),
+				URI: &apis.URL{
+					Scheme: "http",
+					Host:   "example.com",
+					Path:   "/foo",
+				},
+			},
+			wantErr: fmt.Errorf("absolute URI is not allowed when Ref or [apiVersion, kind, name] exists"),
+		},
+		"nil url": {
+			objects: []runtime.Object{
+				getAddressableNilURL(),
+			},
+			dest:    duckv1.Destination{Ref: getUnaddressableRef()},
+			wantErr: fmt.Errorf(`url missing in address of %+v`, getUnaddressableRef()),
+		},
+		"nil address": {
+			objects: []runtime.Object{
+				getAddressableNilAddress(),
+			},
+			dest:    duckv1.Destination{Ref: getUnaddressableRef()},
+			wantErr: fmt.Errorf(`address not set for %+v`, getUnaddressableRef()),
+		}, "missing host": {
+			objects: []runtime.Object{
+				getAddressableNoHostURL(),
+			},
+			dest:    duckv1.Destination{Ref: getUnaddressableRef()},
+			wantErr: fmt.Errorf(`hostname missing in address of %+v`, getUnaddressableRef()),
+		}, "missing status": {
+			objects: []runtime.Object{
+				getAddressableNoStatus(),
+			},
+			dest:    duckv1.Destination{Ref: getUnaddressableRef()},
+			wantErr: fmt.Errorf(`address not set for %+v`, getUnaddressableRef()),
+		}, "notFound": {
+			dest:    duckv1.Destination{Ref: getUnaddressableRef()},
+			wantErr: fmt.Errorf(`failed to get ref %+v: %s "%s" not found`, getUnaddressableRef(), unaddressableResource, unaddressableName),
+		}}
+
+	for n, tc := range tests {
+		t.Run(n, func(t *testing.T) {
+			ctx, _ := fakedynamicclient.With(context.Background(), scheme.Scheme, tc.objects...)
+			r := resolver.NewURIResolver(ctx, func(types.NamespacedName) {})
+
+			// Run it twice since this should be idempotent. URI Resolver should
+			// not modify the cache's copy.
+			_, _ = r.URIFromDestinationV1(tc.dest, getAddressable())
+			uri, gotErr := r.URIFromDestinationV1(tc.dest, getAddressable())
+
+			if gotErr != nil {
+				if tc.wantErr != nil {
+					if diff := cmp.Diff(tc.wantErr.Error(), gotErr.Error()); diff != "" {
+						t.Errorf("%s: unexpected error (-want, +got) = %v", n, diff)
+					}
+				} else {
+					t.Errorf("%s: unexpected error: %v", n, gotErr.Error())
+				}
+			}
+			if gotErr == nil {
+				got := uri
+				if diff := cmp.Diff(tc.wantURI, got); diff != "" {
+					t.Errorf("%s: unexpected object (-want, +got) = %v", n, diff)
+				}
+			}
+		})
+	}
+}
+
+func TestURIFromObjectReferenceErrors(t *testing.T) {
+	tests := map[string]struct {
+		objects []runtime.Object
+		ref     *corev1.ObjectReference
+		wantErr error
+	}{"nil": {
+		wantErr: fmt.Errorf("ref is nil"),
+	}, "fail tracker with bad object": {
+		ref: getInvalidObjectReference(),
+		wantErr: fmt.Errorf(`failed to track %+v: invalid Reference:
+Namespace: a DNS-1123 label must consist of lower case alphanumeric characters or '-', and must start and end with an alphanumeric character (e.g. 'my-name',  or '123-abc', regex used for validation is '[a-z0-9]([-a-z0-9]*[a-z0-9])?')`, getInvalidObjectReference()),
+	}, "fail get": {
+		ref:     getAddressableRef(),
+		wantErr: fmt.Errorf(`failed to get ref %+v: sinks.duck.knative.dev "testsink" not found`, getAddressableRef()),
+	}}
+
+	for n, tc := range tests {
+		t.Run(n, func(t *testing.T) {
+			ctx, _ := fakedynamicclient.With(context.Background(), scheme.Scheme, tc.objects...)
+			r := resolver.NewURIResolver(ctx, func(types.NamespacedName) {})
+
+			// Run it twice since this should be idempotent. URI Resolver should
+			// not modify the cache's copy.
+			_, _ = r.URIFromObjectReference(tc.ref, getAddressable())
+			_, gotErr := r.URIFromObjectReference(tc.ref, getAddressable())
+
+			if gotErr != nil {
+				if tc.wantErr != nil {
+					if diff := cmp.Diff(tc.wantErr.Error(), gotErr.Error()); diff != "" {
+						t.Errorf("%s: unexpected error (-want, +got) = %v", n, diff)
+					}
+				} else {
+					t.Errorf("%s: unexpected error: %v", n, gotErr.Error())
+				}
+			}
+			if gotErr == nil && tc.wantErr != nil {
+				t.Errorf("%s: expected error: %v but got none", n, tc.wantErr)
+			}
+		})
+	}
+}
+
 func getAddressable() *unstructured.Unstructured {
 	return &unstructured.Unstructured{
 		Object: map[string]interface{}{
@@ -477,6 +703,26 @@ func getAddressableNoHostURL() *unstructured.Unstructured {
 			},
 		},
 	}
+}
+
+func getInvalidObjectReference() *corev1.ObjectReference {
+	return &corev1.ObjectReference{
+		Kind:       addressableKind,
+		Name:       addressableName,
+		APIVersion: addressableAPIVersion,
+		Namespace:  "-bad",
+	}
+
+}
+
+func getK8SServiceRef() *corev1.ObjectReference {
+	return &corev1.ObjectReference{
+		Kind:       "Service",
+		Name:       addressableName,
+		APIVersion: "v1",
+		Namespace:  testNS,
+	}
+
 }
 
 func getAddressableRef() *corev1.ObjectReference {
