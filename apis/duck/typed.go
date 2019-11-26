@@ -46,7 +46,7 @@ var _ InformerFactory = (*TypedInformerFactory)(nil)
 
 // Get implements InformerFactory.
 func (dif *TypedInformerFactory) Get(gvr schema.GroupVersionResource) (cache.SharedIndexInformer, cache.GenericLister, error) {
-	// Avoid error cases, like resource not exists
+	// Avoid error cases, like resource not exists.
 	if _, err := dif.Client.Resource(gvr).List(metav1.ListOptions{}); err != nil {
 		return nil, nil, err
 	}
