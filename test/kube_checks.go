@@ -106,11 +106,7 @@ func WaitForServiceEndpoints(client *KubeClient, svcName string, svcNamespace st
 			return false, err
 		}
 
-		if countEndpointsNum(endpoint) == numOfEndpoints {
-			return true, nil
-		}
-
-		return false, nil
+		return countEndpointsNum(endpoint) == numOfEndpoints, nil
 	})
 }
 
