@@ -107,11 +107,10 @@ func TestInvalidResource(t *testing.T) {
 		StopChannel:  stopCh,
 	}
 
-	want := errors.New("failed to get list")
 	_, _, got := tif.Get(SchemeGroupVersion.WithResource("resources"))
 
-	if got == nil || got.Error() != want.Error() {
-		t.Errorf("Didn't see expected error message. Got %v, wanted %v", got, want)
+	if got != testErr {
+		t.Errorf("Didn't see expected error message. Got: %v, wanted: %v", got, testErr)
 	}
 }
 
@@ -297,6 +296,8 @@ func (bo *badObject) DeepCopyObject() runtime.Object {
 	return &badObject{}
 }
 
+var testErr = errors.New("failed to get list")
+
 type invalidResourceClient struct {
 	*fake.FakeDynamicClient
 }
@@ -310,5 +311,5 @@ type invalidResource struct {
 }
 
 func (*invalidResource) List(options metav1.ListOptions) (*unstructured.UnstructuredList, error) {
-	return nil, errors.New("failed to get list")
+	return nil, testErr
 }
