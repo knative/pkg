@@ -93,6 +93,37 @@ func WaitForPodState(client *KubeClient, inState func(p *corev1.Pod) (bool, erro
 	})
 }
 
+// WaitForServiceHasAtLeastOneEndpoint polls the status of the specified Service
+// from client every interval until number of service endpoints = numOfEndpoints
+func WaitForServiceEndpoints(client *KubeClient, svcName string, svcNamespace string, numOfEndpoints int) error {
+	endpointsService := client.Kube.CoreV1().Endpoints(svcNamespace)
+	span := logging.GetEmitableSpan(context.Background(), fmt.Sprintf("WaitForServiceHasAtLeastOneEndpoint/%s", svcName))
+	defer span.End()
+
+	return wait.PollImmediate(interval, podTimeout, func() (bool, error) {
+		endpoints, err := endpointsService.List(metav1.ListOptions{})
+		if err != nil {
+			return true, err
+		}
+
+		for _, e := range endpoints.Items {
+			if e.Name == svcName && countEndpointsNum(&e) == numOfEndpoints {
+				return true, nil
+			}
+		}
+
+		return false, nil
+	})
+}
+
+func countEndpointsNum(e *corev1.Endpoints) int {
+	num := 0
+	for _, sub := range e.Subsets {
+		num += len(sub.Addresses)
+	}
+	return num
+}
+
 // GetConfigMap gets the configmaps for a given namespace
 func GetConfigMap(client *KubeClient, namespace string) k8styped.ConfigMapInterface {
 	return client.Kube.CoreV1().ConfigMaps(namespace)
