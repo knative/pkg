@@ -66,7 +66,7 @@ func TestGetURI_DestinationV1Beta1(t *testing.T) {
 		wantURI string
 		wantErr string
 	}{"nil everything": {
-		wantErr: fmt.Sprintf("destination missing Ref, [apiVersion, kind, name] and URI, expected at least one"),
+		wantErr: "destination missing Ref, [apiVersion, kind, name] and URI, expected at least one",
 	}, "Happy URI with path": {
 		dest: duckv1beta1.Destination{
 			URI: &apis.URL{
@@ -101,7 +101,7 @@ func TestGetURI_DestinationV1Beta1(t *testing.T) {
 				DeprecatedAPIVersion: addressableAPIVersion,
 				DeprecatedNamespace:  testNS,
 			},
-			wantErr: fmt.Sprintf("ref and [apiVersion, kind, name] can't be both present"),
+			wantErr: "ref and [apiVersion, kind, name] can't be both present",
 		},
 		"happy ref": {
 			objects: []runtime.Object{
@@ -187,7 +187,7 @@ func TestGetURI_DestinationV1Beta1(t *testing.T) {
 					Path:   "/foo",
 				},
 			},
-			wantErr: fmt.Sprintf("absolute URI is not allowed when Ref or [apiVersion, kind, name] exists"),
+			wantErr: "absolute URI is not allowed when Ref or [apiVersion, kind, name] exists",
 		},
 		"happy [apiVersion, kind, name]": {
 			objects: []runtime.Object{
@@ -299,7 +299,7 @@ func TestGetURI_DestinationV1Beta1(t *testing.T) {
 					Path:   "/foo",
 				},
 			},
-			wantErr: fmt.Sprintf("absolute URI is not allowed when Ref or [apiVersion, kind, name] exists"),
+			wantErr: "absolute URI is not allowed when Ref or [apiVersion, kind, name] exists",
 		},
 		"nil url": {
 			objects: []runtime.Object{
@@ -328,7 +328,7 @@ func TestGetURI_DestinationV1Beta1(t *testing.T) {
 			wantErr: fmt.Sprintf(`address not set for %+v`, getUnaddressableRef()),
 		}, "notFound": {
 			dest:    duckv1beta1.Destination{Ref: getUnaddressableRef()},
-			wantErr: fmt.Sprintf(`failed to get ref %+v: %s "%s" not found`, getUnaddressableRef(), unaddressableResource, unaddressableName),
+			wantErr: fmt.Sprintf(`failed to get ref %+v: %s %q not found`, getUnaddressableRef(), unaddressableResource, unaddressableName),
 		}}
 
 	for n, tc := range tests {
@@ -366,7 +366,7 @@ func TestGetURI_DestinationV1(t *testing.T) {
 		wantURI string
 		wantErr string
 	}{"nil everything": {
-		wantErr: fmt.Sprintf("destination missing Ref and URI, expected at least one"),
+		wantErr: "destination missing Ref and URI, expected at least one",
 	}, "Happy URI with path": {
 		dest: duckv1.Destination{
 			URI: &apis.URL{
@@ -481,7 +481,7 @@ func TestGetURI_DestinationV1(t *testing.T) {
 					Path:   "/foo",
 				},
 			},
-			wantErr: fmt.Sprintf("absolute URI is not allowed when Ref or [apiVersion, kind, name] exists"),
+			wantErr: "absolute URI is not allowed when Ref or [apiVersion, kind, name] exists",
 		},
 		"nil url": {
 			objects: []runtime.Object{
@@ -510,7 +510,7 @@ func TestGetURI_DestinationV1(t *testing.T) {
 			wantErr: fmt.Sprintf(`address not set for %+v`, getUnaddressableRef()),
 		}, "notFound": {
 			dest:    duckv1.Destination{Ref: getUnaddressableRef()},
-			wantErr: fmt.Sprintf(`failed to get ref %+v: %s "%s" not found`, getUnaddressableRef(), unaddressableResource, unaddressableName),
+			wantErr: fmt.Sprintf(`failed to get ref %+v: %s %q not found`, getUnaddressableRef(), unaddressableResource, unaddressableName),
 		}}
 
 	for n, tc := range tests {
