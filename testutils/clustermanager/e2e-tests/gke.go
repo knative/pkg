@@ -36,7 +36,6 @@ const (
 	DefaultGKEZone     = ""
 	regionEnv          = "E2E_CLUSTER_REGION"
 	backupRegionEnv    = "E2E_CLUSTER_BACKUP_REGIONS"
-	defaultGKEVersion  = "latest"
 
 	ClusterRunning = "RUNNING"
 )
@@ -103,8 +102,8 @@ func (gs *GKEClient) Setup(r GKERequest) ClusterOperations {
 	return gc
 }
 
-// ApplyDefaults applies defaults values in GKERequest if not defined.
-func ApplyDefaults(r GKERequest) GKERequest {
+// ApplyRequestDefaults applies defaults values in GKERequest if not defined.
+func ApplyRequestDefaults(r GKERequest) *GKERequest {
 	if r.ClusterName == "" {
 		var err error
 		r.ClusterName, err = getResourceName(ClusterResource)
@@ -118,11 +117,12 @@ func ApplyDefaults(r GKERequest) GKERequest {
 	}
 	if r.MaxNodes == 0 {
 		r.MaxNodes = DefaultGKEMaxNodes
-		// We don't want MaxNodes < MinNodes
-		if r.MinNodes > r.MaxNodes {
-			r.MaxNodes = r.MinNodes
-		}
 	}
+	// We don't want MaxNodes < MinNodes
+	if r.MinNodes > r.MaxNodes {
+		r.MaxNodes = r.MinNodes
+	}
+
 	if r.NodeType == "" {
 		r.NodeType = DefaultGKENodeType
 	}
@@ -145,7 +145,7 @@ func ApplyDefaults(r GKERequest) GKERequest {
 		r.BackupRegions = make([]string, 0)
 	}
 
-	return r
+	return &r
 }
 
 // Provider returns gke
@@ -192,8 +192,8 @@ func (gc *GKECluster) Acquire() error {
 	gc.ensureProtected()
 	log.Printf("Identified project %s for cluster creation", gc.Project)
 
-	// Make a deep copy of the request struct, since the original request is supposed to be immutable
-	request := gc.Request.DeepCopy()
+	// Apply default request parameters if not specified.
+	request := ApplyRequestDefaults(*gc.Request).Request
 	// We are going to use request for creating cluster, set its Project
 	request.Project = gc.Project
 
@@ -206,7 +206,7 @@ func (gc *GKECluster) Acquire() error {
 		}
 	}
 	var cluster *container.Cluster
-	rb, err := gke.NewCreateClusterRequest(request)
+	rb, err := gke.NewCreateClusterRequest(&request)
 	if err != nil {
 		return fmt.Errorf("failed building the CreateClusterRequest: '%v'", err)
 	}
