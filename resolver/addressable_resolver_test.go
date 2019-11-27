@@ -82,14 +82,14 @@ func TestGetURI_DestinationV1Beta1(t *testing.T) {
 				Host: "example.com",
 			},
 		},
-		wantErr: fmt.Sprintf("URI is not absolute(both scheme and host should be non-empty): %v", "//example.com"),
+		wantErr: fmt.Sprintf("URI is not absolute(both scheme and host should be non-empty): %q", "//example.com"),
 	}, "URI with no host": {
 		dest: duckv1beta1.Destination{
 			URI: &apis.URL{
 				Scheme: "http",
 			},
 		},
-		wantErr: fmt.Sprintf("URI is not absolute(both scheme and host should be non-empty): %v", "http:"),
+		wantErr: fmt.Sprintf("URI is not absolute(both scheme and host should be non-empty): %q", "http:"),
 	},
 		"Ref and [apiVersion, kind, name] both exists": {
 			objects: []runtime.Object{
@@ -382,14 +382,14 @@ func TestGetURI_DestinationV1(t *testing.T) {
 				Host: "example.com",
 			},
 		},
-		wantErr: fmt.Sprintf("URI is not absolute(both scheme and host should be non-empty): %v", "//example.com"),
+		wantErr: fmt.Sprintf("URI is not absolute(both scheme and host should be non-empty): %q", "//example.com"),
 	}, "URI with no host": {
 		dest: duckv1.Destination{
 			URI: &apis.URL{
 				Scheme: "http",
 			},
 		},
-		wantErr: fmt.Sprintf("URI is not absolute(both scheme and host should be non-empty): %v", "http:"),
+		wantErr: fmt.Sprintf("URI is not absolute(both scheme and host should be non-empty): %q", "http:"),
 	},
 		"happy ref": {
 			objects: []runtime.Object{
@@ -533,7 +533,7 @@ func TestGetURI_DestinationV1(t *testing.T) {
 					t.Errorf("unexpected error: %v", gotErr.Error())
 				}
 			}
-			if diff := cmp.Diff(tc.wantURI, uri); diff != "" {
+			if diff := cmp.Diff(tc.wantURI, uri.String()); diff != "" {
 				t.Errorf("unexpected object (-want, +got) = %v", diff)
 			}
 		})
