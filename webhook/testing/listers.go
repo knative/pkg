@@ -90,7 +90,7 @@ func (l *Listers) GetIstioObjects() []runtime.Object {
 	return l.sorter.ObjectsForSchemeFunc(fakeistioclientset.AddToScheme)
 }
 
-// GetIstioObjects filters the Listers initial list of objects to types defined in knative/pkg
+// GetTestObjects filters the Lister's initial list of objects to types defined in knative/pkg/testing
 func (l *Listers) GetTestObjects() []runtime.Object {
 	return l.sorter.ObjectsForSchemeFunc(pkgtesting.AddToScheme)
 }
