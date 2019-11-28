@@ -31,15 +31,28 @@ import (
 
 	kubeclient "knative.dev/pkg/client/injection/kube/client/fake"
 	_ "knative.dev/pkg/client/injection/kube/informers/core/v1/secret/fake"
+	"knative.dev/pkg/system"
 
 	"github.com/mattbaird/jsonpatch"
 	admissionv1beta1 "k8s.io/api/admission/v1beta1"
 	authenticationv1 "k8s.io/api/authentication/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"knative.dev/pkg/metrics/metricstest"
-
-	. "knative.dev/pkg/webhook/testing"
+	pkgtest "knative.dev/pkg/testing"
 )
+
+// createResource creates a testing.Resource with the given name in the system namespace.
+func createResource(name string) *pkgtest.Resource {
+	return &pkgtest.Resource{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: system.Namespace(),
+			Name:      name,
+		},
+		Spec: pkgtest.ResourceSpec{
+			FieldWithValidation: "magic value",
+		},
+	}
+}
 
 const testTimeout = time.Duration(10 * time.Second)
 
@@ -204,7 +217,7 @@ func TestValidResponseForResource(t *testing.T) {
 			Kind:    "Resource",
 		},
 	}
-	testRev := CreateResource("testrev")
+	testRev := createResource("testrev")
 	marshaled, err := json.Marshal(testRev)
 	if err != nil {
 		t.Fatalf("Failed to marshal resource: %s", err)
@@ -291,7 +304,7 @@ func TestInvalidResponseForResource(t *testing.T) {
 		t.Fatalf("createSecureTLSClient() = %v", err)
 	}
 
-	resource := CreateResource(testResourceName)
+	resource := createResource(testResourceName)
 
 	resource.Spec.FieldWithValidation = "not the right value"
 	marshaled, err := json.Marshal(resource)
