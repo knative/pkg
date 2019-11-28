@@ -36,7 +36,7 @@ import (
 	"knative.dev/pkg/resolver"
 )
 
-var (
+const (
 	addressableDNS                           = "http://addressable.sink.svc.cluster.local"
 	addressableDNSWithPathAndTrailingSlash   = "http://addressable.sink.svc.cluster.local/bar/"
 	addressableDNSWithPathAndNoTrailingSlash = "http://addressable.sink.svc.cluster.local/bar"
@@ -59,7 +59,7 @@ func init() {
 	duckv1beta1.AddToScheme(scheme.Scheme)
 }
 
-func TestGetURI_DestinationV1Beta1(t *testing.T) {
+func TestGetURIDestinationV1Beta1(t *testing.T) {
 	tests := map[string]struct {
 		objects []runtime.Object
 		dest    duckv1beta1.Destination
@@ -82,14 +82,14 @@ func TestGetURI_DestinationV1Beta1(t *testing.T) {
 				Host: "example.com",
 			},
 		},
-		wantErr: fmt.Sprintf("URI is not absolute(both scheme and host should be non-empty): %q", "//example.com"),
+		wantErr: fmt.Sprintf("URI is not absolute (both scheme and host should be non-empty): %q", "//example.com"),
 	}, "URI with no host": {
 		dest: duckv1beta1.Destination{
 			URI: &apis.URL{
 				Scheme: "http",
 			},
 		},
-		wantErr: fmt.Sprintf("URI is not absolute(both scheme and host should be non-empty): %q", "http:"),
+		wantErr: fmt.Sprintf("URI is not absolute (both scheme and host should be non-empty): %q", "http:"),
 	},
 		"Ref and [apiVersion, kind, name] both exists": {
 			objects: []runtime.Object{
@@ -306,29 +306,29 @@ func TestGetURI_DestinationV1Beta1(t *testing.T) {
 				getAddressableNilURL(),
 			},
 			dest:    duckv1beta1.Destination{Ref: getUnaddressableRef()},
-			wantErr: fmt.Sprintf(`url missing in address of %+v`, getUnaddressableRef()),
+			wantErr: fmt.Sprintf("url missing in address of %+v", getUnaddressableRef()),
 		},
 		"nil address": {
 			objects: []runtime.Object{
 				getAddressableNilAddress(),
 			},
 			dest:    duckv1beta1.Destination{Ref: getUnaddressableRef()},
-			wantErr: fmt.Sprintf(`address not set for %+v`, getUnaddressableRef()),
+			wantErr: fmt.Sprintf("address not set for %+v", getUnaddressableRef()),
 		}, "missing host": {
 			objects: []runtime.Object{
 				getAddressableNoHostURL(),
 			},
 			dest:    duckv1beta1.Destination{Ref: getUnaddressableRef()},
-			wantErr: fmt.Sprintf(`hostname missing in address of %+v`, getUnaddressableRef()),
+			wantErr: fmt.Sprintf("hostname missing in address of %+v", getUnaddressableRef()),
 		}, "missing status": {
 			objects: []runtime.Object{
 				getAddressableNoStatus(),
 			},
 			dest:    duckv1beta1.Destination{Ref: getUnaddressableRef()},
-			wantErr: fmt.Sprintf(`address not set for %+v`, getUnaddressableRef()),
+			wantErr: fmt.Sprintf("address not set for %+v", getUnaddressableRef()),
 		}, "notFound": {
 			dest:    duckv1beta1.Destination{Ref: getUnaddressableRef()},
-			wantErr: fmt.Sprintf(`failed to get ref %+v: %s %q not found`, getUnaddressableRef(), unaddressableResource, unaddressableName),
+			wantErr: fmt.Sprintf("failed to get ref %+v: %s %q not found", getUnaddressableRef(), unaddressableResource, unaddressableName),
 		}}
 
 	for n, tc := range tests {
@@ -344,22 +344,22 @@ func TestGetURI_DestinationV1Beta1(t *testing.T) {
 
 			if gotErr != nil {
 				if tc.wantErr != "" {
-					if diff := cmp.Diff(tc.wantErr, gotErr.Error()); diff != "" {
-						t.Errorf("unexpected error (-want, +got) = %v", diff)
+					if got, want := gotErr.Error(), tc.wantErr; got != want {
+						t.Errorf("Unexpected error (-want, +got) =\n%s", cmp.Diff(want, got))
 					}
 				} else {
-					t.Errorf("unexpected error: %v", gotErr.Error())
+					t.Errorf("Unexpected error: %v", gotErr)
 				}
 				return
 			}
-			if diff := cmp.Diff(tc.wantURI, uri); diff != "" {
-				t.Errorf("unexpected object (-want, +got) = %v", diff)
+			if got, want := uri, tc.wantURI; got != want {
+				t.Errorf("Unexpected object (-want, +got) =\n%s", cmp.Diff(got, want))
 			}
 		})
 	}
 }
 
-func TestGetURI_DestinationV1(t *testing.T) {
+func TestGetURIDestinationV1(t *testing.T) {
 	tests := map[string]struct {
 		objects []runtime.Object
 		dest    duckv1.Destination
@@ -488,29 +488,29 @@ func TestGetURI_DestinationV1(t *testing.T) {
 				getAddressableNilURL(),
 			},
 			dest:    duckv1.Destination{Ref: getUnaddressableRef()},
-			wantErr: fmt.Sprintf(`url missing in address of %+v`, getUnaddressableRef()),
+			wantErr: fmt.Sprintf("url missing in address of %+v", getUnaddressableRef()),
 		},
 		"nil address": {
 			objects: []runtime.Object{
 				getAddressableNilAddress(),
 			},
 			dest:    duckv1.Destination{Ref: getUnaddressableRef()},
-			wantErr: fmt.Sprintf(`address not set for %+v`, getUnaddressableRef()),
+			wantErr: fmt.Sprintf("address not set for %+v", getUnaddressableRef()),
 		}, "missing host": {
 			objects: []runtime.Object{
 				getAddressableNoHostURL(),
 			},
 			dest:    duckv1.Destination{Ref: getUnaddressableRef()},
-			wantErr: fmt.Sprintf(`hostname missing in address of %+v`, getUnaddressableRef()),
+			wantErr: fmt.Sprintf("hostname missing in address of %+v", getUnaddressableRef()),
 		}, "missing status": {
 			objects: []runtime.Object{
 				getAddressableNoStatus(),
 			},
 			dest:    duckv1.Destination{Ref: getUnaddressableRef()},
-			wantErr: fmt.Sprintf(`address not set for %+v`, getUnaddressableRef()),
+			wantErr: fmt.Sprintf("address not set for %+v", getUnaddressableRef()),
 		}, "notFound": {
 			dest:    duckv1.Destination{Ref: getUnaddressableRef()},
-			wantErr: fmt.Sprintf(`failed to get ref %+v: %s %q not found`, getUnaddressableRef(), unaddressableResource, unaddressableName),
+			wantErr: fmt.Sprintf("failed to get ref %+v: %s %q not found", getUnaddressableRef(), unaddressableResource, unaddressableName),
 		}}
 
 	for n, tc := range tests {
@@ -526,15 +526,15 @@ func TestGetURI_DestinationV1(t *testing.T) {
 
 			if gotErr != nil {
 				if tc.wantErr != "" {
-					if diff := cmp.Diff(tc.wantErr, gotErr.Error()); diff != "" {
-						t.Errorf("unexpected error (-want, +got) = %v", diff)
+					if got, want := gotErr.Error(), tc.wantErr; got != want {
+						t.Errorf("Unexpected error (-want, +got) =\n%s", cmp.Diff(want, got))
 					}
 				} else {
-					t.Errorf("unexpected error: %v", gotErr.Error())
+					t.Errorf("Unexpected error: %v", gotErr)
 				}
 			}
-			if diff := cmp.Diff(tc.wantURI, uri.String()); diff != "" {
-				t.Errorf("unexpected object (-want, +got) = %v", diff)
+			if got, want := uri.String(), tc.wantURI; got != want {
+				t.Errorf("Unexpected object (-want, +got) =\n%s", cmp.Diff(want, got))
 			}
 		})
 	}
@@ -569,16 +569,16 @@ Namespace: a DNS-1123 label must consist of lower case alphanumeric characters o
 
 			if gotErr != nil {
 				if tc.wantErr != "" {
-					if diff := cmp.Diff(tc.wantErr, gotErr.Error()); diff != "" {
-						t.Errorf("unexpected error (-want, +got) = %v", diff)
+					if got, want := gotErr.Error(), tc.wantErr; got != want {
+						t.Errorf("Unexpected error (-want, +got) =\n%s", cmp.Diff(want, got))
 					}
 				} else {
-					t.Errorf("unexpected error: %v", gotErr.Error())
+					t.Errorf("Unexpected error: %v", gotErr)
 				}
 				return
 			}
 			if tc.wantErr != "" {
-				t.Errorf("expected error: %v but got none", tc.wantErr)
+				t.Errorf("Expected error: %q but got none", tc.wantErr)
 			}
 		})
 	}
