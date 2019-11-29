@@ -11,7 +11,8 @@ are as follows:
 
 | Label                               | Duck-Type                                                                     |
 | ----------------------------------- | ----------------------------------------------------------------------------- |
-| `duck.knative.dev/addressable=true` | [Addressable](https://godoc.org/knative.dev/pkg/apis/duck/v1#AddressableType) |
+| `duck.knative.dev/addressable=true` | [Addressable](https://godoc.org/knative.dev/pkg/apis/duck/v1#Addressable)     |
+| `duck.knative.dev/podspecable=true` | [PodSpecable](https://godoc.org/knative.dev/pkg/apis/duck/v1#WithPod)         |
 | `duck.knative.dev/binding=true`     | [Binding](https://godoc.org/knative.dev/pkg/apis/duck/v1alpha1#Binding)       |
 | `duck.knative.dev/source=true`      | [Source](https://godoc.org/knative.dev/pkg/apis/duck/v1#Source)               |
 
@@ -25,6 +26,19 @@ kind: Kind
 status:
   address:
     url: http://host/path?query
+```
+
+## PodSpecable Shape
+
+PodSpecable is expected to be the following shape:
+
+```yaml
+apiVersion: group/version
+kind: Kind
+spec:
+  template: # corev1.PodTemplateSpec
+    spec: # corev1.PodSpec
+      ...
 ```
 
 ## Binding Shape
