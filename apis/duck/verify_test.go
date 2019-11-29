@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package duck
+package duck_test
 
 import (
 	"errors"
@@ -22,13 +22,14 @@ import (
 
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"knative.dev/pkg/apis/duck"
 )
 
 func TestMatches(t *testing.T) {
 	tests := []struct {
 		name     string
 		instance interface{}
-		iface    Implementable
+		iface    duck.Implementable
 	}{{
 		name:     "foo matches fooable",
 		instance: &Foo{},
@@ -101,11 +102,11 @@ func TestMatches(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			if err := VerifyType(test.instance, test.iface); err != nil {
+			if err := duck.VerifyType(test.instance, test.iface); err != nil {
 				t.Error(err)
 			}
 
-			ok, err := ConformsToType(test.instance, test.iface)
+			ok, err := duck.ConformsToType(test.instance, test.iface)
 
 			if err != nil {
 				t.Error(err)
@@ -122,7 +123,7 @@ func TestMismatches(t *testing.T) {
 	tests := []struct {
 		name     string
 		instance interface{}
-		iface    Implementable
+		iface    duck.Implementable
 	}{{
 		name:     "foo doesn't match barable",
 		instance: &Foo{},
@@ -155,11 +156,11 @@ func TestMismatches(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			if err := VerifyType(test.instance, test.iface); err == nil {
+			if err := duck.VerifyType(test.instance, test.iface); err == nil {
 				t.Errorf("Unexpected success %T implements %T", test.instance, test.iface)
 			}
 
-			ok, err := ConformsToType(test.instance, test.iface)
+			ok, err := duck.ConformsToType(test.instance, test.iface)
 
 			if err != nil {
 				t.Error(err)
@@ -176,7 +177,7 @@ func TestErrors(t *testing.T) {
 	tests := []struct {
 		name     string
 		instance interface{}
-		iface    Implementable
+		iface    duck.Implementable
 	}{{
 		name:     "duck type - fails to marshal",
 		instance: &Foo{},
@@ -201,11 +202,11 @@ func TestErrors(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			if err := VerifyType(test.instance, test.iface); err == nil {
+			if err := duck.VerifyType(test.instance, test.iface); err == nil {
 				t.Error("expected VerifyType to return an error")
 			}
 
-			if _, err := ConformsToType(test.instance, test.iface); err == nil {
+			if _, err := duck.ConformsToType(test.instance, test.iface); err == nil {
 				t.Error("expected ConformsToType to return an error")
 			}
 		})
@@ -224,8 +225,8 @@ type FooStatus struct {
 	Fooable *Fooable `json:"fooable,omitempty"`
 }
 
-var _ Implementable = (*Fooable)(nil)
-var _ Populatable = (*Foo)(nil)
+var _ duck.Implementable = (*Fooable)(nil)
+var _ duck.Populatable = (*Foo)(nil)
 
 func (*Foo) GetObjectKind() schema.ObjectKind {
 	return nil // not used
@@ -239,7 +240,7 @@ func (p *Foo) GetListType() runtime.Object {
 	return nil // not used
 }
 
-func (*Fooable) GetFullType() Populatable {
+func (*Fooable) GetFullType() duck.Populatable {
 	return &Foo{}
 }
 
@@ -263,8 +264,8 @@ type BarStatus struct {
 	Barable *Barable `json:"barable,omitempty"`
 }
 
-var _ Implementable = (*Barable)(nil)
-var _ Populatable = (*Bar)(nil)
+var _ duck.Implementable = (*Barable)(nil)
+var _ duck.Populatable = (*Bar)(nil)
 
 func (*Bar) GetObjectKind() schema.ObjectKind {
 	return nil // not used
@@ -278,7 +279,7 @@ func (p *Bar) GetListType() runtime.Object {
 	return nil // not used
 }
 
-func (*Barable) GetFullType() Populatable {
+func (*Barable) GetFullType() duck.Populatable {
 	return &Bar{}
 }
 
@@ -302,8 +303,8 @@ type SliceStatus struct {
 	Sliceable *Sliceable `json:"sliceable,omitempty"`
 }
 
-var _ Implementable = (*Sliceable)(nil)
-var _ Populatable = (*Slice)(nil)
+var _ duck.Implementable = (*Sliceable)(nil)
+var _ duck.Populatable = (*Slice)(nil)
 
 func (*Slice) GetObjectKind() schema.ObjectKind {
 	return nil // not used
@@ -317,7 +318,7 @@ func (p *Slice) GetListType() runtime.Object {
 	return nil // not used
 }
 
-func (*Sliceable) GetFullType() Populatable {
+func (*Sliceable) GetFullType() duck.Populatable {
 	return &Slice{}
 }
 
@@ -334,8 +335,8 @@ type StringStatus struct {
 	Stringable Stringable `json:"stringable,omitempty"`
 }
 
-var _ Implementable = (*Stringable)(nil)
-var _ Populatable = (*String)(nil)
+var _ duck.Implementable = (*Stringable)(nil)
+var _ duck.Populatable = (*String)(nil)
 
 func (*String) GetObjectKind() schema.ObjectKind {
 	return nil // not used
@@ -349,7 +350,7 @@ func (p *String) GetListType() runtime.Object {
 	return nil // not used
 }
 
-func (*Stringable) GetFullType() Populatable {
+func (*Stringable) GetFullType() duck.Populatable {
 	return &String{}
 }
 
@@ -364,8 +365,8 @@ var emptyStringable Stringable
 // and 'Populataable'
 type UnableToMarshal struct{}
 
-var _ Implementable = (*UnableToMarshal)(nil)
-var _ Populatable = (*UnableToMarshal)(nil)
+var _ duck.Implementable = (*UnableToMarshal)(nil)
+var _ duck.Populatable = (*UnableToMarshal)(nil)
 
 func (*UnableToMarshal) GetObjectKind() schema.ObjectKind {
 	return nil // not used
@@ -379,7 +380,7 @@ func (p *UnableToMarshal) GetListType() runtime.Object {
 	return nil // not used
 }
 
-func (u *UnableToMarshal) GetFullType() Populatable {
+func (u *UnableToMarshal) GetFullType() duck.Populatable {
 	return u
 }
 
@@ -390,12 +391,12 @@ func (u *UnableToMarshal) MarshalJSON() ([]byte, error) {
 	return nil, errors.New("I will never marshal for you")
 }
 
-// For testing this doubles as the 'Implementable'
-// and 'Populatable'
+// For testing this doubles as the 'duck.Implementable'
+// and 'duck.Populatable'
 type UnableToUnmarshal struct{}
 
-var _ Implementable = (*UnableToUnmarshal)(nil)
-var _ Populatable = (*UnableToUnmarshal)(nil)
+var _ duck.Implementable = (*UnableToUnmarshal)(nil)
+var _ duck.Populatable = (*UnableToUnmarshal)(nil)
 
 func (*UnableToUnmarshal) GetObjectKind() schema.ObjectKind {
 	return nil // not used
@@ -409,7 +410,7 @@ func (p *UnableToUnmarshal) GetListType() runtime.Object {
 	return nil // not used
 }
 
-func (u *UnableToUnmarshal) GetFullType() Populatable {
+func (u *UnableToUnmarshal) GetFullType() duck.Populatable {
 	return u
 }
 
@@ -420,14 +421,14 @@ func (u *UnableToUnmarshal) UnmarshalJSON([]byte) error {
 	return errors.New("I will never unmarshal for you")
 }
 
-// For testing this doubles as the 'Implementable'
-// and 'Populatable'
+// For testing this doubles as the 'duck.Implementable'
+// and 'duck.Populatable'
 type UnexportedFields struct {
 	a string
 }
 
-var _ Implementable = (*UnexportedFields)(nil)
-var _ Populatable = (*UnexportedFields)(nil)
+var _ duck.Implementable = (*UnexportedFields)(nil)
+var _ duck.Populatable = (*UnexportedFields)(nil)
 
 func (*UnexportedFields) GetObjectKind() schema.ObjectKind {
 	return nil // not used
@@ -441,7 +442,7 @@ func (p *UnexportedFields) GetListType() runtime.Object {
 	return nil // not used
 }
 
-func (u *UnexportedFields) GetFullType() Populatable {
+func (u *UnexportedFields) GetFullType() duck.Populatable {
 	return &UnexportedFields{}
 }
 

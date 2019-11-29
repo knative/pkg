@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package duck
+package duck_test
 
 import (
 	"errors"
@@ -23,6 +23,7 @@ import (
 
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/tools/cache"
+	"knative.dev/pkg/apis/duck"
 )
 
 func TestEnqueueInformerFactory(t *testing.T) {
@@ -34,7 +35,7 @@ func TestEnqueueInformerFactory(t *testing.T) {
 	}
 	fsii := &fakeSharedIndexInformer{t: t}
 	fif := &FixedInformerFactory{inf: fsii}
-	eif := &EnqueueInformerFactory{
+	eif := &duck.EnqueueInformerFactory{
 		Delegate:     fif,
 		EventHandler: want,
 	}
@@ -78,7 +79,7 @@ func TestEnqueueInformerFactory(t *testing.T) {
 func TestEnqueueInformerFactoryWithFailure(t *testing.T) {
 	want := errors.New("expected error")
 	fif := &FixedInformerFactory{err: want}
-	eif := &EnqueueInformerFactory{
+	eif := &duck.EnqueueInformerFactory{
 		Delegate: fif,
 		EventHandler: cache.ResourceEventHandlerFuncs{
 			AddFunc: func(obj interface{}) {
@@ -111,7 +112,7 @@ type FixedInformerFactory struct {
 	err    error
 }
 
-var _ InformerFactory = (*FixedInformerFactory)(nil)
+var _ duck.InformerFactory = (*FixedInformerFactory)(nil)
 
 func (fif *FixedInformerFactory) Get(gvr schema.GroupVersionResource) (cache.SharedIndexInformer, cache.GenericLister, error) {
 	return fif.inf, fif.lister, fif.err

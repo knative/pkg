@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package duck
+package duck_test
 
 import (
 	"testing"
@@ -24,6 +24,8 @@ import (
 	"github.com/google/go-cmp/cmp"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+
+	"knative.dev/pkg/apis/duck"
 	. "knative.dev/pkg/testing"
 )
 
@@ -83,7 +85,7 @@ func TestFromUnstructuredFooable(t *testing.T) {
 			t.Logf("Marshalled: %s", string(raw))
 
 			got := Foo{}
-			if err := FromUnstructured(tc.in, &got); err != tc.wantError {
+			if err := duck.FromUnstructured(tc.in, &got); err != tc.wantError {
 				t.Fatalf("FromUnstructured() = %v", err)
 			}
 
@@ -97,7 +99,7 @@ func TestFromUnstructuredFooable(t *testing.T) {
 func TestToUnstructured(t *testing.T) {
 	tests := []struct {
 		name      string
-		in        OneOfOurs
+		in        duck.OneOfOurs
 		want      *unstructured.Unstructured
 		wantError error
 	}{{
@@ -144,7 +146,7 @@ func TestToUnstructured(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			got, err := ToUnstructured(tc.in)
+			got, err := duck.ToUnstructured(tc.in)
 			if err != tc.wantError {
 				t.Fatalf("ToUnstructured() = %v", err)
 			}

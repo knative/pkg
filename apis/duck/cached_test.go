@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package duck
+package duck_test
 
 import (
 	"context"
@@ -26,6 +26,7 @@ import (
 	"golang.org/x/sync/errgroup"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/tools/cache"
+	"knative.dev/pkg/apis/duck"
 )
 
 type BlockingInformerFactory struct {
@@ -33,7 +34,7 @@ type BlockingInformerFactory struct {
 	getting int32
 }
 
-var _ InformerFactory = (*BlockingInformerFactory)(nil)
+var _ duck.InformerFactory = (*BlockingInformerFactory)(nil)
 
 func (bif *BlockingInformerFactory) Get(gvr schema.GroupVersionResource) (cache.SharedIndexInformer, cache.GenericLister, error) {
 	atomic.AddInt32(&bif.getting, 1)
@@ -45,7 +46,7 @@ func (bif *BlockingInformerFactory) Get(gvr schema.GroupVersionResource) (cache.
 func TestSameGVR(t *testing.T) {
 	bif := &BlockingInformerFactory{block: make(chan struct{})}
 
-	cif := &CachedInformerFactory{
+	cif := &duck.CachedInformerFactory{
 		Delegate: bif,
 	}
 
@@ -90,7 +91,7 @@ func TestSameGVR(t *testing.T) {
 func TestDifferentGVRs(t *testing.T) {
 	bif := &BlockingInformerFactory{block: make(chan struct{})}
 
-	cif := &CachedInformerFactory{
+	cif := &duck.CachedInformerFactory{
 		Delegate: bif,
 	}
 

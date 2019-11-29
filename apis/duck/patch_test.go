@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package duck
+package duck_test
 
 import (
 	"encoding/json"
@@ -24,6 +24,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"knative.dev/pkg/apis/duck"
 )
 
 func TestCreateMergePatch(t *testing.T) {
@@ -100,7 +101,7 @@ func TestCreateMergePatch(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			got, err := CreateMergePatch(test.before, test.after)
+			got, err := duck.CreateMergePatch(test.before, test.after)
 			if err != nil {
 				if !test.wantErr {
 					t.Errorf("CreateMergePatch() = %v", err)
@@ -124,7 +125,7 @@ func TestCreatePatch(t *testing.T) {
 		before  interface{}
 		after   interface{}
 		wantErr bool
-		want    JSONPatch
+		want    duck.JSONPatch
 	}{{
 		name: "patch single field",
 		before: &Patch{
@@ -141,7 +142,7 @@ func TestCreatePatch(t *testing.T) {
 				},
 			},
 		},
-		want: JSONPatch{{
+		want: duck.JSONPatch{{
 			Operation: "replace",
 			Path:      "/status/patchable/field1",
 			Value:     13.0,
@@ -164,7 +165,7 @@ func TestCreatePatch(t *testing.T) {
 				},
 			},
 		},
-		want: JSONPatch{{
+		want: duck.JSONPatch{{
 			Operation: "replace",
 			Path:      "/status/patchable/field1",
 			Value:     42.0,
@@ -188,7 +189,7 @@ func TestCreatePatch(t *testing.T) {
 				},
 			},
 		},
-		want: JSONPatch{{
+		want: duck.JSONPatch{{
 			Operation: "add",
 			Path:      "/status/patchable/array/1",
 			Value:     "bar",
@@ -207,7 +208,7 @@ func TestCreatePatch(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name+" (CreateBytePatch)", func(t *testing.T) {
-			got, err := CreateBytePatch(test.before, test.after)
+			got, err := duck.CreateBytePatch(test.before, test.after)
 			if err != nil {
 				if !test.wantErr {
 					t.Errorf("CreateBytePatch() = %v", err)
@@ -229,7 +230,7 @@ func TestCreatePatch(t *testing.T) {
 
 		})
 		t.Run(test.name, func(t *testing.T) {
-			got, err := CreatePatch(test.before, test.after)
+			got, err := duck.CreatePatch(test.before, test.after)
 			if err != nil {
 				if !test.wantErr {
 					t.Errorf("CreatePatch() = %v", err)
@@ -248,7 +249,7 @@ func TestCreatePatch(t *testing.T) {
 }
 
 func TestPatchToJSON(t *testing.T) {
-	input := JSONPatch{{
+	input := duck.JSONPatch{{
 		Operation: "replace",
 		Path:      "/status/patchable/field1",
 		Value:     42.0,
@@ -291,8 +292,8 @@ type PatchSpec struct {
 	Patchable *Patchable `json:"patchable,omitempty"`
 }
 
-var _ Implementable = (*Patchable)(nil)
-var _ Populatable = (*Patch)(nil)
+var _ duck.Implementable = (*Patchable)(nil)
+var _ duck.Populatable = (*Patch)(nil)
 
 func (*Patch) GetObjectKind() schema.ObjectKind {
 	return nil // not used
@@ -306,7 +307,7 @@ func (p *Patch) GetListType() runtime.Object {
 	return nil // not used
 }
 
-func (*Patchable) GetFullType() Populatable {
+func (*Patchable) GetFullType() duck.Populatable {
 	return &Patch{}
 }
 
