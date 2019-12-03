@@ -89,7 +89,7 @@ func TestAcquireGKEProject(t *testing.T) {
 		})
 		defer ts.Close()
 		boskosURI = ts.URL
-		_, err := client.AcquireGKEProject(data.host)
+		_, err := client.AcquireGKEProject(data.host, GKEProjectResource)
 		if data.expErr && (err == nil) {
 			t.Fatalf("testing acquiring GKE project, want: err, got: no err")
 		}

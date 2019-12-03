@@ -55,6 +55,7 @@ func TestSetup(t *testing.T) {
 	nodeTypeOverride := "foonode"
 	regionOverride := "fooregion"
 	zoneOverride := "foozone"
+	boskosResTypeOverride := "customResType"
 	fakeAddons := "fake-addon"
 	fakeBuildID := "1234"
 	type env struct {
@@ -84,6 +85,7 @@ func TestSetup(t *testing.T) {
 						Addons:      nil,
 					},
 					BackupRegions: []string{"us-west1", "us-east1"},
+					ResourceType:  DefaultResourceType,
 				},
 			},
 		}, {
@@ -102,6 +104,26 @@ func TestSetup(t *testing.T) {
 						Addons:      nil,
 					},
 					BackupRegions: []string{"us-west1", "us-east1"},
+					ResourceType:  DefaultResourceType,
+				},
+			},
+		}, {
+			name: "Custom Boskos Resource type, running in Prow",
+			arg:  GKERequest{ResourceType: boskosResTypeOverride},
+			env:  env{true, "", ""},
+			want: &GKECluster{
+				Request: &GKERequest{
+					Request: gke.Request{
+						ClusterName: "",
+						MinNodes:    1,
+						MaxNodes:    3,
+						NodeType:    "n1-standard-4",
+						Region:      "us-central1",
+						Zone:        "",
+						Addons:      nil,
+					},
+					BackupRegions: []string{"us-west1", "us-east1"},
+					ResourceType:  boskosResTypeOverride,
 				},
 			},
 		}, {
@@ -125,6 +147,7 @@ func TestSetup(t *testing.T) {
 						Addons:      nil,
 					},
 					BackupRegions: []string{"us-west1", "us-east1"},
+					ResourceType:  DefaultResourceType,
 				},
 				Project:      fakeProj,
 				NeedsCleanup: true,
@@ -150,6 +173,7 @@ func TestSetup(t *testing.T) {
 						Addons:      nil,
 					},
 					BackupRegions: []string{"us-west1", "us-east1"},
+					ResourceType:  DefaultResourceType,
 				},
 				Project:      fakeProj,
 				NeedsCleanup: true,
@@ -174,6 +198,7 @@ func TestSetup(t *testing.T) {
 						Addons:      nil,
 					},
 					BackupRegions: []string{"us-west1", "us-east1"},
+					ResourceType:  DefaultResourceType,
 				},
 			},
 		}, {
@@ -196,6 +221,7 @@ func TestSetup(t *testing.T) {
 						Addons:      nil,
 					},
 					BackupRegions: []string{"us-west1", "us-east1"},
+					ResourceType:  DefaultResourceType,
 				},
 			},
 		}, {
@@ -222,6 +248,7 @@ func TestSetup(t *testing.T) {
 						Addons:      nil,
 					},
 					BackupRegions: []string{},
+					ResourceType:  DefaultResourceType,
 				},
 			},
 		}, {
@@ -247,6 +274,7 @@ func TestSetup(t *testing.T) {
 						Addons:      nil,
 					},
 					BackupRegions: nil,
+					ResourceType:  DefaultResourceType,
 				},
 			},
 		}, {
@@ -271,6 +299,7 @@ func TestSetup(t *testing.T) {
 						Addons:      nil,
 					},
 					BackupRegions: nil,
+					ResourceType:  DefaultResourceType,
 				},
 			},
 		}, {
@@ -289,6 +318,7 @@ func TestSetup(t *testing.T) {
 						Addons:      nil,
 					},
 					BackupRegions: []string{"us-west1", "us-east1"},
+					ResourceType:  DefaultResourceType,
 				},
 			},
 		}, {
@@ -307,6 +337,7 @@ func TestSetup(t *testing.T) {
 						Addons:      nil,
 					},
 					BackupRegions: []string{"backupregion1", "backupregion2"},
+					ResourceType:  DefaultResourceType,
 				},
 			},
 		}, {
@@ -329,6 +360,7 @@ func TestSetup(t *testing.T) {
 						Addons:      []string{fakeAddons},
 					},
 					BackupRegions: []string{"us-west1", "us-east1"},
+					ResourceType:  DefaultResourceType,
 				},
 			},
 		},
@@ -971,6 +1003,7 @@ func TestAcquire(t *testing.T) {
 					Addons:      tt.td.request.addons,
 				},
 				BackupRegions: DefaultGKEBackupRegions,
+				ResourceType:  DefaultResourceType,
 			}
 			opCount := 0
 			if data.existCluster != nil {
@@ -1213,7 +1246,7 @@ func TestDelete(t *testing.T) {
 			for _, bos := range data.boskosState {
 				fgc.boskosOps.(*boskosFake.FakeBoskosClient).NewGKEProject(bos.Name)
 				// Acquire with default user
-				fgc.boskosOps.(*boskosFake.FakeBoskosClient).AcquireGKEProject(nil)
+				fgc.boskosOps.(*boskosFake.FakeBoskosClient).AcquireGKEProject(nil, DefaultResourceType)
 			}
 			if data.requestCleanup {
 				fgc.Request = &GKERequest{
