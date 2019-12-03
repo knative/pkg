@@ -22,9 +22,8 @@ import (
 	"time"
 
 	"contrib.go.opencensus.io/exporter/stackdriver"
-	"go.opencensus.io/stats"
+	"go.opencensus.io/metric/metricdata"
 	"go.opencensus.io/stats/view"
-	"go.opencensus.io/tag"
 	. "knative.dev/pkg/logging/testing"
 	"knative.dev/pkg/metrics/metricskey"
 )
@@ -33,6 +32,31 @@ import (
 // 	See https://github.com/knative/pkg/issues/608
 
 var (
+	revisionTestTags = map[string]string{
+		metricskey.LabelNamespaceName: testNS,
+		metricskey.LabelServiceName:   testService,
+		metricskey.LabelRouteName:     testRoute, // Not a label key for knative_revision resource
+		metricskey.LabelRevisionName:  testRevision,
+	}
+	brokerTestTags = map[string]string{
+		metricskey.LabelNamespaceName: testNS,
+		metricskey.LabelBrokerName:    testBroker,
+		metricskey.LabelEventType:     testEventType, // Not a label key for knative_broker resource
+	}
+	triggerTestTags = map[string]string{
+		metricskey.LabelNamespaceName: testNS,
+		metricskey.LabelTriggerName:   testTrigger,
+		metricskey.LabelBrokerName:    testBroker,
+		metricskey.LabelFilterType:    testFilterType, // Not a label key for knative_trigger resource
+	}
+	sourceTestTags = map[string]string{
+		metricskey.LabelNamespaceName: testNS,
+		metricskey.LabelName:          testSource,
+		metricskey.LabelResourceGroup: testSourceResourceGroup,
+		metricskey.LabelEventType:     testEventType,   // Not a label key for knative_source resource
+		metricskey.LabelEventSource:   testEventSource, // Not a label key for knative_source resource
+	}
+
 	testGcpMetadata = gcpMetadata{
 		project:  "test-project",
 		location: "test-location",
@@ -148,200 +172,175 @@ func newFakeExporter(o stackdriver.Options) (view.Exporter, error) {
 	return &fakeExporter{}, nil
 }
 
-func TestGetMonitoredResourceFunc_UseKnativeRevision(t *testing.T) {
+func TestGetResourceByDescriptorFunc_UseKnativeRevision(t *testing.T) {
 	for _, testCase := range supportedServingMetricsTestCases {
-		testView = &view.View{
+		testDescriptor := &metricdata.Descriptor{
+			Name:        testCase.metricName,
 			Description: "Test View",
-			Measure:     stats.Int64(testCase.metricName, "Test Measure", stats.UnitNone),
-			Aggregation: view.LastValue(),
-			TagKeys:     []tag.Key{},
+			Type:        metricdata.TypeGaugeInt64,
+			Unit:        metricdata.UnitDimensionless,
 		}
-		mrf := getMonitoredResourceFunc(path.Join(testCase.domain, testCase.component), &testGcpMetadata)
+		rbd := getResourceByDescriptorFunc(path.Join(testCase.domain, testCase.component), &testGcpMetadata)
 
-		newTags, monitoredResource := mrf(testView, revisionTestTags)
-		gotResType, labels := monitoredResource.MonitoredResource()
+		metricLabels, monitoredResource := rbd(testDescriptor, revisionTestTags)
+		gotResType, resourceLabels := monitoredResource.MonitoredResource()
 		wantedResType := "knative_revision"
 		if gotResType != wantedResType {
 			t.Fatalf("MonitoredResource=%v, want %v", gotResType, wantedResType)
 		}
-		got := getResourceLabelValue(metricskey.LabelRouteName, newTags)
-		if got != testRoute {
-			t.Errorf("expected new tag: %v, got: %v", routeKey, newTags)
+		// revisionTestTags includes route_name, which is not a key for knative_revision resource.
+		if got := metricLabels[metricskey.LabelRouteName]; got != testRoute {
+			t.Errorf("expected metrics label: %v, got: %v", testRoute, got)
 		}
-		got, ok := labels[metricskey.LabelNamespaceName]
-		if !ok || got != testNS {
-			t.Errorf("expected label %v with value %v, got: %v", metricskey.LabelNamespaceName, testNS, got)
+		if got := resourceLabels[metricskey.LabelNamespaceName]; got != testNS {
+			t.Errorf("expected resource label %v with value %v, got: %v", metricskey.LabelNamespaceName, testNS, got)
 		}
-		got, ok = labels[metricskey.LabelConfigurationName]
-		if !ok || got != metricskey.ValueUnknown {
-			t.Errorf("expected label %v with value %v, got: %v", metricskey.LabelConfigurationName, metricskey.ValueUnknown, got)
+		// configuration_name is a key required by knative_revision but missed in revisionTestTags
+		if got := resourceLabels[metricskey.LabelConfigurationName]; got != metricskey.ValueUnknown {
+			t.Errorf("expected resource label %v with value %v, got: %v", metricskey.LabelConfigurationName, metricskey.ValueUnknown, got)
 		}
 	}
 }
 
-func TestGetMonitoredResourceFunc_UseKnativeBroker(t *testing.T) {
+func TestGetResourceByDescriptorFunc_UseKnativeBroker(t *testing.T) {
 	for _, testCase := range supportedEventingBrokerMetricsTestCases {
-		testView = &view.View{
+		testDescriptor := &metricdata.Descriptor{
+			Name:        testCase.metricName,
 			Description: "Test View",
-			Measure:     stats.Int64(testCase.metricName, "Test Measure", stats.UnitDimensionless),
-			Aggregation: view.LastValue(),
-			TagKeys:     []tag.Key{},
+			Type:        metricdata.TypeGaugeInt64,
+			Unit:        metricdata.UnitDimensionless,
 		}
-		mrf := getMonitoredResourceFunc(path.Join(testCase.domain, testCase.component), &testGcpMetadata)
+		rbd := getResourceByDescriptorFunc(path.Join(testCase.domain, testCase.component), &testGcpMetadata)
 
-		newTags, monitoredResource := mrf(testView, brokerTestTags)
-		gotResType, labels := monitoredResource.MonitoredResource()
+		metricLabels, monitoredResource := rbd(testDescriptor, brokerTestTags)
+		gotResType, resourceLabels := monitoredResource.MonitoredResource()
 		wantedResType := "knative_broker"
 		if gotResType != wantedResType {
 			t.Fatalf("MonitoredResource=%v, want %v", gotResType, wantedResType)
 		}
-		got := getResourceLabelValue(metricskey.LabelEventType, newTags)
-		if got != testEventType {
-			t.Errorf("expected new tag: %v, got: %v", eventTypeKey, newTags)
+		// brokerTestTags includes event_type, which is not a key for knative_broker resource.
+		if got := metricLabels[metricskey.LabelEventType]; got != testEventType {
+			t.Errorf("expected metrics label: %v, got: %v", testEventType, got)
 		}
-		got, ok := labels[metricskey.LabelNamespaceName]
-		if !ok || got != testNS {
-			t.Errorf("expected label %v with value %v, got: %v", metricskey.LabelNamespaceName, testNS, got)
+		if got := resourceLabels[metricskey.LabelNamespaceName]; got != testNS {
+			t.Errorf("expected resource label %v with value %v, got: %v", metricskey.LabelNamespaceName, testNS, got)
 		}
-		got, ok = labels[metricskey.LabelBrokerName]
-		if !ok || got != testBroker {
-			t.Errorf("expected label %v with value %v, got: %v", metricskey.LabelBrokerName, testBroker, got)
+		if got := resourceLabels[metricskey.LabelBrokerName]; got != testBroker {
+			t.Errorf("expected resource label %v with value %v, got: %v", metricskey.LabelBrokerName, testBroker, got)
 		}
 	}
 }
 
-func TestGetMonitoredResourceFunc_UseKnativeTrigger(t *testing.T) {
+func TestGetResourceByDescriptorFunc_UseKnativeTrigger(t *testing.T) {
 	for _, testCase := range supportedEventingTriggerMetricsTestCases {
-		testView = &view.View{
+		testDescriptor := &metricdata.Descriptor{
+			Name:        testCase.metricName,
 			Description: "Test View",
-			Measure:     stats.Int64(testCase.metricName, "Test Measure", stats.UnitDimensionless),
-			Aggregation: view.LastValue(),
-			TagKeys:     []tag.Key{},
+			Type:        metricdata.TypeGaugeInt64,
+			Unit:        metricdata.UnitDimensionless,
 		}
-		mrf := getMonitoredResourceFunc(path.Join(testCase.domain, testCase.component), &testGcpMetadata)
+		rbd := getResourceByDescriptorFunc(path.Join(testCase.domain, testCase.component), &testGcpMetadata)
 
-		newTags, monitoredResource := mrf(testView, triggerTestTags)
-		gotResType, labels := monitoredResource.MonitoredResource()
+		metricLabels, monitoredResource := rbd(testDescriptor, triggerTestTags)
+		gotResType, resourceLabels := monitoredResource.MonitoredResource()
 		wantedResType := "knative_trigger"
 		if gotResType != wantedResType {
 			t.Fatalf("MonitoredResource=%v, want %v", gotResType, wantedResType)
 		}
-		got := getResourceLabelValue(metricskey.LabelFilterType, newTags)
-		if got != testFilterType {
-			t.Errorf("expected new tag: %v, got: %v", filterTypeKey, newTags)
+		// triggerTestTags includes filter_type, which is not a key for knative_trigger resource.
+		if got := metricLabels[metricskey.LabelFilterType]; got != testFilterType {
+			t.Errorf("expected metrics label: %v, got: %v", testFilterType, got)
 		}
-		got, ok := labels[metricskey.LabelNamespaceName]
-		if !ok || got != testNS {
-			t.Errorf("expected label %v with value %v, got: %v", metricskey.LabelNamespaceName, testNS, got)
+		if got := resourceLabels[metricskey.LabelNamespaceName]; got != testNS {
+			t.Errorf("expected resource label %v with value %v, got: %v", metricskey.LabelNamespaceName, testNS, got)
 		}
-		got, ok = labels[metricskey.LabelBrokerName]
-		if !ok || got != testBroker {
-			t.Errorf("expected label %v with value %v, got: %v", metricskey.LabelBrokerName, testBroker, got)
+		if got := resourceLabels[metricskey.LabelBrokerName]; got != testBroker {
+			t.Errorf("expected resource label %v with value %v, got: %v", metricskey.LabelBrokerName, testBroker, got)
 		}
 	}
 }
 
-func TestGetMonitoredResourceFunc_UseKnativeSource(t *testing.T) {
+func TestGetResourceByDescriptorFunc_UseKnativeSource(t *testing.T) {
 	for _, testCase := range supportedEventingSourceMetricsTestCases {
-		testView = &view.View{
+		testDescriptor := &metricdata.Descriptor{
+			Name:        testCase.metricName,
 			Description: "Test View",
-			Measure:     stats.Int64(testCase.metricName, "Test Measure", stats.UnitDimensionless),
-			Aggregation: view.LastValue(),
-			TagKeys:     []tag.Key{},
+			Type:        metricdata.TypeGaugeInt64,
+			Unit:        metricdata.UnitDimensionless,
 		}
-		mrf := getMonitoredResourceFunc(path.Join(testCase.domain, testCase.component), &testGcpMetadata)
+		rbd := getResourceByDescriptorFunc(path.Join(testCase.domain, testCase.component), &testGcpMetadata)
 
-		newTags, monitoredResource := mrf(testView, sourceTestTags)
-		gotResType, labels := monitoredResource.MonitoredResource()
+		metricLabels, monitoredResource := rbd(testDescriptor, sourceTestTags)
+		gotResType, resourceLabels := monitoredResource.MonitoredResource()
 		wantedResType := "knative_source"
 		if gotResType != wantedResType {
 			t.Fatalf("MonitoredResource=%v, want %v", gotResType, wantedResType)
 		}
-		got := getResourceLabelValue(metricskey.LabelEventType, newTags)
-		if got != testEventType {
-			t.Errorf("expected new tag: %v, got: %v", eventTypeKey, newTags)
+		// sourceTestTags includes event_type, which is not a key for knative_trigger resource.
+		if got := metricLabels[metricskey.LabelEventType]; got != testEventType {
+			t.Errorf("expected metrics label: %v, got: %v", testEventType, got)
 		}
-		got = getResourceLabelValue(metricskey.LabelEventSource, newTags)
-		if got != testEventSource {
-			t.Errorf("expected new tag: %v, got: %v", eventSourceKey, newTags)
+		// sourceTestTags includes event_source, which is not a key for knative_trigger resource.
+		if got := metricLabels[metricskey.LabelEventSource]; got != testEventSource {
+			t.Errorf("expected metrics label: %v, got: %v", testEventSource, got)
 		}
-		got, ok := labels[metricskey.LabelNamespaceName]
-		if !ok || got != testNS {
-			t.Errorf("expected label %v with value %v, got: %v", metricskey.LabelNamespaceName, testNS, got)
+		if got := resourceLabels[metricskey.LabelNamespaceName]; got != testNS {
+			t.Errorf("expected resource label %v with value %v, got: %v", metricskey.LabelNamespaceName, testNS, got)
 		}
-		got, ok = labels[metricskey.LabelName]
-		if !ok || got != testSource {
-			t.Errorf("expected label %v with value %v, got: %v", metricskey.LabelName, testSource, got)
+		if got := resourceLabels[metricskey.LabelName]; got != testSource {
+			t.Errorf("expected resource label %v with value %v, got: %v", metricskey.LabelName, testSource, got)
 		}
-		got, ok = labels[metricskey.LabelResourceGroup]
-		if !ok || got != testSourceResourceGroup {
-			t.Errorf("expected label %v with value %v, got: %v", metricskey.LabelResourceGroup, testSourceResourceGroup, got)
+		if got := resourceLabels[metricskey.LabelResourceGroup]; got != testSourceResourceGroup {
+			t.Errorf("expected resource label %v with value %v, got: %v", metricskey.LabelResourceGroup, testSourceResourceGroup, got)
 		}
 	}
 }
 
-func TestGetMonitoredResourceFunc_UseGlobal(t *testing.T) {
+func TestGetResourceByDescriptorFunc_UseGlobal(t *testing.T) {
 	for _, testCase := range unsupportedMetricsTestCases {
-		testView = &view.View{
+		testDescriptor := &metricdata.Descriptor{
+			Name:        testCase.metricName,
 			Description: "Test View",
-			Measure:     stats.Int64(testCase.metricName, "Test Measure", stats.UnitNone),
-			Aggregation: view.LastValue(),
-			TagKeys:     []tag.Key{},
+			Type:        metricdata.TypeGaugeInt64,
+			Unit:        metricdata.UnitDimensionless,
 		}
-		mrf := getMonitoredResourceFunc(path.Join(testCase.domain, testCase.component), &testGcpMetadata)
+		mrf := getResourceByDescriptorFunc(path.Join(testCase.domain, testCase.component), &testGcpMetadata)
 
-		newTags, monitoredResource := mrf(testView, revisionTestTags)
-		gotResType, labels := monitoredResource.MonitoredResource()
+		metricLabels, monitoredResource := mrf(testDescriptor, revisionTestTags)
+		gotResType, resourceLabels := monitoredResource.MonitoredResource()
 		wantedResType := "global"
 		if gotResType != wantedResType {
 			t.Fatalf("MonitoredResource=%v, want: %v", gotResType, wantedResType)
 		}
-		got := getResourceLabelValue(metricskey.LabelNamespaceName, newTags)
-		if got != testNS {
-			t.Errorf("expected new tag %v with value %v, got: %v", routeKey, testNS, newTags)
+		if got := metricLabels[metricskey.LabelNamespaceName]; got != testNS {
+			t.Errorf("expected new tag %v with value %v, got: %v", metricskey.LabelNamespaceName, testNS, got)
 		}
-		if len(labels) != 0 {
-			t.Errorf("expected no label, got: %v", labels)
+		if len(resourceLabels) != 0 {
+			t.Errorf("expected no label, got: %v", resourceLabels)
 		}
 	}
 }
 
-func TestGetMetricTypeFunc_UseKnativeDomain(t *testing.T) {
+func TestGetMetricPrefixFunc_UseKnativeDomain(t *testing.T) {
 	for _, testCase := range supportedServingMetricsTestCases {
-		testView = &view.View{
-			Description: "Test View",
-			Measure:     stats.Int64(testCase.metricName, "Test Measure", stats.UnitNone),
-			Aggregation: view.LastValue(),
-			TagKeys:     []tag.Key{},
-		}
-		mtf := getMetricTypeFunc(
-			path.Join(testCase.domain, testCase.component),
-			path.Join(defaultCustomMetricSubDomain, testCase.component))
+		knativePrefix := path.Join(testCase.domain, testCase.component)
+		customPrefix := path.Join(defaultCustomMetricSubDomain, testCase.component)
+		mpf := getMetricPrefixFunc(knativePrefix, customPrefix)
 
-		gotMetricType := mtf(testView)
-		wantedMetricType := path.Join(testCase.domain, testCase.component, testView.Measure.Name())
-		if gotMetricType != wantedMetricType {
-			t.Fatalf("getMetricType=%v, want %v", gotMetricType, wantedMetricType)
+		if got, want := mpf(testCase.metricName), knativePrefix; got != want {
+			t.Fatalf("getMetricPrefixFunc=%v, want %v", got, want)
 		}
 	}
 }
 
-func TestGetgetMetricTypeFunc_UseCustomDomain(t *testing.T) {
+func TestGetMetricPrefixFunc_UseCustomDomain(t *testing.T) {
 	for _, testCase := range unsupportedMetricsTestCases {
-		testView = &view.View{
-			Description: "Test View",
-			Measure:     stats.Int64(testCase.metricName, "Test Measure", stats.UnitNone),
-			Aggregation: view.LastValue(),
-			TagKeys:     []tag.Key{},
-		}
-		mtf := getMetricTypeFunc(
-			path.Join(testCase.domain, testCase.component),
-			path.Join(defaultCustomMetricSubDomain, testCase.component))
+		knativePrefix := path.Join(testCase.domain, testCase.component)
+		customPrefix := path.Join(defaultCustomMetricSubDomain, testCase.component)
+		mpf := getMetricPrefixFunc(knativePrefix, customPrefix)
 
-		gotMetricType := mtf(testView)
-		wantedMetricType := path.Join(defaultCustomMetricSubDomain, testCase.component, testView.Measure.Name())
-		if gotMetricType != wantedMetricType {
-			t.Fatalf("getMetricType=%v, want %v", gotMetricType, wantedMetricType)
+		if got, want := mpf(testCase.metricName), customPrefix; got != want {
+			t.Fatalf("getMetricPrefixFunc=%v, want %v", got, want)
 		}
 	}
 }
