@@ -66,12 +66,10 @@ var (
 		{
 			name:        "GlobalSecretWatcher",
 			constructor: defaultGlobalSecretWatcherConstructor,
-		},
-		{
+		}, {
 			name:        "SingleNamespaceSecretWatcher",
 			constructor: defaultSingleSecretSecretWatcherConstructor,
-		},
-		{
+		}, {
 			name:        "SingleSecretSecretWatcher",
 			constructor: defaultSingleSecretSecretWatcherConstructor,
 		},
@@ -236,6 +234,35 @@ func TestNewSecretWatcher(t *testing.T) {
 	}
 }
 
+func TestInvalidNewSecretWatcher(t *testing.T) {
+	invalidCases := []struct {
+		name        string
+		constructor func() (SecretWatcher, error)
+	}{
+		{
+			name:        "SingleNamespaceNoNamespace",
+			constructor: func() (SecretWatcher, error) { return NewSecretWatcherSingleNamespace("") },
+		}, {
+			name:        "SingleSecretNoNamespace",
+			constructor: func() (SecretWatcher, error) { return NewSecretWatcherSingleSecret("", dsft.name) },
+		}, {
+			name:        "SingleSecretNoName",
+			constructor: func() (SecretWatcher, error) { return NewSecretWatcherSingleSecret(dsft.namespace, "") },
+		}, {
+			name:        "SingleSecretNothing",
+			constructor: func() (SecretWatcher, error) { return NewSecretWatcherSingleSecret("", "") },
+		},
+	}
+
+	for _, test := range invalidCases {
+		t.Run(test.name, func(t *testing.T) {
+			if _, err := test.constructor(); err == nil {
+				t.Error("Expected constructor to fail with error, but no error was returned")
+			}
+		})
+	}
+}
+
 func TestStartStopWatch(t *testing.T) {
 	o := &ObserverFuncs{
 		AddFunc: func(s *corev1.Secret) {},
@@ -367,7 +394,7 @@ func TestSecretWatcherCallbacks(t *testing.T) {
 		testSetupWithCustomKubeclient(f)
 	}
 
-	var tests = []struct {
+	tests := []struct {
 		name                 string
 		testSetupFunc        func()
 		watcherConstructor   func(observers ...Observer) SecretWatcher
@@ -379,51 +406,43 @@ func TestSecretWatcherCallbacks(t *testing.T) {
 			watcherConstructor:   globalSecretWatcherConstructor,
 			secretToCreate:       sOrangeOne,
 			shouldTriggerWatcher: true,
-		},
-		{
+		}, {
 			name:                 "GlobalWatcherChangeAppleOne",
 			watcherConstructor:   globalSecretWatcherConstructor,
 			secretToCreate:       sAppleOne,
 			shouldTriggerWatcher: true,
-		},
-		{
+		}, {
 			name:                 "GlobalWatcherChangeAppleTwo",
 			watcherConstructor:   globalSecretWatcherConstructor,
 			secretToCreate:       sAppleTwo,
 			shouldTriggerWatcher: true,
-		},
-		{
+		}, {
 			name:                 "AppleNamespaceWatcherChangeOrangeOne",
 			watcherConstructor:   appleNamespaceWatcherConstructor,
 			secretToCreate:       sOrangeOne,
 			shouldTriggerWatcher: false,
-		},
-		{
+		}, {
 			name:                 "AppleNamespaceWatcherChangeAppleOne",
 			watcherConstructor:   appleNamespaceWatcherConstructor,
 			secretToCreate:       sAppleOne,
 			shouldTriggerWatcher: true,
-		},
-		{
+		}, {
 			name:                 "AppleNamespaceWatcherChangeAppleTwo",
 			watcherConstructor:   appleNamespaceWatcherConstructor,
 			secretToCreate:       sAppleTwo,
 			shouldTriggerWatcher: true,
-		},
-		{
+		}, {
 			name:                 "AppleNameTwoSecretWatcherChangeOrangeOne",
 			watcherConstructor:   appleTwoSecretWatcherConstructor,
 			secretToCreate:       sOrangeOne,
 			shouldTriggerWatcher: false,
-		},
-		{
+		}, {
 			name:                 "AppleNameTwoSecretWatcherChangeAppleOne",
 			testSetupFunc:        appleNameTwoSecretWatcherChangeAppleOneTestSetup,
 			watcherConstructor:   appleTwoSecretWatcherConstructor,
 			secretToCreate:       sAppleOne,
 			shouldTriggerWatcher: false,
-		},
-		{
+		}, {
 			name:                 "AppleNameTwoSecretWatcherChangeAppleTwo",
 			watcherConstructor:   appleTwoSecretWatcherConstructor,
 			secretToCreate:       sAppleTwo,
