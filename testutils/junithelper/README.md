@@ -12,7 +12,7 @@ This tool can be invoked from command line with following parameters:
 - `--err-msg`: (optional) error message, by default it's empty, means test
   passed
 - `--dest`: (optional) file path for result to be written to, default
-  `junit_result.xml1`
+  `junit_result.xml`
 
 ### Example
 
