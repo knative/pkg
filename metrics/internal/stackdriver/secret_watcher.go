@@ -18,7 +18,6 @@ package stackdriver
 
 import (
 	"fmt"
-	"log"
 	"sync"
 
 	corev1 "k8s.io/api/core/v1"
@@ -226,7 +225,6 @@ func (s *secretWatcherImpl) setupInformer() {
 
 	s.informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc: func(obj interface{}) {
-			log.Println("AddFunc")
 			sec := obj.(*corev1.Secret)
 			for _, obs := range s.observers {
 				obs.OnAdd(sec)
@@ -241,7 +239,6 @@ func (s *secretWatcherImpl) setupInformer() {
 			}
 		},
 		DeleteFunc: func(obj interface{}) {
-			log.Println("DeleteFunc")
 			sec := obj.(*corev1.Secret)
 			for _, obs := range s.observers {
 				obs.OnDelete(sec)

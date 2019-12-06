@@ -17,9 +17,8 @@ limitations under the License.
 package stackdriver
 
 import (
-	"errors"
 	"fmt"
-	"log"
+	"sync"
 	"testing"
 	"time"
 
@@ -30,96 +29,6 @@ import (
 	fclient "k8s.io/client-go/kubernetes/fake"
 	k8stesting "k8s.io/client-go/testing"
 )
-
-// secretForTest encapsulates Secret metadata and a Secret for re-using and verifying values.
-type secretForTest struct {
-	namespace string
-	name      string
-	dataKey   string
-	dataValue string
-	secret    corev1.Secret
-}
-
-func (s *secretForTest) UpdateDataKey(dataKey string) *secretForTest {
-	s.dataKey = dataKey
-	s.secret.Data = map[string][]byte{
-		s.dataKey: []byte(s.dataValue),
-	}
-
-	return s
-}
-
-func (s *secretForTest) UpdateDataValue(dataValue string) *secretForTest {
-	s.dataValue = dataValue
-	s.secret.Data = map[string][]byte{
-		s.dataKey: []byte(s.dataValue),
-	}
-
-	return s
-}
-
-// newSecretForTest constructs a secretForTest.
-func newSecretForTest(namespace string, name string) *secretForTest {
-	return &secretForTest{
-		namespace: namespace,
-		name:      name,
-		dataKey:   defaultSecretDataKey,
-		dataValue: defaultSecretDataValue,
-		secret: corev1.Secret{
-			TypeMeta: metav1.TypeMeta{
-				Kind:       "Secret",
-				APIVersion: "apps/v1",
-			},
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      name,
-				Namespace: namespace,
-			},
-			Data: map[string][]byte{
-				defaultSecretDataKey: []byte(defaultSecretDataValue),
-			},
-			Type: "Opaque",
-		},
-	}
-}
-
-// testObserver is an implementation of the the secretWatcher observer interface
-// that also holds state about whether the observer's callbacks have been triggered.
-type testObserver struct {
-	oFuncs         *ObserverFuncs
-	OnAddCalled    bool
-	OnUpdateCalled bool
-	OnDeleteCalled bool
-}
-
-// newTestObserver constructs a testObserver from observerFuncs.
-func newTestObserver(inputObsFuncs *ObserverFuncs) *testObserver {
-	// If a callback is nil, consider it to be called by default.
-	return &testObserver{
-		oFuncs:         inputObsFuncs,
-		OnAddCalled:    inputObsFuncs.AddFunc == nil,
-		OnUpdateCalled: inputObsFuncs.UpdateFunc == nil,
-		OnDeleteCalled: inputObsFuncs.DeleteFunc == nil,
-	}
-}
-
-func (tObs *testObserver) OnAdd(s *corev1.Secret) {
-	tObs.oFuncs.OnAdd(s)
-	tObs.OnAddCalled = true
-}
-
-func (tObs *testObserver) OnUpdate(sOld *corev1.Secret, sNew *corev1.Secret) {
-	tObs.oFuncs.OnUpdate(sOld, sNew)
-	tObs.OnUpdateCalled = true
-}
-
-func (tObs *testObserver) OnDelete(s *corev1.Secret) {
-	tObs.oFuncs.OnDelete(s)
-	tObs.OnDeleteCalled = true
-}
-
-func (tObs *testObserver) AllCallbacksCalled() bool {
-	return tObs.OnAddCalled && tObs.OnUpdateCalled && tObs.OnDeleteCalled
-}
 
 const (
 	defaultSecretDataKey   = "key.json"
@@ -178,6 +87,123 @@ var (
 	}
 )
 
+// secretForTest encapsulates Secret metadata and a Secret for re-using and verifying values.
+type secretForTest struct {
+	namespace string
+	name      string
+	dataKey   string
+	dataValue string
+	secret    corev1.Secret
+}
+
+func (s *secretForTest) UpdateDataKey(dataKey string) *secretForTest {
+	s.dataKey = dataKey
+	s.secret.Data = map[string][]byte{
+		s.dataKey: []byte(s.dataValue),
+	}
+
+	return s
+}
+
+func (s *secretForTest) UpdateDataValue(dataValue string) *secretForTest {
+	s.dataValue = dataValue
+	s.secret.Data = map[string][]byte{
+		s.dataKey: []byte(s.dataValue),
+	}
+
+	return s
+}
+
+// newSecretForTest constructs a secretForTest.
+func newSecretForTest(namespace string, name string) *secretForTest {
+	return &secretForTest{
+		namespace: namespace,
+		name:      name,
+		dataKey:   defaultSecretDataKey,
+		dataValue: defaultSecretDataValue,
+		secret: corev1.Secret{
+			TypeMeta: metav1.TypeMeta{
+				Kind:       "Secret",
+				APIVersion: "apps/v1",
+			},
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      name,
+				Namespace: namespace,
+			},
+			Data: map[string][]byte{
+				defaultSecretDataKey: []byte(defaultSecretDataValue),
+			},
+			Type: "Opaque",
+		},
+	}
+}
+
+// testObserver is an implementation of the the secretWatcher observer interface
+// that also holds state about whether the observer's callbacks have been triggered.
+type testObserver struct {
+	oFuncs         *ObserverFuncs
+	onAddCalled    bool
+	onUpdateCalled bool
+	onDeleteCalled bool
+	mux            sync.Mutex
+}
+
+// newTestObserver constructs a testObserver from observerFuncs.
+func newTestObserver(inputObsFuncs *ObserverFuncs) *testObserver {
+	// If a callback is nil, consider it to be called by default.
+	return &testObserver{
+		oFuncs:         inputObsFuncs,
+		onAddCalled:    inputObsFuncs.AddFunc == nil,
+		onUpdateCalled: inputObsFuncs.UpdateFunc == nil,
+		onDeleteCalled: inputObsFuncs.DeleteFunc == nil,
+	}
+}
+
+func (tObs *testObserver) markCallbackCalled(callbackSentinel *bool) {
+	tObs.mux.Lock()
+	defer tObs.mux.Unlock()
+	*callbackSentinel = true
+}
+
+func (tObs *testObserver) OnAdd(s *corev1.Secret) {
+	tObs.oFuncs.OnAdd(s)
+	tObs.markCallbackCalled(&tObs.onAddCalled)
+}
+
+func (tObs *testObserver) OnUpdate(sOld *corev1.Secret, sNew *corev1.Secret) {
+	tObs.oFuncs.OnUpdate(sOld, sNew)
+	tObs.markCallbackCalled(&tObs.onUpdateCalled)
+}
+
+func (tObs *testObserver) OnDelete(s *corev1.Secret) {
+	tObs.oFuncs.OnDelete(s)
+	tObs.markCallbackCalled(&tObs.onDeleteCalled)
+}
+
+func (tObs *testObserver) CheckOnAddCalled() bool {
+	return tObs.wasCallbackCalled(&tObs.onAddCalled)
+}
+
+func (tObs *testObserver) CheckOnUpdateCalled() bool {
+	return tObs.wasCallbackCalled(&tObs.onUpdateCalled)
+}
+
+func (tObs *testObserver) CheckOnDeleteCalled() bool {
+	return tObs.wasCallbackCalled(&tObs.onDeleteCalled)
+}
+
+func (tObs *testObserver) wasCallbackCalled(callbackSentinel *bool) bool {
+	tObs.mux.Lock()
+	defer tObs.mux.Unlock()
+	return *callbackSentinel
+}
+
+func (tObs *testObserver) AllCallbacksCalled() bool {
+	tObs.mux.Lock()
+	defer tObs.mux.Unlock()
+	return tObs.onAddCalled && tObs.onUpdateCalled && tObs.onDeleteCalled
+}
+
 func testSetupWithCustomKubeclient(customKubeclient kubernetes.Interface) {
 	// Reset kubeclient on every test to clear out state
 	kubeclientForTest = customKubeclient
@@ -193,42 +219,6 @@ func testSetupWithCustomKubeclient(customKubeclient kubernetes.Interface) {
 // testSetup sets up tests.
 func testSetup() {
 	testSetupWithCustomKubeclient(fclient.NewSimpleClientset())
-	fakeclient := fclient.NewSimpleClientset()
-	fakeclient.Fake.PrependReactor("list", "secrets", func(action k8stesting.Action) (handled bool, ret runtime.Object, err error) {
-		listAction := action.(k8stesting.ListAction)
-		listRestrictions := listAction.GetListRestrictions()
-		log.Printf("LIST %#v", listAction.GetListRestrictions())
-		if listRestrictions.Fields != nil {
-			log.Print(listRestrictions.Fields.String())
-		}
-
-		secrets := &corev1.SecretList{
-			TypeMeta: metav1.TypeMeta{
-				Kind:       "SecretList",
-				APIVersion: "apps/v1",
-			},
-			Items: []corev1.Secret{newSecretForTest("orange", "two").secret},
-		}
-		return true, secrets, nil
-	})
-
-	fakeclient.Fake.PrependReactor("create", "secrets", func(action k8stesting.Action) (handled bool, ret runtime.Object, err error) {
-		createAction := action.(k8stesting.CreateAction)
-		log.Printf("CREATE %#v", createAction)
-		return true, nil, errors.New("What")
-	})
-
-	fakeclient.Fake.PrependReactor("get", "secrets", func(action k8stesting.Action) (handled bool, ret runtime.Object, err error) {
-		getAction := action.(k8stesting.GetAction)
-		log.Printf("watch %#v", getAction)
-		return true, nil, errors.New("What")
-	})
-
-	fakeclient.Fake.PrependReactor("watch", "secrets", func(action k8stesting.Action) (handled bool, ret runtime.Object, err error) {
-		watchAction := action.(k8stesting.WatchAction)
-		log.Printf("WATCH %#v", watchAction)
-		return true, nil, errors.New("What")
-	})
 }
 
 // testCleanup cleans up tests.
@@ -247,18 +237,16 @@ func TestNewSecretWatcher(t *testing.T) {
 }
 
 func TestStartStopWatch(t *testing.T) {
-	added := false
 	o := &ObserverFuncs{
-		AddFunc: func(s *corev1.Secret) {
-			added = true
-		},
+		AddFunc: func(s *corev1.Secret) {},
 	}
 
 	for _, test := range defaultWatchersToTest {
 		t.Run(test.name, func(t *testing.T) {
 			testSetup()
 
-			watcher := test.constructor(t, o)
+			tObs := newTestObserver(o)
+			watcher := test.constructor(t, tObs)
 			// Test weird patterns of stop/start
 			watcher.StopWatch()
 			watcher.StartWatch()
@@ -271,7 +259,7 @@ func TestStartStopWatch(t *testing.T) {
 
 			kubeclientForTest.CoreV1().Secrets(dsft.namespace).Create(&dsft.secret)
 			waitForCondition(t, func() bool {
-				return added
+				return tObs.CheckOnAddCalled()
 			}, 3)
 
 			testCleanup()
@@ -493,15 +481,15 @@ func TestSecretWatcherCallbacks(t *testing.T) {
 			}
 
 			kubeclientForTest.CoreV1().Secrets(test.secretToCreate.namespace).Create(&test.secretToCreate.secret)
-			waitForObserverTriggers(t, testObs, func(tObs *testObserver) bool { return tObs.OnAddCalled }, test.shouldTriggerWatcher)
+			waitForObserverTriggers(t, testObs, func(tObs *testObserver) bool { return tObs.CheckOnAddCalled() }, test.shouldTriggerWatcher)
 
 			// Modify secret value and update
 			test.secretToCreate.UpdateDataValue("newToken")
 			kubeclientForTest.CoreV1().Secrets(test.secretToCreate.namespace).Update(&test.secretToCreate.secret)
-			waitForObserverTriggers(t, testObs, func(tObs *testObserver) bool { return tObs.OnUpdateCalled }, test.shouldTriggerWatcher)
+			waitForObserverTriggers(t, testObs, func(tObs *testObserver) bool { return tObs.CheckOnUpdateCalled() }, test.shouldTriggerWatcher)
 
 			kubeclientForTest.CoreV1().Secrets(test.secretToCreate.namespace).Delete(test.secretToCreate.name, &metav1.DeleteOptions{})
-			waitForObserverTriggers(t, testObs, func(tObs *testObserver) bool { return tObs.OnDeleteCalled }, test.shouldTriggerWatcher)
+			waitForObserverTriggers(t, testObs, func(tObs *testObserver) bool { return tObs.CheckOnDeleteCalled() }, test.shouldTriggerWatcher)
 
 			for i := 0; i < defaultNumTestObservers; i++ {
 				watchers[i].StopWatch()
@@ -532,7 +520,7 @@ func waitForObserverTriggers(t *testing.T, tObs []*testObserver, obsTrigger func
 		for i, o := range tObs {
 			if obsTrigger(o) {
 				t.Errorf("Secret watcher at idx[%d] did not trigger as expected on Secret change. Expected to trigger? %v. OnAdd triggered? %v. OnUpdate triggered? %v. OnDelete triggered? %v",
-					i, shouldTrigger, o.OnAddCalled, o.OnUpdateCalled, o.OnDeleteCalled)
+					i, shouldTrigger, o.onAddCalled, o.onUpdateCalled, o.onDeleteCalled)
 			}
 		}
 	}
