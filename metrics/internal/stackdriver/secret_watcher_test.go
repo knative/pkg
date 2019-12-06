@@ -267,68 +267,41 @@ func TestStartStopWatch(t *testing.T) {
 	}
 }
 
-func TestSecretWatcherGetSecret(t *testing.T) {
-	for _, test := range defaultWatchersToTest {
-		t.Run(test.name, func(t *testing.T) {
-			testSetup()
-
-			watcher := test.constructor(t)
-			if _, err := watcher.GetSecret(dsft.namespace, dsft.name); err == nil {
-				t.Errorf("Expected GetSecret() for Secret %v/%v to fail because secret doesn't exist yet", dsft.namespace, dsft.name)
-			}
-
-			kubeclientForTest.CoreV1().Secrets(dsft.namespace).Create(&dsft.secret)
-
-			waitForCondition(t, func() bool {
-				sec, err := watcher.GetSecret(dsft.namespace, dsft.name)
-				if err != nil {
-					return false
-				}
-				assertSecretValue(t, sec, dsft.namespace, dsft.name, dsft.dataKey, dsft.dataValue)
-				return true
-			}, 3)
-
-			testCleanup()
-		})
-	}
-}
-
-func TestSecretWatcherGetSecretInvalidInputs(t *testing.T) {
+func TestNilObserverFuncs(t *testing.T) {
 	testSetup()
-	defer testCleanup()
+	defer testSetup()
 
-	var invalidCases = []struct {
-		name            string
-		secretNamespace string
-		secretName      string
-	}{
-		{
-			name:            "EmptyNamespace",
-			secretNamespace: "",
-			secretName:      dsft.name,
-		},
-		{
-			name:            "EmptyName",
-			secretNamespace: dsft.namespace,
-			secretName:      "",
-		},
-		{
-			name:            "BothEmpty",
-			secretNamespace: "",
-			secretName:      "",
-		},
+	// Setup two watchers that watch the same Secret, but only have a subset of callbacks
+	o := &ObserverFuncs{
+		AddFunc:    nil,
+		UpdateFunc: nil,
+		DeleteFunc: nil,
 	}
 
-	for _, watcherToTest := range defaultWatchersToTest {
-		for _, test := range invalidCases {
-			t.Run(test.name+watcherToTest.name, func(t *testing.T) {
-				watcher := watcherToTest.constructor(t)
-				if _, err := watcher.GetSecret(test.secretNamespace, test.secretName); err == nil {
-					t.Errorf("Calls to GetSecret() should fail if namespace or name are invalid; namespace: %v, name: %v", test.secretNamespace, test.secretName)
-				}
-			})
-		}
-	}
+	// The testObserver wrapper struct will invoke the funcs from "o" and track whether they were called
+	tObs := newTestObserver(o)
+	watcher := defaultGlobalSecretWatcherConstructor(t, tObs)
+
+	watcher.StartWatch()
+	defer watcher.StopWatch()
+
+	kubeclientForTest.CoreV1().Secrets(dsft.namespace).Create(&dsft.secret)
+	waitForCondition(t, func() bool {
+		return tObs.CheckOnAddCalled()
+	}, 3)
+
+	dsft.UpdateDataValue("newToken")
+	kubeclientForTest.CoreV1().Secrets(dsft.namespace).Update(&dsft.secret)
+	waitForCondition(t, func() bool {
+		return tObs.CheckOnUpdateCalled()
+	}, 3)
+
+	kubeclientForTest.CoreV1().Secrets(dsft.namespace).Delete(dsft.name, &metav1.DeleteOptions{})
+	waitForCondition(t, func() bool {
+		return tObs.CheckOnDeleteCalled()
+	}, 3)
+
+	testCleanup()
 }
 
 func TestSecretWatcherCallbacks(t *testing.T) {
@@ -472,6 +445,8 @@ func TestSecretWatcherCallbacks(t *testing.T) {
 				DeleteFunc: func(s *corev1.Secret) {},
 			}
 
+			kubeclientForTest.CoreV1().Secrets(test.secretToCreate.namespace).Create(&test.secretToCreate.secret)
+
 			testObs := make([]*testObserver, defaultNumTestObservers)
 			watchers := make([]SecretWatcher, defaultNumTestObservers)
 			for i := 0; i < defaultNumTestObservers; i++ {
@@ -480,6 +455,12 @@ func TestSecretWatcherCallbacks(t *testing.T) {
 				watchers[i].StartWatch()
 			}
 
+			// SecretWatchers should get a create/add notification when the watch starts for every existing Secret they are watching
+			waitForObserverTriggers(t, testObs, func(tObs *testObserver) bool { return tObs.CheckOnAddCalled() }, test.shouldTriggerWatcher)
+
+			kubeclientForTest.CoreV1().Secrets(test.secretToCreate.namespace).Delete(test.secretToCreate.name, &metav1.DeleteOptions{})
+			waitForObserverTriggers(t, testObs, func(tObs *testObserver) bool { return tObs.CheckOnDeleteCalled() }, test.shouldTriggerWatcher)
+
 			kubeclientForTest.CoreV1().Secrets(test.secretToCreate.namespace).Create(&test.secretToCreate.secret)
 			waitForObserverTriggers(t, testObs, func(tObs *testObserver) bool { return tObs.CheckOnAddCalled() }, test.shouldTriggerWatcher)
 
@@ -487,9 +468,6 @@ func TestSecretWatcherCallbacks(t *testing.T) {
 			test.secretToCreate.UpdateDataValue("newToken")
 			kubeclientForTest.CoreV1().Secrets(test.secretToCreate.namespace).Update(&test.secretToCreate.secret)
 			waitForObserverTriggers(t, testObs, func(tObs *testObserver) bool { return tObs.CheckOnUpdateCalled() }, test.shouldTriggerWatcher)
-
-			kubeclientForTest.CoreV1().Secrets(test.secretToCreate.namespace).Delete(test.secretToCreate.name, &metav1.DeleteOptions{})
-			waitForObserverTriggers(t, testObs, func(tObs *testObserver) bool { return tObs.CheckOnDeleteCalled() }, test.shouldTriggerWatcher)
 
 			for i := 0; i < defaultNumTestObservers; i++ {
 				watchers[i].StopWatch()
@@ -527,11 +505,15 @@ func waitForObserverTriggers(t *testing.T, tObs []*testObserver, obsTrigger func
 }
 
 func waitForCondition(t *testing.T, condition func() bool, timeoutSec int) {
+	// To speed up tests when condition() becomes true quickly, sleep for a short period of time before starting normal wait loop.
+	// 10ms was selected by empirical testing of what made the tests pass the fastest.
+	time.Sleep(time.Millisecond * 10)
+
 	for i := 0; i < (timeoutSec*2)+1; i++ {
 		if condition() {
 			return
 		}
-
+		// Relatively long sleep period so in cases when condition() is never true, it's not checked too often.
 		time.Sleep(time.Millisecond * 500)
 	}
 

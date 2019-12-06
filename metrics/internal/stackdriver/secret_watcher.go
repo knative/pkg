@@ -48,25 +48,25 @@ type ObserverFuncs struct {
 
 // OnAdd is the OnAdd of the observer interface.
 func (of *ObserverFuncs) OnAdd(s *corev1.Secret) {
-	// if of.AddFunc == nil {
-	// 	return
-	// }
+	if of.AddFunc == nil {
+		return
+	}
 	of.AddFunc(s)
 }
 
 // OnUpdate is the OnUpdate of the observer interface.
 func (of *ObserverFuncs) OnUpdate(sOld *corev1.Secret, sNew *corev1.Secret) {
-	// if of.UpdateFunc == nil {
-	// 	return
-	// }
+	if of.UpdateFunc == nil {
+		return
+	}
 	of.UpdateFunc(sOld, sNew)
 }
 
 // OnDelete is the OnDelete of the observer interface.
 func (of *ObserverFuncs) OnDelete(s *corev1.Secret) {
-	// if of.DeleteFunc == nil {
-	// 	return
-	// }
+	if of.DeleteFunc == nil {
+		return
+	}
 	of.DeleteFunc(s)
 }
 
@@ -77,9 +77,6 @@ type SecretWatcher interface {
 
 	// StopWatch stops the secret watch.
 	StopWatch()
-
-	// GetSecret gets the value of the specified secret.
-	GetSecret(namespace string, name string) (*corev1.Secret, error)
 
 	// GetNamespaceWatched returns the namespace of the Secret being watched;
 	// returns empty string if more than one namespace is being watched.
@@ -107,11 +104,17 @@ func NewSecretWatcher(observers ...Observer) (SecretWatcher, error) {
 
 // NewSecretWatcherSingleNamespace constructs a secretWatcher that watches all Secrets in a namespace.
 func NewSecretWatcherSingleNamespace(namespace string, observers ...Observer) (SecretWatcher, error) {
+	if namespace == "" {
+		return nil, fmt.Errorf("Must provide a non-empty namespace for NewSecretWatcherSingleNamespace; to create a global SecretWatchers call NewSecretWatcher")
+	}
 	return newSecretWatcherInternal(namespace, "", observers...)
 }
 
 // NewSecretWatcherSingleSecret constructs a secretWatcher that watches all a single Secret.
 func NewSecretWatcherSingleSecret(namespace string, name string, observers ...Observer) (SecretWatcher, error) {
+	if namespace == "" || name == "" {
+		return nil, fmt.Errorf("Must provide a non-empty namespace and name for NewSecretWatcherSingleSecret. Got namespace [%v] and name [%v]", namespace, name)
+	}
 	return newSecretWatcherInternal(namespace, name, observers...)
 }
 
@@ -178,20 +181,6 @@ func (s *secretWatcherImpl) StopWatch() {
 	s.watchStarted = false
 
 	close(s.stopCh)
-}
-
-// GetSecret implements GetSecret of secretWatcher interface.
-func (s *secretWatcherImpl) GetSecret(namespace string, name string) (*corev1.Secret, error) {
-	if namespace == "" || name == "" {
-		return nil, fmt.Errorf("Must specify a non-empty Secret namespace and name to get, namespace specified: %v, name specified: %v", namespace, name)
-	}
-	sec, secErr := s.kubeclient.CoreV1().Secrets(namespace).Get(name, metav1.GetOptions{})
-
-	if secErr != nil {
-		return nil, fmt.Errorf("Error getting Secret [%v] in namespace [%v]: %v", name, namespace, secErr)
-	}
-
-	return sec, nil
 }
 
 // GetNamespaceWatched implements GetNamespaceWatched of secretWatcher interface.
