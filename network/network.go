@@ -36,4 +36,10 @@ const (
 
 	// UserAgentKey is the constant for header "User-Agent".
 	UserAgentKey = "User-Agent"
+
+	// ProbeHeaderName is the name of a header that can be added to
+	// requests to probe the knative networking layer.  Requests
+	// with this header will not be passed to the user container or
+	// included in request metrics.
+	ProbeHeaderName = "K-Network-Probe"
 )

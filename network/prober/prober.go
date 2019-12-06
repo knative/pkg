@@ -89,7 +89,7 @@ func ExpectsStatusCodes(statusCodes []int) Verifier {
 func Do(ctx context.Context, transport http.RoundTripper, target string, ops ...interface{}) (bool, error) {
 	req, err := http.NewRequest(http.MethodGet, target, nil)
 	if err != nil {
-		return false, fmt.Errorf("%s is not a valid URL: %w", target, err)
+		return false, fmt.Errorf("%s is not a valid URL: %v", target, err)
 	}
 	for _, op := range ops {
 		if po, ok := op.(Preparer); ok {
@@ -100,12 +100,12 @@ func Do(ctx context.Context, transport http.RoundTripper, target string, ops ...
 	req = req.WithContext(ctx)
 	resp, err := transport.RoundTrip(req)
 	if err != nil {
-		return false, fmt.Errorf("error roundtripping %s: %w", target, err)
+		return false, fmt.Errorf("error roundtripping %s: %v", target, err)
 	}
 	defer resp.Body.Close()
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return false, fmt.Errorf("error reading body: %w", err)
+		return false, fmt.Errorf("error reading body: %v", err)
 	}
 
 	for _, op := range ops {
