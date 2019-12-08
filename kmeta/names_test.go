@@ -52,6 +52,10 @@ func TestChildName(t *testing.T) {
 		parent: strings.Repeat("b", 32),
 		suffix: strings.Repeat("f", 32),
 		want:   "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb329c7c81b9ab3ba71aa139066aa5625d",
+	}, {
+		parent: "aaaa",
+		suffix: strings.Repeat("b---a", 20),
+		want:   "aaaa7a3f7966594e3f0849720eced8212c18b---ab---ab---ab---ab---ab",
 	}}
 
 	for _, test := range tests {
