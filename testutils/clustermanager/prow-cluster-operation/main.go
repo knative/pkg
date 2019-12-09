@@ -17,6 +17,7 @@ limitations under the License.
 package main
 
 import (
+	"errors"
 	"flag"
 	"log"
 
@@ -50,7 +51,7 @@ func main() {
 	case get:
 		err = actions.Get(o)
 	default:
-		log.Fatal("Must pass one of --create, --delete, --get")
+		err = errors.New("Must pass one of --create, --delete, --get")
 	}
 
 	if err != nil {
