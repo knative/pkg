@@ -148,12 +148,8 @@ type testObserver struct {
 
 // newTestObserver constructs a testObserver from observerFuncs.
 func newTestObserver(inputObsFuncs *ObserverFuncs) *testObserver {
-	// If a callback is nil, consider it to be called by default.
 	return &testObserver{
-		oFuncs:         inputObsFuncs,
-		onAddCalled:    inputObsFuncs.AddFunc == nil,
-		onUpdateCalled: inputObsFuncs.UpdateFunc == nil,
-		onDeleteCalled: inputObsFuncs.DeleteFunc == nil,
+		oFuncs: inputObsFuncs,
 	}
 }
 
@@ -194,12 +190,6 @@ func (tObs *testObserver) wasCallbackCalled(callbackSentinel *bool) bool {
 	tObs.mux.Lock()
 	defer tObs.mux.Unlock()
 	return *callbackSentinel
-}
-
-func (tObs *testObserver) AllCallbacksCalled() bool {
-	tObs.mux.Lock()
-	defer tObs.mux.Unlock()
-	return tObs.onAddCalled && tObs.onUpdateCalled && tObs.onDeleteCalled
 }
 
 func testSetupWithCustomKubeclient(customKubeclient kubernetes.Interface) {
@@ -458,18 +448,12 @@ func TestSecretWatcherCallbacks(t *testing.T) {
 				testSetup()
 			}
 
-			obsFuncs := &ObserverFuncs{
-				AddFunc:    func(s *corev1.Secret) {},
-				UpdateFunc: func(sOld *corev1.Secret, sNew *corev1.Secret) {},
-				DeleteFunc: func(s *corev1.Secret) {},
-			}
-
 			kubeclientForTest.CoreV1().Secrets(test.secretToCreate.namespace).Create(&test.secretToCreate.secret)
 
 			testObs := make([]*testObserver, defaultNumTestObservers)
 			watchers := make([]SecretWatcher, defaultNumTestObservers)
 			for i := 0; i < defaultNumTestObservers; i++ {
-				testObs[i] = newTestObserver(obsFuncs)
+				testObs[i] = newTestObserver(defaultObserverFuncs)
 				watchers[i] = test.watcherConstructor(testObs[i])
 				watchers[i].StartWatch()
 			}

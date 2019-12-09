@@ -121,8 +121,8 @@ func NewSecretWatcherSingleSecret(namespace string, name string, observers ...Ob
 // newSecretWatcherInternal constructs a secretWatcher.
 func newSecretWatcherInternal(namespace string, name string, observers ...Observer) (SecretWatcher, error) {
 	impl := &secretWatcherImpl{
-		SecretNamespace: namespace,
-		SecretName:      name,
+		secretNamespace: namespace,
+		secretName:      name,
 		observers:       observers,
 	}
 
@@ -148,9 +148,9 @@ type secretWatcherImpl struct {
 	watchStarted bool
 
 	// SecretName is the name of the secret being watched.
-	SecretName string
+	secretName string
 	// SecretNamespace is the namespace of the secret being watched.
-	SecretNamespace string
+	secretNamespace string
 	// observers is the list of observers to trigger when the Secret is changed.
 	observers []Observer
 }
@@ -174,7 +174,7 @@ func (s *secretWatcherImpl) StartWatch() error {
 // StopWatch implements StopWatch secretWatcher interface.
 func (s *secretWatcherImpl) StopWatch() {
 	s.watchLock.Lock()
-	defer s.watchLock.Unlock()
+	defer s.watchLock.Unlock()	
 	if !s.watchStarted {
 		return
 	}
@@ -185,24 +185,24 @@ func (s *secretWatcherImpl) StopWatch() {
 
 // GetNamespaceWatched implements GetNamespaceWatched of secretWatcher interface.
 func (s *secretWatcherImpl) GetNamespaceWatched() string {
-	return s.SecretNamespace
+	return s.secretNamespace
 }
 
 // GetNameWatched implements GetNameWatched of secretWatcher interface.
 func (s *secretWatcherImpl) GetNameWatched() string {
-	return s.SecretName
+	return s.secretName
 }
 
 // setupInformer sets up a kubernetes informer to watch Secrets.
 func (s *secretWatcherImpl) setupInformer() {
 	var sharedInformerOpts []informers.SharedInformerOption
-	if s.SecretNamespace != "" {
-		namespaceOpt := informers.WithNamespace(s.SecretNamespace)
+	if s.secretNamespace != "" {
+		namespaceOpt := informers.WithNamespace(s.secretNamespace)
 		sharedInformerOpts = append(sharedInformerOpts, namespaceOpt)
 
-		if s.SecretName != "" {
+		if s.secretName != "" {
 			nameFieldSelectorFunc := func(listOpts *metav1.ListOptions) {
-				listOpts.FieldSelector = fields.OneTermEqualSelector("metadata.name", s.SecretName).String()
+				listOpts.FieldSelector = fields.OneTermEqualSelector("metadata.name", s.secretName).String()
 			}
 			nameOpt := informers.WithTweakListOptions(nameFieldSelectorFunc)
 			sharedInformerOpts = append(sharedInformerOpts, nameOpt)
