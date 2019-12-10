@@ -42,7 +42,7 @@ func Flush() {
 
 // V is a shim
 func V(level Level) Verbose {
-	return Verbose(level <= logging.Verbosity)
+	return Verbose(int(level) <= logging.Verbosity)
 }
 
 // Info is a shim
