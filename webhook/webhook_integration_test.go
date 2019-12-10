@@ -34,6 +34,7 @@ import (
 	"knative.dev/pkg/system"
 
 	"github.com/mattbaird/jsonpatch"
+	"golang.org/x/sync/errgroup"
 	admissionv1beta1 "k8s.io/api/admission/v1beta1"
 	authenticationv1 "k8s.io/api/authentication/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -72,17 +73,16 @@ func (fac *fixedAdmissionController) Admit(ctx context.Context, req *admissionv1
 }
 
 func TestMissingContentType(t *testing.T) {
-	wh, serverURL, cancel, err := testSetup(t)
+	wh, serverURL, ctx, cancel, err := testSetup(t)
 	if err != nil {
 		t.Fatalf("testSetup() = %v", err)
 	}
-	defer cancel()
-	stopCh := make(chan struct{})
-	defer close(stopCh)
 
-	go func() {
-		err := wh.Run(stopCh)
-		if err != nil {
+	eg, _ := errgroup.WithContext(ctx)
+	eg.Go(func() error { return wh.Run(ctx.Done()) })
+	defer func() {
+		cancel()
+		if err := eg.Wait(); err != nil {
 			t.Errorf("Unable to run controller: %s", err)
 		}
 	}()
@@ -126,21 +126,19 @@ func TestMissingContentType(t *testing.T) {
 }
 
 func TestEmptyRequestBody(t *testing.T) {
-	wh, serverURL, cancel, err := testSetup(t)
+	wh, serverURL, ctx, cancel, err := testSetup(t)
 	if err != nil {
 		t.Fatalf("testSetup() = %v", err)
 	}
-	defer cancel()
 
-	stopCh := make(chan struct{})
-
-	go func() {
-		err := wh.Run(stopCh)
-		if err != nil {
+	eg, _ := errgroup.WithContext(ctx)
+	eg.Go(func() error { return wh.Run(ctx.Done()) })
+	defer func() {
+		cancel()
+		if err := eg.Wait(); err != nil {
 			t.Errorf("Unable to run controller: %s", err)
 		}
 	}()
-	defer close(stopCh)
 
 	pollErr := waitForServerAvailable(t, serverURL, testTimeout)
 	if pollErr != nil {
@@ -184,18 +182,16 @@ func TestValidResponseForResource(t *testing.T) {
 		path:     "/bazinga",
 		response: &admissionv1beta1.AdmissionResponse{},
 	}
-	wh, serverURL, cancel, err := testSetup(t, ac)
+	wh, serverURL, ctx, cancel, err := testSetup(t, ac)
 	if err != nil {
 		t.Fatalf("testSetup() = %v", err)
 	}
-	defer cancel()
 
-	stopCh := make(chan struct{})
-	defer close(stopCh)
-
-	go func() {
-		err := wh.Run(stopCh)
-		if err != nil {
+	eg, _ := errgroup.WithContext(ctx)
+	eg.Go(func() error { return wh.Run(ctx.Done()) })
+	defer func() {
+		cancel()
+		if err := eg.Wait(); err != nil {
 			t.Errorf("Unable to run controller: %s", err)
 		}
 	}()
@@ -279,18 +275,16 @@ func TestInvalidResponseForResource(t *testing.T) {
 		path:     "/booger",
 		response: MakeErrorStatus(expectedError),
 	}
-	wh, serverURL, cancel, err := testSetup(t, ac)
+	wh, serverURL, ctx, cancel, err := testSetup(t, ac)
 	if err != nil {
 		t.Fatalf("testSetup() = %v", err)
 	}
-	defer cancel()
 
-	stopCh := make(chan struct{})
-	defer close(stopCh)
-
-	go func() {
-		err := wh.Run(stopCh)
-		if err != nil {
+	eg, _ := errgroup.WithContext(ctx)
+	eg.Go(func() error { return wh.Run(ctx.Done()) })
+	defer func() {
+		cancel()
+		if err := eg.Wait(); err != nil {
 			t.Errorf("Unable to run controller: %s", err)
 		}
 	}()
@@ -399,11 +393,11 @@ func TestSetupWebhookHTTPServerError(t *testing.T) {
 
 	nsErr := createNamespace(t, kubeClient, metav1.NamespaceSystem)
 	if nsErr != nil {
-		t.Fatalf("testSetup() = %v", nsErr)
+		t.Fatalf("createNamespace() = %v", nsErr)
 	}
 	cMapsErr := createTestConfigMap(t, kubeClient)
 	if cMapsErr != nil {
-		t.Fatalf("testSetup() = %v", cMapsErr)
+		t.Fatalf("createTestConfigMap() = %v", cMapsErr)
 	}
 
 	stopCh := make(chan struct{})
@@ -424,17 +418,17 @@ func TestSetupWebhookHTTPServerError(t *testing.T) {
 	}
 }
 
-func testSetup(t *testing.T, acs ...AdmissionController) (*Webhook, string, context.CancelFunc, error) {
+func testSetup(t *testing.T, acs ...AdmissionController) (*Webhook, string, context.Context, context.CancelFunc, error) {
 	t.Helper()
 	port, err := newTestPort()
 	if err != nil {
-		return nil, "", nil, err
+		return nil, "", nil, nil, err
 	}
 
 	defaultOpts := newDefaultOptions()
 	defaultOpts.Port = port
-	_, wh, cancel := newNonRunningTestWebhook(t, defaultOpts, acs...)
+	ctx, wh, cancel := newNonRunningTestWebhook(t, defaultOpts, acs...)
 
 	resetMetrics()
-	return wh, fmt.Sprintf("0.0.0.0:%d", port), cancel, nil
+	return wh, fmt.Sprintf("0.0.0.0:%d", port), ctx, cancel, nil
 }
