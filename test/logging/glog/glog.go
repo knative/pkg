@@ -55,7 +55,7 @@ func (v Verbose) Info(args ...interface{}) {
 // Infoln is a shim
 func (v Verbose) Infoln(args ...interface{}) {
 	if v {
-		s := fmt.Sprint(args)
+		s := fmt.Sprint(args...)
 		zap.S().Debug(s, "\n")
 	}
 }
@@ -79,7 +79,7 @@ func InfoDepth(depth int, args ...interface{}) {
 
 // Infoln is a shim
 func Infoln(args ...interface{}) {
-	s := fmt.Sprint(args)
+	s := fmt.Sprint(args...)
 	zap.S().Info(s, "\n")
 }
 
@@ -100,7 +100,7 @@ func WarningDepth(depth int, args ...interface{}) {
 
 // Warningln is a shim
 func Warningln(args ...interface{}) {
-	s := fmt.Sprint(args)
+	s := fmt.Sprint(args...)
 	zap.S().Warn(s, "\n")
 }
 
@@ -121,7 +121,7 @@ func ErrorDepth(depth int, args ...interface{}) {
 
 // Errorln is a shim
 func Errorln(args ...interface{}) {
-	s := fmt.Sprint(args)
+	s := fmt.Sprint(args...)
 	zap.S().Error(s, "\n")
 }
 
@@ -144,7 +144,7 @@ func FatalDepth(depth int, args ...interface{}) {
 
 // Fatalln is a shim
 func Fatalln(args ...interface{}) {
-	s := fmt.Sprint(args)
+	s := fmt.Sprint(args...)
 	zap.S().Error(s, "\n")
 	os.Exit(255)
 }
@@ -169,7 +169,7 @@ func ExitDepth(depth int, args ...interface{}) {
 
 // Exitln is a shim
 func Exitln(args ...interface{}) {
-	s := fmt.Sprint(args)
+	s := fmt.Sprint(args...)
 	zap.S().Error(s, "\n")
 	os.Exit(1)
 }

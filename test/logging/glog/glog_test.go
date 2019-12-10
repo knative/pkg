@@ -18,7 +18,7 @@ import (
 	"testing"
 )
 
-func TestAll(t *testing.T) {
+func TestGlogDoesntCrash(t *testing.T) {
 	// just making sure this stuff doesn't crash...
 
 	Errorf("%s %s", "One", "Two")

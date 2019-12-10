@@ -55,7 +55,7 @@ func (v Verbose) Info(args ...interface{}) {
 // Infoln is a shim
 func (v Verbose) Infoln(args ...interface{}) {
 	if v {
-		s := fmt.Sprint(args)
+		s := fmt.Sprint(args...)
 		zap.S().Debug(s, "\n")
 	}
 }
