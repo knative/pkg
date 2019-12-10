@@ -125,11 +125,15 @@ func InitializeMetricExporter(context string) {
 	trace.ApplyConfig(trace.Config{DefaultSampler: trace.AlwaysSample()})
 }
 
+var Verbosity = 0
+
 // InitializeLogger initializes the base logger
 func InitializeLogger(logVerbose bool) {
+	Verbosity = 2
 	logLevel := "info"
 	if logVerbose {
 		logLevel = "debug"
+		Verbosity = 8
 	}
 
 	logger = newLogger(logLevel)
