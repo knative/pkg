@@ -64,5 +64,7 @@ var (
 		"knative.dev/serving/autoscaler/panic_mode",
 		"knative.dev/internal/serving/revision/request_count",
 		"knative.dev/internal/serving/revision/request_latencies",
+		"knative.dev/internal/serving/controller/cert_expiration_durations",
+		"knative.dev/internal/serving/controller/cert_total_num",
 	)
 )
