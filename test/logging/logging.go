@@ -21,15 +21,19 @@ package logging
 
 import (
 	"context"
+	"flag"
 	"fmt"
+	"os"
+	"runtime"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/davecgh/go-spew/spew"
 	"go.opencensus.io/stats/view"
 	"go.opencensus.io/trace"
 	"go.uber.org/zap"
-	"knative.dev/pkg/logging"
+	"go.uber.org/zap/zapcore"
 )
 
 const (
@@ -43,8 +47,6 @@ const (
 
 // FormatLogger is a printf style function for logging in tests.
 type FormatLogger func(template string, args ...interface{})
-
-var logger *zap.SugaredLogger
 
 var exporter *zapMetricExporter
 
@@ -80,29 +82,22 @@ func (e *zapMetricExporter) ExportSpan(vd *trace.SpanData) {
 	}
 }
 
-func newLogger(logLevel string) *zap.SugaredLogger {
-	configJSONTemplate := `{
-	  "level": "%s",
-	  "encoding": "console",
-	  "outputPaths": ["stdout"],
-	  "errorOutputPaths": ["stderr"],
-	  "encoderConfig": {
-	    "timeKey": "ts",
-	    "messageKey": "message",
-	    "levelKey": "level",
-	    "nameKey": "logger",
-	    "callerKey": "caller",
-	    "messageKey": "msg",
-	    "stacktraceKey": "stacktrace",
-	    "lineEnding": "",
-	    "levelEncoder": "",
-	    "timeEncoder": "iso8601",
-	    "durationEncoder": "",
-	    "callerEncoder": ""
-	  }
-	}`
-	configJSON := fmt.Sprintf(configJSONTemplate, logLevel)
-	l, _ := logging.NewLogger(string(configJSON), logLevel, zap.AddCallerSkip(1))
+const (
+	logrZapDebugLevel = 3
+)
+
+func zapLevelFromLogrLevel(logrLevel int) zapcore.Level {
+	// Zap levels are -1, 0, 1, 2,... corresponding to DebugLevel, InfoLevel, WarnLevel, ErrorLevel,...
+	// zapr library just does zapLevel := -1*logrLevel; which means:
+	//  1. Info level is only active at 0 (versus 2 in klog being generally equivalent to Info)
+	//  2. Only verbosity of 0 and 1 map to valid Zap levels
+	// According to https://github.com/uber-go/zap/issues/713 custom levels (i.e. < -1) aren't guaranteed to work, so not using them (for now).
+
+	l := zap.InfoLevel
+	if logrLevel >= logrZapDebugLevel {
+		l = zap.DebugLevel
+	}
+
 	return l
 }
 
@@ -115,9 +110,9 @@ func InitializeMetricExporter(context string) {
 		trace.UnregisterExporter(exporter)
 	}
 
-	logger := logger.Named(context)
+	l := logger.Named(context).Sugar()
 
-	exporter = &zapMetricExporter{logger: logger}
+	exporter = &zapMetricExporter{logger: l}
 	view.RegisterExporter(exporter)
 	trace.RegisterExporter(exporter)
 
@@ -125,12 +120,89 @@ func InitializeMetricExporter(context string) {
 	trace.ApplyConfig(trace.Config{DefaultSampler: trace.AlwaysSample()})
 }
 
-// InitializeLogger initializes the base logger
-func InitializeLogger(logVerbose bool) {
-	logLevel := "info"
-	if logVerbose {
-		logLevel = "debug"
+func printFlags() {
+	flagList := make([]string, 10)
+	flag.CommandLine.VisitAll(func(f *flag.Flag) {
+		flagList = append(flagList, f.Name, f.Value.String())
+	})
+	s := make([]interface{}, len(flagList))
+	for i, v := range flagList {
+		s[i] = v
 	}
+	logger.Sugar().Debugw("Test Flags", s...)
+}
 
-	logger = newLogger(logLevel)
+var (
+	zapCore              zapcore.Core
+	logger               *zap.Logger
+	Verbosity            int // Amount of log verbosity
+	loggerInitializeOnce = &sync.Once{}
+)
+
+// InitializeLogger initializes the base logger
+func InitializeLogger() {
+	// During a `go test` run, every output (which shows up) normally goes stdout (all PASS, FAIL, prints, logs, etc)
+	// except with build errors; the actual message from the build errors goes to stderr, but FAIL ... [build failed] still appears in stdout
+	loggerInitializeOnce.Do(func() {
+
+		// Encoders
+		// encoderConfig := zapcore.EncoderConfig{
+		// 	TimeKey:        "ts",
+		// 	LevelKey:       "level",
+		// 	NameKey:        "logger",
+		// 	CallerKey:      "caller",
+		// 	MessageKey:     "msg",
+		// 	StacktraceKey:  "stacktrace",
+		// 	LineEnding:     zapcore.DefaultLineEnding,
+		// 	EncodeLevel:    zapcore.LowercaseLevelEncoder,
+		// 	EncodeTime:     zapcore.ISO8601TimeEncoder,
+		// 	EncodeDuration: zapcore.SecondsDurationEncoder,
+		// 	EncodeCaller:   zapcore.ShortCallerEncoder,
+		// }
+		// structuredEncoder := zapcore.NewJSONEncoder(encoderConfig)
+		humanEncoder := zapcore.NewConsoleEncoder(zap.NewDevelopmentEncoderConfig())
+
+		// Output streams
+		// TODO(coryrc): also open a log file
+		stdOut := zapcore.Lock(os.Stdout)
+
+		// Level function helper
+		zapLevel := zapLevelFromLogrLevel(Verbosity)
+		isPriority := zap.LevelEnablerFunc(func(lvl zapcore.Level) bool {
+			return lvl >= zapLevel
+		})
+
+		// Assemble the output streams
+		zapCore = zapcore.NewTee(
+			// TODO(coryrc): log JSON output somewhere?
+			// zapcore.NewCore(structuredEncoder, someFile, isPriority or any priority?),
+			zapcore.NewCore(humanEncoder, stdOut, isPriority),
+		)
+
+		logger = zap.New(zapCore)
+		zap.ReplaceGlobals(logger) // Gets used by klog/glog proxy libraries
+
+		if Verbosity > 2 {
+			printFlags()
+		}
+	})
+}
+
+func init() {
+	flag.IntVar(&Verbosity, "verbosity", 2,
+		"Amount of verbosity, 0-10. See https://github.com/go-logr/logr#how-do-i-choose-my-v-levels and https://github.com/kubernetes/community/blob/master/contributors/devel/sig-instrumentation/logging.md")
+}
+
+// TODO(coryrc): don't need this anymore probably
+// `go test` prints out lines like this after a test:
+// FAIL	knative.dev/pkg/test	0.150s
+// go-junit-reporter uses that to create test names
+func getPackagePath(levelsUp int) (string, error) {
+	var _, file, _, ok = runtime.Caller(levelsUp)
+	// file is like /home/coryrc/go/src/knative.dev/pkg/test/e2e_flags_test.go
+	// TODO(coryrc): look for knative.dev
+	if ok {
+		return file, nil
+	}
+	return "", fmt.Errorf("runtime.Caller() failed")
 }
