@@ -66,5 +66,6 @@ var (
 		"knative.dev/internal/serving/revision/request_latencies",
 		"knative.dev/internal/serving/controller/cert_expiration_durations",
 		"knative.dev/internal/serving/controller/cert_total_num",
+		"knative.dev/internal/serving/controller/cert_issuance_latencies",
 	)
 )
