@@ -115,7 +115,7 @@ func New(
 	acs := make(map[string]AdmissionController, len(admissionControllers))
 	for _, ac := range admissionControllers {
 		if _, ok := acs[ac.Path()]; ok {
-			return nil, fmt.Errorf("Duplicate webhook for path: %v", ac.Path())
+			return nil, fmt.Errorf("duplicate webhook for path: %v", ac.Path())
 		}
 		acs[ac.Path()] = ac
 	}
