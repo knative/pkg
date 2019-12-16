@@ -36,8 +36,8 @@ const (
 	tagEnabledName           = "genreconciler"
 	kindTagName              = tagEnabledName + ":kind"
 	stubsTagName             = tagEnabledName + ":stubs"
-	injectionClientTagName   = tagEnabledName + ":injectionClient"
-	injectionInformerTagName = tagEnabledName + ":injectionInformer"
+	injectionClientTagName   = tagEnabledName + ":injection-client"
+	injectionInformerTagName = tagEnabledName + ":injection-informer"
 	listerTagName            = tagEnabledName + ":lister"
 	clientsetTagName         = tagEnabledName + ":clientset"
 )
