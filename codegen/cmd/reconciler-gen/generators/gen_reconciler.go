@@ -103,18 +103,18 @@ func (g *genReconciler) Init(c *generator.Context, w io.Writer) error {
 		"trackerInterface":     c.Universe.Type(types.Name{Name: "Interface", Package: "knative.dev/pkg/tracker"}),
 		"controllerReconciler": c.Universe.Type(types.Name{Name: "Reconciler", Package: "knative.dev/pkg/controller"}),
 		// K8s types
-		"recordEventRecorder": c.Universe.Type(types.Name{Name: "EventRecorder", Package: "k8s.io/injectionClient-go/tools/record"}),
+		"recordEventRecorder": c.Universe.Type(types.Name{Name: "EventRecorder", Package: "k8s.io/client-go/tools/record"}),
 		// methods
 		"loggingFromContext": c.Universe.Function(types.Name{
 			Package: "knative.dev/pkg/logging",
 			Name:    "FromContext",
 		}),
 		"cacheSplitMetaNamespaceKey": c.Universe.Function(types.Name{
-			Package: "k8s.io/injectionClient-go/tools/cache",
+			Package: "k8s.io/client-go/tools/cache",
 			Name:    "SplitMetaNamespaceKey",
 		}),
 		"retryRetryOnConflict": c.Universe.Function(types.Name{
-			Package: "k8s.io/injectionClient-go/util/retry",
+			Package: "k8s.io/client-go/util/retry",
 			Name:    "RetryOnConflict",
 		}),
 	}
