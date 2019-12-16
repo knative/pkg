@@ -29,13 +29,7 @@ import (
 var (
 	fakeHost = "fakehost"
 	fakeRes  = "{\"name\": \"res\", \"type\": \"t\", \"state\": \"d\"}"
-
-	client Client
 )
-
-func setup() {
-	client = Client{}
-}
 
 // create a fake server as Boskos server, must close() afterwards
 func fakeServer(f func(http.ResponseWriter, *http.Request)) *httptest.Server {
@@ -72,7 +66,6 @@ func TestAcquireGKEProject(t *testing.T) {
 	}()
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			setup()
 			ts := fakeServer(func(w http.ResponseWriter, r *http.Request) {
 				if tt.serverErr {
 					http.Error(w, "", http.StatusBadRequest)
@@ -134,7 +127,6 @@ func TestReleaseGKEProject(t *testing.T) {
 	}()
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			//setup()
 			ts := fakeServer(func(w http.ResponseWriter, r *http.Request) {
 				if tt.serverErr {
 					http.Error(w, "", http.StatusBadRequest)

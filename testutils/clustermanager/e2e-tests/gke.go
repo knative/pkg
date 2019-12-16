@@ -139,7 +139,6 @@ func (gs *GKEClient) Setup(r GKERequest) ClusterOperations {
 	}
 	gc.operations = client
 
-	gc.boskosOps = &boskos.Client{}
 	gc.boskosOps, err = boskos.NewClient(nil, "", "")
 	if err != nil {
 		log.Fatalf("failed to create boskos client: '%v", err)
