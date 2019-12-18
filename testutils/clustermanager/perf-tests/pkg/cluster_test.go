@@ -40,18 +40,24 @@ func setupFakeGKEClient() gkeClient {
 }
 
 func TestRecreateClusters(t *testing.T) {
+	allExpectedClusters := map[string]ClusterConfig{
+		clusterNameForBenchmark("test-benchmark1", fakeRepository): clusterConfigForBenchmark("test-benchmark1", testBenchmarkRoot),
+		clusterNameForBenchmark("test-benchmark2", fakeRepository): clusterConfigForBenchmark("test-benchmark2", testBenchmarkRoot),
+		clusterNameForBenchmark("test-benchmark3", fakeRepository): clusterConfigForBenchmark("test-benchmark3", testBenchmarkRoot),
+		clusterNameForBenchmark("test-benchmark4", fakeRepository): clusterConfigForBenchmark("test-benchmark4", testBenchmarkRoot),
+	}
 	testCases := []struct {
 		testName           string
 		benchmarkRoot      string
 		precreatedClusters map[string]ClusterConfig
 		expectedClusters   map[string]ClusterConfig
 	}{
-		// nothing will change if there is no cluster at the beginning
+		// all clusters will be created if there is no cluster at the beginning
 		{
-			testName:           "nothing will change if there is no cluster at the beginning",
+			testName:           "all clusters will be created if there is no cluster at the beginning",
 			benchmarkRoot:      testBenchmarkRoot,
 			precreatedClusters: make(map[string]ClusterConfig),
-			expectedClusters:   make(map[string]ClusterConfig),
+			expectedClusters:   allExpectedClusters,
 		},
 		// clusters that do not belong to this repo will not be touched
 		{
@@ -64,13 +70,13 @@ func TestRecreateClusters(t *testing.T) {
 					NodeType:  "n1-standard-4",
 				},
 			},
-			expectedClusters: map[string]ClusterConfig{
+			expectedClusters: combineClusterMaps(map[string]ClusterConfig{
 				"unrelated-cluster": {
 					Location:  "us-central1",
 					NodeCount: 3,
 					NodeType:  "n1-standard-4",
 				},
-			},
+			}, allExpectedClusters),
 		},
 		// clusters that belong to this repo, but have no corresponding benchmark, will be deleted
 		{
@@ -83,7 +89,7 @@ func TestRecreateClusters(t *testing.T) {
 					NodeType:  "n1-standard-4",
 				},
 			},
-			expectedClusters: make(map[string]ClusterConfig),
+			expectedClusters: allExpectedClusters,
 		},
 		// clusters that belong to this repo, and have corresponding benchmark, will be recreated with the new config
 		{
@@ -96,9 +102,7 @@ func TestRecreateClusters(t *testing.T) {
 					NodeType:  "n1-standard-4",
 				},
 			},
-			expectedClusters: map[string]ClusterConfig{
-				clusterNameForBenchmark("test-benchmark1", fakeRepository): clusterConfigForBenchmark("test-benchmark1", testBenchmarkRoot),
-			},
+			expectedClusters: allExpectedClusters,
 		},
 		// multiple different clusters can be all handled in one single function call
 		{
@@ -116,10 +120,7 @@ func TestRecreateClusters(t *testing.T) {
 					NodeType:  "n1-standard-8",
 				},
 			},
-			expectedClusters: map[string]ClusterConfig{
-				clusterNameForBenchmark("test-benchmark1", fakeRepository): clusterConfigForBenchmark("test-benchmark1", testBenchmarkRoot),
-				clusterNameForBenchmark("test-benchmark2", fakeRepository): clusterConfigForBenchmark("test-benchmark2", testBenchmarkRoot),
-			},
+			expectedClusters: allExpectedClusters,
 		},
 	}
 
