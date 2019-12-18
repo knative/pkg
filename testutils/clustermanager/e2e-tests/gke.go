@@ -135,13 +135,15 @@ func (gs *GKEClient) Setup(r GKERequest) ClusterOperations {
 
 	client, err := gke.NewSDKClient()
 	if err != nil {
-		log.Fatalf("failed to create GKE SDK client: '%v'", err)
+		log.Fatalf("Failed to create GKE SDK client: '%v'", err)
 	}
 	gc.operations = client
 
-	gc.boskosOps, err = boskos.NewClient(nil, "", "")
+	gc.boskosOps, err = boskos.NewClient(nil, /* boskos owner */
+		"", /* boskos user */
+		"" /* boskos password file */)
 	if err != nil {
-		log.Fatalf("failed to create boskos client: '%v", err)
+		log.Fatalf("Failed to create boskos client: '%v", err)
 	}
 
 	return gc
