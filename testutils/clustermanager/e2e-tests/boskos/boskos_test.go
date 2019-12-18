@@ -77,6 +77,8 @@ func TestAcquireGKEProject(t *testing.T) {
 							t.Fatalf("Request URI = %q, want: %q", r.RequestURI, s)
 						}
 					}
+					// Return a mocked fake http response
+					fmt.Fprint(w, fakeRes)
 				}
 			})
 			defer ts.Close()
