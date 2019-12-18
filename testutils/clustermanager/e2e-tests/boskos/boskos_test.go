@@ -68,7 +68,7 @@ func TestAcquireGKEProject(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			ts := fakeServer(func(w http.ResponseWriter, r *http.Request) {
 				if tt.serverErr {
-					http.Error(w, "", http.StatusBadRequest)
+					http.Error(w, "Bad Request", http.StatusBadRequest)
 				} else {
 					// RequestURI for acquire contains a random hash, doing
 					// substring matching instead
@@ -77,7 +77,6 @@ func TestAcquireGKEProject(t *testing.T) {
 							t.Fatalf("Request URI = %q, want: %q", r.RequestURI, s)
 						}
 					}
-					fmt.Fprint(w, fakeRes)
 				}
 			})
 			defer ts.Close()
@@ -88,10 +87,10 @@ func TestAcquireGKEProject(t *testing.T) {
 			}
 			_, err = client.AcquireGKEProject(GKEProjectResource)
 			if tt.expErr && (err == nil) {
-				t.Fatalf("testing acquiring GKE project, want: err, got: no err")
+				t.Fatalf("No expected error when acquiring GKE project.")
 			}
 			if !tt.expErr && (err != nil) {
-				t.Fatalf("testing acquiring GKE project, want: no err, got: err '%v'", err)
+				t.Fatalf("Unexpected error when acquiring GKE project, '%v'", err)
 			}
 		})
 	}
@@ -131,7 +130,7 @@ func TestReleaseGKEProject(t *testing.T) {
 				if tt.serverErr {
 					http.Error(w, "", http.StatusBadRequest)
 				} else if r.RequestURI != tt.expReq {
-					t.Fatalf("request URI doesn't match: want: '%s', got: '%s'", tt.expReq, r.RequestURI)
+					t.Fatalf("Request URI doesn't match: want: '%s', got: '%s'", tt.expReq, r.RequestURI)
 				} else {
 					fmt.Fprint(w, "")
 				}
@@ -140,14 +139,14 @@ func TestReleaseGKEProject(t *testing.T) {
 			boskosURI = ts.URL
 			client, err := NewClient(tt.host, "", "")
 			if err != nil {
-				t.Fatalf("failed to create test client %v", err)
+				t.Fatalf("Failed to create test client %v", err)
 			}
 			err = client.ReleaseGKEProject(tt.resName)
 			if tt.expErr && (err == nil) {
-				t.Fatalf("testing acquiring GKE project, want: err, got: no err")
+				t.Fatalf("No expected error when releasing GKE project.")
 			}
 			if !tt.expErr && (err != nil) {
-				t.Fatalf("testing acquiring GKE project, want: no err, got: err '%v'", err)
+				t.Fatalf("Unexpected error when releasing GKE project, '%v'", err)
 			}
 		})
 	}
