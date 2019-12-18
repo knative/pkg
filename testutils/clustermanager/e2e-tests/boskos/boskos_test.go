@@ -74,7 +74,7 @@ func TestAcquireGKEProject(t *testing.T) {
 					// substring matching instead
 					for _, s := range []string{"/acquire?", "owner=" + tt.expHost, "state=free", "dest=busy", "type=gke-project"} {
 						if !strings.Contains(r.RequestURI, s) {
-							t.Fatalf("request URI doesn't match: want: contains '%s', got: '%s'", s, r.RequestURI)
+							t.Fatalf("Request URI = %q, want: %q", r.RequestURI, s)
 						}
 					}
 					fmt.Fprint(w, fakeRes)
@@ -82,9 +82,9 @@ func TestAcquireGKEProject(t *testing.T) {
 			})
 			defer ts.Close()
 			boskosURI = ts.URL
-			client, err := NewClient(tt.host, "", "")
+			client, err := NewClient(tt.host, "" /*what's this param?*/, "" /*what's that param?*/)
 			if err != nil {
-				t.Fatalf("failed to create test client %v", err)
+				t.Fatalf("Failed to create test client %v", err)
 			}
 			_, err = client.AcquireGKEProject(GKEProjectResource)
 			if tt.expErr && (err == nil) {
