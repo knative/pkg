@@ -89,7 +89,7 @@ func TestAcquireGKEProject(t *testing.T) {
 			}
 			_, err = client.AcquireGKEProject(GKEProjectResource)
 			if tt.expErr && (err == nil) {
-				t.Fatalf("No expected error when acquiring GKE project.")
+				t.Fatal("No expected error when acquiring GKE project.")
 			}
 			if !tt.expErr && (err != nil) {
 				t.Fatalf("Unexpected error when acquiring GKE project, '%v'", err)
@@ -145,7 +145,7 @@ func TestReleaseGKEProject(t *testing.T) {
 			}
 			err = client.ReleaseGKEProject(tt.resName)
 			if tt.expErr && (err == nil) {
-				t.Fatalf("No expected error when releasing GKE project.")
+				t.Fatal("No expected error when releasing GKE project.")
 			}
 			if !tt.expErr && (err != nil) {
 				t.Fatalf("Unexpected error when releasing GKE project, '%v'", err)
