@@ -20,22 +20,22 @@ import (
 	"fmt"
 )
 
-// New returns a ReconcilerEvent fully populated.
-func New(eventtype, reason, messageFmt string, args ...interface{}) error {
+// NewReconcilerEvent returns a ReconcilerEvent fully populated.
+func NewReconcilerEvent(eventtype, reason, messageFmt string, args ...interface{}) error {
 	return &ReconcilerEvent{
-		EventType:  eventtype,
-		Reason:     reason,
-		Format: messageFmt,
-		Args:       args,
+		EventType: eventtype,
+		Reason:    reason,
+		Format:    messageFmt,
+		Args:      args,
 	}
 }
 
 // ReconcilerEvent wraps the fields required for recorders to create an Event.
 type ReconcilerEvent struct {
-	EventType  string
-	Reason     string
-	Format string
-	Args       []interface{}
+	EventType string
+	Reason    string
+	Format    string
+	Args      []interface{}
 }
 
 // make sure ReconcilerEvent implements error.
