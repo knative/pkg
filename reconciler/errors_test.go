@@ -18,6 +18,7 @@ package reconciler
 
 import (
 	"errors"
+	"io"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -51,6 +52,13 @@ func TestNewOtherType_Is(t *testing.T) {
 	err := NewReconcilerEvent(corev1.EventTypeNormal, exampleStatusFailed, "this is an example error, %s", "yep")
 	if errors.Is(err, NewReconcilerEvent(corev1.EventTypeWarning, exampleStatusFailed, "")) {
 		t.Error("not a Warn, ExampleStatusFailed")
+	}
+}
+
+func TestNewWrappedErrors_Is(t *testing.T) {
+	err := NewReconcilerEvent(corev1.EventTypeNormal, exampleStatusFailed, "this is a wrapped error, %w", io.ErrUnexpectedEOF)
+	if !errors.Is(err, io.ErrUnexpectedEOF) {
+		t.Error("wrapping did not work")
 	}
 }
 

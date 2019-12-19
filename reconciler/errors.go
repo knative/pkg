@@ -17,6 +17,7 @@ limitations under the License.
 package reconciler
 
 import (
+	"errors"
 	"fmt"
 )
 
@@ -48,6 +49,10 @@ func (e *ReconcilerEvent) Is(target error) bool {
 		if t != nil && t.EventType == e.EventType && t.Reason == e.Reason {
 			return true
 		}
+	} else {
+		// Allow for wrapped errors.
+		err := fmt.Errorf(e.Format, e.Args...)
+		return errors.Is(err, target)
 	}
 	return false
 }
