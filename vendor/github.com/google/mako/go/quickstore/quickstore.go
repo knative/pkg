@@ -54,11 +54,11 @@ import (
 	"github.com/golang/protobuf/proto"
 	"google.golang.org/grpc"
 
-	qspb "github.com/google/mako/internal/quickstore_microservice/proto/quickstore_go_proto"
+	qspb "github.com/google/mako/go/internal/quickstore_microservice/proto/quickstore_go_proto"
 	qpb "github.com/google/mako/proto/quickstore/quickstore_go_proto"
 	pgpb "github.com/google/mako/spec/proto/mako_go_proto"
 
-	_ "github.com/google/mako/internal/go/common" // b/111726961
+	_ "github.com/google/mako/go/internal/common" // b/111726961
 )
 
 // Quickstore allows saving of data passed via Add* methods to Mako.

@@ -18,7 +18,7 @@ package mako
 
 import (
 	"github.com/golang/protobuf/proto"
-	tpb "github.com/google/mako/clients/proto/analyzers/threshold_analyzer_go_proto"
+	tpb "github.com/google/mako/proto/clients/analyzers/threshold_analyzer_go_proto"
 	mpb "github.com/google/mako/spec/proto/mako_go_proto"
 )
 
