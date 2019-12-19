@@ -139,7 +139,7 @@ func (gs *GKEClient) Setup(r GKERequest) ClusterOperations {
 	}
 	gc.operations = client
 
-	gc.boskosOps, err = boskos.NewClient(nil, /* boskos owner */
+	gc.boskosOps, err = boskos.NewClient("", /* boskos owner */
 		"", /* boskos user */
 		"" /* boskos password file */)
 	if err != nil {

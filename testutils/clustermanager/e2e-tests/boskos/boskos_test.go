@@ -41,13 +41,13 @@ func TestAcquireGKEProject(t *testing.T) {
 	tests := []struct {
 		name      string
 		serverErr bool
-		host      *string
+		host      string
 		expHost   string
 		expErr    bool
 	}{
-		{"Test boskos server error", true, &fakeHost, "fakehost", true},
-		{"Test passing host as param", false, &fakeHost, "fakehost", false},
-		{"Test using default host", false, nil, "mockjobname", false},
+		{"Test boskos server error", true, fakeHost, "fakehost", true},
+		{"Test passing host as param", false, fakeHost, "fakehost", false},
+		{"Test using default host", false, "", "mockjobname", false},
 	}
 
 	oldBoskosURI := boskosURI
@@ -83,7 +83,9 @@ func TestAcquireGKEProject(t *testing.T) {
 			})
 			defer ts.Close()
 			boskosURI = ts.URL
-			client, err := NewClient(tt.host, "" /*what's this param?*/, "" /*what's that param?*/)
+			client, err := NewClient(tt.host, /* boskos owner */
+				"", /* boskos user */
+				"" /* boskos password file */)
 			if err != nil {
 				t.Fatalf("Failed to create test client %v", err)
 			}
@@ -103,14 +105,14 @@ func TestReleaseGKEProject(t *testing.T) {
 	tests := []struct {
 		name      string
 		serverErr bool
-		host      *string
+		host      string
 		resName   string
 		expReq    string
 		expErr    bool
 	}{
-		{"Test boskos server error", true, &fakeHost, "a", "/release?dest=dirty&name=a&owner=fakehost", true},
-		{"Test passing host as param", false, &fakeHost, "b", "/release?dest=dirty&name=b&owner=fakehost", false},
-		{"Test using default host", false, nil, "c", "/release?dest=dirty&name=c&owner=mockjobname", false},
+		{"Test boskos server error", true, fakeHost, "a", "/release?dest=dirty&name=a&owner=fakehost", true},
+		{"Test passing host as param", false, fakeHost, "b", "/release?dest=dirty&name=b&owner=fakehost", false},
+		{"Test using default host", false, "", "c", "/release?dest=dirty&name=c&owner=mockjobname", false},
 	}
 	oldBoskosURI := boskosURI
 	defer func() {
@@ -139,7 +141,9 @@ func TestReleaseGKEProject(t *testing.T) {
 			})
 			defer ts.Close()
 			boskosURI = ts.URL
-			client, err := NewClient(tt.host, "", "")
+			client, err := NewClient(tt.host, /* boskos owner */
+				"", /* boskos user */
+				"" /* boskos password file */)
 			if err != nil {
 				t.Fatalf("Failed to create test client %v", err)
 			}
