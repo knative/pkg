@@ -89,7 +89,7 @@ func NewCreateClusterRequest(request *Request) (*container.CreateClusterRequest,
 		return nil, errors.New("node type cannot be empty")
 	}
 	if request.EnableWorkloadIdentity && request.Project == "" {
-		return nil, errors.New("project cannot be empty if you want to Workload Identity")
+		return nil, errors.New("project cannot be empty if you want Workload Identity")
 	}
 
 	if request.GKEVersion == "" {
