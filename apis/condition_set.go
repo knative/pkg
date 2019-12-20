@@ -60,6 +60,9 @@ type ConditionManager interface {
 	// set to false.
 	IsFalse() bool
 
+	// GetCondition finds and returns the Condition that matches the ConditionType happy.
+	GetHappyCondition() *Condition
+
 	// GetCondition finds and returns the Condition that matches the ConditionType
 	// previously set on Conditions.
 	GetCondition(t ConditionType) *Condition
@@ -172,6 +175,11 @@ func (r conditionsImpl) IsFalse() bool {
 		return false
 	}
 	return true
+}
+
+// GetHappyCondition finds and returns the Condition that matches the ConditionType happy.
+func (r conditionsImpl) GetHappyCondition() *Condition {
+	return r.GetCondition(r.happy)
 }
 
 // GetCondition finds and returns the Condition that matches the ConditionType
