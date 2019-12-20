@@ -230,11 +230,14 @@ func (gc *gkeClient) createClusterWithRetries(gcpProject, name string, config Cl
 		addons = strings.Split(config.Addons, ",")
 	}
 	req := &gke.Request{
+		Project:     gcpProject,
 		ClusterName: name,
 		MinNodes:    config.NodeCount,
 		MaxNodes:    config.NodeCount,
 		NodeType:    config.NodeType,
 		Addons:      addons,
+		// Always enable Workload Identity.
+		EnableWorkloadIdentity: true,
 	}
 	creq, err := gke.NewCreateClusterRequest(req)
 	if err != nil {
