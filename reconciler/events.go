@@ -32,7 +32,7 @@ type Event error
 // An error is considered to match a target if it is equal to that target or if
 // it implements a method Is(error) bool such that Is(target) returns true.
 // (text from errors/wrap.go)
-var Is = errors.Is
+var EventIs = errors.Is
 
 // As finds the first error in err's chain that matches target, and if so, sets
 // target to that error value and returns true.
@@ -48,10 +48,10 @@ var Is = errors.Is
 // As will panic if target is not a non-nil pointer to either a type that implements
 // error, or to any interface type. As returns false if err is nil.
 // (text from errors/wrap.go)
-var As = errors.As
+var EventAs = errors.As
 
-// NewReconcilerEvent returns a ReconcilerEvent fully populated.
-func NewReconcilerEvent(eventtype, reason, messageFmt string, args ...interface{}) Event {
+// NewEvent returns an Event fully populated.
+func NewEvent(eventtype, reason, messageFmt string, args ...interface{}) Event {
 	return &ReconcilerEvent{
 		EventType: eventtype,
 		Reason:    reason,
@@ -60,7 +60,8 @@ func NewReconcilerEvent(eventtype, reason, messageFmt string, args ...interface{
 	}
 }
 
-// ReconcilerEvent wraps the fields required for recorders to create an Event.
+// ReconcilerEvent wraps the fields required for recorders to create a
+// kubernetes recorder Event.
 type ReconcilerEvent struct {
 	EventType string
 	Reason    string
