@@ -29,42 +29,42 @@ var exampleStatusFailed = "ExampleStatusFailed"
 
 func TestNil_Is(t *testing.T) {
 	var err error
-	if errors.Is(err, NewReconcilerEvent(corev1.EventTypeWarning, exampleStatusFailed, "")) {
+	if Is(err, NewReconcilerEvent(corev1.EventTypeWarning, exampleStatusFailed, "")) {
 		t.Error("not a ReconcilerEvent")
 	}
 }
 
 func TestError_Is(t *testing.T) {
 	err := errors.New("some other error")
-	if errors.Is(err, NewReconcilerEvent(corev1.EventTypeWarning, exampleStatusFailed, "")) {
+	if Is(err, NewReconcilerEvent(corev1.EventTypeWarning, exampleStatusFailed, "")) {
 		t.Error("not a ReconcilerEvent")
 	}
 }
 
 func TestNew_Is(t *testing.T) {
 	err := NewReconcilerEvent(corev1.EventTypeWarning, exampleStatusFailed, "this is an example error, %s", "yep")
-	if !errors.Is(err, NewReconcilerEvent(corev1.EventTypeWarning, exampleStatusFailed, "")) {
+	if !Is(err, NewReconcilerEvent(corev1.EventTypeWarning, exampleStatusFailed, "")) {
 		t.Error("not a ReconcilerEvent")
 	}
 }
 
 func TestNewOtherType_Is(t *testing.T) {
 	err := NewReconcilerEvent(corev1.EventTypeNormal, exampleStatusFailed, "this is an example error, %s", "yep")
-	if errors.Is(err, NewReconcilerEvent(corev1.EventTypeWarning, exampleStatusFailed, "")) {
+	if Is(err, NewReconcilerEvent(corev1.EventTypeWarning, exampleStatusFailed, "")) {
 		t.Error("not a Warn, ExampleStatusFailed")
 	}
 }
 
 func TestNewWrappedErrors_Is(t *testing.T) {
 	err := NewReconcilerEvent(corev1.EventTypeNormal, exampleStatusFailed, "this is a wrapped error, %w", io.ErrUnexpectedEOF)
-	if !errors.Is(err, io.ErrUnexpectedEOF) {
+	if !Is(err, io.ErrUnexpectedEOF) {
 		t.Error("wrapping did not work")
 	}
 }
 
 func TestNewOtherReason_Is(t *testing.T) {
 	err := NewReconcilerEvent(corev1.EventTypeWarning, "otherReason", "this is an example error, %s", "yep")
-	if errors.Is(err, NewReconcilerEvent(corev1.EventTypeWarning, exampleStatusFailed, "")) {
+	if Is(err, NewReconcilerEvent(corev1.EventTypeWarning, exampleStatusFailed, "")) {
 		t.Error("not a Warn, ExampleStatusFailed")
 	}
 }
@@ -73,7 +73,7 @@ func TestNew_As(t *testing.T) {
 	err := NewReconcilerEvent(corev1.EventTypeWarning, exampleStatusFailed, "this is an example error, %s", "yep")
 
 	var event *ReconcilerEvent
-	if errors.As(err, &event) {
+	if As(err, &event) {
 		if event.EventType != "Warning" {
 			t.Error("mismatched reason")
 		}
