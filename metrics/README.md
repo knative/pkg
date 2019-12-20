@@ -21,7 +21,7 @@ namespace.
 There are currently
 [6 supported Golang exporters for OpenCensus](https://opencensus.io/exporters/supported-exporters/go/).
 At least the Stackdriver exporter causes problems/failures if started without
-access to (Google) application defaut credentials. It's not clear that we want
+access to (Google) application default credentials. It's not clear that we want
 to build all of those backends into the core of `knative.dev/pkg` and all
 downstream dependents, and we'd like all the code shipped in `knative.dev/pkg`
 to be able to be tested without needing any special environment setup.
@@ -49,10 +49,12 @@ with speaks the OpenCensus protocol and can proxy from this protocol to multiple
 backends.
 
 ![OpenCensus Agent configuration](https://github.com/census-instrumentation/opencensus-service/raw/master/images/opencensus-service-deployment-models.png)
+(From OpenCensus Documentation)
 
-**We will standardize on export to the OpenCensus agent, and encourage vendors
-to implement their own OpenCensus DaemonSet, Sidecar, or other `localhost:55678`
-service which connects to their desired monitoring environment.**
+**We will standardize on export to the OpenCensus export protocol, and encourage
+vendors to implement their own OpenCensus Agent or Collector DaemonSet, Sidecar,
+or other `localhost:55678` service which connects to their desired monitoring
+environment.**
 
 **Additionally, once OpenTelemetry agent is stable, we will propose adding the
 OpenTelemetry agent running on a localhost port as part of the runtime
@@ -67,7 +69,7 @@ statistics for a short period of time if not.
 ### Concerns
 
 - Unsure about the stability of the OpenCensus Agent (or successor). We're
-  currently investingating this, but the OpenCensus agent seems to have been
+  currently investigating this, but the OpenCensus agent seems to have been
   recommended by several others.
 - Running `fluentd` as a sidecar was very big (400MB) and had a large impact on
   cold start times.
