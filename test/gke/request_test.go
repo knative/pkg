@@ -87,6 +87,7 @@ func TestNewCreateClusterRequest(t *testing.T) {
 			ClusterName: "name-g",
 			MinNodes:    1,
 			MaxNodes:    1,
+			NodeType:    "n1-standard-4",
 			EnableWorkloadIdentity: true,
 		},
 		errorExpected: false,
@@ -96,9 +97,10 @@ func TestNewCreateClusterRequest(t *testing.T) {
 			ClusterName: "name-h",
 			MinNodes:    3,
 			MaxNodes:    3,
+			NodeType:    "n1-standard-4",
 			EnableWorkloadIdentity: true,
 		},
-		errorExpected: false,
+		errorExpected: true,
 	}}
 	for _, data := range datas {
 		createReq, err := NewCreateClusterRequest(data.req)
