@@ -79,12 +79,11 @@ func (e *ReconcilerEvent) Is(target error) bool {
 		if t != nil && t.EventType == e.EventType && t.Reason == e.Reason {
 			return true
 		}
-	} else {
-		// Allow for wrapped errors.
-		err := fmt.Errorf(e.Format, e.Args...)
-		return errors.Is(err, target)
+		return false
 	}
-	return false
+	// Allow for wrapped errors.
+	err := fmt.Errorf(e.Format, e.Args...)
+	return errors.Is(err, target)
 }
 
 // Error returns the string that is formed by using the format string with the

@@ -25,26 +25,28 @@ import (
 	corev1 "k8s.io/api/core/v1"
 )
 
-var exampleStatusFailed = "ExampleStatusFailed"
+const (
+	exampleStatusFailed = "ExampleStatusFailed"
+)
 
 func TestNil_Is(t *testing.T) {
 	var err error
 	if EventIs(err, NewEvent(corev1.EventTypeWarning, exampleStatusFailed, "")) {
-		t.Error("not a ReconcilerEvent")
+		t.Error("expected error to be a ReconcilerEvent, is not")
 	}
 }
 
 func TestError_Is(t *testing.T) {
 	err := errors.New("some other error")
 	if EventIs(err, NewEvent(corev1.EventTypeWarning, exampleStatusFailed, "")) {
-		t.Error("not a ReconcilerEvent")
+		t.Error("expected error to be a ReconcilerEvent, is not")
 	}
 }
 
 func TestNew_Is(t *testing.T) {
 	err := NewEvent(corev1.EventTypeWarning, exampleStatusFailed, "this is an example error, %s", "yep")
 	if !EventIs(err, NewEvent(corev1.EventTypeWarning, exampleStatusFailed, "")) {
-		t.Error("not a ReconcilerEvent")
+		t.Error("expected error to be a ReconcilerEvent, is not")
 	}
 }
 
@@ -81,7 +83,7 @@ func TestNew_As(t *testing.T) {
 			t.Error("mismatched eventtype")
 		}
 	} else {
-		t.Error("not a ReconcilerEvent")
+		t.Error("expected error to be a ReconcilerEvent, is not")
 	}
 }
 
@@ -90,7 +92,7 @@ func TestNil_As(t *testing.T) {
 
 	var event *ReconcilerEvent
 	if EventAs(err, &event) {
-		t.Error("not a ReconcilerEvent")
+		t.Error("expected error to be a ReconcilerEvent, is not")
 	}
 }
 
