@@ -18,13 +18,8 @@ package webhook
 
 import (
 	"context"
-	"fmt"
-	"net"
-	"testing"
-
-	"golang.org/x/sync/errgroup"
 	"knative.dev/pkg/controller"
-
+	"testing"
 	// Make system.Namespace() work in tests.
 	_ "knative.dev/pkg/system/testing"
 
@@ -68,27 +63,4 @@ func newNonRunningTestWebhook(t *testing.T, options Options, acs ...AdmissionCon
 		t.Fatalf("Failed to create new admission controller: %v", err)
 	}
 	return
-}
-
-func TestRegistrationStopChanFire(t *testing.T) {
-	opts := newDefaultOptions()
-	_, ac, cancel := newNonRunningTestWebhook(t, opts)
-	defer cancel()
-
-	stopCh := make(chan struct{})
-
-	var g errgroup.Group
-	g.Go(func() error {
-		return ac.Run(stopCh)
-	})
-	close(stopCh)
-
-	if err := g.Wait(); err != nil {
-		t.Fatal("Error during run: ", err)
-	}
-	conn, err := net.Dial("tcp", fmt.Sprintf(":%d", opts.Port))
-	if err == nil {
-		conn.Close()
-		t.Errorf("Unexpected success to dial to port %d", opts.Port)
-	}
 }

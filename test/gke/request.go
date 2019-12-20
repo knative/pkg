@@ -1,3 +1,5 @@
+// +build gke
+
 /*
 Copyright 2019 The Knative Authors
 
