@@ -51,8 +51,8 @@ backends.
 ![OpenCensus Agent configuration](https://github.com/census-instrumentation/opencensus-service/raw/master/images/opencensus-service-deployment-models.png)
 
 **We will standardize on export to the OpenCensus agent, and encourage vendors
-to implement their own OpenCensus DaemonSet which connects to their desired
-monitoring environment.**
+to implement their own OpenCensus DaemonSet, Sidecar, or other `localhost:55678`
+service which connects to their desired monitoring environment.**
 
 **Additionally, once OpenTelemetry agent is stable, we will propose adding the
 OpenTelemetry agent running on a localhost port as part of the runtime
@@ -84,7 +84,14 @@ statistics for a short period of time if not.
 ### Steps to reach the goal
 
 - [ ] [Add OpenCensus Agent as one of the export options](https://github.com/knative/pkg/issues/955).
-- [ ] Ensure that all tests pass in a non-Google-Cloud connected environment. **This is true today.**
+- [ ] Ensure that all tests pass in a non-Google-Cloud connected environment.
+      **This is true today.**
       [Ensure this on an ongoing basis.](https://github.com/knative/pkg/issues/957)
 - [ ] (Google) to implement OpenCensus Agent configuration to match what they
-      are doing for Stackdriver now. (No public issue link because this shoud be in Google's vendor-specific configuration.)
+      are doing for Stackdriver now. (No public issue link because this shoud be
+      in Google's vendor-specific configuration.)
+- [ ] Stop adding exporter features outside of the OpenCensus / OpenTelemetry
+      export as of 0.13 release (03 March 2020). Between now and 0.13, small
+      amounts of additional features can be built in to assist with the bridging
+      process or to support existing products. New products should build on the
+      OpenCensus Agent approach.
