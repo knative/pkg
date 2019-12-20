@@ -32,14 +32,14 @@ const (
 func TestNil_Is(t *testing.T) {
 	var err error
 	if EventIs(err, NewEvent(corev1.EventTypeWarning, exampleStatusFailed, "")) {
-		t.Error("expected error to be a ReconcilerEvent, is not")
+		t.Error("did not expect error to be a ReconcilerEvent")
 	}
 }
 
 func TestError_Is(t *testing.T) {
 	err := errors.New("some other error")
 	if EventIs(err, NewEvent(corev1.EventTypeWarning, exampleStatusFailed, "")) {
-		t.Error("expected error to be a ReconcilerEvent, is not")
+		t.Error("did not expect error to be a ReconcilerEvent")
 	}
 }
 
@@ -67,7 +67,7 @@ func TestNewWrappedErrors_Is(t *testing.T) {
 func TestNewOtherReason_Is(t *testing.T) {
 	err := NewEvent(corev1.EventTypeWarning, "otherReason", "this is an example error, %s", "yep")
 	if EventIs(err, NewEvent(corev1.EventTypeWarning, exampleStatusFailed, "")) {
-		t.Error("not a Warn, ExampleStatusFailed")
+		t.Error("did not expect event to be [Warn, ExampleStatusFailed]")
 	}
 }
 
@@ -92,7 +92,7 @@ func TestNil_As(t *testing.T) {
 
 	var event *ReconcilerEvent
 	if EventAs(err, &event) {
-		t.Error("expected error to be a ReconcilerEvent, is not")
+		t.Error("did not expect error to be a ReconcilerEvent")
 	}
 }
 
