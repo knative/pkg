@@ -83,8 +83,8 @@ statistics for a short period of time if not.
 
 ### Steps to reach the goal
 
-- [ ] Add OpenCensus Agent as one of the export options.
-- [ ] Ensure that all tests pass in a non-Google-Cloud connected environment.
-      Ensure this on an ongoing basis.
+- [ ] [Add OpenCensus Agent as one of the export options](https://github.com/knative/pkg/issues/955).
+- [ ] Ensure that all tests pass in a non-Google-Cloud connected environment. **This is true today.**
+      [Ensure this on an ongoing basis.](https://github.com/knative/pkg/issues/957)
 - [ ] (Google) to implement OpenCensus Agent configuration to match what they
-      are doing for Stackdriver now.
+      are doing for Stackdriver now. (No public issue link because this shoud be in Google's vendor-specific configuration.)
