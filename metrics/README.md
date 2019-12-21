@@ -53,8 +53,12 @@ backends.
 
 **We will standardize on export to the OpenCensus export protocol, and encourage
 vendors to implement their own OpenCensus Agent or Collector DaemonSet, Sidecar,
-or other `localhost:55678` service which connects to their desired monitoring
-environment.**
+or other
+[OpenCensus Protocol](https://github.com/census-instrumentation/opencensus-proto/tree/master/src/opencensus/proto/agent)
+service which connects to their desired monitoring environment.** For now, we
+will use the `config-observability` ConfigMap to provide the OpenCensus
+endpoint, but we will work with the OpenTelemetry group to define a
+kubernetes-friendly standard export path.
 
 **Additionally, once OpenTelemetry agent is stable, we will propose adding the
 OpenTelemetry agent running on a localhost port as part of the runtime
