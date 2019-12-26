@@ -29,12 +29,10 @@ const credEnvKey = "GOOGLE_APPLICATION_CREDENTIALS"
 // func NewSDKClient(opts ...option.ClientOption) (SDKOperations, error) {
 func TestNewSDKClient(t *testing.T) {
 	pwd, _ := os.Getwd()
-	if err := os.Setenv(credEnvKey, filepath.Join(pwd, "fake/cred.json")); err != nil {
-		t.Errorf("Failed to set dummy gcloud credentials for running this test: '%v'", err)
+	if err := os.Setenv(credEnvKey, filepath.Join(pwd, "fake/credentials.json")); err != nil {
+		t.Errorf("Failed to set %s to fake/credentials.json: %v", credEnvKey, err)
 	}
-	defer func() {
-		os.Unsetenv(credEnvKey)
-	}()
+	defer os.Unsetenv(credEnvKey)
 
 	datas := []struct {
 		req option.ClientOption
