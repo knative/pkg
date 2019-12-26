@@ -53,7 +53,7 @@ type ConditionManager interface {
 	IsHappy() bool
 
 	// IsUnknown looks at the happy condition and returns true if that condition is
-	// set to unknown or that condition is nil.
+	// set to unknown..
 	IsUnknown() bool
 
 	// IsFalse looks at the happy condition and returns true if that condition is
@@ -160,7 +160,7 @@ func (r conditionsImpl) IsHappy() bool {
 }
 
 // IsUnknown looks at the happy condition and returns true if that condition is
-// set to Unknown or that condition is nil.
+// set to unknown.
 func (r conditionsImpl) IsUnknown() bool {
 	if c := r.GetCondition(r.happy); !c.IsUnknown() {
 		return false
@@ -169,7 +169,7 @@ func (r conditionsImpl) IsUnknown() bool {
 }
 
 // IsFalse looks at the happy condition and returns true if that condition is
-// set to False.
+// set to false.
 func (r conditionsImpl) IsFalse() bool {
 	if c := r.GetCondition(r.happy); c == nil || !c.IsFalse() {
 		return false
