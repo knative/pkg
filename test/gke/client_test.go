@@ -17,13 +17,23 @@ limitations under the License.
 package gke
 
 import (
+	"os"
+	"path/filepath"
 	"testing"
 
-	option "google.golang.org/api/option"
+	"google.golang.org/api/option"
 )
+
+const credEnvKey = "GOOGLE_APPLICATION_CREDENTIALS"
 
 // func NewSDKClient(opts ...option.ClientOption) (SDKOperations, error) {
 func TestNewSDKClient(t *testing.T) {
+	pwd, _ := os.Getwd()
+	if err := os.Setenv(credEnvKey, filepath.Join(pwd, "fake/credentials.json")); err != nil {
+		t.Errorf("Failed to set %s to fake/credentials.json: %v", credEnvKey, err)
+	}
+	defer os.Unsetenv(credEnvKey)
+
 	datas := []struct {
 		req option.ClientOption
 	}{{
