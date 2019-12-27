@@ -153,28 +153,19 @@ func (r ConditionSet) Manage(status ConditionsAccessor) ConditionManager {
 // IsHappy looks at the happy condition and returns true if that condition is
 // set to true.
 func (r conditionsImpl) IsHappy() bool {
-	if c := r.GetCondition(r.happy); c == nil || !c.IsTrue() {
-		return false
-	}
-	return true
+	return r.GetHappyCondition().IsTrue()
 }
 
 // IsUnknown looks at the happy condition and returns true if that condition is
 // set to unknown.
 func (r conditionsImpl) IsUnknown() bool {
-	if c := r.GetCondition(r.happy); !c.IsUnknown() {
-		return false
-	}
-	return true
+	return r.GetHappyCondition().IsUnknown()
 }
 
 // IsFalse looks at the happy condition and returns true if that condition is
 // set to false.
 func (r conditionsImpl) IsFalse() bool {
-	if c := r.GetCondition(r.happy); c == nil || !c.IsFalse() {
-		return false
-	}
-	return true
+	return r.GetHappyCondition().IsFalse()
 }
 
 // GetHappyCondition finds and returns the Condition that matches the ConditionType happy.
