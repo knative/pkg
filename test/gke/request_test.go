@@ -58,6 +58,19 @@ func TestNewCreateClusterRequest(t *testing.T) {
 		},
 		{
 			req: &Request{
+				Project:        "project-b",
+				ClusterName:    "name-b",
+				GKEVersion:     "1-2-3",
+				MinNodes:       10,
+				MaxNodes:       10,
+				NodeType:       "n1-standard-8",
+				Addons:         []string{"HorizontalPodAutoscaling", "HttpLoadBalancing", "CloudRun"},
+				ReleaseChannel: "rapid",
+			},
+			errorExpected: true,
+		},
+		{
+			req: &Request{
 				Project:    "project-c",
 				GKEVersion: "1-2-3",
 				MinNodes:   1,
