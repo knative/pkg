@@ -1246,7 +1246,7 @@ func TestDelete(t *testing.T) {
 			for _, bos := range data.boskosState {
 				fgc.boskosOps.(*boskosFake.FakeBoskosClient).NewGKEProject(bos.Name)
 				// Acquire with default user
-				fgc.boskosOps.(*boskosFake.FakeBoskosClient).AcquireGKEProject(nil, DefaultResourceType)
+				fgc.boskosOps.(*boskosFake.FakeBoskosClient).AcquireGKEProject(DefaultResourceType)
 			}
 			if data.requestCleanup {
 				fgc.Request = &GKERequest{
