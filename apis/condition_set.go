@@ -52,16 +52,8 @@ type ConditionManager interface {
 	// set to true.
 	IsHappy() bool
 
-	// IsUnknown looks at the happy condition and returns true if that condition is
-	// set to unknown..
-	IsUnknown() bool
-
-	// IsFalse looks at the happy condition and returns true if that condition is
-	// set to false.
-	IsFalse() bool
-
-	// GetCondition finds and returns the Condition that matches the ConditionType happy.
-	GetHappyCondition() *Condition
+	// GetTopLevelCondition finds and returns the top level Condition((happy Condition).
+	GetTopLevelCondition() *Condition
 
 	// GetCondition finds and returns the Condition that matches the ConditionType
 	// previously set on Conditions.
@@ -153,23 +145,11 @@ func (r ConditionSet) Manage(status ConditionsAccessor) ConditionManager {
 // IsHappy looks at the happy condition and returns true if that condition is
 // set to true.
 func (r conditionsImpl) IsHappy() bool {
-	return r.GetHappyCondition().IsTrue()
+	return r.GetTopLevelCondition().IsTrue()
 }
 
-// IsUnknown looks at the happy condition and returns true if that condition is
-// set to unknown.
-func (r conditionsImpl) IsUnknown() bool {
-	return r.GetHappyCondition().IsUnknown()
-}
-
-// IsFalse looks at the happy condition and returns true if that condition is
-// set to false.
-func (r conditionsImpl) IsFalse() bool {
-	return r.GetHappyCondition().IsFalse()
-}
-
-// GetHappyCondition finds and returns the Condition that matches the ConditionType happy.
-func (r conditionsImpl) GetHappyCondition() *Condition {
+// GetTopLevelCondition finds and returns the top level Condition(happy Condition).
+func (r conditionsImpl) GetTopLevelCondition() *Condition {
 	return r.GetCondition(r.happy)
 }
 
