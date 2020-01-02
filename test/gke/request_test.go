@@ -22,86 +22,142 @@ func TestNewCreateClusterRequest(t *testing.T) {
 	datas := []struct {
 		req           *Request
 		errorExpected bool
-	}{{
-		req: &Request{
-			Project:     "project-a",
-			ClusterName: "name-a",
-			MinNodes:    1,
-			MaxNodes:    1,
-			NodeType:    "n1-standard-4",
-			Addons:      []string{"Istio"},
+	}{
+		{
+			req: &Request{
+				Project:     "project-a",
+				ClusterName: "name-a",
+				MinNodes:    1,
+				MaxNodes:    1,
+				NodeType:    "n1-standard-4",
+				Addons:      []string{"Istio"},
+			},
+			errorExpected: false,
+		}, {
+			req: &Request{
+				Project:     "project-b",
+				ClusterName: "name-b",
+				MinNodes:    10,
+				MaxNodes:    10,
+				NodeType:    "n1-standard-8",
+				Addons:      []string{"HorizontalPodAutoscaling", "HttpLoadBalancing", "CloudRun"},
+			},
+			errorExpected: false,
 		},
-		errorExpected: false,
-	}, {
-		req: &Request{
-			Project:     "project-b",
-			ClusterName: "name-b",
-			MinNodes:    10,
-			MaxNodes:    10,
-			NodeType:    "n1-standard-8",
-			Addons:      []string{"HorizontalPodAutoscaling", "HttpLoadBalancing", "CloudRun"},
+		{
+			req: &Request{
+				Project:        "project-b",
+				ClusterName:    "name-b",
+				MinNodes:       10,
+				MaxNodes:       10,
+				NodeType:       "n1-standard-8",
+				Addons:         []string{"HorizontalPodAutoscaling", "HttpLoadBalancing", "CloudRun"},
+				ReleaseChannel: "rapid",
+			},
+			errorExpected: false,
 		},
-		errorExpected: false,
-	}, {
-		req: &Request{
-			Project:    "project-c",
-			GKEVersion: "1-2-3",
-			MinNodes:   1,
-			MaxNodes:   1,
-			NodeType:   "n1-standard-4",
+		{
+			req: &Request{
+				Project:        "project-b",
+				ClusterName:    "name-b",
+				GKEVersion:     "1-2-3",
+				MinNodes:       10,
+				MaxNodes:       10,
+				NodeType:       "n1-standard-8",
+				Addons:         []string{"HorizontalPodAutoscaling", "HttpLoadBalancing", "CloudRun"},
+				ReleaseChannel: "rapid",
+			},
+			errorExpected: true,
 		},
-		errorExpected: true,
-	}, {
-		req: &Request{
-			Project:     "project-d",
-			GKEVersion:  "1-2-3",
-			ClusterName: "name-d",
-			MinNodes:    0,
-			MaxNodes:    1,
-			NodeType:    "n1-standard-4",
-		},
-		errorExpected: true,
-	}, {
-		req: &Request{
-			Project:     "project-e",
-			GKEVersion:  "1-2-3",
-			ClusterName: "name-e",
-			MinNodes:    10,
-			MaxNodes:    1,
-			NodeType:    "n1-standard-4",
-		},
-		errorExpected: true,
-	}, {
-		req: &Request{
-			Project:     "project-f",
-			GKEVersion:  "1-2-3",
-			ClusterName: "name-f",
-			MinNodes:    1,
-			MaxNodes:    1,
-		},
-		errorExpected: true,
-	}, {
-		req: &Request{
-			Project:                "project-g",
-			GKEVersion:             "1-2-3",
-			ClusterName:            "name-g",
-			MinNodes:               1,
-			MaxNodes:               1,
-			NodeType:               "n1-standard-4",
-			EnableWorkloadIdentity: true,
-		},
-		errorExpected: false,
-	}, {
-		req: &Request{
-			GKEVersion:             "1-2-3",
-			ClusterName:            "name-h",
-			MinNodes:               3,
-			MaxNodes:               3,
-			NodeType:               "n1-standard-4",
-			EnableWorkloadIdentity: true,
-		},
-		errorExpected: true,
-	}}
+		{
+			req: &Request{
+				Project:    "project-c",
+				GKEVersion: "1-2-3",
+				MinNodes:   1,
+				MaxNodes:   1,
+				NodeType:   "n1-standard-4",
+			},
+			errorExpected: true,
+		}, {
+			req: &Request{
+				Project:     "project-d",
+				GKEVersion:  "1-2-3",
+				ClusterName: "name-d",
+				MinNodes:    0,
+				MaxNodes:    1,
+				NodeType:    "n1-standard-4",
+			},
+			errorExpected: true,
+		}, {
+			req: &Request{
+				Project:     "project-e",
+				GKEVersion:  "1-2-3",
+				ClusterName: "name-e",
+				MinNodes:    10,
+				MaxNodes:    1,
+				NodeType:    "n1-standard-4",
+			},
+			errorExpected: true,
+		}, {
+			req: &Request{
+				Project:     "project-f",
+				GKEVersion:  "1-2-3",
+				ClusterName: "name-f",
+				MinNodes:    1,
+				MaxNodes:    1,
+			},
+			errorExpected: true,
+		}, {
+			req: &Request{
+				Project:     "project-d",
+				GKEVersion:  "1-2-3",
+				ClusterName: "name-d",
+				MinNodes:    0,
+				MaxNodes:    1,
+				NodeType:    "n1-standard-4",
+			},
+			errorExpected: true,
+		}, {
+			req: &Request{
+				Project:     "project-e",
+				GKEVersion:  "1-2-3",
+				ClusterName: "name-e",
+				MinNodes:    10,
+				MaxNodes:    1,
+				NodeType:    "n1-standard-4",
+			},
+			errorExpected: true,
+		}, {
+			req: &Request{
+				Project:     "project-f",
+				GKEVersion:  "1-2-3",
+				ClusterName: "name-f",
+				MinNodes:    1,
+				MaxNodes:    1,
+			},
+			errorExpected: true,
+		}, {
+			req: &Request{
+				Project:                "project-g",
+				GKEVersion:             "1-2-3",
+				ClusterName:            "name-g",
+				MinNodes:               1,
+				MaxNodes:               1,
+				NodeType:               "n1-standard-4",
+				EnableWorkloadIdentity: true,
+			},
+			errorExpected: false,
+		}, {
+			req: &Request{
+				GKEVersion:             "1-2-3",
+				ClusterName:            "name-h",
+				MinNodes:               3,
+				MaxNodes:               3,
+				NodeType:               "n1-standard-4",
+				EnableWorkloadIdentity: true,
+			},
+			errorExpected: true,
+		}}
 	for _, data := range datas {
 		createReq, err := NewCreateClusterRequest(data.req)
 		if data.errorExpected {
