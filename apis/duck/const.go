@@ -21,11 +21,11 @@ const (
 	// resources to exclude them from consideration when binding things.
 	// It is critical that bindings dealing with Deployments label their
 	// controller Deployment (or enclosing namespace).
-	// This is used for 'opt-out' behaviour.
+	// This is used for 'opt-in' behaviour (the default).
 	BindingExcludeLabel = "bindings.knative.dev/exclude"
 
 	// BindingIncludeLabel is a label that is placed on namespaces and
 	// resources to include them in consideration when binding things.
-	// This is used for 'opt-in' behaviour.
+	// This is used for 'opt-out' behaviour.
 	BindingIncludeLabel = "bindings.knative.dev/include"
 )
