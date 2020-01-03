@@ -541,7 +541,7 @@ func TestWebhookReconcile(t *testing.T) {
 			},
 		},
 	}, {
-		Name: ":fire: everything is fine, using exclusion :fire:",
+		Name: ":fire: everything is fine, using opt-out (inclusion) :fire:",
 		Key:  key,
 		Ctx:  WithOptOutBindingSelector(context.Background()),
 		Objects: []runtime.Object{secret,
