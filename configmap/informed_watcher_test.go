@@ -23,6 +23,9 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/selection"
 	fakekubeclientset "k8s.io/client-go/kubernetes/fake"
 )
 
@@ -165,20 +168,112 @@ func TestInformedWatcher(t *testing.T) {
 	}
 }
 
+func TestFilterConfigByLabelExists(t *testing.T) {
+	testCases := map[string]struct {
+		input        string
+		expectOutStr string
+		expectErr    bool
+	}{
+		"Valid input": {
+			input:        "test/label",
+			expectOutStr: "test/label",
+		},
+		"Invalid input": {
+			input:     "invalid,",
+			expectErr: true,
+		},
+		"Empty input": {
+			input:     "",
+			expectErr: true,
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			req, err := FilterConfigByLabelExists(tc.input)
+
+			if gotError := err != nil; gotError != tc.expectErr {
+				t.Fatalf("[error] expected/got: %t/%t (msg: %v)", tc.expectErr, gotError, err)
+			}
+			if gotReq, wantReq := req != nil, tc.expectOutStr != ""; gotReq != wantReq {
+				t.Fatalf("[output] expected/got: %t/%t (req: %q)", wantReq, gotReq, req)
+			}
+
+			if req != nil && req.String() != tc.expectOutStr {
+				t.Errorf("Expected %q, got %q", tc.expectOutStr, req.String())
+			}
+		})
+	}
+}
+
 func TestWatchMissingFailsOnStart(t *testing.T) {
-	kc := fakekubeclientset.NewSimpleClientset()
-	cm := NewInformedWatcher(kc, "default")
+	const (
+		labelKey = "test/label"
+		labelVal = "test"
+	)
 
-	foo1 := &counter{name: "foo1"}
-	cm.Watch("foo", foo1.callback)
+	cmWithLabel := &corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: "default",
+			Name:      "with-label",
+			Labels:    map[string]string{labelKey: labelVal},
+		},
+	}
+	cmWithoutLabel := &corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: "default",
+			Name:      "without-label",
+			Labels:    map[string]string{},
+		},
+	}
 
-	stopCh := make(chan struct{})
-	defer close(stopCh)
+	testCases := map[string]struct {
+		initialObj []runtime.Object
+		watchNames []string
+		expectErr  string
+		labelReq   string
+	}{
+		"ConfigMap does not exist": {
+			initialObj: nil,
+			watchNames: []string{"foo"},
+			expectErr:  `configmap "foo" not found`,
+		},
+		"ConfigMap is missing required label": {
+			initialObj: []runtime.Object{cmWithLabel, cmWithoutLabel},
+			watchNames: []string{"with-label", "without-label"},
+			expectErr:  `configmap "without-label" not found`,
+			labelReq:   labelKey,
+		},
+	}
 
-	// This should error because we don't have a ConfigMap named "foo".
-	err := cm.Start(stopCh)
-	if err == nil {
-		t.Fatal("cm.Start() succeeded, wanted error")
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			var cmw *InformedWatcher
+
+			kc := fakekubeclientset.NewSimpleClientset(tc.initialObj...)
+
+			if tc.labelReq != "" {
+				req, _ := labels.NewRequirement(labelKey, selection.Equals, []string{labelVal})
+				cmw = NewInformedWatcher(kc, "default", *req)
+			} else {
+				cmw = NewInformedWatcher(kc, "default")
+			}
+
+			for _, cmName := range tc.watchNames {
+				cmw.Watch(cmName)
+			}
+
+			stopCh := make(chan struct{})
+			defer close(stopCh)
+
+			err := cmw.Start(stopCh)
+			switch {
+			case err == nil:
+				t.Fatalf("Failed to start InformedWatcher: %s", err)
+			case err.Error() != tc.expectErr:
+				t.Fatalf("Unexpected error: %s", err)
+			}
+		})
 	}
 }
 
