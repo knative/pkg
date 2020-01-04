@@ -64,18 +64,18 @@ func TestInformedWatcher(t *testing.T) {
 		Data: map[string]string{"key2": "val3"},
 	}
 	kc := fakekubeclientset.NewSimpleClientset(fooCM, barCM)
-	cm := NewInformedWatcher(kc, "default")
+	cmw := NewInformedWatcher(kc, "default")
 
 	foo1 := &counter{name: "foo1"}
 	foo2 := &counter{name: "foo2"}
 	bar := &counter{name: "bar"}
-	cm.Watch("foo", foo1.callback)
-	cm.Watch("foo", foo2.callback)
-	cm.Watch("bar", bar.callback)
+	cmw.Watch("foo", foo1.callback)
+	cmw.Watch("foo", foo2.callback)
+	cmw.Watch("bar", bar.callback)
 
 	stopCh := make(chan struct{})
 	defer close(stopCh)
-	err := cm.Start(stopCh)
+	err := cmw.Start(stopCh)
 	if err != nil {
 		t.Fatalf("cm.Start() = %v", err)
 	}
@@ -90,7 +90,7 @@ func TestInformedWatcher(t *testing.T) {
 
 	// After a "foo" event, the "foo" watchers should have 2,
 	// and the "bar" watchers should still have 1
-	cm.updateConfigMapEvent(nil, fooCM)
+	cmw.updateConfigMapEvent(nil, fooCM)
 	for _, obj := range []*counter{foo1, foo2} {
 		if got, want := obj.count(), 2; got != want {
 			t.Errorf("%v.count = %v, want %v", obj, got, want)
@@ -105,8 +105,8 @@ func TestInformedWatcher(t *testing.T) {
 
 	// After a "foo" and "bar" event, the "foo" watchers should have 3,
 	// and the "bar" watchers should still have 2
-	cm.updateConfigMapEvent(nil, fooCM)
-	cm.updateConfigMapEvent(nil, barCM)
+	cmw.updateConfigMapEvent(nil, fooCM)
+	cmw.updateConfigMapEvent(nil, barCM)
 	for _, obj := range []*counter{foo1, foo2} {
 		if got, want := obj.count(), 3; got != want {
 			t.Errorf("%v.count = %v, want %v", obj, got, want)
@@ -121,7 +121,7 @@ func TestInformedWatcher(t *testing.T) {
 	// After a "bar" event, all watchers should have 3
 	nbarCM := barCM.DeepCopy()
 	nbarCM.Data["wow"] = "now!"
-	cm.updateConfigMapEvent(barCM, nbarCM)
+	cmw.updateConfigMapEvent(barCM, nbarCM)
 	for _, obj := range []*counter{foo1, foo2, bar} {
 		if got, want := obj.count(), 3; got != want {
 			t.Errorf("%v.count = %v, want %v", obj, got, want)
@@ -129,8 +129,8 @@ func TestInformedWatcher(t *testing.T) {
 	}
 
 	// After an idempotent event no changes should be recorded.
-	cm.updateConfigMapEvent(barCM, barCM)
-	cm.updateConfigMapEvent(fooCM, fooCM)
+	cmw.updateConfigMapEvent(barCM, barCM)
+	cmw.updateConfigMapEvent(fooCM, fooCM)
 	for _, obj := range []*counter{foo1, foo2, bar} {
 		if got, want := obj.count(), 3; got != want {
 			t.Errorf("%v.count = %v, want %v", obj, got, want)
@@ -139,7 +139,7 @@ func TestInformedWatcher(t *testing.T) {
 
 	// After an unwatched ConfigMap update, no change.
 
-	cm.updateConfigMapEvent(nil, &corev1.ConfigMap{
+	cmw.updateConfigMapEvent(nil, &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: "default",
 			Name:      "not-watched",
@@ -152,7 +152,7 @@ func TestInformedWatcher(t *testing.T) {
 	}
 
 	// After a change in an unrelated namespace, no change.
-	cm.updateConfigMapEvent(nil, &corev1.ConfigMap{
+	cmw.updateConfigMapEvent(nil, &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: "not-default",
 			Name:      "foo",
@@ -191,16 +191,16 @@ func TestWatchMissingOKWithDefaultOnStart(t *testing.T) {
 	}
 
 	kc := fakekubeclientset.NewSimpleClientset()
-	cm := NewInformedWatcher(kc, "default")
+	cmw := NewInformedWatcher(kc, "default")
 
 	foo1 := &counter{name: "foo1"}
-	cm.WatchWithDefault(*fooCM, foo1.callback)
+	cmw.WatchWithDefault(*fooCM, foo1.callback)
 
 	stopCh := make(chan struct{})
 	defer close(stopCh)
 
 	// This shouldn't error because we don't have a ConfigMap named "foo", but we do have a default.
-	err := cm.Start(stopCh)
+	err := cmw.Start(stopCh)
 	if err != nil {
 		t.Fatalf("cm.Start() failed, %v", err)
 	}
@@ -218,21 +218,21 @@ func TestErrorOnMultipleStarts(t *testing.T) {
 		},
 	}
 	kc := fakekubeclientset.NewSimpleClientset(fooCM)
-	cm := NewInformedWatcher(kc, "default")
+	cmw := NewInformedWatcher(kc, "default")
 
 	foo1 := &counter{name: "foo1"}
-	cm.Watch("foo", foo1.callback)
+	cmw.Watch("foo", foo1.callback)
 
 	stopCh := make(chan struct{})
 	defer close(stopCh)
 
 	// This should succeed because the watched resource exists.
-	if err := cm.Start(stopCh); err != nil {
+	if err := cmw.Start(stopCh); err != nil {
 		t.Fatalf("cm.Start() = %v", err)
 	}
 
 	// This should error because we already called Start()
-	if err := cm.Start(stopCh); err == nil {
+	if err := cmw.Start(stopCh); err == nil {
 		t.Fatal("cm.Start() succeeded, wanted error")
 	}
 }
@@ -258,14 +258,14 @@ func TestDefaultObserved(t *testing.T) {
 	}
 
 	kc := fakekubeclientset.NewSimpleClientset(fooCM)
-	cm := NewInformedWatcher(kc, "default")
+	cmw := NewInformedWatcher(kc, "default")
 
 	foo1 := &counter{name: "foo1"}
-	cm.WatchWithDefault(*defaultFooCM, foo1.callback)
+	cmw.WatchWithDefault(*defaultFooCM, foo1.callback)
 
 	stopCh := make(chan struct{})
 	defer close(stopCh)
-	err := cm.Start(stopCh)
+	err := cmw.Start(stopCh)
 	if err != nil {
 		t.Fatalf("cm.Start() = %v", err)
 	}
@@ -304,14 +304,14 @@ func TestDefaultConfigMapDeleted(t *testing.T) {
 	}
 
 	kc := fakekubeclientset.NewSimpleClientset(fooCM)
-	cm := NewInformedWatcher(kc, "default")
+	cmw := NewInformedWatcher(kc, "default")
 
 	foo1 := &counter{name: "foo1"}
-	cm.WatchWithDefault(*defaultFooCM, foo1.callback)
+	cmw.WatchWithDefault(*defaultFooCM, foo1.callback)
 
 	stopCh := make(chan struct{})
 	defer close(stopCh)
-	err := cm.Start(stopCh)
+	err := cmw.Start(stopCh)
 	if err != nil {
 		t.Fatalf("cm.Start() = %v", err)
 	}
@@ -365,12 +365,12 @@ func TestWatchWithDefaultAfterStart(t *testing.T) {
 	}
 
 	kc := fakekubeclientset.NewSimpleClientset(fooCM)
-	cm := NewInformedWatcher(kc, "default")
+	cmw := NewInformedWatcher(kc, "default")
 
 	stopCh := make(chan struct{})
 	defer close(stopCh)
 	// Start before adding the WatchWithDefault.
-	err := cm.Start(stopCh)
+	err := cmw.Start(stopCh)
 	if err != nil {
 		t.Fatalf("cm.Start() = %v", err)
 	}
@@ -382,7 +382,7 @@ func TestWatchWithDefaultAfterStart(t *testing.T) {
 		defer func() {
 			recover()
 		}()
-		cm.WatchWithDefault(*defaultFooCM, foo1.callback)
+		cmw.WatchWithDefault(*defaultFooCM, foo1.callback)
 		t.Fatal("WatchWithDefault should have panicked")
 	}()
 
