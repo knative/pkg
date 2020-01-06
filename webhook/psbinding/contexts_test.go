@@ -32,12 +32,12 @@ func TestDefault(t *testing.T) {
 		optout: false,
 	}, {
 		name:   "default",
-		in:     WithOptOutBindingSelector(context.Background()),
+		in:     WithOptOutSelector(context.Background()),
 		optout: true,
 	}}
 
 	for _, tc := range table {
-		if want, got := tc.optout, HasOptOutBindingSelector(tc.in); want != got {
+		if want, got := tc.optout, HasOptOutSelector(tc.in); want != got {
 			t.Errorf("Unexpected optout (-want, +got): %v, %v", want, got)
 		}
 	}

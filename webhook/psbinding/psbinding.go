@@ -308,7 +308,7 @@ func (ac *Reconciler) reconcileMutatingWebhook(ctx context.Context, caCert []byt
 
 	// See if the opt-out behaviour has been specified and specify the Inclusion Selector.
 	selector := ExclusionSelector
-	if HasOptOutBindingSelector(ctx) {
+	if HasOptOutSelector(ctx) {
 		selector = InclusionSelector
 	}
 

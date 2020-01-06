@@ -18,19 +18,19 @@ package psbinding
 
 import "context"
 
-// optOutBindingSelector is used as the key for associating information
+// optOutSelector is used as the key for associating information
 // with a context.Context relating to whether we're going to label
 // namespaces/objects for inclusion/exclusion for bindings.
-type optOutBindingSelector struct{}
+type optOutSelector struct{}
 
-// WithOptOutBindingSelector notes on the context that we want opt-out
+// WithOptOutSelector notes on the context that we want opt-out
 // behaviour for bindings.
-func WithOptOutBindingSelector(ctx context.Context) context.Context {
-	return context.WithValue(ctx, optOutBindingSelector{}, struct{}{})
+func WithOptOutSelector(ctx context.Context) context.Context {
+	return context.WithValue(ctx, optOutSelector{}, struct{}{})
 }
 
-// HasOptOutBindingSelector checks to see whether the given context has
+// HasOptOutSelector checks to see whether the given context has
 // been marked as having opted-out behaviour for bindings webhook.
-func HasOptOutBindingSelector(ctx context.Context) bool {
-	return ctx.Value(optOutBindingSelector{}) != nil
+func HasOptOutSelector(ctx context.Context) bool {
+	return ctx.Value(optOutSelector{}) != nil
 }

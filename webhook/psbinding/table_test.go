@@ -543,7 +543,7 @@ func TestWebhookReconcile(t *testing.T) {
 	}, {
 		Name: ":fire: everything is fine, using opt-out (inclusion) :fire:",
 		Key:  key,
-		Ctx:  WithOptOutBindingSelector(context.Background()),
+		Ctx:  WithOptOutSelector(context.Background()),
 		Objects: []runtime.Object{secret,
 			&admissionregistrationv1beta1.MutatingWebhookConfiguration{
 				ObjectMeta: metav1.ObjectMeta{
