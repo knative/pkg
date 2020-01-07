@@ -96,6 +96,10 @@ statistics for a short period of time if not.
 - [ ] (Google) to implement OpenCensus Agent configuration to match what they
       are doing for Stackdriver now. (No public issue link because this shoud be
       in Google's vendor-specific configuration.)
+- [ ] Document how to configure OpenCensus/OpenTelemetry Agent + Prometheus to
+      achieve the current level of application visibility, and determine a
+      long-term course for how to maintain this as a "bare minimum" supported
+      configuration.
 - [ ] Stop adding exporter features outside of the OpenCensus / OpenTelemetry
       export as of 0.13 release (03 March 2020). Between now and 0.13, small
       amounts of additional features can be built in to assist with the bridging
