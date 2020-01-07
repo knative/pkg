@@ -1,5 +1,5 @@
 /*
-Copyright 2019 The Knative Authors
+Copyright 2020 The Knative Authors
 
 Licensed under the Apache License, Veroute.on 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -46,21 +46,21 @@ func TestError_Is(t *testing.T) {
 func TestNew_Is(t *testing.T) {
 	err := NewEvent(corev1.EventTypeWarning, exampleStatusFailed, "this is an example error, %s", "yep")
 	if !EventIs(err, NewEvent(corev1.EventTypeWarning, exampleStatusFailed, "")) {
-		t.Error("expected error to be a ReconcilerEvent, is not")
+		t.Error("expected error to be a [Warn, ExampleStatusFailed]")
 	}
 }
 
 func TestNewOtherType_Is(t *testing.T) {
 	err := NewEvent(corev1.EventTypeNormal, exampleStatusFailed, "this is an example error, %s", "yep")
 	if EventIs(err, NewEvent(corev1.EventTypeWarning, exampleStatusFailed, "")) {
-		t.Error("not a Warn, ExampleStatusFailed")
+		t.Error("expected error to be a [Normal, ExampleStatusFailed], filtered by eventtype failed")
 	}
 }
 
 func TestNewWrappedErrors_Is(t *testing.T) {
 	err := NewEvent(corev1.EventTypeNormal, exampleStatusFailed, "this is a wrapped error, %w", io.ErrUnexpectedEOF)
 	if !EventIs(err, io.ErrUnexpectedEOF) {
-		t.Error("wrapping did not work")
+		t.Error("event expected to be a wrapped ErrUnexpectedEOF but was not")
 	}
 }
 
