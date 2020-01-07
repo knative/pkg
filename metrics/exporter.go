@@ -121,6 +121,12 @@ func isNewExporterRequired(newConfig *metricsConfig) bool {
 		return true
 	}
 
+	// If the OpenCensus address has changed, restart the collector.
+	// TODO(evankanderson): Should we just always restart the opencensus agent?
+	if newConfig.backendDestination == OpenCensus && newConfig.collectorAddress != cc.collectorAddress {
+		return true
+	}
+
 	return newConfig.backendDestination == Stackdriver && newConfig.stackdriverClientConfig != cc.stackdriverClientConfig
 }
 
@@ -140,6 +146,8 @@ func newMetricsExporter(config *metricsConfig, logger *zap.SugaredLogger) (view.
 	var err error
 	var e view.Exporter
 	switch config.backendDestination {
+	case OpenCensus:
+		e, err = newOpenCensusExporter(config, logger)
 	case Stackdriver:
 		e, err = newStackdriverExporter(config, logger)
 	case Prometheus:

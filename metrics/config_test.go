@@ -83,7 +83,7 @@ var (
 		name: "invalidComponent",
 		ops: ExporterOptions{
 			ConfigMap: map[string]string{
-				"metrics.backend-destination": "prometheus",
+				"metrics.backend-destination": "opencensus",
 			},
 			Domain:    servingDomain,
 			Component: "",
@@ -93,13 +93,24 @@ var (
 		name: "invalidReportingPeriod",
 		ops: ExporterOptions{
 			ConfigMap: map[string]string{
-				"metrics.backend-destination":      "prometheus",
+				"metrics.backend-destination":      "opencensus",
 				"metrics.reporting-period-seconds": "test",
 			},
 			Domain:    servingDomain,
 			Component: testComponent,
 		},
 		expectedErr: "invalid metrics.reporting-period-seconds value \"test\"",
+	}, {
+		name: "invalidOpenCensusSecuritySetting",
+		ops: ExporterOptions{
+			ConfigMap: map[string]string{
+				"metrics.backend-destination":   "opencensus",
+				"metrics.require_collector_tls": "yep",
+			},
+			Domain:    servingDomain,
+			Component: testComponent,
+		},
+		expectedErr: "invalid metrics.require_collector_tls value \"yep\"",
 	}, {
 		name: "invalidAllowStackdriverCustomMetrics",
 		ops: ExporterOptions{
