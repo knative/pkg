@@ -541,6 +541,37 @@ func TestWebhookReconcile(t *testing.T) {
 			},
 		},
 	}, {
+		Name: ":fire: everything is fine, using opt-out (inclusion) :fire:",
+		Key:  key,
+		Ctx:  WithOptOutSelector(context.Background()),
+		Objects: []runtime.Object{secret,
+			&admissionregistrationv1beta1.MutatingWebhookConfiguration{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: name,
+				},
+				Webhooks: []admissionregistrationv1beta1.MutatingWebhook{{
+					Name: name,
+					ClientConfig: admissionregistrationv1beta1.WebhookClientConfig{
+						Service: &admissionregistrationv1beta1.ServiceReference{
+							Namespace: system.Namespace(),
+							Name:      "webhook",
+							// Path is fine.
+							Path: ptr.String(path),
+						},
+						// CABundle is fine.
+						CABundle: []byte("present"),
+					},
+					// Rules are fine.
+					Rules: baseRules,
+					// MatchPolicy is fine.
+					MatchPolicy: &equivalent,
+					// Selectors are fine.
+					NamespaceSelector: &InclusionSelector,
+					ObjectSelector:    &InclusionSelector,
+				}},
+			},
+		},
+	}, {
 		Name: "a new binding has entered the match",
 		Key:  key,
 		Objects: []runtime.Object{secret,
