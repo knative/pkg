@@ -63,8 +63,8 @@ const (
 
 	defaultBackendEnvName = "DEFAULT_METRICS_BACKEND"
 
-	collectorAddressKey = "metrics.collector"
-	collectorSecureKey  = "metrics.require_collector_tls"
+	CollectorAddressKey = "metrics.collector-address"
+	CollectorSecureKey  = "metrics.collector-require-tls"
 
 	defaultPrometheusPort = 9090
 	maxPrometheusPort     = 65535
@@ -89,7 +89,7 @@ type metricsConfig struct {
 	// ---- OpenCensus specific below ----
 	// collectorAddress is the address of the collector, if not `localhost:55678`
 	collectorAddress string
-	// Require mutual TLS. Defaults to "false" because
+	// Require mutual TLS. Defaults to "false" because mutual TLS is hard to set up.
 	requireSecure bool
 
 	// ---- Prometheus specific below ----
@@ -189,11 +189,11 @@ func createMetricsConfig(ops ExporterOptions, logger *zap.SugaredLogger) (*metri
 	}
 
 	if mc.backendDestination == OpenCensus {
-		mc.collectorAddress = ops.ConfigMap[collectorAddressKey]
-		if isSecure := ops.ConfigMap[collectorSecureKey]; isSecure != "" {
+		mc.collectorAddress = ops.ConfigMap[CollectorAddressKey]
+		if isSecure := ops.ConfigMap[CollectorSecureKey]; isSecure != "" {
 			var err error
 			if mc.requireSecure, err = strconv.ParseBool(isSecure); err != nil {
-				return nil, fmt.Errorf("invalid %s value %q", collectorSecureKey, isSecure)
+				return nil, fmt.Errorf("invalid %s value %q", CollectorSecureKey, isSecure)
 			}
 		}
 	}

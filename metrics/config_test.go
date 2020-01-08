@@ -242,6 +242,25 @@ var (
 			},
 			expectedNewExporter: true,
 		}, {
+			name: "validOpenCensusSettings",
+			ops: ExporterOptions{
+				ConfigMap: map[string]string{
+					"metrics.backend-destination":   "opencensus",
+					"metrics.collector":             "external-svc:55678",
+					"metrics.require_collector_tls": "true",
+				},
+				Domain:    servingDomain,
+				Component: testComponent,
+			},
+			expectedConfig: metricsConfig{
+				domain:             servingDomain,
+				component:          testComponent,
+				backendDestination: OpenCensus,
+				collectorAddress:   "external-svc:55678",
+				requireSecure:      true,
+			},
+			expectedNewExporter: true,
+		}, {
 			name: "validPrometheus",
 			ops: ExporterOptions{
 				ConfigMap: map[string]string{

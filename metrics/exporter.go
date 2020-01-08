@@ -121,10 +121,10 @@ func isNewExporterRequired(newConfig *metricsConfig) bool {
 		return true
 	}
 
-	// If the OpenCensus address has changed, restart the collector.
+	// If the OpenCensus address has changed, restart the exporter.
 	// TODO(evankanderson): Should we just always restart the opencensus agent?
-	if newConfig.backendDestination == OpenCensus && newConfig.collectorAddress != cc.collectorAddress {
-		return true
+	if newConfig.backendDestination == OpenCensus {
+		return newConfig.collectorAddress != cc.collectorAddress || newConfig.requireSecure != cc.requireSecure
 	}
 
 	return newConfig.backendDestination == Stackdriver && newConfig.stackdriverClientConfig != cc.stackdriverClientConfig
