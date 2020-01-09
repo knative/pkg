@@ -291,7 +291,7 @@ func TestWithPathOption(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			if ok, _ := Do(context.Background(), network.AutoTransport, ts.URL, test.options...); !ok {
-				t.Errorf("unexpected probe result: %v", ok)
+				t.Error("Unexpected probe failure")
 			}
 		})
 	}
