@@ -36,7 +36,8 @@ var urlRe = regexp.MustCompile(`https://.*/`)
 
 // ServiceEndpoint returns the container service endpoint for the given environment.
 func ServiceEndpoint(environment string) string {
-    var endpoint string
+    // Default to be prod.
+    var endpoint = prodEndpoint
     if environment != "" {
         switch env := environment; {
         case env == testEnv:

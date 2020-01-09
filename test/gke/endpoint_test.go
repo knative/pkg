@@ -23,12 +23,12 @@ func TestServiceEndpoint(t *testing.T) {
         env  string
         want string
     }{
-        {"", ""},
+        {"", prodEndpoint},
         {testEnv, testEndpoint},
         {stagingEnv, stagingEndpoint},
         {staging2Env, staging2Endpoint},
         {prodEnv, prodEndpoint},
-        {"invalid_url", ""},
+        {"invalid_url", prodEndpoint},
         {"https://custom.container.googleapis.com/", "https://custom.container.googleapis.com/"},
     }
     for _, data := range datas {

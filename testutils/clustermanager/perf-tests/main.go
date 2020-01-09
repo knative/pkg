@@ -35,7 +35,7 @@ var (
 
 func main() {
 	flag.StringVar(&gcpProjectName, "gcp-project", "", "name of the GCP project for cluster operations")
-	flag.StringVar(&gkeEnvironment, "gke-environment", "", "Container API endpoint to use, one of 'test', 'staging', 'prod', or a custom https:// URL")
+	flag.StringVar(&gkeEnvironment, "gke-environment", "prod", "Container API endpoint to use, one of 'test', 'staging', 'prod', or a custom https:// URL. Default to be prod.")
 	flag.StringVar(&repoName, "repository", "", "name of the repository")
 	flag.StringVar(&benchmarkRootFolder, "benchmark-root", "", "root folder of the benchmarks")
 	flag.BoolVar(&isRecreate, "recreate", false, "is recreate operation or not")
