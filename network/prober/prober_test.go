@@ -264,6 +264,39 @@ func TestAsyncMultiple(t *testing.T) {
 	}
 }
 
+func TestWithPathOption(t *testing.T) {
+	const path = "/correct/probe/path/"
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		t.Logf("Got: %s, Want: %s\n", r.URL.Path, path)
+		if r.URL.Path != path {
+			w.WriteHeader(http.StatusNotFound)
+		}
+	}))
+	defer ts.Close()
+
+	tests := []struct {
+		name    string
+		options []interface{}
+	}{{
+		name:    "no path",
+		options: []interface{}{ExpectsStatusCodes([]int{http.StatusNotFound})},
+	}, {
+		name:    "expected path",
+		options: []interface{}{WithPath(path), ExpectsStatusCodes([]int{http.StatusOK})},
+	}, {
+		name:    "wrong path",
+		options: []interface{}{WithPath("/wrong/path"), ExpectsStatusCodes([]int{http.StatusNotFound})},
+	}}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			if ok, _ := Do(context.Background(), network.AutoTransport, ts.URL, test.options...); !ok {
+				t.Error("Unexpected probe failure")
+			}
+		})
+	}
+}
+
 func TestWithHostOption(t *testing.T) {
 	host := "foobar.com"
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
