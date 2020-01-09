@@ -324,7 +324,7 @@ func TestWithHostOption(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			if ok, _ := Do(context.Background(), network.AutoTransport, ts.URL, test.options...); !ok {
-				t.Error("unexpected probe result")
+				t.Error("Unexpected probe result")
 			}
 		})
 	}
