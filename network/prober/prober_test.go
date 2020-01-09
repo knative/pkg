@@ -302,7 +302,7 @@ func TestWithHostOption(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		t.Logf("Want: %s, Got: %s\n", host, r.Host)
 		if r.Host != host {
-			w.WriteHeader(404)
+			w.WriteHeader(http.StatusNotFound)
 		}
 	}))
 	defer ts.Close()
@@ -310,36 +310,21 @@ func TestWithHostOption(t *testing.T) {
 	tests := []struct {
 		name    string
 		options []interface{}
-		success bool
-		expErr  bool
 	}{{
 		name:    "no hosts",
-		options: []interface{}{ExpectsStatusCodes([]int{http.StatusOK})},
-		success: false,
-		expErr:  true,
+		options: []interface{}{ExpectsStatusCodes([]int{http.StatusNotFound})},
 	}, {
 		name:    "expected host",
 		options: []interface{}{WithHost(host), ExpectsStatusCodes([]int{http.StatusOK})},
-		success: true,
-		expErr:  false,
 	}, {
 		name:    "wrong host",
-		options: []interface{}{WithHost("nope.com"), ExpectsStatusCodes([]int{http.StatusOK})},
-		success: false,
-		expErr:  true,
+		options: []interface{}{WithHost("nope.com"), ExpectsStatusCodes([]int{http.StatusNotFound})},
 	}}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			ok, err := Do(context.Background(), network.AutoTransport, ts.URL, test.options...)
-			if ok != test.success {
-				t.Errorf("unexpected probe result: want: %v, got: %v", test.success, ok)
-			}
-			if err != nil && !test.expErr {
-				t.Errorf("Do() = %v, no error expected", err)
-			}
-			if err == nil && test.expErr {
-				t.Errorf("Do() = nil, expected an error")
+			if ok, _ := Do(context.Background(), network.AutoTransport, ts.URL, test.options...); !ok {
+				t.Error("unexpected probe result")
 			}
 		})
 	}
