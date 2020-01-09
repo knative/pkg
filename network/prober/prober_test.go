@@ -264,6 +264,54 @@ func TestAsyncMultiple(t *testing.T) {
 	}
 }
 
+func TestWithPathOption(t *testing.T) {
+	path := "/correct/probe/path/"
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		t.Logf("Want: %s, Got: %s\n", path, r.URL.Path)
+		if r.URL.Path != path {
+			w.WriteHeader(404)
+		}
+	}))
+	defer ts.Close()
+
+	tests := []struct {
+		name    string
+		options []interface{}
+		success bool
+		expErr  bool
+	}{{
+		name:    "no path",
+		options: []interface{}{ExpectsStatusCodes([]int{http.StatusOK})},
+		success: false,
+		expErr:  true,
+	}, {
+		name:    "expected path",
+		options: []interface{}{WithPath(path), ExpectsStatusCodes([]int{http.StatusOK})},
+		success: true,
+		expErr:  false,
+	}, {
+		name:    "wrong path",
+		options: []interface{}{WithPath("/wrong/path"), ExpectsStatusCodes([]int{http.StatusOK})},
+		success: false,
+		expErr:  true,
+	}}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			ok, err := Do(context.Background(), network.AutoTransport, ts.URL, test.options...)
+			if ok != test.success {
+				t.Errorf("unexpected probe result: want: %v, got: %v", test.success, ok)
+			}
+			if err != nil && !test.expErr {
+				t.Errorf("Do() = %v, no error expected", err)
+			}
+			if err == nil && test.expErr {
+				t.Errorf("Do() = nil, expected an error")
+			}
+		})
+	}
+}
+
 func TestWithHostOption(t *testing.T) {
 	host := "foobar.com"
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
