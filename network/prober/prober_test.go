@@ -277,8 +277,6 @@ func TestWithPathOption(t *testing.T) {
 	tests := []struct {
 		name    string
 		options []interface{}
-		success bool
-		expErr  bool
 	}{{
 		name:    "no path",
 		options: []interface{}{ExpectsStatusCodes([]int{http.StatusNotFound})},
