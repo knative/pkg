@@ -20,6 +20,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"k8s.io/apimachinery/pkg/api/equality"
 )
 
 func TestParseURL(t *testing.T) {
@@ -590,7 +591,7 @@ func TestResolveReference(t *testing.T) {
 	mustParse := func(url string) *URL {
 		u, err := ParseURL(url)
 		if err != nil {
-			t.Fatalf("Parse(%q) got err %v", url, err)
+			t.Fatalf("ParseURL(%q) got err %v", url, err)
 		}
 		return u
 	}
@@ -601,5 +602,30 @@ func TestResolveReference(t *testing.T) {
 		if got := apisURL.ResolveReference(apisRel).String(); got != tc.expected {
 			t.Errorf("URL(%q).ResolveReference(%q)\ngot  %q\nwant %q", tc.base, tc.rel, got, tc.expected)
 		}
+	}
+}
+
+func TestSemanticEquality(t *testing.T) {
+	u1, err := ParseURL("https://user:password@example.com")
+	if err != nil {
+		t.Fatalf("ParseURL() got err %v", err)
+	}
+
+	u2, err := ParseURL("https://user:password@example.com")
+	if err != nil {
+		t.Fatalf("ParseURL() got err %v", err)
+	}
+
+	u3, err := ParseURL("https://another-user:password@example.com")
+	if err != nil {
+		t.Fatalf("ParseURL() got err %v", err)
+	}
+
+	if !equality.Semantic.DeepEqual(u1, u2) {
+		t.Errorf("expected urls to be equivalent")
+	}
+
+	if equality.Semantic.DeepEqual(u1, u3) {
+		t.Errorf("expected urls to be different")
 	}
 }
