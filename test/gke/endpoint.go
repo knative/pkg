@@ -17,6 +17,7 @@ limitations under the License.
 package gke
 
 import (
+    "fmt"
     "regexp"
 )
 
@@ -35,22 +36,21 @@ const (
 var urlRe = regexp.MustCompile(`https://.*/`)
 
 // ServiceEndpoint returns the container service endpoint for the given environment.
-func ServiceEndpoint(environment string) string {
-    // Default to be prod.
-    var endpoint = prodEndpoint
-    if environment != "" {
-        switch env := environment; {
-        case env == testEnv:
-            endpoint = testEndpoint
-        case env == stagingEnv:
-            endpoint = stagingEndpoint
-        case env == staging2Env:
-            endpoint = staging2Endpoint
-        case env == prodEnv:
-            endpoint = prodEndpoint
-        case urlRe.MatchString(env):
-            endpoint = env
-        }
+func ServiceEndpoint(environment string) (string, error) {
+    var endpoint string
+    switch env := environment; {
+    case env == testEnv:
+        endpoint = testEndpoint
+    case env == stagingEnv:
+        endpoint = stagingEndpoint
+    case env == staging2Env:
+        endpoint = staging2Endpoint
+    case env == prodEnv:
+        endpoint = prodEndpoint
+    case urlRe.MatchString(env):
+        endpoint = env
+    default:
+        return "", fmt.Errorf("the environment '%s' is invalid, must be one of 'test', 'staging', 'staging2', 'prod', or a custom https:// URL", environment)
     }
-    return endpoint
+    return endpoint, nil
 }

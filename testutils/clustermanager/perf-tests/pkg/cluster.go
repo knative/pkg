@@ -47,7 +47,11 @@ type gkeClient struct {
 
 // NewClient will create a new gkeClient.
 func NewClient(environment string) (*gkeClient, error) {
-	endpointOption := option.WithEndpoint(gke.ServiceEndpoint(environment))
+	endpoint, err := gke.ServiceEndpoint(environment)
+	if err != nil {
+		return nil, err
+	}
+	endpointOption := option.WithEndpoint(endpoint)
 	operations, err := gke.NewSDKClient(endpointOption)
 	if err != nil {
 		return nil, fmt.Errorf("failed to set up GKE client: %v", err)
