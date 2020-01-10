@@ -126,7 +126,12 @@ func TestMissingContentType(t *testing.T) {
 }
 
 func TestEmptyRequestBody(t *testing.T) {
-	wh, serverURL, ctx, cancel, err := testSetup(t)
+	ac := &fixedAdmissionController{
+		path:     "/bazinga",
+		response: &admissionv1beta1.AdmissionResponse{},
+	}
+
+	wh, serverURL, ctx, cancel, err := testSetup(t, ac)
 	if err != nil {
 		t.Fatalf("testSetup() = %v", err)
 	}
@@ -150,7 +155,7 @@ func TestEmptyRequestBody(t *testing.T) {
 		t.Fatalf("createSecureTLSClient() = %v", err)
 	}
 
-	req, err := http.NewRequest("GET", fmt.Sprintf("https://%s", serverURL), nil)
+	req, err := http.NewRequest("GET", fmt.Sprintf("https://%s/bazinga", serverURL), nil)
 	if err != nil {
 		t.Fatalf("http.NewRequest() = %v", err)
 	}
