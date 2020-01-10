@@ -33,6 +33,6 @@ func newOpenCensusExporter(config *metricsConfig, logger *zap.SugaredLogger) (vi
 		return nil, err
 	}
 	logger.Infof("Created OpenCensus exporter with config: %+v.", *config)
-	// Start the server for Prometheus scraping
+	view.RegisterExporter(e)
 	return e, nil
 }

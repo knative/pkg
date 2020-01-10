@@ -105,12 +105,12 @@ var (
 		ops: ExporterOptions{
 			ConfigMap: map[string]string{
 				"metrics.backend-destination":   "opencensus",
-				"metrics.require_collector_tls": "yep",
+				"metrics.collector-require-tls": "yep",
 			},
 			Domain:    servingDomain,
 			Component: testComponent,
 		},
-		expectedErr: "invalid metrics.require_collector_tls value \"yep\"",
+		expectedErr: "invalid metrics.collector-require-tls value \"yep\"",
 	}, {
 		name: "invalidAllowStackdriverCustomMetrics",
 		ops: ExporterOptions{
@@ -246,8 +246,8 @@ var (
 			ops: ExporterOptions{
 				ConfigMap: map[string]string{
 					"metrics.backend-destination":   "opencensus",
-					"metrics.collector":             "external-svc:55678",
-					"metrics.require_collector_tls": "true",
+					"metrics.collector-address":     "external-svc:55678",
+					"metrics.collector-require-tls": "true",
 				},
 				Domain:    servingDomain,
 				Component: testComponent,
@@ -517,7 +517,7 @@ func TestGetMetricsConfig(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			defer ClearAll()
 			_, err := createMetricsConfig(test.ops, TestLogger(t))
-			if err.Error() != test.expectedErr {
+			if err == nil || err.Error() != test.expectedErr {
 				t.Errorf("Wanted err: %v, got: %v", test.expectedErr, err)
 			}
 		})
