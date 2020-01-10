@@ -63,8 +63,8 @@ const (
 
 	defaultBackendEnvName = "DEFAULT_METRICS_BACKEND"
 
-	CollectorAddressKey = "metrics.collector-address"
-	CollectorSecureKey  = "metrics.collector-require-tls"
+	CollectorAddressKey = "metrics.opencensus-address"
+	CollectorSecureKey  = "metrics.opencensus-require-tls"
 
 	defaultPrometheusPort = 9090
 	maxPrometheusPort     = 65535

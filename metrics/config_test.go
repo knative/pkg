@@ -105,12 +105,12 @@ var (
 		ops: ExporterOptions{
 			ConfigMap: map[string]string{
 				"metrics.backend-destination":   "opencensus",
-				"metrics.collector-require-tls": "yep",
+				"metrics.opencensus-require-tls": "yep",
 			},
 			Domain:    servingDomain,
 			Component: testComponent,
 		},
-		expectedErr: "invalid metrics.collector-require-tls value \"yep\"",
+		expectedErr: "invalid metrics.opencensus-require-tls value \"yep\"",
 	}, {
 		name: "invalidAllowStackdriverCustomMetrics",
 		ops: ExporterOptions{
@@ -246,8 +246,8 @@ var (
 			ops: ExporterOptions{
 				ConfigMap: map[string]string{
 					"metrics.backend-destination":   "opencensus",
-					"metrics.collector-address":     "external-svc:55678",
-					"metrics.collector-require-tls": "true",
+					"metrics.opencensus-address":     "external-svc:55678",
+					"metrics.opencensus-require-tls": "true",
 				},
 				Domain:    servingDomain,
 				Component: testComponent,
