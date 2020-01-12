@@ -117,7 +117,7 @@ func New(
 	})
 
 	for _, c := range controllers {
-		webhook.mux.HandleFunc(
+		webhook.mux.Handle(
 			c.Path(),
 			admissionHandler(logger, opts.StatsReporter, c),
 		)
