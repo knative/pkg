@@ -126,16 +126,16 @@ func New(
 }
 
 // Run implements the admission controller run loop.
-func (w *Webhook) Run(stop <-chan struct{}) error {
-	logger := w.Logger
+func (wh *Webhook) Run(stop <-chan struct{}) error {
+	logger := wh.Logger
 	ctx := logging.WithLogger(context.Background(), logger)
 
 	server := &http.Server{
-		Handler: w,
-		Addr:    fmt.Sprintf(":%v", w.Options.Port),
+		Handler: wh,
+		Addr:    fmt.Sprintf(":%d", wh.Options.Port),
 		TLSConfig: &tls.Config{
 			GetCertificate: func(*tls.ClientHelloInfo) (*tls.Certificate, error) {
-				secret, err := w.secretlister.Secrets(system.Namespace()).Get(w.Options.SecretName)
+				secret, err := wh.secretlister.Secrets(system.Namespace()).Get(wh.Options.SecretName)
 				if err != nil {
 					return nil, err
 				}
@@ -179,7 +179,7 @@ func (w *Webhook) Run(stop <-chan struct{}) error {
 	}
 }
 
-func (hook *Webhook) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (wh *Webhook) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// Verify the content type is accurate.
 	contentType := r.Header.Get("Content-Type")
 	if contentType != "application/json" {
@@ -187,5 +187,5 @@ func (hook *Webhook) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	hook.mux.ServeHTTP(w, r)
+	wh.mux.ServeHTTP(w, r)
 }

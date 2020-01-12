@@ -39,6 +39,7 @@ type AdmissionController interface {
 	Admit(context.Context, *admissionv1beta1.AdmissionRequest) *admissionv1beta1.AdmissionResponse
 }
 
+// MakeErrorStatus creates an 'BadRequest' error AdmissionResponse
 func MakeErrorStatus(reason string, args ...interface{}) *admissionv1beta1.AdmissionResponse {
 	result := apierrors.NewBadRequest(fmt.Sprintf(reason, args...)).Status()
 	return &admissionv1beta1.AdmissionResponse{
@@ -59,13 +60,14 @@ func admissionHandler(logger *zap.SugaredLogger, stats StatsReporter, c Admissio
 		}
 
 		logger = logger.With(
-			zap.String(logkey.Kind, fmt.Sprint(review.Request.Kind)),
+			zap.String(logkey.Kind, review.Request.Kind.String()),
 			zap.String(logkey.Namespace, review.Request.Namespace),
 			zap.String(logkey.Name, review.Request.Name),
-			zap.String(logkey.Operation, fmt.Sprint(review.Request.Operation)),
-			zap.String(logkey.Resource, fmt.Sprint(review.Request.Resource)),
-			zap.String(logkey.SubResource, fmt.Sprint(review.Request.SubResource)),
+			zap.String(logkey.Operation, string(review.Request.Operation)),
+			zap.String(logkey.Resource, review.Request.Resource.String()),
+			zap.String(logkey.SubResource, review.Request.SubResource),
 			zap.String(logkey.UserInfo, fmt.Sprint(review.Request.UserInfo)))
+
 		ctx := logging.WithLogger(r.Context(), logger)
 
 		var response admissionv1beta1.AdmissionReview
@@ -73,9 +75,7 @@ func admissionHandler(logger *zap.SugaredLogger, stats StatsReporter, c Admissio
 		logger.Infof("AdmissionReview for %#v: %s/%s response=%#v",
 			review.Request.Kind, review.Request.Namespace, review.Request.Name, reviewResponse)
 
-		if !reviewResponse.Allowed {
-			response.Response = reviewResponse
-		} else if reviewResponse.PatchType != nil || response.Response == nil {
+		if !reviewResponse.Allowed || reviewResponse.PatchType != nil || response.Response == nil {
 			response.Response = reviewResponse
 		}
 		response.Response.UID = review.Request.UID
