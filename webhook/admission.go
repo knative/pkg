@@ -48,9 +48,10 @@ func MakeErrorStatus(reason string, args ...interface{}) *admissionv1beta1.Admis
 	}
 }
 
-func admissionHandler(logger *zap.SugaredLogger, stats StatsReporter, c AdmissionController) http.HandlerFunc {
+func admissionHandler(rootLogger *zap.SugaredLogger, stats StatsReporter, c AdmissionController) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var ttStart = time.Now()
+		logger := rootLogger
 		logger.Infof("Webhook ServeHTTP request=%#v", r)
 
 		var review admissionv1beta1.AdmissionReview
