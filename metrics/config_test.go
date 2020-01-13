@@ -104,7 +104,7 @@ var (
 		name: "invalidOpenCensusSecuritySetting",
 		ops: ExporterOptions{
 			ConfigMap: map[string]string{
-				"metrics.backend-destination":   "opencensus",
+				"metrics.backend-destination":    "opencensus",
 				"metrics.opencensus-require-tls": "yep",
 			},
 			Domain:    servingDomain,
@@ -245,7 +245,7 @@ var (
 			name: "validOpenCensusSettings",
 			ops: ExporterOptions{
 				ConfigMap: map[string]string{
-					"metrics.backend-destination":   "opencensus",
+					"metrics.backend-destination":    "opencensus",
 					"metrics.opencensus-address":     "external-svc:55678",
 					"metrics.opencensus-require-tls": "true",
 				},

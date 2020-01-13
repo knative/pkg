@@ -19,30 +19,30 @@ package gke
 import "testing"
 
 func TestServiceEndpoint(t *testing.T) {
-    datas := []struct {
-        env           string
-        want          string
-        errorExpected bool
-    }{
-        {"", "", true},
-        {testEnv, testEndpoint, false},
-        {stagingEnv, stagingEndpoint, false},
-        {staging2Env, staging2Endpoint, false},
-        {prodEnv, prodEndpoint, false},
-        {"invalid_url", "", true},
-        {"https://custom.container.googleapis.com/", "https://custom.container.googleapis.com/", false},
-    }
-    for _, data := range datas {
-        got, err := ServiceEndpoint(data.env)
-        if got != data.want {
-            t.Errorf("Service endpoint for %q = %q, want: %q",
-                data.env, got, data.want)
-        }
-        if err != nil && !data.errorExpected {
-            t.Errorf("Error is not expected by got %v", err)
-        }
-        if err == nil && data.errorExpected {
-            t.Error("Expected one error but got nil")
-        }
-    }
+	datas := []struct {
+		env           string
+		want          string
+		errorExpected bool
+	}{
+		{"", "", true},
+		{testEnv, testEndpoint, false},
+		{stagingEnv, stagingEndpoint, false},
+		{staging2Env, staging2Endpoint, false},
+		{prodEnv, prodEndpoint, false},
+		{"invalid_url", "", true},
+		{"https://custom.container.googleapis.com/", "https://custom.container.googleapis.com/", false},
+	}
+	for _, data := range datas {
+		got, err := ServiceEndpoint(data.env)
+		if got != data.want {
+			t.Errorf("Service endpoint for %q = %q, want: %q",
+				data.env, got, data.want)
+		}
+		if err != nil && !data.errorExpected {
+			t.Errorf("Error is not expected by got %v", err)
+		}
+		if err == nil && data.errorExpected {
+			t.Error("Expected one error but got nil")
+		}
+	}
 }
