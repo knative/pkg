@@ -46,7 +46,7 @@ const (
 	user2            = "arrabbiato@knative.dev"
 )
 
-func newNonRunningTestWebhook(t *testing.T, options Options, acs ...AdmissionController) (
+func newNonRunningTestWebhook(t *testing.T, options Options, acs ...interface{}) (
 	ctx context.Context, ac *Webhook, cancel context.CancelFunc) {
 	t.Helper()
 
