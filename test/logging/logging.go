@@ -139,7 +139,8 @@ var (
 	loggerInitializeOnce = &sync.Once{}
 )
 
-// InitializeLogger initializes the base logger
+// InitializeLogger initializes logging for Knative tests.
+// It should be called prior to executing tests but after command-line flags have been processed. Recommend doing it in a TestMain().
 func InitializeLogger() {
 	// During a `go test` run, every output (which shows up) normally goes stdout (all PASS, FAIL, prints, logs, etc)
 	// except with build errors; the actual message from the build errors goes to stderr, but FAIL ... [build failed] still appears in stdout

@@ -1,4 +1,4 @@
-// Copyright 2019 Knative Authors
+// Copyright 2020 Knative Authors
 // Copyright (c) 2016 Uber Technologies, Inc.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -37,6 +37,16 @@ const (
 	spewLevel3          = 6
 )
 
+var spewConfig *spew.ConfigState
+
+func init() {
+	spewConfig = spew.NewDefaultConfig()
+	spewConfig.DisableCapacities = true
+	spewConfig.SortKeys = true
+	spewConfig.SpewKeys = true
+	spewConfig.ContinueOnMethod = true
+}
+
 func (o *TLogger) handleFields(args []interface{}) []zap.Field {
 	if len(args) == 0 {
 		return nil
@@ -72,27 +82,7 @@ func (o *TLogger) handleFields(args []interface{}) []zap.Field {
 			}
 			invalid = append(invalid, invalidPair{i, key, val})
 		} else {
-			f := zap.Any(keyStr, val)
-			if f.Type != zapcore.ReflectType {
-				fields = append(fields, f)
-			} else {
-				// If there are functions or things the encoder doesn't understand in the struct or the object itself,
-				//  it's current configuration just supplies an error.
-				// It should be possible to make the human-output encoders just do a dump like this,
-				//  while preserving the error behaviour for the machine-compatible output.
-				// But the console encoder uses Go's json encoder under the hood,
-				//  so it still leaves an error.
-				// In the meantime:
-				if o.level < spewLevel1 {
-					fields = append(fields, zap.Any(keyStr, spew.Sprintf("%v", val)))
-				} else if o.level < spewLevel2 {
-					fields = append(fields, zap.Any(keyStr, spew.Sprintf("%+v", val)))
-				} else if o.level < spewLevel3 {
-					fields = append(fields, zap.Any(keyStr, spew.Sprintf("%#v", val)))
-				} else {
-					fields = append(fields, zap.Any(keyStr, spew.Sprintf("%#+v", val)))
-				}
-			}
+			fields = append(fields, zap.Any(keyStr, val))
 		}
 		i += 2
 	}

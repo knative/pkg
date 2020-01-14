@@ -1,5 +1,5 @@
 /*
-Copyright 2019 The Knative Authors
+Copyright 2020 The Knative Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -34,13 +34,10 @@ type de struct {
 
 const runFailingTests = false
 
-func TestTLogger(legacy *testing.T) {
-	Verbosity = 5
-	InitializeLogger()
-	t := NewTLogger(legacy)
-	defer t.CleanUp()
+var someStruct abc
 
-	someStruct := abc{
+func init() {
+	someStruct = abc{
 		A: 42,
 		b: "some string",
 		C: &de{
@@ -49,6 +46,14 @@ func TestTLogger(legacy *testing.T) {
 		},
 		F: InitializeLogger,
 	}
+}
+
+func TestTLogger(legacy *testing.T) {
+	Verbosity = 5
+	InitializeLogger()
+	t, cancel := NewTLogger(legacy)
+	defer cancel()
+
 	var blank interface{}
 	blank = &someStruct
 
@@ -79,4 +84,19 @@ func TestTLogger(legacy *testing.T) {
 	})
 	t.ErrorIfErr(nil, "I won't fail because no error!")
 	t.FatalIfErr(nil, "I won't fail because no error!")
+}
+
+func TestStructuredError(legacy *testing.T) {
+	Verbosity = 5
+	InitializeLogger()
+	t, cancel := NewTLogger(legacy)
+	defer cancel()
+	err := Error("Hello World", "key", "value", "current function", TestStructuredError, "deep struct", someStruct, "z", 4, "y", 3, "x", 2, "w", 1)
+	t.Log(err.Error())
+	// TODO(coryrc): Big problem! zap is printing '\' 'n' instead of a newline, which makes the errors not readable on the screen
+	// need a different zapcore or something
+	if runFailingTests {
+		t.Error(err)
+		t.ErrorIfErr(err, "Demonstrate twice!")
+	}
 }

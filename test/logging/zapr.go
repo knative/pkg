@@ -1,4 +1,4 @@
-// Copyright 2019 Knative Authors
+// Copyright 2020 Knative Authors
 // Copyright 2018 Solly Ross
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,7 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Just the useful parts of this file have been preserved
+// The useful parts of this file have been preserved
 // from their origin at https://github.com/go-logr/zapr/tree/8f2487342d52a33a1793e50e3ca04bc1767aa65c
 
 package logging
