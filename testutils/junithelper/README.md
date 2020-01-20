@@ -1,7 +1,7 @@
 ## junithelper
 
-junithelper is a tool for creating a simple junit test result, which is
-used for creating a single junit result file with a single test
+junithelper is a tool for creating a simple junit test result, which is used for
+creating a single junit result file with a single test
 
 ## Usage
 
