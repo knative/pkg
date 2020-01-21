@@ -27,8 +27,12 @@ import (
 	"strings"
 	"time"
 
+	"go.opencensus.io/tag"
+
+	"go.opencensus.io/resource"
 	"go.opencensus.io/stats"
 	"go.uber.org/zap"
+	clientv1 "k8s.io/client-go/listers/core/v1"
 	"knative.dev/pkg/metrics/metricskey"
 )
 
@@ -86,11 +90,19 @@ type metricsConfig struct {
 	// writing the metrics to the stats.RecordWithOptions interface.
 	recorder func(context.Context, stats.Measurement, ...stats.Options) error
 
+	// secretsLister provides access for fetching Kubernetes Secrets from an
+	// informer cache.
+	secretsLister clientv1.SecretLister
+
 	// ---- OpenCensus specific below ----
 	// collectorAddress is the address of the collector, if not `localhost:55678`
 	collectorAddress string
 	// Require mutual TLS. Defaults to "false" because mutual TLS is hard to set up.
 	requireSecure bool
+	// resourceDescriptor is provides a function to extract an opencensus Resource
+	// (Resource describes an entity about which identifying information and
+	// metadata is exposed)
+	resourceDescriptor resource.Detector
 
 	// ---- Prometheus specific below ----
 	// prometheusPort is the port where metrics are exposed in Prometheus
@@ -147,14 +159,42 @@ func NewStackdriverClientConfigFromMap(config map[string]string) *StackdriverCli
 // Record applies the `ros` Options to `ms` and then records the resulting
 // measurements in the metricsConfig's designated backend.
 func (mc *metricsConfig) Record(ctx context.Context, ms stats.Measurement, ros ...stats.Options) error {
+	var err error
 	if mc == nil || mc.recorder == nil {
+		ros, err = resourceToTags(ctx, ros...)
+		if err != nil {
+			return err
+		}
 		return stats.RecordWithOptions(ctx, append(ros, stats.WithMeasurements(ms))...)
 	}
 	return mc.recorder(ctx, ms, ros...)
 }
 
+// resourceToTags is a backwards-compatibility shim to forward all the labels
+// on the Resource context to tags (used for Prometheus and Stackdriver during
+// the transition to using Resources).
+func resourceToTags(ctx context.Context, ros ...stats.Options) ([]stats.Options, error) {
+	if r, ok := metricskey.FromContext(ctx); ok && r != nil {
+		tags := []tag.Mutator{}
+		for label, v := range r.Labels {
+			key, err := tag.NewKey(label)
+			if err != nil {
+				return nil, fmt.Errorf("Bad resource label %q can't be converted to a tag: %+v", label, err)
+			}
+			tags = append(tags, tag.Upsert(key, v))
+			fmt.Printf("Adding tag %q: %q\n", key, v)
+		}
+		return append(ros, stats.WithTags(tags...)), nil
+	}
+	return ros, nil
+}
+
 func createMetricsConfig(ops ExporterOptions, logger *zap.SugaredLogger) (*metricsConfig, error) {
 	var mc metricsConfig
+
+	// We don't check if this is `nil` right now, because this is a transition step.
+	// Eventually, this should be a startup check.
+	mc.secretsLister = ops.Secrets
 
 	if ops.Domain == "" {
 		return nil, errors.New("metrics domain cannot be empty")
@@ -239,6 +279,11 @@ func createMetricsConfig(ops ExporterOptions, logger *zap.SugaredLogger) (*metri
 				metricType := path.Join(mc.stackdriverMetricTypePrefix, ms.Measure().Name())
 
 				if servingOrEventing.Has(metricType) {
+					var err error
+					ros, err = resourceToTags(ctx, ros...)
+					if err != nil {
+						return err
+					}
 					return stats.RecordWithOptions(ctx, append(ros, stats.WithMeasurements(ms))...)
 				}
 				// Otherwise, skip (because it won't be accepted)

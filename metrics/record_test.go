@@ -22,6 +22,9 @@ import (
 	"path"
 	"testing"
 
+	"go.opencensus.io/resource"
+	"go.opencensus.io/tag"
+
 	"knative.dev/pkg/metrics/metricskey"
 	"knative.dev/pkg/metrics/metricstest"
 
@@ -96,6 +99,65 @@ func TestRecordEventing(t *testing.T) {
 		},
 	}
 	testRecord(t, measure, shouldReportCases)
+}
+
+func TestRecordResource(t *testing.T) {
+	measure := stats.Int64("number", "Count of times called", stats.UnitNone)
+	var err error
+	v := &view.View{
+		Measure:     measure,
+		Aggregation: view.LastValue(),
+		TagKeys: []tag.Key{
+			tag.MustNewKey("foo"),
+			tag.MustNewKey("hero"),
+			tag.MustNewKey("sandwitch"),
+		},
+	}
+
+	testCases := []struct {
+		name string
+		rsrc *resource.Resource
+		tags map[string]string
+		want map[string]string
+	}{
+		{
+			name: "no resource",
+			want: map[string]string{},
+		},
+		{
+			name: "with resource",
+			rsrc: &resource.Resource{Type: "test", Labels: map[string]string{"foo": "bar"}},
+			want: map[string]string{"foo": "bar"},
+		},
+		{
+			name: "resource with tags",
+			rsrc: &resource.Resource{Type: "test", Labels: map[string]string{"foo": "bar"}},
+			tags: map[string]string{"foo": "baz", "hero": "aquaman"},
+			want: map[string]string{"foo": "bar", "hero": "aquaman"},
+		},
+	}
+
+	for _, backend := range []metricsBackend{Prometheus, Stackdriver, OpenCensus} {
+
+		for _, test := range testCases {
+			t.Run(test.name, func(t *testing.T) {
+				view.Register(v)
+				defer view.Unregister(v)
+
+				ctx := metricskey.NewContext(context.Background(), test.rsrc)
+				setCurMetricsConfig(&metricsConfig{
+					backendDestination: backend,
+				})
+				for k, v := range test.tags {
+					if ctx, err = tag.New(ctx, tag.Insert(tag.MustNewKey(k), v)); err != nil {
+						t.Errorf("Failed to set tag %q: %+v", k, err)
+					}
+				}
+				Record(ctx, measure.M(1))
+				metricstest.CheckLastValueData(t, measure.Name(), test.want, 1)
+			})
+		}
+	}
 }
 
 func testRecord(t *testing.T, measure *stats.Int64Measure, shouldReportCases []cases) {
