@@ -175,14 +175,13 @@ func (mc *metricsConfig) Record(ctx context.Context, ms stats.Measurement, ros .
 // the transition to using Resources).
 func resourceToTags(ctx context.Context, ros ...stats.Options) ([]stats.Options, error) {
 	if r, ok := metricskey.FromContext(ctx); ok && r != nil {
-		tags := []tag.Mutator{}
+		tags := make([]tag.Mutator, 0, len(r.Labels))
 		for label, v := range r.Labels {
 			key, err := tag.NewKey(label)
 			if err != nil {
-				return nil, fmt.Errorf("Bad resource label %q can't be converted to a tag: %+v", label, err)
+				return nil, fmt.Errorf("bad resource label %q can't be converted to a tag: %+v", label, err)
 			}
 			tags = append(tags, tag.Upsert(key, v))
-			fmt.Printf("Adding tag %q: %q\n", key, v)
 		}
 		return append(ros, stats.WithTags(tags...)), nil
 	}
