@@ -21,6 +21,7 @@ import (
 	"go.opencensus.io/stats/view"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
+	clientv1 "k8s.io/client-go/listers/core/v1"
 )
 
 var (
@@ -65,17 +66,31 @@ type ExporterOptions struct {
 	// See https://github.com/knative/serving/blob/master/config/config-observability.yaml
 	// for details.
 	ConfigMap map[string]string
+
+	// A lister for Secrets to allow dynamic configuration of outgoing TLS client cert.
+	Secrets clientv1.SecretLister `json:"-"`
 }
 
 // UpdateExporterFromConfigMap returns a helper func that can be used to update the exporter
 // when a config map is updated.
-func UpdateExporterFromConfigMap(component string, logger *zap.SugaredLogger) func(configMap *corev1.ConfigMap) {
+// DEPRECATED: Callers should migrate to UpdateExporterFromConfigMap3 (which will be renamed
+// when all callers are migrated).
+func UpdateExporterFromConfigMap(component string, secrets clientv1.SecretLister, logger *zap.SugaredLogger) func(configMap *corev1.ConfigMap) {
+	return UpdateExporterFromConfigMap3(component, secrets, logger)
+}
+
+// UpdateExporterFromConfigMap3 includes a corev1.SecretLister which is used to configure
+// mTLS with the opencensus agent.
+// Callers should migrate to this function, which will be renamed to UpdateExporterFromConfigMap
+// once all callers in all repos are renamed.
+func UpdateExporterFromConfigMap3(component string, secrets clientv1.SecretLister, logger *zap.SugaredLogger) func(*corev1.ConfigMap) {
 	domain := Domain()
 	return func(configMap *corev1.ConfigMap) {
 		UpdateExporter(ExporterOptions{
 			Domain:    domain,
 			Component: component,
 			ConfigMap: configMap.Data,
+			Secrets:   secrets,
 		}, logger)
 	}
 }
