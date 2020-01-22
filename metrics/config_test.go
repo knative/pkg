@@ -718,14 +718,14 @@ func TestUpdateExporterFromConfigMapWithDefaults(t *testing.T) {
 	for _, test := range successTests[1:] {
 		t.Run(test.name, func(t *testing.T) {
 			defer ClearAll()
-			defaultOps := ExporterOptions{
+			opts := ExporterOptions{
 				Component:      test.ops.Component,
 				Domain:         test.ops.Domain,
 				PrometheusPort: test.ops.PrometheusPort,
 			}
-			updateFunc, err := UpdateExporterFromConfigMapWithDefaults(defaultOps, TestLogger(t))
+			updateFunc, err := UpdateExporterFromConfigMapWithOpts(opts, TestLogger(t))
 			if err != nil {
-				t.Errorf("failed to call UpdateExporterFromConfigMapWithDefaults: %v", err)
+				t.Errorf("failed to call UpdateExporterFromConfigMapWithOpts: %v", err)
 			}
 			updateFunc(&corev1.ConfigMap{Data: test.ops.ConfigMap})
 			mConfig := getCurMetricsConfig()
@@ -741,13 +741,13 @@ func TestUpdateExporterFromConfigMapWithDefaults(t *testing.T) {
 
 	t.Run("ConfigMapSetErr", func(t *testing.T) {
 		defer ClearAll()
-		defaultOps := ExporterOptions{
+		opts := ExporterOptions{
 			Component:      testComponent,
 			Domain:         servingDomain,
 			PrometheusPort: defaultPrometheusPort,
 			ConfigMap:      map[string]string{"some": "data"},
 		}
-		_, err := UpdateExporterFromConfigMapWithDefaults(defaultOps, TestLogger(t))
+		_, err := UpdateExporterFromConfigMapWithOpts(opts, TestLogger(t))
 		if err == nil {
 			t.Error("got err=nil want err")
 		}
@@ -755,12 +755,12 @@ func TestUpdateExporterFromConfigMapWithDefaults(t *testing.T) {
 
 	t.Run("MissingComponentErr", func(t *testing.T) {
 		defer ClearAll()
-		defaultOps := ExporterOptions{
+		opts := ExporterOptions{
 			Component:      "",
 			Domain:         servingDomain,
 			PrometheusPort: defaultPrometheusPort,
 		}
-		_, err := UpdateExporterFromConfigMapWithDefaults(defaultOps, TestLogger(t))
+		_, err := UpdateExporterFromConfigMapWithOpts(opts, TestLogger(t))
 		if err == nil {
 			t.Error("got err=nil want err")
 		}

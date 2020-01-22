@@ -14,6 +14,7 @@ limitations under the License.
 package metrics
 
 import (
+	"errors"
 	"fmt"
 	"sync"
 
@@ -79,25 +80,27 @@ func UpdateExporterFromConfigMap(component string, logger *zap.SugaredLogger) fu
 	}
 }
 
-// UpdateExporterFromConfigMapWithDefaults returns a helper func that can be used to update the exporter
-// when a config map is updated. The defaultOps should be provided for the default exporter options.
-func UpdateExporterFromConfigMapWithDefaults(defaultOps ExporterOptions, logger *zap.SugaredLogger) (func(configMap *corev1.ConfigMap), error) {
-	if defaultOps.Component == "" {
-		return nil, fmt.Errorf("UpdateExporterFromConfigMapWithDefaults must provide Component")
+// UpdateExporterFromConfigMapWithOpts returns a helper func that can be used to update the exporter
+// when a config map is updated.
+// opts.Component must be present.
+// opts.ConfigMap must not be present as the value from the ConfigMap will be used instead.
+func UpdateExporterFromConfigMapWithOpts(opts ExporterOptions, logger *zap.SugaredLogger) (func(configMap *corev1.ConfigMap), error) {
+	if opts.Component == "" {
+		return nil, errors.New("UpdateExporterFromConfigMapWithDefaults must provide Component")
 	}
-	if defaultOps.ConfigMap != nil {
-		return nil, fmt.Errorf("UpdateExporterFromConfigMapWithDefaults doesn't allow defaulting ConfigMap")
+	if opts.ConfigMap != nil {
+		return nil, errors.New("UpdateExporterFromConfigMapWithDefaults doesn't allow defaulting ConfigMap")
 	}
-	domain := defaultOps.Domain
+	domain := opts.Domain
 	if domain == "" {
 		domain = Domain()
 	}
 	return func(configMap *corev1.ConfigMap) {
 		UpdateExporter(ExporterOptions{
 			Domain:         domain,
-			Component:      defaultOps.Component,
+			Component:      opts.Component,
 			ConfigMap:      configMap.Data,
-			PrometheusPort: defaultOps.PrometheusPort,
+			PrometheusPort: opts.PrometheusPort,
 		}, logger)
 	}, nil
 }
