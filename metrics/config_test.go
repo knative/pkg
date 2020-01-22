@@ -712,7 +712,7 @@ func TestUpdateExporter(t *testing.T) {
 	}
 }
 
-func TestUpdateExporterFromConfigMapWithDefaults(t *testing.T) {
+func TestUpdateExporterFromConfigMapWithOpts(t *testing.T) {
 	setCurMetricsConfig(nil)
 	oldConfig := getCurMetricsConfig()
 	for _, test := range successTests[1:] {
