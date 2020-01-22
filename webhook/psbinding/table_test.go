@@ -268,36 +268,6 @@ func TestWebhookReconcile(t *testing.T) {
 		},
 	}
 
-	// These are the rules we expect given the context of "handlers".
-	baseRules := []admissionregistrationv1beta1.RuleWithOperations{{
-		Operations: []admissionregistrationv1beta1.OperationType{"CREATE", "UPDATE"},
-		Rule: admissionregistrationv1beta1.Rule{
-			APIGroups:   []string{"apps"},
-			APIVersions: []string{"v1"},
-			Resources:   []string{"daemonsets/*"},
-		},
-	}, {
-		Operations: []admissionregistrationv1beta1.OperationType{"CREATE", "UPDATE"},
-		Rule: admissionregistrationv1beta1.Rule{
-			APIGroups:   []string{"apps"},
-			APIVersions: []string{"v1"},
-			Resources:   []string{"deployments/*"},
-		},
-	}, {
-		Operations: []admissionregistrationv1beta1.OperationType{"CREATE", "UPDATE"},
-		Rule: admissionregistrationv1beta1.Rule{
-			APIGroups:   []string{"apps"},
-			APIVersions: []string{"v1"},
-			Resources:   []string{"statefulsets/*"},
-		},
-	}, {
-		Operations: []admissionregistrationv1beta1.OperationType{"CREATE", "UPDATE"},
-		Rule: admissionregistrationv1beta1.Rule{
-			APIGroups:   []string{"batch"},
-			APIVersions: []string{"v1"},
-			Resources:   []string{"jobs/*"},
-		},
-	}}
 	equivalent := admissionregistrationv1beta1.Equivalent
 
 	// The key to use, which for this singleton reconciler doesn't matter (although the
@@ -379,7 +349,7 @@ func TestWebhookReconcile(t *testing.T) {
 						CABundle: []byte("present"),
 					},
 					// Rules are added.
-					Rules: baseRules,
+					Rules: nil,
 					// MatchPolicy is added.
 					MatchPolicy: &equivalent,
 					// Selectors are added.
@@ -438,7 +408,7 @@ func TestWebhookReconcile(t *testing.T) {
 						CABundle: []byte("present"),
 					},
 					// Rules are fixed.
-					Rules: baseRules,
+					Rules: nil,
 					// MatchPolicy is added.
 					MatchPolicy: &equivalent,
 					// Selectors are added.
@@ -501,7 +471,7 @@ func TestWebhookReconcile(t *testing.T) {
 						CABundle: []byte("present"),
 					},
 					// Rules are fixed.
-					Rules: baseRules,
+					Rules: nil,
 					// MatchPolicy is added.
 					MatchPolicy: &equivalent,
 					// Selectors are added.
@@ -531,7 +501,7 @@ func TestWebhookReconcile(t *testing.T) {
 						CABundle: []byte("present"),
 					},
 					// Rules are fine.
-					Rules: baseRules,
+					Rules: nil,
 					// MatchPolicy is fine.
 					MatchPolicy: &equivalent,
 					// Selectors are fine.
@@ -562,7 +532,7 @@ func TestWebhookReconcile(t *testing.T) {
 						CABundle: []byte("present"),
 					},
 					// Rules are fine.
-					Rules: baseRules,
+					Rules: nil,
 					// MatchPolicy is fine.
 					MatchPolicy: &equivalent,
 					// Selectors are fine.
@@ -608,7 +578,7 @@ func TestWebhookReconcile(t *testing.T) {
 						CABundle: []byte("present"),
 					},
 					// Rules are fine.
-					Rules: baseRules,
+					Rules: nil,
 					// MatchPolicy is fine.
 					MatchPolicy: &equivalent,
 					// Selectors are fine.
@@ -633,14 +603,14 @@ func TestWebhookReconcile(t *testing.T) {
 						CABundle: []byte("present"),
 					},
 					// A new rule is added to intercept the new type.
-					Rules: append(baseRules, admissionregistrationv1beta1.RuleWithOperations{
+					Rules: []admissionregistrationv1beta1.RuleWithOperations{{
 						Operations: []admissionregistrationv1beta1.OperationType{"CREATE", "UPDATE"},
 						Rule: admissionregistrationv1beta1.Rule{
 							APIGroups:   []string{"random.knative.dev"},
 							APIVersions: []string{"v2beta3"},
 							Resources:   []string{"knoodles/*"},
 						},
-					}),
+					}},
 					MatchPolicy:       &equivalent,
 					NamespaceSelector: &ExclusionSelector,
 					ObjectSelector:    &ExclusionSelector,
@@ -700,14 +670,21 @@ func TestWebhookReconcile(t *testing.T) {
 						CABundle: []byte("present"),
 					},
 					// A new rule is added to intercept the new type.
-					Rules: append(baseRules, admissionregistrationv1beta1.RuleWithOperations{
+					Rules: []admissionregistrationv1beta1.RuleWithOperations{{
+						Operations: []admissionregistrationv1beta1.OperationType{"CREATE", "UPDATE"},
+						Rule: admissionregistrationv1beta1.Rule{
+							APIGroups:   []string{"apps"},
+							APIVersions: []string{"v1"},
+							Resources:   []string{"deployments/*"},
+						},
+					}, {
 						Operations: []admissionregistrationv1beta1.OperationType{"CREATE", "UPDATE"},
 						Rule: admissionregistrationv1beta1.Rule{
 							APIGroups:   []string{"random.knative.dev"},
 							APIVersions: []string{"v2beta3"},
 							Resources:   []string{"knoodles/*"},
 						},
-					}),
+					}},
 					MatchPolicy:       &equivalent,
 					NamespaceSelector: &ExclusionSelector,
 					ObjectSelector:    &ExclusionSelector,
@@ -781,14 +758,21 @@ func TestWebhookReconcile(t *testing.T) {
 						CABundle: []byte("present"),
 					},
 					// A new rule is added to intercept the new type.
-					Rules: append(baseRules, admissionregistrationv1beta1.RuleWithOperations{
+					Rules: []admissionregistrationv1beta1.RuleWithOperations{{
+						Operations: []admissionregistrationv1beta1.OperationType{"CREATE", "UPDATE"},
+						Rule: admissionregistrationv1beta1.Rule{
+							APIGroups:   []string{"apps"},
+							APIVersions: []string{"v1"},
+							Resources:   []string{"deployments/*"},
+						},
+					}, {
 						Operations: []admissionregistrationv1beta1.OperationType{"CREATE", "UPDATE"},
 						Rule: admissionregistrationv1beta1.Rule{
 							APIGroups:   []string{"random.knative.dev"},
 							APIVersions: []string{"v2beta3"},
 							Resources:   []string{"knoodles/*"},
 						},
-					}),
+					}},
 					MatchPolicy:       &equivalent,
 					NamespaceSelector: &ExclusionSelector,
 					ObjectSelector:    &ExclusionSelector,
@@ -842,7 +826,14 @@ func TestWebhookReconcile(t *testing.T) {
 						},
 						CABundle: []byte("present"),
 					},
-					Rules:             baseRules,
+					Rules: []admissionregistrationv1beta1.RuleWithOperations{{
+						Operations: []admissionregistrationv1beta1.OperationType{"CREATE", "UPDATE"},
+						Rule: admissionregistrationv1beta1.Rule{
+							APIGroups:   []string{"apps"},
+							APIVersions: []string{"v1"},
+							Resources:   []string{"deployments/*"},
+						},
+					}},
 					MatchPolicy:       &equivalent,
 					NamespaceSelector: &ExclusionSelector,
 					ObjectSelector:    &ExclusionSelector,
@@ -909,7 +900,7 @@ func TestWebhookReconcile(t *testing.T) {
 						CABundle: []byte("present"),
 					},
 					// Rules are fine.
-					Rules: baseRules,
+					Rules: nil,
 					// MatchPolicy is fine.
 					MatchPolicy: &equivalent,
 					// Selectors are fine.
@@ -934,21 +925,21 @@ func TestWebhookReconcile(t *testing.T) {
 						CABundle: []byte("present"),
 					},
 					// New rules are added to intercept the new types.
-					Rules: append(baseRules, admissionregistrationv1beta1.RuleWithOperations{
+					Rules: []admissionregistrationv1beta1.RuleWithOperations{{
 						Operations: []admissionregistrationv1beta1.OperationType{"CREATE", "UPDATE"},
 						Rule: admissionregistrationv1beta1.Rule{
 							APIGroups:   []string{"pseudorandom.knative.dev"},
 							APIVersions: []string{"v3beta1"},
 							Resources:   []string{"knoogles/*"},
 						},
-					}, admissionregistrationv1beta1.RuleWithOperations{
+					}, {
 						Operations: []admissionregistrationv1beta1.OperationType{"CREATE", "UPDATE"},
 						Rule: admissionregistrationv1beta1.Rule{
 							APIGroups:   []string{"random.knative.dev"},
 							APIVersions: []string{"v2beta3"},
 							Resources:   []string{"knoodles/*"},
 						},
-					}),
+					}},
 					MatchPolicy:       &equivalent,
 					NamespaceSelector: &ExclusionSelector,
 					ObjectSelector:    &ExclusionSelector,
@@ -996,7 +987,7 @@ func TestWebhookReconcile(t *testing.T) {
 						CABundle: []byte("present"),
 					},
 					// Rules are fine.
-					Rules: baseRules,
+					Rules: nil,
 					// MatchPolicy is fine.
 					MatchPolicy: &equivalent,
 					// Selectors are fine.
@@ -1021,14 +1012,14 @@ func TestWebhookReconcile(t *testing.T) {
 						CABundle: []byte("present"),
 					},
 					// A new rule is added to intercept the new type.
-					Rules: append(baseRules, admissionregistrationv1beta1.RuleWithOperations{
+					Rules: []admissionregistrationv1beta1.RuleWithOperations{{
 						Operations: []admissionregistrationv1beta1.OperationType{"CREATE", "UPDATE"},
 						Rule: admissionregistrationv1beta1.Rule{
 							APIGroups:   []string{"random.knative.dev"},
 							APIVersions: []string{"v2beta3"},
 							Resources:   []string{"knoodles/*"},
 						},
-					}),
+					}},
 					MatchPolicy:       &equivalent,
 					NamespaceSelector: &ExclusionSelector,
 					ObjectSelector:    &ExclusionSelector,
