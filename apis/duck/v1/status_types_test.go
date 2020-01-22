@@ -135,4 +135,24 @@ func TestConditionSet(t *testing.T) {
 		t.Errorf("len(s2.ObservedGeneration) = %d, wanted %d",
 			gotGeneration, wantGeneration)
 	}
+
+	s2 = &Status{}
+	s.ConvertTo(context.Background(), s2, func(cond apis.ConditionType) bool {
+		return cond == "Foo"
+	})
+
+	if !condSet.Manage(s2).IsHappy() {
+		t.Error("s2.IsHappy() = false, wanted true")
+	}
+	for _, c := range []apis.ConditionType{apis.ConditionReady, "Foo"} {
+		if cond := mgr.GetCondition(c); cond == nil {
+			t.Errorf("GetCondition(%q) = nil, wanted non-nil", c)
+		} else if got, want := cond.Status, corev1.ConditionTrue; got != want {
+			t.Errorf("GetCondition(%q) = %v, wanted %v", c, got, want)
+		}
+	}
+	if gotGeneration := s2.ObservedGeneration; wantGeneration != gotGeneration {
+		t.Errorf("len(s2.ObservedGeneration) = %d, wanted %d",
+			gotGeneration, wantGeneration)
+	}
 }
