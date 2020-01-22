@@ -30,6 +30,8 @@ import (
 
 	. "knative.dev/pkg/logging/testing"
 	"knative.dev/pkg/metrics/metricstest"
+
+	corev1 "k8s.io/api/core/v1"
 )
 
 // TODO UTs should move to eventing and serving, as appropriate.
@@ -708,6 +710,61 @@ func TestUpdateExporter(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestUpdateExporterFromConfigMapWithDefaults(t *testing.T) {
+	setCurMetricsConfig(nil)
+	oldConfig := getCurMetricsConfig()
+	for _, test := range successTests[1:] {
+		t.Run(test.name, func(t *testing.T) {
+			defer ClearAll()
+			defaultOps := ExporterOptions{
+				Component:      test.ops.Component,
+				Domain:         test.ops.Domain,
+				PrometheusPort: test.ops.PrometheusPort,
+			}
+			updateFunc, err := UpdateExporterFromConfigMapWithDefaults(defaultOps, TestLogger(t))
+			if err != nil {
+				t.Errorf("failed to call UpdateExporterFromConfigMapWithDefaults: %v", err)
+			}
+			updateFunc(&corev1.ConfigMap{Data: test.ops.ConfigMap})
+			mConfig := getCurMetricsConfig()
+			if mConfig == oldConfig {
+				t.Error("Expected metrics config change")
+			}
+			if diff := cmp.Diff(test.expectedConfig, *mConfig, cmp.AllowUnexported(*mConfig), cmpopts.IgnoreTypes(mConfig.recorder)); diff != "" {
+				t.Errorf("Invalid config (-want +got):\n%s", diff)
+			}
+			oldConfig = mConfig
+		})
+	}
+
+	t.Run("ConfigMapSetErr", func(t *testing.T) {
+		defer ClearAll()
+		defaultOps := ExporterOptions{
+			Component:      testComponent,
+			Domain:         servingDomain,
+			PrometheusPort: defaultPrometheusPort,
+			ConfigMap:      map[string]string{"some": "data"},
+		}
+		_, err := UpdateExporterFromConfigMapWithDefaults(defaultOps, TestLogger(t))
+		if err == nil {
+			t.Error("got err=nil want err")
+		}
+	})
+
+	t.Run("MissingComponentErr", func(t *testing.T) {
+		defer ClearAll()
+		defaultOps := ExporterOptions{
+			Component:      "",
+			Domain:         servingDomain,
+			PrometheusPort: defaultPrometheusPort,
+		}
+		_, err := UpdateExporterFromConfigMapWithDefaults(defaultOps, TestLogger(t))
+		if err == nil {
+			t.Error("got err=nil want err")
+		}
+	})
 }
 
 func TestUpdateExporter_doesNotCreateExporter(t *testing.T) {

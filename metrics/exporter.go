@@ -79,6 +79,29 @@ func UpdateExporterFromConfigMap(component string, logger *zap.SugaredLogger) fu
 	}
 }
 
+// UpdateExporterFromConfigMapWithDefaults returns a helper func that can be used to update the exporter
+// when a config map is updated. The defaultOps should be provided for the default exporter options.
+func UpdateExporterFromConfigMapWithDefaults(defaultOps ExporterOptions, logger *zap.SugaredLogger) (func(configMap *corev1.ConfigMap), error) {
+	if defaultOps.Component == "" {
+		return nil, fmt.Errorf("UpdateExporterFromConfigMapWithDefaults must provide Component")
+	}
+	if defaultOps.ConfigMap != nil {
+		return nil, fmt.Errorf("UpdateExporterFromConfigMapWithDefaults doesn't allow defaulting ConfigMap")
+	}
+	domain := defaultOps.Domain
+	if domain == "" {
+		domain = Domain()
+	}
+	return func(configMap *corev1.ConfigMap) {
+		UpdateExporter(ExporterOptions{
+			Domain:         domain,
+			Component:      defaultOps.Component,
+			ConfigMap:      configMap.Data,
+			PrometheusPort: defaultOps.PrometheusPort,
+		}, logger)
+	}, nil
+}
+
 // UpdateExporter updates the exporter based on the given ExporterOptions.
 // This is a thread-safe function. The entire series of operations is locked
 // to prevent a race condition between reading the current configuration
