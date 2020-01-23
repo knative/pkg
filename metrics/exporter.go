@@ -14,6 +14,7 @@ limitations under the License.
 package metrics
 
 import (
+	"errors"
 	"fmt"
 	"sync"
 
@@ -92,6 +93,31 @@ func UpdateExporterFromConfigMap3(component string, secrets clientv1.SecretListe
 			Secrets:   secrets,
 		}, logger)
 	}
+}
+
+// UpdateExporterFromConfigMapWithOpts returns a helper func that can be used to update the exporter
+// when a config map is updated.
+// opts.Component must be present.
+// opts.ConfigMap must not be present as the value from the ConfigMap will be used instead.
+func UpdateExporterFromConfigMapWithOpts(opts ExporterOptions, logger *zap.SugaredLogger) (func(configMap *corev1.ConfigMap), error) {
+	if opts.Component == "" {
+		return nil, errors.New("UpdateExporterFromConfigMapWithDefaults must provide Component")
+	}
+	if opts.ConfigMap != nil {
+		return nil, errors.New("UpdateExporterFromConfigMapWithDefaults doesn't allow defaulting ConfigMap")
+	}
+	domain := opts.Domain
+	if domain == "" {
+		domain = Domain()
+	}
+	return func(configMap *corev1.ConfigMap) {
+		UpdateExporter(ExporterOptions{
+			Domain:         domain,
+			Component:      opts.Component,
+			ConfigMap:      configMap.Data,
+			PrometheusPort: opts.PrometheusPort,
+		}, logger)
+	}, nil
 }
 
 // UpdateExporter updates the exporter based on the given ExporterOptions.
