@@ -14,13 +14,8 @@ limitations under the License.
 package metrics
 
 import (
-	"context"
 	"crypto/tls"
 	"fmt"
-
-	"go.opencensus.io/resource"
-	"go.opencensus.io/tag"
-	"knative.dev/pkg/metrics/metricskey"
 
 	"contrib.go.opencensus.io/exporter/ocagent"
 	"go.opencensus.io/stats/view"
@@ -54,52 +49,6 @@ func newOpenCensusExporter(config *metricsConfig, logger *zap.SugaredLogger) (vi
 	logger.Infof("Created OpenCensus exporter with config: %+v.", *config)
 	view.RegisterExporter(e)
 	return e, nil
-}
-
-func defaultResourceDescriptor(ctx context.Context) (*resource.Resource, error) {
-	if r, ok := metricskey.FromContext(ctx); ok {
-		return r, nil
-	}
-	m := tag.FromContext(ctx)
-
-	if _, ok := m.Value(tag.MustNewKey(metricskey.LabelRevisionName)); ok {
-		return &resource.Resource{
-			Type:   metricskey.ResourceTypeKnativeRevision,
-			Labels: extractLabelsFromMap(m, metricskey.KnativeRevisionLabels.UnsortedList()...),
-		}, nil
-	}
-	if _, ok := m.Value(tag.MustNewKey(metricskey.LabelTriggerName)); ok {
-		return &resource.Resource{
-			Type:   metricskey.ResourceTypeKnativeTrigger,
-			Labels: extractLabelsFromMap(m, metricskey.KnativeTriggerLabels.UnsortedList()...),
-		}, nil
-	}
-	if _, ok := m.Value(tag.MustNewKey(metricskey.LabelEventSource)); ok {
-		return &resource.Resource{
-			Type:   metricskey.ResourceTypeKnativeSource,
-			Labels: extractLabelsFromMap(m, metricskey.KnativeSourceLabels.UnsortedList()...),
-		}, nil
-	}
-	if _, ok := m.Value(tag.MustNewKey(metricskey.LabelBrokerName)); ok {
-		return &resource.Resource{
-			Type:   metricskey.ResourceTypeKnativeBroker,
-			Labels: extractLabelsFromMap(m, metricskey.KnativeBrokerLabels.UnsortedList()...),
-		}, nil
-	}
-	return nil, nil
-}
-
-func extractLabelsFromMap(t *tag.Map, labels ...string) map[string]string {
-	ret := map[string]string{}
-	for _, l := range labels {
-		k := tag.MustNewKey(l)
-		if v, ok := t.Value(k); ok {
-			ret[l] = v
-		} else {
-			ret[l] = "unknown"
-		}
-	}
-	return ret
 }
 
 // credentialFetcher attempts to locate a secret containing TLS credentials

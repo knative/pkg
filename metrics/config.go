@@ -27,9 +27,6 @@ import (
 	"strings"
 	"time"
 
-	"go.opencensus.io/tag"
-
-	"go.opencensus.io/resource"
 	"go.opencensus.io/stats"
 	"go.uber.org/zap"
 	clientv1 "k8s.io/client-go/listers/core/v1"
@@ -99,10 +96,6 @@ type metricsConfig struct {
 	collectorAddress string
 	// Require mutual TLS. Defaults to "false" because mutual TLS is hard to set up.
 	requireSecure bool
-	// resourceDescriptor is provides a function to extract an opencensus Resource
-	// (Resource describes an entity about which identifying information and
-	// metadata is exposed)
-	resourceDescriptor resource.Detector
 
 	// ---- Prometheus specific below ----
 	// prometheusPort is the port where metrics are exposed in Prometheus
@@ -163,25 +156,6 @@ func (mc *metricsConfig) record(ctx context.Context, mss []stats.Measurement, ro
 		return stats.RecordWithOptions(ctx, append(ros, stats.WithMeasurements(mss...))...)
 	}
 	return mc.recorder(ctx, mss, ros...)
-}
-
-// resourceToTags is a backwards-compatibility shim to forward all the labels
-// on the Resource context to tags (used for Prometheus and Stackdriver during
-// the transition to using Resources).
-func resourceToTags(ctx context.Context, ros ...stats.Options) ([]stats.Options, error) {
-	if r, ok := metricskey.FromContext(ctx); ok && r != nil {
-		tags := []tag.Mutator{}
-		for label, v := range r.Labels {
-			key, err := tag.NewKey(label)
-			if err != nil {
-				return nil, fmt.Errorf("Bad resource label %q can't be converted to a tag: %+v", label, err)
-			}
-			tags = append(tags, tag.Upsert(key, v))
-			fmt.Printf("Adding tag %q: %q\n", key, v)
-		}
-		return append(ros, stats.WithTags(tags...)), nil
-	}
-	return ros, nil
 }
 
 func createMetricsConfig(ops ExporterOptions, logger *zap.SugaredLogger) (*metricsConfig, error) {
