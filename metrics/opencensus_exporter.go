@@ -90,7 +90,7 @@ func defaultResourceDescriptor(ctx context.Context) (*resource.Resource, error) 
 }
 
 func extractLabelsFromMap(t *tag.Map, labels ...string) map[string]string {
-	ret := make(map[string]string, 0, len(labels))
+	ret := make(map[string]string, len(labels))
 	for _, l := range labels {
 		k := tag.MustNewKey(l)
 		if v, ok := t.Value(k); ok {

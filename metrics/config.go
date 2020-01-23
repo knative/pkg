@@ -179,7 +179,7 @@ func resourceToTags(ctx context.Context, ros ...stats.Options) ([]stats.Options,
 		for label, v := range r.Labels {
 			key, err := tag.NewKey(label)
 			if err != nil {
-				return nil, fmt.Errorf("bad resource label %q can't be converted to a tag: %+v", label, err)
+				return nil, fmt.Errorf("bad resource label %q can't be converted to a tag: %w", label, err)
 			}
 			tags = append(tags, tag.Upsert(key, v))
 		}

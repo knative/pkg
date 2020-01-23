@@ -22,14 +22,10 @@ import (
 	"go.opencensus.io/resource"
 )
 
-// key is an unexported type for keys defined in this package.
-// This prevents collisions with keys defined in other packages.
-type key int
-
-// userKey is the key for opencensus Resource values in Contexts. It is
+// resourceKey is the key for opencensus Resource values in Contexts. It is
 // unexported; clients use metricskey.NewContext and metricskey.FromContext
 // instead of using this key directly.
-var resourceKey key
+var resourceKey struct{}
 
 // NewContext returns a new Context that carries value u.
 func NewContext(ctx context.Context, r *resource.Resource) context.Context {

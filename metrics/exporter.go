@@ -74,8 +74,8 @@ type ExporterOptions struct {
 // when a config map is updated.
 // DEPRECATED: Callers should migrate to UpdateExporterFromConfigMap3 (which will be renamed
 // when all callers are migrated).
-func UpdateExporterFromConfigMap(component string, secrets clientv1.SecretLister, logger *zap.SugaredLogger) func(configMap *corev1.ConfigMap) {
-	return UpdateExporterFromConfigMap3(component, secrets, logger)
+func UpdateExporterFromConfigMap(component string, logger *zap.SugaredLogger) func(configMap *corev1.ConfigMap) {
+	return UpdateExporterFromConfigMap3(component, nil, logger)
 }
 
 // UpdateExporterFromConfigMap3 includes a corev1.SecretLister which is used to configure
