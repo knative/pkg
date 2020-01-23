@@ -1372,6 +1372,7 @@
     "go.opencensus.io/metric/metricdata",
     "go.opencensus.io/plugin/ochttp",
     "go.opencensus.io/plugin/ochttp/propagation/b3",
+    "go.opencensus.io/resource",
     "go.opencensus.io/stats",
     "go.opencensus.io/stats/view",
     "go.opencensus.io/tag",
