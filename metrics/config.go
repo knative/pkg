@@ -159,9 +159,8 @@ func NewStackdriverClientConfigFromMap(config map[string]string) *StackdriverCli
 // Record applies the `ros` Options to `ms` and then records the resulting
 // measurements in the metricsConfig's designated backend.
 func (mc *metricsConfig) Record(ctx context.Context, ms stats.Measurement, ros ...stats.Options) error {
-	var err error
 	if mc == nil || mc.recorder == nil {
-		ros, err = resourceToTags(ctx, ros...)
+		ros, err := resourceToTags(ctx, ros...)
 		if err != nil {
 			return err
 		}
