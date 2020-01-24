@@ -137,12 +137,23 @@ func TestConditionSet(t *testing.T) {
 	}
 
 	s2 = &Status{}
-	s.ConvertTo(context.Background(), s2, func(cond apis.ConditionType) bool {
-		return cond == "Foo"
-	})
+	s.ConvertTo(context.Background(), s2,
+		func(cond apis.ConditionType) bool {
+			return cond == "Foo"
+		},
+		func(cond apis.ConditionType) bool {
+			return cond == "Ready"
+		},
+		func(cond apis.ConditionType) bool {
+			return cond == "Foo"
+		},
+	)
 
 	if !condSet.Manage(s2).IsHappy() {
 		t.Error("s2.IsHappy() = false, wanted true")
+	}
+	if got, want := len(s2.Conditions), 2; got != want {
+		t.Errorf("len(s2.Conditions) = %d, wanted %d", got, want)
 	}
 	for _, c := range []apis.ConditionType{apis.ConditionReady, "Foo"} {
 		if cond := mgr.GetCondition(c); cond == nil {
