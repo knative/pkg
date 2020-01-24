@@ -113,7 +113,7 @@ func (source *Status) ConvertTo(ctx context.Context, sink *Status, predicates ..
 		// we can reliably transfer.
 		if c.Type == apis.ConditionReady || c.Type == apis.ConditionSucceeded {
 			conditions = append(conditions, c)
-			break
+			continue
 		}
 
 		for _, predicate := range predicates {
