@@ -25,12 +25,13 @@ import (
 )
 
 type testVersioner struct {
-	version string
-	err     error
+	major string
+	minor string
+	err   error
 }
 
 func (t *testVersioner) ServerVersion() (*version.Info, error) {
-	return &version.Info{GitVersion: t.version}, t.err
+	return &version.Info{Major: t.major, Minor: t.minor}, t.err
 }
 
 func TestVersionCheck(t *testing.T) {
@@ -40,17 +41,14 @@ func TestVersionCheck(t *testing.T) {
 		versionOverride string
 		wantError       bool
 	}{{
-		name:          "greater version (patch)",
-		actualVersion: &testVersioner{version: "v1.15.1"},
-	}, {
 		name:          "greater version (minor)",
-		actualVersion: &testVersioner{version: "v1.16.0"},
+		actualVersion: &testVersioner{major: "1", minor: "16"},
 	}, {
 		name:          "same version",
-		actualVersion: &testVersioner{version: "v1.15.0"},
+		actualVersion: &testVersioner{major: "1", minor: "15"},
 	}, {
 		name:          "smaller version",
-		actualVersion: &testVersioner{version: "v1.14.3"},
+		actualVersion: &testVersioner{major: "1", minor: "14"},
 		wantError:     true,
 	}, {
 		name:          "error while fetching",
@@ -59,7 +57,7 @@ func TestVersionCheck(t *testing.T) {
 	}, {
 		name:            "smaller version with overridden version",
 		versionOverride: "v1.13.0",
-		actualVersion:   &testVersioner{version: "v1.13.3"},
+		actualVersion:   &testVersioner{major: "1", minor: "13"},
 	}}
 
 	for _, test := range tests {

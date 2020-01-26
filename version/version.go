@@ -21,16 +21,8 @@ import (
 	"os"
 
 	"github.com/rogpeppe/go-internal/semver"
-	"k8s.io/apimachinery/pkg/version"
+	"k8s.io/client-go/discovery"
 )
-
-// ServerVersioner is an interface to mock the `ServerVersion`
-// method of the Kubernetes client's Discovery interface.
-// In an application `kubeClient.Discovery()` can be used to
-// suffice this interface.
-type ServerVersioner interface {
-	ServerVersion() (*version.Info, error)
-}
 
 const (
 	// KubernetesMinVersionKey is the environment variable that can be used to override
@@ -53,13 +45,13 @@ func getMinimumVersion() string {
 //
 // A Kubernetes discovery client can be passed in as the versioner
 // like `CheckMinimumVersion(kubeClient.Discovery())`.
-func CheckMinimumVersion(versioner ServerVersioner) error {
+func CheckMinimumVersion(versioner discovery.ServerVersionInterface) error {
 	v, err := versioner.ServerVersion()
 	if err != nil {
 		return err
 	}
-	currentVersion := semver.Canonical(v.String())
 
+	currentVersion := semver.Canonical(fmt.Sprintf("v%s.%s", v.Major, v.Minor))
 	minimumVersion := getMinimumVersion()
 
 	// Compare returns 1 if the first version is greater than the
