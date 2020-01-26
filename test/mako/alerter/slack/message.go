@@ -19,6 +19,7 @@ package slack
 import (
 	"flag"
 	"fmt"
+	"html"
 	"strings"
 	"sync"
 	"time"
@@ -91,7 +92,8 @@ func (smh *MessageHandler) SendAlert(testName, summary string) error {
 			// do not send message again if alert for this test has been sent to
 			// the channel a short while ago
 			for _, message := range messageHistory {
-				if strings.Contains(message, decoratedTestName) {
+				// the message text queried from Slack will be escaped, so we also need to do escape here
+				if strings.Contains(message, html.EscapeString(decoratedTestName)) {
 					return
 				}
 			}

@@ -19,6 +19,7 @@ limitations under the License.
 package fakeslackutil
 
 import (
+	"html"
 	"sync"
 	"time"
 )
@@ -64,7 +65,10 @@ func (c *FakeSlackClient) Post(text, channel string) error {
 	if history, ok := c.History[channel]; ok {
 		messages = history
 	}
-	messages = append(messages, messageEntry{text: text, sentTime: time.Now()})
+	// When we use Slack read API to retrieve message history, the message text will be escaped.
+	// So in the fake Slack client, we also need to escape the text.
+	escapedText := html.EscapeString(text)
+	messages = append(messages, messageEntry{text: escapedText, sentTime: time.Now()})
 	c.History[channel] = messages
 	c.mutex.Unlock()
 	return nil
