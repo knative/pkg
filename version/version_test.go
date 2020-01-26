@@ -49,6 +49,9 @@ func TestVersionCheck(t *testing.T) {
 		name:          "same version",
 		actualVersion: &testVersioner{version: "v1.15.0"},
 	}, {
+		name:          "same version with build",
+		actualVersion: &testVersioner{version: "v1.15.0+k3s.1"},
+	}, {
 		name:          "smaller version",
 		actualVersion: &testVersioner{version: "v1.14.3"},
 		wantError:     true,
@@ -60,6 +63,15 @@ func TestVersionCheck(t *testing.T) {
 		name:            "smaller version with overridden version",
 		versionOverride: "v1.13.0",
 		actualVersion:   &testVersioner{version: "v1.13.3"},
+	}, {
+		name:          "unparseable actual version",
+		actualVersion: &testVersioner{version: "v1.13.foo"},
+		wantError:     true,
+	}, {
+		name:            "unparseable override version",
+		versionOverride: "v1.13.foo",
+		actualVersion:   &testVersioner{version: "v1.13.3"},
+		wantError:       true,
 	}}
 
 	for _, test := range tests {
