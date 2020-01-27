@@ -600,7 +600,7 @@ func TestAcquire(t *testing.T) {
 					{
 						Name:             "default-pool",
 						InitialNodeCount: DefaultGKEMinNodes,
-						Config:           &container.NodeConfig{MachineType: "n1-standard-4"},
+						Config:           &container.NodeConfig{MachineType: "n1-standard-4", OauthScopes: []string{container.CloudPlatformScope}},
 						Autoscaling:      &container.NodePoolAutoscaling{Enabled: true, MaxNodeCount: 3, MinNodeCount: 1},
 					},
 				},
@@ -630,7 +630,7 @@ func TestAcquire(t *testing.T) {
 						{
 							Name:             "default-pool",
 							InitialNodeCount: DefaultGKEMinNodes,
-							Config:           &container.NodeConfig{MachineType: "n1-standard-4"},
+							Config:           &container.NodeConfig{MachineType: "n1-standard-4", OauthScopes: []string{container.CloudPlatformScope}},
 							Autoscaling:      &container.NodePoolAutoscaling{Enabled: true, MaxNodeCount: 3, MinNodeCount: 1},
 						},
 					},
@@ -657,7 +657,7 @@ func TestAcquire(t *testing.T) {
 						{
 							Name:             "default-pool",
 							InitialNodeCount: DefaultGKEMinNodes,
-							Config:           &container.NodeConfig{MachineType: "n1-standard-4"},
+							Config:           &container.NodeConfig{MachineType: "n1-standard-4", OauthScopes: []string{container.CloudPlatformScope}},
 							Autoscaling:      &container.NodePoolAutoscaling{Enabled: true, MaxNodeCount: 3, MinNodeCount: 1},
 						},
 					},
@@ -698,7 +698,7 @@ func TestAcquire(t *testing.T) {
 						{
 							Name:             "default-pool",
 							InitialNodeCount: DefaultGKEMinNodes,
-							Config:           &container.NodeConfig{MachineType: "n1-standard-4"},
+							Config:           &container.NodeConfig{MachineType: "n1-standard-4", OauthScopes: []string{container.CloudPlatformScope}},
 							Autoscaling:      &container.NodePoolAutoscaling{Enabled: true, MaxNodeCount: 3, MinNodeCount: 1},
 						},
 					},
@@ -724,7 +724,7 @@ func TestAcquire(t *testing.T) {
 						{
 							Name:             "default-pool",
 							InitialNodeCount: DefaultGKEMinNodes,
-							Config:           &container.NodeConfig{MachineType: "n1-standard-4"},
+							Config:           &container.NodeConfig{MachineType: "n1-standard-4", OauthScopes: []string{container.CloudPlatformScope}},
 							Autoscaling:      &container.NodePoolAutoscaling{Enabled: true, MaxNodeCount: 3, MinNodeCount: 1},
 						},
 					},
@@ -752,7 +752,7 @@ func TestAcquire(t *testing.T) {
 						{
 							Name:             "default-pool",
 							InitialNodeCount: DefaultGKEMinNodes,
-							Config:           &container.NodeConfig{MachineType: "n1-standard-4"},
+							Config:           &container.NodeConfig{MachineType: "n1-standard-4", OauthScopes: []string{container.CloudPlatformScope}},
 							Autoscaling:      &container.NodePoolAutoscaling{Enabled: true, MaxNodeCount: 3, MinNodeCount: 1},
 						},
 					},
@@ -779,7 +779,7 @@ func TestAcquire(t *testing.T) {
 						{
 							Name:             "default-pool",
 							InitialNodeCount: DefaultGKEMinNodes,
-							Config:           &container.NodeConfig{MachineType: "n1-standard-4"},
+							Config:           &container.NodeConfig{MachineType: "n1-standard-4", OauthScopes: []string{container.CloudPlatformScope}},
 							Autoscaling:      &container.NodePoolAutoscaling{Enabled: true, MaxNodeCount: 3, MinNodeCount: 1},
 						},
 					},
@@ -818,7 +818,7 @@ func TestAcquire(t *testing.T) {
 						{
 							Name:             "default-pool",
 							InitialNodeCount: DefaultGKEMinNodes,
-							Config:           &container.NodeConfig{MachineType: "n1-standard-4"},
+							Config:           &container.NodeConfig{MachineType: "n1-standard-4", OauthScopes: []string{container.CloudPlatformScope}},
 							Autoscaling:      &container.NodePoolAutoscaling{Enabled: true, MaxNodeCount: 3, MinNodeCount: 1},
 						},
 					},
@@ -846,7 +846,7 @@ func TestAcquire(t *testing.T) {
 						{
 							Name:             "default-pool",
 							InitialNodeCount: DefaultGKEMinNodes,
-							Config:           &container.NodeConfig{MachineType: "n1-standard-4"},
+							Config:           &container.NodeConfig{MachineType: "n1-standard-4", OauthScopes: []string{container.CloudPlatformScope}},
 							Autoscaling:      &container.NodePoolAutoscaling{Enabled: true, MaxNodeCount: 3, MinNodeCount: 1},
 						},
 					},
@@ -872,7 +872,7 @@ func TestAcquire(t *testing.T) {
 						{
 							Name:             "default-pool",
 							InitialNodeCount: DefaultGKEMinNodes,
-							Config:           &container.NodeConfig{MachineType: "n1-standard-4"},
+							Config:           &container.NodeConfig{MachineType: "n1-standard-4", OauthScopes: []string{container.CloudPlatformScope}},
 							Autoscaling:      &container.NodePoolAutoscaling{Enabled: true, MaxNodeCount: 3, MinNodeCount: 1},
 						},
 					},
@@ -897,7 +897,7 @@ func TestAcquire(t *testing.T) {
 						{
 							Name:             "default-pool",
 							InitialNodeCount: DefaultGKEMinNodes,
-							Config:           &container.NodeConfig{MachineType: "n1-standard-4"},
+							Config:           &container.NodeConfig{MachineType: "n1-standard-4", OauthScopes: []string{container.CloudPlatformScope}},
 							Autoscaling:      &container.NodePoolAutoscaling{Enabled: true, MaxNodeCount: 3, MinNodeCount: 1},
 						},
 					},
@@ -1080,7 +1080,7 @@ func TestDelete(t *testing.T) {
 						{
 							Name:             "default-pool",
 							InitialNodeCount: DefaultGKEMinNodes,
-							Config:           &container.NodeConfig{MachineType: "n1-standard-4"},
+							Config:           &container.NodeConfig{MachineType: "n1-standard-4", OauthScopes: []string{container.CloudPlatformScope}},
 							Autoscaling:      &container.NodePoolAutoscaling{Enabled: true, MaxNodeCount: 3, MinNodeCount: 1},
 						},
 					},
@@ -1171,7 +1171,7 @@ func TestDelete(t *testing.T) {
 						{
 							Name:             "default-pool",
 							InitialNodeCount: DefaultGKEMinNodes,
-							Config:           &container.NodeConfig{MachineType: "n1-standard-4"},
+							Config:           &container.NodeConfig{MachineType: "n1-standard-4", OauthScopes: []string{container.CloudPlatformScope}},
 							Autoscaling:      &container.NodePoolAutoscaling{Enabled: true, MaxNodeCount: 3, MinNodeCount: 1},
 						},
 					},
