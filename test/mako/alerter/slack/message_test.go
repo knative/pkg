@@ -43,7 +43,7 @@ func TestMain(m *testing.M) {
 
 func TestMessaging(t *testing.T) {
 	testCases := []struct {
-		name           string
+		name string
 	}{
 		{"test name"},
 		{"special name <>&'\""},
@@ -68,7 +68,7 @@ func TestMessaging(t *testing.T) {
 			if err != nil {
 				t.Fatalf("expected to get the message history, but failed: %v", err)
 			}
-			if len(history) != historySizes[i] + 1 {
+			if len(history) != historySizes[i]+1 {
 				t.Fatalf("the message is expected to be successfully sent, but failed: %v", err)
 			}
 		}
@@ -82,7 +82,7 @@ func TestMessaging(t *testing.T) {
 			if err != nil {
 				t.Fatalf("expected to get the message history, but failed: %v", err)
 			}
-			if len(history) != historySizes[i] + 1 {
+			if len(history) != historySizes[i]+1 {
 				t.Fatalf("the message history is expected to be unchanged, but now it's: %d", len(history))
 			}
 		}
