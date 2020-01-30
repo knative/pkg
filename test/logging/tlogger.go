@@ -352,8 +352,7 @@ func (o *TLogger) handleCollectedErrors() {
 func (o *TLogger) cleanUp() {
 	o.handleCollectedErrors()
 
-	// Ensure nothing can log to t after test is complete
-	// by raising the minimum level all the way up
+	// Ensure nothing can log to t after test is complete (causes panics)
 	o.w.Disable()
 	o.t = nil
 }

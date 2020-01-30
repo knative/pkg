@@ -89,9 +89,11 @@ func TestTLogger(legacy *testing.T) {
 	t.Run("Skipped", func(ts *TLogger) {
 		ts.SkipNow()
 	})
-	t.Logf("Sadly still have to support %s", "LogF")
 	t.ErrorIfErr(nil, "I won't fail because no error!")
 	t.FatalIfErr(nil, "I won't fail because no error!")
+	t = t.WithName("LongerName")
+	t = t.WithValues("persistentKey", "persistentValue")
+	t.Logf("Sadly still have to support %s", "LogF")
 }
 
 func TestTLoggerInternals(legacy *testing.T) {
