@@ -47,7 +47,7 @@ func Example(legacy *testing.T) {
 	// Logging is leveled from 0-10; see https://github.com/go-logr/logr#how-do-i-choose-my-v-levels
 	// In our tests currently, levels are sort-of used as follows:
 	// 1: Describe broadly what the test is doing
-	// 2: What specific action is occuring
+	// 2: What specific action is occurring
 	// 5: Trace level; print everything you could predict could be useful in diagnosing stubborn failures
 	// 8: Just print anything leftover
 	// Levels 5-9 also instruct the Kubernetes client library to print increasing amounts of data around control plane requests.

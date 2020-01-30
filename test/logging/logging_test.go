@@ -17,6 +17,8 @@ limitations under the License.
 package logging
 
 import (
+	"errors"
+	"reflect"
 	"testing"
 )
 
@@ -67,6 +69,7 @@ func TestTLogger(legacy *testing.T) {
 			ts.Parallel()
 			ts.V(1).Info("I am visible!")
 			ts.V(6).Info("I am invisible!")
+			t.Collect("collected_non_error", "I'm not an error!")
 		})
 		t.Run("A-2nd-Nested-Subtest", func(ts *TLogger) {
 			ts.Parallel()
@@ -75,15 +78,40 @@ func TestTLogger(legacy *testing.T) {
 		})
 	})
 	if runFailingTests {
-		t.Run("Failing", func(ts *TLogger) {
+		t.Run("Failing1", func(ts *TLogger) {
+			t.Collect("collected_error", errors.New("collected"))
 			ts.Error("I am an error", "hello", "world")
+		})
+		t.Run("Failing2", func(ts *TLogger) {
+			ts.Fatal("I am a fatal error", "hello", "world")
 		})
 	}
 	t.Run("Skipped", func(ts *TLogger) {
 		ts.SkipNow()
 	})
+	t.Logf("Sadly still have to support %s", "LogF")
 	t.ErrorIfErr(nil, "I won't fail because no error!")
 	t.FatalIfErr(nil, "I won't fail because no error!")
+}
+
+func TestTLoggerInternals(legacy *testing.T) {
+	Verbosity = 2
+	InitializeLogger()
+	t, cancel := NewTLogger(legacy)
+	defer cancel()
+
+	if validateKeysAndValues(42, "whoops not string key before") {
+		t.Error("Should not have accepted non-string key")
+	}
+
+	input := []interface{}{4, 5, 6}
+	things := t.interfacesToFields(input...)
+	expected := []interface{}{"arg 0", 4, "arg 1", 5, "arg 2", 6}
+	if !reflect.DeepEqual(things, expected) {
+		t.Error("interfacesToFields() didn't give expected output", "input", input, "want", expected, "got", things)
+	}
+
+	t.Helper() // Doesn't do anything
 }
 
 func TestStructuredError(legacy *testing.T) {
@@ -93,8 +121,6 @@ func TestStructuredError(legacy *testing.T) {
 	defer cancel()
 	err := Error("Hello World", "key", "value", "current function", TestStructuredError, "deep struct", someStruct, "z", 4, "y", 3, "x", 2, "w", 1)
 	t.Log(err.Error())
-	// TODO(coryrc): Big problem! zap is printing '\' 'n' instead of a newline, which makes the errors not readable on the screen
-	// need a different zapcore or something
 	if runFailingTests {
 		t.Error(err)
 		t.ErrorIfErr(err, "Demonstrate twice!")
