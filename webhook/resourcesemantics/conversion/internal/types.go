@@ -28,12 +28,26 @@ import (
 )
 
 const (
+	// Group specifies the group of the test resource
 	Group = "webhook.pkg.knative.dev"
-	Kind  = "Resource"
 
-	ErrorMarshal     = "marshal"
-	ErrorUnmarshal   = "unmarshal"
-	ErrorConvertUp   = "convertUp"
+	// Kind specifies the kind of the test resource
+	Kind = "Resource"
+
+	// ErrorMarshal when assigned to the Spec.Property of the ErrorResource
+	// will cause json marshalling of the resource to fail
+	ErrorMarshal = "marshal"
+
+	// ErrorUnmarshal when assigned to the Spec.Property of the ErrorResource
+	// will cause json unmarshalling of the resource to fail
+	ErrorUnmarshal = "unmarshal"
+
+	// ErrorConvertUp when assigned to the Spec.Property of the ErrorResource
+	// will cause ConvertUp to fail
+	ErrorConvertUp = "convertUp"
+
+	// ErrorConvertDown when assigned to the Spec.Property of the ErrorResource
+	// will cause ConvertDown to fail
 	ErrorConvertDown = "convertDown"
 )
 
@@ -41,6 +55,7 @@ type (
 	// V1Resource will never has a prefix or suffix on Spec.Property
 	// This type is used for testing conversion webhooks
 	//
+	// +k8s:deepcopy-gen=true
 	// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 	V1Resource struct {
 		metav1.TypeMeta   `json:",inline"`
@@ -51,6 +66,7 @@ type (
 	// V2Resource will always have a 'prefix/' in front of it's property
 	// This type is used for testing conversion webhooks
 	//
+	// +k8s:deepcopy-gen=true
 	// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 	V2Resource struct {
 		metav1.TypeMeta   `json:",inline"`
@@ -61,11 +77,12 @@ type (
 	// V3Resource will always have a '/suffix' in front of it's property
 	// This type is used for testing conversion webhooks
 	//
+	// +k8s:deepcopy-gen=true
 	// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 	V3Resource struct {
 		metav1.TypeMeta   `json:",inline"`
 		metav1.ObjectMeta `json:"metadata,omitempty"`
-		Spec              Spec `json:"spec"`
+		Spec              SpecWithDefault `json:"spec"`
 	}
 
 	// ErrorResource explodes in various settings depending on the property
@@ -73,6 +90,7 @@ type (
 	//
 	//This type is used for testing conversion webhooks
 	//
+	// +k8s:deepcopy-gen=true
 	// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 	ErrorResource struct {
 		// We embed the V1Resource as an easy way to still marshal & unmarshal
@@ -85,6 +103,12 @@ type (
 	Spec struct {
 		Property string `json:"prop"`
 	}
+
+	// SpecWithDefault holds two fancy string properties
+	SpecWithDefault struct {
+		Property    string `json:"prop"`
+		NewProperty string `json:"defaulted_prop"`
+	}
 )
 
 var (
@@ -92,8 +116,12 @@ var (
 	_ apis.Convertible = (*V2Resource)(nil)
 	_ apis.Convertible = (*V3Resource)(nil)
 	_ apis.Convertible = (*ErrorResource)(nil)
+
+	_ apis.Defaultable = (*V3Resource)(nil)
 )
 
+// NewV1 returns a V1Resource with Spec.Property set
+// to prop
 func NewV1(prop string) *V1Resource {
 	return &V1Resource{
 		TypeMeta: metav1.TypeMeta{
@@ -106,6 +134,8 @@ func NewV1(prop string) *V1Resource {
 	}
 }
 
+// NewV2 returns a V2Resource with Spec.Property set
+// to 'prefix/' + prop
 func NewV2(prop string) *V2Resource {
 	return &V2Resource{
 		TypeMeta: metav1.TypeMeta{
@@ -118,18 +148,24 @@ func NewV2(prop string) *V2Resource {
 	}
 }
 
+// NewV3 returns a V3Resource with Spec.Property set
+// to prop + '/suffix'
 func NewV3(prop string) *V3Resource {
-	return &V3Resource{
+	v3 := &V3Resource{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       Kind,
 			APIVersion: Group + "/v3",
 		},
-		Spec: Spec{
+		Spec: SpecWithDefault{
 			Property: fmt.Sprintf("%s/suffix", prop),
 		},
 	}
+	v3.SetDefaults(context.Background())
+	return v3
 }
 
+// NewErrorResource returns an ErrorResource with Spec.Property set
+// to failure
 func NewErrorResource(failure string) *ErrorResource {
 	return &ErrorResource{
 		V1Resource: V1Resource{
@@ -144,6 +180,7 @@ func NewErrorResource(failure string) *ErrorResource {
 	}
 }
 
+// ConvertUp implements apis.Convertible
 func (r *V1Resource) ConvertUp(ctx context.Context, to apis.Convertible) error {
 	switch sink := to.(type) {
 	case *V2Resource:
@@ -160,6 +197,7 @@ func (r *V1Resource) ConvertUp(ctx context.Context, to apis.Convertible) error {
 	return nil
 }
 
+// ConvertDown implements apis.Convertible
 func (r *V1Resource) ConvertDown(ctx context.Context, from apis.Convertible) error {
 	switch source := from.(type) {
 	case *V2Resource:
@@ -176,46 +214,65 @@ func (r *V1Resource) ConvertDown(ctx context.Context, from apis.Convertible) err
 	return nil
 }
 
+// SetDefaults implements apis.Defaultable
+func (r *V3Resource) SetDefaults(ctx context.Context) {
+	if r.Spec.NewProperty == "" {
+		r.Spec.NewProperty = "defaulted"
+	}
+}
+
+// ConvertUp implements apis.Convertible
 func (*V2Resource) ConvertUp(ctx context.Context, to apis.Convertible) error {
 	panic("unimplemented")
 }
+
+// ConvertDown implements apis.Convertible
 func (*V2Resource) ConvertDown(ctx context.Context, from apis.Convertible) error {
 	panic("unimplemented")
 }
+
+// ConvertUp implements apis.Convertible
 func (*V3Resource) ConvertUp(ctx context.Context, to apis.Convertible) error {
 	panic("unimplemented")
 }
+
+// ConvertDown implements apis.Convertible
 func (*V3Resource) ConvertDown(ctx context.Context, from apis.Convertible) error {
 	panic("unimplemented")
 }
-func (r *ErrorResource) ConvertUp(ctx context.Context, to apis.Convertible) error {
-	if r.Spec.Property == ErrorConvertUp {
-		return errors.New("boooom - convert up!")
+
+// ConvertUp implements apis.Convertible
+func (e *ErrorResource) ConvertUp(ctx context.Context, to apis.Convertible) error {
+	if e.Spec.Property == ErrorConvertUp {
+		return errors.New("boooom - convert up")
 	}
 
-	return r.V1Resource.ConvertUp(ctx, to)
+	return e.V1Resource.ConvertUp(ctx, to)
 }
 
-func (r *ErrorResource) ConvertDown(ctx context.Context, from apis.Convertible) error {
-	err := r.V1Resource.ConvertDown(ctx, from)
+// ConvertDown implements apis.Convertible
+func (e *ErrorResource) ConvertDown(ctx context.Context, from apis.Convertible) error {
+	err := e.V1Resource.ConvertDown(ctx, from)
 
-	if err == nil && r.Spec.Property == ErrorConvertDown {
-		err = errors.New("boooom - convert down!")
+	if err == nil && e.Spec.Property == ErrorConvertDown {
+		err = errors.New("boooom - convert down")
 	}
 	return err
 }
 
+// UnmarshalJSON implements json.Unmarshaler
 func (e *ErrorResource) UnmarshalJSON(data []byte) (err error) {
 	err = json.Unmarshal(data, &e.V1Resource)
 	if err == nil && e.Spec.Property == ErrorUnmarshal {
-		err = errors.New("boooom - unmarshal json!")
+		err = errors.New("boooom - unmarshal json")
 	}
 	return
 }
 
+// MarshalJSON implements json.Marshaler
 func (e *ErrorResource) MarshalJSON() ([]byte, error) {
 	if e.Spec.Property == ErrorMarshal {
-		return nil, errors.New("boooom - marshal json!")
+		return nil, errors.New("boooom - marshal json")
 	}
 	return json.Marshal(e.V1Resource)
 }

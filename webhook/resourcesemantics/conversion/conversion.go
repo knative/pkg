@@ -26,9 +26,11 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"knative.dev/pkg/apis"
 	"knative.dev/pkg/logging"
 )
 
+// Convert implements webhook.ConversionController
 func (r *reconciler) Convert(
 	ctx context.Context,
 	req *apixv1beta1.ConversionRequest,
@@ -143,7 +145,11 @@ func (r *reconciler) convert(
 		return
 	}
 
-	out.SetGroupVersionKind(outGVK)
+	out.GetObjectKind().SetGroupVersionKind(outGVK)
+
+	if defaultable, ok := out.(apis.Defaultable); ok {
+		defaultable.SetDefaults(ctx)
+	}
 
 	if outRaw.Raw, err = json.Marshal(out); err != nil {
 		err = fmt.Errorf("unable to marshal output: %s", err)

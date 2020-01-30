@@ -48,11 +48,12 @@ type reconciler struct {
 var _ webhook.ConversionController = (*reconciler)(nil)
 var _ controller.Reconciler = (*reconciler)(nil)
 
-// Path implements ConversionController
+// Path implements webhook.ConversionController
 func (r *reconciler) Path() string {
 	return r.path
 }
 
+// Reconciler implements controller.Reconciler
 func (r *reconciler) Reconcile(ctx context.Context, key string) error {
 	logger := logging.FromContext(ctx)
 

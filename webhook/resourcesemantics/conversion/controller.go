@@ -33,18 +33,55 @@ import (
 	"knative.dev/pkg/webhook"
 )
 
+// ConvertibleObject defines the functionality our API types
+// are required to implement in order to be convertible from
+// one version to another
+//
+// Optionally if the object implements apis.Defaultable the
+// ConversionController will apply defaults before returning
+// the response
 type ConvertibleObject interface {
-	runtime.Object
+	// ConvertUp(ctx)
+	// ConvertDown(ctx)
 	apis.Convertible
-	SetGroupVersionKind(gvk schema.GroupVersionKind)
+
+	// DeepCopyObject()
+	// GetObjectKind() => SetGroupVersionKind(gvk)
+	runtime.Object
 }
 
+// GroupKindConversion specifies how a specific Kind for a given
+// group should be converted
 type GroupKindConversion struct {
+	// DefinitionName specifies the CustomResourceDefinition that should
+	// be reconciled with by the controller.
+	//
+	// The conversion webhook configuration will be updated
+	// when the CA bundle changes
 	DefinitionName string
-	HubVersion     string
-	Zygotes        map[string]ConvertibleObject
+
+	// HubVersion specifies which version of the CustomResource supports
+	// convertions to and from all types
+	//
+	// It is expected that the Zygotes map contains an entry for the
+	// specified HubVersion
+	HubVersion string
+
+	// Zygotes contains a map of version strings (ie. v1, v2) to empty
+	// ConvertibleObject objects
+	//
+	// During a conversion request these zygotes will be deep copied
+	// and manipulated using the apis.Convertible interface
+	Zygotes map[string]ConvertibleObject
 }
 
+// NewConversionController returns a K8s controller that will
+// will reconcile CustomResourceDefinitions and update their
+// conversion webhook attributes such as path & CA bundle.
+//
+// Additionally the controller's Reconciler implements
+// webhook.ConversionController for the purposes of converting
+// resources between different versions
 func NewConversionController(
 	ctx context.Context,
 	path string,
