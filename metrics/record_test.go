@@ -124,10 +124,10 @@ func testRecord(t *testing.T, measure *stats.Int64Measure, shouldReportCases []c
 			metricsConfig: &metricsConfig{
 				isStackdriverBackend:        true,
 				stackdriverMetricTypePrefix: "knative.dev/unsupported",
-				recorder: func(ctx context.Context, ms stats.Measurement, ros ...stats.Options) error {
-					metricType := path.Join("knative.dev/unsupported", ms.Measure().Name())
+				recorder: func(ctx context.Context, mss []stats.Measurement, ros ...stats.Options) error {
+					metricType := path.Join("knative.dev/unsupported", mss[0].Measure().Name())
 					if metricskey.KnativeRevisionMetrics.Has(metricType) || metricskey.KnativeTriggerMetrics.Has(metricType) {
-						ros = append(ros, stats.WithMeasurements(ms))
+						ros = append(ros, stats.WithMeasurements(mss[0]))
 						return stats.RecordWithOptions(ctx, ros...)
 					}
 					return nil

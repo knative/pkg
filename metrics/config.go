@@ -84,7 +84,7 @@ type metricsConfig struct {
 
 	// recorder provides a hook for performing custom transformations before
 	// writing the metrics to the stats.RecordWithOptions interface.
-	recorder func(context.Context, stats.Measurement, ...stats.Options) error
+	recorder func(context.Context, []stats.Measurement, ...stats.Options) error
 
 	// ---- OpenCensus specific below ----
 	// collectorAddress is the address of the collector, if not `localhost:55678`
@@ -144,13 +144,19 @@ func NewStackdriverClientConfigFromMap(config map[string]string) *StackdriverCli
 	}
 }
 
+// RecordN applies the `ros` Options to each measurement in `mss` and then records the resulting
+// measurements in the metricsConfig's designated backend.
+func (mc *metricsConfig) RecordN(ctx context.Context, mss []stats.Measurement, ros ...stats.Options) error {
+	if mc == nil || mc.recorder == nil {
+		return stats.RecordWithOptions(ctx, append(ros, stats.WithMeasurements(mss...))...)
+	}
+	return mc.recorder(ctx, mss, ros...)
+}
+
 // Record applies the `ros` Options to `ms` and then records the resulting
 // measurements in the metricsConfig's designated backend.
 func (mc *metricsConfig) Record(ctx context.Context, ms stats.Measurement, ros ...stats.Options) error {
-	if mc == nil || mc.recorder == nil {
-		return stats.RecordWithOptions(ctx, append(ros, stats.WithMeasurements(ms))...)
-	}
-	return mc.recorder(ctx, ms, ros...)
+	return mc.RecordN(ctx, []stats.Measurement{ms}, ros...)
 }
 
 func createMetricsConfig(ops ExporterOptions, logger *zap.SugaredLogger) (*metricsConfig, error) {
@@ -235,14 +241,22 @@ func createMetricsConfig(ops ExporterOptions, logger *zap.SugaredLogger) (*metri
 		if !allowCustomMetrics {
 			servingOrEventing := metricskey.KnativeRevisionMetrics.Union(
 				metricskey.KnativeTriggerMetrics).Union(metricskey.KnativeBrokerMetrics)
-			mc.recorder = func(ctx context.Context, ms stats.Measurement, ros ...stats.Options) error {
-				metricType := path.Join(mc.stackdriverMetricTypePrefix, ms.Measure().Name())
-
-				if servingOrEventing.Has(metricType) {
-					return stats.RecordWithOptions(ctx, append(ros, stats.WithMeasurements(ms))...)
+			mc.recorder = func(ctx context.Context, mss []stats.Measurement, ros ...stats.Options) error {
+				w := 0
+				for r := 0; r < len(mss); r++ {
+					metricType := path.Join(mc.stackdriverMetricTypePrefix, mss[r].Measure().Name())
+					if servingOrEventing.Has(metricType) {
+						mss[w] = mss[r]
+						w++
+					}
+					// Otherwise, skip (because it won't be accepted).
 				}
-				// Otherwise, skip (because it won't be accepted)
-				return nil
+				mss = mss[:w]
+				// No matched metrics.
+				if len(mss) == 0 {
+					return nil
+				}
+				return stats.RecordWithOptions(ctx, append(ros, stats.WithMeasurements(mss...))...)
 			}
 		}
 	}
