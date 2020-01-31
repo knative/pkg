@@ -17,6 +17,7 @@ package apis
 
 import (
 	"encoding/json"
+	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -315,7 +316,7 @@ func TestJsonUnmarshalURLAsMember(t *testing.T) {
 		},
 		"invalid format": {
 			b:       []byte(`{"url":"%"}`),
-			wantErr: `parse %: invalid URL escape "%"`,
+			wantErr: `invalid URL escape "%"`,
 		},
 		"relative": {
 			b:    []byte(`{"url":"/path/to/something"}`),
@@ -345,14 +346,14 @@ func TestJsonUnmarshalURLAsMember(t *testing.T) {
 				if err != nil {
 					gotErr = err.Error()
 				}
-				if diff := cmp.Diff(tc.wantErr, gotErr); diff != "" {
-					t.Errorf("unexpected error (-want, +got) = %v", diff)
+				if !strings.Contains(gotErr, tc.wantErr) {
+					t.Errorf("Error `%s` does not contain wanted string `%s`", gotErr, tc.wantErr)
 				}
 				return
 			}
 
 			if diff := cmp.Diff(tc.want, got); diff != "" {
-				t.Errorf("unexpected object (-want, +got) = %v", diff)
+				t.Errorf("Unexpected object (-want, +got) = %v", diff)
 			}
 		})
 	}
@@ -378,7 +379,7 @@ func TestJsonUnmarshalURLAsMemberPointer(t *testing.T) {
 		},
 		"invalid format": {
 			b:       []byte(`{"url":"%"}`),
-			wantErr: `parse %: invalid URL escape "%"`,
+			wantErr: `invalid URL escape "%"`,
 		},
 		"relative": {
 			b:    []byte(`{"url":"/path/to/something"}`),
@@ -408,14 +409,14 @@ func TestJsonUnmarshalURLAsMemberPointer(t *testing.T) {
 				if err != nil {
 					gotErr = err.Error()
 				}
-				if diff := cmp.Diff(tc.wantErr, gotErr); diff != "" {
-					t.Errorf("unexpected error (-want, +got) = %v", diff)
+				if !strings.Contains(gotErr, tc.wantErr) {
+					t.Errorf("Error `%s` does not contain wanted string `%s`", gotErr, tc.wantErr)
 				}
 				return
 			}
 
 			if diff := cmp.Diff(tc.want, got); diff != "" {
-				t.Errorf("unexpected object (-want, +got) = %v", diff)
+				t.Errorf("Unexpected object (-want, +got) = %v", diff)
 			}
 		})
 	}
