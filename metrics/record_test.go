@@ -38,68 +38,87 @@ type cases struct {
 
 func TestRecordServing(t *testing.T) {
 	measure := stats.Int64("request_count", "Number of reconcile operations", stats.UnitNone)
-	shouldReportCases := []cases{
-		// Increase the measurement value for each test case so that checking
-		// the last value ensures the measurement has been recorded.
-		{
-			name:          "none stackdriver backend",
-			metricsConfig: &metricsConfig{},
-			measurement:   measure.M(1),
-		}, {
-			name: "stackdriver backend with supported metric",
-			metricsConfig: &metricsConfig{
-				isStackdriverBackend:        true,
-				stackdriverMetricTypePrefix: "knative.dev/internal/serving/activator",
-			},
-			measurement: measure.M(2),
-		}, {
-			name: "stackdriver backend with unsupported metric and allow custom metric",
-			metricsConfig: &metricsConfig{
-				isStackdriverBackend:        true,
-				stackdriverMetricTypePrefix: "knative.dev/unsupported",
-			},
-			measurement: measure.M(3),
-		}, {
-			name:        "empty metricsConfig",
-			measurement: measure.M(4),
+	// Increase the measurement value for each test case so that checking
+	// the last value ensures the measurement has been recorded.
+	shouldReportCases := []cases{{
+		name:          "none stackdriver backend",
+		metricsConfig: &metricsConfig{},
+		measurement:   measure.M(1),
+	}, {
+		name: "stackdriver backend with supported metric",
+		metricsConfig: &metricsConfig{
+			isStackdriverBackend:        true,
+			stackdriverMetricTypePrefix: "knative.dev/internal/serving/activator",
 		},
-	}
+		measurement: measure.M(2),
+	}, {
+		name: "stackdriver backend with unsupported metric and allow custom metric",
+		metricsConfig: &metricsConfig{
+			isStackdriverBackend:        true,
+			stackdriverMetricTypePrefix: "knative.dev/unsupported",
+		},
+		measurement: measure.M(3),
+	}, {
+		name:        "empty metricsConfig",
+		measurement: measure.M(4),
+	}}
 	testRecord(t, measure, shouldReportCases)
 }
 
 func TestRecordEventing(t *testing.T) {
 	measure := stats.Int64("event_count", "Number of event received", stats.UnitNone)
-	shouldReportCases := []cases{
-		// Increase the measurement value for each test case so that checking
-		// the last value ensures the measurement has been recorded.
-		{
-			name:          "none stackdriver backend",
-			metricsConfig: &metricsConfig{},
-			measurement:   measure.M(1),
-		}, {
-			name: "stackdriver backend with supported metric",
-			metricsConfig: &metricsConfig{
-				isStackdriverBackend:        true,
-				stackdriverMetricTypePrefix: "knative.dev/eventing/broker",
-			},
-			measurement: measure.M(5),
-		}, {
-			name: "stackdriver backend with unsupported metric and allow custom metric",
-			metricsConfig: &metricsConfig{
-				isStackdriverBackend:        true,
-				stackdriverMetricTypePrefix: "knative.dev/unsupported",
-			},
-			measurement: measure.M(3),
-		}, {
-			name:        "empty metricsConfig",
-			measurement: measure.M(4),
+	// Increase the measurement value for each test case so that checking
+	// the last value ensures the measurement has been recorded.
+	shouldReportCases := []cases{{
+		name:          "none stackdriver backend",
+		metricsConfig: &metricsConfig{},
+		measurement:   measure.M(1),
+	}, {
+		name: "stackdriver backend with supported metric",
+		metricsConfig: &metricsConfig{
+			isStackdriverBackend:        true,
+			stackdriverMetricTypePrefix: "knative.dev/eventing/broker",
 		},
-	}
+		measurement: measure.M(2),
+	}, {
+		name: "stackdriver backend with unsupported metric and allow custom metric",
+		metricsConfig: &metricsConfig{
+			isStackdriverBackend:        true,
+			stackdriverMetricTypePrefix: "knative.dev/unsupported",
+		},
+		measurement: measure.M(3),
+	}, {
+		name:        "empty metricsConfig",
+		measurement: measure.M(4),
+	}}
 	testRecord(t, measure, shouldReportCases)
 }
 
+func TestRecordBatch(t *testing.T) {
+	ctx := context.Background()
+	measure1 := stats.Int64("count1", "First counter", stats.UnitNone)
+	measure2 := stats.Int64("count2", "Second counter", stats.UnitNone)
+	v := []*view.View{&view.View{
+		Measure:     measure1,
+		Aggregation: view.LastValue(),
+	}, &view.View{
+		Measure:     measure2,
+		Aggregation: view.LastValue(),
+	}}
+	view.Register(v...)
+	defer view.Unregister(v...)
+	metricsConfig := &metricsConfig{}
+	measurement1 := measure1.M(1984)
+	measurement2 := measure2.M(42)
+	setCurMetricsConfig(metricsConfig)
+	RecordBatch(ctx, measurement1, measurement2)
+	metricstest.CheckLastValueData(t, measurement1.Measure().Name(), map[string]string{}, 1984)
+	metricstest.CheckLastValueData(t, measurement2.Measure().Name(), map[string]string{}, 42)
+}
+
 func testRecord(t *testing.T, measure *stats.Int64Measure, shouldReportCases []cases) {
-	ctx := context.TODO()
+	t.Helper()
+	ctx := context.Background()
 	v := &view.View{
 		Measure:     measure,
 		Aggregation: view.LastValue(),
@@ -117,30 +136,28 @@ func testRecord(t *testing.T, measure *stats.Int64Measure, shouldReportCases []c
 		name          string
 		metricsConfig *metricsConfig
 		measurement   stats.Measurement
-	}{
-		// Use a different value for the measurement other than the last one of shouldReportCases
-		{
-			name: "stackdriver backend with unsupported metric but not allow custom metric",
-			metricsConfig: &metricsConfig{
-				isStackdriverBackend:        true,
-				stackdriverMetricTypePrefix: "knative.dev/unsupported",
-				recorder: func(ctx context.Context, ms stats.Measurement, ros ...stats.Options) error {
-					metricType := path.Join("knative.dev/unsupported", ms.Measure().Name())
-					if metricskey.KnativeRevisionMetrics.Has(metricType) || metricskey.KnativeTriggerMetrics.Has(metricType) {
-						ros = append(ros, stats.WithMeasurements(ms))
-						return stats.RecordWithOptions(ctx, ros...)
-					}
-					return nil
-				},
+	}{{ // Use a different value for the measurement other than the last one of shouldReportCases
+		name: "stackdriver backend with unsupported metric but not allow custom metric",
+		metricsConfig: &metricsConfig{
+			isStackdriverBackend:        true,
+			stackdriverMetricTypePrefix: "knative.dev/unsupported",
+			recorder: func(ctx context.Context, mss []stats.Measurement, ros ...stats.Options) error {
+				metricType := path.Join("knative.dev/unsupported", mss[0].Measure().Name())
+				if metricskey.KnativeRevisionMetrics.Has(metricType) || metricskey.KnativeTriggerMetrics.Has(metricType) {
+					ros = append(ros, stats.WithMeasurements(mss[0]))
+					return stats.RecordWithOptions(ctx, ros...)
+				}
+				return nil
 			},
-			measurement: measure.M(5),
 		},
-	}
+		measurement: measure.M(5),
+	}}
 
 	for _, test := range shouldNotReportCases {
 		setCurMetricsConfig(test.metricsConfig)
 		Record(ctx, test.measurement)
-		metricstest.CheckLastValueData(t, test.measurement.Measure().Name(), map[string]string{}, 4) // The value is still the last one of shouldReportCases
+		metricstest.CheckLastValueData(t, test.measurement.Measure().Name(), map[string]string{},
+			float64(len(shouldReportCases))) // The value is still the last one of shouldReportCases
 	}
 }
 
