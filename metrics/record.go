@@ -27,12 +27,12 @@ import (
 
 // Record stores the given Measurement from `ms` in the current metrics backend.
 func Record(ctx context.Context, ms stats.Measurement, ros ...stats.Options) {
-	getCurMetricsConfig().Record(ctx, ms, ros...)
+	getCurMetricsConfig().record(ctx, []stats.Measurement{ms}, ros...)
 }
 
 // RecordBatch stores the given Measurements from `mss` in the current metrics backend.
 func RecordBatch(ctx context.Context, mss ...stats.Measurement) {
-	getCurMetricsConfig().RecordBatch(ctx, mss)
+	getCurMetricsConfig().record(ctx, mss)
 }
 
 // Buckets125 generates an array of buckets with approximate powers-of-two

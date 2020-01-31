@@ -144,19 +144,13 @@ func NewStackdriverClientConfigFromMap(config map[string]string) *StackdriverCli
 	}
 }
 
-// RecordBatch applies the `ros` Options to each measurement in `mss` and then records the resulting
+// record applies the `ros` Options to each measurement in `mss` and then records the resulting
 // measurements in the metricsConfig's designated backend.
-func (mc *metricsConfig) RecordBatch(ctx context.Context, mss []stats.Measurement, ros ...stats.Options) error {
+func (mc *metricsConfig) record(ctx context.Context, mss []stats.Measurement, ros ...stats.Options) error {
 	if mc == nil || mc.recorder == nil {
 		return stats.RecordWithOptions(ctx, append(ros, stats.WithMeasurements(mss...))...)
 	}
 	return mc.recorder(ctx, mss, ros...)
-}
-
-// Record applies the `ros` Options to `ms` and then records the resulting
-// measurements in the metricsConfig's designated backend.
-func (mc *metricsConfig) Record(ctx context.Context, ms stats.Measurement, ros ...stats.Options) error {
-	return mc.RecordBatch(ctx, []stats.Measurement{ms}, ros...)
 }
 
 func createMetricsConfig(ops ExporterOptions, logger *zap.SugaredLogger) (*metricsConfig, error) {
@@ -252,12 +246,12 @@ func createMetricsConfig(ops ExporterOptions, logger *zap.SugaredLogger) (*metri
 					}
 					// Otherwise, skip the measurement (because it won't be accepted).
 				}
-				// Trim the list to the number of written objects.
-				mss = mss[:wIdx]
 				// Found no matched metrics.
-				if len(mss) == 0 {
+				if wIdx == 0 {
 					return nil
 				}
+				// Trim the list to the number of written objects.
+				mss = mss[:wIdx]
 				return stats.RecordWithOptions(ctx, append(ros, stats.WithMeasurements(mss...))...)
 			}
 		}
