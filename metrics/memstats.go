@@ -366,87 +366,89 @@ func (msp *MemStatsProvider) Start(ctx context.Context, period time.Duration) {
 			case <-ticker.C:
 				ms := runtime.MemStats{}
 				runtime.ReadMemStats(&ms)
+				measurements := make([]stats.Measurement, 0, 27 /*magical number of metrics*/)
 				if msp.Alloc != nil {
-					Record(ctx, msp.Alloc.M(int64(ms.Alloc)))
+					measurements = append(measurements, msp.Alloc.M(int64(ms.Alloc)))
 				}
 				if msp.TotalAlloc != nil {
-					Record(ctx, msp.TotalAlloc.M(int64(ms.TotalAlloc)))
+					measurements = append(measurements, msp.TotalAlloc.M(int64(ms.TotalAlloc)))
 				}
 				if msp.Sys != nil {
-					Record(ctx, msp.Sys.M(int64(ms.Sys)))
+					measurements = append(measurements, msp.Sys.M(int64(ms.Sys)))
 				}
 				if msp.Lookups != nil {
-					Record(ctx, msp.Lookups.M(int64(ms.Lookups)))
+					measurements = append(measurements, msp.Lookups.M(int64(ms.Lookups)))
 				}
 				if msp.Mallocs != nil {
-					Record(ctx, msp.Mallocs.M(int64(ms.Mallocs)))
+					measurements = append(measurements, msp.Mallocs.M(int64(ms.Mallocs)))
 				}
 				if msp.Frees != nil {
-					Record(ctx, msp.Frees.M(int64(ms.Frees)))
+					measurements = append(measurements, msp.Frees.M(int64(ms.Frees)))
 				}
 				if msp.HeapAlloc != nil {
-					Record(ctx, msp.HeapAlloc.M(int64(ms.HeapAlloc)))
+					measurements = append(measurements, msp.HeapAlloc.M(int64(ms.HeapAlloc)))
 				}
 				if msp.HeapSys != nil {
-					Record(ctx, msp.HeapSys.M(int64(ms.HeapSys)))
+					measurements = append(measurements, msp.HeapSys.M(int64(ms.HeapSys)))
 				}
 				if msp.HeapIdle != nil {
-					Record(ctx, msp.HeapIdle.M(int64(ms.HeapIdle)))
+					measurements = append(measurements, msp.HeapIdle.M(int64(ms.HeapIdle)))
 				}
 				if msp.HeapInuse != nil {
-					Record(ctx, msp.HeapInuse.M(int64(ms.HeapInuse)))
+					measurements = append(measurements, msp.HeapInuse.M(int64(ms.HeapInuse)))
 				}
 				if msp.HeapReleased != nil {
-					Record(ctx, msp.HeapReleased.M(int64(ms.HeapReleased)))
+					measurements = append(measurements, msp.HeapReleased.M(int64(ms.HeapReleased)))
 				}
 				if msp.HeapObjects != nil {
-					Record(ctx, msp.HeapObjects.M(int64(ms.HeapObjects)))
+					measurements = append(measurements, msp.HeapObjects.M(int64(ms.HeapObjects)))
 				}
 				if msp.StackInuse != nil {
-					Record(ctx, msp.StackInuse.M(int64(ms.StackInuse)))
+					measurements = append(measurements, msp.StackInuse.M(int64(ms.StackInuse)))
 				}
 				if msp.StackSys != nil {
-					Record(ctx, msp.StackSys.M(int64(ms.StackSys)))
+					measurements = append(measurements, msp.StackSys.M(int64(ms.StackSys)))
 				}
 				if msp.MSpanInuse != nil {
-					Record(ctx, msp.MSpanInuse.M(int64(ms.MSpanInuse)))
+					measurements = append(measurements, msp.MSpanInuse.M(int64(ms.MSpanInuse)))
 				}
 				if msp.MSpanSys != nil {
-					Record(ctx, msp.MSpanSys.M(int64(ms.MSpanSys)))
+					measurements = append(measurements, msp.MSpanSys.M(int64(ms.MSpanSys)))
 				}
 				if msp.MCacheInuse != nil {
-					Record(ctx, msp.MCacheInuse.M(int64(ms.MCacheInuse)))
+					measurements = append(measurements, msp.MCacheInuse.M(int64(ms.MCacheInuse)))
 				}
 				if msp.MCacheSys != nil {
-					Record(ctx, msp.MCacheSys.M(int64(ms.MCacheSys)))
+					measurements = append(measurements, msp.MCacheSys.M(int64(ms.MCacheSys)))
 				}
 				if msp.BuckHashSys != nil {
-					Record(ctx, msp.BuckHashSys.M(int64(ms.BuckHashSys)))
+					measurements = append(measurements, msp.BuckHashSys.M(int64(ms.BuckHashSys)))
 				}
 				if msp.GCSys != nil {
-					Record(ctx, msp.GCSys.M(int64(ms.GCSys)))
+					measurements = append(measurements, msp.GCSys.M(int64(ms.GCSys)))
 				}
 				if msp.OtherSys != nil {
-					Record(ctx, msp.OtherSys.M(int64(ms.OtherSys)))
+					measurements = append(measurements, msp.OtherSys.M(int64(ms.OtherSys)))
 				}
 				if msp.NextGC != nil {
-					Record(ctx, msp.NextGC.M(int64(ms.NextGC)))
+					measurements = append(measurements, msp.NextGC.M(int64(ms.NextGC)))
 				}
 				if msp.LastGC != nil {
-					Record(ctx, msp.LastGC.M(int64(ms.LastGC)))
+					measurements = append(measurements, msp.LastGC.M(int64(ms.LastGC)))
 				}
 				if msp.PauseTotalNs != nil {
-					Record(ctx, msp.PauseTotalNs.M(int64(ms.PauseTotalNs)))
+					measurements = append(measurements, msp.PauseTotalNs.M(int64(ms.PauseTotalNs)))
 				}
 				if msp.NumGC != nil {
-					Record(ctx, msp.NumGC.M(int64(ms.NumGC)))
+					measurements = append(measurements, msp.NumGC.M(int64(ms.NumGC)))
 				}
 				if msp.NumForcedGC != nil {
-					Record(ctx, msp.NumForcedGC.M(int64(ms.NumForcedGC)))
+					measurements = append(measurements, msp.NumForcedGC.M(int64(ms.NumForcedGC)))
 				}
 				if msp.GCCPUFraction != nil {
-					Record(ctx, msp.GCCPUFraction.M(ms.GCCPUFraction))
+					measurements = append(measurements, msp.GCCPUFraction.M(ms.GCCPUFraction))
 				}
+				RecordBatch(ctx, measurements...)
 			}
 		}
 	}()
