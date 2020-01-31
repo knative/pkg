@@ -17,9 +17,11 @@ package apis
 
 import (
 	"encoding/json"
+	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"k8s.io/apimachinery/pkg/api/equality"
 )
 
 func TestParseURL(t *testing.T) {
@@ -314,7 +316,7 @@ func TestJsonUnmarshalURLAsMember(t *testing.T) {
 		},
 		"invalid format": {
 			b:       []byte(`{"url":"%"}`),
-			wantErr: `parse %: invalid URL escape "%"`,
+			wantErr: `invalid URL escape "%"`,
 		},
 		"relative": {
 			b:    []byte(`{"url":"/path/to/something"}`),
@@ -344,14 +346,14 @@ func TestJsonUnmarshalURLAsMember(t *testing.T) {
 				if err != nil {
 					gotErr = err.Error()
 				}
-				if diff := cmp.Diff(tc.wantErr, gotErr); diff != "" {
-					t.Errorf("unexpected error (-want, +got) = %v", diff)
+				if !strings.Contains(gotErr, tc.wantErr) {
+					t.Errorf("Error `%s` does not contain wanted string `%s`", gotErr, tc.wantErr)
 				}
 				return
 			}
 
 			if diff := cmp.Diff(tc.want, got); diff != "" {
-				t.Errorf("unexpected object (-want, +got) = %v", diff)
+				t.Errorf("Unexpected object (-want, +got) = %v", diff)
 			}
 		})
 	}
@@ -377,7 +379,7 @@ func TestJsonUnmarshalURLAsMemberPointer(t *testing.T) {
 		},
 		"invalid format": {
 			b:       []byte(`{"url":"%"}`),
-			wantErr: `parse %: invalid URL escape "%"`,
+			wantErr: `invalid URL escape "%"`,
 		},
 		"relative": {
 			b:    []byte(`{"url":"/path/to/something"}`),
@@ -407,14 +409,14 @@ func TestJsonUnmarshalURLAsMemberPointer(t *testing.T) {
 				if err != nil {
 					gotErr = err.Error()
 				}
-				if diff := cmp.Diff(tc.wantErr, gotErr); diff != "" {
-					t.Errorf("unexpected error (-want, +got) = %v", diff)
+				if !strings.Contains(gotErr, tc.wantErr) {
+					t.Errorf("Error `%s` does not contain wanted string `%s`", gotErr, tc.wantErr)
 				}
 				return
 			}
 
 			if diff := cmp.Diff(tc.want, got); diff != "" {
-				t.Errorf("unexpected object (-want, +got) = %v", diff)
+				t.Errorf("Unexpected object (-want, +got) = %v", diff)
 			}
 		})
 	}
@@ -590,7 +592,7 @@ func TestResolveReference(t *testing.T) {
 	mustParse := func(url string) *URL {
 		u, err := ParseURL(url)
 		if err != nil {
-			t.Fatalf("Parse(%q) got err %v", url, err)
+			t.Fatalf("ParseURL(%q) got err %v", url, err)
 		}
 		return u
 	}
@@ -601,5 +603,30 @@ func TestResolveReference(t *testing.T) {
 		if got := apisURL.ResolveReference(apisRel).String(); got != tc.expected {
 			t.Errorf("URL(%q).ResolveReference(%q)\ngot  %q\nwant %q", tc.base, tc.rel, got, tc.expected)
 		}
+	}
+}
+
+func TestSemanticEquality(t *testing.T) {
+	u1, err := ParseURL("https://user:password@example.com")
+	if err != nil {
+		t.Fatalf("ParseURL() got err %v", err)
+	}
+
+	u2, err := ParseURL("https://user:password@example.com")
+	if err != nil {
+		t.Fatalf("ParseURL() got err %v", err)
+	}
+
+	u3, err := ParseURL("https://another-user:password@example.com")
+	if err != nil {
+		t.Fatalf("ParseURL() got err %v", err)
+	}
+
+	if !equality.Semantic.DeepEqual(u1, u2) {
+		t.Errorf("expected urls to be equivalent")
+	}
+
+	if equality.Semantic.DeepEqual(u1, u3) {
+		t.Errorf("expected urls to be different")
 	}
 }

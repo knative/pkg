@@ -62,7 +62,7 @@ func TestClusterConfigForBenchmark(t *testing.T) {
 		benchmarkRoot: "testdir",
 		benchmarkName: "test-benchmark1",
 		expectedClusterConfig: ClusterConfig{
-			Location: "us-west1", NodeCount: 4, NodeType: "n1-standard-8", Addons: "istio"},
+			Location: "us-west1", NodeCount: 4, NodeType: "e2-standard-8", Addons: "istio"},
 	}, {
 		benchmarkRoot: "testdir",
 		benchmarkName: "test-benchmark2",
