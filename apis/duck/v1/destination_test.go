@@ -29,6 +29,7 @@ const (
 	kind       = "SomeKind"
 	apiVersion = "v1mega1"
 	name       = "a-name"
+	namespace  = "b-namespace"
 )
 
 func TestValidateDestination(t *testing.T) {
