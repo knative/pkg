@@ -21,6 +21,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"knative.dev/pkg/apis"
 )
 
@@ -97,6 +98,42 @@ func TestValidate(t *testing.T) {
 				}
 			} else if gotErr != nil {
 				t.Errorf("%s: Validate() = %v, wanted nil", name, gotErr)
+			}
+		})
+	}
+}
+
+func TestKnativeReferenceSetDefaults(t *testing.T) {
+	ctx := context.TODO()
+
+	parentNamespace := "parentNamespace"
+
+	tests := map[string]struct {
+		ref  *KnativeReference
+		ctx  context.Context
+		want string
+	}{
+		"namespace set, nothing in context, not modified ": {
+			ref:  &KnativeReference{Namespace: namespace},
+			ctx:  ctx,
+			want: namespace,
+		},
+		"namespace set, context set, not modified ": {
+			ref:  &KnativeReference{Namespace: namespace},
+			ctx:  apis.WithinParent(ctx, metav1.ObjectMeta{Namespace: parentNamespace}),
+			want: namespace,
+		},
+		"namespace not set, context set, defaulted": {
+			ref:  &KnativeReference{},
+			ctx:  apis.WithinParent(ctx, metav1.ObjectMeta{Namespace: parentNamespace}),
+			want: parentNamespace,
+		},
+	}
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			tc.ref.SetDefaults(tc.ctx)
+			if tc.ref.Namespace != tc.want {
+				t.Errorf("%s: got: %s wanted %s", name, tc.ref.Namespace, tc.want)
 			}
 		})
 	}
