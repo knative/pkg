@@ -96,7 +96,8 @@ func (g *genReconciler) Init(c *generator.Context, w io.Writer) error {
 	name := g.kind[strings.LastIndex(g.kind, ".")+1:]
 
 	m := map[string]interface{}{
-		"type": c.Universe.Type(types.Name{Package: pkg, Name: name}),
+		"type":            c.Universe.Type(types.Name{Package: pkg, Name: name}),
+		"reconcilerEvent": c.Universe.Type(types.Name{Package: "knative.dev/pkg/reconciler", Name: "Event"}),
 		// Deps
 		"clientsetInterface":   c.Universe.Type(types.Name{Name: "Interface", Package: g.clientset}),
 		"resourceLister":       c.Universe.Type(types.Name{Name: name + "Lister", Package: g.lister}),
@@ -140,7 +141,7 @@ type Interface interface {
 	// object. It is recommended that implementors do not call any update calls
 	// for the Kind inside of ReconcileKind, it is the responsibility of the core
 	// controller to propagate those properties.
-	ReconcileKind(ctx context.Context, o *{{.type|raw}}) error
+	ReconcileKind(ctx context.Context, o *{{.type|raw}}) {{.reconcilerEvent|raw}}
 }
 
 // Reconciler implements controller.Reconciler for {{.type|raw}} resources.
@@ -205,7 +206,7 @@ func (r *Core) Reconcile(ctx context.Context, key string) error {
 
 	// Reconcile this copy of the resource and then write back any status
 	// updates regardless of whether the reconciliation errored out.
-	reconcileErr := r.Reconciler.ReconcileKind(ctx, resource)
+	reconcileEvent := r.Reconciler.ReconcileKind(ctx, resource)
 
 	// Synchronize the finalizers.
 	if equality.Semantic.DeepEqual(original.Finalizers, resource.Finalizers) {
@@ -233,11 +234,17 @@ func (r *Core) Reconcile(ctx context.Context, key string) error {
 		return err
 	}
 
-	// Report the reconciler error, if any.
-	if reconcileErr != nil {
-		r.Recorder.Event(resource, corev1.EventTypeWarning, "InternalError", reconcileErr.Error())
+	// Report the reconciler event, if any.
+	if reconcileEvent != nil {
+		logger.Error("ReconcileKind returned an event: %v", reconcileEvent)
+		var event *reconciler.ReconcilerEvent
+		if reconciler.EventAs(reconcileEvent, &event) {
+			r.Recorder.Eventf(resource, event.EventType, event.Reason, event.Format, event.Args...)
+		} else {
+			r.Recorder.Event(resource, corev1.EventTypeWarning, "InternalError", reconcileEvent.Error())
+		}
 	}
-	return reconcileErr
+	return reconcileEvent
 }
 `
 

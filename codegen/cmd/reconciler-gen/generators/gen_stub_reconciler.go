@@ -96,7 +96,8 @@ func (g *genStubReconciler) Init(c *generator.Context, w io.Writer) error {
 	name := g.kind[strings.LastIndex(g.kind, ".")+1:]
 
 	m := map[string]interface{}{
-		"type": c.Universe.Type(types.Name{Package: pkg, Name: name}),
+		"type":            c.Universe.Type(types.Name{Package: pkg, Name: name}),
+		"reconcilerEvent": c.Universe.Type(types.Name{Package: "knative.dev/pkg/reconciler", Name: "Event"}),
 	}
 
 	sw.Do(stubReconcilerFactory, m)
@@ -118,7 +119,7 @@ type Reconciler struct {
 var _ Interface = (*Reconciler)(nil)
 
 // ReconcileKind implements Interface.ReconcileKind.
-func (r *Reconciler) ReconcileKind(ctx context.Context, o *{{.type|raw}}) error {
+func (r *Reconciler) ReconcileKind(ctx context.Context, o *{{.type|raw}}) {{.reconcilerEvent|raw}} {
 	if o.GetDeletionTimestamp() != nil {
 		// Check for a DeletionTimestamp.  If present, elide the normal reconcile logic.
 		// When a controller needs finalizer handling, it would go here.
