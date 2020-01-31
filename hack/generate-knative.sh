@@ -51,6 +51,7 @@ shift 4
   # so we can install the tools.
   cd $(dirname "${0}")
   go install ../codegen/cmd/injection-gen
+  go install ../codegen/cmd/reconciler-gen
 )
 
 function codegen::join() { local IFS="$1"; shift; echo "$*"; }
@@ -86,6 +87,32 @@ if grep -qw "injection" <<<"${GENS}"; then
   rm -rf ${OUTPUT_PKG}
 
   ${GOPATH}/bin/injection-gen \
+    --input-dirs $(codegen::join , "${FQ_APIS[@]}") \
+    --versioned-clientset-package ${VERSIONED_CLIENTSET_PKG} \
+    --external-versions-informers-package ${EXTERNAL_INFORMER_PKG} \
+    --output-package ${OUTPUT_PKG} \
+    "$@"
+fi
+
+if grep -qw "reconciler" <<<"${GENS}"; then
+  if [[ -z "${OUTPUT_PKG:-}" ]]; then
+    OUTPUT_PKG="${CLIENT_PKG}/reconciler"
+  fi
+
+  if [[ -z "${VERSIONED_CLIENTSET_PKG:-}" ]]; then
+    VERSIONED_CLIENTSET_PKG="${CLIENT_PKG}/clientset/versioned"
+  fi
+
+  if [[ -z "${EXTERNAL_INFORMER_PKG:-}" ]]; then
+    EXTERNAL_INFORMER_PKG="${CLIENT_PKG}/informers/externalversions"
+  fi
+
+  echo "Generating reconciler for ${GROUPS_WITH_VERSIONS} at ${OUTPUT_PKG}"
+
+  # Clear old injection
+  rm -rf ${OUTPUT_PKG}
+
+  ${GOPATH}/bin/reconciler-gen \
     --input-dirs $(codegen::join , "${FQ_APIS[@]}") \
     --versioned-clientset-package ${VERSIONED_CLIENTSET_PKG} \
     --external-versions-informers-package ${EXTERNAL_INFORMER_PKG} \

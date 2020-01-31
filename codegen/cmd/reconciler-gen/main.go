@@ -17,18 +17,38 @@ limitations under the License.
 package main
 
 import (
-	"knative.dev/pkg/codegen/cmd/reconciler-gen/args"
-	"knative.dev/pkg/codegen/cmd/reconciler-gen/generators"
+	"flag"
+	"path/filepath"
 
+	"k8s.io/code-generator/pkg/util"
+	"k8s.io/gengo/args"
 	"k8s.io/klog"
+
+	"github.com/spf13/pflag"
+	generatorargs "knative.dev/pkg/codegen/cmd/reconciler-gen/args"
+	"knative.dev/pkg/codegen/cmd/reconciler-gen/generators"
 )
 
 func main() {
 	klog.InitFlags(nil)
-	arguments := args.Default()
+	genericArgs, customArgs := generatorargs.NewDefaults()
+
+	// Override defaults.
+	genericArgs.GoHeaderFilePath = filepath.Join(args.DefaultSourceTree(), util.BoilerplatePath())
+	genericArgs.OutputPackagePath = "k8s.io/kubernetes/pkg/client/reconciler"
+
+	genericArgs.AddFlags(pflag.CommandLine)
+	customArgs.AddFlags(pflag.CommandLine)
+	flag.Set("logtostderr", "true")
+	pflag.CommandLine.AddGoFlagSet(flag.CommandLine)
+	pflag.Parse()
+
+	if err := generatorargs.Validate(genericArgs); err != nil {
+		klog.Fatalf("Error: %v", err)
+	}
 
 	// Run it.
-	if err := arguments.Execute(
+	if err := genericArgs.Execute(
 		generators.NameSystems(),
 		generators.DefaultNameSystem(),
 		generators.Packages,

@@ -87,6 +87,7 @@ func Packages(context *generator.Context, arguments *args.GeneratorArgs) generat
 
 		var typesWithInformers []*types.Type
 		var duckTypes []*types.Type
+		var reconcilerTypes []*types.Type
 		for _, t := range p.Types {
 			tags := MustParseClientGenTags(append(t.SecondClosestCommentLines, t.CommentLines...))
 			if tags.NeedsInformerInjection() {
@@ -94,6 +95,9 @@ func Packages(context *generator.Context, arguments *args.GeneratorArgs) generat
 			}
 			if tags.NeedsDuckInjection() {
 				duckTypes = append(duckTypes, t)
+			}
+			if tags.NeedsReconciler() {
+				reconcilerTypes = append(reconcilerTypes, t)
 			}
 		}
 
@@ -122,6 +126,14 @@ func Packages(context *generator.Context, arguments *args.GeneratorArgs) generat
 			// Generate a duck-typed informer for each type.
 			packageList = append(packageList, versionDuckPackages(versionPackagePath, groupPackageName, gv, groupGoNames[groupPackageName], boilerplate, duckTypes, customArgs)...)
 		}
+
+		if len(reconcilerTypes) != 0 {
+			orderer := namer.Orderer{Namer: namer.NewPrivateNamer(0)}
+			reconcilerTypes = orderer.OrderTypes(reconcilerTypes)
+
+			// Generate a reconciler and controller for each type.
+			packageList = append(packageList, reconcilerPackages(versionPackagePath, groupPackageName, gv, groupGoNames[groupPackageName], boilerplate, reconcilerTypes, customArgs)...)
+		}
 	}
 
 	return packageList
@@ -131,7 +143,8 @@ func Packages(context *generator.Context, arguments *args.GeneratorArgs) generat
 type Tags struct {
 	util.Tags
 
-	GenerateDuck bool
+	GenerateDuck       bool
+	GenerateReconciler bool
 }
 
 func (t Tags) NeedsInformerInjection() bool {
@@ -140,6 +153,10 @@ func (t Tags) NeedsInformerInjection() bool {
 
 func (t Tags) NeedsDuckInjection() bool {
 	return t.GenerateDuck
+}
+
+func (t Tags) NeedsReconciler() bool {
+	return t.GenerateReconciler
 }
 
 // MustParseClientGenTags calls ParseClientGenTags but instead of returning error it panics.
@@ -151,6 +168,7 @@ func MustParseClientGenTags(lines []string) Tags {
 	values := types.ExtractCommentTags("+", lines)
 	// log.Printf("GOT values %v", values)
 	_, ret.GenerateDuck = values["genduck"]
+	_, ret.GenerateReconciler = values["genreconciler"]
 
 	return ret
 }
@@ -355,6 +373,45 @@ func versionInformerPackages(basePackage string, groupPkgName string, gv clientg
 			FilterFunc: func(c *generator.Context, t *types.Type) bool {
 				tags := MustParseClientGenTags(append(t.SecondClosestCommentLines, t.CommentLines...))
 				return tags.NeedsInformerInjection()
+			},
+		})
+	}
+	return vers
+}
+
+func reconcilerPackages(basePackage string, groupPkgName string, gv clientgentypes.GroupVersion, groupGoName string, boilerplate []byte, typesToGenerate []*types.Type, customArgs *informergenargs.CustomArgs) []generator.Package {
+	packagePath := filepath.Join(basePackage, "reconciler", groupPkgName, strings.ToLower(gv.Version.NonEmpty()))
+
+	vers := make([]generator.Package, 0, len(typesToGenerate))
+
+	for _, t := range typesToGenerate {
+		// Fix for golang iterator bug.
+		t := t
+
+		packagePath := packagePath + "/" + strings.ToLower(t.Name.Name)
+
+		// Controller
+		vers = append(vers, &generator.DefaultPackage{
+			PackageName: strings.ToLower(t.Name.Name),
+			PackagePath: packagePath,
+			HeaderText:  boilerplate,
+			GeneratorFunc: func(c *generator.Context) (generators []generator.Generator) {
+				// Impl
+				generators = append(generators, &reconcilerControllerGenerator{
+					DefaultGen: generator.DefaultGen{
+						OptionalName: strings.ToLower(t.Name.Name),
+					},
+					outputPackage:      packagePath,
+					imports:            generator.NewImportTracker(),
+					fakeClientPkg:      customArgs.VersionedClientSetPackage,
+					clientInjectionPkg: packagePath,
+				})
+
+				return generators
+			},
+			FilterFunc: func(c *generator.Context, t *types.Type) bool {
+				tags := MustParseClientGenTags(append(t.SecondClosestCommentLines, t.CommentLines...))
+				return tags.NeedsDuckInjection()
 			},
 		})
 	}

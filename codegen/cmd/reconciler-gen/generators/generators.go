@@ -16,21 +16,7 @@ limitations under the License.
 
 package generators
 
-import (
-	"fmt"
-	"path/filepath"
-	"strings"
-
-	codegennamer "k8s.io/code-generator/pkg/namer"
-	"k8s.io/gengo/examples/set-gen/sets"
-	"k8s.io/gengo/generator"
-	"k8s.io/gengo/namer"
-	"k8s.io/gengo/types"
-	"knative.dev/pkg/codegen/cmd/reconciler-gen/args"
-
-	"k8s.io/klog"
-)
-
+/*
 // This is the comment tag that carries parameters for reconciler generation.
 const (
 	tagEnabledName           = "genreconciler"
@@ -260,3 +246,4 @@ func Packages(context *generator.Context, arguments *args.GeneratorArgs) generat
 	}
 	return packages
 }
+*/
