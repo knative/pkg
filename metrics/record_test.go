@@ -111,7 +111,7 @@ func TestRecordBatch(t *testing.T) {
 	measurement1 := measure1.M(1984)
 	measurement2 := measure2.M(42)
 	setCurMetricsConfig(metricsConfig)
-	RecordBatch(ctx, []stats.Measurement{measurement1, measurement2})
+	RecordBatch(ctx, measurement1, measurement2)
 	metricstest.CheckLastValueData(t, measurement1.Measure().Name(), map[string]string{}, 1984)
 	metricstest.CheckLastValueData(t, measurement2.Measure().Name(), map[string]string{}, 42)
 }
