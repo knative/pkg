@@ -422,7 +422,7 @@ func reconcilerPackages(basePackage string, groupPkgName string, gv clientgentyp
 		// Controller Stub
 		vers = append(vers, &generator.DefaultPackage{
 			PackageName: strings.ToLower(t.Name.Name),
-			PackagePath: packagePath + "stub",
+			PackagePath: filepath.Join(packagePath, "stub"),
 			HeaderText:  boilerplate,
 			GeneratorFunc: func(c *generator.Context) (generators []generator.Generator) {
 				// Impl
@@ -431,7 +431,7 @@ func reconcilerPackages(basePackage string, groupPkgName string, gv clientgentyp
 						OptionalName: "controller",
 					},
 					reconcilerPkg: packagePath,
-					outputPackage: packagePath + "stub",
+					outputPackage: filepath.Join(packagePath, "stub"),
 					imports:       generator.NewImportTracker(),
 				})
 
@@ -472,7 +472,7 @@ func reconcilerPackages(basePackage string, groupPkgName string, gv clientgentyp
 		// Reconciler Stub
 		vers = append(vers, &generator.DefaultPackage{
 			PackageName: strings.ToLower(t.Name.Name),
-			PackagePath: filepath.Join(packagePath, "/stub"),
+			PackagePath: filepath.Join(packagePath, "stub"),
 			HeaderText:  boilerplate,
 			GeneratorFunc: func(c *generator.Context) (generators []generator.Generator) {
 				// Impl
