@@ -199,7 +199,7 @@ func TestDestination_GetRef(t *testing.T) {
 }
 
 func TestDestinationSetDefaults(t *testing.T) {
-	ctx := context.TODO()
+	ctx := context.Background()
 
 	parentNamespace := "parentNamespace"
 
@@ -243,10 +243,10 @@ func TestDestinationSetDefaults(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			tc.d.SetDefaults(tc.ctx)
 			if tc.d.Ref != nil && tc.d.Ref.Namespace != tc.want {
-				t.Errorf("%s: got: %s wanted %s", name, tc.d.Ref.Namespace, tc.want)
+				t.Errorf("Got: %s wanted %s", tc.d.Ref.Namespace, tc.want)
 			}
 			if tc.d.Ref == nil && tc.want != "" {
-				t.Errorf("%s: got: nil Ref wanted %s", name, tc.want)
+				t.Errorf("Got: nil Ref wanted %s", tc.want)
 			}
 		})
 	}

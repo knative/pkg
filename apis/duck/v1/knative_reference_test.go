@@ -26,7 +26,7 @@ import (
 )
 
 func TestValidate(t *testing.T) {
-	ctx := context.TODO()
+	ctx := context.Background()
 
 	validRef := KnativeReference{
 		Kind:       kind,
@@ -94,17 +94,17 @@ func TestValidate(t *testing.T) {
 
 			if tc.want != nil {
 				if diff := cmp.Diff(tc.want.Error(), gotErr.Error()); diff != "" {
-					t.Errorf("%s: got: %v wanted %v", name, gotErr, tc.want)
+					t.Errorf("Got: %v wanted %v", gotErr, tc.want)
 				}
 			} else if gotErr != nil {
-				t.Errorf("%s: Validate() = %v, wanted nil", name, gotErr)
+				t.Errorf("Validate() = %v, wanted nil", gotErr)
 			}
 		})
 	}
 }
 
 func TestKnativeReferenceSetDefaults(t *testing.T) {
-	ctx := context.TODO()
+	ctx := context.Background()
 
 	parentNamespace := "parentNamespace"
 
@@ -133,7 +133,7 @@ func TestKnativeReferenceSetDefaults(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			tc.ref.SetDefaults(tc.ctx)
 			if tc.ref.Namespace != tc.want {
-				t.Errorf("%s: got: %s wanted %s", name, tc.ref.Namespace, tc.want)
+				t.Errorf("Got: %s wanted %s", tc.ref.Namespace, tc.want)
 			}
 		})
 	}
