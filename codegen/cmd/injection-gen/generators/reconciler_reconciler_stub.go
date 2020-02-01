@@ -70,6 +70,10 @@ func (g *reconcilerReconcilerStubGenerator) GenerateType(c *generator.Context, t
 			Package: g.reconcilerPkg,
 			Name:    "Core",
 		}),
+		"reconcilerInterface": c.Universe.Type(types.Name{
+			Package: g.reconcilerPkg,
+			Name:    "Interface",
+		}),
 	}
 
 	sw.Do(reconcilerReconcilerStub, m)
@@ -88,7 +92,7 @@ type Reconciler struct {
 }
 
 // Check that our Reconciler implements Interface
-var _ Interface = (*Reconciler)(nil)
+var _ {{.reconcilerInterface|raw}} = (*Reconciler)(nil)
 
 // SetCore implements Interface.SetCore.
 func (r *Reconciler) SetCore(core *{{.reconcilerCore|raw}}) {
