@@ -18,11 +18,18 @@ package gke
 
 import (
 	"errors"
+	"flag"
 
 	container "google.golang.org/api/container/v1beta1"
 )
 
 const defaultGKEVersion = "latest"
+
+// Extra configurations we want to support for cluster creation request.
+var (
+	enableWorkloadIdentity = flag.Bool("enable-workload-identity", false, "whether to enable Workload Identity")
+	serviceAccount = flag.String("service-account", "", "service account that will be used on this cluster")
+)
 
 // Request contains all settings collected for cluster creation
 type Request struct {
@@ -57,10 +64,6 @@ type Request struct {
 
 	// Addons: cluster addons to be added to cluster, such as istio
 	Addons []string
-
-	// EnableWorkloadIdentity: whether to enable Workload Identity -
-	// https://cloud.google.com/kubernetes-engine/docs/how-to/workload-identity or not
-	EnableWorkloadIdentity bool
 }
 
 // DeepCopy will make a deepcopy of the request struct.
@@ -76,7 +79,6 @@ func (r *Request) DeepCopy() *Request {
 		Region:                 r.Region,
 		Zone:                   r.Zone,
 		Addons:                 r.Addons,
-		EnableWorkloadIdentity: r.EnableWorkloadIdentity,
 	}
 }
 
@@ -94,7 +96,7 @@ func NewCreateClusterRequest(request *Request) (*container.CreateClusterRequest,
 	if request.NodeType == "" {
 		return nil, errors.New("node type cannot be empty")
 	}
-	if request.EnableWorkloadIdentity && request.Project == "" {
+	if *enableWorkloadIdentity && request.Project == "" {
 		return nil, errors.New("project cannot be empty if you want Workload Identity")
 	}
 	if request.GKEVersion != "" && request.ReleaseChannel != "" {
@@ -138,13 +140,19 @@ func NewCreateClusterRequest(request *Request) (*container.CreateClusterRequest,
 			MasterAuth: &container.MasterAuth{Username: "admin"},
 		},
 	}
-	if request.EnableWorkloadIdentity {
+	if *enableWorkloadIdentity {
 		// Equivalent to --identity-namespace=[PROJECT_ID].svc.id.goog, then
 		// we can configure a Kubernetes service account to act as a Google
 		// service account.
 		ccr.Cluster.WorkloadIdentityConfig = &container.WorkloadIdentityConfig{
 			IdentityNamespace: request.Project + ".svc.id.goog",
 		}
+	}
+	if *serviceAccount != "" {
+		// The Google Cloud Platform Service Account to be used by the node VMs.
+		// If a service account is specified, the cloud-platform and userinfo.email scopes are used.
+		// If no Service Account is specified, the project default service account is used.
+		ccr.Cluster.NodePools[0].Config.ServiceAccount = *serviceAccount
 	}
 
 	// Manage the GKE cluster version. Only one of initial cluster version or release channel can be specified.

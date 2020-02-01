@@ -136,27 +136,6 @@ func TestNewCreateClusterRequest(t *testing.T) {
 				MaxNodes:    1,
 			},
 			errorExpected: true,
-		}, {
-			req: &Request{
-				Project:                "project-g",
-				GKEVersion:             "1-2-3",
-				ClusterName:            "name-g",
-				MinNodes:               1,
-				MaxNodes:               1,
-				NodeType:               "n1-standard-4",
-				EnableWorkloadIdentity: true,
-			},
-			errorExpected: false,
-		}, {
-			req: &Request{
-				GKEVersion:             "1-2-3",
-				ClusterName:            "name-h",
-				MinNodes:               3,
-				MaxNodes:               3,
-				NodeType:               "n1-standard-4",
-				EnableWorkloadIdentity: true,
-			},
-			errorExpected: true,
 		}}
 	for _, data := range datas {
 		createReq, err := NewCreateClusterRequest(data.req)
