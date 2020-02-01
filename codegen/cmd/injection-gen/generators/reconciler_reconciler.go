@@ -71,7 +71,16 @@ func (g *reconcilerReconcilerGenerator) GenerateType(c *generator.Context, t *ty
 			Package: "k8s.io/api/core/v1",
 			Name:    "EventSource",
 		}),
-		"reconcilerEvent": c.Universe.Type(types.Name{Package: "knative.dev/pkg/reconciler", Name: "Event"}),
+		"corev1EventTypeNormal": c.Universe.Type(types.Name{
+			Package: "k8s.io/api/core/v1",
+			Name:    "EventTypeNormal",
+		}),
+		"corev1EventTypeWarning": c.Universe.Type(types.Name{
+			Package: "k8s.io/api/core/v1",
+			Name:    "EventTypeWarning",
+		}),
+		"reconcilerEvent":           c.Universe.Type(types.Name{Package: "knative.dev/pkg/reconciler", Name: "Event"}),
+		"reconcilerReconcilerEvent": c.Universe.Type(types.Name{Package: "knative.dev/pkg/reconciler", Name: "ReconcilerEvent"}),
 		// Deps
 		"clientsetInterface": c.Universe.Type(types.Name{Name: "Interface", Package: g.clientsetPkg}),
 		"resourceLister":     c.Universe.Type(types.Name{Name: g.listerName, Package: g.listerPkg}),
@@ -90,6 +99,14 @@ func (g *reconcilerReconcilerGenerator) GenerateType(c *generator.Context, t *ty
 		"retryRetryOnConflict": c.Universe.Function(types.Name{
 			Package: "k8s.io/client-go/util/retry",
 			Name:    "RetryOnConflict",
+		}),
+		"apierrsIsNotFound": c.Universe.Function(types.Name{
+			Package: "k8s.io/apimachinery/pkg/api/errors",
+			Name:    "IsNotFound",
+		}),
+		"metav1GetOptions": c.Universe.Function(types.Name{
+			Package: "k8s.io/apimachinery/pkg/apis/meta/v1",
+			Name:    "GetOptions",
 		}),
 	}
 
@@ -111,6 +128,10 @@ type Interface interface {
 	// for the Kind inside of ReconcileKind, it is the responsibility of the core
 	// controller to propagate those properties.
 	ReconcileKind(ctx context.Context, o *{{.type|raw}}) {{.reconcilerEvent|raw}}
+
+	// SetCore allows the inner core reconciler to be set from the controller
+	// constructor based on only providing the Interface.
+	SetCore(core *Core)
 }
 
 // Reconciler implements controller.Reconciler for {{.type|raw}} resources.
@@ -162,7 +183,7 @@ func (r *Core) Reconcile(ctx context.Context, key string) error {
 
 	// Get the resource with this namespace/name.
 	original, err := r.Lister.{{.type|apiGroup}}(namespace).Get(name)
-	if apierrs.IsNotFound(err) {
+	if {{.apierrsIsNotFound|raw}}(err) {
 		// The resource may no longer exist, in which case we stop processing.
 		logger.Errorf("resource %q no longer exists", key)
 		return nil
@@ -181,12 +202,12 @@ func (r *Core) Reconcile(ctx context.Context, key string) error {
 		// If we didn't change finalizers then don't call updateFinalizers.
 	} else if _, updated, fErr := r.updateFinalizers(ctx, resource); fErr != nil {
 		logger.Warnw("Failed to update finalizers", zap.Error(fErr))
-		r.Recorder.Eventf(resource, corev1.EventTypeWarning, "UpdateFailed",
+		r.Recorder.Eventf(resource, {{.corev1EventTypeWarning|raw}}, "UpdateFailed",
 			"Failed to update finalizers for %q: %v", resource.Name, fErr)
 		return fErr
 	} else if updated {
 		// There was a difference and updateFinalizers said it updated and did not return an error.
-		r.Recorder.Eventf(resource, corev1.EventTypeNormal, "Updated", "Updated %q finalizers", resource.GetName())
+		r.Recorder.Eventf(resource, {{.corev1EventTypeNormal|raw}}, "Updated", "Updated %q finalizers", resource.GetName())
 	}
 
 	// Synchronize the status.
@@ -197,7 +218,7 @@ func (r *Core) Reconcile(ctx context.Context, key string) error {
 		// to status with this stale state.
 	} else if err = r.updateStatus(original, resource); err != nil {
 		logger.Warnw("Failed to update resource status", zap.Error(err))
-		r.Recorder.Eventf(resource, corev1.EventTypeWarning, "UpdateFailed",
+		r.Recorder.Eventf(resource, {{.corev1EventTypeWarning|raw}}, "UpdateFailed",
 			"Failed to update status for %q: %v", resource.Name, err)
 		return err
 	}
@@ -205,11 +226,11 @@ func (r *Core) Reconcile(ctx context.Context, key string) error {
 	// Report the reconciler event, if any.
 	if reconcileEvent != nil {
 		logger.Error("ReconcileKind returned an event: %v", reconcileEvent)
-		var event *{{.reconcilerEvent|raw}}
+		var event *{{.reconcilerReconcilerEvent|raw}}
 		if reconciler.EventAs(reconcileEvent, &event) {
 			r.Recorder.Eventf(resource, event.EventType, event.Reason, event.Format, event.Args...)
 		} else {
-			r.Recorder.Event(resource, corev1.EventTypeWarning, "InternalError", reconcileEvent.Error())
+			r.Recorder.Event(resource, {{.corev1EventTypeWarning|raw}}, "InternalError", reconcileEvent.Error())
 		}
 	}
 	return reconcileEvent
@@ -222,7 +243,7 @@ func (r *Core) updateStatus(existing *{{.type|raw}}, desired *{{.type|raw}}) err
 	return RetryUpdateConflicts(func(attempts int) (err error) {
 		// The first iteration tries to use the injectionInformer's state, subsequent attempts fetch the latest state via API.
 		if attempts > 0 {
-			existing, err = r.Client.{{.type|versionedClientset}}().{{.type|apiGroup}}(desired.Namespace).Get(desired.Name, metav1.GetOptions{})
+			existing, err = r.Client.{{.type|versionedClientset}}().{{.type|apiGroup}}(desired.Namespace).Get(desired.Name, {{.metav1GetOptions|raw}}{})
 			if err != nil {
 				return err
 			}

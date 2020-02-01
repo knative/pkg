@@ -90,6 +90,11 @@ type Reconciler struct {
 // Check that our Reconciler implements Interface
 var _ Interface = (*Reconciler)(nil)
 
+// SetCore implements Interface.SetCore.
+func (r *Reconciler) SetCore(core *{{.reconcilerCore|raw}}) {
+	r.Core = *core
+}
+
 // ReconcileKind implements Interface.ReconcileKind.
 func (r *Reconciler) ReconcileKind(ctx context.Context, o *{{.type|raw}}) {{.reconcilerEvent|raw}} {
 	if o.GetDeletionTimestamp() != nil {
