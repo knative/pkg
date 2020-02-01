@@ -1,5 +1,5 @@
 /*
-Copyright 2019 The Knative Authors
+Copyright 2020 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -18,7 +18,6 @@ package generators
 
 import (
 	"io"
-	"strings"
 
 	"k8s.io/gengo/generator"
 	"k8s.io/gengo/namer"
@@ -26,81 +25,70 @@ import (
 	"k8s.io/klog"
 )
 
-// genReconciler produces the reconciler.
-type genReconciler struct {
+// reconcilerReconcilerGenerator produces a file of listers for a given GroupVersion and
+// type.
+type reconcilerReconcilerGenerator struct {
 	generator.DefaultGen
-	targetPackage string
+	outputPackage string
+	imports       namer.ImportTracker
+	filtered      bool
 
-	kind              string
-	injectionClient   string
-	injectionInformer string
-	lister            string
-	clientset         string
-
-	imports      namer.ImportTracker
-	typesForInit []*types.Type
+	clientPkg           string
+	clientInjectionPkg  string
+	informerPackagePath string
+	clientsetPkg        string
+	listerName          string
+	listerPkg           string
 }
 
-func NewGenReconciler(sanitizedName, targetPackage string, kind, injectionClient, injectionInformer, lister, clientset string) generator.Generator {
-	return &genReconciler{
-		DefaultGen: generator.DefaultGen{
-			OptionalName: sanitizedName,
-		},
-		targetPackage:     targetPackage,
-		kind:              kind,
-		injectionClient:   injectionClient,
-		injectionInformer: injectionInformer,
-		lister:            lister,
-		clientset:         clientset,
-		imports:           generator.NewImportTracker(),
-		typesForInit:      make([]*types.Type, 0),
+var _ generator.Generator = (*reconcilerReconcilerGenerator)(nil)
+
+func (g *reconcilerReconcilerGenerator) Filter(c *generator.Context, t *types.Type) bool {
+	// We generate a single client, so return true once.
+	if !g.filtered {
+		g.filtered = true
+		return true
 	}
-}
-
-func (g *genReconciler) Namers(c *generator.Context) namer.NameSystems {
-	namers := NameSystems()
-	namers["raw"] = namer.NewRawNamer(g.targetPackage, g.imports)
-	return namers
-}
-
-func (g *genReconciler) Filter(c *generator.Context, t *types.Type) bool {
 	return false
 }
 
-func (g *genReconciler) isOtherPackage(pkg string) bool {
-	if pkg == g.targetPackage {
-		return false
+func (g *reconcilerReconcilerGenerator) Namers(c *generator.Context) namer.NameSystems {
+	return namer.NameSystems{
+		"raw": namer.NewRawNamer(g.outputPackage, g.imports),
 	}
-	if strings.HasSuffix(pkg, "\""+g.targetPackage+"\"") {
-		return false
-	}
-	return true
 }
 
-func (g *genReconciler) Imports(c *generator.Context) (imports []string) {
-	importLines := []string{}
-	for _, singleImport := range g.imports.ImportLines() {
-		if g.isOtherPackage(singleImport) {
-			importLines = append(importLines, singleImport)
-		}
-	}
-	return importLines
+func (g *reconcilerReconcilerGenerator) Imports(c *generator.Context) (imports []string) {
+	imports = append(imports, g.imports.ImportLines()...)
+	return
 }
 
-func (g *genReconciler) Init(c *generator.Context, w io.Writer) error {
-	klog.Infof("Generating reconciler for kind %v", g.kind)
-
+func (g *reconcilerReconcilerGenerator) GenerateType(c *generator.Context, t *types.Type, w io.Writer) error {
 	sw := generator.NewSnippetWriter(w, c, "{{", "}}")
 
-	pkg := g.kind[:strings.LastIndex(g.kind, ".")]
-	name := g.kind[strings.LastIndex(g.kind, ".")+1:]
+	klog.V(5).Infof("processing type %v", t)
 
 	m := map[string]interface{}{
-		"type":            c.Universe.Type(types.Name{Package: pkg, Name: name}),
+
+		"controllerImpl": c.Universe.Type(types.Name{Package: "knative.dev/pkg/controller", Name: "Impl"}),
+		"corev1EventSource": c.Universe.Function(types.Name{
+			Package: "k8s.io/api/core/v1",
+			Name:    "EventSource",
+		}),
+		"clientGet": c.Universe.Function(types.Name{
+			Package: g.clientPkg,
+			Name:    "Get",
+		}),
+		"informerGet": c.Universe.Function(types.Name{
+			Package: g.informerPackagePath,
+			Name:    "Get",
+		}),
+
+		"type":            t,
 		"reconcilerEvent": c.Universe.Type(types.Name{Package: "knative.dev/pkg/reconciler", Name: "Event"}),
 		// Deps
-		"clientsetInterface":   c.Universe.Type(types.Name{Name: "Interface", Package: g.clientset}),
-		"resourceLister":       c.Universe.Type(types.Name{Name: name + "Lister", Package: g.lister}),
+		"clientsetInterface":   c.Universe.Type(types.Name{Name: "Interface", Package: g.clientsetPkg}),
+		"resourceLister":       c.Universe.Type(types.Name{Name: g.listerName, Package: g.listerPkg}),
 		"trackerInterface":     c.Universe.Type(types.Name{Name: "Interface", Package: "knative.dev/pkg/tracker"}),
 		"controllerReconciler": c.Universe.Type(types.Name{Name: "Reconciler", Package: "knative.dev/pkg/controller"}),
 		// K8s types
@@ -126,10 +114,6 @@ func (g *genReconciler) Init(c *generator.Context, w io.Writer) error {
 	sw.Do(reconcilerFinalizerFactory, m)
 
 	return sw.Error()
-}
-
-func (g *genReconciler) GenerateType(c *generator.Context, t *types.Type, w io.Writer) error {
-	return nil
 }
 
 var reconcilerInterfaceFactory = `
@@ -190,7 +174,6 @@ func (r *Core) Reconcile(ctx context.Context, key string) error {
  	// If our controller has configuration state, we'd "freeze" it and
 	// attach the frozen configuration to the context.
 	//    ctx = r.configStore.ToContext(ctx)
-
 
 	// Get the resource with this namespace/name.
 	original, err := r.Lister.{{.type|apiGroup}}(namespace).Get(name)

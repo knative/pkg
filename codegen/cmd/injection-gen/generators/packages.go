@@ -390,6 +390,11 @@ func reconcilerPackages(basePackage string, groupPkgName string, gv clientgentyp
 
 		packagePath := packagePath + "/" + strings.ToLower(t.Name.Name)
 
+		clientPackagePath := filepath.Join(basePackage, "client", groupPkgName, strings.ToLower(gv.Version.NonEmpty()), strings.ToLower(t.Name.Name))
+		informerPackagePath := filepath.Join(basePackage, "informers", groupPkgName, strings.ToLower(gv.Version.NonEmpty()), strings.ToLower(t.Name.Name))
+
+		listerPackagePath := filepath.Join(customArgs.ListersPackage, groupPkgName, strings.ToLower(gv.Version.NonEmpty()))
+
 		// Controller
 		vers = append(vers, &generator.DefaultPackage{
 			PackageName: strings.ToLower(t.Name.Name),
@@ -399,19 +404,99 @@ func reconcilerPackages(basePackage string, groupPkgName string, gv clientgentyp
 				// Impl
 				generators = append(generators, &reconcilerControllerGenerator{
 					DefaultGen: generator.DefaultGen{
-						OptionalName: strings.ToLower(t.Name.Name),
+						OptionalName: "controller",
 					},
-					outputPackage:      packagePath,
-					imports:            generator.NewImportTracker(),
-					fakeClientPkg:      customArgs.VersionedClientSetPackage,
-					clientInjectionPkg: packagePath,
+					outputPackage:       packagePath,
+					imports:             generator.NewImportTracker(),
+					clientPkg:           clientPackagePath,
+					informerPackagePath: informerPackagePath,
 				})
 
 				return generators
 			},
 			FilterFunc: func(c *generator.Context, t *types.Type) bool {
 				tags := MustParseClientGenTags(append(t.SecondClosestCommentLines, t.CommentLines...))
-				return tags.NeedsDuckInjection()
+				return tags.NeedsReconciler()
+			},
+		})
+
+		// Controller Stub
+		vers = append(vers, &generator.DefaultPackage{
+			PackageName: strings.ToLower(t.Name.Name),
+			PackagePath: packagePath + "/stub",
+			HeaderText:  boilerplate,
+			GeneratorFunc: func(c *generator.Context) (generators []generator.Generator) {
+				// Impl
+				generators = append(generators, &reconcilerControllerStubGenerator{
+					DefaultGen: generator.DefaultGen{
+						OptionalName: "controller",
+					},
+					reconcilerPkg:       packagePath,
+					outputPackage:       packagePath + "/stub",
+					imports:             generator.NewImportTracker(),
+					clientPkg:           clientPackagePath,
+					informerPackagePath: informerPackagePath,
+				})
+
+				return generators
+			},
+			FilterFunc: func(c *generator.Context, t *types.Type) bool {
+				tags := MustParseClientGenTags(append(t.SecondClosestCommentLines, t.CommentLines...))
+				return tags.NeedsReconciler()
+			},
+		})
+
+		// Reconciler
+		vers = append(vers, &generator.DefaultPackage{
+			PackageName: strings.ToLower(t.Name.Name),
+			PackagePath: packagePath,
+			HeaderText:  boilerplate,
+			GeneratorFunc: func(c *generator.Context) (generators []generator.Generator) {
+				// Impl
+				generators = append(generators, &reconcilerReconcilerGenerator{
+					DefaultGen: generator.DefaultGen{
+						OptionalName: "reconciler",
+					},
+					outputPackage:       packagePath,
+					imports:             generator.NewImportTracker(),
+					clientPkg:           clientPackagePath,
+					informerPackagePath: informerPackagePath,
+					clientsetPkg:        customArgs.VersionedClientSetPackage,
+					listerName:          t.Name.Name + "Lister",
+					listerPkg:           listerPackagePath,
+				})
+
+				return generators
+			},
+			FilterFunc: func(c *generator.Context, t *types.Type) bool {
+				tags := MustParseClientGenTags(append(t.SecondClosestCommentLines, t.CommentLines...))
+				return tags.NeedsReconciler()
+			},
+		})
+
+		// Reconciler Stub
+		vers = append(vers, &generator.DefaultPackage{
+			PackageName: strings.ToLower(t.Name.Name),
+			PackagePath: packagePath + "/stub",
+			HeaderText:  boilerplate,
+			GeneratorFunc: func(c *generator.Context) (generators []generator.Generator) {
+				// Impl
+				generators = append(generators, &reconcilerReconcilerStubGenerator{
+					DefaultGen: generator.DefaultGen{
+						OptionalName: "reconciler",
+					},
+					reconcilerPkg:       packagePath,
+					outputPackage:       packagePath + "/stub",
+					imports:             generator.NewImportTracker(),
+					clientPkg:           clientPackagePath,
+					informerPackagePath: informerPackagePath,
+				})
+
+				return generators
+			},
+			FilterFunc: func(c *generator.Context, t *types.Type) bool {
+				tags := MustParseClientGenTags(append(t.SecondClosestCommentLines, t.CommentLines...))
+				return tags.NeedsReconciler()
 			},
 		})
 	}

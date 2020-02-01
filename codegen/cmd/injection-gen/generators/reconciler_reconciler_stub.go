@@ -27,20 +27,21 @@ import (
 
 // fakeClientGenerator produces a file of listers for a given GroupVersion and
 // type.
-type reconcilerControllerGenerator struct {
+type reconcilerReconcilerStubGenerator struct {
 	generator.DefaultGen
 	outputPackage string
 	imports       namer.ImportTracker
 	filtered      bool
 
+	reconcilerPkg       string
 	clientPkg           string
 	clientInjectionPkg  string
 	informerPackagePath string
 }
 
-var _ generator.Generator = (*reconcilerControllerGenerator)(nil)
+var _ generator.Generator = (*reconcilerReconcilerStubGenerator)(nil)
 
-func (g *reconcilerControllerGenerator) Filter(c *generator.Context, t *types.Type) bool {
+func (g *reconcilerReconcilerStubGenerator) Filter(c *generator.Context, t *types.Type) bool {
 	// We generate a single client, so return true once.
 	if !g.filtered {
 		g.filtered = true
@@ -49,25 +50,26 @@ func (g *reconcilerControllerGenerator) Filter(c *generator.Context, t *types.Ty
 	return false
 }
 
-func (g *reconcilerControllerGenerator) Namers(c *generator.Context) namer.NameSystems {
+func (g *reconcilerReconcilerStubGenerator) Namers(c *generator.Context) namer.NameSystems {
 	return namer.NameSystems{
 		"raw": namer.NewRawNamer(g.outputPackage, g.imports),
 	}
 }
 
-func (g *reconcilerControllerGenerator) Imports(c *generator.Context) (imports []string) {
+func (g *reconcilerReconcilerStubGenerator) Imports(c *generator.Context) (imports []string) {
 	imports = append(imports, g.imports.ImportLines()...)
 	return
 }
 
-func (g *reconcilerControllerGenerator) GenerateType(c *generator.Context, t *types.Type, w io.Writer) error {
+func (g *reconcilerReconcilerStubGenerator) GenerateType(c *generator.Context, t *types.Type, w io.Writer) error {
 	sw := generator.NewSnippetWriter(w, c, "{{", "}}")
 
 	klog.V(5).Infof("processing type %v", t)
 
 	m := map[string]interface{}{
-		"type":           t,
-		"controllerImpl": c.Universe.Type(types.Name{Package: "knative.dev/pkg/controller", Name: "Impl"}),
+		"type":            t,
+		"controllerImpl":  c.Universe.Type(types.Name{Package: "knative.dev/pkg/controller", Name: "Impl"}),
+		"reconcilerEvent": c.Universe.Type(types.Name{Package: "knative.dev/pkg/reconciler", Name: "Event"}),
 		"loggingFromContext": c.Universe.Function(types.Name{
 			Package: "knative.dev/pkg/logging",
 			Name:    "FromContext",
@@ -84,38 +86,39 @@ func (g *reconcilerControllerGenerator) GenerateType(c *generator.Context, t *ty
 			Package: g.informerPackagePath,
 			Name:    "Get",
 		}),
+		"reconcilerCore": c.Universe.Type(types.Name{
+			Package: g.reconcilerPkg,
+			Name:    "Core",
+		}),
 	}
 
-	sw.Do(reconcilerController, m)
+	sw.Do(reconcilerReconcilerStub, m)
 
 	return sw.Error()
 }
 
-var reconcilerController = `
-
-const (
-	controllerAgentName = "{{.type|lowercaseSingular}}-controller"
-	finalizerName       = "{{.type|lowercaseSingular}}"
-)
-
-func NewImpl(ctx context.Context, r *Reconciler) *{{.controllerImpl|raw}} {
-	logger := {{.loggingFromContext|raw}}(ctx)
-	impl := controller.NewImpl(r, logger, "{{.type|allLowercasePlural}}")
-	injectionInformer := {{.informerGet|raw}}(ctx)
-
-	r.Core = Core{
-		Client:  {{.clientGet|raw}}(ctx),
-		Lister:  injectionInformer.Lister(),
-		Tracker: tracker.New(impl.EnqueueKey, controller.GetTrackerLease(ctx)),
-		Recorder: record.NewBroadcaster().NewRecorder(
-			scheme.Scheme, {{.corev1EventSource|raw}}{Component: controllerAgentName}),
-		FinalizerName: finalizerName,
-		Reconciler:    r,
-	}
-
-	logger.Info("Setting up core event handlers")
-	injectionInformer.Informer().AddEventHandler(controller.HandleAll(impl.Enqueue))
-
-	return impl
+var reconcilerReconcilerStub = `
+// Reconciler implements controller.Reconciler for {{.type|public}} resources.
+type Reconciler struct {
+	{{.reconcilerCore|raw}}
 }
+
+// Check that our Reconciler implements Interface
+var _ Interface = (*Reconciler)(nil)
+
+// ReconcileKind implements Interface.ReconcileKind.
+func (r *Reconciler) ReconcileKind(ctx context.Context, o *{{.type|raw}}) {{.reconcilerEvent|raw}} {
+	if o.GetDeletionTimestamp() != nil {
+		// Check for a DeletionTimestamp.  If present, elide the normal reconcile logic.
+		// When a controller needs finalizer handling, it would go here.
+		return nil
+	}	
+	o.Status.InitializeConditions()
+
+	// TODO: add custom reconciliation logic here.
+
+	o.Status.ObservedGeneration = o.Generation
+	return nil
+}
+
 `

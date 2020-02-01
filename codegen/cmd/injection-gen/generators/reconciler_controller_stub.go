@@ -27,20 +27,21 @@ import (
 
 // fakeClientGenerator produces a file of listers for a given GroupVersion and
 // type.
-type reconcilerControllerGenerator struct {
+type reconcilerControllerStubGenerator struct {
 	generator.DefaultGen
 	outputPackage string
 	imports       namer.ImportTracker
 	filtered      bool
 
+	reconcilerPkg       string
 	clientPkg           string
 	clientInjectionPkg  string
 	informerPackagePath string
 }
 
-var _ generator.Generator = (*reconcilerControllerGenerator)(nil)
+var _ generator.Generator = (*reconcilerControllerStubGenerator)(nil)
 
-func (g *reconcilerControllerGenerator) Filter(c *generator.Context, t *types.Type) bool {
+func (g *reconcilerControllerStubGenerator) Filter(c *generator.Context, t *types.Type) bool {
 	// We generate a single client, so return true once.
 	if !g.filtered {
 		g.filtered = true
@@ -49,18 +50,18 @@ func (g *reconcilerControllerGenerator) Filter(c *generator.Context, t *types.Ty
 	return false
 }
 
-func (g *reconcilerControllerGenerator) Namers(c *generator.Context) namer.NameSystems {
+func (g *reconcilerControllerStubGenerator) Namers(c *generator.Context) namer.NameSystems {
 	return namer.NameSystems{
 		"raw": namer.NewRawNamer(g.outputPackage, g.imports),
 	}
 }
 
-func (g *reconcilerControllerGenerator) Imports(c *generator.Context) (imports []string) {
+func (g *reconcilerControllerStubGenerator) Imports(c *generator.Context) (imports []string) {
 	imports = append(imports, g.imports.ImportLines()...)
 	return
 }
 
-func (g *reconcilerControllerGenerator) GenerateType(c *generator.Context, t *types.Type, w io.Writer) error {
+func (g *reconcilerControllerStubGenerator) GenerateType(c *generator.Context, t *types.Type, w io.Writer) error {
 	sw := generator.NewSnippetWriter(w, c, "{{", "}}")
 
 	klog.V(5).Infof("processing type %v", t)
@@ -84,37 +85,26 @@ func (g *reconcilerControllerGenerator) GenerateType(c *generator.Context, t *ty
 			Package: g.informerPackagePath,
 			Name:    "Get",
 		}),
+		"reconcilerNewImpl": c.Universe.Type(types.Name{
+			Package: g.reconcilerPkg,
+			Name:    "NewImpl",
+		}),
 	}
 
-	sw.Do(reconcilerController, m)
+	sw.Do(reconcilerControllerStub, m)
 
 	return sw.Error()
 }
 
-var reconcilerController = `
+var reconcilerControllerStub = `
+// NewController creates a Reconciler and returns the result of NewImpl.
+func NewController(
+	ctx context.Context,
+	cmw configmap.Watcher,
+) *{{.controllerImpl|raw}} {
 
-const (
-	controllerAgentName = "{{.type|lowercaseSingular}}-controller"
-	finalizerName       = "{{.type|lowercaseSingular}}"
-)
-
-func NewImpl(ctx context.Context, r *Reconciler) *{{.controllerImpl|raw}} {
-	logger := {{.loggingFromContext|raw}}(ctx)
-	impl := controller.NewImpl(r, logger, "{{.type|allLowercasePlural}}")
-	injectionInformer := {{.informerGet|raw}}(ctx)
-
-	r.Core = Core{
-		Client:  {{.clientGet|raw}}(ctx),
-		Lister:  injectionInformer.Lister(),
-		Tracker: tracker.New(impl.EnqueueKey, controller.GetTrackerLease(ctx)),
-		Recorder: record.NewBroadcaster().NewRecorder(
-			scheme.Scheme, {{.corev1EventSource|raw}}{Component: controllerAgentName}),
-		FinalizerName: finalizerName,
-		Reconciler:    r,
-	}
-
-	logger.Info("Setting up core event handlers")
-	injectionInformer.Informer().AddEventHandler(controller.HandleAll(impl.Enqueue))
+	r := &Reconciler{}
+	impl := {{.reconcilerNewImpl|raw}}(ctx, r)
 
 	return impl
 }
