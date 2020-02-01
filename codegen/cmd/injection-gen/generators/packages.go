@@ -17,7 +17,6 @@ limitations under the License.
 package generators
 
 import (
-	"fmt"
 	"path"
 	"path/filepath"
 	"strings"
@@ -221,7 +220,7 @@ func versionClientsPackages(basePackage string, boilerplate []byte, customArgs *
 	// Fake
 	vers = append(vers, &generator.DefaultPackage{
 		PackageName: "fake",
-		PackagePath: packagePath + "/fake",
+		PackagePath: filepath.Join(packagePath, "fake"),
 		HeaderText:  boilerplate,
 		GeneratorFunc: func(c *generator.Context) (generators []generator.Generator) {
 
@@ -230,9 +229,9 @@ func versionClientsPackages(basePackage string, boilerplate []byte, customArgs *
 				DefaultGen: generator.DefaultGen{
 					OptionalName: "fake",
 				},
-				outputPackage:      packagePath + "/fake",
+				outputPackage:      filepath.Join(packagePath, "fake"),
 				imports:            generator.NewImportTracker(),
-				fakeClientPkg:      customArgs.VersionedClientSetPackage + "/fake",
+				fakeClientPkg:      filepath.Join(customArgs.VersionedClientSetPackage, "fake"),
 				clientInjectionPkg: packagePath,
 			})
 
@@ -264,7 +263,7 @@ func versionFactoryPackages(basePackage string, boilerplate []byte, customArgs *
 					OptionalName: "factory",
 				},
 				outputPackage:                packagePath,
-				cachingClientSetPackage:      fmt.Sprintf("%s/client", basePackage),
+				cachingClientSetPackage:      filepath.Join(basePackage, "client"),
 				sharedInformerFactoryPackage: customArgs.ExternalVersionsInformersPackage,
 				imports:                      generator.NewImportTracker(),
 			})
@@ -280,7 +279,7 @@ func versionFactoryPackages(basePackage string, boilerplate []byte, customArgs *
 	// Fake
 	vers = append(vers, &generator.DefaultPackage{
 		PackageName: "fake",
-		PackagePath: packagePath + "/fake",
+		PackagePath: filepath.Join(packagePath, "fake"),
 		HeaderText:  boilerplate,
 		GeneratorFunc: func(c *generator.Context) (generators []generator.Generator) {
 
@@ -289,9 +288,9 @@ func versionFactoryPackages(basePackage string, boilerplate []byte, customArgs *
 				DefaultGen: generator.DefaultGen{
 					OptionalName: "fake",
 				},
-				outputPackage:                packagePath + "/fake",
+				outputPackage:                filepath.Join(packagePath, "fake"),
 				factoryInjectionPkg:          packagePath,
-				fakeClientInjectionPkg:       fmt.Sprintf("%s/client/fake", basePackage),
+				fakeClientInjectionPkg:       filepath.Join(basePackage, "client", "fake"),
 				sharedInformerFactoryPackage: customArgs.ExternalVersionsInformersPackage,
 				imports:                      generator.NewImportTracker(),
 			})
@@ -351,7 +350,7 @@ func versionInformerPackages(basePackage string, groupPkgName string, gv clientg
 		// Fake
 		vers = append(vers, &generator.DefaultPackage{
 			PackageName: "fake",
-			PackagePath: packagePath + "/fake",
+			PackagePath: filepath.Join(packagePath, "fake"),
 			HeaderText:  boilerplate,
 			GeneratorFunc: func(c *generator.Context) (generators []generator.Generator) {
 				// Impl
@@ -359,13 +358,13 @@ func versionInformerPackages(basePackage string, groupPkgName string, gv clientg
 					DefaultGen: generator.DefaultGen{
 						OptionalName: "fake",
 					},
-					outputPackage:           packagePath + "/fake",
+					outputPackage:           filepath.Join(packagePath, "fake"),
 					imports:                 generator.NewImportTracker(),
 					typeToGenerate:          t,
 					groupVersion:            gv,
 					groupGoName:             groupGoName,
 					informerInjectionPkg:    packagePath,
-					fakeFactoryInjectionPkg: factoryPackagePath + "/fake",
+					fakeFactoryInjectionPkg: filepath.Join(factoryPackagePath, "fake"),
 				})
 
 				return generators
@@ -388,9 +387,9 @@ func reconcilerPackages(basePackage string, groupPkgName string, gv clientgentyp
 		// Fix for golang iterator bug.
 		t := t
 
-		packagePath := packagePath + "/" + strings.ToLower(t.Name.Name)
+		packagePath := filepath.Join(packagePath, strings.ToLower(t.Name.Name))
 
-		clientPackagePath := filepath.Join(basePackage, "client", groupPkgName, strings.ToLower(gv.Version.NonEmpty()), strings.ToLower(t.Name.Name))
+		clientPackagePath := filepath.Join(basePackage, "client")
 		informerPackagePath := filepath.Join(basePackage, "informers", groupPkgName, strings.ToLower(gv.Version.NonEmpty()), strings.ToLower(t.Name.Name))
 
 		listerPackagePath := filepath.Join(customArgs.ListersPackage, groupPkgName, strings.ToLower(gv.Version.NonEmpty()))
@@ -423,7 +422,7 @@ func reconcilerPackages(basePackage string, groupPkgName string, gv clientgentyp
 		// Controller Stub
 		vers = append(vers, &generator.DefaultPackage{
 			PackageName: strings.ToLower(t.Name.Name),
-			PackagePath: packagePath + "/stub",
+			PackagePath: packagePath + "stub",
 			HeaderText:  boilerplate,
 			GeneratorFunc: func(c *generator.Context) (generators []generator.Generator) {
 				// Impl
@@ -431,11 +430,9 @@ func reconcilerPackages(basePackage string, groupPkgName string, gv clientgentyp
 					DefaultGen: generator.DefaultGen{
 						OptionalName: "controller",
 					},
-					reconcilerPkg:       packagePath,
-					outputPackage:       packagePath + "/stub",
-					imports:             generator.NewImportTracker(),
-					clientPkg:           clientPackagePath,
-					informerPackagePath: informerPackagePath,
+					reconcilerPkg: packagePath,
+					outputPackage: packagePath + "stub",
+					imports:       generator.NewImportTracker(),
 				})
 
 				return generators
@@ -457,13 +454,11 @@ func reconcilerPackages(basePackage string, groupPkgName string, gv clientgentyp
 					DefaultGen: generator.DefaultGen{
 						OptionalName: "reconciler",
 					},
-					outputPackage:       packagePath,
-					imports:             generator.NewImportTracker(),
-					clientPkg:           clientPackagePath,
-					informerPackagePath: informerPackagePath,
-					clientsetPkg:        customArgs.VersionedClientSetPackage,
-					listerName:          t.Name.Name + "Lister",
-					listerPkg:           listerPackagePath,
+					outputPackage: packagePath,
+					imports:       generator.NewImportTracker(),
+					clientsetPkg:  customArgs.VersionedClientSetPackage,
+					listerName:    t.Name.Name + "Lister",
+					listerPkg:     listerPackagePath,
 				})
 
 				return generators
@@ -477,7 +472,7 @@ func reconcilerPackages(basePackage string, groupPkgName string, gv clientgentyp
 		// Reconciler Stub
 		vers = append(vers, &generator.DefaultPackage{
 			PackageName: strings.ToLower(t.Name.Name),
-			PackagePath: packagePath + "/stub",
+			PackagePath: filepath.Join(packagePath, "/stub"),
 			HeaderText:  boilerplate,
 			GeneratorFunc: func(c *generator.Context) (generators []generator.Generator) {
 				// Impl
@@ -485,11 +480,9 @@ func reconcilerPackages(basePackage string, groupPkgName string, gv clientgentyp
 					DefaultGen: generator.DefaultGen{
 						OptionalName: "reconciler",
 					},
-					reconcilerPkg:       packagePath,
-					outputPackage:       packagePath + "/stub",
-					imports:             generator.NewImportTracker(),
-					clientPkg:           clientPackagePath,
-					informerPackagePath: informerPackagePath,
+					reconcilerPkg: packagePath,
+					outputPackage: filepath.Join(packagePath, "stub"),
+					imports:       generator.NewImportTracker(),
 				})
 
 				return generators
@@ -512,7 +505,7 @@ func versionDuckPackages(basePackage string, groupPkgName string, gv clientgenty
 		// Fix for golang iterator bug.
 		t := t
 
-		packagePath := packagePath + "/" + strings.ToLower(t.Name.Name)
+		packagePath := filepath.Join(packagePath, strings.ToLower(t.Name.Name))
 
 		// Impl
 		vers = append(vers, &generator.DefaultPackage{
@@ -543,7 +536,7 @@ func versionDuckPackages(basePackage string, groupPkgName string, gv clientgenty
 		// Fake
 		vers = append(vers, &generator.DefaultPackage{
 			PackageName: "fake",
-			PackagePath: packagePath + "/fake",
+			PackagePath: filepath.Join(packagePath, "fake"),
 			HeaderText:  boilerplate,
 			GeneratorFunc: func(c *generator.Context) (generators []generator.Generator) {
 				// Impl
@@ -551,7 +544,7 @@ func versionDuckPackages(basePackage string, groupPkgName string, gv clientgenty
 					DefaultGen: generator.DefaultGen{
 						OptionalName: "fake",
 					},
-					outputPackage:    packagePath + "/fake",
+					outputPackage:    filepath.Join(packagePath, "fake"),
 					imports:          generator.NewImportTracker(),
 					typeToGenerate:   t,
 					groupVersion:     gv,

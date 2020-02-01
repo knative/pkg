@@ -25,20 +25,15 @@ import (
 	"k8s.io/klog"
 )
 
-// reconcilerReconcilerGenerator produces a file of listers for a given GroupVersion and
-// type.
+// reconcilerReconcilerGenerator produces a reconciler struct for the given type.
 type reconcilerReconcilerGenerator struct {
 	generator.DefaultGen
 	outputPackage string
 	imports       namer.ImportTracker
 	filtered      bool
-
-	clientPkg           string
-	clientInjectionPkg  string
-	informerPackagePath string
-	clientsetPkg        string
-	listerName          string
-	listerPkg           string
+	clientsetPkg  string
+	listerName    string
+	listerPkg     string
 }
 
 var _ generator.Generator = (*reconcilerReconcilerGenerator)(nil)
@@ -69,28 +64,18 @@ func (g *reconcilerReconcilerGenerator) GenerateType(c *generator.Context, t *ty
 	klog.V(5).Infof("processing type %v", t)
 
 	m := map[string]interface{}{
+		"type": t,
 
 		"controllerImpl": c.Universe.Type(types.Name{Package: "knative.dev/pkg/controller", Name: "Impl"}),
 		"corev1EventSource": c.Universe.Function(types.Name{
 			Package: "k8s.io/api/core/v1",
 			Name:    "EventSource",
 		}),
-		"clientGet": c.Universe.Function(types.Name{
-			Package: g.clientPkg,
-			Name:    "Get",
-		}),
-		"informerGet": c.Universe.Function(types.Name{
-			Package: g.informerPackagePath,
-			Name:    "Get",
-		}),
-
-		"type":            t,
 		"reconcilerEvent": c.Universe.Type(types.Name{Package: "knative.dev/pkg/reconciler", Name: "Event"}),
 		// Deps
-		"clientsetInterface":   c.Universe.Type(types.Name{Name: "Interface", Package: g.clientsetPkg}),
-		"resourceLister":       c.Universe.Type(types.Name{Name: g.listerName, Package: g.listerPkg}),
-		"trackerInterface":     c.Universe.Type(types.Name{Name: "Interface", Package: "knative.dev/pkg/tracker"}),
-		"controllerReconciler": c.Universe.Type(types.Name{Name: "Reconciler", Package: "knative.dev/pkg/controller"}),
+		"clientsetInterface": c.Universe.Type(types.Name{Name: "Interface", Package: g.clientsetPkg}),
+		"resourceLister":     c.Universe.Type(types.Name{Name: g.listerName, Package: g.listerPkg}),
+		"trackerInterface":   c.Universe.Type(types.Name{Name: "Interface", Package: "knative.dev/pkg/tracker"}),
 		// K8s types
 		"recordEventRecorder": c.Universe.Type(types.Name{Name: "EventRecorder", Package: "k8s.io/client-go/tools/record"}),
 		// methods
@@ -220,7 +205,7 @@ func (r *Core) Reconcile(ctx context.Context, key string) error {
 	// Report the reconciler event, if any.
 	if reconcileEvent != nil {
 		logger.Error("ReconcileKind returned an event: %v", reconcileEvent)
-		var event *reconciler.ReconcilerEvent
+		var event *{{.reconcilerEvent|raw}}
 		if reconciler.EventAs(reconcileEvent, &event) {
 			r.Recorder.Eventf(resource, event.EventType, event.Reason, event.Format, event.Args...)
 		} else {

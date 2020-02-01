@@ -25,8 +25,8 @@ import (
 	"k8s.io/klog"
 )
 
-// fakeClientGenerator produces a file of listers for a given GroupVersion and
-// type.
+// reconcilerControllerGenerator produces a file for setting up the reconciler
+// with injection.
 type reconcilerControllerGenerator struct {
 	generator.DefaultGen
 	outputPackage string
@@ -34,7 +34,6 @@ type reconcilerControllerGenerator struct {
 	filtered      bool
 
 	clientPkg           string
-	clientInjectionPkg  string
 	informerPackagePath string
 }
 

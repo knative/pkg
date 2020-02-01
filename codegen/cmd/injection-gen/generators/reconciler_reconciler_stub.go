@@ -25,18 +25,15 @@ import (
 	"k8s.io/klog"
 )
 
-// fakeClientGenerator produces a file of listers for a given GroupVersion and
-// type.
+// reconcilerReconcilerStubGenerator produces a file of the stub of how to
+// implement the reconciler.
 type reconcilerReconcilerStubGenerator struct {
 	generator.DefaultGen
 	outputPackage string
 	imports       namer.ImportTracker
 	filtered      bool
 
-	reconcilerPkg       string
-	clientPkg           string
-	clientInjectionPkg  string
-	informerPackagePath string
+	reconcilerPkg string
 }
 
 var _ generator.Generator = (*reconcilerReconcilerStubGenerator)(nil)
@@ -68,24 +65,7 @@ func (g *reconcilerReconcilerStubGenerator) GenerateType(c *generator.Context, t
 
 	m := map[string]interface{}{
 		"type":            t,
-		"controllerImpl":  c.Universe.Type(types.Name{Package: "knative.dev/pkg/controller", Name: "Impl"}),
 		"reconcilerEvent": c.Universe.Type(types.Name{Package: "knative.dev/pkg/reconciler", Name: "Event"}),
-		"loggingFromContext": c.Universe.Function(types.Name{
-			Package: "knative.dev/pkg/logging",
-			Name:    "FromContext",
-		}),
-		"corev1EventSource": c.Universe.Function(types.Name{
-			Package: "k8s.io/api/core/v1",
-			Name:    "EventSource",
-		}),
-		"clientGet": c.Universe.Function(types.Name{
-			Package: g.clientPkg,
-			Name:    "Get",
-		}),
-		"informerGet": c.Universe.Function(types.Name{
-			Package: g.informerPackagePath,
-			Name:    "Get",
-		}),
 		"reconcilerCore": c.Universe.Type(types.Name{
 			Package: g.reconcilerPkg,
 			Name:    "Core",
@@ -98,9 +78,13 @@ func (g *reconcilerReconcilerStubGenerator) GenerateType(c *generator.Context, t
 }
 
 var reconcilerReconcilerStub = `
+// TODO: PLEASE COPY AND MODIFY THIS FILE AS A STARTING POINT
+
 // Reconciler implements controller.Reconciler for {{.type|public}} resources.
 type Reconciler struct {
 	{{.reconcilerCore|raw}}
+
+	// TODO: add additional requirements here.
 }
 
 // Check that our Reconciler implements Interface

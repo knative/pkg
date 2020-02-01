@@ -25,18 +25,15 @@ import (
 	"k8s.io/klog"
 )
 
-// fakeClientGenerator produces a file of listers for a given GroupVersion and
-// type.
+// reconcilerControllerStubGenerator produces a file of the stub of the
+// controller for a custom impl with injection.
 type reconcilerControllerStubGenerator struct {
 	generator.DefaultGen
 	outputPackage string
 	imports       namer.ImportTracker
 	filtered      bool
 
-	reconcilerPkg       string
-	clientPkg           string
-	clientInjectionPkg  string
-	informerPackagePath string
+	reconcilerPkg string
 }
 
 var _ generator.Generator = (*reconcilerControllerStubGenerator)(nil)
@@ -69,22 +66,6 @@ func (g *reconcilerControllerStubGenerator) GenerateType(c *generator.Context, t
 	m := map[string]interface{}{
 		"type":           t,
 		"controllerImpl": c.Universe.Type(types.Name{Package: "knative.dev/pkg/controller", Name: "Impl"}),
-		"loggingFromContext": c.Universe.Function(types.Name{
-			Package: "knative.dev/pkg/logging",
-			Name:    "FromContext",
-		}),
-		"corev1EventSource": c.Universe.Function(types.Name{
-			Package: "k8s.io/api/core/v1",
-			Name:    "EventSource",
-		}),
-		"clientGet": c.Universe.Function(types.Name{
-			Package: g.clientPkg,
-			Name:    "Get",
-		}),
-		"informerGet": c.Universe.Function(types.Name{
-			Package: g.informerPackagePath,
-			Name:    "Get",
-		}),
 		"reconcilerNewImpl": c.Universe.Type(types.Name{
 			Package: g.reconcilerPkg,
 			Name:    "NewImpl",
@@ -97,14 +78,20 @@ func (g *reconcilerControllerStubGenerator) GenerateType(c *generator.Context, t
 }
 
 var reconcilerControllerStub = `
-// NewController creates a Reconciler and returns the result of NewImpl.
+// TODO: PLEASE COPY AND MODIFY THIS FILE AS A STARTING POINT
+
+// NewController creates a Reconciler for {{.type|public}} and returns the result of NewImpl.
 func NewController(
 	ctx context.Context,
 	cmw configmap.Watcher,
 ) *{{.controllerImpl|raw}} {
 
+	// TODO: setup additional requirements here.
+
 	r := &Reconciler{}
 	impl := {{.reconcilerNewImpl|raw}}(ctx, r)
+
+	// TODO: add additional informer event handlers here.
 
 	return impl
 }
