@@ -27,18 +27,18 @@ import (
 type KnativeReference struct {
 	// Kind of the referent.
 	// More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
-	Kind string `json:"kind,omitempty"`
+	Kind string `json:"kind"`
 
 	// Namespace of the referent.
 	// More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/namespaces/
-	Namespace string `json:"namespace,omitempty"`
+	Namespace string `json:"namespace"`
 
 	// Name of the referent.
 	// More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-	Name string `json:"name,omitempty"`
+	Name string `json:"name"`
 
 	// API version of the referent.
-	APIVersion string `json:"apiVersion,omitempty"`
+	APIVersion string `json:"apiVersion"`
 }
 
 func (kr *KnativeReference) Validate(ctx context.Context) *apis.FieldError {
@@ -63,4 +63,10 @@ func (kr *KnativeReference) Validate(ctx context.Context) *apis.FieldError {
 		errs = errs.Also(apis.ErrMissingField("kind"))
 	}
 	return errs
+}
+
+func (kr *KnativeReference) SetDefaults(ctx context.Context) {
+	if kr.Namespace == "" {
+		kr.Namespace = apis.ParentMeta(ctx).Namespace
+	}
 }

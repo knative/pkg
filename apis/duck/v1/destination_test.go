@@ -21,7 +21,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"knative.dev/pkg/apis"
 )
 
@@ -35,10 +35,11 @@ const (
 func TestValidateDestination(t *testing.T) {
 	ctx := context.TODO()
 
-	validRef := corev1.ObjectReference{
+	validRef := KnativeReference{
 		Kind:       kind,
 		APIVersion: apiVersion,
 		Name:       name,
+		Namespace:  namespace,
 	}
 
 	validURL := apis.URL{
@@ -60,9 +61,20 @@ func TestValidateDestination(t *testing.T) {
 			},
 			want: "",
 		},
+		"invalid ref, missing namespace": {
+			dest: &Destination{
+				Ref: &KnativeReference{
+					Name:       name,
+					Kind:       kind,
+					APIVersion: apiVersion,
+				},
+			},
+			want: "missing field(s): ref.namespace",
+		},
 		"invalid ref, missing name": {
 			dest: &Destination{
-				Ref: &corev1.ObjectReference{
+				Ref: &KnativeReference{
+					Namespace:  namespace,
 					Kind:       kind,
 					APIVersion: apiVersion,
 				},
@@ -71,16 +83,18 @@ func TestValidateDestination(t *testing.T) {
 		},
 		"invalid ref, missing api version": {
 			dest: &Destination{
-				Ref: &corev1.ObjectReference{
-					Kind: kind,
-					Name: apiVersion,
+				Ref: &KnativeReference{
+					Namespace: namespace,
+					Kind:      kind,
+					Name:      name,
 				},
 			},
 			want: "missing field(s): ref.apiVersion",
 		},
 		"invalid ref, missing kind": {
 			dest: &Destination{
-				Ref: &corev1.ObjectReference{
+				Ref: &KnativeReference{
+					Namespace:  namespace,
 					APIVersion: apiVersion,
 					Name:       name,
 				},
@@ -145,14 +159,14 @@ func TestValidateDestination(t *testing.T) {
 }
 
 func TestDestination_GetRef(t *testing.T) {
-	ref := &corev1.ObjectReference{
+	ref := &KnativeReference{
 		APIVersion: apiVersion,
 		Kind:       kind,
 		Name:       name,
 	}
 	tests := map[string]struct {
 		dest *Destination
-		want *corev1.ObjectReference
+		want *KnativeReference
 	}{
 		"nil destination": {
 			dest: nil,
@@ -179,6 +193,60 @@ func TestDestination_GetRef(t *testing.T) {
 			got := tc.dest.GetRef()
 			if diff := cmp.Diff(tc.want, got); diff != "" {
 				t.Errorf("Unexpected result (-want +got): %s", diff)
+			}
+		})
+	}
+}
+
+func TestDestinationSetDefaults(t *testing.T) {
+	ctx := context.Background()
+
+	parentNamespace := "parentNamespace"
+
+	tests := map[string]struct {
+		d    *Destination
+		ctx  context.Context
+		want string
+	}{
+		"uri set, nothing in ref, not modified ": {
+			d:    &Destination{URI: apis.HTTP("example.com")},
+			ctx:  ctx,
+			want: "",
+		},
+		"namespace set, nothing in context, not modified ": {
+			d:    &Destination{Ref: &KnativeReference{Namespace: namespace}},
+			ctx:  ctx,
+			want: namespace,
+		},
+		"namespace set, context set, not modified ": {
+			d:    &Destination{Ref: &KnativeReference{Namespace: namespace}},
+			ctx:  apis.WithinParent(ctx, metav1.ObjectMeta{Namespace: parentNamespace}),
+			want: namespace,
+		},
+		"namespace set, uri set, context set, not modified ": {
+			d:    &Destination{Ref: &KnativeReference{Namespace: namespace}, URI: apis.HTTP("example.com")},
+			ctx:  apis.WithinParent(ctx, metav1.ObjectMeta{Namespace: parentNamespace}),
+			want: namespace,
+		},
+		"namespace not set, context set, defaulted": {
+			d:    &Destination{Ref: &KnativeReference{}},
+			ctx:  apis.WithinParent(ctx, metav1.ObjectMeta{Namespace: parentNamespace}),
+			want: parentNamespace,
+		},
+		"namespace not set, uri set, context set, defaulted": {
+			d:    &Destination{Ref: &KnativeReference{}, URI: apis.HTTP("example.com")},
+			ctx:  apis.WithinParent(ctx, metav1.ObjectMeta{Namespace: parentNamespace}),
+			want: parentNamespace,
+		},
+	}
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			tc.d.SetDefaults(tc.ctx)
+			if tc.d.Ref != nil && tc.d.Ref.Namespace != tc.want {
+				t.Errorf("Got: %s wanted %s", tc.d.Ref.Namespace, tc.want)
+			}
+			if tc.d.Ref == nil && tc.want != "" {
+				t.Errorf("Got: nil Ref wanted %s", tc.want)
 			}
 		})
 	}
