@@ -105,7 +105,7 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, o *{{.type|raw}}) {{.rec
 		// Check for a DeletionTimestamp.  If present, elide the normal reconcile logic.
 		// When a controller needs finalizer handling, it would go here.
 		return nil
-	}	
+	}
 	o.Status.InitializeConditions()
 
 	// TODO: add custom reconciliation logic here.
@@ -113,5 +113,4 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, o *{{.type|raw}}) {{.rec
 	o.Status.ObservedGeneration = o.Generation
 	return nil
 }
-
 `
