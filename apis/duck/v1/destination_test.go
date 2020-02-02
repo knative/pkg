@@ -61,16 +61,6 @@ func TestValidateDestination(t *testing.T) {
 			},
 			want: "",
 		},
-		"invalid ref, missing namespace": {
-			dest: &Destination{
-				Ref: &KnativeReference{
-					Name:       name,
-					Kind:       kind,
-					APIVersion: apiVersion,
-				},
-			},
-			want: "missing field(s): ref.namespace",
-		},
 		"invalid ref, missing name": {
 			dest: &Destination{
 				Ref: &KnativeReference{

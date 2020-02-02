@@ -31,7 +31,9 @@ type KnativeReference struct {
 
 	// Namespace of the referent.
 	// More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/namespaces/
-	Namespace string `json:"namespace"`
+	// This is optional field, it gets defaulted to the object holding it if left out.
+	// +optional
+	Namespace string `json:"namespace,omitempty"`
 
 	// Name of the referent.
 	// More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
@@ -44,14 +46,10 @@ type KnativeReference struct {
 func (kr *KnativeReference) Validate(ctx context.Context) *apis.FieldError {
 	var errs *apis.FieldError
 	if kr == nil {
-		errs = errs.Also(apis.ErrMissingField("namespace"))
 		errs = errs.Also(apis.ErrMissingField("name"))
 		errs = errs.Also(apis.ErrMissingField("apiVersion"))
 		errs = errs.Also(apis.ErrMissingField("kind"))
 		return errs
-	}
-	if kr.Namespace == "" {
-		errs = errs.Also(apis.ErrMissingField("namespace"))
 	}
 	if kr.Name == "" {
 		errs = errs.Also(apis.ErrMissingField("name"))
