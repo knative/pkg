@@ -86,7 +86,7 @@ var reconcilerReconcilerStub = `
 
 // Reconciler implements controller.Reconciler for {{.type|public}} resources.
 type Reconciler struct {
-	{{.reconcilerCore|raw}}
+	*{{.reconcilerCore|raw}}
 
 	// TODO: add additional requirements here.
 }
@@ -96,7 +96,7 @@ var _ {{.reconcilerInterface|raw}} = (*Reconciler)(nil)
 
 // SetCore implements Interface.SetCore.
 func (r *Reconciler) SetCore(core *{{.reconcilerCore|raw}}) {
-	r.Core = *core
+	r.Core = core
 }
 
 // ReconcileKind implements Interface.ReconcileKind.
