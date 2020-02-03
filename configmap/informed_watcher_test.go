@@ -23,6 +23,9 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/selection"
 	fakekubeclientset "k8s.io/client-go/kubernetes/fake"
 )
 
@@ -64,18 +67,18 @@ func TestInformedWatcher(t *testing.T) {
 		Data: map[string]string{"key2": "val3"},
 	}
 	kc := fakekubeclientset.NewSimpleClientset(fooCM, barCM)
-	cm := NewInformedWatcher(kc, "default")
+	cmw := NewInformedWatcher(kc, "default")
 
 	foo1 := &counter{name: "foo1"}
 	foo2 := &counter{name: "foo2"}
 	bar := &counter{name: "bar"}
-	cm.Watch("foo", foo1.callback)
-	cm.Watch("foo", foo2.callback)
-	cm.Watch("bar", bar.callback)
+	cmw.Watch("foo", foo1.callback)
+	cmw.Watch("foo", foo2.callback)
+	cmw.Watch("bar", bar.callback)
 
 	stopCh := make(chan struct{})
 	defer close(stopCh)
-	err := cm.Start(stopCh)
+	err := cmw.Start(stopCh)
 	if err != nil {
 		t.Fatalf("cm.Start() = %v", err)
 	}
@@ -90,7 +93,7 @@ func TestInformedWatcher(t *testing.T) {
 
 	// After a "foo" event, the "foo" watchers should have 2,
 	// and the "bar" watchers should still have 1
-	cm.updateConfigMapEvent(nil, fooCM)
+	cmw.updateConfigMapEvent(nil, fooCM)
 	for _, obj := range []*counter{foo1, foo2} {
 		if got, want := obj.count(), 2; got != want {
 			t.Errorf("%v.count = %v, want %v", obj, got, want)
@@ -105,8 +108,8 @@ func TestInformedWatcher(t *testing.T) {
 
 	// After a "foo" and "bar" event, the "foo" watchers should have 3,
 	// and the "bar" watchers should still have 2
-	cm.updateConfigMapEvent(nil, fooCM)
-	cm.updateConfigMapEvent(nil, barCM)
+	cmw.updateConfigMapEvent(nil, fooCM)
+	cmw.updateConfigMapEvent(nil, barCM)
 	for _, obj := range []*counter{foo1, foo2} {
 		if got, want := obj.count(), 3; got != want {
 			t.Errorf("%v.count = %v, want %v", obj, got, want)
@@ -121,7 +124,7 @@ func TestInformedWatcher(t *testing.T) {
 	// After a "bar" event, all watchers should have 3
 	nbarCM := barCM.DeepCopy()
 	nbarCM.Data["wow"] = "now!"
-	cm.updateConfigMapEvent(barCM, nbarCM)
+	cmw.updateConfigMapEvent(barCM, nbarCM)
 	for _, obj := range []*counter{foo1, foo2, bar} {
 		if got, want := obj.count(), 3; got != want {
 			t.Errorf("%v.count = %v, want %v", obj, got, want)
@@ -129,8 +132,8 @@ func TestInformedWatcher(t *testing.T) {
 	}
 
 	// After an idempotent event no changes should be recorded.
-	cm.updateConfigMapEvent(barCM, barCM)
-	cm.updateConfigMapEvent(fooCM, fooCM)
+	cmw.updateConfigMapEvent(barCM, barCM)
+	cmw.updateConfigMapEvent(fooCM, fooCM)
 	for _, obj := range []*counter{foo1, foo2, bar} {
 		if got, want := obj.count(), 3; got != want {
 			t.Errorf("%v.count = %v, want %v", obj, got, want)
@@ -139,7 +142,7 @@ func TestInformedWatcher(t *testing.T) {
 
 	// After an unwatched ConfigMap update, no change.
 
-	cm.updateConfigMapEvent(nil, &corev1.ConfigMap{
+	cmw.updateConfigMapEvent(nil, &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: "default",
 			Name:      "not-watched",
@@ -152,7 +155,7 @@ func TestInformedWatcher(t *testing.T) {
 	}
 
 	// After a change in an unrelated namespace, no change.
-	cm.updateConfigMapEvent(nil, &corev1.ConfigMap{
+	cmw.updateConfigMapEvent(nil, &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: "not-default",
 			Name:      "foo",
@@ -165,20 +168,112 @@ func TestInformedWatcher(t *testing.T) {
 	}
 }
 
+func TestFilterConfigByLabelExists(t *testing.T) {
+	testCases := map[string]struct {
+		input        string
+		expectOutStr string
+		expectErr    bool
+	}{
+		"Valid input": {
+			input:        "test/label",
+			expectOutStr: "test/label",
+		},
+		"Invalid input": {
+			input:     "invalid,",
+			expectErr: true,
+		},
+		"Empty input": {
+			input:     "",
+			expectErr: true,
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			req, err := FilterConfigByLabelExists(tc.input)
+
+			if gotError := err != nil; gotError != tc.expectErr {
+				t.Fatalf("[error] expected/got: %t/%t (msg: %v)", tc.expectErr, gotError, err)
+			}
+			if gotReq, wantReq := req != nil, tc.expectOutStr != ""; gotReq != wantReq {
+				t.Fatalf("[output] expected/got: %t/%t (req: %q)", wantReq, gotReq, req)
+			}
+
+			if req != nil && req.String() != tc.expectOutStr {
+				t.Errorf("Expected %q, got %q", tc.expectOutStr, req.String())
+			}
+		})
+	}
+}
+
 func TestWatchMissingFailsOnStart(t *testing.T) {
-	kc := fakekubeclientset.NewSimpleClientset()
-	cm := NewInformedWatcher(kc, "default")
+	const (
+		labelKey = "test/label"
+		labelVal = "test"
+	)
 
-	foo1 := &counter{name: "foo1"}
-	cm.Watch("foo", foo1.callback)
+	cmWithLabel := &corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: "default",
+			Name:      "with-label",
+			Labels:    map[string]string{labelKey: labelVal},
+		},
+	}
+	cmWithoutLabel := &corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: "default",
+			Name:      "without-label",
+			Labels:    map[string]string{},
+		},
+	}
 
-	stopCh := make(chan struct{})
-	defer close(stopCh)
+	testCases := map[string]struct {
+		initialObj []runtime.Object
+		watchNames []string
+		expectErr  string
+		labelReq   string
+	}{
+		"ConfigMap does not exist": {
+			initialObj: nil,
+			watchNames: []string{"foo"},
+			expectErr:  `configmap "foo" not found`,
+		},
+		"ConfigMap is missing required label": {
+			initialObj: []runtime.Object{cmWithLabel, cmWithoutLabel},
+			watchNames: []string{"with-label", "without-label"},
+			expectErr:  `configmap "without-label" not found`,
+			labelReq:   labelKey,
+		},
+	}
 
-	// This should error because we don't have a ConfigMap named "foo".
-	err := cm.Start(stopCh)
-	if err == nil {
-		t.Fatal("cm.Start() succeeded, wanted error")
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			var cmw *InformedWatcher
+
+			kc := fakekubeclientset.NewSimpleClientset(tc.initialObj...)
+
+			if tc.labelReq != "" {
+				req, _ := labels.NewRequirement(labelKey, selection.Equals, []string{labelVal})
+				cmw = NewInformedWatcher(kc, "default", *req)
+			} else {
+				cmw = NewInformedWatcher(kc, "default")
+			}
+
+			for _, cmName := range tc.watchNames {
+				cmw.Watch(cmName)
+			}
+
+			stopCh := make(chan struct{})
+			defer close(stopCh)
+
+			err := cmw.Start(stopCh)
+			switch {
+			case err == nil:
+				t.Fatalf("Failed to start InformedWatcher: %s", err)
+			case err.Error() != tc.expectErr:
+				t.Fatalf("Unexpected error: %s", err)
+			}
+		})
 	}
 }
 
@@ -191,16 +286,16 @@ func TestWatchMissingOKWithDefaultOnStart(t *testing.T) {
 	}
 
 	kc := fakekubeclientset.NewSimpleClientset()
-	cm := NewInformedWatcher(kc, "default")
+	cmw := NewInformedWatcher(kc, "default")
 
 	foo1 := &counter{name: "foo1"}
-	cm.WatchWithDefault(*fooCM, foo1.callback)
+	cmw.WatchWithDefault(*fooCM, foo1.callback)
 
 	stopCh := make(chan struct{})
 	defer close(stopCh)
 
 	// This shouldn't error because we don't have a ConfigMap named "foo", but we do have a default.
-	err := cm.Start(stopCh)
+	err := cmw.Start(stopCh)
 	if err != nil {
 		t.Fatalf("cm.Start() failed, %v", err)
 	}
@@ -218,21 +313,21 @@ func TestErrorOnMultipleStarts(t *testing.T) {
 		},
 	}
 	kc := fakekubeclientset.NewSimpleClientset(fooCM)
-	cm := NewInformedWatcher(kc, "default")
+	cmw := NewInformedWatcher(kc, "default")
 
 	foo1 := &counter{name: "foo1"}
-	cm.Watch("foo", foo1.callback)
+	cmw.Watch("foo", foo1.callback)
 
 	stopCh := make(chan struct{})
 	defer close(stopCh)
 
 	// This should succeed because the watched resource exists.
-	if err := cm.Start(stopCh); err != nil {
+	if err := cmw.Start(stopCh); err != nil {
 		t.Fatalf("cm.Start() = %v", err)
 	}
 
 	// This should error because we already called Start()
-	if err := cm.Start(stopCh); err == nil {
+	if err := cmw.Start(stopCh); err == nil {
 		t.Fatal("cm.Start() succeeded, wanted error")
 	}
 }
@@ -258,14 +353,14 @@ func TestDefaultObserved(t *testing.T) {
 	}
 
 	kc := fakekubeclientset.NewSimpleClientset(fooCM)
-	cm := NewInformedWatcher(kc, "default")
+	cmw := NewInformedWatcher(kc, "default")
 
 	foo1 := &counter{name: "foo1"}
-	cm.WatchWithDefault(*defaultFooCM, foo1.callback)
+	cmw.WatchWithDefault(*defaultFooCM, foo1.callback)
 
 	stopCh := make(chan struct{})
 	defer close(stopCh)
-	err := cm.Start(stopCh)
+	err := cmw.Start(stopCh)
 	if err != nil {
 		t.Fatalf("cm.Start() = %v", err)
 	}
@@ -304,14 +399,14 @@ func TestDefaultConfigMapDeleted(t *testing.T) {
 	}
 
 	kc := fakekubeclientset.NewSimpleClientset(fooCM)
-	cm := NewInformedWatcher(kc, "default")
+	cmw := NewInformedWatcher(kc, "default")
 
 	foo1 := &counter{name: "foo1"}
-	cm.WatchWithDefault(*defaultFooCM, foo1.callback)
+	cmw.WatchWithDefault(*defaultFooCM, foo1.callback)
 
 	stopCh := make(chan struct{})
 	defer close(stopCh)
-	err := cm.Start(stopCh)
+	err := cmw.Start(stopCh)
 	if err != nil {
 		t.Fatalf("cm.Start() = %v", err)
 	}
@@ -365,12 +460,12 @@ func TestWatchWithDefaultAfterStart(t *testing.T) {
 	}
 
 	kc := fakekubeclientset.NewSimpleClientset(fooCM)
-	cm := NewInformedWatcher(kc, "default")
+	cmw := NewInformedWatcher(kc, "default")
 
 	stopCh := make(chan struct{})
 	defer close(stopCh)
 	// Start before adding the WatchWithDefault.
-	err := cm.Start(stopCh)
+	err := cmw.Start(stopCh)
 	if err != nil {
 		t.Fatalf("cm.Start() = %v", err)
 	}
@@ -382,7 +477,7 @@ func TestWatchWithDefaultAfterStart(t *testing.T) {
 		defer func() {
 			recover()
 		}()
-		cm.WatchWithDefault(*defaultFooCM, foo1.callback)
+		cmw.WatchWithDefault(*defaultFooCM, foo1.callback)
 		t.Fatal("WatchWithDefault should have panicked")
 	}()
 

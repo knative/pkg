@@ -64,7 +64,7 @@ func TestObservabilityConfiguration(t *testing.T) {
 			EnableVarLogCollection: false,
 			LoggingURLTemplate:     DefaultLogURLTemplate,
 			RequestLogTemplate:     "",
-			RequestMetricsBackend:  "",
+			RequestMetricsBackend:  DefaultRequestMetricsBackend,
 		},
 		config: &corev1.ConfigMap{
 			ObjectMeta: metav1.ObjectMeta{

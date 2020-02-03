@@ -30,6 +30,7 @@ import (
 	"go.opencensus.io/stats/view"
 	"golang.org/x/sync/errgroup"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 
@@ -99,8 +100,10 @@ func Main(component string, ctors ...injection.ControllerConstructor) {
 
 func MainWithContext(ctx context.Context, component string, ctors ...injection.ControllerConstructor) {
 	var (
-		masterURL  = flag.String("master", "", "The address of the Kubernetes API server. Overrides any value in kubeconfig. Only required if out-of-cluster.")
-		kubeconfig = flag.String("kubeconfig", "", "Path to a kubeconfig. Only required if out-of-cluster.")
+		masterURL = flag.String("master", "",
+			"The address of the Kubernetes API server. Overrides any value in kubeconfig. Only required if out-of-cluster.")
+		kubeconfig = flag.String("kubeconfig", "",
+			"Path to a kubeconfig. Only required if out-of-cluster.")
 	)
 	flag.Parse()
 
@@ -140,24 +143,36 @@ func MainWithConfig(ctx context.Context, component string, cfg *rest.Config, cto
 	defer flush(logger)
 	ctx = logging.WithLogger(ctx, logger)
 
+	// Obtain K8s clientset.
 	kc := kubeclient.Get(ctx)
 	if err := version.CheckMinimumVersion(kc.Discovery()); err != nil {
 		logger.Fatalw("Version check failed", zap.Error(err))
 	}
 
+	// Create ConfigMaps watcher with optional label-based filter.
+	var cmLabelReqs []labels.Requirement
+	if cmLabel := system.ResourceLabel(); cmLabel != "" {
+		req, err := configmap.FilterConfigByLabelExists(cmLabel)
+		if err != nil {
+			logger.With(zap.Error(err)).Fatalf("Failed to generate requirement for label %q")
+		}
+		logger.Infof("Setting up ConfigMap watcher with label selector %q", req)
+		cmLabelReqs = append(cmLabelReqs, *req)
+	}
 	// TODO(mattmoor): This should itself take a context and be injection-based.
-	cmw := configmap.NewInformedWatcher(kc, system.Namespace())
+	cmw := configmap.NewInformedWatcher(kc, system.Namespace(), cmLabelReqs...)
 
 	// Based on the reconcilers we have linked, build up the set of controllers to run.
 	controllers := make([]*controller.Impl, 0, len(ctors))
-	webhooks := make([]webhook.AdmissionController, 0)
+	webhooks := make([]interface{}, 0)
 	for _, cf := range ctors {
 		ctrl := cf(ctx, cmw)
 		controllers = append(controllers, ctrl)
 
 		// Build a list of any reconcilers that implement webhook.AdmissionController
-		if ac, ok := ctrl.Reconciler.(webhook.AdmissionController); ok {
-			webhooks = append(webhooks, ac)
+		switch c := ctrl.Reconciler.(type) {
+		case webhook.AdmissionController, webhook.ConversionController:
+			webhooks = append(webhooks, c)
 		}
 	}
 
@@ -208,7 +223,7 @@ func MainWithConfig(ctx context.Context, component string, cfg *rest.Config, cto
 
 		wh, err := webhook.New(ctx, webhooks)
 		if err != nil {
-			logger.Fatalw("Failed to create admission controller", zap.Error(err))
+			logger.Fatalw("Failed to create webhook", zap.Error(err))
 		}
 		eg.Go(func() error {
 			return wh.Run(ctx.Done())

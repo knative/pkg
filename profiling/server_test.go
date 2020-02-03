@@ -19,6 +19,7 @@ package profiling
 import (
 	"net/http"
 	"net/http/httptest"
+	"sync/atomic"
 	"testing"
 
 	"go.uber.org/zap"
@@ -95,7 +96,7 @@ func TestUpdateFromConfigMap(t *testing.T) {
 				t.Errorf("StatusCode: %v, want: %v", rr.Code, tt.wantStatusCode)
 			}
 
-			if handler.enabled != tt.wantEnabled {
+			if atomic.LoadInt32(&handler.enabled) != boolToInt32(tt.wantEnabled) {
 				t.Fatalf("Test: %q; want %v, but got %v", tt.name, tt.wantEnabled, handler.enabled)
 			}
 		})

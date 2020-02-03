@@ -30,7 +30,7 @@ func Example() {
 	var (
 		minNodes int64 = 1
 		maxNodes int64 = 3
-		nodeType       = "n1-standard-8"
+		nodeType       = "e2-standard-8"
 		region         = "us-east1"
 		zone           = "a"
 		project        = "myGKEproject"

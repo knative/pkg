@@ -30,6 +30,8 @@ import (
 
 	. "knative.dev/pkg/logging/testing"
 	"knative.dev/pkg/metrics/metricstest"
+
+	corev1 "k8s.io/api/core/v1"
 )
 
 // TODO UTs should move to eventing and serving, as appropriate.
@@ -83,7 +85,7 @@ var (
 		name: "invalidComponent",
 		ops: ExporterOptions{
 			ConfigMap: map[string]string{
-				"metrics.backend-destination": "prometheus",
+				"metrics.backend-destination": "opencensus",
 			},
 			Domain:    servingDomain,
 			Component: "",
@@ -93,13 +95,24 @@ var (
 		name: "invalidReportingPeriod",
 		ops: ExporterOptions{
 			ConfigMap: map[string]string{
-				"metrics.backend-destination":      "prometheus",
+				"metrics.backend-destination":      "opencensus",
 				"metrics.reporting-period-seconds": "test",
 			},
 			Domain:    servingDomain,
 			Component: testComponent,
 		},
 		expectedErr: "invalid metrics.reporting-period-seconds value \"test\"",
+	}, {
+		name: "invalidOpenCensusSecuritySetting",
+		ops: ExporterOptions{
+			ConfigMap: map[string]string{
+				"metrics.backend-destination":    "opencensus",
+				"metrics.opencensus-require-tls": "yep",
+			},
+			Domain:    servingDomain,
+			Component: testComponent,
+		},
+		expectedErr: "invalid metrics.opencensus-require-tls value \"yep\"",
 	}, {
 		name: "invalidAllowStackdriverCustomMetrics",
 		ops: ExporterOptions{
@@ -228,6 +241,25 @@ var (
 					ProjectID:   anotherProj,
 					ClusterName: "cluster",
 				},
+			},
+			expectedNewExporter: true,
+		}, {
+			name: "validOpenCensusSettings",
+			ops: ExporterOptions{
+				ConfigMap: map[string]string{
+					"metrics.backend-destination":    "opencensus",
+					"metrics.opencensus-address":     "external-svc:55678",
+					"metrics.opencensus-require-tls": "true",
+				},
+				Domain:    servingDomain,
+				Component: testComponent,
+			},
+			expectedConfig: metricsConfig{
+				domain:             servingDomain,
+				component:          testComponent,
+				backendDestination: OpenCensus,
+				collectorAddress:   "external-svc:55678",
+				requireSecure:      true,
 			},
 			expectedNewExporter: true,
 		}, {
@@ -487,7 +519,7 @@ func TestGetMetricsConfig(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			defer ClearAll()
 			_, err := createMetricsConfig(test.ops, TestLogger(t))
-			if err.Error() != test.expectedErr {
+			if err == nil || err.Error() != test.expectedErr {
 				t.Errorf("Wanted err: %v, got: %v", test.expectedErr, err)
 			}
 		})
@@ -678,6 +710,61 @@ func TestUpdateExporter(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestUpdateExporterFromConfigMapWithOpts(t *testing.T) {
+	setCurMetricsConfig(nil)
+	oldConfig := getCurMetricsConfig()
+	for _, test := range successTests[1:] {
+		t.Run(test.name, func(t *testing.T) {
+			defer ClearAll()
+			opts := ExporterOptions{
+				Component:      test.ops.Component,
+				Domain:         test.ops.Domain,
+				PrometheusPort: test.ops.PrometheusPort,
+			}
+			updateFunc, err := UpdateExporterFromConfigMapWithOpts(opts, TestLogger(t))
+			if err != nil {
+				t.Errorf("failed to call UpdateExporterFromConfigMapWithOpts: %v", err)
+			}
+			updateFunc(&corev1.ConfigMap{Data: test.ops.ConfigMap})
+			mConfig := getCurMetricsConfig()
+			if mConfig == oldConfig {
+				t.Error("Expected metrics config change")
+			}
+			if diff := cmp.Diff(test.expectedConfig, *mConfig, cmp.AllowUnexported(*mConfig), cmpopts.IgnoreTypes(mConfig.recorder)); diff != "" {
+				t.Errorf("Invalid config (-want +got):\n%s", diff)
+			}
+			oldConfig = mConfig
+		})
+	}
+
+	t.Run("ConfigMapSetErr", func(t *testing.T) {
+		defer ClearAll()
+		opts := ExporterOptions{
+			Component:      testComponent,
+			Domain:         servingDomain,
+			PrometheusPort: defaultPrometheusPort,
+			ConfigMap:      map[string]string{"some": "data"},
+		}
+		_, err := UpdateExporterFromConfigMapWithOpts(opts, TestLogger(t))
+		if err == nil {
+			t.Error("got err=nil want err")
+		}
+	})
+
+	t.Run("MissingComponentErr", func(t *testing.T) {
+		defer ClearAll()
+		opts := ExporterOptions{
+			Component:      "",
+			Domain:         servingDomain,
+			PrometheusPort: defaultPrometheusPort,
+		}
+		_, err := UpdateExporterFromConfigMapWithOpts(opts, TestLogger(t))
+		if err == nil {
+			t.Error("got err=nil want err")
+		}
+	})
 }
 
 func TestUpdateExporter_doesNotCreateExporter(t *testing.T) {

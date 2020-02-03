@@ -45,10 +45,9 @@ aliases:
   - vagababov
 
   productivity-approvers:
-  - adrcunha
   - chaodaiG
+  - chizhg
   productivity-reviewers:
-  - adrcunha
   - chaodaiG
   - coryrc
   - chizhg
@@ -60,7 +59,7 @@ aliases:
   - vaikas
 
   webhook-approvers:
+  - dprotaso
   - mattmoor
-  - grantr
   - tcnghia
 
