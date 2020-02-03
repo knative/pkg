@@ -32,7 +32,6 @@ type StructuredError interface {
 	WithValues(...interface{}) StructuredError
 	DisableValuePrinting()
 	EnableValuePrinting()
-	Unwrap() error // TODO: maybe not have?
 }
 
 type structuredError struct {
@@ -44,8 +43,6 @@ type structuredError struct {
 func keysAndValuesToSpewedMap(args ...interface{}) map[string]string {
 	m := make(map[string]string)
 	for i := 0; i < len(args); {
-		// TODO: mostly duplicating handleFields()...?
-		// there must be a better way
 		key, val := args[i], args[i+1]
 		if keyStr, ok := key.(string); ok {
 			m[keyStr] = spew.Sdump(val)
@@ -66,25 +63,19 @@ func (e structuredError) Error() string {
 	}
 }
 
+// GetValues gives you the structured key values in a plist
 func (e structuredError) GetValues() []interface{} {
 	return e.keysAndValues
 }
 
-// func (e structuredError) GetMessage() string {
-// 	return e.msg
-// }
-
+// DisableValuePrinting disables printing out the keys and values from the Error() method
 func (e *structuredError) DisableValuePrinting() {
 	e.print = false
 }
 
+// EnableValuePrinting enables printing out the keys and values from the Error() method
 func (e *structuredError) EnableValuePrinting() {
 	e.print = true
-}
-
-func (e structuredError) Unwrap() error {
-	// TODO: if error key allow unwrap? but might not always want to
-	return nil
 }
 
 // Create a StructuredError. Gives a little better logging when given to a TLogger.
@@ -95,7 +86,7 @@ func Error(msg string, keysAndValues ...interface{}) *structuredError {
 	return &structuredError{msg, keysAndValues, true}
 }
 
-// Operates just like TLogger's WithValues but stores them in the error object.
+// WithValues operates just like TLogger's WithValues but stores them in the error object.
 func (e *structuredError) WithValues(keysAndValues ...interface{}) StructuredError {
 	newKAV := make([]interface{}, 0, len(keysAndValues)+len(e.keysAndValues))
 	newKAV = append(newKAV, e.keysAndValues...)

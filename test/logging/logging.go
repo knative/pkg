@@ -22,9 +22,7 @@ package logging
 import (
 	"context"
 	"flag"
-	"fmt"
 	"os"
-	"runtime"
 	"strings"
 	"sync"
 	"time"
@@ -121,15 +119,11 @@ func InitializeMetricExporter(context string) {
 }
 
 func printFlags() {
-	flagList := make([]string, 10)
+	flagList := make([]interface{}, 0)
 	flag.CommandLine.VisitAll(func(f *flag.Flag) {
 		flagList = append(flagList, f.Name, f.Value.String())
 	})
-	s := make([]interface{}, len(flagList))
-	for i, v := range flagList {
-		s[i] = v
-	}
-	logger.Sugar().Debugw("Test Flags", s...)
+	logger.Sugar().Debugw("Test Flags", flagList...)
 }
 
 var (
@@ -142,25 +136,7 @@ var (
 // InitializeLogger initializes logging for Knative tests.
 // It should be called prior to executing tests but after command-line flags have been processed. Recommend doing it in a TestMain().
 func InitializeLogger() {
-	// During a `go test` run, every output (which shows up) normally goes stdout (all PASS, FAIL, prints, logs, etc)
-	// except with build errors; the actual message from the build errors goes to stderr, but FAIL ... [build failed] still appears in stdout
 	loggerInitializeOnce.Do(func() {
-
-		// Encoders
-		// encoderConfig := zapcore.EncoderConfig{
-		// 	TimeKey:        "ts",
-		// 	LevelKey:       "level",
-		// 	NameKey:        "logger",
-		// 	CallerKey:      "caller",
-		// 	MessageKey:     "msg",
-		// 	StacktraceKey:  "stacktrace",
-		// 	LineEnding:     zapcore.DefaultLineEnding,
-		// 	EncodeLevel:    zapcore.LowercaseLevelEncoder,
-		// 	EncodeTime:     zapcore.ISO8601TimeEncoder,
-		// 	EncodeDuration: zapcore.SecondsDurationEncoder,
-		// 	EncodeCaller:   zapcore.ShortCallerEncoder,
-		// }
-		// structuredEncoder := zapcore.NewJSONEncoder(encoderConfig)
 		humanEncoder := zapcore.NewConsoleEncoder(zap.NewDevelopmentEncoderConfig())
 
 		// Output streams
@@ -192,18 +168,4 @@ func InitializeLogger() {
 func init() {
 	flag.IntVar(&Verbosity, "verbosity", 2,
 		"Amount of verbosity, 0-10. See https://github.com/go-logr/logr#how-do-i-choose-my-v-levels and https://github.com/kubernetes/community/blob/master/contributors/devel/sig-instrumentation/logging.md")
-}
-
-// TODO(coryrc): don't need this anymore probably
-// `go test` prints out lines like this after a test:
-// FAIL	knative.dev/pkg/test	0.150s
-// go-junit-reporter uses that to create test names
-func getPackagePath(levelsUp int) (string, error) {
-	var _, file, _, ok = runtime.Caller(levelsUp)
-	// file is like /home/coryrc/go/src/knative.dev/pkg/test/e2e_flags_test.go
-	// TODO(coryrc): look for knative.dev
-	if ok {
-		return file, nil
-	}
-	return "", fmt.Errorf("runtime.Caller() failed")
 }
