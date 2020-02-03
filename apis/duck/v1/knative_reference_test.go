@@ -42,7 +42,7 @@ func TestValidate(t *testing.T) {
 		"nil valid": {
 			ref: nil,
 			want: func() *apis.FieldError {
-				fe := apis.ErrMissingField("name", "namespace", "kind", "apiVersion")
+				fe := apis.ErrMissingField("name", "kind", "apiVersion")
 				return fe
 			}(),
 		},
@@ -52,18 +52,7 @@ func TestValidate(t *testing.T) {
 		},
 		"invalid ref, empty": {
 			ref:  &KnativeReference{},
-			want: apis.ErrMissingField("name", "namespace", "kind", "apiVersion"),
-		},
-		"invalid ref, missing namespace": {
-			ref: &KnativeReference{
-				Name:       name,
-				Kind:       kind,
-				APIVersion: apiVersion,
-			},
-			want: func() *apis.FieldError {
-				fe := apis.ErrMissingField("namespace")
-				return fe
-			}(),
+			want: apis.ErrMissingField("name", "kind", "apiVersion"),
 		},
 		"invalid ref, missing kind": {
 			ref: &KnativeReference{
