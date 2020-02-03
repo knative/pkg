@@ -33,7 +33,7 @@ const (
 )
 
 func TestValidateDestination(t *testing.T) {
-	ctx := context.TODO()
+	ctx := context.Background()
 
 	validRef := KReference{
 		Kind:       kind,
@@ -50,88 +50,74 @@ func TestValidateDestination(t *testing.T) {
 	tests := map[string]struct {
 		dest *Destination
 		want string
-	}{
-		"nil valid": {
-			dest: nil,
-			want: "",
+	}{"nil valid": {
+		dest: nil,
+	}, "valid ref": {
+		dest: &Destination{
+			Ref: &validRef,
 		},
-		"valid ref": {
-			dest: &Destination{
-				Ref: &validRef,
-			},
-			want: "",
-		},
-		"invalid ref, missing name": {
-			dest: &Destination{
-				Ref: &KReference{
-					Namespace:  namespace,
-					Kind:       kind,
-					APIVersion: apiVersion,
-				},
-			},
-			want: "missing field(s): ref.name",
-		},
-		"invalid ref, missing api version": {
-			dest: &Destination{
-				Ref: &KReference{
-					Namespace: namespace,
-					Kind:      kind,
-					Name:      name,
-				},
-			},
-			want: "missing field(s): ref.apiVersion",
-		},
-		"invalid ref, missing kind": {
-			dest: &Destination{
-				Ref: &KReference{
-					Namespace:  namespace,
-					APIVersion: apiVersion,
-					Name:       name,
-				},
-			},
-			want: "missing field(s): ref.kind",
-		},
-		"valid uri": {
-			dest: &Destination{
-				URI: &validURL,
+	}, "invalid ref, missing name": {
+		dest: &Destination{
+			Ref: &KReference{
+				Namespace:  namespace,
+				Kind:       kind,
+				APIVersion: apiVersion,
 			},
 		},
-		"invalid, uri has no host": {
-			dest: &Destination{
-				URI: &apis.URL{
-					Scheme: "http",
-				},
-			},
-			want: "invalid value: Relative URI is not allowed when Ref and [apiVersion, kind, name] is absent: uri",
-		},
-		"invalid, uri is not absolute url": {
-			dest: &Destination{
-				URI: &apis.URL{
-					Host: "host",
-				},
-			},
-			want: "invalid value: Relative URI is not allowed when Ref and [apiVersion, kind, name] is absent: uri",
-		},
-		"invalid, both uri and ref, uri is absolute URL": {
-			dest: &Destination{
-				URI: &validURL,
-				Ref: &validRef,
-			},
-			want: "Absolute URI is not allowed when Ref or [apiVersion, kind, name] is present: [apiVersion, kind, name], ref, uri",
-		},
-		"invalid, both ref, [apiVersion, kind, name] and uri  are nil": {
-			dest: &Destination{},
-			want: "expected at least one, got none: ref, uri",
-		},
-		"valid, both uri and ref, uri is not a absolute URL": {
-			dest: &Destination{
-				URI: &apis.URL{
-					Path: "/handler",
-				},
-				Ref: &validRef,
+		want: "missing field(s): ref.name",
+	}, "invalid ref, missing api version": {
+		dest: &Destination{
+			Ref: &KReference{
+				Namespace: namespace,
+				Kind:      kind,
+				Name:      name,
 			},
 		},
-	}
+		want: "missing field(s): ref.apiVersion",
+	}, "invalid ref, missing kind": {
+		dest: &Destination{
+			Ref: &KReference{
+				Namespace:  namespace,
+				APIVersion: apiVersion,
+				Name:       name,
+			},
+		},
+		want: "missing field(s): ref.kind",
+	}, "valid uri": {
+		dest: &Destination{
+			URI: &validURL,
+		},
+	}, "invalid, uri has no host": {
+		dest: &Destination{
+			URI: &apis.URL{
+				Scheme: "http",
+			},
+		},
+		want: "invalid value: Relative URI is not allowed when Ref and [apiVersion, kind, name] is absent: uri",
+	}, "invalid, uri is not absolute url": {
+		dest: &Destination{
+			URI: &apis.URL{
+				Host: "host",
+			},
+		},
+		want: "invalid value: Relative URI is not allowed when Ref and [apiVersion, kind, name] is absent: uri",
+	}, "invalid, both uri and ref, uri is absolute URL": {
+		dest: &Destination{
+			URI: &validURL,
+			Ref: &validRef,
+		},
+		want: "Absolute URI is not allowed when Ref or [apiVersion, kind, name] is present: [apiVersion, kind, name], ref, uri",
+	}, "invalid, both ref, [apiVersion, kind, name] and uri  are nil": {
+		dest: &Destination{},
+		want: "expected at least one, got none: ref, uri",
+	}, "valid, both uri and ref, uri is not a absolute URL": {
+		dest: &Destination{
+			URI: &apis.URL{
+				Path: "/handler",
+			},
+			Ref: &validRef,
+		},
+	}}
 
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
@@ -148,7 +134,7 @@ func TestValidateDestination(t *testing.T) {
 	}
 }
 
-func TestDestination_GetRef(t *testing.T) {
+func TestDestinationGetRef(t *testing.T) {
 	ref := &KReference{
 		APIVersion: apiVersion,
 		Kind:       kind,
@@ -157,26 +143,22 @@ func TestDestination_GetRef(t *testing.T) {
 	tests := map[string]struct {
 		dest *Destination
 		want *KReference
-	}{
-		"nil destination": {
-			dest: nil,
-			want: nil,
-		},
-		"uri": {
-			dest: &Destination{
-				URI: &apis.URL{
-					Host: "foo",
-				},
+	}{"nil destination": {
+		dest: nil,
+		want: nil,
+	}, "uri": {
+		dest: &Destination{
+			URI: &apis.URL{
+				Host: "foo",
 			},
-			want: nil,
 		},
-		"ref": {
-			dest: &Destination{
-				Ref: ref,
-			},
-			want: ref,
+		want: nil,
+	}, "ref": {
+		dest: &Destination{
+			Ref: ref,
 		},
-	}
+		want: ref,
+	}}
 
 	for n, tc := range tests {
 		t.Run(n, func(t *testing.T) {
@@ -191,44 +173,36 @@ func TestDestination_GetRef(t *testing.T) {
 func TestDestinationSetDefaults(t *testing.T) {
 	ctx := context.Background()
 
-	parentNamespace := "parentNamespace"
+	const parentNamespace = "parentNamespace"
 
 	tests := map[string]struct {
 		d    *Destination
 		ctx  context.Context
 		want string
-	}{
-		"uri set, nothing in ref, not modified ": {
-			d:    &Destination{URI: apis.HTTP("example.com")},
-			ctx:  ctx,
-			want: "",
-		},
-		"namespace set, nothing in context, not modified ": {
-			d:    &Destination{Ref: &KReference{Namespace: namespace}},
-			ctx:  ctx,
-			want: namespace,
-		},
-		"namespace set, context set, not modified ": {
-			d:    &Destination{Ref: &KReference{Namespace: namespace}},
-			ctx:  apis.WithinParent(ctx, metav1.ObjectMeta{Namespace: parentNamespace}),
-			want: namespace,
-		},
-		"namespace set, uri set, context set, not modified ": {
-			d:    &Destination{Ref: &KReference{Namespace: namespace}, URI: apis.HTTP("example.com")},
-			ctx:  apis.WithinParent(ctx, metav1.ObjectMeta{Namespace: parentNamespace}),
-			want: namespace,
-		},
-		"namespace not set, context set, defaulted": {
-			d:    &Destination{Ref: &KReference{}},
-			ctx:  apis.WithinParent(ctx, metav1.ObjectMeta{Namespace: parentNamespace}),
-			want: parentNamespace,
-		},
-		"namespace not set, uri set, context set, defaulted": {
-			d:    &Destination{Ref: &KReference{}, URI: apis.HTTP("example.com")},
-			ctx:  apis.WithinParent(ctx, metav1.ObjectMeta{Namespace: parentNamespace}),
-			want: parentNamespace,
-		},
-	}
+	}{"uri set, nothing in ref, not modified ": {
+		d:   &Destination{URI: apis.HTTP("example.com")},
+		ctx: ctx,
+	}, "namespace set, nothing in context, not modified ": {
+		d:    &Destination{Ref: &KReference{Namespace: namespace}},
+		ctx:  ctx,
+		want: namespace,
+	}, "namespace set, context set, not modified ": {
+		d:    &Destination{Ref: &KReference{Namespace: namespace}},
+		ctx:  apis.WithinParent(ctx, metav1.ObjectMeta{Namespace: parentNamespace}),
+		want: namespace,
+	}, "namespace set, uri set, context set, not modified ": {
+		d:    &Destination{Ref: &KReference{Namespace: namespace}, URI: apis.HTTP("example.com")},
+		ctx:  apis.WithinParent(ctx, metav1.ObjectMeta{Namespace: parentNamespace}),
+		want: namespace,
+	}, "namespace not set, context set, defaulted": {
+		d:    &Destination{Ref: &KReference{}},
+		ctx:  apis.WithinParent(ctx, metav1.ObjectMeta{Namespace: parentNamespace}),
+		want: parentNamespace,
+	}, "namespace not set, uri set, context set, defaulted": {
+		d:    &Destination{Ref: &KReference{}, URI: apis.HTTP("example.com")},
+		ctx:  apis.WithinParent(ctx, metav1.ObjectMeta{Namespace: parentNamespace}),
+		want: parentNamespace,
+	}}
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
 			tc.d.SetDefaults(tc.ctx)

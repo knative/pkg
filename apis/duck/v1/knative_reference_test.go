@@ -95,7 +95,7 @@ func TestValidate(t *testing.T) {
 func TestKReferenceSetDefaults(t *testing.T) {
 	ctx := context.Background()
 
-	parentNamespace := "parentNamespace"
+	const parentNamespace = "parentNamespace"
 
 	tests := map[string]struct {
 		ref  *KReference
@@ -122,7 +122,7 @@ func TestKReferenceSetDefaults(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			tc.ref.SetDefaults(tc.ctx)
 			if tc.ref.Namespace != tc.want {
-				t.Errorf("Got: %s wanted %s", tc.ref.Namespace, tc.want)
+				t.Errorf("Namespace = %s; want: %s", tc.ref.Namespace, tc.want)
 			}
 		})
 	}
