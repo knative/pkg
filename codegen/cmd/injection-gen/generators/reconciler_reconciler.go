@@ -125,17 +125,13 @@ type Interface interface {
 	// ReconcileKind implements custom logic to reconcile {{.type|raw}}. Any changes
 	// to the objects .Status or .Finalizers will be propagated to the stored
 	// object. It is recommended that implementors do not call any update calls
-	// for the Kind inside of ReconcileKind, it is the responsibility of the core
+	// for the Kind inside of ReconcileKind, it is the responsibility of the calling
 	// controller to propagate those properties.
 	ReconcileKind(ctx context.Context, o *{{.type|raw}}) {{.reconcilerEvent|raw}}
-
-	// SetCore allows the inner core reconciler to be set from the controller
-	// constructor based on only providing the Interface.
-	SetCore(core *Core)
 }
 
 // Reconciler implements controller.Reconciler for {{.type|raw}} resources.
-type Core struct {
+type Reconciler struct {
 	// Client is used to write back status updates.
 	Client {{.clientsetInterface|raw}}
 
@@ -151,22 +147,22 @@ type Core struct {
 	// Kubernetes API.
 	Recorder {{.recordEventRecorder|raw}}
 
-	// Reconciler is the implementation of the business logic of the resource.
-	Reconciler Interface
-
 	// FinalizerName is the name of the finalizer to use when finalizing the
 	// resource.
 	FinalizerName string
+
+	// reconciler is the implementation of the business logic of the resource.
+	reconciler Interface
 }
 
-// Check that our Core implements controller.Reconciler
-var _ controller.Reconciler = (*Core)(nil)
+// Check that our Reconciler implements controller.Reconciler
+var _ controller.Reconciler = (*Reconciler)(nil)
 
 `
 
 var reconcilerImplFactory = `
 // Reconcile implements controller.Reconciler
-func (r *Core) Reconcile(ctx context.Context, key string) error {
+func (r *Reconciler) Reconcile(ctx context.Context, key string) error {
 	logger := {{.loggingFromContext|raw}}(ctx)
 
 	// Convert the namespace/name string into a distinct namespace and name
@@ -195,7 +191,7 @@ func (r *Core) Reconcile(ctx context.Context, key string) error {
 
 	// Reconcile this copy of the resource and then write back any status
 	// updates regardless of whether the reconciliation errored out.
-	reconcileEvent := r.Reconciler.ReconcileKind(ctx, resource)
+	reconcileEvent := r.reconciler.ReconcileKind(ctx, resource)
 
 	// Synchronize the finalizers.
 	if equality.Semantic.DeepEqual(original.Finalizers, resource.Finalizers) {
@@ -238,7 +234,7 @@ func (r *Core) Reconcile(ctx context.Context, key string) error {
 `
 
 var reconcilerStatusFactory = `
-func (r *Core) updateStatus(existing *{{.type|raw}}, desired *{{.type|raw}}) error {
+func (r *Reconciler) updateStatus(existing *{{.type|raw}}, desired *{{.type|raw}}) error {
 	existing = existing.DeepCopy()
 	return RetryUpdateConflicts(func(attempts int) (err error) {
 		// The first iteration tries to use the injectionInformer's state, subsequent attempts fetch the latest state via API.
@@ -276,7 +272,7 @@ func RetryUpdateConflicts(updater func(int) error) error {
 
 var reconcilerFinalizerFactory = `
 // Update the Finalizers of the resource.
-func (r *Core) updateFinalizers(ctx context.Context, desired *{{.type|raw}}) (*{{.type|raw}}, bool, error) {
+func (r *Reconciler) updateFinalizers(ctx context.Context, desired *{{.type|raw}}) (*{{.type|raw}}, bool, error) {
 	actual, err := r.Lister.{{.type|apiGroup}}(desired.Namespace).Get(desired.Name)
 	if err != nil {
 		return nil, false, err
@@ -324,13 +320,13 @@ func (r *Core) updateFinalizers(ctx context.Context, desired *{{.type|raw}}) (*{
 	return update, true, err
 }
 
-func (r *Core) setFinalizer(a *{{.type|raw}}) {
+func (r *Reconciler) setFinalizer(a *{{.type|raw}}) {
 	finalizers := sets.NewString(a.Finalizers...)
 	finalizers.Insert(r.FinalizerName)
 	a.Finalizers = finalizers.List()
 }
 
-func (r *Core) unsetFinalizer(a *{{.type|raw}}) {
+func (r *Reconciler) unsetFinalizer(a *{{.type|raw}}) {
 	finalizers := sets.NewString(a.Finalizers...)
 	finalizers.Delete(r.FinalizerName)
 	a.Finalizers = finalizers.List()

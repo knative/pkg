@@ -85,11 +85,16 @@ func NewController(
 	ctx context.Context,
 	cmw configmap.Watcher,
 ) *{{.controllerImpl|raw}} {
+	{{.type|lowercaseSingular}}Informer := {{.informerGet|raw}}(ctx)
 
 	// TODO: setup additional requirements here.
 
 	r := &Reconciler{}
 	impl := {{.reconcilerNewImpl|raw}}(ctx, r)
+
+	logger.Info("Setting up event handlers.")
+
+	{{.type|lowercaseSingular}}Informer.Informer().AddEventHandler(controller.HandleAll(impl.Enqueue))
 
 	// TODO: add additional informer event handlers here.
 

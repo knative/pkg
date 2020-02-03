@@ -92,28 +92,24 @@ func (g *reconcilerControllerGenerator) GenerateType(c *generator.Context, t *ty
 
 var reconcilerController = `
 const (
-	controllerAgentName = "{{.type|lowercaseSingular}}-controller"
-	finalizerName       = "{{.type|lowercaseSingular}}"
+	defaultControllerAgentName = "{{.type|lowercaseSingular}}-controller"
+	defaultFinalizerName       = "{{.type|lowercaseSingular}}"
 )
 
 func NewImpl(ctx context.Context, r Interface) *{{.controllerImpl|raw}} {
 	logger := {{.loggingFromContext|raw}}(ctx)
-	injectionInformer := {{.informerGet|raw}}(ctx)
+	{{.type|lowercaseSingular}}Informer := {{.informerGet|raw}}(ctx)
 
-	c := &Core{
+	c := &Reconciler{
 		Client:  {{.clientGet|raw}}(ctx),
-		Lister:  injectionInformer.Lister(),
+		Lister:  {{.type|lowercaseSingular}}Informer.Lister(),
 		Recorder: record.NewBroadcaster().NewRecorder(
-			scheme.Scheme, {{.corev1EventSource|raw}}{Component: controllerAgentName}),
-		FinalizerName: finalizerName,
-		Reconciler:    r,
+			scheme.Scheme, {{.corev1EventSource|raw}}{Component: defaultControllerAgentName}),
+		FinalizerName: defaultFinalizerName,
+		reconciler:    r,
 	}
 	impl := controller.NewImpl(c, logger, "{{.type|allLowercasePlural}}")
 	c.Tracker = tracker.New(impl.EnqueueKey, controller.GetTrackerLease(ctx))
-	r.SetCore(c)
-
-	logger.Info("Setting up core event handlers")
-	injectionInformer.Informer().AddEventHandler(controller.HandleAll(impl.Enqueue))
 
 	return impl
 }

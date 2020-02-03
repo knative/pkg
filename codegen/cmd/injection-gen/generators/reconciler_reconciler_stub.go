@@ -18,7 +18,6 @@ package generators
 
 import (
 	"io"
-
 	"k8s.io/gengo/generator"
 	"k8s.io/gengo/namer"
 	"k8s.io/gengo/types"
@@ -64,8 +63,15 @@ func (g *reconcilerReconcilerStubGenerator) GenerateType(c *generator.Context, t
 	klog.V(5).Infof("processing type %v", t)
 
 	m := map[string]interface{}{
-		"type":            t,
-		"reconcilerEvent": c.Universe.Type(types.Name{Package: "knative.dev/pkg/reconciler", Name: "Event"}),
+		"type": t,
+		"reconcilerEvent": c.Universe.Type(types.Name{
+			Package: "knative.dev/pkg/reconciler",
+			Name:    "Event",
+		}),
+		"reconcilerNewEvent": c.Universe.Function(types.Name{
+			Package: "knative.dev/pkg/reconciler",
+			Name:    "NewEvent",
+		}),
 		"reconcilerCore": c.Universe.Type(types.Name{
 			Package: g.reconcilerPkg,
 			Name:    "Core",
@@ -73,6 +79,10 @@ func (g *reconcilerReconcilerStubGenerator) GenerateType(c *generator.Context, t
 		"reconcilerInterface": c.Universe.Type(types.Name{
 			Package: g.reconcilerPkg,
 			Name:    "Interface",
+		}),
+		"corev1EventTypeNormal": c.Universe.Type(types.Name{
+			Package: "k8s.io/api/core/v1",
+			Name:    "EventTypeNormal",
 		}),
 	}
 
@@ -84,20 +94,19 @@ func (g *reconcilerReconcilerStubGenerator) GenerateType(c *generator.Context, t
 var reconcilerReconcilerStub = `
 // TODO: PLEASE COPY AND MODIFY THIS FILE AS A STARTING POINT
 
+// newReconciledNormal makes a new reconciler event with event type Normal, and
+// reason {{.type|public}}Reconciled.
+func newReconciledNormal(namespace, name string) reconciler.Event {
+	return {{.reconcilerNewEvent|raw}}({{.corev1EventTypeNormal|raw}}, "{{.type|public}}Reconciled", "{{.type|public}} reconciled: %s/%s", namespace, name)
+}
+
 // Reconciler implements controller.Reconciler for {{.type|public}} resources.
 type Reconciler struct {
-	*{{.reconcilerCore|raw}}
-
 	// TODO: add additional requirements here.
 }
 
 // Check that our Reconciler implements Interface
 var _ {{.reconcilerInterface|raw}} = (*Reconciler)(nil)
-
-// SetCore implements Interface.SetCore.
-func (r *Reconciler) SetCore(core *{{.reconcilerCore|raw}}) {
-	r.Core = core
-}
 
 // ReconcileKind implements Interface.ReconcileKind.
 func (r *Reconciler) ReconcileKind(ctx context.Context, o *{{.type|raw}}) {{.reconcilerEvent|raw}} {
@@ -111,6 +120,6 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, o *{{.type|raw}}) {{.rec
 	// TODO: add custom reconciliation logic here.
 
 	o.Status.ObservedGeneration = o.Generation
-	return nil
+	return newReconciledNormal(o.Namespace, o.Name)
 }
 `
