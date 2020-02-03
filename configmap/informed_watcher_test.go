@@ -87,7 +87,7 @@ func TestInformedWatcher(t *testing.T) {
 	// version of the objects that is available.
 	for _, obj := range []*counter{foo1, foo2, bar} {
 		if got, want := obj.count(), 1; got != want {
-			t.Errorf("%v.count = %v, want %v", obj, got, want)
+			t.Errorf("%v.count = %v, want %v", obj.name, got, want)
 		}
 	}
 
@@ -96,13 +96,13 @@ func TestInformedWatcher(t *testing.T) {
 	cmw.updateConfigMapEvent(nil, fooCM)
 	for _, obj := range []*counter{foo1, foo2} {
 		if got, want := obj.count(), 2; got != want {
-			t.Errorf("%v.count = %v, want %v", obj, got, want)
+			t.Errorf("%v.count = %v, want %v", obj.name, got, want)
 		}
 	}
 
 	for _, obj := range []*counter{bar} {
 		if got, want := obj.count(), 1; got != want {
-			t.Errorf("%v.count = %v, want %v", obj, got, want)
+			t.Errorf("%v.count = %v, want %v", obj.name, got, want)
 		}
 	}
 
@@ -112,12 +112,12 @@ func TestInformedWatcher(t *testing.T) {
 	cmw.updateConfigMapEvent(nil, barCM)
 	for _, obj := range []*counter{foo1, foo2} {
 		if got, want := obj.count(), 3; got != want {
-			t.Errorf("%v.count = %v, want %v", obj, got, want)
+			t.Errorf("%v.count = %v, want %v", obj.name, got, want)
 		}
 	}
 	for _, obj := range []*counter{bar} {
 		if got, want := obj.count(), 2; got != want {
-			t.Errorf("%v.count = %v, want %v", obj, got, want)
+			t.Errorf("%v.count = %v, want %v", obj.name, got, want)
 		}
 	}
 
@@ -127,7 +127,7 @@ func TestInformedWatcher(t *testing.T) {
 	cmw.updateConfigMapEvent(barCM, nbarCM)
 	for _, obj := range []*counter{foo1, foo2, bar} {
 		if got, want := obj.count(), 3; got != want {
-			t.Errorf("%v.count = %v, want %v", obj, got, want)
+			t.Errorf("%v.count = %v, want %v", obj.name, got, want)
 		}
 	}
 
@@ -136,7 +136,7 @@ func TestInformedWatcher(t *testing.T) {
 	cmw.updateConfigMapEvent(fooCM, fooCM)
 	for _, obj := range []*counter{foo1, foo2, bar} {
 		if got, want := obj.count(), 3; got != want {
-			t.Errorf("%v.count = %v, want %v", obj, got, want)
+			t.Errorf("%v.count = %v, want %v", obj.name, got, want)
 		}
 	}
 
@@ -150,7 +150,7 @@ func TestInformedWatcher(t *testing.T) {
 	})
 	for _, obj := range []*counter{foo1, foo2, bar} {
 		if got, want := obj.count(), 3; got != want {
-			t.Errorf("%v.count = %v, want %v", obj, got, want)
+			t.Errorf("%v.count = %v, want %v", obj.name, got, want)
 		}
 	}
 
@@ -163,7 +163,7 @@ func TestInformedWatcher(t *testing.T) {
 	})
 	for _, obj := range []*counter{foo1, foo2, bar} {
 		if got, want := obj.count(), 3; got != want {
-			t.Errorf("%v.count = %v, want %v", obj, got, want)
+			t.Errorf("%v.count = %v, want %v", obj.name, got, want)
 		}
 	}
 }
@@ -368,8 +368,8 @@ func TestDefaultObserved(t *testing.T) {
 	// 1. The default to be seen once during startup.
 	// 2. The real K8s version during the initial pass.
 	expected := []*corev1.ConfigMap{defaultFooCM, fooCM}
-	if foo1.count() != len(expected) {
-		t.Fatalf("foo1.count = %v, want %d", len(foo1.cfg), len(expected))
+	if got, want := foo1.count(), len(expected); got != want {
+		t.Fatalf("foo1.count = %v, want %d", got, want)
 	}
 	for i, cfg := range expected {
 		if got, want := foo1.cfg[i].Data, cfg.Data; !equality.Semantic.DeepEqual(want, got) {
@@ -429,8 +429,8 @@ func TestDefaultConfigMapDeleted(t *testing.T) {
 	// 2. The real K8s version during the initial pass.
 	// 3. The default again, when the real K8s version is deleted.
 	expected := []*corev1.ConfigMap{defaultFooCM, fooCM, defaultFooCM}
-	if foo1.count() != len(expected) {
-		t.Fatalf("foo1.count = %v, want %d", len(foo1.cfg), len(expected))
+	if got, want := foo1.count(), len(expected); got != want {
+		t.Fatalf("foo1.count = %v, want %d", got, want)
 	}
 	for i, cfg := range expected {
 		if got, want := foo1.cfg[i].Data, cfg.Data; !equality.Semantic.DeepEqual(want, got) {
@@ -483,7 +483,7 @@ func TestWatchWithDefaultAfterStart(t *testing.T) {
 
 	// We expect nothing.
 	var expected []*corev1.ConfigMap
-	if foo1.count() != len(expected) {
-		t.Fatalf("foo1.count = %v, want %d", len(foo1.cfg), len(expected))
+	if got, want := foo1.count(), len(expected); got != want {
+		t.Fatalf("foo1.count = %v, want %d", got, want)
 	}
 }
