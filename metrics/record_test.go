@@ -98,10 +98,10 @@ func TestRecordBatch(t *testing.T) {
 	ctx := context.Background()
 	measure1 := stats.Int64("count1", "First counter", stats.UnitNone)
 	measure2 := stats.Int64("count2", "Second counter", stats.UnitNone)
-	v := []*view.View{&view.View{
+	v := []*view.View{{
 		Measure:     measure1,
 		Aggregation: view.LastValue(),
-	}, &view.View{
+	}, {
 		Measure:     measure2,
 		Aggregation: view.LastValue(),
 	}}
