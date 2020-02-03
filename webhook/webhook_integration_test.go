@@ -103,7 +103,7 @@ func TestMissingContentType(t *testing.T) {
 	metricstest.CheckStatsNotReported(t, requestCountName, requestLatenciesName)
 }
 
-func testEmptyRequestBody(t *testing.T, controller AdmissionController) {
+func testEmptyRequestBody(t *testing.T, controller interface{}) {
 	wh, serverURL, ctx, cancel, err := testSetup(t, controller)
 	if err != nil {
 		t.Fatalf("testSetup() = %v", err)
@@ -189,7 +189,7 @@ func TestSetupWebhookHTTPServerError(t *testing.T) {
 	}
 }
 
-func testSetup(t *testing.T, acs ...AdmissionController) (*Webhook, string, context.Context, context.CancelFunc, error) {
+func testSetup(t *testing.T, acs ...interface{}) (*Webhook, string, context.Context, context.CancelFunc, error) {
 	t.Helper()
 	port, err := newTestPort()
 	if err != nil {
