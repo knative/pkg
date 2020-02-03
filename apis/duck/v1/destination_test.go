@@ -35,7 +35,7 @@ const (
 func TestValidateDestination(t *testing.T) {
 	ctx := context.TODO()
 
-	validRef := KnativeReference{
+	validRef := KReference{
 		Kind:       kind,
 		APIVersion: apiVersion,
 		Name:       name,
@@ -63,7 +63,7 @@ func TestValidateDestination(t *testing.T) {
 		},
 		"invalid ref, missing name": {
 			dest: &Destination{
-				Ref: &KnativeReference{
+				Ref: &KReference{
 					Namespace:  namespace,
 					Kind:       kind,
 					APIVersion: apiVersion,
@@ -73,7 +73,7 @@ func TestValidateDestination(t *testing.T) {
 		},
 		"invalid ref, missing api version": {
 			dest: &Destination{
-				Ref: &KnativeReference{
+				Ref: &KReference{
 					Namespace: namespace,
 					Kind:      kind,
 					Name:      name,
@@ -83,7 +83,7 @@ func TestValidateDestination(t *testing.T) {
 		},
 		"invalid ref, missing kind": {
 			dest: &Destination{
-				Ref: &KnativeReference{
+				Ref: &KReference{
 					Namespace:  namespace,
 					APIVersion: apiVersion,
 					Name:       name,
@@ -149,14 +149,14 @@ func TestValidateDestination(t *testing.T) {
 }
 
 func TestDestination_GetRef(t *testing.T) {
-	ref := &KnativeReference{
+	ref := &KReference{
 		APIVersion: apiVersion,
 		Kind:       kind,
 		Name:       name,
 	}
 	tests := map[string]struct {
 		dest *Destination
-		want *KnativeReference
+		want *KReference
 	}{
 		"nil destination": {
 			dest: nil,
@@ -204,27 +204,27 @@ func TestDestinationSetDefaults(t *testing.T) {
 			want: "",
 		},
 		"namespace set, nothing in context, not modified ": {
-			d:    &Destination{Ref: &KnativeReference{Namespace: namespace}},
+			d:    &Destination{Ref: &KReference{Namespace: namespace}},
 			ctx:  ctx,
 			want: namespace,
 		},
 		"namespace set, context set, not modified ": {
-			d:    &Destination{Ref: &KnativeReference{Namespace: namespace}},
+			d:    &Destination{Ref: &KReference{Namespace: namespace}},
 			ctx:  apis.WithinParent(ctx, metav1.ObjectMeta{Namespace: parentNamespace}),
 			want: namespace,
 		},
 		"namespace set, uri set, context set, not modified ": {
-			d:    &Destination{Ref: &KnativeReference{Namespace: namespace}, URI: apis.HTTP("example.com")},
+			d:    &Destination{Ref: &KReference{Namespace: namespace}, URI: apis.HTTP("example.com")},
 			ctx:  apis.WithinParent(ctx, metav1.ObjectMeta{Namespace: parentNamespace}),
 			want: namespace,
 		},
 		"namespace not set, context set, defaulted": {
-			d:    &Destination{Ref: &KnativeReference{}},
+			d:    &Destination{Ref: &KReference{}},
 			ctx:  apis.WithinParent(ctx, metav1.ObjectMeta{Namespace: parentNamespace}),
 			want: parentNamespace,
 		},
 		"namespace not set, uri set, context set, defaulted": {
-			d:    &Destination{Ref: &KnativeReference{}, URI: apis.HTTP("example.com")},
+			d:    &Destination{Ref: &KReference{}, URI: apis.HTTP("example.com")},
 			ctx:  apis.WithinParent(ctx, metav1.ObjectMeta{Namespace: parentNamespace}),
 			want: parentNamespace,
 		},

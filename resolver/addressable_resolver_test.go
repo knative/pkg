@@ -713,8 +713,8 @@ func getInvalidObjectReference() *corev1.ObjectReference {
 
 }
 
-func getK8SServiceRef() *duckv1.KnativeReference {
-	return &duckv1.KnativeReference{
+func getK8SServiceRef() *duckv1.KReference {
+	return &duckv1.KReference{
 		Kind:       "Service",
 		Name:       addressableName,
 		APIVersion: "v1",
@@ -723,8 +723,8 @@ func getK8SServiceRef() *duckv1.KnativeReference {
 
 }
 
-func getAddressableKnativeRef() *duckv1.KnativeReference {
-	return &duckv1.KnativeReference{
+func getAddressableKnativeRef() *duckv1.KReference {
+	return &duckv1.KReference{
 		Kind:       addressableKind,
 		Name:       addressableName,
 		APIVersion: addressableAPIVersion,
@@ -741,8 +741,8 @@ func getAddressableRef() *corev1.ObjectReference {
 	}
 }
 
-func getUnaddressableKnativeRef() *duckv1.KnativeReference {
-	return &duckv1.KnativeReference{
+func getUnaddressableKnativeRef() *duckv1.KReference {
+	return &duckv1.KReference{
 		Kind:       unaddressableKind,
 		Name:       unaddressableName,
 		APIVersion: unaddressableAPIVersion,

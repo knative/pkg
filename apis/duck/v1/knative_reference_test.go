@@ -28,7 +28,7 @@ import (
 func TestValidate(t *testing.T) {
 	ctx := context.Background()
 
-	validRef := KnativeReference{
+	validRef := KReference{
 		Kind:       kind,
 		APIVersion: apiVersion,
 		Name:       name,
@@ -36,7 +36,7 @@ func TestValidate(t *testing.T) {
 	}
 
 	tests := map[string]struct {
-		ref  *KnativeReference
+		ref  *KReference
 		want *apis.FieldError
 	}{
 		"nil valid": {
@@ -51,11 +51,11 @@ func TestValidate(t *testing.T) {
 			want: nil,
 		},
 		"invalid ref, empty": {
-			ref:  &KnativeReference{},
+			ref:  &KReference{},
 			want: apis.ErrMissingField("name", "kind", "apiVersion"),
 		},
 		"invalid ref, missing kind": {
-			ref: &KnativeReference{
+			ref: &KReference{
 				Namespace:  namespace,
 				Name:       name,
 				APIVersion: apiVersion,
@@ -66,7 +66,7 @@ func TestValidate(t *testing.T) {
 			}(),
 		},
 		"invalid ref, missing api version": {
-			ref: &KnativeReference{
+			ref: &KReference{
 				Namespace: namespace,
 				Name:      name,
 				Kind:      kind,
@@ -92,28 +92,28 @@ func TestValidate(t *testing.T) {
 	}
 }
 
-func TestKnativeReferenceSetDefaults(t *testing.T) {
+func TestKReferenceSetDefaults(t *testing.T) {
 	ctx := context.Background()
 
 	parentNamespace := "parentNamespace"
 
 	tests := map[string]struct {
-		ref  *KnativeReference
+		ref  *KReference
 		ctx  context.Context
 		want string
 	}{
 		"namespace set, nothing in context, not modified ": {
-			ref:  &KnativeReference{Namespace: namespace},
+			ref:  &KReference{Namespace: namespace},
 			ctx:  ctx,
 			want: namespace,
 		},
 		"namespace set, context set, not modified ": {
-			ref:  &KnativeReference{Namespace: namespace},
+			ref:  &KReference{Namespace: namespace},
 			ctx:  apis.WithinParent(ctx, metav1.ObjectMeta{Namespace: parentNamespace}),
 			want: namespace,
 		},
 		"namespace not set, context set, defaulted": {
-			ref:  &KnativeReference{},
+			ref:  &KReference{},
 			ctx:  apis.WithinParent(ctx, metav1.ObjectMeta{Namespace: parentNamespace}),
 			want: parentNamespace,
 		},
