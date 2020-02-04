@@ -36,11 +36,6 @@ func newOpenCensusExporter(config *metricsConfig, logger *zap.SugaredLogger) (vi
 	} else {
 		opts = append(opts, ocagent.WithInsecure())
 	}
-	rd := config.resourceDescriptor
-	if rd == nil {
-		rd = defaultResourceDescriptor
-	}
-	opts = append(opts, ocagent.WithResourceDetector(rd))
 	e, err := ocagent.NewExporter(opts...)
 	if err != nil {
 		logger.Errorw("Failed to create the OpenCensus exporter.", zap.Error(err))
