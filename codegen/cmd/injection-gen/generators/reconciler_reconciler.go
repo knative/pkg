@@ -124,7 +124,8 @@ func (g *reconcilerReconcilerGenerator) GenerateType(c *generator.Context, t *ty
 	sw.Do(reconcilerNewReconciler, m)
 	sw.Do(reconcilerImplFactory, m)
 	sw.Do(reconcilerStatusFactory, m)
-	sw.Do(reconcilerFinalizerFactory, m)
+	// TODO(n3wscott): Follow-up to add support for managing finalizers.
+	// sw.Do(reconcilerFinalizerFactory, m)
 
 	return sw.Error()
 }
