@@ -66,7 +66,14 @@ func (g *reconcilerReconcilerGenerator) GenerateType(c *generator.Context, t *ty
 	m := map[string]interface{}{
 		"type": t,
 
-		"controllerImpl": c.Universe.Type(types.Name{Package: "knative.dev/pkg/controller", Name: "Impl"}),
+		"controllerImpl": c.Universe.Type(types.Name{
+			Package: "knative.dev/pkg/controller",
+			Name:    "Impl",
+		}),
+		"controllerReconciler": c.Universe.Type(types.Name{
+			Package: "knative.dev/pkg/controller",
+			Name:    "Reconciler",
+		}),
 		"corev1EventSource": c.Universe.Function(types.Name{
 			Package: "k8s.io/api/core/v1",
 			Name:    "EventSource",
@@ -107,9 +114,14 @@ func (g *reconcilerReconcilerGenerator) GenerateType(c *generator.Context, t *ty
 			Package: "k8s.io/apimachinery/pkg/apis/meta/v1",
 			Name:    "GetOptions",
 		}),
+		"zapSugaredLogger": c.Universe.Type(types.Name{
+			Package: "go.uber.org/zap",
+			Name:    "SugaredLogger",
+		}),
 	}
 
 	sw.Do(reconcilerInterfaceFactory, m)
+	sw.Do(reconcilerNewReconciler, m)
 	sw.Do(reconcilerImplFactory, m)
 	sw.Do(reconcilerStatusFactory, m)
 	sw.Do(reconcilerFinalizerFactory, m)
@@ -152,6 +164,18 @@ type reconcilerImpl struct {
 // Check that our Reconciler implements controller.Reconciler
 var _ controller.Reconciler = (*reconcilerImpl)(nil)
 
+`
+
+var reconcilerNewReconciler = `
+func NewReconciler(ctx context.Context, logger *{{.zapSugaredLogger|raw}}, client {{.clientsetInterface|raw}}, lister {{.resourceLister|raw}}, recorder {{.recordEventRecorder|raw}}, r Interface) {{.controllerReconciler|raw}} {
+	return &reconcilerImpl{
+		Client: client,
+		Lister: lister,
+		Recorder: recorder,
+		FinalizerName: defaultFinalizerName,
+		reconciler:    r,
+	}
+}
 `
 
 var reconcilerImplFactory = `
@@ -215,7 +239,7 @@ func (r *reconcilerImpl) Reconcile(ctx context.Context, key string) error {
 
 	// Report the reconciler event, if any.
 	if reconcileEvent != nil {
-		logger.Error("ReconcileKind returned an event: %v", reconcileEvent)
+		logger.Errorw("ReconcileKind returned an event", zap.Error(reconcileEvent))
 		var event *{{.reconcilerReconcilerEvent|raw}}
 		if reconciler.EventAs(reconcileEvent, &event) {
 			r.Recorder.Eventf(resource, event.EventType, event.Reason, event.Format, event.Args...)

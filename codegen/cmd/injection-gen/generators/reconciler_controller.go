@@ -18,7 +18,6 @@ package generators
 
 import (
 	"io"
-
 	"k8s.io/gengo/generator"
 	"k8s.io/gengo/namer"
 	"k8s.io/gengo/types"
@@ -65,8 +64,11 @@ func (g *reconcilerControllerGenerator) GenerateType(c *generator.Context, t *ty
 	klog.V(5).Infof("processing type %v", t)
 
 	m := map[string]interface{}{
-		"type":           t,
-		"controllerImpl": c.Universe.Type(types.Name{Package: "knative.dev/pkg/controller", Name: "Impl"}),
+		"type": t,
+		"controllerImpl": c.Universe.Type(types.Name{
+			Package: "knative.dev/pkg/controller",
+			Name:    "Impl",
+		}),
 		"loggingFromContext": c.Universe.Function(types.Name{
 			Package: "knative.dev/pkg/logging",
 			Name:    "FromContext",
@@ -85,12 +87,12 @@ func (g *reconcilerControllerGenerator) GenerateType(c *generator.Context, t *ty
 		}),
 	}
 
-	sw.Do(reconcilerController, m)
+	sw.Do(reconcilerControllerNewImpl, m)
 
 	return sw.Error()
 }
 
-var reconcilerController = `
+var reconcilerControllerNewImpl = `
 const (
 	defaultControllerAgentName = "{{.type|lowercaseSingular}}-controller"
 	defaultFinalizerName       = "{{.type|lowercaseSingular}}"
@@ -113,4 +115,5 @@ func NewImpl(ctx context.Context, r Interface) *{{.controllerImpl|raw}} {
 
 	return impl
 }
+
 `
