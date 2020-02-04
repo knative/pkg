@@ -84,7 +84,6 @@ func (g *reconcilerReconcilerGenerator) GenerateType(c *generator.Context, t *ty
 		// Deps
 		"clientsetInterface": c.Universe.Type(types.Name{Name: "Interface", Package: g.clientsetPkg}),
 		"resourceLister":     c.Universe.Type(types.Name{Name: g.listerName, Package: g.listerPkg}),
-		"trackerInterface":   c.Universe.Type(types.Name{Name: "Interface", Package: "knative.dev/pkg/tracker"}),
 		// K8s types
 		"recordEventRecorder": c.Universe.Type(types.Name{Name: "EventRecorder", Package: "k8s.io/client-go/tools/record"}),
 		// methods
@@ -137,11 +136,6 @@ type Reconciler struct {
 
 	// Listers index properties about resources
 	Lister {{.resourceLister|raw}}
-
-	// Tracker builds an index of what resources are watching other
-	// resources so that we can immediately react to changes to changes in
-	// tracked resources.
-	Tracker {{.trackerInterface|raw}}
 
 	// Recorder is an event recorder for recording Event resources to the
 	// Kubernetes API.

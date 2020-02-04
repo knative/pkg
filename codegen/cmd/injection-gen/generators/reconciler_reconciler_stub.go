@@ -18,6 +18,7 @@ package generators
 
 import (
 	"io"
+
 	"k8s.io/gengo/generator"
 	"k8s.io/gengo/namer"
 	"k8s.io/gengo/types"
@@ -72,10 +73,6 @@ func (g *reconcilerReconcilerStubGenerator) GenerateType(c *generator.Context, t
 			Package: "knative.dev/pkg/reconciler",
 			Name:    "NewEvent",
 		}),
-		"reconcilerCore": c.Universe.Type(types.Name{
-			Package: g.reconcilerPkg,
-			Name:    "Core",
-		}),
 		"reconcilerInterface": c.Universe.Type(types.Name{
 			Package: g.reconcilerPkg,
 			Name:    "Interface",
@@ -97,7 +94,7 @@ var reconcilerReconcilerStub = `
 // newReconciledNormal makes a new reconciler event with event type Normal, and
 // reason {{.type|public}}Reconciled.
 func newReconciledNormal(namespace, name string) reconciler.Event {
-	return {{.reconcilerNewEvent|raw}}({{.corev1EventTypeNormal|raw}}, "{{.type|public}}Reconciled", "{{.type|public}} reconciled: %s/%s", namespace, name)
+	return {{.reconcilerNewEvent|raw}}({{.corev1EventTypeNormal|raw}}, "{{.type|public}}Reconciled", "{{.type|public}} reconciled: \"%s/%s\"", namespace, name)
 }
 
 // Reconciler implements controller.Reconciler for {{.type|public}} resources.

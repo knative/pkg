@@ -98,6 +98,7 @@ const (
 
 func NewImpl(ctx context.Context, r Interface) *{{.controllerImpl|raw}} {
 	logger := {{.loggingFromContext|raw}}(ctx)
+
 	{{.type|lowercaseSingular}}Informer := {{.informerGet|raw}}(ctx)
 
 	c := &Reconciler{
@@ -109,7 +110,6 @@ func NewImpl(ctx context.Context, r Interface) *{{.controllerImpl|raw}} {
 		reconciler:    r,
 	}
 	impl := controller.NewImpl(c, logger, "{{.type|allLowercasePlural}}")
-	c.Tracker = tracker.New(impl.EnqueueKey, controller.GetTrackerLease(ctx))
 
 	return impl
 }

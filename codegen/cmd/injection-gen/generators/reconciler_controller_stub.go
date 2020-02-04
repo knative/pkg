@@ -33,7 +33,8 @@ type reconcilerControllerStubGenerator struct {
 	imports       namer.ImportTracker
 	filtered      bool
 
-	reconcilerPkg string
+	reconcilerPkg       string
+	informerPackagePath string
 }
 
 var _ generator.Generator = (*reconcilerControllerStubGenerator)(nil)
@@ -64,11 +65,19 @@ func (g *reconcilerControllerStubGenerator) GenerateType(c *generator.Context, t
 	klog.V(5).Infof("processing type %v", t)
 
 	m := map[string]interface{}{
-		"type":           t,
+		"type": t,
+		"informerGet": c.Universe.Function(types.Name{
+			Package: g.informerPackagePath,
+			Name:    "Get",
+		}),
 		"controllerImpl": c.Universe.Type(types.Name{Package: "knative.dev/pkg/controller", Name: "Impl"}),
 		"reconcilerNewImpl": c.Universe.Type(types.Name{
 			Package: g.reconcilerPkg,
 			Name:    "NewImpl",
+		}),
+		"loggingFromContext": c.Universe.Function(types.Name{
+			Package: "knative.dev/pkg/logging",
+			Name:    "FromContext",
 		}),
 	}
 
@@ -85,9 +94,11 @@ func NewController(
 	ctx context.Context,
 	cmw configmap.Watcher,
 ) *{{.controllerImpl|raw}} {
+	logger := {{.loggingFromContext|raw}}(ctx)
+
 	{{.type|lowercaseSingular}}Informer := {{.informerGet|raw}}(ctx)
 
-	// TODO: setup additional requirements here.
+	// TODO: setup additional informers here.
 
 	r := &Reconciler{}
 	impl := {{.reconcilerNewImpl|raw}}(ctx, r)

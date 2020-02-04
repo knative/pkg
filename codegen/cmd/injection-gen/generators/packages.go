@@ -430,9 +430,10 @@ func reconcilerPackages(basePackage string, groupPkgName string, gv clientgentyp
 					DefaultGen: generator.DefaultGen{
 						OptionalName: "controller",
 					},
-					reconcilerPkg: packagePath,
-					outputPackage: filepath.Join(packagePath, "stub"),
-					imports:       generator.NewImportTracker(),
+					reconcilerPkg:       packagePath,
+					outputPackage:       filepath.Join(packagePath, "stub"),
+					imports:             generator.NewImportTracker(),
+					informerPackagePath: informerPackagePath,
 				})
 
 				return generators
