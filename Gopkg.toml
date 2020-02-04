@@ -92,6 +92,7 @@ required = [
   unused-packages = false
   non-go = false
 
+
 [[prune.project]]
   name = "knative.dev/test-infra"
   non-go = false
