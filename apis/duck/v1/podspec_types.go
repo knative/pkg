@@ -20,6 +20,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	"knative.dev/pkg/apis"
 	"knative.dev/pkg/apis/duck"
@@ -44,7 +45,8 @@ type WithPod struct {
 
 // WithPodSpec is the shell around the PodSpecable within WithPod.
 type WithPodSpec struct {
-	Template PodSpecable `json:"template,omitempty"`
+	Selector *metav1.LabelSelector `json:"selector"`
+	Template PodSpecable           `json:"template,omitempty"`
 }
 
 // Assert that we implement the interfaces necessary to
@@ -80,6 +82,11 @@ func (t *WithPod) Populate() {
 // GetListType implements apis.Listable
 func (*WithPod) GetListType() runtime.Object {
 	return &WithPodList{}
+}
+
+// GetGroupVersionKind returns a GroupVersionKind.
+func (*WithPod) GetGroupVersionKind() schema.GroupVersionKind {
+	return SchemeGroupVersion.WithKind("WithPod")
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
