@@ -129,8 +129,8 @@ type Interface interface {
 	ReconcileKind(ctx context.Context, o *{{.type|raw}}) {{.reconcilerEvent|raw}}
 }
 
-// Reconciler implements controller.Reconciler for {{.type|raw}} resources.
-type Reconciler struct {
+// reconcilerImpl implements controller.Reconciler for {{.type|raw}} resources.
+type reconcilerImpl struct {
 	// Client is used to write back status updates.
 	Client {{.clientsetInterface|raw}}
 
@@ -150,13 +150,13 @@ type Reconciler struct {
 }
 
 // Check that our Reconciler implements controller.Reconciler
-var _ controller.Reconciler = (*Reconciler)(nil)
+var _ controller.Reconciler = (*reconcilerImpl)(nil)
 
 `
 
 var reconcilerImplFactory = `
 // Reconcile implements controller.Reconciler
-func (r *Reconciler) Reconcile(ctx context.Context, key string) error {
+func (r *reconcilerImpl) Reconcile(ctx context.Context, key string) error {
 	logger := {{.loggingFromContext|raw}}(ctx)
 
 	// Convert the namespace/name string into a distinct namespace and name
@@ -228,7 +228,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, key string) error {
 `
 
 var reconcilerStatusFactory = `
-func (r *Reconciler) updateStatus(existing *{{.type|raw}}, desired *{{.type|raw}}) error {
+func (r *reconcilerImpl) updateStatus(existing *{{.type|raw}}, desired *{{.type|raw}}) error {
 	existing = existing.DeepCopy()
 	return RetryUpdateConflicts(func(attempts int) (err error) {
 		// The first iteration tries to use the injectionInformer's state, subsequent attempts fetch the latest state via API.
@@ -266,7 +266,7 @@ func RetryUpdateConflicts(updater func(int) error) error {
 
 var reconcilerFinalizerFactory = `
 // Update the Finalizers of the resource.
-func (r *Reconciler) updateFinalizers(ctx context.Context, desired *{{.type|raw}}) (*{{.type|raw}}, bool, error) {
+func (r *reconcilerImpl) updateFinalizers(ctx context.Context, desired *{{.type|raw}}) (*{{.type|raw}}, bool, error) {
 	actual, err := r.Lister.{{.type|apiGroup}}(desired.Namespace).Get(desired.Name)
 	if err != nil {
 		return nil, false, err
@@ -314,13 +314,13 @@ func (r *Reconciler) updateFinalizers(ctx context.Context, desired *{{.type|raw}
 	return update, true, err
 }
 
-func (r *Reconciler) setFinalizer(a *{{.type|raw}}) {
+func (r *reconcilerImpl) setFinalizer(a *{{.type|raw}}) {
 	finalizers := sets.NewString(a.Finalizers...)
 	finalizers.Insert(r.FinalizerName)
 	a.Finalizers = finalizers.List()
 }
 
-func (r *Reconciler) unsetFinalizer(a *{{.type|raw}}) {
+func (r *reconcilerImpl) unsetFinalizer(a *{{.type|raw}}) {
 	finalizers := sets.NewString(a.Finalizers...)
 	finalizers.Delete(r.FinalizerName)
 	a.Finalizers = finalizers.List()

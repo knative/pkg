@@ -101,7 +101,7 @@ func NewImpl(ctx context.Context, r Interface) *{{.controllerImpl|raw}} {
 
 	{{.type|lowercaseSingular}}Informer := {{.informerGet|raw}}(ctx)
 
-	c := &Reconciler{
+	c := &reconcilerImpl{
 		Client:  {{.clientGet|raw}}(ctx),
 		Lister:  {{.type|lowercaseSingular}}Informer.Lister(),
 		Recorder: record.NewBroadcaster().NewRecorder(
