@@ -24,11 +24,10 @@ import (
 
 // StructuredError is an error which can hold arbitrary key-value arguments.
 //
-// Experimental and likely to be removed.
+// TODO(coryrc): The Structured Error is experimental and likely to be removed, but is currently in use in a refactored test.
 type StructuredError interface {
 	error
 	GetValues() []interface{}
-	//	GetMessage() string
 	WithValues(...interface{}) StructuredError
 	DisableValuePrinting()
 	EnableValuePrinting()
@@ -80,8 +79,6 @@ func (e *structuredError) EnableValuePrinting() {
 
 // Create a StructuredError. Gives a little better logging when given to a TLogger.
 // This may prove to not be useful if users use the logger's WithValues() better.
-//
-// Experimental and likely to be removed
 func Error(msg string, keysAndValues ...interface{}) *structuredError {
 	return &structuredError{msg, keysAndValues, true}
 }

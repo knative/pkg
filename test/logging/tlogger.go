@@ -259,7 +259,7 @@ func (o *TLogger) error(err error, msg string, keysAndValues []interface{}) {
 // Create a TLogger object using the global Zap logger and the current testing.T
 // defer the second return value
 func NewTLogger(t *testing.T) (*TLogger, func()) {
-	tl := newTLogger(t, Verbosity)
+	tl := newTLogger(t, verbosity)
 	return tl, func() { tl.cleanUp() }
 }
 

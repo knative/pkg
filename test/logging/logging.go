@@ -129,7 +129,7 @@ func printFlags() {
 var (
 	zapCore              zapcore.Core
 	logger               *zap.Logger
-	Verbosity            int // Amount of log verbosity
+	verbosity            int // Amount of log verbosity
 	loggerInitializeOnce = &sync.Once{}
 )
 
@@ -140,11 +140,11 @@ func InitializeLogger() {
 		humanEncoder := zapcore.NewConsoleEncoder(zap.NewDevelopmentEncoderConfig())
 
 		// Output streams
-		// TODO(coryrc): also open a log file
+		// TODO(coryrc): also open a log file if in Prow?
 		stdOut := zapcore.Lock(os.Stdout)
 
 		// Level function helper
-		zapLevel := zapLevelFromLogrLevel(Verbosity)
+		zapLevel := zapLevelFromLogrLevel(verbosity)
 		isPriority := zap.LevelEnablerFunc(func(lvl zapcore.Level) bool {
 			return lvl >= zapLevel
 		})
@@ -152,20 +152,19 @@ func InitializeLogger() {
 		// Assemble the output streams
 		zapCore = zapcore.NewTee(
 			// TODO(coryrc): log JSON output somewhere?
-			// zapcore.NewCore(structuredEncoder, someFile, isPriority or any priority?),
 			zapcore.NewCore(humanEncoder, stdOut, isPriority),
 		)
 
 		logger = zap.New(zapCore)
 		zap.ReplaceGlobals(logger) // Gets used by klog/glog proxy libraries
 
-		if Verbosity > 2 {
+		if verbosity > 2 {
 			printFlags()
 		}
 	})
 }
 
 func init() {
-	flag.IntVar(&Verbosity, "verbosity", 2,
+	flag.IntVar(&verbosity, "verbosity", 2,
 		"Amount of verbosity, 0-10. See https://github.com/go-logr/logr#how-do-i-choose-my-v-levels and https://github.com/kubernetes/community/blob/master/contributors/devel/sig-instrumentation/logging.md")
 }

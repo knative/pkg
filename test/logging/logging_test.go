@@ -34,7 +34,7 @@ type de struct {
 	e float64
 }
 
-const runFailingTests = false
+const runFailingTests = true
 
 var someStruct abc
 
@@ -51,7 +51,7 @@ func init() {
 }
 
 func TestTLogger(legacy *testing.T) {
-	Verbosity = 5
+	verbosity = 5
 	InitializeLogger()
 	t, cancel := NewTLogger(legacy)
 	defer cancel()
@@ -97,7 +97,7 @@ func TestTLogger(legacy *testing.T) {
 }
 
 func TestTLoggerInternals(legacy *testing.T) {
-	Verbosity = 2
+	verbosity = 2
 	InitializeLogger()
 	t, cancel := NewTLogger(legacy)
 	defer cancel()
@@ -117,7 +117,7 @@ func TestTLoggerInternals(legacy *testing.T) {
 }
 
 func TestStructuredError(legacy *testing.T) {
-	Verbosity = 5
+	verbosity = 5
 	InitializeLogger()
 	t, cancel := NewTLogger(legacy)
 	defer cancel()
