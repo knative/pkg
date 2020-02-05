@@ -34,7 +34,7 @@ type de struct {
 	e float64
 }
 
-const runFailingTests = true
+const runFailingTests = false
 
 var someStruct abc
 
