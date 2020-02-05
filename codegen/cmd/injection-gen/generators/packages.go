@@ -409,6 +409,7 @@ func reconcilerPackages(basePackage string, groupPkgName string, gv clientgentyp
 					imports:             generator.NewImportTracker(),
 					clientPkg:           clientPackagePath,
 					informerPackagePath: informerPackagePath,
+					schemePkg:           filepath.Join(customArgs.VersionedClientSetPackage, "scheme"),
 				})
 
 				return generators

@@ -245,11 +245,13 @@ func (r *reconcilerImpl) Reconcile(ctx context.Context, key string) error {
 		var event *{{.reconcilerReconcilerEvent|raw}}
 		if reconciler.EventAs(reconcileEvent, &event) {
 			r.Recorder.Eventf(resource, event.EventType, event.Reason, event.Format, event.Args...)
+			return nil
 		} else {
 			r.Recorder.Event(resource, {{.corev1EventTypeWarning|raw}}, "InternalError", reconcileEvent.Error())
+			return reconcileEvent.Error()
 		}
 	}
-	return reconcileEvent
+	return nil
 }
 `
 

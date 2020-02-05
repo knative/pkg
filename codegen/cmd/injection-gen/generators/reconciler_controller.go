@@ -33,6 +33,7 @@ type reconcilerControllerGenerator struct {
 	filtered      bool
 
 	clientPkg           string
+	schemePkg           string
 	informerPackagePath string
 }
 
@@ -85,6 +86,14 @@ func (g *reconcilerControllerGenerator) GenerateType(c *generator.Context, t *ty
 			Package: g.informerPackagePath,
 			Name:    "Get",
 		}),
+		"schemeScheme": c.Universe.Function(types.Name{
+			Package: "k8s.io/client-go/kubernetes/scheme",
+			Name:    "Scheme",
+		}),
+		"schemeAddToScheme": c.Universe.Function(types.Name{
+			Package: g.schemePkg,
+			Name:    "Scheme",
+		}),
 	}
 
 	sw.Do(reconcilerControllerNewImpl, m)
@@ -116,4 +125,7 @@ func NewImpl(ctx context.Context, r Interface) *{{.controllerImpl|raw}} {
 	return impl
 }
 
+func init() {
+	{{.schemeAddToScheme|raw}}({{.schemeScheme|raw}})
+}
 `
