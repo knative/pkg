@@ -118,6 +118,16 @@ func TestContexts(t *testing.T) {
 		ctx:   ctx,
 		check: IsDeprecatedAllowed,
 		want:  true,
+	}, {
+		name:  "allow different namespace",
+		ctx:   AllowDifferentNamespace(ctx),
+		check: IsDifferentNamespaceAllowed,
+		want:  true,
+	}, {
+		name:  "don't allow different namespace",
+		ctx:   ctx,
+		check: IsDifferentNamespaceAllowed,
+		want:  false,
 	}}
 
 	for _, tc := range tests {

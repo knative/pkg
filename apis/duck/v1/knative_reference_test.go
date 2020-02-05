@@ -37,21 +37,22 @@ func TestValidate(t *testing.T) {
 
 	tests := map[string]struct {
 		ref  *KReference
+		ctx  context.Context
 		want *apis.FieldError
 	}{
 		"nil valid": {
-			ref: nil,
-			want: func() *apis.FieldError {
-				fe := apis.ErrMissingField("name", "kind", "apiVersion")
-				return fe
-			}(),
+			ref:  nil,
+			ctx:  ctx,
+			want: apis.ErrMissingField("name", "kind", "apiVersion"),
 		},
 		"valid ref": {
 			ref:  &validRef,
+			ctx:  ctx,
 			want: nil,
 		},
 		"invalid ref, empty": {
 			ref:  &KReference{},
+			ctx:  ctx,
 			want: apis.ErrMissingField("name", "kind", "apiVersion"),
 		},
 		"invalid ref, missing kind": {
@@ -60,10 +61,8 @@ func TestValidate(t *testing.T) {
 				Name:       name,
 				APIVersion: apiVersion,
 			},
-			want: func() *apis.FieldError {
-				fe := apis.ErrMissingField("kind")
-				return fe
-			}(),
+			ctx:  ctx,
+			want: apis.ErrMissingField("kind"),
 		},
 		"invalid ref, missing api version": {
 			ref: &KReference{
@@ -71,15 +70,37 @@ func TestValidate(t *testing.T) {
 				Name:      name,
 				Kind:      kind,
 			},
-			want: func() *apis.FieldError {
-				return apis.ErrMissingField("apiVersion")
-			}(),
+			ctx:  ctx,
+			want: apis.ErrMissingField("apiVersion"),
+		},
+		"invalid ref, mismatched namespaces": {
+			ref: &KReference{
+				Namespace:  namespace,
+				Name:       name,
+				Kind:       kind,
+				APIVersion: apiVersion,
+			},
+			ctx: apis.WithinParent(ctx, metav1.ObjectMeta{Namespace: "diffns"}),
+			want: &apis.FieldError{
+				Message: "mismatched namespaces",
+				Paths:   []string{"namespace"},
+				Details: `parent namespace: "diffns" does not match ref: "b-namespace"`,
+			},
+		},
+		"valid ref, mismatched namespaces, but overridden": {
+			ref: &KReference{
+				Namespace:  namespace,
+				Name:       name,
+				Kind:       kind,
+				APIVersion: apiVersion,
+			},
+			ctx: apis.AllowDifferentNamespace(apis.WithinParent(ctx, metav1.ObjectMeta{Namespace: "diffns"})),
 		},
 	}
 
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
-			gotErr := tc.ref.Validate(ctx)
+			gotErr := tc.ref.Validate(tc.ctx)
 
 			if tc.want != nil {
 				if diff := cmp.Diff(tc.want.Error(), gotErr.Error()); diff != "" {
