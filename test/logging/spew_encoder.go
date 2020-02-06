@@ -49,7 +49,9 @@ func init() {
 
 // NewSpewEncoder encodes logs using the spew library.
 //
-// The JSON encoder (also used by the console encoder) included in Zap can only print objects that can be serialized to JSON and doesn't print them in the most readable way. This spew encoder is designed to make human-readable log only and get the most information to the user on any data type.
+// The JSON encoder (also used by the console encoder) included in Zap can only print objects that
+// can be serialized to JSON and doesn't print them in the most readable way. This spew encoder is
+// designed to make human-readable log only and get the most information to the user on any data type.
 //
 // Code is mostly from console_encoder.go in zapcore.
 func NewSpewEncoder(cfg EncoderConfig) *SpewEncoder {

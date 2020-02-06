@@ -46,7 +46,9 @@ type TLogger struct {
 //     l.Info("logging it", "expensiveThing", x)
 //   }
 //
-// Elsewhere in this documentation refers to a hypothetical .V(errorLevel) to simplify explanations. The V() function cannot write to the error level; the Error, ErrorIfErr, Fatal, and FatalIfErr methods are the only way to write to the error level.
+// Elsewhere in this documentation refers to a hypothetical .V(errorLevel) to simplify explanations.
+// The V() function cannot write to the error level; the Error, ErrorIfErr, Fatal, and
+// FatalIfErr methods are the only way to write to the error level.
 func (o *TLogger) V(level int) logr.InfoLogger {
 	// Consider adding || (level <= logrZapDebugLevel && o.l.Core().Enabled(zapLevelFromLogrLevel(level)))
 	// Reason to add it is even if you ask for verbosity=1, in case of error you'll get up to verbosity=3 in the debug output
