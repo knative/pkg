@@ -31,8 +31,7 @@ type TLogger struct {
 	l     *zap.Logger
 	level int
 	t     *testing.T
-	e     map[string][]interface{} // For Collect()
-	w     *testingWriter           // Only here so it can be disabled
+	errs  map[string][]interface{} // For Collect()
 }
 
 // V() returns an InfoLogger from go-logr.
@@ -172,9 +171,9 @@ func (o *TLogger) errorWithRuntimeCheck(stringThenKeysAndValues ...interface{}) 
 // Run a subtest. Just like testing.T.Run but creates a TLogger.
 func (o *TLogger) Run(name string, f func(t *TLogger)) {
 	tfunc := func(ts *testing.T) {
-		tl := newTLogger(ts, o.level)
+		tl, cancel := newTLogger(ts, o.level)
+		defer cancel()
 		f(tl)
-		tl.handleCollectedErrors()
 	}
 	o.t.Run(name, tfunc)
 }
@@ -259,13 +258,12 @@ func (o *TLogger) error(err error, msg string, keysAndValues []interface{}) {
 // Creation and Teardown
 
 // Create a TLogger object using the global Zap logger and the current testing.T
-// defer the second return value
+// `defer` a call to second return value immediately after.
 func NewTLogger(t *testing.T) (*TLogger, func()) {
-	tl := newTLogger(t, verbosity)
-	return tl, func() { tl.cleanUp() }
+	return newTLogger(t, verbosity)
 }
 
-func newTLogger(t *testing.T, verbosity int) *TLogger {
+func newTLogger(t *testing.T, verbosity int) (*TLogger, func()) {
 	testOptions := []zap.Option{
 		zap.AddCaller(),
 		zap.AddCallerSkip(2),
@@ -274,7 +272,7 @@ func newTLogger(t *testing.T, verbosity int) *TLogger {
 	writer := newTestingWriter(t)
 	// Based off zap.NewDevelopmentEncoderConfig()
 	cfg := zapcore.EncoderConfig{
-		// Keys can be anything except the empty string.
+		// Wanted keys can be anything except the empty string.
 		TimeKey:        "",
 		LevelKey:       "",
 		NameKey:        "",
@@ -304,10 +302,14 @@ func newTLogger(t *testing.T, verbosity int) *TLogger {
 		l:     log,
 		level: verbosity,
 		t:     t,
-		e:     make(map[string][]interface{}, 0),
-		w:     &writer,
+		errs:  make(map[string][]interface{}, 0),
 	}
-	return &tlogger
+	return &tlogger, func() {
+		tlogger.handleCollectedErrors()
+		// Sometimes goroutines exist after a test and they cause panics if they attempt to call t.Log().
+		// Prevent this panic by disabling writes to the testing.T (we'll still get them everywhere else).
+		writer.Disable()
+	}
 }
 
 func (o *TLogger) cloneWithNewLogger(l *zap.Logger) *TLogger {
@@ -315,8 +317,7 @@ func (o *TLogger) cloneWithNewLogger(l *zap.Logger) *TLogger {
 		l:     l,
 		level: o.level,
 		t:     o.t,
-		e:     o.e,
-		w:     o.w,
+		errs:  o.errs,
 	}
 	return &t
 }
@@ -326,18 +327,18 @@ func (o *TLogger) cloneWithNewLogger(l *zap.Logger) *TLogger {
 // If any are errors, it fails the subtest.
 // Currently experimental and likely to be removed
 func (o *TLogger) Collect(key string, value interface{}) {
-	list, has_key := o.e[key]
+	list, has_key := o.errs[key]
 	if has_key {
 		list = append(list, value)
 	} else {
 		list = make([]interface{}, 1)
 		list[0] = value
 	}
-	o.e[key] = list
+	o.errs[key] = list
 }
 
 func (o *TLogger) handleCollectedErrors() {
-	for name, list := range o.e {
+	for name, list := range o.errs {
 		o.Run(name, func(t *TLogger) {
 			for _, item := range list {
 				_, isError := item.(error)
@@ -349,12 +350,4 @@ func (o *TLogger) handleCollectedErrors() {
 			}
 		})
 	}
-}
-
-func (o *TLogger) cleanUp() {
-	o.handleCollectedErrors()
-
-	// Ensure nothing can log to t after test is complete (causes panics)
-	o.w.Disable()
-	o.t = nil
 }
