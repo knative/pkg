@@ -45,6 +45,12 @@ func TestConversion(t *testing.T) {
 		wantErrUp:   false,
 		wantErrDown: false,
 	}, {
+		name:        "v1 - empty",
+		addr:        &Addressable{},
+		conv:        &v1.Addressable{},
+		wantErrUp:   false,
+		wantErrDown: false,
+	}, {
 		name: "v1beta1",
 		addr: &Addressable{
 			URL: &apis.URL{
@@ -52,6 +58,12 @@ func TestConversion(t *testing.T) {
 				Host:   "bar.com",
 			},
 		},
+		conv:        &Addressable{},
+		wantErrUp:   true,
+		wantErrDown: true,
+	}, {
+		name:        "v1beta1 - empty",
+		addr:        &Addressable{},
 		conv:        &Addressable{},
 		wantErrUp:   true,
 		wantErrDown: true,

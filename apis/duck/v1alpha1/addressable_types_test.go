@@ -128,6 +128,12 @@ func TestConversion(t *testing.T) {
 		conv:        &Addressable{},
 		wantErrUp:   true,
 		wantErrDown: true,
+	}, {
+		name:        "v1alpha1 - empty",
+		addr:        &Addressable{},
+		conv:        &Addressable{},
+		wantErrUp:   true,
+		wantErrDown: true,
 	}}
 
 	for _, test := range tests {
