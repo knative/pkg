@@ -163,3 +163,73 @@ func TestConversion(t *testing.T) {
 		})
 	}
 }
+
+func TestConvertUp(t *testing.T) {
+	tests := []struct {
+		name        string
+		addr        *Addressable
+		conv        apis.Convertible
+		want        apis.Convertible
+		wantErrUp   bool
+		wantErrDown bool
+	}{{
+		name:        "empty to v1beta1",
+		addr:        &Addressable{},
+		conv:        &v1beta1.Addressable{},
+		want:        &v1beta1.Addressable{},
+		wantErrUp:   false,
+		wantErrDown: false,
+	}, {
+		name: "to v1beta1",
+		addr: &Addressable{
+			Hostname: "bar.com",
+		},
+		conv: &v1beta1.Addressable{},
+		want: &v1beta1.Addressable{
+			URL: &apis.URL{
+				Scheme: "http",
+				Host:   "bar.com",
+			},
+		},
+		wantErrUp:   false,
+		wantErrDown: false,
+	}, {
+		name:        "empty to v1",
+		addr:        &Addressable{},
+		conv:        &v1.Addressable{},
+		want:        &v1.Addressable{},
+		wantErrUp:   false,
+		wantErrDown: false,
+	}, {
+		name: "to v1",
+		addr: &Addressable{
+			Hostname: "bar.com",
+		},
+		conv: &v1.Addressable{},
+		want: &v1.Addressable{
+			URL: &apis.URL{
+				Scheme: "http",
+				Host:   "bar.com",
+			},
+		},
+		wantErrUp:   false,
+		wantErrDown: false,
+	}}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			got := test.conv
+			if err := test.addr.ConvertUp(context.Background(), got); err != nil {
+				if !test.wantErrUp {
+					t.Errorf("ConvertUp() = %v", err)
+				}
+			} else if test.wantErrUp {
+				t.Errorf("ConvertUp() = %#v, wanted error", got)
+			}
+
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("roundtrip (-want, +got) = %v", diff)
+			}
+		})
+	}
+}
