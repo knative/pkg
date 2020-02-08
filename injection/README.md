@@ -3,11 +3,6 @@
 This library supports the production of controller processes with minimal
 boilerplate outside of the reconciler implementation.
 
-## Building Controllers Leveraging Generated Reconciler
-
-To adopt this model of controller construction, implementations should start
-with the following controller constructor:
-
 ## Building Controllers
 
 To adopt this model of controller construction, implementations should start
@@ -40,9 +35,10 @@ func NewController(ctx context.Context, cmw configmap.Watcher) *controller.Impl 
 
 ### Generated Reconcilers
 
-A code generator is aviable for simple subset of reconciliation requirements. A
-label above the API type will signal to the injection code generator to generate
-a strongly typed reconciler. Use `+genreconciler` to generate the reconcilers.
+A code generator is available for simple subset of reconciliation requirements.
+A label above the API type will signal to the injection code generator to
+generate a strongly typed reconciler. Use `+genreconciler` to generate the
+reconcilers.
 
 ```go
 // +genclient
@@ -285,7 +281,7 @@ required = [
   non-go = false
 ```
 
-## Generated Reconciler responsibility
+## Generated Reconciler Responsibilities
 
 The goal of generating the reconcilers is to provide the controller implementor
 a strongly typed interface, and ensure correct reconciler behaviour around
@@ -321,8 +317,8 @@ The responsibility and consequences of using the generated
   `InternalError` and the body of the error as the message.
   - Additionally, the `error` will be returned from `Reconciler` and `key` will
     requeue back into the reconciler key queue.
-- If `event` is a `reconciler.Event`, `Reconciler` will log a typed and
-  reasoned Kubernetes Event based on the contents of `event`.
+- If `event` is a `reconciler.Event`, `Reconciler` will log a typed and reasoned
+  Kubernetes Event based on the contents of `event`.
   - `event` is not considered an error for requeue and nil is returned from
     `Reconciler`.
 - If additional events are required to be produced, an implementation can pull a
@@ -337,3 +333,55 @@ Pending Features:
     back to the API Server.
   - If `resource.metadata.labels` or `.annotations` are updated, `Reconcile`
     will synchronize it back to the API Server.
+- Adjust `+genreconciler` to allow for generated reconcilers to be made without
+  annotating the type struct.
+
+### Artifacts
+
+The artifacts are targeted to the configured `client/injection` directory:
+
+```go
+kindreconciler "knative.dev/<repo>/pkg/client/injection/reconciler/<clientgroup>/<version>/<kind>"
+```
+
+Controller related artifacts:
+
+- `NewImpl` - gets an injection based client and lister for <kind>, sets up
+  Kubernetes Event recorders, and delegates to `controller.NewImpl` for queue
+  management.
+
+```go
+impl := reconciler.NewImpl(ctx, reconcilerInstance)
+```
+
+Reconciler related artifacts:
+
+- `Interface` - defines the strongly typed interfaces to be implemented by a
+  controller reconciling <kind>.
+
+```go
+// Check that our Reconciler implements Interface
+var _ addressableservicereconciler.Interface = (*Reconciler)(nil)
+```
+
+#### Stubs
+
+To get started, or to use as reference. It is intended to be copied out of the
+`client` dir.
+
+`knative.dev/<repo>/pkg/client/injection/reconciler/<clientgroup>/<version>/<kind>/stubs/controller.go`
+
+- A basic implementation of `NewController`.
+
+`knative.dev/<repo>/pkg/client/injection/reconciler/<clientgroup>/<version>/<kind>/stubs/reconciler.go`
+
+- A basic implementation of `type Reconciler struct {}` and
+  `Reconciler.ReconcileKind`.
+- This shows an example `reconciler.Event`: `newReconciledNormal`
+
+### Examples
+
+Please look at
+[`sample-controller`](http://github.com/knative/sample-controller) or
+[`sample-source`](http://github.com/knative/sample-source) for working
+integrations of the generated geconciler code.
