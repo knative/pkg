@@ -3,6 +3,11 @@
 This library supports the production of controller processes with minimal
 boilerplate outside of the reconciler implementation.
 
+## Building Controllers Leveraging Generated Reconciler
+
+To adopt this model of controller construction, implementations should start
+with the following controller constructor:
+
 ## Building Controllers
 
 To adopt this model of controller construction, implementations should start
@@ -32,6 +37,69 @@ func NewController(ctx context.Context, cmw configmap.Watcher) *controller.Impl 
 	return impl
 }
 ```
+
+### Generated Reconcilers
+
+A code generator is aviable for simple subset of reconciliation requirements. A
+label above the API type will signal to the injection code generator to generate
+a strongly typed reconciler. Use `+genreconciler` to generate the reconcilers.
+
+```go
+// +genclient
+// +genreconciler
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+
+type ExampleType struct {
+	...
+}
+```
+
+`+genreconciler` will produce a helper method to get a controller impl.
+
+Update `NewController` as follows:
+
+```go
+"knative.dev/pkg/controller"
+...
+impl := controller.NewImpl(c, logger, "NameOfController")
+```
+
+becomes
+
+```go
+reconciler "knative.dev/<repo>/pkg/client/injection/reconciler/<clientgroup>/<version>/<resource>"
+...
+impl := reconciler.NewImpl(ctx, c)
+```
+
+See
+[Generated Reconciler Responsibilities](#generated-reconciler-responsibilities)
+for more information.
+
+## Implementing Reconcilers
+
+Type `Reconciler` is expected to implement `Reconcile`:
+
+```go
+func (r *Reconciler) Reconcile(ctx context.Context, key string) error {
+	...
+}
+```
+
+### Generated Reconcilers
+
+If generated reconcilers are used, Type `Reconciler` is expected to implement
+`ReconcileKind`:
+
+```go
+func (r *Reconciler) ReconcileKind(ctx context.Context, o *samplesv1alpha1.AddressableService) reconciler.Event {
+    ...
+}
+```
+
+See
+[Generated Reconciler Responsibilities](#generated-reconciler-responsibilities)
+for more information.
 
 ## Consuming Informers
 
@@ -86,7 +154,7 @@ func NewController(ctx context.Context, cmw configmap.Watcher) *controller.Impl 
 Similar to `injection.Default`, we also have `injection.Fake`. While linking the
 normal accessors sets up the former, linking their fakes set up the latter.
 
-```
+```go
 import (
 	"testing"
 
@@ -112,7 +180,7 @@ func TestFoo(t *testing.T) {
 
 The fake clients also support manually setting up contexts seeded with objects:
 
-```
+```go
 import (
 	"testing"
 
@@ -216,3 +284,56 @@ required = [
   unused-packages = false
   non-go = false
 ```
+
+## Generated Reconciler responsibility
+
+The goal of generating the reconcilers is to provide the controller implementor
+a strongly typed interface, and ensure correct reconciler behaviour around
+status updates, Kubernetes event creation, and queue management.
+
+We have already helped the queue management with libraries in this repo. But
+there was a gap in support and standards around how status updates (and retries)
+are performed, and when Kubernetes events are created for the resource.
+
+The general flow with generated reconcilers looks like the following:
+
+```
+[k8s] -> [watches] -> [reconciler enqeueue] -> [Reconcile(key)] -> [ReconcileKind(resource)]
+            ^-- you set up.                          ^-- generated       ^-- stubbed and you customize
+```
+
+The responsibility and consequences of using the generated
+`ReconcileKind(resource)` method are as follows:
+
+- In `NewController`, set up watches and reconciler enqueue requests as before.
+- Implementing `ReconcileKind(ctx, resource)`
+- Resulting changes from `Reconcile` calling `ReconcileKind(ctx, resource)`:
+  - DO NOT edit the spec of `resource`, it will be ignored.
+  - DO NOT edit the metadata of `resource`, it will be ignored.
+  - If `resource.status` is changed, `Reconcile` will synchronize it back to the
+    API Server.
+    - Note: the watches setup for `resource.Kind` will see the update to status
+      and cause another reconciliation.
+- `ReconcileKind(ctx, resource)` returns a
+  [`reconciler.Event`](../reconciler/events.go) results in:
+- If `event` is an `error` (`reconciler.Event` extends `error` internally),
+  `Reconciler` will produce a `Warning` kubernetes event with _reason_
+  `InternalError` and the body of the error as the message.
+  - Additionally, the `error` will be returned from `Reconciler` and `key` will
+    requeue back into the reconciler key queue.
+- If `event` is a `reconciler.Event`, `Reconciler` will log a typed and
+  reasoned Kubernetes Event based on the contents of `event`.
+  - `event` is not considered an error for requeue and nil is returned from
+    `Reconciler`.
+- If additional events are required to be produced, an implementation can pull a
+  recorder from the context: `recorder := controller.GetEventRecorder(ctx)`.
+
+Pending Features:
+
+- Leverage `configStore` and specifically `ctx = r.configStore.ToContext(ctx)`
+  inside `Reconcile`.
+- Resulting changes from `Reconcile` calling `ReconcileKind(ctx, resource)`:
+  - If resource.status.finalizers are updated, `Reconcile` will synchronize it
+    back to the API Server.
+  - If `resource.metadata.labels` or `.annotations` are updated, `Reconcile`
+    will synchronize it back to the API Server.
