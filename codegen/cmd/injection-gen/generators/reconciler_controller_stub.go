@@ -75,6 +75,10 @@ func (g *reconcilerControllerStubGenerator) GenerateType(c *generator.Context, t
 			Package: g.reconcilerPkg,
 			Name:    "NewImpl",
 		}),
+		"reconcilerNewFinalizingImpl": c.Universe.Type(types.Name{
+			Package: g.reconcilerPkg,
+			Name:    "NewFinalizingImpl",
+		}),
 		"loggingFromContext": c.Universe.Function(types.Name{
 			Package: "knative.dev/pkg/logging",
 			Name:    "FromContext",
@@ -102,6 +106,9 @@ func NewController(
 
 	r := &Reconciler{}
 	impl := {{.reconcilerNewImpl|raw}}(ctx, r)
+
+	// Alternatively, if {{.type|public}} requires a finalizer:
+	// impl := {{.reconcilerNewFinalizingImpl|raw}}(ctx, r, "")
 
 	logger.Info("Setting up event handlers.")
 

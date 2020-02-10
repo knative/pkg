@@ -32,6 +32,7 @@ type reconcilerControllerGenerator struct {
 	imports       namer.ImportTracker
 	filtered      bool
 
+	groupName           string
 	clientPkg           string
 	schemePkg           string
 	informerPackagePath string
@@ -65,7 +66,8 @@ func (g *reconcilerControllerGenerator) GenerateType(c *generator.Context, t *ty
 	klog.V(5).Infof("processing type %v", t)
 
 	m := map[string]interface{}{
-		"type": t,
+		"type":  t,
+		"group": g.groupName,
 		"controllerImpl": c.Universe.Type(types.Name{
 			Package: "knative.dev/pkg/controller",
 			Name:    "Impl",
@@ -136,7 +138,7 @@ func (g *reconcilerControllerGenerator) GenerateType(c *generator.Context, t *ty
 var reconcilerControllerNewImpl = `
 const (
 	defaultControllerAgentName = "{{.type|lowercaseSingular}}-controller"
-	defaultFinalizerName       = "{{.type|lowercaseSingular}}.{{.type|apiGroup}}" // TODO: check this. DO NOT SUBMIT
+	defaultFinalizerName       = "{{.type|allLowercasePlural}}.{{.group}}"
 	defaultQueueName           = "{{.type|allLowercasePlural}}"
 )
 
