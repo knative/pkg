@@ -18,7 +18,6 @@ package generators
 
 import (
 	"io"
-
 	"k8s.io/gengo/generator"
 	"k8s.io/gengo/namer"
 	"k8s.io/gengo/types"
@@ -71,9 +70,21 @@ func (g *reconcilerControllerGenerator) GenerateType(c *generator.Context, t *ty
 			Package: "knative.dev/pkg/controller",
 			Name:    "Impl",
 		}),
+		"controllerReconciler": c.Universe.Type(types.Name{
+			Package: "knative.dev/pkg/controller",
+			Name:    "Reconciler",
+		}),
+		"controllerNewImpl": c.Universe.Function(types.Name{
+			Package: "knative.dev/pkg/controller",
+			Name:    "NewImpl",
+		}),
 		"loggingFromContext": c.Universe.Function(types.Name{
 			Package: "knative.dev/pkg/logging",
 			Name:    "FromContext",
+		}),
+		"ptrString": c.Universe.Function(types.Name{
+			Package: "knative.dev/pkg/ptr",
+			Name:    "String",
 		}),
 		"corev1EventSource": c.Universe.Function(types.Name{
 			Package: "k8s.io/api/core/v1",
@@ -125,10 +136,35 @@ func (g *reconcilerControllerGenerator) GenerateType(c *generator.Context, t *ty
 var reconcilerControllerNewImpl = `
 const (
 	defaultControllerAgentName = "{{.type|lowercaseSingular}}-controller"
-	defaultFinalizerName       = "{{.type|lowercaseSingular}}"
+	defaultFinalizerName       = "{{.type|lowercaseSingular}}.{{.type|apiGroup}}" // TODO: check this. DO NOT SUBMIT
+	defaultQueueName           = "{{.type|allLowercasePlural}}"
 )
 
+// NewImpl returns a {{.controllerImpl|raw}} that handles queuing and feeding work from
+// the queue through an implementation of {{.controllerReconciler|raw}}, delegating to
+// the provided Interface.
 func NewImpl(ctx context.Context, r Interface) *{{.controllerImpl|raw}} {
+	logger := {{.loggingFromContext|raw}}(ctx)
+	rec := newRecordedReconcilerImpl(ctx, r)
+	return {{.controllerNewImpl|raw}}(rec, logger, defaultQueueName)
+}
+
+// NewFinalizingImpl returns a {{.controllerImpl|raw}} that handles queuing and feeding work from
+// the queue through an implementation of {{.controllerReconciler|raw}}, delegating to
+// the provided Interface with automatic addition and removal of the provided
+// finalizer name.
+func NewFinalizingImpl(ctx context.Context, r Interface, finalizer string) *{{.controllerImpl|raw}} {
+	logger := {{.loggingFromContext|raw}}(ctx)
+	rec := newRecordedReconcilerImpl(ctx, r)
+	finalizer = strings.TrimSpace(finalizer)
+	if finalizer == "" {
+		finalizer = defaultFinalizerName
+	}
+	rec.finalizerName = {{.ptrString|raw}}(finalizer)
+	return {{.controllerNewImpl|raw}}(rec, logger, defaultQueueName)
+}
+
+func newRecordedReconcilerImpl(ctx context.Context, r Interface) *reconcilerImpl {
 	logger := {{.loggingFromContext|raw}}(ctx)
 
 	{{.type|lowercaseSingular}}Informer := {{.informerGet|raw}}(ctx)
@@ -152,16 +188,12 @@ func NewImpl(ctx context.Context, r Interface) *{{.controllerImpl|raw}} {
 		}()
 	}
 
-	c := &reconcilerImpl{
+	return &reconcilerImpl{
 		Client:  {{.clientGet|raw}}(ctx),
 		Lister:  {{.type|lowercaseSingular}}Informer.Lister(),
 		Recorder: recorder,
-		FinalizerName: defaultFinalizerName,
 		reconciler:    r,
 	}
-	impl := controller.NewImpl(c, logger, "{{.type|allLowercasePlural}}")
-
-	return impl
 }
 
 func init() {
