@@ -77,6 +77,10 @@ func (g *reconcilerReconcilerStubGenerator) GenerateType(c *generator.Context, t
 			Package: g.reconcilerPkg,
 			Name:    "Interface",
 		}),
+		"reconcilerFinalizer": c.Universe.Type(types.Name{
+			Package: g.reconcilerPkg,
+			Name:    "Finalizer",
+		}),
 		"corev1EventTypeNormal": c.Universe.Type(types.Name{
 			Package: "k8s.io/api/core/v1",
 			Name:    "EventTypeNormal",
@@ -105,6 +109,10 @@ type Reconciler struct {
 // Check that our Reconciler implements Interface
 var _ {{.reconcilerInterface|raw}} = (*Reconciler)(nil)
 
+// Optionally check that our Reconciler implements Finalizer
+//var _ {{.reconcilerFinalizer|raw}} = (*Reconciler)(nil)
+
+
 // ReconcileKind implements Interface.ReconcileKind.
 func (r *Reconciler) ReconcileKind(ctx context.Context, o *{{.type|raw}}) {{.reconcilerEvent|raw}} {
 	o.Status.InitializeConditions()
@@ -117,7 +125,7 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, o *{{.type|raw}}) {{.rec
 
 // Optionally, use FinalizeKind to add finalizers. FinalizeKind will be called
 // when the resource is deleted.
-//func (r *Reconciler) FinalizeKind(ctx context.Context, o *v1alpha1.AddressableService) reconciler.Event {
+//func (r *Reconciler) FinalizeKind(ctx context.Context, o *{{.type|raw}}) {{.reconcilerEvent|raw}} {
 //	// TODO: add custom finalization logic here.
 //	return nil
 //}
