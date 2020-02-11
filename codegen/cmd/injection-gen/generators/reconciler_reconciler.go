@@ -294,10 +294,10 @@ var reconcilerFinalizerFactory = `
 // updateFinalizersFiltered will update the Finalizers of the resource.
 // TODO: this method could be generic and sync all finalizers. For now it only
 // updates defaultFinalizerName.
-func (r *reconcilerImpl) updateFinalizersFiltered(ctx context.Context, desired *{{.type|raw}}) error {
+func (r *reconcilerImpl) updateFinalizersFiltered(ctx context.Context, resource *{{.type|raw}}) error {
 	finalizerName := defaultFinalizerName
 
-	actual, err := r.Lister.{{.type|apiGroup}}(desired.Namespace).Get(desired.Name)
+	actual, err := r.Lister.{{.type|apiGroup}}(resource.Namespace).Get(resource.Name)
 	if err != nil {
 		return err
 	}
@@ -309,7 +309,7 @@ func (r *reconcilerImpl) updateFinalizersFiltered(ctx context.Context, desired *
 
 	// If there's nothing to update, just return.
 	existingFinalizers := sets.NewString(existing.Finalizers...)
-	desiredFinalizers := sets.NewString(desired.Finalizers...)
+	desiredFinalizers := sets.NewString(resource.Finalizers...)
 
 	if desiredFinalizers.Has(finalizerName) {
 		if existingFinalizers.Has(finalizerName) {
@@ -340,7 +340,14 @@ func (r *reconcilerImpl) updateFinalizersFiltered(ctx context.Context, desired *
 		return err
 	}
 
-	_, err = r.Client.{{.type|versionedClientset}}().{{.type|apiGroup}}(desired.Namespace).Patch(existing.Name, types.MergePatchType, patch)
+	_, err = r.Client.{{.type|versionedClientset}}().{{.type|apiGroup}}(resource.Namespace).Patch(resource.Name, types.MergePatchType, patch)
+	if err != nil {
+		r.Recorder.Eventf(resource, {{.corev1EventTypeWarning|raw}}, "FinalizerUpdateFailed",
+			"Failed to update finalizers for %q: %v", resource.Name, err)
+	} else {
+		r.Recorder.Eventf(resource, {{.corev1EventTypeNormal|raw}}, "FinalizerUpdate",
+			"Updated %q finalizers", resource.GetName())
+	}
 	return err
 }
 
