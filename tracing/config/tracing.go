@@ -99,9 +99,12 @@ func NewTracingConfigFromMap(cfgMap map[string]string) (*Config, error) {
 		}
 	}
 
-	if jaegerAgentEndpoint, ok := cfgMap[jaegerAgentEndpointKey]; ok {
+	if jaegerAgentEndpoint, agentFound := cfgMap[jaegerAgentEndpointKey]; agentFound {
 		tc.JaegerAgentEndpoint = jaegerAgentEndpoint
-	} else if jaegerCollectorEndpoint, ok := cfgMap[jaegerCollectorEndpointKey]; ok && tc.Backend == Jaeger {
+	} else if jaegerCollectorEndpoint, collectorFound := cfgMap[jaegerCollectorEndpointKey]; collectorFound {
+		if agentFound && tc.Backend == Jaeger {
+			return nil, errors.New("only one of the agent and collector endpoints can be specified for the jaeger backend")
+		}
 		tc.JaegerCollectorEndpoint = jaegerCollectorEndpoint
 	} else if tc.Backend == Jaeger {
 		return nil, errors.New("jaeger tracing enabled without a jaeger agent or collector endpoint specified")
