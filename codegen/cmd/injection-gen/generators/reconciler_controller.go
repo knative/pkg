@@ -144,31 +144,9 @@ const (
 
 // NewImpl returns a {{.controllerImpl|raw}} that handles queuing and feeding work from
 // the queue through an implementation of {{.controllerReconciler|raw}}, delegating to
-// the provided Interface.
+// the provided Interface and optional Finalizer methods.
 func NewImpl(ctx context.Context, r Interface) *{{.controllerImpl|raw}} {
 	logger := {{.loggingFromContext|raw}}(ctx)
-	rec := newRecordedReconcilerImpl(ctx, r)
-	return {{.controllerNewImpl|raw}}(rec, logger, defaultQueueName)
-}
-
-// NewFinalizingImpl returns a {{.controllerImpl|raw}} that handles queuing and feeding work from
-// the queue through an implementation of {{.controllerReconciler|raw}}, delegating to
-// the provided Interface with automatic addition and removal of the provided
-// finalizer name.
-func NewFinalizingImpl(ctx context.Context, r Interface, finalizer string) *{{.controllerImpl|raw}} {
-	logger := {{.loggingFromContext|raw}}(ctx)
-	rec := newRecordedReconcilerImpl(ctx, r)
-	finalizer = strings.TrimSpace(finalizer)
-	if finalizer == "" {
-		finalizer = defaultFinalizerName
-	}
-	rec.finalizerName = {{.ptrString|raw}}(finalizer)
-	return {{.controllerNewImpl|raw}}(rec, logger, defaultQueueName)
-}
-
-func newRecordedReconcilerImpl(ctx context.Context, r Interface) *reconcilerImpl {
-	logger := {{.loggingFromContext|raw}}(ctx)
-
 	{{.type|lowercaseSingular}}Informer := {{.informerGet|raw}}(ctx)
 
 	recorder := {{.controllerGetEventRecorder|raw}}(ctx)
@@ -190,12 +168,13 @@ func newRecordedReconcilerImpl(ctx context.Context, r Interface) *reconcilerImpl
 		}()
 	}
 
-	return &reconcilerImpl{
+	rec := &reconcilerImpl{
 		Client:  {{.clientGet|raw}}(ctx),
 		Lister:  {{.type|lowercaseSingular}}Informer.Lister(),
 		Recorder: recorder,
 		reconciler:    r,
 	}
+	return {{.controllerNewImpl|raw}}(rec, logger, defaultQueueName)
 }
 
 func init() {
