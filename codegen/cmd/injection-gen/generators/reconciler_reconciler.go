@@ -218,10 +218,12 @@ func (r *reconcilerImpl) Reconcile(ctx context.Context, key string) error {
 
 	var reconcileEvent {{.reconcilerEvent|raw}}
 	if resource.GetDeletionTimestamp().IsZero() {
-		if _, ok := r.reconciler.(Finalizer); ok {
-			// For finalizing reconcilers, if this resource is not being deleted, mark the finalizer.
-			r.setFinalizer(resource)
+		// Set and update the finalizer on resource if r.reconciler
+		// implements Finalizer.
+		if err := r.setFinalizerIfFinalizer(ctx, resource); err != nil {
+			logger.Warnw("Failed to set finalizers", zap.Error(err))
 		}
+
 		// Reconcile this copy of the resource and then write back any status
 		// updates regardless of whether the reconciliation errored out.
 		reconcileEvent = r.reconciler.ReconcileKind(ctx, resource)
@@ -229,29 +231,9 @@ func (r *reconcilerImpl) Reconcile(ctx context.Context, key string) error {
 		// For finalizing reconcilers, if this resource being marked for deletion
 		// and reconciled cleanly (nil or normal event), remove the finalizer.
 		reconcileEvent = fin.FinalizeKind(ctx, resource)
-		if reconcileEvent != nil {
-			var event *{{.reconcilerReconcilerEvent|raw}}
-			if reconciler.EventAs(reconcileEvent, &event) {
-				if event.EventType == {{.corev1EventTypeNormal|raw}} {
-					r.clearFinalizer(resource)
-				}
-			}
-		} else {
-			r.clearFinalizer(resource)
+		if err := r.clearFinalizer(ctx, resource, reconcileEvent); err != nil {
+			logger.Warnw("Failed to clear finalizers", zap.Error(err))
 		}
-	}
-
-	// Synchronize the finalizers filtered by defaultFinalizerName.
-	if equality.Semantic.DeepEqual(original.Finalizers, resource.Finalizers) {
-		// If we didn't change finalizers then don't call updateFinalizersFiltered.
-	} else if _, updated, fErr := r.updateFinalizersFiltered(ctx, resource); fErr != nil {
-		logger.Warnw("Failed to update finalizers", zap.Error(fErr))
-		r.Recorder.Eventf(resource, {{.corev1EventTypeWarning|raw}}, "FinalizerUpdateFailed",
-			"Failed to update finalizers for %q: %v", resource.Name, fErr)
-		return fErr
-	} else if updated {
-		// There was a difference and updateFinalizersFiltered said it updated and did not return an error.
-		r.Recorder.Eventf(resource, {{.corev1EventTypeNormal|raw}}, "FinalizerUpdate", "Updated %q finalizers", resource.GetName())
 	}
 
 	// Synchronize the status.
@@ -312,12 +294,12 @@ var reconcilerFinalizerFactory = `
 // updateFinalizersFiltered will update the Finalizers of the resource.
 // TODO: this method could be generic and sync all finalizers. For now it only
 // updates defaultFinalizerName.
-func (r *reconcilerImpl) updateFinalizersFiltered(ctx context.Context, desired *{{.type|raw}}) (*{{.type|raw}}, bool, error) {
+func (r *reconcilerImpl) updateFinalizersFiltered(ctx context.Context, desired *{{.type|raw}}) error {
 	finalizerName := defaultFinalizerName
 
 	actual, err := r.Lister.{{.type|apiGroup}}(desired.Namespace).Get(desired.Name)
 	if err != nil {
-		return nil, false, err
+		return err
 	}
 
 	// Don't modify the informers copy.
@@ -332,14 +314,14 @@ func (r *reconcilerImpl) updateFinalizersFiltered(ctx context.Context, desired *
 	if desiredFinalizers.Has(finalizerName) {
 		if existingFinalizers.Has(finalizerName) {
 			// Nothing to do.
-			return desired, false, nil
+			return nil
 		}
 		// Add the finalizer.
 		finalizers = append(existing.Finalizers, finalizerName)
 	} else {
 		if !existingFinalizers.Has(finalizerName) {
 			// Nothing to do.
-			return desired, false, nil
+			return nil
 		}
 		// Remove the finalizer.
 		existingFinalizers.Delete(finalizerName)
@@ -355,22 +337,55 @@ func (r *reconcilerImpl) updateFinalizersFiltered(ctx context.Context, desired *
 
 	patch, err := json.Marshal(mergePatch)
 	if err != nil {
-		return desired, false, err
+		return err
 	}
 
-	update, err := r.Client.{{.type|versionedClientset}}().{{.type|apiGroup}}(desired.Namespace).Patch(existing.Name, types.MergePatchType, patch)
-	return update, true, err
+	_, err = r.Client.{{.type|versionedClientset}}().{{.type|apiGroup}}(desired.Namespace).Patch(existing.Name, types.MergePatchType, patch)
+	return err
 }
 
-func (r *reconcilerImpl) setFinalizer(a *{{.type|raw}}) {
-		finalizers := sets.NewString(a.Finalizers...)
+func (r *reconcilerImpl) setFinalizerIfFinalizer(ctx context.Context, resource *{{.type|raw}}) error {
+	if _, ok := r.reconciler.(Finalizer); !ok {
+		return nil
+	}
+
+	finalizers := sets.NewString(resource.Finalizers...)
+
+	// If this resource is not being deleted, mark the finalizer.
+	if resource.GetDeletionTimestamp().IsZero() {
 		finalizers.Insert(defaultFinalizerName)
-		a.Finalizers = finalizers.List()
+	}
+
+	resource.Finalizers = finalizers.List()
+
+	// Synchronize the finalizers filtered by defaultFinalizerName.
+	return r.updateFinalizersFiltered(ctx, resource)
 }
 
-func (r *reconcilerImpl) clearFinalizer(a *{{.type|raw}}) {
-		finalizers := sets.NewString(a.Finalizers...)
+func (r *reconcilerImpl) clearFinalizer(ctx context.Context, resource *{{.type|raw}}, reconcileEvent {{.reconcilerEvent|raw}}) error {
+	if _, ok := r.reconciler.(Finalizer); !ok {
+		return nil
+	}
+	if resource.GetDeletionTimestamp().IsZero() {
+		return nil
+	}
+
+	finalizers := sets.NewString(resource.Finalizers...)
+
+	if reconcileEvent != nil {
+		var event *{{.reconcilerReconcilerEvent|raw}}
+		if reconciler.EventAs(reconcileEvent, &event) {
+			if event.EventType == v1.EventTypeNormal {
+				finalizers.Delete(defaultFinalizerName)
+			}
+		}
+	} else {
 		finalizers.Delete(defaultFinalizerName)
-		a.Finalizers = finalizers.List()
+	}
+
+	resource.Finalizers = finalizers.List()
+
+	// Synchronize the finalizers filtered by defaultFinalizerName.
+	return r.updateFinalizersFiltered(ctx, resource)
 }
 `
