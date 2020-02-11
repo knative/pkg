@@ -27,13 +27,17 @@ import (
 )
 
 // TestLogger gets a logger to use in unit and end to end tests
-func TestLogger(t *testing.T) *zap.SugaredLogger {
+func TestLogger(i interface{}) *zap.SugaredLogger {
 	opts := zaptest.WrapOptions(
 		zap.AddCaller(),
 		zap.Development(),
 	)
 
-	return zaptest.NewLogger(t, opts).Sugar()
+	switch v := i.(type) {
+	case *testing.B:
+		return zaptest.NewLogger(v, opts).Sugar()
+	}
+	return zaptest.NewLogger(&testing.T{}, opts).Sugar()
 }
 
 // ClearAll removes all the testing loggers.
