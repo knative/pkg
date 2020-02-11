@@ -349,7 +349,7 @@ The responsibility and consequences of using the generated
 - If additional events are required to be produced, an implementation can pull a
   recorder from the context: `recorder := controller.GetEventRecorder(ctx)`.
 
-Future features to be concidered:
+Future features to be considered:
 
 - Leverage `configStore` and specifically `ctx = r.configStore.ToContext(ctx)`
   inside `Reconcile`.
