@@ -24,7 +24,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/mattbaird/jsonpatch"
+	jsonpatch "gomodules.xyz/jsonpatch/v2"
 	"knative.dev/pkg/apis"
 	"knative.dev/pkg/client/injection/ducks/duck/v1/podspecable"
 	kubeclient "knative.dev/pkg/client/injection/kube/client/fake"
