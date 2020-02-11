@@ -93,6 +93,14 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, o *samplesv1alpha1.Addre
 }
 ```
 
+And if finalizers are required,
+
+```go
+func (r *Reconciler) FinalizeKind(ctx context.Context, o *samplesv1alpha1.AddressableService) reconciler.Event {
+    ...
+}
+```
+
 See
 [Generated Reconciler Responsibilities](#generated-reconciler-responsibilities)
 for more information.
@@ -298,11 +306,28 @@ The general flow with generated reconcilers looks like the following:
             ^-- you set up.                          ^-- generated       ^-- stubbed and you customize
 ```
 
+Optionally, support for finalizers:
+
+```
+[Reconcile(key)] -> <resource deleted?> - no -> [ReconcileKind(resource)]
+                          `
+                      (optional)
+                            `- yes -> [FinalizeKind(resource)]
+```
+
+- `ReconcileKind` is only called if the resource's deletion timestamp is empty.
+- `FinalizeKind` is optional, and if implemnted by the reconciler will be called
+  when the resource's deletion timestamp is set.
+
 The responsibility and consequences of using the generated
 `ReconcileKind(resource)` method are as follows:
 
 - In `NewController`, set up watches and reconciler enqueue requests as before.
-- Implementing `ReconcileKind(ctx, resource)`
+- Implementing `ReconcileKind(ctx, resource)` to handle active resources.
+- Implementing `FinalizeKind(ctx, resource)` to finalize deleting active
+  resources.
+  - NOTE: Implementing `FinalizeKind` will result in the reconciler using
+    finalizers on the resource.
 - Resulting changes from `Reconcile` calling `ReconcileKind(ctx, resource)`:
   - DO NOT edit the spec of `resource`, it will be ignored.
   - DO NOT edit the metadata of `resource`, it will be ignored.
@@ -324,13 +349,11 @@ The responsibility and consequences of using the generated
 - If additional events are required to be produced, an implementation can pull a
   recorder from the context: `recorder := controller.GetEventRecorder(ctx)`.
 
-Pending Features:
+Future features to be concidered:
 
 - Leverage `configStore` and specifically `ctx = r.configStore.ToContext(ctx)`
   inside `Reconcile`.
 - Resulting changes from `Reconcile` calling `ReconcileKind(ctx, resource)`:
-  - If resource.status.finalizers are updated, `Reconcile` will synchronize it
-    back to the API Server.
   - If `resource.metadata.labels` or `.annotations` are updated, `Reconcile`
     will synchronize it back to the API Server.
 - Adjust `+genreconciler` to allow for generated reconcilers to be made without
@@ -364,6 +387,14 @@ Reconciler related artifacts:
 var _ addressableservicereconciler.Interface = (*Reconciler)(nil)
 ```
 
+- `Finalizer` - defines the strongly typed interfaces to be implemented by a
+  controller finalizing <kind>.
+
+```go
+// Check that our Reconciler implements Interface
+var _ addressableservicereconciler.Finalizer = (*Reconciler)(nil)
+```
+
 #### Stubs
 
 To get started, or to use as reference. It is intended to be copied out of the
@@ -377,7 +408,9 @@ To get started, or to use as reference. It is intended to be copied out of the
 
 - A basic implementation of `type Reconciler struct {}` and
   `Reconciler.ReconcileKind`.
-- This shows an example `reconciler.Event`: `newReconciledNormal`
+- A commented out example of a basic implementation of
+  `Reconciler.FinalizeKind`.
+- An example `reconciler.Event`: `newReconciledNormal`
 
 ### Examples
 
