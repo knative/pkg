@@ -29,9 +29,9 @@ import (
 // implement the reconciler.
 type reconcilerReconcilerStubGenerator struct {
 	generator.DefaultGen
-	outputPackage string
-	imports       namer.ImportTracker
-	filtered      bool
+	outputPackage  string
+	imports        namer.ImportTracker
+	typeToGenerate *types.Type
 
 	reconcilerPkg string
 }
@@ -39,12 +39,8 @@ type reconcilerReconcilerStubGenerator struct {
 var _ generator.Generator = (*reconcilerReconcilerStubGenerator)(nil)
 
 func (g *reconcilerReconcilerStubGenerator) Filter(c *generator.Context, t *types.Type) bool {
-	// We generate a single client, so return true once.
-	if !g.filtered {
-		g.filtered = true
-		return true
-	}
-	return false
+	// Only process the type for this generator.
+	return t == g.typeToGenerate
 }
 
 func (g *reconcilerReconcilerStubGenerator) Namers(c *generator.Context) namer.NameSystems {
