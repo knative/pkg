@@ -77,6 +77,34 @@ func TestNewConfigFromMap(t *testing.T) {
 			SampleRate:     0.5,
 		},
 	}, {
+		name: "Everything enabled (jaeger collector)",
+		input: map[string]string{
+			backendKey:                 "jaeger",
+			jaegerCollectorEndpointKey: "some-endpoint",
+			debugKey:                   "true",
+			sampleRateKey:              "0.5",
+		},
+		output: Config{
+			Backend:                 Jaeger,
+			Debug:                   true,
+			JaegerCollectorEndpoint: "some-endpoint",
+			SampleRate:              0.5,
+		},
+	}, {
+		name: "Everything enabled (jaeger agent)",
+		input: map[string]string{
+			backendKey:             "jaeger",
+			jaegerAgentEndpointKey: "some-endpoint",
+			debugKey:               "true",
+			sampleRateKey:          "0.5",
+		},
+		output: Config{
+			Backend:             Jaeger,
+			Debug:               true,
+			JaegerAgentEndpoint: "some-endpoint",
+			SampleRate:          0.5,
+		},
+	}, {
 		name: "Everything enabled (zipkin)",
 		input: map[string]string{
 			backendKey:        "zipkin",

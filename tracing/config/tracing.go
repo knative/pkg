@@ -30,12 +30,14 @@ const (
 	// ConfigName is the name of the configmap
 	ConfigName = "config-tracing"
 
-	enableKey               = "enable"
-	backendKey              = "backend"
-	zipkinEndpointKey       = "zipkin-endpoint"
-	debugKey                = "debug"
-	sampleRateKey           = "sample-rate"
-	stackdriverProjectIDKey = "stackdriver-project-id"
+	enableKey                  = "enable"
+	backendKey                 = "backend"
+	jaegerAgentEndpointKey     = "jaeger-agent-endpoint"
+	jaegerCollectorEndpointKey = "jaeger-collector-endpoint"
+	zipkinEndpointKey          = "zipkin-endpoint"
+	debugKey                   = "debug"
+	sampleRateKey              = "sample-rate"
+	stackdriverProjectIDKey    = "stackdriver-project-id"
 )
 
 // BackendType specifies the backend to use for tracing
@@ -48,13 +50,17 @@ const (
 	Stackdriver BackendType = "stackdriver"
 	// Zipkin is used for Zipkin backend.
 	Zipkin BackendType = "zipkin"
+	// Jaeger is used for a Jaeger collector backend.
+	Jaeger BackendType = "jaeger"
 )
 
 // Config holds the configuration for tracers
 type Config struct {
-	Backend              BackendType
-	ZipkinEndpoint       string
-	StackdriverProjectID string
+	Backend                 BackendType
+	JaegerAgentEndpoint     string
+	JaegerCollectorEndpoint string
+	ZipkinEndpoint          string
+	StackdriverProjectID    string
 
 	Debug      bool
 	SampleRate float64
@@ -75,7 +81,7 @@ func NewTracingConfigFromMap(cfgMap map[string]string) (*Config, error) {
 
 	if backend, ok := cfgMap[backendKey]; ok {
 		switch bt := BackendType(backend); bt {
-		case Stackdriver, Zipkin, None:
+		case Stackdriver, Zipkin, Jaeger, None:
 			tc.Backend = bt
 		default:
 			return nil, fmt.Errorf("unsupported tracing backend value %q", backend)
@@ -93,10 +99,18 @@ func NewTracingConfigFromMap(cfgMap map[string]string) (*Config, error) {
 		}
 	}
 
-	if endpoint, ok := cfgMap[zipkinEndpointKey]; !ok && tc.Backend == Zipkin {
+	if jaegerAgentEndpoint, ok := cfgMap[jaegerAgentEndpointKey]; ok {
+		tc.JaegerAgentEndpoint = jaegerAgentEndpoint
+	} else if jaegerCollectorEndpoint, ok := cfgMap[jaegerCollectorEndpointKey]; ok && tc.Backend == Jaeger {
+		tc.JaegerCollectorEndpoint = jaegerCollectorEndpoint
+	} else if tc.Backend == Jaeger {
+		return nil, errors.New("jaeger tracing enabled without a jaeger agent or collector endpoint specified")
+	}
+
+	if zipkinEndpoint, ok := cfgMap[zipkinEndpointKey]; !ok && tc.Backend == Zipkin {
 		return nil, errors.New("zipkin tracing enabled without a zipkin endpoint specified")
 	} else {
-		tc.ZipkinEndpoint = endpoint
+		tc.ZipkinEndpoint = zipkinEndpoint
 	}
 
 	if projectID, ok := cfgMap[stackdriverProjectIDKey]; ok {

@@ -7,6 +7,7 @@ import (
 	"os"
 	"sync"
 
+	"contrib.go.opencensus.io/exporter/jaeger"
 	"contrib.go.opencensus.io/exporter/stackdriver"
 	oczipkin "contrib.go.opencensus.io/exporter/zipkin"
 	zipkin "github.com/openzipkin/zipkin-go"
@@ -149,6 +150,23 @@ func WithExporter(name string, logger *zap.SugaredLogger) ConfigOption {
 			reporter := httpreporter.NewReporter(cfg.ZipkinEndpoint)
 			exporter = oczipkin.NewExporter(reporter, zipEP)
 			closer = reporter
+		case config.Jaeger:
+			opts := jaeger.Options{
+				Process: jaeger.Process{
+					ServiceName: name,
+				},
+			}
+			if cfg.JaegerCollectorEndpoint != "" {
+				opts.CollectorEndpoint = cfg.JaegerCollectorEndpoint
+			} else {
+				opts.AgentEndpoint = cfg.JaegerAgentEndpoint
+			}
+			exp, err := jaeger.NewExporter(opts)
+			if err != nil {
+				logger.Errorw("error building jaeger exporter", err)
+				return err
+			}
+			exporter = exp
 		default:
 			// Disables tracing.
 		}

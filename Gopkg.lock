@@ -21,6 +21,14 @@
   version = "v0.41.0"
 
 [[projects]]
+  digest = "1:e1f07f13dce3ac184c07a727701e0fce1859c3e93318a4bf04aa022d3759d756"
+  name = "contrib.go.opencensus.io/exporter/jaeger"
+  packages = ["."]
+  pruneopts = "NUT"
+  revision = "540daef1da72376e9b3e1d52e4f90403d72f5c00"
+  version = "v0.2.0"
+
+[[projects]]
   digest = "1:0a936e17f4fc0c65615913199ce0a387a67a4c72e017747b6f38c898168b1b75"
   name = "contrib.go.opencensus.io/exporter/ocagent"
   packages = ["."]
@@ -566,6 +574,19 @@
   packages = ["lib"]
   pruneopts = "NUT"
   revision = "b5f4fca92137581c0f118ba6b106ba0cb3a2c84e"
+
+[[projects]]
+  digest = "1:c5049ddbecc9b95c1989bf4a99be655d50ac9f78a3788a5fb80d42a6d897f0c5"
+  name = "github.com/uber/jaeger-client-go"
+  packages = [
+    "thrift",
+    "thrift-gen/agent",
+    "thrift-gen/jaeger",
+    "thrift-gen/zipkincore",
+  ]
+  pruneopts = "NUT"
+  revision = "2d55657eac169e2a86b4fcc1a421e26a9a485b63"
+  version = "v2.22.1"
 
 [[projects]]
   digest = "1:0e3fd52087079d1289983e4fef32268ca965973f5370b69204e2934185527baa"
@@ -1346,6 +1367,7 @@
   input-imports = [
     "cloud.google.com/go/compute/metadata",
     "cloud.google.com/go/storage",
+    "contrib.go.opencensus.io/exporter/jaeger",
     "contrib.go.opencensus.io/exporter/ocagent",
     "contrib.go.opencensus.io/exporter/prometheus",
     "contrib.go.opencensus.io/exporter/stackdriver",
