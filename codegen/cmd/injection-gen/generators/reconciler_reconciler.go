@@ -28,23 +28,19 @@ import (
 // reconcilerReconcilerGenerator produces a reconciler struct for the given type.
 type reconcilerReconcilerGenerator struct {
 	generator.DefaultGen
-	outputPackage string
-	imports       namer.ImportTracker
-	filtered      bool
-	clientsetPkg  string
-	listerName    string
-	listerPkg     string
+	outputPackage  string
+	imports        namer.ImportTracker
+	typeToGenerate *types.Type
+	clientsetPkg   string
+	listerName     string
+	listerPkg      string
 }
 
 var _ generator.Generator = (*reconcilerReconcilerGenerator)(nil)
 
 func (g *reconcilerReconcilerGenerator) Filter(c *generator.Context, t *types.Type) bool {
-	// We generate a single client, so return true once.
-	if !g.filtered {
-		g.filtered = true
-		return true
-	}
-	return false
+	// Only process the type for this generator.
+	return t == g.typeToGenerate
 }
 
 func (g *reconcilerReconcilerGenerator) Namers(c *generator.Context) namer.NameSystems {

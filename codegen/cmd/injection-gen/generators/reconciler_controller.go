@@ -28,9 +28,9 @@ import (
 // with injection.
 type reconcilerControllerGenerator struct {
 	generator.DefaultGen
-	outputPackage string
-	imports       namer.ImportTracker
-	filtered      bool
+	outputPackage  string
+	imports        namer.ImportTracker
+	typeToGenerate *types.Type
 
 	groupName           string
 	clientPkg           string
@@ -41,12 +41,8 @@ type reconcilerControllerGenerator struct {
 var _ generator.Generator = (*reconcilerControllerGenerator)(nil)
 
 func (g *reconcilerControllerGenerator) Filter(c *generator.Context, t *types.Type) bool {
-	// We generate a single client, so return true once.
-	if !g.filtered {
-		g.filtered = true
-		return true
-	}
-	return false
+	// Only process the type for this generator.
+	return t == g.typeToGenerate
 }
 
 func (g *reconcilerControllerGenerator) Namers(c *generator.Context) namer.NameSystems {
