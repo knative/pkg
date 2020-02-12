@@ -236,6 +236,10 @@ func (r *reconcilerImpl) Reconcile(ctx context.Context, key string) error {
 		}
 	}
 
+        // Since the Reconciler observed this object, update the Status.ObservedGeneration
+        // to match the objects ObservedGeneration.
+        resource.Status.ObservedGeneration = original.Generation
+
 	// Synchronize the status.
 	if equality.Semantic.DeepEqual(original.Status, resource.Status) {
 		// If we didn't change anything then don't call updateStatus.
