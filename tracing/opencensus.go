@@ -112,6 +112,18 @@ func createOCTConfig(cfg *config.Config) *trace.Config {
 	return &octCfg
 }
 
+func mkServiceName(name string) (string, error) {
+	// When name is unspecified, create a service name from hostname.
+	if name == "" {
+		n, err := os.Hostname()
+		if err != nil {
+			return "", fmt.Errorf("unable to get hostname: %v", err)
+		}
+		name = n
+	}
+	return name, nil
+}
+
 // WithExporter returns a ConfigOption for use with NewOpenCensusTracer that configures
 // it to export traces based on the configuration read from config-tracing.
 func WithExporter(name string, logger *zap.SugaredLogger) ConfigOption {
@@ -131,15 +143,10 @@ func WithExporter(name string, logger *zap.SugaredLogger) ConfigOption {
 			}
 			exporter = exp
 		case config.Zipkin:
-			// If name isn't specified, then zipkin.NewEndpoint will return an error saying that it
-			// can't find the host named ''. So, if not specified, default it to this machine's
-			// hostname.
-			if name == "" {
-				n, err := os.Hostname()
-				if err != nil {
-					return fmt.Errorf("unable to get hostname: %v", err)
-				}
-				name = n
+			name, err := mkServiceName(name)
+			if err != nil {
+				logger.Errorw("error creating service name", zap.Error(err))
+				return err
 			}
 			hostPort := name + ":80"
 			zipEP, err := zipkin.NewEndpoint(name, hostPort)
@@ -151,6 +158,11 @@ func WithExporter(name string, logger *zap.SugaredLogger) ConfigOption {
 			exporter = oczipkin.NewExporter(reporter, zipEP)
 			closer = reporter
 		case config.Jaeger:
+			name, err := mkServiceName(name)
+			if err != nil {
+				logger.Errorw("error creating service name", zap.Error(err))
+				return err
+			}
 			opts := jaeger.Options{
 				Process: jaeger.Process{
 					ServiceName: name,
