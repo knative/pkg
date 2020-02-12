@@ -97,13 +97,15 @@ func Filter(gvk schema.GroupVersionKind) func(obj interface{}) bool {
 // schema.GroupVersionKind of the controlling resources.
 func FilterGroupVersionKind(gvk schema.GroupVersionKind) func(obj interface{}) bool {
 	return func(obj interface{}) bool {
-		if object, ok := obj.(metav1.Object); ok {
-			owner := metav1.GetControllerOf(object)
-			return owner != nil &&
-				owner.APIVersion == gvk.GroupVersion().String() &&
-				owner.Kind == gvk.Kind
+		object, ok := obj.(metav1.Object)
+		if !ok {
+			return false
 		}
-		return false
+
+		owner := metav1.GetControllerOf(object)
+		return owner != nil &&
+			owner.APIVersion == gvk.GroupVersion().String() &&
+			owner.Kind == gvk.Kind
 	}
 }
 
@@ -112,20 +114,20 @@ func FilterGroupVersionKind(gvk schema.GroupVersionKind) func(obj interface{}) b
 // schema.GroupKind of the controlling resources.
 func FilterGroupKind(gk schema.GroupKind) func(obj interface{}) bool {
 	return func(obj interface{}) bool {
-		if object, ok := obj.(metav1.Object); ok {
-			owner := metav1.GetControllerOf(object)
-			if owner == nil {
-				return false
-			}
-
-			ownerGV, err := schema.ParseGroupVersion(owner.APIVersion)
-			if err != nil {
-				return false
-			}
-
-			return ownerGV.Group == gk.Group && owner.Kind == gk.Kind
+		object, ok := obj.(metav1.Object)
+		if !ok {
+			return false
 		}
-		return false
+
+		owner := metav1.GetControllerOf(object)
+		if owner == nil {
+			return false
+		}
+
+		ownerGV, err := schema.ParseGroupVersion(owner.APIVersion)
+		return err == nil &&
+			ownerGV.Group == gk.Group &&
+			owner.Kind == gk.Kind
 	}
 }
 
