@@ -115,7 +115,6 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, o *{{.type|raw}}) {{.rec
 
 	// TODO: add custom reconciliation logic here.
 
-	o.Status.ObservedGeneration = o.Generation
 	return newReconciledNormal(o.Namespace, o.Name)
 }
 
