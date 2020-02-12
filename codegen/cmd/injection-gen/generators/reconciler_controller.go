@@ -187,7 +187,7 @@ func NewImpl(ctx context.Context, r Interface, optionsFns ...OptionsFn) *{{.cont
 	impl := {{.controllerNewImpl|raw}}(rec, logger, defaultQueueName)
 
 	// Pass impl to the options. Save any optional results.
-	for _, fn := range optionFns {
+	for _, fn := range optionsFns {
 		opts := fn(impl)
 		if opts.ConfigStore != nil {
 			rec.configStore = opts.ConfigStore
