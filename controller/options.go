@@ -24,3 +24,8 @@ type Options struct {
 	// ConfigStore is used to attach the frozen configuration to the context.
 	ConfigStore reconciler.ConfigStore
 }
+
+// OptionsFn is a callback method signature that accepts an Impl and returns
+// Options. Used for controllers that need access to the members of Options but
+// to build Options, integrators need an Impl.
+type OptionsFn func(impl *Impl) Options

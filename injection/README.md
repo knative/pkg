@@ -371,21 +371,21 @@ To add this feature to the generated reconciler, it will have to be passed in on
 kindreconciler "knative.dev/<repo>/pkg/client/injection/reconciler/<clientgroup>/<version>/<resource>"
 ...
 impl := kindreconciler.NewImpl(ctx, c, func(impl *controller.Impl) controller.Options {
-	    // Setup options that require access to a controller.Impl.
-		configsToResync := []interface{}{
-			&some.Config{},
-		}
-		resyncOnConfigChange := configmap.TypeFilter(configsToResync...)(func(string, interface{}) {
-			impl.FilteredGlobalResync(myFilterFunc, kindInformer.Informer())
-		})
-		configStore := config.NewStore(c.Logger.Named("config-store"), resyncOnConfigChange)
-		configStore.WatchConfigs(cmw)
-
-        // Return the controller options.
-		return controller.Options{
-			ConfigStore: configStore,
-		}
+	// Setup options that require access to a controller.Impl.
+	configsToResync := []interface{}{
+		&some.Config{},
+	}
+	resyncOnConfigChange := configmap.TypeFilter(configsToResync...)(func(string, interface{}) {
+		impl.FilteredGlobalResync(myFilterFunc, kindInformer.Informer())
 	})
+	configStore := config.NewStore(c.Logger.Named("config-store"), resyncOnConfigChange)
+	configStore.WatchConfigs(cmw)
+
+	// Return the controller options.
+	return controller.Options{
+		ConfigStore: configStore,
+	}
+})
 ```
 
 ### Artifacts
