@@ -125,6 +125,10 @@ func (g *reconcilerControllerGenerator) GenerateType(c *generator.Context, t *ty
 			Package: "knative.dev/pkg/controller",
 			Name:    "GetEventRecorder",
 		}),
+		"controllerOptions": c.Universe.Type(types.Name{
+			Package: "knative.dev/pkg/controller",
+			Name:    "Options",
+		}),
 	}
 
 	sw.Do(reconcilerControllerNewImpl, m)
@@ -139,11 +143,20 @@ const (
 	defaultQueueName           = "{{.type|allLowercasePlural}}"
 )
 
+type OptionsFn func (impl *{{.controllerImpl|raw}}) {{.controllerOptions|raw}}
+
 // NewImpl returns a {{.controllerImpl|raw}} that handles queuing and feeding work from
 // the queue through an implementation of {{.controllerReconciler|raw}}, delegating to
-// the provided Interface and optional Finalizer methods.
-func NewImpl(ctx context.Context, r Interface) *{{.controllerImpl|raw}} {
+// the provided Interface and optional Finalizer methods. OptionsFn is used to return
+// {{.controllerOptions|raw}} to be used but the internal reconciler.
+func NewImpl(ctx context.Context, r Interface, optionsFns ...OptionsFn) *{{.controllerImpl|raw}} {
 	logger := {{.loggingFromContext|raw}}(ctx)
+
+	// Check the options function input. It should be 0 or 1.
+	if len(optionsFns) > 1 {
+		logger.Fatalf("up to one options function is supported, found %d", len(optionsFns))
+	}
+
 	{{.type|lowercaseSingular}}Informer := {{.informerGet|raw}}(ctx)
 
 	recorder := {{.controllerGetEventRecorder|raw}}(ctx)
@@ -171,7 +184,17 @@ func NewImpl(ctx context.Context, r Interface) *{{.controllerImpl|raw}} {
 		Recorder: recorder,
 		reconciler:    r,
 	}
-	return {{.controllerNewImpl|raw}}(rec, logger, defaultQueueName)
+	impl := {{.controllerNewImpl|raw}}(rec, logger, defaultQueueName)
+
+	// Pass impl to the options. Save any optional results.
+	for _, fn := range optionFns {
+		opts := fn(impl)
+		if opts.ConfigStore != nil {
+			rec.configStore = opts.ConfigStore
+		}
+	}
+	
+	return impl
 }
 
 func init() {
