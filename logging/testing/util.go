@@ -36,8 +36,10 @@ func TestLogger(i interface{}) *zap.SugaredLogger {
 	switch v := i.(type) {
 	case *testing.B:
 		return zaptest.NewLogger(v, opts).Sugar()
+	case *testing.T:
+		return zaptest.NewLogger(v, opts).Sugar()
 	}
-	return zaptest.NewLogger(&testing.T{}, opts).Sugar()
+	return &zap.SugaredLogger{}
 }
 
 // ClearAll removes all the testing loggers.
