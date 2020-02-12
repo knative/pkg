@@ -27,8 +27,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/mattbaird/jsonpatch"
 	"golang.org/x/sync/errgroup"
+	jsonpatch "gomodules.xyz/jsonpatch/v2"
 	admissionv1beta1 "k8s.io/api/admission/v1beta1"
 	authenticationv1 "k8s.io/api/authentication/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"

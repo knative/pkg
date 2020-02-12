@@ -194,6 +194,84 @@ func TestCreatePatch(t *testing.T) {
 			Value:     "bar",
 		}},
 	}, {
+		name: "patch with remove elements from array",
+		before: &Patch{
+			Spec: PatchSpec{
+				Patchable: &Patchable{
+					Array: []string{"foo", "bar"},
+				},
+			},
+		},
+		after: &Patch{
+			Spec: PatchSpec{
+				Patchable: &Patchable{
+					Array: []string{"bar"},
+				},
+			},
+		},
+		want: JSONPatch{{
+			Operation: "remove",
+			Path:      "/status/patchable/array/0",
+		}},
+	}, {
+		name: "patch with remove collection",
+		before: &Patch{
+			Spec: PatchSpec{
+				Patchable: &Patchable{
+					Array: []string{"foo", "bar"},
+				},
+			},
+		},
+		after: &Patch{
+			Spec: PatchSpec{
+				Patchable: &Patchable{},
+			},
+		},
+		want: JSONPatch{{
+			Operation: "remove",
+			Path:      "/status/patchable/array",
+		}},
+	}, {
+		name: "patch with add elements to array",
+		before: &Patch{
+			Spec: PatchSpec{
+				Patchable: &Patchable{
+					Array: []string{"bar"},
+				},
+			},
+		},
+		after: &Patch{
+			Spec: PatchSpec{
+				Patchable: &Patchable{
+					Array: []string{"foo", "bar"},
+				},
+			},
+		},
+		want: JSONPatch{{
+			Operation: "add",
+			Path:      "/status/patchable/array/0",
+			Value:     "foo",
+		}},
+	}, {
+		name: "patch with add array",
+		before: &Patch{
+			Spec: PatchSpec{
+				Patchable: &Patchable{},
+			},
+		},
+		after: &Patch{
+			Spec: PatchSpec{
+				Patchable: &Patchable{
+					Array: []string{"foo"},
+				},
+			},
+		},
+		want: JSONPatch{{
+			Operation: "add",
+			Path:      "/status/patchable/array",
+			Value:     []interface{}{string("foo")},
+		}},
+	}, {
 		name:    "before doesn't marshal",
 		before:  &DoesntMarshal{},
 		after:   &Patch{},
