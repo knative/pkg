@@ -361,12 +361,13 @@ Future features to be considered:
 
 ### ConfigStore
 
-Config store is used to decorate the context with a snapshot of configmaps to be used in a reconciler method.
+Config store is used to decorate the context with a snapshot of configmaps to be
+used in a reconciler method.
 
-To add this feature to the generated reconciler, it will have to be passed in on `reconciler<kind>.NewImpl` like so:
+To add this feature to the generated reconciler, it will have to be passed in on
+`reconciler<kind>.NewImpl` like so:
 
 ```go
-controller "knative.dev/pkg/controller"
 kindreconciler "knative.dev/<repo>/pkg/client/injection/reconciler/<clientgroup>/<version>/<resource>"
 ...
 impl := kindreconciler.NewImpl(ctx, c, func(impl *controller.Impl) controller.Options {
@@ -385,7 +386,7 @@ impl := kindreconciler.NewImpl(ctx, c, func(impl *controller.Impl) controller.Op
 			ConfigStore: configStore,
 		}
 	})
-```  
+```
 
 ### Artifacts
 

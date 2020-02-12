@@ -193,7 +193,7 @@ func NewImpl(ctx context.Context, r Interface, optionsFns ...OptionsFn) *{{.cont
 			rec.configStore = opts.ConfigStore
 		}
 	}
-	
+
 	return impl
 }
 

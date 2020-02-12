@@ -197,7 +197,7 @@ func NewReconciler(ctx context.Context, logger *{{.zapSugaredLogger|raw}}, clien
 		Recorder: recorder,
 		reconciler:    r,
 	}
-	
+
 	for _, opts := range options {
 		if opts.ConfigStore != nil {
 			rec.configStore = opts.ConfigStore
