@@ -214,7 +214,7 @@ func (r *reconcilerImpl) Reconcile(ctx context.Context, key string) error {
 	logger := {{.loggingFromContext|raw}}(ctx)
 
 	// If configStore is set, attach the frozen configuration to the context.
-	if r.configStore {
+	if r.configStore != nil {
 		ctx = r.configStore.ToContext(ctx)
 	}
 
