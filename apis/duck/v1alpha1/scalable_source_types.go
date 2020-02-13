@@ -49,10 +49,6 @@ type SourceScaler struct {
 }
 
 const (
-	// SourceScalerProvided has status True when the Source
-	// has been configured with an SourceScaler.
-	SourceScalerProvided apis.ConditionType = "ScalerProvided"
-
 	// SourceScalerAnnotationKey is the annotation for the explicit class of
 	// source scaler that a particular resource has opted into. For example,
 	// sources.knative.dev/scaler: foo
@@ -187,10 +183,6 @@ func (s *KedaSource) Populate() {
 	s.Status.Conditions = v1.Conditions{{
 		// Populate ALL fields
 		Type:               v1.SourceConditionSinkProvided,
-		Status:             corev1.ConditionTrue,
-		LastTransitionTime: apis.VolatileTime{Inner: metav1.NewTime(time.Date(1984, 02, 28, 18, 52, 00, 00, time.UTC))},
-	}, {
-		Type:               SourceScalerProvided,
 		Status:             corev1.ConditionTrue,
 		LastTransitionTime: apis.VolatileTime{Inner: metav1.NewTime(time.Date(1984, 02, 28, 18, 52, 00, 00, time.UTC))},
 	}}
