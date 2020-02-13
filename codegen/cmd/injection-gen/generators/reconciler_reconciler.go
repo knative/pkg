@@ -248,7 +248,7 @@ func (r *reconcilerImpl) Reconcile(ctx {{.contextContext|raw}}, key string) erro
 
 		// Set and update the finalizer on resource if r.reconciler
 		// implements Finalizer.
-		if resource, err := r.setFinalizerIfFinalizer(ctx, resource); err != nil {
+		if resource, err = r.setFinalizerIfFinalizer(ctx, resource); err != nil {
 			logger.Warnw("Failed to set finalizers", zap.Error(err))
 		}
 
