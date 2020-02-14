@@ -17,7 +17,9 @@ limitations under the License.
 package v1alpha1
 
 import (
+	"context"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"knative.dev/pkg/apis"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
 	"knative.dev/pkg/kmeta"
@@ -63,4 +65,26 @@ type BarList struct {
 	metav1.ListMeta `json:"metadata"`
 
 	Items []Bar `json:"items"`
+}
+
+// -- lifecycle --
+
+// GetGroupVersionKind implements kmeta.OwnerRefable
+func (b *Bar) GetGroupVersionKind() schema.GroupVersionKind {
+	return SchemeGroupVersion.WithKind("Bar")
+}
+
+// -- Defaults --
+
+// SetDefaults implements apis.Defaultable
+func (b *Bar) SetDefaults(ctx context.Context) {
+	// Nothing to default.
+}
+
+// -- Validation --
+
+// Validate implements apis.Validatable
+func (b *Bar) Validate(ctx context.Context) *apis.FieldError {
+	// Nothing to validate.
+	return nil
 }
