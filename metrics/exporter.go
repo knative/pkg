@@ -73,17 +73,15 @@ type ExporterOptions struct {
 
 // UpdateExporterFromConfigMap returns a helper func that can be used to update the exporter
 // when a config map is updated.
-// DEPRECATED: Callers should migrate to UpdateExporterFromConfigMap3 (which will be renamed
-// when all callers are migrated).
+// DEPRECATED: Callers should migrate to ConfigMapWatcher.
 func UpdateExporterFromConfigMap(component string, logger *zap.SugaredLogger) func(configMap *corev1.ConfigMap) {
-	return UpdateExporterFromConfigMap3(component, nil, logger)
+	return ConfigMapWatcher(component, nil, logger)
 }
 
-// UpdateExporterFromConfigMap3 includes a corev1.SecretLister which is used to configure
-// mTLS with the opencensus agent.
-// Callers should migrate to this function, which will be renamed to UpdateExporterFromConfigMap
-// once all callers in all repos are renamed.
-func UpdateExporterFromConfigMap3(component string, secrets clientv1.SecretLister, logger *zap.SugaredLogger) func(*corev1.ConfigMap) {
+// ConfigMapWatcher returns a helper func which updates the exporter configuration based on
+// values in the supplied ConfigMap. This method captures a corev1.SecretLister which is used
+// to configure mTLS with the opencensus agent.
+func ConfigMapWatcher(component string, secrets clientv1.SecretLister, logger *zap.SugaredLogger) func(*corev1.ConfigMap) {
 	domain := Domain()
 	return func(configMap *corev1.ConfigMap) {
 		UpdateExporter(ExporterOptions{

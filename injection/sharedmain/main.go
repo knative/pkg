@@ -192,7 +192,7 @@ func MainWithConfig(ctx context.Context, component string, cfg *rest.Config, cto
 		metav1.GetOptions{}); err == nil {
 		secretLister := secrets.Get(ctx).Lister()
 		cmw.Watch(metrics.ConfigMapName(),
-			metrics.UpdateExporterFromConfigMap3(component, secretLister, logger),
+			metrics.ConfigMapWatcher(component, secretLister, logger),
 			profilingHandler.UpdateFromConfigMap)
 	} else if !apierrors.IsNotFound(err) {
 		logger.With(zap.Error(err)).Fatalf("Error reading ConfigMap %q", metrics.ConfigMapName())
