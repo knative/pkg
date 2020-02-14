@@ -19,11 +19,12 @@ package psbinding
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"testing"
 	"time"
 
-	"github.com/mattbaird/jsonpatch"
+	jsonpatch "gomodules.xyz/jsonpatch/v2"
 	"knative.dev/pkg/apis"
 	"knative.dev/pkg/client/injection/ducks/duck/v1/podspecable"
 	kubeclient "knative.dev/pkg/client/injection/kube/client/fake"
@@ -40,6 +41,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	clientgotesting "k8s.io/client-go/testing"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/record"
@@ -1393,6 +1395,83 @@ func TestBaseReconcile(t *testing.T) {
 		WantPatches: []clientgotesting.PatchActionImpl{
 			patchRemoveFinalizer("foo", "bar", "" /* resource version */),
 		},
+	}, {
+		Name: "finalizing forbidden subject",
+		Key:  "foo/bar",
+		WithReactors: []clientgotesting.ReactionFunc{
+			// This will cause the duck informer factory to return a Forbidden error on Get(gvr)
+			// The informer calls list to ensure the type exists - this will
+			func(a clientgotesting.Action) (handled bool, ret runtime.Object, err error) {
+				if a.Matches("list", "deployments") {
+					return true, nil, apierrs.NewForbidden(schema.GroupResource{}, "", errors.New("some-error"))
+				}
+				return false, nil, nil
+			},
+		},
+		Objects: []runtime.Object{
+			&TestBindable{
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace:         "foo",
+					Name:              "bar",
+					DeletionTimestamp: &metav1.Time{time.Now()},
+					Finalizers:        []string{"testbindables.duck.knative.dev"},
+				},
+				Spec: TestBindableSpec{
+					BindingSpec: duckv1alpha1.BindingSpec{
+						Subject: tracker.Reference{
+							APIVersion: "apps/v1",
+							Kind:       "Deployment",
+							Namespace:  "foo",
+							Name:       "on-it",
+						},
+					},
+					Foo: "new value",
+				},
+				Status: TestBindableStatus{
+					Status: duckv1.Status{
+						Conditions: []apis.Condition{{
+							Type:   "Ready",
+							Status: "True",
+						}},
+					},
+				},
+			},
+		},
+		WantPatches: []clientgotesting.PatchActionImpl{
+			patchRemoveFinalizer("foo", "bar", "" /* resource version */),
+		},
+		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+			Object: mustTU(t, &TestBindable{
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace:         "foo",
+					Name:              "bar",
+					DeletionTimestamp: &metav1.Time{time.Now()},
+					Finalizers:        []string{"testbindables.duck.knative.dev"},
+				},
+				Spec: TestBindableSpec{
+					BindingSpec: duckv1alpha1.BindingSpec{
+						Subject: tracker.Reference{
+							APIVersion: "apps/v1",
+							Kind:       "Deployment",
+							Namespace:  "foo",
+							Name:       "on-it",
+						},
+					},
+					Foo: "new value",
+				},
+				Status: TestBindableStatus{
+					Status: duckv1.Status{
+						Conditions: []apis.Condition{{
+							Type:   "Ready",
+							Status: "False",
+							Reason: "SubjectUnavailable",
+							// prefix comes from apiserrs.NewForbidden
+							Message: "forbidden: some-error",
+						}},
+					},
+				},
+			}),
+		}},
 	}, {
 		Name: "finalizing (unbind, and remove the finalizer)",
 		Key:  "foo/bar",

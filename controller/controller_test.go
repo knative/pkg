@@ -198,8 +198,8 @@ func TestFilterWithName(t *testing.T) {
 	}
 }
 
-func TestFilter(t *testing.T) {
-	filter := Filter(gvk)
+func TestFilterGroupKind(t *testing.T) {
+	filter := FilterGroupKind(gvk.GroupKind())
 
 	tests := []struct {
 		name  string
@@ -278,6 +278,126 @@ func TestFilter(t *testing.T) {
 			},
 		},
 		want: true,
+	}, {
+		name: "right owner reference, is controller, different version",
+		input: &Resource{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "foo",
+				Namespace: "bar",
+				OwnerReferences: []metav1.OwnerReference{{
+					APIVersion: schema.GroupVersion{Group: gvk.Group, Version: "other"}.String(),
+					Kind:       gvk.Kind,
+					Controller: &boolTrue,
+				}},
+			},
+		},
+		want: true,
+	}}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			got := filter(test.input)
+			if test.want != got {
+				t.Errorf("Filter() = %v, wanted %v", got, test.want)
+			}
+		})
+	}
+}
+
+func TestFilterGroupVersionKind(t *testing.T) {
+	filter := FilterGroupVersionKind(gvk)
+
+	tests := []struct {
+		name  string
+		input interface{}
+		want  bool
+	}{{
+		name:  "not a metav1.Object",
+		input: "foo",
+		want:  false,
+	}, {
+		name:  "nil",
+		input: nil,
+		want:  false,
+	}, {
+		name: "no owner reference",
+		input: &Resource{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "foo",
+				Namespace: "bar",
+			},
+		},
+		want: false,
+	}, {
+		name: "wrong owner reference, not controller",
+		input: &Resource{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "foo",
+				Namespace: "bar",
+				OwnerReferences: []metav1.OwnerReference{{
+					APIVersion: "another.knative.dev/v1beta3",
+					Kind:       "Parent",
+					Controller: &boolFalse,
+				}},
+			},
+		},
+		want: false,
+	}, {
+		name: "right owner reference, not controller",
+		input: &Resource{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "foo",
+				Namespace: "bar",
+				OwnerReferences: []metav1.OwnerReference{{
+					APIVersion: gvk.GroupVersion().String(),
+					Kind:       gvk.Kind,
+					Controller: &boolFalse,
+				}},
+			},
+		},
+		want: false,
+	}, {
+		name: "wrong owner reference, but controller",
+		input: &Resource{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "foo",
+				Namespace: "bar",
+				OwnerReferences: []metav1.OwnerReference{{
+					APIVersion: "another.knative.dev/v1beta3",
+					Kind:       "Parent",
+					Controller: &boolTrue,
+				}},
+			},
+		},
+		want: false,
+	}, {
+		name: "right owner reference, is controller",
+		input: &Resource{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "foo",
+				Namespace: "bar",
+				OwnerReferences: []metav1.OwnerReference{{
+					APIVersion: gvk.GroupVersion().String(),
+					Kind:       gvk.Kind,
+					Controller: &boolTrue,
+				}},
+			},
+		},
+		want: true,
+	}, {
+		name: "right owner reference, is controller, wrong version",
+		input: &Resource{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "foo",
+				Namespace: "bar",
+				OwnerReferences: []metav1.OwnerReference{{
+					APIVersion: schema.GroupVersion{Group: gvk.Group, Version: "other"}.String(),
+					Kind:       gvk.Kind,
+					Controller: &boolTrue,
+				}},
+			},
+		},
+		want: false,
 	}}
 
 	for _, test := range tests {
