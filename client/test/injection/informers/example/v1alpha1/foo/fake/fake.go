@@ -21,8 +21,8 @@ package fake
 import (
 	"context"
 
+	foo "knative.dev/pkg/client/test/injection/informers/example/v1alpha1/foo"
 	fake "knative.dev/pkg/client/test/injection/informers/factory/fake"
-	foo "knative.dev/pkg/client/test/injection/informers/sample/v1alpha1/foo"
 	controller "knative.dev/pkg/controller"
 	injection "knative.dev/pkg/injection"
 )

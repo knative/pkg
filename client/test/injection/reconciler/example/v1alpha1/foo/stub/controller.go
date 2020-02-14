@@ -21,8 +21,8 @@ package foo
 import (
 	context "context"
 
-	foo "knative.dev/pkg/client/test/injection/informers/sample/v1alpha1/foo"
-	v1alpha1foo "knative.dev/pkg/client/test/injection/reconciler/sample/v1alpha1/foo"
+	foo "knative.dev/pkg/client/test/injection/informers/example/v1alpha1/foo"
+	v1alpha1foo "knative.dev/pkg/client/test/injection/reconciler/example/v1alpha1/foo"
 	configmap "knative.dev/pkg/configmap"
 	controller "knative.dev/pkg/controller"
 	logging "knative.dev/pkg/logging"

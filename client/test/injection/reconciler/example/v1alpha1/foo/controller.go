@@ -29,7 +29,7 @@ import (
 	client "knative.dev/pkg/client/injection/kube/client"
 	versionedscheme "knative.dev/pkg/client/test/clientset/versioned/scheme"
 	injectionclient "knative.dev/pkg/client/test/injection/client"
-	foo "knative.dev/pkg/client/test/injection/informers/sample/v1alpha1/foo"
+	foo "knative.dev/pkg/client/test/injection/informers/example/v1alpha1/foo"
 	controller "knative.dev/pkg/controller"
 	logging "knative.dev/pkg/logging"
 )

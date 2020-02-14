@@ -72,6 +72,9 @@ ${GOPATH}/bin/deepcopy-gen --input-dirs \
   -O zz_generated.deepcopy \
   --go-header-file ${REPO_ROOT_DIR}/hack/boilerplate/boilerplate.go.txt
 
+# Update test client.
+${REPO_ROOT_DIR}/hack/update-test-codegen.sh
+
 # Make sure our dependencies are up-to-date
 ${REPO_ROOT_DIR}/hack/update-deps.sh
 

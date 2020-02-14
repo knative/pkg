@@ -308,7 +308,7 @@ func versionFactoryPackages(basePackage string, boilerplate []byte, customArgs *
 
 func versionInformerPackages(basePackage string, groupPkgName string, gv clientgentypes.GroupVersion, groupGoName string, boilerplate []byte, typesToGenerate []*types.Type, customArgs *informergenargs.CustomArgs) []generator.Package {
 	factoryPackagePath := filepath.Join(basePackage, "informers", "factory")
-	packagePath := filepath.Join(basePackage, "informers", strings.ToLower(groupGoName), strings.ToLower(gv.Version.NonEmpty()))
+	packagePath := filepath.Join(basePackage, "informers", groupPkgName, strings.ToLower(gv.Version.NonEmpty()))
 
 	vers := make([]generator.Package, 0, len(typesToGenerate))
 
@@ -379,7 +379,7 @@ func versionInformerPackages(basePackage string, groupPkgName string, gv clientg
 }
 
 func reconcilerPackages(basePackage string, groupPkgName string, gv clientgentypes.GroupVersion, groupGoName string, boilerplate []byte, typesToGenerate []*types.Type, customArgs *informergenargs.CustomArgs) []generator.Package {
-	packagePath := filepath.Join(basePackage, "reconciler", strings.ToLower(groupGoName), strings.ToLower(gv.Version.NonEmpty()))
+	packagePath := filepath.Join(basePackage, "reconciler", groupPkgName, strings.ToLower(gv.Version.NonEmpty()))
 
 	vers := make([]generator.Package, 0, len(typesToGenerate))
 
@@ -390,9 +390,9 @@ func reconcilerPackages(basePackage string, groupPkgName string, gv clientgentyp
 		packagePath := filepath.Join(packagePath, strings.ToLower(t.Name.Name))
 
 		clientPackagePath := filepath.Join(basePackage, "client")
-		informerPackagePath := filepath.Join(basePackage, "informers", strings.ToLower(groupGoName), strings.ToLower(gv.Version.NonEmpty()), strings.ToLower(t.Name.Name))
+		informerPackagePath := filepath.Join(basePackage, "informers", groupPkgName, strings.ToLower(gv.Version.NonEmpty()), strings.ToLower(t.Name.Name))
 
-		listerPackagePath := filepath.Join(customArgs.ListersPackage, strings.ToLower(groupGoName), strings.ToLower(gv.Version.NonEmpty()))
+		listerPackagePath := filepath.Join(customArgs.ListersPackage, groupPkgName, strings.ToLower(gv.Version.NonEmpty()))
 
 		// Controller
 		vers = append(vers, &generator.DefaultPackage{
@@ -504,7 +504,7 @@ func reconcilerPackages(basePackage string, groupPkgName string, gv clientgentyp
 }
 
 func versionDuckPackages(basePackage string, groupPkgName string, gv clientgentypes.GroupVersion, groupGoName string, boilerplate []byte, typesToGenerate []*types.Type, customArgs *informergenargs.CustomArgs) []generator.Package {
-	packagePath := filepath.Join(basePackage, "ducks", strings.ToLower(groupGoName), strings.ToLower(gv.Version.NonEmpty()))
+	packagePath := filepath.Join(basePackage, "ducks", groupPkgName, strings.ToLower(gv.Version.NonEmpty()))
 
 	vers := make([]generator.Package, 0, len(typesToGenerate))
 

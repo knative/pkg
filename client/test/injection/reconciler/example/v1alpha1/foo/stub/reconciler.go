@@ -23,7 +23,7 @@ import (
 
 	v1 "k8s.io/api/core/v1"
 	v1alpha1 "knative.dev/pkg/apis/test/example/v1alpha1"
-	foo "knative.dev/pkg/client/test/injection/reconciler/sample/v1alpha1/foo"
+	foo "knative.dev/pkg/client/test/injection/reconciler/example/v1alpha1/foo"
 	reconciler "knative.dev/pkg/reconciler"
 )
 

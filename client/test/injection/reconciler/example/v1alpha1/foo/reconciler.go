@@ -34,7 +34,7 @@ import (
 	record "k8s.io/client-go/tools/record"
 	v1alpha1 "knative.dev/pkg/apis/test/example/v1alpha1"
 	versioned "knative.dev/pkg/client/test/clientset/versioned"
-	samplev1alpha1 "knative.dev/pkg/client/test/listers/sample/v1alpha1"
+	examplev1alpha1 "knative.dev/pkg/client/test/listers/example/v1alpha1"
 	controller "knative.dev/pkg/controller"
 	logging "knative.dev/pkg/logging"
 	reconciler "knative.dev/pkg/reconciler"
@@ -69,7 +69,7 @@ type reconcilerImpl struct {
 	Client versioned.Interface
 
 	// Listers index properties about resources
-	Lister samplev1alpha1.FooLister
+	Lister examplev1alpha1.FooLister
 
 	// Recorder is an event recorder for recording Event resources to the
 	// Kubernetes API.
@@ -86,7 +86,7 @@ type reconcilerImpl struct {
 // Check that our Reconciler implements controller.Reconciler
 var _ controller.Reconciler = (*reconcilerImpl)(nil)
 
-func NewReconciler(ctx context.Context, logger *zap.SugaredLogger, client versioned.Interface, lister samplev1alpha1.FooLister, recorder record.EventRecorder, r Interface, options ...controller.Options) controller.Reconciler {
+func NewReconciler(ctx context.Context, logger *zap.SugaredLogger, client versioned.Interface, lister examplev1alpha1.FooLister, recorder record.EventRecorder, r Interface, options ...controller.Options) controller.Reconciler {
 	// Check the options function input. It should be 0 or 1.
 	if len(options) > 1 {
 		logger.Fatalf("up to one options struct is supported, found %d", len(options))
