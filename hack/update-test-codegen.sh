@@ -28,15 +28,25 @@ KNATIVE_CODEGEN_PKG=${KNATIVE_CODEGEN_PKG:-$(cd ${REPO_ROOT_DIR}; ls -d -1 $(dir
   rm -rf ${REPO_ROOT_DIR}/knative.dev/pkg/apis/test
 )
 
-# For testing.
 ${CODEGEN_PKG}/generate-groups.sh "deepcopy,client,informer,lister" \
   knative.dev/pkg/client/test knative.dev/pkg/apis/test \
-  "example:v1alpha1 sample:v1alpha1" \
+  "example:v1alpha1" \
   --go-header-file ${REPO_ROOT_DIR}/hack/boilerplate/boilerplate.go.txt
 
 # Knative Injection
 ${KNATIVE_CODEGEN_PKG}/hack/generate-knative.sh "injection" \
   knative.dev/pkg/client/test knative.dev/pkg/apis/test \
-  "example:v1alpha1 sample:v1alpha1" \
+  "example:v1alpha1" \
+  --go-header-file ${REPO_ROOT_DIR}/hack/boilerplate/boilerplate.go.txt
+
+${CODEGEN_PKG}/generate-groups.sh "deepcopy,client,informer,lister" \
+  knative.dev/pkg/client/test/pub knative.dev/pkg/apis/test \
+  "pub:v1alpha1" \
+  --go-header-file ${REPO_ROOT_DIR}/hack/boilerplate/boilerplate.go.txt
+
+# Knative Injection
+${KNATIVE_CODEGEN_PKG}/hack/generate-knative.sh "injection" \
+  knative.dev/pkg/client/test/pub knative.dev/pkg/apis/test \
+  "pub:v1alpha1" \
   --go-header-file ${REPO_ROOT_DIR}/hack/boilerplate/boilerplate.go.txt
 

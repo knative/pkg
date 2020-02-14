@@ -29,64 +29,64 @@ import (
 // +genreconciler
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
-// Foo is for testing.
-type Foo struct {
+// Bar is for testing.
+type Bar struct {
 	metav1.TypeMeta `json:",inline"`
 	// +optional
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	// Spec holds the desired state of the Foo (from the client).
+	// Spec holds the desired state of the Bar (from the client).
 	// +optional
-	Spec FooSpec `json:"spec,omitempty"`
+	Spec BarSpec `json:"spec,omitempty"`
 
-	// Status communicates the observed state of the Foo (from the controller).
+	// Status communicates the observed state of the Bar (from the controller).
 	// +optional
-	Status FooStatus `json:"status,omitempty"`
+	Status BarStatus `json:"status,omitempty"`
 }
 
-// Check that Foo can be validated and defaulted.
-var _ apis.Validatable = (*Foo)(nil)
-var _ apis.Defaultable = (*Foo)(nil)
-var _ kmeta.OwnerRefable = (*Foo)(nil)
+// Check that Bar can be validated and defaulted.
+var _ apis.Validatable = (*Bar)(nil)
+var _ apis.Defaultable = (*Bar)(nil)
+var _ kmeta.OwnerRefable = (*Bar)(nil)
 
-// FooSpec holds the desired state of the Foo (from the client).
-type FooSpec struct{}
+// BarSpec holds the desired state of the Bar (from the client).
+type BarSpec struct{}
 
-// FooStatus communicates the observed state of the Foo (from the controller).
-type FooStatus struct {
+// BarStatus communicates the observed state of the Bar (from the controller).
+type BarStatus struct {
 	duckv1.Status `json:",inline"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
-// FooList is a list of Foo resources
-type FooList struct {
+// BarList is a list of Bar resources
+type BarList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata"`
 
-	Items []Foo `json:"items"`
+	Items []Bar `json:"items"`
 }
 
 // -- lifecycle --
 
-func (fs *FooStatus) InitializeConditions() {}
+func (bs *BarStatus) InitializeConditions() {}
 
 // GetGroupVersionKind implements kmeta.OwnerRefable
-func (f *Foo) GetGroupVersionKind() schema.GroupVersionKind {
+func (b *Bar) GetGroupVersionKind() schema.GroupVersionKind {
 	return SchemeGroupVersion.WithKind("Bar")
 }
 
 // -- Defaults --
 
 // SetDefaults implements apis.Defaultable
-func (f *Foo) SetDefaults(ctx context.Context) {
+func (b *Bar) SetDefaults(ctx context.Context) {
 	// Nothing to default.
 }
 
 // -- Validation --
 
 // Validate implements apis.Validatable
-func (f *Foo) Validate(ctx context.Context) *apis.FieldError {
+func (b *Bar) Validate(ctx context.Context) *apis.FieldError {
 	// Nothing to validate.
 	return nil
 }

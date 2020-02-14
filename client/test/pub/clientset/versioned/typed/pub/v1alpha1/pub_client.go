@@ -20,13 +20,13 @@ package v1alpha1
 
 import (
 	rest "k8s.io/client-go/rest"
-	v1alpha1 "knative.dev/pkg/apis/test/example/v1alpha1"
-	"knative.dev/pkg/client/test/clientset/versioned/scheme"
+	v1alpha1 "knative.dev/pkg/apis/test/pub/v1alpha1"
+	"knative.dev/pkg/client/test/pub/clientset/versioned/scheme"
 )
 
 type SampleV1alpha1Interface interface {
 	RESTClient() rest.Interface
-	FoosGetter
+	BarsGetter
 }
 
 // SampleV1alpha1Client is used to interact with features provided by the sample.knative.dev group.
@@ -34,8 +34,8 @@ type SampleV1alpha1Client struct {
 	restClient rest.Interface
 }
 
-func (c *SampleV1alpha1Client) Foos(namespace string) FooInterface {
-	return newFoos(c, namespace)
+func (c *SampleV1alpha1Client) Bars(namespace string) BarInterface {
+	return newBars(c, namespace)
 }
 
 // NewForConfig creates a new SampleV1alpha1Client for the given config.

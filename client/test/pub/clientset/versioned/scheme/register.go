@@ -24,7 +24,7 @@ import (
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	serializer "k8s.io/apimachinery/pkg/runtime/serializer"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
-	samplev1alpha1 "knative.dev/pkg/apis/test/example/v1alpha1"
+	samplev1alpha1 "knative.dev/pkg/apis/test/pub/v1alpha1"
 )
 
 var Scheme = runtime.NewScheme()

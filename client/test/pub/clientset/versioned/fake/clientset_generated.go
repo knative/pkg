@@ -24,9 +24,9 @@ import (
 	"k8s.io/client-go/discovery"
 	fakediscovery "k8s.io/client-go/discovery/fake"
 	"k8s.io/client-go/testing"
-	clientset "knative.dev/pkg/client/test/clientset/versioned"
-	samplev1alpha1 "knative.dev/pkg/client/test/clientset/versioned/typed/example/v1alpha1"
-	fakesamplev1alpha1 "knative.dev/pkg/client/test/clientset/versioned/typed/example/v1alpha1/fake"
+	clientset "knative.dev/pkg/client/test/pub/clientset/versioned"
+	samplev1alpha1 "knative.dev/pkg/client/test/pub/clientset/versioned/typed/pub/v1alpha1"
+	fakesamplev1alpha1 "knative.dev/pkg/client/test/pub/clientset/versioned/typed/pub/v1alpha1/fake"
 )
 
 // NewSimpleClientset returns a clientset that will respond with the provided objects.

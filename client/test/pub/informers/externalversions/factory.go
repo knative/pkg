@@ -27,9 +27,9 @@ import (
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	cache "k8s.io/client-go/tools/cache"
-	versioned "knative.dev/pkg/client/test/clientset/versioned"
-	example "knative.dev/pkg/client/test/informers/externalversions/example"
-	internalinterfaces "knative.dev/pkg/client/test/informers/externalversions/internalinterfaces"
+	versioned "knative.dev/pkg/client/test/pub/clientset/versioned"
+	internalinterfaces "knative.dev/pkg/client/test/pub/informers/externalversions/internalinterfaces"
+	pub "knative.dev/pkg/client/test/pub/informers/externalversions/pub"
 )
 
 // SharedInformerOption defines the functional option type for SharedInformerFactory.
@@ -172,9 +172,9 @@ type SharedInformerFactory interface {
 	ForResource(resource schema.GroupVersionResource) (GenericInformer, error)
 	WaitForCacheSync(stopCh <-chan struct{}) map[reflect.Type]bool
 
-	Sample() example.Interface
+	Sample() pub.Interface
 }
 
-func (f *sharedInformerFactory) Sample() example.Interface {
-	return example.New(f, f.namespace, f.tweakListOptions)
+func (f *sharedInformerFactory) Sample() pub.Interface {
+	return pub.New(f, f.namespace, f.tweakListOptions)
 }

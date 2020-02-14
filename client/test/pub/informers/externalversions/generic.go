@@ -23,7 +23,7 @@ import (
 
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	cache "k8s.io/client-go/tools/cache"
-	v1alpha1 "knative.dev/pkg/apis/test/example/v1alpha1"
+	v1alpha1 "knative.dev/pkg/apis/test/pub/v1alpha1"
 )
 
 // GenericInformer is type of SharedIndexInformer which will locate and delegate to other
@@ -53,8 +53,8 @@ func (f *genericInformer) Lister() cache.GenericLister {
 func (f *sharedInformerFactory) ForResource(resource schema.GroupVersionResource) (GenericInformer, error) {
 	switch resource {
 	// Group=sample.knative.dev, Version=v1alpha1
-	case v1alpha1.SchemeGroupVersion.WithResource("foos"):
-		return &genericInformer{resource: resource.GroupResource(), informer: f.Sample().V1alpha1().Foos().Informer()}, nil
+	case v1alpha1.SchemeGroupVersion.WithResource("bars"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Sample().V1alpha1().Bars().Informer()}, nil
 
 	}
 
