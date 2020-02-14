@@ -76,5 +76,5 @@ func certificateFetcher(secretName string, lister clientv1.SecretLister) (tls.Ce
 	if err != nil {
 		return tls.Certificate{}, err
 	}
-	return tls.X509KeyPair(secret.Data["server-cert.pem"], secret.Data["server-key.pem"])
+	return tls.X509KeyPair(secret.Data["client-cert.pem"], secret.Data["client-key.pem"])
 }
