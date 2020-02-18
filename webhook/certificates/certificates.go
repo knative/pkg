@@ -18,6 +18,9 @@ package certificates
 
 import (
 	"context"
+	"crypto/tls"
+	"crypto/x509"
+	"time"
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/kubernetes"
@@ -68,7 +71,18 @@ func (r *reconciler) reconcileCertificate(ctx context.Context) error {
 		logger.Infof("Certificate secret %q is missing key %q", r.secretName, certresources.CACert)
 	} else {
 		// It has all of the keys, it's good.
-		return nil
+		cert, err := tls.X509KeyPair(secret.Data[certresources.ServerCert], secret.Data[certresources.ServerKey])
+		if err != nil {
+			logger.Infof("error creating pem from certificate and key")
+		}
+		certData, err := x509.ParseCertificate(cert.Certificate[0])
+		if err != nil {
+			logger.Infof("error parsing certificate: ", err.Error)
+		}
+		oneWeek := 168 * time.Hour
+		if certData.NotAfter.Sub(time.Now()) > oneWeek {
+			return nil
+		}
 	}
 	// Don't modify the informer copy.
 	secret = secret.DeepCopy()

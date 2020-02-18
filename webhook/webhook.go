@@ -19,11 +19,9 @@ package webhook
 import (
 	"context"
 	"crypto/tls"
-	"crypto/x509"
 	"errors"
 	"fmt"
 	"net/http"
-	"time"
 
 	// Injection stuff
 	kubeclient "knative.dev/pkg/client/injection/kube/client"
@@ -31,7 +29,6 @@ import (
 
 	"go.uber.org/zap"
 	"golang.org/x/sync/errgroup"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	corelisters "k8s.io/client-go/listers/core/v1"
 	"knative.dev/pkg/logging"
@@ -166,15 +163,6 @@ func (wh *Webhook) Run(stop <-chan struct{}) error {
 				cert, err := tls.X509KeyPair(serverCert, serverKey)
 				if err != nil {
 					return nil, err
-				}
-				certData, err := x509.ParseCertificate(cert.Certificate[0])
-				if err != nil {
-					logger.Info("failed to parse certificate: " + err.Error())
-				}
-				oneWeek := 168 * time.Hour
-				if certData.NotAfter.Sub(time.Now()) < oneWeek {
-					wh.Client.CoreV1().Secrets(system.Namespace()).Delete(secret.Name, &metav1.DeleteOptions{})
-					logger.Info("Deleting secret so that the certificate will renew.")
 				}
 				return &cert, nil
 			},
