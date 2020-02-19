@@ -22,17 +22,17 @@ import (
 	"knative.dev/pkg/test/logging"
 )
 
-type de struct {
+type testStruct struct {
 	D string
 	e float64
 }
 
 var (
-	someStruct de
+	someStruct testStruct
 	couldBeErr error
 )
 
-func init() { someStruct = de{"hello", 42.0} }
+func init() { someStruct = testStruct{"hello", 42.0} }
 
 // godoc limitation; this would be named Test*(), of course
 
