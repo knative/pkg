@@ -408,7 +408,7 @@ func reconcilerPackages(basePackage string, groupPkgName string, gv clientgentyp
 					typeToGenerate:      t,
 					outputPackage:       packagePath,
 					imports:             generator.NewImportTracker(),
-					groupName:           gv.Group.String(), // TODO: look at this.
+					groupName:           gv.Group.String(),
 					clientPkg:           clientPackagePath,
 					informerPackagePath: informerPackagePath,
 					schemePkg:           filepath.Join(customArgs.VersionedClientSetPackage, "scheme"),
