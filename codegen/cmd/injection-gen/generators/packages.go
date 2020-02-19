@@ -144,7 +144,6 @@ type Tags struct {
 
 	GenerateDuck       bool
 	GenerateReconciler bool
-	ClassFilter        *string
 }
 
 func (t Tags) NeedsInformerInjection() bool {

@@ -198,7 +198,7 @@ type reconcilerImpl struct {
 	reconciler Interface
 
 	{{if .hasClass}}
-	// classValue is the resource annotation[{{ .class }}] instance value this reconciler instance filters on. 
+	// classValue is the resource annotation[{{ .class }}] instance value this reconciler instance filters on.
 	classValue string
 	{{end}}
 }

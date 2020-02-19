@@ -423,6 +423,35 @@ var _ addressableservicereconciler.Interface = (*Reconciler)(nil)
 var _ addressableservicereconciler.Finalizer = (*Reconciler)(nil)
 ```
 
+#### Annotation based class filters
+
+Sometimes a reconciler only wants to reconcile a class of resource identified by
+a special annotation on the Custom Resource.
+
+This behavior can be enabled in the generators by adding the annotation class
+key to the type struct:
+
+```go
+// +genreconciler:class=example.com/filter.class
+```
+
+The `genreconciler` generator code will now have the addition of
+`classValue string` to `NewImpl` and `NewReconciler` (for tests):
+
+```go
+NewImpl(ctx context.Context, r Interface, classValue string, optionsFns ...controller.OptionsFn) *controller.Impl
+```
+
+```go
+NewReconciler(ctx context.Context, logger *zap.SugaredLogger, client versioned.Interface, lister pubv1alpha1.BarLister, recorder record.EventRecorder, r Interface, classValue string, options ...controller.Options) controller.Reconciler
+```
+
+`ReconcileKind` and `FinalizeKind` will NOT be called for resources that DO NOT
+have the provided `+genreconciler:class=<key>` key annotation. Additionally the
+value of the `<key>` annotation on a resource must match the value provided to
+`NewImpl` (or `NewReconcile`) for `ReconcileKind` or `FinalizeKind` to be called
+for that resource.
+
 #### Stubs
 
 To get started, or to use as reference. It is intended to be copied out of the
