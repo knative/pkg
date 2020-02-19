@@ -24,8 +24,9 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"go.opencensus.io/stats/view"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/labels"
-	clientv1 "k8s.io/client-go/listers/core/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	logtesting "knative.dev/pkg/logging/testing"
 )
 
@@ -64,12 +65,15 @@ func TestOpenCensusConfig(t *testing.T) {
 			domain:             "secure",
 			component:          "test",
 			backendDestination: OpenCensus,
-			secretsLister: fakeSecretList(corev1.Secret{
+			secretFetcher: fakeSecretList(corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test-opencensus",
+				},
 				Data: map[string][]byte{
 					"client-cert.pem": cert,
 					"client-key.pem":  key,
 				},
-			}),
+			}).Get,
 			requireSecure: true,
 		},
 		tls: &tls.Config{},
@@ -134,16 +138,13 @@ func fakeSecretList(s ...corev1.Secret) *fakeSecrets {
 	return &fakeSecrets{secrets: s}
 }
 
-func (f *fakeSecrets) List(selector labels.Selector) ([]*corev1.Secret, error) {
-	return nil, fmt.Errorf("Not implemented yet!")
-}
-
-func (f *fakeSecrets) Secrets(namespace string) clientv1.SecretNamespaceLister {
-	return f
-}
-
 func (f *fakeSecrets) Get(name string) (*corev1.Secret, error) {
-	return &f.secrets[0], nil
+	for _, s := range f.secrets {
+		if s.Name == name {
+			return &s, nil
+		}
+	}
+	return nil, errors.NewNotFound(schema.GroupResource{Resource: "secrets"}, name)
 }
 
 func GetServer(config *tls.Config) (net.Listener, chan error, error) {

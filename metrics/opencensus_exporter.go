@@ -22,8 +22,6 @@ import (
 	"go.uber.org/zap"
 	"google.golang.org/grpc/credentials"
 	"k8s.io/apimachinery/pkg/api/errors"
-	clientv1 "k8s.io/client-go/listers/core/v1"
-	"knative.dev/pkg/system"
 )
 
 func newOpenCensusExporter(config *metricsConfig, logger *zap.SugaredLogger) (view.Exporter, error) {
@@ -32,7 +30,7 @@ func newOpenCensusExporter(config *metricsConfig, logger *zap.SugaredLogger) (vi
 		opts = append(opts, ocagent.WithAddress(config.collectorAddress))
 	}
 	if config.requireSecure {
-		opts = append(opts, ocagent.WithTLSCredentials(credentialFetcher(config.component, config.secretsLister, logger)))
+		opts = append(opts, ocagent.WithTLSCredentials(credentialFetcher(config.component, config.secretFetcher, logger)))
 	} else {
 		opts = append(opts, ocagent.WithInsecure())
 	}
@@ -50,7 +48,7 @@ func newOpenCensusExporter(config *metricsConfig, logger *zap.SugaredLogger) (vi
 // for communicating with the OpenCensus Agent. To do this, it first looks
 // for a secret named "<component>-opencensus", then for a generic
 // "opencensus" secret.
-func credentialFetcher(component string, lister clientv1.SecretLister, logger *zap.SugaredLogger) credentials.TransportCredentials {
+func credentialFetcher(component string, lister SecretFetcher, logger *zap.SugaredLogger) credentials.TransportCredentials {
 	if lister == nil {
 		logger.Errorf("No secret lister provided for component %q; cannot use requireSecure=true", component)
 		return nil
@@ -71,8 +69,8 @@ func credentialFetcher(component string, lister clientv1.SecretLister, logger *z
 	})
 }
 
-func certificateFetcher(secretName string, lister clientv1.SecretLister) (tls.Certificate, error) {
-	secret, err := lister.Secrets(system.Namespace()).Get(secretName)
+func certificateFetcher(secretName string, lister SecretFetcher) (tls.Certificate, error) {
+	secret, err := lister(secretName)
 	if err != nil {
 		return tls.Certificate{}, err
 	}

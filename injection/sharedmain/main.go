@@ -29,6 +29,7 @@ import (
 
 	"go.opencensus.io/stats/view"
 	"golang.org/x/sync/errgroup"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/rest"
@@ -37,7 +38,6 @@ import (
 	"go.uber.org/zap"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	kubeclient "knative.dev/pkg/client/injection/kube/client"
-	secrets "knative.dev/pkg/client/injection/kube/informers/core/v1/secret"
 	"knative.dev/pkg/configmap"
 	"knative.dev/pkg/controller"
 	"knative.dev/pkg/injection"
@@ -190,9 +190,15 @@ func MainWithConfig(ctx context.Context, component string, cfg *rest.Config, cto
 	// Watch the observability config map
 	if _, err := kubeclient.Get(ctx).CoreV1().ConfigMaps(system.Namespace()).Get(metrics.ConfigMapName(),
 		metav1.GetOptions{}); err == nil {
-		secretLister := secrets.Get(ctx).Lister()
+		// NOTE: Do not use secrets.Get(ctx) here to get a SecretLister, as it will register
+		// a *global* SecretInformer and require cluster-level `secrets.list` permission,
+		// even if you scope down the Lister to a given namespace after requesting it. Instead,
+		// we package up a function from kubeclient.
+		secretFetcher := func(name string) (*corev1.Secret, error) {
+			return kubeclient.Get(ctx).CoreV1().Secrets(system.Namespace()).Get(name, metav1.GetOptions{})
+		}
 		cmw.Watch(metrics.ConfigMapName(),
-			metrics.ConfigMapWatcher(component, secretLister, logger),
+			metrics.ConfigMapWatcher(component, secretFetcher, logger),
 			profilingHandler.UpdateFromConfigMap)
 	} else if !apierrors.IsNotFound(err) {
 		logger.With(zap.Error(err)).Fatalf("Error reading ConfigMap %q", metrics.ConfigMapName())
