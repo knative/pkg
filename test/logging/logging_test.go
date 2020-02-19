@@ -22,7 +22,7 @@ import (
 	"testing"
 )
 
-type abc struct {
+type abcf struct {
 	A int
 	b string
 	C *de
@@ -34,12 +34,10 @@ type de struct {
 	e float64
 }
 
-const runFailingTests = false
-
-var someStruct abc
+var someStruct abcf
 
 func init() {
-	someStruct = abc{
+	someStruct = abcf{
 		A: 42,
 		b: "some string",
 		C: &de{
@@ -77,15 +75,6 @@ func TestTLogger(legacy *testing.T) {
 			ts.V(6).Info("I am also invisible!")
 		})
 	})
-	if runFailingTests {
-		t.Run("Failing1", func(ts *TLogger) {
-			t.Collect("collected_error", errors.New("collected"))
-			ts.Error("I am an error", "hello", "world")
-		})
-		t.Run("Failing2", func(ts *TLogger) {
-			ts.Fatal("I am a fatal error", "hello", "world")
-		})
-	}
 	t.Run("Skipped", func(ts *TLogger) {
 		ts.SkipNow()
 	})
@@ -96,14 +85,62 @@ func TestTLogger(legacy *testing.T) {
 	t.Logf("Sadly still have to support %s", "LogF")
 }
 
+func TestTLoggerFailing(legacy *testing.T) {
+	t, cancel := NewTLogger(legacy)
+	defer cancel()
+	t.dontFail = true
+
+	t.Run("Failing1", func(ts *TLogger) {
+		t.V(0).Info("dontFail values", "t", t.dontFail, "ts", ts.dontFail)
+		t.Collect("collected_error", errors.New("collected"))
+		ts.Error("I am an error", "hello", "world")
+	})
+	t.Run("Failing2", func(ts *TLogger) {
+		ts.Fatal("I am a fatal error", "hello", "world")
+	})
+}
+
+type errorWithRuntimeCheckValues struct {
+	testName           string
+	inputs             []interface{}
+	expectedError      error
+	expectedString     string
+	expectedInterfaces []interface{}
+}
+
 func TestTLoggerInternals(legacy *testing.T) {
 	verbosity = 2
 	InitializeLogger()
 	t, cancel := NewTLogger(legacy)
 	defer cancel()
 
+	tests := []errorWithRuntimeCheckValues{
+		{"empty", nil, nil, "", nil},
+		{"string with valid single key-value pair", []interface{}{"greetings!", "hello", "world"}, nil, "greetings!", []interface{}{"hello", "world"}},
+		{"junk inputs", []interface{}{42}, nil, "unstructured error", t.interfacesToFields(42)},
+	}
+
+	for _, tt := range tests {
+		t.Run("errorWithRuntimeCheck "+tt.testName, func(t *TLogger) {
+			e, s, i := t.errorWithRuntimeCheck(tt.inputs...)
+			if e != tt.expectedError {
+				t.Error("error did not match", "got", e, "want", tt.expectedError)
+			}
+			if s != tt.expectedString {
+				t.Error("string did not match", "got", s, "want", tt.expectedString)
+			}
+			if !reflect.DeepEqual(i, tt.expectedInterfaces) {
+				t.Error("interfaces did not match", "got", i, "want", tt.expectedInterfaces)
+			}
+		})
+	}
+
 	if validateKeysAndValues(42, "whoops not string key before") {
 		t.Error("Should not have accepted non-string key")
+	}
+
+	if !validateKeysAndValues("we like string keys", "any value is fine") {
+		t.Error("Should have accepted string key")
 	}
 
 	input := []interface{}{4, 5, 6}
@@ -123,8 +160,4 @@ func TestStructuredError(legacy *testing.T) {
 	defer cancel()
 	err := Error("Hello World", "key", "value", "current function", TestStructuredError, "deep struct", someStruct, "z", 4, "y", 3, "x", 2, "w", 1)
 	t.Log(err.Error())
-	if runFailingTests {
-		t.Error(err)
-		t.ErrorIfErr(err, "Demonstrate twice!")
-	}
 }

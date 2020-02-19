@@ -41,12 +41,11 @@ type structuredError struct {
 
 func keysAndValuesToSpewedMap(args ...interface{}) map[string]string {
 	m := make(map[string]string)
-	for i := 0; i < len(args); {
+	for i := 0; i < len(args); i += 2 {
 		key, val := args[i], args[i+1]
 		if keyStr, ok := key.(string); ok {
 			m[keyStr] = spew.Sdump(val)
 		}
-		i += 2
 	}
 	return m
 }

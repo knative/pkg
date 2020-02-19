@@ -134,7 +134,8 @@ var (
 )
 
 // InitializeLogger initializes logging for Knative tests.
-// It should be called prior to executing tests but after command-line flags have been processed. Recommend doing it in a TestMain().
+// It should be called prior to executing tests but after command-line flags have been processed.
+// Recommend doing it in a TestMain().
 func InitializeLogger() {
 	loggerInitializeOnce.Do(func() {
 		humanEncoder := zapcore.NewConsoleEncoder(zap.NewDevelopmentEncoderConfig())

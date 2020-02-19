@@ -28,10 +28,11 @@ import (
 
 // TLogger is TLogger
 type TLogger struct {
-	l     *zap.Logger
-	level int
-	t     *testing.T
-	errs  map[string][]interface{} // For Collect()
+	l        *zap.Logger
+	level    int
+	t        *testing.T
+	errs     map[string][]interface{} // For Collect()
+	dontFail bool
 }
 
 // V() returns an InfoLogger from go-logr.
@@ -85,7 +86,7 @@ func (o *TLogger) WithName(name string) *TLogger {
 func (o *TLogger) ErrorIfErr(err error, msg string, keysAndValues ...interface{}) {
 	if err != nil {
 		o.error(err, msg, keysAndValues)
-		o.t.Fail()
+		o.fail()
 	}
 }
 
@@ -93,7 +94,7 @@ func (o *TLogger) ErrorIfErr(err error, msg string, keysAndValues ...interface{}
 func (o *TLogger) FatalIfErr(err error, msg string, keysAndValues ...interface{}) {
 	if err != nil {
 		o.error(err, msg, keysAndValues)
-		o.t.FailNow()
+		o.failNow()
 	}
 }
 
@@ -105,7 +106,7 @@ func (o *TLogger) FatalIfErr(err error, msg string, keysAndValues ...interface{}
 func (o *TLogger) Error(stringThenKeysAndValues ...interface{}) {
 	// Using o.error to have consistent call depth for Error, FatalIfErr, Info, etc
 	o.error(o.errorWithRuntimeCheck(stringThenKeysAndValues...))
-	o.t.Fail()
+	o.fail()
 }
 
 // Fatal is essentially a .V(errorLevel).Info() followed by failing and immediately stopping the test.
@@ -115,7 +116,19 @@ func (o *TLogger) Error(stringThenKeysAndValues ...interface{}) {
 // Implements test.TLegacy
 func (o *TLogger) Fatal(stringThenKeysAndValues ...interface{}) {
 	o.error(o.errorWithRuntimeCheck(stringThenKeysAndValues...))
-	o.t.FailNow()
+	o.failNow()
+}
+
+func (o *TLogger) fail() {
+	if o.t != nil && !o.dontFail {
+		o.t.Fail()
+	}
+}
+
+func (o *TLogger) failNow() {
+	if o.t != nil && !o.dontFail {
+		o.t.FailNow()
+	}
 }
 
 func validateKeysAndValues(keysAndValues ...interface{}) bool {
@@ -156,14 +169,14 @@ func (o *TLogger) errorWithRuntimeCheck(stringThenKeysAndValues ...interface{}) 
 		if isString {
 			// Desired case (hopefully)
 			remainder := stringThenKeysAndValues[1:]
-			if !validateKeysAndValues(remainder) {
-				remainder = o.interfacesToFields(remainder)
+			if !validateKeysAndValues(remainder...) {
+				remainder = o.interfacesToFields(remainder...)
 			}
 			return nil, s, remainder
 		} else if isError && len(stringThenKeysAndValues) == 1 {
 			return e, "", nil
 		} else {
-			return nil, "unstructured error", o.interfacesToFields(stringThenKeysAndValues)
+			return nil, "unstructured error", o.interfacesToFields(stringThenKeysAndValues...)
 		}
 	}
 }
@@ -171,7 +184,7 @@ func (o *TLogger) errorWithRuntimeCheck(stringThenKeysAndValues ...interface{}) 
 // Run a subtest. Just like testing.T.Run but creates a TLogger.
 func (o *TLogger) Run(name string, f func(t *TLogger)) {
 	tfunc := func(ts *testing.T) {
-		tl, cancel := newTLogger(ts, o.level)
+		tl, cancel := newTLogger(ts, o.level, o.dontFail)
 		defer cancel()
 		f(tl)
 	}
@@ -260,10 +273,10 @@ func (o *TLogger) error(err error, msg string, keysAndValues []interface{}) {
 // Create a TLogger object using the global Zap logger and the current testing.T
 // `defer` a call to second return value immediately after.
 func NewTLogger(t *testing.T) (*TLogger, func()) {
-	return newTLogger(t, verbosity)
+	return newTLogger(t, verbosity, false)
 }
 
-func newTLogger(t *testing.T, verbosity int) (*TLogger, func()) {
+func newTLogger(t *testing.T, verbosity int, dontFail bool) (*TLogger, func()) {
 	testOptions := []zap.Option{
 		zap.AddCaller(),
 		zap.AddCallerSkip(2),
@@ -299,10 +312,11 @@ func newTLogger(t *testing.T, verbosity int) (*TLogger, func()) {
 	}
 	log := zap.New(core, testOptions...).Named(t.Name())
 	tlogger := TLogger{
-		l:     log,
-		level: verbosity,
-		t:     t,
-		errs:  make(map[string][]interface{}, 0),
+		l:        log,
+		level:    verbosity,
+		t:        t,
+		errs:     make(map[string][]interface{}, 0),
+		dontFail: dontFail,
 	}
 	return &tlogger, func() {
 		tlogger.handleCollectedErrors()
@@ -314,10 +328,11 @@ func newTLogger(t *testing.T, verbosity int) (*TLogger, func()) {
 
 func (o *TLogger) cloneWithNewLogger(l *zap.Logger) *TLogger {
 	t := TLogger{
-		l:     l,
-		level: o.level,
-		t:     o.t,
-		errs:  o.errs,
+		l:        l,
+		level:    o.level,
+		t:        o.t,
+		errs:     o.errs,
+		dontFail: o.dontFail,
 	}
 	return &t
 }
