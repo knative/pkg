@@ -37,7 +37,6 @@ import (
 	"go.uber.org/zap"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	kubeclient "knative.dev/pkg/client/injection/kube/client"
-	secrets "knative.dev/pkg/client/injection/kube/informers/core/v1/secret"
 	"knative.dev/pkg/configmap"
 	"knative.dev/pkg/controller"
 	"knative.dev/pkg/injection"
@@ -190,9 +189,8 @@ func MainWithConfig(ctx context.Context, component string, cfg *rest.Config, cto
 	// Watch the observability config map
 	if _, err := kubeclient.Get(ctx).CoreV1().ConfigMaps(system.Namespace()).Get(metrics.ConfigMapName(),
 		metav1.GetOptions{}); err == nil {
-		secretLister := secrets.Get(ctx).Lister()
 		cmw.Watch(metrics.ConfigMapName(),
-			metrics.ConfigMapWatcher(component, secretLister, logger),
+			metrics.UpdateExporterFromConfigMap(component, logger),
 			profilingHandler.UpdateFromConfigMap)
 	} else if !apierrors.IsNotFound(err) {
 		logger.With(zap.Error(err)).Fatalf("Error reading ConfigMap %q", metrics.ConfigMapName())
