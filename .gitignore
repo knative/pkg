@@ -14,4 +14,4 @@ bazel-*
 *~
 
 # Generated Test Code
-test/__genclient
+test/genclient

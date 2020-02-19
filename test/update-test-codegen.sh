@@ -23,10 +23,10 @@ source $(dirname $0)/../vendor/knative.dev/test-infra/scripts/library.sh
 CODEGEN_PKG=${CODEGEN_PKG:-$(cd ${REPO_ROOT_DIR}; ls -d -1 $(dirname $0)/../vendor/k8s.io/code-generator 2>/dev/null || echo ../code-generator)}
 KNATIVE_CODEGEN_PKG=${KNATIVE_CODEGEN_PKG:-$(cd ${REPO_ROOT_DIR}; ls -d -1 $(dirname $0)/../vendor/knative.dev/pkg 2>/dev/null || echo ../pkg)}
 
-GENCLIENT_PKG=knative.dev/pkg/test/__genclient
+GENCLIENT_PKG=knative.dev/pkg/test/genclient
 (
   cd ${REPO_ROOT_DIR}
-  rm -rf ${REPO_ROOT_DIR}/pkg/test/__genclient
+  rm -rf ${REPO_ROOT_DIR}/pkg/test/genclient
 )
 
 ${CODEGEN_PKG}/generate-groups.sh "deepcopy,client,informer,lister" \
@@ -50,6 +50,3 @@ ${KNATIVE_CODEGEN_PKG}/hack/generate-knative.sh "injection" \
   ${GENCLIENT_PKG}/pub knative.dev/pkg/apis/test \
   "pub:v1alpha1" \
   --go-header-file ${REPO_ROOT_DIR}/hack/boilerplate/boilerplate.go.txt
-
-go build ${GENCLIENT_PKG}
-
