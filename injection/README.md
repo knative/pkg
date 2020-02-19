@@ -351,8 +351,8 @@ The responsibility and consequences of using the generated
 
 Future features to be considered:
 
-- Document how we leverage `configStore` and specifically `ctx = r.configStore.ToContext(ctx)`
-  inside `Reconcile`.
+- Document how we leverage `configStore` and specifically
+  `ctx = r.configStore.ToContext(ctx)` inside `Reconcile`.
 - Adjust `+genreconciler` to allow for generated reconcilers to be made without
   annotating the type struct.
 - Add class-based annotation filtering.
