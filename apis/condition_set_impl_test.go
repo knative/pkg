@@ -415,6 +415,7 @@ type ConditionMarkTrueTest struct {
 	conditions Conditions
 	mark       ConditionType
 	happy      bool
+	happyWant  *Condition
 }
 
 func doTestMarkTrueAccessor(t *testing.T, cases []ConditionMarkTrueTest) {
@@ -428,6 +429,17 @@ func doTestMarkTrueAccessor(t *testing.T, cases []ConditionMarkTrueTest) {
 
 			if e, a := tc.happy, condSet.Manage(status).IsHappy(); e != a {
 				t.Errorf("%q expected: %v got: %v", tc.name, e, a)
+			} else if !e && tc.happyWant != nil {
+				e, a := tc.happyWant, condSet.Manage(status).GetTopLevelCondition()
+				if diff := cmp.Diff(e, a, ignoreFields); diff != "" {
+					t.Errorf("%s (-want, +got) = %v", tc.name, diff)
+				}
+			}
+
+			if tc.mark == condSet.happy {
+				// Skip validation the happy condition because we can't be sure
+				// marking it true was correct. Use tc.happyWant to test that case.
+				return
 			}
 
 			expected := &Condition{
@@ -470,14 +482,24 @@ func TestMarkTrue(t *testing.T) {
 	}, {
 		name: "with deps, not happy",
 		conditions: Conditions{{
-			Type:   ConditionReady,
-			Status: corev1.ConditionFalse,
+			Type:    ConditionReady,
+			Status:  corev1.ConditionFalse,
+			Reason:  "ReadyReason",
+			Message: "ReadyMsg",
 		}, {
-			Type:   "Foo",
-			Status: corev1.ConditionFalse,
+			Type:    "Foo",
+			Status:  corev1.ConditionFalse,
+			Reason:  "FooReason",
+			Message: "FooMsg",
 		}},
 		mark:  ConditionReady,
-		happy: true,
+		happy: false,
+		happyWant: &Condition{
+			Type:    ConditionReady,
+			Status:  corev1.ConditionFalse,
+			Reason:  "FooReason",
+			Message: "FooMsg",
+		},
 	}, {
 		name: "update dep, turns happy",
 		conditions: Conditions{{
@@ -503,17 +525,29 @@ func TestMarkTrue(t *testing.T) {
 	}, {
 		name: "update dep 1/2, still not happy",
 		conditions: Conditions{{
-			Type:   ConditionReady,
-			Status: corev1.ConditionFalse,
+			Type:    ConditionReady,
+			Status:  corev1.ConditionFalse,
+			Reason:  "FooReason",
+			Message: "FooMsg",
 		}, {
-			Type:   "Foo",
-			Status: corev1.ConditionFalse,
+			Type:    "Foo",
+			Status:  corev1.ConditionFalse,
+			Reason:  "FooReason",
+			Message: "FooMsg",
 		}, {
-			Type:   "Bar",
-			Status: corev1.ConditionFalse,
+			Type:    "Bar",
+			Status:  corev1.ConditionFalse,
+			Reason:  "BarReason",
+			Message: "BarMsg",
 		}},
 		mark:  "Foo",
 		happy: false,
+		happyWant: &Condition{
+			Type:    ConditionReady,
+			Status:  corev1.ConditionFalse,
+			Reason:  "BarReason",
+			Message: "BarMsg",
+		},
 	}}
 	doTestMarkTrueAccessor(t, cases)
 }
@@ -868,4 +902,15 @@ func TestRemoveNonTerminalConditions(t *testing.T) {
 	if !manager.IsHappy() {
 		t.Error("IsHappy() = false, wanted true")
 	}
+}
+
+func TestClearConditionWithNilManager(t *testing.T) {
+	set := NewLivingConditionSet("Foo")
+	manager := set.Manage(nil)
+
+	err := manager.ClearCondition("Bar")
+	if err != nil {
+		t.Errorf("ClearCondition() expected to return nil if status is nil, got %s", err)
+	}
+
 }
