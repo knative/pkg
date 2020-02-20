@@ -33,7 +33,7 @@ import (
 
 const (
 	// Time used for updating a certificate before it expires. Default 1 week.
-	oneWeek = 168 * time.Hour
+	oneWeek = 7 * 24 * time.Hour
 )
 
 type reconciler struct {
@@ -78,13 +78,12 @@ func (r *reconciler) reconcileCertificate(ctx context.Context) error {
 		// Check the expiration date of the certificate to see if it needs to be updated
 		cert, err := tls.X509KeyPair(secret.Data[certresources.ServerCert], secret.Data[certresources.ServerKey])
 		if err != nil {
-			logger.Errorf("error creating pem from certificate and key: %v", err)
+			logger.Warnf("Error creating pem from certificate and key: %v", err)
 		} else {
 			certData, err := x509.ParseCertificate(cert.Certificate[0])
 			if err != nil {
-				logger.Errorf("error parsing certificate: %v", err)
-			}
-			if certData.NotAfter.Sub(time.Now()) > oneWeek {
+				logger.Errorf("Error parsing certificate: %v", err)
+			} else if time.Now().Add(oneWeek).Before(certData.NotAfter) {
 				return nil
 			}
 		}
