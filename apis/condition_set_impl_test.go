@@ -548,6 +548,37 @@ func TestMarkTrue(t *testing.T) {
 			Reason:  "BarReason",
 			Message: "BarMsg",
 		},
+	}, {
+		name: "update dep 1/3, mixed status, still not happy",
+		conditions: Conditions{{
+			Type:    ConditionReady,
+			Status:  corev1.ConditionFalse,
+			Reason:  "FooReason",
+			Message: "FooMsg",
+		}, {
+			Type:    "Foo",
+			Status:  corev1.ConditionFalse,
+			Reason:  "FooReason",
+			Message: "FooMsg",
+		}, {
+			Type:    "Bar",
+			Status:  corev1.ConditionUnknown,
+			Reason:  "BarReason",
+			Message: "BarMsg",
+		}, {
+			Type:    "Baz",
+			Status:  corev1.ConditionFalse,
+			Reason:  "BazReason",
+			Message: "BazMsg",
+		}},
+		mark:  "Foo",
+		happy: false,
+		happyWant: &Condition{
+			Type:    ConditionReady,
+			Status:  corev1.ConditionFalse,
+			Reason:  "BazReason",
+			Message: "BazMsg",
+		},
 	}}
 	doTestMarkTrueAccessor(t, cases)
 }
