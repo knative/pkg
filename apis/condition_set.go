@@ -276,7 +276,7 @@ func (r conditionsImpl) MarkTrue(t ConditionType) {
 }
 
 func (r conditionsImpl) propagateFailure(org, orgTL *Condition) {
-	// First check the dependents for errors at the Error level.
+	// First check the dependents with Status == False.
 	for _, cond := range r.dependents {
 		c := r.GetCondition(cond)
 		// False conditions trump Unknown.
@@ -291,7 +291,7 @@ func (r conditionsImpl) propagateFailure(org, orgTL *Condition) {
 			return
 		}
 	}
-	// Second check for Unknown status.
+	// Second check for dependents with Status == Unknown.
 	for _, cond := range r.dependents {
 		c := r.GetCondition(cond)
 		if c.IsUnknown() {
