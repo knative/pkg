@@ -242,10 +242,6 @@ func (r conditionsImpl) ClearCondition(t ConditionType) error {
 // MarkTrue sets the status of t to true, and then marks the happy condition to
 // true if all other dependents are also true.
 func (r conditionsImpl) MarkTrue(t ConditionType) {
-	// Save the original status of t.
-	org := r.GetCondition(t).DeepCopy()
-	orgTL := r.GetTopLevelCondition().DeepCopy()
-
 	// Set the specified condition.
 	r.SetCondition(Condition{
 		Type:     t,
@@ -253,58 +249,72 @@ func (r conditionsImpl) MarkTrue(t ConditionType) {
 		Severity: r.severity(t),
 	})
 
-	// Check the dependents.
-	for _, cond := range r.dependents {
-		c := r.GetCondition(cond)
-		// Failed or Unknown conditions trump true conditions.
-		if !c.IsTrue() {
-			// Update the happy condition if the current ready condition is
-			// marked not ready because of this condition.
-			if org.Reason == orgTL.Reason && org.Message == orgTL.Message {
-				r.propagateFailure(org, orgTL)
-			}
-			return
-		}
+	if c := r.findUnhappyDependent(); c != nil {
+		// Propagate unhappy dependent to happy condition.
+		r.SetCondition(Condition{
+			Type:     r.happy,
+			Status:   c.Status,
+			Reason:   c.Reason,
+			Message:  c.Message,
+			Severity: r.severity(r.happy),
+		})
+	} else if t != r.happy {
+		// Set the happy condition to true.
+		r.SetCondition(Condition{
+			Type:     r.happy,
+			Status:   corev1.ConditionTrue,
+			Severity: r.severity(r.happy),
+		})
 	}
-
-	// Set the happy condition.
-	r.SetCondition(Condition{
-		Type:     r.happy,
-		Status:   corev1.ConditionTrue,
-		Severity: r.severity(r.happy),
-	})
 }
 
-func (r conditionsImpl) propagateFailure(org, orgTL *Condition) {
-	// First check the dependents with Status == False.
-	for _, cond := range r.dependents {
-		c := r.GetCondition(cond)
+func (r conditionsImpl) findUnhappyDependent() *Condition {
+	// This only works if there are dependents.
+	if len(r.dependents) == 0 {
+		return nil
+	}
+
+	// Do not modify the accessors condition order.
+	conditions := r.accessor.GetConditions().DeepCopy()
+
+	// Filter based on terminal status.
+	n := 0
+	for _, c := range conditions {
+		if c.Severity == ConditionSeverityError && c.Type != r.happy {
+			conditions[n] = c
+			n++
+		}
+	}
+	conditions = conditions[:n]
+
+	// Sort set conditions by time.
+	sort.Slice(conditions, func(i, j int) bool {
+		return conditions[i].LastTransitionTime.Inner.Time.After(conditions[j].LastTransitionTime.Inner.Time)
+	})
+
+	// First check the conditions with Status == False.
+	for _, c := range conditions {
 		// False conditions trump Unknown.
 		if c.IsFalse() {
-			r.SetCondition(Condition{
-				Type:     r.happy,
-				Status:   c.Status,
-				Reason:   c.Reason,
-				Message:  c.Message,
-				Severity: r.severity(r.happy),
-			})
-			return
+			return &c
 		}
 	}
-	// Second check for dependents with Status == Unknown.
-	for _, cond := range r.dependents {
-		c := r.GetCondition(cond)
+	// Second check for conditions with Status == Unknown.
+	for _, c := range conditions {
 		if c.IsUnknown() {
-			r.SetCondition(Condition{
-				Type:     r.happy,
-				Status:   c.Status,
-				Reason:   c.Reason,
-				Message:  c.Message,
-				Severity: r.severity(r.happy),
-			})
-			return
+			return &c
 		}
 	}
+
+	// If something was not initialized.
+	if len(r.dependents) != len(conditions) {
+		return &Condition{
+			Status: corev1.ConditionUnknown,
+		}
+	}
+
+	// All dependents are fine.
+	return nil
 }
 
 // MarkUnknown sets the status of t to Unknown and also sets the happy condition
