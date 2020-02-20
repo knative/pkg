@@ -261,13 +261,7 @@ func (r conditionsImpl) MarkTrue(t ConditionType) {
 			// Update the happy condition if the current ready condition is
 			// marked not ready because of this condition.
 			if org.Reason == orgTL.Reason && org.Message == orgTL.Message {
-				r.SetCondition(Condition{
-					Type:     r.happy,
-					Status:   c.Status,
-					Reason:   c.Reason,
-					Message:  c.Message,
-					Severity: r.severity(r.happy),
-				})
+				r.propagateFailure(org, orgTL)
 			}
 			return
 		}
@@ -279,6 +273,38 @@ func (r conditionsImpl) MarkTrue(t ConditionType) {
 		Status:   corev1.ConditionTrue,
 		Severity: r.severity(r.happy),
 	})
+}
+
+func (r conditionsImpl) propagateFailure(org, orgTL *Condition) {
+	// First check the dependents with Status == False.
+	for _, cond := range r.dependents {
+		c := r.GetCondition(cond)
+		// False conditions trump Unknown.
+		if c.IsFalse() {
+			r.SetCondition(Condition{
+				Type:     r.happy,
+				Status:   c.Status,
+				Reason:   c.Reason,
+				Message:  c.Message,
+				Severity: r.severity(r.happy),
+			})
+			return
+		}
+	}
+	// Second check for dependents with Status == Unknown.
+	for _, cond := range r.dependents {
+		c := r.GetCondition(cond)
+		if c.IsUnknown() {
+			r.SetCondition(Condition{
+				Type:     r.happy,
+				Status:   c.Status,
+				Reason:   c.Reason,
+				Message:  c.Message,
+				Severity: r.severity(r.happy),
+			})
+			return
+		}
+	}
 }
 
 // MarkUnknown sets the status of t to Unknown and also sets the happy condition
