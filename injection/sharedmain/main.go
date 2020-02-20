@@ -194,6 +194,8 @@ func MainWithConfig(ctx context.Context, component string, cfg *rest.Config, cto
 		// a *global* SecretInformer and require cluster-level `secrets.list` permission,
 		// even if you scope down the Lister to a given namespace after requesting it. Instead,
 		// we package up a function from kubeclient.
+		// TODO(evankanderson): If this direct request to the apiserver on each TLS connection
+		// to the opencensus agent is too much load, switch to a cached Secret.
 		secretFetcher := func(name string) (*corev1.Secret, error) {
 			return kubeclient.Get(ctx).CoreV1().Secrets(system.Namespace()).Get(name, metav1.GetOptions{})
 		}
