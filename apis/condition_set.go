@@ -260,8 +260,8 @@ func (r conditionsImpl) MarkTrue(t ConditionType) {
 		if !c.IsTrue() {
 			// Update the happy condition if the current ready condition is
 			// marked not ready because of this condition.
-			if org.Reason == orgTL.Reason && org.Message == orgTL.Message {
-				r.propagateFailure(org, orgTL)
+			if org.GetReason() == orgTL.GetReason() && org.GetMessage() == orgTL.GetMessage() {
+				r.propagateFailure()
 			}
 			return
 		}
@@ -275,7 +275,7 @@ func (r conditionsImpl) MarkTrue(t ConditionType) {
 	})
 }
 
-func (r conditionsImpl) propagateFailure(org, orgTL *Condition) {
+func (r conditionsImpl) propagateFailure() {
 	// First check the dependents with Status == False.
 	for _, cond := range r.dependents {
 		c := r.GetCondition(cond)
