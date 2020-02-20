@@ -37,6 +37,9 @@ type reconcilerReconcilerGenerator struct {
 	listerName     string
 	listerPkg      string
 
+	reconcilerClass    string
+	hasReconcilerClass bool
+
 	groupGoName  string
 	groupVersion clientgentypes.GroupVersion
 }
@@ -65,9 +68,11 @@ func (g *reconcilerReconcilerGenerator) GenerateType(c *generator.Context, t *ty
 	klog.V(5).Infof("processing type %v", t)
 
 	m := map[string]interface{}{
-		"type":    t,
-		"group":   namer.IC(g.groupGoName),
-		"version": namer.IC(g.groupVersion.Version.String()),
+		"type":     t,
+		"group":    namer.IC(g.groupGoName),
+		"version":  namer.IC(g.groupVersion.Version.String()),
+		"class":    g.reconcilerClass,
+		"hasClass": g.hasReconcilerClass,
 		"controllerImpl": c.Universe.Type(types.Name{
 			Package: "knative.dev/pkg/controller",
 			Name:    "Impl",
@@ -191,6 +196,11 @@ type reconcilerImpl struct {
 
 	// reconciler is the implementation of the business logic of the resource.
 	reconciler Interface
+
+	{{if .hasClass}}
+	// classValue is the resource annotation[{{ .class }}] instance value this reconciler instance filters on.
+	classValue string
+	{{end}}
 }
 
 // Check that our Reconciler implements controller.Reconciler
@@ -199,7 +209,7 @@ var _ controller.Reconciler = (*reconcilerImpl)(nil)
 `
 
 var reconcilerNewReconciler = `
-func NewReconciler(ctx {{.contextContext|raw}}, logger *{{.zapSugaredLogger|raw}}, client {{.clientsetInterface|raw}}, lister {{.resourceLister|raw}}, recorder {{.recordEventRecorder|raw}}, r Interface, options ...{{.controllerOptions|raw}} ) {{.controllerReconciler|raw}} {
+func NewReconciler(ctx {{.contextContext|raw}}, logger *{{.zapSugaredLogger|raw}}, client {{.clientsetInterface|raw}}, lister {{.resourceLister|raw}}, recorder {{.recordEventRecorder|raw}}, r Interface{{if .hasClass}}, classValue string{{end}}, options ...{{.controllerOptions|raw}} ) {{.controllerReconciler|raw}} {
 	// Check the options function input. It should be 0 or 1.
 	if len(options) > 1 {
 		logger.Fatalf("up to one options struct is supported, found %d", len(options))
@@ -210,6 +220,7 @@ func NewReconciler(ctx {{.contextContext|raw}}, logger *{{.zapSugaredLogger|raw}
 		Lister: lister,
 		Recorder: recorder,
 		reconciler:    r,
+		{{if .hasClass}}classValue: classValue,{{end}}
 	}
 
 	for _, opts := range options {
@@ -251,6 +262,15 @@ func (r *reconcilerImpl) Reconcile(ctx {{.contextContext|raw}}, key string) erro
 	} else if err != nil {
 		return err
 	}
+	{{if .hasClass}}
+	if classValue, found := original.GetAnnotations()[classAnnotationKey]; !found || classValue != r.classValue {
+		logger.Debugw("Skip reconciling resource, class annotation value does not match reconciler instance value.",
+			zap.String("classKey", classAnnotationKey),
+			zap.String("issue", classValue+"!="+r.classValue))
+		return nil
+	}
+	{{end}}
+
 	// Don't modify the informers copy.
 	resource := original.DeepCopy()
 
