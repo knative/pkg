@@ -411,17 +411,22 @@ func getTypes(conds Conditions) []ConditionType {
 }
 
 type ConditionMarkTrueTest struct {
-	name       string
-	conditions Conditions
-	mark       ConditionType
-	happy      bool
-	happyWant  *Condition
+	name           string
+	conditions     Conditions
+	conditionTypes []ConditionType
+	mark           ConditionType
+	happy          bool
+	happyWant      *Condition
 }
 
 func doTestMarkTrueAccessor(t *testing.T, cases []ConditionMarkTrueTest) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			condSet := NewLivingConditionSet(getTypes(tc.conditions)...)
+			conditionTypes := tc.conditionTypes
+			if conditionTypes == nil {
+				conditionTypes = getTypes(tc.conditions)
+			}
+			condSet := NewLivingConditionSet(conditionTypes...)
 			status := &TestStatus{c: tc.conditions}
 			condSet.Manage(status).InitializeConditions()
 
@@ -609,6 +614,120 @@ func TestMarkTrue(t *testing.T) {
 			Status:  corev1.ConditionUnknown,
 			Reason:  "BarReason",
 			Message: "BarMsg",
+		},
+	}, {
+		name: "update dep 1/3, unknown status because nil",
+		conditions: Conditions{{
+			Type:    ConditionReady,
+			Status:  corev1.ConditionFalse,
+			Reason:  "FooReason",
+			Message: "FooMsg",
+		}, {
+			Type:    "Foo",
+			Status:  corev1.ConditionFalse,
+			Reason:  "FooReason",
+			Message: "FooMsg",
+		}},
+		mark:           "Foo",
+		conditionTypes: []ConditionType{"Foo", "Bar", "Baz"},
+		happy:          false,
+		happyWant: &Condition{
+			Type:   ConditionReady,
+			Status: corev1.ConditionUnknown,
+		},
+	}, {
+		name: "update deps all happy with extra cruft",
+		conditions: Conditions{{
+			Type:    ConditionReady,
+			Status:  corev1.ConditionFalse,
+			Reason:  "FooReason",
+			Message: "FooMsg",
+		}, {
+			Type:    "Foo",
+			Status:  corev1.ConditionFalse,
+			Reason:  "FooReason",
+			Message: "FooMsg",
+		}, {
+			Type:     "Bar",
+			Status:   corev1.ConditionUnknown,
+			Reason:   "BarReason",
+			Message:  "BarMsg",
+			Severity: "FYI",
+		}, {
+			Type:     "Baz",
+			Status:   corev1.ConditionUnknown,
+			Reason:   "BazReason",
+			Message:  "BazMsg",
+			Severity: "LOLJK",
+		}},
+		mark:           "Foo",
+		conditionTypes: []ConditionType{"Foo"},
+		happy:          true,
+		happyWant: &Condition{
+			Type:   ConditionReady,
+			Status: corev1.ConditionTrue,
+		},
+	}, {
+		name: "with no dependents with extra cruft",
+		conditions: Conditions{{
+			Type:    ConditionReady,
+			Status:  corev1.ConditionFalse,
+			Reason:  "LongStory",
+			Message: "Set manually",
+		}, {
+			Type:    "Foo",
+			Status:  corev1.ConditionFalse,
+			Reason:  "FooReason",
+			Message: "FooMsg",
+		}, {
+			Type:     "Bar",
+			Status:   corev1.ConditionUnknown,
+			Reason:   "BarReason",
+			Message:  "BarMsg",
+			Severity: "FYI",
+		}, {
+			Type:     "Baz",
+			Status:   corev1.ConditionUnknown,
+			Reason:   "BazReason",
+			Message:  "BazMsg",
+			Severity: "LOLJK",
+		}},
+		mark:           "Foo",
+		conditionTypes: []ConditionType{},
+		happy:          true,
+		happyWant: &Condition{
+			Type:   ConditionReady,
+			Status: corev1.ConditionTrue,
+		},
+	}, {
+		name: "happy dependents with extra cruft",
+		conditions: Conditions{{
+			Type:    ConditionReady,
+			Status:  corev1.ConditionFalse,
+			Reason:  "LongStory",
+			Message: "Set manually",
+		}, {
+			Type:   "Foo",
+			Status: corev1.ConditionTrue,
+		}, {
+			Type:     "Bar",
+			Status:   corev1.ConditionUnknown,
+			Reason:   "BarReason",
+			Message:  "BarMsg",
+			Severity: "FYI",
+		}, {
+			Type:     "Baz",
+			Status:   corev1.ConditionUnknown,
+			Reason:   "BazReason",
+			Message:  "BazMsg",
+			Severity: "LOLJK",
+		}},
+		mark:           "Bar",
+		conditionTypes: []ConditionType{"Foo"},
+		happy:          true,
+		happyWant: &Condition{
+			Type:   ConditionReady,
+			Status: corev1.ConditionTrue,
 		},
 	}}
 	doTestMarkTrueAccessor(t, cases)
