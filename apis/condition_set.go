@@ -278,31 +278,33 @@ func (r conditionsImpl) MarkTrue(t ConditionType) {
 func (r conditionsImpl) propagateFailure() {
 	// First check the dependents with Status == False.
 	for _, cond := range r.dependents {
-		c := r.GetCondition(cond)
-		// False conditions trump Unknown.
-		if c.IsFalse() {
-			r.SetCondition(Condition{
-				Type:     r.happy,
-				Status:   c.Status,
-				Reason:   c.Reason,
-				Message:  c.Message,
-				Severity: r.severity(r.happy),
-			})
-			return
+		if c := r.GetCondition(cond); c != nil {
+			// False conditions trump Unknown.
+			if c.IsFalse() {
+				r.SetCondition(Condition{
+					Type:     r.happy,
+					Status:   c.Status,
+					Reason:   c.Reason,
+					Message:  c.Message,
+					Severity: r.severity(r.happy),
+				})
+				return
+			}
 		}
 	}
 	// Second check for dependents with Status == Unknown.
 	for _, cond := range r.dependents {
-		c := r.GetCondition(cond)
-		if c.IsUnknown() {
-			r.SetCondition(Condition{
-				Type:     r.happy,
-				Status:   c.Status,
-				Reason:   c.Reason,
-				Message:  c.Message,
-				Severity: r.severity(r.happy),
-			})
-			return
+		if c := r.GetCondition(cond); c != nil {
+			if c.IsUnknown() {
+				r.SetCondition(Condition{
+					Type:     r.happy,
+					Status:   c.Status,
+					Reason:   c.Reason,
+					Message:  c.Message,
+					Severity: r.severity(r.happy),
+				})
+				return
+			}
 		}
 	}
 }
