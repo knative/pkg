@@ -79,6 +79,8 @@ func (g *fakeClientGenerator) GenerateType(c *generator.Context, t *types.Type, 
 			Package: "context",
 			Name:    "Context",
 		}),
+		"restConfig":    c.Universe.Type(types.Name{Package: "k8s.io/client-go/rest", Name: "Config"}),
+		"runtimeObject": c.Universe.Type(types.Name{Package: "k8s.io/apimachinery/pkg/runtime", Name: "Object"}),
 	}
 
 	sw.Do(injectionFakeClient, m)
@@ -91,12 +93,12 @@ func init() {
 	{{.injectionRegisterClient|raw}}(withClient)
 }
 
-func withClient(ctx {{.contextContext|raw}}, cfg *rest.Config) {{.contextContext|raw}} {
+func withClient(ctx {{.contextContext|raw}}, cfg *{{.restConfig|raw}}) {{.contextContext|raw}} {
 	ctx, _ = With(ctx)
 	return ctx
 }
 
-func With(ctx {{.contextContext|raw}}, objects ...runtime.Object) ({{.contextContext|raw}}, *{{.fakeClient|raw}}) {
+func With(ctx {{.contextContext|raw}}, objects ...{{.runtimeObject|raw}}) ({{.contextContext|raw}}, *{{.fakeClient|raw}}) {
 	cs := fake.NewSimpleClientset(objects...)
 	return context.WithValue(ctx, {{.clientKey|raw}}{}, cs), cs
 }
