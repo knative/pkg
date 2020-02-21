@@ -75,6 +75,10 @@ func (g *fakeClientGenerator) GenerateType(c *generator.Context, t *types.Type, 
 			Package: "knative.dev/pkg/logging",
 			Name:    "FromContext",
 		}),
+		"contextContext": c.Universe.Type(types.Name{
+			Package: "context",
+			Name:    "Context",
+		}),
 	}
 
 	sw.Do(injectionFakeClient, m)
@@ -87,18 +91,18 @@ func init() {
 	{{.injectionRegisterClient|raw}}(withClient)
 }
 
-func withClient(ctx context.Context, cfg *rest.Config) context.Context {
+func withClient(ctx {{.contextContext|raw}}, cfg *rest.Config) {{.contextContext|raw}} {
 	ctx, _ = With(ctx)
 	return ctx
 }
 
-func With(ctx context.Context, objects ...runtime.Object) (context.Context, *{{.fakeClient|raw}}) {
+func With(ctx {{.contextContext|raw}}, objects ...runtime.Object) ({{.contextContext|raw}}, *{{.fakeClient|raw}}) {
 	cs := fake.NewSimpleClientset(objects...)
 	return context.WithValue(ctx, {{.clientKey|raw}}{}, cs), cs
 }
 
 // Get extracts the Kubernetes client from the context.
-func Get(ctx context.Context) *{{.fakeClient|raw}} {
+func Get(ctx {{.contextContext|raw}}) *{{.fakeClient|raw}} {
 	untyped := ctx.Value({{.clientKey|raw}}{})
 	if untyped == nil {
 		{{.loggingFromContext|raw}}(ctx).Panic(
