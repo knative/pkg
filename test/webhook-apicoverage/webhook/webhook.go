@@ -29,7 +29,7 @@ import (
 	"github.com/markbates/inflect"
 	"go.uber.org/zap"
 	admissionregistrationv1beta1 "k8s.io/api/admissionregistration/v1beta1"
-	extensionsv1beta1 "k8s.io/api/extensions/v1beta1"
+	appsv1 "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/kubernetes"
@@ -42,7 +42,7 @@ import (
 
 var (
 	// GroupVersionKind for deployment to be used to set the webhook's owner reference.
-	deploymentKind = extensionsv1beta1.SchemeGroupVersion.WithKind("Deployment")
+	deploymentKind = appsv1.SchemeGroupVersion.WithKind("Deployment")
 )
 
 // APICoverageWebhook encapsulates necessary configuration details for the api-coverage webhook.
@@ -137,7 +137,7 @@ func (acw *APICoverageWebhook) registerWebhook(rules []admissionregistrationv1be
 		},
 	}
 
-	deployment, err := acw.KubeClient.ExtensionsV1beta1().Deployments(namespace).Get(acw.DeploymentName, metav1.GetOptions{})
+	deployment, err := acw.KubeClient.AppsV1().Deployments(namespace).Get(acw.DeploymentName, metav1.GetOptions{})
 	if err != nil {
 		return fmt.Errorf("Error retrieving Deployment Extension object: %v", err)
 	}
