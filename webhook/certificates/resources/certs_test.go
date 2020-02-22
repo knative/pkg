@@ -21,6 +21,7 @@ import (
 	"encoding/pem"
 	"fmt"
 	"testing"
+	"time"
 
 	"github.com/google/go-cmp/cmp"
 
@@ -28,7 +29,7 @@ import (
 )
 
 func TestCreateCerts(t *testing.T) {
-	sKey, serverCertPEM, caCertBytes, err := CreateCerts(TestContextWithLogger(t), "got-the-hook", "knative-webhook")
+	sKey, serverCertPEM, caCertBytes, err := CreateCerts(TestContextWithLogger(t), "got-the-hook", "knative-webhook", time.Now().AddDate(1, 0, 0))
 	if err != nil {
 		t.Fatalf("Failed to create certs %v", err)
 	}
