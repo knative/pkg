@@ -22,6 +22,7 @@ package logging
 import (
 	"context"
 	"flag"
+	"fmt"
 	"os"
 	"strings"
 	"sync"
@@ -32,6 +33,7 @@ import (
 	"go.opencensus.io/trace"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
+	"k8s.io/klog"
 )
 
 const (
@@ -158,6 +160,10 @@ func InitializeLogger() {
 
 		logger = zap.New(zapCore)
 		zap.ReplaceGlobals(logger) // Gets used by klog/glog proxy libraries
+
+		// Set klog/glog verbosities (works with and without proxy libraries)
+		klogLevel := klog.Level(0)
+		klogLevel.Set(fmt.Sprint(Verbosity))
 
 		if verbosity > 2 {
 			printFlags()
