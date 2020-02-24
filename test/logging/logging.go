@@ -163,7 +163,7 @@ func InitializeLogger() {
 
 		// Set klog/glog verbosities (works with and without proxy libraries)
 		klogLevel := klog.Level(0)
-		klogLevel.Set(fmt.Sprint(Verbosity))
+		klogLevel.Set(fmt.Sprint(verbosity))
 
 		if verbosity > 2 {
 			printFlags()
