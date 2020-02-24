@@ -22,8 +22,8 @@ package logging
 import (
 	"context"
 	"flag"
-	"fmt"
 	"os"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -121,7 +121,7 @@ func InitializeMetricExporter(context string) {
 }
 
 func printFlags() {
-	flagList := make([]interface{}, 0)
+	var flagList []interface{}
 	flag.CommandLine.VisitAll(func(f *flag.Flag) {
 		flagList = append(flagList, f.Name, f.Value.String())
 	})
@@ -137,7 +137,7 @@ var (
 
 // InitializeLogger initializes logging for Knative tests.
 // It should be called prior to executing tests but after command-line flags have been processed.
-// Recommend doing it in a TestMain().
+// It is recommended doing it in the TestMain() function.
 func InitializeLogger() {
 	loggerInitializeOnce.Do(func() {
 		humanEncoder := zapcore.NewConsoleEncoder(zap.NewDevelopmentEncoderConfig())
@@ -163,7 +163,7 @@ func InitializeLogger() {
 
 		// Set klog/glog verbosities (works with and without proxy libraries)
 		klogLevel := klog.Level(0)
-		klogLevel.Set(fmt.Sprint(verbosity))
+		klogLevel.Set(strconv.Itoa(verbosity))
 
 		if verbosity > 2 {
 			printFlags()
