@@ -139,21 +139,21 @@ func TestConversion(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			conv := test.conv
-			if err := test.addr.ConvertUp(context.Background(), conv); err != nil {
+			if err := test.addr.ConvertTo(context.Background(), conv); err != nil {
 				if !test.wantErrUp {
-					t.Errorf("ConvertUp() = %v", err)
+					t.Errorf("ConvertTo() = %v", err)
 				}
 			} else if test.wantErrUp {
-				t.Errorf("ConvertUp() = %#v, wanted error", conv)
+				t.Errorf("ConvertTo() = %#v, wanted error", conv)
 			}
 			got := &Addressable{}
-			if err := got.ConvertDown(context.Background(), conv); err != nil {
+			if err := got.ConvertFrom(context.Background(), conv); err != nil {
 				if !test.wantErrDown {
-					t.Errorf("ConvertDown() = %v", err)
+					t.Errorf("ConvertFrom() = %v", err)
 				}
 				return
 			} else if test.wantErrDown {
-				t.Errorf("ConvertDown() = %#v, wanted error", conv)
+				t.Errorf("ConvertFrom() = %#v, wanted error", conv)
 				return
 			}
 
@@ -164,7 +164,7 @@ func TestConversion(t *testing.T) {
 	}
 }
 
-func TestConvertUp(t *testing.T) {
+func TestConvertTo(t *testing.T) {
 	tests := []struct {
 		name        string
 		addr        *Addressable
@@ -219,12 +219,12 @@ func TestConvertUp(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			got := test.conv
-			if err := test.addr.ConvertUp(context.Background(), got); err != nil {
+			if err := test.addr.ConvertTo(context.Background(), got); err != nil {
 				if !test.wantErrUp {
-					t.Errorf("ConvertUp() = %v", err)
+					t.Errorf("ConvertTo() = %v", err)
 				}
 			} else if test.wantErrUp {
-				t.Errorf("ConvertUp() = %#v, wanted error", got)
+				t.Errorf("ConvertTo() = %#v, wanted error", got)
 			}
 
 			if diff := cmp.Diff(test.want, got); diff != "" {
