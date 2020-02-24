@@ -183,75 +183,20 @@ func MainWithConfig(ctx context.Context, component string, cfg *rest.Config, cto
 		}
 	}
 
-	recorder := controller.GetEventRecorder(ctx)
-	if recorder == nil {
-		// Create event broadcaster
-		logger.Debug("Creating event broadcaster")
-		eventBroadcaster := record.NewBroadcaster()
-		watches := []watch.Interface{
-			eventBroadcaster.StartLogging(logger.Named("event-broadcaster").Infof),
-			eventBroadcaster.StartRecordingToSink(
-				&typedcorev1.EventSinkImpl{Interface: kubeclient.Get(ctx).CoreV1().Events("")}),
-		}
-		recorder = eventBroadcaster.NewRecorder(
-			// todo: what agent name?
-			scheme.Scheme, corev1.EventSource{Component: "fake-agent-name"})
-		go func() {
-			<-ctx.Done()
-			for _, w := range watches {
-				w.Stop()
-			}
-		}()
-	}
-
 	// Set up leader election config
 	leaderElectionConfig, err := GetLeaderElectionConfig(ctx)
 	if err != nil {
-		log.Fatalf("Error loading leader election configuration: %v", err)
+		logger.Fatalf("Error loading leader election configuration: %v", err)
 	}
 	leConfig := leaderElectionConfig.GetComponentConfig(component)
 
 	if !leConfig.LeaderElect {
-		log.Printf("%v will not run in leader-elected mode", component)
+		logger.Infof("%v will not run in leader-elected mode", component)
 		run(ctx)
 		logger.Fatal("unreachable")
 	}
 
-	// Create a unique identifier so that two controllers on the same host don't
-	// race.
-	id, err := kle.UniqueID()
-	if err != nil {
-		logger.Fatalw("Failed to get unique ID for leader election", zap.Error(err))
-	}
-	logger.Infof("%v will run in leader-elected mode with id %v", component, id)
-
-	rl, err := resourcelock.New(leConfig.ResourceLock,
-		system.Namespace(), // use namespace we are running in
-		component,          // component is used as the resource name
-		kubeclient.Get(ctx).CoreV1(),
-		kubeclient.Get(ctx).CoordinationV1(),
-		resourcelock.ResourceLockConfig{
-			Identity:      id,
-			EventRecorder: recorder,
-		})
-	if err != nil {
-		logger.Fatalw("Error creating lock: %v", err)
-	}
-
-	leaderelection.RunOrDie(ctx, leaderelection.LeaderElectionConfig{
-		Lock:          rl,
-		LeaseDuration: leConfig.LeaseDuration,
-		RenewDeadline: leConfig.RenewDeadline,
-		RetryPeriod:   leConfig.RetryPeriod,
-		Callbacks: leaderelection.LeaderCallbacks{
-			OnStartedLeading: run,
-			OnStoppedLeading: func() {
-				logger.Fatal("leaderelection lost")
-			},
-		},
-		// TODO: use health check watchdog, knative/pkg#1048
-		Name: component,
-	})
+	RunLeaderElected(ctx, logger, run, component, leConfig)
 	logger.Fatal("unreachable")
 }
 
@@ -463,4 +408,66 @@ func ControllersAndWebhooksFromCtors(ctx context.Context,
 	}
 
 	return controllers, webhooks
+}
+
+// RunLeaderElected runs the given function in leader elected mode. The function
+// will be run only once the leader election lock is obtained.
+func RunLeaderElected(ctx context.Context, logger *zap.SugaredLogger, run func(context.Context), component string, leConfig kle.ComponentConfig) {
+	recorder := controller.GetEventRecorder(ctx)
+	if recorder == nil {
+		// Create event broadcaster
+		logger.Debug("Creating event broadcaster")
+		eventBroadcaster := record.NewBroadcaster()
+		watches := []watch.Interface{
+			eventBroadcaster.StartLogging(logger.Named("event-broadcaster").Infof),
+			eventBroadcaster.StartRecordingToSink(
+				&typedcorev1.EventSinkImpl{Interface: kubeclient.Get(ctx).CoreV1().Events(system.Namespace())}),
+		}
+		recorder = eventBroadcaster.NewRecorder(
+			scheme.Scheme, corev1.EventSource{Component: component})
+		go func() {
+			<-ctx.Done()
+			for _, w := range watches {
+				w.Stop()
+			}
+		}()
+	}
+
+	// Create a unique identifier so that two controllers on the same host don't
+	// race.
+	id, err := kle.UniqueID()
+	if err != nil {
+		logger.Fatalw("Failed to get unique ID for leader election", zap.Error(err))
+	}
+	logger.Infof("%v will run in leader-elected mode with id %v", component, id)
+
+	// rl is the resource used to hold the leader election lock.
+	rl, err := resourcelock.New(leConfig.ResourceLock,
+		system.Namespace(), // use namespace we are running in
+		component,          // component is used as the resource name
+		kubeclient.Get(ctx).CoreV1(),
+		kubeclient.Get(ctx).CoordinationV1(),
+		resourcelock.ResourceLockConfig{
+			Identity:      id,
+			EventRecorder: recorder,
+		})
+	if err != nil {
+		logger.Fatalw("Error creating lock: %v", err)
+	}
+
+	// Execute the `run` function when we have the lock.
+	leaderelection.RunOrDie(ctx, leaderelection.LeaderElectionConfig{
+		Lock:          rl,
+		LeaseDuration: leConfig.LeaseDuration,
+		RenewDeadline: leConfig.RenewDeadline,
+		RetryPeriod:   leConfig.RetryPeriod,
+		Callbacks: leaderelection.LeaderCallbacks{
+			OnStartedLeading: run,
+			OnStoppedLeading: func() {
+				logger.Fatal("leaderelection lost")
+			},
+		},
+		// TODO: use health check watchdog, knative/pkg#1048
+		Name: component,
+	})
 }
