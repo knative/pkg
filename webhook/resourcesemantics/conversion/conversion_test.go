@@ -418,11 +418,11 @@ func TestConversionFailureToConvert(t *testing.T) {
 		name    string
 		errorOn string
 	}{{
-		name:    "error converting down",
-		errorOn: internal.ErrorConvertDown,
+		name:    "error converting from",
+		errorOn: internal.ErrorConvertFrom,
 	}, {
-		name:    "error converting up",
-		errorOn: internal.ErrorConvertUp,
+		name:    "error converting to",
+		errorOn: internal.ErrorConvertTo,
 	}}
 
 	for _, test := range tests {
