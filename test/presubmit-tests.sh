@@ -33,3 +33,5 @@ $(dirname $0)/update-test-codegen.sh
 # We use the default build, unit and integration test runners.
 
 main $@
+
+$(dirname $0)/cleanup-test-codegen.sh

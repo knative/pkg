@@ -24,9 +24,9 @@ CODEGEN_PKG=${CODEGEN_PKG:-$(cd ${REPO_ROOT_DIR}; ls -d -1 $(dirname $0)/../vend
 KNATIVE_CODEGEN_PKG=${KNATIVE_CODEGEN_PKG:-$(cd ${REPO_ROOT_DIR}; ls -d -1 $(dirname $0)/../vendor/knative.dev/pkg 2>/dev/null || echo ../pkg)}
 
 GENCLIENT_PKG=knative.dev/pkg/test/genclient
+
 (
-  cd ${REPO_ROOT_DIR}
-  rm -rf ${REPO_ROOT_DIR}/pkg/test/genclient
+    $(dirname $0)/cleanup-test-codegen.sh
 )
 
 ${CODEGEN_PKG}/generate-groups.sh "deepcopy,client,informer,lister" \
