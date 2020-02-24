@@ -24,11 +24,14 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/go-cmp/cmp"
 	jsonpatch "gomodules.xyz/jsonpatch/v2"
 	"knative.dev/pkg/apis"
 	"knative.dev/pkg/client/injection/ducks/duck/v1/podspecable"
 	kubeclient "knative.dev/pkg/client/injection/kube/client/fake"
+	mwhinformer "knative.dev/pkg/client/injection/kube/informers/admissionregistration/v1beta1/mutatingwebhookconfiguration"
 	_ "knative.dev/pkg/client/injection/kube/informers/admissionregistration/v1beta1/mutatingwebhookconfiguration/fake"
+	secretinformer "knative.dev/pkg/client/injection/kube/informers/core/v1/secret"
 	_ "knative.dev/pkg/client/injection/kube/informers/core/v1/secret/fake"
 	dynamicclient "knative.dev/pkg/injection/clients/dynamicclient/fake"
 	"knative.dev/pkg/tracker"
@@ -509,37 +512,6 @@ func TestWebhookReconcile(t *testing.T) {
 					// Selectors are fine.
 					NamespaceSelector: &ExclusionSelector,
 					ObjectSelector:    &ExclusionSelector,
-				}},
-			},
-		},
-	}, {
-		Name: ":fire: everything is fine, using opt-out (inclusion) :fire:",
-		Key:  key,
-		Ctx:  WithOptOutSelector(context.Background()),
-		Objects: []runtime.Object{secret,
-			&admissionregistrationv1beta1.MutatingWebhookConfiguration{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: name,
-				},
-				Webhooks: []admissionregistrationv1beta1.MutatingWebhook{{
-					Name: name,
-					ClientConfig: admissionregistrationv1beta1.WebhookClientConfig{
-						Service: &admissionregistrationv1beta1.ServiceReference{
-							Namespace: system.Namespace(),
-							Name:      "webhook",
-							// Path is fine.
-							Path: ptr.String(path),
-						},
-						// CABundle is fine.
-						CABundle: []byte("present"),
-					},
-					// Rules are fine.
-					Rules: nil,
-					// MatchPolicy is fine.
-					MatchPolicy: &equivalent,
-					// Selectors are fine.
-					NamespaceSelector: &InclusionSelector,
-					ObjectSelector:    &InclusionSelector,
 				}},
 			},
 		},
@@ -1031,27 +1003,19 @@ func TestWebhookReconcile(t *testing.T) {
 	}}
 
 	table.Test(t, MakeFactory(func(ctx context.Context, listers *Listers, cmw configmap.Watcher) controller.Reconciler {
-		return &Reconciler{
-			Name:        name,
-			HandlerPath: path,
-			SecretName:  secretName,
-
-			Client:       kubeclient.Get(ctx),
-			MWHLister:    listers.GetMutatingWebhookConfigurationLister(),
-			SecretLister: listers.GetSecretLister(),
-
-			ListAll: func() ([]Bindable, error) {
-				bl := make([]Bindable, 0)
-				for _, elt := range listers.GetDuckObjects() {
-					b, ok := elt.(Bindable)
-					if !ok {
-						continue
-					}
-					bl = append(bl, b)
+		r := NewReconciler(name, path, secretName, kubeclient.Get(ctx), listers.GetMutatingWebhookConfigurationLister(), listers.GetSecretLister(), nil)
+		r.ListAll = func() ([]Bindable, error) {
+			bl := make([]Bindable, 0)
+			for _, elt := range listers.GetDuckObjects() {
+				b, ok := elt.(Bindable)
+				if !ok {
+					continue
 				}
-				return bl, nil
-			},
+				bl = append(bl, b)
+			}
+			return bl, nil
 		}
+		return r
 	}))
 }
 
@@ -1070,6 +1034,51 @@ func TestNew(t *testing.T) {
 		})
 	if c == nil {
 		t.Fatal("Expected NewController to return a non-nil value")
+	}
+}
+
+func TestNewReconciler(t *testing.T) {
+	ctx, _ := SetupFakeContext(t)
+	ctx = webhook.WithOptions(ctx, webhook.Options{})
+	tests := []struct {
+		name           string
+		selectorOption ReconcilerOption
+		wantSelector   metav1.LabelSelector
+	}{
+		{
+			name:         "no selector, use default",
+			wantSelector: ExclusionSelector,
+		},
+		{
+			name:           "ExclusionSelector option",
+			selectorOption: WithSelector(ExclusionSelector),
+			wantSelector:   ExclusionSelector,
+		},
+		{
+			name:           "InclusionSelector option",
+			selectorOption: WithSelector(InclusionSelector),
+			wantSelector:   InclusionSelector,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			client := kubeclient.Get(ctx)
+			mwhInformer := mwhinformer.Get(ctx)
+			secretInformer := secretinformer.Get(ctx)
+			withContext := func(ctx context.Context, b Bindable) (context.Context, error) {
+				return ctx, nil
+			}
+			var r *Reconciler
+			if tt.selectorOption == nil {
+				r = NewReconciler("foo", "/bar", "foosec", client, mwhInformer.Lister(), secretInformer.Lister(), withContext)
+			} else {
+				r = NewReconciler("foo", "/bar", "foosec", client, mwhInformer.Lister(), secretInformer.Lister(), withContext, tt.selectorOption)
+			}
+			if diff := cmp.Diff(r.selector, tt.wantSelector); diff != "" {
+				t.Errorf("Wrong selector configured. Got: %+v, want: %+v, diff: %v", r.selector, tt.wantSelector, diff)
+			}
+		})
 	}
 }
 
