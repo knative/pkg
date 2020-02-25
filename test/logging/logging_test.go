@@ -20,6 +20,8 @@ import (
 	"errors"
 	"reflect"
 	"testing"
+
+	"k8s.io/klog"
 )
 
 type abcf struct {
@@ -58,7 +60,9 @@ func TestTLogger(legacy *testing.T) {
 	blank = &someStruct
 
 	t.V(6).Info("Should not be printed")
+	klog.V(6).Info("Should not be printed")
 	t.V(4).Info("Should be printed!")
+	klog.V(4).Info("Should be printed from klog!")
 	t.Run("A-Nice-Subtest", func(ts *TLogger) {
 		ts.V(0).Info("This is pretty important; everyone needs to see it!",
 			"some pointer", blank,

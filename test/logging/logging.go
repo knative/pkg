@@ -29,6 +29,7 @@ import (
 	"time"
 
 	"github.com/davecgh/go-spew/spew"
+	"github.com/golang/glog"
 	"go.opencensus.io/stats/view"
 	"go.opencensus.io/trace"
 	"go.uber.org/zap"
@@ -164,6 +165,8 @@ func InitializeLogger() {
 		// Set klog/glog verbosities (works with and without proxy libraries)
 		klogLevel := klog.Level(0)
 		klogLevel.Set(strconv.Itoa(verbosity))
+		glogLevel := glog.Level(0)
+		glogLevel.Set(strconv.Itoa(verbosity))
 
 		if verbosity > 2 {
 			printFlags()
