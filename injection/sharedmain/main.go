@@ -107,9 +107,9 @@ func GetLeaderElectionConfig(ctx context.Context) (*kle.Config, error) {
 	if err != nil {
 		if apierrors.IsNotFound(err) {
 			return kle.NewConfigFromMap(nil)
-		} else {
-			return nil, err
 		}
+
+		return nil, err
 	}
 
 	return kle.NewConfigFromConfigMap(leaderElectionConfigMap)
@@ -148,7 +148,20 @@ func MainWithConfig(ctx context.Context, component string, cfg *rest.Config, cto
 	defer flush(logger)
 	ctx = logging.WithLogger(ctx, logger)
 	profilingHandler := profiling.NewHandler(logger, false)
+	profilingServer := profiling.NewServer(profilingHandler)
+	eg, egCtx := errgroup.WithContext(ctx)
+	eg.Go(profilingServer.ListenAndServe)
+	go func() {
+		// This will block until either a signal arrives or one of the grouped functions
+		// returns an error.
+		<-egCtx.Done()
 
+		profilingServer.Shutdown(context.Background())
+		// Don't forward ErrServerClosed as that indicates we're already shutting down.
+		if err := eg.Wait(); err != nil && err != http.ErrServerClosed {
+			logger.Errorw("Error while running server", zap.Error(err))
+		}
+	}()
 	CheckK8sClientMinimumVersionOrDie(ctx, logger)
 
 	run := func(ctx context.Context) {
@@ -167,20 +180,6 @@ func MainWithConfig(ctx context.Context, component string, cfg *rest.Config, cto
 		}
 		logger.Info("Starting controllers...")
 		go controller.StartAll(ctx.Done(), controllers...)
-
-		profilingServer := profiling.NewServer(profilingHandler)
-		eg, egCtx := errgroup.WithContext(ctx)
-		eg.Go(profilingServer.ListenAndServe)
-
-		// This will block until either a signal arrives or one of the grouped functions
-		// returns an error.
-		<-egCtx.Done()
-
-		profilingServer.Shutdown(context.Background())
-		// Don't forward ErrServerClosed as that indicates we're already shutting down.
-		if err := eg.Wait(); err != nil && err != http.ErrServerClosed {
-			logger.Errorw("Error while running server", zap.Error(err))
-		}
 	}
 
 	// Set up leader election config
@@ -226,6 +225,7 @@ func WebhookMainWithConfig(ctx context.Context, component string, cfg *rest.Conf
 	defer flush(logger)
 	ctx = logging.WithLogger(ctx, logger)
 	profilingHandler := profiling.NewHandler(logger, false)
+	profilingServer := profiling.NewServer(profilingHandler)
 
 	CheckK8sClientMinimumVersionOrDie(ctx, logger)
 	cmw := SetupConfigMapWatchOrDie(ctx, logger)
@@ -243,8 +243,6 @@ func WebhookMainWithConfig(ctx context.Context, component string, cfg *rest.Conf
 	}
 	logger.Info("Starting controllers...")
 	go controller.StartAll(ctx.Done(), controllers...)
-
-	profilingServer := profiling.NewServer(profilingHandler)
 
 	eg, egCtx := errgroup.WithContext(ctx)
 	eg.Go(profilingServer.ListenAndServe)
