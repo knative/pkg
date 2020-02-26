@@ -180,6 +180,8 @@ func MainWithConfig(ctx context.Context, component string, cfg *rest.Config, cto
 		}
 		logger.Info("Starting controllers...")
 		go controller.StartAll(ctx.Done(), controllers...)
+
+		<-ctx.Done()
 	}
 
 	// Set up leader election config
