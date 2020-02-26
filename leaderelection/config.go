@@ -41,44 +41,28 @@ func NewConfigFromMap(data map[string]string) (*Config, error) {
 		EnabledComponents: sets.NewString(),
 	}
 
-	if resourceLock, ok := data["resourceLock"]; ok {
-		if !validResourceLocks.Has(resourceLock) {
-			return nil, fmt.Errorf("resourceLock: invalid value %q: valid values are \"leases\",\"configmaps\",\"endpoints\"", resourceLock)
-		}
-
+	if resourceLock := data["resourceLock"]; !validResourceLocks.Has(resourceLock) {
+		return nil, fmt.Errorf(`resourceLock: invalid value %q: valid values are "leases","configmaps","endpoints"`, resourceLock)
+	} else {
 		config.ResourceLock = resourceLock
-	} else {
-		return nil, errors.New("resourceLock cannot be empty")
 	}
 
-	if leaseDurationStr, ok := data["leaseDuration"]; ok {
-		if leaseDuration, err := time.ParseDuration(leaseDurationStr); err == nil {
-			config.LeaseDuration = leaseDuration
-		} else {
-			return nil, fmt.Errorf("leaseDuration: invalid duration: %q", leaseDurationStr)
-		}
+	if leaseDuration, err := time.ParseDuration(data["leaseDuration"]); err != nil {
+		return nil, fmt.Errorf("leaseDuration: invalid duration: %q", data["leaseDuration"])
 	} else {
-		return nil, errors.New("leaseDuration cannot be empty")
+		config.LeaseDuration = leaseDuration
 	}
 
-	if renewDeadlineStr, ok := data["renewDeadline"]; ok {
-		if renewDeadline, err := time.ParseDuration(renewDeadlineStr); err == nil {
-			config.RenewDeadline = renewDeadline
-		} else {
-			return nil, fmt.Errorf("renewDeadline: invalid duration: %q", renewDeadlineStr)
-		}
+	if renewDeadline, err := time.ParseDuration(data["renewDeadline"]); err != nil {
+		return nil, fmt.Errorf("renewDeadline: invalid duration: %q", data["renewDeadline"])
 	} else {
-		return nil, errors.New("renewDeadline cannot be empty")
+		config.RenewDeadline = renewDeadline
 	}
 
-	if retryPeriodStr, ok := data["retryPeriod"]; ok {
-		if retryPeriod, err := time.ParseDuration(retryPeriodStr); err == nil {
-			config.RetryPeriod = retryPeriod
-		} else {
-			return nil, fmt.Errorf("retryPeriod: invalid duration: %q", retryPeriodStr)
-		}
+	if retryPeriod, err := time.ParseDuration(data["retryPeriod"]); err != nil {
+		return nil, fmt.Errorf("retryPeriod: invalid duration: %q", data["retryPeriod"])
 	} else {
-		return nil, errors.New("retryPeriod cannot be empty")
+		config.RetryPeriod = retryPeriod
 	}
 
 	// enabledComponents are not validated here, because they are dependent on
@@ -96,7 +80,7 @@ func NewConfigFromMap(data map[string]string) (*Config, error) {
 func NewConfigFromConfigMap(configMap *corev1.ConfigMap) (*Config, error) {
 	if configMap == nil {
 		config := defaultConfig()
-		return &config, nil
+		return config, nil
 	}
 
 	return NewConfigFromMap(configMap.Data)
@@ -127,8 +111,8 @@ func (c *Config) GetComponentConfig(name string) ComponentConfig {
 	return defaultComponentConfig()
 }
 
-func defaultConfig() Config {
-	return Config{
+func defaultConfig() *Config {
+	return &Config{
 		ResourceLock:      "leases",
 		LeaseDuration:     15 * time.Second,
 		RenewDeadline:     10 * time.Second,

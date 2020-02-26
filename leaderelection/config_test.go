@@ -80,7 +80,7 @@ func TestNewConfigMapFromData(t *testing.T) {
 				delete(data, "resourceLock")
 				return data
 			}(),
-			err: errors.New("resourceLock cannot be empty"),
+			err: errors.New(`resourceLock: invalid value "": valid values are "leases","configmaps","endpoints"`),
 		},
 		{
 			name: "invalid resourceLock",
@@ -98,7 +98,7 @@ func TestNewConfigMapFromData(t *testing.T) {
 				delete(data, "leaseDuration")
 				return data
 			}(),
-			err: errors.New("leaseDuration cannot be empty"),
+			err: errors.New(`leaseDuration: invalid duration: ""`),
 		},
 		{
 			name: "invalid leaseDuration",
@@ -116,7 +116,7 @@ func TestNewConfigMapFromData(t *testing.T) {
 				delete(data, "renewDeadline")
 				return data
 			}(),
-			err: errors.New("renewDeadline cannot be empty"),
+			err: errors.New(`renewDeadline: invalid duration: ""`),
 		},
 		{
 			name: "invalid renewDeadline",
@@ -134,7 +134,7 @@ func TestNewConfigMapFromData(t *testing.T) {
 				delete(data, "retryPeriod")
 				return data
 			}(),
-			err: errors.New("retryPeriod cannot be empty"),
+			err: errors.New(`retryPeriod: invalid duration: ""`),
 		},
 		{
 			name: "invalid retryPeriod",

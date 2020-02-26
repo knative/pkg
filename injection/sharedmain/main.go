@@ -157,7 +157,6 @@ func MainWithConfig(ctx context.Context, component string, cfg *rest.Config, cto
 		<-egCtx.Done()
 
 		profilingServer.Shutdown(context.Background())
-		// Don't forward ErrServerClosed as that indicates we're already shutting down.
 		if err := eg.Wait(); err != nil && err != http.ErrServerClosed {
 			logger.Errorw("Error while running server", zap.Error(err))
 		}
@@ -194,11 +193,9 @@ func MainWithConfig(ctx context.Context, component string, cfg *rest.Config, cto
 	if !leConfig.LeaderElect {
 		logger.Infof("%v will not run in leader-elected mode", component)
 		run(ctx)
-		logger.Fatal("unreachable")
+	} else {
+		RunLeaderElected(ctx, logger, run, component, leConfig)
 	}
-
-	RunLeaderElected(ctx, logger, run, component, leConfig)
-	logger.Fatal("unreachable")
 }
 
 // WebhookMainWithContext runs the generic main flow for controllers and
