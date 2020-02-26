@@ -17,12 +17,36 @@ limitations under the License.
 package leaderelection
 
 import (
+	"errors"
 	"reflect"
 	"testing"
 	"time"
 
 	"k8s.io/apimachinery/pkg/util/sets"
 )
+
+func okConfig() *Config {
+	return &Config{
+		ResourceLock:      "leases",
+		LeaseDuration:     15 * time.Second,
+		RenewDeadline:     10 * time.Second,
+		RetryPeriod:       2 * time.Second,
+		EnabledComponents: sets.NewString(),
+	}
+}
+
+func okData() map[string]string {
+	return map[string]string{
+		"resourceLock": "leases",
+		// values in this data come from the defaults suggested in the
+		// code:
+		// https://github.com/kubernetes/client-go/blob/kubernetes-1.16.0/tools/leaderelection/leaderelection.go
+		"leaseDuration":     "15s",
+		"renewDeadline":     "10s",
+		"retryPeriod":       "2s",
+		"enabledComponents": "controller",
+	}
+}
 
 func TestNewConfigMapFromData(t *testing.T) {
 	cases := []struct {
@@ -33,55 +57,93 @@ func TestNewConfigMapFromData(t *testing.T) {
 	}{
 		{
 			name: "disabled but OK config",
-			data: map[string]string{
-				"resourceLock": "leases",
-				// values in this data come from the defaults suggested in the
-				// code:
-				// https://github.com/kubernetes/client-go/blob/kubernetes-1.16.0/tools/leaderelection/leaderelection.go
-				"leaseDuration": "15s",
-				"renewDeadline": "10s",
-				"retryPeriod":   "2s",
-			},
-			expected: &Config{
-				ResourceLock:      "leases",
-				LeaseDuration:     15 * time.Second,
-				RenewDeadline:     10 * time.Second,
-				RetryPeriod:       2 * time.Second,
-				EnabledComponents: sets.NewString(),
-			},
+			data: func() map[string]string {
+				data := okData()
+				delete(data, "enabledComponents")
+				return data
+			}(),
+			expected: okConfig(),
 		},
 		{
-			name: "OK config with controller enabled",
-			data: map[string]string{
-				"resourceLock":      "leases",
-				"leaseDuration":     "15s",
-				"renewDeadline":     "10s",
-				"retryPeriod":       "2s",
-				"enabledComponents": "controller",
-			},
-			expected: &Config{
-				ResourceLock:      "leases",
-				LeaseDuration:     15 * time.Second,
-				RenewDeadline:     10 * time.Second,
-				RetryPeriod:       2 * time.Second,
-				EnabledComponents: sets.NewString("controller"),
-			},
+			name: "OK config - controller enabled",
+			data: okData(),
+			expected: func() *Config {
+				config := okConfig()
+				config.EnabledComponents.Insert("controller")
+				return config
+			}(),
 		},
 		{
-			name: "config missing resourceLock field",
-			data: map[string]string{
-				"leaseDuration":     "15s",
-				"renewDeadline":     "10s",
-				"retryPeriod":       "2s",
-				"enabledComponents": "controller",
-			},
-			expected: &Config{
-				ResourceLock:      "leases",
-				LeaseDuration:     15 * time.Second,
-				RenewDeadline:     10 * time.Second,
-				RetryPeriod:       2 * time.Second,
-				EnabledComponents: sets.NewString("controller"),
-			},
+			name: "missing resourceLock",
+			data: func() map[string]string {
+				data := okData()
+				delete(data, "resourceLock")
+				return data
+			}(),
+			err: errors.New("resourceLock cannot be empty"),
+		},
+		{
+			name: "invalid resourceLock",
+			data: func() map[string]string {
+				data := okData()
+				data["resourceLock"] = "flarps"
+				return data
+			}(),
+			err: errors.New(`resourceLock: invalid value "flarps": valid values are "leases","configmaps","endpoints"`),
+		},
+		{
+			name: "missing leaseDuration",
+			data: func() map[string]string {
+				data := okData()
+				delete(data, "leaseDuration")
+				return data
+			}(),
+			err: errors.New("leaseDuration cannot be empty"),
+		},
+		{
+			name: "invalid leaseDuration",
+			data: func() map[string]string {
+				data := okData()
+				data["leaseDuration"] = "flops"
+				return data
+			}(),
+			err: errors.New(`leaseDuration: invalid duration: "flops"`),
+		},
+		{
+			name: "missing renewDeadline",
+			data: func() map[string]string {
+				data := okData()
+				delete(data, "renewDeadline")
+				return data
+			}(),
+			err: errors.New("renewDeadline cannot be empty"),
+		},
+		{
+			name: "invalid renewDeadline",
+			data: func() map[string]string {
+				data := okData()
+				data["renewDeadline"] = "flops"
+				return data
+			}(),
+			err: errors.New(`renewDeadline: invalid duration: "flops"`),
+		},
+		{
+			name: "missing retryPeriod",
+			data: func() map[string]string {
+				data := okData()
+				delete(data, "retryPeriod")
+				return data
+			}(),
+			err: errors.New("retryPeriod cannot be empty"),
+		},
+		{
+			name: "invalid retryPeriod",
+			data: func() map[string]string {
+				data := okData()
+				data["retryPeriod"] = "flops"
+				return data
+			}(),
+			err: errors.New(`retryPeriod: invalid duration: "flops"`),
 		},
 	}
 

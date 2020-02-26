@@ -18,6 +18,7 @@ package leaderelection
 
 import (
 	"errors"
+	"fmt"
 	"os"
 	"strings"
 	"time"
@@ -29,40 +30,66 @@ import (
 
 const ConfigMapNameEnv = "CONFIG_LEADERELECTION_NAME"
 
-var errEmptyLeaderElectionConfig = errors.New("empty leader election configuration")
+var (
+	errEmptyLeaderElectionConfig = errors.New("empty leader election configuration")
+	validResourceLocks           = sets.NewString("leases", "configmaps", "endpoints")
+)
 
 // NewConfigFromMap returns a Config for the given map, or an error.
 func NewConfigFromMap(data map[string]string) (*Config, error) {
-	config := defaultConfig()
+	config := &Config{
+		EnabledComponents: sets.NewString(),
+	}
 
 	if resourceLock, ok := data["resourceLock"]; ok {
+		if !validResourceLocks.Has(resourceLock) {
+			return nil, fmt.Errorf("resourceLock: invalid value %q: valid values are \"leases\",\"configmaps\",\"endpoints\"", resourceLock)
+		}
+
 		config.ResourceLock = resourceLock
+	} else {
+		return nil, errors.New("resourceLock cannot be empty")
 	}
 
 	if leaseDurationStr, ok := data["leaseDuration"]; ok {
 		if leaseDuration, err := time.ParseDuration(leaseDurationStr); err == nil {
 			config.LeaseDuration = leaseDuration
+		} else {
+			return nil, fmt.Errorf("leaseDuration: invalid duration: %q", leaseDurationStr)
 		}
+	} else {
+		return nil, errors.New("leaseDuration cannot be empty")
 	}
 
 	if renewDeadlineStr, ok := data["renewDeadline"]; ok {
 		if renewDeadline, err := time.ParseDuration(renewDeadlineStr); err == nil {
 			config.RenewDeadline = renewDeadline
+		} else {
+			return nil, fmt.Errorf("renewDeadline: invalid duration: %q", renewDeadlineStr)
 		}
+	} else {
+		return nil, errors.New("renewDeadline cannot be empty")
 	}
 
 	if retryPeriodStr, ok := data["retryPeriod"]; ok {
 		if retryPeriod, err := time.ParseDuration(retryPeriodStr); err == nil {
 			config.RetryPeriod = retryPeriod
+		} else {
+			return nil, fmt.Errorf("retryPeriod: invalid duration: %q", retryPeriodStr)
 		}
+	} else {
+		return nil, errors.New("retryPeriod cannot be empty")
 	}
 
+	// enabledComponents are not validated here, because they are dependent on
+	// the component. Components should provide additional validation for this
+	// field.
 	if enabledComponents, ok := data["enabledComponents"]; ok {
 		tokens := strings.Split(enabledComponents, ",")
 		config.EnabledComponents = sets.NewString(tokens...)
 	}
 
-	return &config, nil
+	return config, nil
 }
 
 // NewConfigFromConfigMap returns a new Config from the given ConfigMap.
