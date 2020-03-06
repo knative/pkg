@@ -85,6 +85,17 @@ func TestMetricsExporter(t *testing.T) {
 		},
 		expectSuccess: true,
 	}, {
+		name: "validConfigWithDashInName",
+		config: &metricsConfig{
+			domain:             servingDomain,
+			component:          "test-component",
+			backendDestination: Stackdriver,
+			stackdriverClientConfig: StackdriverClientConfig{
+				ProjectID: "testProj",
+			},
+		},
+		expectSuccess: true,
+	}, {
 		name: "stackdriverConfigOnly",
 		config: &metricsConfig{
 			backendDestination: Stackdriver,
