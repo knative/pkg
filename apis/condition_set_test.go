@@ -111,6 +111,12 @@ func TestNonTerminalCondition(t *testing.T) {
 		t.Errorf("MarkUnknown(Foo) = %v, wanted %v", got, want)
 	}
 
+	// Setting the other "terminal" condition makes Ready true.
+	manager.MarkTrueWithReason("Foo", "", "")
+	if got, want := manager.GetCondition("Ready").Status, corev1.ConditionTrue; got != want {
+		t.Errorf("MarkTrue(Foo) = %v, wanted %v", got, want)
+	}
+
 	// Setting a "non-terminal" condition, doesn't change Ready.
 	manager.MarkFalse("Bar", "", "")
 	if got, want := manager.GetCondition("Ready").Status, corev1.ConditionTrue; got != want {
