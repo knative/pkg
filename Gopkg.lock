@@ -411,6 +411,14 @@
   revision = "95032a82bc518f77982ea72343cc1ade730072f0"
 
 [[projects]]
+  digest = "1:08c58ac78a8c1f61e9a96350066d30fe194b8779799bd932a79932a5166a173f"
+  name = "github.com/kelseyhightower/envconfig"
+  packages = ["."]
+  pruneopts = "NUT"
+  revision = "0b417c4ec4a8a82eecc22a1459a504aa55163d61"
+  version = "v1.4.0"
+
+[[projects]]
   digest = "1:58999a98719fddbac6303cb17e8d85b945f60b72f48e3a2df6b950b97fa926f1"
   name = "github.com/konsorten/go-windows-terminal-sequences"
   packages = ["."]
@@ -1390,6 +1398,7 @@
     "github.com/google/uuid",
     "github.com/gorilla/websocket",
     "github.com/kballard/go-shellquote",
+    "github.com/kelseyhightower/envconfig",
     "github.com/markbates/inflect",
     "github.com/openzipkin/zipkin-go",
     "github.com/openzipkin/zipkin-go/model",
