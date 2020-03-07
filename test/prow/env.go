@@ -18,7 +18,11 @@ limitations under the License.
 
 package prow
 
-import "github.com/kelseyhightower/envconfig"
+import (
+	"fmt"
+
+	"github.com/kelseyhightower/envconfig"
+)
 
 type EnvConfig struct {
 	CI          bool   `required:"true"`
@@ -33,12 +37,14 @@ type EnvConfig struct {
 	PullBaseRef string `split_words:"true"`
 	PullBaseSha string `split_words:"true"`
 	PullRefs    string `split_words:"true"`
-	PullNumber  string `split_words:"true"`
+	PullNumber  uint   `split_words:"true"`
 	PullPullSha string `split_words:"true"`
 }
 
 func GetEnvConfig() (*EnvConfig, error) {
 	var ec EnvConfig
-	err := envconfig.Process("", &ec)
-	return &ec, err
+	if err := envconfig.Process("", &ec); err != nil {
+		return nil, fmt.Errorf("failed getting environment variables for Prow: %w", err)
+	}
+	return &ec, nil
 }

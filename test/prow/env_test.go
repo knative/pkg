@@ -19,6 +19,11 @@ package prow
 import "testing"
 
 func TestGetEnvConfig(t *testing.T) {
-    ec, _ := GetEnvConfig()
-    t.Log(*ec)
+    if IsCI() {
+        ec, err := GetEnvConfig()
+        t.Logf("EnvConfig is: %v", ec)
+        if err != nil {
+            t.Fatalf("Error getting envconfig for Prow: %v", err)
+        }
+    }
 }

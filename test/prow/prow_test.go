@@ -64,8 +64,22 @@ func TestInvalidJobPath(t *testing.T) {
 	}
 }
 
+func TestIsCI(t *testing.T) {
+	isCI := os.Getenv("CI")
+	// Set it to the original value
+	defer os.Setenv("CI", isCI)
+
+	os.Setenv("CI", "true")
+	ic := IsCI()
+	if !ic {
+		t.Fatalf("Expected: %t, actual: %t", true, false)
+	}
+}
+
 func TestGetArtifacts(t *testing.T) {
 	dir := os.Getenv("ARTIFACTS")
+	// Set it to the original value
+	defer os.Setenv("ARTIFACTS", dir)
 
 	// Test we can read from the env var
 	os.Setenv("ARTIFACTS", "test")
@@ -80,7 +94,4 @@ func TestGetArtifacts(t *testing.T) {
 	if v != "artifacts" {
 		t.Fatalf("Actual artifacts dir: '%s' and Expected: 'artifacts'", v)
 	}
-
-	// Set it to the original value
-	os.Setenv("ARTIFACTS", dir)
 }
