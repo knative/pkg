@@ -16,9 +16,17 @@ limitations under the License.
 
 package prow
 
-import "testing"
+import (
+    "os"
+    "testing"
+)
 
 func TestGetEnvConfig(t *testing.T) {
+    isCI := os.Getenv("CI")
+    // Set it to the original value
+    defer os.Setenv("CI", isCI)
+
+    os.Setenv("CI", "true")
     if IsCI() {
         ec, err := GetEnvConfig()
         t.Logf("EnvConfig is: %v", ec)

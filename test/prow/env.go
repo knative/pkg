@@ -24,6 +24,9 @@ import (
 	"github.com/kelseyhightower/envconfig"
 )
 
+// EnvConfig consists of all the environment variables that can be set in a Prow job,
+// check https://github.com/kubernetes/test-infra/blob/master/prow/jobs.md#job-environment-variables
+// for more information.
 type EnvConfig struct {
 	CI          bool   `required:"true"`
 	Artifacts   string `required:"true"`

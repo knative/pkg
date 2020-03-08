@@ -70,9 +70,8 @@ func TestIsCI(t *testing.T) {
 	defer os.Setenv("CI", isCI)
 
 	os.Setenv("CI", "true")
-	ic := IsCI()
-	if !ic {
-		t.Fatalf("Expected: %t, actual: %t", true, false)
+	if ic := IsCI(); !ic {
+		t.Fatal("Expected: true, actual: false")
 	}
 }
 
