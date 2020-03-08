@@ -27,11 +27,15 @@ func TestGetEnvConfig(t *testing.T) {
     defer os.Setenv("CI", isCI)
 
     os.Setenv("CI", "true")
-    if IsCI() {
-        ec, err := GetEnvConfig()
-        t.Logf("EnvConfig is: %v", ec)
-        if err != nil {
-            t.Fatalf("Error getting envconfig for Prow: %v", err)
-        }
+    ec, err := GetEnvConfig()
+    t.Logf("EnvConfig is: %v", ec)
+    if err != nil {
+        t.Fatalf("Error getting envconfig for Prow: %v", err)
+    }
+
+    os.Setenv("CI", "false")
+    _, err = GetEnvConfig()
+    if err == nil {
+        t.Fatalf("Expected an error if called from a non-CI environment but got nil")
     }
 }

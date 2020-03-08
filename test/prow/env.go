@@ -45,6 +45,10 @@ type EnvConfig struct {
 }
 
 func GetEnvConfig() (*EnvConfig, error) {
+	if !IsCI() {
+		return nil, fmt.Errorf("this function is not expected to be called from a non-CI environment")
+	}
+
 	var ec EnvConfig
 	if err := envconfig.Process("", &ec); err != nil {
 		return nil, fmt.Errorf("failed getting environment variables for Prow: %w", err)
