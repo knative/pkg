@@ -28,13 +28,13 @@ import (
 // check https://github.com/kubernetes/test-infra/blob/master/prow/jobs.md#job-environment-variables
 // for more information.
 type EnvConfig struct {
-	CI          bool   `required:"true"`
-	Artifacts   string `required:"true"`
-	JobName     string `required:"true" split_words:"true"`
-	JobType     string `required:"true" split_words:"true"`
-	JobSpec     string `required:"true" split_words:"true"`
-	BuildID     string `required:"true" envconfig:"BUILD_ID"`
-	ProwJobID   string `required:"true" envconfig:"PROW_JOB_ID"`
+	CI          bool
+	Artifacts   string
+	JobName     string `split_words:"true"`
+	JobType     string `split_words:"true"`
+	JobSpec     string `split_words:"true"`
+	BuildID     string `envconfig:"BUILD_ID"`
+	ProwJobID   string `envconfig:"PROW_JOB_ID"`
 	RepoOwner   string `split_words:"true"`
 	RepoName    string `split_words:"true"`
 	PullBaseRef string `split_words:"true"`
