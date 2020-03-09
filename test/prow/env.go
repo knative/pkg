@@ -19,6 +19,7 @@ limitations under the License.
 package prow
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/kelseyhightower/envconfig"
@@ -44,14 +45,15 @@ type EnvConfig struct {
 	PullPullSha string `split_words:"true"`
 }
 
+// GetEnvConfig returns values of all the environment variables that can be possibly set in a Prow job.
 func GetEnvConfig() (*EnvConfig, error) {
-	if !IsCI() {
-		return nil, fmt.Errorf("this function is not expected to be called from a non-CI environment")
-	}
-
 	var ec EnvConfig
 	if err := envconfig.Process("", &ec); err != nil {
 		return nil, fmt.Errorf("failed getting environment variables for Prow: %w", err)
+	}
+
+	if !ec.CI {
+		return nil, errors.New("this function is not expected to be called from a non-CI environment")
 	}
 	return &ec, nil
 }

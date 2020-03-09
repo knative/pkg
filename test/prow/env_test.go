@@ -17,28 +17,27 @@ limitations under the License.
 package prow
 
 import (
-    "os"
-    "testing"
+	"os"
+	"testing"
 )
 
 func TestGetEnvConfig(t *testing.T) {
-    isCI := os.Getenv("CI")
-    // Set it to the original value
-    defer os.Setenv("CI", isCI)
+	isCI := os.Getenv("CI")
+	// Set it to the original value
+	defer os.Setenv("CI", isCI)
 
-    os.Setenv("CI", "true")
-    ec, err := GetEnvConfig()
-    t.Logf("EnvConfig is: %v", ec)
-    if err != nil {
-        t.Fatalf("Error getting envconfig for Prow: %v", err)
-    }
-    if !ec.CI {
-        t.Fatal("Expected CI to be true but is false")
-    }
+	os.Setenv("CI", "true")
+	ec, err := GetEnvConfig()
+	t.Logf("EnvConfig is: %v", ec)
+	if err != nil {
+		t.Fatalf("Error getting envconfig for Prow: %v", err)
+	}
+	if !ec.CI {
+		t.Fatal("Expected CI to be true but is false")
+	}
 
-    os.Setenv("CI", "false")
-    _, err = GetEnvConfig()
-    if err == nil {
-        t.Fatalf("Expected an error if called from a non-CI environment but got nil")
-    }
+	os.Setenv("CI", "false")
+	if _, err = GetEnvConfig(); err == nil {
+		t.Fatal("Expected an error if called from a non-CI environment but got nil")
+	}
 }
