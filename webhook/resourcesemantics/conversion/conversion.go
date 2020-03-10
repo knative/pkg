@@ -127,21 +127,21 @@ func (r *reconciler) convert(
 
 	// TODO(dprotaso) - potentially error on unknown fields
 	if err = json.Unmarshal(inRaw.Raw, &in); err != nil {
-		err = fmt.Errorf("unable to unmarshal input: %s", err)
+		err = fmt.Errorf("unable to unmarshal input: %w", err)
 		return
 	}
 
 	if inGVK.Version == conv.HubVersion {
 		hub = in
 	} else if err = hub.ConvertFrom(ctx, in); err != nil {
-		err = fmt.Errorf("conversion failed to version %s for type %s -  %s", outGVK.Version, formatGVK(inGVK), err)
+		err = fmt.Errorf("conversion failed to version %s for type %s -  %w", outGVK.Version, formatGVK(inGVK), err)
 		return
 	}
 
 	if outGVK.Version == conv.HubVersion {
 		out = hub
 	} else if err = hub.ConvertTo(ctx, out); err != nil {
-		err = fmt.Errorf("conversion failed to version %s for type %s -  %s", outGVK.Version, formatGVK(inGVK), err)
+		err = fmt.Errorf("conversion failed to version %s for type %s -  %w", outGVK.Version, formatGVK(inGVK), err)
 		return
 	}
 
@@ -152,7 +152,7 @@ func (r *reconciler) convert(
 	}
 
 	if outRaw.Raw, err = json.Marshal(out); err != nil {
-		err = fmt.Errorf("unable to marshal output: %s", err)
+		err = fmt.Errorf("unable to marshal output: %w", err)
 		return
 	}
 
@@ -163,7 +163,7 @@ func parseGVK(in runtime.RawExtension) (gvk schema.GroupVersionKind, err error) 
 	var typeMeta metav1.TypeMeta
 
 	if err = json.Unmarshal(in.Raw, &typeMeta); err != nil {
-		err = fmt.Errorf("error parsing type meta %q - %s", string(in.Raw), err)
+		err = fmt.Errorf("error parsing type meta %q - %w", string(in.Raw), err)
 		return
 	}
 
