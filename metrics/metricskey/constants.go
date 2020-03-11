@@ -16,6 +16,12 @@ limitations under the License.
 
 package metricskey
 
+import (
+	"context"
+
+	"go.opencensus.io/resource"
+)
+
 const (
 	// LabelProject is the label for project (e.g. GCP GAIA ID, AWS project name)
 	LabelProject = "project_id"
@@ -45,3 +51,18 @@ const (
 	// is not running on GKE.
 	ValueUnknown = "unknown"
 )
+
+type resourceKey struct{}
+
+func WithResource(ctx context.Context, r resource.Resource) context.Context {
+	return context.WithValue(ctx, resourceKey{}, &r)
+}
+
+// GetResource extracts a resource from the current context, if present.
+func GetResource(ctx context.Context) *resource.Resource {
+	r := ctx.Value(resourceKey{})
+	if r == nil {
+		return nil
+	}
+	return r.(*resource.Resource)
+}
