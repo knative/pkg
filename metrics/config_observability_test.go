@@ -49,12 +49,12 @@ func TestObservabilityConfiguration(t *testing.T) {
 				Name:      ConfigMapName(),
 			},
 			Data: map[string]string{
-				"logging.enable-var-log-collection":           "true",
-				"logging.revision-url-template":               "https://logging.io",
-				"logging.enable-probe-request-log":            "true",
-				"logging.write-request-logs":                  "true",
-				"logging.request-log-template":                `{"requestMethod": "{{.Request.Method}}"}`,
-				"metrics.request-metrics-backend-destination": "stackdriver",
+				"logging.enable-var-log-collection": "true",
+				"logging.revision-url-template":     "https://logging.io",
+				"logging.enable-probe-request-log":  "true",
+				"logging.write-request-logs":        "true",
+				"logging.request-log-template":      `{"requestMethod": "{{.Request.Method}}"}`,
+				"metrics.backend-destination":       "stackdriver",
 			},
 		},
 	}, {

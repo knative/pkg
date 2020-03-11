@@ -86,7 +86,7 @@ func NewObservabilityConfigFromConfigMap(configMap *corev1.ConfigMap) (*Observab
 		oc.EnableProbeRequestLog = strings.EqualFold(eprl, "true")
 	}
 
-	if mb, ok := configMap.Data["metrics.request-metrics-backend-destination"]; ok {
+	if mb, ok := configMap.Data["metrics.backend-destination"]; ok {
 		oc.RequestMetricsBackend = mb
 	} else {
 		oc.RequestMetricsBackend = DefaultRequestMetricsBackend
