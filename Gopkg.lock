@@ -576,7 +576,7 @@
   revision = "b5f4fca92137581c0f118ba6b106ba0cb3a2c84e"
 
 [[projects]]
-  digest = "1:0e3fd52087079d1289983e4fef32268ca965973f5370b69204e2934185527baa"
+  digest = "1:c61e0b7febdecac7f383db9ebe498359854bf1e7f2cd3a758055b35ff9612a39"
   name = "go.opencensus.io"
   packages = [
     ".",
@@ -600,8 +600,7 @@
     "trace/tracestate",
   ]
   pruneopts = "NUT"
-  revision = "9c377598961b706d1542bd2d84d538b5094d596e"
-  version = "v0.22.0"
+  revision = "84d38db2b42a4fc1eebad7b32616e8f4bd48bd76"
 
 [[projects]]
   digest = "1:cc9d86ec4e6e3bdf87e3a421273bfeed003cf8e21351c0302fe8b0eb7b10efe6"
@@ -1404,6 +1403,7 @@
     "go.opencensus.io/metric/metricdata",
     "go.opencensus.io/plugin/ochttp",
     "go.opencensus.io/plugin/ochttp/propagation/b3",
+    "go.opencensus.io/resource",
     "go.opencensus.io/stats",
     "go.opencensus.io/stats/view",
     "go.opencensus.io/tag",

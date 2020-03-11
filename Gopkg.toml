@@ -77,6 +77,11 @@ required = [
   revision = "59d068f8d8ff5b653916aa30cdc4e13c7f15d56e"
 
 [[constraint]]
+  name = "go.opencensus.io"
+  # With https://github.com/census-instrumentation/opencensus-go/pull/1196
+  revision = "84d38db2b42a4fc1eebad7b32616e8f4bd48bd76"
+
+[[constraint]]
   name = "github.com/google/mako"
   version = "v0.1.0"
 
