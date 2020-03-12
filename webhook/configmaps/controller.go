@@ -24,6 +24,7 @@ import (
 	kubeclient "knative.dev/pkg/client/injection/kube/client"
 	vwhinformer "knative.dev/pkg/client/injection/kube/informers/admissionregistration/v1beta1/validatingwebhookconfiguration"
 	secretinformer "knative.dev/pkg/client/injection/kube/informers/core/v1/secret"
+	"knative.dev/pkg/injection"
 
 	"k8s.io/client-go/tools/cache"
 	"knative.dev/pkg/configmap"
@@ -41,9 +42,12 @@ func NewAdmissionController(
 ) *controller.Impl {
 
 	client := kubeclient.Get(ctx)
+	// Those are global.
 	vwhInformer := vwhinformer.Get(ctx)
-	secretInformer := secretinformer.Get(ctx)
 	options := webhook.GetOptions(ctx)
+
+	ctx = injection.WithNamespaceScope(ctx, system.Namespace())
+	secretInformer := secretinformer.Get(ctx)
 
 	wh := &reconciler{
 		name: name,

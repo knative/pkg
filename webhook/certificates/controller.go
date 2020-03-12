@@ -22,6 +22,7 @@ import (
 	// Injection stuff
 	kubeclient "knative.dev/pkg/client/injection/kube/client"
 	secretinformer "knative.dev/pkg/client/injection/kube/informers/core/v1/secret"
+	"knative.dev/pkg/injection"
 
 	"k8s.io/client-go/tools/cache"
 	"knative.dev/pkg/configmap"
@@ -41,6 +42,7 @@ func NewController(
 ) *controller.Impl {
 
 	client := kubeclient.Get(ctx)
+	ctx = injection.WithNamespaceScope(ctx, system.Namespace())
 	secretInformer := secretinformer.Get(ctx)
 	options := webhook.GetOptions(ctx)
 

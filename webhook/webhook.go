@@ -26,6 +26,7 @@ import (
 	// Injection stuff
 	kubeclient "knative.dev/pkg/client/injection/kube/client"
 	kubeinformerfactory "knative.dev/pkg/client/injection/kube/informers/factory"
+	"knative.dev/pkg/injection"
 
 	"go.uber.org/zap"
 	"golang.org/x/sync/errgroup"
@@ -89,7 +90,8 @@ func New(
 	// of the admission controllers' informers *also* require the secret
 	// informer, then we can fetch the shared informer factory here and produce
 	// a new secret informer from it.
-	secretInformer := kubeinformerfactory.Get(ctx).Core().V1().Secrets()
+	ctxN := injection.WithNamespaceScope(ctx, system.Namespace())
+	secretInformer := kubeinformerfactory.Get(ctxN).Core().V1().Secrets()
 
 	opts := GetOptions(ctx)
 	if opts == nil {

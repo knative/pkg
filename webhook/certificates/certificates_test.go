@@ -46,6 +46,8 @@ func TestReconcile(t *testing.T) {
 	if err != nil {
 		t.Fatalf("MakeSecret() = %v", err)
 	}
+	otherNSSecret := secret.DeepCopy()
+	otherNSSecret.Namespace = "some-random-namespace-from-the-moon"
 
 	// Mutate the MakeSecret to return our secret deterministically.
 	certresources.MakeSecret = func(ctx context.Context, name, namespace, serviceName string) (*corev1.Secret, error) {
@@ -63,6 +65,11 @@ func TestReconcile(t *testing.T) {
 		Name:    "well formed secret exists",
 		Key:     key,
 		Objects: []runtime.Object{secret},
+	}, {
+		Name:        "well formed secret exists but not in System NS",
+		Key:         key,
+		Objects:     []runtime.Object{otherNSSecret},
+		WantCreates: []runtime.Object{secret},
 	}, {
 		Name:        "secret does not exist",
 		Key:         key,
@@ -102,8 +109,7 @@ func TestReconcile(t *testing.T) {
 			},
 			Data: map[string][]byte{
 				certresources.ServerKey: []byte("present"),
-				// certresources.ServerCert: []byte("missing"),
-				certresources.CACert: []byte("present"),
+				certresources.CACert:    []byte("present"),
 			},
 		}},
 		WantUpdates: []clientgotesting.UpdateActionImpl{{
@@ -120,7 +126,6 @@ func TestReconcile(t *testing.T) {
 			Data: map[string][]byte{
 				certresources.ServerKey:  []byte("present"),
 				certresources.ServerCert: []byte("present"),
-				// certresources.CACert: []byte("missing"),
 			},
 		}},
 		WantUpdates: []clientgotesting.UpdateActionImpl{{
