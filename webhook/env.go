@@ -26,7 +26,7 @@ const portEnvKey = "WEBHOOK_PORT"
 // Port returns the webhook port set by portEnvKey, or default port if env var is invalid.
 func Port(defaultPort int) int {
 	port, err := strconv.Atoi(os.Getenv(portEnvKey))
-	if err != nil {
+	if err != nil || port == 0 {
 		return defaultPort
 	}
 	return port
