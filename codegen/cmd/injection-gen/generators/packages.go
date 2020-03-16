@@ -169,9 +169,11 @@ func MustParseClientGenTags(lines []string) Tags {
 	_, ret.GenerateDuck = values["genduck"]
 
 	_, genRec := values["genreconciler"]
+	_, genRecNonNamespaced := values["genreconciler:nonNamespaced"]
 	_, genRecClass := values["genreconciler:class"]
-	// Generate Reconciler code if genreconciler OR genreconciler:class exist.
-	if genRec || genRecClass {
+
+	// Generate Reconciler code if genreconciler OR genreconciler:nonNamespaced OR genreconciler:class exist.
+	if genRec || genRecNonNamespaced || genRecClass {
 		ret.GenerateReconciler = true
 	}
 
@@ -188,6 +190,12 @@ func extractReconcilerClassTag(t *types.Type) (string, bool) {
 		return v, true
 	}
 	return "", false
+}
+
+func nonNamespacedReconcilerTag(t *types.Type) bool {
+	comments := append(append([]string{}, t.SecondClosestCommentLines...), t.CommentLines...)
+	_, nonNamespaced := types.ExtractCommentTags("+", comments)["genreconciler:nonNamespaced"]
+	return nonNamespaced
 }
 
 // isInternal returns true if the tags for a member do not contain a json tag
@@ -406,6 +414,7 @@ func reconcilerPackages(basePackage string, groupPkgName string, gv clientgentyp
 		t := t
 
 		reconcilerClass, hasReconcilerClass := extractReconcilerClassTag(t)
+		nonNamespacedReconciler := nonNamespacedReconcilerTag(t)
 
 		packagePath := filepath.Join(packagePath, strings.ToLower(t.Name.Name))
 
@@ -493,6 +502,7 @@ func reconcilerPackages(basePackage string, groupPkgName string, gv clientgentyp
 					groupVersion:       gv,
 					reconcilerClass:    reconcilerClass,
 					hasReconcilerClass: hasReconcilerClass,
+					nonNamespaced:      nonNamespacedReconciler,
 				})
 
 				return generators
