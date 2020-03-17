@@ -63,7 +63,7 @@ func TestPort(t *testing.T) {
 			defer os.Unsetenv(portEnvKey)
 
 			if got := Port(testDefaultPort); got != tc.want {
-				t.Errorf("got %v, want %v", got, tc.want)
+				t.Errorf("got %d, want %d", got, tc.want)
 			}
 		})
 	}
