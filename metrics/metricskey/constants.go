@@ -30,10 +30,10 @@ const (
 	LabelNamespaceName = "namespace_name"
 
 	// ContainerName is the container for which the metric is reported.
-	ContainerName = "container_name"
+	ContainerName = "container"
 
 	// PodName is the name of the pod for which the metric is reported.
-	PodName = "pod_name"
+	PodName = "pod"
 
 	// LabelResponseCode is the label for the HTTP response status code.
 	LabelResponseCode = "response_code"
