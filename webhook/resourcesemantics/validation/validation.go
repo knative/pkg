@@ -29,6 +29,8 @@ import (
 	"go.uber.org/zap"
 	admissionv1beta1 "k8s.io/api/admission/v1beta1"
 	admissionregistrationv1beta1 "k8s.io/api/admissionregistration/v1beta1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/kubernetes"
 	admissionlisters "k8s.io/client-go/listers/admissionregistration/v1beta1"
@@ -46,11 +48,15 @@ import (
 
 var errMissingNewObject = errors.New("the new object may not be nil")
 
+// Callback is a generic function to be called by a consumer of validation
+type Callback func(unstructured.Unstructured) error
+
 // reconciler implements the AdmissionController for resources
 type reconciler struct {
-	name     string
-	path     string
-	handlers map[schema.GroupVersionKind]resourcesemantics.GenericCRD
+	name      string
+	path      string
+	handlers  map[schema.GroupVersionKind]resourcesemantics.GenericCRD
+	callbacks map[schema.GroupVersionKind]Callback
 
 	withContext func(context.Context) context.Context
 
@@ -200,6 +206,7 @@ func (ac *reconciler) validate(ctx context.Context, req *admissionv1beta1.Admiss
 	// nil values denote absence of `old` (create) or `new` (delete) objects.
 	var oldObj, newObj resourcesemantics.GenericCRD
 
+	// Decode json to a GenericCRD
 	if len(newBytes) != 0 {
 		newObj = handler.DeepCopyObject().(resourcesemantics.GenericCRD)
 		newDecoder := json.NewDecoder(bytes.NewBuffer(newBytes))
@@ -238,21 +245,27 @@ func (ac *reconciler) validate(ctx context.Context, req *admissionv1beta1.Admiss
 		return errMissingNewObject
 	}
 
-	if err := validate(ctx, newObj); err != nil {
+	if err := newObj.Validate(ctx); err != nil {
 		logger.Errorw("Failed the resource specific validation", zap.Error(err))
 		// Return the error message as-is to give the validation callback
 		// discretion over (our portion of) the message that the user sees.
 		return err
 	}
 
-	return nil
-}
+	// Generically callback if any are provided for the resource.
+	if callback, ok := ac.callbacks[gvk]; ok {
+		var unstruct unstructured.Unstructured
+		unstruct.NewEmptyInstance()
 
-// validate performs validation on the provided "new" CRD.
-func validate(ctx context.Context, new apis.Validatable) error {
-	// Can't just `return new.Validate()` because it doesn't properly nil-check.
-	if err := new.Validate(ctx); err != nil {
-		return err
+		uns, err := runtime.DefaultUnstructuredConverter.ToUnstructured(newObj)
+		if err != nil {
+			return fmt.Errorf("cannot convert new object to unnstructured: %v", err)
+		}
+		unstruct.SetUnstructuredContent(uns)
+
+		if err := callback(unstruct); err != nil {
+			return err
+		}
 	}
 
 	return nil

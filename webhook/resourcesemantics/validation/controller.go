@@ -38,6 +38,7 @@ func NewAdmissionController(
 	ctx context.Context,
 	name, path string,
 	handlers map[schema.GroupVersionKind]resourcesemantics.GenericCRD,
+	callbacks map[schema.GroupVersionKind]Callback,
 	wc func(context.Context) context.Context,
 	disallowUnknownFields bool,
 ) *controller.Impl {
@@ -48,9 +49,10 @@ func NewAdmissionController(
 	options := webhook.GetOptions(ctx)
 
 	wh := &reconciler{
-		name:     name,
-		path:     path,
-		handlers: handlers,
+		name:      name,
+		path:      path,
+		handlers:  handlers,
+		callbacks: callbacks,
 
 		withContext:           wc,
 		disallowUnknownFields: disallowUnknownFields,

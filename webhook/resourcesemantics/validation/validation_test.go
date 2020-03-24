@@ -19,6 +19,7 @@ package validation
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"testing"
 
 	// Injection stuff
@@ -30,6 +31,8 @@ import (
 	admissionregistrationv1beta1 "k8s.io/api/admissionregistration/v1beta1"
 	authenticationv1 "k8s.io/api/authentication/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	fakekubeclientset "k8s.io/client-go/kubernetes/fake"
 	"knative.dev/pkg/apis"
@@ -76,6 +79,19 @@ var (
 		}: &InnerDefaultResource{},
 	}
 
+	callbacks = map[schema.GroupVersionKind]Callback{
+		{
+			Group:   "pkg.knative.dev",
+			Version: "v1alpha1",
+			Kind:    "Resource",
+		}: resourceCallback,
+		{
+			Group:   "pkg.knative.dev",
+			Version: "v1beta1",
+			Kind:    "Resource",
+		}: resourceCallback,
+	}
+
 	initialResourceWebhook = &admissionregistrationv1beta1.ValidatingWebhookConfiguration{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "webhook.knative.dev",
@@ -94,6 +110,19 @@ var (
 		}},
 	}
 )
+
+func resourceCallback(uns unstructured.Unstructured) error {
+
+	var resource Resource
+	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(uns.UnstructuredContent(), &resource); err != nil {
+		return err
+	}
+
+	if resource.Spec.FieldThatCallbackRejects != "" {
+		return fmt.Errorf(resource.Spec.FieldThatCallbackRejects)
+	}
+	return nil
+}
 
 func newNonRunningTestResourceAdmissionController(t *testing.T) (
 	kubeClient *fakekubeclientset.Clientset,
@@ -294,7 +323,17 @@ func TestAdmitUpdates(t *testing.T) {
 			r.Spec.FieldWithValidation = "not what's expected"
 		},
 		rejection: "invalid value",
-	}}
+	},
+		{
+			name: "callback validation",
+			setup: func(ctx context.Context, r *Resource) {
+				r.SetDefaults(ctx)
+			},
+			mutate: func(ctx context.Context, r *Resource) {
+				r.Spec.FieldThatCallbackRejects = "callbacks hate this"
+			},
+			rejection: "validation failed: callbacks hate this",
+		}}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
@@ -355,6 +394,10 @@ func createUpdateResource(ctx context.Context, t *testing.T, old, new *Resource)
 func createInnerDefaultResourceWithoutSpec(t *testing.T) []byte {
 	t.Helper()
 	r := InnerDefaultResource{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "testKind",
+			APIVersion: "testAPIVersion",
+		},
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: system.Namespace(),
 			Name:      "a name",
@@ -381,6 +424,10 @@ func createInnerDefaultResourceWithoutSpec(t *testing.T) []byte {
 func createInnerDefaultResourceWithSpecAndStatus(t *testing.T, spec *InnerDefaultSpec, status *InnerDefaultStatus) []byte {
 	t.Helper()
 	r := InnerDefaultResource{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "testKind",
+			APIVersion: "testAPIVersion",
+		},
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: system.Namespace(),
 			Name:      "a name",
@@ -407,7 +454,7 @@ func NewTestResourceAdmissionController(t *testing.T) *reconciler {
 	})
 	return NewAdmissionController(
 		ctx, testResourceValidationName, testResourceValidationPath,
-		handlers, func(ctx context.Context) context.Context {
+		handlers, callbacks, func(ctx context.Context) context.Context {
 			return ctx
 		}, true).Reconciler.(*reconciler)
 }
