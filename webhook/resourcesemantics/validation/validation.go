@@ -254,13 +254,11 @@ func (ac *reconciler) validate(ctx context.Context, req *admissionv1beta1.Admiss
 
 	// Generically callback if any are provided for the resource.
 	if callback, ok := ac.callbacks[gvk]; ok {
-		var unstruct unstructured.Unstructured
-		unstruct.NewEmptyInstance()
-
 		uns, err := runtime.DefaultUnstructuredConverter.ToUnstructured(newObj)
 		if err != nil {
 			return fmt.Errorf("cannot convert new object to unstructured: %v", err)
 		}
+		var unstruct unstructured.Unstructured
 		unstruct.SetUnstructuredContent(uns)
 
 		if err := callback(ctx, unstruct); err != nil {
