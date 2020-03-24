@@ -21,6 +21,9 @@ import (
 )
 
 type Interface interface {
+	// Init loads the configstore from the backing store if it exists, or
+	// if it does not, will create an empty one.
+	Init(ctx context.Context) error
 	// Load loads the configstore from the backing store
 	Load(ctx context.Context) error
 	// Save saves the configstore to the backing store

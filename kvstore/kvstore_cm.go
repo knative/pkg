@@ -43,7 +43,7 @@ var (
 	_ Interface = (*configMapKVStore)(nil)
 )
 
-func NewConfigMapKVStore(ctx context.Context, name string, namespace string, clientset v1.CoreV1Interface) *configMapKVStore {
+func NewConfigMapKVStore(ctx context.Context, name string, namespace string, clientset v1.CoreV1Interface) Interface {
 
 	return &configMapKVStore{name: name, namespace: namespace, cmClient: clientset.ConfigMaps(namespace)}
 }
