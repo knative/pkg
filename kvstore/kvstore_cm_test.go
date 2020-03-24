@@ -65,7 +65,7 @@ func NewTestClient(objects ...runtime.Object) *testClient {
 
 func TestInitCreates(t *testing.T) {
 	tc := NewTestClient()
-	cs := NewConfigMapKVStore(name, namespace, tc.clientset)
+	cs := NewConfigMapKVStore(context.Background(), name, namespace, tc.clientset)
 	err := cs.Init(context.Background())
 	if err != nil {
 		t.Errorf("Failed to Init ConfigStore: %v", err)
@@ -83,14 +83,14 @@ func TestInitCreates(t *testing.T) {
 
 func TestLoadNonexisting(t *testing.T) {
 	tc := NewTestClient()
-	if NewConfigMapKVStore(name, namespace, tc.clientset).Load() == nil {
+	if NewConfigMapKVStore(context.Background(), name, namespace, tc.clientset).Load(context.Background()) == nil {
 		t.Error("non-existent store load didn't fail")
 	}
 }
 
 func TestInitLoads(t *testing.T) {
 	tc := NewTestClient([]runtime.Object{configMap(map[string]string{"foo": marshal(t, "bar")})}...)
-	cs := NewConfigMapKVStore(name, namespace, tc.clientset)
+	cs := NewConfigMapKVStore(context.Background(), name, namespace, tc.clientset)
 	err := cs.Init(context.Background())
 	if err != nil {
 		t.Errorf("Failed to Init ConfigStore: %v", err)
@@ -102,32 +102,32 @@ func TestInitLoads(t *testing.T) {
 		t.Errorf("ConfigMap updated")
 	}
 	var ret string
-	err = cs.Get("foo", &ret)
+	err = cs.Get(context.Background(), "foo", &ret)
 	if err != nil {
 		t.Errorf("failed to return string: %v", err)
 	}
 	if ret != "bar" {
 		t.Errorf("got back unexpected value, wanted %q got %q", "bar", ret)
 	}
-	if cs.Get("not there", &ret) == nil {
+	if cs.Get(context.Background(), "not there", &ret) == nil {
 		t.Error("non-existent key didn't error")
 	}
 }
 
 func TestLoadSaveUpdate(t *testing.T) {
 	tc := NewTestClient([]runtime.Object{configMap(map[string]string{"foo": marshal(t, "bar")})}...)
-	cs := NewConfigMapKVStore(name, namespace, tc.clientset)
+	cs := NewConfigMapKVStore(context.Background(), name, namespace, tc.clientset)
 	err := cs.Init(context.Background())
 	if err != nil {
 		t.Errorf("Failed to Init ConfigStore: %v", err)
 	}
-	cs.Set("jimmy", "otherbar")
-	cs.Save()
+	cs.Set(context.Background(), "jimmy", "otherbar")
+	cs.Save(context.Background())
 	if tc.updated == nil {
 		t.Errorf("ConfigMap Not updated")
 	}
 	var ret string
-	err = cs.Get("jimmy", &ret)
+	err = cs.Get(context.Background(), "jimmy", &ret)
 	if err != nil {
 		t.Errorf("failed to return string: %v", err)
 	}
@@ -146,7 +146,7 @@ func TestLoadSaveUpdateComplex(t *testing.T) {
 	}
 
 	tc := NewTestClient([]runtime.Object{configMap(map[string]string{"foo": marshal(t, &ts)})}...)
-	cs := NewConfigMapKVStore(name, namespace, tc.clientset)
+	cs := NewConfigMapKVStore(context.Background(), name, namespace, tc.clientset)
 	err := cs.Init(context.Background())
 	if err != nil {
 		t.Errorf("Failed to Init ConfigStore: %v", err)
@@ -155,13 +155,13 @@ func TestLoadSaveUpdateComplex(t *testing.T) {
 		LastThingProcessed: "otherthingie",
 		Stuff:              []string{"fourth", "fifth", "sixth"},
 	}
-	cs.Set("jimmy", &ts2)
-	cs.Save()
+	cs.Set(context.Background(), "jimmy", &ts2)
+	cs.Save(context.Background())
 	if tc.updated == nil {
 		t.Errorf("ConfigMap Not updated")
 	}
 	var ret testStruct
-	err = cs.Get("jimmy", &ret)
+	err = cs.Get(context.Background(), "jimmy", &ret)
 	if err != nil {
 		t.Errorf("failed to return string: %v", err)
 	}

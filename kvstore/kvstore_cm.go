@@ -32,7 +32,7 @@ import (
 	"knative.dev/pkg/logging"
 )
 
-type ConfigMapKVStore struct {
+type configMapKVStore struct {
 	cmClient  v1.ConfigMapInterface
 	name      string
 	namespace string
@@ -40,20 +40,20 @@ type ConfigMapKVStore struct {
 }
 
 var (
-	_ KVStore = (*ConfigMapKVStore)(nil)
+	_ Interface = (*configMapKVStore)(nil)
 )
 
-func NewConfigMapKVStore(name string, namespace string, clientset v1.CoreV1Interface) *ConfigMapKVStore {
+func NewConfigMapKVStore(ctx context.Context, name string, namespace string, clientset v1.CoreV1Interface) *configMapKVStore {
 
-	return &ConfigMapKVStore{name: name, namespace: namespace, cmClient: clientset.ConfigMaps(namespace)}
+	return &configMapKVStore{name: name, namespace: namespace, cmClient: clientset.ConfigMaps(namespace)}
 }
 
-// Init initializes ConfigMapKVStore either by loading or creating an empty one.
-func (cs *ConfigMapKVStore) Init(ctx context.Context) error {
+// Init initializes configMapKVStore either by loading or creating an empty one.
+func (cs *configMapKVStore) Init(ctx context.Context) error {
 	l := logging.FromContext(ctx)
-	l.Info("Initializing ConfigMapKVStore...")
+	l.Info("Initializing configMapKVStore...")
 
-	err := cs.Load()
+	err := cs.Load(ctx)
 	if apierrors.IsNotFound(err) {
 		l.Info("No config found, creating empty")
 		return cs.createConfigMap()
@@ -63,7 +63,7 @@ func (cs *ConfigMapKVStore) Init(ctx context.Context) error {
 
 // Load fetches the ConfigMap from k8s and unmarshals the data found
 // in the configdatakey type as specified by value.
-func (cs *ConfigMapKVStore) Load() error {
+func (cs *configMapKVStore) Load(ctx context.Context) error {
 	cm, err := cs.cmClient.Get(cs.name, metav1.GetOptions{})
 	if err != nil {
 		return err
@@ -74,7 +74,7 @@ func (cs *ConfigMapKVStore) Load() error {
 
 // Save takes the value given in, and marshals it into a string
 // and saves it into the k8s ConfigMap under the configdatakey.
-func (cs *ConfigMapKVStore) Save() error {
+func (cs *configMapKVStore) Save(ctx context.Context) error {
 	cm, err := cs.cmClient.Get(cs.name, metav1.GetOptions{})
 	if err != nil {
 		return err
@@ -85,7 +85,7 @@ func (cs *ConfigMapKVStore) Save() error {
 }
 
 // Get retrieves and unmarshals the value from the map.
-func (cs *ConfigMapKVStore) Get(key string, value interface{}) error {
+func (cs *configMapKVStore) Get(ctx context.Context, key string, value interface{}) error {
 	v, ok := cs.data[key]
 	if !ok {
 		return fmt.Errorf("key %s does not exist", key)
@@ -98,7 +98,7 @@ func (cs *ConfigMapKVStore) Get(key string, value interface{}) error {
 }
 
 // Set marshals and sets the value given under specified key.
-func (cs *ConfigMapKVStore) Set(key string, value interface{}) error {
+func (cs *configMapKVStore) Set(ctx context.Context, key string, value interface{}) error {
 	bytes, err := json.Marshal(value)
 	if err != nil {
 		return fmt.Errorf("Failed to Marshal: %v", err)
@@ -107,7 +107,7 @@ func (cs *ConfigMapKVStore) Set(key string, value interface{}) error {
 	return nil
 }
 
-func (cs *ConfigMapKVStore) createConfigMap() error {
+func (cs *configMapKVStore) createConfigMap() error {
 	cm := &corev1.ConfigMap{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: "v1",

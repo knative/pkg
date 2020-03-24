@@ -16,13 +16,17 @@ limitations under the License.
 
 package kvstore
 
-type KVStore interface {
+import (
+	"context"
+)
+
+type Interface interface {
 	// Load loads the configstore from the backing store
-	Load() error
+	Load(ctx context.Context) error
 	// Save saves the configstore to the backing store
-	Save() error
+	Save(ctx context.Context) error
 	// Get gets the key from the KVStore into the provided value
-	Get(key string, value interface{}) error
+	Get(ctx context.Context, key string, value interface{}) error
 	// Set sets the key into the KVStore from the provided value
-	Set(key string, value interface{}) error
+	Set(ctx context.Context, key string, value interface{}) error
 }
