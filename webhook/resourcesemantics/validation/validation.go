@@ -258,10 +258,10 @@ func (ac *reconciler) validate(ctx context.Context, req *admissionv1beta1.Admiss
 		if err != nil {
 			return fmt.Errorf("cannot convert new object to unstructured: %v", err)
 		}
-		var unstruct unstructured.Unstructured
+		unstruct := &unstructured.Unstructured{}
 		unstruct.SetUnstructuredContent(uns)
 
-		if err := callback(ctx, unstruct); err != nil {
+		if err := callback(ctx, *unstruct); err != nil {
 			return err
 		}
 	}
