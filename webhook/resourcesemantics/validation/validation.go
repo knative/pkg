@@ -259,7 +259,7 @@ func (ac *reconciler) validate(ctx context.Context, req *admissionv1beta1.Admiss
 
 		uns, err := runtime.DefaultUnstructuredConverter.ToUnstructured(newObj)
 		if err != nil {
-			return fmt.Errorf("cannot convert new object to unnstructured: %v", err)
+			return fmt.Errorf("cannot convert new object to unstructured: %v", err)
 		}
 		unstruct.SetUnstructuredContent(uns)
 
