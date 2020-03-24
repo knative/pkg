@@ -49,7 +49,7 @@ import (
 var errMissingNewObject = errors.New("the new object may not be nil")
 
 // Callback is a generic function to be called by a consumer of validation
-type Callback func(unstructured.Unstructured) error
+type Callback func(context.Context, unstructured.Unstructured) error
 
 // reconciler implements the AdmissionController for resources
 type reconciler struct {
@@ -263,7 +263,7 @@ func (ac *reconciler) validate(ctx context.Context, req *admissionv1beta1.Admiss
 		}
 		unstruct.SetUnstructuredContent(uns)
 
-		if err := callback(unstruct); err != nil {
+		if err := callback(ctx, unstruct); err != nil {
 			return err
 		}
 	}
