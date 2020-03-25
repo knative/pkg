@@ -120,14 +120,20 @@ func (r *reconcilerImpl) Reconcile(ctx context.Context, key string) error {
 	ctx = controller.WithEventRecorder(ctx, r.Recorder)
 
 	// Convert the namespace/name string into a distinct namespace and name
-	namespace, name, err := cache.SplitMetaNamespaceKey(key)
+
+	_, name, err := cache.SplitMetaNamespaceKey(key)
+
 	if err != nil {
 		logger.Errorf("invalid resource key: %s", key)
 		return nil
 	}
 
 	// Get the resource with this namespace/name.
-	original, err := r.Lister.Namespaces(namespace).Get(name)
+
+	getter := r.Lister
+
+	original, err := getter.Get(name)
+
 	if errors.IsNotFound(err) {
 		// The resource may no longer exist, in which case we stop processing.
 		logger.Errorf("resource %q no longer exists", key)
@@ -199,7 +205,10 @@ func (r *reconcilerImpl) updateStatus(existing *v1.Namespace, desired *v1.Namesp
 	return reconciler.RetryUpdateConflicts(func(attempts int) (err error) {
 		// The first iteration tries to use the injectionInformer's state, subsequent attempts fetch the latest state via API.
 		if attempts > 0 {
-			existing, err = r.Client.CoreV1().Namespaces(desired.Namespace).Get(desired.Name, metav1.GetOptions{})
+
+			getter := r.Client.CoreV1().Namespaces()
+
+			existing, err = getter.Get(desired.Name, metav1.GetOptions{})
 			if err != nil {
 				return err
 			}
@@ -211,7 +220,10 @@ func (r *reconcilerImpl) updateStatus(existing *v1.Namespace, desired *v1.Namesp
 		}
 
 		existing.Status = desired.Status
-		_, err = r.Client.CoreV1().Namespaces(existing.Namespace).UpdateStatus(existing)
+
+		updater := r.Client.CoreV1().Namespaces()
+
+		_, err = updater.UpdateStatus(existing)
 		return err
 	})
 }
@@ -222,7 +234,9 @@ func (r *reconcilerImpl) updateStatus(existing *v1.Namespace, desired *v1.Namesp
 func (r *reconcilerImpl) updateFinalizersFiltered(ctx context.Context, resource *v1.Namespace) (*v1.Namespace, error) {
 	finalizerName := defaultFinalizerName
 
-	actual, err := r.Lister.Namespaces(resource.Namespace).Get(resource.Name)
+	getter := r.Lister
+
+	actual, err := getter.Get(resource.Name)
 	if err != nil {
 		return resource, err
 	}
@@ -265,7 +279,9 @@ func (r *reconcilerImpl) updateFinalizersFiltered(ctx context.Context, resource 
 		return resource, err
 	}
 
-	resource, err = r.Client.CoreV1().Namespaces(resource.Namespace).Patch(resource.Name, types.MergePatchType, patch)
+	patcher := r.Client.CoreV1().Namespaces()
+
+	resource, err = patcher.Patch(resource.Name, types.MergePatchType, patch)
 	if err != nil {
 		r.Recorder.Eventf(resource, v1.EventTypeWarning, "FinalizerUpdateFailed",
 			"Failed to update finalizers for %q: %v", resource.Name, err)

@@ -260,11 +260,14 @@ func (r *reconcilerImpl) Reconcile(ctx {{.contextContext|raw}}, key string) erro
 	}
 
 	// Get the resource with this namespace/name.
+	
 	{{if .nonNamespaced}}
-	original, err := r.Lister.Get(name)
+	getter := r.Lister
 	{{else}}
-	original, err := r.Lister.{{.type|apiGroup}}(namespace).Get(name)
+	getter := r.Lister.{{.type|apiGroup}}(namespace)
 	{{end}}
+	original, err := getter.Get(name)
+
 	if {{.apierrsIsNotFound|raw}}(err) {
 		// The resource may no longer exist, in which case we stop processing.
 		logger.Errorf("resource %q no longer exists", key)
@@ -347,10 +350,11 @@ func (r *reconcilerImpl) updateStatus(existing *{{.type|raw}}, desired *{{.type|
 		// The first iteration tries to use the injectionInformer's state, subsequent attempts fetch the latest state via API.
 		if attempts > 0 {
 			{{if .nonNamespaced}}
-			existing, err = r.Client.{{.group}}{{.version}}().{{.type|apiGroup}}().Get(desired.Name, {{.metav1GetOptions|raw}}{})
+			getter := r.Client.{{.group}}{{.version}}().{{.type|apiGroup}}()
 			{{else}}
-			existing, err = r.Client.{{.group}}{{.version}}().{{.type|apiGroup}}(desired.Namespace).Get(desired.Name, {{.metav1GetOptions|raw}}{})
+			getter := r.Client.{{.group}}{{.version}}().{{.type|apiGroup}}(desired.Namespace)
 			{{end}}
+			existing, err = getter.Get(desired.Name, {{.metav1GetOptions|raw}}{})
 			if err != nil {
 				return err
 			}
@@ -362,11 +366,13 @@ func (r *reconcilerImpl) updateStatus(existing *{{.type|raw}}, desired *{{.type|
 		}
 
 		existing.Status = desired.Status
+
 		{{if .nonNamespaced}}
-		_, err = r.Client.{{.group}}{{.version}}().{{.type|apiGroup}}().UpdateStatus(existing)
+		updater := r.Client.{{.group}}{{.version}}().{{.type|apiGroup}}()
 		{{else}}
-		_, err = r.Client.{{.group}}{{.version}}().{{.type|apiGroup}}(existing.Namespace).UpdateStatus(existing)
+		updater := r.Client.{{.group}}{{.version}}().{{.type|apiGroup}}(existing.Namespace)
 		{{end}}
+		_, err = updater.UpdateStatus(existing)
 		return err
 	})
 }
@@ -380,10 +386,11 @@ func (r *reconcilerImpl) updateFinalizersFiltered(ctx {{.contextContext|raw}}, r
 	finalizerName := defaultFinalizerName
 
 	{{if .nonNamespaced}}
-	actual, err := r.Lister.Get(resource.Name)
+	getter := r.Lister
 	{{else}}
-	actual, err := r.Lister.{{.type|apiGroup}}(resource.Namespace).Get(resource.Name)
+	getter := r.Lister.{{.type|apiGroup}}(resource.Namespace)
 	{{end}}
+	actual, err := getter.Get(resource.Name)
 	if err != nil {
 		return resource, err
 	}
@@ -427,10 +434,11 @@ func (r *reconcilerImpl) updateFinalizersFiltered(ctx {{.contextContext|raw}}, r
 	}
 
 	{{if .nonNamespaced}}
-	resource, err = r.Client.{{.group}}{{.version}}().{{.type|apiGroup}}().Patch(resource.Name, types.MergePatchType, patch)
+	patcher := r.Client.{{.group}}{{.version}}().{{.type|apiGroup}}()
 	{{else}}
-	resource, err = r.Client.{{.group}}{{.version}}().{{.type|apiGroup}}(resource.Namespace).Patch(resource.Name, types.MergePatchType, patch)
+	patcher := r.Client.{{.group}}{{.version}}().{{.type|apiGroup}}(resource.Namespace)
 	{{end}}
+	resource, err = patcher.Patch(resource.Name, types.MergePatchType, patch)
 	if err != nil {
 		r.Recorder.Eventf(resource, {{.corev1EventTypeWarning|raw}}, "FinalizerUpdateFailed",
 			"Failed to update finalizers for %q: %v", resource.Name, err)
