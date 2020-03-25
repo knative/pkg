@@ -43,7 +43,7 @@ EXTERNAL_INFORMER_PKG="k8s.io/client-go/informers" \
     k8s.io/api \
     "admissionregistration:v1beta1 apps:v1 autoscaling:v1,v2beta1 batch:v1,v1beta1 core:v1 rbac:v1" \
     --go-header-file ${REPO_ROOT_DIR}/hack/boilerplate/boilerplate.go.txt \
-    --force-kinds "Namespace"
+    --force-genreconciler-kinds "Namespace"
 
 OUTPUT_PKG="knative.dev/pkg/client/injection/apiextensions" \
 VERSIONED_CLIENTSET_PKG="k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset" \
@@ -52,7 +52,7 @@ VERSIONED_CLIENTSET_PKG="k8s.io/apiextensions-apiserver/pkg/client/clientset/cli
     k8s.io/apiextensions-apiserver/pkg/apis \
     "apiextensions:v1beta1" \
     --go-header-file ${REPO_ROOT_DIR}/hack/boilerplate/boilerplate.go.txt \
-    --force-kinds "CustomResourceDefinition"
+    --force-genreconciler-kinds "CustomResourceDefinition"
 
 # Only deepcopy the Duck types, as they are not real resources.
 ${CODEGEN_PKG}/generate-groups.sh "deepcopy" \
