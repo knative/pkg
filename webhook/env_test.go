@@ -27,9 +27,10 @@ const (
 )
 
 type portTest struct {
-	name string
-	in   string
-	want int
+	name      string
+	in        string
+	want      int
+	wantPanic bool
 }
 
 func TestPort(t *testing.T) {
@@ -41,13 +42,17 @@ func TestPort(t *testing.T) {
 		in:   "",
 		want: testDefaultPort,
 	}, {
-		name: "InvalidInputNonNumeric",
-		in:   "invalid",
-		want: testDefaultPort,
+		name:      "InvalidInputNonNumeric",
+		in:        "invalid",
+		wantPanic: true,
 	}, {
-		name: "InvalidInputZero",
-		in:   "0",
-		want: testDefaultPort,
+		name:      "InvalidInputTrailingSpace",
+		in:        "8443 ",
+		wantPanic: true,
+	}, {
+		name:      "InvalidInputZero",
+		in:        "0",
+		wantPanic: true,
 	}, {
 		name: "ValidInput",
 		in:   "443",
@@ -61,6 +66,14 @@ func TestPort(t *testing.T) {
 				os.Setenv(portEnvKey, tc.in)
 			}
 			defer os.Unsetenv(portEnvKey)
+
+			defer func() {
+				if r := recover(); r == nil && tc.wantPanic {
+					t.Errorf("did not panic")
+				} else if r != nil && !tc.wantPanic {
+					t.Errorf("got unexpected panic")
+				}
+			}()
 
 			if got := Port(testDefaultPort); got != tc.want {
 				t.Errorf("got %v, want %v", got, tc.want)

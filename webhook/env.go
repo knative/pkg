@@ -17,17 +17,23 @@ limitations under the License.
 package webhook
 
 import (
+	"fmt"
 	"os"
 	"strconv"
 )
 
 const portEnvKey = "WEBHOOK_PORT"
 
-// Port returns the webhook port set by portEnvKey, or default port if env var is invalid.
+// Port returns the webhook port set by portEnvKey, or default port if env var is not set.
 func Port(defaultPort int) int {
-	port, err := strconv.Atoi(os.Getenv(portEnvKey))
-	if err != nil || port == 0 {
+	if os.Getenv(portEnvKey) == "" {
 		return defaultPort
+	}
+	port, err := strconv.Atoi(os.Getenv(portEnvKey))
+	if err != nil {
+		panic(fmt.Sprintf("failed to convert the environment variable %q : %v", portEnvKey, err))
+	} else if port == 0 {
+		panic(fmt.Sprintf("the environment variable %q can't be zero", portEnvKey))
 	}
 	return port
 }
