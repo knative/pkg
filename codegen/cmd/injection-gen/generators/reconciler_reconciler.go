@@ -260,7 +260,7 @@ func (r *reconcilerImpl) Reconcile(ctx {{.contextContext|raw}}, key string) erro
 	}
 
 	// Get the resource with this namespace/name.
-	
+
 	{{if .nonNamespaced}}
 	getter := r.Lister
 	{{else}}
