@@ -457,6 +457,45 @@ func doTestMarkTrueAccessor(t *testing.T, cases []ConditionMarkTrueTest) {
 				t.Errorf("%s (-want, +got) = %v", tc.name, diff)
 			}
 		})
+		// Run same test with MarkTrueWithReason
+		t.Run(tc.name+" with reason", func(t *testing.T) {
+			conditionTypes := tc.conditionTypes
+			if conditionTypes == nil {
+				conditionTypes = getTypes(tc.conditions)
+			}
+			condSet := NewLivingConditionSet(conditionTypes...)
+			status := &TestStatus{c: tc.conditions}
+			condSet.Manage(status).InitializeConditions()
+
+			condSet.Manage(status).MarkTrueWithReason(tc.mark, "UnitTest", "calm down, just testing")
+
+			if e, a := tc.happy, condSet.Manage(status).IsHappy(); e != a {
+				t.Errorf("%q expected: %v got: %v", tc.name, e, a)
+			} else if !e && tc.happyWant != nil {
+				e, a := tc.happyWant, condSet.Manage(status).GetTopLevelCondition()
+				if diff := cmp.Diff(e, a, ignoreFields); diff != "" {
+					t.Errorf("%s (-want, +got) = %v", tc.name, diff)
+				}
+			}
+
+			if tc.mark == condSet.happy {
+				// Skip validation the happy condition because we can't be sure
+				// marking it true was correct. Use tc.happyWant to test that case.
+				return
+			}
+
+			expected := &Condition{
+				Type:    tc.mark,
+				Status:  corev1.ConditionTrue,
+				Reason:  "UnitTest",
+				Message: "calm down, just testing",
+			}
+
+			e, a := expected, condSet.Manage(status).GetCondition(tc.mark)
+			if diff := cmp.Diff(e, a, ignoreFields); diff != "" {
+				t.Errorf("%s (-want, +got) = %v", tc.name, diff)
+			}
+		})
 	}
 }
 

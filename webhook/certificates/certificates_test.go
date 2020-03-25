@@ -23,7 +23,7 @@ import (
 	"time"
 
 	kubeclient "knative.dev/pkg/client/injection/kube/client/fake"
-	_ "knative.dev/pkg/client/injection/kube/informers/core/v1/secret/fake"
+	_ "knative.dev/pkg/injection/clients/namespacedkube/informers/core/v1/secret/fake"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -64,17 +64,8 @@ func TestReconcile(t *testing.T) {
 		Key:     key,
 		Objects: []runtime.Object{secret},
 	}, {
-		Name:        "secret does not exist",
-		Key:         key,
-		WantCreates: []runtime.Object{secret},
-	}, {
-		Name:    "secret does not exist, create error",
-		Key:     key,
-		WantErr: true,
-		WithReactors: []clientgotesting.ReactionFunc{
-			InduceFailure("create", "secrets"),
-		},
-		WantCreates: []runtime.Object{secret},
+		Name: "secret does not exist",
+		Key:  key,
 	}, {
 		Name: "missing server key",
 		Key:  key,
@@ -176,9 +167,20 @@ func TestReconcileMakeSecretFailure(t *testing.T) {
 		Key:     key,
 		Objects: []runtime.Object{secret},
 	}, {
-		Name:    "secret does not exist",
+		Name:    "malformed secret",
 		Key:     key,
 		WantErr: true,
+		Objects: []runtime.Object{&corev1.Secret{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      secretName,
+				Namespace: system.Namespace(),
+			},
+			Data: map[string][]byte{
+				// certresources.ServerKey:  []byte("missing"),
+				certresources.ServerCert: []byte("present"),
+				certresources.CACert:     []byte("present"),
+			},
+		}},
 	}, {
 		Name: "missing server key",
 		Key:  key,

@@ -1042,6 +1042,7 @@ func TestAcquire(t *testing.T) {
 func TestDelete(t *testing.T) {
 	type testdata struct {
 		isProw         bool
+		isBoskos       bool
 		NeedsCleanup   bool
 		requestCleanup bool
 		boskosState    []*boskoscommon.Resource
@@ -1146,6 +1147,7 @@ func TestDelete(t *testing.T) {
 			name: "In prow, only need to release boskos",
 			td: testdata{
 				isProw:         true,
+				isBoskos:       true,
 				NeedsCleanup:   true,
 				requestCleanup: false,
 				boskosState: []*boskoscommon.Resource{{
@@ -1226,6 +1228,7 @@ func TestDelete(t *testing.T) {
 			}
 			fgc := setupFakeGKECluster()
 			fgc.Project = fakeProj
+			fgc.IsBoskos = data.isBoskos
 			fgc.NeedsCleanup = data.NeedsCleanup
 			fgc.Request = &GKERequest{
 				Request: gke.Request{
@@ -1260,9 +1263,9 @@ func TestDelete(t *testing.T) {
 				gotCluster, _ = fgc.operations.GetCluster(fakeProj, data.cluster.Location, "", data.cluster.Name)
 			}
 			gotBoskos := fgc.boskosOps.(*boskosFake.FakeBoskosClient).GetResources()
-			errMsg := fmt.Sprintf("testing deleting cluster, with:\n\tIs Prow: '%v'\n\tNeed cleanup: '%v'\n\t"+
+			errMsg := fmt.Sprintf("testing deleting cluster, with:\n\tIs Prow: '%v'\n\tIs Boskos: '%v'\n\tNeed cleanup: '%v'\n\t"+
 				"Request cleanup: '%v'\n\texisting cluster: '%v'\n\tboskos state: '%v'",
-				data.isProw, data.NeedsCleanup, data.requestCleanup, data.cluster, data.boskosState)
+				data.isProw, data.isBoskos, data.NeedsCleanup, data.requestCleanup, data.cluster, data.boskosState)
 			if !reflect.DeepEqual(err, tt.want.Err) {
 				t.Errorf("%s\nerror got: '%v'\nerror want: '%v'", errMsg, err, tt.want.Err)
 			}

@@ -31,9 +31,9 @@ import (
 	kubeclient "knative.dev/pkg/client/injection/kube/client/fake"
 	mwhinformer "knative.dev/pkg/client/injection/kube/informers/admissionregistration/v1beta1/mutatingwebhookconfiguration"
 	_ "knative.dev/pkg/client/injection/kube/informers/admissionregistration/v1beta1/mutatingwebhookconfiguration/fake"
-	secretinformer "knative.dev/pkg/client/injection/kube/informers/core/v1/secret"
-	_ "knative.dev/pkg/client/injection/kube/informers/core/v1/secret/fake"
 	dynamicclient "knative.dev/pkg/injection/clients/dynamicclient/fake"
+	secretinformer "knative.dev/pkg/injection/clients/namespacedkube/informers/core/v1/secret"
+	_ "knative.dev/pkg/injection/clients/namespacedkube/informers/core/v1/secret/fake"
 	"knative.dev/pkg/tracker"
 
 	admissionv1beta1 "k8s.io/api/admission/v1beta1"
