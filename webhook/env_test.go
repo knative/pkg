@@ -76,7 +76,7 @@ func TestPort(t *testing.T) {
 			}()
 
 			if got := Port(testDefaultPort); got != tc.want {
-				t.Errorf("got %v, want %v", got, tc.want)
+				t.Errorf("got %d, want %d", got, tc.want)
 			}
 		})
 	}
