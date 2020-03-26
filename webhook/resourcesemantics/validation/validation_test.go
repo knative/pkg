@@ -111,19 +111,6 @@ var (
 	}
 )
 
-func resourceCallback(ctx Context, uns *unstructured.Unstructured) error {
-
-	var resource Resource
-	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(uns.UnstructuredContent(), &resource); err != nil {
-		return err
-	}
-
-	if resource.Spec.FieldThatCallbackRejects != "" {
-		return fmt.Errorf(resource.Spec.FieldThatCallbackRejects)
-	}
-	return nil
-}
-
 func newNonRunningTestResourceAdmissionController(t *testing.T) (
 	kubeClient *fakekubeclientset.Clientset,
 	ac *reconciler) {
@@ -270,6 +257,84 @@ func TestAdmitCreates(t *testing.T) {
 	}
 }
 
+func resourceCallback(ctx Context, uns *unstructured.Unstructured) error {
+
+	var resource Resource
+	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(uns.UnstructuredContent(), &resource); err != nil {
+		return err
+	}
+
+	if ctx.DryRun {
+		return fmt.Errorf("dryRun fail")
+	}
+
+	if resource.Spec.FieldForCallbackValidation != "" &&
+		resource.Spec.FieldForCallbackValidation != "magic value" {
+		return fmt.Errorf(resource.Spec.FieldForCallbackValidation)
+	}
+	return nil
+}
+
+func TestValidaitonCallback(t *testing.T) {
+	tests := []struct {
+		name      string
+		dryRun    bool
+		setup     func(context.Context, *Resource)
+		rejection string
+	}{{
+		name:      "with dryRun reject",
+		dryRun:    true,
+		setup:     func(ctx context.Context, r *Resource) {},
+		rejection: "validation failed: dryRun fail",
+	}, {
+		name:   "with dryRun off",
+		dryRun: false,
+		setup:  func(ctx context.Context, r *Resource) {},
+	}, {
+		name:   "with field magic value",
+		dryRun: false,
+		setup: func(ctx context.Context, r *Resource) {
+			// Put a good value in.
+			r.Spec.FieldForCallbackValidation = "magic value"
+		},
+	}, {
+		name:   "with field reject value",
+		dryRun: false,
+		setup: func(ctx context.Context, r *Resource) {
+			// Put a bad value in.
+			r.Spec.FieldForCallbackValidation = "callbacks hate this"
+		},
+		rejection: "validation failed: callbacks hate this",
+	}}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			r := CreateResource("a name")
+			ctx := apis.WithinCreate(apis.WithUserInfo(
+				TestContextWithLogger(t),
+				&authenticationv1.UserInfo{Username: user1}))
+
+			// Setup the resource.
+			tc.setup(ctx, r)
+
+			_, ac := newNonRunningTestResourceAdmissionController(t)
+			req := createCreateResource(ctx, t, r)
+			if tc.dryRun {
+				truePoint := true
+				req.DryRun = &truePoint
+			}
+
+			resp := ac.Admit(ctx, req)
+
+			if tc.rejection == "" {
+				ExpectAllowed(t, resp)
+			} else {
+				ExpectFailsWith(t, resp, tc.rejection)
+			}
+		})
+	}
+}
+
 func createCreateResource(ctx context.Context, t *testing.T, r *Resource) *admissionv1beta1.AdmissionRequest {
 	t.Helper()
 	req := &admissionv1beta1.AdmissionRequest{
@@ -323,17 +388,7 @@ func TestAdmitUpdates(t *testing.T) {
 			r.Spec.FieldWithValidation = "not what's expected"
 		},
 		rejection: "invalid value",
-	},
-		{
-			name: "callback validation",
-			setup: func(ctx context.Context, r *Resource) {
-				r.SetDefaults(ctx)
-			},
-			mutate: func(ctx context.Context, r *Resource) {
-				r.Spec.FieldThatCallbackRejects = "callbacks hate this"
-			},
-			rejection: "validation failed: callbacks hate this",
-		}}
+	}}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
