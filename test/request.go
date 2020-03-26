@@ -145,6 +145,20 @@ func WaitForEndpointState(
 	return WaitForEndpointStateWithTimeout(kubeClient, logf, url, inState, desc, resolvable, Flags.SpoofRequestTimeout, opts...)
 }
 
+// WaitForEndpointSteadyState will poll an endpoint until inState is achieved for numConsecutiveInState
+// times in a row or until timeout is reached.
+func WaitForEndpointSteadyState(
+	kubeClient *KubeClient,
+	logf logging.FormatLogger,
+	url *url.URL,
+	inState spoof.ResponseChecker,
+	numConsecutiveInState int,
+	desc string,
+	resolvable bool,
+	opts ...interface{}) (*spoof.Response, error) {
+	return WaitForEndpointSteadyStateWithTimeout(kubeClient, logf, url, inState, numConsecutiveInState, desc, resolvable, Flags.SpoofRequestTimeout, opts...)
+}
+
 // WaitForEndpointStateWithTimeout will poll an endpoint until inState indicates the state is achieved
 // or the provided timeout is achieved.
 // If resolvableDomain is false, it will use kubeClientset to look up the ingress and spoof
@@ -156,6 +170,21 @@ func WaitForEndpointStateWithTimeout(
 	logf logging.FormatLogger,
 	url *url.URL,
 	inState spoof.ResponseChecker,
+	desc string,
+	resolvable bool,
+	timeout time.Duration,
+	opts ...interface{}) (*spoof.Response, error) {
+	return WaitForEndpointSteadyStateWithTimeout(kubeClient, logf, url, inState, 1 /*num consecutive responses matching inState*/, desc, resolvable, Flags.SpoofRequestTimeout, opts...)
+}
+
+// WaitForEndpointSteadyStateWithTimeout will poll an endpoint until inState is achieved for numConsecutiveInState
+// times in a row or until timeout is reached.
+func WaitForEndpointSteadyStateWithTimeout(
+	kubeClient *KubeClient,
+	logf logging.FormatLogger,
+	url *url.URL,
+	inState spoof.ResponseChecker,
+	numConsecutiveInState int,
 	desc string,
 	resolvable bool,
 	timeout time.Duration,
@@ -187,5 +216,5 @@ func WaitForEndpointStateWithTimeout(
 	}
 	client.RequestTimeout = timeout
 
-	return client.Poll(req, inState)
+	return client.PollSteady(req, inState, numConsecutiveInState)
 }

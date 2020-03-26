@@ -62,6 +62,7 @@ func (r *Response) String() string {
 type Interface interface {
 	Do(*http.Request) (*Response, error)
 	Poll(*http.Request, ResponseChecker, ...ErrorRetryChecker) (*Response, error)
+	PollSteady(*http.Request, ResponseChecker, int, ...ErrorRetryChecker) (*Response, error)
 }
 
 // https://medium.com/stupid-gopher-tricks/ensuring-go-interface-satisfaction-at-compile-time-1ed158e8fa17
@@ -203,11 +204,18 @@ func (sc *SpoofingClient) Do(req *http.Request) (*Response, error) {
 
 // Poll executes an http request until it satisfies the inState condition or encounters an error.
 func (sc *SpoofingClient) Poll(req *http.Request, inState ResponseChecker, errorRetryCheckers ...ErrorRetryChecker) (*Response, error) {
+	return sc.PollSteady(req, inState, 1 /*num consecutive responses matching inState*/, errorRetryCheckers...)
+
+}
+
+// PollSteady executes an http request until it satisfies the inState condition for the given number of times or encounters an error
+func (sc *SpoofingClient) PollSteady(req *http.Request, inState ResponseChecker, numResponsesInState int, errorRetryCheckers ...ErrorRetryChecker) (*Response, error) {
 	var (
 		resp *Response
 		err  error
 	)
 
+	validResponseCounter := 0
 	err = wait.PollImmediate(sc.RequestInterval, sc.RequestTimeout, func() (bool, error) {
 		// As we may do multiple Do calls as part of a single Poll we add this temporary header
 		// to the request to indicate to Do method not to log Zipkin trace, instead it is
@@ -227,8 +235,18 @@ func (sc *SpoofingClient) Poll(req *http.Request, inState ResponseChecker, error
 			}
 			return true, err
 		}
-
-		return inState(resp)
+		done, err := inState(resp)
+		if numResponsesInState > 1 {
+			if done && err == nil {
+				validResponseCounter = validResponseCounter + 1
+				if validResponseCounter == numResponsesInState {
+					return true, nil
+				}
+				return false, nil
+			}
+			validResponseCounter = 0 //reset and start from scratch
+		}
+		return done, err
 	})
 
 	if resp != nil {
