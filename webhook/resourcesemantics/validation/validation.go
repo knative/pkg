@@ -256,7 +256,7 @@ func (ac *reconciler) validate(ctx context.Context, req *admissionv1beta1.Admiss
 		unstruct := &unstructured.Unstructured{}
 		newDecoder := json.NewDecoder(bytes.NewBuffer(newBytes))
 		if err := newDecoder.Decode(&unstruct); err != nil {
-			return fmt.Errorf("cannot decode incoming new object: %v", err)
+			return fmt.Errorf("cannot decode incoming new object: %w", err)
 		}
 
 		if err := callback(ctx, unstruct); err != nil {
