@@ -55,6 +55,16 @@ func WithinUpdate(ctx context.Context, base interface{}) context.Context {
 	})
 }
 
+type decodeUnstructuredKey struct{}
+
+func WithDecodeUnstructured(ctx context.Context) context.Context {
+	return context.WithValue(ctx, decodeUnstructuredKey{}, struct{}{})
+}
+
+func ShouldDecodeUnstructured(ctx context.Context) bool {
+	return ctx.Value(decodeUnstructuredKey{}) != nil
+}
+
 // WithinSubResourceUpdate is used to note that the webhook is calling within
 // the context of a Update operation on a subresource.
 func WithinSubResourceUpdate(ctx context.Context, base interface{}, sr string) context.Context {

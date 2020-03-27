@@ -21,6 +21,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"testing"
+	"time"
 
 	// Injection stuff
 	_ "knative.dev/pkg/client/injection/kube/client/fake"
@@ -212,6 +213,32 @@ func TestUnknownFieldFails(t *testing.T) {
 
 	ExpectFailsWith(t, ac.Admit(TestContextWithLogger(t), req),
 		`validation failed: cannot decode incoming new object: json: unknown field "foo"`)
+}
+
+func TestBenchDecode(t *testing.T) {
+	r := CreateResource("a name")
+	_, ac := newNonRunningTestResourceAdmissionController(t)
+
+	ctx := apis.WithinCreate(apis.WithUserInfo(
+		TestContextWithLogger(t),
+		&authenticationv1.UserInfo{Username: user1}))
+	var start time.Time
+
+	start = time.Now()
+	for i := 0; i < 10000; i++ {
+		ac.Admit(ctx, createCreateResource(ctx, t, r))
+	}
+	elapsedConvert := time.Since(start)
+
+	decodeCtx := apis.WithDecodeUnstructured(ctx)
+
+	start = time.Now()
+	for i := 0; i < 10000; i++ {
+		ac.Admit(decodeCtx, createCreateResource(decodeCtx, t, r))
+	}
+	elapsedDecode := time.Since(start)
+
+	t.Errorf("\nConverting took: %v\nDecoding took: %v", +elapsedConvert, elapsedDecode)
 }
 
 func TestAdmitCreates(t *testing.T) {
