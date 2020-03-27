@@ -30,7 +30,6 @@ import (
 	admissionv1beta1 "k8s.io/api/admission/v1beta1"
 	admissionregistrationv1beta1 "k8s.io/api/admissionregistration/v1beta1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/kubernetes"
 	admissionlisters "k8s.io/client-go/listers/admissionregistration/v1beta1"
@@ -254,12 +253,11 @@ func (ac *reconciler) validate(ctx context.Context, req *admissionv1beta1.Admiss
 
 	// Generically callback if any are provided for the resource.
 	if callback, ok := ac.callbacks[gvk]; ok {
-		uns, err := runtime.DefaultUnstructuredConverter.ToUnstructured(newObj)
-		if err != nil {
-			return fmt.Errorf("cannot convert new object to unstructured: %v", err)
-		}
 		unstruct := &unstructured.Unstructured{}
-		unstruct.SetUnstructuredContent(uns)
+		newDecoder := json.NewDecoder(bytes.NewBuffer(newBytes))
+		if err := newDecoder.Decode(&unstruct); err != nil {
+			return fmt.Errorf("cannot decode incoming new object: %v", err)
+		}
 
 		if err := callback(ctx, unstruct); err != nil {
 			return err
