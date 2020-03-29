@@ -34,7 +34,7 @@ cleanup
 mkdir -p "${TMP_DIFFROOT}"
 
 cp -aR \
-  "${REPO_ROOT_DIR}/Gopkg.lock" \
+  "${REPO_ROOT_DIR}/go.sum" \
   "${REPO_ROOT_DIR}/apis" \
   "${REPO_ROOT_DIR}/logging" \
   "${REPO_ROOT_DIR}/metrics" \
@@ -46,7 +46,7 @@ echo "Diffing ${REPO_ROOT_DIR} against freshly generated codegen"
 ret=0
 
 diff -Naupr --no-dereference \
-  "${REPO_ROOT_DIR}/Gopkg.lock" "${TMP_DIFFROOT}/Gopkg.lock" || ret=1
+  "${REPO_ROOT_DIR}/go.sum" "${TMP_DIFFROOT}/go.sum" || ret=1
 
 diff -Naupr --no-dereference \
   "${REPO_ROOT_DIR}/apis" "${TMP_DIFFROOT}/apis" || ret=1
@@ -62,7 +62,7 @@ diff -Naupr --no-dereference \
 
 # Restore working tree state
 rm -fr \
-  "${REPO_ROOT_DIR}/Gopkg.lock" \
+  "${REPO_ROOT_DIR}/go.sum" \
   "${REPO_ROOT_DIR}/apis" \
   "${REPO_ROOT_DIR}/logging" \
   "${REPO_ROOT_DIR}/metrics" \
