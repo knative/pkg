@@ -22,7 +22,7 @@ source $(dirname $0)/../vendor/knative.dev/test-infra/scripts/library.sh
 
 CODEGEN_PKG=${CODEGEN_PKG:-$(cd ${REPO_ROOT_DIR}; ls -d -1 $(dirname $0)/../vendor/k8s.io/code-generator 2>/dev/null || echo ../code-generator)}
 
-go install k8s.io/code-generator/cmd/deepcopy-gen
+go install $(dirname $0)/../vendor/k8s.io/code-generator/cmd/deepcopy-gen
 
 # generate the code with:
 # --output-base    because this script should also be able to run inside the vendor dir of
@@ -55,7 +55,6 @@ VERSIONED_CLIENTSET_PKG="k8s.io/apiextensions-apiserver/pkg/client/clientset/cli
     --force-genreconciler-kinds "CustomResourceDefinition"
 
 # Only deepcopy the Duck types, as they are not real resources.
-chmod +x ${CODEGEN_PKG}/generate-groups.sh
 ${CODEGEN_PKG}/generate-groups.sh "deepcopy" \
   knative.dev/pkg/client knative.dev/pkg/apis \
   "duck:v1alpha1,v1beta1,v1" \
