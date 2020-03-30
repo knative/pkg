@@ -39,6 +39,7 @@ cp -aR \
   "${REPO_ROOT_DIR}/logging" \
   "${REPO_ROOT_DIR}/metrics" \
   "${REPO_ROOT_DIR}/testing" \
+  "${REPO_ROOT_DIR}/vendor" \
   "${TMP_DIFFROOT}"
 
 "${REPO_ROOT_DIR}/hack/update-codegen.sh"
@@ -60,13 +61,17 @@ diff -Naupr --no-dereference \
 diff -Naupr --no-dereference \
   "${REPO_ROOT_DIR}/testing" "${TMP_DIFFROOT}/testing" || ret=1
 
+diff -Naupr --no-dereference \
+  "${REPO_ROOT_DIR}/vendor" "${TMP_DIFFROOT}/vendor" || ret=1
+
 # Restore working tree state
 rm -fr \
   "${REPO_ROOT_DIR}/go.sum" \
   "${REPO_ROOT_DIR}/apis" \
   "${REPO_ROOT_DIR}/logging" \
   "${REPO_ROOT_DIR}/metrics" \
-  "${REPO_ROOT_DIR}/testing"
+  "${REPO_ROOT_DIR}/testing" \
+  "${REPO_ROOT_DIR}/vendor"
 
 cp -aR "${TMP_DIFFROOT}"/* "${REPO_ROOT_DIR}"
 
