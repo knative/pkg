@@ -48,7 +48,7 @@ import (
 var errMissingNewObject = errors.New("the new object may not be nil")
 
 // Callback is a generic function to be called by a consumer of validation
-type Callback func(Context, *unstructured.Unstructured) error
+type Callback func(ctx context.Context, unstructured *unstructured.Unstructured, dryRun bool, opVerb admissionv1beta1.Operation) error
 
 // reconciler implements the AdmissionController for resources
 type reconciler struct {
@@ -259,9 +259,14 @@ func (ac *reconciler) validate(ctx context.Context, req *admissionv1beta1.Admiss
 			return fmt.Errorf("cannot decode incoming new object: %w", err)
 		}
 
-		vCtx := NewValidationContext(ctx, ac, req)
+		dryRun := false
+		if req.DryRun != nil {
+			dryRun = *req.DryRun
+		}
 
-		if err := callback(*vCtx, unstruct); err != nil {
+		ctx := apis.WithKubeClient(ctx, ac.client)
+
+		if err := callback(ctx, unstruct, dryRun, req.Operation); err != nil {
 			return err
 		}
 	}

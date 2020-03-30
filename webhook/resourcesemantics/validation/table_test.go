@@ -333,7 +333,6 @@ func TestNew(t *testing.T) {
 
 	c := NewAdmissionController(ctx, "foo", "/bar",
 		map[schema.GroupVersionKind]resourcesemantics.GenericCRD{},
-		map[schema.GroupVersionKind]Callback{},
 		func(ctx context.Context) context.Context {
 			return ctx
 		}, true /* disallow unknown field */)

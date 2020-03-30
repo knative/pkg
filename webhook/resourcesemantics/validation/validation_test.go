@@ -257,14 +257,14 @@ func TestAdmitCreates(t *testing.T) {
 	}
 }
 
-func resourceCallback(ctx Context, uns *unstructured.Unstructured) error {
+func resourceCallback(ctx context.Context, uns *unstructured.Unstructured, dryRun bool, opVerb admissionv1beta1.Operation) error {
 
 	var resource Resource
 	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(uns.UnstructuredContent(), &resource); err != nil {
 		return err
 	}
 
-	if ctx.DryRun {
+	if dryRun {
 		return fmt.Errorf("dryRun fail")
 	}
 
@@ -509,7 +509,8 @@ func NewTestResourceAdmissionController(t *testing.T) *reconciler {
 	})
 	return NewAdmissionController(
 		ctx, testResourceValidationName, testResourceValidationPath,
-		handlers, callbacks, func(ctx context.Context) context.Context {
+		handlers,
+		func(ctx context.Context) context.Context {
 			return ctx
-		}, true).Reconciler.(*reconciler)
+		}, true, callbacks).Reconciler.(*reconciler)
 }

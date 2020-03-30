@@ -38,9 +38,9 @@ func NewAdmissionController(
 	ctx context.Context,
 	name, path string,
 	handlers map[schema.GroupVersionKind]resourcesemantics.GenericCRD,
-	callbacks map[schema.GroupVersionKind]Callback,
 	wc func(context.Context) context.Context,
 	disallowUnknownFields bool,
+	callbacks ...map[schema.GroupVersionKind]Callback,
 ) *controller.Impl {
 
 	client := kubeclient.Get(ctx)
@@ -48,11 +48,21 @@ func NewAdmissionController(
 	secretInformer := secretinformer.Get(ctx)
 	options := webhook.GetOptions(ctx)
 
+	// This not ideal, we are using a variadic argument to effectively make callbacks optional
+	// This allows this addition to be non-breaking to consumers of /pkg
+	// TODO: once all sub-repos have adoped this, we might move this back to a traditional param.
+	unwrappedCallbacks := map[schema.GroupVersionKind]Callback{}
+	for _, m := range callbacks {
+		for k, v := range m {
+			unwrappedCallbacks[k] = v
+		}
+	}
+
 	wh := &reconciler{
 		name:      name,
 		path:      path,
 		handlers:  handlers,
-		callbacks: callbacks,
+		callbacks: unwrappedCallbacks,
 
 		withContext:           wc,
 		disallowUnknownFields: disallowUnknownFields,
