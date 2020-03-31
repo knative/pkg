@@ -24,7 +24,6 @@ import (
 	admissionv1beta1 "k8s.io/api/admission/v1beta1"
 	authenticationv1 "k8s.io/api/authentication/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	fakekubeclientset "k8s.io/client-go/kubernetes/fake"
 )
 
 func TestContexts(t *testing.T) {
@@ -212,20 +211,5 @@ func TestParentMeta(t *testing.T) {
 
 	if got := ParentMeta(ctx); !cmp.Equal(want, got) {
 		t.Errorf("ParentMeta() = %v, wanted %v", got, want)
-	}
-}
-
-func TestGetKubeClient(t *testing.T) {
-	ctx := context.Background()
-
-	if got := GetKubeClient(ctx); got != nil {
-		t.Errorf("GetKubeClient() = %v, wanted %v", got, nil)
-	}
-
-	c := &fakekubeclientset.Clientset{}
-	ctx = WithKubeClient(ctx, c)
-
-	if want, got := c, GetKubeClient(ctx); got != want {
-		t.Errorf("GetKubeclient() = %v, wanted %v", got, want)
 	}
 }
