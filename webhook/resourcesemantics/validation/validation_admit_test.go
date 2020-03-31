@@ -267,14 +267,14 @@ func TestAdmitCreates(t *testing.T) {
 	}
 }
 
-func resourceCallback(ctx context.Context, uns *unstructured.Unstructured, dryRun bool, opVerb admissionv1beta1.Operation) error {
+func resourceCallback(ctx context.Context, uns *unstructured.Unstructured, opVerb admissionv1beta1.Operation) error {
 
 	var resource Resource
 	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(uns.UnstructuredContent(), &resource); err != nil {
 		return err
 	}
 
-	if dryRun {
+	if apis.IsDryRun(ctx) {
 		return fmt.Errorf("dryRun fail")
 	}
 

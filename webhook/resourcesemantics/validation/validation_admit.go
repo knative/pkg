@@ -36,7 +36,7 @@ import (
 var errMissingNewObject = errors.New("the new object may not be nil")
 
 // Callback is a generic function to be called by a consumer of validation
-type Callback func(ctx context.Context, unstructured *unstructured.Unstructured, dryRun bool, opVerb admissionv1beta1.Operation) error
+type Callback func(ctx context.Context, unstructured *unstructured.Unstructured, opVerb admissionv1beta1.Operation) error
 
 var _ webhook.AdmissionController = (*reconciler)(nil)
 
@@ -124,6 +124,11 @@ func (ac *reconciler) decodeRequestAndPrepareContext(
 	}
 	ctx = apis.WithUserInfo(ctx, &req.UserInfo)
 	ctx = apis.WithKubeClient(ctx, ac.client)
+
+	if req.DryRun != nil && *req.DryRun {
+		ctx = apis.WithDryRun(ctx)
+	}
+
 	return ctx, newObj, nil
 }
 
@@ -176,12 +181,7 @@ func (ac *reconciler) callback(ctx context.Context, req *admissionv1beta1.Admiss
 			return fmt.Errorf("cannot decode incoming new object: %w", err)
 		}
 
-		dryRun := false
-		if req.DryRun != nil {
-			dryRun = *req.DryRun
-		}
-
-		if err := callback(ctx, unstruct, dryRun, req.Operation); err != nil {
+		if err := callback(ctx, unstruct, req.Operation); err != nil {
 			return err
 		}
 	}
