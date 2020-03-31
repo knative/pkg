@@ -512,6 +512,27 @@ func createInnerDefaultResourceWithSpecAndStatus(t *testing.T, spec *InnerDefaul
 	return b
 }
 
+func TestNewResourceAdmissionController(t *testing.T) {
+	ctx, _ := SetupFakeContext(t)
+
+	defer func() {
+		if r := recover(); r == nil {
+			t.Errorf("Expected a second callback to panic")
+		}
+	}()
+
+	invalidSecondCallback := map[schema.GroupVersionKind]Callback{}
+
+	NewAdmissionController(
+		ctx, testResourceValidationName, testResourceValidationPath,
+		handlers,
+		func(ctx context.Context) context.Context {
+			return ctx
+		}, true,
+		callbacks,
+		invalidSecondCallback)
+}
+
 func NewTestResourceAdmissionController(t *testing.T) *reconciler {
 	ctx, _ := SetupFakeContext(t)
 	ctx = webhook.WithOptions(ctx, webhook.Options{
