@@ -21,6 +21,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	admissionv1beta1 "k8s.io/api/admission/v1beta1"
 	authenticationv1 "k8s.io/api/authentication/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	fakekubeclientset "k8s.io/client-go/kubernetes/fake"
@@ -178,6 +179,21 @@ func TestGetUserInfo(t *testing.T) {
 
 	if want, got := bob, GetUserInfo(ctx); got != want {
 		t.Errorf("GetUserInfo() = %v, wanted %v", got, want)
+	}
+}
+
+func TestGetOpVerb(t *testing.T) {
+	ctx := context.Background()
+
+	if got := GetOpVerb(ctx); got != "" {
+		t.Errorf("GetOpVerb() = %v, wanted %v", got, "")
+	}
+
+	op := admissionv1beta1.Delete
+	ctx = WithOpVerb(ctx, op)
+
+	if want, got := op, GetOpVerb(ctx); got != want {
+		t.Errorf("GetOpVerb() = %v, wanted %v", got, want)
 	}
 }
 
