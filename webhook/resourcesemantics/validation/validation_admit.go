@@ -28,6 +28,7 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"knative.dev/pkg/apis"
+	kubeclient "knative.dev/pkg/client/injection/kube/client"
 	"knative.dev/pkg/logging"
 	"knative.dev/pkg/webhook"
 	"knative.dev/pkg/webhook/resourcesemantics"
@@ -123,7 +124,7 @@ func (ac *reconciler) decodeRequestAndPrepareContext(
 		ctx = apis.WithinCreate(ctx)
 	}
 	ctx = apis.WithUserInfo(ctx, &req.UserInfo)
-	ctx = apis.WithKubeClient(ctx, ac.client)
+	ctx = context.WithValue(ctx, kubeclient.Key{}, ac.client)
 	ctx = apis.WithOpVerb(ctx, req.Operation)
 
 	if req.DryRun != nil && *req.DryRun {
