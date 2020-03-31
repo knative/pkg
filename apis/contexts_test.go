@@ -129,6 +129,16 @@ func TestContexts(t *testing.T) {
 		ctx:   ctx,
 		check: IsDifferentNamespaceAllowed,
 		want:  false,
+	}, {
+		name:  "not in dry run",
+		ctx:   ctx,
+		check: IsDryRun,
+		want:  false,
+	}, {
+		name:  "in dry run",
+		ctx:   WithDryRun(ctx),
+		check: IsDryRun,
+		want:  true,
 	}}
 
 	for _, tc := range tests {
