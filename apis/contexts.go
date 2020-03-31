@@ -19,7 +19,6 @@ package apis
 import (
 	"context"
 
-	admissionv1beta1 "k8s.io/api/admission/v1beta1"
 	authenticationv1 "k8s.io/api/authentication/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -211,20 +210,4 @@ func WithDryRun(ctx context.Context) context.Context {
 // IsDryRun indicates that this request is in DryRun mode.
 func IsDryRun(ctx context.Context) bool {
 	return ctx.Value(isDryRun{}) != nil
-}
-
-// Key to attach an operation verb to the context.
-type opVerb struct{}
-
-// WithOpVerb is used to attach an operation verb to the context.
-func WithOpVerb(ctx context.Context, op admissionv1beta1.Operation) context.Context {
-	return context.WithValue(ctx, opVerb{}, op)
-}
-
-// GetOpVerb is used to retrieve an operation verb from the context.
-func GetOpVerb(ctx context.Context) admissionv1beta1.Operation {
-	if op, ok := ctx.Value(opVerb{}).(admissionv1beta1.Operation); ok {
-		return op
-	}
-	return ""
 }

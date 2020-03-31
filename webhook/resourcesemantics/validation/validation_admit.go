@@ -37,7 +37,11 @@ import (
 var errMissingNewObject = errors.New("the new object may not be nil")
 
 // Callback is a generic function to be called by a consumer of validation
-type Callback func(ctx context.Context, unstructured *unstructured.Unstructured) error
+type Callback struct {
+	callback func(ctx context.Context, unstructured *unstructured.Unstructured) error
+
+	supportedVerbs map[admissionv1beta1.Operation]bool
+}
 
 var _ webhook.AdmissionController = (*reconciler)(nil)
 
@@ -125,7 +129,6 @@ func (ac *reconciler) decodeRequestAndPrepareContext(
 	}
 	ctx = apis.WithUserInfo(ctx, &req.UserInfo)
 	ctx = context.WithValue(ctx, kubeclient.Key{}, ac.client)
-	ctx = apis.WithOpVerb(ctx, req.Operation)
 
 	if req.DryRun != nil && *req.DryRun {
 		ctx = apis.WithDryRun(ctx)
@@ -176,15 +179,17 @@ func (ac *reconciler) callback(ctx context.Context, req *admissionv1beta1.Admiss
 	}
 
 	// Generically callback if any are provided for the resource.
-	if callback, ok := ac.callbacks[gvk]; ok {
-		unstruct := &unstructured.Unstructured{}
-		newDecoder := json.NewDecoder(bytes.NewBuffer(toDecode))
-		if err := newDecoder.Decode(&unstruct); err != nil {
-			return fmt.Errorf("cannot decode incoming new object: %w", err)
-		}
+	if c, ok := ac.callbacks[gvk]; ok {
+		if b, supported := c.supportedVerbs[req.Operation]; supported && b {
+			unstruct := &unstructured.Unstructured{}
+			newDecoder := json.NewDecoder(bytes.NewBuffer(toDecode))
+			if err := newDecoder.Decode(&unstruct); err != nil {
+				return fmt.Errorf("cannot decode incoming new object: %w", err)
+			}
 
-		if err := callback(ctx, unstruct); err != nil {
-			return err
+			if err := c.callback(ctx, unstruct); err != nil {
+				return err
+			}
 		}
 	}
 
