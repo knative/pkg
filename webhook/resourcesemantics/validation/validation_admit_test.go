@@ -85,21 +85,21 @@ var (
 			Version: "v1alpha1",
 			Kind:    "Resource",
 		}: {
-			supportedVerbs: map[admissionv1beta1.Operation]bool{
+			SupportedVerbs: map[admissionv1beta1.Operation]bool{
 				admissionv1beta1.Create: true,
 				admissionv1beta1.Update: true,
 			},
-			callback: resourceCallback},
+			Callback: resourceCallback},
 		{
 			Group:   "pkg.knative.dev",
 			Version: "v1beta1",
 			Kind:    "Resource",
 		}: {
-			supportedVerbs: map[admissionv1beta1.Operation]bool{
+			SupportedVerbs: map[admissionv1beta1.Operation]bool{
 				admissionv1beta1.Create: true,
 				admissionv1beta1.Update: true,
 			},
-			callback: resourceCallback},
+			Callback: resourceCallback},
 	}
 
 	initialResourceWebhook = &admissionregistrationv1beta1.ValidatingWebhookConfiguration{
