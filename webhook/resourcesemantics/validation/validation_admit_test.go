@@ -128,6 +128,11 @@ func TestDeleteAllowed(t *testing.T) {
 
 	req := &admissionv1beta1.AdmissionRequest{
 		Operation: admissionv1beta1.Delete,
+		Kind: metav1.GroupVersionKind{
+			Group:   "pkg.knative.dev",
+			Version: "v1alpha1",
+			Kind:    "Resource",
+		},
 	}
 
 	if resp := ac.Admit(TestContextWithLogger(t), req); !resp.Allowed {
@@ -140,6 +145,11 @@ func TestConnectAllowed(t *testing.T) {
 
 	req := &admissionv1beta1.AdmissionRequest{
 		Operation: admissionv1beta1.Connect,
+		Kind: metav1.GroupVersionKind{
+			Group:   "pkg.knative.dev",
+			Version: "v1alpha1",
+			Kind:    "Resource",
+		},
 	}
 
 	resp := ac.Admit(TestContextWithLogger(t), req)
@@ -198,7 +208,7 @@ func TestUnknownFieldFails(t *testing.T) {
 	req.Object.Raw = marshaled
 
 	ExpectFailsWith(t, ac.Admit(TestContextWithLogger(t), req),
-		`validation failed: cannot decode incoming new object: json: unknown field "foo"`)
+		`decoding request failed: cannot decode incoming new object: json: unknown field "foo"`)
 }
 
 func TestAdmitCreates(t *testing.T) {
@@ -285,7 +295,7 @@ func TestValidaitonCallback(t *testing.T) {
 		name:      "with dryRun reject",
 		dryRun:    true,
 		setup:     func(ctx context.Context, r *Resource) {},
-		rejection: "validation failed: dryRun fail",
+		rejection: "validation callback failed: dryRun fail",
 	}, {
 		name:   "with dryRun off",
 		dryRun: false,
@@ -304,7 +314,7 @@ func TestValidaitonCallback(t *testing.T) {
 			// Put a bad value in.
 			r.Spec.FieldForCallbackValidation = "callbacks hate this"
 		},
-		rejection: "validation failed: callbacks hate this",
+		rejection: "validation callback failed: callbacks hate this",
 	}}
 
 	for _, tc := range tests {
