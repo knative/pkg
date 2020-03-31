@@ -238,6 +238,7 @@ func WebhookMainWithConfig(ctx context.Context, component string, cfg *rest.Conf
 	// If we have one or more admission controllers, then start the webhook
 	// and pass them in.
 	var wh *webhook.Webhook
+	var err error
 	if len(webhooks) > 0 {
 		// Register webhook metrics
 		webhook.RegisterMetrics()
