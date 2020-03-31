@@ -84,7 +84,7 @@ var (
 			Group:   "pkg.knative.dev",
 			Version: "v1alpha1",
 			Kind:    "Resource",
-		}: Callback{
+		}: {
 			supportedVerbs: map[admissionv1beta1.Operation]bool{
 				admissionv1beta1.Create: true,
 				admissionv1beta1.Update: true,
@@ -94,7 +94,7 @@ var (
 			Group:   "pkg.knative.dev",
 			Version: "v1beta1",
 			Kind:    "Resource",
-		}: Callback{
+		}: {
 			supportedVerbs: map[admissionv1beta1.Operation]bool{
 				admissionv1beta1.Create: true,
 				admissionv1beta1.Update: true,
