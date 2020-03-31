@@ -51,6 +51,9 @@ func NewAdmissionController(
 	// This not ideal, we are using a variadic argument to effectively make callbacks optional
 	// This allows this addition to be non-breaking to consumers of /pkg
 	// TODO: once all sub-repos have adoped this, we might move this back to a traditional param.
+	if len(callbacks) > 1 {
+		panic("NewAdmissionController may not be called with multiple callback maps")
+	}
 	unwrappedCallbacks := map[schema.GroupVersionKind]Callback{}
 	for _, m := range callbacks {
 		for k, v := range m {
