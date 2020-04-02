@@ -63,8 +63,7 @@ func (ac *reconciler) Admit(ctx context.Context, request *admissionv1beta1.Admis
 		return webhook.MakeErrorStatus("decoding request failed: %v", err)
 	}
 
-	err = validate(ctx, resource, request)
-	if err != nil {
+	if err := validate(ctx, resource, request); err != nil {
 		return webhook.MakeErrorStatus("validation failed: %v", err)
 	}
 
@@ -75,7 +74,7 @@ func (ac *reconciler) Admit(ctx context.Context, request *admissionv1beta1.Admis
 	return &admissionv1beta1.AdmissionResponse{Allowed: true}
 }
 
-// decodeRequest deserializes the old and new GenericCrds from the incoming request and sets up the context.
+// decodeRequestAndPrepareContext deserializes the old and new GenericCrds from the incoming request and sets up the context.
 // nil oldObj or newObj denote absence of `old` (create) or `new` (delete) objects.
 func (ac *reconciler) decodeRequestAndPrepareContext(
 	ctx context.Context,

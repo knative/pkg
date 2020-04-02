@@ -20,7 +20,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"testing"
 
 	// Injection stuff
@@ -286,7 +285,7 @@ func resourceCallback(ctx context.Context, uns *unstructured.Unstructured) error
 	}
 
 	if apis.IsDryRun(ctx) {
-		return fmt.Errorf("dryRun fail")
+		return errors.New("dryRun fail")
 	}
 
 	if resource.Spec.FieldForCallbackValidation != "" &&
