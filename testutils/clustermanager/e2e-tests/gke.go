@@ -278,7 +278,7 @@ func (gc *GKECluster) Delete() error {
 	}
 	log.Printf("Deleting cluster %q in %q", gc.Cluster.Name, gc.Cluster.Location)
 	region, zone := gke.RegionZoneFromLoc(gc.Cluster.Location)
-	if err := gc.operations.DeleteCluster(gc.Project, region, zone, gc.Cluster.Name); err != nil {
+	if _, err := gc.operations.DeleteClusterAsync(gc.Project, region, zone, gc.Cluster.Name); err != nil {
 		return fmt.Errorf("failed deleting cluster: '%v'", err)
 	}
 	return nil
