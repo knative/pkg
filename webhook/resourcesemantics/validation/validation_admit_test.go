@@ -86,8 +86,8 @@ var (
 			Kind:    "Resource",
 		}: {
 			SupportedVerbs: map[admissionv1beta1.Operation]bool{
-				admissionv1beta1.Create: true,
-				admissionv1beta1.Update: true,
+				Create: true,
+				Update: true,
 			},
 			Callback: resourceCallback},
 		{
@@ -96,8 +96,8 @@ var (
 			Kind:    "Resource",
 		}: {
 			SupportedVerbs: map[admissionv1beta1.Operation]bool{
-				admissionv1beta1.Create: true,
-				admissionv1beta1.Update: true,
+				Create: true,
+				Update: true,
 			},
 			Callback: resourceCallback},
 	}
