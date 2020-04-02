@@ -229,6 +229,25 @@ func (r *BaseReconciler) RemoveFinalizer(ctx context.Context, fb kmeta.Accessor)
 	return err
 }
 
+func (r *BaseReconciler) labelNamespace(ctx context.Context, fb kmeta.Accessor) error {
+	// Don't remove any existing labels or add ours more than once
+	labels := fb.GetLabels()
+	if labels["bindings.knative.dev/exclude"] != "" || labels["bindings.knative.dev/include"] != "" {
+		return nil
+	}
+	patch, err := json.Marshal(map[string]interface{}{
+		"metadata": map[string]interface{}{
+			"labels": map[string]string{"bindings.knative.dev/include": "true"},
+		},
+	})
+	if err != nil {
+		return err
+	}
+	r.DynamicClient.Resource(r.GVR).Namespace(fb.GetNamespace()).Patch(fb.GetName(),
+		types.MergePatchType, patch, metav1.PatchOptions{})
+	return nil
+}
+
 // ReconcileSubject handles applying the provided Binding "mutation" (Do or
 // Undo) to the Binding's subject(s).
 func (r *BaseReconciler) ReconcileSubject(ctx context.Context, fb Bindable, mutation Mutation) error {
@@ -269,6 +288,8 @@ func (r *BaseReconciler) ReconcileSubject(ctx context.Context, fb Bindable, muta
 		} else if err != nil {
 			return fmt.Errorf("error fetching Pod Speccable %v: %v", subject, err)
 		}
+		// TODO check error code
+		r.labelNamespace(ctx, fb)
 		referents = append(referents, psObj.(*duckv1.WithPod))
 	} else {
 		// Otherwise, the subject is referenced by selector, so compile
@@ -281,6 +302,8 @@ func (r *BaseReconciler) ReconcileSubject(ctx context.Context, fb Bindable, muta
 		if err != nil {
 			return fmt.Errorf("error fetching Pod Speccable %v: %v", subject, err)
 		}
+		// TODO check error code
+		r.labelNamespace(ctx, fb)
 		// Type cast the returned resources into our referent list.
 		for _, psObj := range psObjs {
 			referents = append(referents, psObj.(*duckv1.WithPod))
