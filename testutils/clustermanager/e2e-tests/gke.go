@@ -219,7 +219,7 @@ func (gc *GKECluster) Acquire() error {
 		}
 		if err != nil {
 			errMsg := fmt.Sprintf("Error during cluster creation: '%v'. ", err)
-			if gc.AsyncCleanup { // Delete half created cluster if it's user created
+			if !common.IsProw() { // Delete half created cluster if it's user created
 				errMsg = fmt.Sprintf("%sDeleting cluster %q in region %q zone %q in background...\n", errMsg, clusterName, region, request.Zone)
 				gc.operations.DeleteClusterAsync(gc.Project, region, request.Zone, clusterName)
 			}
@@ -248,8 +248,8 @@ func needsRetryCreation(errMsg string) bool {
 	return false
 }
 
-// Delete takes care of GKE cluster resource cleanup. It only release Boskos resource if running in
-// Prow, otherwise deletes the cluster if marked AsyncCleanup
+// Delete takes care of GKE cluster resource cleanup.
+// It also releases Boskos resource if running in Prow.
 func (gc *GKECluster) Delete() error {
 	if err := gc.checkEnvironment(); err != nil {
 		return fmt.Errorf("failed checking project/cluster from environment: '%v'", err)
