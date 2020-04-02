@@ -73,9 +73,7 @@ func (gs *GKEClient) Setup(r GKERequest) ClusterOperations {
 	if r.Project != "" { // use provided project to create cluster
 		gc.Project = r.Project
 		gc.AsyncCleanup = true
-	}
-
-	if r.Project == "" && common.IsProw() { // if no project is provided and is on Prow, use boskos
+	} else if common.IsProw() { // if no project is provided and is on Prow, use boskos
 		gc.IsBoskos = true
 	}
 
@@ -251,7 +249,8 @@ func needsRetryCreation(errMsg string) bool {
 // Delete takes care of GKE cluster resource cleanup.
 // It also releases Boskos resource if running in Prow.
 func (gc *GKECluster) Delete() error {
-	if err := gc.checkEnvironment(); err != nil {
+	var err error
+	if err = gc.checkEnvironment(); err != nil {
 		return fmt.Errorf("failed checking project/cluster from environment: '%v'", err)
 	}
 	gc.ensureProtected()
@@ -269,7 +268,7 @@ func (gc *GKECluster) Delete() error {
 	}
 	log.Printf("Deleting cluster %q in %q", gc.Cluster.Name, gc.Cluster.Location)
 	region, zone := gke.RegionZoneFromLoc(gc.Cluster.Location)
-	var err error
+
 	if gc.AsyncCleanup {
 		_, err = gc.operations.DeleteClusterAsync(gc.Project, region, zone, gc.Cluster.Name)
 	} else {
