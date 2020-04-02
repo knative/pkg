@@ -278,7 +278,6 @@ func TestAdmitCreates(t *testing.T) {
 }
 
 func resourceCallback(ctx context.Context, uns *unstructured.Unstructured) error {
-
 	var resource Resource
 	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(uns.UnstructuredContent(), &resource); err != nil {
 		return err
