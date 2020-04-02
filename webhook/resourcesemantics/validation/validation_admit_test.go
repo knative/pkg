@@ -289,7 +289,7 @@ func resourceCallback(ctx context.Context, uns *unstructured.Unstructured) error
 
 	if resource.Spec.FieldForCallbackValidation != "" &&
 		resource.Spec.FieldForCallbackValidation != "magic value" {
-		return fmt.Errorf(resource.Spec.FieldForCallbackValidation)
+		return errors.New(resource.Spec.FieldForCallbackValidation)
 	}
 	return nil
 }
