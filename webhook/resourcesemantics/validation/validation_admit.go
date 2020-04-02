@@ -38,7 +38,7 @@ var errMissingNewObject = errors.New("the new object may not be nil")
 
 // Callback is a generic function to be called by a consumer of validation
 type Callback struct {
-	Callback func(ctx context.Context, unstructured *unstructured.Unstructured) error
+	Func func(ctx context.Context, unstructured *unstructured.Unstructured) error
 
 	SupportedVerbs map[webhook.Operation]bool
 }

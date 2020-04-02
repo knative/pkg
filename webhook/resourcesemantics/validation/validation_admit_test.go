@@ -89,7 +89,7 @@ var (
 				webhook.Create: true,
 				webhook.Update: true,
 			},
-			Callback: resourceCallback,
+			Func: resourceCallback,
 		},
 		{
 			Group:   "pkg.knative.dev",
@@ -100,7 +100,7 @@ var (
 				webhook.Create: true,
 				webhook.Update: true,
 			},
-			Callback: resourceCallback,
+			Func: resourceCallback,
 		},
 	}
 	initialResourceWebhook = &admissionregistrationv1beta1.ValidatingWebhookConfiguration{
