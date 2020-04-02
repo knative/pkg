@@ -187,9 +187,7 @@ func (ac *reconciler) callback(ctx context.Context, req *admissionv1beta1.Admiss
 				return fmt.Errorf("cannot decode incoming new object: %w", err)
 			}
 
-			if err := c.Callback(ctx, unstruct); err != nil {
-				return err
-			}
+			return c.Callback(ctx, unstruct)
 		}
 	}
 
