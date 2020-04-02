@@ -46,10 +46,6 @@ type GKERequest struct {
 	// SkipCreation: skips cluster creation
 	SkipCreation bool
 
-	// NeedsCleanup: enforce clean up if given this option, used when running
-	// locally
-	NeedsCleanup bool
-
 	// ResourceType: the boskos resource type to acquire to hold the cluster in create
 	ResourceType string
 }
@@ -61,9 +57,9 @@ type GKECluster struct {
 	Project string
 	// IsBoskos is true if the GCP project used is managed by boskos
 	IsBoskos bool
-	// NeedsCleanup tells whether the cluster needs to be deleted afterwards
-	// This probably should be part of task wrapper's logic
-	NeedsCleanup bool
+	// AsyncCleanup tells whether the cluster needs to be deleted asynchronously afterwards
+	// It should be true on Prow but false on local.
+	AsyncCleanup bool
 	Cluster      *container.Cluster
 	operations   gke.SDKOperations
 	boskosOps    boskos.Operation
@@ -74,9 +70,13 @@ type GKECluster struct {
 func (gs *GKEClient) Setup(r GKERequest) ClusterOperations {
 	gc := &GKECluster{}
 
-	if r.Project != "" { // use provided project and create cluster
+	if r.Project != "" { // use provided project to create cluster
 		gc.Project = r.Project
-		gc.NeedsCleanup = true
+		gc.AsyncCleanup = true
+	}
+
+	if r.Project == "" && common.IsProw() { // if no project is provided and is on Prow, use boskos
+		gc.IsBoskos = true
 	}
 
 	if r.MinNodes == 0 {
@@ -159,18 +159,14 @@ func (gc *GKECluster) Acquire() error {
 	// If comes here we are very likely going to create a cluster, unless
 	// the cluster already exists
 
-	// Cleanup if cluster is created by this client
-	gc.NeedsCleanup = !common.IsProw()
-
 	// Get project name from boskos if running in Prow, otherwise it should fail
 	// since we don't know which project to use
-	if gc.Request.Project == "" && common.IsProw() {
+	if gc.IsBoskos {
 		project, err := gc.boskosOps.AcquireGKEProject(gc.Request.ResourceType)
 		if err != nil {
 			return fmt.Errorf("failed acquiring boskos project: '%v'", err)
 		}
 		gc.Project = project.Name
-		gc.IsBoskos = true
 	}
 	if gc.Project == "" {
 		return errors.New("GCP project must be set")
@@ -223,7 +219,7 @@ func (gc *GKECluster) Acquire() error {
 		}
 		if err != nil {
 			errMsg := fmt.Sprintf("Error during cluster creation: '%v'. ", err)
-			if gc.NeedsCleanup { // Delete half created cluster if it's user created
+			if gc.AsyncCleanup { // Delete half created cluster if it's user created
 				errMsg = fmt.Sprintf("%sDeleting cluster %q in region %q zone %q in background...\n", errMsg, clusterName, region, request.Zone)
 				gc.operations.DeleteClusterAsync(gc.Project, region, request.Zone, clusterName)
 			}
@@ -253,7 +249,7 @@ func needsRetryCreation(errMsg string) bool {
 }
 
 // Delete takes care of GKE cluster resource cleanup. It only release Boskos resource if running in
-// Prow, otherwise deletes the cluster if marked NeedsCleanup
+// Prow, otherwise deletes the cluster if marked AsyncCleanup
 func (gc *GKECluster) Delete() error {
 	if err := gc.checkEnvironment(); err != nil {
 		return fmt.Errorf("failed checking project/cluster from environment: '%v'", err)
@@ -266,11 +262,6 @@ func (gc *GKECluster) Delete() error {
 		return gc.boskosOps.ReleaseGKEProject(gc.Project)
 	}
 
-	// NeedsCleanup is only true if running locally and cluster created by the
-	// process
-	if !gc.NeedsCleanup && !gc.Request.NeedsCleanup {
-		return nil
-	}
 	// Should only get here if running locally and cluster created by this
 	// client, so at this moment cluster should have been set
 	if gc.Cluster == nil {
@@ -278,8 +269,14 @@ func (gc *GKECluster) Delete() error {
 	}
 	log.Printf("Deleting cluster %q in %q", gc.Cluster.Name, gc.Cluster.Location)
 	region, zone := gke.RegionZoneFromLoc(gc.Cluster.Location)
-	if _, err := gc.operations.DeleteClusterAsync(gc.Project, region, zone, gc.Cluster.Name); err != nil {
-		return fmt.Errorf("failed deleting cluster: '%v'", err)
+	var err error
+	if gc.AsyncCleanup {
+		_, err = gc.operations.DeleteClusterAsync(gc.Project, region, zone, gc.Cluster.Name)
+	} else {
+		err = gc.operations.DeleteCluster(gc.Project, region, zone, gc.Cluster.Name)
+	}
+	if err != nil {
+		return fmt.Errorf("failed deleting cluster: '%w'", err)
 	}
 	return nil
 }

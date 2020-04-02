@@ -53,7 +53,7 @@ func New(dir string) (*client, error) {
 	c.Path = path.Join(dir, filename)
 	if _, err := os.Stat(dir); os.IsNotExist(err) {
 		if err = os.MkdirAll(dir, 0777); err != nil {
-			return nil, fmt.Errorf("failed creating directory: %v", err)
+			return nil, fmt.Errorf("failed creating directory: %w", err)
 		}
 	}
 	return c, nil

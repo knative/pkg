@@ -150,7 +150,7 @@ func TestSetup(t *testing.T) {
 					ResourceType:  DefaultResourceType,
 				},
 				Project:      fakeProj,
-				NeedsCleanup: true,
+				AsyncCleanup: true,
 			},
 		}, {
 			name: "Project provided, running in Prow",
@@ -176,7 +176,7 @@ func TestSetup(t *testing.T) {
 					ResourceType:  DefaultResourceType,
 				},
 				Project:      fakeProj,
-				NeedsCleanup: true,
+				AsyncCleanup: true,
 			},
 		}, {
 			name: "Cluster name provided, not running in Prow",
@@ -1022,9 +1022,9 @@ func TestAcquire(t *testing.T) {
 			if data.skipCreation {
 				fgc.Request.SkipCreation = true
 			}
-			// Set NeedsCleanup to false for easier testing, as it launches a
+			// Set AsyncCleanup to false for easier testing, as it launches a
 			// goroutine
-			fgc.NeedsCleanup = false
+			fgc.AsyncCleanup = false
 			err := fgc.Acquire()
 			errMsg := fmt.Sprintf("testing acquiring cluster, with:\n\tisProw: '%v'\n\tproject: '%v'\n\texisting cluster: '%+v'\n\tSkip creation: '%+v'\n\t"+
 				"next operations outcomes: '%v'\n\taddons: '%v'\n\tboskos projects: '%v'",
@@ -1059,7 +1059,7 @@ func TestDelete(t *testing.T) {
 		want wantResult
 	}{
 		{
-			name: "Not in prow, NeedsCleanup is false",
+			name: "Not in prow, AsyncCleanup is false",
 			td: testdata{
 				isProw:         false,
 				NeedsCleanup:   false,
@@ -1093,7 +1093,7 @@ func TestDelete(t *testing.T) {
 			},
 		},
 		{
-			name: "Not in prow, NeedsCleanup is true",
+			name: "Not in prow, AsyncCleanup is true",
 			td: testdata{
 				isProw:         false,
 				NeedsCleanup:   true,
@@ -1111,7 +1111,7 @@ func TestDelete(t *testing.T) {
 			},
 		},
 		{
-			name: "Not in prow, NeedsCleanup is false, requestCleanup is true",
+			name: "Not in prow, AsyncCleanup is false, requestCleanup is true",
 			td: testdata{
 				isProw:         false,
 				NeedsCleanup:   false,
@@ -1129,7 +1129,7 @@ func TestDelete(t *testing.T) {
 			},
 		},
 		{
-			name: "Not in prow, NeedsCleanup is true, but cluster doesn't exist",
+			name: "Not in prow, AsyncCleanup is true, but cluster doesn't exist",
 			td: testdata{
 				isProw:         false,
 				NeedsCleanup:   true,
@@ -1229,7 +1229,7 @@ func TestDelete(t *testing.T) {
 			fgc := setupFakeGKECluster()
 			fgc.Project = fakeProj
 			fgc.IsBoskos = data.isBoskos
-			fgc.NeedsCleanup = data.NeedsCleanup
+			fgc.AsyncCleanup = data.NeedsCleanup
 			fgc.Request = &GKERequest{
 				Request: gke.Request{
 					MinNodes: DefaultGKEMinNodes,
@@ -1250,11 +1250,6 @@ func TestDelete(t *testing.T) {
 				fgc.boskosOps.(*boskosFake.FakeBoskosClient).NewGKEProject(bos.Name)
 				// Acquire with default user
 				fgc.boskosOps.(*boskosFake.FakeBoskosClient).AcquireGKEProject(DefaultResourceType)
-			}
-			if data.requestCleanup {
-				fgc.Request = &GKERequest{
-					NeedsCleanup: true,
-				}
 			}
 
 			err := fgc.Delete()
