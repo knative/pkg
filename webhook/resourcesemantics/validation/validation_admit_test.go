@@ -19,6 +19,7 @@ package validation
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"testing"
 
@@ -89,8 +90,9 @@ var (
 				webhook.Create: true,
 				webhook.Update: true,
 			},
-			Callback: resourceCallback
-		<span class="x x-first x-last">},</span>{
+			Callback: resourceCallback,
+		},
+		{
 			Group:   "pkg.knative.dev",
 			Version: "v1beta1",
 			Kind:    "Resource",
@@ -99,8 +101,9 @@ var (
 				webhook.Create: true,
 				webhook.Update: true,
 			},
-			Callback: resourceCallback
-	<span class="x x-first x-last">	}</span>}
+			Callback: resourceCallback,
+		},
+	}
 	initialResourceWebhook = &admissionregistrationv1beta1.ValidatingWebhookConfiguration{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "webhook.knative.dev",
