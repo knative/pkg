@@ -24,7 +24,6 @@ import (
 	"fmt"
 
 	"go.uber.org/zap"
-	"k8s.io/api/admission/v1beta1"
 	admissionv1beta1 "k8s.io/api/admission/v1beta1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -37,23 +36,11 @@ import (
 
 var errMissingNewObject = errors.New("the new object may not be nil")
 
-// Operation is the verb being operated on
-// it is aliasde in Validation from the k8s admission package
-type Operation = v1beta1.Operation
-
-// Operation types
-const (
-	Create  Operation = admissionv1beta1.Create
-	Update  Operation = admissionv1beta1.Update
-	Delete  Operation = admissionv1beta1.Delete
-	Connect Operation = admissionv1beta1.Connect
-)
-
 // Callback is a generic function to be called by a consumer of validation
 type Callback struct {
 	Callback func(ctx context.Context, unstructured *unstructured.Unstructured) error
 
-	SupportedVerbs map[Operation]bool
+	SupportedVerbs map[webhook.Operation]bool
 }
 
 var _ webhook.AdmissionController = (*reconciler)(nil)

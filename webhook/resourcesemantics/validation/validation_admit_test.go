@@ -85,9 +85,9 @@ var (
 			Version: "v1alpha1",
 			Kind:    "Resource",
 		}: {
-			SupportedVerbs: map[admissionv1beta1.Operation]bool{
-				Create: true,
-				Update: true,
+			SupportedVerbs: map[webhook.Operation]bool{
+				webhook.Create: true,
+				webhook.Update: true,
 			},
 			Callback: resourceCallback},
 		{
@@ -95,9 +95,9 @@ var (
 			Version: "v1beta1",
 			Kind:    "Resource",
 		}: {
-			SupportedVerbs: map[admissionv1beta1.Operation]bool{
-				Create: true,
-				Update: true,
+			SupportedVerbs: map[webhook.Operation]bool{
+				webhook.Create: true,
+				webhook.Update: true,
 			},
 			Callback: resourceCallback},
 	}
