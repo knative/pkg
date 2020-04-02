@@ -89,8 +89,8 @@ var (
 				webhook.Create: true,
 				webhook.Update: true,
 			},
-			Callback: resourceCallback},
-		{
+			Callback: resourceCallback
+		<span class="x x-first x-last">},</span>{
 			Group:   "pkg.knative.dev",
 			Version: "v1beta1",
 			Kind:    "Resource",
@@ -99,9 +99,8 @@ var (
 				webhook.Create: true,
 				webhook.Update: true,
 			},
-			Callback: resourceCallback},
-	}
-
+			Callback: resourceCallback
+	<span class="x x-first x-last">	}</span>}
 	initialResourceWebhook = &admissionregistrationv1beta1.ValidatingWebhookConfiguration{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "webhook.knative.dev",
