@@ -101,7 +101,7 @@ func (ac *reconciler) decodeRequestAndPrepareContext(
 			newDecoder.DisallowUnknownFields()
 		}
 		if err := newDecoder.Decode(&newObj); err != nil {
-			return ctx, nil, fmt.Errorf("cannot decode incoming new object: %v", err)
+			return ctx, nil, fmt.Errorf("cannot decode incoming new object: %w", err)
 		}
 	}
 
