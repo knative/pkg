@@ -17,37 +17,37 @@ limitations under the License.
 package clustermanager
 
 import (
-    "regexp"
+	"regexp"
 
-    "knative.dev/pkg/testutils/clustermanager/e2e-tests/boskos"
+	"knative.dev/pkg/testutils/clustermanager/e2e-tests/boskos"
 )
 
 const (
-    DefaultGKEMinNodes  = 1
-    DefaultGKEMaxNodes  = 3
-    DefaultGKENodeType  = "e2-standard-4"
-    DefaultGKERegion    = "us-central1"
-    DefaultGKEZone      = ""
-    regionEnv           = "E2E_CLUSTER_REGION"
-    backupRegionEnv     = "E2E_CLUSTER_BACKUP_REGIONS"
-    DefaultResourceType = boskos.GKEProjectResource
+	DefaultGKEMinNodes  = 1
+	DefaultGKEMaxNodes  = 3
+	DefaultGKENodeType  = "e2-standard-4"
+	DefaultGKERegion    = "us-central1"
+	DefaultGKEZone      = ""
+	regionEnv           = "E2E_CLUSTER_REGION"
+	backupRegionEnv     = "E2E_CLUSTER_BACKUP_REGIONS"
+	DefaultResourceType = boskos.GKEProjectResource
 
-    ClusterRunning = "RUNNING"
+	ClusterRunning = "RUNNING"
 )
 
 var (
-    protectedProjects       = []string{"knative-tests"}
-    protectedClusters       = []string{"knative-prow"}
-    DefaultGKEBackupRegions = []string{"us-west1", "us-east1"}
+	protectedProjects       = []string{"knative-tests"}
+	protectedClusters       = []string{"knative-prow"}
+	DefaultGKEBackupRegions = []string{"us-west1", "us-east1"}
 
-    // If one of the error patterns below is matched, it would be recommended to
-    // retry creating the cluster in a different region/zone.
-    // - stockout (https://github.com/knative/test-infra/issues/592)
-    // - latest GKE not available in this region/zone yet (https://github.com/knative/test-infra/issues/694)
-    retryableCreationErrors = []*regexp.Regexp{
-        regexp.MustCompile(".*Master version \"[0-9a-z\\-.]+\" is unsupported.*"),
-        regexp.MustCompile(".*No valid versions with the prefix \"[0-9.]+\" found.*"),
-        regexp.MustCompile(".*does not have enough resources available to fulfill.*"),
-        regexp.MustCompile(".*only \\d+ nodes out of \\d+ have registered; this is likely due to Nodes failing to start correctly.*"),
-    }
+	// If one of the error patterns below is matched, it would be recommended to
+	// retry creating the cluster in a different region/zone.
+	// - stockout (https://github.com/knative/test-infra/issues/592)
+	// - latest GKE not available in this region/zone yet (https://github.com/knative/test-infra/issues/694)
+	retryableCreationErrors = []*regexp.Regexp{
+		regexp.MustCompile(".*Master version \"[0-9a-z\\-.]+\" is unsupported.*"),
+		regexp.MustCompile(".*No valid versions with the prefix \"[0-9.]+\" found.*"),
+		regexp.MustCompile(".*does not have enough resources available to fulfill.*"),
+		regexp.MustCompile(".*only \\d+ nodes out of \\d+ have registered; this is likely due to Nodes failing to start correctly.*"),
+	}
 )
