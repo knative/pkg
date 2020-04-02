@@ -30,25 +30,6 @@ import (
 	"knative.dev/pkg/testutils/clustermanager/e2e-tests/common"
 )
 
-const (
-	DefaultGKEMinNodes  = 1
-	DefaultGKEMaxNodes  = 3
-	DefaultGKENodeType  = "e2-standard-4"
-	DefaultGKERegion    = "us-central1"
-	DefaultGKEZone      = ""
-	regionEnv           = "E2E_CLUSTER_REGION"
-	backupRegionEnv     = "E2E_CLUSTER_BACKUP_REGIONS"
-	DefaultResourceType = boskos.GKEProjectResource
-
-	ClusterRunning = "RUNNING"
-)
-
-var (
-	DefaultGKEBackupRegions = []string{"us-west1", "us-east1"}
-	protectedProjects       = []string{"knative-tests"}
-	protectedClusters       = []string{"knative-prow"}
-)
-
 // GKEClient implements Client
 type GKEClient struct {
 }
@@ -247,8 +228,7 @@ func (gc *GKECluster) Acquire() error {
 				gc.operations.DeleteClusterAsync(gc.Project, region, request.Zone, clusterName)
 			}
 			// Retry another region if cluster creation failed.
-			// TODO(chaodaiG): catch specific errors as we know what the error look like for stockout etc.
-			if i != len(regions)-1 {
+			if i != len(regions)-1 && needsRetryCreation(err.Error()) {
 				errMsg = fmt.Sprintf("%sRetry another region %q for cluster creation", errMsg, regions[i+1])
 			}
 			log.Print(errMsg)
@@ -260,6 +240,16 @@ func (gc *GKECluster) Acquire() error {
 	}
 
 	return err
+}
+
+// needsRetryCreation determines if cluster creation needs to be retried based on the error message.
+func needsRetryCreation(errMsg string) bool {
+	for _, regx := range retryableCreationErrors {
+		if regx.MatchString(errMsg) {
+			return true
+		}
+	}
+	return false
 }
 
 // Delete takes care of GKE cluster resource cleanup. It only release Boskos resource if running in
