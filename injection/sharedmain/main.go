@@ -96,14 +96,6 @@ func GetLoggingConfig(ctx context.Context) (*logging.Config, error) {
 	if err := wait.PollImmediate(1*time.Second, 5*time.Second, func() (bool, error) {
 		var err error
 		loggingConfigMap, err = kubeclient.Get(ctx).CoreV1().ConfigMaps(system.Namespace()).Get(logging.ConfigMapName(), metav1.GetOptions{})
-		if err != nil {
-			if apierrors.IsNotFound(err) {
-				return true, nil
-			} else {
-				log.Printf("Failed to get logging configmap: %v", err)
-				return false, nil
-			}
-		}
 		return err == nil || apierrors.IsNotFound(err), nil
 	}); err != nil {
 		return nil, err
