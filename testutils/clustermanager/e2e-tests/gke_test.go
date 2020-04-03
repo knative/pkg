@@ -1045,10 +1045,10 @@ func TestAcquire(t *testing.T) {
 
 func TestDelete(t *testing.T) {
 	type testdata struct {
-		isProw         bool
-		isBoskos       bool
-		boskosState    []*boskoscommon.Resource
-		cluster        *container.Cluster
+		isProw      bool
+		isBoskos    bool
+		boskosState []*boskoscommon.Resource
+		cluster     *container.Cluster
 	}
 	type wantResult struct {
 		Boskos  []*boskoscommon.Resource
@@ -1063,8 +1063,8 @@ func TestDelete(t *testing.T) {
 		{
 			name: "Not in prow",
 			td: testdata{
-				isProw:         false,
-				boskosState:    []*boskoscommon.Resource{},
+				isProw:      false,
+				boskosState: []*boskoscommon.Resource{},
 				cluster: &container.Cluster{
 					Name:     "customcluster",
 					Location: "us-central1",
@@ -1079,9 +1079,9 @@ func TestDelete(t *testing.T) {
 		{
 			name: "Not in prow, but cluster doesn't exist",
 			td: testdata{
-				isProw:         false,
-				boskosState:    []*boskoscommon.Resource{},
-				cluster:        nil,
+				isProw:      false,
+				boskosState: []*boskoscommon.Resource{},
+				cluster:     nil,
 			},
 			want: wantResult{
 				nil,
@@ -1092,8 +1092,8 @@ func TestDelete(t *testing.T) {
 		{
 			name: "In prow",
 			td: testdata{
-				isProw:         true,
-				isBoskos:       true,
+				isProw:   true,
+				isBoskos: true,
 				boskosState: []*boskoscommon.Resource{{
 					Name: fakeProj,
 				}},
