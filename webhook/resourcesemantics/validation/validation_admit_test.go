@@ -531,6 +531,33 @@ func TestNewResourceAdmissionController(t *testing.T) {
 		invalidSecondCallback)
 }
 
+func TestNewResourceAdmissionControllerDuplciateVerb(t *testing.T) {
+	ctx, _ := SetupFakeContext(t)
+
+	defer func() {
+		if r := recover(); r == nil {
+			t.Errorf("Expected a second callback to panic")
+		}
+	}()
+
+	call := map[schema.GroupVersionKind]Callback{
+		{
+			Group:   "pkg.knative.dev",
+			Version: "v1alpha1",
+			Kind:    "Resource",
+		}: NewCallback(resourceCallback,
+			[]webhook.Operation{webhook.Create, webhook.Create}), // Disallow duplicates under test
+	}
+
+	NewAdmissionController(
+		ctx, testResourceValidationName, testResourceValidationPath,
+		handlers,
+		func(ctx context.Context) context.Context {
+			return ctx
+		}, true,
+		call)
+}
+
 func NewTestResourceAdmissionController(t *testing.T) *reconciler {
 	ctx, _ := SetupFakeContext(t)
 	ctx = webhook.WithOptions(ctx, webhook.Options{
