@@ -23,22 +23,22 @@ import (
 )
 
 const (
-	DefaultGKEMinNodes  = 1
-	DefaultGKEMaxNodes  = 3
-	DefaultGKENodeType  = "e2-standard-4"
-	DefaultGKERegion    = "us-central1"
-	DefaultGKEZone      = ""
+	defaultGKEMinNodes  = 1
+	defaultGKEMaxNodes  = 3
+	defaultGKENodeType  = "e2-standard-4"
+	defaultGKERegion    = "us-central1"
+	defaultGKEZone      = ""
 	regionEnv           = "E2E_CLUSTER_REGION"
 	backupRegionEnv     = "E2E_CLUSTER_BACKUP_REGIONS"
-	DefaultResourceType = boskos.GKEProjectResource
+	defaultResourceType = boskos.GKEProjectResource
 
-	ClusterRunning = "RUNNING"
+	clusterRunning = "RUNNING"
 )
 
 var (
 	protectedProjects       = []string{"knative-tests"}
 	protectedClusters       = []string{"knative-prow"}
-	DefaultGKEBackupRegions = []string{"us-west1", "us-east1"}
+	defaultGKEBackupRegions = []string{"us-west1", "us-east1"}
 
 	// If one of the error patterns below is matched, it would be recommended to
 	// retry creating the cluster in a different region/zone.

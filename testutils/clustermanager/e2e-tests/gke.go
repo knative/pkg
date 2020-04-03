@@ -78,39 +78,39 @@ func (gs *GKEClient) Setup(r GKERequest) ClusterOperations {
 	}
 
 	if r.MinNodes == 0 {
-		r.MinNodes = DefaultGKEMinNodes
+		r.MinNodes = defaultGKEMinNodes
 	}
 	if r.MaxNodes == 0 {
-		r.MaxNodes = DefaultGKEMaxNodes
+		r.MaxNodes = defaultGKEMaxNodes
 		// We don't want MaxNodes < MinNodes
 		if r.MinNodes > r.MaxNodes {
 			r.MaxNodes = r.MinNodes
 		}
 	}
 	if r.NodeType == "" {
-		r.NodeType = DefaultGKENodeType
+		r.NodeType = defaultGKENodeType
 	}
 	// Only use default backup regions if region is not provided
 	if len(r.BackupRegions) == 0 && r.Region == "" {
-		r.BackupRegions = DefaultGKEBackupRegions
+		r.BackupRegions = defaultGKEBackupRegions
 		if common.GetOSEnv(backupRegionEnv) != "" {
 			r.BackupRegions = strings.Split(common.GetOSEnv(backupRegionEnv), " ")
 		}
 	}
 	if r.Region == "" {
-		r.Region = DefaultGKERegion
+		r.Region = defaultGKERegion
 		if common.GetOSEnv(regionEnv) != "" {
 			r.Region = common.GetOSEnv(regionEnv)
 		}
 	}
 	if r.Zone == "" {
-		r.Zone = DefaultGKEZone
+		r.Zone = defaultGKEZone
 	} else { // No backupregions if zone is provided
 		r.BackupRegions = make([]string, 0)
 	}
 
 	if r.ResourceType == "" {
-		r.ResourceType = DefaultResourceType
+		r.ResourceType = defaultResourceType
 	}
 
 	gc.Request = &r
@@ -205,7 +205,7 @@ func (gc *GKECluster) Acquire() error {
 		clusterName := request.ClusterName
 		// Use cluster if it already exists and running
 		existingCluster, _ := gc.operations.GetCluster(gc.Project, region, request.Zone, clusterName)
-		if existingCluster != nil && existingCluster.Status == ClusterRunning {
+		if existingCluster != nil && existingCluster.Status == clusterRunning {
 			gc.Cluster = existingCluster
 			return nil
 		}
@@ -251,14 +251,15 @@ func needsRetryCreation(errMsg string) bool {
 func (gc *GKECluster) Delete() error {
 	var err error
 	if err = gc.checkEnvironment(); err != nil {
-		return fmt.Errorf("failed checking project/cluster from environment: '%v'", err)
+		return fmt.Errorf("failed checking project/cluster from environment: '%w'", err)
 	}
 	gc.ensureProtected()
-	// Release Boskos if running in Prow, will let Janitor taking care of
-	// clusters deleting
+	// Release Boskos if running in Prow
 	if gc.IsBoskos {
 		log.Printf("Releasing Boskos resource: '%v'", gc.Project)
-		return gc.boskosOps.ReleaseGKEProject(gc.Project)
+		if err = gc.boskosOps.ReleaseGKEProject(gc.Project); err != nil {
+			return fmt.Errorf("failed releasing boskos resource: '%w'", err)
+		}
 	}
 
 	// Should only get here if running locally and cluster created by this
@@ -268,7 +269,6 @@ func (gc *GKECluster) Delete() error {
 	}
 	log.Printf("Deleting cluster %q in %q", gc.Cluster.Name, gc.Cluster.Location)
 	region, zone := gke.RegionZoneFromLoc(gc.Cluster.Location)
-
 	if gc.AsyncCleanup {
 		_, err = gc.operations.DeleteClusterAsync(gc.Project, region, zone, gc.Cluster.Name)
 	} else {
