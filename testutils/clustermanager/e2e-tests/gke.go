@@ -73,9 +73,9 @@ func (gs *GKEClient) Setup(r GKERequest) ClusterOperations {
 
 	if r.Project != "" { // use provided project to create cluster
 		gc.Project = r.Project
-		gc.asyncCleanup = true
 	} else if common.IsProw() { // if no project is provided and is on Prow, use boskos
 		gc.isBoskos = true
+		gc.asyncCleanup = true
 	}
 
 	if r.MinNodes == 0 {
