@@ -68,11 +68,16 @@ func TestMetricsExporter(t *testing.T) {
 			domain:             servingDomain,
 			component:          testComponent,
 			backendDestination: "unsupported",
-			stackdriverClientConfig: StackdriverClientConfig{
-				ProjectID: "",
-			},
 		},
 		expectSuccess: false,
+	}, {
+		name: "noneBackend",
+		config: &metricsConfig{
+			domain:             servingDomain,
+			component:          testComponent,
+			backendDestination: None,
+		},
+		expectSuccess: true,
 	}, {
 		name: "validConfig",
 		config: &metricsConfig{
@@ -198,9 +203,9 @@ func TestMetricsExporter(t *testing.T) {
 	// getStackdriverSecretFunc = fakeGetStackdriverSecret
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			e, err := newMetricsExporter(test.config, TestLogger(t))
+			_, err := newMetricsExporter(test.config, TestLogger(t))
 
-			succeeded := e != nil && err == nil
+			succeeded := err == nil
 			if test.expectSuccess != succeeded {
 				t.Errorf("Unexpected test result. Expected success? [%v]. Error: [%v]", test.expectSuccess, err)
 			}
