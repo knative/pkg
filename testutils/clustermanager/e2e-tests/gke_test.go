@@ -17,6 +17,7 @@ limitations under the License.
 package clustermanager
 
 import (
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -585,7 +586,7 @@ func TestAcquire(t *testing.T) {
 			td: testdata{
 				request: request{clusterName: predefinedClusterName, addons: []string{}},
 				isProw:  true, nextOpStatus: []string{}, boskosProjs: []string{}, skipCreation: false},
-			want: wantResult{expCluster: nil, expErr: fmt.Errorf("failed acquiring boskos project: 'no GKE project available'"), expPanic: false},
+			want: wantResult{expCluster: nil, expErr: fmt.Errorf("failed acquiring boskos project: '%w'", errors.New("no GKE project available")), expPanic: false},
 		}, {
 			name: "cluster not exist, running in Prow and boskos available",
 			td: testdata{
@@ -614,7 +615,7 @@ func TestAcquire(t *testing.T) {
 			td: testdata{
 				request: request{clusterName: predefinedClusterName, addons: []string{}},
 				isProw:  true, nextOpStatus: []string{}, boskosProjs: []string{}, skipCreation: false},
-			want: wantResult{expCluster: nil, expErr: fmt.Errorf("failed acquiring boskos project: 'no GKE project available'"), expPanic: false},
+			want: wantResult{expCluster: nil, expErr: fmt.Errorf("failed acquiring boskos project: '%w'", errors.New("no GKE project available")), expPanic: false},
 		},
 		{
 			name: "cluster not exist, project not set, running in Prow and boskos available",
