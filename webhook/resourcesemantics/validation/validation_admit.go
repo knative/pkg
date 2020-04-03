@@ -39,11 +39,11 @@ var errMissingNewObject = errors.New("the new object may not be nil")
 // Callback is a generic function to be called by a consumer of validation
 type Callback struct {
 	// f is the function to be called
-	f func(ctx context.Context, unstructured *unstructured.Unstructured) error
+	function func(ctx context.Context, unstructured *unstructured.Unstructured) error
 
 	// supported are the verbs supported for the callback.
 	// The function will only be called on these acitons.
-	supported map[webhook.Operation]bool
+	supportedVerbs map[webhook.Operation]bool
 }
 
 // NewCallback creats a new callback function to be invoked on supported vebs.
@@ -55,7 +55,7 @@ func NewCallback(function func(context.Context, *unstructured.Unstructured) erro
 		}
 		m[op] = true
 	}
-	c = &Callback{f: function, supported: m}
+	c = &Callback{function: function, supportedVerbs: m}
 	return c
 }
 
@@ -195,14 +195,14 @@ func (ac *reconciler) callback(ctx context.Context, req *admissionv1beta1.Admiss
 
 	// Generically callback if any are provided for the resource.
 	if c, ok := ac.callbacks[gvk]; ok {
-		if b, supported := c.supported[req.Operation]; supported && b {
+		if b, supported := c.supportedVerbs[req.Operation]; supported && b {
 			unstruct := &unstructured.Unstructured{}
 			newDecoder := json.NewDecoder(bytes.NewBuffer(toDecode))
 			if err := newDecoder.Decode(&unstruct); err != nil {
 				return fmt.Errorf("cannot decode incoming new object: %w", err)
 			}
 
-			return c.f(ctx, unstruct)
+			return c.function(ctx, unstruct)
 		}
 	}
 
