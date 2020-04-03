@@ -229,11 +229,26 @@ func (r *BaseReconciler) RemoveFinalizer(ctx context.Context, fb kmeta.Accessor)
 	return err
 }
 
-func (r *BaseReconciler) labelNamespace(ctx context.Context, fb kmeta.Accessor) error {
+func (r *BaseReconciler) labelNamespace(ctx context.Context, subject tracker.Reference) error {
+
+	// Determine the GroupVersionResource of the subject reference
+	gv, err := schema.ParseGroupVersion("v1")
+	if err != nil {
+		logging.FromContext(ctx).Infof("Error parsing GroupVersion %v: %v", "v1", err)
+		return err
+	}
+	gvr := apis.KindToResource(gv.WithKind("Namespace"))
+
 	// Don't remove any existing labels or add ours more than once
-	labels := fb.GetLabels()
-	if labels["bindings.knative.dev/exclude"] != "" || labels["bindings.knative.dev/include"] != "" {
-		return nil
+	unstructuredLabels, err := r.DynamicClient.Resource(gvr).Get(subject.Namespace, metav1.GetOptions{})
+	if err != nil {
+		logging.FromContext(ctx).Infof("Error getting labels from namespace: %s: %v", subject.Namespace, err)
+	}
+	if unstructuredLabels != nil {
+		labels := unstructuredLabels.GetLabels()
+		if labels["bindings.knative.dev/exclude"] != "" || labels["bindings.knative.dev/include"] != "" {
+			return nil
+		}
 	}
 	patch, err := json.Marshal(map[string]interface{}{
 		"metadata": map[string]interface{}{
@@ -241,10 +256,14 @@ func (r *BaseReconciler) labelNamespace(ctx context.Context, fb kmeta.Accessor) 
 		},
 	})
 	if err != nil {
-		return err
+		logging.FromContext(ctx).Infof("Error generating json patch: %v, to namespace: %s", err, subject.Namespace)
+		return nil
 	}
-	r.DynamicClient.Resource(r.GVR).Namespace(fb.GetNamespace()).Patch(fb.GetName(),
-		types.MergePatchType, patch, metav1.PatchOptions{})
+	_, err = r.DynamicClient.Resource(gvr).Patch(subject.Namespace, types.MergePatchType, patch, metav1.PatchOptions{})
+	if err != nil {
+		logging.FromContext(ctx).Infof("Error applying patch to namespace: %s: %v", subject.Namespace, err)
+	}
+
 	return nil
 }
 
@@ -288,8 +307,7 @@ func (r *BaseReconciler) ReconcileSubject(ctx context.Context, fb Bindable, muta
 		} else if err != nil {
 			return fmt.Errorf("error fetching Pod Speccable %v: %v", subject, err)
 		}
-		// TODO check error code
-		r.labelNamespace(ctx, fb)
+		r.labelNamespace(ctx, subject)
 		referents = append(referents, psObj.(*duckv1.WithPod))
 	} else {
 		// Otherwise, the subject is referenced by selector, so compile
@@ -302,8 +320,7 @@ func (r *BaseReconciler) ReconcileSubject(ctx context.Context, fb Bindable, muta
 		if err != nil {
 			return fmt.Errorf("error fetching Pod Speccable %v: %v", subject, err)
 		}
-		// TODO check error code
-		r.labelNamespace(ctx, fb)
+		r.labelNamespace(ctx, subject)
 		// Type cast the returned resources into our referent list.
 		for _, psObj := range psObjs {
 			referents = append(referents, psObj.(*duckv1.WithPod))
