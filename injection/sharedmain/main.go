@@ -104,7 +104,7 @@ func GetLoggingConfig(ctx context.Context) (*logging.Config, error) {
 				return false, nil
 			}
 		}
-		return true, nil
+		return err == nil || apierrors.IsNotFound(err), nil
 	}); err != nil {
 		return nil, err
 	}
