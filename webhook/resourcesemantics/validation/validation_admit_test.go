@@ -84,12 +84,12 @@ var (
 			Group:   "pkg.knative.dev",
 			Version: "v1alpha1",
 			Kind:    "Resource",
-		}: NewCallback(resourceCallback, []webhook.Operation{webhook.Create, webhook.Update}),
+		}: NewCallback(resourceCallback, webhook.Create, webhook.Update),
 		{
 			Group:   "pkg.knative.dev",
 			Version: "v1beta1",
 			Kind:    "Resource",
-		}: NewCallback(resourceCallback, []webhook.Operation{webhook.Create, webhook.Update}),
+		}: NewCallback(resourceCallback, webhook.Create, webhook.Update),
 	}
 	initialResourceWebhook = &admissionregistrationv1beta1.ValidatingWebhookConfiguration{
 		ObjectMeta: metav1.ObjectMeta{
@@ -545,8 +545,7 @@ func TestNewResourceAdmissionControllerDuplciateVerb(t *testing.T) {
 			Group:   "pkg.knative.dev",
 			Version: "v1alpha1",
 			Kind:    "Resource",
-		}: NewCallback(resourceCallback,
-			[]webhook.Operation{webhook.Create, webhook.Create}), // Disallow duplicates under test
+		}: NewCallback(resourceCallback, webhook.Create, webhook.Create), // Disallow duplicates under test
 	}
 
 	NewAdmissionController(

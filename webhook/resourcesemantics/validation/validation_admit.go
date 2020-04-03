@@ -43,20 +43,19 @@ type Callback struct {
 
 	// supportedVerbs are the verbs supported for the callback.
 	// The function will only be called on these acitons.
-	supportedVerbs map[webhook.Operation]struct
+	supportedVerbs map[webhook.Operation]struct{}
 }
 
 // NewCallback creates a new callback function to be invoked on supported vebs.
-func NewCallback(function func(context.Context, *unstructured.Unstructured) error, supportedVerbs []webhook.Operation) (c Callback) {
-	m := make(map[webhook.Operation]struct)
+func NewCallback(function func(context.Context, *unstructured.Unstructured) error, supportedVerbs ...webhook.Operation) Callback {
+	m := make(map[webhook.Operation]struct{})
 	for _, op := range supportedVerbs {
 		if _, has := m[op]; has {
 			panic("duplicate verbs not allowed")
 		}
-		m[op] = struct{}
+		m[op] = struct{}{}
 	}
-	c = Callback{function: function, supportedVerbs: m}
-	return c
+	return Callback{function: function, supportedVerbs: m}
 }
 
 var _ webhook.AdmissionController = (*reconciler)(nil)
