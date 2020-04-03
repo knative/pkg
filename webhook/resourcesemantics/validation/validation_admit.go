@@ -43,17 +43,17 @@ type Callback struct {
 
 	// supportedVerbs are the verbs supported for the callback.
 	// The function will only be called on these acitons.
-	supportedVerbs map[webhook.Operation]bool
+	supportedVerbs map[webhook.Operation]struct
 }
 
 // NewCallback creates a new callback function to be invoked on supported vebs.
 func NewCallback(function func(context.Context, *unstructured.Unstructured) error, supportedVerbs []webhook.Operation) (c Callback) {
-	m := make(map[webhook.Operation]bool)
+	m := make(map[webhook.Operation]struct)
 	for _, op := range supportedVerbs {
 		if _, has := m[op]; has {
-			panic("duplicates verbs not allowed")
+			panic("duplicate verbs not allowed")
 		}
-		m[op] = true
+		m[op] = struct{}
 	}
 	c = Callback{function: function, supportedVerbs: m}
 	return c
@@ -195,7 +195,7 @@ func (ac *reconciler) callback(ctx context.Context, req *admissionv1beta1.Admiss
 
 	// Generically callback if any are provided for the resource.
 	if c, ok := ac.callbacks[gvk]; ok {
-		if b, supported := c.supportedVerbs[req.Operation]; supported && b {
+		if _, supported := c.supportedVerbs[req.Operation]; supported {
 			unstruct := &unstructured.Unstructured{}
 			newDecoder := json.NewDecoder(bytes.NewBuffer(toDecode))
 			if err := newDecoder.Decode(&unstruct); err != nil {
