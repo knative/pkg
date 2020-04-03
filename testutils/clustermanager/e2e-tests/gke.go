@@ -157,12 +157,11 @@ func (gc *GKECluster) Acquire() error {
 	// If comes here we are very likely going to create a cluster, unless
 	// the cluster already exists
 
-	// Get project name from boskos if running in Prow, otherwise it should fail
-	// since we don't know which project to use
-	if gc.IsBoskos {
+	// If running on Prow and project name is not provided, get project name from boskos.
+	if gc.Project == "" && gc.IsBoskos {
 		project, err := gc.boskosOps.AcquireGKEProject(gc.Request.ResourceType)
 		if err != nil {
-			return fmt.Errorf("failed acquiring boskos project: '%v'", err)
+			return fmt.Errorf("failed acquiring boskos project: '%w'", err)
 		}
 		gc.Project = project.Name
 	}
