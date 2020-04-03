@@ -152,7 +152,7 @@ func TestSetup(t *testing.T) {
 					ResourceType:  defaultResourceType,
 				},
 				Project:      fakeProj,
-				AsyncCleanup: true,
+				asyncCleanup: true,
 			},
 		}, {
 			name: "Project provided, running in Prow",
@@ -178,7 +178,7 @@ func TestSetup(t *testing.T) {
 					ResourceType:  defaultResourceType,
 				},
 				Project:      fakeProj,
-				AsyncCleanup: true,
+				asyncCleanup: true,
 			},
 		}, {
 			name: "Cluster name provided, not running in Prow",
@@ -1022,14 +1022,14 @@ func TestAcquire(t *testing.T) {
 			}
 
 			if data.isProw && data.project == "" {
-				fgc.IsBoskos = true
+				fgc.isBoskos = true
 			}
 			if data.skipCreation {
 				fgc.Request.SkipCreation = true
 			}
-			// Set AsyncCleanup to false for easier testing, as it launches a
+			// Set asyncCleanup to false for easier testing, as it launches a
 			// goroutine
-			fgc.AsyncCleanup = false
+			fgc.asyncCleanup = false
 			err := fgc.Acquire()
 			errMsg := fmt.Sprintf("testing acquiring cluster, with:\n\tisProw: '%v'\n\tproject: '%v'\n\texisting cluster: '%+v'\n\tSkip creation: '%+v'\n\t"+
 				"next operations outcomes: '%v'\n\taddons: '%v'\n\tboskos projects: '%v'",
@@ -1157,7 +1157,7 @@ func TestDelete(t *testing.T) {
 			}
 			fgc := setupFakeGKECluster()
 			fgc.Project = fakeProj
-			fgc.IsBoskos = data.isBoskos
+			fgc.isBoskos = data.isBoskos
 			fgc.Request = &GKERequest{
 				Request: gke.Request{
 					MinNodes: defaultGKEMinNodes,

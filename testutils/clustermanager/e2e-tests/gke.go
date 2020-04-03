@@ -55,12 +55,13 @@ type GKECluster struct {
 	Request *GKERequest
 	// Project might be GKE specific, so put it here
 	Project string
-	// IsBoskos is true if the GCP project used is managed by boskos
-	IsBoskos bool
-	// AsyncCleanup tells whether the cluster needs to be deleted asynchronously afterwards
+	Cluster  *container.Cluster
+
+	// isBoskos is true if the GCP project used is managed by boskos
+	isBoskos bool
+	// asyncCleanup tells whether the cluster needs to be deleted asynchronously afterwards
 	// It should be true on Prow but false on local.
-	AsyncCleanup bool
-	Cluster      *container.Cluster
+	asyncCleanup bool
 	operations   gke.SDKOperations
 	boskosOps    boskos.Operation
 }
@@ -72,9 +73,9 @@ func (gs *GKEClient) Setup(r GKERequest) ClusterOperations {
 
 	if r.Project != "" { // use provided project to create cluster
 		gc.Project = r.Project
-		gc.AsyncCleanup = true
+		gc.asyncCleanup = true
 	} else if common.IsProw() { // if no project is provided and is on Prow, use boskos
-		gc.IsBoskos = true
+		gc.isBoskos = true
 	}
 
 	if r.MinNodes == 0 {
@@ -158,7 +159,7 @@ func (gc *GKECluster) Acquire() error {
 	// the cluster already exists
 
 	// If running on Prow and project name is not provided, get project name from boskos.
-	if gc.Project == "" && gc.IsBoskos {
+	if gc.Request.Project == "" && gc.isBoskos {
 		project, err := gc.boskosOps.AcquireGKEProject(gc.Request.ResourceType)
 		if err != nil {
 			return fmt.Errorf("failed acquiring boskos project: '%w'", err)
@@ -254,7 +255,7 @@ func (gc *GKECluster) Delete() error {
 	}
 	gc.ensureProtected()
 	// Release Boskos if running in Prow
-	if gc.IsBoskos {
+	if gc.isBoskos {
 		log.Printf("Releasing Boskos resource: '%v'", gc.Project)
 		if err = gc.boskosOps.ReleaseGKEProject(gc.Project); err != nil {
 			return fmt.Errorf("failed releasing boskos resource: '%w'", err)
@@ -268,7 +269,7 @@ func (gc *GKECluster) Delete() error {
 	}
 	log.Printf("Deleting cluster %q in %q", gc.Cluster.Name, gc.Cluster.Location)
 	region, zone := gke.RegionZoneFromLoc(gc.Cluster.Location)
-	if gc.AsyncCleanup {
+	if gc.asyncCleanup {
 		_, err = gc.operations.DeleteClusterAsync(gc.Project, region, zone, gc.Cluster.Name)
 	} else {
 		err = gc.operations.DeleteCluster(gc.Project, region, zone, gc.Cluster.Name)
