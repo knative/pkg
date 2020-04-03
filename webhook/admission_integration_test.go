@@ -133,16 +133,19 @@ func TestAdmissionValidResponseForResource(t *testing.T) {
 		response, err := tlsClient.Do(req)
 		if err != nil {
 			t.Errorf("Failed to get response %v", err)
+			return
 		}
 
 		if got, want := response.StatusCode, http.StatusOK; got != want {
 			t.Errorf("Response status code = %v, wanted %v", got, want)
+			return
 		}
 
 		defer response.Body.Close()
 		responseBody, err := ioutil.ReadAll(response.Body)
 		if err != nil {
 			t.Errorf("Failed to read response body %v", err)
+			return
 		}
 
 		reviewResponse := admissionv1beta1.AdmissionReview{}
@@ -150,6 +153,7 @@ func TestAdmissionValidResponseForResource(t *testing.T) {
 		err = json.NewDecoder(bytes.NewReader(responseBody)).Decode(&reviewResponse)
 		if err != nil {
 			t.Errorf("Failed to decode response: %v", err)
+			return
 		}
 	}()
 
