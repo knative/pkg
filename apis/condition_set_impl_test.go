@@ -768,6 +768,45 @@ func TestMarkTrue(t *testing.T) {
 			Type:   ConditionReady,
 			Status: corev1.ConditionTrue,
 		},
+	}, {
+		name: "all happy but not cover all dependents",
+		conditions: Conditions{{
+			Type:    ConditionReady,
+			Status:  corev1.ConditionFalse,
+			Reason:  "LongStory",
+			Message: "Set manually",
+		}, {
+			Type:   "Foo",
+			Status: corev1.ConditionTrue,
+		}},
+		mark:           "Foo",
+		conditionTypes: []ConditionType{"Foo", "Bar"}, // dependents is more than conditions.
+		happy:          false,
+		happyWant: &Condition{
+			Type:   ConditionReady,
+			Status: corev1.ConditionUnknown,
+		},
+	}, {
+		name: "all happy and cover all dependents",
+		conditions: Conditions{{
+			Type:    ConditionReady,
+			Status:  corev1.ConditionFalse,
+			Reason:  "LongStory",
+			Message: "Set manually",
+		}, {
+			Type:   "Foo",
+			Status: corev1.ConditionTrue,
+		}, {
+			Type:   "NewCondition",
+			Status: corev1.ConditionTrue,
+		}},
+		mark:           "Foo",
+		conditionTypes: []ConditionType{"Foo"}, // dependents is less than conditions.
+		happy:          true,
+		happyWant: &Condition{
+			Type:   ConditionReady,
+			Status: corev1.ConditionTrue,
+		},
 	}}
 	doTestMarkTrueAccessor(t, cases)
 }
