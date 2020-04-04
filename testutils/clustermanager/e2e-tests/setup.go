@@ -107,6 +107,13 @@ func (gs *GKEClient) Setup(r GKERequest) ClusterOperations {
 		r.BackupRegions = make([]string, 0)
 	}
 
+	loc := gke.GetClusterLocation(r.Region, r.Zone)
+	if version, err := resolveGKEVersion(r.GKEVersion, loc); err == nil {
+		r.GKEVersion = version
+	} else {
+		log.Fatalf("Failed to resolve GKE version: '%v'", err)
+	}
+
 	if r.ResourceType == "" {
 		r.ResourceType = defaultResourceType
 	}
@@ -117,7 +124,7 @@ func (gs *GKEClient) Setup(r GKERequest) ClusterOperations {
 		"", /* boskos user */
 		"" /* boskos password file */)
 	if err != nil {
-		log.Fatalf("Failed to create boskos client: '%v", err)
+		log.Fatalf("Failed to create boskos client: '%v'", err)
 	}
 	gc.boskosOps = client
 
