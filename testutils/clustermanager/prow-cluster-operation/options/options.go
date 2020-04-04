@@ -48,6 +48,7 @@ func (rw *RequestWrapper) Prep() {
 }
 
 func (rw *RequestWrapper) addOptions() {
+	flag.StringVar(&rw.Request.Environment, "gke-environment", "prod", "Container API endpoint to use, one of 'test', 'staging', 'staging2', 'prod', or a custom https:// URL. Default to be prod.")
 	flag.Int64Var(&rw.Request.MinNodes, "min-nodes", 0, "minimal number of nodes")
 	flag.Int64Var(&rw.Request.MaxNodes, "max-nodes", 0, "maximal number of nodes")
 	flag.StringVar(&rw.Request.NodeType, "node-type", "", "node type")
