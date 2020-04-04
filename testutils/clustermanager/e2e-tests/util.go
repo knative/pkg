@@ -78,8 +78,8 @@ func resolveGKEVersion(raw, location string) (string, error) {
 			return "", fmt.Errorf("failed getting the list of valid versions: %w", err)
 		}
 		versions := strings.Split(versionsStr, ";")
-		log.Printf("Using the latest version, %s", versions[0])
-		return versions[0], nil
+		log.Printf("Using the latest version, %s", strings.TrimSpace(versions[0]))
+		return strings.TrimSpace(versions[0]), nil
 	default:
 		log.Printf("Using the custom version, %s", raw)
 		return raw, nil
