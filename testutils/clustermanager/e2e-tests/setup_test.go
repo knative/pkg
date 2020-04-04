@@ -114,7 +114,8 @@ func TestSetup(t *testing.T) {
 			name: "Project provided, not running in Prow",
 			arg: GKERequest{
 				Request: gke.Request{
-					Project: fakeProj,
+					Project:    fakeProj,
+					GKEVersion: "1.2.3",
 				},
 			},
 			env: env{false, "", ""},
@@ -123,6 +124,7 @@ func TestSetup(t *testing.T) {
 					Request: gke.Request{
 						ClusterName: "",
 						Project:     "b",
+						GKEVersion:  "1.2.3",
 						MinNodes:    1,
 						MaxNodes:    3,
 						NodeType:    "e2-standard-4",

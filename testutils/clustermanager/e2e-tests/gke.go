@@ -272,11 +272,12 @@ func (gc *GKECluster) checkEnvironment() error {
 
 // newGKEClient returns a new GKE client. project and environment must be provided.
 func (gc *GKECluster) newGKEClient(project string) (gke.SDKOperations, error) {
+	// HACK: this is merely used for unit tests.
 	// Return the operation directly if it's already initialize.
-	// This is merely used for unit tests, and it needs to be removed REAL soon.
 	if gc.operations != nil {
 		return gc.operations, nil
 	}
+
 	return gke.NewSDKClient(
 		option.WithQuotaProject(project))
 }
