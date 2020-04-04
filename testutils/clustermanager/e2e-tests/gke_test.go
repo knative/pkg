@@ -38,8 +38,9 @@ import (
 
 func setupFakeGKECluster() GKECluster {
 	return GKECluster{
-		Request:   &GKERequest{},
-		boskosOps: &boskosFake.FakeBoskosClient{},
+		Request:    &GKERequest{},
+		operations: gkeFake.NewGKESDKClient(),
+		boskosOps:  &boskosFake.FakeBoskosClient{},
 	}
 }
 
@@ -112,10 +113,9 @@ func TestGKECheckEnvironment(t *testing.T) {
 
 	for _, data := range datas {
 		fgc := setupFakeGKECluster()
-		client := gkeFake.NewGKESDKClient()
 		if data.clusterExist {
 			parts := strings.Split(data.kubectlOut, "_")
-			client.CreateClusterAsync(parts[1], parts[2], "", &container.CreateClusterRequest{
+			fgc.operations.CreateClusterAsync(parts[1], parts[2], "", &container.CreateClusterRequest{
 				Cluster: &container.Cluster{
 					Name: parts[3],
 				},
@@ -602,7 +602,6 @@ func TestAcquire(t *testing.T) {
 				return oldEnvFunc(key)
 			}
 			fgc := setupFakeGKECluster()
-			client := gkeFake.NewGKESDKClient()
 			// Set up fake boskos
 			for _, bos := range data.boskosProjs {
 				fgc.boskosOps.(*boskosFake.FakeBoskosClient).NewGKEProject(bos)
@@ -625,13 +624,13 @@ func TestAcquire(t *testing.T) {
 				opCount++
 				fgc.Request.ClusterName = data.existCluster.Name
 				rb, _ := gke.NewCreateClusterRequest(&fgc.Request.Request)
-				client.CreateClusterAsync(data.project, data.existCluster.Location, "", rb)
-				fgc.Cluster, _ = client.GetCluster(data.project, data.existCluster.Location, "", data.existCluster.Name)
+				fgc.operations.CreateClusterAsync(data.project, data.existCluster.Location, "", rb)
+				fgc.Cluster, _ = fgc.operations.GetCluster(data.project, data.existCluster.Location, "", data.existCluster.Name)
 			}
 
 			fgc.Project = data.project
 			for i, status := range data.nextOpStatus {
-				client.OpStatus[strconv.Itoa(opCount+i)] = status
+				fgc.operations.(*gkeFake.GKESDKClient).OpStatus[strconv.Itoa(opCount+i)] = status
 			}
 
 			if data.isProw && data.project == "" {
@@ -769,7 +768,6 @@ func TestDelete(t *testing.T) {
 				return oldEnvFunc(key)
 			}
 			fgc := setupFakeGKECluster()
-			client := gkeFake.NewGKESDKClient()
 			fgc.Project = fakeProj
 			fgc.isBoskos = data.isBoskos
 			fgc.Request = &GKERequest{
@@ -784,8 +782,8 @@ func TestDelete(t *testing.T) {
 			if data.cluster != nil {
 				fgc.Request.ClusterName = data.cluster.Name
 				rb, _ := gke.NewCreateClusterRequest(&fgc.Request.Request)
-				client.CreateClusterAsync(fakeProj, data.cluster.Location, "", rb)
-				fgc.Cluster, _ = client.GetCluster(fakeProj, data.cluster.Location, "", data.cluster.Name)
+				fgc.operations.CreateClusterAsync(fakeProj, data.cluster.Location, "", rb)
+				fgc.Cluster, _ = fgc.operations.GetCluster(fakeProj, data.cluster.Location, "", data.cluster.Name)
 			}
 			// Set up fake boskos
 			for _, bos := range data.boskosState {
@@ -797,7 +795,7 @@ func TestDelete(t *testing.T) {
 			err := fgc.Delete()
 			var gotCluster *container.Cluster
 			if data.cluster != nil {
-				gotCluster, _ = client.GetCluster(fakeProj, data.cluster.Location, "", data.cluster.Name)
+				gotCluster, _ = fgc.operations.GetCluster(fakeProj, data.cluster.Location, "", data.cluster.Name)
 			}
 			gotBoskos := fgc.boskosOps.(*boskosFake.FakeBoskosClient).GetResources()
 			errMsg := fmt.Sprintf("testing deleting cluster, with:\n\tIs Prow: '%v'\n\tIs Boskos: '%v'\n\t"+

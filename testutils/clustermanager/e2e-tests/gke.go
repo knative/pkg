@@ -70,7 +70,7 @@ func (gc *GKECluster) Acquire() error {
 	gc.ensureProtected()
 	log.Printf("Identified project %s for cluster creation", gc.Project)
 
-	client, err := newGKEClient(gc.Project, gc.Request.Environment)
+	client, err := gc.newGKEClient(gc.Project)
 	if err != nil {
 		return fmt.Errorf("failed creating the GKE client: '%w'", err)
 	}
@@ -164,7 +164,7 @@ func (gc *GKECluster) Delete() error {
 	}
 
 	log.Printf("Deleting cluster %q in %q", gc.Cluster.Name, gc.Cluster.Location)
-	client, err := newGKEClient(gc.Project, gc.Request.Environment)
+	client, err := gc.newGKEClient(gc.Project)
 	if err != nil {
 		return fmt.Errorf("failed creating the GKE client: '%w'", err)
 	}
@@ -235,13 +235,13 @@ func (gc *GKECluster) checkEnvironment() error {
 				region, zone := gke.RegionZoneFromLoc(location)
 				// Use the cluster only if project and clustername match
 				if (gc.Request.Project == "" || gc.Request.Project == project) && (gc.Request.ClusterName == "" || gc.Request.ClusterName == clusterName) {
-					client, err := newGKEClient(project, gc.Request.Environment)
+					client, err := gc.newGKEClient(project)
 					if err != nil {
-						return fmt.Errorf("failed creating the GKE client: '%w'", err)
+						return fmt.Errorf("failed creating the GKE client: '%v'", err)
 					}
 					cluster, err := client.GetCluster(project, region, zone, clusterName)
 					if err != nil {
-						return fmt.Errorf("couldn't find cluster %s in %s in %s, does it exist? %w", clusterName, project, location, err)
+						return fmt.Errorf("couldn't find cluster %s in %s in %s, does it exist? %v", clusterName, project, location, err)
 					}
 					gc.Cluster = cluster
 					gc.Project = project
@@ -264,7 +264,7 @@ func (gc *GKECluster) checkEnvironment() error {
 	// if gcloud is pointing to a project, use it
 	output, err = common.StandardExec("gcloud", "config", "get-value", "project")
 	if err != nil {
-		return fmt.Errorf("failed getting gcloud project: '%w'", err)
+		return fmt.Errorf("failed getting gcloud project: '%v'", err)
 	}
 	if string(output) != "" {
 		project := strings.Trim(strings.TrimSpace(string(output)), "\n\r")
@@ -274,12 +274,12 @@ func (gc *GKECluster) checkEnvironment() error {
 }
 
 // newGKEClient returns a new GKE client. project and environment must be provided.
-func newGKEClient(project, environment string) (gke.SDKOperations, error) {
-	endpoint, err := gke.ServiceEndpoint(environment)
-	if err != nil {
-		return nil, err
+func (gc *GKECluster) newGKEClient(project string) (gke.SDKOperations, error) {
+	// Return the operation directly if it's already initialize.
+	// This is merely used for unit tests, and it needs to be removed REAL soon.
+	if gc.operations != nil {
+		return gc.operations, nil
 	}
 	return gke.NewSDKClient(
-		option.WithEndpoint(endpoint),
 		option.WithQuotaProject(project))
 }

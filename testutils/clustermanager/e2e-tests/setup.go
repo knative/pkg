@@ -36,10 +36,6 @@ type GKERequest struct {
 	// Request holds settings for GKE native operations
 	gke.Request
 
-	// Environment is the environment to create GKE clusters.
-	// See https://github.com/knative/pkg/blob/7727cb37e05d6c6dd2abadbc3ab01ab748f12561/test/gke/endpoint.go#L25
-	Environment string
-
 	// BackupRegions: fall back regions to try out in case of cluster creation
 	// failure due to regional issue(s)
 	BackupRegions []string
@@ -63,6 +59,7 @@ type GKECluster struct {
 	// asyncCleanup tells whether the cluster needs to be deleted asynchronously afterwards
 	// It should be true on Prow but false on local.
 	asyncCleanup bool
+	operations   gke.SDKOperations
 	boskosOps    boskos.Operation
 }
 
