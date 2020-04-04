@@ -38,8 +38,8 @@ import (
 
 func setupFakeGKECluster() GKECluster {
 	return GKECluster{
-		Request:    &GKERequest{},
-		boskosOps:  &boskosFake.FakeBoskosClient{},
+		Request:   &GKERequest{},
+		boskosOps: &boskosFake.FakeBoskosClient{},
 	}
 }
 
