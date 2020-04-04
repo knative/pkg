@@ -408,14 +408,14 @@ func TestAcquire(t *testing.T) {
 				request: request{clusterName: predefinedClusterName, addons: []string{}},
 				isProw:  false, project: fakeProj, nextOpStatus: []string{},
 				boskosProjs: []string{fakeBoskosProj}, skipCreation: true},
-			want: wantResult{nil, fmt.Errorf("cannot acquire cluster if SkipCreation is set"), false},
+			want: wantResult{nil, fmt.Errorf("failing acquiring an existing cluster"), false},
 		}, {
 			name: "cluster not exist, running in Prow and skip creation",
 			td: testdata{
 				request: request{clusterName: predefinedClusterName, addons: []string{}},
 				isProw:  true, project: fakeProj, nextOpStatus: []string{},
 				boskosProjs: []string{fakeBoskosProj}, skipCreation: true},
-			want: wantResult{nil, fmt.Errorf("cannot acquire cluster if SkipCreation is set"), false},
+			want: wantResult{nil, fmt.Errorf("failing acquiring an existing cluster"), false},
 		}, {
 			name: "skipped cluster creation as SkipCreation is requested",
 			td: testdata{

@@ -40,21 +40,18 @@ func (gc *GKECluster) Provider() string {
 // in us-central1, and default BackupRegions are us-west1 and us-east1. If
 // Region or Zone is provided then there is no retries
 func (gc *GKECluster) Acquire() error {
-	if err := gc.checkEnvironment(); err != nil {
-		return fmt.Errorf("failed checking project/cluster from environment: '%w'", err)
-	}
-	// If gc.Cluster is discovered above, then the cluster exists and it's
-	// project and name matches with requested, use it
-	if gc.Cluster != nil {
-		gc.ensureProtected()
-		return nil
-	}
 	if gc.Request.SkipCreation {
-		return errors.New("cannot acquire cluster if SkipCreation is set")
+		if err := gc.checkEnvironment(); err != nil {
+			return fmt.Errorf("failed checking project/cluster from environment: '%w'", err)
+		}
+		// If gc.Cluster is discovered above, then the cluster exists and it's
+		// project and name matches with requested, use it
+		if gc.Cluster != nil {
+			gc.ensureProtected()
+			return nil
+		}
+		return errors.New("failing acquiring an existing cluster")
 	}
-
-	// If comes here we are very likely going to create a cluster, unless
-	// the cluster already exists
 
 	// If running on Prow and project name is not provided, get project name from boskos.
 	if gc.Request.Project == "" && gc.isBoskos {
