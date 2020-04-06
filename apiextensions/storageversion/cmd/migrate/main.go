@@ -56,7 +56,7 @@ func main() {
 		}
 	}
 
-	logger.Infof("Migration complete")
+	logger.Info("Migration complete")
 }
 
 func parseResources(args []string) ([]schema.GroupResource, error) {
