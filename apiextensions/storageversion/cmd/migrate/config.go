@@ -47,7 +47,7 @@ func configOrDie() *rest.Config {
 	return cfg
 }
 
-// GetConfig returns a rest.Config to be used for kubernetes client creation.
+// getConfig returns a rest.Config to be used for kubernetes client creation.
 // It does so in the following order:
 //   1. Use the passed kubeconfig/masterURL.
 //   2. Fallback to the KUBECONFIG environment variable.
