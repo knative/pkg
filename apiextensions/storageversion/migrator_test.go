@@ -102,44 +102,40 @@ func TestMigrate_Errors(t *testing.T) {
 		name string
 		crd  func(*k8stesting.Fake)
 		dyn  func(*k8stesting.Fake)
-	}{
-		{
-			name: "failed to fetch CRD",
-			crd: func(fake *k8stesting.Fake) {
-				fake.PrependReactor("get", "*",
-					func(k8stesting.Action) (bool, runtime.Object, error) {
-						return true, nil, fmt.Errorf("failed to get crd")
-					})
-			},
+	}{{
+		name: "failed to fetch CRD",
+		crd: func(fake *k8stesting.Fake) {
+			fake.PrependReactor("get", "*",
+				func(k8stesting.Action) (bool, runtime.Object, error) {
+					return true, nil, fmt.Errorf("failed to get crd")
+				})
 		},
-		{
-			name: "listing fails",
-			dyn: func(fake *k8stesting.Fake) {
-				fake.PrependReactor("list", "*",
-					func(k8stesting.Action) (bool, runtime.Object, error) {
-						return true, nil, fmt.Errorf("failed to list resources")
-					})
-			},
+	}, {
+		name: "listing fails",
+		dyn: func(fake *k8stesting.Fake) {
+			fake.PrependReactor("list", "*",
+				func(k8stesting.Action) (bool, runtime.Object, error) {
+					return true, nil, fmt.Errorf("failed to list resources")
+				})
 		},
-		{
-			name: "patching resource fails",
-			dyn: func(fake *k8stesting.Fake) {
-				fake.PrependReactor("patch", "*",
-					func(k8stesting.Action) (bool, runtime.Object, error) {
-						return true, nil, fmt.Errorf("failed to patch resources")
-					})
-			},
+	}, {
+		name: "patching resource fails",
+		dyn: func(fake *k8stesting.Fake) {
+			fake.PrependReactor("patch", "*",
+				func(k8stesting.Action) (bool, runtime.Object, error) {
+					return true, nil, fmt.Errorf("failed to patch resources")
+				})
 		},
-		{
-			name: "patching definition fails",
-			crd: func(fake *k8stesting.Fake) {
-				fake.PrependReactor("patch", "*",
-					func(k8stesting.Action) (bool, runtime.Object, error) {
-						return true, nil, fmt.Errorf("failed to patch definition")
-					})
-			},
+	}, {
+		name: "patching definition fails",
+		crd: func(fake *k8stesting.Fake) {
+			fake.PrependReactor("patch", "*",
+				func(k8stesting.Action) (bool, runtime.Object, error) {
+					return true, nil, fmt.Errorf("failed to patch definition")
+				})
 		},
-		// todo paging fails
+	},
+	// todo paging fails
 	}
 
 	for _, test := range tests {
