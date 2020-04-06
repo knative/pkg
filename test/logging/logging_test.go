@@ -54,8 +54,7 @@ func TestTLogger(legacy *testing.T) {
 	t, cancel := NewTLogger(legacy)
 	defer cancel()
 
-	var blank interface{}
-	blank = &someStruct
+	var blank interface{} = &someStruct
 
 	t.V(6).Info("Should not be printed")
 	t.V(4).Info("Should be printed!")

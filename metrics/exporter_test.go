@@ -18,7 +18,6 @@ import (
 	"testing"
 	"time"
 
-	"go.opencensus.io/tag"
 	. "knative.dev/pkg/logging/testing"
 )
 
@@ -26,11 +25,10 @@ import (
 // 	See https://github.com/knative/pkg/issues/608
 
 const (
-	testNS            = "test"
-	testService       = "test-service"
-	testRoute         = "test-route"
-	testConfiguration = "test-configuration"
-	testRevision      = "test-revision"
+	testNS       = "test"
+	testService  = "test-service"
+	testRoute    = "test-route"
+	testRevision = "test-revision"
 
 	testBroker              = "test-broker"
 	testEventType           = "test-eventtype"
@@ -40,14 +38,6 @@ const (
 	testSource              = "test-source"
 	testSourceResourceGroup = "test-source-rg"
 )
-
-func mustNewTagKey(s string) tag.Key {
-	tagKey, err := tag.NewKey(s)
-	if err != nil {
-		panic(err)
-	}
-	return tagKey
-}
 
 func TestMain(m *testing.M) {
 	resetCurPromSrv()

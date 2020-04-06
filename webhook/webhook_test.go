@@ -40,10 +40,8 @@ func newDefaultOptions() Options {
 }
 
 const (
-	testNamespace    = "test-namespace"
 	testResourceName = "test-resource"
 	user1            = "brutto@knative.dev"
-	user2            = "arrabbiato@knative.dev"
 )
 
 func newNonRunningTestWebhook(t *testing.T, options Options, acs ...interface{}) (
