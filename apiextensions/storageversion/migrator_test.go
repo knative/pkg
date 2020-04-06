@@ -158,7 +158,7 @@ func TestMigrate_Errors(t *testing.T) {
 
 			m := NewMigrator(dclient, cclient)
 			if err := m.Migrate(context.TODO(), fakeGR); err == nil {
-				t.Errorf("Migrate should have returned an error")
+				t.Error("Migrate should have returned an error")
 			}
 		})
 	}
