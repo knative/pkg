@@ -144,7 +144,6 @@ func TestMigrate_Errors(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-
 			resources := []runtime.Object{fake("first"), fake("second")}
 			dclient := dynamicFake.NewSimpleDynamicClient(runtime.NewScheme(), resources...)
 			cclient := apixFake.NewSimpleClientset(fakeCRD)
