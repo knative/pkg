@@ -67,7 +67,7 @@ func (m *Migrator) Migrate(ctx context.Context, gr schema.GroupResource) error {
 		return err
 	}
 
-	patch := fmt.Sprintf(`{"status":{"storedVersions":["` + version + `"]}}`)
+	patch := `{"status":{"storedVersions":["` + version + `"]}}`
 	_, err = crdClient.Patch(crd.Name, types.StrategicMergePatchType, []byte(patch), "status")
 	if err != nil {
 		return fmt.Errorf("unable to drop storage version definition %s - %w", gr, err)
