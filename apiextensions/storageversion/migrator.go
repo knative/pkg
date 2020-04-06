@@ -30,11 +30,14 @@ import (
 	"k8s.io/client-go/tools/pager"
 )
 
+// Migrator will read custom resource definitions and upgrade
+// the associated resources to the latest storage version
 type Migrator struct {
 	dynamicClient dynamic.Interface
 	apixClient    apixclient.Interface
 }
 
+// NewMigrator will return a new Migrator
 func NewMigrator(d dynamic.Interface, a apixclient.Interface) *Migrator {
 	return &Migrator{
 		dynamicClient: d,
@@ -42,6 +45,14 @@ func NewMigrator(d dynamic.Interface, a apixclient.Interface) *Migrator {
 	}
 }
 
+// Migrate takes a group resource (ie. resource.some.group.dev) and
+// updates instances of the resource to the latest storage version
+//
+// This is done by listing all the resources and performing an empty patch
+// which triggers a migration on the K8s API server
+//
+// Finally the migrator will update the CRD's status and drop older storage
+// versions
 func (m *Migrator) Migrate(ctx context.Context, gr schema.GroupResource) error {
 	crdClient := m.apixClient.ApiextensionsV1beta1().CustomResourceDefinitions()
 
