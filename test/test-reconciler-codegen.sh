@@ -30,6 +30,8 @@ rm -rf $(dirname $0)/genclient
 
 header "Test Generated Reconciler Builds."
 
+chmod +x ${CODEGEN_PKG}/generate-groups.sh
+
 ${CODEGEN_PKG}/generate-groups.sh "deepcopy,client,informer,lister" \
   ${GENCLIENT_PKG} knative.dev/pkg/apis/test \
   "example:v1alpha1" \

@@ -22,11 +22,13 @@
 # in a net-negative contributor experience.
 export DISABLE_MD_LINTING=1
 
-export GO111MODULE=on
-
 source $(dirname $0)/../vendor/knative.dev/test-infra/scripts/presubmit-tests.sh
 
 # TODO(#17): Write integration tests.
+
+echo "#################"
+echo "${GO111MODULE}"
+echo "#################"
 
 # We use the default build, unit and integration test runners.
 
