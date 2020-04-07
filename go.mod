@@ -64,7 +64,7 @@ require (
 	k8s.io/klog v1.0.0
 	k8s.io/test-infra v0.0.0-20191212060232-70b0b49fe247
 	k8s.io/utils v0.0.0-20190907131718-3d4f5b7dea0b // indirect
-	knative.dev/test-infra v0.0.0-20200327223851-0258d48ef3a8
+	knative.dev/test-infra v0.0.0-20200406223059-a7b18bf0c37b
 )
 
 replace (
@@ -76,5 +76,5 @@ replace (
 	k8s.io/client-go => k8s.io/client-go v0.16.4
 	k8s.io/code-generator => k8s.io/code-generator v0.16.4
 
-	knative.dev/test-infra => github.com/chizhg/test-infra v0.0.0-20200407042251-76f9fd42380b
+// knative.dev/test-infra => github.com/chizhg/test-infra v0.0.0-20200407042251-76f9fd42380b
 )

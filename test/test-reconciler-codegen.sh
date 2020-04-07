@@ -32,10 +32,14 @@ header "Test Generated Reconciler Builds."
 
 chmod +x ${CODEGEN_PKG}/generate-groups.sh
 
+echo "11111111"
+
 ${CODEGEN_PKG}/generate-groups.sh "deepcopy,client,informer,lister" \
   ${GENCLIENT_PKG} knative.dev/pkg/apis/test \
   "example:v1alpha1" \
   --go-header-file ${REPO_ROOT_DIR}/hack/boilerplate/boilerplate.go.txt
+
+echo "22222222"
 
 # Knative Injection
 ${KNATIVE_CODEGEN_PKG}/hack/generate-knative.sh "injection" \
@@ -44,10 +48,14 @@ ${KNATIVE_CODEGEN_PKG}/hack/generate-knative.sh "injection" \
   --go-header-file ${REPO_ROOT_DIR}/hack/boilerplate/boilerplate.go.txt \
   --force-genreconciler-kinds "Foo"
 
+echo "333333333"
+
 ${CODEGEN_PKG}/generate-groups.sh "deepcopy,client,informer,lister" \
   ${GENCLIENT_PKG}/pub knative.dev/pkg/apis/test \
   "pub:v1alpha1" \
   --go-header-file ${REPO_ROOT_DIR}/hack/boilerplate/boilerplate.go.txt
+
+echo "444444444"
 
 # Knative Injection
 ${KNATIVE_CODEGEN_PKG}/hack/generate-knative.sh "injection" \
@@ -55,6 +63,7 @@ ${KNATIVE_CODEGEN_PKG}/hack/generate-knative.sh "injection" \
   "pub:v1alpha1" \
   --go-header-file ${REPO_ROOT_DIR}/hack/boilerplate/boilerplate.go.txt
 
+echo "5555555555"
 
 if ! go build -v $(dirname $0)/genclient/... ; then
     exit 1
