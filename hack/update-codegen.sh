@@ -78,6 +78,5 @@ ${GOPATH}/bin/deepcopy-gen --input-dirs \
   --go-header-file ${REPO_ROOT_DIR}/hack/boilerplate/boilerplate.go.txt
 
 # Make sure our dependencies are up-to-date
-#FIXME(chizhg): remove the comment after it works
-#${REPO_ROOT_DIR}/hack/update-deps.sh
+${REPO_ROOT_DIR}/hack/update-deps.sh
 

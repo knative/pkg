@@ -1,5 +1,5 @@
 /*
-Copyright 2019 The Knative Authors
+Copyright 2020 The Knative Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ package validation
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"testing"
 
 	// Injection stuff
@@ -30,6 +31,8 @@ import (
 	admissionregistrationv1beta1 "k8s.io/api/admissionregistration/v1beta1"
 	authenticationv1 "k8s.io/api/authentication/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	fakekubeclientset "k8s.io/client-go/kubernetes/fake"
 	"knative.dev/pkg/apis"
@@ -76,6 +79,18 @@ var (
 		}: &InnerDefaultResource{},
 	}
 
+	callbacks = map[schema.GroupVersionKind]Callback{
+		{
+			Group:   "pkg.knative.dev",
+			Version: "v1alpha1",
+			Kind:    "Resource",
+		}: NewCallback(resourceCallback, webhook.Create, webhook.Update),
+		{
+			Group:   "pkg.knative.dev",
+			Version: "v1beta1",
+			Kind:    "Resource",
+		}: NewCallback(resourceCallback, webhook.Create, webhook.Update),
+	}
 	initialResourceWebhook = &admissionregistrationv1beta1.ValidatingWebhookConfiguration{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "webhook.knative.dev",
@@ -112,6 +127,11 @@ func TestDeleteAllowed(t *testing.T) {
 
 	req := &admissionv1beta1.AdmissionRequest{
 		Operation: admissionv1beta1.Delete,
+		Kind: metav1.GroupVersionKind{
+			Group:   "pkg.knative.dev",
+			Version: "v1alpha1",
+			Kind:    "Resource",
+		},
 	}
 
 	if resp := ac.Admit(TestContextWithLogger(t), req); !resp.Allowed {
@@ -124,6 +144,11 @@ func TestConnectAllowed(t *testing.T) {
 
 	req := &admissionv1beta1.AdmissionRequest{
 		Operation: admissionv1beta1.Connect,
+		Kind: metav1.GroupVersionKind{
+			Group:   "pkg.knative.dev",
+			Version: "v1alpha1",
+			Kind:    "Resource",
+		},
 	}
 
 	resp := ac.Admit(TestContextWithLogger(t), req)
@@ -182,7 +207,7 @@ func TestUnknownFieldFails(t *testing.T) {
 	req.Object.Raw = marshaled
 
 	ExpectFailsWith(t, ac.Admit(TestContextWithLogger(t), req),
-		`validation failed: cannot decode incoming new object: json: unknown field "foo"`)
+		`decoding request failed: cannot decode incoming new object: json: unknown field "foo"`)
 }
 
 func TestAdmitCreates(t *testing.T) {
@@ -231,6 +256,83 @@ func TestAdmitCreates(t *testing.T) {
 
 			_, ac := newNonRunningTestResourceAdmissionController(t)
 			resp := ac.Admit(ctx, createCreateResource(ctx, t, r))
+
+			if tc.rejection == "" {
+				ExpectAllowed(t, resp)
+			} else {
+				ExpectFailsWith(t, resp, tc.rejection)
+			}
+		})
+	}
+}
+
+func resourceCallback(ctx context.Context, uns *unstructured.Unstructured) error {
+	var resource Resource
+	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(uns.UnstructuredContent(), &resource); err != nil {
+		return err
+	}
+
+	if apis.IsDryRun(ctx) {
+		return errors.New("dryRun fail")
+	}
+
+	if resource.Spec.FieldForCallbackValidation != "" &&
+		resource.Spec.FieldForCallbackValidation != "magic value" {
+		return errors.New(resource.Spec.FieldForCallbackValidation)
+	}
+	return nil
+}
+
+func TestValidaitonCallback(t *testing.T) {
+	tests := []struct {
+		name      string
+		dryRun    bool
+		setup     func(context.Context, *Resource)
+		rejection string
+	}{{
+		name:      "with dryRun reject",
+		dryRun:    true,
+		setup:     func(ctx context.Context, r *Resource) {},
+		rejection: "validation callback failed: dryRun fail",
+	}, {
+		name:   "with dryRun off",
+		dryRun: false,
+		setup:  func(ctx context.Context, r *Resource) {},
+	}, {
+		name:   "with field magic value",
+		dryRun: false,
+		setup: func(ctx context.Context, r *Resource) {
+			// Put a good value in.
+			r.Spec.FieldForCallbackValidation = "magic value"
+		},
+	}, {
+		name:   "with field reject value",
+		dryRun: false,
+		setup: func(ctx context.Context, r *Resource) {
+			// Put a bad value in.
+			r.Spec.FieldForCallbackValidation = "callbacks hate this"
+		},
+		rejection: "validation callback failed: callbacks hate this",
+	}}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			r := CreateResource("a name")
+			ctx := apis.WithinCreate(apis.WithUserInfo(
+				TestContextWithLogger(t),
+				&authenticationv1.UserInfo{Username: user1}))
+
+			// Setup the resource.
+			tc.setup(ctx, r)
+
+			_, ac := newNonRunningTestResourceAdmissionController(t)
+			req := createCreateResource(ctx, t, r)
+			if tc.dryRun {
+				truePoint := true
+				req.DryRun = &truePoint
+			}
+
+			resp := ac.Admit(ctx, req)
 
 			if tc.rejection == "" {
 				ExpectAllowed(t, resp)
@@ -355,6 +457,10 @@ func createUpdateResource(ctx context.Context, t *testing.T, old, new *Resource)
 func createInnerDefaultResourceWithoutSpec(t *testing.T) []byte {
 	t.Helper()
 	r := InnerDefaultResource{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "testKind",
+			APIVersion: "testAPIVersion",
+		},
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: system.Namespace(),
 			Name:      "a name",
@@ -381,6 +487,10 @@ func createInnerDefaultResourceWithoutSpec(t *testing.T) []byte {
 func createInnerDefaultResourceWithSpecAndStatus(t *testing.T, spec *InnerDefaultSpec, status *InnerDefaultStatus) []byte {
 	t.Helper()
 	r := InnerDefaultResource{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "testKind",
+			APIVersion: "testAPIVersion",
+		},
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: system.Namespace(),
 			Name:      "a name",
@@ -400,6 +510,53 @@ func createInnerDefaultResourceWithSpecAndStatus(t *testing.T, spec *InnerDefaul
 	return b
 }
 
+func TestNewResourceAdmissionController(t *testing.T) {
+	ctx, _ := SetupFakeContext(t)
+
+	defer func() {
+		if r := recover(); r == nil {
+			t.Errorf("Expected a second callback to panic")
+		}
+	}()
+
+	invalidSecondCallback := map[schema.GroupVersionKind]Callback{}
+
+	NewAdmissionController(
+		ctx, testResourceValidationName, testResourceValidationPath,
+		handlers,
+		func(ctx context.Context) context.Context {
+			return ctx
+		}, true,
+		callbacks,
+		invalidSecondCallback)
+}
+
+func TestNewResourceAdmissionControllerDuplciateVerb(t *testing.T) {
+	ctx, _ := SetupFakeContext(t)
+
+	defer func() {
+		if r := recover(); r == nil {
+			t.Errorf("Expected a second callback to panic")
+		}
+	}()
+
+	call := map[schema.GroupVersionKind]Callback{
+		{
+			Group:   "pkg.knative.dev",
+			Version: "v1alpha1",
+			Kind:    "Resource",
+		}: NewCallback(resourceCallback, webhook.Create, webhook.Create), // Disallow duplicates under test
+	}
+
+	NewAdmissionController(
+		ctx, testResourceValidationName, testResourceValidationPath,
+		handlers,
+		func(ctx context.Context) context.Context {
+			return ctx
+		}, true,
+		call)
+}
+
 func NewTestResourceAdmissionController(t *testing.T) *reconciler {
 	ctx, _ := SetupFakeContext(t)
 	ctx = webhook.WithOptions(ctx, webhook.Options{
@@ -407,7 +564,8 @@ func NewTestResourceAdmissionController(t *testing.T) *reconciler {
 	})
 	return NewAdmissionController(
 		ctx, testResourceValidationName, testResourceValidationPath,
-		handlers, func(ctx context.Context) context.Context {
+		handlers,
+		func(ctx context.Context) context.Context {
 			return ctx
-		}, true).Reconciler.(*reconciler)
+		}, true, callbacks).Reconciler.(*reconciler)
 }
