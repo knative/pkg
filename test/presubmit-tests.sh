@@ -23,10 +23,6 @@
 export DISABLE_MD_LINTING=1
 
 export GO111MODULE=on
-#export GOFLAGS=-mod=vendor
-
-echo "##########"
-go env
 
 source $(dirname $0)/../vendor/knative.dev/test-infra/scripts/presubmit-tests.sh
 
@@ -38,6 +34,7 @@ function pre_build_tests() {
   # Test the custom code generators. This makes sure we can compile the output
   # of the injection generators.
   $(dirname $0)/test-reconciler-codegen.sh
+  export GOFLAGS=-mod=vendor
   return 0
 }
 
