@@ -34,7 +34,6 @@ function pre_build_tests() {
   # Test the custom code generators. This makes sure we can compile the output
   # of the injection generators.
   $(dirname $0)/test-reconciler-codegen.sh
-#  export GOFLAGS=-mod=vendor
   return 0
 }
 
