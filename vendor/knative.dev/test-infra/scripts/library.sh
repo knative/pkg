@@ -489,11 +489,11 @@ function run_go_tool() {
       local install_failed=0
       # Swallow the output as we are returning the stdout in the end.
       pushd "${temp_dir}" > /dev/null 2>&1
-      go ${action} $1 || install_failed=1
+      GOFLAGS='' go ${action} $1 || install_failed=1
       popd > /dev/null 2>&1
       (( install_failed )) && return ${install_failed}
     else
-      go ${action} $1
+      GOFLAGS='' go ${action} $1
     fi
   fi
   shift 2
