@@ -93,7 +93,7 @@ func (ac *reconciler) reconcileValidatingWebhook(ctx context.Context, caCert []b
 	for gvk := range ac.handlers {
 		plural := strings.ToLower(inflect.Pluralize(gvk.Kind))
 
-		rules = append(rules, admissionregistrationv1beta1.RuleWithOperations{
+		newRule := admissionregistrationv1beta1.RuleWithOperations{
 			Operations: []admissionregistrationv1beta1.OperationType{
 				admissionregistrationv1beta1.Create,
 				admissionregistrationv1beta1.Update,
@@ -103,7 +103,20 @@ func (ac *reconciler) reconcileValidatingWebhook(ctx context.Context, caCert []b
 				APIVersions: []string{gvk.Version},
 				Resources:   []string{plural + "/*"},
 			},
-		})
+		}
+
+		// Add supported verbs from callbacks to the rule operations
+		callback, ok := ac.callbacks[gvk]
+		if ok {
+			for verb := range callback.supportedVerbs {
+				operationType := admissionregistrationv1beta1.OperationType(verb)
+				if operationType != admissionregistrationv1beta1.Create && operationType != admissionregistrationv1beta1.Update {
+					newRule.Operations = append(newRule.Operations, operationType)
+				}
+			}
+		}
+
+		rules = append(rules, newRule)
 	}
 
 	// Sort the rules by Group, Version, Kind so that things are deterministically ordered.

@@ -326,6 +326,102 @@ func TestReconcile(t *testing.T) {
 	}))
 }
 
+func TestReconcileWithCallback(t *testing.T) {
+	const name, path = "foo.bar.baz", "/blah"
+	const secretName = "webhook-secret"
+
+	secret := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      secretName,
+			Namespace: system.Namespace(),
+		},
+		Data: map[string][]byte{
+			certresources.ServerKey:  []byte("present"),
+			certresources.ServerCert: []byte("present"),
+			certresources.CACert:     []byte("present"),
+		},
+	}
+
+	// These are the rules we expect given the context of "handlers" and "callbacks".
+	expectedRules := []admissionregistrationv1beta1.RuleWithOperations{{
+		Operations: []admissionregistrationv1beta1.OperationType{"CREATE", "UPDATE"},
+		Rule: admissionregistrationv1beta1.Rule{
+			APIGroups:   []string{"pkg.knative.dev"},
+			APIVersions: []string{"v1alpha1"},
+			Resources:   []string{"innerdefaultresources/*"},
+		},
+	}, {
+		Operations: []admissionregistrationv1beta1.OperationType{"CREATE", "UPDATE"},
+		Rule: admissionregistrationv1beta1.Rule{
+			APIGroups:   []string{"pkg.knative.dev"},
+			APIVersions: []string{"v1alpha1"},
+			Resources:   []string{"resources/*"},
+		},
+	}, // Callbacks includes a callback for the GVK for v1beta1, supporting the DELETE operation.
+		{
+			Operations: []admissionregistrationv1beta1.OperationType{"CREATE", "UPDATE", "DELETE"},
+			Rule: admissionregistrationv1beta1.Rule{
+				APIGroups:   []string{"pkg.knative.dev"},
+				APIVersions: []string{"v1beta1"},
+				Resources:   []string{"resources/*"},
+			},
+		}, {
+			Operations: []admissionregistrationv1beta1.OperationType{"CREATE", "UPDATE"},
+			Rule: admissionregistrationv1beta1.Rule{
+				APIGroups:   []string{"pkg.knative.io"},
+				APIVersions: []string{"v1alpha1"},
+				Resources:   []string{"innerdefaultresources/*"},
+			},
+		}}
+
+	// The key to use, which for this singleton reconciler doesn't matter (although the
+	// namespace matters for namespace validation).
+	key := system.Namespace() + "/does not matter"
+
+	table := TableTest{{
+		Name: "callback operation shows up in webhook config rule",
+		Key:  key,
+		Objects: []runtime.Object{secret,
+			&admissionregistrationv1beta1.ValidatingWebhookConfiguration{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: name,
+				},
+				Webhooks: []admissionregistrationv1beta1.ValidatingWebhook{{
+					Name: name,
+					ClientConfig: admissionregistrationv1beta1.WebhookClientConfig{
+						Service: &admissionregistrationv1beta1.ServiceReference{
+							Namespace: system.Namespace(),
+							Name:      "webhook",
+							// Path is fine.
+							Path: ptr.String(path),
+						},
+						// CABundle is fine.
+						CABundle: []byte("present"),
+					},
+					// Rules are fine.
+					Rules: expectedRules,
+				}},
+			},
+		},
+	}}
+
+	table.Test(t, MakeFactory(func(ctx context.Context, listers *Listers, cmw configmap.Watcher) controller.Reconciler {
+		return &reconciler{
+			name: name,
+			path: path,
+
+			handlers:  handlers,
+			callbacks: callbacks,
+
+			client:       kubeclient.Get(ctx),
+			vwhlister:    listers.GetValidatingWebhookConfigurationLister(),
+			secretlister: listers.GetSecretLister(),
+
+			secretName: secretName,
+		}
+	}))
+}
+
 func TestNew(t *testing.T) {
 	ctx, cancel, _ := SetupFakeContextWithCancel(t)
 	defer cancel()

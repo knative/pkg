@@ -89,7 +89,7 @@ var (
 			Group:   "pkg.knative.dev",
 			Version: "v1beta1",
 			Kind:    "Resource",
-		}: NewCallback(resourceCallback, webhook.Create, webhook.Update),
+		}: NewCallback(resourceCallback, webhook.Create, webhook.Update, webhook.Delete),
 	}
 	initialResourceWebhook = &admissionregistrationv1beta1.ValidatingWebhookConfiguration{
 		ObjectMeta: metav1.ObjectMeta{
