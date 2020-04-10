@@ -310,7 +310,7 @@ func (c *Impl) EnqueueLabelOfClusterScopedResource(nameLabel string) func(obj in
 func (c *Impl) EnqueueNamespaceOf(obj interface{}) {
 	object, err := kmeta.DeletionHandlingAccessor(obj)
 	if err != nil {
-		c.logger.Errorw("Enqueue", zap.Error(err))
+		c.logger.Errorw("EnqueueNamespaceOf", zap.Error(err))
 		return
 	}
 	c.EnqueueKey(types.NamespacedName{Name: object.GetNamespace()})
