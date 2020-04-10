@@ -106,8 +106,7 @@ func (ac *reconciler) reconcileValidatingWebhook(ctx context.Context, caCert []b
 		}
 
 		// Add supported verbs from callbacks to the rule operations
-		callback, ok := ac.callbacks[gvk]
-		if ok {
+		if callback, ok := ac.callbacks[gvk]; ok {
 			for verb := range callback.supportedVerbs {
 				operationType := admissionregistrationv1beta1.OperationType(verb)
 				if operationType != admissionregistrationv1beta1.Create && operationType != admissionregistrationv1beta1.Update {
