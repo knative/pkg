@@ -42,11 +42,11 @@ type Callback struct {
 	function func(ctx context.Context, unstructured *unstructured.Unstructured) error
 
 	// supportedVerbs are the verbs supported for the callback.
-	// The function will only be called on these acitons.
+	// The function will only be called on these actions.
 	supportedVerbs map[webhook.Operation]struct{}
 }
 
-// NewCallback creates a new callback function to be invoked on supported vebs.
+// NewCallback creates a new callback function to be invoked on supported verbs.
 func NewCallback(function func(context.Context, *unstructured.Unstructured) error, supportedVerbs ...webhook.Operation) Callback {
 	m := make(map[webhook.Operation]struct{})
 	for _, op := range supportedVerbs {
