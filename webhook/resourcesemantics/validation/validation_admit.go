@@ -131,19 +131,23 @@ func (ac *reconciler) decodeRequestAndPrepareContext(
 		}
 	}
 
-	// Set up the context for validation
-	if oldObj != nil {
-		if req.SubResource == "" {
-			ctx = apis.WithinUpdate(ctx, oldObj)
-		} else {
-			ctx = apis.WithinSubResourceUpdate(ctx, oldObj, req.SubResource)
+	switch req.Operation {
+	case admissionv1beta1.Update:
+		if oldObj != nil {
+			if req.SubResource == "" {
+				ctx = apis.WithinUpdate(ctx, oldObj)
+			} else {
+				ctx = apis.WithinSubResourceUpdate(ctx, oldObj, req.SubResource)
+			}
 		}
-	} else {
+	case admissionv1beta1.Create:
 		ctx = apis.WithinCreate(ctx)
+	case admissionv1beta1.Delete:
+		ctx = apis.WithinDelete(ctx)
 	}
+
 	ctx = apis.WithUserInfo(ctx, &req.UserInfo)
 	ctx = context.WithValue(ctx, kubeclient.Key{}, ac.client)
-
 	if req.DryRun != nil && *req.DryRun {
 		ctx = apis.WithDryRun(ctx)
 	}
