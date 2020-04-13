@@ -29,7 +29,7 @@ type CachedInformerFactory struct {
 	Delegate InformerFactory
 
 	m     sync.Mutex
-	cache map[schema.GroupVersionResource]*result
+	cache map[schema.GroupVersionResource]*informerCache
 }
 
 // Check that CachedInformerFactory implements InformerFactory.
@@ -38,36 +38,39 @@ var _ InformerFactory = (*CachedInformerFactory)(nil)
 // Get implements InformerFactory.
 func (cif *CachedInformerFactory) Get(gvr schema.GroupVersionResource) (cache.SharedIndexInformer, cache.GenericLister, error) {
 	cif.m.Lock()
+
 	if cif.cache == nil {
-		cif.cache = make(map[schema.GroupVersionResource]*result)
+		cif.cache = make(map[schema.GroupVersionResource]*informerCache)
 	}
-	elt, ok := cif.cache[gvr]
+
+	ic, ok := cif.cache[gvr]
 	if !ok {
-		elt = &result{}
-		elt.init = func() {
-			elt.Lock()
-			defer elt.Unlock()
+		ic = &informerCache{}
+		ic.init = func() {
+			ic.Lock()
+			defer ic.Unlock()
 
 			// double-checked lock to ensure we call the Delegate
 			// only once even if multiple goroutines end up inside
 			// init() simultaneously
-			if elt.hasInformer() {
+			if ic.hasInformer() {
 				return
 			}
 
-			elt.inf, elt.lister, elt.err = cif.Delegate.Get(gvr)
+			ic.inf, ic.lister, ic.err = cif.Delegate.Get(gvr)
 		}
-		cif.cache[gvr] = elt
+		cif.cache[gvr] = ic
 	}
+
 	// If this were done via "defer", then TestDifferentGVRs will fail.
 	cif.m.Unlock()
 
 	// The call to the delegate could be slow because it syncs informers, so do
 	// this outside of the main lock.
-	return elt.Get()
+	return ic.Get()
 }
 
-type result struct {
+type informerCache struct {
 	sync.RWMutex
 
 	init func()
@@ -79,19 +82,19 @@ type result struct {
 
 // Get returns the cached informer. If it does not yet exist, we first try to
 // acquire one by executing the cache's init function.
-func (t *result) Get() (cache.SharedIndexInformer, cache.GenericLister, error) {
-	if !t.initialized() {
-		t.init()
+func (ic *informerCache) Get() (cache.SharedIndexInformer, cache.GenericLister, error) {
+	if !ic.initialized() {
+		ic.init()
 	}
-	return t.inf, t.lister, t.err
+	return ic.inf, ic.lister, ic.err
 }
 
-func (t *result) initialized() bool {
-	t.RLock()
-	defer t.RUnlock()
-	return t.hasInformer()
+func (ic *informerCache) initialized() bool {
+	ic.RLock()
+	defer ic.RUnlock()
+	return ic.hasInformer()
 }
 
-func (t *result) hasInformer() bool {
-	return t.inf != nil && t.lister != nil
+func (ic *informerCache) hasInformer() bool {
+	return ic.inf != nil && ic.lister != nil
 }
