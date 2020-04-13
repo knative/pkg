@@ -45,6 +45,16 @@ func (cif *CachedInformerFactory) Get(gvr schema.GroupVersionResource) (cache.Sh
 	if !ok {
 		elt = &result{}
 		elt.init = func() {
+			elt.Lock()
+			defer elt.Unlock()
+
+			// double-checked lock to ensure we call the Delegate
+			// only once even if multiple goroutines end up inside
+			// init() simultaneously
+			if elt.hasInformer() {
+				return
+			}
+
 			elt.inf, elt.lister, elt.err = cif.Delegate.Get(gvr)
 		}
 		cif.cache[gvr] = elt
@@ -58,7 +68,8 @@ func (cif *CachedInformerFactory) Get(gvr schema.GroupVersionResource) (cache.Sh
 }
 
 type result struct {
-	sync.Once
+	sync.RWMutex
+
 	init func()
 
 	inf    cache.SharedIndexInformer
@@ -66,7 +77,21 @@ type result struct {
 	err    error
 }
 
+// Get returns the cached informer. If it does not yet exist, we first try to
+// acquire one by executing the cache's init function.
 func (t *result) Get() (cache.SharedIndexInformer, cache.GenericLister, error) {
-	t.Do(t.init)
+	if !t.initialized() {
+		t.init()
+	}
 	return t.inf, t.lister, t.err
+}
+
+func (t *result) initialized() bool {
+	t.RLock()
+	defer t.RUnlock()
+	return t.hasInformer()
+}
+
+func (t *result) hasInformer() bool {
+	return t.inf != nil && t.lister != nil
 }
