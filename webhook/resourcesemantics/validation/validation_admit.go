@@ -131,6 +131,16 @@ func (ac *reconciler) decodeRequestAndPrepareContext(
 		}
 	}
 
+	ctx = apis.WithUserInfo(ctx, &req.UserInfo)
+	ctx = context.WithValue(ctx, kubeclient.Key{}, ac.client)
+	if req.DryRun != nil && *req.DryRun {
+		ctx = apis.WithDryRun(ctx)
+	}
+
+	if newObj != nil && oldObj != nil && req.SubResource == "" {
+		ctx = apis.WithinSubResourceUpdate(ctx, oldObj, req.SubResource)
+	}
+
 	switch req.Operation {
 	case admissionv1beta1.Update:
 		ctx = apis.WithinUpdate(ctx, oldObj)
@@ -138,16 +148,7 @@ func (ac *reconciler) decodeRequestAndPrepareContext(
 		ctx = apis.WithinCreate(ctx)
 	case admissionv1beta1.Delete:
 		ctx = apis.WithinDelete(ctx)
-	}
-
-	if newObj != nil && oldObj != nil && req.SubResource == "" {
-		ctx = apis.WithinSubResourceUpdate(ctx, oldObj, req.SubResource)
-	}
-
-	ctx = apis.WithUserInfo(ctx, &req.UserInfo)
-	ctx = context.WithValue(ctx, kubeclient.Key{}, ac.client)
-	if req.DryRun != nil && *req.DryRun {
-		ctx = apis.WithDryRun(ctx)
+		return ctx, oldObj, nil
 	}
 
 	return ctx, newObj, nil
