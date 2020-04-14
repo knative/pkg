@@ -1,8 +1,8 @@
 # Development
 
 This doc explains how to setup a development environment so you can get started
-[contributing](https://knative.dev/community/contributing/)
-to Knative `pkg`. Also take a look at:
+[contributing](https://knative.dev/community/contributing/) to Knative `pkg`.
+Also take a look at:
 
 - [The pull request workflow](https://knative.dev/community/contributing/reviewing/)
 
