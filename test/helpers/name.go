@@ -49,7 +49,11 @@ func ObjectPrefixForTest(t test.T) string {
 
 // ObjectNameForTest generates a random object name based on the test name.
 func ObjectNameForTest(t test.T) string {
-	return AppendRandomString(ObjectPrefixForTest(t))
+	nameprefix := ObjectPrefixForTest(t)
+	if len(nameprefix) > 35 {
+		nameprefix = nameprefix[:35]
+	}
+	return AppendRandomString(nameprefix)
 }
 
 // AppendRandomString will generate a random string that begins with prefix.
