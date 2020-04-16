@@ -43,6 +43,12 @@ import (
 	"knative.dev/pkg/tracker"
 )
 
+var jsonLabelPatch = map[string]interface{}{
+	"metadata": map[string]interface{}{
+		"labels": map[string]string{"bindings.knative.dev/include": "true"},
+	},
+}
+
 // BaseReconciler helps implement controller.Reconciler for Binding resources.
 type BaseReconciler struct {
 	// The GVR of the "primary key" resource for this reconciler.
@@ -232,29 +238,30 @@ func (r *BaseReconciler) RemoveFinalizer(ctx context.Context, fb kmeta.Accessor)
 func (r *BaseReconciler) labelNamespace(ctx context.Context, subject tracker.Reference) error {
 
 	// Determine the GroupVersionResource of the subject reference
-	gv, err := schema.ParseGroupVersion("v1")
-	if err != nil {
-		logging.FromContext(ctx).Infof("Error parsing GroupVersion %v: %v", "v1", err)
-		return err
+	gvr := schema.GroupVersionResource{
+		Group:    "",
+		Version:  "v1",
+		Resource: "namespaces",
 	}
-	gvr := apis.KindToResource(gv.WithKind("Namespace"))
 
 	// Don't remove any existing labels or add ours more than once
-	unstructuredLabels, err := r.DynamicClient.Resource(gvr).Get(subject.Namespace, metav1.GetOptions{})
+	_, namespaceLister, err := r.Factory.Get(gvr)
 	if err != nil {
-		logging.FromContext(ctx).Infof("Error getting labels from namespace: %s: %v", subject.Namespace, err)
+		logging.FromContext(ctx).Infof("Error getting lister for namespaces: '%v': %v", gvr, err)
+		return err
 	}
-	if unstructuredLabels != nil {
-		labels := unstructuredLabels.GetLabels()
-		if labels["bindings.knative.dev/exclude"] != "" || labels["bindings.knative.dev/include"] != "" {
-			return nil
-		}
+	namespaceObject, err := namespaceLister.Get(subject.Namespace)
+	if apierrs.IsNotFound(err) {
+		logging.FromContext(ctx).Infof("")
+		return err
+	} else if err != nil {
+		return err
 	}
-	patch, err := json.Marshal(map[string]interface{}{
-		"metadata": map[string]interface{}{
-			"labels": map[string]string{"bindings.knative.dev/include": "true"},
-		},
-	})
+	labels := (namespaceObject.(*duckv1.WithPod)).GetLabels()
+	if labels["bindings.knative.dev/exclude"] != "" || labels["bindings.knative.dev/include"] != "" {
+		return nil
+	}
+	patch, err := json.Marshal(jsonLabelPatch)
 	if err != nil {
 		logging.FromContext(ctx).Infof("Error generating json patch: %v, to namespace: %s", err, subject.Namespace)
 		return nil
@@ -262,6 +269,7 @@ func (r *BaseReconciler) labelNamespace(ctx context.Context, subject tracker.Ref
 	_, err = r.DynamicClient.Resource(gvr).Patch(subject.Namespace, types.MergePatchType, patch, metav1.PatchOptions{})
 	if err != nil {
 		logging.FromContext(ctx).Infof("Error applying patch to namespace: %s: %v", subject.Namespace, err)
+		return err
 	}
 
 	return nil
@@ -307,7 +315,10 @@ func (r *BaseReconciler) ReconcileSubject(ctx context.Context, fb Bindable, muta
 		} else if err != nil {
 			return fmt.Errorf("error fetching Pod Speccable %v: %v", subject, err)
 		}
-		r.labelNamespace(ctx, subject)
+		err = r.labelNamespace(ctx, subject)
+		if err != nil {
+			return err
+		}
 		referents = append(referents, psObj.(*duckv1.WithPod))
 	} else {
 		// Otherwise, the subject is referenced by selector, so compile
@@ -320,7 +331,10 @@ func (r *BaseReconciler) ReconcileSubject(ctx context.Context, fb Bindable, muta
 		if err != nil {
 			return fmt.Errorf("error fetching Pod Speccable %v: %v", subject, err)
 		}
-		r.labelNamespace(ctx, subject)
+		err = r.labelNamespace(ctx, subject)
+		if err != nil {
+			return err
+		}
 		// Type cast the returned resources into our referent list.
 		for _, psObj := range psObjs {
 			referents = append(referents, psObj.(*duckv1.WithPod))

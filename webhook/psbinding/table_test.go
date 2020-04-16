@@ -2010,11 +2010,7 @@ func patchAddLabel(namespace string) clientgotesting.PatchActionImpl {
 	action.Name = namespace
 	action.PatchType = types.MergePatchType
 
-	patch, _ := json.Marshal(map[string]interface{}{
-		"metadata": map[string]interface{}{
-			"labels": map[string]string{"bindings.knative.dev/include": "true"},
-		},
-	})
+	patch, _ := json.Marshal(jsonLabelPatch)
 	action.Patch = patch
 	return action
 }
