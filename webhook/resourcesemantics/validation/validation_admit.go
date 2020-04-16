@@ -161,6 +161,8 @@ func validate(ctx context.Context, resource resourcesemantics.GenericCRD, req *a
 	switch req.Operation {
 	case admissionv1beta1.Create, admissionv1beta1.Update:
 		// Supported verbs
+	case admissionv1beta1.Delete:
+		return nil // Validation handled by optional Callback, but not validatable.
 	default:
 		logger.Infof("Unhandled webhook validation operation, letting it through %v", req.Operation)
 		return nil
