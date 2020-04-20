@@ -32,6 +32,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/client-go/dynamic"
+	corev1listers "k8s.io/client-go/listers/core/v1"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/record"
 	"knative.dev/pkg/apis"
@@ -45,7 +46,7 @@ import (
 
 var jsonLabelPatch = map[string]interface{}{
 	"metadata": map[string]interface{}{
-		"labels": map[string]string{"bindings.knative.dev/include": "true"},
+		"labels": map[string]string{duck.BindingIncludeLabel: "true"},
 	},
 }
 
@@ -81,6 +82,9 @@ type BaseReconciler struct {
 	// Recorder is an event recorder for recording Event resources to the
 	// Kubernetes API.
 	Recorder record.EventRecorder
+
+	// Namespace Lister
+	NamespaceLister corev1listers.NamespaceLister
 }
 
 // Check that our Reconciler implements controller.Reconciler
@@ -237,6 +241,25 @@ func (r *BaseReconciler) RemoveFinalizer(ctx context.Context, fb kmeta.Accessor)
 
 func (r *BaseReconciler) labelNamespace(ctx context.Context, subject tracker.Reference) error {
 
+	namespaceObject, err := r.NamespaceLister.Get(subject.Namespace)
+	if apierrs.IsNotFound(err) {
+		logging.FromContext(ctx).Infof("Error getting namespace listener (not found): %v", err)
+		return err
+	} else if err != nil {
+		return err
+	}
+
+	labels := namespaceObject.GetLabels()
+	if labels[duck.BindingIncludeLabel] != "" || labels[duck.BindingExcludeLabel] != "" {
+		return nil
+	}
+
+	patch, err := json.Marshal(jsonLabelPatch)
+	if err != nil {
+		logging.FromContext(ctx).Infof("Error generating json patch: %v, to namespace: %s", err, subject.Namespace)
+		return nil
+	}
+
 	// Determine the GroupVersionResource of the subject reference
 	gvr := schema.GroupVersionResource{
 		Group:    "",
@@ -244,28 +267,6 @@ func (r *BaseReconciler) labelNamespace(ctx context.Context, subject tracker.Ref
 		Resource: "namespaces",
 	}
 
-	// Don't remove any existing labels or add ours more than once
-	_, namespaceLister, err := r.Factory.Get(gvr)
-	if err != nil {
-		logging.FromContext(ctx).Infof("Error getting lister for namespaces: '%v': %v", gvr, err)
-		return err
-	}
-	namespaceObject, err := namespaceLister.Get(subject.Namespace)
-	if apierrs.IsNotFound(err) {
-		logging.FromContext(ctx).Infof("")
-		return err
-	} else if err != nil {
-		return err
-	}
-	labels := (namespaceObject.(*duckv1.WithPod)).GetLabels()
-	if labels["bindings.knative.dev/exclude"] != "" || labels["bindings.knative.dev/include"] != "" {
-		return nil
-	}
-	patch, err := json.Marshal(jsonLabelPatch)
-	if err != nil {
-		logging.FromContext(ctx).Infof("Error generating json patch: %v, to namespace: %s", err, subject.Namespace)
-		return nil
-	}
 	_, err = r.DynamicClient.Resource(gvr).Patch(subject.Namespace, types.MergePatchType, patch, metav1.PatchOptions{})
 	if err != nil {
 		logging.FromContext(ctx).Infof("Error applying patch to namespace: %s: %v", subject.Namespace, err)

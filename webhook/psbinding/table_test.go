@@ -1239,7 +1239,7 @@ func TestBaseReconcile(t *testing.T) {
 			&corev1.Namespace{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:   "foo",
-					Labels: map[string]string{"bindings.knative.dev/include": "true"},
+					Labels: map[string]string{duck.BindingIncludeLabel: "true"},
 				},
 			},
 			&appsv1.Deployment{
@@ -1981,6 +1981,7 @@ func TestBaseReconcile(t *testing.T) {
 				}
 				return nil, apierrs.NewNotFound(gvr.GroupResource(), name)
 			},
+			NamespaceLister: listers.GetNamespaceLister(),
 		}
 	}))
 }
