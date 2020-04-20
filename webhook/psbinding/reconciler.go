@@ -243,9 +243,10 @@ func (r *BaseReconciler) labelNamespace(ctx context.Context, subject tracker.Ref
 
 	namespaceObject, err := r.NamespaceLister.Get(subject.Namespace)
 	if apierrs.IsNotFound(err) {
-		logging.FromContext(ctx).Infof("Error getting namespace listener (not found): %v", err)
+		logging.FromContext(ctx).Infof("Error getting namespace (not found): %v", err)
 		return err
 	} else if err != nil {
+		logging.FromContext(ctx).Infof("Error getting namespace: %v", err)
 		return err
 	}
 
