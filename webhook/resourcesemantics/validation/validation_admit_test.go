@@ -84,12 +84,12 @@ var (
 			Group:   "pkg.knative.dev",
 			Version: "v1alpha1",
 			Kind:    "Resource",
-		}: NewCallback(resourceCallback, webhook.Create, webhook.Update),
+		}: NewCallback(resourceCallback, webhook.Create, webhook.Update, webhook.Delete),
 		{
 			Group:   "pkg.knative.dev",
 			Version: "v1beta1",
 			Kind:    "Resource",
-		}: NewCallback(resourceCallback, webhook.Create, webhook.Update),
+		}: NewCallback(resourceCallback, webhook.Create, webhook.Update, webhook.Delete),
 	}
 	initialResourceWebhook = &admissionregistrationv1beta1.ValidatingWebhookConfiguration{
 		ObjectMeta: metav1.ObjectMeta{
@@ -272,6 +272,14 @@ func resourceCallback(ctx context.Context, uns *unstructured.Unstructured) error
 		return err
 	}
 
+	if apis.IsInDelete(ctx) {
+		if resource.Spec.FieldForCallbackValidation != "magic delete" {
+			return errors.New("no magic delete")
+		} else {
+			return nil
+		}
+	}
+
 	if apis.IsDryRun(ctx) {
 		return errors.New("dryRun fail")
 	}
@@ -283,7 +291,7 @@ func resourceCallback(ctx context.Context, uns *unstructured.Unstructured) error
 	return nil
 }
 
-func TestValidaitonCallback(t *testing.T) {
+func TestValidationCreateCallback(t *testing.T) {
 	tests := []struct {
 		name      string
 		dryRun    bool
@@ -341,6 +349,70 @@ func TestValidaitonCallback(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestValidationDeleteCallback(t *testing.T) {
+	tests := []struct {
+		name      string
+		setup     func(context.Context, *Resource)
+		rejection string
+	}{{
+		name: "with field magic delete",
+		setup: func(ctx context.Context, r *Resource) {
+			// Put a good value in.
+			r.Spec.FieldForCallbackValidation = "magic delete"
+		},
+	}, {
+		name: "with field reject value",
+		setup: func(ctx context.Context, r *Resource) {
+			// Put a bad value in.
+			r.Spec.FieldForCallbackValidation = "no magic delete"
+		},
+		rejection: "validation callback failed: no magic delete",
+	}}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			r := CreateResource("a name")
+			ctx := apis.WithinCreate(apis.WithUserInfo(
+				TestContextWithLogger(t),
+				&authenticationv1.UserInfo{Username: user1}))
+
+			// Setup the resource.
+			tc.setup(ctx, r)
+
+			_, ac := newNonRunningTestResourceAdmissionController(t)
+			req := createDeleteResource(ctx, t, r)
+
+			resp := ac.Admit(ctx, req)
+
+			if tc.rejection == "" {
+				ExpectAllowed(t, resp)
+			} else {
+				ExpectFailsWith(t, resp, tc.rejection)
+			}
+		})
+	}
+}
+
+func createDeleteResource(ctx context.Context, t *testing.T, old *Resource) *admissionv1beta1.AdmissionRequest {
+	t.Helper()
+	req := &admissionv1beta1.AdmissionRequest{
+		Operation: admissionv1beta1.Delete,
+		Kind: metav1.GroupVersionKind{
+			Group:   "pkg.knative.dev",
+			Version: "v1alpha1",
+			Kind:    "Resource",
+		},
+		UserInfo: *apis.GetUserInfo(ctx),
+	}
+	marshaledOld, err := json.Marshal(old)
+	if err != nil {
+		t.Fatalf("Failed to marshal resource: %v", err)
+	}
+	req.OldObject.Raw = marshaledOld
+	req.Resource.Group = "pkg.knative.dev"
+	return req
 }
 
 func createCreateResource(ctx context.Context, t *testing.T, r *Resource) *admissionv1beta1.AdmissionRequest {

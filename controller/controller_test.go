@@ -685,6 +685,16 @@ func TestEnqueues(t *testing.T) {
 		},
 		wantQueue: []types.NamespacedName{{Namespace: "", Name: "baz"}},
 	}, {
+		name: "enqueue namespace of object",
+		work: func(impl *Impl) {
+			impl.EnqueueNamespaceOf(&Resource{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "foo",
+					Namespace: "bar",
+				}})
+		},
+		wantQueue: []types.NamespacedName{{Name: "bar"}},
+	}, {
 		name: "enqueue label of deleted bad cluster scoped resource",
 		work: func(impl *Impl) {
 			impl.EnqueueLabelOfClusterScopedResource("name-key")(cache.DeletedFinalStateUnknown{
