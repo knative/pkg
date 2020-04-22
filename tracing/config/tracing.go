@@ -174,8 +174,8 @@ func TracingConfigToJson(cfg *Config) (string, error) {
 	if cfg.StackdriverProjectID != "" {
 		out[stackdriverProjectIDKey] = cfg.StackdriverProjectID
 	}
-	out[debugKey] = strconv.FormatBool(cfg.Debug)
-	out[sampleRateKey] = strconv.FormatFloat(cfg.SampleRate, 'f', -1, 64)
+	out[debugKey] = fmt.Sprint(cfg.Debug)
+	out[sampleRateKey] = fmt.Sprint(cfg.SampleRate)
 
 	jsonCfg, err := json.Marshal(out)
 	return string(jsonCfg), err

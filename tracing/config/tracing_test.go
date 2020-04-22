@@ -137,7 +137,7 @@ func TestNewConfigSuccess(t *testing.T) {
 	}
 }
 
-func TestNewConfig_json(t *testing.T) {
+func TestNewConfigJson(t *testing.T) {
 	tt := []struct {
 		name   string
 		input  map[string]string
@@ -226,8 +226,8 @@ func TestNewConfig_json(t *testing.T) {
 				t.Fatal("Failed to create tracing config:", err)
 			}
 
-			if diff := cmp.Diff(tc.output, haveConfig); diff != "" {
-				t.Errorf("Got config from map (-want, +got) = %v", diff)
+			if !cmp.Equal(tc.output, haveConfig) {
+				t.Error("Got config from map (-want, +got) =", cmp.Diff(tc.output, haveConfig))
 			}
 		})
 	}
