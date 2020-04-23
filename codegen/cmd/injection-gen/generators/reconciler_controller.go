@@ -138,6 +138,10 @@ func (g *reconcilerControllerGenerator) GenerateType(c *generator.Context, t *ty
 			Package: "knative.dev/pkg/controller",
 			Name:    "OptionsFn",
 		}),
+		"controllerGetControllerAgentName": c.Universe.Function(types.Name{
+			Package: "knative.dev/pkg/controller",
+			Name:    "GetControllerAgentName",
+		}),
 		"contextContext": c.Universe.Type(types.Name{
 			Package: "context",
 			Name:    "Context",
@@ -177,6 +181,7 @@ const (
 // {{.controllerOptions|raw}} to be used but the internal reconciler.
 func NewImpl(ctx {{.contextContext|raw}}, r Interface{{if .hasClass}}, classValue string{{end}}, optionsFns ...{{.controllerOptionsFn|raw}}) *{{.controllerImpl|raw}} {
 	logger := {{.loggingFromContext|raw}}(ctx)
+	agentName := {{.controllerGetControllerAgentName|raw}}(ctx, defaultControllerAgentName)
 
 	// Check the options function input. It should be 0 or 1.
 	if len(optionsFns) > 1 {
@@ -195,7 +200,7 @@ func NewImpl(ctx {{.contextContext|raw}}, r Interface{{if .hasClass}}, classValu
 			eventBroadcaster.StartRecordingToSink(
 				&{{.typedcorev1EventSinkImpl|raw}}{Interface: {{.kubeclientGet|raw}}(ctx).CoreV1().Events("")}),
 		}
-		recorder = eventBroadcaster.NewRecorder({{.schemeScheme|raw}}, {{.corev1EventSource|raw}}{Component: defaultControllerAgentName})
+		recorder = eventBroadcaster.NewRecorder({{.schemeScheme|raw}}, {{.corev1EventSource|raw}}{Component: agentName})
 		go func() {
 			<-ctx.Done()
 			for _, w := range watches {

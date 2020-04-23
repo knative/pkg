@@ -1344,3 +1344,19 @@ func TestGetEventRecorder(t *testing.T) {
 		t.Error("GetEventRecorder() = nil, wanted non-nil")
 	}
 }
+
+func TestGetControllerAgentName(t *testing.T) {
+	ctx := context.Background()
+	wantdefaultAgentName := "defaultName"
+	wantNewAgentName := "newAgentName"
+
+	if got := GetControllerAgentName(ctx, wantdefaultAgentName); got != wantdefaultAgentName {
+		t.Errorf("GetControllerAgentName() = %v, wanted %s", got, wantdefaultAgentName)
+	}
+
+	ctx = SetControllerAgentName(ctx, wantNewAgentName)
+
+	if got := GetControllerAgentName(ctx, wantdefaultAgentName); got != wantNewAgentName {
+		t.Errorf("GetControllerAgentName() = %s, wanted %s", got, wantNewAgentName)
+	}
+}
