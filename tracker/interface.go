@@ -71,10 +71,10 @@ type Interface interface {
 	// so that we are notified for appropriate object changes.
 	OnChanged(obj interface{})
 
-	// OnDeletedParent is a callback to register with the InformerFactory
+	// OnDeletedObserver is a callback to register with the InformerFactory
 	// so that we are notified for deletions of a watching parent to
 	// remove the respective tracking.
-	OnDeletedParent(obj interface{})
+	OnDeletedObserver(obj interface{})
 }
 
 // GroupVersionKind returns the GroupVersion of the object referenced.

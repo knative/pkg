@@ -39,8 +39,8 @@ var _ tracker.Interface = (*FakeTracker)(nil)
 // OnChanged implements OnChanged.
 func (*FakeTracker) OnChanged(interface{}) {}
 
-// OnDeletedParent implements OnDeletedParent.
-func (*FakeTracker) OnDeletedParent(interface{}) {}
+// OnDeletedObserver implements OnDeletedObserver.
+func (*FakeTracker) OnDeletedObserver(interface{}) {}
 
 // Track implements tracker.Interface.
 func (n *FakeTracker) Track(ref corev1.ObjectReference, obj interface{}) error {

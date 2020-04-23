@@ -277,7 +277,7 @@ func (i *impl) OnChanged(obj interface{}) {
 }
 
 // OnChanged implements Interface.
-func (i *impl) OnDeletedParent(obj interface{}) {
+func (i *impl) OnDeletedObserver(obj interface{}) {
 	item, err := kmeta.DeletionHandlingAccessor(obj)
 	if err != nil {
 		return

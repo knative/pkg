@@ -166,7 +166,7 @@ func TestHappyPathsExact(t *testing.T) {
 
 	// Stops tracking explicitly
 	{
-		trk.OnDeletedParent(thing2)
+		trk.OnDeletedObserver(thing2)
 		trk.OnChanged(thing1)
 		if got, want := calls, 6; got != want {
 			t.Fatalf("OnChanged() = %v, wanted %v", got, want)
@@ -642,7 +642,7 @@ func TestHappyPathsInexact(t *testing.T) {
 
 	// Stops tracking explicitly
 	{
-		trk.OnDeletedParent(thing2)
+		trk.OnDeletedObserver(thing2)
 		trk.OnChanged(thing1)
 		if got, want := calls, 7; got != want {
 			t.Fatalf("OnChanged() = %v, wanted %v", got, want)
@@ -744,7 +744,7 @@ func TestHappyPathsByBoth(t *testing.T) {
 
 	// Stops tracking explicitly
 	{
-		trk.OnDeletedParent(thing2)
+		trk.OnDeletedObserver(thing2)
 		trk.OnChanged(thing1)
 		if got, want := calls, 4; got != want {
 			t.Fatalf("OnChanged() = %v, wanted %v", got, want)
