@@ -621,10 +621,13 @@ func GetEventRecorder(ctx context.Context) record.EventRecorder {
 // It will return defaultAgentName if none is found.
 func GetControllerAgentName(ctx context.Context, defaultAgentName string) string {
 	agentName := ctx.Value(agentNameKey)
-	if agentName == nil {
-		return defaultAgentName
+	if agentName != nil {
+		if name, ok := agentName.(string); ok {
+			return name
+		}
 	}
-	return agentName.(string)
+
+	return defaultAgentName
 }
 
 // SetControllerAgentName attaches the agentNameKey to the provided context
