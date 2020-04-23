@@ -96,15 +96,19 @@ func NewReconciler(ctx context.Context, logger *zap.SugaredLogger, client client
 	}
 
 	rec := &reconcilerImpl{
-		Client:     client,
-		Lister:     lister,
-		Recorder:   recorder,
-		reconciler: r,
+		Client:        client,
+		Lister:        lister,
+		Recorder:      recorder,
+		reconciler:    r,
+		finalizerName: defaultFinalizerName,
 	}
 
 	for _, opts := range options {
 		if opts.ConfigStore != nil {
 			rec.configStore = opts.ConfigStore
+		}
+		if opts.FinalizerName != "" {
+			rec.finalizerName = opts.FinalizerName
 		}
 	}
 
