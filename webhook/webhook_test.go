@@ -34,7 +34,7 @@ import (
 func newDefaultOptions() Options {
 	return Options{
 		ServiceName: "webhook",
-		Port:        443,
+		Port:        8443,
 		SecretName:  "webhook-certs",
 	}
 }
