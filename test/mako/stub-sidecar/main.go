@@ -52,7 +52,7 @@ type server struct {
 func (s *server) Store(ctx context.Context, in *qspb.StoreInput) (*qspb.StoreOutput, error) {
 	m := jsonpb.Marshaler{}
 	qi, _ := m.MarshalToString(in.GetQuickstoreInput())
-	fmt.Print("# Received input")
+	fmt.Println("# Received input")
 
 	fmt.Fprintln(s.sb, "#", qi)
 	writer := csv.NewWriter(s.sb)
