@@ -84,8 +84,8 @@ func (s *server) Store(ctx context.Context, in *qspb.StoreInput) (*qspb.StoreOut
 
 	writer.Flush()
 
-	fmt.Fprint(s.sb, "# CSV end\n")
-	fmt.Print("# Input completed")
+	fmt.Fprintln(s.sb, "# CSV end")
+	fmt.Println("# Input completed")
 
 	return &qspb.StoreOutput{}, nil
 }
