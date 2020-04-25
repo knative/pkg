@@ -133,14 +133,10 @@ func MainWithContext(ctx context.Context, component string, ctors ...injection.C
 // MainWithConfig runs the generic main flow for non-webhook controllers. Use
 // WebhookMainWithConfig if you need to serve webhooks.
 func MainWithConfig(ctx context.Context, component string, cfg *rest.Config, ctors ...injection.ControllerConstructor) {
-	logger, atomicLevel := SetupLoggerOrDie(ctx, component)
-	defer flush(logger)
-	ctx = logging.WithLogger(ctx, logger)
-
-	logger.Infof("Registering %d clients", len(injection.Default.GetClients()))
-	logger.Infof("Registering %d informer factories", len(injection.Default.GetInformerFactories()))
-	logger.Infof("Registering %d informers", len(injection.Default.GetInformers()))
-	logger.Infof("Registering %d controllers", len(ctors))
+	log.Printf("Registering %d clients", len(injection.Default.GetClients()))
+	log.Printf("Registering %d informer factories", len(injection.Default.GetInformerFactories()))
+	log.Printf("Registering %d informers", len(injection.Default.GetInformers()))
+	log.Printf("Registering %d controllers", len(ctors))
 
 	MemStatsOrDie(ctx)
 
@@ -150,6 +146,9 @@ func MainWithConfig(ctx context.Context, component string, cfg *rest.Config, cto
 
 	ctx, informers := injection.Default.SetupInformers(ctx, cfg)
 
+	logger, atomicLevel := SetupLoggerOrDie(ctx, component)
+	defer flush(logger)
+	ctx = logging.WithLogger(ctx, logger)
 	profilingHandler := profiling.NewHandler(logger, false)
 	profilingServer := profiling.NewServer(profilingHandler)
 	eg, egCtx := errgroup.WithContext(ctx)
@@ -211,14 +210,10 @@ func WebhookMainWithContext(ctx context.Context, component string, ctors ...inje
 // with the given config. Use MainWithConfig if you do not need to serve
 // webhooks.
 func WebhookMainWithConfig(ctx context.Context, component string, cfg *rest.Config, ctors ...injection.ControllerConstructor) {
-	logger, atomicLevel := SetupLoggerOrDie(ctx, component)
-	defer flush(logger)
-	ctx = logging.WithLogger(ctx, logger)
-
-	logger.Infof("Registering %d clients", len(injection.Default.GetClients()))
-	logger.Infof("Registering %d informer factories", len(injection.Default.GetInformerFactories()))
-	logger.Infof("Registering %d informers", len(injection.Default.GetInformers()))
-	logger.Infof("Registering %d controllers", len(ctors))
+	log.Printf("Registering %d clients", len(injection.Default.GetClients()))
+	log.Printf("Registering %d informer factories", len(injection.Default.GetInformerFactories()))
+	log.Printf("Registering %d informers", len(injection.Default.GetInformers()))
+	log.Printf("Registering %d controllers", len(ctors))
 
 	MemStatsOrDie(ctx)
 
@@ -227,6 +222,9 @@ func WebhookMainWithConfig(ctx context.Context, component string, cfg *rest.Conf
 	cfg.Burst = len(ctors) * rest.DefaultBurst
 	ctx, informers := injection.Default.SetupInformers(ctx, cfg)
 
+	logger, atomicLevel := SetupLoggerOrDie(ctx, component)
+	defer flush(logger)
+	ctx = logging.WithLogger(ctx, logger)
 	profilingHandler := profiling.NewHandler(logger, false)
 	profilingServer := profiling.NewServer(profilingHandler)
 
