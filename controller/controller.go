@@ -329,11 +329,11 @@ func (c *Impl) EnqueueKeyAfter(key types.NamespacedName, delay time.Duration) {
 	c.logger.Debugf("Adding to queue %s (delay: %v, depth: %d)", safeKey(key), delay, c.WorkQueue.Len())
 }
 
-// Run starts the controller's worker threads, the number of which is threadiness.
+// RunContext starts the controller's worker threads, the number of which is threadiness.
 // It then blocks until the context is cancelled, at which point it shuts down its
 // internal work queue and waits for workers to finish processing their current
 // work items.
-func (c *Impl) Run(ctx context.Context, threadiness int) error {
+func (c *Impl) RunContext(ctx context.Context, threadiness int) error {
 	defer runtime.HandleCrash()
 	sg := sync.WaitGroup{}
 	defer sg.Wait()
@@ -361,6 +361,17 @@ func (c *Impl) Run(ctx context.Context, threadiness int) error {
 	logger.Info("Shutting down workers")
 
 	return nil
+}
+
+// DEPRECATED use RunContext instead.
+func (c *Impl) Run(threadiness int, stopCh <-chan struct{}) error {
+	// Create a context that is cancelled when the stopCh is called.
+	ctx, cancel := context.WithCancel(context.Background())
+	go func() {
+		<-stopCh
+		cancel()
+	}()
+	return c.RunContext(ctx, threadiness)
 }
 
 // processNextWorkItem will read a single work item off the workqueue and
@@ -537,7 +548,7 @@ func StartAll(ctx context.Context, controllers ...*Impl) {
 		wg.Add(1)
 		go func(c *Impl) {
 			defer wg.Done()
-			c.Run(ctx, DefaultThreadsPerController)
+			c.RunContext(ctx, DefaultThreadsPerController)
 		}(ctrlr)
 	}
 	wg.Wait()
