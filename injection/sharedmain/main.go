@@ -180,7 +180,7 @@ func MainWithConfig(ctx context.Context, component string, cfg *rest.Config, cto
 			logger.Fatalw("Failed to start informers", zap.Error(err))
 		}
 		logger.Info("Starting controllers...")
-		go controller.StartAll(ctx.Done(), controllers...)
+		go controller.StartAll(ctx, controllers...)
 
 		<-ctx.Done()
 	}
@@ -266,7 +266,7 @@ func WebhookMainWithConfig(ctx context.Context, component string, cfg *rest.Conf
 		wh.InformersHaveSynced()
 	}
 	logger.Info("Starting controllers...")
-	go controller.StartAll(ctx.Done(), controllers...)
+	go controller.StartAll(ctx, controllers...)
 
 	// This will block until either a signal arrives or one of the grouped functions
 	// returns an error.
