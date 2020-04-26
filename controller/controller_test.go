@@ -24,15 +24,22 @@ import (
 	"time"
 
 	"github.com/google/go-cmp/cmp"
+	coordinationv1 "k8s.io/api/coordination/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
+	fakekube "k8s.io/client-go/kubernetes/fake"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/workqueue"
+	"knative.dev/pkg/ptr"
+	"knative.dev/pkg/system"
+	_ "knative.dev/pkg/system/testing"
 
 	. "knative.dev/pkg/controller/testing"
+	"knative.dev/pkg/leaderelection"
 	. "knative.dev/pkg/logging/testing"
+	"knative.dev/pkg/reconciler"
 	. "knative.dev/pkg/testing"
 )
 
@@ -810,6 +817,141 @@ func TestStartAndShutdown(t *testing.T) {
 	case <-doneCh:
 		t.Error("StartAll finished early.")
 	}
+	cancel()
+
+	select {
+	case <-time.After(1 * time.Second):
+		t.Error("Timed out waiting for controller to finish.")
+	case <-doneCh:
+		// We expect the work to complete.
+	}
+
+	if got, want := r.Count, 0; got != want {
+		t.Errorf("Count = %v, wanted %v", got, want)
+	}
+}
+
+type CountingLeaderAwareReconciler struct {
+	reconciler.LeaderAwareFuncs
+
+	m     sync.Mutex
+	Count int
+}
+
+var _ reconciler.LeaderAware = (*CountingLeaderAwareReconciler)(nil)
+
+func (cr *CountingLeaderAwareReconciler) Reconcile(ctx context.Context, key string) error {
+	namespace, name, err := cache.SplitMetaNamespaceKey(key)
+	if err != nil {
+		return err
+	}
+
+	if cr.IsLeader(types.NamespacedName{
+		Namespace: namespace,
+		Name:      name,
+	}) {
+		cr.m.Lock()
+		defer cr.m.Unlock()
+		cr.Count++
+	}
+	return nil
+}
+
+func TestStartAndShutdownWithLeaderAwareNoElection(t *testing.T) {
+	defer ClearAll()
+	promoted := make(chan struct{})
+	r := &CountingLeaderAwareReconciler{
+		LeaderAwareFuncs: reconciler.LeaderAwareFuncs{
+			PromoteFunc: func(bkt reconciler.Bucket, enq func(reconciler.Bucket, types.NamespacedName)) {
+				close(promoted)
+			},
+		},
+	}
+	impl := NewImplWithStats(r, TestLogger(t), "Testing", &FakeStatsReporter{})
+
+	ctx, cancel := context.WithCancel(context.Background())
+	doneCh := make(chan struct{})
+
+	go func() {
+		defer close(doneCh)
+		StartAll(ctx, impl)
+	}()
+
+	select {
+	case <-promoted:
+		// We expect to be promoted immediately, since there is no
+		// ElectorBuilder attached to the context.
+	case <-doneCh:
+		t.Error("StartAll finished early.")
+	}
+
+	cancel()
+
+	select {
+	case <-time.After(1 * time.Second):
+		t.Error("Timed out waiting for controller to finish.")
+	case <-doneCh:
+		// We expect the work to complete.
+	}
+
+	if got, want := r.Count, 0; got != want {
+		t.Errorf("Count = %v, wanted %v", got, want)
+	}
+}
+
+func TestStartAndShutdownWithLeaderAwareWithLostElection(t *testing.T) {
+	defer ClearAll()
+	promoted := make(chan struct{})
+	r := &CountingLeaderAwareReconciler{
+		LeaderAwareFuncs: reconciler.LeaderAwareFuncs{
+			PromoteFunc: func(bkt reconciler.Bucket, enq func(reconciler.Bucket, types.NamespacedName)) {
+				close(promoted)
+			},
+		},
+	}
+	cc := leaderelection.ComponentConfig{
+		Component:     "component",
+		LeaderElect:   true,
+		ResourceLock:  "leases",
+		LeaseDuration: 15 * time.Second,
+		RenewDeadline: 10 * time.Second,
+		RetryPeriod:   2 * time.Second,
+	}
+	kc := fakekube.NewSimpleClientset(
+		&coordinationv1.Lease{
+			ObjectMeta: metav1.ObjectMeta{
+				Namespace: system.Namespace(),
+				Name:      "component.testing.00-of-01",
+			},
+			Spec: coordinationv1.LeaseSpec{
+				HolderIdentity:       ptr.String("not-us"),
+				LeaseDurationSeconds: ptr.Int32(3000),
+				AcquireTime:          &metav1.MicroTime{time.Now()},
+				RenewTime:            &metav1.MicroTime{time.Now().Add(3000 * time.Second)},
+			},
+		},
+	)
+
+	impl := NewImplWithStats(r, TestLogger(t), "Testing", &FakeStatsReporter{})
+
+	ctx, cancel := context.WithCancel(context.Background())
+	ctx = leaderelection.WithLeaderElectorBuilder(ctx, kc, cc)
+	doneCh := make(chan struct{})
+
+	go func() {
+		defer close(doneCh)
+		StartAll(ctx, impl)
+	}()
+
+	select {
+	case <-promoted:
+		t.Fatal("Unexpected promotion.")
+	case <-time.After(3 * time.Second):
+		// Wait for 3 seconds for good measure.
+	case <-doneCh:
+		t.Error("StartAll finished early.")
+	}
+
 	cancel()
 
 	select {
