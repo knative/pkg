@@ -22,7 +22,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/go-cmp/cmp"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/sets"
+	"knative.dev/pkg/kmeta"
 )
 
 func okConfig() *Config {
@@ -54,157 +57,109 @@ func TestNewConfigMapFromData(t *testing.T) {
 		data     map[string]string
 		expected *Config
 		err      error
-	}{
-		{
-			name: "disabled but OK config",
-			data: func() map[string]string {
-				data := okData()
-				delete(data, "enabledComponents")
-				return data
-			}(),
-			expected: okConfig(),
-		},
-		{
-			name: "OK config - controller enabled",
-			data: okData(),
-			expected: func() *Config {
-				config := okConfig()
-				config.EnabledComponents.Insert("controller")
-				return config
-			}(),
-		},
-		{
-			name: "missing resourceLock",
-			data: func() map[string]string {
-				data := okData()
-				delete(data, "resourceLock")
-				return data
-			}(),
-			err: errors.New(`resourceLock: invalid value "": valid values are "leases","configmaps","endpoints"`),
-		},
-		{
-			name: "invalid resourceLock",
-			data: func() map[string]string {
-				data := okData()
-				data["resourceLock"] = "flarps"
-				return data
-			}(),
-			err: errors.New(`resourceLock: invalid value "flarps": valid values are "leases","configmaps","endpoints"`),
-		},
-		{
-			name: "missing leaseDuration",
-			data: func() map[string]string {
-				data := okData()
-				delete(data, "leaseDuration")
-				return data
-			}(),
-			err: errors.New(`leaseDuration: invalid duration: ""`),
-		},
-		{
-			name: "invalid leaseDuration",
-			data: func() map[string]string {
-				data := okData()
-				data["leaseDuration"] = "flops"
-				return data
-			}(),
-			err: errors.New(`leaseDuration: invalid duration: "flops"`),
-		},
-		{
-			name: "missing renewDeadline",
-			data: func() map[string]string {
-				data := okData()
-				delete(data, "renewDeadline")
-				return data
-			}(),
-			err: errors.New(`renewDeadline: invalid duration: ""`),
-		},
-		{
-			name: "invalid renewDeadline",
-			data: func() map[string]string {
-				data := okData()
-				data["renewDeadline"] = "flops"
-				return data
-			}(),
-			err: errors.New(`renewDeadline: invalid duration: "flops"`),
-		},
-		{
-			name: "missing retryPeriod",
-			data: func() map[string]string {
-				data := okData()
-				delete(data, "retryPeriod")
-				return data
-			}(),
-			err: errors.New(`retryPeriod: invalid duration: ""`),
-		},
-		{
-			name: "invalid retryPeriod",
-			data: func() map[string]string {
-				data := okData()
-				data["retryPeriod"] = "flops"
-				return data
-			}(),
-			err: errors.New(`retryPeriod: invalid duration: "flops"`),
-		},
-	}
+	}{{
+		name: "disabled but OK config",
+		data: func() map[string]string {
+			data := okData()
+			delete(data, "enabledComponents")
+			return data
+		}(),
+		expected: okConfig(),
+	}, {
+		name: "OK config - controller enabled",
+		data: okData(),
+		expected: func() *Config {
+			config := okConfig()
+			config.EnabledComponents.Insert("controller")
+			return config
+		}(),
+	}, {
+		name: "invalid resourceLock",
+		data: kmeta.UnionMaps(okData(), map[string]string{
+			"resourceLock": "flarps",
+		}),
+		err: errors.New(`resourceLock: invalid value "flarps": valid values are "leases","configmaps","endpoints"`),
+	}, {
+		name: "invalid leaseDuration",
+		data: kmeta.UnionMaps(okData(), map[string]string{
+			"leaseDuration": "flops",
+		}),
+		err: errors.New(`leaseDuration: invalid duration: "flops"`),
+	}, {
+		name: "invalid renewDeadline",
+		data: kmeta.UnionMaps(okData(), map[string]string{
+			"renewDeadline": "flops",
+		}),
+		err: errors.New(`renewDeadline: invalid duration: "flops"`),
+	}, {
+		name: "invalid retryPeriod",
+		data: kmeta.UnionMaps(okData(), map[string]string{
+			"retryPeriod": "flops",
+		}),
+		err: errors.New(`retryPeriod: invalid duration: "flops"`),
+	}}
 
-	for i := range cases {
-		tc := cases[i]
-		actualConfig, actualErr := NewConfigFromMap(tc.data)
-		if !reflect.DeepEqual(tc.err, actualErr) {
-			t.Errorf("%v: expected error %v, got %v", tc.name, tc.err, actualErr)
-			continue
-		}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			actualConfig, actualErr := NewConfigFromConfigMap(
+				&corev1.ConfigMap{
+					Data: tc.data,
+				})
+			if !reflect.DeepEqual(tc.err, actualErr) {
+				t.Fatalf("Error = %v, want: %v", actualErr, tc.err)
+			}
 
-		if !reflect.DeepEqual(tc.expected, actualConfig) {
-			t.Errorf("%v: expected config:\n%+v\ngot:\n%+v", tc.name, tc.expected, actualConfig)
-			continue
-		}
+			if got, want := actualConfig, tc.expected; !cmp.Equal(got, want) {
+				t.Errorf("Config = %#v, want: %#v, diff(-want,+got):\n%s", got, want, cmp.Diff(want, got))
+			}
+		})
 	}
 }
 
 func TestGetComponentConfig(t *testing.T) {
+	const expectedName = "the-component"
 	cases := []struct {
 		name     string
 		config   Config
 		expected ComponentConfig
-	}{
-		{
-			name: "component enabled",
-			config: Config{
-				ResourceLock:      "leases",
-				LeaseDuration:     15 * time.Second,
-				RenewDeadline:     10 * time.Second,
-				RetryPeriod:       2 * time.Second,
-				EnabledComponents: sets.NewString("component"),
-			},
-			expected: ComponentConfig{
-				LeaderElect:   true,
-				ResourceLock:  "leases",
-				LeaseDuration: 15 * time.Second,
-				RenewDeadline: 10 * time.Second,
-				RetryPeriod:   2 * time.Second,
-			},
+	}{{
+		name: "component enabled",
+		config: Config{
+			ResourceLock:      "leases",
+			LeaseDuration:     15 * time.Second,
+			RenewDeadline:     10 * time.Second,
+			RetryPeriod:       2 * time.Second,
+			EnabledComponents: sets.NewString(expectedName),
 		},
-		{
-			name: "component disabled",
-			config: Config{
-				ResourceLock:      "leases",
-				LeaseDuration:     15 * time.Second,
-				RenewDeadline:     10 * time.Second,
-				RetryPeriod:       2 * time.Second,
-				EnabledComponents: sets.NewString("not-the-component"),
-			},
-			expected: ComponentConfig{
-				LeaderElect: false,
-			},
+		expected: ComponentConfig{
+			Component:     expectedName,
+			LeaderElect:   true,
+			ResourceLock:  "leases",
+			LeaseDuration: 15 * time.Second,
+			RenewDeadline: 10 * time.Second,
+			RetryPeriod:   2 * time.Second,
 		},
-	}
+	}, {
+		name: "component disabled",
+		config: Config{
+			ResourceLock:      "leases",
+			LeaseDuration:     15 * time.Second,
+			RenewDeadline:     10 * time.Second,
+			RetryPeriod:       2 * time.Second,
+			EnabledComponents: sets.NewString("not-the-component"),
+		},
+		expected: ComponentConfig{
+			Component:   expectedName,
+			LeaderElect: false,
+		},
+	}}
 
-	for i := range cases {
-		tc := cases[i]
-		actual := tc.config.GetComponentConfig("component")
-		if !reflect.DeepEqual(tc.expected, actual) {
-			t.Errorf("%v: expected:\n%+v\ngot:\n%+v", tc.name, tc.expected, actual)
-		}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			actual := tc.config.GetComponentConfig(expectedName)
+			if got, want := actual, tc.expected; !cmp.Equal(got, want) {
+				t.Errorf("Incorrect config: diff(-want,+got):\n%s", cmp.Diff(want, got))
+			}
+		})
 	}
 }

@@ -59,28 +59,28 @@ func TestReconcile(t *testing.T) {
 
 	// These are the rules we expect given the context of "handlers".
 	expectedRules := []admissionregistrationv1beta1.RuleWithOperations{{
-		Operations: []admissionregistrationv1beta1.OperationType{"CREATE", "UPDATE"},
+		Operations: []admissionregistrationv1beta1.OperationType{"CREATE", "UPDATE", "DELETE"},
 		Rule: admissionregistrationv1beta1.Rule{
 			APIGroups:   []string{"pkg.knative.dev"},
 			APIVersions: []string{"v1alpha1"},
 			Resources:   []string{"innerdefaultresources/*"},
 		},
 	}, {
-		Operations: []admissionregistrationv1beta1.OperationType{"CREATE", "UPDATE"},
+		Operations: []admissionregistrationv1beta1.OperationType{"CREATE", "UPDATE", "DELETE"},
 		Rule: admissionregistrationv1beta1.Rule{
 			APIGroups:   []string{"pkg.knative.dev"},
 			APIVersions: []string{"v1alpha1"},
 			Resources:   []string{"resources/*"},
 		},
 	}, {
-		Operations: []admissionregistrationv1beta1.OperationType{"CREATE", "UPDATE"},
+		Operations: []admissionregistrationv1beta1.OperationType{"CREATE", "UPDATE", "DELETE"},
 		Rule: admissionregistrationv1beta1.Rule{
 			APIGroups:   []string{"pkg.knative.dev"},
 			APIVersions: []string{"v1beta1"},
 			Resources:   []string{"resources/*"},
 		},
 	}, {
-		Operations: []admissionregistrationv1beta1.OperationType{"CREATE", "UPDATE"},
+		Operations: []admissionregistrationv1beta1.OperationType{"CREATE", "UPDATE", "DELETE"},
 		Rule: admissionregistrationv1beta1.Rule{
 			APIGroups:   []string{"pkg.knative.io"},
 			APIVersions: []string{"v1alpha1"},

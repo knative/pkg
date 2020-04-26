@@ -34,16 +34,14 @@ import (
 func newDefaultOptions() Options {
 	return Options{
 		ServiceName: "webhook",
-		Port:        443,
+		Port:        8443,
 		SecretName:  "webhook-certs",
 	}
 }
 
 const (
-	testNamespace    = "test-namespace"
 	testResourceName = "test-resource"
 	user1            = "brutto@knative.dev"
-	user2            = "arrabbiato@knative.dev"
 )
 
 func newNonRunningTestWebhook(t *testing.T, options Options, acs ...interface{}) (

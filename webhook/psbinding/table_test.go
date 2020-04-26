@@ -45,6 +45,7 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/types"
 	clientgotesting "k8s.io/client-go/testing"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/record"
@@ -768,7 +769,7 @@ func TestWebhookReconcile(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{
 					Namespace:         "foo",
 					Name:              "bar2",
-					DeletionTimestamp: &metav1.Time{time.Now()},
+					DeletionTimestamp: &metav1.Time{Time: time.Now()},
 				},
 				Spec: TestBindableSpec{
 					BindingSpec: duckv1alpha1.BindingSpec{
@@ -1126,6 +1127,11 @@ func TestBaseReconcile(t *testing.T) {
 					},
 				},
 			},
+			&corev1.Namespace{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "foo",
+				},
+			},
 		},
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: mustTU(t, &TestBindable{
@@ -1156,6 +1162,7 @@ func TestBaseReconcile(t *testing.T) {
 		}},
 		WantPatches: []clientgotesting.PatchActionImpl{
 			patchAddFinalizer("foo", "bar", "" /* resource version */),
+			patchAddLabel("foo"),
 			patchAddEnv("foo", "on-it", "asdfasdfasdfasdf"),
 		},
 	}, {
@@ -1227,6 +1234,12 @@ func TestBaseReconcile(t *testing.T) {
 							Status: "True",
 						}},
 					},
+				},
+			},
+			&corev1.Namespace{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:   "foo",
+					Labels: map[string]string{duck.BindingIncludeLabel: "true"},
 				},
 			},
 			&appsv1.Deployment{
@@ -1329,6 +1342,14 @@ func TestBaseReconcile(t *testing.T) {
 					},
 				},
 			},
+			&corev1.Namespace{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "foo",
+				},
+			},
+		},
+		WantPatches: []clientgotesting.PatchActionImpl{
+			patchAddLabel("foo"),
 		},
 	}, {
 		Name: "finalizing, but not our turn.",
@@ -1338,7 +1359,7 @@ func TestBaseReconcile(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{
 					Namespace:         "foo",
 					Name:              "bar",
-					DeletionTimestamp: &metav1.Time{time.Now()},
+					DeletionTimestamp: &metav1.Time{Time: time.Now()},
 					Finalizers: []string{
 						"slow.your.role",
 						"testbindables.duck.knative.dev",
@@ -1373,7 +1394,7 @@ func TestBaseReconcile(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{
 					Namespace:         "foo",
 					Name:              "bar",
-					DeletionTimestamp: &metav1.Time{time.Now()},
+					DeletionTimestamp: &metav1.Time{Time: time.Now()},
 					Finalizers: []string{
 						"testbindables.duck.knative.dev",
 					},
@@ -1422,7 +1443,7 @@ func TestBaseReconcile(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{
 					Namespace:         "foo",
 					Name:              "bar",
-					DeletionTimestamp: &metav1.Time{time.Now()},
+					DeletionTimestamp: &metav1.Time{Time: time.Now()},
 					Finalizers:        []string{"testbindables.duck.knative.dev"},
 				},
 				Spec: TestBindableSpec{
@@ -1454,7 +1475,7 @@ func TestBaseReconcile(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{
 					Namespace:         "foo",
 					Name:              "bar",
-					DeletionTimestamp: &metav1.Time{time.Now()},
+					DeletionTimestamp: &metav1.Time{Time: time.Now()},
 					Finalizers:        []string{"testbindables.duck.knative.dev"},
 				},
 				Spec: TestBindableSpec{
@@ -1489,7 +1510,7 @@ func TestBaseReconcile(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{
 					Namespace:         "foo",
 					Name:              "bar",
-					DeletionTimestamp: &metav1.Time{time.Now()},
+					DeletionTimestamp: &metav1.Time{Time: time.Now()},
 					Finalizers: []string{
 						"testbindables.duck.knative.dev",
 					},
@@ -1534,8 +1555,14 @@ func TestBaseReconcile(t *testing.T) {
 					},
 				},
 			},
+			&corev1.Namespace{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "foo",
+				},
+			},
 		},
 		WantPatches: []clientgotesting.PatchActionImpl{
+			patchAddLabel("foo"),
 			patchRemoveEnv("foo", "on-it"),
 			patchRemoveFinalizer("foo", "bar", "" /* resource version */),
 		},
@@ -1586,9 +1613,15 @@ func TestBaseReconcile(t *testing.T) {
 					},
 				},
 			},
+			&corev1.Namespace{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "foo",
+				},
+			},
 		},
 		WantPatches: []clientgotesting.PatchActionImpl{
 			patchAddFinalizer("foo", "bar", "" /* resource version */),
+			patchAddLabel("foo"),
 			patchAddEnv("foo", "on-it", "asdfasdfasdfasdf"),
 		},
 	}, {
@@ -1643,6 +1676,14 @@ func TestBaseReconcile(t *testing.T) {
 					},
 				},
 			},
+			&corev1.Namespace{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "foo",
+				},
+			},
+		},
+		WantPatches: []clientgotesting.PatchActionImpl{
+			patchAddLabel("foo"),
 		},
 	}, {
 		Name: "finalizing, missing subject (remove the finalizer, via selector)",
@@ -1652,7 +1693,7 @@ func TestBaseReconcile(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{
 					Namespace:         "foo",
 					Name:              "bar",
-					DeletionTimestamp: &metav1.Time{time.Now()},
+					DeletionTimestamp: &metav1.Time{Time: time.Now()},
 					Finalizers: []string{
 						"testbindables.duck.knative.dev",
 					},
@@ -1679,8 +1720,14 @@ func TestBaseReconcile(t *testing.T) {
 					},
 				},
 			},
+			&corev1.Namespace{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "foo",
+				},
+			},
 		},
 		WantPatches: []clientgotesting.PatchActionImpl{
+			patchAddLabel("foo"),
 			patchRemoveFinalizer("foo", "bar", "" /* resource version */),
 		},
 	}, {
@@ -1691,7 +1738,7 @@ func TestBaseReconcile(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{
 					Namespace:         "foo",
 					Name:              "bar",
-					DeletionTimestamp: &metav1.Time{time.Now()},
+					DeletionTimestamp: &metav1.Time{Time: time.Now()},
 					Finalizers: []string{
 						"testbindables.duck.knative.dev",
 					},
@@ -1738,8 +1785,14 @@ func TestBaseReconcile(t *testing.T) {
 					},
 				},
 			},
+			&corev1.Namespace{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "foo",
+				},
+			},
 		},
 		WantPatches: []clientgotesting.PatchActionImpl{
+			patchAddLabel("foo"),
 			patchRemoveEnv("foo", "on-it"),
 			patchRemoveFinalizer("foo", "bar", "" /* resource version */),
 		},
@@ -1789,6 +1842,14 @@ func TestBaseReconcile(t *testing.T) {
 					},
 				},
 			},
+			&corev1.Namespace{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "foo",
+				},
+			},
+		},
+		WantPatches: []clientgotesting.PatchActionImpl{
+			patchAddLabel("foo"),
 		},
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: mustTU(t, &TestBindable{
@@ -1830,7 +1891,7 @@ func TestBaseReconcile(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{
 					Namespace:         "foo",
 					Name:              "bar",
-					DeletionTimestamp: &metav1.Time{time.Now()},
+					DeletionTimestamp: &metav1.Time{Time: time.Now()},
 					Finalizers: []string{
 						"testbindables.duck.knative.dev",
 					},
@@ -1879,8 +1940,14 @@ func TestBaseReconcile(t *testing.T) {
 					},
 				},
 			},
+			&corev1.Namespace{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "foo",
+				},
+			},
 		},
 		WantPatches: []clientgotesting.PatchActionImpl{
+			patchAddLabel("foo"),
 			patchRemoveEnv("foo", "on-it"),
 		},
 	}}
@@ -1914,6 +1981,7 @@ func TestBaseReconcile(t *testing.T) {
 				}
 				return nil, apierrs.NewNotFound(gvr.GroupResource(), name)
 			},
+			NamespaceLister: listers.GetNamespaceLister(),
 		}
 	}))
 }
@@ -1926,6 +1994,27 @@ func mustTU(t *testing.T, ro duck.OneOfOurs) *unstructured.Unstructured {
 	return u
 }
 
+func patchAddLabel(namespace string) clientgotesting.PatchActionImpl {
+	action := clientgotesting.PatchActionImpl{}
+	resource := schema.GroupVersionResource{
+		Group:    "",
+		Version:  "v1",
+		Resource: "namespaces",
+	}
+	actionImpl := clientgotesting.ActionImpl{
+		Namespace:   namespace,
+		Verb:        "patch",
+		Resource:    resource,
+		Subresource: "",
+	}
+	action.ActionImpl = actionImpl
+	action.Name = namespace
+	action.PatchType = types.MergePatchType
+
+	patch, _ := json.Marshal(jsonLabelPatch)
+	action.Patch = patch
+	return action
+}
 func patchAddFinalizer(namespace, name, resourceVersion string) clientgotesting.PatchActionImpl {
 	action := clientgotesting.PatchActionImpl{}
 	action.Name = name
@@ -1954,17 +2043,6 @@ func patchAddEnv(namespace, name, value string) clientgotesting.PatchActionImpl 
 	action.Namespace = namespace
 
 	patch := fmt.Sprintf(`[{"op":"add","path":"/spec/template/spec/containers/0/env","value":[{"name":"FOO","value":%q}]}]`, value)
-
-	action.Patch = []byte(patch)
-	return action
-}
-
-func patchReplaceEnv(namespace, name, value string) clientgotesting.PatchActionImpl {
-	action := clientgotesting.PatchActionImpl{}
-	action.Name = name
-	action.Namespace = namespace
-
-	patch := fmt.Sprintf(`[{"op":"replace","path":"/spec/template/spec/containers/0/env/0/value","value":%q}]`, value)
 
 	action.Patch = []byte(patch)
 	return action

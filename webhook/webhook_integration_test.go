@@ -58,6 +58,7 @@ func TestMissingContentType(t *testing.T) {
 
 	eg, _ := errgroup.WithContext(ctx)
 	eg.Go(func() error { return wh.Run(ctx.Done()) })
+	wh.InformersHaveSynced()
 	defer func() {
 		cancel()
 		if err := eg.Wait(); err != nil {
@@ -111,6 +112,7 @@ func testEmptyRequestBody(t *testing.T, controller interface{}) {
 
 	eg, _ := errgroup.WithContext(ctx)
 	eg.Go(func() error { return wh.Run(ctx.Done()) })
+	wh.InformersHaveSynced()
 	defer func() {
 		cancel()
 		if err := eg.Wait(); err != nil {

@@ -54,7 +54,7 @@ func TestNewClient(t *testing.T) {
 		}
 		os.RemoveAll(dir)
 		defer os.RemoveAll(dir)
-		c, err := NewClient(data.customDir)
+		c, err := New(data.customDir)
 		errMsg := fmt.Sprintf("Testing new client with dir: %q", data.customDir)
 		if (err == nil && data.expErr) || (err != nil && !data.expErr) {
 			log.Fatalf("%s\ngot: '%v', want: '%v'", errMsg, err, data.expErr)
@@ -88,7 +88,7 @@ func TestSync(t *testing.T) {
 	}
 
 	for _, data := range datas {
-		c, _ := NewClient(fakeArtifactDir)
+		c, _ := New(fakeArtifactDir)
 		os.Remove(c.Path)
 		if data.fileExist {
 			defer os.Remove(c.Path)
@@ -126,7 +126,7 @@ func TestSet(t *testing.T) {
 	}
 
 	for _, data := range datas {
-		c, _ := NewClient(fakeArtifactDir)
+		c, _ := New(fakeArtifactDir)
 		defer os.Remove(c.Path)
 		ioutil.WriteFile(c.Path, []byte(data.content), 0644)
 
@@ -163,7 +163,7 @@ func TestGet(t *testing.T) {
 	}
 
 	for _, data := range datas {
-		c, _ := NewClient(fakeArtifactDir)
+		c, _ := New(fakeArtifactDir)
 		defer os.Remove(c.Path)
 		ioutil.WriteFile(c.Path, []byte(data.content), 0644)
 
