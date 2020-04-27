@@ -79,11 +79,11 @@ func TestReportReconcile(t *testing.T) {
 		initialReconcileLatency = d[0].Data.(*view.DistributionData).Sum()
 	}
 
-	expectSuccess(t, func() error { return r.ReportReconcile(time.Duration(10*time.Millisecond), "test/key", "true") })
+	expectSuccess(t, func() error { return r.ReportReconcile(10*time.Millisecond, "test/key", "true") })
 	checkCountData(t, "reconcile_count", wantTags, initialReconcileCount+1)
 	checkDistributionData(t, "reconcile_latency", wantTags, initialReconcileLatency+10)
 
-	expectSuccess(t, func() error { return r.ReportReconcile(time.Duration(15*time.Millisecond), "test/key", "true") })
+	expectSuccess(t, func() error { return r.ReportReconcile(15*time.Millisecond, "test/key", "true") })
 	checkCountData(t, "reconcile_count", wantTags, initialReconcileCount+2)
 	checkDistributionData(t, "reconcile_latency", wantTags, initialReconcileLatency+25)
 }
