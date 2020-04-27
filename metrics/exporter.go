@@ -19,6 +19,7 @@ import (
 	"strings"
 	"sync"
 
+	"go.opencensus.io/resource"
 	"go.opencensus.io/stats/view"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
@@ -216,6 +217,10 @@ func setCurMetricsExporter(e view.Exporter) {
 	metricsMux.Lock()
 	defer metricsMux.Unlock()
 	curMetricsExporter = e
+	setFactory(func(r *resource.Resource) (view.Exporter, error) {
+		// TODO(evankanderson): Plumb through a proper factory
+		return e, nil
+	})
 }
 
 func getCurMetricsConfig() *metricsConfig {

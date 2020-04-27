@@ -153,6 +153,12 @@ func NewStackdriverClientConfigFromMap(config map[string]string) *StackdriverCli
 // record applies the `ros` Options to each measurement in `mss` and then records the resulting
 // measurements in the metricsConfig's designated backend.
 func (mc *metricsConfig) record(ctx context.Context, mss []stats.Measurement, ros ...stats.Options) error {
+	m, err := meterForResource(metricskey.GetResource(ctx))
+	if err != nil {
+		return err
+	}
+	ros = append(ros, m)
+
 	if mc == nil || mc.recorder == nil {
 		return stats.RecordWithOptions(ctx, append(ros, stats.WithMeasurements(mss...))...)
 	}
