@@ -157,25 +157,25 @@ func GetServer(config *tls.Config) (net.Listener, chan error, error) {
 			serverCert, err := tls.LoadX509KeyPair(
 				filepath.Join("testdata", "server-cert.pem"), filepath.Join("testdata", "server-key.pem"))
 			if err != nil {
-				return nil, nil, fmt.Errorf("Unable to load server cert from testadata: %v", err)
+				return nil, nil, fmt.Errorf("Unable to load server cert from testadata: %w", err)
 			}
 			config.Certificates = []tls.Certificate{serverCert}
 		}
 		server, err = tls.Listen("tcp", "localhost:0", config)
 	}
 	if err != nil {
-		return nil, nil, fmt.Errorf("Unable to create listen server: %v", err)
+		return nil, nil, fmt.Errorf("Unable to create listen server: %w", err)
 	}
 	shutdown := make(chan error)
 	go func() {
 		c, err := server.Accept()
 		if err != nil {
-			shutdown <- fmt.Errorf("Failed to accept connection: %v", err)
+			shutdown <- fmt.Errorf("Failed to accept connection: %w", err)
 			return
 		}
 		err = c.Close()
 		if err != nil {
-			shutdown <- fmt.Errorf("Failed to close server connection: %v", err)
+			shutdown <- fmt.Errorf("Failed to close server connection: %w", err)
 			return
 		}
 		shutdown <- nil
