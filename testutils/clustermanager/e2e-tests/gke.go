@@ -263,8 +263,7 @@ func (gc *GKECluster) checkEnvironment() error {
 	if err != nil {
 		return fmt.Errorf("failed getting gcloud project: %w", err)
 	}
-	os := string(output)
-	if os != "" {
+	if os := string(output); os != "" {
 		gc.Project = strings.TrimSpace(os)
 	}
 	return nil
