@@ -142,13 +142,14 @@ func UpdateExporter(ops ExporterOptions, logger *zap.SugaredLogger) error {
 	if isNewExporterRequired(newConfig) {
 		logger.Info("Flushing the existing exporter before setting up the new exporter.")
 		FlushExporter()
-		e, err := newMetricsExporter(newConfig, logger)
+		e, f, err := newMetricsExporter(newConfig, logger)
 		if err != nil {
 			logger.Errorf("Failed to update a new metrics exporter based on metric config %v. error: %v", newConfig, err)
 			return err
 		}
 		existingConfig := getCurMetricsConfig()
 		setCurMetricsExporter(e)
+		setFactory(f)
 		logger.Infof("Successfully updated the metrics exporter; old config: %v; new config %v", existingConfig, newConfig)
 	}
 
@@ -176,7 +177,7 @@ func isNewExporterRequired(newConfig *metricsConfig) bool {
 
 // newMetricsExporter gets a metrics exporter based on the config.
 // This function is not implicitly thread-safe.
-func newMetricsExporter(config *metricsConfig, logger *zap.SugaredLogger) (view.Exporter, error) {
+func newMetricsExporter(config *metricsConfig, logger *zap.SugaredLogger) (view.Exporter, ResourceExporterFactory, error) {
 	ce := getCurMetricsExporter()
 	// If there is a Prometheus Exporter server running, stop it.
 	resetCurPromSrv()
@@ -189,6 +190,7 @@ func newMetricsExporter(config *metricsConfig, logger *zap.SugaredLogger) (view.
 
 	var err error
 	var e view.Exporter
+	var f ResourceExporterFactory
 	switch config.backendDestination {
 	case OpenCensus:
 		e, err = newOpenCensusExporter(config, logger)
@@ -202,9 +204,14 @@ func newMetricsExporter(config *metricsConfig, logger *zap.SugaredLogger) (view.
 		err = fmt.Errorf("unsupported metrics backend %v", config.backendDestination)
 	}
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
-	return e, nil
+	if f != nil {
+		f = func(*resource.Resource) (view.Exporter, error) {
+			return e, nil
+		}
+	}
+	return e, f, nil
 }
 
 func getCurMetricsExporter() view.Exporter {
@@ -217,10 +224,6 @@ func setCurMetricsExporter(e view.Exporter) {
 	metricsMux.Lock()
 	defer metricsMux.Unlock()
 	curMetricsExporter = e
-	setFactory(func(r *resource.Resource) (view.Exporter, error) {
-		// TODO(evankanderson): Plumb through a proper factory
-		return e, nil
-	})
 }
 
 func getCurMetricsConfig() *metricsConfig {

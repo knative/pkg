@@ -39,9 +39,14 @@ type meterExporter struct {
 	e view.Exporter
 }
 
+// ResourceExporterFactory provides a hook for producing separate view.Exporters
+// for each observed Resource. This is needed because OpenCensus support for
+// Resources is a bit tacked-on rather than being a first-class component like
+// Tags are.
+type ResourceExporterFactory func(*resource.Resource) (view.Exporter, error)
 type meters struct {
 	meters  map[string]meterExporter
-	factory func(*resource.Resource) (view.Exporter, error)
+	factory ResourceExporterFactory
 	// Cache of Resource pointers from metricskey to Meters, to avoid
 	// unnecessary stringify operations
 	resourceToKey map[*resource.Resource]string

@@ -193,7 +193,7 @@ func TestMetricsExporter(t *testing.T) {
 	// getStackdriverSecretFunc = fakeGetStackdriverSecret
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			_, err := newMetricsExporter(test.config, TestLogger(t))
+			_, _, err := newMetricsExporter(test.config, TestLogger(t))
 
 			succeeded := err == nil
 			if test.expectSuccess != succeeded {
@@ -209,7 +209,7 @@ func TestInterlevedExporters(t *testing.T) {
 	t.Skip()
 
 	// First create a stackdriver exporter
-	_, err := newMetricsExporter(&metricsConfig{
+	_, _, err := newMetricsExporter(&metricsConfig{
 		domain:             servingDomain,
 		component:          testComponent,
 		backendDestination: Stackdriver,
@@ -222,7 +222,7 @@ func TestInterlevedExporters(t *testing.T) {
 	}
 	expectNoPromSrv(t)
 	// Then switch to prometheus exporter
-	_, err = newMetricsExporter(&metricsConfig{
+	_, _, err = newMetricsExporter(&metricsConfig{
 		domain:             servingDomain,
 		component:          testComponent,
 		backendDestination: Prometheus,
@@ -232,7 +232,7 @@ func TestInterlevedExporters(t *testing.T) {
 	}
 	expectPromSrv(t, ":9090")
 	// Finally switch to stackdriver exporter
-	_, err = newMetricsExporter(&metricsConfig{
+	_, _, err = newMetricsExporter(&metricsConfig{
 		domain:             servingDomain,
 		component:          testComponent,
 		backendDestination: Stackdriver,
@@ -260,7 +260,7 @@ func TestFlushExporter(t *testing.T) {
 		reportingPeriod:    1 * time.Minute,
 		backendDestination: Prometheus,
 	}
-	e, err := newMetricsExporter(c, TestLogger(t))
+	e, _, err := newMetricsExporter(c, TestLogger(t))
 	if err != nil {
 		t.Errorf("Expected no error. got %v", err)
 	} else {
@@ -283,7 +283,7 @@ func TestFlushExporter(t *testing.T) {
 		},
 	}
 
-	e, err = newMetricsExporter(c, TestLogger(t))
+	e, _, err = newMetricsExporter(c, TestLogger(t))
 	if err != nil {
 		t.Errorf("Expected no error. got %v", err)
 	} else {
