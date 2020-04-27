@@ -46,7 +46,6 @@ const (
 	// DefaultResyncPeriod is the default duration that is used when no
 	// resync period is associated with a controllers initialization context.
 	DefaultResyncPeriod = 10 * time.Hour
-	agentNameKey        = "agentName"
 )
 
 var (
@@ -615,25 +614,6 @@ func GetEventRecorder(ctx context.Context) record.EventRecorder {
 		return nil
 	}
 	return untyped.(record.EventRecorder)
-}
-
-// GetControllerAgentName attempts to look up agentNameKey on a given context
-// It will return defaultAgentName if none is found.
-func GetControllerAgentName(ctx context.Context, defaultAgentName string) string {
-	agentName := ctx.Value(agentNameKey)
-	if agentName != nil {
-		if name, ok := agentName.(string); ok {
-			return name
-		}
-	}
-
-	return defaultAgentName
-}
-
-// SetControllerAgentName attaches the agentNameKey to the provided context
-// in the returned context
-func SetControllerAgentName(ctx context.Context, value string) context.Context {
-	return context.WithValue(ctx, agentNameKey, value)
 }
 
 func safeKey(key types.NamespacedName) string {

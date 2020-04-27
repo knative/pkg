@@ -138,10 +138,6 @@ func (g *reconcilerControllerGenerator) GenerateType(c *generator.Context, t *ty
 			Package: "knative.dev/pkg/controller",
 			Name:    "OptionsFn",
 		}),
-		"controllerGetControllerAgentName": c.Universe.Function(types.Name{
-			Package: "knative.dev/pkg/controller",
-			Name:    "GetControllerAgentName",
-		}),
 		"contextContext": c.Universe.Type(types.Name{
 			Package: "context",
 			Name:    "Context",
@@ -181,7 +177,6 @@ const (
 // {{.controllerOptions|raw}} to be used but the internal reconciler.
 func NewImpl(ctx {{.contextContext|raw}}, r Interface{{if .hasClass}}, classValue string{{end}}, optionsFns ...{{.controllerOptionsFn|raw}}) *{{.controllerImpl|raw}} {
 	logger := {{.loggingFromContext|raw}}(ctx)
-	agentName := {{.controllerGetControllerAgentName|raw}}(ctx, defaultControllerAgentName)
 
 	// Check the options function input. It should be 0 or 1.
 	if len(optionsFns) > 1 {
@@ -189,6 +184,43 @@ func NewImpl(ctx {{.contextContext|raw}}, r Interface{{if .hasClass}}, classValu
 	}
 
 	{{.type|lowercaseSingular}}Informer := {{.informerGet|raw}}(ctx)
+
+	rec := &reconcilerImpl{
+		Client:  {{.clientGet|raw}}(ctx),
+		Lister:  {{.type|lowercaseSingular}}Informer.Lister(),
+		reconciler:    r,
+		finalizerName: defaultFinalizerName,
+		{{if .hasClass}}classValue: classValue,{{end}}
+	}
+
+	t := {{.reflectTypeOf|raw}}(r).Elem()
+	queueName := {{.fmtSprintf|raw}}("%s.%s", {{.stringsReplaceAll|raw}}(t.PkgPath(), "/", "-"), t.Name())
+
+	impl := {{.controllerNewImpl|raw}}(rec, logger, queueName)
+
+	// Pass impl to the options. Save any optional results.
+	for _, fn := range optionsFns {
+		opts := fn(impl)
+		if opts.ConfigStore != nil {
+			rec.configStore = opts.ConfigStore
+		}
+		if opts.FinalizerName != "" {
+			rec.finalizerName = opts.FinalizerName
+		}
+		if opts.AgentName != "" {
+			rec.Recorder = createRecorder(ctx, opts.AgentName)
+		}
+	}
+
+	if rec.Recorder == nil {
+		rec.Recorder = createRecorder(ctx, defaultControllerAgentName)
+	}
+
+	return impl
+}
+
+func createRecorder(ctx context.Context, agentName string) record.EventRecorder {
+	logger := {{.loggingFromContext|raw}}(ctx)
 
 	recorder := {{.controllerGetEventRecorder|raw}}(ctx)
 	if recorder == nil {
@@ -209,32 +241,7 @@ func NewImpl(ctx {{.contextContext|raw}}, r Interface{{if .hasClass}}, classValu
 		}()
 	}
 
-	rec := &reconcilerImpl{
-		Client:  {{.clientGet|raw}}(ctx),
-		Lister:  {{.type|lowercaseSingular}}Informer.Lister(),
-		Recorder: recorder,
-		reconciler:    r,
-		finalizerName: defaultFinalizerName,
-		{{if .hasClass}}classValue: classValue,{{end}}
-	}
-
-	t := {{.reflectTypeOf|raw}}(r).Elem()
-	queueName := {{.fmtSprintf|raw}}("%s.%s", {{.stringsReplaceAll|raw}}(t.PkgPath(), "/", "-"), t.Name())
-
-	impl := {{.controllerNewImpl|raw}}(rec, logger, queueName)
-
-	// Pass impl to the options. Save any optional results.
-	for _, fn := range optionsFns {
-		opts := fn(impl)
-		if opts.ConfigStore != nil {
-			rec.configStore = opts.ConfigStore
-		}
-		if opts.FinalizerName != "" {
-			rec.finalizerName = opts.FinalizerName
-		}
-	}
-
-	return impl
+	return recorder
 }
 
 func init() {
