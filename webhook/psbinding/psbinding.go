@@ -302,7 +302,7 @@ func (ac *Reconciler) reconcileMutatingWebhook(ctx context.Context, caCert []byt
 		ac.inexact = inexact
 	}()
 
-	var rules []admissionregistrationv1beta1.RuleWithOperations
+	rules := make([]admissionregistrationv1beta1.RuleWithOperations, 0, len(gks))
 	for gk, versions := range gks {
 		plural := strings.ToLower(inflect.Pluralize(gk.Kind))
 
