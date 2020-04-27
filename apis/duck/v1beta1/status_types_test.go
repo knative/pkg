@@ -58,7 +58,7 @@ func TestStatusGetCondition(t *testing.T) {
 func TestConditionSet(t *testing.T) {
 	condSet := apis.NewLivingConditionSet("Foo")
 
-	wantGeneration := int64(42)
+	const wantGeneration = 42
 
 	s := &Status{ObservedGeneration: wantGeneration}
 	mgr := condSet.Manage(s)

@@ -62,6 +62,7 @@ require (
 	k8s.io/code-generator v0.18.0
 	k8s.io/gengo v0.0.0-20200205140755-e0e292d8aa12
 	k8s.io/klog v1.0.0
+	k8s.io/kube-openapi v0.0.0-20190816220812-743ec37842bf
 	k8s.io/test-infra v0.0.0-20191212060232-70b0b49fe247
 	k8s.io/utils v0.0.0-20190907131718-3d4f5b7dea0b // indirect
 	knative.dev/test-infra v0.0.0-20200407185800-1b88cb3b45a5

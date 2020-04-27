@@ -137,6 +137,102 @@ func TestNewConfigSuccess(t *testing.T) {
 	}
 }
 
+func TestNewConfigJson(t *testing.T) {
+	tt := []struct {
+		name   string
+		input  map[string]string
+		output *Config
+	}{{
+		name:   "Empty map",
+		input:  map[string]string{},
+		output: defaultConfig(),
+	}, {
+		name: "Everything enabled (legacy)",
+		input: map[string]string{
+			enableKey:         "true",
+			zipkinEndpointKey: "some-endpoint",
+			debugKey:          "true",
+			sampleRateKey:     "0.5",
+		},
+		output: &Config{
+			Backend:        Zipkin,
+			Debug:          true,
+			ZipkinEndpoint: "some-endpoint",
+			SampleRate:     0.5,
+		},
+	}, {
+		name: "Everything enabled (zipkin)",
+		input: map[string]string{
+			backendKey:        "zipkin",
+			zipkinEndpointKey: "some-endpoint",
+			debugKey:          "true",
+			sampleRateKey:     "0.5",
+		},
+		output: &Config{
+			Backend:        Zipkin,
+			Debug:          true,
+			ZipkinEndpoint: "some-endpoint",
+			SampleRate:     0.5,
+		},
+	}, {
+		name: "Everything enabled (stackdriver)",
+		input: map[string]string{
+			backendKey:              "stackdriver",
+			zipkinEndpointKey:       "some-endpoint",
+			stackdriverProjectIDKey: "my-project",
+			debugKey:                "true",
+			sampleRateKey:           "0.5",
+		},
+		output: &Config{
+			Backend:              Stackdriver,
+			Debug:                true,
+			ZipkinEndpoint:       "some-endpoint",
+			StackdriverProjectID: "my-project",
+			SampleRate:           0.5,
+		},
+	}, {
+		name: "Everything enabled (stackdriver, with enabled)",
+		input: map[string]string{
+			enableKey:               "true",
+			backendKey:              "stackdriver",
+			zipkinEndpointKey:       "some-endpoint",
+			stackdriverProjectIDKey: "my-project",
+			debugKey:                "true",
+			sampleRateKey:           "0.5",
+		},
+		output: &Config{
+			Backend:              Stackdriver,
+			Debug:                true,
+			ZipkinEndpoint:       "some-endpoint",
+			StackdriverProjectID: "my-project",
+			SampleRate:           0.5,
+		},
+	}}
+
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			config, err := NewTracingConfigFromMap(tc.input)
+			if err != nil {
+				t.Fatal("Failed to create tracing config:", err)
+			}
+
+			json, err := TracingConfigToJson(config)
+			if err != nil {
+				t.Fatal("Failed to create tracing config:", err)
+			}
+
+			haveConfig, err := JsonToTracingConfig(json)
+			if err != nil {
+				t.Fatal("Failed to create tracing config:", err)
+			}
+
+			if !cmp.Equal(tc.output, haveConfig) {
+				t.Error("Got config from map (-want, +got) =", cmp.Diff(tc.output, haveConfig))
+			}
+		})
+	}
+}
+
 func TestNewConfigFailures(t *testing.T) {
 	tests := []struct {
 		name  string
