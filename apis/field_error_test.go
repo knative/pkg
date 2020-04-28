@@ -748,16 +748,13 @@ func TestAlsoStaysNil(t *testing.T) {
 func TestAlsoMultiple(t *testing.T) {
 	var err *FieldError
 
-	errs := []*FieldError{
-		&FieldError{
-			Message: "1",
-			Paths:   []string{"bar"},
-		},
-		&FieldError{
-			Message: "2",
-			Paths:   []string{"baz"},
-		},
-	}
+	errs := []*FieldError{{
+		Message: "1",
+		Paths:   []string{"bar"},
+	}, {
+		Message: "2",
+		Paths:   []string{"baz"},
+	}}
 	err = err.Also(errs...)
 	const want = "1: bar\n2: baz"
 	if got := err.Error(); got != want {
