@@ -22,6 +22,8 @@ package test
 import (
 	"context"
 	"fmt"
+	"github.com/google/go-cmp/cmp"
+	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	"strings"
 	"time"
 
@@ -121,6 +123,28 @@ func countEndpointsNum(e *corev1.Endpoints) int {
 	return num
 }
 
+// GetEndpoints returns addresses of endpoints selected by given listOptions.
+func GetEndpoints(client *KubeClient, namespace string, listOptions metav1.ListOptions) ([]string, error) {
+	endpoints, err := client.Kube.CoreV1().Endpoints(namespace).List(listOptions)
+	if err != nil || len(endpoints.Items) != 1 {
+		return nil, fmt.Errorf("no endpoints or error: %w", err)
+	}
+	addresses := endpoints.Items[0].Subsets[0].Addresses
+	hosts := make([]string, 0, len(addresses))
+	for _, addr := range addresses {
+		hosts = append(hosts, addr.IP)
+	}
+	return hosts, nil
+}
+
+// WaitForChangedEndpoints waits until the endpoints selected by listOptions differ from origEndpoints.
+func WaitForChangedEndpoints(client *KubeClient, namespace string, listOptions metav1.ListOptions, origEndpoints []string) error {
+	return wait.PollImmediate(100*time.Millisecond, time.Minute, func() (bool, error) {
+		newEndpoints, err := GetEndpoints(client, namespace, listOptions)
+		return !cmp.Equal(origEndpoints, newEndpoints), err
+	})
+}
+
 // GetConfigMap gets the configmaps for a given namespace
 func GetConfigMap(client *KubeClient, namespace string) k8styped.ConfigMapInterface {
 	return client.Kube.CoreV1().ConfigMaps(namespace)
@@ -175,4 +199,37 @@ func PodsRunning(podList *corev1.PodList) (bool, error) {
 // PodRunning will check the status conditions of the pod and return true if it's Running
 func PodRunning(pod *corev1.Pod) bool {
 	return pod.Status.Phase == corev1.PodRunning || pod.Status.Phase == corev1.PodSucceeded
+}
+
+// WaitForPodDeleted waits for the given pod to disappear from the given namespace.
+func WaitForPodDeleted(client *KubeClient, name, namespace string) error {
+	return wait.PollImmediate(interval, time.Minute, func() (bool, error) {
+		exists, err := PodExists(client, name, namespace)
+		return !exists, err
+	})
+}
+
+// PodExists checks if the given pod exists in the given namespace.
+func PodExists(client *KubeClient, name, namespace string) (bool, error) {
+	if _, err := client.Kube.CoreV1().Pods(namespace).Get(name, metav1.GetOptions{}); err != nil {
+		if apierrs.IsNotFound(err) {
+			return false, nil
+		}
+		return false, err
+	}
+	return true, nil
+}
+
+// WaitForDeploymentScale waits until the given deployment has the expected scale.
+func WaitForDeploymentScale(client *KubeClient, name, namespace string, scale int) error {
+	return WaitForDeploymentState(
+		client,
+		name,
+		func(d *appsv1.Deployment) (bool, error) {
+			return d.Status.ReadyReplicas == int32(scale), nil
+		},
+		"DeploymentIsScaled",
+		namespace,
+		time.Minute,
+	)
 }
