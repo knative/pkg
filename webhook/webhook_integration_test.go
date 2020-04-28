@@ -48,7 +48,7 @@ func createResource(name string) *pkgtest.Resource {
 	}
 }
 
-const testTimeout = time.Duration(10 * time.Second)
+const testTimeout = 10 * time.Second
 
 func TestMissingContentType(t *testing.T) {
 	wh, serverURL, ctx, cancel, err := testSetup(t)
