@@ -102,7 +102,7 @@ func TestOpenCensusConfig(t *testing.T) {
 				c.config.collectorAddress = server.Addr().String()
 			}
 
-			got, gotErr := newOpenCensusExporter(&c.config, logtesting.TestLogger(t))
+			got, _, gotErr := newOpenCensusExporter(&c.config, logtesting.TestLogger(t))
 			if c.err != nil {
 				if diff := cmp.Diff(c.err, gotErr); diff != "" {
 					t.Errorf("wrong err (-want +got) = %v", diff)

@@ -193,7 +193,7 @@ func newMetricsExporter(config *metricsConfig, logger *zap.SugaredLogger) (view.
 	var f ResourceExporterFactory
 	switch config.backendDestination {
 	case OpenCensus:
-		e, err = newOpenCensusExporter(config, logger)
+		e, f, err = newOpenCensusExporter(config, logger)
 	case Stackdriver:
 		e, err = newStackdriverExporter(config, logger)
 	case Prometheus:
