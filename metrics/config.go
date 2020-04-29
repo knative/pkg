@@ -155,7 +155,7 @@ func NewStackdriverClientConfigFromMap(config map[string]string) *StackdriverCli
 func (mc *metricsConfig) record(ctx context.Context, mss []stats.Measurement, ros ...stats.Options) error {
 	if mc == nil {
 		// Do nothing if the metric config is nil, which happens when it hasn't been initialized yet.
-		// At that point, it unclear whether should record or not.
+		// At that point, it's unclear whether should record or not.
 		return nil
 	}
 	if mc.recorder == nil {
