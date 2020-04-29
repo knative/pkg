@@ -49,13 +49,6 @@ const (
 )
 
 var (
-	// A metric config used for unit tests only.
-	testMc = &metricsConfig{
-		backendDestination: Prometheus,
-		component:          "test",
-		domain:             "test",
-	}
-
 	errorTests = []struct {
 		name        string
 		ops         ExporterOptions

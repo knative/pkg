@@ -22,6 +22,7 @@ import (
 	"time"
 
 	"go.opencensus.io/stats/view"
+	_ "knative.dev/pkg/metrics/testing"
 )
 
 func TestNewStatsReporterErrors(t *testing.T) {
