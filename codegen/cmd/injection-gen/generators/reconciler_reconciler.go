@@ -106,6 +106,7 @@ func (g *reconcilerReconcilerGenerator) GenerateType(c *generator.Context, t *ty
 		// Deps
 		"clientsetInterface": c.Universe.Type(types.Name{Name: "Interface", Package: g.clientsetPkg}),
 		"resourceLister":     c.Universe.Type(types.Name{Name: g.listerName, Package: g.listerPkg}),
+		"conditionSet":       c.Universe.Type(types.Name{Name: "ConditionSet", Package: "knative.dev/pkg/apis"}),
 		// K8s types
 		"recordEventRecorder": c.Universe.Type(types.Name{Name: "EventRecorder", Package: "k8s.io/client-go/tools/record"}),
 		// methods
@@ -210,6 +211,9 @@ type reconcilerImpl struct {
 
 // Check that our Reconciler implements controller.Reconciler
 var _ controller.Reconciler = (*reconcilerImpl)(nil)
+
+// Creates a {{.conditionSet|raw}} to manipulate resource status conditions
+var condSet = apis.NewLivingConditionSet()
 
 `
 
@@ -317,6 +321,22 @@ func (r *reconcilerImpl) Reconcile(ctx {{.contextContext|raw}}, key string) erro
 		reconcileEvent = fin.FinalizeKind(ctx, resource)
 		if resource, err = r.clearFinalizer(ctx, resource, reconcileEvent); err != nil {
 			logger.Warnw("Failed to clear finalizers", zap.Error(err))
+		}
+	}
+
+	// Bump observed generation to denote that we have processed this
+	// generation regardless of success or failure.
+	resource.Status.ObservedGeneration = resource.Generation
+
+	if resource.Status.ObservedGeneration != original.Status.ObservedGeneration && reconcileEvent != nil {
+		originalRc := original.Status.GetCondition(apis.ConditionReady)
+		rc := resource.Status.GetCondition(apis.ConditionReady)
+		// if a new generation is observed and reconciliation reported an error event
+		// the reconciler should change the ready state. By default we will set unknown.
+		if equality.Semantic.DeepEqual(originalRc, rc) {
+			logger.Warnw("A reconconiler observed a new generation without updating the resource status")
+			condSet.Manage(&resource.Status).MarkUnknown(
+				apis.ConditionReady, "", "unsucessfully observed a new generation")
 		}
 	}
 
