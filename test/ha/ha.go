@@ -18,11 +18,12 @@ package ha
 
 import (
 	"fmt"
+	"strings"
+	"time"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"knative.dev/pkg/test"
-	"strings"
-	"time"
 )
 
 // GetLeader returns the holder of the given lease which is a pod name.
