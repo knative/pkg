@@ -28,6 +28,7 @@ import (
 
 // +genclient
 // +genreconciler
+// +genducklogic
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
 // Foo is for testing.

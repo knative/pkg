@@ -40,6 +40,7 @@ type reconcilerReconcilerGenerator struct {
 	reconcilerClass    string
 	hasReconcilerClass bool
 	nonNamespaced      bool
+	genDuckLogic       bool
 
 	groupGoName  string
 	groupVersion clientgentypes.GroupVersion
@@ -75,6 +76,7 @@ func (g *reconcilerReconcilerGenerator) GenerateType(c *generator.Context, t *ty
 		"class":         g.reconcilerClass,
 		"hasClass":      g.hasReconcilerClass,
 		"nonNamespaced": g.nonNamespaced,
+		"genDuckLogic":  g.genDuckLogic,
 		"controllerImpl": c.Universe.Type(types.Name{
 			Package: "knative.dev/pkg/controller",
 			Name:    "Impl",
@@ -212,8 +214,10 @@ type reconcilerImpl struct {
 // Check that our Reconciler implements controller.Reconciler
 var _ controller.Reconciler = (*reconcilerImpl)(nil)
 
-// Creates a {{.conditionSet|raw}} to manipulate resource status conditions
+{{if .genDuckLogic}}
+// Creates the {{.conditionSet|raw}} to manipulate resource status conditions
 var condSet = apis.NewLivingConditionSet()
+{{end}}
 
 `
 
@@ -324,6 +328,7 @@ func (r *reconcilerImpl) Reconcile(ctx {{.contextContext|raw}}, key string) erro
 		}
 	}
 
+	{{if .genDuckLogic}}
 	// Bump observed generation to denote that we have processed this
 	// generation regardless of success or failure.
 	resource.Status.ObservedGeneration = resource.Generation
@@ -339,6 +344,7 @@ func (r *reconcilerImpl) Reconcile(ctx {{.contextContext|raw}}, key string) erro
 				apis.ConditionReady, "", "unsucessfully observed a new generation")
 		}
 	}
+	{{end}}
 
 	// Synchronize the status.
 	if equality.Semantic.DeepEqual(original.Status, resource.Status) {

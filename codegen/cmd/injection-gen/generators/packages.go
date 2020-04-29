@@ -206,6 +206,12 @@ func isNonNamespaced(t *types.Type) bool {
 	return nonNamespaced
 }
 
+func genDuckLogic(t *types.Type) bool {
+	comments := append(append([]string{}, t.SecondClosestCommentLines...), t.CommentLines...)
+	_, duckLogic := types.ExtractCommentTags("+", comments)["genducklogic"]
+	return duckLogic
+}
+
 func vendorless(p string) string {
 	if pos := strings.LastIndex(p, "/vendor/"); pos != -1 {
 		return p[pos+len("/vendor/"):]
@@ -418,6 +424,7 @@ func reconcilerPackages(basePackage string, groupPkgName string, gv clientgentyp
 
 		reconcilerClass, hasReconcilerClass := extractReconcilerClassTag(t)
 		nonNamespaced := isNonNamespaced(t)
+		genDuck := genDuckLogic(t)
 
 		packagePath := filepath.Join(packagePath, strings.ToLower(t.Name.Name))
 
@@ -506,6 +513,7 @@ func reconcilerPackages(basePackage string, groupPkgName string, gv clientgentyp
 					reconcilerClass:    reconcilerClass,
 					hasReconcilerClass: hasReconcilerClass,
 					nonNamespaced:      nonNamespaced,
+					genDuckLogic:       genDuck,
 				})
 
 				return generators
