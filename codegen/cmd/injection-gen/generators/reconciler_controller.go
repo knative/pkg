@@ -197,6 +197,7 @@ func NewImpl(ctx {{.contextContext|raw}}, r Interface{{if .hasClass}}, classValu
 	queueName := {{.fmtSprintf|raw}}("%s.%s", {{.stringsReplaceAll|raw}}(t.PkgPath(), "/", "-"), t.Name())
 
 	impl := {{.controllerNewImpl|raw}}(rec, logger, queueName)
+	agentName := defaultControllerAgentName
 
 	// Pass impl to the options. Save any optional results.
 	for _, fn := range optionsFns {
@@ -208,12 +209,12 @@ func NewImpl(ctx {{.contextContext|raw}}, r Interface{{if .hasClass}}, classValu
 			rec.finalizerName = opts.FinalizerName
 		}
 		if opts.AgentName != "" {
-			rec.Recorder = createRecorder(ctx, opts.AgentName)
+			agentName = opts.AgentName
 		}
 	}
 
 	if rec.Recorder == nil {
-		rec.Recorder = createRecorder(ctx, defaultControllerAgentName)
+		rec.Recorder = createRecorder(ctx, agentName)
 	}
 
 	return impl
