@@ -55,9 +55,9 @@ var backOffTemplate = wait.Backoff{
 
 var errDialTimeout = errors.New("timed out dialing")
 
-// dialWithBackOff executes `net.Dialer.DialContext()` with exponentially increasing
+// DialWithBackOff executes `net.Dialer.DialContext()` with exponentially increasing
 // dial timeouts. In addition it sleeps with random jitter between tries.
-func dialWithBackOff(ctx context.Context, network, address string) (net.Conn, error) {
+func DialWithBackOff(ctx context.Context, network, address string) (net.Conn, error) {
 	return dialBackOffHelper(ctx, network, address, backOffTemplate, sleepTO)
 }
 
@@ -97,7 +97,7 @@ func newHTTPTransport(connTimeout time.Duration, disableKeepAlives bool) http.Ro
 		DisableKeepAlives:     disableKeepAlives,
 
 		// This is bespoke.
-		DialContext: dialWithBackOff,
+		DialContext: DialWithBackOff,
 	}
 }
 
