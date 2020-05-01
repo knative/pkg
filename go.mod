@@ -65,7 +65,7 @@ require (
 	k8s.io/kube-openapi v0.0.0-20190816220812-743ec37842bf
 	k8s.io/test-infra v0.0.0-20191212060232-70b0b49fe247
 	k8s.io/utils v0.0.0-20190907131718-3d4f5b7dea0b // indirect
-	knative.dev/test-infra v0.0.0-20200429211942-f4c4853375cf
+	knative.dev/test-infra v0.0.0-20200430225942-f7c1fafc1cde
 )
 
 replace (
