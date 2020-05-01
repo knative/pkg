@@ -213,9 +213,7 @@ func NewImpl(ctx {{.contextContext|raw}}, r Interface{{if .hasClass}}, classValu
 		}
 	}
 
-	if rec.Recorder == nil {
-		rec.Recorder = createRecorder(ctx, agentName)
-	}
+	rec.Recorder = createRecorder(ctx, agentName)
 
 	return impl
 }
