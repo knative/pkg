@@ -482,7 +482,7 @@ func TestSetStackdriverSecretLocation(t *testing.T) {
 		useStackdriverSecretEnabled = false
 	}()
 
-	testName, testNamespace := "test-name", "test-namespace"
+	const testName, testNamespace = "test-name", "test-namespace"
 	secretFetcher := func(name string) (*corev1.Secret, error) {
 		return &corev1.Secret{
 			ObjectMeta: metav1.ObjectMeta{
@@ -510,7 +510,7 @@ func TestSetStackdriverSecretLocation(t *testing.T) {
 		t.Errorf("Got unexpected error when getting secret: %v", err)
 	}
 	if sec == nil {
-		t.Errorf("expected secret to be non-nil if there is no error and SetStackdriverSecretLocation has been called")
+		t.Error("expected secret to be non-nil if there is no error and SetStackdriverSecretLocation has been called")
 	}
 	assertStringsEqual(t, "secretName", secretName, testName)
 	assertStringsEqual(t, "secretNamespace", secretNamespace, testNamespace)

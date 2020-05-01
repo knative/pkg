@@ -271,8 +271,8 @@ var (
 						Name: "opencensus",
 					},
 					Data: map[string][]byte{
-						"client-cert.pem": []byte{},
-						"client-key.pem":  []byte{},
+						"client-cert.pem": {},
+						"client-key.pem":  {},
 					},
 				}).Get,
 			},
@@ -287,8 +287,8 @@ var (
 						Name: "opencensus",
 					},
 					Data: map[string][]byte{
-						"client-cert.pem": []byte{},
-						"client-key.pem":  []byte{},
+						"client-cert.pem": {},
+						"client-key.pem":  {},
 					},
 				},
 			},

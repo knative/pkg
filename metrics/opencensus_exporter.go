@@ -40,10 +40,10 @@ func newOpenCensusExporter(config *metricsConfig, logger *zap.SugaredLogger) (vi
 	}
 	e, err := ocagent.NewExporter(opts...)
 	if err != nil {
-		logger.Errorw("Failed to create the OpenCensus exporter.", zap.Error(err))
+		logger.Errorw("failed to create the OpenCensus exporter.", zap.Error(err))
 		return nil, err
 	}
-	logger.Infof("Created OpenCensus exporter with config: %+v.", *config)
+	logger.Infof("created OpenCensus exporter with config: %+v.", *config)
 	view.RegisterExporter(e)
 	return e, nil
 }
@@ -54,14 +54,14 @@ func newOpenCensusExporter(config *metricsConfig, logger *zap.SugaredLogger) (vi
 // "opencensus" secret.
 func getOpenCensusSecret(component string, lister SecretFetcher) (*corev1.Secret, error) {
 	if lister == nil {
-		return nil, fmt.Errorf("No secret lister provided for component %q; cannot use requireSecure=true", component)
+		return nil, fmt.Errorf("no secret lister provided for component %q; cannot use requireSecure=true", component)
 	}
 	secret, err := lister(component + "-opencensus")
 	if errors.IsNotFound(err) {
 		secret, err = lister("opencensus")
 	}
 	if err != nil {
-		return nil, fmt.Errorf("Unable to fetch opencensus secret for %q, cannot use requireSecure=true: %+v", component, err)
+		return nil, fmt.Errorf("unable to fetch opencensus secret for %q, cannot use requireSecure=true: %+v", component, err)
 	}
 
 	return secret, nil
@@ -71,7 +71,7 @@ func getOpenCensusSecret(component string, lister SecretFetcher) (*corev1.Secret
 // for communicating with the OpenCensus Agent.
 func getCredentials(component string, secret *corev1.Secret, logger *zap.SugaredLogger) credentials.TransportCredentials {
 	if secret == nil {
-		logger.Errorf("No secret provided for component %q; cannot use requireSecure=true", component)
+		logger.Errorf("no secret provided for component %q; cannot use requireSecure=true", component)
 		return nil
 	}
 	return credentials.NewTLS(&tls.Config{

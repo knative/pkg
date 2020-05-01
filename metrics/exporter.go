@@ -131,12 +131,7 @@ func UpdateExporterFromConfigMapWithOpts(opts ExporterOptions, logger *zap.Sugar
 // to prevent a race condition between reading the current configuration
 // and updating the current exporter.
 func UpdateExporter(ops ExporterOptions, logger *zap.SugaredLogger) error {
-	// We don't check if ops.secrets is `nil` right now, because this is a transition step.
-	// Eventually, this should be a startup check, i.e.
-	// if opts.secrets == nil {
-	//     return error
-	// }
-
+	// TODO(https://github.com/knative/pkg/issues/1273): check if ops.secrets is `nil` after new metrics plan lands
 	newConfig, err := createMetricsConfig(ops, logger)
 	if err != nil {
 		if getCurMetricsConfig() == nil {
@@ -155,7 +150,7 @@ func UpdateExporter(ops ExporterOptions, logger *zap.SugaredLogger) error {
 
 	if isNewExporterRequired(newConfig) {
 		logger.Info("Flushing the existing exporter before setting up the new exporter.")
-		flushExporterUnlocked(curMetricsExporter)
+		flushGivenExporter(curMetricsExporter)
 		e, err := newMetricsExporter(newConfig, logger)
 		if err != nil {
 			logger.Errorf("Failed to update a new metrics exporter based on metric config %v. error: %v", newConfig, err)
@@ -191,13 +186,12 @@ func isNewExporterRequired(newConfig *metricsConfig) bool {
 // newMetricsExporter gets a metrics exporter based on the config.
 // This function must be called with the metricsMux reader (or writer) locked.
 func newMetricsExporter(config *metricsConfig, logger *zap.SugaredLogger) (view.Exporter, error) {
-	ce := curMetricsExporter
 	// If there is a Prometheus Exporter server running, stop it.
 	resetCurPromSrv()
 
 	// TODO(https://github.com/knative/pkg/issues/866): Move Stackdriver and Promethus
 	// operations before stopping to an interface.
-	if se, ok := ce.(stoppable); ok {
+	if se, ok := curMetricsExporter.(stoppable); ok {
 		se.StopMetricsExporter()
 	}
 
@@ -260,10 +254,10 @@ func setCurMetricsConfigUnlocked(c *metricsConfig) {
 // Return value indicates whether the exporter is flushable or not.
 func FlushExporter() bool {
 	e := getCurMetricsExporter()
-	return flushExporterUnlocked(e)
+	return flushGivenExporter(e)
 }
 
-func flushExporterUnlocked(e view.Exporter) bool {
+func flushGivenExporter(e view.Exporter) bool {
 	if e == nil {
 		return false
 	}
