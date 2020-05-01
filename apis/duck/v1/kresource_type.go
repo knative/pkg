@@ -75,5 +75,5 @@ func (t *KResource) GetObjectMeta() *metav1.ObjectMeta {
 
 // GetStatus retrieves the status of the KResource. Implements the Shaped interface.
 func (t *KResource) GetStatus() *Status {
-	return &k.Status
+	return &t.Status
 }
