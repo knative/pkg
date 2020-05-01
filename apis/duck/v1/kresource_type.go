@@ -26,8 +26,8 @@ import (
 	"knative.dev/pkg/apis"
 )
 
-// DuckShaped is an interface for retrieving the duck elements of an arbitraty resource.
-type DuckShaped interface {
+// KRShaped is an interface for retrieving the duck elements of an arbitraty resource.
+type KRShaped interface {
 	GetTypeMeta() *metav1.TypeMeta
 
 	GetObjectMeta() *metav1.ObjectMeta
@@ -35,8 +35,8 @@ type DuckShaped interface {
 	GetStatus() *Status
 }
 
-// Asserts KResource conformance with the shape of duck resource.
-var _ DuckShaped = (*KResource)(nil)
+// Asserts KResource conformance with KRShaped
+var _ KRShaped = (*KResource)(nil)
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
@@ -79,17 +79,17 @@ type KResourceList struct {
 	Items []KResource `json:"items"`
 }
 
-// GetTypeMeta retrieves the ObjectMeta of the KResource. Implements the Shaped interface.
+// GetTypeMeta retrieves the ObjectMeta of the KResource. Implements the KRShaped interface.
 func (t *KResource) GetTypeMeta() *metav1.TypeMeta {
 	return &t.TypeMeta
 }
 
-// GetObjectMeta retrieves the ObjectMeta of the KResource. Implements the Shaped interface.
+// GetObjectMeta retrieves the ObjectMeta of the KResource. Implements the KRShaped interface.
 func (t *KResource) GetObjectMeta() *metav1.ObjectMeta {
 	return &t.ObjectMeta
 }
 
-// GetStatus retrieves the status of the KResource. Implements the Shaped interface.
+// GetStatus retrieves the status of the KResource. Implements the KRShaped interface.
 func (t *KResource) GetStatus() *Status {
 	return &t.Status
 }
