@@ -40,10 +40,7 @@ func ExtractCommentTags(marker string, lines []string) map[string]map[string]str
 	out := map[string]map[string]string{}
 	for _, line := range lines {
 		line = strings.TrimSpace(line)
-		if len(line) == 0 {
-			continue
-		}
-		if !strings.HasPrefix(line, marker) {
+		if len(line) == 0 || !strings.HasPrefix(line, marker) {
 			continue
 		}
 
