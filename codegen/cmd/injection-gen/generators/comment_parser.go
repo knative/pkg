@@ -64,7 +64,6 @@ func ExtractCommentTags(marker string, lines []string) map[string]map[string]str
 				}
 			}
 			out[options[0]] = opts
-
 		} else if len(options) == 1 {
 			if _, has := out[options[0]]; !has {
 				out[options[0]] = nil
