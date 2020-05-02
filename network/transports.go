@@ -92,7 +92,7 @@ func dialBackOffHelper(ctx context.Context, network, address string, bo wait.Bac
 		return c, nil
 	}
 	elapsed := time.Now().Sub(start)
-	return nil, fmt.Errorf("timed out dialing(%.2fs)", elapsed.Seconds())
+	return nil, fmt.Errorf("timed out dialing after %.2fs", elapsed.Seconds())
 }
 
 func newHTTPTransport(connTimeout time.Duration, disableKeepAlives bool) http.RoundTripper {
