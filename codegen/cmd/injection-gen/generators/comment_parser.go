@@ -53,7 +53,7 @@ func ExtractCommentTags(marker string, lines []string) map[string]map[string]str
 
 			opts := out[options[0]]
 			if opts == nil {
-				opts = map[string]string{}
+				opts = make(map[string]string, len(vals))
 			}
 
 			for _, pair := range vals {
