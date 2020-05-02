@@ -90,7 +90,7 @@ func TestDialWithBackoff(t *testing.T) {
 		c.Close()
 		t.Error("Unexpected success dialing")
 	}
-	expectedErrPrefix := "timed out dialing"
+	const expectedErrPrefix = "timed out dialing"
 	if err == nil || !strings.HasPrefix(err.Error(), expectedErrPrefix) {
 		t.Errorf("Error = %v, want: %s(...)", err, expectedErrPrefix)
 	}
