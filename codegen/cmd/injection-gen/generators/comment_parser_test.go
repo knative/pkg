@@ -18,7 +18,6 @@ package generators
 import "testing"
 
 func TestParseComments(t *testing.T) {
-
 	comment := []string{
 		"This is an example comment to parse",
 		"",
