@@ -53,7 +53,6 @@ func TestParseComments(t *testing.T) {
 }
 
 func TestMergeDuplicates(t *testing.T) {
-
 	comment := []string{
 		"This is an example comment to parse",
 		"",
