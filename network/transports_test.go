@@ -90,8 +90,9 @@ func TestDialWithBackoff(t *testing.T) {
 		c.Close()
 		t.Error("Unexpected success dialing")
 	}
-	if err != errDialTimeout {
-		t.Errorf("Error = %v, want: %v", err, errDialTimeout)
+	const expectedErrPrefix = "timed out dialing"
+	if err == nil || !strings.HasPrefix(err.Error(), expectedErrPrefix) {
+		t.Errorf("Error = %v, want: %s(...)", err, expectedErrPrefix)
 	}
 
 	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
