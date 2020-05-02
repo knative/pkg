@@ -39,7 +39,7 @@ import "strings"
 func ExtractCommentTags(marker string, lines []string) map[string]map[string]string {
 	out := map[string]map[string]string{}
 	for _, line := range lines {
-		line = strings.Trim(line, " ")
+		line = strings.TrimSpace(line)
 		if len(line) == 0 {
 			continue
 		}
