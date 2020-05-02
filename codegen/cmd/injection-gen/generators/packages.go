@@ -204,11 +204,7 @@ func extractReconcilerClassTag(tags map[string]map[string]string) (classname str
 
 func isNonNamespaced(tags map[string]map[string]string) bool {
 	vals, has := tags["genclient"]
-	if !has {
-		return false
-	}
-	_, has = vals["nonNamespaced"]
-	return has
+	return has && vals["nonNamespaced"]
 }
 
 func vendorless(p string) string {
