@@ -61,6 +61,7 @@ func TestMergeDuplicates(t *testing.T) {
 		"+bar",
 		"+manypairs:key1=value1",
 		"+manypairs:key2=value2",
+		"+oops:,,,",
 	}
 
 	extracted := ExtractCommentTags("+", comment)
@@ -75,5 +76,9 @@ func TestMergeDuplicates(t *testing.T) {
 
 	if val, ok := extracted["manypairs"]; !ok || val["key1"] != "value1" || val["key2"] != "value2" {
 		t.Errorf("Failed to extract single key got=%t,%v want=true,{\"key\":\"value\"}", ok, val)
+	}
+
+	if val, ok := extracted["oops"]; !ok || val != nil {
+		t.Errorf("Failed to extract single key got=%t,%v want=true,{\"oops\":nil}", ok, val)
 	}
 }

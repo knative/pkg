@@ -56,11 +56,15 @@ func ExtractCommentTags(marker string, lines []string) map[string]map[string]str
 			for _, pair := range vals {
 				if kv := strings.SplitN(pair, "=", 2); len(kv) == 2 {
 					opts[kv[0]] = kv[1]
-				} else if len(kv) == 1 {
+				} else if kv[0] != "" {
 					opts[kv[0]] = ""
 				}
 			}
-			out[options[0]] = opts
+			if len(opts) == 0 {
+				out[options[0]] = nil
+			} else {
+				out[options[0]] = opts
+			}
 		} else if len(options) == 1 {
 			if _, has := out[options[0]]; !has {
 				out[options[0]] = nil
