@@ -33,7 +33,7 @@ import "strings"
 //   +bar
 //
 // Then this function will return:
-//   map[string]map[string]string{"foo":{"key":value1","key2":"value2"}, "bar": {}}
+//   map[string]map[string]string{"foo":{"key":value1","key2":"value2"}, "bar": nil}
 //
 // Users are not expected to repeat values.
 func ExtractCommentTags(marker string, lines []string) map[string]map[string]string {
