@@ -66,7 +66,7 @@ func makeResources() (*v1.KResource, *v1.KResource) {
 func TestPostProcessReconcileBumpsGeneration(t *testing.T) {
 	old, new := makeResources()
 
-	oldShape := interface{}(old).(v1.KRShaped)
+	oldShape := v1.KRShaped(old)
 	newShape := interface{}(new).(v1.KRShaped)
 	PostProcessReconcile(context.Background(), oldShape, newShape, nil)
 
@@ -83,8 +83,8 @@ func TestPostProcessReconcileBumpsWithEvent(t *testing.T) {
 	old, new := makeResources()
 	reconcilEvent := NewEvent(corev1.EventTypeWarning, exampleStatusFailed, "")
 
-	oldShape := interface{}(old).(v1.KRShaped)
-	newShape := interface{}(new).(v1.KRShaped)
+	oldShape := v1.KRShaped(old)
+	newShape := v1.KRShaped(new)
 	PostProcessReconcile(context.Background(), oldShape, newShape, reconcilEvent)
 
 	// Expect generation bumped
@@ -108,8 +108,8 @@ func TestPostProcessWithEventCondChange(t *testing.T) {
 	old.Status.Conditions = make([]apis.Condition, 0)
 	reconcilEvent := NewEvent(corev1.EventTypeWarning, exampleStatusFailed, "")
 
-	oldShape := interface{}(old).(v1.KRShaped)
-	newShape := interface{}(new).(v1.KRShaped)
+	oldShape := v1.KRShaped(old)
+	newShape := v1.KRShaped(new)
 	PostProcessReconcile(context.Background(), oldShape, newShape, reconcilEvent)
 
 	// Expect generation bumped
