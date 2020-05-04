@@ -63,12 +63,12 @@ func makeResources() (*v1.KResource, *v1.KResource) {
 	return old, new
 }
 
-func TestPostProccessReconcileBumpsGeneration(t *testing.T) {
+func TestPostProcessReconcileBumpsGeneration(t *testing.T) {
 	old, new := makeResources()
 
 	oldShape := interface{}(old).(v1.KRShaped)
 	newShape := interface{}(new).(v1.KRShaped)
-	PostProccessReconcile(context.Background(), oldShape, newShape, nil)
+	PostProcessReconcile(context.Background(), oldShape, newShape, nil)
 
 	if new.Status.ObservedGeneration != new.Generation {
 		t.Errorf("Expected observed generation bump got=%d want=%d", new.Status.ObservedGeneration, new.Generation)
@@ -79,13 +79,13 @@ func TestPostProccessReconcileBumpsGeneration(t *testing.T) {
 	}
 }
 
-func TestPostProccessReconcileBumpsWithEvent(t *testing.T) {
+func TestPostProcessReconcileBumpsWithEvent(t *testing.T) {
 	old, new := makeResources()
 	reconcilEvent := NewEvent(corev1.EventTypeWarning, exampleStatusFailed, "")
 
 	oldShape := interface{}(old).(v1.KRShaped)
 	newShape := interface{}(new).(v1.KRShaped)
-	PostProccessReconcile(context.Background(), oldShape, newShape, reconcilEvent)
+	PostProcessReconcile(context.Background(), oldShape, newShape, reconcilEvent)
 
 	// Expect generation bumped
 	if new.Status.ObservedGeneration != new.Generation {
@@ -102,7 +102,7 @@ func TestPostProccessReconcileBumpsWithEvent(t *testing.T) {
 	}
 }
 
-func TestPostProccessWithEventCondChange(t *testing.T) {
+func TestPostProcessWithEventCondChange(t *testing.T) {
 	old, new := makeResources()
 	originalReadyStatus := old.Status.GetCondition(apis.ConditionReady).Status
 	old.Status.Conditions = make([]apis.Condition, 0)
@@ -110,7 +110,7 @@ func TestPostProccessWithEventCondChange(t *testing.T) {
 
 	oldShape := interface{}(old).(v1.KRShaped)
 	newShape := interface{}(new).(v1.KRShaped)
-	PostProccessReconcile(context.Background(), oldShape, newShape, reconcilEvent)
+	PostProcessReconcile(context.Background(), oldShape, newShape, reconcilEvent)
 
 	// Expect generation bumped
 	if new.Status.ObservedGeneration != new.Generation {

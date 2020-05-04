@@ -27,8 +27,8 @@ import (
 
 var condSet = apis.NewLivingConditionSet()
 
-// PostProccessReconcile contains logic to apply after reconciliation of a resource.
-func PostProccessReconcile(ctx context.Context, old v1.KRShaped, new v1.KRShaped, reconcileEvent Event) {
+// PostProcessReconcile contains logic to apply after reconciliation of a resource.
+func PostProcessReconcile(ctx context.Context, old v1.KRShaped, new v1.KRShaped, reconcileEvent Event) {
 	logger := logging.FromContext(ctx)
 	newStatus := new.GetStatus()
 
@@ -42,7 +42,7 @@ func PostProccessReconcile(ctx context.Context, old v1.KRShaped, new v1.KRShaped
 		// if a new generation is observed and reconciliation reported an error event
 		// the reconciler should change the ready state. By default we will set unknown.
 		if equality.Semantic.DeepEqual(oldRc, rc) {
-			logger.Warnw("A reconconiler observed a new generation without updating the resource status")
+			logger.Warn("A reconconiler observed a new generation without updating the resource status")
 			condSet.Manage(newStatus).MarkUnknown(apis.ConditionReady, "", "unsucessfully observed a new generation")
 		}
 	}
