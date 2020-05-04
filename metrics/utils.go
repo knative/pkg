@@ -16,11 +16,39 @@ limitations under the License.
 
 package metrics
 
-import "strconv"
+import (
+	"strconv"
+
+	"go.opencensus.io/tag"
+)
 
 // ResponseCodeClass converts an HTTP response code to a string representing its response code class.
 // E.g., The response code class is "5xx" for response code 503.
 func ResponseCodeClass(responseCode int) string {
 	// Get the hundred digit of the response code and concatenate "xx".
 	return strconv.Itoa(responseCode/100) + "xx"
+}
+
+// MaybeInsertInt conditionally insert the tag when cond is true.
+func MaybeInsertInt(key tag.Key, value int, cond bool) tag.Mutator {
+	if cond {
+		return tag.Insert(key, strconv.Itoa(value))
+	}
+	return tag.Insert(key, "")
+}
+
+// MaybeInsertBool conditionally insert the tag when cond is true.
+func MaybeInsertBool(key tag.Key, value bool, cond bool) tag.Mutator {
+	if cond {
+		return tag.Insert(key, strconv.FormatBool(value))
+	}
+	return tag.Insert(key, "")
+}
+
+// MaybeInsertString conditionally insert the tag when cond is true.
+func MaybeInsertString(key tag.Key, value string, cond bool) tag.Mutator {
+	if cond {
+		return tag.Insert(key, value)
+	}
+	return tag.Insert(key, "")
 }
