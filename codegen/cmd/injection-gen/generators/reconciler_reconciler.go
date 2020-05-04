@@ -367,18 +367,41 @@ func (r *reconcilerImpl) updateStatus(existing *{{.type|raw}}, desired *{{.type|
 			}
 		}
 
-		// If there's nothing to update, just return.
-		if reflect.DeepEqual(existing.Status, desired.Status) {
-			return nil
+		fullUpdate := false
+		statusUpdate := false
+
+		if !reflect.DeepEqual(existing.GetAnnotations(),desired.GetAnnotations()) {
+			existing.ObjectMeta.Annotations = desired.ObjectMeta.Annotations
+			fullUpdate = true
 		}
 
-		existing.Status = desired.Status
+		if !reflect.DeepEqual(existing.GetLabels(),desired.GetLabels()) {
+			existing.ObjectMeta.Labels = desired.ObjectMeta.Labels
+			fullUpdate = true
+		}
+
+		if !reflect.DeepEqual(existing.Status, desired.Status) {
+			existing.Status = desired.Status
+			statusUpdate = true
+		}
+
+		// If there's nothing to update, just return.
+		if !fullUpdate && !statusUpdate {
+			return nil
+		}
 
 		{{if .nonNamespaced}}
 		updater := r.Client.{{.group}}{{.version}}().{{.type|apiGroup}}()
 		{{else}}
 		updater := r.Client.{{.group}}{{.version}}().{{.type|apiGroup}}(existing.Namespace)
 		{{end}}
+
+		if fullUpdate {
+			_, err = updater.Update(existing)
+		} else {
+			_, err = updater.UpdateStatus(existing)
+		}
+
 		_, err = updater.UpdateStatus(existing)
 		return err
 	})
