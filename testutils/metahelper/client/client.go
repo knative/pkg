@@ -32,9 +32,9 @@ const (
 	filename = "metadata.json"
 )
 
-// client holds metadata as a string:string map, as well as path for storing
+// Client holds metadata as a string:string map, as well as path for storing
 // metadata
-type client struct {
+type Client struct {
 	MetaData map[string]string
 	Path     string
 }
@@ -42,8 +42,8 @@ type client struct {
 // New creates a client, takes custom directory for storing `metadata.json`.
 // It reads existing `metadata.json` file if it exists, otherwise creates it.
 // Errors out if there is any file i/o problem other than file not exist error.
-func New(dir string) (*client, error) {
-	c := &client{
+func New(dir string) (*Client, error) {
+	c := &Client{
 		MetaData: make(map[string]string),
 	}
 	if dir == "" {
@@ -61,7 +61,7 @@ func New(dir string) (*client, error) {
 
 // sync is shared by Get and Set, invoked at the very beginning of each, makes
 // sure the file exists, and loads the content of file into c.MetaData
-func (c *client) sync() error {
+func (c *Client) sync() error {
 	_, err := os.Stat(c.Path)
 	if os.IsNotExist(err) {
 		body, _ := json.Marshal(&c.MetaData)
@@ -78,7 +78,7 @@ func (c *client) sync() error {
 }
 
 // Set sets key:val pair, and overrides if it exists
-func (c *client) Set(key, val string) error {
+func (c *Client) Set(key, val string) error {
 	err := c.sync()
 	if err != nil {
 		return err
@@ -92,7 +92,7 @@ func (c *client) Set(key, val string) error {
 }
 
 // Get gets val for key
-func (c *client) Get(key string) (string, error) {
+func (c *Client) Get(key string) (string, error) {
 	if _, err := os.Stat(c.Path); err != nil && os.IsNotExist(err) {
 		return "", fmt.Errorf("file %q doesn't exist", c.Path)
 	}
