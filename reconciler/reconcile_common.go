@@ -27,11 +27,11 @@ import (
 const failedGenerationBump = "NewObservedGenFailure"
 
 // PreProcessReconcile contains logic to apply before reconciliation of a resource.
-func PreProcessReconcile(ctx context.Context, new duckv1.KRShaped) {
+func PreProcessReconcile(ctx context.Context, resource duckv1.KRShaped) {
 	var condSet = apis.NewLivingConditionSet()
-	newStatus := new.GetStatus()
+	newStatus := resource.GetStatus()
 
-	if newStatus.ObservedGeneration != new.GetObjectMeta().GetGeneration() {
+	if newStatus.ObservedGeneration != resource.GetObjectMeta().GetGeneration() {
 		// Reset ready to unknown. The reconciler is expected to overwrite this.
 		condSet.Manage(newStatus).MarkUnknown(
 			apis.ConditionReady, failedGenerationBump, "unsucessfully observed a new generation")
@@ -39,13 +39,13 @@ func PreProcessReconcile(ctx context.Context, new duckv1.KRShaped) {
 }
 
 // PostProcessReconcile contains logic to apply after reconciliation of a resource.
-func PostProcessReconcile(ctx context.Context, new duckv1.KRShaped) {
+func PostProcessReconcile(ctx context.Context, resource duckv1.KRShaped) {
 	logger := logging.FromContext(ctx)
-	newStatus := new.GetStatus()
+	newStatus := resource.GetStatus()
 
 	// Bump observed generation to denote that we have processed this
 	// generation regardless of success or failure.
-	newStatus.ObservedGeneration = new.GetObjectMeta().GetGeneration()
+	newStatus.ObservedGeneration = resource.GetObjectMeta().GetGeneration()
 
 	rc := newStatus.GetCondition(apis.ConditionReady)
 	if rc.Reason == failedGenerationBump {
