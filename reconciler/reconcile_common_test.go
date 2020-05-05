@@ -28,14 +28,14 @@ import (
 	v1 "knative.dev/pkg/apis/duck/v1"
 )
 
-func makeResource() *duckv1.KResource {
+func makeResource(topLevelCond string) *duckv1.KResource {
 	fooCond := apis.Condition{
 		Type:    "Foo",
 		Status:  corev1.ConditionTrue,
 		Message: "Something something foo",
 	}
 	readyCond := apis.Condition{
-		Type:    "Ready",
+		Type:    apis.ConditionType(topLevelCond),
 		Status:  corev1.ConditionTrue,
 		Message: "Something something bar",
 	}
@@ -53,19 +53,39 @@ func makeResource() *duckv1.KResource {
 }
 
 func TestPreProcessResetsReady(t *testing.T) {
-	resource := makeResource()
+	testCases := []struct {
+		name                      string
+		initTopLevelCond          string
+		expectedTopLevelCondition apis.ConditionType
+	}{
+		{
+			name:                      "top level Ready",
+			initTopLevelCond:          "Ready",
+			expectedTopLevelCondition: apis.ConditionReady,
+		},
+		{
+			name:                      "top level Succeeded",
+			initTopLevelCond:          "Succeeded",
+			expectedTopLevelCondition: apis.ConditionSucceeded,
+		},
+	}
 
-	krShape := duckv1.KRShaped(resource)
-	PreProcessReconcile(context.Background(), krShape)
+	for _, test := range testCases {
+		t.Run(test.name, func(t *testing.T) {
+			resource := makeResource(test.initTopLevelCond)
+			krShape := duckv1.KRShaped(resource)
 
-	// Expect ready to be reset to Unknown
-	if rc := resource.Status.GetCondition(apis.ConditionReady); rc.Status != "Unknown" {
-		t.Errorf("Expected unchanged ready status got=%s want=Unknown", rc.Status)
+			PreProcessReconcile(context.Background(), krShape)
+
+			if rc := resource.Status.GetCondition(test.expectedTopLevelCondition); rc.Status != "Unknown" {
+				t.Errorf("Expected unchanged ready status got=%s want=Unknown", rc.Status)
+			}
+		})
 	}
 }
 
 func TestPostProcessReconcileBumpsGeneration(t *testing.T) {
-	resource := makeResource()
+	resource := makeResource("Ready")
 
 	krShape := duckv1.KRShaped(resource)
 	PostProcessReconcile(context.Background(), krShape)

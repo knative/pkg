@@ -19,6 +19,7 @@ package reconciler
 import (
 	"context"
 
+	"github.com/pkg/errors"
 	"knative.dev/pkg/apis"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
 	"knative.dev/pkg/logging"
@@ -28,13 +29,17 @@ const failedGenerationBump = "NewObservedGenFailure"
 
 // PreProcessReconcile contains logic to apply before reconciliation of a resource.
 func PreProcessReconcile(ctx context.Context, resource duckv1.KRShaped) {
-	var condSet = apis.NewLivingConditionSet()
-	newStatus := resource.GetStatus()
+	condSet, err := getDefaultConditionSet(resource)
+	if err != nil {
+		return
+	}
 
+	newStatus := resource.GetStatus()
 	if newStatus.ObservedGeneration != resource.GetObjectMeta().GetGeneration() {
 		// Reset ready to unknown. The reconciler is expected to overwrite this.
-		condSet.Manage(newStatus).MarkUnknown(
-			apis.ConditionReady, failedGenerationBump, "unsucessfully observed a new generation")
+		manager := condSet.Manage(newStatus)
+		manager.MarkUnknown(
+			manager.GetTopLevelCondition().Type, failedGenerationBump, "unsucessfully observed a new generation")
 	}
 }
 
@@ -50,5 +55,16 @@ func PostProcessReconcile(ctx context.Context, resource duckv1.KRShaped) {
 	rc := newStatus.GetCondition(apis.ConditionReady)
 	if rc.Reason == failedGenerationBump {
 		logger.Warn("A reconconiler observed a new generation without updating the resource status")
+	}
+}
+
+func getDefaultConditionSet(resource duckv1.KRShaped) (apis.ConditionSet, error) {
+	switch resource.GetTopLevelConditionType() {
+	case apis.ConditionReady:
+		return apis.NewLivingConditionSet(), nil
+	case apis.ConditionSucceeded:
+		return apis.NewBatchConditionSet(), nil
+	default:
+		return apis.ConditionSet{}, errors.Errorf("No ConditionSet found for type %s", resource.GetTypeMeta().Kind)
 	}
 }
