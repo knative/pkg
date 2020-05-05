@@ -22,8 +22,9 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
-	"reflect"
 	"testing"
+
+	"github.com/google/go-cmp/cmp"
 )
 
 const (
@@ -36,13 +37,11 @@ func TestNewClient(t *testing.T) {
 		customDir string
 		expPath   string
 		expErr    bool
-	}{
-		{ // default dir
-			"", "mockArtifactDir/metadata.json", false,
-		}, { // custom dir
-			"a", "a/metadata.json", false,
-		},
-	}
+	}{{ // default dir
+		"", "mockArtifactDir/metadata.json", false,
+	}, { // custom dir
+		"a", "a/metadata.json", false,
+	}}
 
 	for _, data := range datas {
 		dir := data.customDir
@@ -99,7 +98,7 @@ func TestSync(t *testing.T) {
 		if (err == nil && data.expErr) || (err != nil && !data.expErr) {
 			log.Fatalf("%s\ngot: '%v', want: '%v'", errMsg, err, data.expErr)
 		}
-		if !reflect.DeepEqual(c.metadata, data.expMetadata) {
+		if !cmp.Equal(c.metadata, data.expMetadata) {
 			log.Fatalf("%s\ngot: '%v', want: '%v'", errMsg, c.metadata, data.expMetadata)
 		}
 	}
@@ -136,7 +135,7 @@ func TestSet(t *testing.T) {
 		if (err == nil && data.expErr) || (err != nil && !data.expErr) {
 			log.Fatalf("%s\ngot: '%v', want: '%v'", errMsg, err, data.expErr)
 		}
-		if !reflect.DeepEqual(c.metadata, data.expMetadata) {
+		if !cmp.Equal(c.metadata, data.expMetadata) {
 			log.Fatalf("%s\ngot: '%v', want: '%v'", errMsg, c.metadata, data.expMetadata)
 		}
 	}
@@ -173,7 +172,7 @@ func TestGet(t *testing.T) {
 		if (err == nil && data.expErr) || (err != nil && !data.expErr) {
 			log.Fatalf("%s\ngot: '%v', want: '%v'", errMsg, err, data.expErr)
 		}
-		if !reflect.DeepEqual(c.metadata, data.expMetadata) {
+		if !cmp.Equal(c.metadata, data.expMetadata) {
 			log.Fatalf("%s\ngot: '%v', want: '%v'", errMsg, c.metadata, data.expMetadata)
 		}
 		if val != data.expVal {
