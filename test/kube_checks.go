@@ -126,13 +126,16 @@ func countEndpointsNum(e *corev1.Endpoints) int {
 // GetEndpoints returns addresses of endpoints selected by given listOptions.
 func GetEndpoints(client *KubeClient, namespace string, listOptions metav1.ListOptions) ([]string, error) {
 	endpoints, err := client.Kube.CoreV1().Endpoints(namespace).List(listOptions)
-	if err != nil || len(endpoints.Items) != 1 {
+	if err != nil || len(endpoints.Items) == 0 {
 		return nil, fmt.Errorf("no endpoints or error: %w", err)
 	}
-	addresses := endpoints.Items[0].Subsets[0].Addresses
-	hosts := make([]string, 0, len(addresses))
-	for _, addr := range addresses {
-		hosts = append(hosts, addr.IP)
+	var hosts []string
+	for _, item := range endpoints.Items {
+		for _, sub := range item.Subsets {
+			for _, addr := range sub.Addresses {
+				hosts = append(hosts, addr.IP)
+			}
+		}
 	}
 	return hosts, nil
 }
