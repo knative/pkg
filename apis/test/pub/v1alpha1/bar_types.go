@@ -93,17 +93,17 @@ func (b *Bar) Validate(ctx context.Context) *apis.FieldError {
 	return nil
 }
 
-// GetTypeMeta retrieves the ObjectMeta of the KResource. Implements the KRShaped interface.
+// GetTypeMeta retrieves the ObjectMeta of the Bar. Implements the KRShaped interface.
 func (b *Bar) GetTypeMeta() *metav1.TypeMeta {
 	return &b.TypeMeta
 }
 
-// GetObjectMeta retrieves the ObjectMeta of the KResource. Implements the KRShaped interface.
+// GetObjectMeta retrieves the ObjectMeta of the Bar. Implements the KRShaped interface.
 func (b *Bar) GetObjectMeta() *metav1.ObjectMeta {
 	return &b.ObjectMeta
 }
 
-// GetStatus retrieves the status of the KResource. Implements the KRShaped interface.
+// GetStatus retrieves the status of the Bar. Implements the KRShaped interface.
 func (b *Bar) GetStatus() *duckv1.Status {
 	return &b.Status.Status
 }
