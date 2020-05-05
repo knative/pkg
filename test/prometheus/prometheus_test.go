@@ -35,6 +35,11 @@ const (
 type TestPromAPI struct {
 }
 
+//  Alerts returns a list of all active alerts.
+func (tpa *TestPromAPI) Alerts(ctx context.Context) (v1.AlertsResult, error) {
+	return v1.AlertsResult{}, nil
+}
+
 // AlertManagers returns an overview of the current state of the Prometheus alert manager discovery.
 func (tpa *TestPromAPI) AlertManagers(ctx context.Context) (v1.AlertManagersResult, error) {
 	return v1.AlertManagersResult{}, nil
@@ -60,32 +65,37 @@ func (tpa *TestPromAPI) Flags(ctx context.Context) (v1.FlagsResult, error) {
 	return v1.FlagsResult{}, nil
 }
 
+// LabelNames returns all the unique label names present in the block in sorted order.
+func (tpa *TestPromAPI) LabelNames(ctx context.Context) ([]string, v1.Warnings, error) {
+	return nil, nil, nil
+}
+
 // LabelValues performs a query for the values of the given label.
-func (tpa *TestPromAPI) LabelValues(ctx context.Context, label string) (model.LabelValues, error) {
-	return nil, nil
+func (tpa *TestPromAPI) LabelValues(ctx context.Context, label string) (model.LabelValues, v1.Warnings, error) {
+	return nil, nil, nil
 }
 
 // Query performs a query on the prom api
-func (tpa *TestPromAPI) Query(c context.Context, query string, ts time.Time) (model.Value, error) {
+func (tpa *TestPromAPI) Query(c context.Context, query string, ts time.Time) (model.Value, v1.Warnings, error) {
 	s := model.Sample{Value: expected}
 	var v []*model.Sample
 	v = append(v, &s)
 
-	return model.Vector(v), nil
+	return model.Vector(v), nil, nil
 }
 
 // QueryRange performs a query for the given range.
-func (tpa *TestPromAPI) QueryRange(ctx context.Context, query string, r v1.Range) (model.Value, error) {
+func (tpa *TestPromAPI) QueryRange(ctx context.Context, query string, r v1.Range) (model.Value, v1.Warnings, error) {
 	s := model.Sample{Value: expected}
 	var v []*model.Sample
 	v = append(v, &s)
 
-	return model.Vector(v), nil
+	return model.Vector(v), nil, nil
 }
 
 // Series finds series by label matchers.
-func (tpa *TestPromAPI) Series(ctx context.Context, matches []string, startTime time.Time, endTime time.Time) ([]model.LabelSet, error) {
-	return nil, nil
+func (tpa *TestPromAPI) Series(ctx context.Context, matches []string, startTime time.Time, endTime time.Time) ([]model.LabelSet, v1.Warnings, error) {
+	return nil, nil, nil
 }
 
 // Snapshot creates a snapshot of all current data into snapshots/<datetime>-<rand>
@@ -94,9 +104,24 @@ func (tpa *TestPromAPI) Snapshot(ctx context.Context, skipHead bool) (v1.Snapsho
 	return v1.SnapshotResult{}, nil
 }
 
+// Rules returns a list of alerting and recording rules that are currently loaded.
+func (tpa *TestPromAPI) Rules(ctx context.Context) (v1.RulesResult, error) {
+	return v1.RulesResult{}, nil
+}
+
 // Targets returns an overview of the current state of the Prometheus target discovery.
 func (t *TestPromAPI) Targets(ctx context.Context) (v1.TargetsResult, error) {
 	return v1.TargetsResult{}, nil
+}
+
+// TargetsMetadata returns metadata about metrics currently scraped by the target.
+func (tpa *TestPromAPI) TargetsMetadata(ctx context.Context, matchTarget string, metric string, limit string) ([]v1.MetricMetadata, error) {
+	return nil, nil
+}
+
+// Metadata returns metadata about metrics currently scraped by the metric name.
+func (tpa *TestPromAPI) Metadata(ctx context.Context, metric string, limit string) (map[string][]v1.Metadata, error) {
+	return nil, nil
 }
 
 // getTestAPI gets the test api implementation for prometheus api

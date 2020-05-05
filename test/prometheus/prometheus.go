@@ -20,6 +20,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"sync"
 	"time"
 
@@ -101,9 +102,13 @@ func AllowPrometheusSync(logf logging.FormatLogger) {
 func RunQuery(ctx context.Context, logf logging.FormatLogger, promAPI v1.API, query string) (float64, error) {
 	logf("Running prometheus query: %s", query)
 
-	value, err := promAPI.Query(ctx, query, time.Now())
+	value, warnings, err := promAPI.Query(ctx, query, time.Now())
 	if err != nil {
 		return 0, err
+	}
+
+	if len(warnings) > 0 {
+		logf("Encountered warnings while running query: %s", strings.Join(warnings, ", "))
 	}
 
 	return VectorValue(value)
@@ -113,9 +118,13 @@ func RunQuery(ctx context.Context, logf logging.FormatLogger, promAPI v1.API, qu
 func RunQueryRange(ctx context.Context, logf logging.FormatLogger, promAPI v1.API, query string, r v1.Range) (float64, error) {
 	logf("Running prometheus query: %s", query)
 
-	value, err := promAPI.QueryRange(ctx, query, r)
+	value, warnings, err := promAPI.QueryRange(ctx, query, r)
 	if err != nil {
 		return 0, err
+	}
+
+	if len(warnings) > 0 {
+		logf("Encountered warnings while running query: %s", strings.Join(warnings, ", "))
 	}
 
 	return VectorValue(value)
