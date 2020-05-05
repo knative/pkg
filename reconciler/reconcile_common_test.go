@@ -28,7 +28,7 @@ import (
 	v1 "knative.dev/pkg/apis/duck/v1"
 )
 
-func makeResources() (*duckv1.KResource, *duckv1.KResource) {
+func makeResource() *duckv1.KResource {
 	fooCond := apis.Condition{
 		Type:    "Foo",
 		Status:  corev1.ConditionTrue,
@@ -40,18 +40,7 @@ func makeResources() (*duckv1.KResource, *duckv1.KResource) {
 		Message: "Something something bar",
 	}
 
-	old := &duckv1.KResource{
-		ObjectMeta: metav1.ObjectMeta{
-			Generation: 0,
-		},
-
-		Status: v1.Status{
-			ObservedGeneration: 0,
-			Conditions:         v1.Conditions{fooCond, readyCond},
-		},
-	}
-
-	new := &duckv1.KResource{
+	return &duckv1.KResource{
 		ObjectMeta: metav1.ObjectMeta{
 			Generation: 1,
 		},
@@ -61,69 +50,31 @@ func makeResources() (*duckv1.KResource, *duckv1.KResource) {
 			Conditions:         v1.Conditions{fooCond, readyCond},
 		},
 	}
-	return old, new
+}
+
+func TestPreProcessResetsReady(t *testing.T) {
+	resource := makeResource()
+
+	krShape := duckv1.KRShaped(resource)
+	PreProcessReconcile(context.Background(), krShape)
+
+	// Expect ready to be reset to Unknown
+	if rc := resource.Status.GetCondition(apis.ConditionReady); rc.Status != "Unknown" {
+		t.Errorf("Expected unchanged ready status got=%s want=Unknown", rc.Status)
+	}
 }
 
 func TestPostProcessReconcileBumpsGeneration(t *testing.T) {
-	old, new := makeResources()
+	resource := makeResource()
 
-	oldShape := duckv1.KRShaped(old)
-	newShape := duckv1.KRShaped(new)
-	PostProcessReconcile(context.Background(), oldShape, newShape, nil)
+	krShape := duckv1.KRShaped(resource)
+	PostProcessReconcile(context.Background(), krShape)
 
-	if new.Status.ObservedGeneration != new.Generation {
-		t.Errorf("Expected observed generation bump got=%d want=%d", new.Status.ObservedGeneration, new.Generation)
+	if resource.Status.ObservedGeneration != resource.Generation {
+		t.Errorf("Expected observed generation bump got=%d want=%d", resource.Status.ObservedGeneration, resource.Generation)
 	}
 
-	if newShape.GetStatus().ObservedGeneration != newShape.GetObjectMeta().GetGeneration() {
-		t.Errorf("Expected observed generation bump got=%d want=%d", new.Status.ObservedGeneration, new.Generation)
-	}
-}
-
-func TestPostProcessReconcileBumpsWithEvent(t *testing.T) {
-	old, new := makeResources()
-	reconcilEvent := NewEvent(corev1.EventTypeWarning, exampleStatusFailed, "")
-
-	oldShape := duckv1.KRShaped(old)
-	newShape := duckv1.KRShaped(new)
-	PostProcessReconcile(context.Background(), oldShape, newShape, reconcilEvent)
-
-	// Expect generation bumped
-	if new.Status.ObservedGeneration != new.Generation {
-		t.Errorf("Expected observed generation bump got=%d want=%d", new.Status.ObservedGeneration, new.Generation)
-	}
-
-	if newShape.GetStatus().ObservedGeneration != newShape.GetObjectMeta().GetGeneration() {
-		t.Errorf("Expected observed generation bump got=%d want=%d", new.Status.ObservedGeneration, new.Generation)
-	}
-
-	// The old/new conditions were not changed, expect sets unknown
-	if rc := new.Status.GetCondition(apis.ConditionReady); rc.Status != "Unknown" {
-		t.Errorf("Expected unknown ready status got=%s", rc.Status)
-	}
-}
-
-func TestPostProcessWithEventCondChange(t *testing.T) {
-	old, new := makeResources()
-	originalReadyStatus := old.Status.GetCondition(apis.ConditionReady).Status
-	old.Status.Conditions = make([]apis.Condition, 0)
-	reconcilEvent := NewEvent(corev1.EventTypeWarning, exampleStatusFailed, "")
-
-	oldShape := duckv1.KRShaped(old)
-	newShape := duckv1.KRShaped(new)
-	PostProcessReconcile(context.Background(), oldShape, newShape, reconcilEvent)
-
-	// Expect generation bumped
-	if new.Status.ObservedGeneration != new.Generation {
-		t.Errorf("Expected observed generation bump got=%d want=%d", new.Status.ObservedGeneration, new.Generation)
-	}
-
-	if newShape.GetStatus().ObservedGeneration != newShape.GetObjectMeta().GetGeneration() {
-		t.Errorf("Expected observed generation bump got=%d want=%d", new.Status.ObservedGeneration, new.Generation)
-	}
-
-	// The old/new conditions were changed, expect that ready remains unchanged
-	if rc := new.Status.GetCondition(apis.ConditionReady); rc.Status != originalReadyStatus {
-		t.Errorf("Expected unchanged ready status got=%s want=%s", rc.Status, originalReadyStatus)
+	if krShape.GetStatus().ObservedGeneration != krShape.GetObjectMeta().GetGeneration() {
+		t.Errorf("Expected observed generation bump got=%d want=%d", resource.Status.ObservedGeneration, resource.Generation)
 	}
 }
