@@ -34,7 +34,7 @@ func PostProcessReconcile(ctx context.Context, old v1.KRShaped, new v1.KRShaped,
 
 	// Bump observed generation to denote that we have processed this
 	// generation regardless of success or failure.
-	newStatus.ObservedGeneration = new.GetObjectMeta().Generation
+	newStatus.ObservedGeneration = new.GetObjectMeta().GetGeneration()
 
 	if newStatus.ObservedGeneration != old.GetStatus().ObservedGeneration && reconcileEvent != nil {
 		oldRc := old.GetStatus().GetCondition(apis.ConditionReady)
