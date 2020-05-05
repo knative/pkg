@@ -30,9 +30,9 @@ import (
 type KRShaped interface {
 	metav1.ObjectMetaAccessor
 
-	GetTypeMeta() metav1.TypeMeta
+	GetTypeMeta() *metav1.TypeMeta
 
-	GetStatus() Status
+	GetStatus() *Status
 }
 
 // Asserts KResource conformance with KRShaped
@@ -80,11 +80,11 @@ type KResourceList struct {
 }
 
 // GetTypeMeta retrieves the ObjectMeta of the KResource. Implements the KRShaped interface.
-func (t *KResource) GetTypeMeta() metav1.TypeMeta {
-	return t.TypeMeta
+func (t *KResource) GetTypeMeta() *metav1.TypeMeta {
+	return &t.TypeMeta
 }
 
 // GetStatus retrieves the status of the KResource. Implements the KRShaped interface.
-func (t *KResource) GetStatus() Status {
-	return t.Status
+func (t *KResource) GetStatus() *Status {
+	return &t.Status
 }
