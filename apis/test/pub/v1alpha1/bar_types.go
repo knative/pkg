@@ -102,3 +102,8 @@ func (b *Bar) GetTypeMeta() *metav1.TypeMeta {
 func (b *Bar) GetStatus() *duckv1.Status {
 	return &b.Status.Status
 }
+
+// GetHappyConditionType retrieves the happy condition of this resource. Implements the KRShaped interface.
+func (t *Bar) GetHappyConditionType() apis.ConditionType {
+	return apis.ConditionReady
+}
