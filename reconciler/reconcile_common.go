@@ -25,10 +25,11 @@ import (
 	"knative.dev/pkg/logging"
 )
 
-var condSet = apis.NewLivingConditionSet()
+const failedGenerationBump = "NewObservedGenFailure"
 
 // PostProcessReconcile contains logic to apply after reconciliation of a resource.
 func PostProcessReconcile(ctx context.Context, old, new duckv1.KRShaped, reconcileEvent Event) {
+	var condSet = apis.NewLivingConditionSet()
 	logger := logging.FromContext(ctx)
 	newStatus := new.GetStatus()
 
@@ -43,7 +44,8 @@ func PostProcessReconcile(ctx context.Context, old, new duckv1.KRShaped, reconci
 		// the reconciler should change the ready state. By default we will set unknown.
 		if equality.Semantic.DeepEqual(oldRc, rc) {
 			logger.Warn("A reconconiler observed a new generation without updating the resource status")
-			condSet.Manage(newStatus).MarkUnknown(apis.ConditionReady, "", "unsucessfully observed a new generation")
+			condSet.Manage(newStatus).MarkUnknown(
+				apis.ConditionReady, failedGenerationBump, "unsucessfully observed a new generation")
 		}
 	}
 }
