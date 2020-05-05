@@ -34,7 +34,7 @@ type KRShaped interface {
 
 	GetStatus() *Status
 
-	GetHappyConditionType() apis.ConditionType
+	GetTopLevelConditionType() apis.ConditionType
 }
 
 // Asserts KResource conformance with KRShaped
@@ -91,8 +91,8 @@ func (t *KResource) GetStatus() *Status {
 	return &t.Status
 }
 
-// GetHappyConditionType retrieves the happy condition of this resource. Implements the KRShaped interface.
-func (t *KResource) GetHappyConditionType() apis.ConditionType {
+// GetTopLevelConditionType retrieves the happy condition of this resource. Implements the KRShaped interface.
+func (t *KResource) GetTopLevelConditionType() apis.ConditionType {
 	// Note: KResources are unmarshalled from existing resources. This will only work properly for resources that
 	// have already been initialized to their type.
 	if cond := t.Status.GetCondition(apis.ConditionSucceeded); cond != nil {

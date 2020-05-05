@@ -22,14 +22,14 @@ import (
 	"knative.dev/pkg/apis"
 )
 
-func TestGetHappyCondition(t *testing.T) {
+func TestGetTopLevelCondition(t *testing.T) {
 	resource := KResource{}
 
 	condSet := apis.NewLivingConditionSet("Foo")
 	mgr := condSet.Manage(resource.GetStatus())
 	mgr.InitializeConditions()
 
-	if resource.GetHappyConditionType() != apis.ConditionReady {
+	if resource.GetTopLevelConditionType() != apis.ConditionReady {
 		t.Error("Expected Ready as happy condition for living condition set type")
 	}
 
@@ -37,7 +37,7 @@ func TestGetHappyCondition(t *testing.T) {
 	mgr = condSet.Manage(resource.GetStatus())
 	mgr.InitializeConditions()
 
-	if resource.GetHappyConditionType() != apis.ConditionSucceeded {
+	if resource.GetTopLevelConditionType() != apis.ConditionSucceeded {
 		t.Error("Expected Succeeded as happy condition for living condition set type")
 	}
 }
