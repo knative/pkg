@@ -117,6 +117,7 @@ func TestNewConfigMapFromData(t *testing.T) {
 }
 
 func TestGetComponentConfig(t *testing.T) {
+	const expectedName = "the-component"
 	cases := []struct {
 		name     string
 		config   Config
@@ -128,9 +129,10 @@ func TestGetComponentConfig(t *testing.T) {
 			LeaseDuration:     15 * time.Second,
 			RenewDeadline:     10 * time.Second,
 			RetryPeriod:       2 * time.Second,
-			EnabledComponents: sets.NewString("component"),
+			EnabledComponents: sets.NewString(expectedName),
 		},
 		expected: ComponentConfig{
+			Component:     expectedName,
 			LeaderElect:   true,
 			ResourceLock:  "leases",
 			LeaseDuration: 15 * time.Second,
@@ -147,13 +149,14 @@ func TestGetComponentConfig(t *testing.T) {
 			EnabledComponents: sets.NewString("not-the-component"),
 		},
 		expected: ComponentConfig{
+			Component:   expectedName,
 			LeaderElect: false,
 		},
 	}}
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			actual := tc.config.GetComponentConfig("component")
+			actual := tc.config.GetComponentConfig(expectedName)
 			if got, want := actual, tc.expected; !cmp.Equal(got, want) {
 				t.Errorf("Incorrect config: diff(-want,+got):\n%s", cmp.Diff(want, got))
 			}

@@ -39,11 +39,6 @@ var (
 		Group: "group.dev",
 	}
 
-	fakeListGK = schema.GroupKind{
-		Kind:  "FakeList",
-		Group: "group.dev",
-	}
-
 	fakeGR = schema.GroupResource{
 		Resource: "fakes",
 		Group:    "group.dev",

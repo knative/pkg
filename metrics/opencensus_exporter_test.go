@@ -65,7 +65,7 @@ func TestOpenCensusConfig(t *testing.T) {
 			domain:             "secure",
 			component:          "test",
 			backendDestination: OpenCensus,
-			secretFetcher: fakeSecretList(corev1.Secret{
+			secret: &corev1.Secret{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "test-opencensus",
 				},
@@ -73,7 +73,7 @@ func TestOpenCensusConfig(t *testing.T) {
 					"client-cert.pem": cert,
 					"client-key.pem":  key,
 				},
-			}).Get,
+			},
 			requireSecure: true,
 		},
 		tls: &tls.Config{},
@@ -140,6 +140,10 @@ func fakeSecretList(s ...corev1.Secret) *fakeSecrets {
 
 func (f *fakeSecrets) Get(name string) (*corev1.Secret, error) {
 	for _, s := range f.secrets {
+		if fmt.Sprintf("%s/%s", s.Namespace, s.Name) == name {
+			return &s, nil
+		}
+
 		if s.Name == name {
 			return &s, nil
 		}
@@ -157,25 +161,25 @@ func GetServer(config *tls.Config) (net.Listener, chan error, error) {
 			serverCert, err := tls.LoadX509KeyPair(
 				filepath.Join("testdata", "server-cert.pem"), filepath.Join("testdata", "server-key.pem"))
 			if err != nil {
-				return nil, nil, fmt.Errorf("Unable to load server cert from testadata: %v", err)
+				return nil, nil, fmt.Errorf("Unable to load server cert from testadata: %w", err)
 			}
 			config.Certificates = []tls.Certificate{serverCert}
 		}
 		server, err = tls.Listen("tcp", "localhost:0", config)
 	}
 	if err != nil {
-		return nil, nil, fmt.Errorf("Unable to create listen server: %v", err)
+		return nil, nil, fmt.Errorf("Unable to create listen server: %w", err)
 	}
 	shutdown := make(chan error)
 	go func() {
 		c, err := server.Accept()
 		if err != nil {
-			shutdown <- fmt.Errorf("Failed to accept connection: %v", err)
+			shutdown <- fmt.Errorf("Failed to accept connection: %w", err)
 			return
 		}
 		err = c.Close()
 		if err != nil {
-			shutdown <- fmt.Errorf("Failed to close server connection: %v", err)
+			shutdown <- fmt.Errorf("Failed to close server connection: %w", err)
 			return
 		}
 		shutdown <- nil

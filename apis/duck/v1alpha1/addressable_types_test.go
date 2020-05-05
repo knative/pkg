@@ -30,45 +30,30 @@ func TestGetURL(t *testing.T) {
 	tests := []struct {
 		name string
 		addr Addressable
-		want apis.URL
+		want *apis.URL
 	}{{
 		name: "just hostname",
 		addr: Addressable{
 			Hostname: "foo.com",
 		},
-		want: apis.URL{
-			Scheme: "http",
-			Host:   "foo.com",
-		},
+		want: apis.HTTP("foo.com"),
 	}, {
 		name: "just url",
 		addr: Addressable{
 			Addressable: v1beta1.Addressable{
-				URL: &apis.URL{
-					Scheme: "https",
-					Host:   "bar.com",
-				},
+				URL: apis.HTTP("bar.com"),
 			},
 		},
-		want: apis.URL{
-			Scheme: "https",
-			Host:   "bar.com",
-		},
+		want: apis.HTTP("bar.com"),
 	}, {
 		name: "both fields",
 		addr: Addressable{
 			Hostname: "foo.bar.svc.cluster.local",
 			Addressable: v1beta1.Addressable{
-				URL: &apis.URL{
-					Scheme: "https",
-					Host:   "baz.com",
-				},
+				URL: apis.HTTPS("baz.com"),
 			},
 		},
-		want: apis.URL{
-			Scheme: "https",
-			Host:   "baz.com",
-		},
+		want: apis.HTTPS("baz.com"),
 	}}
 
 	for _, test := range tests {
@@ -93,11 +78,9 @@ func TestConversion(t *testing.T) {
 		name: "v1",
 		addr: &Addressable{
 			Addressable: v1beta1.Addressable{
-				URL: &apis.URL{
-					Scheme: "https",
-					Host:   "bar.com",
-				},
+				URL: apis.HTTP("bar.com"),
 			},
+			Hostname: "bar.com",
 		},
 		conv:        &v1.Addressable{},
 		wantErrUp:   false,
@@ -106,11 +89,9 @@ func TestConversion(t *testing.T) {
 		name: "v1beta1",
 		addr: &Addressable{
 			Addressable: v1beta1.Addressable{
-				URL: &apis.URL{
-					Scheme: "https",
-					Host:   "bar.com",
-				},
+				URL: apis.HTTP("bar.com"),
 			},
+			Hostname: "bar.com",
 		},
 		conv:        &v1beta1.Addressable{},
 		wantErrUp:   false,
@@ -119,10 +100,7 @@ func TestConversion(t *testing.T) {
 		name: "v1alpha1",
 		addr: &Addressable{
 			Addressable: v1beta1.Addressable{
-				URL: &apis.URL{
-					Scheme: "https",
-					Host:   "bar.com",
-				},
+				URL: apis.HTTPS("bar.com"),
 			},
 		},
 		conv:        &Addressable{},
@@ -186,10 +164,7 @@ func TestConvertTo(t *testing.T) {
 		},
 		conv: &v1beta1.Addressable{},
 		want: &v1beta1.Addressable{
-			URL: &apis.URL{
-				Scheme: "http",
-				Host:   "bar.com",
-			},
+			URL: apis.HTTP("bar.com"),
 		},
 		wantErrUp:   false,
 		wantErrDown: false,
@@ -207,10 +182,7 @@ func TestConvertTo(t *testing.T) {
 		},
 		conv: &v1.Addressable{},
 		want: &v1.Addressable{
-			URL: &apis.URL{
-				Scheme: "http",
-				Host:   "bar.com",
-			},
+			URL: apis.HTTP("bar.com"),
 		},
 		wantErrUp:   false,
 		wantErrDown: false,
@@ -225,6 +197,35 @@ func TestConvertTo(t *testing.T) {
 				}
 			} else if test.wantErrUp {
 				t.Errorf("ConvertTo() = %#v, wanted error", got)
+			}
+
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("roundtrip (-want, +got) = %v", diff)
+			}
+		})
+	}
+}
+
+func TestConvertFrom(t *testing.T) {
+	tests := []struct {
+		name string
+		in   apis.Convertible
+		want *Addressable
+	}{{
+		name: "v1beta1",
+		in:   &v1beta1.Addressable{URL: apis.HTTP("foo.example.com")},
+		want: &Addressable{Addressable: v1beta1.Addressable{URL: apis.HTTP("foo.example.com")}, Hostname: "foo.example.com"},
+	}, {
+		name: "v1",
+		in:   &v1.Addressable{URL: apis.HTTP("bar.example.com")},
+		want: &Addressable{Addressable: v1beta1.Addressable{URL: apis.HTTP("bar.example.com")}, Hostname: "bar.example.com"},
+	}}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			got := &Addressable{}
+			if err := got.ConvertFrom(context.Background(), test.in); err != nil {
+				t.Errorf("ConvertFrom() = %v", err)
 			}
 
 			if diff := cmp.Diff(test.want, got); diff != "" {
