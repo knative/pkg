@@ -49,6 +49,7 @@ type Foo struct {
 var _ apis.Validatable = (*Foo)(nil)
 var _ apis.Defaultable = (*Foo)(nil)
 var _ kmeta.OwnerRefable = (*Foo)(nil)
+var _ duckv1.KRShaped = (*Foo)(nil)
 
 // FooSpec holds the desired state of the Foo (from the client).
 type FooSpec struct{}
@@ -90,4 +91,19 @@ func (f *Foo) SetDefaults(ctx context.Context) {
 func (f *Foo) Validate(ctx context.Context) *apis.FieldError {
 	// Nothing to validate.
 	return nil
+}
+
+// GetTypeMeta retrieves the ObjectMeta of the KResource. Implements the KRShaped interface.
+func (f *Foo) GetTypeMeta() *metav1.TypeMeta {
+	return &f.TypeMeta
+}
+
+// GetObjectMeta retrieves the ObjectMeta of the KResource. Implements the KRShaped interface.
+func (f *Foo) GetObjectMeta() *metav1.ObjectMeta {
+	return &f.ObjectMeta
+}
+
+// GetStatus retrieves the status of the KResource. Implements the KRShaped interface.
+func (f *Foo) GetStatus() *duckv1.Status {
+	return &f.Status.Status
 }
