@@ -24,10 +24,11 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"knative.dev/pkg/apis"
+	duckv1 "knative.dev/pkg/apis/duck/v1"
 	v1 "knative.dev/pkg/apis/duck/v1"
 )
 
-func makeResources() (*v1.KResource, *v1.KResource) {
+func makeResources() (*duckv1.KResource, *duckv1.KResource) {
 	foo := &apis.Condition{
 		Type:    "Foo",
 		Status:  corev1.ConditionTrue,
@@ -39,7 +40,7 @@ func makeResources() (*v1.KResource, *v1.KResource) {
 		Message: "Something something bar",
 	}
 
-	old := &v1.KResource{
+	old := &duckv1.KResource{
 		ObjectMeta: metav1.ObjectMeta{
 			Generation: 0,
 		},
@@ -50,7 +51,7 @@ func makeResources() (*v1.KResource, *v1.KResource) {
 		},
 	}
 
-	new := &v1.KResource{
+	new := &duckv1.KResource{
 		ObjectMeta: metav1.ObjectMeta{
 			Generation: 1,
 		},
@@ -66,8 +67,10 @@ func makeResources() (*v1.KResource, *v1.KResource) {
 func TestPostProcessReconcileBumpsGeneration(t *testing.T) {
 	old, new := makeResources()
 
-	oldShape := v1.KRShaped(old)
-	newShape := v1.KRShaped(new)
+	oldShape := duck
+	duckv1.KRShaped(old)
+	newShape := duck
+	duckv1.KRShaped(new)
 	PostProcessReconcile(context.Background(), oldShape, newShape, nil)
 
 	if new.Status.ObservedGeneration != new.Generation {
@@ -83,8 +86,10 @@ func TestPostProcessReconcileBumpsWithEvent(t *testing.T) {
 	old, new := makeResources()
 	reconcilEvent := NewEvent(corev1.EventTypeWarning, exampleStatusFailed, "")
 
-	oldShape := v1.KRShaped(old)
-	newShape := v1.KRShaped(new)
+	oldShape := duck
+	duckv1.KRShaped(old)
+	newShape := duck
+	duckv1.KRShaped(new)
 	PostProcessReconcile(context.Background(), oldShape, newShape, reconcilEvent)
 
 	// Expect generation bumped
@@ -108,8 +113,10 @@ func TestPostProcessWithEventCondChange(t *testing.T) {
 	old.Status.Conditions = make([]apis.Condition, 0)
 	reconcilEvent := NewEvent(corev1.EventTypeWarning, exampleStatusFailed, "")
 
-	oldShape := v1.KRShaped(old)
-	newShape := v1.KRShaped(new)
+	oldShape := duck
+	duckv1.KRShaped(old)
+	newShape := duck
+	duckv1.KRShaped(new)
 	PostProcessReconcile(context.Background(), oldShape, newShape, reconcilEvent)
 
 	// Expect generation bumped

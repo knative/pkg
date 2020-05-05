@@ -21,14 +21,14 @@ import (
 
 	"k8s.io/apimachinery/pkg/api/equality"
 	"knative.dev/pkg/apis"
-	v1 "knative.dev/pkg/apis/duck/v1"
+	duckv1 "knative.dev/pkg/apis/duck/v1"
 	"knative.dev/pkg/logging"
 )
 
 var condSet = apis.NewLivingConditionSet()
 
 // PostProcessReconcile contains logic to apply after reconciliation of a resource.
-func PostProcessReconcile(ctx context.Context, old v1.KRShaped, new v1.KRShaped, reconcileEvent Event) {
+func PostProcessReconcile(ctx context.Context, old duckv1.KRShaped, new duckv1.KRShaped, reconcileEvent Event) {
 	logger := logging.FromContext(ctx)
 	newStatus := new.GetStatus()
 
