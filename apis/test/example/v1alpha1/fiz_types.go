@@ -95,16 +95,11 @@ func (f *ClusterFiz) Validate(ctx context.Context) *apis.FieldError {
 }
 
 // GetTypeMeta retrieves the ObjectMeta of the ClusterFiz. Implements the KRShaped interface.
-func (f *ClusterFiz) GetTypeMeta() *metav1.TypeMeta {
-	return &f.TypeMeta
-}
-
-// GetObjectMeta retrieves the ObjectMeta of the ClusterFiz. Implements the KRShaped interface.
-func (f *ClusterFiz) GetObjectMeta() *metav1.ObjectMeta {
-	return &f.ObjectMeta
+func (f *ClusterFiz) GetTypeMeta() metav1.TypeMeta {
+	return f.TypeMeta
 }
 
 // GetStatus retrieves the status of the ClusterFiz. Implements the KRShaped interface.
-func (f *ClusterFiz) GetStatus() *duckv1.Status {
-	return &f.Status.Status
+func (f *ClusterFiz) GetStatus() duckv1.Status {
+	return f.Status.Status
 }

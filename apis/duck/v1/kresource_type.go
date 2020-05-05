@@ -28,11 +28,11 @@ import (
 
 // KRShaped is an interface for retrieving the duck elements of an arbitraty resource.
 type KRShaped interface {
-	GetTypeMeta() *metav1.TypeMeta
+	metav1.ObjectMetaAccessor
 
-	GetObjectMeta() *metav1.ObjectMeta
+	GetTypeMeta() metav1.TypeMeta
 
-	GetStatus() *Status
+	GetStatus() Status
 }
 
 // Asserts KResource conformance with KRShaped
@@ -80,16 +80,11 @@ type KResourceList struct {
 }
 
 // GetTypeMeta retrieves the ObjectMeta of the KResource. Implements the KRShaped interface.
-func (t *KResource) GetTypeMeta() *metav1.TypeMeta {
-	return &t.TypeMeta
-}
-
-// GetObjectMeta retrieves the ObjectMeta of the KResource. Implements the KRShaped interface.
-func (t *KResource) GetObjectMeta() *metav1.ObjectMeta {
-	return &t.ObjectMeta
+func (t *KResource) GetTypeMeta() metav1.TypeMeta {
+	return t.TypeMeta
 }
 
 // GetStatus retrieves the status of the KResource. Implements the KRShaped interface.
-func (t *KResource) GetStatus() *Status {
-	return &t.Status
+func (t *KResource) GetStatus() Status {
+	return t.Status
 }
