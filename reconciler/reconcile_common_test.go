@@ -67,7 +67,7 @@ func TestPostProcessReconcileBumpsGeneration(t *testing.T) {
 	old, new := makeResources()
 
 	oldShape := v1.KRShaped(old)
-	newShape := interface{}(new).(v1.KRShaped)
+	newShape := v1.KRShaped(new)
 	PostProcessReconcile(context.Background(), oldShape, newShape, nil)
 
 	if new.Status.ObservedGeneration != new.Generation {
