@@ -21,18 +21,21 @@ set -o pipefail
 export GO111MODULE=on
 export K8S_VERSION="$1"
 
-go mod edit \
-  -require=k8s.io/api@"${K8S_VERSION}" \
-  -require=k8s.io/apiextensions-apiserver@"${K8S_VERSION}" \
-  -require=k8s.io/apimachinery@"${K8S_VERSION}" \
-  -require=k8s.io/code-generator@"${K8S_VERSION}" \
-  -require=k8s.io/client-go@"${K8S_VERSION}" \
-  \
-  -replace=k8s.io/api=k8s.io/api@"${K8S_VERSION}" \
-  -replace=k8s.io/apiextensions-apiserver=k8s.io/apiextensions-apiserver@"${K8S_VERSION}" \
-  -replace=k8s.io/apimachinery=k8s.io/apimachinery@"${K8S_VERSION}" \
-  -replace=k8s.io/code-generator=k8s.io/code-generator@"${K8S_VERSION}" \
-  -replace=k8s.io/client-go=k8s.io/client-go@"${K8S_VERSION}" \
+K8S_DEPS=(
+  "k8s.io/api"
+  "k8s.io/apiextensions-apiserver"
+  "k8s.io/apimachinery"
+  "k8s.io/code-generator"
+  "k8s.io/client-go"
+)
+
+
+for dep in "${K8S_DEPS[@]}"
+do
+  go mod edit \
+    -require="${dep}@${K8S_VERSION}" \
+    -replace="${dep}=${dep}@${K8S_VERSION}"
+done
 
 ./hack/update-deps.sh
 
