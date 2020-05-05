@@ -29,24 +29,24 @@ func ResponseCodeClass(responseCode int) string {
 	return strconv.Itoa(responseCode/100) + "xx"
 }
 
-// MaybeInsertInt conditionally insert the tag when cond is true.
-func MaybeInsertInt(key tag.Key, value int, cond bool) tag.Mutator {
+// MaybeInsertIntTag conditionally insert the tag when cond is true.
+func MaybeInsertIntTag(key tag.Key, value int, cond bool) tag.Mutator {
 	if cond {
 		return tag.Insert(key, strconv.Itoa(value))
 	}
 	return tag.Insert(key, "")
 }
 
-// MaybeInsertBool conditionally insert the tag when cond is true.
-func MaybeInsertBool(key tag.Key, value bool, cond bool) tag.Mutator {
+// MaybeInsertBoolTag conditionally insert the tag when cond is true.
+func MaybeInsertBoolTag(key tag.Key, value bool, cond bool) tag.Mutator {
 	if cond {
 		return tag.Insert(key, strconv.FormatBool(value))
 	}
 	return tag.Insert(key, "")
 }
 
-// MaybeInsertString conditionally insert the tag when cond is true.
-func MaybeInsertString(key tag.Key, value string, cond bool) tag.Mutator {
+// MaybeInsertStringTag conditionally insert the tag when cond is true.
+func MaybeInsertStringTag(key tag.Key, value string, cond bool) tag.Mutator {
 	if cond {
 		return tag.Insert(key, value)
 	}
