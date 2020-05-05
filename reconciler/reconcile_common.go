@@ -52,7 +52,7 @@ func PostProcessReconcile(ctx context.Context, resource duckv1.KRShaped) {
 	// generation regardless of success or failure.
 	newStatus.ObservedGeneration = resource.GetObjectMeta().GetGeneration()
 
-	rc := newStatus.GetCondition(apis.ConditionReady)
+	rc := newStatus.GetCondition(resource.GetTopLevelConditionType())
 	if rc.Reason == failedGenerationBump {
 		logger.Warn("A reconconiler observed a new generation without updating the resource status")
 	}
