@@ -103,3 +103,8 @@ func (f *ClusterFiz) GetTypeMeta() *metav1.TypeMeta {
 func (f *ClusterFiz) GetStatus() *duckv1.Status {
 	return &f.Status.Status
 }
+
+// GetTopLevelConditionType retrieves the happy condition of this resource. Implements the KRShaped interface.
+func (*ClusterFiz) GetTopLevelConditionType() apis.ConditionType {
+	return apis.ConditionReady
+}
