@@ -28,7 +28,7 @@ import (
 var condSet = apis.NewLivingConditionSet()
 
 // PostProcessReconcile contains logic to apply after reconciliation of a resource.
-func PostProcessReconcile(ctx context.Context, old duckv1.KRShaped, new duckv1.KRShaped, reconcileEvent Event) {
+func PostProcessReconcile(ctx context.Context, old, new duckv1.KRShaped, reconcileEvent Event) {
 	logger := logging.FromContext(ctx)
 	newStatus := new.GetStatus()
 

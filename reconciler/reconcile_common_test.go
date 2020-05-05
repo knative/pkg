@@ -29,12 +29,12 @@ import (
 )
 
 func makeResources() (*duckv1.KResource, *duckv1.KResource) {
-	foo := &apis.Condition{
+	fooCond := apis.Condition{
 		Type:    "Foo",
 		Status:  corev1.ConditionTrue,
 		Message: "Something something foo",
 	}
-	bar := &apis.Condition{
+	readyCond := apis.Condition{
 		Type:    "Ready",
 		Status:  corev1.ConditionTrue,
 		Message: "Something something bar",
@@ -47,7 +47,7 @@ func makeResources() (*duckv1.KResource, *duckv1.KResource) {
 
 		Status: v1.Status{
 			ObservedGeneration: 0,
-			Conditions:         v1.Conditions{*foo, *bar},
+			Conditions:         v1.Conditions{fooCond, readyCond},
 		},
 	}
 
@@ -58,7 +58,7 @@ func makeResources() (*duckv1.KResource, *duckv1.KResource) {
 
 		Status: v1.Status{
 			ObservedGeneration: 0,
-			Conditions:         v1.Conditions{*foo, *bar},
+			Conditions:         v1.Conditions{fooCond, readyCond},
 		},
 	}
 	return old, new
@@ -67,17 +67,15 @@ func makeResources() (*duckv1.KResource, *duckv1.KResource) {
 func TestPostProcessReconcileBumpsGeneration(t *testing.T) {
 	old, new := makeResources()
 
-	oldShape := duck
-	duckv1.KRShaped(old)
-	newShape := duck
-	duckv1.KRShaped(new)
+	oldShape := duckv1.KRShaped(old)
+	newShape := duckv1.KRShaped(new)
 	PostProcessReconcile(context.Background(), oldShape, newShape, nil)
 
 	if new.Status.ObservedGeneration != new.Generation {
 		t.Errorf("Expected observed generation bump got=%d want=%d", new.Status.ObservedGeneration, new.Generation)
 	}
 
-	if newShape.GetStatus().ObservedGeneration != newShape.GetObjectMeta().Generation {
+	if newShape.GetStatus().ObservedGeneration != newShape.GetObjectMeta().GetGeneration() {
 		t.Errorf("Expected observed generation bump got=%d want=%d", new.Status.ObservedGeneration, new.Generation)
 	}
 }
@@ -86,10 +84,8 @@ func TestPostProcessReconcileBumpsWithEvent(t *testing.T) {
 	old, new := makeResources()
 	reconcilEvent := NewEvent(corev1.EventTypeWarning, exampleStatusFailed, "")
 
-	oldShape := duck
-	duckv1.KRShaped(old)
-	newShape := duck
-	duckv1.KRShaped(new)
+	oldShape := duckv1.KRShaped(old)
+	newShape := duckv1.KRShaped(new)
 	PostProcessReconcile(context.Background(), oldShape, newShape, reconcilEvent)
 
 	// Expect generation bumped
@@ -97,7 +93,7 @@ func TestPostProcessReconcileBumpsWithEvent(t *testing.T) {
 		t.Errorf("Expected observed generation bump got=%d want=%d", new.Status.ObservedGeneration, new.Generation)
 	}
 
-	if newShape.GetStatus().ObservedGeneration != newShape.GetObjectMeta().Generation {
+	if newShape.GetStatus().ObservedGeneration != newShape.GetObjectMeta().GetGeneration() {
 		t.Errorf("Expected observed generation bump got=%d want=%d", new.Status.ObservedGeneration, new.Generation)
 	}
 
@@ -113,10 +109,8 @@ func TestPostProcessWithEventCondChange(t *testing.T) {
 	old.Status.Conditions = make([]apis.Condition, 0)
 	reconcilEvent := NewEvent(corev1.EventTypeWarning, exampleStatusFailed, "")
 
-	oldShape := duck
-	duckv1.KRShaped(old)
-	newShape := duck
-	duckv1.KRShaped(new)
+	oldShape := duckv1.KRShaped(old)
+	newShape := duckv1.KRShaped(new)
 	PostProcessReconcile(context.Background(), oldShape, newShape, reconcilEvent)
 
 	// Expect generation bumped
@@ -124,7 +118,7 @@ func TestPostProcessWithEventCondChange(t *testing.T) {
 		t.Errorf("Expected observed generation bump got=%d want=%d", new.Status.ObservedGeneration, new.Generation)
 	}
 
-	if newShape.GetStatus().ObservedGeneration != newShape.GetObjectMeta().Generation {
+	if newShape.GetStatus().ObservedGeneration != newShape.GetObjectMeta().GetGeneration() {
 		t.Errorf("Expected observed generation bump got=%d want=%d", new.Status.ObservedGeneration, new.Generation)
 	}
 
