@@ -99,8 +99,8 @@ func TestSync(t *testing.T) {
 		if (err == nil && data.expErr) || (err != nil && !data.expErr) {
 			log.Fatalf("%s\ngot: '%v', want: '%v'", errMsg, err, data.expErr)
 		}
-		if !reflect.DeepEqual(c.MetaData, data.expMetadata) {
-			log.Fatalf("%s\ngot: '%v', want: '%v'", errMsg, c.MetaData, data.expMetadata)
+		if !reflect.DeepEqual(c.metadata, data.expMetadata) {
+			log.Fatalf("%s\ngot: '%v', want: '%v'", errMsg, c.metadata, data.expMetadata)
 		}
 	}
 }
@@ -136,8 +136,8 @@ func TestSet(t *testing.T) {
 		if (err == nil && data.expErr) || (err != nil && !data.expErr) {
 			log.Fatalf("%s\ngot: '%v', want: '%v'", errMsg, err, data.expErr)
 		}
-		if !reflect.DeepEqual(c.MetaData, data.expMetadata) {
-			log.Fatalf("%s\ngot: '%v', want: '%v'", errMsg, c.MetaData, data.expMetadata)
+		if !reflect.DeepEqual(c.metadata, data.expMetadata) {
+			log.Fatalf("%s\ngot: '%v', want: '%v'", errMsg, c.metadata, data.expMetadata)
 		}
 	}
 }
@@ -173,8 +173,8 @@ func TestGet(t *testing.T) {
 		if (err == nil && data.expErr) || (err != nil && !data.expErr) {
 			log.Fatalf("%s\ngot: '%v', want: '%v'", errMsg, err, data.expErr)
 		}
-		if !reflect.DeepEqual(c.MetaData, data.expMetadata) {
-			log.Fatalf("%s\ngot: '%v', want: '%v'", errMsg, c.MetaData, data.expMetadata)
+		if !reflect.DeepEqual(c.metadata, data.expMetadata) {
+			log.Fatalf("%s\ngot: '%v', want: '%v'", errMsg, c.metadata, data.expMetadata)
 		}
 		if val != data.expVal {
 			log.Fatalf("%s\ngot: %q, want: %q", errMsg, val, data.expVal)

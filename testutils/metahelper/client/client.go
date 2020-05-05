@@ -35,7 +35,7 @@ const (
 // Client holds metadata as a string:string map, as well as path for storing
 // metadata
 type Client struct {
-	MetaData map[string]string
+	metadata map[string]string
 	Path     string
 }
 
@@ -44,7 +44,7 @@ type Client struct {
 // Errors out if there is any file i/o problem other than file not exist error.
 func New(dir string) (*Client, error) {
 	c := &Client{
-		MetaData: make(map[string]string),
+		metadata: make(map[string]string),
 	}
 	if dir == "" {
 		log.Println("Getting artifacts dir from prow")
@@ -60,17 +60,17 @@ func New(dir string) (*Client, error) {
 }
 
 // sync is shared by Get and Set, invoked at the very beginning of each, makes
-// sure the file exists, and loads the content of file into c.MetaData
+// sure the file exists, and loads the content of file into c.metadata
 func (c *Client) sync() error {
 	_, err := os.Stat(c.Path)
 	if os.IsNotExist(err) {
-		body, _ := json.Marshal(&c.MetaData)
+		body, _ := json.Marshal(&c.metadata)
 		err = ioutil.WriteFile(c.Path, body, 0777)
 	} else {
 		var body []byte
 		body, err = ioutil.ReadFile(c.Path)
 		if err == nil {
-			err = json.Unmarshal(body, &c.MetaData)
+			err = json.Unmarshal(body, &c.metadata)
 		}
 	}
 
@@ -83,11 +83,11 @@ func (c *Client) Set(key, val string) error {
 	if err != nil {
 		return err
 	}
-	if oldVal, ok := c.MetaData[key]; ok {
+	if oldVal, ok := c.metadata[key]; ok {
 		log.Printf("Overriding meta %q:%q with new value %q", key, oldVal, val)
 	}
-	c.MetaData[key] = val
-	body, _ := json.Marshal(c.MetaData)
+	c.metadata[key] = val
+	body, _ := json.Marshal(c.metadata)
 	return ioutil.WriteFile(c.Path, body, 0777)
 }
 
@@ -99,7 +99,7 @@ func (c *Client) Get(key string) (string, error) {
 	var res string
 	err := c.sync()
 	if err == nil {
-		if val, ok := c.MetaData[key]; ok {
+		if val, ok := c.metadata[key]; ok {
 			res = val
 		} else {
 			err = fmt.Errorf("key %q doesn't exist", key)
