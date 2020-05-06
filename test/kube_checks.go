@@ -22,13 +22,13 @@ package test
 import (
 	"context"
 	"fmt"
+	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	"strings"
 	"time"
 
 	"github.com/google/go-cmp/cmp"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
-	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 	k8styped "k8s.io/client-go/kubernetes/typed/core/v1"
@@ -123,27 +123,27 @@ func countEndpointsNum(e *corev1.Endpoints) int {
 	return num
 }
 
-// GetEndpoints returns addresses of endpoints selected by given listOptions.
-func GetEndpoints(client *KubeClient, namespace string, listOptions metav1.ListOptions) ([]string, error) {
-	endpoints, err := client.Kube.CoreV1().Endpoints(namespace).List(listOptions)
-	if err != nil || len(endpoints.Items) == 0 {
+// GetEndpointAddresses returns addresses of endpoints for the given service.
+func GetEndpointAddresses(client *KubeClient, svcName, svcNamespace string) ([]string, error) {
+	endpoints, err := client.Kube.CoreV1().Endpoints(svcNamespace).Get(svcName, metav1.GetOptions{})
+	if err != nil || countEndpointsNum(endpoints) == 0 {
 		return nil, fmt.Errorf("no endpoints or error: %w", err)
 	}
 	var hosts []string
-	for _, item := range endpoints.Items {
-		for _, sub := range item.Subsets {
-			for _, addr := range sub.Addresses {
-				hosts = append(hosts, addr.IP)
-			}
+	for _, sub := range endpoints.Subsets {
+		for _, addr := range sub.Addresses {
+			hosts = append(hosts, addr.IP)
 		}
 	}
 	return hosts, nil
 }
 
-// WaitForChangedEndpoints waits until the endpoints selected by listOptions differ from origEndpoints.
-func WaitForChangedEndpoints(client *KubeClient, namespace string, listOptions metav1.ListOptions, origEndpoints []string) error {
-	return wait.PollImmediate(100*time.Millisecond, time.Minute, func() (bool, error) {
-		newEndpoints, err := GetEndpoints(client, namespace, listOptions)
+// WaitForChangedEndpoints waits until the endpoints for the given service differ from origEndpoints.
+func WaitForChangedEndpoints(client *KubeClient, svcName, svcNamespace string, origEndpoints []string) error {
+	span := logging.GetEmitableSpan(context.Background(), "WaitForChangedEndpoints/"+svcName)
+	defer span.End()
+	return wait.PollImmediate(1*time.Second, 2*time.Minute, func() (bool, error) {
+		newEndpoints, err := GetEndpointAddresses(client, svcName, svcNamespace)
 		return !cmp.Equal(origEndpoints, newEndpoints), err
 	})
 }
@@ -158,6 +158,25 @@ func DeploymentScaledToZeroFunc() func(d *appsv1.Deployment) (bool, error) {
 	return func(d *appsv1.Deployment) (bool, error) {
 		return d.Status.ReadyReplicas == 0, nil
 	}
+}
+
+// WaitForPodDeleted waits for the given pod to disappear from the given namespace.
+func WaitForPodDeleted(client *KubeClient, name, namespace string) error {
+	return wait.PollImmediate(interval, time.Minute, func() (bool, error) {
+		exists, err := PodExists(client, name, namespace)
+		return !exists, err
+	})
+}
+
+// PodExists checks if the given pod exists in the given namespace.
+func PodExists(client *KubeClient, name, namespace string) (bool, error) {
+	if _, err := client.Kube.CoreV1().Pods(namespace).Get(name, metav1.GetOptions{}); err != nil {
+		if apierrs.IsNotFound(err) {
+			return false, nil
+		}
+		return false, err
+	}
+	return true, nil
 }
 
 // WaitForLogContent waits until logs for given Pod/Container include the given content.
@@ -202,25 +221,6 @@ func PodsRunning(podList *corev1.PodList) (bool, error) {
 // PodRunning will check the status conditions of the pod and return true if it's Running
 func PodRunning(pod *corev1.Pod) bool {
 	return pod.Status.Phase == corev1.PodRunning || pod.Status.Phase == corev1.PodSucceeded
-}
-
-// WaitForPodDeleted waits for the given pod to disappear from the given namespace.
-func WaitForPodDeleted(client *KubeClient, name, namespace string) error {
-	return wait.PollImmediate(interval, time.Minute, func() (bool, error) {
-		exists, err := PodExists(client, name, namespace)
-		return !exists, err
-	})
-}
-
-// PodExists checks if the given pod exists in the given namespace.
-func PodExists(client *KubeClient, name, namespace string) (bool, error) {
-	if _, err := client.Kube.CoreV1().Pods(namespace).Get(name, metav1.GetOptions{}); err != nil {
-		if apierrs.IsNotFound(err) {
-			return false, nil
-		}
-		return false, err
-	}
-	return true, nil
 }
 
 // WaitForDeploymentScale waits until the given deployment has the expected scale.
