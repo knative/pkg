@@ -25,7 +25,6 @@ import (
 
 	"knative.dev/pkg/apis"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
-	v1 "knative.dev/pkg/apis/duck/v1"
 )
 
 func makeResource(topLevelCond string) *duckv1.KResource {
@@ -45,9 +44,9 @@ func makeResource(topLevelCond string) *duckv1.KResource {
 			Generation: 1,
 		},
 
-		Status: v1.Status{
+		Status: duckv1.Status{
 			ObservedGeneration: 0,
-			Conditions:         v1.Conditions{fooCond, readyCond},
+			Conditions:         duckv1.Conditions{fooCond, readyCond},
 		},
 	}
 }

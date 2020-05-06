@@ -18,8 +18,8 @@ package reconciler
 
 import (
 	"context"
+	"fmt"
 
-	"github.com/pkg/errors"
 	"knative.dev/pkg/apis"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
 	"knative.dev/pkg/logging"
@@ -54,7 +54,7 @@ func PostProcessReconcile(ctx context.Context, resource duckv1.KRShaped) {
 
 	rc := newStatus.GetCondition(resource.GetTopLevelConditionType())
 	if rc.Reason == failedGenerationBump {
-		logger.Warn("A reconconiler observed a new generation without updating the resource status")
+		logger.Warn("A reconciler observed a new generation without updating the resource status")
 	}
 }
 
@@ -65,6 +65,6 @@ func getDefaultConditionSet(resource duckv1.KRShaped) (apis.ConditionSet, error)
 	case apis.ConditionSucceeded:
 		return apis.NewBatchConditionSet(), nil
 	default:
-		return apis.ConditionSet{}, errors.Errorf("No ConditionSet found for type %s", resource.GetTypeMeta().Kind)
+		return apis.ConditionSet{}, fmt.Errorf("no ConditionSet found for type %s", resource.GetTypeMeta().Kind)
 	}
 }
