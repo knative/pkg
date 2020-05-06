@@ -103,7 +103,7 @@ func (f *Foo) GetStatus() *duckv1.Status {
 	return &f.Status.Status
 }
 
-// GetTopLevelConditionType retrieves the happy condition of this resource. Implements the KRShaped interface.
-func (*Foo) GetTopLevelConditionType() apis.ConditionType {
-	return apis.ConditionSucceeded
+// GetConditionSet retrieves the condition set for this resource. Implements the KRShaped interface.
+func (*Foo) GetConditionSet() apis.ConditionSet {
+	return apis.NewLivingConditionSet()
 }
