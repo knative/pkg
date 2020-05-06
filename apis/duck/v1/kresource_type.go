@@ -26,7 +26,7 @@ import (
 	"knative.dev/pkg/apis"
 )
 
-// KRShaped is an interface for retrieving the duck elements of an arbitraty resource.
+// KRShaped is an interface for retrieving the duck elements of an arbitrary resource.
 type KRShaped interface {
 	metav1.ObjectMetaAccessor
 
