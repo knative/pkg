@@ -18,9 +18,7 @@ package reconciler
 
 import (
 	"context"
-	"fmt"
 
-	"knative.dev/pkg/apis"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
 	"knative.dev/pkg/logging"
 )
@@ -29,17 +27,14 @@ const failedGenerationBump = "NewObservedGenFailure"
 
 // PreProcessReconcile contains logic to apply before reconciliation of a resource.
 func PreProcessReconcile(ctx context.Context, resource duckv1.KRShaped) {
-	condSet, err := getDefaultConditionSet(resource)
-	if err != nil {
-		return
-	}
-
 	newStatus := resource.GetStatus()
+
 	if newStatus.ObservedGeneration != resource.GetObjectMeta().GetGeneration() {
-		// Reset ready to unknown. The reconciler is expected to overwrite this.
+		condSet := resource.GetConditionSet()
 		manager := condSet.Manage(newStatus)
-		manager.MarkUnknown(
-			manager.GetTopLevelCondition().Type, failedGenerationBump, "unsucessfully observed a new generation")
+
+		// Reset Ready/Successful to unknown. The reconciler is expected to overwrite this.
+		manager.MarkUnknown(condSet.GetTopLevelConditionType(), failedGenerationBump, "unsuccessfully observed a new generation")
 	}
 }
 
@@ -47,24 +42,14 @@ func PreProcessReconcile(ctx context.Context, resource duckv1.KRShaped) {
 func PostProcessReconcile(ctx context.Context, resource duckv1.KRShaped) {
 	logger := logging.FromContext(ctx)
 	newStatus := resource.GetStatus()
+	mgr := resource.GetConditionSet().Manage(newStatus)
 
 	// Bump observed generation to denote that we have processed this
 	// generation regardless of success or failure.
 	newStatus.ObservedGeneration = resource.GetObjectMeta().GetGeneration()
 
-	rc := newStatus.GetCondition(resource.GetTopLevelConditionType())
+	rc := mgr.GetTopLevelCondition()
 	if rc.Reason == failedGenerationBump {
 		logger.Warn("A reconciler observed a new generation without updating the resource status")
-	}
-}
-
-func getDefaultConditionSet(resource duckv1.KRShaped) (apis.ConditionSet, error) {
-	switch resource.GetTopLevelConditionType() {
-	case apis.ConditionReady:
-		return apis.NewLivingConditionSet(), nil
-	case apis.ConditionSucceeded:
-		return apis.NewBatchConditionSet(), nil
-	default:
-		return apis.ConditionSet{}, fmt.Errorf("no ConditionSet found for type %s", resource.GetTypeMeta().Kind)
 	}
 }
