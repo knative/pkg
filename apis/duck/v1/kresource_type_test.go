@@ -43,10 +43,9 @@ func TestGetConditionSet(t *testing.T) {
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
 			resource := KResource{}
+			test.condSet.Manage(resource.GetStatus()).InitializeConditions()
 
-			condSet := test.condSet
-			mgr := condSet.Manage(resource.GetStatus())
-			mgr.InitializeConditions()
+			mgr := resource.GetConditionSet().Manage(resource.GetStatus())
 
 			if mgr.GetTopLevelCondition().Type != test.expectedTopLevelCondition {
 				t.Errorf("wrong top-level condition got=%s want=%s",
