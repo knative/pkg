@@ -19,13 +19,13 @@ package ha
 import (
 	"context"
 	"fmt"
-	"knative.dev/pkg/test/logging"
 	"strings"
 	"time"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"knative.dev/pkg/test"
+	"knative.dev/pkg/test/logging"
 )
 
 // WaitForNewLeader waits until the holder of the given lease is different from the previousLeader.
