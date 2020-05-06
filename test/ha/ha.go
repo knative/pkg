@@ -17,7 +17,9 @@ limitations under the License.
 package ha
 
 import (
+	"context"
 	"fmt"
+	"knative.dev/pkg/test/logging"
 	"strings"
 	"time"
 
@@ -26,8 +28,10 @@ import (
 	"knative.dev/pkg/test"
 )
 
-// GetLeader returns the holder of the given lease which is a pod name.
-func GetLeader(client *test.KubeClient, lease, namespace string) (string, error) {
+// WaitForNewLeader waits until the holder of the given lease is different from the previousLeader.
+func WaitForNewLeader(client *test.KubeClient, lease, namespace, previousLeader string) (string, error) {
+	span := logging.GetEmitableSpan(context.Background(), "WaitForNewLeader/"+lease)
+	defer span.End()
 	var leader string
 	err := wait.PollImmediate(time.Second, time.Minute, func() (bool, error) {
 		lease, err := client.Kube.CoordinationV1().Leases(namespace).Get(lease, metav1.GetOptions{})
@@ -35,8 +39,7 @@ func GetLeader(client *test.KubeClient, lease, namespace string) (string, error)
 			return false, fmt.Errorf("error getting lease %s: %w", lease, err)
 		}
 		leader = strings.Split(*lease.Spec.HolderIdentity, "_")[0]
-		// the leader must be an existing pod
-		return test.PodExists(client, leader, namespace)
+		return leader != previousLeader, nil
 	})
 	return leader, err
 }

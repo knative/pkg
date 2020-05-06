@@ -162,6 +162,8 @@ func DeploymentScaledToZeroFunc() func(d *appsv1.Deployment) (bool, error) {
 
 // WaitForPodDeleted waits for the given pod to disappear from the given namespace.
 func WaitForPodDeleted(client *KubeClient, name, namespace string) error {
+	span := logging.GetEmitableSpan(context.Background(), fmt.Sprintf("WaitForPodDeleted/%s", name))
+	defer span.End()
 	return wait.PollImmediate(interval, time.Minute, func() (bool, error) {
 		exists, err := PodExists(client, name, namespace)
 		return !exists, err
