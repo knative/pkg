@@ -22,22 +22,35 @@ import (
 	"knative.dev/pkg/apis"
 )
 
-func TestGetTopLevelCondition(t *testing.T) {
-	resource := KResource{}
-
-	condSet := apis.NewLivingConditionSet("Foo")
-	mgr := condSet.Manage(resource.GetStatus())
-	mgr.InitializeConditions()
-
-	if resource.GetTopLevelConditionType() != apis.ConditionReady {
-		t.Error("Expected Ready as happy condition for living condition set type")
+func TestGetConditionSet(t *testing.T) {
+	testCases := []struct {
+		name                      string
+		condSet                   apis.ConditionSet
+		expectedTopLevelCondition apis.ConditionType
+	}{
+		{
+			name:                      "living set",
+			condSet:                   apis.NewLivingConditionSet(),
+			expectedTopLevelCondition: apis.ConditionReady,
+		},
+		{
+			name:                      "batch set",
+			condSet:                   apis.NewBatchConditionSet(),
+			expectedTopLevelCondition: apis.ConditionSucceeded,
+		},
 	}
 
-	condSet = apis.NewBatchConditionSet("Foo")
-	mgr = condSet.Manage(resource.GetStatus())
-	mgr.InitializeConditions()
+	for _, test := range testCases {
+		t.Run(test.name, func(t *testing.T) {
+			resource := KResource{}
+			test.condSet.Manage(resource.GetStatus()).InitializeConditions()
 
-	if resource.GetTopLevelConditionType() != apis.ConditionSucceeded {
-		t.Error("Expected Succeeded as happy condition for living condition set type")
+			mgr := resource.GetConditionSet().Manage(resource.GetStatus())
+
+			if mgr.GetTopLevelCondition().Type != test.expectedTopLevelCondition {
+				t.Errorf("wrong top-level condition got=%s want=%s",
+					mgr.GetTopLevelCondition().Type, test.expectedTopLevelCondition)
+			}
+		})
 	}
 }

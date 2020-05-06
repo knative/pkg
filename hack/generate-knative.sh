@@ -46,9 +46,6 @@ APIS_PKG="$3"
 GROUPS_WITH_VERSIONS="$4"
 shift 4
 
-# To support running this script from anywhere, we have to first cd into this directory.
-cd $(dirname "${0}")/..
-
 function codegen::join() { local IFS="$1"; shift; echo "$*"; }
 
 # enumerate group versions
