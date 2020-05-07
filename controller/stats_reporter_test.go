@@ -23,6 +23,7 @@ import (
 
 	"go.opencensus.io/stats/view"
 	"knative.dev/pkg/metrics/metricstest"
+	_ "knative.dev/pkg/metrics/testing"
 )
 
 func TestNewStatsReporterErrors(t *testing.T) {
