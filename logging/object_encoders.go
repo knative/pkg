@@ -39,8 +39,7 @@ func StringSet(s sets.String) zapcore.ObjectMarshalerFunc {
 // NamespacedName returns a marshaler for NamespacedName.
 func NamespacedName(n types.NamespacedName) zapcore.ObjectMarshalerFunc {
 	return func(enc zapcore.ObjectEncoder) error {
-		enc.AddString("name", n.Name)
-		enc.AddString("namespace", n.Namespace)
+		enc.AddString("key", n.Namespace+"/"+n.Name)
 		return nil
 	}
 }
