@@ -44,9 +44,9 @@ func StringSet(s sets.String) zapcore.ObjectMarshalerFunc {
 
 // NamespacedName returns a marshaler for NamespacedName.
 // To use this in sugared logger do:
-//	logger.Infow("Enqueueing", zap.Object("key", logging.NamespacedName(n)))
+//	logger.Infow("Enqueuing", zap.Object("key", logging.NamespacedName(n)))
 // To use with non-sugared logger do:
-//	logger.Info("Enqueueing", zap.Object("key", logging.NamespacedName(n)))
+//	logger.Info("Enqueuing", zap.Object("key", logging.NamespacedName(n)))
 func NamespacedName(n types.NamespacedName) zapcore.ObjectMarshalerFunc {
 	return func(enc zapcore.ObjectEncoder) error {
 		if n.Namespace != "" {
