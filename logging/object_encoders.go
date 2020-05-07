@@ -29,6 +29,12 @@ import (
 // to optimize logging experience and performance.
 
 // StringSet returns a marshaler for the set of strings.
+// To use this in sugared logger do:
+//	logger.Infow("Revision State", zap.Object("healthy", logging.StringSet(healthySet)),
+//		zap.Object("unhealthy", logging.StringSet(unhealthySet)))
+// To use with non-sugared logger do:
+//	logger.Info("Revision State", zap.Object("healthy", logging.StringSet(healthySet)),
+//		zap.Object("unhealthy", logging.StringSet(unhealthySet)))
 func StringSet(s sets.String) zapcore.ObjectMarshalerFunc {
 	return func(enc zapcore.ObjectEncoder) error {
 		enc.AddString("keys", strings.Join(s.UnsortedList(), ","))
@@ -37,6 +43,10 @@ func StringSet(s sets.String) zapcore.ObjectMarshalerFunc {
 }
 
 // NamespacedName returns a marshaler for NamespacedName.
+// To use this in sugared logger do:
+//	logger.Infow("Enqueueing", zap.Object("key", logging.NamespacedName(n)))
+// To use with non-sugared logger do:
+//	logger.Info("Enqueueing", zap.Object("key", logging.NamespacedName(n)))
 func NamespacedName(n types.NamespacedName) zapcore.ObjectMarshalerFunc {
 	return func(enc zapcore.ObjectEncoder) error {
 		enc.AddString("key", n.Namespace+"/"+n.Name)
