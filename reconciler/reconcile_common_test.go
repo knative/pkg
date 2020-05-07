@@ -56,18 +56,15 @@ func TestPreProcessResetsReady(t *testing.T) {
 		name                      string
 		initTopLevelCond          string
 		expectedTopLevelCondition apis.ConditionType
-	}{
-		{
+	}{{
 			name:                      "top level Ready",
 			initTopLevelCond:          "Ready",
 			expectedTopLevelCondition: apis.ConditionReady,
-		},
-		{
+		},{
 			name:                      "top level Succeeded",
 			initTopLevelCond:          "Succeeded",
 			expectedTopLevelCondition: apis.ConditionSucceeded,
-		},
-	}
+		}}
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
