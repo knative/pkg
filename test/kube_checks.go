@@ -95,6 +95,19 @@ func WaitForPodState(client *KubeClient, inState func(p *corev1.Pod) (bool, erro
 	})
 }
 
+// WaitForPodDeleted waits for the given pod to disappear from the given namespace.
+func WaitForPodDeleted(client *KubeClient, name, namespace string) error {
+	if err := WaitForPodState(client, func(p *corev1.Pod) (bool, error) {
+		// Always return false. We're oly interested in the error which indicates pod deletion or timeout.
+		return false, nil
+	}, name, namespace); err != nil {
+		if !apierrs.IsNotFound(err) {
+			return err
+		}
+	}
+	return nil
+}
+
 // WaitForServiceHasAtLeastOneEndpoint polls the status of the specified Service
 // from client every interval until number of service endpoints = numOfEndpoints
 func WaitForServiceEndpoints(client *KubeClient, svcName string, svcNamespace string, numOfEndpoints int) error {
@@ -158,27 +171,6 @@ func DeploymentScaledToZeroFunc() func(d *appsv1.Deployment) (bool, error) {
 	return func(d *appsv1.Deployment) (bool, error) {
 		return d.Status.ReadyReplicas == 0, nil
 	}
-}
-
-// WaitForPodDeleted waits for the given pod to disappear from the given namespace.
-func WaitForPodDeleted(client *KubeClient, name, namespace string) error {
-	span := logging.GetEmitableSpan(context.Background(), fmt.Sprintf("WaitForPodDeleted/%s", name))
-	defer span.End()
-	return wait.PollImmediate(interval, time.Minute, func() (bool, error) {
-		exists, err := PodExists(client, name, namespace)
-		return !exists, err
-	})
-}
-
-// PodExists checks if the given pod exists in the given namespace.
-func PodExists(client *KubeClient, name, namespace string) (bool, error) {
-	if _, err := client.Kube.CoreV1().Pods(namespace).Get(name, metav1.GetOptions{}); err != nil {
-		if apierrs.IsNotFound(err) {
-			return false, nil
-		}
-		return false, err
-	}
-	return true, nil
 }
 
 // WaitForLogContent waits until logs for given Pod/Container include the given content.
