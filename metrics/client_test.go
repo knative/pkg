@@ -58,11 +58,7 @@ func TestClientMetrics(t *testing.T) {
 	metrics.Register(cp.NewLatencyMetric(), cp.NewResultMetric())
 
 	// Reset the metrics configuration to avoid leaked state from other tests.
-<<<<<<< HEAD
 	InitForTesting()
-=======
-	setCurMetricsConfig(nil)
->>>>>>> master
 
 	views := cp.DefaultViews()
 	if got, want := len(views), 2; got != want {
