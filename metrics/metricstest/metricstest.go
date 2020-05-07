@@ -20,8 +20,13 @@ import (
 	"reflect"
 
 	"go.opencensus.io/stats/view"
+	"knative.dev/pkg/metrics"
 	"knative.dev/pkg/test"
 )
+
+func init() {
+	metrics.InitForTesting()
+}
 
 // CheckStatsReported checks that there is a view registered with the given name for each string in names,
 // and that each view has at least one record.

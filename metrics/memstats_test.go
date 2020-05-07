@@ -36,7 +36,11 @@ func TestMemStatsMetrics(t *testing.T) {
 	msp.Start(ctx, period)
 
 	// Reset the metrics configuration to avoid leaked state from other tests.
+<<<<<<< HEAD
 	InitForTesting()
+=======
+	setCurMetricsConfig(nil)
+>>>>>>> master
 
 	views := msp.DefaultViews()
 	if got, want := len(views), 27; got != want {

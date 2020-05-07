@@ -20,18 +20,18 @@ package customresourcedefinition
 
 import (
 	context "context"
-	"encoding/json"
-	"reflect"
+	json "encoding/json"
+	reflect "reflect"
 
 	zap "go.uber.org/zap"
 	v1 "k8s.io/api/core/v1"
 	v1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 	clientset "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	apiextensionsv1beta1 "k8s.io/apiextensions-apiserver/pkg/client/listers/apiextensions/v1beta1"
-	"k8s.io/apimachinery/pkg/api/equality"
+	equality "k8s.io/apimachinery/pkg/api/equality"
 	errors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/types"
+	types "k8s.io/apimachinery/pkg/types"
 	sets "k8s.io/apimachinery/pkg/util/sets"
 	cache "k8s.io/client-go/tools/cache"
 	record "k8s.io/client-go/tools/record"
