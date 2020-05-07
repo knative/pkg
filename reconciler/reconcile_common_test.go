@@ -41,7 +41,7 @@ func makeResource(topLevelCond string) *duckv1.KResource {
 
 	return &duckv1.KResource{
 		ObjectMeta: metav1.ObjectMeta{
-			Generation: 1,
+			Generation: 42,
 		},
 
 		Status: duckv1.Status{
