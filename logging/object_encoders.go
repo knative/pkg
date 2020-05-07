@@ -49,7 +49,11 @@ func StringSet(s sets.String) zapcore.ObjectMarshalerFunc {
 //	logger.Info("Enqueueing", zap.Object("key", logging.NamespacedName(n)))
 func NamespacedName(n types.NamespacedName) zapcore.ObjectMarshalerFunc {
 	return func(enc zapcore.ObjectEncoder) error {
-		enc.AddString("key", n.Namespace+"/"+n.Name)
+		if n.Namespace != "" {
+			enc.AddString("key", n.Name)
+		} else {
+			enc.AddString("key", n.Namespace+"/"+n.Name)
+		}
 		return nil
 	}
 }
