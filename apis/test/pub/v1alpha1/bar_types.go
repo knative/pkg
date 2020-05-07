@@ -49,6 +49,7 @@ type Bar struct {
 var _ apis.Validatable = (*Bar)(nil)
 var _ apis.Defaultable = (*Bar)(nil)
 var _ kmeta.OwnerRefable = (*Bar)(nil)
+var _ duckv1.KRShaped = (*Bar)(nil)
 
 // BarSpec holds the desired state of the Bar (from the client).
 type BarSpec struct{}
@@ -90,4 +91,19 @@ func (b *Bar) SetDefaults(ctx context.Context) {
 func (b *Bar) Validate(ctx context.Context) *apis.FieldError {
 	// Nothing to validate.
 	return nil
+}
+
+// GetTypeMeta retrieves the ObjectMeta of the Bar. Implements the KRShaped interface.
+func (b *Bar) GetTypeMeta() *metav1.TypeMeta {
+	return &b.TypeMeta
+}
+
+// GetStatus retrieves the status of the Bar. Implements the KRShaped interface.
+func (b *Bar) GetStatus() *duckv1.Status {
+	return &b.Status.Status
+}
+
+// GetConditionSet retrieves the condition set for this resource. Implements the KRShaped interface.
+func (*Bar) GetConditionSet() apis.ConditionSet {
+	return apis.NewLivingConditionSet()
 }

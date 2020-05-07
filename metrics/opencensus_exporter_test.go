@@ -65,7 +65,7 @@ func TestOpenCensusConfig(t *testing.T) {
 			domain:             "secure",
 			component:          "test",
 			backendDestination: OpenCensus,
-			secretFetcher: fakeSecretList(corev1.Secret{
+			secret: &corev1.Secret{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "test-opencensus",
 				},
@@ -73,7 +73,7 @@ func TestOpenCensusConfig(t *testing.T) {
 					"client-cert.pem": cert,
 					"client-key.pem":  key,
 				},
-			}).Get,
+			},
 			requireSecure: true,
 		},
 		tls: &tls.Config{},
@@ -140,6 +140,10 @@ func fakeSecretList(s ...corev1.Secret) *fakeSecrets {
 
 func (f *fakeSecrets) Get(name string) (*corev1.Secret, error) {
 	for _, s := range f.secrets {
+		if fmt.Sprintf("%s/%s", s.Namespace, s.Name) == name {
+			return &s, nil
+		}
+
 		if s.Name == name {
 			return &s, nil
 		}
