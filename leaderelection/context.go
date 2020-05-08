@@ -75,7 +75,7 @@ func (b *builder) BuildElector(ctx context.Context, la reconciler.LeaderAware, n
 	}
 
 	// TODO(mattmoor): Extract this from b.lec for this name?
-	const count uint32 = 1
+	const count uint32 = 3
 
 	buckets := make([]*leaderelection.LeaderElector, 0, count)
 	for i := uint32(0); i < count; i++ {
