@@ -65,7 +65,6 @@ func TestPort(t *testing.T) {
 			if tc.name != testMissingInputName {
 				os.Setenv(portEnvKey, tc.in)
 			}
-			defer os.Unsetenv(portEnvKey)
 
 			defer func() {
 				if r := recover(); r == nil && tc.wantPanic {
@@ -73,6 +72,7 @@ func TestPort(t *testing.T) {
 				} else if r != nil && !tc.wantPanic {
 					t.Error("Got unexpected panic")
 				}
+				os.Unsetenv(portEnvKey)
 			}()
 
 			if got := PortFromEnv(testDefaultPort); got != tc.want {
