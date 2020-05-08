@@ -24,8 +24,8 @@ import (
 
 const portEnvKey = "WEBHOOK_PORT"
 
-// Port returns the webhook port set by portEnvKey, or default port if env var is not set.
-func Port(defaultPort int) int {
+// PortFromEnv returns the webhook port set by portEnvKey, or default port if env var is not set.
+func PortFromEnv(defaultPort int) int {
 	if os.Getenv(portEnvKey) == "" {
 		return defaultPort
 	}
