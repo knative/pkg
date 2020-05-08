@@ -456,8 +456,9 @@ for that resource.
 
 **krshaped=true may become the default if omitted in the future**
 
-Reconcilers can handle common logic for resources that conform to the KRShaped interface. This allows
-the generated code to automatically increment ObservedGeneration.
+Reconcilers can handle common logic for resources that conform to the KRShaped
+interface. This allows the generated code to automatically increment
+ObservedGeneration.
 
 ```go
 // +genreconciler:krshapedlogic=true
