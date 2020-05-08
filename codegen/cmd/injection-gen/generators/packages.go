@@ -462,7 +462,6 @@ func reconcilerPackages(basePackage string, groupPkgName string, gv clientgentyp
 					schemePkg:           filepath.Join(customArgs.VersionedClientSetPackage, "scheme"),
 					reconcilerClass:     reconcilerClass,
 					hasReconcilerClass:  hasReconcilerClass,
-					isKRShaped:          isKRShaped,
 				})
 
 				return generators
@@ -523,6 +522,7 @@ func reconcilerPackages(basePackage string, groupPkgName string, gv clientgentyp
 					reconcilerClass:    reconcilerClass,
 					hasReconcilerClass: hasReconcilerClass,
 					nonNamespaced:      nonNamespaced,
+					isKRShaped:         isKRShaped,
 				})
 
 				return generators
