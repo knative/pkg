@@ -211,6 +211,15 @@ func isNonNamespaced(tags map[string]map[string]string) bool {
 	return has
 }
 
+func isKRShaped(tags map[string]map[string]string) bool {
+	vals, has := tags["genclient"]
+	if !has {
+		return false
+	}
+	shaped, _ := vals["krshaped"]
+	return shaped == "true"
+}
+
 func vendorless(p string) string {
 	if pos := strings.LastIndex(p, "/vendor/"); pos != -1 {
 		return p[pos+len("/vendor/"):]
@@ -424,6 +433,7 @@ func reconcilerPackages(basePackage string, groupPkgName string, gv clientgentyp
 		extracted := extractCommentTags(t)
 		reconcilerClass, hasReconcilerClass := extractReconcilerClassTag(extracted)
 		nonNamespaced := isNonNamespaced(extracted)
+		isKRShaped := isKRShaped(extracted)
 
 		packagePath := filepath.Join(packagePath, strings.ToLower(t.Name.Name))
 
@@ -452,6 +462,7 @@ func reconcilerPackages(basePackage string, groupPkgName string, gv clientgentyp
 					schemePkg:           filepath.Join(customArgs.VersionedClientSetPackage, "scheme"),
 					reconcilerClass:     reconcilerClass,
 					hasReconcilerClass:  hasReconcilerClass,
+					isKRShaped:          isKRShaped,
 				})
 
 				return generators
