@@ -22,6 +22,9 @@ import (
 )
 
 // VolatileTime wraps metav1.Time
+//
+// Unlike metav1.Time, VolatileTimes are considered semantically equal when
+// using go-cmp, so differing VolatileTime values are not considered different.
 type VolatileTime struct {
 	Inner metav1.Time
 }
