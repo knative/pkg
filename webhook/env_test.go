@@ -69,14 +69,14 @@ func TestPort(t *testing.T) {
 
 			defer func() {
 				if r := recover(); r == nil && tc.wantPanic {
-					t.Errorf("did not panic")
+					t.Error("Did not panic")
 				} else if r != nil && !tc.wantPanic {
-					t.Errorf("got unexpected panic")
+					t.Error("Got unexpected panic")
 				}
 			}()
 
 			if got := PortFromEnv(testDefaultPort); got != tc.want {
-				t.Errorf("got %d, want %d", got, tc.want)
+				t.Errorf("PortFromEnv = %d, want: %d", got, tc.want)
 			}
 		})
 	}
