@@ -27,7 +27,7 @@ import (
 )
 
 // +genclient
-// +genreconciler:krshaped=true
+// +genreconciler:krshapedlogic=true
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
 // Foo is for testing.

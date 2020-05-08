@@ -216,7 +216,7 @@ func isKRShaped(tags map[string]map[string]string) bool {
 	if !has {
 		return false
 	}
-	shaped, _ := vals["krshaped"]
+	shaped, _ := vals["krshapedlogic"]
 	return shaped == "true"
 }
 

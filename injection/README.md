@@ -460,7 +460,7 @@ Reconcilers can handle common logic for resources that conform to the KRShaped i
 the generated code to automatically increment ObservedGeneration.
 
 ```go
-// +genreconciler:krshaped=true
+// +genreconciler:krshapedlogic=true
 ```
 
 Setting this annotation will emit the following in the generated reconciler.
