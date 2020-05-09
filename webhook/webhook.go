@@ -221,20 +221,22 @@ func (wh *Webhook) Run(stop <-chan struct{}) error {
 
 	select {
 	case <-stop:
-		// Start failing readiness probes immediately.
-		logger.Info("Starting to fail readiness probes...")
-		close(wh.stopCh)
+		eg.Go(func() error {
+			// Start failing readiness probes immediately.
+			logger.Info("Starting to fail readiness probes...")
+			close(wh.stopCh)
 
-		// Wait for a grace period for the above to take effect and this Pod's
-		// endpoint to be removed from the webhook service's Endpoints.
-		// For this to be effective, it must be greater than the probe's
-		// periodSeconds times failureThreshold by a margin suitable to
-		// propagate the new Endpoints data across the cluster.
-		time.Sleep(wh.gracePeriod)
+			// Wait for a grace period for the above to take effect and this Pod's
+			// endpoint to be removed from the webhook service's Endpoints.
+			// For this to be effective, it must be greater than the probe's
+			// periodSeconds times failureThreshold by a margin suitable to
+			// propagate the new Endpoints data across the cluster.
+			time.Sleep(wh.gracePeriod)
 
-		if err := server.Shutdown(context.Background()); err != nil {
-			return err
-		}
+			return server.Shutdown(context.Background())
+		})
+
+		// Wait for all outstanding go routined to terminate, including our new one.
 		return eg.Wait()
 
 	case <-ctx.Done():
