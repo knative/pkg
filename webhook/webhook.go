@@ -222,7 +222,7 @@ func (wh *Webhook) Run(stop <-chan struct{}) error {
 	select {
 	case <-stop:
 		// Start failing readiness probes immediately.
-		logger.Debug("Starting to fail readiness probes...")
+		logger.Info("Starting to fail readiness probes...")
 		close(wh.stopCh)
 
 		// Wait for a grace period for the above to take effect and this Pod's
