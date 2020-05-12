@@ -202,6 +202,15 @@ func extractReconcilerClassTag(tags map[string]map[string]string) (string, bool)
 	return classname, has
 }
 
+func isKRShaped(tags map[string]map[string]string) bool {
+	vals, has := tags["genreconciler"]
+	if !has {
+		return false
+	}
+	shaped, _ := vals["krshapedlogic"]
+	return shaped == "true"
+}
+
 func isNonNamespaced(tags map[string]map[string]string) bool {
 	vals, has := tags["genclient"]
 	if !has {
@@ -209,15 +218,6 @@ func isNonNamespaced(tags map[string]map[string]string) bool {
 	}
 	_, has = vals["nonNamespaced"]
 	return has
-}
-
-func isKRShaped(tags map[string]map[string]string) bool {
-	vals, has := tags["genclient"]
-	if !has {
-		return false
-	}
-	shaped, _ := vals["krshapedlogic"]
-	return shaped == "true"
 }
 
 func vendorless(p string) string {
