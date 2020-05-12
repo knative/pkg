@@ -2,7 +2,7 @@ package mock
 
 import (
 	"context"
-	"fmt"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -46,13 +46,14 @@ type clientMocker struct {
 
 	// reverse index to lookup which project a bucket is under as GCS has a global
 	// bucket namespace.
-	revIndex map[bucketName]project
+	revIndex map[bucket]project
 }
 
 func NewClientMocker() *clientMocker {
 	c := &clientMocker{
-		gcp: make(map[project]*buckets),
-		err: make(map[Method]*ReturnError),
+		gcp:      make(map[project]*buckets),
+		err:      make(map[Method]*ReturnError),
+		revIndex: make(map[bucket]project),
 	}
 	return c
 }
@@ -79,7 +80,8 @@ func (c *clientMocker) ClearError() {
 // getError is a helper that returns the error if it is set for this function
 func (c *clientMocker) getError(funcName Method) error {
 	if val, ok := c.err[funcName]; ok {
-		if val.NumCall == 0 {
+		if val.NumCall <= 0 {
+			delete(c.err, funcName)
 			return val.Err
 		}
 		val.NumCall = val.NumCall - 1
@@ -89,12 +91,12 @@ func (c *clientMocker) getError(funcName Method) error {
 
 // getBucketRoot is a helper that returns the objects bucket if it exists
 func (c *clientMocker) getBucketRoot(bkt string) *objects {
-	p, ok := c.revIndex[bucketName(bkt)]
+	p, ok := c.revIndex[bucket(bkt)]
 	if !ok {
 		return nil
 	}
 
-	bktRoot, ok := c.gcp[p].bucket[bucketName(bkt)]
+	bktRoot, ok := c.gcp[p].bkt[bucket(bkt)]
 	if !ok {
 		return nil
 	}
@@ -109,17 +111,19 @@ func (c *clientMocker) NewStorageBucket(ctx context.Context, bkt, projectName st
 
 	p := project(projectName)
 
-	if _, ok := c.revIndex[bucketName(bkt)]; ok {
+	if _, ok := c.revIndex[bucket(bkt)]; ok {
 		return NewBucketExistError(bkt)
 	}
 
-	c.gcp[project(projectName)] = &buckets{
-		bucket: make(map[bucketName]*objects),
+	if _, ok := c.gcp[p]; !ok {
+		c.gcp[p] = &buckets{
+			bkt: make(map[bucket]*objects),
+		}
 	}
-	c.gcp[p].bucket[bucketName(bkt)] = &objects{
-		o: make(map[mockpath]*object),
+	c.gcp[p].bkt[bucket(bkt)] = &objects{
+		obj: make(map[mockpath]*object),
 	}
-	c.revIndex[bucketName(bkt)] = project(projectName)
+	c.revIndex[bucket(bkt)] = p
 	return nil
 }
 
@@ -129,14 +133,14 @@ func (c *clientMocker) DeleteStorageBucket(ctx context.Context, bkt string) erro
 		return err
 	}
 
-	bktName := bucketName(bkt)
+	bktName := bucket(bkt)
 
 	p, ok := c.revIndex[bktName]
 	if !ok {
 		return NewNoBucketError(bkt)
 	}
 
-	delete(c.gcp[p].bucket, bktName)
+	delete(c.gcp[p].bkt, bktName)
 	delete(c.revIndex, bktName)
 	return nil
 }
@@ -154,20 +158,16 @@ func (c *clientMocker) Exists(ctx context.Context, bkt, objPath string) bool {
 	}
 
 	dir, obj := filepath.Split(objPath)
-	if _, ok := bktRoot.o[newMockPath(dir, obj)]; ok {
+	if _, ok := bktRoot.obj[newMockPath(dir, obj)]; ok {
 		return true
-	}
-
-	if obj != "" {
-		return false
 	}
 
 	// could be asking for if a directory exists. Since our structure is flat, at
 	// path of an object containing the searched for directory as its subpath means
 	// the directory "exists"
 	// NOTE: this is inefficient....but we are not scale testing with mock anyway.
-	for k, _ := range bktRoot.o {
-		if strings.HasPrefix(k.dir, dir) {
+	for k, _ := range bktRoot.obj {
+		if strings.HasPrefix(k.dir, objPath) {
 			return true
 		}
 	}
@@ -187,7 +187,7 @@ func (c *clientMocker) ListChildrenFiles(ctx context.Context, bkt, dirPath strin
 
 	dir := strings.TrimRight(dirPath, " /") + "/"
 	var children []string
-	for k, _ := range bktRoot.o {
+	for k, _ := range bktRoot.obj {
 		if strings.HasPrefix(k.dir, dir) {
 			children = append(children, k.toString())
 		}
@@ -209,7 +209,7 @@ func (c *clientMocker) ListDirectChildren(ctx context.Context, bkt, dirPath stri
 
 	dir := strings.TrimRight(dirPath, " /") + "/"
 	var children []string
-	for k, _ := range bktRoot.o {
+	for k, _ := range bktRoot.obj {
 		if k.dir == dir {
 			children = append(children, k.toString())
 		}
@@ -233,7 +233,7 @@ func (c *clientMocker) AttrObject(ctx context.Context, bkt, objPath string) (*st
 	if obj == "" {
 		return nil, NewNoObjectError(bkt, obj, dir)
 	}
-	o, ok := bktRoot.o[newMockPath(dir, obj)]
+	o, ok := bktRoot.obj[newMockPath(dir, obj)]
 	if !ok {
 		return nil, NewNoObjectError(bkt, obj, dir)
 	}
@@ -274,16 +274,17 @@ func (c *clientMocker) CopyObject(ctx context.Context, srcBkt, srcObjPath, dstBk
 	srcMockPath := newMockPath(srcDir, srcObjName)
 	dstMockPath := newMockPath(dstDir, dstObjName)
 
-	srcObj, ok := srcBktRoot.o[srcMockPath]
+	srcObj, ok := srcBktRoot.obj[srcMockPath]
 	if !ok {
-		return fmt.Errorf("no object %s", srcObjPath)
+		return NewNoObjectError(srcBkt, srcObjName, srcDir)
 	}
 
-	dstBktRoot.o[dstMockPath] = &object{
-		name: srcObj.name,
-		bkt:  dstBkt,
+	dstBktRoot.obj[dstMockPath] = &object{
+		name:    srcObj.name,
+		bkt:     dstBkt,
+		content: make([]byte, len(srcBktRoot.obj[srcMockPath].content)),
 	}
-	copy(dstBktRoot.o[srcMockPath].content, srcBktRoot.o[srcMockPath].content)
+	copy(dstBktRoot.obj[dstMockPath].content, srcBktRoot.obj[srcMockPath].content)
 	return nil
 }
 
@@ -303,7 +304,7 @@ func (c *clientMocker) ReadObject(ctx context.Context, bkt, objPath string) ([]b
 		return nil, NewNoObjectError(bkt, objName, dir)
 	}
 
-	obj, ok := bktRoot.o[newMockPath(dir, objName)]
+	obj, ok := bktRoot.obj[newMockPath(dir, objName)]
 	if !ok {
 		return nil, NewNoObjectError(bkt, objName, dir)
 	}
@@ -328,11 +329,12 @@ func (c *clientMocker) WriteObject(ctx context.Context, bkt, objPath string, con
 	}
 
 	mockPath := newMockPath(dir, objName)
-	bktRoot.o[mockPath] = &object{
-		name: mockPath,
-		bkt:  bkt,
+	bktRoot.obj[mockPath] = &object{
+		name:    mockPath,
+		bkt:     bkt,
+		content: make([]byte, len(content)),
 	}
-	copy(bktRoot.o[mockPath].content, content)
+	copy(bktRoot.obj[mockPath].content, content)
 	return len(content), nil
 }
 
@@ -344,15 +346,15 @@ func (c *clientMocker) DeleteObject(ctx context.Context, bkt, objPath string) er
 
 	bktRoot := c.getBucketRoot(bkt)
 	if bktRoot == nil {
-		return NewNoBucketError(bkt)
+		return nil
 	}
 
 	dir, objName := filepath.Split(objPath)
 	if objName == "" {
-		return NewNoObjectError(bkt, objName, dir)
+		return nil
 	}
 
-	delete(bktRoot.o, newMockPath(dir, objName))
+	delete(bktRoot.obj, newMockPath(dir, objName))
 	return nil
 }
 
@@ -372,7 +374,7 @@ func (c *clientMocker) Download(ctx context.Context, bkt, objPath, filePath stri
 		return NewNoObjectError(bkt, objName, dir)
 	}
 
-	obj, ok := bktRoot.o[newMockPath(dir, objName)]
+	obj, ok := bktRoot.obj[newMockPath(dir, objName)]
 	if !ok {
 		return NewNoObjectError(bkt, objName, dir)
 	}
@@ -403,23 +405,17 @@ func (c *clientMocker) Upload(ctx context.Context, bkt, objPath, filePath string
 		return NewNoObjectError(bkt, objName, dir)
 	}
 
-	f, err := os.Open(filePath)
+	content, err := ioutil.ReadFile(filePath)
 	if err != nil {
-		return err
-	}
-	defer f.Close()
-
-	var content []byte
-
-	if _, err := f.Read(content); err != nil {
 		return err
 	}
 
 	mockPath := newMockPath(dir, objName)
-	bktRoot.o[mockPath] = &object{
-		name: mockPath,
-		bkt:  bkt,
+	bktRoot.obj[mockPath] = &object{
+		name:    mockPath,
+		bkt:     bkt,
+		content: make([]byte, len(content)),
 	}
-	copy(bktRoot.o[mockPath].content, content)
+	copy(bktRoot.obj[mockPath].content, content)
 	return nil
 }

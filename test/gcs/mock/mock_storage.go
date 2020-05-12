@@ -6,7 +6,7 @@ import (
 
 // more friendly type casts for better readability of what some strings are
 type project string
-type bucketName string
+type bucket string
 type Method string
 
 // mockpath contains the bucket path to an object and the object name
@@ -40,12 +40,12 @@ type object struct {
 
 // bucket of objects - structure is flat
 type objects struct {
-	o map[mockpath]*object
+	obj map[mockpath]*object
 }
 
 // project with buckets
 type buckets struct {
-	bucket map[bucketName]*objects
+	bkt map[bucket]*objects
 }
 
 // Error map to return custom errors for specific methods
