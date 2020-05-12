@@ -23,6 +23,7 @@ import (
 
 	"contrib.go.opencensus.io/exporter/stackdriver"
 	"go.opencensus.io/metric/metricdata"
+	"go.opencensus.io/resource"
 	"go.opencensus.io/stats/view"
 	. "knative.dev/pkg/logging/testing"
 	"knative.dev/pkg/metrics/metricskey"
@@ -180,7 +181,7 @@ func TestGetResourceByDescriptorFunc_UseKnativeRevision(t *testing.T) {
 			Type:        metricdata.TypeGaugeInt64,
 			Unit:        metricdata.UnitDimensionless,
 		}
-		rbd := getResourceByDescriptorFunc(path.Join(testCase.domain, testCase.component), &testGcpMetadata)
+		rbd := getResourceByDescriptorFunc(path.Join(testCase.domain, testCase.component), &testGcpMetadata, &resource.Resource{})
 
 		metricLabels, monitoredResource := rbd(testDescriptor, revisionTestTags)
 		gotResType, resourceLabels := monitoredResource.MonitoredResource()
@@ -210,7 +211,7 @@ func TestGetResourceByDescriptorFunc_UseKnativeBroker(t *testing.T) {
 			Type:        metricdata.TypeGaugeInt64,
 			Unit:        metricdata.UnitDimensionless,
 		}
-		rbd := getResourceByDescriptorFunc(path.Join(testCase.domain, testCase.component), &testGcpMetadata)
+		rbd := getResourceByDescriptorFunc(path.Join(testCase.domain, testCase.component), &testGcpMetadata, &resource.Resource{})
 
 		metricLabels, monitoredResource := rbd(testDescriptor, brokerTestTags)
 		gotResType, resourceLabels := monitoredResource.MonitoredResource()
@@ -239,7 +240,7 @@ func TestGetResourceByDescriptorFunc_UseKnativeTrigger(t *testing.T) {
 			Type:        metricdata.TypeGaugeInt64,
 			Unit:        metricdata.UnitDimensionless,
 		}
-		rbd := getResourceByDescriptorFunc(path.Join(testCase.domain, testCase.component), &testGcpMetadata)
+		rbd := getResourceByDescriptorFunc(path.Join(testCase.domain, testCase.component), &testGcpMetadata, &resource.Resource{})
 
 		metricLabels, monitoredResource := rbd(testDescriptor, triggerTestTags)
 		gotResType, resourceLabels := monitoredResource.MonitoredResource()
@@ -268,7 +269,7 @@ func TestGetResourceByDescriptorFunc_UseKnativeSource(t *testing.T) {
 			Type:        metricdata.TypeGaugeInt64,
 			Unit:        metricdata.UnitDimensionless,
 		}
-		rbd := getResourceByDescriptorFunc(path.Join(testCase.domain, testCase.component), &testGcpMetadata)
+		rbd := getResourceByDescriptorFunc(path.Join(testCase.domain, testCase.component), &testGcpMetadata, &resource.Resource{})
 
 		metricLabels, monitoredResource := rbd(testDescriptor, sourceTestTags)
 		gotResType, resourceLabels := monitoredResource.MonitoredResource()
@@ -304,7 +305,7 @@ func TestGetResourceByDescriptorFunc_UseGlobal(t *testing.T) {
 			Type:        metricdata.TypeGaugeInt64,
 			Unit:        metricdata.UnitDimensionless,
 		}
-		mrf := getResourceByDescriptorFunc(path.Join(testCase.domain, testCase.component), &testGcpMetadata)
+		mrf := getResourceByDescriptorFunc(path.Join(testCase.domain, testCase.component), &testGcpMetadata, &resource.Resource{})
 
 		metricLabels, monitoredResource := mrf(testDescriptor, revisionTestTags)
 		gotResType, resourceLabels := monitoredResource.MonitoredResource()
@@ -444,7 +445,7 @@ func TestNewStackdriverExporterWithMetadata(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			e, err := newStackdriverExporter(test.config, TestLogger(t))
+			e, _, err := newStackdriverExporter(test.config, TestLogger(t))
 
 			succeeded := e != nil && err == nil
 			if test.expectSuccess != succeeded {

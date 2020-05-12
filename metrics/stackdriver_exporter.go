@@ -24,6 +24,7 @@ import (
 	"contrib.go.opencensus.io/exporter/stackdriver"
 	"contrib.go.opencensus.io/exporter/stackdriver/monitoredresource"
 	"go.opencensus.io/metric/metricdata"
+	"go.opencensus.io/resource"
 	"go.opencensus.io/stats/view"
 	"go.uber.org/zap"
 	"google.golang.org/api/option"
@@ -112,29 +113,51 @@ func newOpencensusSDExporter(o stackdriver.Options) (view.Exporter, error) {
 
 // TODO should be properly refactored to be able to inject the getResourceByDescriptorFunc function.
 // 	See https://github.com/knative/pkg/issues/608
-func newStackdriverExporter(config *metricsConfig, logger *zap.SugaredLogger) (view.Exporter, error) {
+func newStackdriverExporter(config *metricsConfig, logger *zap.SugaredLogger) (view.Exporter, ResourceExporterFactory, error) {
+	// Automatically fall back on Google application default credentials
+	r := resource.Resource{Type: "", Labels: map[string]string{}}
+	cfg := clientConfig{storeConfig: config, storeLogger: logger}
+	e, err := cfg.GetExporter(&r)
+	if err != nil {
+		logger.Errorw("Failed to create the Stackdriver exporter: ", zap.Error(err))
+		return nil, nil, err
+	}
+	logger.Infof("Created Opencensus Stackdriver exporter with config %v", config)
+	return e, cfg.GetExporter, nil
+}
+
+func generateStackdriverOptions(config *metricsConfig, logger *zap.SugaredLogger, r *resource.Resource) stackdriver.Options {
 	gm := getMergedGCPMetadata(config)
 	mpf := getMetricPrefixFunc(config.stackdriverMetricTypePrefix, config.stackdriverCustomMetricTypePrefix)
 	co, err := getStackdriverExporterClientOptions(&config.stackdriverClientConfig)
 	if err != nil {
 		logger.Warnw("Issue configuring Stackdriver exporter client options, no additional client options will be used: ", zap.Error(err))
 	}
-	// Automatically fall back on Google application default credentials
-	e, err := newStackdriverExporterFunc(stackdriver.Options{
+
+	return stackdriver.Options{
 		ProjectID:               gm.project,
 		Location:                gm.location,
 		MonitoringClientOptions: co,
 		TraceClientOptions:      co,
 		GetMetricPrefix:         mpf,
-		ResourceByDescriptor:    getResourceByDescriptorFunc(config.stackdriverMetricTypePrefix, gm),
+		ResourceByDescriptor:    getResourceByDescriptorFunc(config.stackdriverMetricTypePrefix, gm, r),
 		ReportingInterval:       config.reportingPeriod,
 		DefaultMonitoringLabels: &stackdriver.Labels{},
-	})
+	}
+}
+
+// clientConfig stores the stackdriver configs for cerating additional connections.
+type clientConfig struct {
+	storeConfig *metricsConfig
+	storeLogger *zap.SugaredLogger
+}
+
+func (o clientConfig) GetExporter(r *resource.Resource) (view.Exporter, error) {
+	e, err := newStackdriverExporterFunc(generateStackdriverOptions(o.storeConfig, o.storeLogger, nil))
 	if err != nil {
-		logger.Errorw("Failed to create the Stackdriver exporter: ", zap.Error(err))
+		o.storeLogger.Errorw("Failed to create the Stackdriver exporter: ", zap.Error(err))
 		return nil, err
 	}
-	logger.Infof("Created Opencensus Stackdriver exporter with config %v", config)
 	return e, nil
 }
 
@@ -178,11 +201,11 @@ func getMergedGCPMetadata(config *metricsConfig) *gcpMetadata {
 	return gm
 }
 
-func getResourceByDescriptorFunc(metricTypePrefix string, gm *gcpMetadata) func(*metricdata.Descriptor, map[string]string) (map[string]string, monitoredresource.Interface) {
+func getResourceByDescriptorFunc(metricTypePrefix string, gm *gcpMetadata, r *resource.Resource) func(*metricdata.Descriptor, map[string]string) (map[string]string, monitoredresource.Interface) {
 	return func(des *metricdata.Descriptor, tags map[string]string) (map[string]string, monitoredresource.Interface) {
 		metricType := path.Join(metricTypePrefix, des.Name)
 		if metricskey.KnativeRevisionMetrics.Has(metricType) {
-			return GetKnativeRevisionMonitoredResource(des, tags, gm)
+			return GetKnativeRevisionMonitoredResource(des, tags, gm, r)
 		} else if metricskey.KnativeBrokerMetrics.Has(metricType) {
 			return GetKnativeBrokerMonitoredResource(des, tags, gm)
 		} else if metricskey.KnativeTriggerMetrics.Has(metricType) {

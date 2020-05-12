@@ -19,6 +19,7 @@ package metrics
 import (
 	"contrib.go.opencensus.io/exporter/stackdriver/monitoredresource"
 	"go.opencensus.io/metric/metricdata"
+	"go.opencensus.io/resource"
 	"knative.dev/pkg/metrics/metricskey"
 )
 
@@ -48,17 +49,17 @@ func (kr *KnativeRevision) MonitoredResource() (resType string, labels map[strin
 }
 
 func GetKnativeRevisionMonitoredResource(
-	des *metricdata.Descriptor, tags map[string]string, gm *gcpMetadata) (map[string]string, monitoredresource.Interface) {
+	des *metricdata.Descriptor, tags map[string]string, gm *gcpMetadata, r *resource.Resource) (map[string]string, monitoredresource.Interface) {
 	kr := &KnativeRevision{
 		// The first three resource labels are from metadata.
 		Project:     gm.project,
 		Location:    gm.location,
 		ClusterName: gm.cluster,
 		// The rest resource labels are from metrics labels.
-		NamespaceName:     valueOrUnknown(metricskey.LabelNamespaceName, tags),
-		ServiceName:       valueOrUnknown(metricskey.LabelServiceName, tags),
-		ConfigurationName: valueOrUnknown(metricskey.LabelConfigurationName, tags),
-		RevisionName:      valueOrUnknown(metricskey.LabelRevisionName, tags),
+		NamespaceName:     valueOrUnknown(metricskey.LabelNamespaceName, r.Labels, tags),
+		ServiceName:       valueOrUnknown(metricskey.LabelServiceName, r.Labels, tags),
+		ConfigurationName: valueOrUnknown(metricskey.LabelConfigurationName, r.Labels, tags),
+		RevisionName:      valueOrUnknown(metricskey.LabelRevisionName, r.Labels, tags),
 	}
 
 	metricLabels := map[string]string{}

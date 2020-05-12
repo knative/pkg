@@ -26,9 +26,11 @@ func (g *Global) MonitoredResource() (resType string, labels map[string]string) 
 	return "global", nil
 }
 
-func valueOrUnknown(key string, tagsMap map[string]string) string {
-	if value, ok := tagsMap[key]; ok {
-		return value
+func valueOrUnknown(key string, labelMaps ...map[string]string) string {
+	for _, labelMap := range labelMaps {
+		if value, ok := labelMap[key]; ok {
+			return value
+		}
 	}
 	return metricskey.ValueUnknown
 }

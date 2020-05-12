@@ -195,7 +195,7 @@ func newMetricsExporter(config *metricsConfig, logger *zap.SugaredLogger) (view.
 	case OpenCensus:
 		e, f, err = newOpenCensusExporter(config, logger)
 	case Stackdriver:
-		e, err = newStackdriverExporter(config, logger)
+		e, f, err = newStackdriverExporter(config, logger)
 	case Prometheus:
 		e, err = newPrometheusExporter(config, logger)
 	case None:
