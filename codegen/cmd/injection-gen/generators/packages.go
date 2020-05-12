@@ -173,17 +173,11 @@ func MustParseClientGenTags(lines []string) Tags {
 		Tags: util.MustParseClientGenTags(lines),
 	}
 
-	values := types.ExtractCommentTags("+", lines)
+	values := ExtractCommentTags("+", lines)
 
 	_, ret.GenerateDuck = values["genduck"]
 
-	_, genRec := values["genreconciler"]
-	_, genRecClass := values["genreconciler:class"]
-
-	// Generate Reconciler code if genreconciler OR genreconciler:class exist.
-	if genRec || genRecClass {
-		ret.GenerateReconciler = true
-	}
+	_, ret.GenerateReconciler = values["genreconciler"]
 
 	return ret
 }
