@@ -22,6 +22,17 @@ import (
 	"time"
 )
 
+// AsString passes the value at key through into the target, if it exists.
+func AsString(key string, target *string) func(map[string]string) error {
+	return func(data map[string]string) error {
+		if raw, ok := data[key]; ok {
+			*target = raw
+		}
+		return nil
+	}
+}
+
+// AsBool parses the value at key as a boolean into the target, if it exists.
 func AsBool(key string, target *bool) func(map[string]string) error {
 	return func(data map[string]string) error {
 		if raw, ok := data[key]; ok {
@@ -31,6 +42,7 @@ func AsBool(key string, target *bool) func(map[string]string) error {
 	}
 }
 
+// AsInt32 parses the value at key as an int32 into the target, if it exists.
 func AsInt32(key string, target *int32) func(map[string]string) error {
 	return func(data map[string]string) error {
 		if raw, ok := data[key]; ok {
@@ -44,6 +56,7 @@ func AsInt32(key string, target *int32) func(map[string]string) error {
 	}
 }
 
+// AsInt64 parses the value at key as an int64 into the target, if it exists.
 func AsInt64(key string, target *int64) func(map[string]string) error {
 	return func(data map[string]string) error {
 		if raw, ok := data[key]; ok {
@@ -57,6 +70,7 @@ func AsInt64(key string, target *int64) func(map[string]string) error {
 	}
 }
 
+// AsFloat64 parses the value at key as a float64 into the target, if it exists.
 func AsFloat64(key string, target *float64) func(map[string]string) error {
 	return func(data map[string]string) error {
 		if raw, ok := data[key]; ok {
@@ -70,6 +84,7 @@ func AsFloat64(key string, target *float64) func(map[string]string) error {
 	}
 }
 
+// AsDuration parses the value at key as a time.Duration into the target, if it exists.
 func AsDuration(key string, target *time.Duration) func(map[string]string) error {
 	return func(data map[string]string) error {
 		if raw, ok := data[key]; ok {
@@ -83,6 +98,7 @@ func AsDuration(key string, target *time.Duration) func(map[string]string) error
 	}
 }
 
+// Parse parses the given map using the parser functions passed in.
 func Parse(data map[string]string, parsers ...func(map[string]string) error) error {
 	for _, parse := range parsers {
 		if err := parse(data); err != nil {

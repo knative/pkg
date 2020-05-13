@@ -22,6 +22,7 @@ import (
 )
 
 type testConfig struct {
+	str string
 	boo bool
 	i32 int32
 	i64 int64
@@ -39,6 +40,7 @@ func TestParse(t *testing.T) {
 	}{{
 		name: "all good",
 		data: map[string]string{
+			"test-string":   "foo.bar",
 			"test-bool":     "true",
 			"test-int32":    "1",
 			"test-int64":    "2",
@@ -46,6 +48,7 @@ func TestParse(t *testing.T) {
 			"test-duration": "1m",
 		},
 		want: testConfig{
+			str: "foo.bar",
 			boo: true,
 			i32: 1,
 			i64: 2,
@@ -55,6 +58,7 @@ func TestParse(t *testing.T) {
 	}, {
 		name: "respect defaults",
 		conf: testConfig{
+			str: "foo.bar",
 			boo: true,
 			i32: 1,
 			i64: 2,
@@ -62,6 +66,7 @@ func TestParse(t *testing.T) {
 			dur: time.Minute,
 		},
 		want: testConfig{
+			str: "foo.bar",
 			boo: true,
 			i32: 1,
 			i64: 2,
@@ -103,18 +108,21 @@ func TestParse(t *testing.T) {
 	}}
 
 	for _, test := range tests {
-		if err := Parse(test.data,
-			AsBool("test-bool", &test.conf.boo),
-			AsInt32("test-int32", &test.conf.i32),
-			AsInt64("test-int64", &test.conf.i64),
-			AsFloat64("test-float64", &test.conf.f64),
-			AsDuration("test-duration", &test.conf.dur),
-		); (err == nil) == test.expectErr {
-			t.Fatal("Failed to parse data:", err)
-		}
+		t.Run(test.name, func(t *testing.T) {
+			if err := Parse(test.data,
+				AsString("test-string", &test.conf.str),
+				AsBool("test-bool", &test.conf.boo),
+				AsInt32("test-int32", &test.conf.i32),
+				AsInt64("test-int64", &test.conf.i64),
+				AsFloat64("test-float64", &test.conf.f64),
+				AsDuration("test-duration", &test.conf.dur),
+			); (err == nil) == test.expectErr {
+				t.Fatal("Failed to parse data:", err)
+			}
 
-		if test.conf != test.want {
-			t.Fatalf("parsed = %v, want %v", test.conf, test.want)
-		}
+			if test.conf != test.want {
+				t.Fatalf("parsed = %v, want %v", test.conf, test.want)
+			}
+		})
 	}
 }
