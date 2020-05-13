@@ -93,11 +93,6 @@ func (f *Foo) Validate(ctx context.Context) *apis.FieldError {
 	return nil
 }
 
-// GetTypeMeta retrieves the ObjectMeta of the Foo. Implements the KRShaped interface.
-func (f *Foo) GetTypeMeta() *metav1.TypeMeta {
-	return &f.TypeMeta
-}
-
 // GetStatus retrieves the status of the Foo Implements the KRShaped interface.
 func (f *Foo) GetStatus() *duckv1.Status {
 	return &f.Status.Status

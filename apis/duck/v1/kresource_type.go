@@ -30,7 +30,7 @@ import (
 // KRShaped is an interface for retrieving the duck elements of an arbitrary resource.
 type KRShaped interface {
 	metav1.Object
-	schema.ObjectKind 
+	schema.ObjectKind
 
 	GetStatus() *Status
 
