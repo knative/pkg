@@ -56,19 +56,40 @@ func GetKnativeRevisionMonitoredResource(
 		Location:    gm.location,
 		ClusterName: gm.cluster,
 		// The rest resource labels are from metrics labels.
-		NamespaceName:     valueOrUnknown(metricskey.LabelNamespaceName, r.Labels, tags),
-		ServiceName:       valueOrUnknown(metricskey.LabelServiceName, r.Labels, tags),
-		ConfigurationName: valueOrUnknown(metricskey.LabelConfigurationName, r.Labels, tags),
-		RevisionName:      valueOrUnknown(metricskey.LabelRevisionName, r.Labels, tags),
+		NamespaceName:     metricskey.ValueUnknown,
+		ServiceName:       metricskey.ValueUnknown,
+		ConfigurationName: metricskey.ValueUnknown,
+		RevisionName:      metricskey.ValueUnknown,
 	}
 
-	metricLabels := map[string]string{}
+	metricLabels := make(map[string]string, len(tags))
 	for k, v := range tags {
-		// Keep the metrics labels that are not resource labels
-		if !metricskey.KnativeRevisionLabels.Has(k) {
+		if !setKnativeRevisionField(kr, k, v) {
 			metricLabels[k] = v
 		}
 	}
 
+	if r != nil {
+		for k, v := range r.Labels {
+			setKnativeRevisionField(kr, k, v)
+		}
+	}
+
 	return metricLabels, kr
+}
+
+func setKnativeRevisionField(kr *KnativeRevision, k string, v string) bool {
+	switch k {
+	case metricskey.LabelNamespaceName:
+		kr.NamespaceName = v
+	case metricskey.LabelServiceName:
+		kr.ServiceName = v
+	case metricskey.LabelConfigurationName:
+		kr.ConfigurationName = v
+	case metricskey.LabelRevisionName:
+		kr.RevisionName = v
+	default:
+		return false
+	}
+	return true
 }

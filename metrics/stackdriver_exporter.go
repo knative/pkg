@@ -111,13 +111,10 @@ func newOpencensusSDExporter(o stackdriver.Options) (view.Exporter, error) {
 	return e, nil
 }
 
-// TODO should be properly refactored to be able to inject the getResourceByDescriptorFunc function.
-// 	See https://github.com/knative/pkg/issues/608
 func newStackdriverExporter(config *metricsConfig, logger *zap.SugaredLogger) (view.Exporter, ResourceExporterFactory, error) {
 	// Automatically fall back on Google application default credentials
-	r := resource.Resource{Type: "", Labels: map[string]string{}}
 	cfg := clientConfig{storeConfig: config, storeLogger: logger}
-	e, err := cfg.GetExporter(&r)
+	e, err := cfg.GetExporter(nil)
 	if err != nil {
 		logger.Errorw("Failed to create the Stackdriver exporter: ", zap.Error(err))
 		return nil, nil, err
@@ -153,7 +150,7 @@ type clientConfig struct {
 }
 
 func (o clientConfig) GetExporter(r *resource.Resource) (view.Exporter, error) {
-	e, err := newStackdriverExporterFunc(generateStackdriverOptions(o.storeConfig, o.storeLogger, nil))
+	e, err := newStackdriverExporterFunc(generateStackdriverOptions(o.storeConfig, o.storeLogger, r))
 	if err != nil {
 		o.storeLogger.Errorw("Failed to create the Stackdriver exporter: ", zap.Error(err))
 		return nil, err
