@@ -153,8 +153,6 @@ func GetEndpointAddresses(client *KubeClient, svcName, svcNamespace string) ([]s
 
 // WaitForChangedEndpoints waits until the endpoints for the given service differ from origEndpoints.
 func WaitForChangedEndpoints(client *KubeClient, svcName, svcNamespace string, origEndpoints []string) error {
-	span := logging.GetEmitableSpan(context.Background(), "WaitForChangedEndpoints/"+svcName)
-	defer span.End()
 	return wait.PollImmediate(1*time.Second, 2*time.Minute, func() (bool, error) {
 		newEndpoints, err := GetEndpointAddresses(client, svcName, svcNamespace)
 		return !cmp.Equal(origEndpoints, newEndpoints), err
