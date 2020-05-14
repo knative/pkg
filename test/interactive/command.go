@@ -18,7 +18,6 @@ limitations under the License.
 package interactive
 
 import (
-	"fmt"
 	"io"
 	"log"
 	"os"
@@ -73,7 +72,7 @@ func (c Command) Run() error {
 // String conforms to Stringer
 func (c Command) String() string {
 	s := c.Name + " " + strings.Join(c.Args, " ")
-	return fmt.Sprintf("Command to run: %s", s)
+	return "Command to run: " + s
 }
 
 // AddArgs appends arguments to the current list of args

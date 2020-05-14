@@ -23,6 +23,7 @@ import (
 	"log"
 	"os"
 	"path"
+	"strings"
 )
 
 var defaultDockerCommands []string
@@ -46,7 +47,7 @@ func (e Env) PromoteFromEnv(envVars ...string) error {
 	for _, env := range envVars {
 		v := os.Getenv(env)
 		if v == "" {
-			err = fmt.Errorf("environment variable '%s' is not set; %v", env, err)
+			err = fmt.Errorf("environment variable %q is not set; %v", env, err)
 		} else {
 			e[env] = v
 		}
@@ -69,8 +70,8 @@ func (d *Docker) AddEnv(e Env) {
 // AddMount add arguments for the --mount command
 func (d *Docker) AddMount(typeStr, source, target string, optAdditionalArgs ...string) {
 	addl := ""
-	for _, arg := range optAdditionalArgs {
-		addl = addl + "," + arg
+	if len(optAdditionalArgs) != 0 {
+		addl = "," + strings.Join(optAdditionalArgs, ",")
 	}
 	d.AddArgs("--mount", fmt.Sprintf("type=%s,source=%s,target=%s%s", typeStr, source, target, addl))
 }
