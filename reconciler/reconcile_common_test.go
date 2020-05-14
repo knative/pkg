@@ -90,7 +90,7 @@ func TestPostProcessReconcileBumpsGeneration(t *testing.T) {
 		t.Errorf("Expected observed generation bump got=%d want=%d", resource.Status.ObservedGeneration, resource.Generation)
 	}
 
-	if krShape.GetStatus().ObservedGeneration != krShape.GetObjectMeta().GetGeneration() {
+	if krShape.GetStatus().ObservedGeneration != krShape.GetGeneration() {
 		t.Errorf("Expected observed generation bump got=%d want=%d", resource.Status.ObservedGeneration, resource.Generation)
 	}
 }
