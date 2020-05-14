@@ -58,9 +58,6 @@ func TestRecordServing(t *testing.T) {
 			stackdriverMetricTypePrefix: "knative.dev/unsupported",
 		},
 		measurement: measure.M(3),
-	}, {
-		name:        "empty metricsConfig",
-		measurement: measure.M(4),
 	}}
 	testRecord(t, measure, shouldReportCases)
 }
@@ -87,9 +84,6 @@ func TestRecordEventing(t *testing.T) {
 			stackdriverMetricTypePrefix: "knative.dev/unsupported",
 		},
 		measurement: measure.M(3),
-	}, {
-		name:        "empty metricsConfig",
-		measurement: measure.M(4),
 	}}
 	testRecord(t, measure, shouldReportCases)
 }
@@ -149,6 +143,9 @@ func testRecord(t *testing.T, measure *stats.Int64Measure, shouldReportCases []c
 			},
 		},
 		measurement: measure.M(5),
+	}, {
+		name:        "empty metricsConfig",
+		measurement: measure.M(4),
 	}}
 
 	for _, test := range shouldNotReportCases {
