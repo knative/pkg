@@ -17,7 +17,6 @@ limitations under the License.
 package interactive
 
 import (
-	"fmt"
 	"os"
 	"os/exec"
 	"testing"
@@ -28,12 +27,21 @@ func TestEnv(t *testing.T) {
 	err := e.PromoteFromEnv("PWD")
 	if err != nil {
 		t.Error(err)
-		fmt.Printf("The Environ is:\n%+v\n", os.Environ())
+		t.Logf("The Environ is:\n%+v\n", os.Environ())
 	}
-	if e["PWD"] != os.Getenv("PWD") {
-		t.Errorf("Promotion did not occur correctly: %v;%v", e["PWD"], os.Getenv("PWD"))
+	epwd, exists := e["PWD"]
+	if !exists || epwd != os.Getenv("PWD") {
+		t.Errorf("$PWD promotion did not occur correctly: Env='%v'; os.Getenv(\"PWD\")=%s", e, os.Getenv("PWD"))
 	}
 	badName := "GEEZ_I_REALLY_H0PE_TH1S_DOES_NOT_EXIST"
+	// and just in case:
+	for {
+		_, exists := os.LookupEnv(badName)
+		if !exists {
+			break
+		}
+		badName = badName + "z"
+	}
 	err = e.PromoteFromEnv(badName)
 	if err == nil {
 		t.Error("Should have received error promoting non-existent variable")

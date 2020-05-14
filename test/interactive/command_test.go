@@ -61,3 +61,7 @@ func TestAddArgs(t *testing.T) {
 	cmd.run = argsValidator(t, arbitraryArgs)
 	cmd.Run()
 }
+
+func TestCommandStringer(t *testing.T) {
+	t.Log(NewCommand("true"))
+}

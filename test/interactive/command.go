@@ -78,7 +78,5 @@ func (c Command) String() string {
 
 // AddArgs appends arguments to the current list of args
 func (c *Command) AddArgs(args ...string) {
-	for _, a := range args {
-		c.Args = append(c.Args, a)
-	}
+	c.Args = append(c.Args, args...)
 }
