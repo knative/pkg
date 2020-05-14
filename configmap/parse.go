@@ -22,8 +22,11 @@ import (
 	"time"
 )
 
+// ParseFunc is a function taking ConfigMap data and applying a parse operation to it.
+type ParseFunc func(map[string]string) error
+
 // AsString passes the value at key through into the target, if it exists.
-func AsString(key string, target *string) func(map[string]string) error {
+func AsString(key string, target *string) ParseFunc {
 	return func(data map[string]string) error {
 		if raw, ok := data[key]; ok {
 			*target = raw
@@ -33,7 +36,7 @@ func AsString(key string, target *string) func(map[string]string) error {
 }
 
 // AsBool parses the value at key as a boolean into the target, if it exists.
-func AsBool(key string, target *bool) func(map[string]string) error {
+func AsBool(key string, target *bool) ParseFunc {
 	return func(data map[string]string) error {
 		if raw, ok := data[key]; ok {
 			*target = strings.EqualFold(raw, "true")
@@ -43,7 +46,7 @@ func AsBool(key string, target *bool) func(map[string]string) error {
 }
 
 // AsInt32 parses the value at key as an int32 into the target, if it exists.
-func AsInt32(key string, target *int32) func(map[string]string) error {
+func AsInt32(key string, target *int32) ParseFunc {
 	return func(data map[string]string) error {
 		if raw, ok := data[key]; ok {
 			val, err := strconv.ParseInt(raw, 10, 32)
@@ -57,7 +60,7 @@ func AsInt32(key string, target *int32) func(map[string]string) error {
 }
 
 // AsInt64 parses the value at key as an int64 into the target, if it exists.
-func AsInt64(key string, target *int64) func(map[string]string) error {
+func AsInt64(key string, target *int64) ParseFunc {
 	return func(data map[string]string) error {
 		if raw, ok := data[key]; ok {
 			val, err := strconv.ParseInt(raw, 10, 64)
@@ -71,7 +74,7 @@ func AsInt64(key string, target *int64) func(map[string]string) error {
 }
 
 // AsFloat64 parses the value at key as a float64 into the target, if it exists.
-func AsFloat64(key string, target *float64) func(map[string]string) error {
+func AsFloat64(key string, target *float64) ParseFunc {
 	return func(data map[string]string) error {
 		if raw, ok := data[key]; ok {
 			val, err := strconv.ParseFloat(raw, 64)
@@ -85,7 +88,7 @@ func AsFloat64(key string, target *float64) func(map[string]string) error {
 }
 
 // AsDuration parses the value at key as a time.Duration into the target, if it exists.
-func AsDuration(key string, target *time.Duration) func(map[string]string) error {
+func AsDuration(key string, target *time.Duration) ParseFunc {
 	return func(data map[string]string) error {
 		if raw, ok := data[key]; ok {
 			val, err := time.ParseDuration(raw)
@@ -99,7 +102,7 @@ func AsDuration(key string, target *time.Duration) func(map[string]string) error
 }
 
 // Parse parses the given map using the parser functions passed in.
-func Parse(data map[string]string, parsers ...func(map[string]string) error) error {
+func Parse(data map[string]string, parsers ...ParseFunc) error {
 	for _, parse := range parsers {
 		if err := parse(data); err != nil {
 			return err
