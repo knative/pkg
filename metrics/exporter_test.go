@@ -25,10 +25,13 @@ import (
 // 	See https://github.com/knative/pkg/issues/608
 
 const (
-	testNS       = "test"
-	testService  = "test-service"
-	testRoute    = "test-route"
-	testRevision = "test-revision"
+	testNS            = "test"
+	testService       = "test-service"
+	testRoute         = "test-route"
+	testRevision      = "test-revision"
+	testConfiguration = "test-configuration"
+	testContainer     = "test-container"
+	testPod           = "test-pod"
 
 	testBroker              = "test-broker"
 	testEventType           = "test-eventtype"

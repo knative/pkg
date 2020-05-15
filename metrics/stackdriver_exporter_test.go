@@ -18,11 +18,13 @@ package metrics
 
 import (
 	"path"
+	"reflect"
 	"testing"
 	"time"
 
 	"contrib.go.opencensus.io/exporter/stackdriver"
 	"go.opencensus.io/metric/metricdata"
+	"go.opencensus.io/resource"
 	"go.opencensus.io/stats/view"
 	. "knative.dev/pkg/logging/testing"
 	"knative.dev/pkg/metrics/metricskey"
@@ -64,20 +66,135 @@ var (
 	}
 
 	supportedServingMetricsTestCases = []struct {
-		name       string
-		domain     string
-		component  string
-		metricName string
+		name                      string
+		domain                    string
+		component                 string
+		metricName                string
+		metricTags                map[string]string
+		resource                  resource.Resource
+		expectedMetricLabels      map[string]string
+		expectedMonitoredResource map[string]string
 	}{{
-		name:       "activator metric",
+		name:       "both resource and metric labels",
 		domain:     internalServingDomain,
 		component:  "activator",
 		metricName: "request_count",
+		metricTags: map[string]string{
+			metricskey.ContainerName:          testContainer,
+			metricskey.PodName:                testPod,
+			metricskey.LabelResponseCodeClass: "2xx",
+			metricskey.LabelResponseCode:      "200",
+		},
+		resource: resource.Resource{
+			Labels: map[string]string{
+				metricskey.LabelConfigurationName: testConfiguration,
+				metricskey.LabelNamespaceName:     testNS,
+				metricskey.LabelServiceName:       testService,
+				metricskey.LabelRevisionName:      testRevision,
+			},
+		},
+		expectedMetricLabels: map[string]string{
+			metricskey.ContainerName:          testContainer,
+			metricskey.PodName:                testPod,
+			metricskey.LabelResponseCodeClass: "2xx",
+			metricskey.LabelResponseCode:      "200",
+		},
+		expectedMonitoredResource: map[string]string{
+			metricskey.LabelProject:           testGcpMetadata.project,
+			metricskey.LabelLocation:          testGcpMetadata.location,
+			metricskey.LabelClusterName:       testGcpMetadata.cluster,
+			metricskey.LabelNamespaceName:     testNS,
+			metricskey.LabelServiceName:       testService,
+			metricskey.LabelConfigurationName: testConfiguration,
+			metricskey.LabelRevisionName:      testRevision,
+		},
 	}, {
-		name:       "autoscaler metric",
-		domain:     servingDomain,
-		component:  "autoscaler",
-		metricName: "desired_pods",
+		name:       "only resource labels",
+		domain:     internalServingDomain,
+		component:  "activator",
+		metricName: "request_count",
+		metricTags: map[string]string{},
+		resource: resource.Resource{
+			Labels: map[string]string{
+				metricskey.LabelConfigurationName: testConfiguration,
+				metricskey.LabelNamespaceName:     testNS,
+				metricskey.LabelServiceName:       testService,
+				metricskey.LabelRevisionName:      testRevision,
+			},
+		},
+		expectedMetricLabels: map[string]string{},
+		expectedMonitoredResource: map[string]string{
+			metricskey.LabelProject:           testGcpMetadata.project,
+			metricskey.LabelLocation:          testGcpMetadata.location,
+			metricskey.LabelClusterName:       testGcpMetadata.cluster,
+			metricskey.LabelNamespaceName:     testNS,
+			metricskey.LabelServiceName:       testService,
+			metricskey.LabelConfigurationName: testConfiguration,
+			metricskey.LabelRevisionName:      testRevision,
+		},
+	}, {
+		name:       "resource labels overwrite metric labels",
+		domain:     internalServingDomain,
+		component:  "activator",
+		metricName: "request_count",
+		metricTags: map[string]string{
+			metricskey.LabelNamespaceName: testNS,
+			metricskey.LabelServiceName:   testService,
+		},
+		resource: resource.Resource{
+			Labels: map[string]string{
+				metricskey.LabelNamespaceName: "foo",
+				metricskey.LabelServiceName:   "bar",
+				metricskey.LabelRevisionName:  testRevision,
+			},
+		},
+		expectedMetricLabels: map[string]string{},
+		expectedMonitoredResource: map[string]string{
+			metricskey.LabelProject:           testGcpMetadata.project,
+			metricskey.LabelLocation:          testGcpMetadata.location,
+			metricskey.LabelClusterName:       testGcpMetadata.cluster,
+			metricskey.LabelNamespaceName:     "foo",
+			metricskey.LabelServiceName:       "bar",
+			metricskey.LabelConfigurationName: metricskey.ValueUnknown,
+			metricskey.LabelRevisionName:      testRevision,
+		},
+	}, {
+		name:       "only metric labels",
+		domain:     internalServingDomain,
+		component:  "activator",
+		metricName: "request_count",
+		metricTags: map[string]string{
+			metricskey.LabelNamespaceName:     testNS,
+			metricskey.LabelServiceName:       testService,
+			metricskey.LabelRevisionName:      testRevision,
+			metricskey.ContainerName:          testContainer,
+			metricskey.PodName:                testPod,
+			metricskey.LabelResponseCodeClass: "2xx",
+			metricskey.LabelResponseCode:      "200",
+		},
+		resource: resource.Resource{
+			Labels: map[string]string{
+				metricskey.ContainerName:          testContainer,
+				metricskey.PodName:                testPod,
+				metricskey.LabelResponseCodeClass: "2xx",
+				metricskey.LabelResponseCode:      "200",
+			},
+		},
+		expectedMetricLabels: map[string]string{
+			metricskey.ContainerName:          testContainer,
+			metricskey.PodName:                testPod,
+			metricskey.LabelResponseCodeClass: "2xx",
+			metricskey.LabelResponseCode:      "200",
+		},
+		expectedMonitoredResource: map[string]string{
+			metricskey.LabelProject:           testGcpMetadata.project,
+			metricskey.LabelLocation:          testGcpMetadata.location,
+			metricskey.LabelClusterName:       testGcpMetadata.cluster,
+			metricskey.LabelNamespaceName:     testNS,
+			metricskey.LabelServiceName:       testService,
+			metricskey.LabelConfigurationName: metricskey.ValueUnknown,
+			metricskey.LabelRevisionName:      testRevision,
+		},
 	}}
 
 	supportedEventingBrokerMetricsTestCases = []struct {
@@ -160,7 +277,9 @@ var (
 )
 
 func fakeGcpMetadataFunc() *gcpMetadata {
-	return &testGcpMetadata
+	// the caller of this function could modify the struct, so we need a copy if we don't want the original modified.
+	newTestGCPMetadata := testGcpMetadata
+	return &newTestGCPMetadata
 }
 
 type fakeExporter struct{}
@@ -180,24 +299,21 @@ func TestGetResourceByDescriptorFunc_UseKnativeRevision(t *testing.T) {
 			Type:        metricdata.TypeGaugeInt64,
 			Unit:        metricdata.UnitDimensionless,
 		}
-		rbd := getResourceByDescriptorFunc(path.Join(testCase.domain, testCase.component), &testGcpMetadata, nil)
+		rbd := getResourceByDescriptorFunc(path.Join(testCase.domain, testCase.component), &testGcpMetadata, &testCase.resource)
 
-		metricLabels, monitoredResource := rbd(testDescriptor, revisionTestTags)
+		metricLabels, monitoredResource := rbd(testDescriptor, testCase.metricTags)
 		gotResType, resourceLabels := monitoredResource.MonitoredResource()
 		wantedResType := "knative_revision"
 		if gotResType != wantedResType {
 			t.Fatalf("MonitoredResource=%v, want %v", gotResType, wantedResType)
 		}
-		// revisionTestTags includes route_name, which is not a key for knative_revision resource.
-		if got := metricLabels[metricskey.LabelRouteName]; got != testRoute {
-			t.Errorf("expected metrics label: %v, got: %v", testRoute, got)
+
+		if !reflect.DeepEqual(metricLabels, testCase.expectedMetricLabels) {
+			t.Errorf("expected metrics label: %v, got: %v", testCase.expectedMetricLabels, metricLabels)
 		}
-		if got := resourceLabels[metricskey.LabelNamespaceName]; got != testNS {
-			t.Errorf("expected resource label %v with value %v, got: %v", metricskey.LabelNamespaceName, testNS, got)
-		}
-		// configuration_name is a key required by knative_revision but missed in revisionTestTags
-		if got := resourceLabels[metricskey.LabelConfigurationName]; got != metricskey.ValueUnknown {
-			t.Errorf("expected resource label %v with value %v, got: %v", metricskey.LabelConfigurationName, metricskey.ValueUnknown, got)
+
+		if !reflect.DeepEqual(resourceLabels, testCase.expectedMonitoredResource) {
+			t.Errorf("expected resource label: %v, got: %v", testCase.expectedMonitoredResource, resourceLabels)
 		}
 	}
 }
