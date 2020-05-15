@@ -25,71 +25,42 @@ import (
 
 // TODO should be moved to serving. See https://github.com/knative/pkg/issues/608
 
-type KnativeRevision struct {
-	Project           string
-	Location          string
-	ClusterName       string
-	NamespaceName     string
-	ServiceName       string
-	ConfigurationName string
-	RevisionName      string
-}
+type KnativeRevision map[string]string
 
 func (kr *KnativeRevision) MonitoredResource() (resType string, labels map[string]string) {
-	labels = map[string]string{
-		metricskey.LabelProject:           kr.Project,
-		metricskey.LabelLocation:          kr.Location,
-		metricskey.LabelClusterName:       kr.ClusterName,
-		metricskey.LabelNamespaceName:     kr.NamespaceName,
-		metricskey.LabelServiceName:       kr.ServiceName,
-		metricskey.LabelConfigurationName: kr.ConfigurationName,
-		metricskey.LabelRevisionName:      kr.RevisionName,
-	}
-	return metricskey.ResourceTypeKnativeRevision, labels
+	return metricskey.ResourceTypeKnativeRevision, *kr
 }
 
 func GetKnativeRevisionMonitoredResource(
 	des *metricdata.Descriptor, tags map[string]string, gm *gcpMetadata, r *resource.Resource) (map[string]string, monitoredresource.Interface) {
-	kr := &KnativeRevision{
+	kr := KnativeRevision{
 		// The first three resource labels are from metadata.
-		Project:     gm.project,
-		Location:    gm.location,
-		ClusterName: gm.cluster,
+		metricskey.LabelProject:     gm.project,
+		metricskey.LabelLocation:    gm.location,
+		metricskey.LabelClusterName: gm.cluster,
 		// The rest resource labels are from metrics labels.
-		NamespaceName:     metricskey.ValueUnknown,
-		ServiceName:       metricskey.ValueUnknown,
-		ConfigurationName: metricskey.ValueUnknown,
-		RevisionName:      metricskey.ValueUnknown,
+		metricskey.LabelNamespaceName:     metricskey.ValueUnknown,
+		metricskey.LabelServiceName:       metricskey.ValueUnknown,
+		metricskey.LabelConfigurationName: metricskey.ValueUnknown,
+		metricskey.LabelRevisionName:      metricskey.ValueUnknown,
 	}
 
 	metricLabels := make(map[string]string, len(tags))
 	for k, v := range tags {
-		if !setKnativeRevisionField(kr, k, v) {
+		if _, ok := kr[k]; ok {
+			kr[k] = v
+		} else {
 			metricLabels[k] = v
 		}
 	}
 
 	if r != nil {
 		for k, v := range r.Labels {
-			setKnativeRevisionField(kr, k, v)
+			if _, ok := kr[k]; ok {
+				kr[k] = v
+			}
 		}
 	}
 
-	return metricLabels, kr
-}
-
-func setKnativeRevisionField(kr *KnativeRevision, k string, v string) bool {
-	switch k {
-	case metricskey.LabelNamespaceName:
-		kr.NamespaceName = v
-	case metricskey.LabelServiceName:
-		kr.ServiceName = v
-	case metricskey.LabelConfigurationName:
-		kr.ConfigurationName = v
-	case metricskey.LabelRevisionName:
-		kr.RevisionName = v
-	default:
-		return false
-	}
-	return true
+	return metricLabels, &kr
 }
