@@ -268,8 +268,8 @@ func TestEmptyComponentName(t *testing.T) {
 	}
 	// The empty string component should have been ignored, so it should be the default Info, rather
 	// than Error as set in the config map.
-	if l := c.LoggingLevel[""]; l != zapcore.InfoLevel {
-		t.Errorf("Expected default Info level for LoggingLevel[\"\"]. got: %v", l)
+	if got := c.LoggingLevel[""]; got != zapcore.InfoLevel {
+		t.Errorf(`LoggingLevel[""] = %v, want: InfoLevel`, got)
 	}
 }
 
@@ -288,7 +288,7 @@ func TestUpdateLevelFromConfigMap(t *testing.T) {
 			Name:      "config-logging",
 		},
 		Data: map[string]string{
-			loggerConfigKey: fmt.Sprintf("{\"level\": %q}", globalLevel),
+			loggerConfigKey: fmt.Sprintf(`{"level": %q}`, globalLevel),
 			componentLogKey: componentLevel.String(),
 		},
 	}
@@ -452,7 +452,7 @@ type testConfigOption func(*Config) *Config
 func withGlobalLevel(lvl string) testConfigOption {
 	return func(cfg *Config) *Config {
 		cfg.LoggingConfig = fmt.Sprintf("{"+
-			"\"level\": %q, "+
+			`"level": %q, `+
 			`"outputPaths": ["stdout"], `+
 			`"errorOutputPaths": ["stderr"], `+
 			`"encoding": "json"`+

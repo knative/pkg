@@ -112,7 +112,7 @@ func TestRunCommands(t *testing.T) {
 			1,
 		},
 		{
-			[]string{"bash -c \"echo foo > /dev/stderr; exit 4\""},
+			[]string{`bash -c "echo foo > /dev/stderr; exit 4"`},
 			"",
 			"foo\n",
 			4,
