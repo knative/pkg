@@ -157,11 +157,11 @@ func NewStackdriverClientConfigFromMap(config map[string]string) *StackdriverCli
 func (mc *metricsConfig) record(ctx context.Context, mss []stats.Measurement, ros ...stats.Options) error {
 	if mc == nil {
 		logOnce.Do(func() {
-			log.Println(`The metricsConfig has not been initialized yet.	
-If this is a Go unit test consuming metric.Record(...) or metric.RecordBatch(...) then	
-it should add the following import:	
-import (	
-	_ "knative.dev/pkg/metrics/testing"	
+			log.Println(`The metricsConfig has not been initialized yet.
+If this is a Go unit test consuming metric.Record(...) or metric.RecordBatch(...) then
+it should add the following import:
+import (
+	_ "knative.dev/pkg/metrics/testing"
 )`)
 		})
 
