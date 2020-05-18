@@ -25,13 +25,13 @@ import (
 )
 
 type testConfig struct {
-	Str string
-	Boo bool
-	I32 int32
-	I64 int64
-	F64 float64
-	Dur time.Duration
-	Set sets.String
+	str string
+	boo bool
+	i32 int32
+	i64 int64
+	f64 float64
+	dur time.Duration
+	set sets.String
 }
 
 func TestParse(t *testing.T) {
@@ -53,31 +53,31 @@ func TestParse(t *testing.T) {
 			"test-set":      "a,b,c",
 		},
 		want: testConfig{
-			Str: "foo.bar",
-			Boo: true,
-			I32: 1,
-			I64: 2,
-			F64: 1.0,
-			Dur: time.Minute,
-			Set: sets.NewString("a", "b", "c"),
+			str: "foo.bar",
+			boo: true,
+			i32: 1,
+			i64: 2,
+			f64: 1.0,
+			dur: time.Minute,
+			set: sets.NewString("a", "b", "c"),
 		},
 	}, {
 		name: "respect defaults",
 		conf: testConfig{
-			Str: "foo.bar",
-			Boo: true,
-			I32: 1,
-			I64: 2,
-			F64: 1.0,
-			Dur: time.Minute,
+			str: "foo.bar",
+			boo: true,
+			i32: 1,
+			i64: 2,
+			f64: 1.0,
+			dur: time.Minute,
 		},
 		want: testConfig{
-			Str: "foo.bar",
-			Boo: true,
-			I32: 1,
-			I64: 2,
-			F64: 1.0,
-			Dur: time.Minute,
+			str: "foo.bar",
+			boo: true,
+			i32: 1,
+			i64: 2,
+			f64: 1.0,
+			dur: time.Minute,
 		},
 	}, {
 		name: "bool defaults to false",
@@ -85,7 +85,7 @@ func TestParse(t *testing.T) {
 			"test-bool": "foo",
 		},
 		want: testConfig{
-			Boo: false,
+			boo: false,
 		},
 	}, {
 		name: "int32 error",
@@ -116,18 +116,18 @@ func TestParse(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			if err := Parse(test.data,
-				AsString("test-string", &test.conf.Str),
-				AsBool("test-bool", &test.conf.Boo),
-				AsInt32("test-int32", &test.conf.I32),
-				AsInt64("test-int64", &test.conf.I64),
-				AsFloat64("test-float64", &test.conf.F64),
-				AsDuration("test-duration", &test.conf.Dur),
-				AsStringSet("test-set", &test.conf.Set),
+				AsString("test-string", &test.conf.str),
+				AsBool("test-bool", &test.conf.boo),
+				AsInt32("test-int32", &test.conf.i32),
+				AsInt64("test-int64", &test.conf.i64),
+				AsFloat64("test-float64", &test.conf.f64),
+				AsDuration("test-duration", &test.conf.dur),
+				AsStringSet("test-set", &test.conf.set),
 			); (err == nil) == test.expectErr {
 				t.Fatal("Failed to parse data:", err)
 			}
 
-			if !cmp.Equal(test.conf, test.want) {
+			if !cmp.Equal(test.conf, test.want, cmp.AllowUnexported(testConfig{})) {
 				t.Fatalf("parsed = %v, want %v", test.conf, test.want)
 			}
 		})
