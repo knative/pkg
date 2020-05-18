@@ -255,7 +255,7 @@ github.com/spf13/pflag
 # github.com/tsenart/vegeta v12.7.1-0.20190725001342-b5f4fca92137+incompatible
 ## explicit
 github.com/tsenart/vegeta/lib
-# go.opencensus.io v0.22.3
+# go.opencensus.io v0.22.4-0.20200403004729-46dfec7deb6e
 ## explicit
 go.opencensus.io
 go.opencensus.io/internal
