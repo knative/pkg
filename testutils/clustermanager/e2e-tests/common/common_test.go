@@ -82,7 +82,7 @@ func TestGetRepoName(t *testing.T) {
 		}
 
 		out, err := GetRepoName()
-		if string(data.expOut) != out || !reflect.DeepEqual(err, data.expErr) {
+		if data.expOut != out || !reflect.DeepEqual(err, data.expErr) {
 			t.Errorf("testing getting repo name with:\n\tmocked git output: '%s'\n\tmocked git err: '%v'\nwant: out - '%s', err - '%v'\ngot: out - '%s', err - '%v'",
 				data.out, data.err, data.expOut, data.expErr, out, err)
 		}

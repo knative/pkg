@@ -403,7 +403,7 @@ func TestConditionSeverity(t *testing.T) {
 
 // getTypes is a small helped to strip out the used ConditionTypes from Conditions
 func getTypes(conds Conditions) []ConditionType {
-	var types []ConditionType
+	types := make([]ConditionType, 0, len(conds))
 	for _, c := range conds {
 		types = append(types, c.Type)
 	}

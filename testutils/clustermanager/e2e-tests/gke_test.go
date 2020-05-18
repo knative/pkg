@@ -65,7 +65,7 @@ func TestGKECheckEnvironment(t *testing.T) {
 			"", fmt.Errorf("kubectl not set"), "", nil, false, "", "", "", nil, nil,
 		}, {
 			// kubeconfig failed
-			"failed", fmt.Errorf("kubectl other err"), "", nil, false, "", "", "", nil, fmt.Errorf("failed running kubectl config current-context: 'failed'"),
+			"failed", fmt.Errorf("kubectl other err"), "", nil, false, "", "", "", nil, fmt.Errorf(`failed running kubectl config current-context: "failed"`),
 		}, {
 			// kubeconfig returned something other than "gke_PROJECT_REGION_CLUSTER"
 			"gke_b_c", nil, "", nil, false, "", "", "", nil, nil,
@@ -95,7 +95,7 @@ func TestGKECheckEnvironment(t *testing.T) {
 			"gke_b_c_d", nil, "", nil, false, "d", "", "", nil, fmt.Errorf("couldn't find cluster d in b in c, does it exist? cluster not found"),
 		}, {
 			// kubeconfig not set and gcloud failed
-			"", fmt.Errorf("kubectl not set"), "", fmt.Errorf("gcloud failed"), false, "", "", "", nil, fmt.Errorf("failed getting gcloud project: 'gcloud failed'"),
+			"", fmt.Errorf("kubectl not set"), "", fmt.Errorf("gcloud failed"), false, "", "", "", nil, fmt.Errorf("failed getting gcloud project: gcloud failed"),
 		}, {
 			// kubeconfig not set and gcloud not set
 			"", fmt.Errorf("kubectl not set"), "", nil, false, "", "", "", nil, nil,
@@ -107,7 +107,6 @@ func TestGKECheckEnvironment(t *testing.T) {
 
 	oldFunc := common.StandardExec
 	defer func() {
-		// restore
 		common.StandardExec = oldFunc
 	}()
 
@@ -145,17 +144,14 @@ func TestGKECheckEnvironment(t *testing.T) {
 			gotCluster = &fgc.Cluster.Name
 		}
 
-		errMsg := fmt.Sprintf("check environment with:\n\tkubectl output: %q\n\t\terror: '%v'\n\tgcloud output: %q\n\t\t"+
+		errMsg := fmt.Sprintf("check environment with:\n\tkubectl output: %q\n\t\terror: %v\n\tgcloud output: %q\n\t\t"+
 			"error: '%v'\n\t\tclustername requested: %q\n\t\tproject requested: %q",
 			data.kubectlOut, data.kubectlErr, data.gcloudOut, data.gcloudErr, data.requestClusterName, data.requestProject)
 
-		if !reflect.DeepEqual(err, data.expErr) || !reflect.DeepEqual(fgc.Project, data.expProj) || !reflect.DeepEqual(gotCluster, data.expCluster) {
-			t.Errorf("%s\ngot: project - %q, cluster - '%v', err - '%v'\nwant: project - '%v', cluster - '%v', err - '%v'",
-				errMsg, fgc.Project, fgc.Cluster, err, data.expProj, data.expCluster, data.expErr)
-		}
-
-		if !reflect.DeepEqual(data.expErr, err) {
-			t.Errorf("%s\nerror got: '%v'\nerror want: '%v'", errMsg, data.expErr, err)
+		if (data.expErr != nil) != (err != nil) {
+			t.Errorf("Error got = %v, want: %v", err, data.expErr)
+		} else if err != nil && err.Error() != data.expErr.Error() {
+			t.Errorf("Error got = %v, want: %v", err, data.expErr)
 		}
 		if dif := cmp.Diff(data.expCluster, gotCluster); dif != "" {
 			t.Errorf("%s\nCluster got(+) is different from wanted(-)\n%v", errMsg, dif)

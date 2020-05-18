@@ -20,6 +20,9 @@ package namespace
 
 import (
 	context "context"
+	fmt "fmt"
+	reflect "reflect"
+	strings "strings"
 
 	corev1 "k8s.io/api/core/v1"
 	watch "k8s.io/apimachinery/pkg/watch"
@@ -35,7 +38,6 @@ import (
 const (
 	defaultControllerAgentName = "namespace-controller"
 	defaultFinalizerName       = "namespaces.core"
-	defaultQueueName           = "namespaces"
 )
 
 // NewImpl returns a controller.Impl that handles queuing and feeding work from
@@ -52,33 +54,18 @@ func NewImpl(ctx context.Context, r Interface, optionsFns ...controller.OptionsF
 
 	namespaceInformer := namespace.Get(ctx)
 
-	recorder := controller.GetEventRecorder(ctx)
-	if recorder == nil {
-		// Create event broadcaster
-		logger.Debug("Creating event broadcaster")
-		eventBroadcaster := record.NewBroadcaster()
-		watches := []watch.Interface{
-			eventBroadcaster.StartLogging(logger.Named("event-broadcaster").Infof),
-			eventBroadcaster.StartRecordingToSink(
-				&v1.EventSinkImpl{Interface: client.Get(ctx).CoreV1().Events("")}),
-		}
-		recorder = eventBroadcaster.NewRecorder(scheme.Scheme, corev1.EventSource{Component: defaultControllerAgentName})
-		go func() {
-			<-ctx.Done()
-			for _, w := range watches {
-				w.Stop()
-			}
-		}()
-	}
-
 	rec := &reconcilerImpl{
 		Client:        client.Get(ctx),
 		Lister:        namespaceInformer.Lister(),
-		Recorder:      recorder,
 		reconciler:    r,
 		finalizerName: defaultFinalizerName,
 	}
-	impl := controller.NewImpl(rec, logger, defaultQueueName)
+
+	t := reflect.TypeOf(r).Elem()
+	queueName := fmt.Sprintf("%s.%s", strings.ReplaceAll(t.PkgPath(), "/", "-"), t.Name())
+
+	impl := controller.NewImpl(rec, logger, queueName)
+	agentName := defaultControllerAgentName
 
 	// Pass impl to the options. Save any optional results.
 	for _, fn := range optionsFns {
@@ -89,9 +76,39 @@ func NewImpl(ctx context.Context, r Interface, optionsFns ...controller.OptionsF
 		if opts.FinalizerName != "" {
 			rec.finalizerName = opts.FinalizerName
 		}
+		if opts.AgentName != "" {
+			agentName = opts.AgentName
+		}
 	}
 
+	rec.Recorder = createRecorder(ctx, agentName)
+
 	return impl
+}
+
+func createRecorder(ctx context.Context, agentName string) record.EventRecorder {
+	logger := logging.FromContext(ctx)
+
+	recorder := controller.GetEventRecorder(ctx)
+	if recorder == nil {
+		// Create event broadcaster
+		logger.Debug("Creating event broadcaster")
+		eventBroadcaster := record.NewBroadcaster()
+		watches := []watch.Interface{
+			eventBroadcaster.StartLogging(logger.Named("event-broadcaster").Infof),
+			eventBroadcaster.StartRecordingToSink(
+				&v1.EventSinkImpl{Interface: client.Get(ctx).CoreV1().Events("")}),
+		}
+		recorder = eventBroadcaster.NewRecorder(scheme.Scheme, corev1.EventSource{Component: agentName})
+		go func() {
+			<-ctx.Done()
+			for _, w := range watches {
+				w.Stop()
+			}
+		}()
+	}
+
+	return recorder
 }
 
 func init() {
