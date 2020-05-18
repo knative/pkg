@@ -18,7 +18,6 @@ package leaderelection
 
 import (
 	"errors"
-	"reflect"
 	"testing"
 	"time"
 
@@ -84,19 +83,19 @@ func TestNewConfigMapFromData(t *testing.T) {
 		data: kmeta.UnionMaps(okData(), map[string]string{
 			"leaseDuration": "flops",
 		}),
-		err: errors.New(`leaseDuration: invalid duration: "flops"`),
+		err: errors.New(`failed to parse "leaseDuration": time: invalid duration flops`),
 	}, {
 		name: "invalid renewDeadline",
 		data: kmeta.UnionMaps(okData(), map[string]string{
 			"renewDeadline": "flops",
 		}),
-		err: errors.New(`renewDeadline: invalid duration: "flops"`),
+		err: errors.New(`failed to parse "renewDeadline": time: invalid duration flops`),
 	}, {
 		name: "invalid retryPeriod",
 		data: kmeta.UnionMaps(okData(), map[string]string{
 			"retryPeriod": "flops",
 		}),
-		err: errors.New(`retryPeriod: invalid duration: "flops"`),
+		err: errors.New(`failed to parse "retryPeriod": time: invalid duration flops`),
 	}}
 
 	for _, tc := range cases {
@@ -105,7 +104,8 @@ func TestNewConfigMapFromData(t *testing.T) {
 				&corev1.ConfigMap{
 					Data: tc.data,
 				})
-			if !reflect.DeepEqual(tc.err, actualErr) {
+
+			if tc.err != nil && tc.err.Error() != actualErr.Error() {
 				t.Fatalf("Error = %v, want: %v", actualErr, tc.err)
 			}
 

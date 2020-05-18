@@ -31,7 +31,7 @@ func TestEnv(t *testing.T) {
 	}
 	epwd, exists := e["PWD"]
 	if !exists || epwd != os.Getenv("PWD") {
-		t.Errorf("$PWD promotion did not occur correctly: Env='%v'; os.Getenv(\"PWD\")=%s", e, os.Getenv("PWD"))
+		t.Errorf(`$PWD promotion did not occur correctly: Env='%v'; os.Getenv("PWD")=%s`, e, os.Getenv("PWD"))
 	}
 	badName := "GEEZ_I_REALLY_H0PE_TH1S_DOES_NOT_EXIST"
 	// and just in case:

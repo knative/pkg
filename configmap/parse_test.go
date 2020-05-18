@@ -19,6 +19,9 @@ package configmap
 import (
 	"testing"
 	"time"
+
+	"github.com/google/go-cmp/cmp"
+	"k8s.io/apimachinery/pkg/util/sets"
 )
 
 type testConfig struct {
@@ -28,6 +31,7 @@ type testConfig struct {
 	i64 int64
 	f64 float64
 	dur time.Duration
+	set sets.String
 }
 
 func TestParse(t *testing.T) {
@@ -46,6 +50,7 @@ func TestParse(t *testing.T) {
 			"test-int64":    "2",
 			"test-float64":  "1.0",
 			"test-duration": "1m",
+			"test-set":      "a,b,c",
 		},
 		want: testConfig{
 			str: "foo.bar",
@@ -54,6 +59,7 @@ func TestParse(t *testing.T) {
 			i64: 2,
 			f64: 1.0,
 			dur: time.Minute,
+			set: sets.NewString("a", "b", "c"),
 		},
 	}, {
 		name: "respect defaults",
@@ -116,11 +122,12 @@ func TestParse(t *testing.T) {
 				AsInt64("test-int64", &test.conf.i64),
 				AsFloat64("test-float64", &test.conf.f64),
 				AsDuration("test-duration", &test.conf.dur),
+				AsStringSet("test-set", &test.conf.set),
 			); (err == nil) == test.expectErr {
 				t.Fatal("Failed to parse data:", err)
 			}
 
-			if test.conf != test.want {
+			if !cmp.Equal(test.conf, test.want, cmp.AllowUnexported(testConfig{})) {
 				t.Fatalf("parsed = %v, want %v", test.conf, test.want)
 			}
 		})
