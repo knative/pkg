@@ -121,7 +121,7 @@ func NewTracingConfigFromMap(cfgMap map[string]string) (*Config, error) {
 	}
 
 	if tc.SampleRate < 0 || tc.SampleRate > 1 {
-		return nil, fmt.Errorf("sampleRate = %v must be in [0, 1] range", tc.SampleRate)
+		return nil, fmt.Errorf("sample-rate = %v must be in [0, 1] range", tc.SampleRate)
 	}
 
 	return tc, nil
