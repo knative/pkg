@@ -258,11 +258,6 @@ func TestNewConfigFailures(t *testing.T) {
 			sampleRateKey: "1.01",
 		},
 	}, {
-		name: "debug key not a bool",
-		input: map[string]string{
-			debugKey: "not a bool",
-		},
-	}, {
 		name: "zipkin set without backend",
 		input: map[string]string{
 			backendKey: "zipkin",
