@@ -49,7 +49,9 @@ func PostProcessReconcile(ctx context.Context, resource duckv1.KRShaped) {
 	newStatus.ObservedGeneration = resource.GetGeneration()
 
 	rc := mgr.GetTopLevelCondition()
-	if rc != nil && rc.Reason == failedGenerationBump {
+	if rc == nil {
+		logger.Warn("A reconciliation included no top-level condition")
+	} else if rc.Reason == failedGenerationBump {
 		logger.Warn("A reconciler observed a new generation without updating the resource status")
 	}
 }
