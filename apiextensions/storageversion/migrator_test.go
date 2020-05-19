@@ -18,7 +18,7 @@ package storageversion
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -36,11 +36,6 @@ import (
 var (
 	fakeGK = schema.GroupKind{
 		Kind:  "Fake",
-		Group: "group.dev",
-	}
-
-	fakeListGK = schema.GroupKind{
-		Kind:  "FakeList",
 		Group: "group.dev",
 	}
 
@@ -76,8 +71,8 @@ func TestMigrate(t *testing.T) {
 	cclient := apixFake.NewSimpleClientset(fakeCRD)
 	m := NewMigrator(dclient, cclient)
 
-	if err := m.Migrate(context.TODO(), fakeGR); err != nil {
-		t.Fatalf("Migrate() = %s", err)
+	if err := m.Migrate(context.Background(), fakeGR); err != nil {
+		t.Fatalf("Migrate() = %v", err)
 	}
 
 	assertPatches(t, dclient.Actions(),
@@ -107,7 +102,7 @@ func TestMigrate_Errors(t *testing.T) {
 		crd: func(fake *k8stesting.Fake) {
 			fake.PrependReactor("get", "*",
 				func(k8stesting.Action) (bool, runtime.Object, error) {
-					return true, nil, fmt.Errorf("failed to get crd")
+					return true, nil, errors.New("failed to get crd")
 				})
 		},
 	}, {
@@ -115,7 +110,7 @@ func TestMigrate_Errors(t *testing.T) {
 		dyn: func(fake *k8stesting.Fake) {
 			fake.PrependReactor("list", "*",
 				func(k8stesting.Action) (bool, runtime.Object, error) {
-					return true, nil, fmt.Errorf("failed to list resources")
+					return true, nil, errors.New("failed to list resources")
 				})
 		},
 	}, {
@@ -123,7 +118,7 @@ func TestMigrate_Errors(t *testing.T) {
 		dyn: func(fake *k8stesting.Fake) {
 			fake.PrependReactor("patch", "*",
 				func(k8stesting.Action) (bool, runtime.Object, error) {
-					return true, nil, fmt.Errorf("failed to patch resources")
+					return true, nil, errors.New("failed to patch resources")
 				})
 		},
 	}, {
@@ -131,7 +126,7 @@ func TestMigrate_Errors(t *testing.T) {
 		crd: func(fake *k8stesting.Fake) {
 			fake.PrependReactor("patch", "*",
 				func(k8stesting.Action) (bool, runtime.Object, error) {
-					return true, nil, fmt.Errorf("failed to patch definition")
+					return true, nil, errors.New("failed to patch definition")
 				})
 		},
 	},
@@ -153,7 +148,7 @@ func TestMigrate_Errors(t *testing.T) {
 			}
 
 			m := NewMigrator(dclient, cclient)
-			if err := m.Migrate(context.TODO(), fakeGR); err == nil {
+			if err := m.Migrate(context.Background(), fakeGR); err == nil {
 				t.Error("Migrate should have returned an error")
 			}
 		})
@@ -165,7 +160,7 @@ func assertPatches(t *testing.T, actions []k8stesting.Action, want ...k8stesting
 
 	got := getPatchActions(actions)
 	if diff := cmp.Diff(got, want); diff != "" {
-		t.Errorf("unexpected patches: %s", diff)
+		t.Error("Unexpected patches:", diff)
 	}
 }
 

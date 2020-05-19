@@ -93,7 +93,7 @@ func runCommand(cmdLine string, options ...Option) (string, error) {
 // RunCommands will run the commands sequentially.
 // If there is an error when running a command, it will return directly with all standard output so far and the error.
 func runCommands(cmdLines ...string) (string, error) {
-	var outputs []string
+	outputs := make([]string, 0, len(cmdLines))
 	for _, cmdLine := range cmdLines {
 		output, err := RunCommand(cmdLine)
 		outputs = append(outputs, output)

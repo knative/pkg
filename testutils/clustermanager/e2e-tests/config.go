@@ -45,9 +45,9 @@ var (
 	// - stockout (https://github.com/knative/test-infra/issues/592)
 	// - latest GKE not available in this region/zone yet (https://github.com/knative/test-infra/issues/694)
 	retryableCreationErrors = []*regexp.Regexp{
-		regexp.MustCompile(".*Master version \"[0-9a-z\\-.]+\" is unsupported.*"),
-		regexp.MustCompile(".*No valid versions with the prefix \"[0-9.]+\" found.*"),
-		regexp.MustCompile(".*does not have enough resources available to fulfill.*"),
-		regexp.MustCompile(".*only \\d+ nodes out of \\d+ have registered; this is likely due to Nodes failing to start correctly.*"),
+		regexp.MustCompile(`.*Master version "[0-9a-z\-.]+" is unsupported.*`),
+		regexp.MustCompile(`.*No valid versions with the prefix "[0-9.]+" found.*`),
+		regexp.MustCompile(`.*does not have enough resources available to fulfill.*`),
+		regexp.MustCompile(`.*only \d+ nodes out of \d+ have registered; this is likely due to Nodes failing to start correctly.*`),
 	}
 )

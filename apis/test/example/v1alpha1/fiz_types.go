@@ -50,6 +50,7 @@ type ClusterFiz struct {
 var _ apis.Validatable = (*ClusterFiz)(nil)
 var _ apis.Defaultable = (*ClusterFiz)(nil)
 var _ kmeta.OwnerRefable = (*ClusterFiz)(nil)
+var _ duckv1.KRShaped = (*ClusterFiz)(nil)
 
 // ClusterFizSpec holds the desired state of the ClusterFiz (from the client).
 type ClusterFizSpec struct{}
@@ -91,4 +92,14 @@ func (f *ClusterFiz) SetDefaults(ctx context.Context) {
 func (f *ClusterFiz) Validate(ctx context.Context) *apis.FieldError {
 	// Nothing to validate.
 	return nil
+}
+
+// GetStatus retrieves the status of the ClusterFiz. Implements the KRShaped interface.
+func (f *ClusterFiz) GetStatus() *duckv1.Status {
+	return &f.Status.Status
+}
+
+// GetConditionSet retrieves the condition set for this resource. Implements the KRShaped interface.
+func (*ClusterFiz) GetConditionSet() apis.ConditionSet {
+	return apis.NewLivingConditionSet()
 }

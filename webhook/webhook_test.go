@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"net"
 	"testing"
+	"time"
 
 	"golang.org/x/sync/errgroup"
 	"knative.dev/pkg/controller"
@@ -43,6 +44,11 @@ const (
 	testResourceName = "test-resource"
 	user1            = "brutto@knative.dev"
 )
+
+func init() {
+	// Don't hang forever when running tests.
+	GracePeriod = 100 * time.Millisecond
+}
 
 func newNonRunningTestWebhook(t *testing.T, options Options, acs ...interface{}) (
 	ctx context.Context, ac *Webhook, cancel context.CancelFunc) {

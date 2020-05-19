@@ -78,16 +78,17 @@ func TestCreateCerts(t *testing.T) {
 
 func validCertificate(cert []byte, t *testing.T) (*x509.Certificate, error) {
 	t.Helper()
+	const certificate = "CERTIFICATE"
 	caCert, _ := pem.Decode(cert)
-	if caCert.Type != "CERTIFICATE" {
-		return nil, fmt.Errorf("Expected %s but got %s", "CERTIFICATE", caCert.Type)
+	if caCert.Type != certificate {
+		return nil, fmt.Errorf("cert.Type = %s, want: %s", caCert.Type, certificate)
 	}
 	parsedCert, err := x509.ParseCertificate(caCert.Bytes)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to parse cert %v", err)
+		return nil, fmt.Errorf("Failed to parse cert %w", err)
 	}
 	if parsedCert.SignatureAlgorithm != x509.SHA256WithRSA {
-		return nil, fmt.Errorf("Failed to match signature. Expect %s but got %s", x509.SHA256WithRSA, parsedCert.SignatureAlgorithm)
+		return nil, fmt.Errorf("Failed to match signature. Got: %s, want: %s", parsedCert.SignatureAlgorithm, x509.SHA256WithRSA)
 	}
 	return parsedCert, nil
 }

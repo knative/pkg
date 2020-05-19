@@ -86,7 +86,7 @@ func RegisterResourceView(views ...*view.View) error {
 
 func setFactory(f func(*resource.Resource) (view.Exporter, error)) error {
 	if f == nil {
-		return fmt.Errorf("Do not setFactory(nil)!")
+		return fmt.Errorf("do not setFactory(nil)!")
 	}
 
 	allMeters.lock.Lock()
@@ -112,8 +112,7 @@ func setFactory(f func(*resource.Resource) (view.Exporter, error)) error {
 	return nil
 }
 
-// meterForResource finds or creates a stats.Option indicating which meter to record to.
-func meterForResource(r *resource.Resource) (stats.Options, error) {
+func meterExporterForResource(r *resource.Resource) *meterExporter {
 	allMeters.lock.Lock()
 	defer allMeters.lock.Unlock()
 
@@ -125,14 +124,42 @@ func meterForResource(r *resource.Resource) (stats.Options, error) {
 
 	mE := allMeters.meters[key]
 	if mE.o != nil {
+		return &mE
+	}
+	mE.m = view.NewMeter()
+	mE.o = stats.WithRecorder(mE.m)
+	allMeters.meters[key] = mE
+	return &mE
+}
+
+// meterForResource finds or creates a view.Meter for the given resource. If
+func meterForResource(r *resource.Resource) view.Meter {
+	mE := meterExporterForResource(r)
+	if mE == nil {
+		return nil
+	}
+	return mE.m
+}
+
+// optionForResource finds or creates a stats.Option indicating which meter to record to.
+func optionForResource(r *resource.Resource) (stats.Options, error) {
+	mE := meterExporterForResource(r)
+	if mE == nil {
+		return nil, fmt.Errorf("unexpectedly failed lookup for resource %v", r)
+	}
+
+	if mE.e != nil {
+		// Assume the exporter is already started.
 		return mE.o, nil
 	}
 
-	mE.m = view.NewMeter()
-	mE.o = stats.WithRecorder(mE.m)
 	if allMeters.factory == nil {
+		if mE.o != nil {
+			// If we can't create exporters but we have a Meter, return that.
+			return mE.o, nil
+		}
 		fmt.Printf("No factory to export to!\n")
-		return nil, fmt.Errorf("Whoops, allMeters.factory is nil")
+		return nil, fmt.Errorf("whoops, allMeters.factory is nil")
 	}
 	exporter, err := allMeters.factory(r)
 	if err != nil {
@@ -141,7 +168,6 @@ func meterForResource(r *resource.Resource) (stats.Options, error) {
 
 	mE.m.RegisterExporter(exporter)
 	mE.e = exporter
-	allMeters.meters[key] = mE
 	mE.m.Start()
 	return mE.o, nil
 }
