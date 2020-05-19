@@ -257,6 +257,10 @@ func DefaultErrorRetryChecker(err error) (bool, error) {
 	if isConnectionReset(err) {
 		return true, fmt.Errorf("Retrying for connection reset: %w", err)
 	}
+	// Retry on connection/network errors.
+	if isEOF(err) {
+		return true, fmt.Errorf("Retrying for EOF: %w", err)
+	}
 	return false, err
 }
 
