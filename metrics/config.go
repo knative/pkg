@@ -169,11 +169,11 @@ import (
 		// At this point, it's unclear whether should record or not.
 		return nil
 	}
-	m, err := meterForResource(metricskey.GetResource(ctx))
+	opt, err := optionForResource(metricskey.GetResource(ctx))
 	if err != nil {
 		return err
 	}
-	ros = append(ros, m)
+	ros = append(ros, opt)
 
 	if mc.recorder == nil {
 		return stats.RecordWithOptions(ctx, append(ros, stats.WithMeasurements(mss...))...)

@@ -206,7 +206,7 @@ func newMetricsExporter(config *metricsConfig, logger *zap.SugaredLogger) (view.
 	case Stackdriver:
 		e, err = newStackdriverExporter(config, logger)
 	case Prometheus:
-		e, err = newPrometheusExporter(config, logger)
+		e, f, err = newPrometheusExporter(config, logger)
 	case None:
 		e, err = nil, nil
 	default:
