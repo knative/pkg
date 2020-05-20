@@ -187,7 +187,7 @@ func (c *clientMocker) ListChildrenFiles(ctx context.Context, bkt, dirPath strin
 
 	dir := strings.TrimRight(dirPath, " /") + "/"
 	var children []string
-	for k, _ := range bktRoot.obj {
+	for k := range bktRoot.obj {
 		if strings.HasPrefix(k.dir, dir) {
 			children = append(children, k.toString())
 		}
