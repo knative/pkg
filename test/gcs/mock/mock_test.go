@@ -25,7 +25,7 @@ func TestSetError(t *testing.T) {
 		{
 			testname: "set errors for methods",
 			m: map[Method]ReturnError{
-				MethodNewStorageBucket: ReturnError{
+				MethodNewStorageBucket: {
 					NumCall: 2,
 					Err:     fmt.Errorf("MethodNewStorageBucket Error"),
 				},
