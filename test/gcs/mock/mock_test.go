@@ -37,35 +37,35 @@ func TestSetError(t *testing.T) {
 					NumCall: 0,
 					Err:     fmt.Errorf("MethodListChildrenFilesError"),
 				},
-				MethodListDirectChildren: ReturnError{
+				MethodListDirectChildren: {
 					NumCall: 1,
 					Err:     fmt.Errorf("MethodListDirectChildrenError"),
 				},
-				MethodAttrObject: ReturnError{
+				MethodAttrObject: {
 					NumCall: 2,
 					Err:     fmt.Errorf("MethodAttrObjectError"),
 				},
-				MethodCopyObject: ReturnError{
+				MethodCopyObject: {
 					NumCall: 3,
 					Err:     fmt.Errorf("MethodCopyObjectError"),
 				},
-				MethodReadObject: ReturnError{
+				MethodReadObject: {
 					NumCall: 2,
 					Err:     fmt.Errorf("MethodReadObjectError"),
 				},
-				MethodWriteObject: ReturnError{
+				MethodWriteObject: {
 					NumCall: 1,
 					Err:     fmt.Errorf("MethodWriteObjectError"),
 				},
-				MethodDeleteObject: ReturnError{
+				MethodDeleteObject: {
 					NumCall: 0,
 					Err:     fmt.Errorf("MethodDeleteObjectError"),
 				},
-				MethodDownload: ReturnError{
+				MethodDownload: {
 					NumCall: 1,
 					Err:     fmt.Errorf("MethodDownload"),
 				},
-				MethodUpload: ReturnError{
+				MethodUpload: {
 					NumCall: 2,
 					Err:     fmt.Errorf("MethodUpload"),
 				},
@@ -211,47 +211,47 @@ func TestClearError(t *testing.T) {
 		{
 			testname: "set errors for methods",
 			m: map[Method]ReturnError{
-				MethodNewStorageBucket: ReturnError{
+				MethodNewStorageBucket: {
 					NumCall: 0,
 					Err:     fmt.Errorf("MethodNewStorageBucket Error"),
 				},
-				MethodDeleteStorageBucket: ReturnError{
+				MethodDeleteStorageBucket: {
 					NumCall: 0,
 					Err:     fmt.Errorf("MethodDeleteStorageBucketError"),
 				},
-				MethodListChildrenFiles: ReturnError{
+				MethodListChildrenFiles: {
 					NumCall: 0,
 					Err:     fmt.Errorf("MethodListChildrenFilesError"),
 				},
-				MethodListDirectChildren: ReturnError{
+				MethodListDirectChildren: {
 					NumCall: 0,
 					Err:     fmt.Errorf("MethodListDirectChildrenError"),
 				},
-				MethodAttrObject: ReturnError{
+				MethodAttrObject: {
 					NumCall: 0,
 					Err:     fmt.Errorf("MethodAttrObjectError"),
 				},
-				MethodCopyObject: ReturnError{
+				MethodCopyObject: {
 					NumCall: 0,
 					Err:     fmt.Errorf("MethodCopyObjectError"),
 				},
-				MethodReadObject: ReturnError{
+				MethodReadObject: {
 					NumCall: 0,
 					Err:     fmt.Errorf("MethodReadObjectError"),
 				},
-				MethodWriteObject: ReturnError{
+				MethodWriteObject: {
 					NumCall: 0,
 					Err:     fmt.Errorf("MethodWriteObjectError"),
 				},
-				MethodDeleteObject: ReturnError{
+				MethodDeleteObject: {
 					NumCall: 0,
 					Err:     fmt.Errorf("MethodDeleteObjectError"),
 				},
-				MethodDownload: ReturnError{
+				MethodDownload: {
 					NumCall: 0,
 					Err:     fmt.Errorf("MethodDownload"),
 				},
-				MethodUpload: ReturnError{
+				MethodUpload: {
 					NumCall: 0,
 					Err:     fmt.Errorf("MethodUpload"),
 				},
