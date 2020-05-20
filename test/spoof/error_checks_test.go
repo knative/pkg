@@ -144,25 +144,3 @@ func TestTCPTimeout(t *testing.T) {
 		})
 	}
 }
-
-func TestEOF(t *testing.T) {
-	for _, tt := range []struct {
-		name string
-		err  error
-		eof  bool
-	}{{
-		name: "error matching",
-		err:  errors.New("EOF"),
-		eof:  true,
-	}, {
-		name: "error not matching",
-		err:  errors.New("dial tcp: lookup this.url.does.not.exist on 127.0.0.1:53: no such host"),
-		eof:  false,
-	}} {
-		t.Run(tt.name, func(t *testing.T) {
-			if eof := isEOF(tt.err); tt.eof != eof {
-				t.Errorf("Expected EOF=%v, got %v", tt.eof, eof)
-			}
-		})
-	}
-}

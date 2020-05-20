@@ -20,7 +20,9 @@ package spoof
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net"
 	"net/http"
@@ -258,8 +260,8 @@ func DefaultErrorRetryChecker(err error) (bool, error) {
 		return true, fmt.Errorf("Retrying for connection reset: %w", err)
 	}
 	// Retry on connection/network errors.
-	if isEOF(err) {
-		return true, fmt.Errorf("Retrying for EOF: %w", err)
+	if errors.Is(err, io.EOF) {
+		return true, fmt.Errorf("Retrying for: %w", err)
 	}
 	return false, err
 }

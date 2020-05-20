@@ -51,7 +51,3 @@ func isConnectionRefused(err error) bool {
 func isConnectionReset(err error) bool {
 	return err != nil && strings.Contains(err.Error(), "connection reset by peer")
 }
-
-func isEOF(err error) bool {
-	return err != nil && strings.Contains(err.Error(), "EOF")
-}
