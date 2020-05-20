@@ -33,7 +33,7 @@ func TestSetError(t *testing.T) {
 					NumCall: 1,
 					Err:     fmt.Errorf("MethodDeleteStorageBucketError"),
 				},
-				MethodListChildrenFiles: ReturnError{
+				MethodListChildrenFiles: {
 					NumCall: 0,
 					Err:     fmt.Errorf("MethodListChildrenFilesError"),
 				},
