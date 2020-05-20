@@ -166,7 +166,7 @@ func (c *clientMocker) Exists(ctx context.Context, bkt, objPath string) bool {
 	// path of an object containing the searched for directory as its subpath means
 	// the directory "exists"
 	// NOTE: this is inefficient....but we are not scale testing with mock anyway.
-	for k, _ := range bktRoot.obj {
+	for k := range bktRoot.obj {
 		if strings.HasPrefix(k.dir, objPath) {
 			return true
 		}
