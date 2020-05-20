@@ -209,7 +209,7 @@ func (c *clientMocker) ListDirectChildren(ctx context.Context, bkt, dirPath stri
 
 	dir := strings.TrimRight(dirPath, " /") + "/"
 	var children []string
-	for k, _ := range bktRoot.obj {
+	for k := range bktRoot.obj {
 		if k.dir == dir {
 			children = append(children, k.toString())
 		}
