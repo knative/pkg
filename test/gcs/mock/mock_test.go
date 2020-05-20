@@ -29,7 +29,7 @@ func TestSetError(t *testing.T) {
 					NumCall: 2,
 					Err:     fmt.Errorf("MethodNewStorageBucket Error"),
 				},
-				MethodDeleteStorageBucket: ReturnError{
+				MethodDeleteStorageBucket: {
 					NumCall: 1,
 					Err:     fmt.Errorf("MethodDeleteStorageBucketError"),
 				},
