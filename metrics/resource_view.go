@@ -45,7 +45,7 @@ type meterExporter struct {
 // Tags are.
 type ResourceExporterFactory func(*resource.Resource) (view.Exporter, error)
 type meters struct {
-	meters  map[string]meterExporter
+	meters  map[string]*meterExporter
 	factory ResourceExporterFactory
 	// Cache of Resource pointers from metricskey to Meters, to avoid
 	// unnecessary stringify operations
@@ -55,7 +55,7 @@ type meters struct {
 
 var resourceViews storedViews = storedViews{}
 var allMeters meters = meters{
-	meters:        map[string]meterExporter{"": defaultMeter},
+	meters:        map[string]*meterExporter{"": &defaultMeter},
 	resourceToKey: map[*resource.Resource]string{nil: ""},
 }
 
@@ -122,14 +122,22 @@ func meterExporterForResource(r *resource.Resource) *meterExporter {
 		allMeters.resourceToKey[r] = key
 	}
 
-	mE := allMeters.meters[key]
+	mE, ok := allMeters.meters[key]
+	if !ok {
+		mE = &meterExporter{}
+		allMeters.meters[key] = mE
+	}
 	if mE.o != nil {
-		return &mE
+		return mE
 	}
 	mE.m = view.NewMeter()
+	mE.m.Start()
+	for _, v := range resourceViews.views {
+		mE.m.Register(v)
+	}
 	mE.o = stats.WithRecorder(mE.m)
 	allMeters.meters[key] = mE
-	return &mE
+	return mE
 }
 
 // meterForResource finds or creates a view.Meter for the given resource. If
@@ -187,7 +195,10 @@ func resourceAsString(r *resource.Resource) string {
 }
 
 func resourceFromString(s string) *resource.Resource {
-	var r resource.Resource
+	if s == "" {
+		return nil
+	}
+	r := resource.Resource{Labels: map[string]string{}}
 	parts := strings.Split(s, "\x01")
 	r.Type = parts[0]
 	for _, label := range parts[1:] {
