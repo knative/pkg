@@ -22,11 +22,14 @@ import (
 	"fmt"
 
 	"go.uber.org/zap"
+
 	apixv1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+
 	"knative.dev/pkg/apis"
+	"knative.dev/pkg/kmeta"
 	"knative.dev/pkg/logging"
 )
 
@@ -78,8 +81,6 @@ func (r *reconciler) convert(
 		return ret, err
 	}
 
-	logger.Infof("Converting %s to version %s", formatGVK(inGVK), targetVersion)
-
 	inGK := inGVK.GroupKind()
 	conv, ok := r.kinds[inGK]
 	if !ok {
@@ -109,16 +110,25 @@ func (r *reconciler) convert(
 	out := outZygote.DeepCopyObject().(ConvertibleObject)
 
 	hubGVK := inGVK.GroupKind().WithVersion(conv.HubVersion)
-	ctx = logging.WithLogger(ctx, logger.With(
+
+	logger = logger.With(
 		zap.String("inputType", formatGVK(inGVK)),
 		zap.String("outputType", formatGVK(outGVK)),
 		zap.String("hubType", formatGVK(hubGVK)),
-	))
+	)
 
 	// TODO(dprotaso) - potentially error on unknown fields
 	if err = json.Unmarshal(inRaw.Raw, &in); err != nil {
 		return ret, fmt.Errorf("unable to unmarshal input: %w", err)
 	}
+
+	if acc, err := kmeta.DeletionHandlingAccessor(in); err == nil {
+		logger = logger.With("key", acc.GetNamespace()+"/"+acc.GetName())
+	} else {
+		logger.Infof("Could not get Accessor for %s: %v", formatGK(inGVK.GroupKind()), err)
+	}
+	logger.Infof("Converting %s to version %s", formatGVK(inGVK), targetVersion)
+	ctx = logging.WithLogger(ctx, logger)
 
 	if inGVK.Version == conv.HubVersion {
 		hub = in
