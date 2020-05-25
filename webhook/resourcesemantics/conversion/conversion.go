@@ -27,10 +27,12 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/types"
 
 	"knative.dev/pkg/apis"
 	"knative.dev/pkg/kmeta"
 	"knative.dev/pkg/logging"
+	"knative.dev/pkg/logging/logkey"
 )
 
 // Convert implements webhook.ConversionController
@@ -123,7 +125,10 @@ func (r *reconciler) convert(
 	}
 
 	if acc, err := kmeta.DeletionHandlingAccessor(in); err == nil {
-		logger = logger.With("key", acc.GetNamespace()+"/"+acc.GetName())
+		logger = logger.With(zap.Object(logkey.Key, logging.NamespacedName(types.NamespacedName{
+			Namespace: acc.GetNamespace(),
+			Name:      acc.GetName(),
+		})))
 	} else {
 		logger.Infof("Could not get Accessor for %s: %v", formatGK(inGVK.GroupKind()), err)
 	}
