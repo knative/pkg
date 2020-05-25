@@ -473,6 +473,7 @@ func (c *Impl) FilteredGlobalResync(f func(interface{}) bool, si cache.SharedInf
 	if c.WorkQueue.ShuttingDown() {
 		return
 	}
+	start := time.Now()
 	list := si.GetStore().List()
 	count := float64(len(list))
 	for _, obj := range list {
@@ -480,6 +481,7 @@ func (c *Impl) FilteredGlobalResync(f func(interface{}) bool, si cache.SharedInf
 			c.EnqueueAfter(obj, wait.Jitter(time.Second, count))
 		}
 	}
+	c.logger.Debugf("Enqueuing keys for global resync took %v", time.Since(start))
 }
 
 // NewPermanentError returns a new instance of permanentError.
