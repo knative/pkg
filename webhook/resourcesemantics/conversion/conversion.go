@@ -27,7 +27,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/apimachinery/pkg/types"
 
 	"knative.dev/pkg/apis"
 	"knative.dev/pkg/kmeta"
@@ -125,10 +124,9 @@ func (r *reconciler) convert(
 	}
 
 	if acc, err := kmeta.DeletionHandlingAccessor(in); err == nil {
-		logger = logger.With(zap.Object(logkey.Key, logging.NamespacedName(types.NamespacedName{
-			Namespace: acc.GetNamespace(),
-			Name:      acc.GetName(),
-		})))
+		// TODO: right now we don't convert any non-namespaced objects. If we ever do that
+		// this needs to updated to deal with it.
+		logger = logger.With(zap.String(logkey.Key, acc.GetNamespace()+"/"+acc.GetName()))
 	} else {
 		logger.Infof("Could not get Accessor for %s: %v", formatGK(inGVK.GroupKind()), err)
 	}
