@@ -60,7 +60,13 @@ func TestConditionSet(t *testing.T) {
 
 	const wantGeneration = 42
 
-	s := &Status{ObservedGeneration: wantGeneration}
+	s := &Status{
+		ObservedGeneration: wantGeneration,
+		Annotations: map[string]string{
+			"peace": "was",
+			"never": "an-option",
+		},
+	}
 	mgr := condSet.Manage(s)
 
 	mgr.InitializeConditions()
@@ -82,8 +88,11 @@ func TestConditionSet(t *testing.T) {
 		t.Errorf("len(s2.Conditions) = %d, wanted %d", got, want)
 	}
 	if gotGeneration := s2.ObservedGeneration; wantGeneration != gotGeneration {
-		t.Errorf("len(s2.ObservedGeneration) = %d, wanted %d",
+		t.Errorf("s2.ObservedGeneration = %d, wanted %d",
 			gotGeneration, wantGeneration)
+	}
+	if got, want := s2.Annotations, s.Annotations; !cmp.Equal(got, want) {
+		t.Errorf("Annotations mismatch: diff(-want,+got):\n%s", cmp.Diff(want, got))
 	}
 
 	for _, c := range []apis.ConditionType{"Foo"} {
@@ -107,8 +116,11 @@ func TestConditionSet(t *testing.T) {
 		t.Errorf("len(s2.Conditions) = %d, wanted %d", got, want)
 	}
 	if gotGeneration := s2.ObservedGeneration; wantGeneration != gotGeneration {
-		t.Errorf("len(s2.ObservedGeneration) = %d, wanted %d",
+		t.Errorf("s2.ObservedGeneration = %d, wanted %d",
 			gotGeneration, wantGeneration)
+	}
+	if got, want := s2.Annotations, s.Annotations; !cmp.Equal(got, want) {
+		t.Errorf("Annotations mismatch: diff(-want,+got):\n%s", cmp.Diff(want, got))
 	}
 
 	for _, c := range []apis.ConditionType{"Foo"} {
@@ -132,8 +144,11 @@ func TestConditionSet(t *testing.T) {
 		t.Errorf("len(s2.Conditions) = %d, wanted %d", got, want)
 	}
 	if gotGeneration := s2.ObservedGeneration; wantGeneration != gotGeneration {
-		t.Errorf("len(s2.ObservedGeneration) = %d, wanted %d",
+		t.Errorf("s2.ObservedGeneration = %d, wanted %d",
 			gotGeneration, wantGeneration)
+	}
+	if got, want := s2.Annotations, s.Annotations; !cmp.Equal(got, want) {
+		t.Errorf("Annotations mismatch: diff(-want,+got):\n%s", cmp.Diff(want, got))
 	}
 
 	s2 = &Status{}
@@ -163,7 +178,10 @@ func TestConditionSet(t *testing.T) {
 		}
 	}
 	if gotGeneration := s2.ObservedGeneration; wantGeneration != gotGeneration {
-		t.Errorf("len(s2.ObservedGeneration) = %d, wanted %d",
+		t.Errorf("s2.ObservedGeneration = %d, wanted %d",
 			gotGeneration, wantGeneration)
+	}
+	if got, want := s2.Annotations, s.Annotations; !cmp.Equal(got, want) {
+		t.Errorf("Annotations mismatch: diff(-want,+got):\n%s", cmp.Diff(want, got))
 	}
 }
