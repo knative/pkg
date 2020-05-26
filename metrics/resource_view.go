@@ -69,7 +69,7 @@ func RegisterResourceView(views ...*view.View) error {
 	allMeters.lock.Lock()
 	defer allMeters.lock.Unlock()
 
-	errors := make([]error, len(allMeters.meters))
+	errors := make([]error, 0, len(allMeters.meters))
 
 	for _, meter := range allMeters.meters {
 		if err := meter.m.Register(views...); err != nil {
@@ -176,7 +176,6 @@ func optionForResource(r *resource.Resource) (stats.Options, error) {
 
 	mE.m.RegisterExporter(exporter)
 	mE.e = exporter
-	mE.m.Start()
 	return mE.o, nil
 }
 
