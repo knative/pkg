@@ -111,7 +111,7 @@ func TestWebhookKubeletProbe(t *testing.T) {
 	webhook.ServeHTTP(&recorder, probeReq)
 
 	if got, want := recorder.Code, http.StatusOK; got != want {
-		t.Fatalf("probe got HTTP status %d - expected %d", got, want)
+		t.Fatalf("Probe got HTTP status %d - expected %d", got, want)
 	}
 
 	if got, want := recorder.writeCount, 1; got != want {
