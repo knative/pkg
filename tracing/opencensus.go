@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strings"
 	"sync"
 
 	"contrib.go.opencensus.io/exporter/stackdriver"
@@ -114,7 +115,14 @@ func createOCTConfig(cfg *config.Config) *trace.Config {
 // WithExporter returns a ConfigOption for use with NewOpenCensusTracer that configures
 // it to export traces based on the configuration read from config-tracing.
 func WithExporter(name string, logger *zap.SugaredLogger) ConfigOption {
+	return WithExporterFull(name, name, logger)
+}
+
+// WithExporterFull supports hostPort argument, which is used for the endpoint.
+// The hostPort allows HOST:PORT or HOST. If no port is specified, use 80 port.
+func WithExporterFull(name, hostPort string, logger *zap.SugaredLogger) ConfigOption {
 	return func(cfg *config.Config) error {
+		const defaultPort = "80"
 		var (
 			exporter trace.Exporter
 			closer   io.Closer
@@ -130,17 +138,22 @@ func WithExporter(name string, logger *zap.SugaredLogger) ConfigOption {
 			}
 			exporter = exp
 		case config.Zipkin:
-			// If name isn't specified, then zipkin.NewEndpoint will return an error saying that it
+			// If hostPort isn't specified, then zipkin.NewEndpoint will return an error saying that it
 			// can't find the host named ''. So, if not specified, default it to this machine's
 			// hostname.
-			if name == "" {
+			if hostPort == "" {
 				n, err := os.Hostname()
 				if err != nil {
 					return fmt.Errorf("unable to get hostname: %w", err)
 				}
-				name = n
+				hostPort = n
 			}
-			hostPort := name + ":80"
+			if name == "" {
+				name = hostPort
+			}
+			if strings.IndexByte(hostPort, ':') < 0 {
+				hostPort = hostPort + ":" + defaultPort
+			}
 			zipEP, err := zipkin.NewEndpoint(name, hostPort)
 			if err != nil {
 				logger.Errorw("error building zipkin endpoint", zap.Error(err))
