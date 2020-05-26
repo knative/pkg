@@ -184,4 +184,11 @@ func TestConditionSet(t *testing.T) {
 	if got, want := s2.Annotations, s.Annotations; !cmp.Equal(got, want) {
 		t.Errorf("Annotations mismatch: diff(-want,+got):\n%s", cmp.Diff(want, got))
 	}
+
+	s.Annotations = nil
+	s2 = &Status{}
+	s.ConvertTo(context.Background(), s2)
+	if s2.Annotations != nil {
+		t.Error("Annotations were not nil:", s2.Annotations)
+	}
 }
