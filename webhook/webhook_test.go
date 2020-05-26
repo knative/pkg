@@ -115,7 +115,7 @@ func TestWebhookKubeletProbe(t *testing.T) {
 	}
 
 	if got, want := recorder.writeCount, 1; got != want {
-		t.Errorf("status was written %d times - expected only one write", got)
+		t.Errorf("Status was written %d times - expected only one write", got)
 	}
 
 	// Stop the webhook - which means probes should fail
@@ -133,7 +133,7 @@ func TestWebhookKubeletProbe(t *testing.T) {
 	}
 
 	if got, want := recorder.writeCount, 1; got != want {
-		t.Errorf("status was written %d times - expected only one write", got)
+		t.Errorf("Status was written %d times - expected only one write", got)
 	}
 }
 
