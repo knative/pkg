@@ -48,7 +48,7 @@ require (
 	k8s.io/klog v1.0.0
 	k8s.io/kube-openapi v0.0.0-20200316234421-82d701f24f9d
 	k8s.io/test-infra v0.0.0-20200407001919-bc7f71ef65b8
-	knative.dev/test-infra v0.0.0-20200514223200-ef4fd3ad398f
+	knative.dev/test-infra v0.0.0-20200522180958-6a0a9b9d893a
 )
 
 replace (
