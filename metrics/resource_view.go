@@ -22,6 +22,8 @@ import (
 	"sync"
 	"time"
 
+	"go.opencensus.io/metric/metricdata"
+	"go.opencensus.io/metric/metricproducer"
 	"go.opencensus.io/resource"
 	"go.opencensus.io/stats"
 	"go.opencensus.io/stats/view"
@@ -69,7 +71,7 @@ func RegisterResourceView(views ...*view.View) error {
 	allMeters.lock.Lock()
 	defer allMeters.lock.Unlock()
 
-	errors := make([]error, len(allMeters.meters))
+	errors := make([]error, 0, len(allMeters.meters))
 
 	for _, meter := range allMeters.meters {
 		if err := meter.m.Register(views...); err != nil {
@@ -113,9 +115,6 @@ func setFactory(f func(*resource.Resource) (view.Exporter, error)) error {
 }
 
 func meterExporterForResource(r *resource.Resource) *meterExporter {
-	allMeters.lock.Lock()
-	defer allMeters.lock.Unlock()
-
 	key, ok := allMeters.resourceToKey[r]
 	if !ok {
 		key = resourceAsString(r)
@@ -132,9 +131,10 @@ func meterExporterForResource(r *resource.Resource) *meterExporter {
 	}
 	mE.m = view.NewMeter()
 	mE.m.Start()
-	for _, v := range resourceViews.views {
-		mE.m.Register(v)
-	}
+	mE.m.Register(resourceViews.views...)
+	// Prometheus's default collector uses the global metricproducer to read *all* meters.
+	// This confuses the default prometheus adapter, so remove these from the global export.
+	metricproducer.GlobalManager().DeleteProducer(mE.m.(metricproducer.Producer))
 	mE.o = stats.WithRecorder(mE.m)
 	allMeters.meters[key] = mE
 	return mE
@@ -151,6 +151,9 @@ func meterForResource(r *resource.Resource) view.Meter {
 
 // optionForResource finds or creates a stats.Option indicating which meter to record to.
 func optionForResource(r *resource.Resource) (stats.Options, error) {
+	allMeters.lock.Lock()
+	defer allMeters.lock.Unlock()
+
 	mE := meterExporterForResource(r)
 	if mE == nil {
 		return nil, fmt.Errorf("unexpectedly failed lookup for resource %v", r)
@@ -166,7 +169,6 @@ func optionForResource(r *resource.Resource) (stats.Options, error) {
 			// If we can't create exporters but we have a Meter, return that.
 			return mE.o, nil
 		}
-		fmt.Printf("No factory to export to!\n")
 		return nil, fmt.Errorf("whoops, allMeters.factory is nil")
 	}
 	exporter, err := allMeters.factory(r)
@@ -176,7 +178,6 @@ func optionForResource(r *resource.Resource) (stats.Options, error) {
 
 	mE.m.RegisterExporter(exporter)
 	mE.e = exporter
-	mE.m.Start()
 	return mE.o, nil
 }
 
@@ -253,4 +254,12 @@ func (*defaultMeterImpl) Stop() {
 }
 func (*defaultMeterImpl) RetrieveData(viewName string) ([]*view.Row, error) {
 	return view.RetrieveData(viewName)
+}
+func (*defaultMeterImpl) Read() []*metricdata.Metric {
+	producers := metricproducer.GlobalManager().GetAll()
+	ret := []*metricdata.Metric{}
+	for _, p := range producers {
+		ret = append(ret, p.Read()...)
+	}
+	return ret
 }

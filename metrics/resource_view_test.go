@@ -19,8 +19,11 @@ package metrics
 import (
 	"context"
 	"fmt"
+	"io/ioutil"
+	"net/http"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
 	"go.opencensus.io/resource"
 	"go.opencensus.io/stats"
 	"go.opencensus.io/stats/view"
@@ -155,11 +158,27 @@ func TestMetricsExport(t *testing.T) {
 			return UpdateExporter(configForBackend(Prometheus), logtesting.TestLogger(t))
 		},
 		validate: func(t *testing.T) {
+			resp, err := http.Get(fmt.Sprintf("http://localhost:%d/metrics", 9090))
+			if err != nil {
+				t.Fatalf("failed to fetch prometheus metrics: %+v", err)
+			}
+			defer resp.Body.Close()
 			t.Logf("TODO: Validate Prometheus")
+			body, err := ioutil.ReadAll(resp.Body)
+			if err != nil {
+				t.Fatalf("failed to read prometheus response: %+v", err)
+			}
+			want := `# HELP testComponent_testing_value Test value
+# TYPE testComponent_testing_value gauge
+testComponent_testing_value{project="p1",revision="r1"} 0
+testComponent_testing_value{project="p1",revision="r2"} 1
+`
+			if diff := cmp.Diff(want, string(body)); diff != "" {
+				t.Errorf("Unexpected prometheus output (-want +got):\n%s", diff)
+			}
 		},
 	}}
 	resources := []*resource.Resource{
-		nil,
 		&resource.Resource{
 			Type: "revision",
 			Labels: map[string]string{
@@ -200,7 +219,7 @@ func TestMetricsExport(t *testing.T) {
 				if r != nil {
 					ctx = metricskey.WithResource(ctx, *r)
 				}
-				stats.Record(ctx, gauge.M(int64(i)))
+				Record(ctx, gauge.M(int64(i)))
 			}
 			c.validate(t)
 		})
