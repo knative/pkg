@@ -119,10 +119,10 @@ func WithExporter(name string, logger *zap.SugaredLogger) ConfigOption {
 }
 
 // WithExporterFull supports hostPort argument, which is used for the endpoint.
-// The hostPort allows HOST:PORT or HOST. If no port is specified, use 80 port.
+// The hostPort allows HOST:PORT or HOST. If no port is specified, port 80 will be used.
 func WithExporterFull(name, hostPort string, logger *zap.SugaredLogger) ConfigOption {
 	return func(cfg *config.Config) error {
-		const defaultPort = "80"
+		const defaultPort = ":80"
 		var (
 			exporter trace.Exporter
 			closer   io.Closer
@@ -151,8 +151,8 @@ func WithExporterFull(name, hostPort string, logger *zap.SugaredLogger) ConfigOp
 			if name == "" {
 				name = hostPort
 			}
-			if strings.IndexByte(hostPort, ':') < 0 {
-				hostPort = hostPort + ":" + defaultPort
+			if !strings.Contains(hostPort, ":") {
+				hostPort = hostPort + defaultPort
 			}
 			zipEP, err := zipkin.NewEndpoint(name, hostPort)
 			if err != nil {
