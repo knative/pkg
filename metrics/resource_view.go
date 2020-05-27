@@ -86,6 +86,34 @@ func RegisterResourceView(views ...*view.View) error {
 	return nil
 }
 
+func UnregisterResourceView(views ...*view.View) {
+	resourceViews.lock.Lock()
+	defer resourceViews.lock.Unlock()
+
+	allMeters.lock.Lock()
+	defer allMeters.lock.Unlock()
+
+	for _, meter := range allMeters.meters {
+		meter.m.Unregister(views...)
+	}
+
+	j := 0
+	for _, view := range resourceViews.views {
+		toRemove := false
+		for _, viewToRemove := range views {
+			if view == viewToRemove {
+				toRemove = true
+				break
+			}
+		}
+		if !toRemove {
+			resourceViews.views[j] = view
+			j++
+		}
+	}
+	resourceViews.views = resourceViews.views[:j]
+}
+
 func setFactory(f func(*resource.Resource) (view.Exporter, error)) error {
 	if f == nil {
 		return fmt.Errorf("do not setFactory(nil)!")

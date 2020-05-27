@@ -215,6 +215,7 @@ func testMeterRecord(t *testing.T, measure *stats.Int64Measure, shouldReportCase
 		Aggregation: view.LastValue(),
 	}
 	RegisterResourceView(v)
+	defer UnregisterResourceView(v)
 
 	for _, test := range shouldReportCases {
 		t.Run(test.name, func(t *testing.T) {

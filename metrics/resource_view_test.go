@@ -222,6 +222,8 @@ testComponent_testing_value{project="p1",revision="r2"} 1
 				Record(ctx, gauge.M(int64(i)))
 			}
 			c.validate(t)
+
+			UnregisterResourceView(gaugeView)
 		})
 	}
 }
