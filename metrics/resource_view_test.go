@@ -168,7 +168,13 @@ func TestMetricsExport(t *testing.T) {
 			if err != nil {
 				t.Fatalf("failed to read prometheus response: %+v", err)
 			}
-			want := `# HELP testComponent_testing_value Test value
+			want := `# HELP testComponent_global_export_counts Count of exports via standard OpenCensus view.
+# TYPE testComponent_global_export_counts counter
+testComponent_global_export_counts 2
+# HELP testComponent_resource_global_export_count Count of exports via RegisterResourceView.
+# TYPE testComponent_resource_global_export_count counter
+testComponent_resource_global_export_count 2
+# HELP testComponent_testing_value Test value
 # TYPE testComponent_testing_value gauge
 testComponent_testing_value{project="p1",revision="r1"} 0
 testComponent_testing_value{project="p1",revision="r2"} 1
@@ -195,11 +201,24 @@ testComponent_testing_value{project="p1",revision="r2"} 1
 		},
 	}
 	gauge := stats.Int64("testing/value", "Stored value", stats.UnitDimensionless)
+	counter := stats.Int64("export counts", "Times through the export", stats.UnitDimensionless)
 	gaugeView := &view.View{
 		Name:        "testing/value",
 		Description: "Test value",
 		Measure:     gauge,
 		Aggregation: view.LastValue(),
+	}
+	resourceCounter := &view.View{
+		Name:        "resource global export count",
+		Description: "Count of exports via RegisterResourceView.",
+		Measure:     counter,
+		Aggregation: view.Count(),
+	}
+	globalCounter := &view.View{
+		Name:        "global export counts",
+		Description: "Count of exports via standard OpenCensus view.",
+		Measure:     counter,
+		Aggregation: view.Count(),
 	}
 
 	for _, c := range harnesses {
@@ -209,13 +228,15 @@ testComponent_testing_value{project="p1",revision="r2"} 1
 				t.Fatalf("unable to init: %+v", err)
 			}
 
-			err = RegisterResourceView(gaugeView)
+			view.Register(globalCounter)
+			err = RegisterResourceView(gaugeView, resourceCounter)
 			if err != nil {
 				t.Fatalf("unable to register view: %+v", err)
 			}
 
 			for i, r := range resources {
 				ctx := context.Background()
+				Record(ctx, counter.M(int64(1)))
 				if r != nil {
 					ctx = metricskey.WithResource(ctx, *r)
 				}

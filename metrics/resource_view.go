@@ -255,11 +255,11 @@ func (*defaultMeterImpl) Stop() {
 func (*defaultMeterImpl) RetrieveData(viewName string) ([]*view.Row, error) {
 	return view.RetrieveData(viewName)
 }
+
+// Read is implemented to support casting defaultMeterImpl to a metricproducer.Producer,
+// but returns no values because the prometheus exporter (which is the only consumer)
+// already has a built in path which collects these metrics via metricexport, which calls
+// concat(x.Read() for x in metricproducer.GlobalManager.GetAll()).
 func (*defaultMeterImpl) Read() []*metricdata.Metric {
-	producers := metricproducer.GlobalManager().GetAll()
-	ret := []*metricdata.Metric{}
-	for _, p := range producers {
-		ret = append(ret, p.Read()...)
-	}
-	return ret
+	return []*metricdata.Metric{}
 }
