@@ -19,14 +19,19 @@ package metrics
 import (
 	"context"
 	"fmt"
+	"io"
 	"io/ioutil"
+	"net"
 	"net/http"
 	"testing"
 
+	ocmetrics "github.com/census-instrumentation/opencensus-proto/gen-go/agent/metrics/v1"
+	ocresource "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	"github.com/google/go-cmp/cmp"
 	"go.opencensus.io/resource"
 	"go.opencensus.io/stats"
 	"go.opencensus.io/stats/view"
+	"google.golang.org/grpc"
 	logtesting "knative.dev/pkg/logging/testing"
 	"knative.dev/pkg/metrics/metricskey"
 	//_ "knative.dev/pkg/metrics/testing"
@@ -137,6 +142,7 @@ func TestSetFactor(t *testing.T) {
 
 // Begin table tests for exporters
 func TestMetricsExport(t *testing.T) {
+	ocFake := openCensusFake{address: "localhost:12345"}
 	configForBackend := func(backend metricsBackend) ExporterOptions {
 		return ExporterOptions{
 			Domain:         servingDomain,
@@ -144,7 +150,7 @@ func TestMetricsExport(t *testing.T) {
 			PrometheusPort: 9090,
 			ConfigMap: map[string]string{
 				BackendDestinationKey: string(backend),
-				CollectorAddressKey:   "TODO-OpenCensus-endpoint",
+				CollectorAddressKey:   ocFake.address,
 			},
 		}
 	}
@@ -183,6 +189,36 @@ testComponent_testing_value{project="p1",revision="r2"} 1
 				t.Errorf("Unexpected prometheus output (-want +got):\n%s", diff)
 			}
 		},
+	}, {
+		name: "OpenCensus",
+		init: func() error {
+			if err := ocFake.start(); err != nil {
+				return err
+			}
+			t.Logf("Created exporter at %s", ocFake.address)
+			return UpdateExporter(configForBackend(OpenCensus), logtesting.TestLogger(t))
+		},
+		validate: func(t *testing.T) {
+			records := []ocmetrics.ExportMetricsServiceRequest{}
+			for record := range ocFake.published {
+				if len(record.Metrics) > 0 {
+					ocFake.srv.Stop()
+				}
+				records = append(records, record)
+			}
+			expected := []struct {
+				name   string
+				value  int
+				labels map[string]string
+			}{
+				{"testing/value", 1, map[string]string{"project": "p1", "revision": "r1"}},
+				{"testing/value", 2, map[string]string{"project": "p1", "revision": "r2"}},
+			}
+			// TODO(evankanderson): Finish the comparison and remove the flake!
+			if len(records) <= len(expected) {
+				t.Errorf("Expected %d records, got %d:\n%+v", len(expected), len(records), records)
+			}
+		},
 	}}
 	resources := []*resource.Resource{
 		&resource.Resource{
@@ -209,13 +245,13 @@ testComponent_testing_value{project="p1",revision="r2"} 1
 		Aggregation: view.LastValue(),
 	}
 	resourceCounter := &view.View{
-		Name:        "resource global export count",
+		Name:        "resource_global_export_count",
 		Description: "Count of exports via RegisterResourceView.",
 		Measure:     counter,
 		Aggregation: view.Count(),
 	}
 	globalCounter := &view.View{
-		Name:        "global export counts",
+		Name:        "global_export_counts",
 		Description: "Count of exports via standard OpenCensus view.",
 		Measure:     counter,
 		Aggregation: view.Count(),
@@ -242,7 +278,53 @@ testComponent_testing_value{project="p1",revision="r2"} 1
 				}
 				Record(ctx, gauge.M(int64(i)))
 			}
+			FlushExporter()
 			c.validate(t)
 		})
+	}
+}
+
+type openCensusFake struct {
+	address   string
+	srv       *grpc.Server
+	published chan ocmetrics.ExportMetricsServiceRequest
+}
+
+func (oc *openCensusFake) start() error {
+	oc.published = make(chan ocmetrics.ExportMetricsServiceRequest, 100)
+	ln, err := net.Listen("tcp", oc.address)
+	if err != nil {
+		return err
+	}
+	oc.srv = grpc.NewServer()
+	ocmetrics.RegisterMetricsServiceServer(oc.srv, oc)
+	// Run the server in the background.
+	go func() {
+		oc.srv.Serve(ln)
+		close(oc.published)
+	}()
+	return nil
+}
+
+func (oc *openCensusFake) Export(stream ocmetrics.MetricsService_ExportServer) error {
+	var streamResource *ocresource.Resource
+	for {
+		in, err := stream.Recv()
+		if err == io.EOF {
+			return nil
+		}
+		if err != nil {
+			return err
+		}
+		if in.Resource == nil {
+			// The stream is stateful, keep track of the last Resource seen.
+			streamResource = in.Resource
+		}
+		if len(in.Metrics) > 0 {
+			if in.Resource == nil {
+				in.Resource = streamResource
+			}
+			oc.published <- *in
+		}
 	}
 }

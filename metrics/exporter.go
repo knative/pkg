@@ -256,6 +256,7 @@ func setCurMetricsConfigUnlocked(c *metricsConfig) {
 // Return value indicates whether the exporter is flushable or not.
 func FlushExporter() bool {
 	e := getCurMetricsExporter()
+	flushResourceExporters()
 	return flushGivenExporter(e)
 }
 

@@ -114,6 +114,15 @@ func setFactory(f func(*resource.Resource) (view.Exporter, error)) error {
 	return nil
 }
 
+func flushResourceExporters() {
+	allMeters.lock.Lock()
+	defer allMeters.lock.Unlock()
+
+	for _, meter := range allMeters.meters {
+		flushGivenExporter(meter.e)
+	}
+}
+
 func meterExporterForResource(r *resource.Resource) *meterExporter {
 	key, ok := allMeters.resourceToKey[r]
 	if !ok {
