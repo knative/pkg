@@ -122,8 +122,8 @@ func meterExporterForResource(r *resource.Resource) *meterExporter {
 		allMeters.resourceToKey[r] = key
 	}
 
-	mE, ok := allMeters.meters[key]
-	if !ok {
+	mE := allMeters.meters[key]
+	if mE == nil {
 		mE = &meterExporter{}
 		allMeters.meters[key] = mE
 	}

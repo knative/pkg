@@ -17,12 +17,15 @@ limitations under the License.
 package metrics
 
 import (
+	"context"
 	"fmt"
 	"testing"
 
 	"go.opencensus.io/resource"
 	"go.opencensus.io/stats"
 	"go.opencensus.io/stats/view"
+	logtesting "knative.dev/pkg/logging/testing"
+	"knative.dev/pkg/metrics/metricskey"
 	//_ "knative.dev/pkg/metrics/testing"
 )
 
@@ -126,5 +129,80 @@ func TestSetFactor(t *testing.T) {
 	e = me.e.(*testExporter)
 	if e.id != "456" {
 		t.Errorf("Expect id to be 456, instead got %v", e.id)
+	}
+}
+
+// Begin table tests for exporters
+func TestMetricsExport(t *testing.T) {
+	configForBackend := func(backend metricsBackend) ExporterOptions {
+		return ExporterOptions{
+			Domain:         servingDomain,
+			Component:      testComponent,
+			PrometheusPort: 9090,
+			ConfigMap: map[string]string{
+				BackendDestinationKey: string(backend),
+				CollectorAddressKey:   "TODO-OpenCensus-endpoint",
+			},
+		}
+	}
+	harnesses := []struct {
+		name     string
+		init     func() error
+		validate func(t *testing.T)
+	}{{
+		name: "Prometheus",
+		init: func() error {
+			return UpdateExporter(configForBackend(Prometheus), logtesting.TestLogger(t))
+		},
+		validate: func(t *testing.T) {
+			t.Logf("TODO: Validate Prometheus")
+		},
+	}}
+	resources := []*resource.Resource{
+		nil,
+		&resource.Resource{
+			Type: "revision",
+			Labels: map[string]string{
+				"project":  "p1",
+				"revision": "r1",
+			},
+		},
+		&resource.Resource{
+			Type: "revision",
+			Labels: map[string]string{
+				"project":  "p1",
+				"revision": "r2",
+			},
+		},
+	}
+	gauge := stats.Int64("testing/value", "Stored value", stats.UnitDimensionless)
+	gaugeView := &view.View{
+		Name:        "testing/value",
+		Description: "Test value",
+		Measure:     gauge,
+		Aggregation: view.LastValue(),
+	}
+
+	for _, c := range harnesses {
+		t.Run(c.name, func(t *testing.T) {
+			err := c.init()
+			if err != nil {
+				t.Fatalf("unable to init: %+v", err)
+			}
+
+			err = RegisterResourceView(gaugeView)
+			if err != nil {
+				t.Fatalf("unable to register view: %+v", err)
+			}
+
+			for i, r := range resources {
+				ctx := context.Background()
+				if r != nil {
+					ctx = metricskey.WithResource(ctx, *r)
+				}
+				stats.Record(ctx, gauge.M(int64(i)))
+			}
+			c.validate(t)
+		})
 	}
 }
