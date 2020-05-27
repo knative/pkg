@@ -22,7 +22,6 @@ import (
 	"strings"
 	"sync"
 
-	"go.opencensus.io/resource"
 	"go.opencensus.io/stats/view"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
@@ -214,11 +213,6 @@ func newMetricsExporter(config *metricsConfig, logger *zap.SugaredLogger) (view.
 	}
 	if err != nil {
 		return nil, nil, err
-	}
-	if f != nil {
-		f = func(*resource.Resource) (view.Exporter, error) {
-			return e, nil
-		}
 	}
 	return e, f, nil
 }

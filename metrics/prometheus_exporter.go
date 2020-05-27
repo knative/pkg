@@ -19,6 +19,7 @@ package metrics
 import (
 	"fmt"
 	"net/http"
+	"strings"
 	"sync"
 
 	"contrib.go.opencensus.io/exporter/prometheus"
@@ -70,13 +71,20 @@ func newPrometheusExporter(config *metricsConfig, logger *zap.SugaredLogger) (vi
 }
 
 func (re *resourceExporter) collectorForResource(r *resource.Resource) (view.Exporter, error) {
+	if r == nil {
+		r = &resource.Resource{Labels: map[string]string{}}
+	}
 	c := &miniCollector{
 		namespace: re.opts.Namespace,
 		meter:     meterForResource(r),
+		resource:  r,
 		logger:    re.logger,
 	}
 
-	err := prom.WrapRegistererWith(r.Labels, re.opts.Registry).Register(c)
+	err := re.opts.Registry.Register(c)
+	if err != nil {
+		re.logger.Warnf("Failed to register for %+v: %v", r, err)
+	}
 
 	return c, err
 }
@@ -114,6 +122,7 @@ func startNewPromSrv(e *prometheus.Exporter, port int) *http.Server {
 type miniCollector struct {
 	namespace string
 	meter     view.Meter
+	resource  *resource.Resource
 	logger    *zap.SugaredLogger
 }
 
@@ -130,19 +139,19 @@ func (mc *miniCollector) Describe(d chan<- *prom.Desc) {
 	}
 	ocMetrics := reader.Read()
 	for _, m := range ocMetrics {
-		d <- mc.toPromDesc(m.Descriptor)
+		d <- mc.toPromDesc(m.Descriptor, mc.resource)
 	}
 }
 
 func (mc *miniCollector) Collect(metrics chan<- prom.Metric) {
 	reader, ok := mc.meter.(metricproducer.Producer)
 	if !ok {
-		mc.logger.Warn("Unable to convert Meter to a metric producer")
+		mc.logger.Warnf("Unable to convert Meter %#v to a metric producer", mc.meter)
 		return
 	}
 	ocMetrics := reader.Read()
 	for _, m := range ocMetrics {
-		desc := mc.toPromDesc(m.Descriptor)
+		desc := mc.toPromDesc(m.Descriptor, mc.resource)
 		for _, ts := range m.TimeSeries {
 			labels := make([]string, 0, len(ts.LabelValues))
 			for _, lv := range ts.LabelValues {
@@ -152,7 +161,7 @@ func (mc *miniCollector) Collect(metrics chan<- prom.Metric) {
 
 			metric, err := MetricFromPoint(desc, m.Descriptor.Type, pt, labels)
 			if err != nil {
-				mc.logger.Warn("Failed to convert %q to Prometheus Metric: %v", desc, err)
+				mc.logger.Warnf("Failed to convert %q to Prometheus Metric: %v", desc, err)
 				continue
 			}
 			metrics <- metric
@@ -160,7 +169,7 @@ func (mc *miniCollector) Collect(metrics chan<- prom.Metric) {
 	}
 }
 
-func (mc *miniCollector) toPromDesc(m metricdata.Descriptor) *prom.Desc {
+func (mc *miniCollector) toPromDesc(m metricdata.Descriptor, r *resource.Resource) *prom.Desc {
 	labels := make([]string, 0, len(m.LabelKeys))
 	for _, l := range m.LabelKeys {
 		labels = append(labels, sanitizedName(l.Key))
@@ -169,12 +178,30 @@ func (mc *miniCollector) toPromDesc(m metricdata.Descriptor) *prom.Desc {
 	if mc.namespace != "" {
 		name = mc.namespace + "_" + name
 	}
-	return prom.NewDesc(name, m.Description, labels, prom.Labels{})
+	return prom.NewDesc(name, m.Description, labels, r.Labels)
 }
 
 func sanitizedName(s string) string {
 	// TODO: copy from prometheus/sanitize.go
 	// NOTE: unicode.IsLetter covers more than ASCII allowed by Prometheus!
+	s = strings.Map(func(r rune) rune {
+		switch {
+		case r >= 'a' && r <= 'z':
+			return r
+		case r >= 'A' && r <= 'Z':
+			return r
+		case r >= '0' && r <= '9':
+			return r
+		default:
+			return '_'
+		}
+	}, s)
+	if s[0] == '_' {
+		s = "key" + s
+	}
+	if s[0] >= '0' && s[0] <= '9' {
+		s = "key_" + s
+	}
 	return s
 }
 

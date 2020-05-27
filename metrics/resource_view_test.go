@@ -17,12 +17,18 @@ limitations under the License.
 package metrics
 
 import (
+	"context"
 	"fmt"
+	"io/ioutil"
+	"net/http"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
 	"go.opencensus.io/resource"
 	"go.opencensus.io/stats"
 	"go.opencensus.io/stats/view"
+	logtesting "knative.dev/pkg/logging/testing"
+	"knative.dev/pkg/metrics/metricskey"
 	//_ "knative.dev/pkg/metrics/testing"
 )
 
@@ -126,5 +132,96 @@ func TestSetFactor(t *testing.T) {
 	e = me.e.(*testExporter)
 	if e.id != "456" {
 		t.Errorf("Expect id to be 456, instead got %v", e.id)
+	}
+}
+
+// Begin table tests for exporters
+func TestMetricsExport(t *testing.T) {
+	configForBackend := func(backend metricsBackend) ExporterOptions {
+		return ExporterOptions{
+			Domain:         servingDomain,
+			Component:      testComponent,
+			PrometheusPort: 9090,
+			ConfigMap: map[string]string{
+				BackendDestinationKey: string(backend),
+				CollectorAddressKey:   "TODO-OpenCensus-endpoint",
+			},
+		}
+	}
+	harnesses := []struct {
+		name     string
+		init     func() error
+		validate func(t *testing.T)
+	}{{
+		name: "Prometheus",
+		init: func() error {
+			return UpdateExporter(configForBackend(Prometheus), logtesting.TestLogger(t))
+		},
+		validate: func(t *testing.T) {
+			resp, err := http.Get(fmt.Sprintf("http://localhost:%d/metrics", 9090))
+			if err != nil {
+				t.Fatalf("failed to fetch prometheus metrics: %+v", err)
+			}
+			defer resp.Body.Close()
+			t.Logf("TODO: Validate Prometheus")
+			body, err := ioutil.ReadAll(resp.Body)
+			if err != nil {
+				t.Fatalf("failed to read prometheus response: %+v", err)
+			}
+			want := `# HELP testComponent_testing_value Test value
+# TYPE testComponent_testing_value gauge
+testComponent_testing_value{project="p1",revision="r1"} 0
+testComponent_testing_value{project="p1",revision="r2"} 1
+`
+			if diff := cmp.Diff(want, string(body)); diff != "" {
+				t.Errorf("Unexpected prometheus output (-want +got):\n%s", diff)
+			}
+		},
+	}}
+	resources := []*resource.Resource{
+		&resource.Resource{
+			Type: "revision",
+			Labels: map[string]string{
+				"project":  "p1",
+				"revision": "r1",
+			},
+		},
+		&resource.Resource{
+			Type: "revision",
+			Labels: map[string]string{
+				"project":  "p1",
+				"revision": "r2",
+			},
+		},
+	}
+	gauge := stats.Int64("testing/value", "Stored value", stats.UnitDimensionless)
+	gaugeView := &view.View{
+		Name:        "testing/value",
+		Description: "Test value",
+		Measure:     gauge,
+		Aggregation: view.LastValue(),
+	}
+
+	for _, c := range harnesses {
+		t.Run(c.name, func(t *testing.T) {
+			err := c.init()
+			if err != nil {
+				t.Fatalf("unable to init: %+v", err)
+			}
+
+			err = RegisterResourceView(gaugeView)
+			if err != nil {
+				t.Fatalf("unable to register view: %+v", err)
+			}
+
+			for i, r := range resources {
+				ctx := context.Background()
+				if r != nil {
+					ctx = metricskey.WithResource(ctx, *r)
+				}
+				Record(ctx, gauge.M(int64(i)))
+			}
+			c.validate(t)
+		})
 	}
 }
