@@ -280,6 +280,8 @@ testComponent_testing_value{project="p1",revision="r2"} 1
 			}
 			FlushExporter()
 			c.validate(t)
+
+			UnregisterResourceView(gaugeView)
 		})
 	}
 }

@@ -26,6 +26,7 @@ import (
 	"knative.dev/pkg/metrics/metricstest"
 
 	"github.com/google/go-cmp/cmp"
+	"go.opencensus.io/resource"
 	"go.opencensus.io/stats"
 	"go.opencensus.io/stats/view"
 )
@@ -34,6 +35,7 @@ type cases struct {
 	name          string
 	metricsConfig *metricsConfig
 	measurement   stats.Measurement
+	resource      resource.Resource
 }
 
 func TestRecordServing(t *testing.T) {
@@ -183,6 +185,46 @@ func TestBucketsNBy10(t *testing.T) {
 			if diff := cmp.Diff(got, test.want); diff != "" {
 				t.Errorf("BucketsNBy10 (-want, +got) = %s", diff)
 			}
+		})
+	}
+}
+
+func TestMeter(t *testing.T) {
+	measure := stats.Int64("request_count", "Number of reconcile operations", stats.UnitNone)
+	// Increase the measurement value for each test case so that checking
+	// the last value ensures the measurement has been recorded.
+	meterTestCases := []cases{{
+		name:          "resource 1",
+		metricsConfig: &metricsConfig{},
+		measurement:   measure.M(1),
+		resource:      resource.Resource{Type: "resource 1", Labels: map[string]string{"bar": "foo"}},
+	}, {
+		name:          "resource 2",
+		metricsConfig: &metricsConfig{},
+		measurement:   measure.M(2),
+		resource:      resource.Resource{Type: "resource 2", Labels: map[string]string{"bar": "foo", "bar1": "foo1"}},
+	}}
+	testMeterRecord(t, measure, meterTestCases)
+}
+
+func testMeterRecord(t *testing.T, measure *stats.Int64Measure, shouldReportCases []cases) {
+	t.Helper()
+
+	v := &view.View{
+		Measure:     measure,
+		Aggregation: view.LastValue(),
+	}
+	RegisterResourceView(v)
+	defer UnregisterResourceView(v)
+
+	for _, test := range shouldReportCases {
+		t.Run(test.name, func(t *testing.T) {
+			ctx := context.Background()
+			ctx = metricskey.WithResource(ctx, test.resource)
+			meter := meterForResource(metricskey.GetResource(ctx))
+			setCurMetricsConfig(test.metricsConfig)
+			Record(ctx, test.measurement)
+			metricstest.CheckLastValueDataWithMeter(t, test.measurement.Measure().Name(), map[string]string{}, test.measurement.Value(), meter)
 		})
 	}
 }
