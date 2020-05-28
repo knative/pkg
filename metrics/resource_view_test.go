@@ -368,13 +368,13 @@ func (oc *openCensusFake) Export(stream ocmetrics.MetricsService_ExportServer) e
 		if err != nil {
 			return err
 		}
-		if in.Resource != nil && in.Resource.Type != "" {
+		if in.Resource != nil {
 			// The stream is stateful, keep track of the last Resource seen.
 			// TODO(evankanderson): why does it sometimes seem that Resource is set but empty when sending Node?
 			streamResource = in.Resource
 		}
 		if len(in.Metrics) > 0 {
-			if in.Resource == nil || in.Resource.Type == "" {
+			if in.Resource == nil {
 				in.Resource = streamResource
 			}
 			oc.published <- *in
