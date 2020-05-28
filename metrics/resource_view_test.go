@@ -147,8 +147,12 @@ type metricExtract struct {
 	Value  int64
 }
 
+func (m metricExtract) Key() string {
+	return fmt.Sprintf("%s<%s>", m.Name, resource.EncodeLabels(m.Labels))
+}
+
 func (m metricExtract) String() string {
-	return fmt.Sprintf("%s<%s>:%d", m.Name, resource.EncodeLabels(m.Labels), m.Value)
+	return fmt.Sprintf("%s:%d", m.Key(), m.Value)
 }
 
 // Begin table tests for exporters
@@ -165,6 +169,50 @@ func TestMetricsExport(t *testing.T) {
 			},
 		}
 	}
+
+	resources := []*resource.Resource{
+		&resource.Resource{
+			Type: "revision",
+			Labels: map[string]string{
+				"project":  "p1",
+				"revision": "r1",
+			},
+		},
+		&resource.Resource{
+			Type: "revision",
+			Labels: map[string]string{
+				"project":  "p1",
+				"revision": "r2",
+			},
+		},
+	}
+	gauge := stats.Int64("testing/value", "Stored value", stats.UnitDimensionless)
+	counter := stats.Int64("export counts", "Times through the export", stats.UnitDimensionless)
+	gaugeView := &view.View{
+		Name:        "testing/value",
+		Description: "Test value",
+		Measure:     gauge,
+		Aggregation: view.LastValue(),
+	}
+	resourceCounter := &view.View{
+		Name:        "resource_global_export_count",
+		Description: "Count of exports via RegisterResourceView.",
+		Measure:     counter,
+		Aggregation: view.Count(),
+	}
+	globalCounter := &view.View{
+		Name:        "global_export_counts",
+		Description: "Count of exports via standard OpenCensus view.",
+		Measure:     counter,
+		Aggregation: view.Count(),
+	}
+	expected := []metricExtract{
+		{"global_export_counts", map[string]string{}, 2},
+		{"resource_global_export_count", map[string]string{}, 2},
+		{"testing/value", map[string]string{"project": "p1", "revision": "r1"}, 0},
+		{"testing/value", map[string]string{"project": "p1", "revision": "r2"}, 1},
+	}
+
 	harnesses := []struct {
 		name     string
 		init     func() error
@@ -210,6 +258,15 @@ testComponent_testing_value{project="p1",revision="r2"} 1
 			return UpdateExporter(configForBackend(OpenCensus), logtesting.TestLogger(t))
 		},
 		validate: func(t *testing.T) {
+			// We unregister the views because this is one of two ways to flush
+			// the internal aggregation buffers; the other is to have the
+			// internal reporting period duration tick, which is at least
+			// [new duration] in the future.
+			view.Unregister(globalCounter)
+			UnregisterResourceView(gaugeView, resourceCounter)
+			FlushExporter()
+
+			ocFake.srv.Stop()
 			records := []metricExtract{}
 			for record := range ocFake.published {
 				for _, m := range record.Metrics {
@@ -223,22 +280,21 @@ testComponent_testing_value{project="p1",revision="r2"} 1
 							Labels: labels,
 							Value:  m.Timeseries[0].Points[0].GetInt64Value(),
 						})
-						// Switch exporter to force a metrics collection.
-						UpdateExporter(configForBackend(Prometheus), logtesting.TestLogger(t))
-						ocFake.srv.Stop()
 					}
 				}
 			}
-			expected := []metricExtract{
-				{"global_export_counts", map[string]string{}, 4},
-				{"resource_global_export_count", map[string]string{}, 4},
-				{"testing/value", map[string]string{"project": "p1", "revision": "r1"}, 0},
-				{"testing/value", map[string]string{"project": "p1", "revision": "r2"}, 1},
-			}
 			sortMetrics := cmp.Transformer("Sort", func(in []metricExtract) []string {
 				out := make([]string, 0, len(in))
+				seen := map[string]int{}
 				for _, m := range in {
-					out = append(out, m.String())
+					// Keep only the newest report for a key
+					key := m.Key()
+					if seen[key] == 0 {
+						out = append(out, m.String())
+						seen[key] = len(out) // Store address+1 to avoid doubling first item.
+					} else {
+						out[seen[key]-1] = m.String()
+					}
 				}
 				sort.Strings(out)
 				return out
@@ -248,42 +304,6 @@ testComponent_testing_value{project="p1",revision="r2"} 1
 			}
 		},
 	}}
-	resources := []*resource.Resource{
-		&resource.Resource{
-			Type: "revision",
-			Labels: map[string]string{
-				"project":  "p1",
-				"revision": "r1",
-			},
-		},
-		&resource.Resource{
-			Type: "revision",
-			Labels: map[string]string{
-				"project":  "p1",
-				"revision": "r2",
-			},
-		},
-	}
-	gauge := stats.Int64("testing/value", "Stored value", stats.UnitDimensionless)
-	counter := stats.Int64("export counts", "Times through the export", stats.UnitDimensionless)
-	gaugeView := &view.View{
-		Name:        "testing/value",
-		Description: "Test value",
-		Measure:     gauge,
-		Aggregation: view.LastValue(),
-	}
-	resourceCounter := &view.View{
-		Name:        "resource_global_export_count",
-		Description: "Count of exports via RegisterResourceView.",
-		Measure:     counter,
-		Aggregation: view.Count(),
-	}
-	globalCounter := &view.View{
-		Name:        "global_export_counts",
-		Description: "Count of exports via standard OpenCensus view.",
-		Measure:     counter,
-		Aggregation: view.Count(),
-	}
 
 	for _, c := range harnesses {
 		t.Run(c.name, func(t *testing.T) {
@@ -294,6 +314,10 @@ testComponent_testing_value{project="p1",revision="r2"} 1
 
 			view.Register(globalCounter)
 			err = RegisterResourceView(gaugeView, resourceCounter)
+			defer func() {
+				view.Unregister(globalCounter)
+				UnregisterResourceView(gaugeView, resourceCounter)
+			}()
 			if err != nil {
 				t.Fatalf("unable to register view: %+v", err)
 			}
@@ -306,10 +330,8 @@ testComponent_testing_value{project="p1",revision="r2"} 1
 				}
 				Record(ctx, gauge.M(int64(i)))
 			}
-			FlushExporter()
 			c.validate(t)
 
-			UnregisterResourceView(gaugeView)
 		})
 	}
 }
