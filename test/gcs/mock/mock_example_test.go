@@ -44,7 +44,7 @@ func ExampleSetError() {
 	mockClient := NewClientMocker()
 
 	// Call to ReadObject, first call should return error, but returns nil
-	// because it is overriden.
+	// because it is overridden.
 	mockClient.SetError(
 		map[Method]*ReturnError{
 			MethodReadObject: {
