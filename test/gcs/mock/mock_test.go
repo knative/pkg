@@ -20,11 +20,11 @@ func TestSetError(t *testing.T) {
 
 	testCases := []struct {
 		testname string
-		m        map[Method]ReturnError //error map to load into mockClient
+		m        map[Method]*ReturnError //error map to load into mockClient
 	}{
 		{
 			testname: "set errors for methods",
-			m: map[Method]ReturnError{
+			m: map[Method]*ReturnError{
 				MethodNewStorageBucket: {
 					NumCall: 2,
 					Err:     fmt.Errorf("MethodNewStorageBucket Error"),
@@ -79,9 +79,9 @@ func TestSetError(t *testing.T) {
 			mockClient.SetError(tt.m)
 
 			for k, v := range tt.m {
-				switch k {
+				switch numCall := v.NumCall; k {
 				case MethodNewStorageBucket:
-					for i := uint8(0); i < v.NumCall; i++ {
+					for i := uint8(0); i < numCall; i++ {
 						mockClient.NewStorageBucket(ctx, bkt, project)
 					}
 
@@ -91,17 +91,17 @@ func TestSetError(t *testing.T) {
 						t.Errorf("expected error %v, got error %v", v.Err, err)
 					}
 				case MethodDeleteStorageBucket:
-					for i := uint8(0); i < v.NumCall; i++ {
-						mockClient.DeleteStorageBucket(ctx, bkt)
+					for i := uint8(0); i < numCall; i++ {
+						mockClient.DeleteStorageBucket(ctx, bkt, true)
 					}
 
-					if err := mockClient.DeleteStorageBucket(ctx, bkt); err == nil {
+					if err := mockClient.DeleteStorageBucket(ctx, bkt, true); err == nil {
 						t.Errorf("expected error %v", v.Err)
 					} else if err.Error() != v.Err.Error() {
 						t.Errorf("expected error %v, got error %v", v.Err, err)
 					}
 				case MethodListChildrenFiles:
-					for i := uint8(0); i < v.NumCall; i++ {
+					for i := uint8(0); i < numCall; i++ {
 						mockClient.ListChildrenFiles(ctx, bkt, dirPath)
 					}
 
@@ -111,7 +111,7 @@ func TestSetError(t *testing.T) {
 						t.Errorf("expected error %v, got error %v", v.Err, err)
 					}
 				case MethodListDirectChildren:
-					for i := uint8(0); i < v.NumCall; i++ {
+					for i := uint8(0); i < numCall; i++ {
 						mockClient.ListDirectChildren(ctx, bkt, dirPath)
 					}
 
@@ -121,7 +121,7 @@ func TestSetError(t *testing.T) {
 						t.Errorf("expected error %v, got error %v", v.Err, err)
 					}
 				case MethodAttrObject:
-					for i := uint8(0); i < v.NumCall; i++ {
+					for i := uint8(0); i < numCall; i++ {
 						mockClient.AttrObject(ctx, bkt, dirPath)
 					}
 
@@ -131,7 +131,7 @@ func TestSetError(t *testing.T) {
 						t.Errorf("expected error %v, got error %v", v.Err, err)
 					}
 				case MethodCopyObject:
-					for i := uint8(0); i < v.NumCall; i++ {
+					for i := uint8(0); i < numCall; i++ {
 						mockClient.CopyObject(ctx, bkt, dirPath, bkt, dirPath)
 					}
 
@@ -141,7 +141,7 @@ func TestSetError(t *testing.T) {
 						t.Errorf("expected error %v, got error %v", v.Err, err)
 					}
 				case MethodReadObject:
-					for i := uint8(0); i < v.NumCall; i++ {
+					for i := uint8(0); i < numCall; i++ {
 						mockClient.ReadObject(ctx, bkt, dirPath)
 					}
 
@@ -151,7 +151,7 @@ func TestSetError(t *testing.T) {
 						t.Errorf("expected error %v, got error %v", v.Err, err)
 					}
 				case MethodWriteObject:
-					for i := uint8(0); i < v.NumCall; i++ {
+					for i := uint8(0); i < numCall; i++ {
 						mockClient.WriteObject(ctx, bkt, dirPath, []byte{})
 					}
 
@@ -161,7 +161,7 @@ func TestSetError(t *testing.T) {
 						t.Errorf("expected error %v, got error %v", v.Err, err)
 					}
 				case MethodDeleteObject:
-					for i := uint8(0); i < v.NumCall; i++ {
+					for i := uint8(0); i < numCall; i++ {
 						mockClient.DeleteObject(ctx, bkt, dirPath)
 					}
 
@@ -171,7 +171,7 @@ func TestSetError(t *testing.T) {
 						t.Errorf("expected error %v, got error %v", v.Err, err)
 					}
 				case MethodDownload:
-					for i := uint8(0); i < v.NumCall; i++ {
+					for i := uint8(0); i < numCall; i++ {
 						mockClient.Download(ctx, bkt, dirPath, dirPath)
 					}
 
@@ -181,7 +181,7 @@ func TestSetError(t *testing.T) {
 						t.Errorf("expected error %v, got error %v", v.Err, err)
 					}
 				case MethodUpload:
-					for i := uint8(0); i < v.NumCall; i++ {
+					for i := uint8(0); i < numCall; i++ {
 						mockClient.Upload(ctx, bkt, dirPath, dirPath)
 					}
 
@@ -206,11 +206,11 @@ func TestClearError(t *testing.T) {
 
 	testCases := []struct {
 		testname string
-		m        map[Method]ReturnError //error map to load into mockClient
+		m        map[Method]*ReturnError //error map to load into mockClient
 	}{
 		{
 			testname: "set errors for methods",
-			m: map[Method]ReturnError{
+			m: map[Method]*ReturnError{
 				MethodNewStorageBucket: {
 					NumCall: 0,
 					Err:     fmt.Errorf("MethodNewStorageBucket Error"),
@@ -272,7 +272,7 @@ func TestClearError(t *testing.T) {
 						t.Errorf("error %v should have been cleared", v.Err)
 					}
 				case MethodDeleteStorageBucket:
-					if err := mockClient.DeleteStorageBucket(ctx, bkt); err != nil && err.Error() == v.Err.Error() {
+					if err := mockClient.DeleteStorageBucket(ctx, bkt, true); err != nil && err.Error() == v.Err.Error() {
 						t.Errorf("error %v should have been cleared", v.Err)
 					}
 				case MethodListChildrenFiles:
@@ -395,15 +395,24 @@ func TestDeleteStorageBucket(t *testing.T) {
 	project1 := "test-project1"
 
 	mockClient.NewStorageBucket(ctx, bktName1, project1)
+	mockClient.WriteObject(ctx, bktName1, "object1", []byte("Hello"))
 
 	testCases := []struct {
 		testname string
 		bkt      string
+		force    bool
 		err      error
 	}{
 		{
 			testname: "deleteBucket",
 			bkt:      bktName1,
+			force:    false,
+			err:      NewNotEmptyBucketError(bktName1),
+		},
+		{
+			testname: "deleteBucket",
+			bkt:      bktName1,
+			force:    true,
 			err:      nil,
 		},
 		{
@@ -415,7 +424,7 @@ func TestDeleteStorageBucket(t *testing.T) {
 
 	for _, tt := range testCases {
 		t.Run(tt.testname, func(t *testing.T) {
-			err := mockClient.DeleteStorageBucket(ctx, tt.bkt)
+			err := mockClient.DeleteStorageBucket(ctx, tt.bkt, tt.force)
 			if (tt.err == nil || err == nil) && err != tt.err {
 				t.Fatalf("expected error %v, got error %v", tt.err, err)
 			} else if (tt.err != nil && err != nil) && tt.err.Error() != err.Error() {
@@ -527,6 +536,13 @@ func TestListChildrenFiles(t *testing.T) {
 			err:      nil,
 		},
 		{
+			testname: "listAllChildrenObjects",
+			bkt:      bktName1,
+			dir:      "",
+			expected: []string{object1, object2, object3},
+			err:      nil,
+		},
+		{
 			testname: "badBucket",
 			bkt:      "non-existent-bucket",
 			err:      NewNoBucketError("non-existent-bucket"),
@@ -562,12 +578,14 @@ func TestListDirectChildren(t *testing.T) {
 	object1 := path.Join(dir1, "object1")
 	object2 := path.Join(dir1, "object2")
 	object3 := path.Join(dir2, "object3")
+	object4 := "object4"
 	content := []byte("Hello World")
 
 	mockClient.NewStorageBucket(ctx, bktName1, project1)
 	mockClient.WriteObject(ctx, bktName1, object1, content)
 	mockClient.WriteObject(ctx, bktName1, object2, content)
 	mockClient.WriteObject(ctx, bktName1, object3, content)
+	mockClient.WriteObject(ctx, bktName1, object4, content)
 
 	testCases := []struct {
 		testname string
@@ -581,6 +599,13 @@ func TestListDirectChildren(t *testing.T) {
 			bkt:      bktName1,
 			dir:      "dir",
 			expected: []string{object1, object2},
+			err:      nil,
+		},
+		{
+			testname: "listAllChildrenObjects",
+			bkt:      bktName1,
+			dir:      "",
+			expected: []string{object4},
 			err:      nil,
 		},
 		{

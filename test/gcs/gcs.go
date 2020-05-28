@@ -18,6 +18,7 @@ package gcs
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -31,7 +32,7 @@ import (
 )
 
 type GCSClient struct {
-	client *storage.Client
+	*storage.Client
 }
 
 // NewClient creates new GCS client with given service account
@@ -40,21 +41,24 @@ func NewClient(ctx context.Context, serviceAccount string) (*GCSClient, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &GCSClient{client: client}, nil
+	return &GCSClient{Client: client}, nil
 }
 
-// StorageBucket creates a new bucket in GCS with uniform access policy
+// NewStorageBucket creates a new bucket in GCS with uniform access policy
 func (g *GCSClient) NewStorageBucket(ctx context.Context, bucketName, project string) error {
 	if project == "" {
-		return fmt.Errorf("a project must be provided")
+		return errors.New("a project must be provided")
 	}
 
 	if bucketName == "" {
-		return fmt.Errorf("a bucket name must be provided")
+		return errors.New("a bucket name must be provided")
 	}
 
-	bucket := g.client.Bucket(bucketName)
+	bucket := g.Bucket(bucketName)
 
+	// For now, this creates a bucket with uniform policy across its objects to make ACL
+	// and permission management simple instead of object-level granularity that we currently
+	// do not use anyway.
 	bucketAttr := &storage.BucketAttrs{
 		BucketPolicyOnly: storage.BucketPolicyOnly{
 			Enabled: true,
@@ -65,10 +69,14 @@ func (g *GCSClient) NewStorageBucket(ctx context.Context, bucketName, project st
 }
 
 // DeleteStorageBucket removes all children objects and then deletes the bucket
-func (g *GCSClient) DeleteStorageBucket(ctx context.Context, bucketName string) error {
+func (g *GCSClient) DeleteStorageBucket(ctx context.Context, bucketName string, force bool) error {
 	children, err := g.ListChildrenFiles(ctx, bucketName, "")
 	if err != nil {
 		return err
+	}
+
+	if len(children) == 0 && !force {
+		return fmt.Errorf("bucket %s not empty, please use force=true", bucketName)
 	}
 
 	for _, child := range children {
@@ -76,21 +84,21 @@ func (g *GCSClient) DeleteStorageBucket(ctx context.Context, bucketName string) 
 			return err
 		}
 	}
-	return g.client.Bucket(bucketName).Delete(ctx)
+	return g.Bucket(bucketName).Delete(ctx)
 }
 
 // get objects iterator under given storagePath and bucketName, use exclusionFilter to eliminate some files.
 func (g *GCSClient) getObjectsIter(ctx context.Context, bucketName, storagePath, exclusionFilter string) *storage.ObjectIterator {
-	return g.client.Bucket(bucketName).Objects(ctx, &storage.Query{
+	return g.Bucket(bucketName).Objects(ctx, &storage.Query{
 		Prefix:    storagePath,
 		Delimiter: exclusionFilter,
 	})
 }
 
-// CheckExist checks if an object exists under a bucket, assuming bucket exists
+// Exists check if an object exists under a bucket, assuming bucket exists
 func (g *GCSClient) Exists(ctx context.Context, bucketName, objPath string) bool {
 	// Check if this is a file
-	objHandle := g.client.Bucket(bucketName).Object(objPath)
+	objHandle := g.Bucket(bucketName).Object(objPath)
 	if _, err := objHandle.Attrs(ctx); err == nil {
 		return true
 	}
@@ -112,7 +120,7 @@ func (g *GCSClient) list(ctx context.Context, bucketName, storagePath, exclusion
 	if err != nil {
 		return nil, err
 	}
-	filePaths := make([]string, 0, len(objsAttrs))
+	var filePaths []string
 	for _, attrs := range objsAttrs {
 		filePaths = append(filePaths, path.Join(attrs.Prefix, attrs.Name))
 	}
@@ -151,10 +159,10 @@ func (g *GCSClient) ListDirectChildren(ctx context.Context, bucketName, dirPath 
 	return g.list(ctx, bucketName, strings.TrimRight(dirPath, " /")+"/", "/")
 }
 
-// Copy objects from one location to another. Assumes both source and destination buckets exist.
+// CopyObject copies objects from one location to another. Assumes both source and destination buckets exist.
 func (g *GCSClient) CopyObject(ctx context.Context, srcBucketName, srcPath, dstBucketName, dstPath string) error {
-	src := g.client.Bucket(srcBucketName).Object(srcPath)
-	dst := g.client.Bucket(dstBucketName).Object(dstPath)
+	src := g.Bucket(srcBucketName).Object(srcPath)
+	dst := g.Bucket(dstBucketName).Object(dstPath)
 
 	_, err := dst.CopierFrom(src).Run(ctx)
 	return err
@@ -162,7 +170,7 @@ func (g *GCSClient) CopyObject(ctx context.Context, srcBucketName, srcPath, dstB
 
 // Download gcs object to a file
 func (g *GCSClient) Download(ctx context.Context, bucketName, objPath, dstPath string) error {
-	handle := g.client.Bucket(bucketName).Object(objPath)
+	handle := g.Bucket(bucketName).Object(objPath)
 	if _, err := handle.Attrs(ctx); err != nil {
 		return err
 	}
@@ -186,7 +194,7 @@ func (g *GCSClient) Upload(ctx context.Context, bucketName, objPath, srcPath str
 	if err != nil {
 		return err
 	}
-	dst := g.client.Bucket(bucketName).Object(objPath).NewWriter(ctx)
+	dst := g.Bucket(bucketName).Object(objPath).NewWriter(ctx)
 	defer dst.Close()
 	_, err = io.Copy(dst, src)
 	return err
@@ -194,7 +202,7 @@ func (g *GCSClient) Upload(ctx context.Context, bucketName, objPath, srcPath str
 
 // AttrObject returns the object attributes
 func (g *GCSClient) AttrObject(ctx context.Context, bucketName, objPath string) (*storage.ObjectAttrs, error) {
-	objHandle := g.client.Bucket(bucketName).Object(objPath)
+	objHandle := g.Bucket(bucketName).Object(objPath)
 	return objHandle.Attrs(ctx)
 }
 
@@ -212,7 +220,7 @@ func (g *GCSClient) ReadObject(ctx context.Context, bucketName, objPath string) 
 // NewReader creates a new Reader of a gcs file.
 // Important: caller must call Close on the returned Reader when done reading
 func (g *GCSClient) NewReader(ctx context.Context, bucketName, objPath string) (*storage.Reader, error) {
-	o := g.client.Bucket(bucketName).Object(objPath)
+	o := g.Bucket(bucketName).Object(objPath)
 	if _, err := o.Attrs(ctx); err != nil {
 		return nil, err
 	}
@@ -221,14 +229,14 @@ func (g *GCSClient) NewReader(ctx context.Context, bucketName, objPath string) (
 
 // DeleteObject deletes an object
 func (g *GCSClient) DeleteObject(ctx context.Context, bucketName, objPath string) error {
-	objHandle := g.client.Bucket(bucketName).Object(objPath)
+	objHandle := g.Bucket(bucketName).Object(objPath)
 	return objHandle.Delete(ctx)
 }
 
 // WriteObject writes the content to a gcs object
 func (g *GCSClient) WriteObject(ctx context.Context, bucketName, objPath string,
 	content []byte) (n int, err error) {
-	objWriter := g.client.Bucket(bucketName).Object(objPath).NewWriter(ctx)
+	objWriter := g.Bucket(bucketName).Object(objPath).NewWriter(ctx)
 	defer func() {
 		cerr := objWriter.Close()
 		if err == nil {

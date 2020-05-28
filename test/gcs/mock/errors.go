@@ -4,6 +4,18 @@ import (
 	"fmt"
 )
 
+type notEmptyBucketError struct {
+	bkt string
+}
+
+func (e *notEmptyBucketError) Error() string {
+	return fmt.Sprintf("bucket %s not empty, use force=true", e.bkt)
+}
+
+func NewNotEmptyBucketError(bkt string) *notEmptyBucketError {
+	return &notEmptyBucketError{bkt}
+}
+
 type noBucketError struct {
 	bkt string
 }

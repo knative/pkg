@@ -60,13 +60,8 @@ func NewClientMocker() *clientMocker {
 
 // SetError sets the number of calls of an interface function before an error is returned.
 // Otherwise it will return the err of the mock function itself (which is usually nil).
-func (c *clientMocker) SetError(m map[Method]ReturnError) {
-	for k, v := range m {
-		c.err[k] = &ReturnError{
-			NumCall: v.NumCall,
-			Err:     v.Err,
-		}
-	}
+func (c *clientMocker) SetError(m map[Method]*ReturnError) {
+	c.err = m
 }
 
 // ClearError clears the error map in mock client
@@ -78,15 +73,15 @@ func (c *clientMocker) ClearError() {
 }
 
 // getError is a helper that returns the error if it is set for this function
-func (c *clientMocker) getError(funcName Method) error {
+func (c *clientMocker) getError(funcName Method) (bool, error) {
 	if val, ok := c.err[funcName]; ok {
 		if val.NumCall <= 0 {
 			delete(c.err, funcName)
-			return val.Err
+			return true, val.Err
 		}
 		val.NumCall = val.NumCall - 1
 	}
-	return nil
+	return false, nil
 }
 
 // getBucketRoot is a helper that returns the objects bucket if it exists
@@ -105,7 +100,7 @@ func (c *clientMocker) getBucketRoot(bkt string) *objects {
 
 // NewStorageBucket mock creates a new storage bucket in gcp
 func (c *clientMocker) NewStorageBucket(ctx context.Context, bkt, projectName string) error {
-	if err := c.getError(MethodNewStorageBucket); err != nil {
+	if override, err := c.getError(MethodNewStorageBucket); override {
 		return err
 	}
 
@@ -127,9 +122,9 @@ func (c *clientMocker) NewStorageBucket(ctx context.Context, bkt, projectName st
 	return nil
 }
 
-// DeleteStorageBucket mock deletes a storage bucket from gcp
-func (c *clientMocker) DeleteStorageBucket(ctx context.Context, bkt string) error {
-	if err := c.getError(MethodDeleteStorageBucket); err != nil {
+// DeleteStorageBucket mock deletes a storage bucket from gcp, force if not empty
+func (c *clientMocker) DeleteStorageBucket(ctx context.Context, bkt string, force bool) error {
+	if override, err := c.getError(MethodDeleteStorageBucket); override {
 		return err
 	}
 
@@ -138,6 +133,10 @@ func (c *clientMocker) DeleteStorageBucket(ctx context.Context, bkt string) erro
 	p, ok := c.revIndex[bktName]
 	if !ok {
 		return NewNoBucketError(bkt)
+	}
+
+	if len(c.gcp[p].bkt) != 0 && !force {
+		return NewNotEmptyBucketError(bkt)
 	}
 
 	delete(c.gcp[p].bkt, bktName)
@@ -176,7 +175,7 @@ func (c *clientMocker) Exists(ctx context.Context, bkt, objPath string) bool {
 
 // ListChildrenFiles mock lists all children recursively
 func (c *clientMocker) ListChildrenFiles(ctx context.Context, bkt, dirPath string) ([]string, error) {
-	if err := c.getError(MethodListChildrenFiles); err != nil {
+	if override, err := c.getError(MethodListChildrenFiles); override {
 		return nil, err
 	}
 
@@ -185,10 +184,12 @@ func (c *clientMocker) ListChildrenFiles(ctx context.Context, bkt, dirPath strin
 		return nil, NewNoBucketError(bkt)
 	}
 
-	dir := strings.TrimRight(dirPath, " /") + "/"
+	if dirPath != "" {
+		dirPath = strings.TrimRight(dirPath, " /") + "/"
+	}
 	var children []string
 	for k := range bktRoot.obj {
-		if strings.HasPrefix(k.dir, dir) {
+		if strings.HasPrefix(k.dir, dirPath) {
 			children = append(children, k.toString())
 		}
 	}
@@ -198,7 +199,7 @@ func (c *clientMocker) ListChildrenFiles(ctx context.Context, bkt, dirPath strin
 
 // mock lists all direct children recursively
 func (c *clientMocker) ListDirectChildren(ctx context.Context, bkt, dirPath string) ([]string, error) {
-	if err := c.getError(MethodListDirectChildren); err != nil {
+	if override, err := c.getError(MethodListDirectChildren); override {
 		return nil, err
 	}
 
@@ -207,10 +208,12 @@ func (c *clientMocker) ListDirectChildren(ctx context.Context, bkt, dirPath stri
 		return nil, NewNoBucketError(bkt)
 	}
 
-	dir := strings.TrimRight(dirPath, " /") + "/"
+	if dirPath != "" {
+		dirPath = strings.TrimRight(dirPath, " /") + "/"
+	}
 	var children []string
 	for k := range bktRoot.obj {
-		if k.dir == dir {
+		if k.dir == dirPath {
 			children = append(children, k.toString())
 		}
 	}
@@ -220,7 +223,7 @@ func (c *clientMocker) ListDirectChildren(ctx context.Context, bkt, dirPath stri
 
 // AttrObject mock returns the attribute of an object
 func (c *clientMocker) AttrObject(ctx context.Context, bkt, objPath string) (*storage.ObjectAttrs, error) {
-	if err := c.getError(MethodAttrObject); err != nil {
+	if override, err := c.getError(MethodAttrObject); override {
 		return nil, err
 	}
 
@@ -247,7 +250,7 @@ func (c *clientMocker) AttrObject(ctx context.Context, bkt, objPath string) (*st
 
 // CopyObject mocks the copying of one object to another
 func (c *clientMocker) CopyObject(ctx context.Context, srcBkt, srcObjPath, dstBkt, dstObjPath string) error {
-	if err := c.getError(MethodCopyObject); err != nil {
+	if override, err := c.getError(MethodCopyObject); override {
 		return err
 	}
 
@@ -290,7 +293,7 @@ func (c *clientMocker) CopyObject(ctx context.Context, srcBkt, srcObjPath, dstBk
 
 // ReadObject mocks reading from an object
 func (c *clientMocker) ReadObject(ctx context.Context, bkt, objPath string) ([]byte, error) {
-	if err := c.getError(MethodReadObject); err != nil {
+	if override, err := c.getError(MethodReadObject); override {
 		return nil, err
 	}
 
@@ -314,7 +317,7 @@ func (c *clientMocker) ReadObject(ctx context.Context, bkt, objPath string) ([]b
 
 // WriteObject mocks writing to an object
 func (c *clientMocker) WriteObject(ctx context.Context, bkt, objPath string, content []byte) (int, error) {
-	if err := c.getError(MethodWriteObject); err != nil {
+	if override, err := c.getError(MethodWriteObject); override {
 		return -1, err
 	}
 
@@ -340,7 +343,7 @@ func (c *clientMocker) WriteObject(ctx context.Context, bkt, objPath string, con
 
 // DeleteObject mocks deleting an object
 func (c *clientMocker) DeleteObject(ctx context.Context, bkt, objPath string) error {
-	if err := c.getError(MethodDeleteObject); err != nil {
+	if override, err := c.getError(MethodDeleteObject); override {
 		return err
 	}
 
@@ -360,7 +363,7 @@ func (c *clientMocker) DeleteObject(ctx context.Context, bkt, objPath string) er
 
 // Download mocks downloading an object to a local file
 func (c *clientMocker) Download(ctx context.Context, bkt, objPath, filePath string) error {
-	if err := c.getError(MethodDownload); err != nil {
+	if override, err := c.getError(MethodDownload); override {
 		return err
 	}
 
@@ -391,7 +394,7 @@ func (c *clientMocker) Download(ctx context.Context, bkt, objPath, filePath stri
 
 // Upload mocks uploading a local file to an object
 func (c *clientMocker) Upload(ctx context.Context, bkt, objPath, filePath string) error {
-	if err := c.getError(MethodUpload); err != nil {
+	if override, err := c.getError(MethodUpload); override {
 		return err
 	}
 
