@@ -18,6 +18,7 @@ package controller
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sync"
 	"time"
@@ -495,11 +496,20 @@ type permanentError struct {
 	e error
 }
 
-// IsPermanentError returns true if the given error is a permanentError.
+// IsPermanentError returns true if the given error is a permanentError or
+// wraps a permanentError.
 func IsPermanentError(err error) bool {
-	_, ok := err.(permanentError)
+	return errors.Is(err, permanentError{})
+}
+
+// Is implements the Is() interface of error. It returns whether the target
+// error can be treated as equivalent to a permanentError.
+func (permanentError) Is(target error) bool {
+	_, ok := target.(permanentError)
 	return ok
 }
+
+var _ error = permanentError{}
 
 // Error implements the Error() interface of error.
 func (err permanentError) Error() string {

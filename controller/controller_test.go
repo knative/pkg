@@ -19,6 +19,7 @@ package controller
 import (
 	"context"
 	"errors"
+	"fmt"
 	"sync"
 	"testing"
 	"time"
@@ -881,6 +882,11 @@ func TestPermanentError(t *testing.T) {
 	}
 	if IsPermanentError(err) {
 		t.Errorf("Expected type %T to not be a permanentError", err)
+	}
+
+	wrapPermErr := fmt.Errorf("wrapped: %w", permErr)
+	if !IsPermanentError(wrapPermErr) {
+		t.Error("Expected wrapped permanentError to be equivalent to a permanentError")
 	}
 
 	unwrapErr := new(fakeError)
