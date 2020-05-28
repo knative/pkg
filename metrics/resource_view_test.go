@@ -23,6 +23,7 @@ import (
 	"io/ioutil"
 	"net"
 	"net/http"
+	"sort"
 	"testing"
 
 	ocmetrics "github.com/census-instrumentation/opencensus-proto/gen-go/agent/metrics/v1"
@@ -140,6 +141,16 @@ func TestSetFactor(t *testing.T) {
 	}
 }
 
+type metricExtract struct {
+	Name   string
+	Labels map[string]string
+	Value  int64
+}
+
+func (m metricExtract) String() string {
+	return fmt.Sprintf("%s<%s>:%d", m.Name, resource.EncodeLabels(m.Labels), m.Value)
+}
+
 // Begin table tests for exporters
 func TestMetricsExport(t *testing.T) {
 	ocFake := openCensusFake{address: "localhost:12345"}
@@ -199,24 +210,41 @@ testComponent_testing_value{project="p1",revision="r2"} 1
 			return UpdateExporter(configForBackend(OpenCensus), logtesting.TestLogger(t))
 		},
 		validate: func(t *testing.T) {
-			records := []ocmetrics.ExportMetricsServiceRequest{}
+			records := []metricExtract{}
 			for record := range ocFake.published {
-				if len(record.Metrics) > 0 {
-					ocFake.srv.Stop()
+				for _, m := range record.Metrics {
+					if len(m.Timeseries) > 0 {
+						labels := map[string]string{}
+						if record.Resource != nil {
+							labels = record.Resource.Labels
+						}
+						records = append(records, metricExtract{
+							Name:   m.MetricDescriptor.Name,
+							Labels: labels,
+							Value:  m.Timeseries[0].Points[0].GetInt64Value(),
+						})
+						// Switch exporter to force a metrics collection.
+						UpdateExporter(configForBackend(Prometheus), logtesting.TestLogger(t))
+						ocFake.srv.Stop()
+					}
 				}
-				records = append(records, record)
 			}
-			expected := []struct {
-				name   string
-				value  int
-				labels map[string]string
-			}{
-				{"testing/value", 1, map[string]string{"project": "p1", "revision": "r1"}},
-				{"testing/value", 2, map[string]string{"project": "p1", "revision": "r2"}},
+			expected := []metricExtract{
+				{"global_export_counts", map[string]string{}, 4},
+				{"resource_global_export_count", map[string]string{}, 4},
+				{"testing/value", map[string]string{"project": "p1", "revision": "r1"}, 0},
+				{"testing/value", map[string]string{"project": "p1", "revision": "r2"}, 1},
 			}
-			// TODO(evankanderson): Finish the comparison and remove the flake!
-			if len(records) <= len(expected) {
-				t.Errorf("Expected %d records, got %d:\n%+v", len(expected), len(records), records)
+			sortMetrics := cmp.Transformer("Sort", func(in []metricExtract) []string {
+				out := make([]string, 0, len(in))
+				for _, m := range in {
+					out = append(out, m.String())
+				}
+				sort.Strings(out)
+				return out
+			})
+			if diff := cmp.Diff(expected, records, sortMetrics); diff != "" {
+				t.Errorf("Unexpected OpenCensus exports (-want +got):\n%s", diff)
 			}
 		},
 	}}
@@ -318,12 +346,13 @@ func (oc *openCensusFake) Export(stream ocmetrics.MetricsService_ExportServer) e
 		if err != nil {
 			return err
 		}
-		if in.Resource == nil {
+		if in.Resource != nil && in.Resource.Type != "" {
 			// The stream is stateful, keep track of the last Resource seen.
+			// TODO(evankanderson): why does it sometimes seem that Resource is set but empty when sending Node?
 			streamResource = in.Resource
 		}
 		if len(in.Metrics) > 0 {
-			if in.Resource == nil {
+			if in.Resource == nil || in.Resource.Type == "" {
 				in.Resource = streamResource
 			}
 			oc.published <- *in
