@@ -75,11 +75,20 @@ func ConfigMapsFromTestFile(t *testing.T, name string, allowed ...string) (*core
 	}
 	// With the length and membership checks, we know that the keyspace matches.
 
-	exampleBody := orig.Data[configmap.ExampleKey]
+	exampleBody, hasExampleBody := orig.Data[configmap.ExampleKey]
 	// Check that exampleBody does not have lines that end in a trailing space,
 	for i, line := range strings.Split(exampleBody, "\n") {
 		if strings.TrimRightFunc(line, unicode.IsSpace) != line {
 			t.Errorf("line %d of %q example contains trailing spaces", i, name)
+		}
+	}
+
+	// Check that the hashed exampleBody matches the assigned label, if present.
+	gotHash, hasExampleHashLabel := orig.Labels[configmap.ExampleHashLabel]
+	if hasExampleBody && hasExampleHashLabel {
+		wantHash := configmap.ExampleHash(exampleBody)
+		if gotHash != wantHash {
+			t.Errorf("example hash label = %s, want %s", gotHash, wantHash)
 		}
 	}
 
