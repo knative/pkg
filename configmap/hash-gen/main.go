@@ -18,6 +18,8 @@ package main
 
 import (
 	"bytes"
+	"errors"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
@@ -28,31 +30,44 @@ import (
 
 func main() {
 	fileName := os.Args[1]
-	file, err := ioutil.ReadFile(fileName)
+	if err := processFile(fileName); err != nil {
+		log.Fatal(err)
+	}
+}
+
+func processFile(fileName string) error {
+	in, err := ioutil.ReadFile(fileName)
 	if err != nil {
-		log.Fatal("Failed to read file: ", err)
+		return fmt.Errorf("failed to read file: %w", err)
 	}
 
+	out, err := process(in)
+	if out == nil || err != nil {
+		return err
+	}
+
+	if err := ioutil.WriteFile(fileName, out, 0644); err != nil {
+		return fmt.Errorf("failed to write file: %w", err)
+	}
+	return nil
+}
+
+func process(data []byte) ([]byte, error) {
 	var doc yaml.Node
-	if err := yaml.Unmarshal(file, &doc); err != nil {
-		log.Fatal("Failed to parse YAML: ", err)
-	}
-
-	if len(doc.Content) != 1 {
-		log.Fatal("Can only handle singular YAML documents")
+	if err := yaml.Unmarshal(data, &doc); err != nil {
+		return nil, fmt.Errorf("failed to parse YAML: %w", err)
 	}
 	content := doc.Content[0]
 
 	example := traverse(content, "data", configmap.ExampleKey)
 	if example == nil {
-		log.Print("No example field present")
-		os.Exit(0)
+		return nil, nil
 	}
 
 	labels := traverse(content, "metadata", "labels")
 	if labels == nil {
 		// TODO(markusthoemmes): Potentially handle missing metadata and labels?
-		log.Fatal("'metadata.labels' not found")
+		return nil, errors.New("'metadata.labels' not found")
 	}
 
 	hash := configmap.ExampleHash(example.Value)
@@ -69,12 +84,9 @@ func main() {
 	encoder := yaml.NewEncoder(buffer)
 	encoder.SetIndent(2)
 	if err := encoder.Encode(&doc); err != nil {
-		log.Fatal("Failed to encode YAML: ", err)
+		return nil, fmt.Errorf("failed to encode YAML: %w", err)
 	}
-
-	if err := ioutil.WriteFile(fileName, buffer.Bytes(), 0644); err != nil {
-		log.Fatal("Failed to write file: ", err)
-	}
+	return buffer.Bytes(), nil
 }
 
 func traverse(parent *yaml.Node, path ...string) *yaml.Node {
