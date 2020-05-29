@@ -83,11 +83,11 @@ func newNonRunningTestConfigValidationController(t *testing.T) (
 	// Create fake clients
 	kubeClient = fakekubeclientset.NewSimpleClientset(initialConfigWebhook)
 
-	ac = NewTestConfigValidationController(t)
+	ac = newTestConfigValidationController(t)
 	return
 }
 
-func NewTestConfigValidationController(t *testing.T) *reconciler {
+func newTestConfigValidationController(t *testing.T) *reconciler {
 	ctx, _ := SetupFakeContext(t)
 	ctx = webhook.WithOptions(ctx, webhook.Options{
 		SecretName: "webhook-secret",
@@ -200,6 +200,41 @@ func TestDenyInvalidUpdateConfigMapOutOfRange(t *testing.T) {
 	resp := ac.Admit(ctx, createCreateConfigMapRequest(ctx, t, r))
 
 	ExpectFailsWith(t, resp, "out of range")
+}
+
+func TestAllowConfigMapExample(t *testing.T) {
+	_, ac := newNonRunningTestConfigValidationController(t)
+
+	r := &corev1.ConfigMap{
+		Data: map[string]string{
+			"_example": "bar",
+		},
+	}
+	ctx := TestContextWithLogger(t)
+
+	resp := ac.Admit(ctx, createCreateConfigMapRequest(ctx, t, r))
+
+	ExpectAllowed(t, resp)
+}
+
+func TestDenyInvalidUpdateConfigMapExample(t *testing.T) {
+	_, ac := newNonRunningTestConfigValidationController(t)
+
+	r := &corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Labels: map[string]string{
+				configmap.ExampleHashLabel: "foo",
+			},
+		},
+		Data: map[string]string{
+			"_example": "bar",
+		},
+	}
+	ctx := TestContextWithLogger(t)
+
+	resp := ac.Admit(ctx, createCreateConfigMapRequest(ctx, t, r))
+
+	ExpectFailsWith(t, resp, fmt.Sprintf("%q block edited", configmap.ExampleKey))
 }
 
 type config struct {
