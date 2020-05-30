@@ -23,15 +23,22 @@ import (
 	"io/ioutil"
 	"net"
 	"net/http"
+	"os"
 	"sort"
 	"testing"
 
+	"contrib.go.opencensus.io/exporter/stackdriver"
 	ocmetrics "github.com/census-instrumentation/opencensus-proto/gen-go/agent/metrics/v1"
 	ocresource "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
+	emptypb "github.com/golang/protobuf/ptypes/empty"
 	"github.com/google/go-cmp/cmp"
 	"go.opencensus.io/resource"
 	"go.opencensus.io/stats"
 	"go.opencensus.io/stats/view"
+	"google.golang.org/api/option"
+	metricpb "google.golang.org/genproto/googleapis/api/metric"
+	monitoredrespb "google.golang.org/genproto/googleapis/api/monitoredres"
+	stackdriverpb "google.golang.org/genproto/googleapis/monitoring/v3"
 	"google.golang.org/grpc"
 	logtesting "knative.dev/pkg/logging/testing"
 	"knative.dev/pkg/metrics/metricskey"
@@ -158,14 +165,16 @@ func (m metricExtract) String() string {
 // Begin table tests for exporters
 func TestMetricsExport(t *testing.T) {
 	ocFake := openCensusFake{address: "localhost:12345"}
+	sdFake := stackDriverFake{address: "localhost:12346"}
 	configForBackend := func(backend metricsBackend) ExporterOptions {
 		return ExporterOptions{
 			Domain:         servingDomain,
 			Component:      testComponent,
 			PrometheusPort: 9090,
 			ConfigMap: map[string]string{
-				BackendDestinationKey: string(backend),
-				CollectorAddressKey:   ocFake.address,
+				BackendDestinationKey:            string(backend),
+				CollectorAddressKey:              ocFake.address,
+				AllowStackdriverCustomMetricsKey: "true",
 			},
 		}
 	}
@@ -212,6 +221,22 @@ func TestMetricsExport(t *testing.T) {
 		{"testing/value", map[string]string{"project": "p1", "revision": "r1"}, 0},
 		{"testing/value", map[string]string{"project": "p1", "revision": "r2"}, 1},
 	}
+	sortMetrics := cmp.Transformer("Sort", func(in []metricExtract) []string {
+		out := make([]string, 0, len(in))
+		seen := map[string]int{}
+		for _, m := range in {
+			// Keep only the newest report for a key
+			key := m.Key()
+			if seen[key] == 0 {
+				out = append(out, m.String())
+				seen[key] = len(out) // Store address+1 to avoid doubling first item.
+			} else {
+				out[seen[key]-1] = m.String()
+			}
+		}
+		sort.Strings(out)
+		return out
+	})
 
 	harnesses := []struct {
 		name     string
@@ -283,22 +308,58 @@ testComponent_testing_value{project="p1",revision="r2"} 1
 					}
 				}
 			}
-			sortMetrics := cmp.Transformer("Sort", func(in []metricExtract) []string {
-				out := make([]string, 0, len(in))
-				seen := map[string]int{}
-				for _, m := range in {
-					// Keep only the newest report for a key
-					key := m.Key()
-					if seen[key] == 0 {
-						out = append(out, m.String())
-						seen[key] = len(out) // Store address+1 to avoid doubling first item.
-					} else {
-						out[seen[key]-1] = m.String()
-					}
+
+			if diff := cmp.Diff(expected, records, sortMetrics); diff != "" {
+				t.Errorf("Unexpected OpenCensus exports (-want +got):\n%s", diff)
+			}
+		},
+	}, {
+		name: "Stackdriver",
+		init: func() error {
+			if err := sdFake.start(); err != nil {
+				return err
+			}
+			conn, err := grpc.Dial(sdFake.address, grpc.WithInsecure())
+			if err != nil {
+				return err
+			}
+			newStackdriverExporterFunc = func(o stackdriver.Options) (view.Exporter, error) {
+				o.MonitoringClientOptions = append(o.MonitoringClientOptions, option.WithGRPCConn(conn))
+				return newOpencensusSDExporter(o)
+			}
+			// File: must exist, be json of credentialsFile, and type must be a jwtConfig or oauth2Config
+			tmp, err := ioutil.TempFile("", "metrics-sd-test")
+			if err != nil {
+				return err
+			}
+			credentialsContent := []byte(`{"type": "service_account"}`)
+			if _, err := tmp.Write(credentialsContent); err != nil {
+				return err
+			}
+			os.Setenv("GOOGLE_APPLICATION_CREDENTIALS", tmp.Name())
+			return UpdateExporter(configForBackend(Stackdriver), logtesting.TestLogger(t))
+		},
+		validate: func(t *testing.T) {
+			// We unregister the views because this is one of two ways to flush
+			// the internal aggregation buffers; the other is to have the
+			// internal reporting period duration tick, which is at least
+			// [new duration] in the future.
+			view.Unregister(globalCounter)
+			UnregisterResourceView(gaugeView, resourceCounter)
+			FlushExporter()
+			sdFake.srv.Stop()
+
+			records := []metricExtract{}
+			for record := range sdFake.published {
+				t.Logf("RECORD: %v", record)
+				for _, ts := range record.TimeSeries {
+					records = append(records, metricExtract{
+						Name:   ts.Metric.Type,
+						Labels: ts.Resource.Labels,
+						Value:  ts.Points[0].Value.GetInt64Value(),
+					})
 				}
-				sort.Strings(out)
-				return out
-			})
+			}
 			if diff := cmp.Diff(expected, records, sortMetrics); diff != "" {
 				t.Errorf("Unexpected OpenCensus exports (-want +got):\n%s", diff)
 			}
@@ -307,6 +368,7 @@ testComponent_testing_value{project="p1",revision="r2"} 1
 
 	for _, c := range harnesses {
 		t.Run(c.name, func(t *testing.T) {
+			sdFake.t = t
 			err := c.init()
 			if err != nil {
 				t.Fatalf("unable to init: %+v", err)
@@ -380,4 +442,62 @@ func (oc *openCensusFake) Export(stream ocmetrics.MetricsService_ExportServer) e
 			oc.published <- *in
 		}
 	}
+}
+
+type stackDriverFake struct {
+	address   string
+	srv       *grpc.Server
+	t         *testing.T
+	published chan stackdriverpb.CreateTimeSeriesRequest
+}
+
+func (sd *stackDriverFake) start() error {
+	sd.published = make(chan stackdriverpb.CreateTimeSeriesRequest, 100)
+	ln, err := net.Listen("tcp", sd.address)
+	if err != nil {
+		return err
+	}
+	sd.srv = grpc.NewServer()
+	stackdriverpb.RegisterMetricServiceServer(sd.srv, sd)
+	// Run the server in the background.
+	go func() {
+		sd.srv.Serve(ln)
+		close(sd.published)
+	}()
+	return nil
+}
+
+func (sd *stackDriverFake) CreateTimeSeries(ctx context.Context, req *stackdriverpb.CreateTimeSeriesRequest) (*emptypb.Empty, error) {
+	sd.published <- *req
+	return nil, nil
+}
+
+func (sd *stackDriverFake) ListMonitoredResourceDescriptors(ctx context.Context, req *stackdriverpb.ListMonitoredResourceDescriptorsRequest) (*stackdriverpb.ListMonitoredResourceDescriptorsResponse, error) {
+	sd.t.Fatalf("ListMonitoredResourceDescriptors")
+	return nil, fmt.Errorf("Unimplemented")
+}
+
+func (sd *stackDriverFake) GetMonitoredResourceDescriptor(context.Context, *stackdriverpb.GetMonitoredResourceDescriptorRequest) (*monitoredrespb.MonitoredResourceDescriptor, error) {
+	sd.t.Fatalf("GetMonitoredResourceDescriptor")
+	return nil, fmt.Errorf("Unimplemented")
+}
+func (sd *stackDriverFake) ListMetricDescriptors(context.Context, *stackdriverpb.ListMetricDescriptorsRequest) (*stackdriverpb.ListMetricDescriptorsResponse, error) {
+	sd.t.Fatalf("ListMetricDescriptors")
+	return nil, fmt.Errorf("Unimplemented")
+}
+func (sd *stackDriverFake) GetMetricDescriptor(context.Context, *stackdriverpb.GetMetricDescriptorRequest) (*metricpb.MetricDescriptor, error) {
+	sd.t.Fatalf("GetMetricDescriptor")
+	return nil, fmt.Errorf("Unimplemented")
+}
+func (sd *stackDriverFake) CreateMetricDescriptor(ctx context.Context, req *stackdriverpb.CreateMetricDescriptorRequest) (*metricpb.MetricDescriptor, error) {
+	resp := *req.MetricDescriptor
+	return &resp, nil
+}
+func (sd *stackDriverFake) DeleteMetricDescriptor(context.Context, *stackdriverpb.DeleteMetricDescriptorRequest) (*emptypb.Empty, error) {
+	sd.t.Fatalf("DeleteMetricDescriptor")
+	return nil, fmt.Errorf("Unimplemented")
+}
+func (sd *stackDriverFake) ListTimeSeries(context.Context, *stackdriverpb.ListTimeSeriesRequest) (*stackdriverpb.ListTimeSeriesResponse, error) {
+	sd.t.Fatalf("ListTimeSeries")
+	return nil, fmt.Errorf("Unimplemented")
 }
