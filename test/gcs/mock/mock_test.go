@@ -20,11 +20,11 @@ func TestSetError(t *testing.T) {
 
 	testCases := []struct {
 		testname string
-		m        map[Method]*ReturnError //error map to load into mockClient
+		m        map[method]*ReturnError //error map to load into mockClient
 	}{
 		{
 			testname: "set errors for methods",
-			m: map[Method]*ReturnError{
+			m: map[method]*ReturnError{
 				MethodNewStorageBucket: {
 					NumCall: 2,
 					Err:     fmt.Errorf("MethodNewStorageBucket Error"),
@@ -206,11 +206,11 @@ func TestClearError(t *testing.T) {
 
 	testCases := []struct {
 		testname string
-		m        map[Method]*ReturnError //error map to load into mockClient
+		m        map[method]*ReturnError //error map to load into mockClient
 	}{
 		{
 			testname: "set errors for methods",
-			m: map[Method]*ReturnError{
+			m: map[method]*ReturnError{
 				MethodNewStorageBucket: {
 					NumCall: 0,
 					Err:     fmt.Errorf("MethodNewStorageBucket Error"),

@@ -9,7 +9,7 @@ type notEmptyBucketError struct {
 }
 
 func (e *notEmptyBucketError) Error() string {
-	return fmt.Sprintf("bucket %s not empty, use force=true", e.bkt)
+	return fmt.Sprintf("bucket %q not empty, use force=true", e.bkt)
 }
 
 func NewNotEmptyBucketError(bkt string) *notEmptyBucketError {
@@ -25,7 +25,7 @@ func NewNoBucketError(bkt string) *noBucketError {
 }
 
 func (e *noBucketError) Error() string {
-	return fmt.Sprintf("no bucket %s", e.bkt)
+	return fmt.Sprintf("no bucket %q", e.bkt)
 }
 
 type bucketExistError struct {
@@ -37,7 +37,7 @@ func NewBucketExistError(bkt string) *bucketExistError {
 }
 
 func (e *bucketExistError) Error() string {
-	return fmt.Sprintf("bucket %s already exists", e.bkt)
+	return fmt.Sprintf("bucket %q already exists", e.bkt)
 }
 
 type noObjectError struct {
@@ -55,6 +55,6 @@ func NewNoObjectError(bkt, obj, path string) *noObjectError {
 }
 
 func (e *noObjectError) Error() string {
-	return fmt.Sprintf("bucket %s does not contain object \"%s\" under path \"%s\"",
+	return fmt.Sprintf("bucket %q does not contain object %q under path %q",
 		e.bkt, e.obj, e.path)
 }

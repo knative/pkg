@@ -25,12 +25,11 @@ import (
 
 // get the bucket and object from the gsURL
 func linkToBucketAndObject(gsURL string) (string, string, error) {
-	var bucket, obj string
 	gsURL = strings.Replace(gsURL, "gs://", "", 1)
 
 	sIdx := strings.IndexByte(gsURL, '/')
 	if sIdx == -1 || sIdx+1 >= len(gsURL) {
-		return bucket, obj, fmt.Errorf("the gsUrl (%s) cannot be converted to bucket/object", gsURL)
+		return "", "", fmt.Errorf("the gsUrl (%q) cannot be converted to bucket/object", gsURL)
 	}
 
 	return gsURL[:sIdx], gsURL[sIdx+1:], nil

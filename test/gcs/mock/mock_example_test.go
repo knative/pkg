@@ -46,7 +46,7 @@ func ExampleSetError() {
 	// Call to ReadObject, first call should return error, but returns nil
 	// because it is overridden.
 	mockClient.SetError(
-		map[Method]*ReturnError{
+		map[method]*ReturnError{
 			MethodReadObject: {
 				NumCall: uint8(0),
 				Err:     nil,
@@ -57,7 +57,7 @@ func ExampleSetError() {
 			},
 		})
 
-	fmt.Printf("%v", topFunction(mockClient))
+	fmt.Println(topFunction(mockClient))
 	// Output:
-	// no bucket NewBkt
+	// no bucket "NewBkt"
 }
