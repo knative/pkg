@@ -107,7 +107,9 @@ func newOpencensusSDExporter(o stackdriver.Options) (view.Exporter, error) {
 	}
 	// Start the exporter.
 	// TODO(https://github.com/knative/pkg/issues/866): Move this to an interface.
-	e.StartMetricsExporter()
+	if err := e.StartMetricsExporter(); err != nil {
+		return nil, err
+	}
 	return e, nil
 }
 
