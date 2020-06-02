@@ -19,7 +19,7 @@ metadata:
   namespace: knative-serving
   labels:
     serving.knative.dev/release: devel
-    knative.dev/example-hash: bla
+    knative.dev/example-checksum: bla
 data:
   leave-me: "alone"
   _example: |

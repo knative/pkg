@@ -70,13 +70,13 @@ func process(data []byte) ([]byte, error) {
 		return nil, errors.New("'metadata.labels' not found")
 	}
 
-	hash := configmap.ExampleHash(example.Value)
-	existingLabel := child(labels, configmap.ExampleHashLabel)
+	hash := configmap.Checksum(example.Value)
+	existingLabel := child(labels, configmap.ExampleChecksumLabel)
 	if existingLabel != nil {
 		existingLabel.Value = hash
 	} else {
 		labels.Content = append(labels.Content,
-			strNode(configmap.ExampleHashLabel),
+			strNode(configmap.ExampleChecksumLabel),
 			strNode(hash))
 	}
 

@@ -25,11 +25,11 @@ const (
 	// ExampleKey signifies a given example configuration in a ConfigMap.
 	ExampleKey = "_example"
 
-	// ExampleHashLabel is the label that stores the computed hash.
-	ExampleHashLabel = "knative.dev/example-hash"
+	// ExampleChecksumLabel is the label that stores the computed hash.
+	ExampleChecksumLabel = "knative.dev/example-checksum"
 )
 
-// ExampleHash generates a hash for the example value to be compared against a respective label.
-func ExampleHash(value string) string {
+// Checksum generates a checksum for the example value to be compared against a respective label.
+func Checksum(value string) string {
 	return fmt.Sprintf("%x", sha256.Sum256([]byte(value)))[:9]
 }

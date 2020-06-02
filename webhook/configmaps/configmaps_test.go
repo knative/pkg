@@ -223,7 +223,7 @@ func TestDenyInvalidUpdateConfigMapExample(t *testing.T) {
 	r := &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
 			Labels: map[string]string{
-				configmap.ExampleHashLabel: "foo",
+				configmap.ExampleChecksumLabel: "foo",
 			},
 		},
 		Data: map[string]string{

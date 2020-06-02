@@ -18,7 +18,7 @@ package configmap
 
 import "testing"
 
-func TestExampleHash(t *testing.T) {
+func TestChecksum(t *testing.T) {
 	tests := []struct {
 		in   string
 		want string
@@ -34,8 +34,8 @@ func TestExampleHash(t *testing.T) {
 	}}
 
 	for _, test := range tests {
-		if got := ExampleHash(test.in); got != test.want {
-			t.Errorf("ExampleHash(%q) = %s, want %s", test.in, got, test.want)
+		if got := Checksum(test.in); got != test.want {
+			t.Errorf("Checksum(%q) = %s, want %s", test.in, got, test.want)
 		}
 	}
 }
