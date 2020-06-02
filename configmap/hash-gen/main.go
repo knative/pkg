@@ -84,8 +84,9 @@ func process(data []byte) ([]byte, error) {
 			strNode(hash))
 	}
 
-	buffer := &bytes.Buffer{}
-	encoder := yaml.NewEncoder(buffer)
+	var buffer bytes.Buffer
+	buffer.Grow(len(data))
+	encoder := yaml.NewEncoder(&buffer)
 	encoder.SetIndent(2)
 	if err := encoder.Encode(&doc); err != nil {
 		return nil, fmt.Errorf("failed to encode YAML: %w", err)
@@ -96,10 +97,7 @@ func process(data []byte) ([]byte, error) {
 // traverse traverses the YAML nodes' children using the given path keys. Returns nil if
 // one of the keys can't be found.
 func traverse(parent *yaml.Node, path ...string) *yaml.Node {
-	if parent == nil {
-		return nil
-	}
-	if len(path) == 0 {
+	if parent == nil || len(path) == 0 {
 		return parent
 	}
 	tail := path[1:]
@@ -110,9 +108,6 @@ func traverse(parent *yaml.Node, path ...string) *yaml.Node {
 // child returns the a child of the current node under the given key. Returns nil if not
 // found.
 func child(parent *yaml.Node, key string) *yaml.Node {
-	if parent == nil {
-		return nil
-	}
 	for i := range parent.Content {
 		if parent.Content[i].Value == key {
 			if len(parent.Content) < i+1 {
