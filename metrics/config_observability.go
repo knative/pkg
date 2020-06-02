@@ -59,6 +59,10 @@ type ObservabilityConfig struct {
 	// EnableProfiling indicates whether it is allowed to retrieve runtime profiling data from
 	// the pods via an HTTP server in the format expected by the pprof visualization tool.
 	EnableProfiling bool
+
+	// EnableTagLabelOnRequestMetrics specifies if the route tag, which is specified in the tag header,
+	// is used as a label on the request metrics or not.
+	EnableTagLabelOnRequestMetrics bool
 }
 
 func defaultConfig() *ObservabilityConfig {
@@ -79,6 +83,7 @@ func NewObservabilityConfigFromConfigMap(configMap *corev1.ConfigMap) (*Observab
 		cm.AsBool("logging.enable-probe-request-log", &oc.EnableProbeRequestLog),
 		cm.AsString("metrics.request-metrics-backend-destination", &oc.RequestMetricsBackend),
 		cm.AsBool("profiling.enable", &oc.EnableProfiling),
+		cm.AsBool("metrics.enable-tag-label-on-request-metrics", &oc.EnableTagLabelOnRequestMetrics),
 	); err != nil {
 		return nil, err
 	}

@@ -35,12 +35,13 @@ func TestObservabilityConfiguration(t *testing.T) {
 		name:    "observability configuration with all inputs",
 		wantErr: false,
 		wantConfig: &ObservabilityConfig{
-			EnableProbeRequestLog:  true,
-			EnableProfiling:        true,
-			EnableVarLogCollection: true,
-			LoggingURLTemplate:     "https://logging.io",
-			RequestLogTemplate:     `{"requestMethod": "{{.Request.Method}}"}`,
-			RequestMetricsBackend:  "stackdriver",
+			EnableProbeRequestLog:          true,
+			EnableProfiling:                true,
+			EnableVarLogCollection:         true,
+			LoggingURLTemplate:             "https://logging.io",
+			RequestLogTemplate:             `{"requestMethod": "{{.Request.Method}}"}`,
+			RequestMetricsBackend:          "stackdriver",
+			EnableTagLabelOnRequestMetrics: true,
 		},
 		data: map[string]string{
 			"logging.enable-probe-request-log":            "true",
@@ -50,6 +51,7 @@ func TestObservabilityConfiguration(t *testing.T) {
 			"logging.write-request-logs":                  "true",
 			"metrics.request-metrics-backend-destination": "stackdriver",
 			"profiling.enable":                            "true",
+			"metrics.enable-tag-label-on-request-metrics": "true",
 		},
 	}, {
 		name:       "observability config with no map",
