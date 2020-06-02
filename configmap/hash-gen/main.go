@@ -35,6 +35,8 @@ func main() {
 	}
 }
 
+// processFile reads the ConfigMap manifest from a file and adds or updates the label
+// containing the checksum of it's _example data if present.
 func processFile(fileName string) error {
 	in, err := ioutil.ReadFile(fileName)
 	if err != nil {
@@ -52,6 +54,8 @@ func processFile(fileName string) error {
 	return nil
 }
 
+// process processes a YAML file's bytes and adds or updates the label containing
+// the checksum of it's _example data if present.
 func process(data []byte) ([]byte, error) {
 	var doc yaml.Node
 	if err := yaml.Unmarshal(data, &doc); err != nil {
@@ -89,6 +93,8 @@ func process(data []byte) ([]byte, error) {
 	return buffer.Bytes(), nil
 }
 
+// traverse traverses the YAML nodes' children using the given path keys. Returns nil if
+// one of the keys can't be found.
 func traverse(parent *yaml.Node, path ...string) *yaml.Node {
 	if parent == nil {
 		return nil
@@ -101,6 +107,8 @@ func traverse(parent *yaml.Node, path ...string) *yaml.Node {
 	return traverse(child, tail...)
 }
 
+// child returns the a child of the current node under the given key. Returns nil if not
+// found.
 func child(parent *yaml.Node, key string) *yaml.Node {
 	if parent == nil {
 		return nil
@@ -116,6 +124,7 @@ func child(parent *yaml.Node, key string) *yaml.Node {
 	return nil
 }
 
+// strNode generate a node that forces the representation to be a string.
 func strNode(value string) *yaml.Node {
 	return &yaml.Node{
 		Kind:  yaml.ScalarNode,
