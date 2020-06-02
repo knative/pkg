@@ -75,7 +75,7 @@ func process(data []byte) ([]byte, error) {
 	}
 
 	hash := configmap.Checksum(example.Value)
-	existingLabel := child(labels, configmap.ExampleChecksumLabel)
+	existingLabel := value(labels, configmap.ExampleChecksumLabel)
 	if existingLabel != nil {
 		existingLabel.Value = hash
 	} else {
@@ -101,15 +101,19 @@ func traverse(parent *yaml.Node, path ...string) *yaml.Node {
 		return parent
 	}
 	tail := path[1:]
-	child := child(parent, path[0])
+	child := value(parent, path[0])
 	return traverse(child, tail...)
 }
 
-// child returns the a child of the current node under the given key. Returns nil if not
+// value returns the value of the current node under the given key. Returns nil if not
 // found.
-func child(parent *yaml.Node, key string) *yaml.Node {
+func value(parent *yaml.Node, key string) *yaml.Node {
 	for i := range parent.Content {
 		if parent.Content[i].Value == key {
+			// The Content array of a yaml.Node is just an array of more nodes. The keys
+			// to each field are therefore a string node right before the relevant field's
+			// value, hence we need to return the next value of the array to retrieve
+			// the value under a key.
 			if len(parent.Content) < i+1 {
 				return nil
 			}
