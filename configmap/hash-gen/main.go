@@ -74,7 +74,7 @@ func process(data []byte) ([]byte, error) {
 		return nil, errors.New("'metadata.labels' not found")
 	}
 
-	checksum := fmt.Sprintf("%d", configmap.Checksum(example.Value))
+	checksum := fmt.Sprint(configmap.Checksum(example.Value))
 	existingLabel := value(labels, configmap.ExampleChecksumLabel)
 	if existingLabel != nil {
 		existingLabel.Value = checksum
@@ -114,7 +114,7 @@ func value(parent *yaml.Node, key string) *yaml.Node {
 			// to each field are therefore a string node right before the relevant field's
 			// value, hence we need to return the next value of the array to retrieve
 			// the value under a key.
-			if len(parent.Content) < i+1 {
+			if len(parent.Content) < i+2 {
 				return nil
 			}
 			return parent.Content[i+1]
