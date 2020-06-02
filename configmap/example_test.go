@@ -19,15 +19,23 @@ package configmap
 import "testing"
 
 func TestExampleHash(t *testing.T) {
-	if got, want := ExampleHash(""), "e3b0c4429"; got != want {
-		t.Errorf("ExampleHash() = %s, want %s", got, want)
-	}
+	tests := []struct {
+		in   string
+		want string
+	}{{
+		in:   "",
+		want: "e3b0c4429",
+	}, {
+		in:   "1",
+		want: "6b86b273f",
+	}, {
+		in:   "a somewhat longer test",
+		want: "2b55bd0be",
+	}}
 
-	if got, want := ExampleHash("1"), "6b86b273f"; got != want {
-		t.Errorf("ExampleHash(1) = %s, want %s", got, want)
-	}
-
-	if got, want := ExampleHash("a somewhat longer test"), "2b55bd0be"; got != want {
-		t.Errorf("ExampleHash(a somewhat longer test) = %s, want %s", got, want)
+	for _, test := range tests {
+		if got := ExampleHash(test.in); got != test.want {
+			t.Errorf("ExampleHash(%q) = %s, want %s", test.in, got, test.want)
+		}
 	}
 }
