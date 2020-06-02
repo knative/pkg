@@ -185,9 +185,9 @@ func (ac *reconciler) validate(ctx context.Context, req *admissionv1beta1.Admiss
 	}
 
 	exampleData, hasExampleData := newObj.Data[configmap.ExampleKey]
-	exampleHash, hasExampleChecksumLabel := newObj.Labels[configmap.ExampleChecksumLabel]
+	exampleChecksum, hasExampleChecksumLabel := newObj.Labels[configmap.ExampleChecksumLabel]
 	if hasExampleData && hasExampleChecksumLabel &&
-		exampleHash != configmap.Checksum(exampleData) {
+		exampleChecksum != fmt.Sprintf("%d", configmap.Checksum(exampleData)) {
 		return fmt.Errorf(
 			"%q block edited, you likely wanted to create an unindented configuration",
 			configmap.ExampleKey)

@@ -21,21 +21,21 @@ import "testing"
 func TestChecksum(t *testing.T) {
 	tests := []struct {
 		in   string
-		want string
+		want uint32
 	}{{
 		in:   "",
-		want: "e3b0c4429",
+		want: 0,
 	}, {
 		in:   "1",
-		want: "6b86b273f",
+		want: 2212294583,
 	}, {
 		in:   "a somewhat longer test",
-		want: "2b55bd0be",
+		want: 4278087538,
 	}}
 
 	for _, test := range tests {
 		if got := Checksum(test.in); got != test.want {
-			t.Errorf("Checksum(%q) = %s, want %s", test.in, got, test.want)
+			t.Errorf("Checksum(%q) = %d, want %d", test.in, got, test.want)
 		}
 	}
 }

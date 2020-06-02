@@ -17,19 +17,18 @@ limitations under the License.
 package configmap
 
 import (
-	"crypto/sha256"
-	"fmt"
+	"hash/crc32"
 )
 
 const (
 	// ExampleKey signifies a given example configuration in a ConfigMap.
 	ExampleKey = "_example"
 
-	// ExampleChecksumLabel is the label that stores the computed hash.
+	// ExampleChecksumLabel is the label that stores the computed checksum.
 	ExampleChecksumLabel = "knative.dev/example-checksum"
 )
 
 // Checksum generates a checksum for the example value to be compared against a respective label.
-func Checksum(value string) string {
-	return fmt.Sprintf("%x", sha256.Sum256([]byte(value)))[:9]
+func Checksum(value string) uint32 {
+	return crc32.ChecksumIEEE([]byte(value))
 }

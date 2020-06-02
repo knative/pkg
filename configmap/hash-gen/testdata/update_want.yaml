@@ -19,7 +19,7 @@ metadata:
   namespace: knative-serving
   labels:
     serving.knative.dev/release: devel
-    knative.dev/example-checksum: 70b892bd5
+    knative.dev/example-checksum: "2958957236"
 data:
   leave-me: "alone"
   _example: |
