@@ -74,7 +74,7 @@ func process(data []byte) ([]byte, error) {
 		return nil, errors.New("'metadata.labels' not found")
 	}
 
-	checksum := fmt.Sprint(configmap.Checksum(example.Value))
+	checksum := configmap.Checksum(example.Value)
 	existingLabel := value(labels, configmap.ExampleChecksumLabel)
 	if existingLabel != nil {
 		existingLabel.Value = checksum
