@@ -23,7 +23,7 @@ import (
 // more friendly type casts for better readability of what some strings are
 type project string
 type bucket string
-type method string
+type Method string
 
 // mockpath contains the bucket path to an object and the object name
 type mockpath struct {

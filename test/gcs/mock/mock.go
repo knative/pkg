@@ -37,17 +37,17 @@ import (
 // easy to replicate.
 
 var (
-	MethodNewStorageBucket    = method("NewStorageBucket")
-	MethodDeleteStorageBucket = method("NewDeleteStorageBucket")
-	MethodListChildrenFiles   = method("ListChildrenFiles")
-	MethodListDirectChildren  = method("ListDirectChildren")
-	MethodAttrObject          = method("AttrObject")
-	MethodCopyObject          = method("CopyObject")
-	MethodReadObject          = method("ReadObject")
-	MethodWriteObject         = method("WriteObject")
-	MethodDeleteObject        = method("DeleteObject")
-	MethodDownload            = method("Download")
-	MethodUpload              = method("Upload")
+	MethodNewStorageBucket    = Method("NewStorageBucket")
+	MethodDeleteStorageBucket = Method("NewDeleteStorageBucket")
+	MethodListChildrenFiles   = Method("ListChildrenFiles")
+	MethodListDirectChildren  = Method("ListDirectChildren")
+	MethodAttrObject          = Method("AttrObject")
+	MethodCopyObject          = Method("CopyObject")
+	MethodReadObject          = Method("ReadObject")
+	MethodWriteObject         = Method("WriteObject")
+	MethodDeleteObject        = Method("DeleteObject")
+	MethodDownload            = Method("Download")
+	MethodUpload              = Method("Upload")
 )
 
 // mock GCS Client
@@ -56,9 +56,9 @@ type clientMocker struct {
 	gcp map[project]*buckets
 	// error map
 	// - on each call of the higher level function that calls any number of methods
-	//	in this library, you can use SetError(map[method]*ReturnError) or ClearError()
+	//	in this library, you can use SetError(map[Method]*ReturnError) or ClearError()
 	//	to create the error return values you want. Default is nil.
-	err map[method]*ReturnError
+	err map[Method]*ReturnError
 
 	// reverse index to lookup which project a bucket is under as GCS has a global
 	// bucket namespace.
@@ -68,7 +68,7 @@ type clientMocker struct {
 func NewClientMocker() *clientMocker {
 	c := &clientMocker{
 		gcp:      make(map[project]*buckets),
-		err:      make(map[method]*ReturnError),
+		err:      make(map[Method]*ReturnError),
 		revIndex: make(map[bucket]project),
 	}
 	return c
@@ -76,7 +76,7 @@ func NewClientMocker() *clientMocker {
 
 // SetError sets the number of calls of an interface function before an error is returned.
 // Otherwise it will return the err of the mock function itself (which is usually nil).
-func (c *clientMocker) SetError(m map[method]*ReturnError) {
+func (c *clientMocker) SetError(m map[Method]*ReturnError) {
 	c.err = m
 }
 
@@ -89,7 +89,7 @@ func (c *clientMocker) ClearError() {
 }
 
 // getError is a helper that returns the error if it is set for this function
-func (c *clientMocker) getError(funcName method) (bool, error) {
+func (c *clientMocker) getError(funcName Method) (bool, error) {
 	if val, ok := c.err[funcName]; ok {
 		if val.NumCall == 0 {
 			delete(c.err, funcName)
