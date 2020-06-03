@@ -91,7 +91,7 @@ func (c *clientMocker) ClearError() {
 // getError is a helper that returns the error if it is set for this function
 func (c *clientMocker) getError(funcName method) (bool, error) {
 	if val, ok := c.err[funcName]; ok {
-		if val.NumCall <= 0 {
+		if val.NumCall == 0 {
 			delete(c.err, funcName)
 			return true, val.Err
 		}

@@ -796,7 +796,7 @@ func TestCopyObject(t *testing.T) {
 				t.Fatalf("cannot read %v from bucket %v, got error %v", tt.dstObjPath, tt.dstBkt, err)
 			}
 
-			if bytes.Compare(objContent, content) != 0 {
+			if !bytes.Equal(objContent, content) {
 				t.Fatalf("expected copied content %v, got content %v", content, objContent)
 			}
 		})
@@ -853,7 +853,7 @@ func TestReadObject(t *testing.T) {
 				return
 			}
 
-			if bytes.Compare(content, objContent) != 0 {
+			if !bytes.Equal(content, objContent) {
 				t.Fatalf("expected content %v, got content %v", content, objContent)
 			}
 		})
@@ -915,7 +915,7 @@ func TestWriteObject(t *testing.T) {
 
 			if content, err := mockClient.ReadObject(ctx, tt.bkt, tt.objpath); err != nil {
 				t.Fatalf("read object returned error %v", err)
-			} else if bytes.Compare(content, tt.content) != 0 {
+			} else if !bytes.Equal(content, tt.content) {
 				t.Fatalf("expected content %v, got content %v", tt.content, content)
 			}
 		})
@@ -1027,7 +1027,7 @@ func TestDownload(t *testing.T) {
 			if err != nil {
 				t.Fatalf("cannot read content %v, error %v", file, err)
 			}
-			if bytes.Compare(fileContent, content) != 0 {
+			if !bytes.Equal(fileContent, content) {
 				t.Fatalf("expected copied content %v, got content %v", content, fileContent)
 			}
 		})
@@ -1090,7 +1090,7 @@ func TestUpload(t *testing.T) {
 			if err != nil {
 				t.Fatalf("cannot read content %v in bucket %v, error %v", tt.objPath, tt.bkt, err)
 			}
-			if bytes.Compare(objContent, content) != 0 {
+			if !bytes.Equal(objContent, content) {
 				t.Fatalf("expected copied content %v, got content %v", content, objContent)
 			}
 		})

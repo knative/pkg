@@ -49,7 +49,7 @@ func makeResource() *TestResource {
 		Message: "Something something foo",
 	}
 	readyCond := apis.Condition{
-		Type:    apis.ConditionType(apis.ConditionReady),
+		Type:    apis.ConditionReady,
 		Status:  corev1.ConditionTrue,
 		Message: "Something something bar",
 	}
