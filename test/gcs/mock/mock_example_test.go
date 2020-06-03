@@ -62,7 +62,7 @@ func ExampleSetError() {
 	// Call to ReadObject, first call should return error, but returns nil
 	// because it is overridden.
 	mockClient.SetError(
-		map[method]*ReturnError{
+		map[Method]*ReturnError{
 			MethodReadObject: {
 				NumCall: uint8(0),
 				Err:     nil,
