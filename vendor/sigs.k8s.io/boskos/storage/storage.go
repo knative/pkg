@@ -21,7 +21,7 @@ import (
 
 	"fmt"
 
-	"k8s.io/test-infra/boskos/common"
+	"sigs.k8s.io/boskos/common"
 )
 
 // PersistenceLayer defines a simple interface to persists Boskos Information
