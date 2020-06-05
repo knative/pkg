@@ -59,6 +59,15 @@ import (
 	"knative.dev/pkg/webhook"
 )
 
+var (
+	masterURL = flag.String("master", "",
+		"The address of the Kubernetes API server. Overrides any value in kubeconfig. Only required if out-of-cluster.")
+	kubeconfig = flag.String("kubeconfig", "",
+		"Path to a kubeconfig. Only required if out-of-cluster.")
+	leaderElectionEnabled = flag.Bool("leader-election-enabled", false,
+		"Set this flag to true to enable leader election.")
+)
+
 // GetConfig returns a rest.Config to be used for kubernetes client creation.
 // It does so in the following order:
 //   1. Use the passed kubeconfig/masterURL.
@@ -128,16 +137,20 @@ func Main(component string, ctors ...injection.ControllerConstructor) {
 // MainWithContext runs the generic main flow for non-webhook controllers. Use
 // WebhookMainWithContext if you need to serve webhooks.
 func MainWithContext(ctx context.Context, component string, ctors ...injection.ControllerConstructor) {
-	MainWithConfig(ctx, component, ParseAndGetConfigOrDie(), ctors...)
+	MainWithConfig(ctx, component, ctors...)
 }
 
 // MainWithConfig runs the generic main flow for non-webhook controllers. Use
 // WebhookMainWithConfig if you need to serve webhooks.
-func MainWithConfig(ctx context.Context, component string, cfg *rest.Config, ctors ...injection.ControllerConstructor) {
+func MainWithConfig(ctx context.Context, component string, ctors ...injection.ControllerConstructor) {
 	log.Printf("Registering %d clients", len(injection.Default.GetClients()))
 	log.Printf("Registering %d informer factories", len(injection.Default.GetInformerFactories()))
 	log.Printf("Registering %d informers", len(injection.Default.GetInformers()))
 	log.Printf("Registering %d controllers", len(ctors))
+
+	flag.Parse()
+
+	cfg := GetConfigOrDie()
 
 	MemStatsOrDie(ctx)
 
@@ -187,35 +200,37 @@ func MainWithConfig(ctx context.Context, component string, cfg *rest.Config, cto
 		<-ctx.Done()
 	}
 
-	// Set up leader election config
-	leaderElectionConfig, err := GetLeaderElectionConfig(ctx)
-	if err != nil {
-		logger.Fatalw("Error loading leader election configuration", zap.Error(err))
-	}
-	leConfig := leaderElectionConfig.GetComponentConfig(component)
-
-	if !leConfig.LeaderElect {
+	if *leaderElectionEnabled {
+		// Set up leader election config.
+		leaderElectionConfig, err := GetLeaderElectionConfig(ctx)
+		if err != nil {
+			logger.Fatalw("Error loading leader election configuration", zap.Error(err))
+		}
+		RunLeaderElected(ctx, logger, run, leaderElectionConfig.GetComponentConfig(component))
+	} else {
 		logger.Infof("%v will not run in leader-elected mode", component)
 		run(ctx)
-	} else {
-		RunLeaderElected(ctx, logger, run, leConfig)
 	}
 }
 
 // WebhookMainWithContext runs the generic main flow for controllers and
 // webhooks. Use MainWithContext if you do not need to serve webhooks.
 func WebhookMainWithContext(ctx context.Context, component string, ctors ...injection.ControllerConstructor) {
-	WebhookMainWithConfig(ctx, component, ParseAndGetConfigOrDie(), ctors...)
+	WebhookMainWithConfig(ctx, component, ctors...)
 }
 
 // WebhookMainWithConfig runs the generic main flow for controllers and webhooks
 // with the given config. Use MainWithConfig if you do not need to serve
 // webhooks.
-func WebhookMainWithConfig(ctx context.Context, component string, cfg *rest.Config, ctors ...injection.ControllerConstructor) {
+func WebhookMainWithConfig(ctx context.Context, component string, ctors ...injection.ControllerConstructor) {
 	log.Printf("Registering %d clients", len(injection.Default.GetClients()))
 	log.Printf("Registering %d informer factories", len(injection.Default.GetInformerFactories()))
 	log.Printf("Registering %d informers", len(injection.Default.GetInformers()))
 	log.Printf("Registering %d controllers", len(ctors))
+
+	flag.Parse()
+
+	cfg := GetConfigOrDie()
 
 	MemStatsOrDie(ctx)
 
@@ -239,7 +254,7 @@ func WebhookMainWithConfig(ctx context.Context, component string, cfg *rest.Conf
 		logger.Fatalf("Error loading leader election configuration: %v", err)
 	}
 	leConfig := leaderElectionConfig.GetComponentConfig(component)
-	if leConfig.LeaderElect {
+	if *leaderElectionEnabled {
 		// Signal that we are executing in a context with leader election.
 		ctx = kle.WithStandardLeaderElectorBuilder(ctx, kubeclient.Get(ctx), leConfig)
 	}
@@ -297,22 +312,12 @@ func flush(logger *zap.SugaredLogger) {
 	metrics.FlushExporter()
 }
 
-// ParseAndGetConfigOrDie parses the rest config flags and creates a client or
-// dies by calling log.Fatalf.
-func ParseAndGetConfigOrDie() *rest.Config {
-	var (
-		masterURL = flag.String("master", "",
-			"The address of the Kubernetes API server. Overrides any value in kubeconfig. Only required if out-of-cluster.")
-		kubeconfig = flag.String("kubeconfig", "",
-			"Path to a kubeconfig. Only required if out-of-cluster.")
-	)
-	flag.Parse()
-
+// GetConfigOrDie creates a client from flags or dies by calling log.Fatalf.
+func GetConfigOrDie() *rest.Config {
 	cfg, err := GetConfig(*masterURL, *kubeconfig)
 	if err != nil {
 		log.Fatalf("Error building kubeconfig: %v", err)
 	}
-
 	return cfg
 }
 

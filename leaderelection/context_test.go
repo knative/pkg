@@ -35,7 +35,6 @@ import (
 func TestWithBuilder(t *testing.T) {
 	cc := ComponentConfig{
 		Component:     "component",
-		LeaderElect:   true,
 		Buckets:       1,
 		ResourceLock:  "leases",
 		LeaseDuration: 15 * time.Second,
