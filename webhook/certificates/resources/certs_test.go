@@ -60,7 +60,7 @@ func TestCreateCerts(t *testing.T) {
 	}
 
 	// Verify common name
-	expectedCommonName := "got-the-hook.knative-webhook.svc"
+	const expectedCommonName = "got-the-hook.knative-webhook.svc"
 
 	if diff := cmp.Diff(caParsedCert.CommonName, expectedCommonName); diff != "" {
                 t.Fatalf("Unexpected Cert Common Name (-want +got) : %v", diff)
