@@ -78,7 +78,7 @@ func TestCreateCerts(t *testing.T) {
 	}
 
 	if diff := cmp.Diff(caParsedCert.DNSNames, expectedDNSNames); diff != "" {
-		t.Fatalf("Unexpected CA Cert DNS Name (-want +got) : %v", diff)
+		t.Fatalf("Unexpected CA Cert DNS Name (-want +got): %s", diff)
 	}
 
 	// Verify Server Cert is Signed by CA Cert
