@@ -928,7 +928,7 @@ k8s.io/utils/buffer
 k8s.io/utils/integer
 k8s.io/utils/pointer
 k8s.io/utils/trace
-# knative.dev/test-infra v0.0.0-20200522180958-6a0a9b9d893a
+# knative.dev/test-infra v0.0.0-20200605033518-4b5d9e1bbdbe
 ## explicit
 knative.dev/test-infra/scripts
 # sigs.k8s.io/yaml v1.1.0
