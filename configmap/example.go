@@ -26,11 +26,12 @@ const (
 	// ExampleKey signifies a given example configuration in a ConfigMap.
 	ExampleKey = "_example"
 
-	// ExampleChecksumLabel is the label that stores the computed checksum.
-	ExampleChecksumLabel = "knative.dev/example-checksum"
+	// ExampleChecksumAnnotation is the annotation that stores the computed checksum.
+	ExampleChecksumAnnotation = "knative.dev/example-checksum"
 )
 
-// Checksum generates a checksum for the example value to be compared against a respective label.
+// Checksum generates a checksum for the example value to be compared against
+// a respective annotation.
 // Heading and trailing spaces are ignored.
 func Checksum(value string) string {
 	return fmt.Sprintf("%08x", crc32.ChecksumIEEE([]byte(strings.TrimSpace(value))))
