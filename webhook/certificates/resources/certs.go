@@ -55,7 +55,7 @@ func createCertTemplate(name, namespace string, notAfter time.Time) (*x509.Certi
 	}
 
 	tmpl := x509.Certificate{
-		SerialNumber:          serialNumber,
+		SerialNumber: serialNumber,
 		Subject: pkix.Name{
 			Organization: []string{organization},
 			CommonName:   commonName,
