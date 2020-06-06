@@ -58,7 +58,7 @@ func createCertTemplate(name, namespace string, notAfter time.Time) (*x509.Certi
 		SerialNumber:          serialNumber,
 		Subject: pkix.Name{
 			Organization: []string{organization},
-			CommonName: commonName,
+			CommonName:   commonName,
 		},
 		SignatureAlgorithm:    x509.SHA256WithRSA,
 		NotBefore:             time.Now(),
