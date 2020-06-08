@@ -175,6 +175,7 @@ func TestMetricsExport(t *testing.T) {
 				BackendDestinationKey:            string(backend),
 				CollectorAddressKey:              ocFake.address,
 				AllowStackdriverCustomMetricsKey: "true",
+				ReportingPeriodKey:               "1",
 			},
 		}
 	}
@@ -340,24 +341,23 @@ testComponent_testing_value{project="p1",revision="r2"} 1
 			return UpdateExporter(configForBackend(Stackdriver), logtesting.TestLogger(t))
 		},
 		validate: func(t *testing.T) {
-			// We unregister the views because this is one of two ways to flush
-			// the internal aggregation buffers; the other is to have the
-			// internal reporting period duration tick, which is at least
-			// [new duration] in the future.
-			view.Unregister(globalCounter)
-			UnregisterResourceView(gaugeView, resourceCounter)
-			FlushExporter()
-			sdFake.srv.Stop()
-
 			records := []metricExtract{}
 			for record := range sdFake.published {
 				t.Logf("RECORD: %v", record)
 				for _, ts := range record.TimeSeries {
+					name := ts.Metric.Type[len("custom.googleapis.com/knative.dev/testComponent/"):]
 					records = append(records, metricExtract{
-						Name:   ts.Metric.Type,
+						Name:   name,
 						Labels: ts.Resource.Labels,
 						Value:  ts.Points[0].Value.GetInt64Value(),
 					})
+				}
+				if len(records) >= 4 {
+					// There's no way to synchronize on the internal timer used
+					// by metricsexport.IntervalReader, so shut down the
+					// exporter after the first report cycle.
+					FlushExporter()
+					sdFake.srv.Stop()
 				}
 			}
 			if diff := cmp.Diff(expected, records, sortMetrics); diff != "" {

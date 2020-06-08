@@ -19,44 +19,28 @@ package metrics
 import (
 	"fmt"
 	"net/http"
-	"strings"
 	"sync"
 
 	"contrib.go.opencensus.io/exporter/prometheus"
-	prom "github.com/prometheus/client_golang/prometheus"
-	"go.opencensus.io/metric/metricdata"
-	"go.opencensus.io/metric/metricproducer"
 	"go.opencensus.io/resource"
 	"go.opencensus.io/stats/view"
 	"go.uber.org/zap"
 )
 
 var (
-	curPromSrv       *http.Server
-	curPromSrvMux    sync.Mutex
-	curExporter      resourceExporter
-	metricTypeToProm = map[metricdata.Type]prom.ValueType{
-		metricdata.TypeGaugeInt64:        prom.GaugeValue,
-		metricdata.TypeGaugeFloat64:      prom.GaugeValue,
-		metricdata.TypeCumulativeInt64:   prom.CounterValue,
-		metricdata.TypeCumulativeFloat64: prom.CounterValue,
-	}
+	curPromSrv    *http.Server
+	curPromSrvMux sync.Mutex
 )
 
-type resourceExporter struct {
-	opts   prometheus.Options
-	logger *zap.SugaredLogger
+type emptyPromExporter struct{}
+
+func (emptyPromExporter) ExportView(viewData *view.Data) {
+	// Prometheus runs a loop to read stats via ReadAndExport, so this is just
+	// a signal to enrich the internal Meters with Resource information.
 }
 
 func newPrometheusExporter(config *metricsConfig, logger *zap.SugaredLogger) (view.Exporter, ResourceExporterFactory, error) {
-	curExporter = resourceExporter{
-		opts: prometheus.Options{
-			Namespace: config.component,
-			Registry:  prom.NewRegistry(),
-		},
-		logger: logger,
-	}
-	e, err := prometheus.NewExporter(curExporter.opts)
+	e, err := prometheus.NewExporter(prometheus.Options{Namespace: config.component})
 	if err != nil {
 		logger.Errorw("Failed to create the Prometheus exporter.", zap.Error(err))
 		return nil, nil, err
@@ -67,26 +51,7 @@ func newPrometheusExporter(config *metricsConfig, logger *zap.SugaredLogger) (vi
 		srv := startNewPromSrv(e, config.prometheusPort)
 		srv.ListenAndServe()
 	}()
-	return e, curExporter.collectorForResource, nil
-}
-
-func (re *resourceExporter) collectorForResource(r *resource.Resource) (view.Exporter, error) {
-	if r == nil {
-		r = &resource.Resource{Labels: map[string]string{}}
-	}
-	c := &miniCollector{
-		namespace: re.opts.Namespace,
-		meter:     meterForResource(r),
-		resource:  r,
-		logger:    re.logger,
-	}
-
-	err := re.opts.Registry.Register(c)
-	if err != nil {
-		re.logger.Warnf("Failed to register for %+v: %v", r, err)
-	}
-
-	return c, err
+	return e, func(r *resource.Resource) (view.Exporter, error) { return &emptyPromExporter{}, nil }, nil
 }
 
 func getCurPromSrv() *http.Server {
@@ -117,120 +82,4 @@ func startNewPromSrv(e *prometheus.Exporter, port int) *http.Server {
 		Handler: sm,
 	}
 	return curPromSrv
-}
-
-type miniCollector struct {
-	namespace string
-	meter     view.Meter
-	resource  *resource.Resource
-	logger    *zap.SugaredLogger
-}
-
-func (mc *miniCollector) ExportView(vd *view.Data) {
-	// pass
-	// Maybe at some point we register this?
-}
-
-func (mc *miniCollector) Describe(d chan<- *prom.Desc) {
-	reader, ok := mc.meter.(metricproducer.Producer)
-	if !ok {
-		mc.logger.Warn("Unable to convert Meter to a metric producer")
-		return
-	}
-	ocMetrics := reader.Read()
-	for _, m := range ocMetrics {
-		d <- mc.toPromDesc(m.Descriptor, mc.resource)
-	}
-}
-
-func (mc *miniCollector) Collect(metrics chan<- prom.Metric) {
-	reader, ok := mc.meter.(metricproducer.Producer)
-	if !ok {
-		mc.logger.Warnf("Unable to convert Meter %#v to a metric producer", mc.meter)
-		return
-	}
-	ocMetrics := reader.Read()
-	for _, m := range ocMetrics {
-		desc := mc.toPromDesc(m.Descriptor, mc.resource)
-		for _, ts := range m.TimeSeries {
-			labels := make([]string, 0, len(ts.LabelValues))
-			for _, lv := range ts.LabelValues {
-				labels = append(labels, lv.Value)
-			}
-			pt := ts.Points[len(ts.Points)-1] // TODO: see which order these are in.
-
-			metric, err := MetricFromPoint(desc, m.Descriptor.Type, pt, labels)
-			if err != nil {
-				mc.logger.Warnf("Failed to convert %q to Prometheus Metric: %v", desc, err)
-				continue
-			}
-			metrics <- metric
-		}
-	}
-}
-
-func (mc *miniCollector) toPromDesc(m metricdata.Descriptor, r *resource.Resource) *prom.Desc {
-	labels := make([]string, 0, len(m.LabelKeys))
-	for _, l := range m.LabelKeys {
-		labels = append(labels, sanitizedName(l.Key))
-	}
-	name := sanitizedName(m.Name)
-	if mc.namespace != "" {
-		name = mc.namespace + "_" + name
-	}
-	return prom.NewDesc(name, m.Description, labels, r.Labels)
-}
-
-func sanitizedName(s string) string {
-	// TODO: copy from prometheus/sanitize.go
-	// NOTE: unicode.IsLetter covers more than ASCII allowed by Prometheus!
-	s = strings.Map(func(r rune) rune {
-		switch {
-		case r >= 'a' && r <= 'z':
-			return r
-		case r >= 'A' && r <= 'Z':
-			return r
-		case r >= '0' && r <= '9':
-			return r
-		default:
-			return '_'
-		}
-	}, s)
-	if s[0] == '_' {
-		s = "key" + s
-	}
-	if s[0] >= '0' && s[0] <= '9' {
-		s = "key_" + s
-	}
-	return s
-}
-
-func MetricFromPoint(desc *prom.Desc, t metricdata.Type, pt metricdata.Point, labels []string) (prom.Metric, error) {
-	if t == metricdata.TypeCumulativeDistribution {
-		data, ok := pt.Value.(*metricdata.Distribution)
-		if !ok {
-			return nil, fmt.Errorf("bad value for %q", desc)
-		}
-		var sum uint64
-		buckets := make(map[float64]uint64)
-		for i, b := range data.BucketOptions.Bounds {
-			sum += uint64(data.Buckets[i].Count)
-			buckets[b] = sum
-		}
-		return prom.NewConstHistogram(desc, uint64(data.Count), data.Sum, buckets, labels...)
-	}
-
-	if promType, ok := metricTypeToProm[t]; ok {
-		var data float64
-		switch v := pt.Value.(type) {
-		case float64:
-			data = v
-		case int64:
-			data = float64(v)
-		default:
-			return nil, fmt.Errorf("bad value type for %q", desc)
-		}
-		return prom.NewConstMetric(desc, promType, data, labels...)
-	}
-	return nil, fmt.Errorf("unsupported metric type %d", t)
 }

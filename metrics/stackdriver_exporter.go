@@ -17,6 +17,7 @@ limitations under the License.
 package metrics
 
 import (
+	"context"
 	"fmt"
 	"path"
 	"sync"
@@ -25,9 +26,12 @@ import (
 	"contrib.go.opencensus.io/exporter/stackdriver/monitoredresource"
 	"go.opencensus.io/metric/metricdata"
 	"go.opencensus.io/resource"
+	"go.opencensus.io/stats"
 	"go.opencensus.io/stats/view"
+	"go.opencensus.io/tag"
 	"go.uber.org/zap"
 	"google.golang.org/api/option"
+	"k8s.io/apimachinery/pkg/util/sets"
 	"knative.dev/pkg/metrics/metricskey"
 
 	corev1 "k8s.io/api/core/v1"
@@ -79,7 +83,16 @@ var (
 	// useStackdriverSecretEnabled specifies whether or not the exporter can be configured with a Secret.
 	// Consuming packages must do explicitly enable this by calling SetStackdriverSecretLocation.
 	useStackdriverSecretEnabled = false
+
+	// metricToResourceLabels provides a quick lookup from a custom metric name to the set of tags
+	// which should be promoted to Stackdriver Resource labels via opencensus resources.
+	metricToResourceLabels = map[string]*resourceTemplate{}
 )
+
+type resourceTemplate struct {
+	Type      string
+	LabelKeys sets.String
+}
 
 // SetStackdriverSecretLocation sets the name and namespace of the Secret that can be used to authenticate with Stackdriver.
 // The Secret is only used if both:
@@ -99,6 +112,38 @@ func init() {
 	newStackdriverExporterFunc = newOpencensusSDExporter
 
 	kubeclientInitErr = nil
+
+	metricsToTemplates := []struct {
+		metrics  sets.String
+		template resourceTemplate
+	}{
+		{metricskey.KnativeRevisionMetrics, resourceTemplate{metricskey.ResourceTypeKnativeRevision, metricskey.KnativeRevisionLabels}},
+		{metricskey.KnativeTriggerMetrics, resourceTemplate{metricskey.ResourceTypeKnativeTrigger, metricskey.KnativeTriggerLabels}},
+		{metricskey.KnativeBrokerMetrics, resourceTemplate{metricskey.ResourceTypeKnativeBroker, metricskey.KnativeBrokerLabels}},
+		{metricskey.KnativeSourceMetrics, resourceTemplate{metricskey.ResourceTypeKnativeSource, metricskey.KnativeSourceLabels}},
+	}
+
+	for _, item := range metricsToTemplates {
+		for k := range item.metrics {
+			metricToResourceLabels[k] = &item.template
+		}
+	}
+}
+
+type pollOnlySDExporter struct {
+	internalExporter view.Exporter
+}
+
+func (e *pollOnlySDExporter) ExportView(viewData *view.Data) {
+	// Stackdriver will run an internal loop to bundle stats, so ignore this.
+}
+
+func (e *pollOnlySDExporter) Flush() {
+	if e.internalExporter != nil {
+		if f, ok := e.internalExporter.(flushable); ok {
+			f.Flush()
+		}
+	}
 }
 
 func newOpencensusSDExporter(o stackdriver.Options) (view.Exporter, error) {
@@ -114,17 +159,19 @@ func newOpencensusSDExporter(o stackdriver.Options) (view.Exporter, error) {
 
 func newStackdriverExporter(config *metricsConfig, logger *zap.SugaredLogger) (view.Exporter, ResourceExporterFactory, error) {
 	// Automatically fall back on Google application default credentials
-	cfg := clientConfig{storeConfig: config, storeLogger: logger}
-	e, err := cfg.GetExporter(nil)
+	//	cfg := clientConfig{storeConfig: config, storeLogger: logger}
+
+	e, err := newStackdriverExporterFunc(generateStackdriverOptions(config, logger))
 	if err != nil {
 		logger.Errorw("Failed to create the Stackdriver exporter: ", zap.Error(err))
 		return nil, nil, err
 	}
 	logger.Infof("Created Opencensus Stackdriver exporter with config %v", config)
-	return e, cfg.GetExporter, nil
+	// We have to return a ResourceExporterFactory here to enable tracking resources, even though we always poll for them.
+	return &pollOnlySDExporter{e}, func(r *resource.Resource) (view.Exporter, error) { return &pollOnlySDExporter{}, nil }, nil
 }
 
-func generateStackdriverOptions(config *metricsConfig, logger *zap.SugaredLogger, r *resource.Resource) stackdriver.Options {
+func generateStackdriverOptions(config *metricsConfig, logger *zap.SugaredLogger) stackdriver.Options {
 	gm := getMergedGCPMetadata(config)
 	mpf := getMetricPrefixFunc(config.stackdriverMetricTypePrefix, config.stackdriverCustomMetricTypePrefix)
 	co, err := getStackdriverExporterClientOptions(config)
@@ -138,9 +185,55 @@ func generateStackdriverOptions(config *metricsConfig, logger *zap.SugaredLogger
 		MonitoringClientOptions: co,
 		TraceClientOptions:      co,
 		GetMetricPrefix:         mpf,
-		ResourceByDescriptor:    getResourceByDescriptorFunc(config.stackdriverMetricTypePrefix, gm, r),
 		ReportingInterval:       config.reportingPeriod,
 		DefaultMonitoringLabels: &stackdriver.Labels{},
+	}
+}
+
+func sdCustomMetricsRecorder(mc metricsConfig) func(context.Context, []stats.Measurement, ...stats.Options) error {
+	return func(ctx context.Context, mss []stats.Measurement, ros ...stats.Options) error {
+		// Filter the measuremenst array to only include permitted metrics.
+		i := 0
+		var templ *resourceTemplate
+		for _, m := range mss {
+			metricType := path.Join(mc.stackdriverMetricTypePrefix, m.Measure().Name())
+			if t, ok := metricToResourceLabels[metricType]; ok {
+				mss[i] = m
+				i++
+				if templ != nil && templ != t {
+					return fmt.Errorf("Mixed resource type measurements in one report: %v", mss)
+				}
+				templ = t
+			}
+		}
+		// Trim the array
+		mss = mss[:i]
+		if i == 0 {
+			return nil
+		}
+		// Extract resource, if possible
+		if templ != nil {
+			tagMap := tag.FromContext(ctx)
+			r := resource.Resource{
+				Type:   templ.Type,
+				Labels: map[string]string{},
+			}
+			tagMutations := make([]tag.Mutator, 0, len(templ.LabelKeys))
+			for k := range templ.LabelKeys {
+				tagKey := tag.MustNewKey(k)
+				if v, ok := tagMap.Value(tagKey); ok {
+					r.Labels[k] = v
+					tagMutations = append(tagMutations, tag.Delete(tagKey))
+				}
+			}
+			var err error
+			ctx, err = tag.New(metricskey.WithResource(ctx, r), tagMutations...)
+			if err != nil {
+				return err
+			}
+		}
+
+		return stats.RecordWithOptions(ctx, append(ros, stats.WithMeasurements(mss...))...)
 	}
 }
 
@@ -148,15 +241,6 @@ func generateStackdriverOptions(config *metricsConfig, logger *zap.SugaredLogger
 type clientConfig struct {
 	storeConfig *metricsConfig
 	storeLogger *zap.SugaredLogger
-}
-
-func (o clientConfig) GetExporter(r *resource.Resource) (view.Exporter, error) {
-	e, err := newStackdriverExporterFunc(generateStackdriverOptions(o.storeConfig, o.storeLogger, r))
-	if err != nil {
-		o.storeLogger.Errorw("Failed to create the Stackdriver exporter: ", zap.Error(err))
-		return nil, err
-	}
-	return e, nil
 }
 
 // getStackdriverExporterClientOptions creates client options for the opencensus Stackdriver exporter from the given stackdriverClientConfig.

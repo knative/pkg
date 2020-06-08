@@ -30,7 +30,7 @@ require (
 	github.com/prometheus/common v0.9.1
 	github.com/spf13/pflag v1.0.5
 	github.com/tsenart/vegeta v12.7.1-0.20190725001342-b5f4fca92137+incompatible
-	go.opencensus.io v0.22.4-0.20200403004729-46dfec7deb6e
+	go.opencensus.io v0.22.4-0.20200608061201-1901b56b9515
 	go.uber.org/multierr v1.5.0
 	go.uber.org/zap v1.14.1
 	golang.org/x/net v0.0.0-20200324143707-d3edc9973b7e
@@ -61,4 +61,6 @@ replace (
 	k8s.io/apimachinery => k8s.io/apimachinery v0.16.4
 	k8s.io/client-go => k8s.io/client-go v0.16.4
 	k8s.io/code-generator => k8s.io/code-generator v0.16.4
+
+	contrib.go.opencensus.io/exporter/prometheus => github.com/jjzeng-seattle/opencensus-go-exporter-prometheus v0.2.1-0.20200608170152-538b0d161bb6
 )

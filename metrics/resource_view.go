@@ -23,7 +23,6 @@ import (
 	"time"
 
 	"go.opencensus.io/metric/metricdata"
-	"go.opencensus.io/metric/metricproducer"
 	"go.opencensus.io/resource"
 	"go.opencensus.io/stats"
 	"go.opencensus.io/stats/view"
@@ -167,11 +166,14 @@ func meterExporterForResource(r *resource.Resource) *meterExporter {
 		return mE
 	}
 	mE.m = view.NewMeter()
+	mE.m.SetResource(r)
 	mE.m.Start()
 	mE.m.Register(resourceViews.views...)
-	// Prometheus's default collector uses the global metricproducer to read *all* meters.
-	// This confuses the default prometheus adapter, so remove these from the global export.
-	metricproducer.GlobalManager().DeleteProducer(mE.m.(metricproducer.Producer))
+	/*
+		// Prometheus's default collector uses the global metricproducer to read *all* meters.
+		// This confuses the default prometheus adapter, so remove these from the global export.
+		metricproducer.GlobalManager().DeleteProducer(mE.m.(metricproducer.Producer))
+	*/
 	mE.o = stats.WithRecorder(mE.m)
 	allMeters.meters[key] = mE
 	return mE
@@ -291,6 +293,8 @@ func (*defaultMeterImpl) Stop() {
 }
 func (*defaultMeterImpl) RetrieveData(viewName string) ([]*view.Row, error) {
 	return view.RetrieveData(viewName)
+}
+func (*defaultMeterImpl) SetResource(*resource.Resource) {
 }
 
 // Read is implemented to support casting defaultMeterImpl to a metricproducer.Producer,
