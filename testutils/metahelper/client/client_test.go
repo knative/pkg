@@ -111,7 +111,7 @@ func TestSet(t *testing.T) {
 	}{
 		{"sync failed", make(map[string]string), "", "", "", make(map[string]string), true},
 		{"set normal key", make(map[string]string), "{}", "a", "b", map[string]string{"a": "b"}, false},
-		{"override", make(map[string]string), "{\"a\":\"b\"}", "a", "c", map[string]string{"a": "c"}, false},
+		{"override", make(map[string]string), `{"a":"b"}`, "a", "c", map[string]string{"a": "c"}, false},
 		{"ignore old client val", map[string]string{"a": "b"}, "{}", "c", "d", map[string]string{"c": "d"}, false},
 	}
 
@@ -143,9 +143,9 @@ func TestGet(t *testing.T) {
 		expErr      bool
 	}{
 		{"sync failed", make(map[string]string), "", "", make(map[string]string), "", true},
-		{"get normal key", make(map[string]string), "{\"a\":\"b\"}", "a", map[string]string{"a": "b"}, "b", false},
-		{"key not exist", make(map[string]string), "{\"a\":\"b\"}", "c", map[string]string{"a": "b"}, "", true},
-		{"ignore old client val", map[string]string{"a": "c"}, "{\"a\":\"b\"}", "a", map[string]string{"a": "b"}, "b", false},
+		{"get normal key", make(map[string]string), `{"a":"b"}`, "a", map[string]string{"a": "b"}, "b", false},
+		{"key not exist", make(map[string]string), `{"a":"b"}`, "c", map[string]string{"a": "b"}, "", true},
+		{"ignore old client val", map[string]string{"a": "c"}, `{"a":"b"}`, "a", map[string]string{"a": "b"}, "b", false},
 	}
 
 	for _, data := range datas {

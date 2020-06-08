@@ -39,15 +39,15 @@ func TestParseComments(t *testing.T) {
 	}
 
 	if val, ok := extracted["with"]; !ok || val["option"] != "" {
-		t.Errorf("Failed to extract single key got=%t,%v want=true,{\"option\":\"\"}", ok, val)
+		t.Errorf(`Failed to extract single key got=%t,%v want=true,{"option":""}`, ok, val)
 	}
 
 	if val, ok := extracted["pair"]; !ok || val["key"] != "value" {
-		t.Errorf("Failed to extract single key got=%t,%v want=true,{\"key\":\"value\"}", ok, val)
+		t.Errorf(`Failed to extract single key got=%t,%v want=true,{"key":"value"}`, ok, val)
 	}
 
 	if val, ok := extracted["manypairs"]; !ok || val["key1"] != "value1" || val["key2"] != "value2" {
-		t.Errorf("Failed to extract single key got=%t,%v want=true,{\"key\":\"value\"}", ok, val)
+		t.Errorf(`Failed to extract single key got=%t,%v want=true,{"key":"value"}`, ok, val)
 	}
 }
 
@@ -71,14 +71,14 @@ func TestMergeDuplicates(t *testing.T) {
 	}
 
 	if val, ok := extracted["bar"]; !ok || val["key"] != "value" {
-		t.Errorf("Failed to extract single key got=%t,%v want=true,{\"key\":\"value\"}", ok, val)
+		t.Errorf(`Failed to extract single key got=%t,%v want=true,{"key":"value"}`, ok, val)
 	}
 
 	if val, ok := extracted["manypairs"]; !ok || val["key1"] != "value1" || val["key2"] != "value2" {
-		t.Errorf("Failed to extract single key got=%t,%v want=true,{\"key\":\"value\"}", ok, val)
+		t.Errorf(`Failed to extract single key got=%t,%v want=true,{"key":"value"}`, ok, val)
 	}
 
 	if val, ok := extracted["oops"]; !ok || val != nil {
-		t.Errorf("Failed to extract single key got=%t,%v want=true,{\"oops\":nil}", ok, val)
+		t.Errorf(`Failed to extract single key got=%t,%v want=true,{"oops":nil}`, ok, val)
 	}
 }

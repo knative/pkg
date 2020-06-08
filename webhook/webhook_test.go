@@ -20,6 +20,8 @@ import (
 	"context"
 	"fmt"
 	"net"
+	"net/http"
+	"net/http/httptest"
 	"testing"
 	"time"
 
@@ -45,11 +47,6 @@ const (
 	user1            = "brutto@knative.dev"
 )
 
-func init() {
-	// Don't hang forever when running tests.
-	GracePeriod = 100 * time.Millisecond
-}
-
 func newNonRunningTestWebhook(t *testing.T, options Options, acs ...interface{}) (
 	ctx context.Context, ac *Webhook, cancel context.CancelFunc) {
 	t.Helper()
@@ -71,6 +68,7 @@ func newNonRunningTestWebhook(t *testing.T, options Options, acs ...interface{})
 	if err != nil {
 		t.Fatalf("Failed to create new admission controller: %v", err)
 	}
+	ac.gracePeriod = 100 * time.Millisecond
 	return
 }
 
@@ -95,4 +93,52 @@ func TestRegistrationStopChanFire(t *testing.T) {
 		conn.Close()
 		t.Errorf("Unexpected success to dial to port %d", opts.Port)
 	}
+}
+
+func TestWebhookKubeletProbe(t *testing.T) {
+	opts := newDefaultOptions()
+	ctx, webhook, cancel := newNonRunningTestWebhook(t, opts)
+	defer cancel()
+
+	recorder := bombRecorder{ResponseRecorder: httptest.NewRecorder()}
+	probeReq := httptest.NewRequest("GET", "/", nil)
+	probeReq.Header.Set("User-Agent", "kube-probe/1.16")
+
+	webhook.ServeHTTP(&recorder, probeReq)
+
+	if got, want := recorder.Code, http.StatusOK; got != want {
+		t.Fatalf("Probe got HTTP status %d - expected %d", got, want)
+	}
+
+	if got, want := recorder.writeCount, 1; got != want {
+		t.Errorf("HTTP status was written %d times - expected only one write", got)
+	}
+
+	// Stop the webhook - which means probes should fail
+	//
+	// The steps below aren't obvious and requires you to
+	// know the implementation details
+	cancel()
+	webhook.Run(ctx.Done())
+
+	recorder = bombRecorder{ResponseRecorder: httptest.NewRecorder()}
+	webhook.ServeHTTP(&recorder, probeReq)
+
+	if got, want := recorder.Code, http.StatusInternalServerError; got != want {
+		t.Fatalf("Probe got HTTP status %d - expected %d", got, want)
+	}
+
+	if got, want := recorder.writeCount, 1; got != want {
+		t.Errorf("HTTP status was written %d times - expected only one write", got)
+	}
+}
+
+type bombRecorder struct {
+	*httptest.ResponseRecorder
+	writeCount int
+}
+
+func (rw *bombRecorder) WriteHeader(code int) {
+	rw.writeCount += 1
+	rw.ResponseRecorder.WriteHeader(code)
 }

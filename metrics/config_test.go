@@ -71,7 +71,7 @@ var (
 			Domain:    servingDomain,
 			Component: testComponent,
 		},
-		expectedErr: "unsupported metrics backend value \"unsupported\"",
+		expectedErr: `unsupported metrics backend value "unsupported"`,
 	}, {
 		name: "emptyDomain",
 		ops: ExporterOptions{
@@ -102,7 +102,7 @@ var (
 			Domain:    servingDomain,
 			Component: testComponent,
 		},
-		expectedErr: "invalid metrics.reporting-period-seconds value \"test\"",
+		expectedErr: `invalid metrics.reporting-period-seconds value "test"`,
 	}, {
 		name: "invalidOpenCensusSecuritySetting",
 		ops: ExporterOptions{
@@ -113,7 +113,7 @@ var (
 			Domain:    servingDomain,
 			Component: testComponent,
 		},
-		expectedErr: "invalid metrics.opencensus-require-tls value \"yep\"",
+		expectedErr: `invalid metrics.opencensus-require-tls value "yep"`,
 	}, {
 		name: "invalidAllowStackdriverCustomMetrics",
 		ops: ExporterOptions{
@@ -124,7 +124,7 @@ var (
 			Domain:    servingDomain,
 			Component: testComponent,
 		},
-		expectedErr: "invalid metrics.allow-stackdriver-custom-metrics value \"test\"",
+		expectedErr: `invalid metrics.allow-stackdriver-custom-metrics value "test"`,
 	}, {
 		name: "tooSmallPrometheusPort",
 		ops: ExporterOptions{
