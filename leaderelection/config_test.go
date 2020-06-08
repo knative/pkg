@@ -122,7 +122,7 @@ func TestNewConfigMapFromData(t *testing.T) {
 		data: kmeta.UnionMaps(okData(), map[string]string{
 			"buckets": "0",
 		}),
-		err: fmt.Errorf(`buckets: value must be between 1 <= 0 <= %d`, MaxBuckets),
+		err: fmt.Errorf("buckets: value must be between 1 <= 0 <= %d", MaxBuckets),
 	}, {
 		name: "invalid buckets - too large",
 		data: kmeta.UnionMaps(okData(), map[string]string{

@@ -67,7 +67,7 @@ func BuildElector(ctx context.Context, la reconciler.LeaderAware, name string, e
 
 	return &unopposedElector{
 		la:  la,
-		bkt: reconciler.AllBuckets(),
+		bkt: reconciler.UniversalBucket(),
 		enq: enq,
 	}, nil
 }
@@ -136,7 +136,7 @@ func (b *standardBuilder) BuildElector(ctx context.Context, la reconciler.Leader
 		// if lec.WatchDog != nil {
 		// 	lec.WatchDog.SetLeaderElection(le)
 		// }
-		buckets = append(buckets, &runUntilCancelled{le: le})
+		buckets = append(buckets, &runUntilCancelled{Elector: le})
 	}
 	return &runAll{les: buckets}, nil
 }
@@ -174,7 +174,7 @@ func (ra *runAll) Run(ctx context.Context) {
 // runUntilCancelled wraps a single-term Elector into one that runs until
 // the passed context is cancelled.
 type runUntilCancelled struct {
-	le Elector
+	Elector
 }
 
 // Run implements Elector
@@ -188,7 +188,7 @@ func (ruc *runUntilCancelled) Run(ctx context.Context) {
 	// We effectively want this in a loop, where the termination
 	// condition is cancellation of our context.
 	for {
-		ruc.le.Run(ctx)
+		ruc.Elector.Run(ctx)
 		select {
 		case <-ctx.Done():
 			return // Run quit because context was cancelled, we are done!

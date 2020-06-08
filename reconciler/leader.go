@@ -28,12 +28,12 @@ type Bucket interface {
 	// identifies the bucket and is suitable for use as a resource lock name.
 	Name() string
 
-	// Has determines whether this Bucket covers a particular key.
+	// Has determines whether this Bucket contains a particular key.
 	Has(key types.NamespacedName) bool
 }
 
-// AllBuckets returns a Bucket that "Has()" all keys.
-func AllBuckets() Bucket {
+// UniversalBucket returns a Bucket that "Has()" all keys.
+func UniversalBucket() Bucket {
 	return &bucket{}
 }
 

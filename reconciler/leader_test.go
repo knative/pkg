@@ -24,10 +24,9 @@ import (
 )
 
 func TestLeaderAwareFuncs(t *testing.T) {
-
 	laf := LeaderAwareFuncs{}
 
-	wantBkt := AllBuckets()
+	wantBkt := UniversalBucket()
 
 	wantKey := types.NamespacedName{
 		Namespace: "foo",

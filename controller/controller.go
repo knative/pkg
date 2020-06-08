@@ -211,6 +211,7 @@ func NewImpl(r Reconciler, logger *zap.SugaredLogger, workQueueName string) *Imp
 }
 
 func NewImplWithStats(r Reconciler, logger *zap.SugaredLogger, workQueueName string, reporter StatsReporter) *Impl {
+	logger = logger.Named(workQueueName)
 	return &Impl{
 		Name:       workQueueName,
 		Reconciler: r,
@@ -364,6 +365,7 @@ func (c *Impl) EnqueueKeyAfter(key types.NamespacedName, delay time.Duration) {
 }
 
 // RunContext starts the controller's worker threads, the number of which is threadiness.
+// If the context has been decorated for LeaderElection, then an elector is built and run.
 // It then blocks until the context is cancelled, at which point it shuts down its
 // internal work queue and waits for workers to finish processing their current
 // work items.
