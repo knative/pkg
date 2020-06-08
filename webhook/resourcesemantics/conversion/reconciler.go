@@ -20,9 +20,9 @@ import (
 	"context"
 	"fmt"
 
-	apixv1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
+	apixv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	apixclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
-	apixlisters "k8s.io/apiextensions-apiserver/pkg/client/listers/apiextensions/v1beta1"
+	apixlisters "k8s.io/apiextensions-apiserver/pkg/client/listers/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	corelisters "k8s.io/client-go/listers/core/v1"
 	"knative.dev/pkg/controller"
@@ -83,20 +83,20 @@ func (r *reconciler) reconcileCRD(ctx context.Context, cacert []byte, key string
 	crd := configuredCRD.DeepCopy()
 
 	if crd.Spec.Conversion == nil ||
-		crd.Spec.Conversion.Strategy != apixv1beta1.WebhookConverter ||
-		crd.Spec.Conversion.WebhookClientConfig == nil ||
-		crd.Spec.Conversion.WebhookClientConfig.Service == nil {
+		crd.Spec.Conversion.Strategy != apixv1.WebhookConverter ||
+		crd.Spec.Conversion.Webhook.ClientConfig == nil ||
+		crd.Spec.Conversion.Webhook.ClientConfig.Service == nil {
 		return fmt.Errorf("custom resource %q isn't configured for webhook conversion", key)
 	}
 
-	crd.Spec.Conversion.WebhookClientConfig.CABundle = cacert
-	crd.Spec.Conversion.WebhookClientConfig.Service.Path = ptr.String(r.path)
+	crd.Spec.Conversion.Webhook.ClientConfig.CABundle = cacert
+	crd.Spec.Conversion.Webhook.ClientConfig.Service.Path = ptr.String(r.path)
 
 	if ok, err := kmp.SafeEqual(configuredCRD, crd); err != nil {
 		return fmt.Errorf("error diffing custom resource definitions: %w", err)
 	} else if !ok {
 		logger.Infof("updating CRD")
-		crdClient := r.client.ApiextensionsV1beta1().CustomResourceDefinitions()
+		crdClient := r.client.ApiextensionsV1().CustomResourceDefinitions()
 		if _, err := crdClient.Update(crd); err != nil {
 			return fmt.Errorf("failed to update webhook: %w", err)
 		}
