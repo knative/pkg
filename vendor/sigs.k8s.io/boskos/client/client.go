@@ -38,9 +38,9 @@ import (
 	"github.com/sirupsen/logrus"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 
-	"k8s.io/test-infra/boskos/common"
-	"k8s.io/test-infra/boskos/storage"
 	"k8s.io/test-infra/prow/config/secret"
+	"sigs.k8s.io/boskos/common"
+	"sigs.k8s.io/boskos/storage"
 )
 
 var (
