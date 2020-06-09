@@ -166,14 +166,14 @@ func TestMetricsExport(t *testing.T) {
 	}
 
 	resources := []*resource.Resource{
-		&resource.Resource{
+		{
 			Type: "revision",
 			Labels: map[string]string{
 				"project":  "p1",
 				"revision": "r1",
 			},
 		},
-		&resource.Resource{
+		{
 			Type: "revision",
 			Labels: map[string]string{
 				"project":  "p1",
