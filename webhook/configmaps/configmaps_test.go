@@ -48,11 +48,12 @@ import (
 const (
 	testConfigValidationName = "configmap.webhook.knative.dev"
 	testConfigValidationPath = "/cm"
+	testConfigName           = "test-config"
 )
 
 var (
 	validations = configmap.Constructors{
-		"test-config": newConfigFromConfigMap,
+		testConfigName: newConfigFromConfigMap,
 	}
 	initialConfigWebhook = &admissionregistrationv1beta1.ValidatingWebhookConfiguration{
 		ObjectMeta: metav1.ObjectMeta{
@@ -205,9 +206,28 @@ func TestDenyInvalidUpdateConfigMapOutOfRange(t *testing.T) {
 func TestAllowConfigMapExample(t *testing.T) {
 	_, ac := newNonRunningTestConfigValidationController(t)
 
+	r := createValidConfigMap()
+	// Add an _example field but add no annotation.
+	r.Data[configmap.ExampleKey] = "bar"
+	ctx := TestContextWithLogger(t)
+
+	resp := ac.Admit(ctx, createCreateConfigMapRequest(ctx, t, r))
+
+	ExpectAllowed(t, resp)
+}
+
+func TestAllowUnknownConfigMapExample(t *testing.T) {
+	_, ac := newNonRunningTestConfigValidationController(t)
+
 	r := &corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "some-other-config",
+			Annotations: map[string]string{
+				configmap.ExampleChecksumAnnotation: "foo",
+			},
+		},
 		Data: map[string]string{
-			"_example": "bar",
+			configmap.ExampleKey: "bar",
 		},
 	}
 	ctx := TestContextWithLogger(t)
@@ -222,12 +242,13 @@ func TestDenyInvalidUpdateConfigMapExample(t *testing.T) {
 
 	r := &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
+			Name: testConfigName,
 			Annotations: map[string]string{
 				configmap.ExampleChecksumAnnotation: "foo",
 			},
 		},
 		Data: map[string]string{
-			"_example": "bar",
+			configmap.ExampleKey: "bar",
 		},
 	}
 	ctx := TestContextWithLogger(t)
@@ -284,7 +305,7 @@ func createConfigMap(value string) *corev1.ConfigMap {
 	return &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: system.Namespace(),
-			Name:      "test-config",
+			Name:      testConfigName,
 		},
 		Data: map[string]string{
 			"value": value,
