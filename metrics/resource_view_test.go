@@ -50,7 +50,7 @@ var (
 )
 
 func TestRegisterResourceView(t *testing.T) {
-	meter := meterForResource(&r)
+	meter := meterExporterForResource(&r).m
 
 	m := stats.Int64("testView_sum", "", stats.UnitDimensionless)
 	view := view.View{Name: "testView", Measure: m, Aggregation: view.Sum()}
@@ -68,21 +68,6 @@ func TestRegisterResourceView(t *testing.T) {
 	viewToFind = meter.Find("testView")
 	if viewToFind == nil || viewToFind.Name != "testView" {
 		t.Errorf("Registered view should be found in new meter, instead got %v", viewToFind)
-	}
-}
-
-func TestMeterForResource(t *testing.T) {
-	meter := meterForResource(&r)
-	if meter == nil {
-		t.Error("Should succeed getting meter, instead got nil")
-	}
-	meterAgain := meterForResource(&r)
-	if meterAgain == nil {
-		t.Error("Should succeed getting meter, instead got nil")
-	}
-
-	if meterAgain != meter {
-		t.Error("Meter for the same resource should not be recreated")
 	}
 }
 

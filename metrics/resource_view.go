@@ -17,6 +17,7 @@ limitations under the License.
 package metrics
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 	"sync"
@@ -115,7 +116,7 @@ func UnregisterResourceView(views ...*view.View) {
 
 func setFactory(f func(*resource.Resource) (view.Exporter, error)) error {
 	if f == nil {
-		return fmt.Errorf("do not setFactory(nil)!")
+		return errors.New("do not setFactory(nil)")
 	}
 
 	allMeters.lock.Lock()
@@ -131,8 +132,8 @@ func setFactory(f func(*resource.Resource) (view.Exporter, error)) error {
 			errs = append(errs, err)
 			continue
 		}
-		meter.m.RegisterExporter(e)
 		meter.m.UnregisterExporter(meter.e)
+		meter.m.RegisterExporter(e)
 		meter.e = e
 	}
 	if len(errs) > 0 {
@@ -179,15 +180,6 @@ func meterExporterForResource(r *resource.Resource) *meterExporter {
 	return mE
 }
 
-// meterForResource finds or creates a view.Meter for the given resource. If
-func meterForResource(r *resource.Resource) view.Meter {
-	mE := meterExporterForResource(r)
-	if mE == nil {
-		return nil
-	}
-	return mE.m
-}
-
 // optionForResource finds or creates a stats.Option indicating which meter to record to.
 func optionForResource(r *resource.Resource) (stats.Options, error) {
 	allMeters.lock.Lock()
@@ -227,8 +219,10 @@ func resourceAsString(r *resource.Resource) string {
 		l += len(k) + len(v) + 2
 	}
 	s.Grow(l)
-	fmt.Fprintf(&s, "%s", r.Type)
+	s.WriteString(r.Type)
 	for k, v := range r.Labels {
+		// We use byte values 1 and 2 to avoid colliding with valid resource labels
+		// and to make unpacking easy
 		fmt.Fprintf(&s, "\x01%s\x02%s", k, v)
 	}
 	return s.String()
@@ -242,7 +236,7 @@ func resourceFromString(s string) *resource.Resource {
 	parts := strings.Split(s, "\x01")
 	r.Type = parts[0]
 	for _, label := range parts[1:] {
-		keyValue := strings.Split(label, "\x02")
+		keyValue := strings.SplitN(label, "\x02", 2)
 		r.Labels[keyValue[0]] = keyValue[1]
 	}
 	return &r
@@ -251,13 +245,11 @@ func resourceFromString(s string) *resource.Resource {
 // defaultMeter is a pass-through to the default worker in OpenCensus. This
 // allows legacy code that uses OpenCensus and does not store a Resource in the
 // context to continue to interoperate.
-type defaultMeterImpl struct {
-}
+type defaultMeterImpl struct{}
 
 var defaultMeter meterExporter = meterExporter{
 	m: &defaultMeterImpl{},
 	o: stats.WithRecorder(nil),
-	e: nil,
 }
 
 func (*defaultMeterImpl) Record(*tag.Map, interface{}, map[string]interface{}) {
@@ -285,12 +277,8 @@ func (*defaultMeterImpl) RegisterExporter(e view.Exporter) {
 func (*defaultMeterImpl) UnregisterExporter(e view.Exporter) {
 	view.UnregisterExporter(e)
 }
-func (*defaultMeterImpl) Start() {
-
-}
-func (*defaultMeterImpl) Stop() {
-
-}
+func (*defaultMeterImpl) Start() {}
+func (*defaultMeterImpl) Stop()  {}
 func (*defaultMeterImpl) RetrieveData(viewName string) ([]*view.Row, error) {
 	return view.RetrieveData(viewName)
 }

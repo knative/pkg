@@ -44,6 +44,6 @@ func TestResourceContext(t *testing.T) {
 	}
 
 	if diff := cmp.Diff(orig, *r); diff != "" {
-		t.Errorf("Expected same Resource: %s", diff)
+		t.Errorf("Expected same Resource: diff(-want,+got)\n%s", diff)
 	}
 }

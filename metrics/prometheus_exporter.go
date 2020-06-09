@@ -51,7 +51,9 @@ func newPrometheusExporter(config *metricsConfig, logger *zap.SugaredLogger) (vi
 		srv := startNewPromSrv(e, config.prometheusPort)
 		srv.ListenAndServe()
 	}()
-	return e, func(r *resource.Resource) (view.Exporter, error) { return &emptyPromExporter{}, nil }, nil
+	return e,
+		func(r *resource.Resource) (view.Exporter, error) { return &emptyPromExporter{}, nil },
+		nil
 }
 
 func getCurPromSrv() *http.Server {

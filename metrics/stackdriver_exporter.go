@@ -156,9 +156,6 @@ func newOpencensusSDExporter(o stackdriver.Options) (view.Exporter, error) {
 	if err := e.StartMetricsExporter(); err != nil {
 		return nil, err
 	}
-	// Start the exporter.
-	// TODO(https://github.com/knative/pkg/issues/866): Move this to an interface.
-	e.StartMetricsExporter()
 	return e, nil
 }
 
@@ -173,7 +170,9 @@ func newStackdriverExporter(config *metricsConfig, logger *zap.SugaredLogger) (v
 	}
 	logger.Infof("Created Opencensus Stackdriver exporter with config %v", config)
 	// We have to return a ResourceExporterFactory here to enable tracking resources, even though we always poll for them.
-	return &pollOnlySDExporter{e}, func(r *resource.Resource) (view.Exporter, error) { return &pollOnlySDExporter{}, nil }, nil
+	return &pollOnlySDExporter{e},
+		func(r *resource.Resource) (view.Exporter, error) { return &pollOnlySDExporter{}, nil },
+		nil
 }
 
 func generateStackdriverOptions(config *metricsConfig, logger *zap.SugaredLogger) stackdriver.Options {

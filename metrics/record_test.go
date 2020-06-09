@@ -207,7 +207,7 @@ func TestMeter(t *testing.T) {
 	testMeterRecord(t, measure, meterTestCases)
 }
 
-func testMeterRecord(t *testing.T, measure *stats.Int64Measure, shouldReportCases []cases) {
+func testMeterRecord(t *testing.T, measure *stats.Int64Measure, tests []cases) {
 	t.Helper()
 
 	v := &view.View{
@@ -217,11 +217,11 @@ func testMeterRecord(t *testing.T, measure *stats.Int64Measure, shouldReportCase
 	RegisterResourceView(v)
 	defer UnregisterResourceView(v)
 
-	for _, test := range shouldReportCases {
+	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			ctx := context.Background()
 			ctx = metricskey.WithResource(ctx, test.resource)
-			meter := meterForResource(metricskey.GetResource(ctx))
+			meter := meterExporterForResource(metricskey.GetResource(ctx)).m
 			setCurMetricsConfig(test.metricsConfig)
 			Record(ctx, test.measurement)
 			metricstest.CheckLastValueDataWithMeter(t, test.measurement.Measure().Name(), map[string]string{}, test.measurement.Value(), meter)
