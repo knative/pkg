@@ -292,7 +292,8 @@ testComponent_testing_value{project="p1",revision="r2"} 1
 			UnregisterResourceView(gaugeView, resourceCounter)
 			FlushExporter()
 
-			ocFake.srv.Stop()
+			ocFake.srv.Stop() // Force close connections
+			ocFake.srv.GracefulStop()
 			records := []metricExtract{}
 			for record := range ocFake.published {
 				for _, m := range record.Metrics {
@@ -343,7 +344,6 @@ testComponent_testing_value{project="p1",revision="r2"} 1
 		validate: func(t *testing.T) {
 			records := []metricExtract{}
 			for record := range sdFake.published {
-				t.Logf("RECORD: %v", record)
 				for _, ts := range record.TimeSeries {
 					name := ts.Metric.Type[len("custom.googleapis.com/knative.dev/testComponent/"):]
 					records = append(records, metricExtract{
@@ -357,7 +357,7 @@ testComponent_testing_value{project="p1",revision="r2"} 1
 					// by metricsexport.IntervalReader, so shut down the
 					// exporter after the first report cycle.
 					FlushExporter()
-					sdFake.srv.Stop()
+					sdFake.srv.GracefulStop()
 				}
 			}
 			if diff := cmp.Diff(expected, records, sortMetrics); diff != "" {
@@ -432,7 +432,6 @@ func (oc *openCensusFake) Export(stream ocmetrics.MetricsService_ExportServer) e
 		}
 		if in.Resource != nil {
 			// The stream is stateful, keep track of the last Resource seen.
-			// TODO(evankanderson): why does it sometimes seem that Resource is set but empty when sending Node?
 			streamResource = in.Resource
 		}
 		if len(in.Metrics) > 0 {

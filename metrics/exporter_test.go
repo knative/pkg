@@ -292,7 +292,7 @@ func TestFlushExporter(t *testing.T) {
 	} else {
 		setCurMetricsExporter(e)
 		if want, got := true, FlushExporter(); got != want {
-			t.Errorf("Expected %v, got %v.", want, got)
+			t.Errorf("Expected %v, got %v when calling FlushExporter().", want, got)
 		}
 	}
 }
