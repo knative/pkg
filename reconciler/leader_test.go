@@ -25,9 +25,7 @@ import (
 
 func TestLeaderAwareFuncs(t *testing.T) {
 	laf := LeaderAwareFuncs{}
-
 	wantBkt := UniversalBucket()
-
 	wantKey := types.NamespacedName{
 		Namespace: "foo",
 		Name:      "bar",
@@ -49,8 +47,9 @@ func TestLeaderAwareFuncs(t *testing.T) {
 			t.Error("gotFunc didn't call wantFunc!")
 		}
 
-		// Check that we're not called while the lock is held,
-		// and that we are already the Leader.
+		// IsLeaderFor takes the bucket's lock, so make sure that the callback
+		// we provide is not called while the lock is still held by calling a
+		// function that we know takes the lock.
 		if !laf.IsLeaderFor(wantKey) {
 			t.Error("IsLeaderFor() = false, wanted true")
 		}

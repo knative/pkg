@@ -32,10 +32,10 @@ import (
 	"knative.dev/pkg/system"
 )
 
-// WithLeaderElectorBuilder infuses a context with the ability to build
+// WithStandardLeaderElectorBuilder infuses a context with the ability to build
 // LeaderElectors with the provided component configuration acquiring resource
 // locks via the provided kubernetes client.
-func WithLeaderElectorBuilder(ctx context.Context, kc kubernetes.Interface, cc ComponentConfig) context.Context {
+func WithStandardLeaderElectorBuilder(ctx context.Context, kc kubernetes.Interface, cc ComponentConfig) context.Context {
 	return context.WithValue(ctx, builderKey{}, &standardBuilder{
 		kc:  kc,
 		lec: cc,
@@ -55,7 +55,7 @@ type Elector interface {
 }
 
 // BuildElector builds a leaderelection.LeaderElector for the named LeaderAware
-// reconciler using a builder added to the context via WithLeaderElectorBuilder.
+// reconciler using a builder added to the context via WithStandardLeaderElectorBuilder.
 func BuildElector(ctx context.Context, la reconciler.LeaderAware, name string, enq func(reconciler.Bucket, types.NamespacedName)) (Elector, error) {
 	if val := ctx.Value(builderKey{}); val != nil {
 		switch builder := val.(type) {
@@ -174,19 +174,13 @@ func (ra *runAll) Run(ctx context.Context) {
 // runUntilCancelled wraps a single-term Elector into one that runs until
 // the passed context is cancelled.
 type runUntilCancelled struct {
+	// Elector is a single-term elector as we get from K8s leaderelection package.
 	Elector
 }
 
 // Run implements Elector
 func (ruc *runUntilCancelled) Run(ctx context.Context) {
-	// Run executes a single iteration of an election:
-	// 1. Wait to become leader
-	// 2. Call OnStartedLeading
-	// 3. Wait for ctx cancel or loss of leader.
-	// 4. Call OnStoppedLeading
-	//
-	// We effectively want this in a loop, where the termination
-	// condition is cancellation of our context.
+	// Turn the single-term elector into a continuous election cycle.
 	for {
 		ruc.Elector.Run(ctx)
 		select {

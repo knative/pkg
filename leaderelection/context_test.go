@@ -86,7 +86,7 @@ func TestWithBuilder(t *testing.T) {
 		t.Errorf("BuildElector() = %T, wanted an unopposedElector", le)
 	}
 
-	ctx = WithLeaderElectorBuilder(ctx, kc, cc)
+	ctx = WithStandardLeaderElectorBuilder(ctx, kc, cc)
 	if !HasLeaderElection(ctx) {
 		t.Error("HasLeaderElection() = false, wanted true")
 	}

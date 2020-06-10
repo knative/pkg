@@ -936,7 +936,7 @@ func TestStartAndShutdownWithLeaderAwareWithLostElection(t *testing.T) {
 	impl := NewImplWithStats(r, TestLogger(t), "Testing", &FakeStatsReporter{})
 
 	ctx, cancel := context.WithCancel(context.Background())
-	ctx = leaderelection.WithLeaderElectorBuilder(ctx, kc, cc)
+	ctx = leaderelection.WithStandardLeaderElectorBuilder(ctx, kc, cc)
 	doneCh := make(chan struct{})
 
 	go func() {
