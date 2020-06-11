@@ -39,10 +39,6 @@ func UniversalBucket() Bucket {
 
 // LeaderAware is implemented by Reconcilers that are aware of their leader status.
 type LeaderAware interface {
-	// IsLeaderFor returns whether the reconciler is the leader for the
-	// bucket covering the given key.
-	IsLeaderFor(types.NamespacedName) bool
-
 	// Promote is called when we become the leader of a given Bucket.  It must be
 	// supplied with an enqueue function through which a Bucket resync may be triggered.
 	Promote(b Bucket, enq func(Bucket, types.NamespacedName))
