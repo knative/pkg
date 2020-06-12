@@ -91,7 +91,7 @@ func TestPostProcessReconcileBumpsGeneration(t *testing.T) {
 	resource := makeResource()
 
 	krShape := duckv1.KRShaped(resource)
-	PostProcessReconcile(context.Background(), krShape)
+	PostProcessReconcile(context.Background(), krShape, krShape)
 
 	if resource.Status.ObservedGeneration != resource.Generation {
 		t.Errorf("Expected observed generation bump got=%d want=%d", resource.Status.ObservedGeneration, resource.Generation)
