@@ -19,6 +19,7 @@ package reconciler
 import (
 	"context"
 
+	"knative.dev/pkg/apis"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
 	"knative.dev/pkg/logging"
 )
@@ -29,12 +30,20 @@ const failedGenerationBump = "NewObservedGenFailure"
 func PreProcessReconcile(ctx context.Context, resource duckv1.KRShaped) {
 	newStatus := resource.GetStatus()
 
-	if newStatus.ObservedGeneration != resource.GetGeneration() {
-		condSet := resource.GetConditionSet()
-		manager := condSet.Manage(newStatus)
-		// Ensure conditions are initialized before we modify.
-		manager.InitializeConditions()
+	// We may be reading a version of the object that was stored at an older version
+	// and may not have had all of the assumed defaults specified.  This won't result
+	// in this getting written back to the API Server, but lets downstream logic make
+	// assumptions about defaulting.
+	if d, ok := resource.(apis.Defaultable); ok {
+		d.SetDefaults(ctx)
+	}
 
+	// Ensure conditions are initialized before we modify.
+	condSet := resource.GetConditionSet()
+	manager := condSet.Manage(newStatus)
+	manager.InitializeConditions()
+
+	if newStatus.ObservedGeneration != resource.GetGeneration() {
 		// Reset Ready/Successful to unknown. The reconciler is expected to overwrite this.
 		manager.MarkUnknown(condSet.GetTopLevelConditionType(), failedGenerationBump, "unsuccessfully observed a new generation")
 	}
