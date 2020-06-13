@@ -69,12 +69,14 @@ func PostProcessReconcile(ctx context.Context, resource, oldResource duckv1.KRSh
 // conditions share the same timestamp.
 func groomConditionsTransitionTime(resource, oldResource duckv1.KRShaped) {
 	now := apis.VolatileTime{Inner: metav1.NewTime(time.Now())}
-	for _, cond := range resource.GetStatus().Conditions {
+	sts := resource.GetStatus()
+	for i := range sts.Conditions {
+		cond := &sts.Conditions[i]
 
 		if oldCond := oldResource.GetStatus().GetCondition(cond.Type); oldCond != nil {
 			cond.LastTransitionTime = oldCond.LastTransitionTime
-			if reflect.DeepEqual(&cond, &oldCond) {
-				return
+			if reflect.DeepEqual(cond, oldCond) {
+				continue
 			}
 		}
 
