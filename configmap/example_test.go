@@ -26,6 +26,12 @@ func TestChecksum(t *testing.T) {
 		in:   "",
 		want: "00000000",
 	}, {
+		in:   "a somewhat\nlonger\ntext",
+		want: "2b4ed320",
+	}, {
+		in:   "a somewhat\n\n\nlonger\n\ntext",
+		want: "2b4ed320",
+	}, {
 		in:   "1",
 		want: "83dcefb7",
 	}, {
