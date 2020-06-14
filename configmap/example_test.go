@@ -32,6 +32,9 @@ func TestChecksum(t *testing.T) {
 		in:   "a somewhat\n\n\nlonger\n\ntext",
 		want: "2b4ed320",
 	}, {
+                in:   "a somewhat\r\n\r\n\r\nlonger\r\n\r\ntext",
+                want: "2b4ed320",
+        }, {
 		in:   "1",
 		want: "83dcefb7",
 	}, {

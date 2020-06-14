@@ -33,7 +33,7 @@ const (
 
 var (
 	// Allows for normalizing by collapsing newlines.
-	sequentialNewlines = regexp.MustCompile("\n+")
+	sequentialNewlines = regexp.MustCompile("(?:(?:\r)?\n)+")
 )
 
 // Checksum generates a checksum for the example value to be compared against
