@@ -20,7 +20,7 @@ metadata:
   labels:
     serving.knative.dev/release: devel
   annotations:
-    knative.dev/example-checksum: 81e8e656
+    knative.dev/example-checksum: 05d48218
 data:
   leave-me: "alone"
   _example: |
