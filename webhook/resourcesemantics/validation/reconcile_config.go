@@ -138,7 +138,7 @@ func (ac *reconciler) reconcileValidatingWebhook(ctx context.Context, caCert []b
 		webhook.Webhooks[i].Rules = rules
 		webhook.Webhooks[i].NamespaceSelector = &metav1.LabelSelector{
 			MatchExpressions: []metav1.LabelSelectorRequirement{{
-				Key:      "pkg.knative.dev/skip-webhooks",
+				Key:      "webhooks.knative.dev/exclude",
 				Operator: metav1.LabelSelectorOpDoesNotExist,
 			}},
 		}
