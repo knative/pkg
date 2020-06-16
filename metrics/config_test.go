@@ -65,8 +65,8 @@ var (
 		name: "unsupportedBackend",
 		ops: ExporterOptions{
 			ConfigMap: map[string]string{
-				"metrics.backend-destination":    "unsupported",
-				"metrics.stackdriver-project-id": testProj,
+				BackendDestinationKey:   "unsupported",
+				StackdriverProjectIDKey: testProj,
 			},
 			Domain:    servingDomain,
 			Component: testComponent,
@@ -76,7 +76,7 @@ var (
 		name: "emptyDomain",
 		ops: ExporterOptions{
 			ConfigMap: map[string]string{
-				"metrics.backend-destination": "prometheus",
+				BackendDestinationKey: string(Prometheus),
 			},
 			Domain:    "",
 			Component: testComponent,
@@ -86,7 +86,7 @@ var (
 		name: "invalidComponent",
 		ops: ExporterOptions{
 			ConfigMap: map[string]string{
-				"metrics.backend-destination": "opencensus",
+				BackendDestinationKey: string(OpenCensus),
 			},
 			Domain:    servingDomain,
 			Component: "",
@@ -96,40 +96,40 @@ var (
 		name: "invalidReportingPeriod",
 		ops: ExporterOptions{
 			ConfigMap: map[string]string{
-				"metrics.backend-destination":      "opencensus",
-				"metrics.reporting-period-seconds": "test",
+				BackendDestinationKey: string(OpenCensus),
+				ReportingPeriodKey:    "test",
 			},
 			Domain:    servingDomain,
 			Component: testComponent,
 		},
-		expectedErr: `invalid metrics.reporting-period-seconds value "test"`,
+		expectedErr: "invalid " + ReportingPeriodKey + ` value "test"`,
 	}, {
 		name: "invalidOpenCensusSecuritySetting",
 		ops: ExporterOptions{
 			ConfigMap: map[string]string{
-				"metrics.backend-destination":    "opencensus",
-				"metrics.opencensus-require-tls": "yep",
+				BackendDestinationKey: string(OpenCensus),
+				CollectorSecureKey:    "yep",
 			},
 			Domain:    servingDomain,
 			Component: testComponent,
 		},
-		expectedErr: `invalid metrics.opencensus-require-tls value "yep"`,
+		expectedErr: "invalid " + CollectorSecureKey + ` value "yep"`,
 	}, {
 		name: "invalidAllowStackdriverCustomMetrics",
 		ops: ExporterOptions{
 			ConfigMap: map[string]string{
-				"metrics.backend-destination":              "stackdriver",
-				"metrics.allow-stackdriver-custom-metrics": "test",
+				BackendDestinationKey:            string(Stackdriver),
+				AllowStackdriverCustomMetricsKey: "test",
 			},
 			Domain:    servingDomain,
 			Component: testComponent,
 		},
-		expectedErr: `invalid metrics.allow-stackdriver-custom-metrics value "test"`,
+		expectedErr: "invalid " + AllowStackdriverCustomMetricsKey + ` value "test"`,
 	}, {
 		name: "tooSmallPrometheusPort",
 		ops: ExporterOptions{
 			ConfigMap: map[string]string{
-				"metrics.backend-destination": "prometheus",
+				BackendDestinationKey: string(Prometheus),
 			},
 			Domain:         servingDomain,
 			Component:      testComponent,
@@ -140,7 +140,7 @@ var (
 		name: "tooBigPrometheusPort",
 		ops: ExporterOptions{
 			ConfigMap: map[string]string{
-				"metrics.backend-destination": "prometheus",
+				BackendDestinationKey: string(Prometheus),
 			},
 			Domain:         servingDomain,
 			Component:      testComponent,
@@ -160,7 +160,7 @@ var (
 			name: "stackdriverProjectIDMissing",
 			ops: ExporterOptions{
 				ConfigMap: map[string]string{
-					"metrics.backend-destination": "stackdriver",
+					BackendDestinationKey: string(Stackdriver),
 				},
 				Domain:    servingDomain,
 				Component: testComponent,
@@ -194,11 +194,11 @@ var (
 			name: "validStackdriver",
 			ops: ExporterOptions{
 				ConfigMap: map[string]string{
-					"metrics.backend-destination":      "stackdriver",
-					"metrics.stackdriver-project-id":   anotherProj,
-					"metrics.stackdriver-gcp-location": "us-west1",
-					"metrics.stackdriver-cluster-name": "cluster",
-					"metrics.stackdriver-use-secret":   "true",
+					BackendDestinationKey:     string(Stackdriver),
+					StackdriverProjectIDKey:   anotherProj,
+					StackdriverGCPLocationKey: "us-west1",
+					StackdriverClusterNameKey: "cluster",
+					StackdriverUseSecretKey:   "true",
 				},
 				Domain:    servingDomain,
 				Component: testComponent,
@@ -235,9 +235,9 @@ var (
 			name: "validPartialStackdriver",
 			ops: ExporterOptions{
 				ConfigMap: map[string]string{
-					"metrics.backend-destination":      "stackdriver",
-					"metrics.stackdriver-project-id":   anotherProj,
-					"metrics.stackdriver-cluster-name": "cluster",
+					BackendDestinationKey:     string(Stackdriver),
+					StackdriverProjectIDKey:   anotherProj,
+					StackdriverClusterNameKey: "cluster",
 				},
 				Domain:    servingDomain,
 				Component: testComponent,
@@ -260,9 +260,9 @@ var (
 			name: "validOpenCensusSettings",
 			ops: ExporterOptions{
 				ConfigMap: map[string]string{
-					"metrics.backend-destination":    "opencensus",
-					"metrics.opencensus-address":     "external-svc:55678",
-					"metrics.opencensus-require-tls": "true",
+					BackendDestinationKey: string(OpenCensus),
+					CollectorAddressKey:   "external-svc:55678",
+					CollectorSecureKey:    "true",
 				},
 				Domain:    servingDomain,
 				Component: testComponent,
@@ -297,7 +297,7 @@ var (
 			name: "validPrometheus",
 			ops: ExporterOptions{
 				ConfigMap: map[string]string{
-					"metrics.backend-destination": "prometheus",
+					BackendDestinationKey: string(Prometheus),
 				},
 				Domain:    servingDomain,
 				Component: testComponent,
@@ -314,8 +314,8 @@ var (
 			name: "validCapitalStackdriver",
 			ops: ExporterOptions{
 				ConfigMap: map[string]string{
-					"metrics.backend-destination":    "Stackdriver",
-					"metrics.stackdriver-project-id": testProj,
+					BackendDestinationKey:   "Stackdriver",
+					StackdriverProjectIDKey: testProj,
 				},
 				Domain:    servingDomain,
 				Component: testComponent,
@@ -337,8 +337,8 @@ var (
 			name: "overriddenReportingPeriodPrometheus",
 			ops: ExporterOptions{
 				ConfigMap: map[string]string{
-					"metrics.backend-destination":      "prometheus",
-					"metrics.reporting-period-seconds": "12",
+					BackendDestinationKey: string(Prometheus),
+					ReportingPeriodKey:    "12",
 				},
 				Domain:    servingDomain,
 				Component: testComponent,
@@ -355,9 +355,9 @@ var (
 			name: "overriddenReportingPeriodStackdriver",
 			ops: ExporterOptions{
 				ConfigMap: map[string]string{
-					"metrics.backend-destination":      "stackdriver",
-					"metrics.stackdriver-project-id":   "test2",
-					"metrics.reporting-period-seconds": "7",
+					BackendDestinationKey:   string(Stackdriver),
+					StackdriverProjectIDKey: "test2",
+					ReportingPeriodKey:      "7",
 				},
 				Domain:    servingDomain,
 				Component: testComponent,
@@ -379,9 +379,9 @@ var (
 			name: "overriddenReportingPeriodStackdriver2",
 			ops: ExporterOptions{
 				ConfigMap: map[string]string{
-					"metrics.backend-destination":      "stackdriver",
-					"metrics.stackdriver-project-id":   "test2",
-					"metrics.reporting-period-seconds": "3",
+					BackendDestinationKey:   string(Stackdriver),
+					StackdriverProjectIDKey: "test2",
+					ReportingPeriodKey:      "3",
 				},
 				Domain:    servingDomain,
 				Component: testComponent,
@@ -402,8 +402,8 @@ var (
 			name: "emptyReportingPeriodPrometheus",
 			ops: ExporterOptions{
 				ConfigMap: map[string]string{
-					"metrics.backend-destination":      "prometheus",
-					"metrics.reporting-period-seconds": "",
+					BackendDestinationKey: string(Prometheus),
+					ReportingPeriodKey:    "",
 				},
 				Domain:    servingDomain,
 				Component: testComponent,
@@ -420,9 +420,9 @@ var (
 			name: "emptyReportingPeriodStackdriver",
 			ops: ExporterOptions{
 				ConfigMap: map[string]string{
-					"metrics.backend-destination":      "stackdriver",
-					"metrics.stackdriver-project-id":   "test2",
-					"metrics.reporting-period-seconds": "",
+					BackendDestinationKey:   string(Stackdriver),
+					StackdriverProjectIDKey: "test2",
+					ReportingPeriodKey:      "",
 				},
 				Domain:    servingDomain,
 				Component: testComponent,
@@ -444,10 +444,10 @@ var (
 			name: "allowStackdriverCustomMetric",
 			ops: ExporterOptions{
 				ConfigMap: map[string]string{
-					"metrics.backend-destination":              "stackdriver",
-					"metrics.stackdriver-project-id":           "test2",
-					"metrics.reporting-period-seconds":         "",
-					"metrics.allow-stackdriver-custom-metrics": "true",
+					BackendDestinationKey:            string(Stackdriver),
+					StackdriverProjectIDKey:          "test2",
+					ReportingPeriodKey:               "",
+					AllowStackdriverCustomMetricsKey: "true",
 				},
 				Domain:    servingDomain,
 				Component: testComponent,
@@ -468,10 +468,10 @@ var (
 			name: "allowStackdriverCustomMetric with subdomain",
 			ops: ExporterOptions{
 				ConfigMap: map[string]string{
-					"metrics.backend-destination":                  "stackdriver",
-					"metrics.stackdriver-project-id":               "test2",
-					"metrics.reporting-period-seconds":             "",
-					"metrics.stackdriver-custom-metrics-subdomain": customSubDomain,
+					BackendDestinationKey:               string(Stackdriver),
+					StackdriverProjectIDKey:             "test2",
+					ReportingPeriodKey:                  "",
+					StackdriverCustomMetricSubDomainKey: customSubDomain,
 				},
 				Domain:    servingDomain,
 				Component: testComponent,
@@ -492,7 +492,7 @@ var (
 			name: "overridePrometheusPort",
 			ops: ExporterOptions{
 				ConfigMap: map[string]string{
-					"metrics.backend-destination": "prometheus",
+					BackendDestinationKey: string(Prometheus),
 				},
 				Domain:         servingDomain,
 				Component:      testComponent,
@@ -531,7 +531,7 @@ var (
 		}, {
 			name: "validPrometheus",
 			ops: ExporterOptions{
-				ConfigMap: map[string]string{"metrics.backend-destination": "prometheus"},
+				ConfigMap: map[string]string{BackendDestinationKey: string(Prometheus)},
 				Domain:    servingDomain,
 				Component: testComponent,
 			},
@@ -890,10 +890,10 @@ func TestNewStackdriverConfigFromMap(t *testing.T) {
 	}{{
 		name: "fullSdConfig",
 		stringMap: map[string]string{
-			"metrics.stackdriver-project-id":   "project",
-			"metrics.stackdriver-gcp-location": "us-west1",
-			"metrics.stackdriver-cluster-name": "cluster",
-			"metrics.stackdriver-use-secret":   "true",
+			StackdriverProjectIDKey:   "project",
+			StackdriverGCPLocationKey: "us-west1",
+			StackdriverClusterNameKey: "cluster",
+			StackdriverUseSecretKey:   "true",
 		},
 		expectedConfig: StackdriverClientConfig{
 			ProjectID:   "project",
@@ -908,9 +908,9 @@ func TestNewStackdriverConfigFromMap(t *testing.T) {
 	}, {
 		name: "partialSdConfig",
 		stringMap: map[string]string{
-			"metrics.stackdriver-project-id":   "project",
-			"metrics.stackdriver-gcp-location": "us-west1",
-			"metrics.stackdriver-cluster-name": "cluster",
+			StackdriverProjectIDKey:   "project",
+			StackdriverGCPLocationKey: "us-west1",
+			StackdriverClusterNameKey: "cluster",
 		},
 		expectedConfig: StackdriverClientConfig{
 			ProjectID:   "project",
@@ -943,22 +943,22 @@ func TestStackdriverRecord(t *testing.T) {
 	}{
 		"non-stackdriver": {
 			opts: map[string]string{
-				"metrics.backend-destination": "prometheus",
+				BackendDestinationKey: string(Prometheus),
 			},
 			servedCounter: 1,
 			statCounter:   1,
 		},
 		"stackdriver with custom metrics": {
 			opts: map[string]string{
-				"metrics.backend-destination":              "stackdriver",
-				"metrics.allow-stackdriver-custom-metrics": "true",
+				BackendDestinationKey:            string(Stackdriver),
+				AllowStackdriverCustomMetricsKey: "true",
 			},
 			servedCounter: 1,
 			statCounter:   1,
 		},
 		"stackdriver no custom metrics": {
 			opts: map[string]string{
-				"metrics.backend-destination": "stackdriver",
+				BackendDestinationKey: string(Stackdriver),
 			},
 			servedCounter: 1,
 			statCounter:   0,
