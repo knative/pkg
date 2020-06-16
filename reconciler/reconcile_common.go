@@ -52,12 +52,12 @@ func PreProcessReconcile(ctx context.Context, resource duckv1.KRShaped) {
 // PostProcessReconcile contains logic to apply after reconciliation of a resource.
 func PostProcessReconcile(ctx context.Context, resource duckv1.KRShaped) {
 	logger := logging.FromContext(ctx)
-	newStatus := resource.GetStatus()
-	mgr := resource.GetConditionSet().Manage(newStatus)
+	status := resource.GetStatus()
+	mgr := resource.GetConditionSet().Manage(status)
 
 	// Bump observed generation to denote that we have processed this
 	// generation regardless of success or failure.
-	newStatus.ObservedGeneration = resource.GetGeneration()
+	status.ObservedGeneration = resource.GetGeneration()
 
 	if rc := mgr.GetTopLevelCondition(); rc == nil {
 		logger.Warn("A reconciliation included no top-level condition")
