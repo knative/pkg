@@ -85,6 +85,15 @@ func UpdateExporterFromConfigMap(component string, logger *zap.SugaredLogger) fu
 	return ConfigMapWatcher(component, nil, logger)
 }
 
+// RegisterResourceView is placeholder for real implementation in https://github.com/knative/pkg/pull/1392.
+// That PR will introduce a breaking change, as we need to  all view.Register to RegisterResourceView in 
+// all callers, in serving, eventing, and eventing-contrib.
+// Since that PR is huge, a better approach is to introduce the breaking change up front, by creating this
+// passthrough method, and fixing all the callers before merging that PR.
+func RegisterResourceView(views ...*view.View) error {
+	return view.Register(views...)
+}
+
 // ConfigMapWatcher returns a helper func which updates the exporter configuration based on
 // values in the supplied ConfigMap. This method captures a corev1.SecretLister which is used
 // to configure mTLS with the opencensus agent.
