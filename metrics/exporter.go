@@ -85,13 +85,24 @@ func UpdateExporterFromConfigMap(component string, logger *zap.SugaredLogger) fu
 	return ConfigMapWatcher(component, nil, logger)
 }
 
-// RegisterResourceView is placeholder for real implementation in https://github.com/knative/pkg/pull/1392.
+// RegisterResourceView is similar to view.Register(), except that it will
+// register the view across all Resources tracked by the system, rather than
+// simply the default view.
+// this is a placeholder for real implementation in https://github.com/knative/pkg/pull/1392.
 // That PR will introduce a breaking change, as we need to convert some view.Register to RegisterResourceView in
 // all callers, in serving, eventing, and eventing-contrib.
 // Since that PR is huge, a better approach is to introduce the breaking change up front, by creating this
 // passthrough method, and fixing all the callers before merging that PR.
 func RegisterResourceView(views ...*view.View) error {
 	return view.Register(views...)
+}
+
+// UnregisterResourceView is similar to view.unRegister(), except that it will
+// unregister the view across all Resources tracked by the system, rather than
+// simply the default view.
+// this is a placeholder for real implementation in https://github.com/knative/pkg/pull/1392.
+func UnregisterResourceView(views ...*view.View) {
+	view.Unregister(views...)
 }
 
 // ConfigMapWatcher returns a helper func which updates the exporter configuration based on
