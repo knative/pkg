@@ -40,15 +40,15 @@ const (
 	// The following keys are used to configure metrics reporting.
 	// See https://github.com/knative/serving/blob/master/config/config-observability.yaml
 	// for details.
-	AllowStackdriverCustomMetricsKey    = "metrics.allow-stackdriver-custom-metrics"
-	BackendDestinationKey               = "metrics.backend-destination"
-	ReportingPeriodKey                  = "metrics.reporting-period-seconds"
-	StackdriverCustomMetricSubDomainKey = "metrics.stackdriver-custom-metrics-subdomain"
+	AllowStackdriverCustomMetricsKey = "metrics.allow-stackdriver-custom-metrics"
+	BackendDestinationKey            = "metrics.backend-destination"
+	ReportingPeriodKey               = "metrics.reporting-period-seconds"
 	// Stackdriver client configuration keys
-	StackdriverProjectIDKey   = "metrics.stackdriver-project-id"
-	StackdriverGCPLocationKey = "metrics.stackdriver-gcp-location"
-	StackdriverClusterNameKey = "metrics.stackdriver-cluster-name"
-	StackdriverUseSecretKey   = "metrics.stackdriver-use-secret"
+	StackdriverProjectIDKey             = "metrics.stackdriver-project-id"
+	StackdriverGCPLocationKey           = "metrics.stackdriver-gcp-location"
+	StackdriverClusterNameKey           = "metrics.stackdriver-cluster-name"
+	StackdriverUseSecretKey             = "metrics.stackdriver-use-secret"
+	StackdriverCustomMetricSubDomainKey = "metrics.stackdriver-custom-metrics-subdomain"
 
 	DomainEnv = "METRICS_DOMAIN"
 
