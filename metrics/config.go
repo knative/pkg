@@ -21,6 +21,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 	"os"
 	"path"
 	"strconv"
@@ -151,16 +152,17 @@ func NewStackdriverClientConfigFromMap(config map[string]string) *StackdriverCli
 
 // record applies the `ros` Options to each measurement in `mss` and then records the resulting
 // measurements in the metricsConfig's designated backend.
-func (mc *metricsConfig) record(ctx context.Context, mss []stats.Measurement, ros ...stats.Options) error {
-	if mc == nil {
-		// Don't record data points if the metric config is not initialized yet.
-		// At this point, it's unclear whether should record or not.
-		return nil
-	}
+func (mc *metricsConfig) record(ctx context.Context, mss []stats.Measurement, ros ...stats.Options) {
+	var err error = nil
 	if mc.recorder == nil {
-		return stats.RecordWithOptions(ctx, append(ros, stats.WithMeasurements(mss...))...)
+		err = stats.RecordWithOptions(ctx, append(ros, stats.WithMeasurements(mss...))...)
+	} else {
+		err = mc.recorder(ctx, mss, ros...)
 	}
-	return mc.recorder(ctx, mss, ros...)
+	if err != nil {
+		// TODO: DO NOT SUBMIT We were ignoring this
+		log.Print(err)
+	}
 }
 
 func createMetricsConfig(ops ExporterOptions, logger *zap.SugaredLogger) (*metricsConfig, error) {

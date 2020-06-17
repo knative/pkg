@@ -19,6 +19,7 @@ package controller
 import (
 	"context"
 	"errors"
+	"net/url"
 	"time"
 
 	"go.opencensus.io/stats"
@@ -49,6 +50,31 @@ var (
 	keyTagKey        = tag.MustNewKey("key")
 	successTagKey    = tag.MustNewKey("success")
 )
+
+type configAwareLatencyMetric struct {
+	delegate kubemetrics.LatencyMetric
+}
+
+func (m configAwareLatencyMetric) Observe(verb string, u url.URL, latency time.Duration) {
+	if !metrics.ShouldEmitMetrics() {
+		return
+	}
+	m.delegate.Observe(verb, u, latency)
+}
+
+type configAwareResultMetric struct {
+	delegate kubemetrics.ResultMetric
+}
+
+func (m configAwareResultMetric) Increment(code string, method string, host string) {
+	if !metrics.ShouldEmitMetrics() {
+		return
+	}
+	m.delegate.Increment(code, method, host)
+}
+
+var _ kubemetrics.LatencyMetric = (*configAwareLatencyMetric)(nil)
+var _ kubemetrics.ResultMetric = (*configAwareResultMetric)(nil)
 
 func init() {
 	// Register to receive metrics from kubernetes workqueues.
@@ -156,7 +182,7 @@ func init() {
 			stats.UnitNone,
 		),
 	}
-	kubemetrics.Register(cp.NewLatencyMetric(), cp.NewResultMetric())
+	kubemetrics.Register(configAwareLatencyMetric{delegate: cp.NewLatencyMetric()}, configAwareResultMetric{delegate: cp.NewResultMetric()})
 
 	views := []*view.View{{
 		Description: "Depth of the work queue",

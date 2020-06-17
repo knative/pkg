@@ -125,6 +125,9 @@ func testRecord(t *testing.T, measure *stats.Int64Measure, shouldReportCases []c
 			setCurMetricsConfig(test.metricsConfig)
 			Record(ctx, test.measurement)
 			metricstest.CheckLastValueData(t, test.measurement.Measure().Name(), map[string]string{}, test.measurement.Value())
+			if !ShouldEmitMetrics() {
+				t.Fatal("Metrics were recorded when ShouldEmitMetrics() == false")
+			}
 		})
 	}
 
@@ -154,6 +157,11 @@ func testRecord(t *testing.T, measure *stats.Int64Measure, shouldReportCases []c
 			Record(ctx, test.measurement)
 			metricstest.CheckLastValueData(t, test.measurement.Measure().Name(), map[string]string{},
 				float64(len(shouldReportCases))) // The value is still the last one of shouldReportCases
+			if test.metricsConfig == nil && ShouldEmitMetrics() {
+				t.Fatal("Metrics were recorded when there was no metrics config.")
+			} else if test.metricsConfig != nil && !ShouldEmitMetrics() {
+				t.Fatal("Metrics were not recorded when there is a metrics config.")
+			}
 		})
 	}
 }
