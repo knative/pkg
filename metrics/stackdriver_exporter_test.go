@@ -70,170 +70,6 @@ var (
 		location: "test-location",
 		cluster:  "test-cluster",
 	}
-
-	supportedServingMetricsTestCases = []struct {
-		name                      string
-		domain                    string
-		component                 string
-		metricName                string
-		metricTags                map[string]string
-		resource                  resource.Resource
-		expectedMetricLabels      map[string]string
-		expectedMonitoredResource map[string]string
-	}{{
-		name:       "both resource and metric labels",
-		domain:     internalServingDomain,
-		component:  "activator",
-		metricName: "request_count",
-		metricTags: map[string]string{
-			metricskey.ContainerName:          testContainer,
-			metricskey.PodName:                testPod,
-			metricskey.LabelResponseCodeClass: "2xx",
-			metricskey.LabelResponseCode:      "200",
-		},
-		resource: resource.Resource{
-			Labels: map[string]string{
-				metricskey.LabelConfigurationName: testConfiguration,
-				metricskey.LabelNamespaceName:     testNS,
-				metricskey.LabelServiceName:       testService,
-				metricskey.LabelRevisionName:      testRevision,
-			},
-		},
-		expectedMetricLabels: map[string]string{
-			metricskey.ContainerName:          testContainer,
-			metricskey.PodName:                testPod,
-			metricskey.LabelResponseCodeClass: "2xx",
-			metricskey.LabelResponseCode:      "200",
-		},
-		expectedMonitoredResource: map[string]string{
-			metricskey.LabelProject:           testGcpMetadata.project,
-			metricskey.LabelLocation:          testGcpMetadata.location,
-			metricskey.LabelClusterName:       testGcpMetadata.cluster,
-			metricskey.LabelNamespaceName:     testNS,
-			metricskey.LabelServiceName:       testService,
-			metricskey.LabelConfigurationName: testConfiguration,
-			metricskey.LabelRevisionName:      testRevision,
-		},
-	}, {
-		name:       "only resource labels",
-		domain:     internalServingDomain,
-		component:  "activator",
-		metricName: "request_count",
-		metricTags: map[string]string{},
-		resource: resource.Resource{
-			Labels: map[string]string{
-				metricskey.LabelConfigurationName: testConfiguration,
-				metricskey.LabelNamespaceName:     testNS,
-				metricskey.LabelServiceName:       testService,
-				metricskey.LabelRevisionName:      testRevision,
-			},
-		},
-		expectedMetricLabels: map[string]string{},
-		expectedMonitoredResource: map[string]string{
-			metricskey.LabelProject:           testGcpMetadata.project,
-			metricskey.LabelLocation:          testGcpMetadata.location,
-			metricskey.LabelClusterName:       testGcpMetadata.cluster,
-			metricskey.LabelNamespaceName:     testNS,
-			metricskey.LabelServiceName:       testService,
-			metricskey.LabelConfigurationName: testConfiguration,
-			metricskey.LabelRevisionName:      testRevision,
-		},
-	}, {
-		name:       "resource labels overwrite metric labels",
-		domain:     internalServingDomain,
-		component:  "activator",
-		metricName: "request_count",
-		metricTags: map[string]string{
-			metricskey.LabelNamespaceName: testNS,
-			metricskey.LabelServiceName:   testService,
-		},
-		resource: resource.Resource{
-			Labels: map[string]string{
-				metricskey.LabelNamespaceName: "foo",
-				metricskey.LabelServiceName:   "bar",
-				metricskey.LabelRevisionName:  testRevision,
-			},
-		},
-		expectedMetricLabels: map[string]string{},
-		expectedMonitoredResource: map[string]string{
-			metricskey.LabelProject:           testGcpMetadata.project,
-			metricskey.LabelLocation:          testGcpMetadata.location,
-			metricskey.LabelClusterName:       testGcpMetadata.cluster,
-			metricskey.LabelNamespaceName:     "foo",
-			metricskey.LabelServiceName:       "bar",
-			metricskey.LabelConfigurationName: metricskey.ValueUnknown,
-			metricskey.LabelRevisionName:      testRevision,
-		},
-	}, {
-		name:       "only metric labels",
-		domain:     internalServingDomain,
-		component:  "activator",
-		metricName: "request_count",
-		metricTags: map[string]string{
-			metricskey.LabelNamespaceName:     testNS,
-			metricskey.LabelServiceName:       testService,
-			metricskey.LabelRevisionName:      testRevision,
-			metricskey.ContainerName:          testContainer,
-			metricskey.PodName:                testPod,
-			metricskey.LabelResponseCodeClass: "2xx",
-			metricskey.LabelResponseCode:      "200",
-		},
-		resource: resource.Resource{
-			Labels: map[string]string{
-				metricskey.ContainerName:          testContainer,
-				metricskey.PodName:                testPod,
-				metricskey.LabelResponseCodeClass: "2xx",
-				metricskey.LabelResponseCode:      "200",
-			},
-		},
-		expectedMetricLabels: map[string]string{
-			metricskey.ContainerName:          testContainer,
-			metricskey.PodName:                testPod,
-			metricskey.LabelResponseCodeClass: "2xx",
-			metricskey.LabelResponseCode:      "200",
-		},
-		expectedMonitoredResource: map[string]string{
-			metricskey.LabelProject:           testGcpMetadata.project,
-			metricskey.LabelLocation:          testGcpMetadata.location,
-			metricskey.LabelClusterName:       testGcpMetadata.cluster,
-			metricskey.LabelNamespaceName:     testNS,
-			metricskey.LabelServiceName:       testService,
-			metricskey.LabelConfigurationName: metricskey.ValueUnknown,
-			metricskey.LabelRevisionName:      testRevision,
-		},
-	}}
-
-	unsupportedMetricsTestCases = []struct {
-		name       string
-		domain     string
-		component  string
-		metricName string
-	}{{
-		name:       "unsupported domain",
-		domain:     "unsupported",
-		component:  "activator",
-		metricName: "request_count",
-	}, {
-		name:       "unsupported component",
-		domain:     servingDomain,
-		component:  "unsupported",
-		metricName: "request_count",
-	}, {
-		name:       "unsupported metric",
-		domain:     servingDomain,
-		component:  "activator",
-		metricName: "unsupported",
-	}, {
-		name:       "unsupported component",
-		domain:     internalEventingDomain,
-		component:  "unsupported",
-		metricName: "event_count",
-	}, {
-		name:       "unsupported metric",
-		domain:     internalEventingDomain,
-		component:  "broker",
-		metricName: "unsupported",
-	}}
 )
 
 func fakeGcpMetadataFunc() *gcpMetadata {
@@ -455,26 +291,87 @@ func TestSdRecordWithResources(t *testing.T) {
 }
 
 func TestGetMetricPrefixFunc_UseKnativeDomain(t *testing.T) {
-	for _, testCase := range supportedServingMetricsTestCases {
-		knativePrefix := path.Join(testCase.domain, testCase.component)
-		customPrefix := path.Join(defaultCustomMetricSubDomain, testCase.component)
-		mpf := getMetricPrefixFunc(knativePrefix, customPrefix)
+	testCases := []struct {
+		name       string
+		domain     string
+		component  string
+		metricName string
+	}{{
+		name:       "both resource and metric labels",
+		domain:     internalServingDomain,
+		component:  "activator",
+		metricName: "request_count",
+	}, {
+		name:       "only resource labels",
+		domain:     internalServingDomain,
+		component:  "activator",
+		metricName: "request_count",
+	}, {
+		name:       "resource labels overwrite metric labels",
+		domain:     internalServingDomain,
+		component:  "activator",
+		metricName: "request_count",
+	}, {
+		name:       "only metric labels",
+		domain:     internalServingDomain,
+		component:  "activator",
+		metricName: "request_count",
+	}}
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+			knativePrefix := path.Join(testCase.domain, testCase.component)
+			customPrefix := path.Join(defaultCustomMetricSubDomain, testCase.component)
+			mpf := getMetricPrefixFunc(knativePrefix, customPrefix)
 
-		if got, want := mpf(testCase.metricName), knativePrefix; got != want {
-			t.Fatalf("getMetricPrefixFunc=%v, want %v", got, want)
-		}
+			if got, want := mpf(testCase.metricName), knativePrefix; got != want {
+				t.Fatalf("getMetricPrefixFunc=%v, want %v", got, want)
+			}
+		})
 	}
 }
 
 func TestGetMetricPrefixFunc_UseCustomDomain(t *testing.T) {
-	for _, testCase := range unsupportedMetricsTestCases {
-		knativePrefix := path.Join(testCase.domain, testCase.component)
-		customPrefix := path.Join(defaultCustomMetricSubDomain, testCase.component)
-		mpf := getMetricPrefixFunc(knativePrefix, customPrefix)
+	testCases := []struct {
+		name       string
+		domain     string
+		component  string
+		metricName string
+	}{{
+		name:       "unsupported domain",
+		domain:     "unsupported",
+		component:  "activator",
+		metricName: "request_count",
+	}, {
+		name:       "unsupported component",
+		domain:     servingDomain,
+		component:  "unsupported",
+		metricName: "request_count",
+	}, {
+		name:       "unsupported metric",
+		domain:     servingDomain,
+		component:  "activator",
+		metricName: "unsupported",
+	}, {
+		name:       "unsupported component",
+		domain:     internalEventingDomain,
+		component:  "unsupported",
+		metricName: "event_count",
+	}, {
+		name:       "unsupported metric",
+		domain:     internalEventingDomain,
+		component:  "broker",
+		metricName: "unsupported",
+	}}
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+			knativePrefix := path.Join(testCase.domain, testCase.component)
+			customPrefix := path.Join(defaultCustomMetricSubDomain, testCase.component)
+			mpf := getMetricPrefixFunc(knativePrefix, customPrefix)
 
-		if got, want := mpf(testCase.metricName), customPrefix; got != want {
-			t.Fatalf("getMetricPrefixFunc=%v, want %v", got, want)
-		}
+			if got, want := mpf(testCase.metricName), customPrefix; got != want {
+				t.Fatalf("getMetricPrefixFunc=%v, want %v", got, want)
+			}
+		})
 	}
 }
 
