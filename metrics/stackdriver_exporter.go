@@ -23,8 +23,6 @@ import (
 	"sync"
 
 	"contrib.go.opencensus.io/exporter/stackdriver"
-	"contrib.go.opencensus.io/exporter/stackdriver/monitoredresource"
-	"go.opencensus.io/metric/metricdata"
 	"go.opencensus.io/resource"
 	"go.opencensus.io/stats"
 	"go.opencensus.io/stats/view"
@@ -124,8 +122,9 @@ func init() {
 	}
 
 	for _, item := range metricsToTemplates {
+		t := item.template
 		for k := range item.metrics {
-			metricToResourceLabels[k] = &item.template
+			metricToResourceLabels[k] = &t
 		}
 	}
 }
@@ -133,6 +132,9 @@ func init() {
 type pollOnlySDExporter struct {
 	internalExporter view.Exporter
 }
+
+var _ (view.Exporter) = (*pollOnlySDExporter)(nil)
+var _ (flushable) = (*pollOnlySDExporter)(nil)
 
 func (e *pollOnlySDExporter) ExportView(viewData *view.Data) {
 	// Stackdriver will run an internal loop to bundle stats, so ignore this.
@@ -160,10 +162,23 @@ func newOpencensusSDExporter(o stackdriver.Options) (view.Exporter, error) {
 }
 
 func newStackdriverExporter(config *metricsConfig, logger *zap.SugaredLogger) (view.Exporter, ResourceExporterFactory, error) {
-	// Automatically fall back on Google application default credentials
-	//	cfg := clientConfig{storeConfig: config, storeLogger: logger}
+	gm := getMergedGCPMetadata(config)
+	mpf := getMetricPrefixFunc(config.stackdriverMetricTypePrefix, config.stackdriverCustomMetricTypePrefix)
+	co, err := getStackdriverExporterClientOptions(config)
+	if err != nil {
+		logger.Warnw("Issue configuring Stackdriver exporter client options, no additional client options will be used: ", zap.Error(err))
+	}
 
-	e, err := newStackdriverExporterFunc(generateStackdriverOptions(config, logger))
+	// Automatically fall back on Google application default credentials
+	e, err := newStackdriverExporterFunc(stackdriver.Options{
+		ProjectID:               gm.project,
+		Location:                gm.location,
+		MonitoringClientOptions: co,
+		TraceClientOptions:      co,
+		GetMetricPrefix:         mpf,
+		ReportingInterval:       config.reportingPeriod,
+		DefaultMonitoringLabels: &stackdriver.Labels{},
+	})
 	if err != nil {
 		logger.Errorw("Failed to create the Stackdriver exporter: ", zap.Error(err))
 		return nil, nil, err
@@ -175,26 +190,13 @@ func newStackdriverExporter(config *metricsConfig, logger *zap.SugaredLogger) (v
 		nil
 }
 
-func generateStackdriverOptions(config *metricsConfig, logger *zap.SugaredLogger) stackdriver.Options {
-	gm := getMergedGCPMetadata(config)
-	mpf := getMetricPrefixFunc(config.stackdriverMetricTypePrefix, config.stackdriverCustomMetricTypePrefix)
-	co, err := getStackdriverExporterClientOptions(config)
-	if err != nil {
-		logger.Warnw("Issue configuring Stackdriver exporter client options, no additional client options will be used: ", zap.Error(err))
-	}
-
-	return stackdriver.Options{
-		ProjectID:               gm.project,
-		Location:                gm.location,
-		MonitoringClientOptions: co,
-		TraceClientOptions:      co,
-		GetMetricPrefix:         mpf,
-		ReportingInterval:       config.reportingPeriod,
-		DefaultMonitoringLabels: &stackdriver.Labels{},
-	}
-}
-
 func sdCustomMetricsRecorder(mc metricsConfig) func(context.Context, []stats.Measurement, ...stats.Options) error {
+	gm := getMergedGCPMetadata(&mc)
+	metadataMap := map[string]string{
+		metricskey.LabelProject:     gm.project,
+		metricskey.LabelLocation:    gm.location,
+		metricskey.LabelClusterName: gm.cluster,
+	}
 	return func(ctx context.Context, mss []stats.Measurement, ros ...stats.Options) error {
 		// Filter the measuremenst array to only include permitted metrics.
 		i := 0
@@ -205,7 +207,7 @@ func sdCustomMetricsRecorder(mc metricsConfig) func(context.Context, []stats.Mea
 				mss[i] = m
 				i++
 				if templ != nil && templ != t {
-					return fmt.Errorf("Mixed resource type measurements in one report: %v", mss)
+					return fmt.Errorf("mixed resource type measurements in one report: %v", mss)
 				}
 				templ = t
 			}
@@ -222,19 +224,39 @@ func sdCustomMetricsRecorder(mc metricsConfig) func(context.Context, []stats.Mea
 				Type:   templ.Type,
 				Labels: map[string]string{},
 			}
+			baseResource := metricskey.GetResource(ctx)
+			if baseResource == nil {
+				baseResource = &resource.Resource{}
+			}
 			tagMutations := make([]tag.Mutator, 0, len(templ.LabelKeys))
 			for k := range templ.LabelKeys {
+				if v, ok := baseResource.Labels[k]; ok {
+					r.Labels[k] = v
+					continue
+				}
 				tagKey := tag.MustNewKey(k)
 				if v, ok := tagMap.Value(tagKey); ok {
 					r.Labels[k] = v
 					tagMutations = append(tagMutations, tag.Delete(tagKey))
+					continue
 				}
+				if v, ok := metadataMap[k]; ok {
+					r.Labels[k] = v
+					continue
+				}
+				r.Labels[k] = metricskey.ValueUnknown
 			}
 			var err error
 			ctx, err = tag.New(metricskey.WithResource(ctx, r), tagMutations...)
 			if err != nil {
 				return err
 			}
+
+			opt, err := optionForResource(&r)
+			if err != nil {
+				return err
+			}
+			ros = append(ros, opt)
 		}
 
 		return stats.RecordWithOptions(ctx, append(ros, stats.WithMeasurements(mss...))...)
@@ -285,27 +307,6 @@ func getMergedGCPMetadata(config *metricsConfig) *gcpMetadata {
 	}
 
 	return gm
-}
-
-func getResourceByDescriptorFunc(metricTypePrefix string, gm *gcpMetadata, r *resource.Resource) func(*metricdata.Descriptor, map[string]string) (map[string]string, monitoredresource.Interface) {
-	return func(des *metricdata.Descriptor, tags map[string]string) (map[string]string, monitoredresource.Interface) {
-		metricType := path.Join(metricTypePrefix, des.Name)
-		if metricskey.KnativeRevisionMetrics.Has(metricType) {
-			return GetKnativeRevisionMonitoredResource(des, tags, gm, r)
-		} else if metricskey.KnativeBrokerMetrics.Has(metricType) {
-			return GetKnativeBrokerMonitoredResource(des, tags, gm)
-		} else if metricskey.KnativeTriggerMetrics.Has(metricType) {
-			return GetKnativeTriggerMonitoredResource(des, tags, gm)
-		} else if metricskey.KnativeSourceMetrics.Has(metricType) {
-			return GetKnativeSourceMonitoredResource(des, tags, gm)
-		}
-		// Unsupported metric by knative_revision, knative_broker, knative_trigger, and knative_source, use "global" resource type.
-		return getGlobalMonitoredResource(des, tags)
-	}
-}
-
-func getGlobalMonitoredResource(des *metricdata.Descriptor, tags map[string]string) (map[string]string, monitoredresource.Interface) {
-	return tags, &Global{}
 }
 
 func getMetricPrefixFunc(metricTypePrefix, customMetricTypePrefix string) func(name string) string {

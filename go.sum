@@ -42,6 +42,9 @@ contrib.go.opencensus.io/exporter/ocagent v0.6.0 h1:Z1n6UAyr0QwM284yUuh5Zd8JlvxU
 contrib.go.opencensus.io/exporter/ocagent v0.6.0/go.mod h1:zmKjrJcdo0aYcVS7bmEeSEBLPA9YJp5bjrofdU3pIXs=
 contrib.go.opencensus.io/exporter/ocagent v0.6.1-0.20200121232419-b3d61dbd6252 h1:78QgIAE2FeU2klDzCuergwddNYzuC9EihGyR2Eq+/XM=
 contrib.go.opencensus.io/exporter/ocagent v0.6.1-0.20200121232419-b3d61dbd6252/go.mod h1:COXDBN+YYlzrujnt2M1Ym3DBY4O3GlMujpfhzvS27Rk=
+contrib.go.opencensus.io/exporter/prometheus v0.1.0/go.mod h1:cGFniUXGZlKRjzOyuZJ6mgB+PgBcCIa79kEKR8YCW+A=
+contrib.go.opencensus.io/exporter/prometheus v0.2.1-0.20200609204449-6bcf6f8577f0 h1:2O3c1g5CzMc1+Uah4Waot9Obm0yw70VXJzWaP6Fz3nw=
+contrib.go.opencensus.io/exporter/prometheus v0.2.1-0.20200609204449-6bcf6f8577f0/go.mod h1:MjHoxkI7Ny27toPeFkRbXbzVjzIGkwOAptrAy8Mxtm8=
 contrib.go.opencensus.io/exporter/stackdriver v0.12.1/go.mod h1:iwB6wGarfphGGe/e5CWqyUk/cLzKnWsOKPVW3no6OTw=
 contrib.go.opencensus.io/exporter/stackdriver v0.12.8/go.mod h1:XyyafDnFOsqoxHJgTFycKZMrRUrPThLh2iYTJF6uoO0=
 contrib.go.opencensus.io/exporter/stackdriver v0.12.9-0.20191108183826-59d068f8d8ff h1:g4QkFNN0ak+sCs/jqbhYLNkQaF1NVaKVoQ4Xm1RV3wM=
@@ -549,8 +552,6 @@ github.com/jinzhu/inflection v0.0.0-20190603042836-f5c5f50e6090/go.mod h1:h+uFLl
 github.com/jinzhu/inflection v1.0.0/go.mod h1:h+uFLlag+Qp1Va5pdKtLDYj+kHp5pxUVkryuEj+Srlc=
 github.com/jinzhu/now v1.0.1/go.mod h1:d3SSVoowX0Lcu0IBviAWJpolVfI5UJVZZ7cO71lE/z8=
 github.com/jinzhu/now v1.1.1/go.mod h1:d3SSVoowX0Lcu0IBviAWJpolVfI5UJVZZ7cO71lE/z8=
-github.com/jjzeng-seattle/opencensus-go-exporter-prometheus v0.2.1-0.20200608170152-538b0d161bb6 h1:mhsr33FtJjqYl9PBzGSqniYikC7cCkF4/uk3acbFhSY=
-github.com/jjzeng-seattle/opencensus-go-exporter-prometheus v0.2.1-0.20200608170152-538b0d161bb6/go.mod h1:MjHoxkI7Ny27toPeFkRbXbzVjzIGkwOAptrAy8Mxtm8=
 github.com/jmespath/go-jmespath v0.0.0-20160202185014-0b12d6b521d8/go.mod h1:Nht3zPeWKUH0NzdCt2Blrr5ys8VGpn0CEB0cQHVjt7k=
 github.com/jmespath/go-jmespath v0.0.0-20160803190731-bd40a432e4c7/go.mod h1:Nht3zPeWKUH0NzdCt2Blrr5ys8VGpn0CEB0cQHVjt7k=
 github.com/jmespath/go-jmespath v0.0.0-20180206201540-c2b33e8439af h1:pmfjZENx5imkbgOkpRUYLnmbU7UEFbjtDA2hxJ1ichM=

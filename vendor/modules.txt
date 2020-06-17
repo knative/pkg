@@ -16,7 +16,7 @@ cloud.google.com/go/storage
 # contrib.go.opencensus.io/exporter/ocagent v0.6.1-0.20200121232419-b3d61dbd6252
 ## explicit
 contrib.go.opencensus.io/exporter/ocagent
-# contrib.go.opencensus.io/exporter/prometheus v0.1.0 => github.com/jjzeng-seattle/opencensus-go-exporter-prometheus v0.2.1-0.20200608170152-538b0d161bb6
+# contrib.go.opencensus.io/exporter/prometheus v0.2.1-0.20200609204449-6bcf6f8577f0
 ## explicit
 contrib.go.opencensus.io/exporter/prometheus
 # contrib.go.opencensus.io/exporter/stackdriver v0.12.9-0.20191108183826-59d068f8d8ff
@@ -948,7 +948,6 @@ k8s.io/utils/trace
 knative.dev/test-infra/scripts
 # sigs.k8s.io/yaml v1.1.0
 sigs.k8s.io/yaml
-# contrib.go.opencensus.io/exporter/prometheus => github.com/jjzeng-seattle/opencensus-go-exporter-prometheus v0.2.1-0.20200608170152-538b0d161bb6
 # github.com/prometheus/client_golang => github.com/prometheus/client_golang v0.9.2
 # k8s.io/api => k8s.io/api v0.17.6
 # k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.17.6

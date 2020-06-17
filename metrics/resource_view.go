@@ -55,6 +55,9 @@ type meters struct {
 	lock          sync.Mutex
 }
 
+// Lock regime: lock allMeters before resourceViews. The critical path is in
+// optionForResource, which must lock allMeters, but only needs to lock
+// resourceViews if a new meter needs to be created.
 var resourceViews storedViews = storedViews{}
 var allMeters meters = meters{
 	meters:        map[string]*meterExporter{"": &defaultMeter},
@@ -65,14 +68,13 @@ var allMeters meters = meters{
 // register the view across all Resources tracked by the system, rather than
 // simply the default view.
 func RegisterResourceView(views ...*view.View) error {
-	resourceViews.lock.Lock()
-	defer resourceViews.lock.Unlock()
-
 	allMeters.lock.Lock()
 	defer allMeters.lock.Unlock()
 
 	errors := make([]error, 0, len(allMeters.meters))
 
+	resourceViews.lock.Lock()
+	defer resourceViews.lock.Unlock()
 	for _, meter := range allMeters.meters {
 		if err := meter.m.Register(views...); err != nil {
 			errors = append(errors, err)
@@ -87,11 +89,11 @@ func RegisterResourceView(views ...*view.View) error {
 }
 
 func UnregisterResourceView(views ...*view.View) {
-	resourceViews.lock.Lock()
-	defer resourceViews.lock.Unlock()
-
 	allMeters.lock.Lock()
 	defer allMeters.lock.Unlock()
+
+	resourceViews.lock.Lock()
+	defer resourceViews.lock.Unlock()
 
 	for _, meter := range allMeters.meters {
 		meter.m.Unregister(views...)
@@ -169,12 +171,9 @@ func meterExporterForResource(r *resource.Resource) *meterExporter {
 	mE.m = view.NewMeter()
 	mE.m.SetResource(r)
 	mE.m.Start()
+	resourceViews.lock.Lock()
+	defer resourceViews.lock.Unlock()
 	mE.m.Register(resourceViews.views...)
-	/*
-		// Prometheus's default collector uses the global metricproducer to read *all* meters.
-		// This confuses the default prometheus adapter, so remove these from the global export.
-		metricproducer.GlobalManager().DeleteProducer(mE.m.(metricproducer.Producer))
-	*/
 	mE.o = stats.WithRecorder(mE.m)
 	allMeters.meters[key] = mE
 	return mE
@@ -187,7 +186,7 @@ func optionForResource(r *resource.Resource) (stats.Options, error) {
 
 	mE := meterExporterForResource(r)
 	if mE == nil {
-		return nil, fmt.Errorf("unexpectedly failed lookup for resource %v", r)
+		return nil, fmt.Errorf("failed lookup for resource %v", r)
 	}
 
 	if mE.e != nil {
@@ -246,6 +245,8 @@ func resourceFromString(s string) *resource.Resource {
 // allows legacy code that uses OpenCensus and does not store a Resource in the
 // context to continue to interoperate.
 type defaultMeterImpl struct{}
+
+var _ view.Meter = (*defaultMeterImpl)(nil)
 
 var defaultMeter meterExporter = meterExporter{
 	m: &defaultMeterImpl{},

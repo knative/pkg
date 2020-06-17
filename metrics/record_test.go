@@ -204,12 +204,6 @@ func TestMeter(t *testing.T) {
 		measurement:   measure.M(2),
 		resource:      resource.Resource{Type: "resource 2", Labels: map[string]string{"bar": "foo", "bar1": "foo1"}},
 	}}
-	testMeterRecord(t, measure, meterTestCases)
-}
-
-func testMeterRecord(t *testing.T, measure *stats.Int64Measure, tests []cases) {
-	t.Helper()
-
 	v := &view.View{
 		Measure:     measure,
 		Aggregation: view.LastValue(),
@@ -217,7 +211,7 @@ func testMeterRecord(t *testing.T, measure *stats.Int64Measure, tests []cases) {
 	RegisterResourceView(v)
 	defer UnregisterResourceView(v)
 
-	for _, test := range tests {
+	for _, test := range meterTestCases {
 		t.Run(test.name, func(t *testing.T) {
 			ctx := context.Background()
 			ctx = metricskey.WithResource(ctx, test.resource)
