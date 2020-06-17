@@ -110,6 +110,33 @@ func TestRecordBatch(t *testing.T) {
 	metricstest.CheckLastValueData(t, measurement2.Measure().Name(), map[string]string{}, 42)
 }
 
+func TestCallIfConfigured(t *testing.T) {
+	t.Helper()
+	doNotWantCalled := false
+	wantCalled := false
+	t.Run("should not call missing metrics config", func(t *testing.T) {
+		setCurMetricsConfig(nil)
+		CallIfConfigured(observer(&doNotWantCalled))(nil, nil, nil)
+		if doNotWantCalled {
+			t.Error("Wanted observer NOT to be called, instead it was.")
+		}
+	})
+	t.Run("should call present metrics config", func(t *testing.T) {
+		setCurMetricsConfig(&metricsConfig{})
+		CallIfConfigured(observer(&wantCalled))(nil, nil, nil)
+		if !wantCalled {
+			t.Error("Wanted observer to be called, instead it was not.")
+		}
+	})
+}
+
+func observer(recordIfCalled *bool) func(context.Context, []stats.Measurement, ...stats.Options) error {
+	return func(_ context.Context, _ []stats.Measurement, _ ...stats.Options) error {
+		*recordIfCalled = true
+		return nil
+	}
+}
+
 func testRecord(t *testing.T, measure *stats.Int64Measure, shouldReportCases []cases) {
 	t.Helper()
 	ctx := context.Background()

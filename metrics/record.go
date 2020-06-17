@@ -25,14 +25,27 @@ import (
 // TODO should be properly refactored and pieces should move to eventing and serving, as appropriate.
 // 	See https://github.com/knative/pkg/issues/608
 
+// Takes a function that would record a metric, and returns one that only does so if
+// the metric config has been configured.
+func CallIfConfigured(observer func(ctx context.Context, ms []stats.Measurement, ros ...stats.Options) error) func(ctx context.Context, ms []stats.Measurement, ros ...stats.Options) {
+	return func(ctx context.Context, ms []stats.Measurement, ros ...stats.Options) {
+		if getCurMetricsConfig() == nil {
+			return
+		}
+		if err := observer(ctx, ms, ros...); err != nil {
+		        // TODO: We were ignoring this?
+		}
+	}
+}
+
 // Record stores the given Measurement from `ms` in the current metrics backend.
 func Record(ctx context.Context, ms stats.Measurement, ros ...stats.Options) {
-	getCurMetricsConfig().record(ctx, []stats.Measurement{ms}, ros...)
+	CallIfConfigured(getCurMetricsConfig().record)(ctx, []stats.Measurement{ms}, ros...)
 }
 
 // RecordBatch stores the given Measurements from `mss` in the current metrics backend.
 func RecordBatch(ctx context.Context, mss ...stats.Measurement) {
-	getCurMetricsConfig().record(ctx, mss)
+	CallIfConfigured(getCurMetricsConfig().record)(ctx, mss)
 }
 
 // Buckets125 generates an array of buckets with approximate powers-of-two
