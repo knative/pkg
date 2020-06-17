@@ -25,8 +25,8 @@ import (
 // TODO should be properly refactored and pieces should move to eventing and serving, as appropriate.
 // 	See https://github.com/knative/pkg/issues/608
 
-// Takes a function that would record a metric, and returns one that only does so if
-// the metric config has been configured.
+// Returns whether the metrics configuration has been loaded and thus whether metrics
+// can begin to be recorded.
 func ShouldEmitMetrics() bool {
 	return getCurMetricsConfig() != nil
 }
