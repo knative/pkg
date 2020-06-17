@@ -34,6 +34,8 @@ var (
 
 type emptyPromExporter struct{}
 
+var _ view.Exporter = (*emptyPromExporter)(nil)
+
 func (emptyPromExporter) ExportView(viewData *view.Data) {
 	// Prometheus runs a loop to read stats via ReadAndExport, so this is just
 	// a signal to enrich the internal Meters with Resource information.

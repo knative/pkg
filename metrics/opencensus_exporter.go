@@ -40,7 +40,6 @@ func newOpenCensusExporter(config *metricsConfig, logger *zap.SugaredLogger) (vi
 	} else {
 		opts = append(opts, ocagent.WithInsecure())
 	}
-	cfg := agentConfig{storedOpts: opts}
 	e, err := ocagent.NewExporter(opts...)
 	if err != nil {
 		logger.Errorw("failed to create the OpenCensus exporter.", zap.Error(err))
@@ -48,20 +47,17 @@ func newOpenCensusExporter(config *metricsConfig, logger *zap.SugaredLogger) (vi
 	}
 	logger.Infof("created OpenCensus exporter with config: %+v.", *config)
 	view.RegisterExporter(e)
-	return e, cfg.GetExporter, nil
+	return e, getFactory(opts), nil
 }
 
-// agentConfig stores the OpenCensus configuration for cerating additional connections to agents.
-type agentConfig struct {
-	storedOpts []ocagent.ExporterOption
-}
-
-func (o agentConfig) GetExporter(r *resource.Resource) (view.Exporter, error) {
-	opts := append(o.storedOpts, ocagent.WithResourceDetector(
-		func(context.Context) (*resource.Resource, error) {
-			return r, nil
-		}))
-	return ocagent.NewExporter(opts...)
+func getFactory(stored []ocagent.ExporterOption) ResourceExporterFactory {
+	return func(r *resource.Resource) (view.Exporter, error) {
+		opts := append(stored, ocagent.WithResourceDetector(
+			func(context.Context) (*resource.Resource, error) {
+				return r, nil
+			}))
+		return ocagent.NewExporter(opts...)
+	}
 }
 
 // getOpenCensusSecret attempts to locate a secret containing TLS credentials
