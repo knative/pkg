@@ -37,21 +37,35 @@ import (
 type metricsBackend string
 
 const (
+	// BackendDestinationKey points to the config map entry key for metrics backend destination.
+	BackendDestinationKey = "metrics.backend-destination"
+	// DomainEnv points to the metrics domain env var.
+	DomainEnv = "METRICS_DOMAIN"
+
 	// The following keys are used to configure metrics reporting.
 	// See https://github.com/knative/serving/blob/master/config/config-observability.yaml
 	// for details.
 	allowStackdriverCustomMetricsKey = "metrics.allow-stackdriver-custom-metrics"
-	BackendDestinationKey            = "metrics.backend-destination"
+	collectorAddressKey              = "metrics.opencensus-address"
+	collectorSecureKey               = "metrics.opencensus-require-tls"
 	reportingPeriodKey               = "metrics.reporting-period-seconds"
+
 	// Stackdriver client configuration keys
-	stackdriverProjectIDKey             = "metrics.stackdriver-project-id"
-	stackdriverGCPLocationKey           = "metrics.stackdriver-gcp-location"
 	stackdriverClusterNameKey           = "metrics.stackdriver-cluster-name"
-	stackdriverUseSecretKey             = "metrics.stackdriver-use-secret"
 	stackdriverCustomMetricSubDomainKey = "metrics.stackdriver-custom-metrics-subdomain"
+	stackdriverGCPLocationKey           = "metrics.stackdriver-gcp-location"
+	stackdriverProjectIDKey             = "metrics.stackdriver-project-id"
+	stackdriverUseSecretKey             = "metrics.stackdriver-use-secret"
 
-	DomainEnv = "METRICS_DOMAIN"
+	defaultBackendEnvName = "DEFAULT_METRICS_BACKEND"
+	defaultPrometheusPort = 9090
+	maxPrometheusPort     = 65535
+	minPrometheusPort     = 1024
+	prometheusPortEnvName = "METRICS_PROMETHEUS_PORT"
+)
 
+// Metrics backend "enum".
+const (
 	// stackdriver is used for Stackdriver backend
 	stackdriver metricsBackend = "stackdriver"
 	// prometheus is used for Prometheus backend
@@ -61,16 +75,6 @@ const (
 	openCensus metricsBackend = "opencensus"
 	// none is used to export, well, nothing.
 	none metricsBackend = "none"
-
-	defaultBackendEnvName = "DEFAULT_METRICS_BACKEND"
-
-	collectorAddressKey = "metrics.opencensus-address"
-	collectorSecureKey  = "metrics.opencensus-require-tls"
-
-	prometheusPortEnvName = "METRICS_PROMETHEUS_PORT"
-	defaultPrometheusPort = 9090
-	maxPrometheusPort     = 65535
-	minPrometheusPort     = 1024
 )
 
 type metricsConfig struct {
