@@ -34,6 +34,10 @@ type TestResource struct {
 	Status duckv1.Status `json:"status"`
 }
 
+func (t *TestResource) SetDefaults(context.Context) {
+	t.Annotations = map[string]string{"default": "was set"}
+}
+
 func (t *TestResource) GetStatus() *duckv1.Status {
 	return &t.Status
 }
@@ -71,6 +75,10 @@ func TestPreProcess(t *testing.T) {
 	krShape := duckv1.KRShaped(resource)
 
 	PreProcessReconcile(context.Background(), krShape)
+
+	if resource.Annotations["default"] != "was set" {
+		t.Errorf("Expected default annotations set got=%v", resource.Annotations)
+	}
 
 	if rc := resource.Status.GetCondition("Ready"); rc.Status != "Unknown" {
 		t.Errorf("Expected unchanged ready status got=%s want=Unknown", rc.Status)
