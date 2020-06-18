@@ -200,7 +200,7 @@ func sortMetrics() cmp.Option {
 func TestMetricsExport(t *testing.T) {
 	ocFake := openCensusFake{address: "localhost:12345"}
 	sdFake := stackDriverFake{address: "localhost:12346"}
-	prometheusPort = 19090
+	prometheusPort := 19090
 	configForBackend := func(backend metricsBackend) ExporterOptions {
 		return ExporterOptions{
 			Domain:         servingDomain,
