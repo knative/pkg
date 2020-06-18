@@ -22,7 +22,7 @@ import (
 	"testing"
 	"time"
 
-	"contrib.go.opencensus.io/exporter/stackdriver"
+	sd "contrib.go.opencensus.io/exporter/stackdriver"
 	"github.com/google/go-cmp/cmp"
 	"go.opencensus.io/metric/metricdata"
 	"go.opencensus.io/metric/metricexport"
@@ -83,7 +83,7 @@ type fakeExporter struct{}
 func (fe *fakeExporter) ExportView(vd *view.Data) {}
 func (fe *fakeExporter) Flush()                   {}
 
-func newFakeExporter(o stackdriver.Options) (view.Exporter, error) {
+func newFakeExporter(o sd.Options) (view.Exporter, error) {
 	return &fakeExporter{}, nil
 }
 
@@ -385,7 +385,7 @@ func TestNewStackdriverExporterWithMetadata(t *testing.T) {
 		config: &metricsConfig{
 			domain:             servingDomain,
 			component:          "autoscaler",
-			backendDestination: Stackdriver,
+			backendDestination: stackdriver,
 			stackdriverClientConfig: StackdriverClientConfig{
 				ProjectID: testProj,
 			},
@@ -407,7 +407,7 @@ func TestNewStackdriverExporterWithMetadata(t *testing.T) {
 		config: &metricsConfig{
 			domain:                            servingDomain,
 			component:                         testComponent,
-			backendDestination:                Stackdriver,
+			backendDestination:                stackdriver,
 			reportingPeriod:                   60 * time.Second,
 			isStackdriverBackend:              true,
 			stackdriverMetricTypePrefix:       path.Join(servingDomain, testComponent),
@@ -425,7 +425,7 @@ func TestNewStackdriverExporterWithMetadata(t *testing.T) {
 		config: &metricsConfig{
 			domain:                            servingDomain,
 			component:                         testComponent,
-			backendDestination:                Stackdriver,
+			backendDestination:                stackdriver,
 			reportingPeriod:                   60 * time.Second,
 			isStackdriverBackend:              true,
 			stackdriverMetricTypePrefix:       path.Join(servingDomain, testComponent),
@@ -443,7 +443,7 @@ func TestNewStackdriverExporterWithMetadata(t *testing.T) {
 		config: &metricsConfig{
 			domain:                            servingDomain,
 			component:                         testComponent,
-			backendDestination:                Stackdriver,
+			backendDestination:                stackdriver,
 			reportingPeriod:                   60 * time.Second,
 			isStackdriverBackend:              true,
 			stackdriverMetricTypePrefix:       path.Join(servingDomain, testComponent),
@@ -460,7 +460,7 @@ func TestNewStackdriverExporterWithMetadata(t *testing.T) {
 		config: &metricsConfig{
 			domain:                            servingDomain,
 			component:                         testComponent,
-			backendDestination:                Stackdriver,
+			backendDestination:                stackdriver,
 			reportingPeriod:                   60 * time.Second,
 			isStackdriverBackend:              true,
 			stackdriverMetricTypePrefix:       path.Join(servingDomain, testComponent),

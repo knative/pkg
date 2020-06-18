@@ -22,7 +22,7 @@ import (
 	"path"
 	"sync"
 
-	"contrib.go.opencensus.io/exporter/stackdriver"
+	sd "contrib.go.opencensus.io/exporter/stackdriver"
 	"go.opencensus.io/resource"
 	"go.opencensus.io/stats"
 	"go.opencensus.io/stats/view"
@@ -63,7 +63,7 @@ var (
 	// In product usage, this is always set to function newOpencensusSDExporter.
 	// In unit tests this is set to a fake one to avoid calling actual Google API
 	// service.
-	newStackdriverExporterFunc func(stackdriver.Options) (view.Exporter, error)
+	newStackdriverExporterFunc func(sd.Options) (view.Exporter, error)
 
 	// kubeclient is the in-cluster Kubernetes kubeclient, which is lazy-initialized on first use.
 	kubeclient *kubernetes.Clientset
@@ -148,8 +148,8 @@ func (e *pollOnlySDExporter) Flush() {
 	}
 }
 
-func newOpencensusSDExporter(o stackdriver.Options) (view.Exporter, error) {
-	e, err := stackdriver.NewExporter(o)
+func newOpencensusSDExporter(o sd.Options) (view.Exporter, error) {
+	e, err := sd.NewExporter(o)
 	if err != nil {
 		return nil, err
 	}
@@ -170,14 +170,14 @@ func newStackdriverExporter(config *metricsConfig, logger *zap.SugaredLogger) (v
 	}
 
 	// Automatically fall back on Google application default credentials
-	e, err := newStackdriverExporterFunc(stackdriver.Options{
+	e, err := newStackdriverExporterFunc(sd.Options{
 		ProjectID:               gm.project,
 		Location:                gm.location,
 		MonitoringClientOptions: co,
 		TraceClientOptions:      co,
 		GetMetricPrefix:         mpf,
 		ReportingInterval:       config.reportingPeriod,
-		DefaultMonitoringLabels: &stackdriver.Labels{},
+		DefaultMonitoringLabels: &sd.Labels{},
 	})
 	if err != nil {
 		logger.Errorw("Failed to create the Stackdriver exporter: ", zap.Error(err))

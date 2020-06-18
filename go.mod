@@ -36,7 +36,7 @@ require (
 	golang.org/x/net v0.0.0-20200324143707-d3edc9973b7e
 	golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d
 	golang.org/x/sync v0.0.0-20200317015054-43a5402ce75a
-	gomodules.xyz/jsonpatch/v2 v2.0.1
+	gomodules.xyz/jsonpatch/v2 v2.1.0
 	google.golang.org/api v0.20.0
 	google.golang.org/genproto v0.0.0-20200326112834-f447254575fd
 	google.golang.org/grpc v1.28.0
@@ -49,9 +49,8 @@ require (
 	k8s.io/code-generator v0.18.0
 	k8s.io/gengo v0.0.0-20200205140755-e0e292d8aa12
 	k8s.io/klog v1.0.0
-	k8s.io/kube-openapi v0.0.0-20200410145947-bcb3869e6f29
-	k8s.io/test-infra v0.0.0-20200407001919-bc7f71ef65b8
-	knative.dev/test-infra v0.0.0-20200606045118-14ebc4a42974
+	knative.dev/test-infra v0.0.0-20200615231324-3a016f44102c
+	sigs.k8s.io/boskos v0.0.0-20200530174753-71e795271860
 )
 
 replace (

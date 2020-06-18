@@ -17,8 +17,11 @@ package metrics
 
 import (
 	"context"
+	"math"
 	"os"
 	"path"
+	"strconv"
+	"strings"
 	"testing"
 	"time"
 
@@ -65,8 +68,8 @@ var (
 		name: "unsupportedBackend",
 		ops: ExporterOptions{
 			ConfigMap: map[string]string{
-				"metrics.backend-destination":    "unsupported",
-				"metrics.stackdriver-project-id": testProj,
+				BackendDestinationKey:   "unsupported",
+				stackdriverProjectIDKey: testProj,
 			},
 			Domain:    servingDomain,
 			Component: testComponent,
@@ -76,7 +79,7 @@ var (
 		name: "emptyDomain",
 		ops: ExporterOptions{
 			ConfigMap: map[string]string{
-				"metrics.backend-destination": "prometheus",
+				BackendDestinationKey: string(prometheus),
 			},
 			Domain:    "",
 			Component: testComponent,
@@ -86,7 +89,7 @@ var (
 		name: "invalidComponent",
 		ops: ExporterOptions{
 			ConfigMap: map[string]string{
-				"metrics.backend-destination": "opencensus",
+				BackendDestinationKey: string(openCensus),
 			},
 			Domain:    servingDomain,
 			Component: "",
@@ -96,453 +99,415 @@ var (
 		name: "invalidReportingPeriod",
 		ops: ExporterOptions{
 			ConfigMap: map[string]string{
-				"metrics.backend-destination":      "opencensus",
-				"metrics.reporting-period-seconds": "test",
+				BackendDestinationKey: string(openCensus),
+				reportingPeriodKey:    "test",
 			},
 			Domain:    servingDomain,
 			Component: testComponent,
 		},
-		expectedErr: `invalid metrics.reporting-period-seconds value "test"`,
+		expectedErr: "invalid " + reportingPeriodKey + ` value "test"`,
 	}, {
 		name: "invalidOpenCensusSecuritySetting",
 		ops: ExporterOptions{
 			ConfigMap: map[string]string{
-				"metrics.backend-destination":    "opencensus",
-				"metrics.opencensus-require-tls": "yep",
+				BackendDestinationKey: string(openCensus),
+				collectorSecureKey:    "yep",
 			},
 			Domain:    servingDomain,
 			Component: testComponent,
 		},
-		expectedErr: `invalid metrics.opencensus-require-tls value "yep"`,
+		expectedErr: "invalid " + collectorSecureKey + ` value "yep"`,
 	}, {
 		name: "invalidAllowStackdriverCustomMetrics",
 		ops: ExporterOptions{
 			ConfigMap: map[string]string{
-				"metrics.backend-destination":              "stackdriver",
-				"metrics.allow-stackdriver-custom-metrics": "test",
+				BackendDestinationKey:            string(stackdriver),
+				allowStackdriverCustomMetricsKey: "test",
 			},
 			Domain:    servingDomain,
 			Component: testComponent,
 		},
-		expectedErr: `invalid metrics.allow-stackdriver-custom-metrics value "test"`,
+		expectedErr: "invalid " + allowStackdriverCustomMetricsKey + ` value "test"`,
 	}, {
 		name: "tooSmallPrometheusPort",
 		ops: ExporterOptions{
 			ConfigMap: map[string]string{
-				"metrics.backend-destination": "prometheus",
+				BackendDestinationKey: string(prometheus),
 			},
 			Domain:         servingDomain,
 			Component:      testComponent,
 			PrometheusPort: 1023,
 		},
-		expectedErr: "invalid port 1023, should between 1024 and 65535",
+		expectedErr: "invalid port 1023, should be between 1024 and 65535",
 	}, {
 		name: "tooBigPrometheusPort",
 		ops: ExporterOptions{
 			ConfigMap: map[string]string{
-				"metrics.backend-destination": "prometheus",
+				BackendDestinationKey: string(prometheus),
 			},
 			Domain:         servingDomain,
 			Component:      testComponent,
 			PrometheusPort: 65536,
 		},
-		expectedErr: "invalid port 65536, should between 1024 and 65535",
+		expectedErr: "invalid port 65536, should be between 1024 and 65535",
 	}}
+
 	successTests = []struct {
 		name                string
 		ops                 ExporterOptions
 		expectedConfig      metricsConfig
 		expectedNewExporter bool // Whether the config requires a new exporter compared to previous test case
-	}{
-		// Note the first unit test is skipped in TestUpdateExporterFromConfigMap since
-		// unit test does not have application default credentials.
-		{
-			name: "stackdriverProjectIDMissing",
-			ops: ExporterOptions{
-				ConfigMap: map[string]string{
-					"metrics.backend-destination": "stackdriver",
+	}{{
+		name: "stackdriverProjectIDMissing",
+		ops: ExporterOptions{
+			ConfigMap: map[string]string{
+				BackendDestinationKey: string(stackdriver),
+			},
+			Domain:    servingDomain,
+			Component: testComponent,
+		},
+		expectedConfig: metricsConfig{
+			domain:                            servingDomain,
+			component:                         testComponent,
+			backendDestination:                stackdriver,
+			reportingPeriod:                   60 * time.Second,
+			isStackdriverBackend:              true,
+			stackdriverMetricTypePrefix:       path.Join(servingDomain, testComponent),
+			stackdriverCustomMetricTypePrefix: path.Join(customMetricTypePrefix, defaultCustomMetricSubDomain, testComponent),
+		},
+		expectedNewExporter: true,
+	}, {
+		name: "backendKeyMissing",
+		ops: ExporterOptions{
+			ConfigMap: map[string]string{},
+			Domain:    servingDomain,
+			Component: testComponent,
+		},
+		expectedConfig: metricsConfig{
+			domain:             servingDomain,
+			component:          testComponent,
+			backendDestination: prometheus,
+			reportingPeriod:    5 * time.Second,
+			prometheusPort:     defaultPrometheusPort,
+		},
+		expectedNewExporter: true,
+	}, {
+		name: "validStackdriver",
+		ops: ExporterOptions{
+			ConfigMap: map[string]string{
+				BackendDestinationKey:     string(stackdriver),
+				stackdriverProjectIDKey:   anotherProj,
+				stackdriverGCPLocationKey: "us-west1",
+				stackdriverClusterNameKey: "cluster",
+				stackdriverUseSecretKey:   "true",
+			},
+			Domain:    servingDomain,
+			Component: testComponent,
+			Secrets: fakeSecretList(corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      StackdriverSecretNameDefault,
+					Namespace: StackdriverSecretNamespaceDefault,
 				},
-				Domain:    servingDomain,
-				Component: testComponent,
+			}).Get,
+		},
+		expectedConfig: metricsConfig{
+			domain:                            servingDomain,
+			component:                         testComponent,
+			backendDestination:                stackdriver,
+			reportingPeriod:                   60 * time.Second,
+			isStackdriverBackend:              true,
+			stackdriverMetricTypePrefix:       path.Join(servingDomain, testComponent),
+			stackdriverCustomMetricTypePrefix: path.Join(customMetricTypePrefix, defaultCustomMetricSubDomain, testComponent),
+			stackdriverClientConfig: StackdriverClientConfig{
+				ProjectID:   anotherProj,
+				GCPLocation: "us-west1",
+				ClusterName: "cluster",
+				UseSecret:   true,
 			},
-			expectedConfig: metricsConfig{
-				domain:                            servingDomain,
-				component:                         testComponent,
-				backendDestination:                Stackdriver,
-				reportingPeriod:                   60 * time.Second,
-				isStackdriverBackend:              true,
-				stackdriverMetricTypePrefix:       path.Join(servingDomain, testComponent),
-				stackdriverCustomMetricTypePrefix: path.Join(customMetricTypePrefix, defaultCustomMetricSubDomain, testComponent),
-			},
-			expectedNewExporter: true,
-		}, {
-			name: "backendKeyMissing",
-			ops: ExporterOptions{
-				ConfigMap: map[string]string{},
-				Domain:    servingDomain,
-				Component: testComponent,
-			},
-			expectedConfig: metricsConfig{
-				domain:             servingDomain,
-				component:          testComponent,
-				backendDestination: Prometheus,
-				reportingPeriod:    5 * time.Second,
-				prometheusPort:     defaultPrometheusPort,
-			},
-			expectedNewExporter: true,
-		}, {
-			name: "validStackdriver",
-			ops: ExporterOptions{
-				ConfigMap: map[string]string{
-					"metrics.backend-destination":      "stackdriver",
-					"metrics.stackdriver-project-id":   anotherProj,
-					"metrics.stackdriver-gcp-location": "us-west1",
-					"metrics.stackdriver-cluster-name": "cluster",
-					"metrics.stackdriver-use-secret":   "true",
-				},
-				Domain:    servingDomain,
-				Component: testComponent,
-				Secrets: fakeSecretList(corev1.Secret{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      StackdriverSecretNameDefault,
-						Namespace: StackdriverSecretNamespaceDefault,
-					},
-				}).Get,
-			},
-			expectedConfig: metricsConfig{
-				domain:                            servingDomain,
-				component:                         testComponent,
-				backendDestination:                Stackdriver,
-				reportingPeriod:                   60 * time.Second,
-				isStackdriverBackend:              true,
-				stackdriverMetricTypePrefix:       path.Join(servingDomain, testComponent),
-				stackdriverCustomMetricTypePrefix: path.Join(customMetricTypePrefix, defaultCustomMetricSubDomain, testComponent),
-				stackdriverClientConfig: StackdriverClientConfig{
-					ProjectID:   anotherProj,
-					GCPLocation: "us-west1",
-					ClusterName: "cluster",
-					UseSecret:   true,
-				},
-				secret: &corev1.Secret{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      StackdriverSecretNameDefault,
-						Namespace: StackdriverSecretNamespaceDefault,
-					},
+			secret: &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      StackdriverSecretNameDefault,
+					Namespace: StackdriverSecretNamespaceDefault,
 				},
 			},
-			expectedNewExporter: true,
-		}, {
-			name: "validPartialStackdriver",
-			ops: ExporterOptions{
-				ConfigMap: map[string]string{
-					"metrics.backend-destination":      "stackdriver",
-					"metrics.stackdriver-project-id":   anotherProj,
-					"metrics.stackdriver-cluster-name": "cluster",
+		},
+		expectedNewExporter: true,
+	}, {
+		name: "validPartialStackdriver",
+		ops: ExporterOptions{
+			ConfigMap: map[string]string{
+				BackendDestinationKey:     string(stackdriver),
+				stackdriverProjectIDKey:   anotherProj,
+				stackdriverClusterNameKey: "cluster",
+			},
+			Domain:    servingDomain,
+			Component: testComponent,
+		},
+		expectedConfig: metricsConfig{
+			domain:                            servingDomain,
+			component:                         testComponent,
+			backendDestination:                stackdriver,
+			reportingPeriod:                   60 * time.Second,
+			isStackdriverBackend:              true,
+			stackdriverMetricTypePrefix:       path.Join(servingDomain, testComponent),
+			stackdriverCustomMetricTypePrefix: path.Join(customMetricTypePrefix, defaultCustomMetricSubDomain, testComponent),
+			stackdriverClientConfig: StackdriverClientConfig{
+				ProjectID:   anotherProj,
+				ClusterName: "cluster",
+			},
+		},
+		expectedNewExporter: true,
+	}, {
+		name: "validOpenCensusSettings",
+		ops: ExporterOptions{
+			ConfigMap: map[string]string{
+				BackendDestinationKey: string(openCensus),
+				collectorAddressKey:   "external-svc:55678",
+				collectorSecureKey:    "true",
+			},
+			Domain:    servingDomain,
+			Component: testComponent,
+			Secrets: fakeSecretList(corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "opencensus",
 				},
-				Domain:    servingDomain,
-				Component: testComponent,
-			},
-			expectedConfig: metricsConfig{
-				domain:                            servingDomain,
-				component:                         testComponent,
-				backendDestination:                Stackdriver,
-				reportingPeriod:                   60 * time.Second,
-				isStackdriverBackend:              true,
-				stackdriverMetricTypePrefix:       path.Join(servingDomain, testComponent),
-				stackdriverCustomMetricTypePrefix: path.Join(customMetricTypePrefix, defaultCustomMetricSubDomain, testComponent),
-				stackdriverClientConfig: StackdriverClientConfig{
-					ProjectID:   anotherProj,
-					ClusterName: "cluster",
+				Data: map[string][]byte{
+					"client-cert.pem": {},
+					"client-key.pem":  {},
 				},
-			},
-			expectedNewExporter: true,
-		}, {
-			name: "validOpenCensusSettings",
-			ops: ExporterOptions{
-				ConfigMap: map[string]string{
-					"metrics.backend-destination":    "opencensus",
-					"metrics.opencensus-address":     "external-svc:55678",
-					"metrics.opencensus-require-tls": "true",
+			}).Get,
+		},
+		expectedConfig: metricsConfig{
+			domain:             servingDomain,
+			component:          testComponent,
+			backendDestination: openCensus,
+			collectorAddress:   "external-svc:55678",
+			requireSecure:      true,
+			secret: &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "opencensus",
 				},
-				Domain:    servingDomain,
-				Component: testComponent,
-				Secrets: fakeSecretList(corev1.Secret{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "opencensus",
-					},
-					Data: map[string][]byte{
-						"client-cert.pem": {},
-						"client-key.pem":  {},
-					},
-				}).Get,
-			},
-			expectedConfig: metricsConfig{
-				domain:             servingDomain,
-				component:          testComponent,
-				backendDestination: OpenCensus,
-				collectorAddress:   "external-svc:55678",
-				requireSecure:      true,
-				secret: &corev1.Secret{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "opencensus",
-					},
-					Data: map[string][]byte{
-						"client-cert.pem": {},
-						"client-key.pem":  {},
-					},
-				},
-			},
-			expectedNewExporter: true,
-		}, {
-			name: "validPrometheus",
-			ops: ExporterOptions{
-				ConfigMap: map[string]string{
-					"metrics.backend-destination": "prometheus",
-				},
-				Domain:    servingDomain,
-				Component: testComponent,
-			},
-			expectedConfig: metricsConfig{
-				domain:             servingDomain,
-				component:          testComponent,
-				backendDestination: Prometheus,
-				reportingPeriod:    5 * time.Second,
-				prometheusPort:     defaultPrometheusPort,
-			},
-			expectedNewExporter: true,
-		}, {
-			name: "validCapitalStackdriver",
-			ops: ExporterOptions{
-				ConfigMap: map[string]string{
-					"metrics.backend-destination":    "Stackdriver",
-					"metrics.stackdriver-project-id": testProj,
-				},
-				Domain:    servingDomain,
-				Component: testComponent,
-			},
-			expectedConfig: metricsConfig{
-				domain:                            servingDomain,
-				component:                         testComponent,
-				backendDestination:                Stackdriver,
-				reportingPeriod:                   60 * time.Second,
-				isStackdriverBackend:              true,
-				stackdriverMetricTypePrefix:       path.Join(servingDomain, testComponent),
-				stackdriverCustomMetricTypePrefix: path.Join(customMetricTypePrefix, defaultCustomMetricSubDomain, testComponent),
-				stackdriverClientConfig: StackdriverClientConfig{
-					ProjectID: testProj,
+				Data: map[string][]byte{
+					"client-cert.pem": {},
+					"client-key.pem":  {},
 				},
 			},
-			expectedNewExporter: true,
-		}, {
-			name: "overriddenReportingPeriodPrometheus",
-			ops: ExporterOptions{
-				ConfigMap: map[string]string{
-					"metrics.backend-destination":      "prometheus",
-					"metrics.reporting-period-seconds": "12",
-				},
-				Domain:    servingDomain,
-				Component: testComponent,
+		},
+		expectedNewExporter: true,
+	}, {
+		name: "validPrometheus",
+		ops: ExporterOptions{
+			ConfigMap: map[string]string{
+				BackendDestinationKey: string(prometheus),
 			},
-			expectedConfig: metricsConfig{
-				domain:             servingDomain,
-				component:          testComponent,
-				backendDestination: Prometheus,
-				reportingPeriod:    12 * time.Second,
-				prometheusPort:     defaultPrometheusPort,
+			Domain:    servingDomain,
+			Component: testComponent,
+		},
+		expectedConfig: metricsConfig{
+			domain:             servingDomain,
+			component:          testComponent,
+			backendDestination: prometheus,
+			reportingPeriod:    5 * time.Second,
+			prometheusPort:     defaultPrometheusPort,
+		},
+		expectedNewExporter: true,
+	}, {
+		name: "validCapitalStackdriver",
+		ops: ExporterOptions{
+			ConfigMap: map[string]string{
+				BackendDestinationKey:   "Stackdriver",
+				stackdriverProjectIDKey: testProj,
 			},
-			expectedNewExporter: true,
-		}, {
-			name: "overriddenReportingPeriodStackdriver",
-			ops: ExporterOptions{
-				ConfigMap: map[string]string{
-					"metrics.backend-destination":      "stackdriver",
-					"metrics.stackdriver-project-id":   "test2",
-					"metrics.reporting-period-seconds": "7",
-				},
-				Domain:    servingDomain,
-				Component: testComponent,
+			Domain:    servingDomain,
+			Component: testComponent,
+		},
+		expectedConfig: metricsConfig{
+			domain:                            servingDomain,
+			component:                         testComponent,
+			backendDestination:                stackdriver,
+			reportingPeriod:                   60 * time.Second,
+			isStackdriverBackend:              true,
+			stackdriverMetricTypePrefix:       path.Join(servingDomain, testComponent),
+			stackdriverCustomMetricTypePrefix: path.Join(customMetricTypePrefix, defaultCustomMetricSubDomain, testComponent),
+			stackdriverClientConfig: StackdriverClientConfig{
+				ProjectID: testProj,
 			},
-			expectedConfig: metricsConfig{
-				domain:                            servingDomain,
-				component:                         testComponent,
-				backendDestination:                Stackdriver,
-				reportingPeriod:                   7 * time.Second,
-				isStackdriverBackend:              true,
-				stackdriverMetricTypePrefix:       path.Join(servingDomain, testComponent),
-				stackdriverCustomMetricTypePrefix: path.Join(customMetricTypePrefix, defaultCustomMetricSubDomain, testComponent),
-				stackdriverClientConfig: StackdriverClientConfig{
-					ProjectID: "test2",
-				},
+		},
+		expectedNewExporter: true,
+	}, {
+		name: "overriddenReportingPeriodPrometheus",
+		ops: ExporterOptions{
+			ConfigMap: map[string]string{
+				BackendDestinationKey: string(prometheus),
+				reportingPeriodKey:    "12",
 			},
-			expectedNewExporter: true,
-		}, {
-			name: "overriddenReportingPeriodStackdriver2",
-			ops: ExporterOptions{
-				ConfigMap: map[string]string{
-					"metrics.backend-destination":      "stackdriver",
-					"metrics.stackdriver-project-id":   "test2",
-					"metrics.reporting-period-seconds": "3",
-				},
-				Domain:    servingDomain,
-				Component: testComponent,
+			Domain:    servingDomain,
+			Component: testComponent,
+		},
+		expectedConfig: metricsConfig{
+			domain:             servingDomain,
+			component:          testComponent,
+			backendDestination: prometheus,
+			reportingPeriod:    12 * time.Second,
+			prometheusPort:     defaultPrometheusPort,
+		},
+		expectedNewExporter: true,
+	}, {
+		name: "overriddenReportingPeriodStackdriver",
+		ops: ExporterOptions{
+			ConfigMap: map[string]string{
+				BackendDestinationKey:   string(stackdriver),
+				stackdriverProjectIDKey: "test2",
+				reportingPeriodKey:      "7",
 			},
-			expectedConfig: metricsConfig{
-				domain:                            servingDomain,
-				component:                         testComponent,
-				backendDestination:                Stackdriver,
-				reportingPeriod:                   3 * time.Second,
-				isStackdriverBackend:              true,
-				stackdriverMetricTypePrefix:       path.Join(servingDomain, testComponent),
-				stackdriverCustomMetricTypePrefix: path.Join(customMetricTypePrefix, defaultCustomMetricSubDomain, testComponent),
-				stackdriverClientConfig: StackdriverClientConfig{
-					ProjectID: "test2",
-				},
+			Domain:    servingDomain,
+			Component: testComponent,
+		},
+		expectedConfig: metricsConfig{
+			domain:                            servingDomain,
+			component:                         testComponent,
+			backendDestination:                stackdriver,
+			reportingPeriod:                   7 * time.Second,
+			isStackdriverBackend:              true,
+			stackdriverMetricTypePrefix:       path.Join(servingDomain, testComponent),
+			stackdriverCustomMetricTypePrefix: path.Join(customMetricTypePrefix, defaultCustomMetricSubDomain, testComponent),
+			stackdriverClientConfig: StackdriverClientConfig{
+				ProjectID: "test2",
 			},
-		}, {
-			name: "emptyReportingPeriodPrometheus",
-			ops: ExporterOptions{
-				ConfigMap: map[string]string{
-					"metrics.backend-destination":      "prometheus",
-					"metrics.reporting-period-seconds": "",
-				},
-				Domain:    servingDomain,
-				Component: testComponent,
+		},
+		expectedNewExporter: true,
+	}, {
+		name: "overriddenReportingPeriodStackdriver2",
+		ops: ExporterOptions{
+			ConfigMap: map[string]string{
+				BackendDestinationKey:   string(stackdriver),
+				stackdriverProjectIDKey: "test2",
+				reportingPeriodKey:      "3",
 			},
-			expectedConfig: metricsConfig{
-				domain:             servingDomain,
-				component:          testComponent,
-				backendDestination: Prometheus,
-				reportingPeriod:    5 * time.Second,
-				prometheusPort:     defaultPrometheusPort,
+			Domain:    servingDomain,
+			Component: testComponent,
+		},
+		expectedConfig: metricsConfig{
+			domain:                            servingDomain,
+			component:                         testComponent,
+			backendDestination:                stackdriver,
+			reportingPeriod:                   3 * time.Second,
+			isStackdriverBackend:              true,
+			stackdriverMetricTypePrefix:       path.Join(servingDomain, testComponent),
+			stackdriverCustomMetricTypePrefix: path.Join(customMetricTypePrefix, defaultCustomMetricSubDomain, testComponent),
+			stackdriverClientConfig: StackdriverClientConfig{
+				ProjectID: "test2",
 			},
-			expectedNewExporter: true,
-		}, {
-			name: "emptyReportingPeriodStackdriver",
-			ops: ExporterOptions{
-				ConfigMap: map[string]string{
-					"metrics.backend-destination":      "stackdriver",
-					"metrics.stackdriver-project-id":   "test2",
-					"metrics.reporting-period-seconds": "",
-				},
-				Domain:    servingDomain,
-				Component: testComponent,
+		},
+	}, {
+		name: "emptyReportingPeriodPrometheus",
+		ops: ExporterOptions{
+			ConfigMap: map[string]string{
+				BackendDestinationKey: string(prometheus),
+				reportingPeriodKey:    "",
 			},
-			expectedConfig: metricsConfig{
-				domain:                            servingDomain,
-				component:                         testComponent,
-				backendDestination:                Stackdriver,
-				reportingPeriod:                   60 * time.Second,
-				isStackdriverBackend:              true,
-				stackdriverMetricTypePrefix:       path.Join(servingDomain, testComponent),
-				stackdriverCustomMetricTypePrefix: path.Join(customMetricTypePrefix, defaultCustomMetricSubDomain, testComponent),
-				stackdriverClientConfig: StackdriverClientConfig{
-					ProjectID: "test2",
-				},
+			Domain:    servingDomain,
+			Component: testComponent,
+		},
+		expectedConfig: metricsConfig{
+			domain:             servingDomain,
+			component:          testComponent,
+			backendDestination: prometheus,
+			reportingPeriod:    5 * time.Second,
+			prometheusPort:     defaultPrometheusPort,
+		},
+		expectedNewExporter: true,
+	}, {
+		name: "emptyReportingPeriodStackdriver",
+		ops: ExporterOptions{
+			ConfigMap: map[string]string{
+				BackendDestinationKey:   string(stackdriver),
+				stackdriverProjectIDKey: "test2",
+				reportingPeriodKey:      "",
 			},
-			expectedNewExporter: true,
-		}, {
-			name: "allowStackdriverCustomMetric",
-			ops: ExporterOptions{
-				ConfigMap: map[string]string{
-					"metrics.backend-destination":              "stackdriver",
-					"metrics.stackdriver-project-id":           "test2",
-					"metrics.reporting-period-seconds":         "",
-					"metrics.allow-stackdriver-custom-metrics": "true",
-				},
-				Domain:    servingDomain,
-				Component: testComponent,
+			Domain:    servingDomain,
+			Component: testComponent,
+		},
+		expectedConfig: metricsConfig{
+			domain:                            servingDomain,
+			component:                         testComponent,
+			backendDestination:                stackdriver,
+			reportingPeriod:                   60 * time.Second,
+			isStackdriverBackend:              true,
+			stackdriverMetricTypePrefix:       path.Join(servingDomain, testComponent),
+			stackdriverCustomMetricTypePrefix: path.Join(customMetricTypePrefix, defaultCustomMetricSubDomain, testComponent),
+			stackdriverClientConfig: StackdriverClientConfig{
+				ProjectID: "test2",
 			},
-			expectedConfig: metricsConfig{
-				domain:                            servingDomain,
-				component:                         testComponent,
-				backendDestination:                Stackdriver,
-				reportingPeriod:                   60 * time.Second,
-				isStackdriverBackend:              true,
-				stackdriverMetricTypePrefix:       path.Join(servingDomain, testComponent),
-				stackdriverCustomMetricTypePrefix: path.Join(customMetricTypePrefix, defaultCustomMetricSubDomain, testComponent),
-				stackdriverClientConfig: StackdriverClientConfig{
-					ProjectID: "test2",
-				},
+		},
+		expectedNewExporter: true,
+	}, {
+		name: "allowStackdriverCustomMetric",
+		ops: ExporterOptions{
+			ConfigMap: map[string]string{
+				BackendDestinationKey:            string(stackdriver),
+				stackdriverProjectIDKey:          "test2",
+				reportingPeriodKey:               "",
+				allowStackdriverCustomMetricsKey: "true",
 			},
-		}, {
-			name: "allowStackdriverCustomMetric with subdomain",
-			ops: ExporterOptions{
-				ConfigMap: map[string]string{
-					"metrics.backend-destination":                  "stackdriver",
-					"metrics.stackdriver-project-id":               "test2",
-					"metrics.reporting-period-seconds":             "",
-					"metrics.stackdriver-custom-metrics-subdomain": customSubDomain,
-				},
-				Domain:    servingDomain,
-				Component: testComponent,
+			Domain:    servingDomain,
+			Component: testComponent,
+		},
+		expectedConfig: metricsConfig{
+			domain:                            servingDomain,
+			component:                         testComponent,
+			backendDestination:                stackdriver,
+			reportingPeriod:                   60 * time.Second,
+			isStackdriverBackend:              true,
+			stackdriverMetricTypePrefix:       path.Join(servingDomain, testComponent),
+			stackdriverCustomMetricTypePrefix: path.Join(customMetricTypePrefix, defaultCustomMetricSubDomain, testComponent),
+			stackdriverClientConfig: StackdriverClientConfig{
+				ProjectID: "test2",
 			},
-			expectedConfig: metricsConfig{
-				domain:                            servingDomain,
-				component:                         testComponent,
-				backendDestination:                Stackdriver,
-				reportingPeriod:                   60 * time.Second,
-				isStackdriverBackend:              true,
-				stackdriverMetricTypePrefix:       path.Join(servingDomain, testComponent),
-				stackdriverCustomMetricTypePrefix: path.Join(customMetricTypePrefix, customSubDomain, testComponent),
-				stackdriverClientConfig: StackdriverClientConfig{
-					ProjectID: "test2",
-				},
+		},
+	}, {
+		name: "allowStackdriverCustomMetric with subdomain",
+		ops: ExporterOptions{
+			ConfigMap: map[string]string{
+				BackendDestinationKey:               string(stackdriver),
+				stackdriverProjectIDKey:             "test2",
+				reportingPeriodKey:                  "",
+				stackdriverCustomMetricSubDomainKey: customSubDomain,
 			},
-		}, {
-			name: "overridePrometheusPort",
-			ops: ExporterOptions{
-				ConfigMap: map[string]string{
-					"metrics.backend-destination": "prometheus",
-				},
-				Domain:         servingDomain,
-				Component:      testComponent,
-				PrometheusPort: 9091,
+			Domain:    servingDomain,
+			Component: testComponent,
+		},
+		expectedConfig: metricsConfig{
+			domain:                            servingDomain,
+			component:                         testComponent,
+			backendDestination:                stackdriver,
+			reportingPeriod:                   60 * time.Second,
+			isStackdriverBackend:              true,
+			stackdriverMetricTypePrefix:       path.Join(servingDomain, testComponent),
+			stackdriverCustomMetricTypePrefix: path.Join(customMetricTypePrefix, customSubDomain, testComponent),
+			stackdriverClientConfig: StackdriverClientConfig{
+				ProjectID: "test2",
 			},
-			expectedConfig: metricsConfig{
-				domain:             servingDomain,
-				component:          testComponent,
-				backendDestination: Prometheus,
-				reportingPeriod:    5 * time.Second,
-				prometheusPort:     9091,
+		},
+	}, {
+		name: "overridePrometheusPort",
+		ops: ExporterOptions{
+			ConfigMap: map[string]string{
+				BackendDestinationKey: string(prometheus),
 			},
-			expectedNewExporter: true,
-		}}
-	envTests = []struct {
-		name           string
-		ops            ExporterOptions
-		expectedConfig metricsConfig
-	}{
-		{
-			name: "stackdriverFromEnv",
-			ops: ExporterOptions{
-				ConfigMap: map[string]string{},
-				Domain:    servingDomain,
-				Component: testComponent,
-			},
-			expectedConfig: metricsConfig{
-				domain:                            servingDomain,
-				component:                         testComponent,
-				backendDestination:                Stackdriver,
-				reportingPeriod:                   60 * time.Second,
-				isStackdriverBackend:              true,
-				stackdriverMetricTypePrefix:       path.Join(servingDomain, testComponent),
-				stackdriverCustomMetricTypePrefix: path.Join(customMetricTypePrefix, defaultCustomMetricSubDomain, testComponent),
-			},
-		}, {
-			name: "validPrometheus",
-			ops: ExporterOptions{
-				ConfigMap: map[string]string{"metrics.backend-destination": "prometheus"},
-				Domain:    servingDomain,
-				Component: testComponent,
-			},
-			expectedConfig: metricsConfig{
-				domain:             servingDomain,
-				component:          testComponent,
-				backendDestination: Prometheus,
-				reportingPeriod:    5 * time.Second,
-				prometheusPort:     defaultPrometheusPort,
-			},
-		}}
+			Domain:         servingDomain,
+			Component:      testComponent,
+			PrometheusPort: 9091,
+		},
+		expectedConfig: metricsConfig{
+			domain:             servingDomain,
+			component:          testComponent,
+			backendDestination: prometheus,
+			reportingPeriod:    5 * time.Second,
+			prometheusPort:     9091,
+		},
+		expectedNewExporter: true,
+	}}
 )
 
 func successTestsInit() {
@@ -576,9 +541,87 @@ func TestGetMetricsConfig(t *testing.T) {
 }
 
 func TestGetMetricsConfig_fromEnv(t *testing.T) {
-	os.Setenv(defaultBackendEnvName, "stackdriver")
-	for _, test := range envTests {
+	successTests := []struct {
+		name           string
+		varName        string
+		varValue       string
+		ops            ExporterOptions
+		expectedConfig metricsConfig
+	}{{
+		name:     "Stackdriver backend from env, no config",
+		varName:  defaultBackendEnvName,
+		varValue: string(stackdriver),
+		ops: ExporterOptions{
+			ConfigMap: map[string]string{},
+			Domain:    servingDomain,
+			Component: testComponent,
+		},
+		expectedConfig: metricsConfig{
+			domain:                            servingDomain,
+			component:                         testComponent,
+			backendDestination:                stackdriver,
+			reportingPeriod:                   60 * time.Second,
+			isStackdriverBackend:              true,
+			stackdriverMetricTypePrefix:       path.Join(servingDomain, testComponent),
+			stackdriverCustomMetricTypePrefix: path.Join(customMetricTypePrefix, defaultCustomMetricSubDomain, testComponent),
+		},
+	}, {
+		name:     "Stackdriver backend from env, Prometheus backend from config",
+		varName:  defaultBackendEnvName,
+		varValue: string(stackdriver),
+		ops: ExporterOptions{
+			ConfigMap: map[string]string{BackendDestinationKey: string(prometheus)},
+			Domain:    servingDomain,
+			Component: testComponent,
+		},
+		expectedConfig: metricsConfig{
+			domain:             servingDomain,
+			component:          testComponent,
+			backendDestination: prometheus,
+			reportingPeriod:    5 * time.Second,
+			prometheusPort:     defaultPrometheusPort,
+		},
+	}, {
+		name:     "PrometheusPort from env",
+		varName:  prometheusPortEnvName,
+		varValue: "9999",
+		ops: ExporterOptions{
+			ConfigMap: map[string]string{},
+			Domain:    servingDomain,
+			Component: testComponent,
+		},
+		expectedConfig: metricsConfig{
+			domain:             servingDomain,
+			component:          testComponent,
+			backendDestination: prometheus,
+			reportingPeriod:    5 * time.Second,
+			prometheusPort:     9999,
+		},
+	}}
+
+	failureTests := []struct {
+		name                string
+		varName             string
+		varValue            string
+		ops                 ExporterOptions
+		expectedErrContains string
+	}{{
+		name:     "Invalid PrometheusPort from env",
+		varName:  prometheusPortEnvName,
+		varValue: strconv.Itoa(math.MaxUint16 + 1),
+		ops: ExporterOptions{
+			ConfigMap: map[string]string{},
+			Domain:    servingDomain,
+			Component: testComponent,
+		},
+		expectedErrContains: "value out of range",
+	}}
+
+	for _, test := range successTests {
 		t.Run(test.name, func(t *testing.T) {
+			os.Setenv(test.varName, test.varValue)
+			defer os.Unsetenv(test.varName)
+
 			defer ClearAll()
 			mc, err := createMetricsConfig(test.ops, TestLogger(t))
 			if err != nil {
@@ -589,7 +632,22 @@ func TestGetMetricsConfig_fromEnv(t *testing.T) {
 			}
 		})
 	}
-	os.Unsetenv(defaultBackendEnvName)
+
+	for _, test := range failureTests {
+		t.Run(test.name, func(t *testing.T) {
+			os.Setenv(test.varName, test.varValue)
+			defer os.Unsetenv(test.varName)
+
+			defer ClearAll()
+			mc, err := createMetricsConfig(test.ops, TestLogger(t))
+			if mc != nil {
+				t.Errorf("Wanted no config, got %v", mc)
+			}
+			if err == nil || !strings.Contains(err.Error(), test.expectedErrContains) {
+				t.Errorf("Wanted err to contain: %q, got: %v", test.expectedErrContains, err)
+			}
+		})
+	}
 }
 
 func TestIsNewExporterRequiredFromNilConfig(t *testing.T) {
@@ -622,12 +680,12 @@ func TestIsNewExporterRequired(t *testing.T) {
 		oldConfig: metricsConfig{
 			domain:             servingDomain,
 			component:          testComponent,
-			backendDestination: Prometheus,
+			backendDestination: prometheus,
 		},
 		newConfig: metricsConfig{
 			domain:             servingDomain,
 			component:          testComponent,
-			backendDestination: Prometheus,
+			backendDestination: prometheus,
 			stackdriverClientConfig: StackdriverClientConfig{
 				ProjectID:   testProj,
 				ClusterName: "cluster",
@@ -639,7 +697,7 @@ func TestIsNewExporterRequired(t *testing.T) {
 		oldConfig: metricsConfig{
 			domain:                            servingDomain,
 			component:                         testComponent,
-			backendDestination:                Stackdriver,
+			backendDestination:                stackdriver,
 			reportingPeriod:                   60 * time.Second,
 			isStackdriverBackend:              true,
 			stackdriverMetricTypePrefix:       path.Join(servingDomain, testComponent),
@@ -648,7 +706,7 @@ func TestIsNewExporterRequired(t *testing.T) {
 		newConfig: metricsConfig{
 			domain:                            servingDomain,
 			component:                         testComponent,
-			backendDestination:                Prometheus,
+			backendDestination:                prometheus,
 			reportingPeriod:                   60 * time.Second,
 			isStackdriverBackend:              true,
 			stackdriverMetricTypePrefix:       path.Join(servingDomain, testComponent),
@@ -671,7 +729,7 @@ func TestIsNewExporterRequired(t *testing.T) {
 		oldConfig: metricsConfig{
 			domain:             servingDomain,
 			component:          testComponent,
-			backendDestination: Stackdriver,
+			backendDestination: stackdriver,
 			stackdriverClientConfig: StackdriverClientConfig{
 				ProjectID: "proj1",
 			},
@@ -679,7 +737,7 @@ func TestIsNewExporterRequired(t *testing.T) {
 		newConfig: metricsConfig{
 			domain:             servingDomain,
 			component:          testComponent,
-			backendDestination: Stackdriver,
+			backendDestination: stackdriver,
 			stackdriverClientConfig: StackdriverClientConfig{
 				ProjectID: "proj2",
 			},
@@ -690,7 +748,7 @@ func TestIsNewExporterRequired(t *testing.T) {
 		oldConfig: metricsConfig{
 			domain:             servingDomain,
 			component:          testComponent,
-			backendDestination: Stackdriver,
+			backendDestination: stackdriver,
 			stackdriverClientConfig: StackdriverClientConfig{
 				ProjectID:   testProj,
 				ClusterName: "cluster1",
@@ -699,7 +757,7 @@ func TestIsNewExporterRequired(t *testing.T) {
 		newConfig: metricsConfig{
 			domain:             servingDomain,
 			component:          testComponent,
-			backendDestination: Stackdriver,
+			backendDestination: stackdriver,
 			stackdriverClientConfig: StackdriverClientConfig{
 				ProjectID:   testProj,
 				ClusterName: "cluster2",
@@ -890,10 +948,10 @@ func TestNewStackdriverConfigFromMap(t *testing.T) {
 	}{{
 		name: "fullSdConfig",
 		stringMap: map[string]string{
-			"metrics.stackdriver-project-id":   "project",
-			"metrics.stackdriver-gcp-location": "us-west1",
-			"metrics.stackdriver-cluster-name": "cluster",
-			"metrics.stackdriver-use-secret":   "true",
+			stackdriverProjectIDKey:   "project",
+			stackdriverGCPLocationKey: "us-west1",
+			stackdriverClusterNameKey: "cluster",
+			stackdriverUseSecretKey:   "true",
 		},
 		expectedConfig: StackdriverClientConfig{
 			ProjectID:   "project",
@@ -908,9 +966,9 @@ func TestNewStackdriverConfigFromMap(t *testing.T) {
 	}, {
 		name: "partialSdConfig",
 		stringMap: map[string]string{
-			"metrics.stackdriver-project-id":   "project",
-			"metrics.stackdriver-gcp-location": "us-west1",
-			"metrics.stackdriver-cluster-name": "cluster",
+			stackdriverProjectIDKey:   "project",
+			stackdriverGCPLocationKey: "us-west1",
+			stackdriverClusterNameKey: "cluster",
 		},
 		expectedConfig: StackdriverClientConfig{
 			ProjectID:   "project",
@@ -943,22 +1001,22 @@ func TestStackdriverRecord(t *testing.T) {
 	}{
 		"non-stackdriver": {
 			opts: map[string]string{
-				"metrics.backend-destination": "prometheus",
+				BackendDestinationKey: string(prometheus),
 			},
 			servedCounter: 1,
 			statCounter:   1,
 		},
 		"stackdriver with custom metrics": {
 			opts: map[string]string{
-				"metrics.backend-destination":              "stackdriver",
-				"metrics.allow-stackdriver-custom-metrics": "true",
+				BackendDestinationKey:            string(stackdriver),
+				allowStackdriverCustomMetricsKey: "true",
 			},
 			servedCounter: 1,
 			statCounter:   1,
 		},
 		"stackdriver no custom metrics": {
 			opts: map[string]string{
-				"metrics.backend-destination": "stackdriver",
+				BackendDestinationKey: string(stackdriver),
 			},
 			servedCounter: 1,
 			statCounter:   0,

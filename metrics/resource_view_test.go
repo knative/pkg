@@ -27,7 +27,7 @@ import (
 	"sort"
 	"testing"
 
-	"contrib.go.opencensus.io/exporter/stackdriver"
+	sd "contrib.go.opencensus.io/exporter/stackdriver"
 	ocmetrics "github.com/census-instrumentation/opencensus-proto/gen-go/agent/metrics/v1"
 	ocresource "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	emptypb "github.com/golang/protobuf/ptypes/empty"
@@ -158,9 +158,9 @@ func TestMetricsExport(t *testing.T) {
 			PrometheusPort: 9090,
 			ConfigMap: map[string]string{
 				BackendDestinationKey:            string(backend),
-				CollectorAddressKey:              ocFake.address,
-				AllowStackdriverCustomMetricsKey: "true",
-				ReportingPeriodKey:               "1",
+				collectorAddressKey:              ocFake.address,
+				allowStackdriverCustomMetricsKey: "true",
+				reportingPeriodKey:               "1",
 			},
 		}
 	}
@@ -231,7 +231,7 @@ func TestMetricsExport(t *testing.T) {
 	}{{
 		name: "Prometheus",
 		init: func() error {
-			return UpdateExporter(configForBackend(Prometheus), logtesting.TestLogger(t))
+			return UpdateExporter(configForBackend(prometheus), logtesting.TestLogger(t))
 		},
 		validate: func(t *testing.T) {
 			resp, err := http.Get(fmt.Sprintf("http://localhost:%d/metrics", 9090))
@@ -266,7 +266,7 @@ testComponent_testing_value{project="p1",revision="r2"} 1
 				return err
 			}
 			t.Logf("Created exporter at %s", ocFake.address)
-			return UpdateExporter(configForBackend(OpenCensus), logtesting.TestLogger(t))
+			return UpdateExporter(configForBackend(openCensus), logtesting.TestLogger(t))
 		},
 		validate: func(t *testing.T) {
 			// We unregister the views because this is one of two ways to flush
@@ -310,7 +310,7 @@ testComponent_testing_value{project="p1",revision="r2"} 1
 			if err != nil {
 				return err
 			}
-			newStackdriverExporterFunc = func(o stackdriver.Options) (view.Exporter, error) {
+			newStackdriverExporterFunc = func(o sd.Options) (view.Exporter, error) {
 				o.MonitoringClientOptions = append(o.MonitoringClientOptions, option.WithGRPCConn(conn))
 				return newOpencensusSDExporter(o)
 			}
@@ -324,7 +324,7 @@ testComponent_testing_value{project="p1",revision="r2"} 1
 				return err
 			}
 			os.Setenv("GOOGLE_APPLICATION_CREDENTIALS", tmp.Name())
-			return UpdateExporter(configForBackend(Stackdriver), logtesting.TestLogger(t))
+			return UpdateExporter(configForBackend(stackdriver), logtesting.TestLogger(t))
 		},
 		validate: func(t *testing.T) {
 			records := []metricExtract{}
