@@ -35,6 +35,7 @@ import (
 	"go.opencensus.io/resource"
 	"go.opencensus.io/stats"
 	"go.opencensus.io/stats/view"
+	"go.opencensus.io/tag"
 	"google.golang.org/api/option"
 	metricpb "google.golang.org/genproto/googleapis/api/metric"
 	monitoredrespb "google.golang.org/genproto/googleapis/api/monitoredres"
@@ -46,7 +47,11 @@ import (
 )
 
 var (
-	r = resource.Resource{Labels: map[string]string{"foo": "bar"}}
+	r               = resource.Resource{Labels: map[string]string{"foo": "bar"}}
+	NamespaceTagKey = tag.MustNewKey(metricskey.LabelNamespaceName)
+	ServiceTagKey   = tag.MustNewKey(metricskey.LabelServiceName)
+	ConfigTagKey    = tag.MustNewKey(metricskey.LabelConfigurationName)
+	RevisionTagKey  = tag.MustNewKey(metricskey.LabelRevisionName)
 )
 
 func TestRegisterResourceView(t *testing.T) {
@@ -147,6 +152,50 @@ func (m metricExtract) String() string {
 	return fmt.Sprintf("%s:%d", m.Key(), m.Value)
 }
 
+func initSdFake(sdFake *stackDriverFake) error {
+	if err := sdFake.start(); err != nil {
+		return err
+	}
+	conn, err := grpc.Dial(sdFake.address, grpc.WithInsecure())
+	if err != nil {
+		return err
+	}
+	newStackdriverExporterFunc = func(o sd.Options) (view.Exporter, error) {
+		o.MonitoringClientOptions = append(o.MonitoringClientOptions, option.WithGRPCConn(conn))
+		return newOpencensusSDExporter(o)
+	}
+	// File: must exist, be json of credentialsFile, and type must be a jwtConfig or oauth2Config
+	tmp, err := ioutil.TempFile("", "metrics-sd-test")
+	if err != nil {
+		return err
+	}
+	credentialsContent := []byte(`{"type": "service_account"}`)
+	if _, err := tmp.Write(credentialsContent); err != nil {
+		return err
+	}
+	os.Setenv("GOOGLE_APPLICATION_CREDENTIALS", tmp.Name())
+	return nil
+}
+
+func sortMetrics() cmp.Option {
+	return cmp.Transformer("Sort", func(in []metricExtract) []string {
+		out := make([]string, 0, len(in))
+		seen := map[string]int{}
+		for _, m := range in {
+			// Keep only the newest report for a key
+			key := m.Key()
+			if seen[key] == 0 {
+				out = append(out, m.String())
+				seen[key] = len(out) // Store address+1 to avoid doubling first item.
+			} else {
+				out[seen[key]-1] = m.String()
+			}
+		}
+		sort.Strings(out)
+		return out
+	})
+}
+
 // Begin table tests for exporters
 func TestMetricsExport(t *testing.T) {
 	ocFake := openCensusFake{address: "localhost:12345"}
@@ -201,28 +250,13 @@ func TestMetricsExport(t *testing.T) {
 		Measure:     counter,
 		Aggregation: view.Count(),
 	}
+
 	expected := []metricExtract{
 		{"global_export_counts", map[string]string{}, 2},
 		{"resource_global_export_count", map[string]string{}, 2},
 		{"testing/value", map[string]string{"project": "p1", "revision": "r1"}, 0},
 		{"testing/value", map[string]string{"project": "p1", "revision": "r2"}, 1},
 	}
-	sortMetrics := cmp.Transformer("Sort", func(in []metricExtract) []string {
-		out := make([]string, 0, len(in))
-		seen := map[string]int{}
-		for _, m := range in {
-			// Keep only the newest report for a key
-			key := m.Key()
-			if seen[key] == 0 {
-				out = append(out, m.String())
-				seen[key] = len(out) // Store address+1 to avoid doubling first item.
-			} else {
-				out[seen[key]-1] = m.String()
-			}
-		}
-		sort.Strings(out)
-		return out
-	})
 
 	harnesses := []struct {
 		name     string
@@ -296,34 +330,16 @@ testComponent_testing_value{project="p1",revision="r2"} 1
 				}
 			}
 
-			if diff := cmp.Diff(expected, records, sortMetrics); diff != "" {
+			if diff := cmp.Diff(expected, records, sortMetrics()); diff != "" {
 				t.Errorf("Unexpected OpenCensus exports (-want +got):\n%s", diff)
 			}
 		},
 	}, {
 		name: "Stackdriver",
 		init: func() error {
-			if err := sdFake.start(); err != nil {
+			if err := initSdFake(&sdFake); err != nil {
 				return err
 			}
-			conn, err := grpc.Dial(sdFake.address, grpc.WithInsecure())
-			if err != nil {
-				return err
-			}
-			newStackdriverExporterFunc = func(o sd.Options) (view.Exporter, error) {
-				o.MonitoringClientOptions = append(o.MonitoringClientOptions, option.WithGRPCConn(conn))
-				return newOpencensusSDExporter(o)
-			}
-			// File: must exist, be json of credentialsFile, and type must be a jwtConfig or oauth2Config
-			tmp, err := ioutil.TempFile("", "metrics-sd-test")
-			if err != nil {
-				return err
-			}
-			credentialsContent := []byte(`{"type": "service_account"}`)
-			if _, err := tmp.Write(credentialsContent); err != nil {
-				return err
-			}
-			os.Setenv("GOOGLE_APPLICATION_CREDENTIALS", tmp.Name())
 			return UpdateExporter(configForBackend(stackdriver), logtesting.TestLogger(t))
 		},
 		validate: func(t *testing.T) {
@@ -345,8 +361,8 @@ testComponent_testing_value{project="p1",revision="r2"} 1
 					sdFake.srv.GracefulStop()
 				}
 			}
-			if diff := cmp.Diff(expected, records, sortMetrics); diff != "" {
-				t.Errorf("Unexpected OpenCensus exports (-want +got):\n%s", diff)
+			if diff := cmp.Diff(expected, records, sortMetrics()); diff != "" {
+				t.Errorf("Unexpected Stackdriver exports (-want +got):\n%s", diff)
 			}
 		},
 	}}
@@ -378,8 +394,118 @@ testComponent_testing_value{project="p1",revision="r2"} 1
 				Record(ctx, gauge.M(int64(i)))
 			}
 			c.validate(t)
-
 		})
+	}
+}
+
+func TestStackDriverExports(t *testing.T) {
+	sdFake := stackDriverFake{address: "localhost:12346", t: t}
+	eo := ExporterOptions{
+		Domain:    servingDomain,
+		Component: "autoscaler",
+		ConfigMap: map[string]string{
+			BackendDestinationKey:            string(stackdriver),
+			allowStackdriverCustomMetricsKey: "false",
+			reportingPeriodKey:               "1",
+			stackdriverProjectIDKey:          "foobar",
+		},
+	}
+
+	actualPodCountM := stats.Int64(
+		"actual_pods",
+		"Number of pods that are allocated currently",
+		stats.UnitDimensionless)
+	actualPodsCountView := &view.View{
+		Description: "Number of pods that are allocated currently",
+		Measure:     actualPodCountM,
+		Aggregation: view.LastValue(),
+		TagKeys:     []tag.Key{NamespaceTagKey, ServiceTagKey, ConfigTagKey, RevisionTagKey},
+	}
+	desiredPodCountM := stats.Int64(
+		"desired_pods",
+		"Number of pods that are desired",
+		stats.UnitDimensionless)
+	desiredPodsCountView := &view.View{
+		Description: "Number of pods that are desired",
+		Measure:     desiredPodCountM,
+		Aggregation: view.LastValue(),
+	}
+	if err := initSdFake(&sdFake); err != nil {
+		t.Errorf("Init stackdriver failed %s", err)
+	}
+	if err := UpdateExporter(eo, logtesting.TestLogger(t)); err != nil {
+		t.Errorf("UpdateExporter failed %s", err)
+	}
+
+	if err := RegisterResourceView(desiredPodsCountView, actualPodsCountView); err != nil {
+		t.Fatalf("unable to register view: %+v", err)
+	}
+	defer UnregisterResourceView(desiredPodsCountView, actualPodsCountView)
+
+	ctx, err := tag.New(context.Background(), tag.Upsert(NamespaceTagKey, "ns"),
+		tag.Upsert(ServiceTagKey, "service"),
+		tag.Upsert(ConfigTagKey, "config"),
+		tag.Upsert(RevisionTagKey, "revision"))
+	if err != nil {
+		t.Fatalf("Unable to create tags %s", err)
+	}
+	Record(ctx, actualPodCountM.M(int64(1)))
+
+	r := resource.Resource{
+		Type: "knative_revision",
+		Labels: map[string]string{
+			metricskey.LabelNamespaceName:     "ns2",
+			metricskey.LabelServiceName:       "service2",
+			metricskey.LabelConfigurationName: "config2",
+			metricskey.LabelRevisionName:      "revision2",
+		},
+	}
+	ctx = metricskey.WithResource(context.Background(), r)
+	Record(ctx, desiredPodCountM.M(int64(2)))
+
+	records := []metricExtract{}
+	for record := range sdFake.published {
+		for _, ts := range record.TimeSeries {
+			records = append(records, metricExtract{
+				Name:   ts.Metric.Type,
+				Labels: ts.Resource.Labels,
+				Value:  ts.Points[0].Value.GetInt64Value(),
+			})
+		}
+		if len(records) >= 2 {
+			// There's no way to synchronize on the internal timer used
+			// by metricsexport.IntervalReader, so shut down the
+			// exporter after the first report cycle.
+			FlushExporter()
+			sdFake.srv.GracefulStop()
+		}
+	}
+	expectedRevisionResults := []metricExtract{
+		{"knative.dev/serving/autoscaler/actual_pods", map[string]string{
+			"cluster_name":       "test-cluster",
+			"configuration_name": "config",
+			"location":           "test-location",
+			"namespace_name":     "ns",
+			"project_id":         "foobar",
+			"revision_name":      "revision",
+			"service_name":       "service",
+		},
+			1,
+		},
+		{"knative.dev/serving/autoscaler/desired_pods", map[string]string{
+			"cluster_name":       "test-cluster",
+			"configuration_name": "config2",
+			"location":           "test-location",
+			"namespace_name":     "ns2",
+			"project_id":         "foobar",
+			"revision_name":      "revision2",
+			"service_name":       "service2",
+		},
+			2,
+		},
+	}
+	if diff := cmp.Diff(expectedRevisionResults, records, sortMetrics()); diff != "" {
+		t.Errorf("Unexpected stackdriver knative exports (-want +got):\n%s", diff)
 	}
 }
 

@@ -148,6 +148,14 @@ func (e *pollOnlySDExporter) Flush() {
 	}
 }
 
+func (e *pollOnlySDExporter) StopMetricsExporter() {
+	if e.internalExporter != nil {
+		if f, ok := e.internalExporter.(stoppable); ok {
+			f.StopMetricsExporter()
+		}
+	}
+}
+
 func newOpencensusSDExporter(o sd.Options) (view.Exporter, error) {
 	e, err := sd.NewExporter(o)
 	if err != nil {
