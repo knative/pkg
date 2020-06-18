@@ -337,9 +337,7 @@ testComponent_testing_value{project="p1",revision="r2"} 1
 	}, {
 		name: "Stackdriver",
 		init: func() error {
-			var err error
-			err = initSdFake(&sdFake)
-			if err != nil {
+			if err := initSdFake(&sdFake); err != nil {
 				return err
 			}
 			return UpdateExporter(configForBackend(Stackdriver), logtesting.TestLogger(t))
@@ -401,11 +399,10 @@ testComponent_testing_value{project="p1",revision="r2"} 1
 }
 
 func TestStackDriverExports(t *testing.T) {
-	sdFake := stackDriverFake{address: "localhost:12346"}
+	sdFake := stackDriverFake{address: "localhost:12346", t: t}
 	eo := ExporterOptions{
-		Domain:         servingDomain,
-		Component:      "autoscaler",
-		PrometheusPort: 9090,
+		Domain:    servingDomain,
+		Component: "autoscaler",
 		ConfigMap: map[string]string{
 			BackendDestinationKey:            string(Stackdriver),
 			AllowStackdriverCustomMetricsKey: "false",
@@ -433,17 +430,16 @@ func TestStackDriverExports(t *testing.T) {
 		Measure:     desiredPodCountM,
 		Aggregation: view.LastValue(),
 	}
-	err := initSdFake(&sdFake)
-	if err != nil {
+	if err := initSdFake(&sdFake); err != nil {
 		t.Errorf("Init stackdriver failed %s", err)
 	}
-	err = UpdateExporter(eo, logtesting.TestLogger(t))
-	if err != nil {
+	if err := UpdateExporter(eo, logtesting.TestLogger(t)); err != nil {
 		t.Errorf("UpdateExporter failed %s", err)
 	}
-	sdFake.t = t
 
-	err = RegisterResourceView(desiredPodsCountView, actualPodsCountView)
+	if err := RegisterResourceView(desiredPodsCountView, actualPodsCountView); err != nil {
+		t.Fatalf("unable to register view: %+v", err)
+	}
 	defer UnregisterResourceView(desiredPodsCountView, actualPodsCountView)
 
 	ctx, err := tag.New(context.Background(), tag.Upsert(NamespaceTagKey, "ns"),
