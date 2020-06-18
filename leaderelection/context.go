@@ -117,7 +117,12 @@ func (b *standardBuilder) BuildElector(ctx context.Context, la reconciler.Leader
 			Callbacks: leaderelection.LeaderCallbacks{
 				OnStartedLeading: func(context.Context) {
 					logger.Infof("%q has started leading %q", rl.Identity(), bkt.Name())
-					la.Promote(bkt, enq)
+					if err := la.Promote(bkt, enq); err != nil {
+						// TODO(mattmoor): We expect this to effectively never happen,
+						// but if it does, we should support wrapping `le` in an elector
+						// we can cancel here.
+						logger.Fatalf("%q failed to Promote: %v", rl.Identity(), err)
+					}
 				},
 				OnStoppedLeading: func() {
 					logger.Infof("%q has stopped leading %q", rl.Identity(), bkt.Name())

@@ -41,7 +41,7 @@ func TestLeaderAwareFuncs(t *testing.T) {
 		}
 	}
 
-	laf.PromoteFunc = func(bkt Bucket, gotFunc func(Bucket, types.NamespacedName)) {
+	laf.PromoteFunc = func(bkt Bucket, gotFunc func(Bucket, types.NamespacedName)) error {
 		gotFunc(bkt, wantKey)
 		if !called {
 			t.Error("gotFunc didn't call wantFunc!")
@@ -53,6 +53,7 @@ func TestLeaderAwareFuncs(t *testing.T) {
 		if !laf.IsLeaderFor(wantKey) {
 			t.Error("IsLeaderFor() = false, wanted true")
 		}
+		return nil
 	}
 	laf.DemoteFunc = func(bkt Bucket) {
 		// Check that we're not called while the lock is held,

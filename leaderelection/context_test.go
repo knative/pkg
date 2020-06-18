@@ -1,4 +1,5 @@
 // +build !race
+// TODO(https://github.com/kubernetes/kubernetes/issues/90952): Remove the above.
 
 /*
 Copyright 2020 The Knative Authors
@@ -47,8 +48,9 @@ func TestWithBuilder(t *testing.T) {
 	promoted := make(chan struct{})
 	demoted := make(chan struct{})
 	laf := &reconciler.LeaderAwareFuncs{
-		PromoteFunc: func(bkt reconciler.Bucket, enq func(reconciler.Bucket, types.NamespacedName)) {
+		PromoteFunc: func(bkt reconciler.Bucket, enq func(reconciler.Bucket, types.NamespacedName)) error {
 			close(promoted)
+			return nil
 		},
 		DemoteFunc: func(bkt reconciler.Bucket) {
 			close(demoted)

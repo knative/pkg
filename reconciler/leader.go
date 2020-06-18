@@ -55,7 +55,7 @@ func (b *bucket) Has(nn types.NamespacedName) bool {
 type LeaderAware interface {
 	// Promote is called when we become the leader of a given Bucket.  It must be
 	// supplied with an enqueue function through which a Bucket resync may be triggered.
-	Promote(b Bucket, enq func(Bucket, types.NamespacedName))
+	Promote(b Bucket, enq func(Bucket, types.NamespacedName)) error
 
 	// Demote is called when we stop being the leader for the specified Bucket.
 	Demote(Bucket)
@@ -67,7 +67,7 @@ type LeaderAwareFuncs struct {
 	sync.RWMutex
 	buckets map[string]Bucket
 
-	PromoteFunc func(b Bucket, enq func(Bucket, types.NamespacedName))
+	PromoteFunc func(b Bucket, enq func(Bucket, types.NamespacedName)) error
 	DemoteFunc  func(b Bucket)
 }
 
@@ -87,7 +87,7 @@ func (laf *LeaderAwareFuncs) IsLeaderFor(key types.NamespacedName) bool {
 }
 
 // Promote implements LeaderAware
-func (laf *LeaderAwareFuncs) Promote(b Bucket, enq func(Bucket, types.NamespacedName)) {
+func (laf *LeaderAwareFuncs) Promote(b Bucket, enq func(Bucket, types.NamespacedName)) error {
 	func() {
 		laf.Lock()
 		defer laf.Unlock()
@@ -99,8 +99,9 @@ func (laf *LeaderAwareFuncs) Promote(b Bucket, enq func(Bucket, types.Namespaced
 	}()
 
 	if promote := laf.PromoteFunc; promote != nil {
-		promote(b, enq)
+		return promote(b, enq)
 	}
+	return nil
 }
 
 // Demote implements LeaderAware

@@ -863,8 +863,9 @@ func TestStartAndShutdownWithLeaderAwareNoElection(t *testing.T) {
 	promoted := make(chan struct{})
 	r := &countingLeaderAwareReconciler{
 		LeaderAwareFuncs: reconciler.LeaderAwareFuncs{
-			PromoteFunc: func(bkt reconciler.Bucket, enq func(reconciler.Bucket, types.NamespacedName)) {
+			PromoteFunc: func(bkt reconciler.Bucket, enq func(reconciler.Bucket, types.NamespacedName)) error {
 				close(promoted)
+				return nil
 			},
 		},
 	}
@@ -905,8 +906,9 @@ func TestStartAndShutdownWithLeaderAwareWithLostElection(t *testing.T) {
 	promoted := make(chan struct{})
 	r := &countingLeaderAwareReconciler{
 		LeaderAwareFuncs: reconciler.LeaderAwareFuncs{
-			PromoteFunc: func(bkt reconciler.Bucket, enq func(reconciler.Bucket, types.NamespacedName)) {
+			PromoteFunc: func(bkt reconciler.Bucket, enq func(reconciler.Bucket, types.NamespacedName)) error {
 				close(promoted)
+				return nil
 			},
 		},
 	}
