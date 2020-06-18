@@ -907,8 +907,6 @@ k8s.io/gengo/types
 ## explicit
 k8s.io/klog
 # k8s.io/kube-openapi v0.0.0-20200410145947-bcb3869e6f29
-## explicit
-k8s.io/kube-openapi/cmd/openapi-gen
 k8s.io/kube-openapi/cmd/openapi-gen/args
 k8s.io/kube-openapi/pkg/common
 k8s.io/kube-openapi/pkg/generators
@@ -924,7 +922,7 @@ k8s.io/utils/buffer
 k8s.io/utils/integer
 k8s.io/utils/pointer
 k8s.io/utils/trace
-# knative.dev/test-infra v0.0.0-20200606045118-14ebc4a42974
+# knative.dev/test-infra v0.0.0-20200615231324-3a016f44102c
 ## explicit
 knative.dev/test-infra/scripts
 # sigs.k8s.io/boskos v0.0.0-20200530174753-71e795271860
