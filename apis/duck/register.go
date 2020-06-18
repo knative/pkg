@@ -18,4 +18,12 @@ package duck
 
 const (
 	GroupName = "duck.knative.dev"
+
+	// AddressableDuckVersionLabel is the label we use to declare
+	// which Addressable duck version type we conform to.
+	AddressableDuckVersionLabel = "duck.knative.dev/addressable"
+
+	// SourceDuckVersionLabel is the label we use to declare
+	// which Source duck version type we conform to.
+	SourceDuckVersionLabel = "duck.knative.dev/source"
 )
