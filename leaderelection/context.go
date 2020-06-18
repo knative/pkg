@@ -126,7 +126,7 @@ func (b *standardBuilder) BuildElector(ctx context.Context, la reconciler.Leader
 			},
 			ReleaseOnCancel: true,
 
-			Name: b.lec.Component,
+			Name: rl.Identity(),
 		})
 		if err != nil {
 			return nil, err

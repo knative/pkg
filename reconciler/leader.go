@@ -88,31 +88,30 @@ func (laf *LeaderAwareFuncs) IsLeaderFor(key types.NamespacedName) bool {
 
 // Promote implements LeaderAware
 func (laf *LeaderAwareFuncs) Promote(b Bucket, enq func(Bucket, types.NamespacedName)) {
-	promote := func() func(Bucket, func(Bucket, types.NamespacedName)) {
+	func() {
 		laf.Lock()
 		defer laf.Unlock()
 		if laf.buckets == nil {
 			laf.buckets = make(map[string]Bucket, 1)
 		}
 		laf.buckets[b.Name()] = b
-		return laf.PromoteFunc
+		return
 	}()
 
-	if promote != nil {
+	if promote := laf.PromoteFunc; promote != nil {
 		promote(b, enq)
 	}
 }
 
 // Demote implements LeaderAware
 func (laf *LeaderAwareFuncs) Demote(b Bucket) {
-	demote := func() func(Bucket) {
+	func() {
 		laf.Lock()
 		defer laf.Unlock()
 		delete(laf.buckets, b.Name())
-		return laf.DemoteFunc
 	}()
 
-	if demote != nil {
+	if demote := laf.DemoteFunc; demote != nil {
 		demote(b)
 	}
 }
