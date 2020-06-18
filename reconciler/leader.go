@@ -37,6 +37,20 @@ func UniversalBucket() Bucket {
 	return &bucket{}
 }
 
+type bucket struct{}
+
+var _ Bucket = (*bucket)(nil)
+
+// Name implements Bucket
+func (b *bucket) Name() string {
+	return ""
+}
+
+// Has implements Bucket
+func (b *bucket) Has(nn types.NamespacedName) bool {
+	return true
+}
+
 // LeaderAware is implemented by Reconcilers that are aware of their leader status.
 type LeaderAware interface {
 	// Promote is called when we become the leader of a given Bucket.  It must be
@@ -101,18 +115,4 @@ func (laf *LeaderAwareFuncs) Demote(b Bucket) {
 	if demote != nil {
 		demote(b)
 	}
-}
-
-type bucket struct{}
-
-var _ Bucket = (*bucket)(nil)
-
-// Name implements Bucket
-func (b *bucket) Name() string {
-	return ""
-}
-
-// Has implements Bucket
-func (b *bucket) Has(nn types.NamespacedName) bool {
-	return true
 }

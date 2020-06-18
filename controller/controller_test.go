@@ -789,13 +789,13 @@ func TestEnqeueKeyAfter(t *testing.T) {
 
 type CountingReconciler struct {
 	m     sync.Mutex
-	Count int
+	count int
 }
 
 func (cr *CountingReconciler) Reconcile(context.Context, string) error {
 	cr.m.Lock()
 	defer cr.m.Unlock()
-	cr.Count++
+	cr.count++
 	return nil
 }
 
@@ -827,8 +827,8 @@ func TestStartAndShutdown(t *testing.T) {
 		// We expect the work to complete.
 	}
 
-	if got, want := r.Count, 0; got != want {
-		t.Errorf("Count = %v, wanted %v", got, want)
+	if got, want := r.count, 0; got != want {
+		t.Errorf("count = %v, wanted %v", got, want)
 	}
 }
 
@@ -836,7 +836,7 @@ type countingLeaderAwareReconciler struct {
 	reconciler.LeaderAwareFuncs
 
 	m     sync.Mutex
-	Count int
+	count int
 }
 
 var _ reconciler.LeaderAware = (*countingLeaderAwareReconciler)(nil)
@@ -853,7 +853,7 @@ func (cr *countingLeaderAwareReconciler) Reconcile(ctx context.Context, key stri
 	}) {
 		cr.m.Lock()
 		defer cr.m.Unlock()
-		cr.Count++
+		cr.count++
 	}
 	return nil
 }
@@ -895,8 +895,8 @@ func TestStartAndShutdownWithLeaderAwareNoElection(t *testing.T) {
 		// We expect the work to complete.
 	}
 
-	if got, want := r.Count, 0; got != want {
-		t.Errorf("Count = %v, wanted %v", got, want)
+	if got, want := r.count, 0; got != want {
+		t.Errorf("count = %v, wanted %v", got, want)
 	}
 }
 
@@ -962,8 +962,8 @@ func TestStartAndShutdownWithLeaderAwareWithLostElection(t *testing.T) {
 		// We expect the work to complete.
 	}
 
-	if got, want := r.Count, 0; got != want {
-		t.Errorf("Count = %v, wanted %v", got, want)
+	if got, want := r.count, 0; got != want {
+		t.Errorf("count = %v, wanted %v", got, want)
 	}
 }
 
@@ -998,7 +998,7 @@ func TestStartAndShutdownWithWork(t *testing.T) {
 		// We expect the work to complete.
 	}
 
-	if got, want := r.Count, 1; got != want {
+	if got, want := r.count, 1; got != want {
 		t.Errorf("Count = %v, wanted %v", got, want)
 	}
 	if got, want := impl.WorkQueue.NumRequeues(types.NamespacedName{Namespace: "foo", Name: "bar"}), 0; got != want {
@@ -1221,7 +1221,7 @@ func TestImplGlobalResync(t *testing.T) {
 		// We expect the work to complete.
 	}
 
-	if want, got := 3, r.Count; want != got {
+	if want, got := 3, r.count; want != got {
 		t.Errorf("GlobalResync: want = %v, got = %v", want, got)
 	}
 }

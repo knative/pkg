@@ -126,7 +126,6 @@ func (b *standardBuilder) BuildElector(ctx context.Context, la reconciler.Leader
 			},
 			ReleaseOnCancel: true,
 
-			// TODO: use health check watchdog, knative/pkg#1048
 			Name: b.lec.Component,
 		})
 		if err != nil {
