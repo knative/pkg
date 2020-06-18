@@ -200,11 +200,12 @@ func sortMetrics() cmp.Option {
 func TestMetricsExport(t *testing.T) {
 	ocFake := openCensusFake{address: "localhost:12345"}
 	sdFake := stackDriverFake{address: "localhost:12346"}
+	prometheusPort = 19090
 	configForBackend := func(backend metricsBackend) ExporterOptions {
 		return ExporterOptions{
 			Domain:         servingDomain,
 			Component:      testComponent,
-			PrometheusPort: 9090,
+			PrometheusPort: prometheusPort,
 			ConfigMap: map[string]string{
 				BackendDestinationKey:            string(backend),
 				collectorAddressKey:              ocFake.address,
@@ -268,7 +269,7 @@ func TestMetricsExport(t *testing.T) {
 			return UpdateExporter(configForBackend(prometheus), logtesting.TestLogger(t))
 		},
 		validate: func(t *testing.T) {
-			resp, err := http.Get(fmt.Sprintf("http://localhost:%d/metrics", 9090))
+			resp, err := http.Get(fmt.Sprintf("http://localhost:%d/metrics", prometheusPort))
 			if err != nil {
 				t.Fatalf("failed to fetch prometheus metrics: %+v", err)
 			}
