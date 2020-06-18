@@ -156,13 +156,14 @@ func (mc *metricsConfig) record(ctx context.Context, mss []stats.Measurement, ro
 		// At this point, it's unclear whether should record or not.
 		return nil
 	}
-	opt, err := optionForResource(metricskey.GetResource(ctx))
-	if err != nil {
-		return err
-	}
-	ros = append(ros, opt)
 
 	if mc.recorder == nil {
+		opt, err := optionForResource(metricskey.GetResource(ctx))
+		if err != nil {
+			return err
+		}
+		ros = append(ros, opt)
+
 		return stats.RecordWithOptions(ctx, append(ros, stats.WithMeasurements(mss...))...)
 	}
 	return mc.recorder(ctx, mss, ros...)
