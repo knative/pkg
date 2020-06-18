@@ -265,7 +265,7 @@ github.com/spf13/pflag
 # github.com/tsenart/vegeta v12.7.1-0.20190725001342-b5f4fca92137+incompatible
 ## explicit
 github.com/tsenart/vegeta/lib
-# go.opencensus.io v0.22.4-0.20200608061201-1901b56b9515
+# go.opencensus.io v0.22.4
 ## explicit
 go.opencensus.io
 go.opencensus.io/internal
@@ -937,7 +937,7 @@ k8s.io/utils/buffer
 k8s.io/utils/integer
 k8s.io/utils/pointer
 k8s.io/utils/trace
-# knative.dev/test-infra v0.0.0-20200615231324-3a016f44102c
+# knative.dev/test-infra v0.0.0-20200617235125-6382dba95484
 ## explicit
 knative.dev/test-infra/scripts
 # sigs.k8s.io/boskos v0.0.0-20200530174753-71e795271860
