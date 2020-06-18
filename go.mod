@@ -29,7 +29,7 @@ require (
 	github.com/prometheus/common v0.9.1
 	github.com/spf13/pflag v1.0.5
 	github.com/tsenart/vegeta v12.7.1-0.20190725001342-b5f4fca92137+incompatible
-	go.opencensus.io v0.22.3
+	go.opencensus.io v0.22.4
 	go.uber.org/multierr v1.5.0
 	go.uber.org/zap v1.14.1
 	golang.org/x/net v0.0.0-20200324143707-d3edc9973b7e
