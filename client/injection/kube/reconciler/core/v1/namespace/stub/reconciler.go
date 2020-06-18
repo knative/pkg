@@ -47,13 +47,9 @@ var _ namespace.Interface = (*Reconciler)(nil)
 
 // ReconcileKind implements Interface.ReconcileKind.
 func (r *Reconciler) ReconcileKind(ctx context.Context, o *v1.Namespace) reconciler.Event {
-	// TODO: use this if the resource implements InitializeConditions.
-	// o.Status.InitializeConditions()
 
 	// TODO: add custom reconciliation logic here.
 
-	// TODO: use this if the object has .status.ObservedGeneration.
-	// o.Status.ObservedGeneration = o.Generation
 	return newReconciledNormal(o.Namespace, o.Name)
 }
 
