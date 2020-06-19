@@ -48,7 +48,6 @@ var _ customresourcedefinition.Interface = (*Reconciler)(nil)
 
 // ReconcileKind implements Interface.ReconcileKind.
 func (r *Reconciler) ReconcileKind(ctx context.Context, o *v1beta1.CustomResourceDefinition) reconciler.Event {
-
 	// TODO: use this if the resource implements InitializeConditions.
 	// o.Status.InitializeConditions()
 
@@ -56,7 +55,6 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, o *v1beta1.CustomResourc
 
 	// TODO: use this if the object has .status.ObservedGeneration.
 	// o.Status.ObservedGeneration = o.Generation
-
 	return newReconciledNormal(o.Namespace, o.Name)
 }
 
