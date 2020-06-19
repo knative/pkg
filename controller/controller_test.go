@@ -805,6 +805,7 @@ func TestStartAndShutdown(t *testing.T) {
 	impl := NewImplWithStats(r, TestLogger(t), "Testing", &FakeStatsReporter{})
 
 	ctx, cancel := context.WithCancel(context.Background())
+	t.Cleanup(cancel)
 	doneCh := make(chan struct{})
 
 	go func() {
@@ -872,6 +873,7 @@ func TestStartAndShutdownWithLeaderAwareNoElection(t *testing.T) {
 	impl := NewImplWithStats(r, TestLogger(t), "Testing", &FakeStatsReporter{})
 
 	ctx, cancel := context.WithCancel(context.Background())
+	t.Cleanup(cancel)
 	doneCh := make(chan struct{})
 
 	go func() {
@@ -884,7 +886,9 @@ func TestStartAndShutdownWithLeaderAwareNoElection(t *testing.T) {
 		// We expect to be promoted immediately, since there is no
 		// ElectorBuilder attached to the context.
 	case <-doneCh:
-		t.Error("StartAll finished early.")
+		t.Fatal("StartAll finished early.")
+	case <-time.After(10 * time.Second):
+		t.Error("Timed out waiting for StartAll.")
 	}
 
 	cancel()
@@ -897,7 +901,7 @@ func TestStartAndShutdownWithLeaderAwareNoElection(t *testing.T) {
 	}
 
 	if got, want := r.count, 0; got != want {
-		t.Errorf("count = %v, wanted %v", got, want)
+		t.Errorf("reconcile count = %v, wanted %v", got, want)
 	}
 }
 
@@ -938,6 +942,7 @@ func TestStartAndShutdownWithLeaderAwareWithLostElection(t *testing.T) {
 	impl := NewImplWithStats(r, TestLogger(t), "Testing", &FakeStatsReporter{})
 
 	ctx, cancel := context.WithCancel(context.Background())
+	t.Cleanup(cancel)
 	ctx = leaderelection.WithStandardLeaderElectorBuilder(ctx, kc, cc)
 	doneCh := make(chan struct{})
 
@@ -965,7 +970,7 @@ func TestStartAndShutdownWithLeaderAwareWithLostElection(t *testing.T) {
 	}
 
 	if got, want := r.count, 0; got != want {
-		t.Errorf("count = %v, wanted %v", got, want)
+		t.Errorf("reconcile count = %v, wanted %v", got, want)
 	}
 }
 
@@ -976,6 +981,7 @@ func TestStartAndShutdownWithWork(t *testing.T) {
 	impl := NewImplWithStats(r, TestLogger(t), "Testing", reporter)
 
 	ctx, cancel := context.WithCancel(context.Background())
+	t.Cleanup(cancel)
 	doneCh := make(chan struct{})
 
 	impl.EnqueueKey(types.NamespacedName{Namespace: "foo", Name: "bar"})
@@ -1001,10 +1007,10 @@ func TestStartAndShutdownWithWork(t *testing.T) {
 	}
 
 	if got, want := r.count, 1; got != want {
-		t.Errorf("Count = %v, wanted %v", got, want)
+		t.Errorf("reconcile count = %v, wanted %v", got, want)
 	}
 	if got, want := impl.WorkQueue.NumRequeues(types.NamespacedName{Namespace: "foo", Name: "bar"}), 0; got != want {
-		t.Errorf("Count = %v, wanted %v", got, want)
+		t.Errorf("requeues = %v, wanted %v", got, want)
 	}
 
 	checkStats(t, reporter, 1, 0, 1, trueString)
@@ -1052,6 +1058,7 @@ func TestStartAndShutdownWithErroringWork(t *testing.T) {
 	impl := NewImplWithStats(r, TestLogger(t), "Testing", reporter)
 
 	ctx, cancel := context.WithCancel(context.Background())
+	t.Cleanup(cancel)
 	doneCh := make(chan struct{})
 
 	impl.EnqueueKey(types.NamespacedName{Namespace: "", Name: "bar"})
@@ -1106,6 +1113,7 @@ func TestStartAndShutdownWithPermanentErroringWork(t *testing.T) {
 	impl := NewImplWithStats(r, TestLogger(t), "Testing", reporter)
 
 	ctx, cancel := context.WithCancel(context.Background())
+	t.Cleanup(cancel)
 	doneCh := make(chan struct{})
 
 	impl.EnqueueKey(types.NamespacedName{Namespace: "foo", Name: "bar"})
@@ -1197,6 +1205,7 @@ func TestImplGlobalResync(t *testing.T) {
 	impl := NewImplWithStats(r, TestLogger(t), "Testing", &FakeStatsReporter{})
 
 	ctx, cancel := context.WithCancel(context.Background())
+	t.Cleanup(cancel)
 	doneCh := make(chan struct{})
 
 	go func() {
@@ -1463,6 +1472,7 @@ func TestRunInformersFinished(t *testing.T) {
 	}()
 
 	ctx, cancel := context.WithCancel(TestContextWithLogger(t))
+	t.Cleanup(cancel)
 
 	waitInformers, err := RunInformers(ctx.Done(), fi)
 	if err != nil {
