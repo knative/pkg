@@ -21,6 +21,7 @@ import (
 	"time"
 
 	"github.com/google/go-cmp/cmp"
+	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/apimachinery/pkg/util/sets"
 )
 
@@ -29,12 +30,15 @@ type testConfig struct {
 	boo bool
 	i32 int32
 	i64 int64
+	u32 uint32
 	f64 float64
 	dur time.Duration
 	set sets.String
+	qua *resource.Quantity
 }
 
 func TestParse(t *testing.T) {
+	fiveHundredM := resource.MustParse("500m")
 	tests := []struct {
 		name      string
 		conf      testConfig
@@ -48,18 +52,22 @@ func TestParse(t *testing.T) {
 			"test-bool":     "true",
 			"test-int32":    "1",
 			"test-int64":    "2",
+			"test-uint32":   "3",
 			"test-float64":  "1.0",
 			"test-duration": "1m",
 			"test-set":      "a,b,c",
+			"test-quantity": "500m",
 		},
 		want: testConfig{
 			str: "foo.bar",
 			boo: true,
 			i32: 1,
 			i64: 2,
+			u32: 3,
 			f64: 1.0,
 			dur: time.Minute,
 			set: sets.NewString("a", "b", "c"),
+			qua: &fiveHundredM,
 		},
 	}, {
 		name: "respect defaults",
@@ -70,6 +78,7 @@ func TestParse(t *testing.T) {
 			i64: 2,
 			f64: 1.0,
 			dur: time.Minute,
+			qua: &fiveHundredM,
 		},
 		want: testConfig{
 			str: "foo.bar",
@@ -78,6 +87,7 @@ func TestParse(t *testing.T) {
 			i64: 2,
 			f64: 1.0,
 			dur: time.Minute,
+			qua: &fiveHundredM,
 		},
 	}, {
 		name: "bool defaults to false",
@@ -100,6 +110,12 @@ func TestParse(t *testing.T) {
 		},
 		expectErr: true,
 	}, {
+		name: "uint32 error",
+		data: map[string]string{
+			"test-uint32": "foo",
+		},
+		expectErr: true,
+	}, {
 		name: "float64 error",
 		data: map[string]string{
 			"test-float64": "foo",
@@ -111,6 +127,12 @@ func TestParse(t *testing.T) {
 			"test-duration": "foo",
 		},
 		expectErr: true,
+	}, {
+		name: "quantity error",
+		data: map[string]string{
+			"test-quantity": "foo",
+		},
+		expectErr: true,
 	}}
 
 	for _, test := range tests {
@@ -120,9 +142,11 @@ func TestParse(t *testing.T) {
 				AsBool("test-bool", &test.conf.boo),
 				AsInt32("test-int32", &test.conf.i32),
 				AsInt64("test-int64", &test.conf.i64),
+				AsUint32("test-uint32", &test.conf.u32),
 				AsFloat64("test-float64", &test.conf.f64),
 				AsDuration("test-duration", &test.conf.dur),
 				AsStringSet("test-set", &test.conf.set),
+				AsQuantity("test-quantity", &test.conf.qua),
 			); (err == nil) == test.expectErr {
 				t.Fatal("Failed to parse data:", err)
 			}

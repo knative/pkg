@@ -115,13 +115,15 @@ var _ {{.reconcilerInterface|raw}} = (*Reconciler)(nil)
 
 // ReconcileKind implements Interface.ReconcileKind.
 func (r *Reconciler) ReconcileKind(ctx {{.contextContext|raw}}, o *{{.type|raw}}) {{.reconcilerEvent|raw}} {
-    // TODO: use this if the resource implements InitializeConditions.
+	{{if not .isKRShaped}}// TODO: use this if the resource implements InitializeConditions.
 	// o.Status.InitializeConditions()
+	{{end}}
 
 	// TODO: add custom reconciliation logic here.
 
+	{{if not .isKRShaped}}
 	// TODO: use this if the object has .status.ObservedGeneration.
-    // o.Status.ObservedGeneration = o.Generation
+	// o.Status.ObservedGeneration = o.Generation{{end}}
 	return newReconciledNormal(o.Namespace, o.Name)
 }
 
