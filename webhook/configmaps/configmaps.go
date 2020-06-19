@@ -24,12 +24,12 @@ import (
 	"fmt"
 	"reflect"
 
-	admissionv1beta1 "k8s.io/api/admission/v1beta1"
-	admissionregistrationv1beta1 "k8s.io/api/admissionregistration/v1beta1"
+	admissionv1 "k8s.io/api/admission/v1"
+	admissionregistrationv1 "k8s.io/api/admissionregistration/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/kubernetes"
-	admissionlisters "k8s.io/client-go/listers/admissionregistration/v1beta1"
+	admissionlisters "k8s.io/client-go/listers/admissionregistration/v1"
 	corelisters "k8s.io/client-go/listers/core/v1"
 
 	"knative.dev/pkg/configmap"
@@ -85,20 +85,20 @@ func (ac *reconciler) Path() string {
 }
 
 // Admit implements AdmissionController
-func (ac *reconciler) Admit(ctx context.Context, request *admissionv1beta1.AdmissionRequest) *admissionv1beta1.AdmissionResponse {
+func (ac *reconciler) Admit(ctx context.Context, request *admissionv1.AdmissionRequest) *admissionv1.AdmissionResponse {
 	logger := logging.FromContext(ctx)
 	switch request.Operation {
-	case admissionv1beta1.Create, admissionv1beta1.Update:
+	case admissionv1.Create, admissionv1.Update:
 	default:
 		logger.Infof("Unhandled webhook operation, letting it through %v", request.Operation)
-		return &admissionv1beta1.AdmissionResponse{Allowed: true}
+		return &admissionv1.AdmissionResponse{Allowed: true}
 	}
 
 	if err := ac.validate(ctx, request); err != nil {
 		return webhook.MakeErrorStatus("validation failed: %v", err)
 	}
 
-	return &admissionv1beta1.AdmissionResponse{
+	return &admissionv1.AdmissionResponse{
 		Allowed: true,
 	}
 }
@@ -106,13 +106,13 @@ func (ac *reconciler) Admit(ctx context.Context, request *admissionv1beta1.Admis
 func (ac *reconciler) reconcileValidatingWebhook(ctx context.Context, caCert []byte) error {
 	logger := logging.FromContext(ctx)
 
-	ruleScope := admissionregistrationv1beta1.NamespacedScope
-	rules := []admissionregistrationv1beta1.RuleWithOperations{{
-		Operations: []admissionregistrationv1beta1.OperationType{
-			admissionregistrationv1beta1.Create,
-			admissionregistrationv1beta1.Update,
+	ruleScope := admissionregistrationv1.NamespacedScope
+	rules := []admissionregistrationv1.RuleWithOperations{{
+		Operations: []admissionregistrationv1.OperationType{
+			admissionregistrationv1.Create,
+			admissionregistrationv1.Update,
 		},
-		Rule: admissionregistrationv1beta1.Rule{
+		Rule: admissionregistrationv1.Rule{
 			APIGroups:   []string{""},
 			APIVersions: []string{"v1"},
 			Resources:   []string{"configmaps/*"},
@@ -147,7 +147,7 @@ func (ac *reconciler) reconcileValidatingWebhook(ctx context.Context, caCert []b
 		return fmt.Errorf("error diffing webhooks: %w", err)
 	} else if !ok {
 		logger.Info("Updating webhook")
-		vwhclient := ac.client.AdmissionregistrationV1beta1().ValidatingWebhookConfigurations()
+		vwhclient := ac.client.AdmissionregistrationV1().ValidatingWebhookConfigurations()
 		if _, err := vwhclient.Update(webhook); err != nil {
 			return fmt.Errorf("failed to update webhook: %w", err)
 		}
@@ -158,7 +158,7 @@ func (ac *reconciler) reconcileValidatingWebhook(ctx context.Context, caCert []b
 	return nil
 }
 
-func (ac *reconciler) validate(ctx context.Context, req *admissionv1beta1.AdmissionRequest) error {
+func (ac *reconciler) validate(ctx context.Context, req *admissionv1.AdmissionRequest) error {
 	logger := logging.FromContext(ctx)
 	kind := req.Kind
 	newBytes := req.Object.Raw

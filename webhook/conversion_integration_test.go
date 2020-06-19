@@ -26,7 +26,7 @@ import (
 	"testing"
 
 	"golang.org/x/sync/errgroup"
-	apixv1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
+	apixv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
@@ -34,7 +34,7 @@ import (
 
 type fixedConversionController struct {
 	path     string
-	response *apixv1beta1.ConversionResponse
+	response *apixv1.ConversionResponse
 }
 
 var _ ConversionController = (*fixedConversionController)(nil)
@@ -43,14 +43,14 @@ func (fcc *fixedConversionController) Path() string {
 	return fcc.path
 }
 
-func (fcc *fixedConversionController) Convert(context.Context, *apixv1beta1.ConversionRequest) *apixv1beta1.ConversionResponse {
+func (fcc *fixedConversionController) Convert(context.Context, *apixv1.ConversionRequest) *apixv1.ConversionResponse {
 	return fcc.response
 }
 
 func TestConversionEmptyRequestBody(t *testing.T) {
 	c := &fixedConversionController{
 		path:     "/bazinga",
-		response: &apixv1beta1.ConversionResponse{},
+		response: &apixv1.ConversionResponse{},
 	}
 
 	testEmptyRequestBody(t, c)
@@ -59,7 +59,7 @@ func TestConversionEmptyRequestBody(t *testing.T) {
 func TestConversionValidResponse(t *testing.T) {
 	cc := &fixedConversionController{
 		path: "/bazinga",
-		response: &apixv1beta1.ConversionResponse{
+		response: &apixv1.ConversionResponse{
 			UID: types.UID("some-uid"),
 		},
 	}
@@ -86,12 +86,12 @@ func TestConversionValidResponse(t *testing.T) {
 		t.Fatalf("createSecureTLSClient() = %v", err)
 	}
 
-	review := apixv1beta1.ConversionReview{
+	review := apixv1.ConversionReview{
 		TypeMeta: metav1.TypeMeta{
-			APIVersion: "apiextensions.k8s.io/v1beta1",
+			APIVersion: "apiextensions.k8s.io/v1",
 			Kind:       "ConversionReview",
 		},
-		Request: &apixv1beta1.ConversionRequest{
+		Request: &apixv1.ConversionRequest{
 			UID:               types.UID("some-uid"),
 			DesiredAPIVersion: "example.com/v1",
 			Objects:           []runtime.RawExtension{},
@@ -126,7 +126,7 @@ func TestConversionValidResponse(t *testing.T) {
 		t.Fatalf("Failed to read response body %v", err)
 	}
 
-	reviewResponse := apixv1beta1.ConversionReview{}
+	reviewResponse := apixv1.ConversionReview{}
 
 	err = json.NewDecoder(bytes.NewReader(responseBody)).Decode(&reviewResponse)
 	if err != nil {
@@ -141,7 +141,7 @@ func TestConversionValidResponse(t *testing.T) {
 func TestConversionInvalidResponse(t *testing.T) {
 	cc := &fixedConversionController{
 		path: "/bazinga",
-		response: &apixv1beta1.ConversionResponse{
+		response: &apixv1.ConversionResponse{
 			UID: types.UID("some-uid"),
 			Result: metav1.Status{
 				Status: metav1.StatusFailure,
@@ -171,12 +171,12 @@ func TestConversionInvalidResponse(t *testing.T) {
 		t.Fatalf("createSecureTLSClient() = %v", err)
 	}
 
-	review := apixv1beta1.ConversionReview{
+	review := apixv1.ConversionReview{
 		TypeMeta: metav1.TypeMeta{
-			APIVersion: "apiextensions.k8s.io/v1beta1",
+			APIVersion: "apiextensions.k8s.io/v1",
 			Kind:       "ConversionReview",
 		},
-		Request: &apixv1beta1.ConversionRequest{
+		Request: &apixv1.ConversionRequest{
 			UID:               types.UID("some-uid"),
 			DesiredAPIVersion: "example.com/v1",
 			Objects:           []runtime.RawExtension{},
@@ -211,7 +211,7 @@ func TestConversionInvalidResponse(t *testing.T) {
 		t.Fatalf("Failed to read response body %v", err)
 	}
 
-	reviewResponse := apixv1beta1.ConversionReview{}
+	reviewResponse := apixv1.ConversionReview{}
 
 	err = json.NewDecoder(bytes.NewReader(responseBody)).Decode(&reviewResponse)
 	if err != nil {
