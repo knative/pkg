@@ -32,6 +32,7 @@ import (
 	admissionregistrationv1 "k8s.io/api/admissionregistration/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
 	admissionlisters "k8s.io/client-go/listers/admissionregistration/v1"
 	corelisters "k8s.io/client-go/listers/core/v1"
@@ -41,6 +42,7 @@ import (
 	"knative.dev/pkg/kmp"
 	"knative.dev/pkg/logging"
 	"knative.dev/pkg/ptr"
+	pkgreconciler "knative.dev/pkg/reconciler"
 	"knative.dev/pkg/system"
 	"knative.dev/pkg/webhook"
 	certresources "knative.dev/pkg/webhook/certificates/resources"
@@ -52,8 +54,9 @@ var errMissingNewObject = errors.New("the new object may not be nil")
 // reconciler implements the AdmissionController for resources
 type reconciler struct {
 	webhook.StatelessAdmissionImpl
+	pkgreconciler.LeaderAwareFuncs
 
-	name     string
+	key      types.NamespacedName
 	path     string
 	handlers map[schema.GroupVersionKind]resourcesemantics.GenericCRD
 
@@ -68,12 +71,18 @@ type reconciler struct {
 }
 
 var _ controller.Reconciler = (*reconciler)(nil)
+var _ pkgreconciler.LeaderAware = (*reconciler)(nil)
 var _ webhook.AdmissionController = (*reconciler)(nil)
 var _ webhook.StatelessAdmissionController = (*reconciler)(nil)
 
 // Reconcile implements controller.Reconciler
 func (ac *reconciler) Reconcile(ctx context.Context, key string) error {
 	logger := logging.FromContext(ctx)
+
+	if !ac.IsLeaderFor(ac.key) {
+		logger.Debugf("Skipping key %q, not the leader.", ac.key)
+		return nil
+	}
 
 	// Look up the webhook secret, and fetch the CA cert bundle.
 	secret, err := ac.secretlister.Secrets(system.Namespace()).Get(ac.secretName)
@@ -157,7 +166,7 @@ func (ac *reconciler) reconcileMutatingWebhook(ctx context.Context, caCert []byt
 		return lhs.Resources[0] < rhs.Resources[0]
 	})
 
-	configuredWebhook, err := ac.mwhlister.Get(ac.name)
+	configuredWebhook, err := ac.mwhlister.Get(ac.key.Name)
 	if err != nil {
 		return fmt.Errorf("error retrieving webhook: %w", err)
 	}

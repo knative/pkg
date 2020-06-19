@@ -26,6 +26,7 @@ import (
 	_ "knative.dev/pkg/client/injection/kube/client/fake"
 	_ "knative.dev/pkg/client/injection/kube/informers/admissionregistration/v1/validatingwebhookconfiguration/fake"
 	_ "knative.dev/pkg/injection/clients/namespacedkube/informers/core/v1/secret/fake"
+	pkgreconciler "knative.dev/pkg/reconciler"
 
 	admissionv1 "k8s.io/api/admission/v1"
 	admissionregistrationv1 "k8s.io/api/admissionregistration/v1beta1"
@@ -634,10 +635,33 @@ func NewTestResourceAdmissionController(t *testing.T) *reconciler {
 	ctx = webhook.WithOptions(ctx, webhook.Options{
 		SecretName: "webhook-secret",
 	})
-	return NewAdmissionController(
+
+	c := NewAdmissionController(
 		ctx, testResourceValidationName, testResourceValidationPath,
 		handlers,
 		func(ctx context.Context) context.Context {
 			return ctx
-		}, true, callbacks).Reconciler.(*reconciler)
+		}, true, callbacks)
+	if c == nil {
+		t.Fatal("Expected NewController to return a non-nil value")
+	}
+
+	if want, got := 0, c.WorkQueue.Len(); want != got {
+		t.Errorf("WorkQueue.Len() = %d, wanted %d", got, want)
+	}
+
+	la, ok := c.Reconciler.(pkgreconciler.LeaderAware)
+	if !ok {
+		t.Fatalf("%T is not leader aware", c.Reconciler)
+	}
+
+	if err := la.Promote(pkgreconciler.UniversalBucket(), c.MaybeEnqueueBucketKey); err != nil {
+		t.Errorf("Promote() = %v", err)
+	}
+
+	if want, got := 1, c.WorkQueue.Len(); want != got {
+		t.Errorf("WorkQueue.Len() = %d, wanted %d", got, want)
+	}
+
+	return c.Reconciler.(*reconciler)
 }
