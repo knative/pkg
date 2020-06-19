@@ -25,6 +25,7 @@ import (
 	"net/http"
 	"os"
 	"sort"
+	"sync"
 	"testing"
 
 	sd "contrib.go.opencensus.io/exporter/stackdriver"
@@ -274,7 +275,6 @@ func TestMetricsExport(t *testing.T) {
 				t.Fatalf("failed to fetch prometheus metrics: %+v", err)
 			}
 			defer resp.Body.Close()
-			t.Logf("TODO: Validate Prometheus")
 			body, err := ioutil.ReadAll(resp.Body)
 			if err != nil {
 				t.Fatalf("failed to read prometheus response: %+v", err)
@@ -511,11 +511,13 @@ func TestStackDriverExports(t *testing.T) {
 type openCensusFake struct {
 	address   string
 	srv       *grpc.Server
+	wg        sync.WaitGroup
 	published chan ocmetrics.ExportMetricsServiceRequest
 }
 
 func (oc *openCensusFake) start() error {
 	oc.published = make(chan ocmetrics.ExportMetricsServiceRequest, 100)
+	oc.wg.Add(1) // Make sure that add is called before Done
 	ln, err := net.Listen("tcp", oc.address)
 	if err != nil {
 		return err
@@ -525,6 +527,8 @@ func (oc *openCensusFake) start() error {
 	// Run the server in the background.
 	go func() {
 		oc.srv.Serve(ln)
+		oc.wg.Done()
+		oc.wg.Wait()
 		close(oc.published)
 	}()
 	return nil
@@ -532,6 +536,8 @@ func (oc *openCensusFake) start() error {
 
 func (oc *openCensusFake) Export(stream ocmetrics.MetricsService_ExportServer) error {
 	var streamResource *ocresource.Resource
+	oc.wg.Add(1)
+	defer oc.wg.Done()
 	for {
 		in, err := stream.Recv()
 		if err == io.EOF {
