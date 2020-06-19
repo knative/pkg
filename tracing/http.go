@@ -22,7 +22,7 @@ import (
 	"go.opencensus.io/plugin/ochttp"
 	"go.opencensus.io/trace"
 	"k8s.io/apimachinery/pkg/util/sets"
-	"knative.dev/pkg/tracing/b3tracecontext"
+	"knative.dev/pkg/tracing/propagation"
 )
 
 var (
@@ -51,7 +51,7 @@ func HTTPSpanIgnoringPaths(pathsToIgnore ...string) func(http.Handler) http.Hand
 				}
 				return underlyingSampling
 			},
-			Propagation: &b3tracecontext.HTTPFormat{},
+			Propagation: propagation.TraceContextB3,
 		}
 	}
 }

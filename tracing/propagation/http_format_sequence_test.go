@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package b3tracecontext
+package propagation
 
 import (
 	"fmt"
@@ -40,7 +40,7 @@ var (
 	tracePropagators = []propagation.HTTPFormat{
 		&b3.HTTPFormat{},
 		&tracecontext.HTTPFormat{},
-		&HTTPFormat{},
+		TraceContextB3,
 	}
 )
 
@@ -74,8 +74,8 @@ func TestSpanContextFromRequest(t *testing.T) {
 					tracePropagator.SpanContextToRequest(*tc.sc, r)
 				}
 				// Check we extract the correct SpanContext with both the original and the
-				// b3tracecontext propagators.
-				for _, extractFormat := range []propagation.HTTPFormat{tracePropagator, &HTTPFormat{}} {
+				// TraceContextB3 propagators.
+				for _, extractFormat := range []propagation.HTTPFormat{tracePropagator, TraceContextB3} {
 					actual, ok := extractFormat.SpanContextFromRequest(r)
 					if tc.sc == nil {
 						if ok {
@@ -118,8 +118,8 @@ func TestSpanContextToRequest(t *testing.T) {
 			r := &http.Request{}
 			r.Header = http.Header{}
 			if tc.sc != nil {
-				// Apply using the b3tracecontext propagator.
-				(&HTTPFormat{}).SpanContextToRequest(*tc.sc, r)
+				// Apply using the TraceContextB3 propagator.
+				TraceContextB3.SpanContextToRequest(*tc.sc, r)
 			}
 			// Verify that we extract the correct SpanContext with all three formats.
 			for _, tracePropagator := range tracePropagators {

@@ -34,7 +34,7 @@ import (
 	"knative.dev/pkg/test/ingress"
 	"knative.dev/pkg/test/logging"
 	"knative.dev/pkg/test/zipkin"
-	"knative.dev/pkg/tracing/b3tracecontext"
+	"knative.dev/pkg/tracing/propagation"
 
 	"go.opencensus.io/plugin/ochttp"
 	"go.opencensus.io/trace"
@@ -135,7 +135,7 @@ func New(
 	// Enable Zipkin tracing
 	roundTripper := &ochttp.Transport{
 		Base:        transport,
-		Propagation: &b3tracecontext.HTTPFormat{},
+		Propagation: propagation.TraceContextB3,
 	}
 
 	sc := SpoofingClient{
