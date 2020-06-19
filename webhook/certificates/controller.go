@@ -46,18 +46,20 @@ func NewController(
 	secretInformer := secretinformer.Get(ctx)
 	options := webhook.GetOptions(ctx)
 
+	key := types.NamespacedName{
+		Namespace: system.Namespace(),
+		Name:      options.SecretName,
+	}
+
 	wh := &reconciler{
 		LeaderAwareFuncs: pkgreconciler.LeaderAwareFuncs{
 			// Enqueue the key whenever we become leader.
 			PromoteFunc: func(bkt pkgreconciler.Bucket, enq func(pkgreconciler.Bucket, types.NamespacedName)) error {
-				enq(bkt, types.NamespacedName{
-					Namespace: system.Namespace(),
-					Name:      options.SecretName,
-				})
+				enq(bkt, key)
 				return nil
 			},
 		},
-		secretName:  options.SecretName,
+		key:         key,
 		serviceName: options.ServiceName,
 
 		client:       client,
@@ -68,7 +70,7 @@ func NewController(
 
 	// Reconcile when the cert bundle changes.
 	secretInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
-		FilterFunc: controller.FilterWithNameAndNamespace(system.Namespace(), wh.secretName),
+		FilterFunc: controller.FilterWithNameAndNamespace(key.Namespace, key.Name),
 		// It doesn't matter what we enqueue because we will always Reconcile
 		// the named MWH resource.
 		Handler: controller.HandleAll(c.Enqueue),

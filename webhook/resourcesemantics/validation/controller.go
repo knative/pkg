@@ -72,7 +72,9 @@ func NewAdmissionController(
 			},
 		},
 
-		name:      name,
+		key: types.NamespacedName{
+			Name: name,
+		},
 		path:      path,
 		handlers:  handlers,
 		callbacks: unwrappedCallbacks,

@@ -47,16 +47,18 @@ func NewAdmissionController(
 	secretInformer := secretinformer.Get(ctx)
 	options := webhook.GetOptions(ctx)
 
+	key := types.NamespacedName{Name: name}
+
 	wh := &reconciler{
 		LeaderAwareFuncs: pkgreconciler.LeaderAwareFuncs{
 			// Have this reconciler enqueue our singleton whenever it becomes leader.
 			PromoteFunc: func(bkt pkgreconciler.Bucket, enq func(pkgreconciler.Bucket, types.NamespacedName)) error {
-				enq(bkt, types.NamespacedName{Name: name})
+				enq(bkt, key)
 				return nil
 			},
 		},
 
-		name: name,
+		key:  key,
 		path: path,
 
 		constructors: make(map[string]reflect.Value),

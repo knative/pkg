@@ -49,7 +49,7 @@ type reconciler struct {
 	webhook.StatelessAdmissionImpl
 	pkgreconciler.LeaderAwareFuncs
 
-	name         string
+	key          types.NamespacedName
 	path         string
 	constructors map[string]reflect.Value
 
@@ -69,8 +69,8 @@ var _ webhook.StatelessAdmissionController = (*reconciler)(nil)
 func (ac *reconciler) Reconcile(ctx context.Context, key string) error {
 	logger := logging.FromContext(ctx)
 
-	if !ac.IsLeaderFor(types.NamespacedName{Name: ac.name}) {
-		logger.Debugf("Skipping key %q, not the leader.", key)
+	if !ac.IsLeaderFor(ac.key) {
+		logger.Debugf("Skipping key %q, not the leader.", ac.key)
 		return nil
 	}
 
@@ -129,7 +129,7 @@ func (ac *reconciler) reconcileValidatingWebhook(ctx context.Context, caCert []b
 		},
 	}}
 
-	configuredWebhook, err := ac.vwhlister.Get(ac.name)
+	configuredWebhook, err := ac.vwhlister.Get(ac.key.Name)
 	if err != nil {
 		return fmt.Errorf("error retrieving webhook: %w", err)
 	}

@@ -28,6 +28,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	clientgotesting "k8s.io/client-go/testing"
 	"knative.dev/pkg/configmap"
 	"knative.dev/pkg/controller"
@@ -136,8 +137,11 @@ func TestReconcile(t *testing.T) {
 		return &reconciler{
 			client:       kubeclient.Get(ctx),
 			secretlister: listers.GetSecretLister(),
-			secretName:   secretName,
-			serviceName:  serviceName,
+			key: types.NamespacedName{
+				Namespace: system.Namespace(),
+				Name:      secretName,
+			},
+			serviceName: serviceName,
 		}
 	}))
 }
@@ -202,8 +206,11 @@ func TestReconcileMakeSecretFailure(t *testing.T) {
 		return &reconciler{
 			client:       kubeclient.Get(ctx),
 			secretlister: listers.GetSecretLister(),
-			secretName:   secretName,
-			serviceName:  serviceName,
+			key: types.NamespacedName{
+				Namespace: system.Namespace(),
+				Name:      secretName,
+			},
+			serviceName: serviceName,
 		}
 	}))
 }
