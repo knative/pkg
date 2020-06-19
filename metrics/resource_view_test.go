@@ -371,20 +371,18 @@ testComponent_testing_value{project="p1",revision="r2"} 1
 	for _, c := range harnesses {
 		t.Run(c.name, func(t *testing.T) {
 			sdFake.t = t
-			err := c.init()
-			if err != nil {
+			if err := c.init(); err != nil {
 				t.Fatalf("unable to init: %+v", err)
 			}
 
 			view.Register(globalCounter)
-			err = RegisterResourceView(gaugeView, resourceCounter)
+			if err := RegisterResourceView(gaugeView, resourceCounter); err != nil {
+				t.Fatalf("Unable to register views: %v", err)
+			}
 			defer func() {
 				view.Unregister(globalCounter)
 				UnregisterResourceView(gaugeView, resourceCounter)
 			}()
-			if err != nil {
-				t.Fatalf("unable to register view: %+v", err)
-			}
 
 			for i, r := range resources {
 				ctx := context.Background()

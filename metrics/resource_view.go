@@ -76,7 +76,13 @@ func RegisterResourceView(views ...*view.View) error {
 	resourceViews.lock.Lock()
 	defer resourceViews.lock.Unlock()
 	for _, meter := range allMeters.meters {
-		if err := meter.m.Register(views...); err != nil {
+		// make a copy of views to avoid data races
+		viewCopy := make([]*view.View, 0, len(views))
+		for _, v := range views {
+			c := *v
+			viewCopy = append(viewCopy, &c)
+		}
+		if err := meter.m.Register(viewCopy...); err != nil {
 			errors = append(errors, err)
 		}
 	}
@@ -96,7 +102,18 @@ func UnregisterResourceView(views ...*view.View) {
 	defer resourceViews.lock.Unlock()
 
 	for _, meter := range allMeters.meters {
-		meter.m.Unregister(views...)
+		// Since we make a defensive copy of all views in RegisterResourceView,
+		// the caller might not have the same view pointer that was registered.
+		// Use Meter.Find() to find the view with a matching name.
+		for _, v := range views {
+			name := v.Name
+			if v.Name == "" {
+				name = v.Measure.Name()
+			}
+			if v := meter.m.Find(name); v != nil {
+				meter.m.Unregister(v)
+			}
+		}
 	}
 
 	j := 0
@@ -173,7 +190,13 @@ func meterExporterForResource(r *resource.Resource) *meterExporter {
 	mE.m.Start()
 	resourceViews.lock.Lock()
 	defer resourceViews.lock.Unlock()
-	mE.m.Register(resourceViews.views...)
+	// make a copy of views to avoid data races
+	viewsCopy := make([]*view.View, 0, len(resourceViews.views))
+	for _, v := range resourceViews.views {
+		c := *v
+		viewsCopy = append(viewsCopy, &c)
+	}
+	mE.m.Register(viewsCopy...)
 	mE.o = stats.WithRecorder(mE.m)
 	allMeters.meters[key] = mE
 	return mE
