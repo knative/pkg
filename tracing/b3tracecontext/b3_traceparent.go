@@ -37,7 +37,8 @@ type HTTPFormat struct{}
 
 var _ propagation.HTTPFormat = (*HTTPFormat)(nil)
 
-func (H *HTTPFormat) SpanContextFromRequest(req *http.Request) (trace.SpanContext, bool) {
+// SpanContextFromRequest satisfies the propagation.HTTPFormat interface.
+func (*HTTPFormat) SpanContextFromRequest(req *http.Request) (trace.SpanContext, bool) {
 	if sc, ok := traceContext.SpanContextFromRequest(req); ok {
 		return sc, true
 	}
@@ -47,7 +48,8 @@ func (H *HTTPFormat) SpanContextFromRequest(req *http.Request) (trace.SpanContex
 	return trace.SpanContext{}, false
 }
 
-func (H *HTTPFormat) SpanContextToRequest(sc trace.SpanContext, req *http.Request) {
+// SpanContextToRequest satisfies the propagation.HTTPFormat interface.
+func (*HTTPFormat) SpanContextToRequest(sc trace.SpanContext, req *http.Request) {
 	traceContext.SpanContextToRequest(sc, req)
 	b3Format.SpanContextToRequest(sc, req)
 }
