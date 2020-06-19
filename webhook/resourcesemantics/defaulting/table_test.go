@@ -22,6 +22,7 @@ import (
 
 	kubeclient "knative.dev/pkg/client/injection/kube/client/fake"
 	_ "knative.dev/pkg/injection/clients/namespacedkube/informers/core/v1/secret/fake"
+	pkgreconciler "knative.dev/pkg/reconciler"
 
 	admissionregistrationv1 "k8s.io/api/admissionregistration/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -352,5 +353,22 @@ func TestNew(t *testing.T) {
 		}, true /* disallow unknown field */)
 	if c == nil {
 		t.Fatal("Expected NewController to return a non-nil value")
+	}
+
+	if want, got := 0, c.WorkQueue.Len(); want != got {
+		t.Errorf("WorkQueue.Len() = %d, wanted %d", got, want)
+	}
+
+	la, ok := c.Reconciler.(pkgreconciler.LeaderAware)
+	if !ok {
+		t.Fatalf("%T is not leader aware", c.Reconciler)
+	}
+
+	if err := la.Promote(pkgreconciler.UniversalBucket(), c.MaybeEnqueueBucketKey); err != nil {
+		t.Errorf("Promote() = %v", err)
+	}
+
+	if want, got := 1, c.WorkQueue.Len(); want != got {
+		t.Errorf("WorkQueue.Len() = %d, wanted %d", got, want)
 	}
 }
