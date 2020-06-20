@@ -148,7 +148,10 @@ func (g *GCSClient) getObjectsAttrs(ctx context.Context, bucketName, storagePath
 
 // ListChildrenFiles recursively lists all children files.
 func (g *GCSClient) ListChildrenFiles(ctx context.Context, bucketName, dirPath string) ([]string, error) {
-	return g.list(ctx, bucketName, strings.TrimRight(dirPath, " /")+"/", "")
+	if dirPath != "" {
+		dirPath = strings.TrimRight(dirPath, " /") + "/"
+	}
+	return g.list(ctx, bucketName, dirPath, "")
 }
 
 // ListDirectChildren lists direct children paths (including files and directories).
@@ -156,7 +159,10 @@ func (g *GCSClient) ListDirectChildren(ctx context.Context, bucketName, dirPath 
 	// If there are 2 directories named "foo" and "foobar",
 	// then given storagePath "foo" will get files both under "foo" and "foobar".
 	// Add trailling slash to storagePath, so that only gets children under given directory.
-	return g.list(ctx, bucketName, strings.TrimRight(dirPath, " /")+"/", "/")
+	if dirPath != "" {
+		dirPath = strings.TrimRight(dirPath, " /") + "/"
+	}
+	return g.list(ctx, bucketName, dirPath, "/")
 }
 
 // CopyObject copies objects from one location to another. Assumes both source and destination buckets exist.
