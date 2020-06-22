@@ -40,9 +40,20 @@ var (
 	tracePropagators = []propagation.HTTPFormat{
 		&b3.HTTPFormat{},
 		&tracecontext.HTTPFormat{},
-		TraceContextB3,
+		both,
 	}
 )
+
+var both = &HTTPFormatSequence{
+	Ingress: []propagation.HTTPFormat{
+		&tracecontext.HTTPFormat{},
+		&b3.HTTPFormat{},
+	},
+	Egress: []propagation.HTTPFormat{
+		&tracecontext.HTTPFormat{},
+		&b3.HTTPFormat{},
+	},
+}
 
 func TestSpanContextFromRequest(t *testing.T) {
 	testCases := map[string]struct {
@@ -74,8 +85,8 @@ func TestSpanContextFromRequest(t *testing.T) {
 					tracePropagator.SpanContextToRequest(*tc.sc, r)
 				}
 				// Check we extract the correct SpanContext with both the original and the
-				// TraceContextB3 propagators.
-				for _, extractFormat := range []propagation.HTTPFormat{tracePropagator, TraceContextB3} {
+				// 'both' propagators.
+				for _, extractFormat := range []propagation.HTTPFormat{tracePropagator, both} {
 					actual, ok := extractFormat.SpanContextFromRequest(r)
 					if tc.sc == nil {
 						if ok {
@@ -119,7 +130,7 @@ func TestSpanContextToRequest(t *testing.T) {
 			r.Header = http.Header{}
 			if tc.sc != nil {
 				// Apply using the TraceContextB3 propagator.
-				TraceContextB3.SpanContextToRequest(*tc.sc, r)
+				both.SpanContextToRequest(*tc.sc, r)
 			}
 			// Verify that we extract the correct SpanContext with all three formats.
 			for _, tracePropagator := range tracePropagators {
