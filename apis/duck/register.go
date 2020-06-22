@@ -20,7 +20,7 @@ const (
 	GroupName = "duck.knative.dev"
 
 	// AddressableDuckVersionLabel is the label we use to declare
-	// which Addressable duck version type we conform to.
+	// that a type conforms to the Addressable duck type.
 	AddressableDuckVersionLabel = "duck.knative.dev/addressable"
 
 	// SourceDuckVersionLabel is the label we use to declare
