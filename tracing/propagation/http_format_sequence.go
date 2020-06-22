@@ -28,10 +28,8 @@ import (
 // TraceContextB3 is a propagation.HTTPFormat that reads both TraceContext and B3 tracing
 // formats, preferring TraceContext. It always writes both formats.
 var TraceContextB3 = &HTTPFormatSequence{
-	Formats: []propagation.HTTPFormat{
-		&tracecontext.HTTPFormat{},
-		&b3.HTTPFormat{},
-	},
+	&tracecontext.HTTPFormat{},
+	&b3.HTTPFormat{},
 }
 
 // HTTPFormatSequence is a propagation.HTTPFormat that applies multiple other propagation formats.
@@ -39,15 +37,13 @@ var TraceContextB3 = &HTTPFormatSequence{
 // HTTPFormatSequence.Formats.
 // For outgoing requests, it will apply all the formats to the outgoing request, in the order of
 // HTTPFormatSequence.Formats.
-type HTTPFormatSequence struct {
-	Formats []propagation.HTTPFormat
-}
+type HTTPFormatSequence []propagation.HTTPFormat
 
 var _ propagation.HTTPFormat = (*HTTPFormatSequence)(nil)
 
 // SpanContextFromRequest satisfies the propagation.HTTPFormat interface.
 func (h *HTTPFormatSequence) SpanContextFromRequest(req *http.Request) (trace.SpanContext, bool) {
-	for _, format := range h.Formats {
+	for _, format := range *h {
 		if sc, ok := format.SpanContextFromRequest(req); ok {
 			return sc, true
 		}
@@ -57,7 +53,7 @@ func (h *HTTPFormatSequence) SpanContextFromRequest(req *http.Request) (trace.Sp
 
 // SpanContextToRequest satisfies the propagation.HTTPFormat interface.
 func (h *HTTPFormatSequence) SpanContextToRequest(sc trace.SpanContext, req *http.Request) {
-	for _, format := range h.Formats {
+	for _, format := range *h {
 		format.SpanContextToRequest(sc, req)
 	}
 }
