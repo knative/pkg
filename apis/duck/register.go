@@ -24,6 +24,6 @@ const (
 	AddressableDuckVersionLabel = "duck.knative.dev/addressable"
 
 	// SourceDuckVersionLabel is the label we use to declare
-	// which Source duck version type we conform to.
+	// that a type conforms to the Source duck type.
 	SourceDuckVersionLabel = "duck.knative.dev/source"
 )
