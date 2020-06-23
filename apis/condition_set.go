@@ -17,7 +17,6 @@ limitations under the License.
 package apis
 
 import (
-	"reflect"
 	"sort"
 	"time"
 
@@ -193,15 +192,9 @@ func (r conditionsImpl) SetCondition(new Condition) {
 	for _, c := range r.accessor.GetConditions() {
 		if c.Type != t {
 			conditions = append(conditions, c)
-		} else {
-			// If we'd only update the LastTransitionTime, then return.
-			new.LastTransitionTime = c.LastTransitionTime
-			if reflect.DeepEqual(&new, &c) {
-				return
-			}
 		}
 	}
-	new.LastTransitionTime = VolatileTime{Inner: metav1.NewTime(time.Now())}
+	new.LastTransitionTime = metav1.NewTime(time.Now())
 	conditions = append(conditions, new)
 	// Sorted for convenience of the consumer, i.e. kubectl.
 	sort.Slice(conditions, func(i, j int) bool { return conditions[i].Type < conditions[j].Type })
@@ -321,7 +314,7 @@ func (r conditionsImpl) findUnhappyDependent() *Condition {
 
 	// Sort set conditions by time.
 	sort.Slice(conditions, func(i, j int) bool {
-		return conditions[i].LastTransitionTime.Inner.Time.After(conditions[j].LastTransitionTime.Inner.Time)
+		return conditions[i].LastTransitionTime.Time.After(conditions[j].LastTransitionTime.Time)
 	})
 
 	// First check the conditions with Status == False.

@@ -134,7 +134,7 @@ var tbCondSet = apis.NewLivingConditionSet()
 // which is how psbinding updates statuses.
 func (tbs *TestBindableStatus) clearLTT() {
 	for i := range tbs.Conditions {
-		tbs.Conditions[i].LastTransitionTime = apis.VolatileTime{}
+		tbs.Conditions[i].LastTransitionTime = metav1.Time{}
 	}
 }
 

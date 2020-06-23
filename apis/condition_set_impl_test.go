@@ -294,7 +294,7 @@ func TestUpdateLastTransitionTime(t *testing.T) {
 		conditions: Conditions{{
 			Type:               ConditionReady,
 			Status:             corev1.ConditionFalse,
-			LastTransitionTime: VolatileTime{metav1.NewTime(time.Unix(1337, 0))},
+			LastTransitionTime: metav1.NewTime(time.Unix(1337, 0)),
 		}},
 		condition: Condition{
 			Type:   ConditionReady,
@@ -306,7 +306,7 @@ func TestUpdateLastTransitionTime(t *testing.T) {
 		conditions: Conditions{{
 			Type:               ConditionReady,
 			Status:             corev1.ConditionFalse,
-			LastTransitionTime: VolatileTime{metav1.NewTime(time.Unix(1337, 0))},
+			LastTransitionTime: metav1.NewTime(time.Unix(1337, 0)),
 		}},
 
 		condition: Condition{
