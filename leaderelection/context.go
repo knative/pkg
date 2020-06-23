@@ -43,8 +43,8 @@ func WithStandardLeaderElectorBuilder(ctx context.Context, kc kubernetes.Interfa
 }
 
 // WithStatefulSetLeaderElectorBuilder infuses a context with the ability to build
-// Electors with the provided component configuration acquiring resource
-// locks via the provided kubernetes client.
+// Electors which are assigned leadership based on the StatefulSet ordinal from
+// the provided component configuration.
 func WithStatefulSetLeaderElectorBuilder(ctx context.Context, cc ComponentConfig) context.Context {
 	return context.WithValue(ctx, builderKey{}, &statefulSetBuilder{
 		lec: cc,
