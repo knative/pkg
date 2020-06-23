@@ -23,7 +23,6 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/equality"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -329,14 +328,8 @@ func TestUpdateLastTransitionTime(t *testing.T) {
 				t.Errorf("%q expected: %v to match %v", tc.name, e, a)
 			}
 
-			if tc.update {
-				if e, a := was.LastTransitionTime, now.LastTransitionTime; e == a {
-					t.Errorf("%q expected: %v to not match %v", tc.name, e, a)
-				}
-			} else {
-				if e, a := was.LastTransitionTime, now.LastTransitionTime; e != a {
-					t.Errorf("%q expected: %v to match %v", tc.name, e, a)
-				}
+			if e, a := was.LastTransitionTime, now.LastTransitionTime; e == a {
+				t.Errorf("%q expected: %v to not match %v", tc.name, e, a)
 			}
 		})
 	}
@@ -1073,27 +1066,28 @@ func TestInitializeConditions(t *testing.T) {
 			Status:   corev1.ConditionUnknown,
 			Severity: ConditionSeverityError,
 		},
-		// TODO(#357): Uncomment once fixed.
-		// }, {
-		// 	name: "initialization overwrites existing",
-		// 	conditions: Conditions{{
-		// 		Type:     ConditionReady,
-		// 		Status:   corev1.ConditionFalse,
-		// 		Severity: ConditionSeverityError,
-		// 	}},
-		// 	want: &Condition{
-		// 		Type:     ConditionReady,
-		// 		Status:   corev1.ConditionUnknown,
-		// 		Severity: ConditionSeverityError,
-		// 	},
 	}}
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			status := &TestStatus{c: tc.conditions}
 			condSet.Manage(status).InitializeConditions()
-			if e, a := tc.want, condSet.Manage(status).GetCondition(ConditionReady); !equality.Semantic.DeepEqual(e, a) {
-				t.Errorf("accessor, %q expected: %v got: %v", tc.name, e, a)
+			e, a := tc.want, condSet.Manage(status).GetCondition(ConditionReady)
+
+			if e.Type != a.Type {
+				t.Errorf("type not equal, %q expected: %v got: %v", tc.name, e, a)
+			}
+
+			if e.Status != a.Status {
+				t.Errorf("status not equal, %q expected: %v got: %v", tc.name, e, a)
+			}
+
+			if e.Reason != a.Reason {
+				t.Errorf("reason not equal, %q expected: %v got: %v", tc.name, e, a)
+			}
+
+			if e.Message != a.Message {
+				t.Errorf("message not equal, %q expected: %v got: %v", tc.name, e, a)
 			}
 		})
 	}
