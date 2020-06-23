@@ -42,6 +42,15 @@ func WithStandardLeaderElectorBuilder(ctx context.Context, kc kubernetes.Interfa
 	})
 }
 
+// WithStatefulSetLeaderElectorBuilder infuses a context with the ability to build
+// Electors with the provided component configuration acquiring resource
+// locks via the provided kubernetes client.
+func WithStatefulSetLeaderElectorBuilder(ctx context.Context, cc ComponentConfig) context.Context {
+	return context.WithValue(ctx, builderKey{}, &statefulSetBuilder{
+		lec: cc,
+	})
+}
+
 // HasLeaderElection returns whether there is leader election configuration
 // associated with the context
 func HasLeaderElection(ctx context.Context) bool {
@@ -61,8 +70,9 @@ func BuildElector(ctx context.Context, la reconciler.LeaderAware, name string, e
 		switch builder := val.(type) {
 		case *standardBuilder:
 			return builder.BuildElector(ctx, la, name, enq)
+		case *statefulSetBuilder:
+			return builder.BuildElector(ctx, la, enq)
 		}
-		// TODO(mattmoor): Add a flavor of builder that relies on StatefulSet to partition the key space.
 	}
 
 	return &unopposedElector{
@@ -90,10 +100,11 @@ func (b *standardBuilder) BuildElector(ctx context.Context, la reconciler.Leader
 	buckets := make([]Elector, 0, b.lec.Buckets)
 	for i := uint32(0); i < b.lec.Buckets; i++ {
 		bkt := &bucket{
-			component: b.lec.Component,
-			name:      name,
-			index:     i,
-			total:     b.lec.Buckets,
+			// The resource name is the lowercase:
+			//   {component}.{workqueue}.{index}-of-{total}
+			name:  strings.ToLower(fmt.Sprintf("%s.%s.%02d-of-%02d", b.lec.Component, name, i, b.lec.Buckets)),
+			index: i,
+			total: b.lec.Buckets,
 		}
 
 		rl, err := resourcelock.New(b.lec.ResourceLock,
@@ -143,6 +154,27 @@ func (b *standardBuilder) BuildElector(ctx context.Context, la reconciler.Leader
 		buckets = append(buckets, &runUntilCancelled{Elector: le})
 	}
 	return &runAll{les: buckets}, nil
+}
+
+type statefulSetBuilder struct {
+	lec ComponentConfig
+}
+
+func (b *statefulSetBuilder) BuildElector(ctx context.Context, la reconciler.LeaderAware, enq func(reconciler.Bucket, types.NamespacedName)) (Elector, error) {
+	logger := logging.FromContext(ctx)
+	logger.Infof("%s will run in StatefulSet ordinal assignement mode with ordinal %d", b.lec.Component, b.lec.Ordinal)
+
+	return &unopposedElector{
+		bkt: &bucket{
+			// The name is the full pod DNS of the owner pod of this bucket.
+			name: fmt.Sprintf("%s://%s-%d.%s.%s.svc.%s:%s", b.lec.Protocol, b.lec.StatefulSetName, b.lec.Ordinal,
+				b.lec.ServiceName, b.lec.Namespace, b.lec.ClusterDomainName, b.lec.Port),
+			index: b.lec.Ordinal,
+			total: b.lec.Buckets,
+		},
+		la:  la,
+		enq: enq,
+	}, nil
 }
 
 // unopposedElector promotes when run without needing to be elected.
@@ -197,8 +229,7 @@ func (ruc *runUntilCancelled) Run(ctx context.Context) {
 }
 
 type bucket struct {
-	component string
-	name      string
+	name string
 
 	// We are bucket {index} of {total}
 	index uint32
@@ -209,9 +240,7 @@ var _ reconciler.Bucket = (*bucket)(nil)
 
 // Name implements reconciler.Bucket
 func (b *bucket) Name() string {
-	// The resource name is the lowercase:
-	//   {component}.{workqueue}.{index}-of-{total}
-	return strings.ToLower(fmt.Sprintf("%s.%s.%02d-of-%02d", b.component, b.name, b.index, b.total))
+	return b.name
 }
 
 // Has implements reconciler.Bucket
