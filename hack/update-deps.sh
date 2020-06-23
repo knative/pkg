@@ -51,3 +51,4 @@ go mod vendor
 
 rm -rf $(find vendor/ -name 'OWNERS')
 rm -rf $(find vendor/ -name '*_test.go')
+git apply hack/patches/*.patch
