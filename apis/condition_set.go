@@ -183,11 +183,11 @@ func (r conditionsImpl) GetCondition(t ConditionType) *Condition {
 
 // SetCondition sets or updates the Condition on Conditions for Condition.Type.
 // If there is an update, Conditions are stored back sorted.
-func (r conditionsImpl) SetCondition(new Condition) {
+func (r conditionsImpl) SetCondition(cond Condition) {
 	if r.accessor == nil {
 		return
 	}
-	t := new.Type
+	t := cond.Type
 	var conditions Conditions
 	for _, c := range r.accessor.GetConditions() {
 		if c.Type != t {
