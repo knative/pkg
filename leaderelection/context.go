@@ -20,6 +20,8 @@ import (
 	"context"
 	"fmt"
 	"hash/fnv"
+	"os"
+	"strconv"
 	"strings"
 	"sync"
 
@@ -28,9 +30,12 @@ import (
 	"k8s.io/client-go/tools/leaderelection"
 	"k8s.io/client-go/tools/leaderelection/resourcelock"
 	"knative.dev/pkg/logging"
+	"knative.dev/pkg/network"
 	"knative.dev/pkg/reconciler"
 	"knative.dev/pkg/system"
 )
+
+const controllerOrdinalEnv = "CONTROLLER_ORDINAL"
 
 // WithStandardLeaderElectorBuilder infuses a context with the ability to build
 // LeaderElectors with the provided component configuration acquiring resource
@@ -46,9 +51,7 @@ func WithStandardLeaderElectorBuilder(ctx context.Context, kc kubernetes.Interfa
 // Electors which are assigned leadership based on the StatefulSet ordinal from
 // the provided component configuration.
 func WithStatefulSetLeaderElectorBuilder(ctx context.Context, cc ComponentConfig) context.Context {
-	return context.WithValue(ctx, builderKey{}, &statefulSetBuilder{
-		lec: cc,
-	})
+	return context.WithValue(ctx, builderKey{}, &statefulSetBuilder{cc})
 }
 
 // HasLeaderElection returns whether there is leader election configuration
@@ -157,24 +160,40 @@ func (b *standardBuilder) BuildElector(ctx context.Context, la reconciler.Leader
 }
 
 type statefulSetBuilder struct {
-	lec ComponentConfig
+	ComponentConfig
 }
 
 func (b *statefulSetBuilder) BuildElector(ctx context.Context, la reconciler.LeaderAware, enq func(reconciler.Bucket, types.NamespacedName)) (Elector, error) {
 	logger := logging.FromContext(ctx)
-	logger.Infof("%s will run in StatefulSet ordinal assignement mode with ordinal %d", b.lec.Component, b.lec.Ordinal)
+
+	ordianl, err := controllerOrdinal()
+	if err != nil {
+		return nil, err
+	}
+
+	logger.Infof("%s will run in StatefulSet ordinal assignement mode with ordinal %d", b.Component, ordianl)
 
 	return &unopposedElector{
 		bkt: &bucket{
 			// The name is the full pod DNS of the owner pod of this bucket.
-			name: fmt.Sprintf("%s://%s-%d.%s.%s.svc.%s:%s", b.lec.Protocol, b.lec.StatefulSetName, b.lec.Ordinal,
-				b.lec.ServiceName, b.lec.Namespace, b.lec.ClusterDomainName, b.lec.Port),
-			index: b.lec.Ordinal,
-			total: b.lec.Buckets,
+			name: fmt.Sprintf("%s://%s-%d.%s.%s.svc.%s:%s", b.StatefulSet.Protocol,
+				b.StatefulSet.StatefulSetName, ordianl, b.StatefulSet.ServiceName,
+				system.Namespace(), network.GetClusterDomainName(), b.StatefulSet.Port),
+			index: uint32(ordianl),
+			total: b.Buckets,
 		},
 		la:  la,
 		enq: enq,
 	}, nil
+}
+
+func controllerOrdinal() (uint64, error) {
+	v := os.Getenv(controllerOrdinalEnv)
+	if i := strings.LastIndex(v, "-"); i != -1 {
+		return strconv.ParseUint(v[i+1:], 10, 64)
+	}
+
+	return 0, fmt.Errorf("ordinal not found in %s=%s", controllerOrdinalEnv, v)
 }
 
 // unopposedElector promotes when run without needing to be elected.

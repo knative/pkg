@@ -128,14 +128,15 @@ type ComponentConfig struct {
 	RetryPeriod   time.Duration
 
 	// The following section is for StatefulSet ordinal assignment mode only.
-	// They are informations about the StatefulSet pod.
-	Namespace         string
-	StatefulSetName   string
-	ServiceName       string
-	ClusterDomainName string
-	Port              string
-	Protocol          string
-	Ordinal           uint32
+	StatefulSet StatefulSetConfig
+}
+
+// StatefulSetConfig represents the required information for a StatefulSet service.
+type StatefulSetConfig struct {
+	StatefulSetName string
+	ServiceName     string
+	Port            string
+	Protocol        string
 }
 
 func defaultComponentConfig(name string) ComponentConfig {

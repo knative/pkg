@@ -21,6 +21,7 @@ package leaderelection
 
 import (
 	"context"
+	"os"
 	"testing"
 	"time"
 
@@ -147,18 +148,17 @@ func TestWithBuilder(t *testing.T) {
 
 func TestWithStatefulSetBuilder(t *testing.T) {
 	cc := ComponentConfig{
-		Component:         "component",
-		LeaderElect:       true,
-		Buckets:           1,
-		ServiceName:       "autoscaler",
-		StatefulSetName:   "as",
-		ClusterDomainName: "cluster.local",
-		Namespace:         "knative-serving",
-		Ordinal:           0,
-		Protocol:          "ws",
-		Port:              "8080",
+		Component:   "component",
+		LeaderElect: true,
+		Buckets:     1,
+		StatefulSet: StatefulSetConfig{
+			ServiceName:     "autoscaler",
+			StatefulSetName: "as",
+			Protocol:        "ws",
+			Port:            "8080",
+		},
 	}
-	podDNS := "ws://as-0.autoscaler.knative-serving.svc.cluster.local:8080"
+	podDNS := "ws://as-0.autoscaler.knative-testing.svc.cluster.local:8080"
 	ctx := context.Background()
 
 	promoted := make(chan struct{})
@@ -176,6 +176,21 @@ func TestWithStatefulSetBuilder(t *testing.T) {
 	}
 
 	le, err := BuildElector(ctx, laf, "name", enq)
+	if err == nil {
+		// controller ordinal env not set
+		t.Error("expected BuildElector() returns error but got none")
+	}
+
+	os.Setenv(controllerOrdinalEnv, "as-invalid")
+	defer os.Unsetenv(controllerOrdinalEnv)
+	le, err = BuildElector(ctx, laf, "name", enq)
+	if err == nil {
+		// invalide controller ordinal
+		t.Error("expected BuildElector() returns error but got none")
+	}
+
+	os.Setenv(controllerOrdinalEnv, "as-0")
+	le, err = BuildElector(ctx, laf, "name", enq)
 	if err != nil {
 		t.Fatalf("BuildElector() = %v", err)
 	}
