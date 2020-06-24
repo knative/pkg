@@ -28,6 +28,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/go-cmp/cmp"
 	"golang.org/x/sync/errgroup"
 	jsonpatch "gomodules.xyz/jsonpatch/v2"
 	admissionv1 "k8s.io/api/admission/v1"
@@ -154,6 +155,11 @@ func TestAdmissionValidResponseForResource(t *testing.T) {
 		err = json.NewDecoder(bytes.NewReader(responseBody)).Decode(&reviewResponse)
 		if err != nil {
 			t.Errorf("Failed to decode response: %v", err)
+			return
+		}
+
+		if diff := cmp.Diff(rev.TypeMeta, reviewResponse.TypeMeta); diff != "" {
+			t.Errorf("expected the response typeMeta to be the same as the request (-want, +got)\n%s", diff)
 			return
 		}
 	}()
