@@ -204,11 +204,12 @@ func flatten(path []string) string {
 	var newPath []string
 	for _, part := range path {
 		for _, p := range strings.Split(part, ".") {
-			if p == CurrentField {
+			switch {
+			case p == CurrentField:
 				continue
-			} else if len(newPath) > 0 && isIndex(p) {
+			case len(newPath) > 0 && isIndex(p):
 				newPath[len(newPath)-1] += p
-			} else {
+			default:
 				newPath = append(newPath, p)
 			}
 		}
