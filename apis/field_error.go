@@ -383,7 +383,7 @@ func ErrOutOfBoundsValue(value, lower, upper interface{}, fieldPath string) *Fie
 func CheckDisallowedFields(request, maskedRequest interface{}) *FieldError {
 	if disallowed, err := kmp.CompareSetFields(request, maskedRequest); err != nil {
 		return &FieldError{
-			Message: fmt.Sprintf("Internal Error"),
+			Message: "Internal Error",
 			Paths:   []string{CurrentField},
 		}
 	} else if len(disallowed) > 0 {
