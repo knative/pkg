@@ -933,8 +933,8 @@ func TestStartAndShutdownWithLeaderAwareWithLostElection(t *testing.T) {
 			Spec: coordinationv1.LeaseSpec{
 				HolderIdentity:       ptr.String("not-us"),
 				LeaseDurationSeconds: ptr.Int32(3000),
-				AcquireTime:          &metav1.MicroTime{time.Now()},
-				RenewTime:            &metav1.MicroTime{time.Now().Add(3000 * time.Second)},
+				AcquireTime:          &metav1.MicroTime{Time: time.Now()},
+				RenewTime:            &metav1.MicroTime{Time: time.Now().Add(3000 * time.Second)},
 			},
 		},
 	)
