@@ -181,15 +181,8 @@ func TestWithStatefulSetBuilder(t *testing.T) {
 		t.Error("expected BuildElector() returns error but got none")
 	}
 
-	os.Setenv(controllerOrdinalEnv, "as-invalid")
-	defer os.Unsetenv(controllerOrdinalEnv)
-	le, err = BuildElector(ctx, laf, "name", enq)
-	if err == nil {
-		// invalide controller ordinal
-		t.Error("expected BuildElector() returns error but got none")
-	}
-
 	os.Setenv(controllerOrdinalEnv, "as-0")
+	defer os.Unsetenv(controllerOrdinalEnv)
 	le, err = BuildElector(ctx, laf, "name", enq)
 	if err != nil {
 		t.Fatalf("BuildElector() = %v", err)

@@ -20,8 +20,6 @@ import (
 	"context"
 	"fmt"
 	"hash/fnv"
-	"os"
-	"strconv"
 	"strings"
 	"sync"
 
@@ -34,8 +32,6 @@ import (
 	"knative.dev/pkg/reconciler"
 	"knative.dev/pkg/system"
 )
-
-const controllerOrdinalEnv = "CONTROLLER_ORDINAL"
 
 // WithStandardLeaderElectorBuilder infuses a context with the ability to build
 // LeaderElectors with the provided component configuration acquiring resource
@@ -166,7 +162,7 @@ type statefulSetBuilder struct {
 func (b *statefulSetBuilder) BuildElector(ctx context.Context, la reconciler.LeaderAware, enq func(reconciler.Bucket, types.NamespacedName)) (Elector, error) {
 	logger := logging.FromContext(ctx)
 
-	ordianl, err := controllerOrdinal()
+	ordianl, err := ControllerOrdinal()
 	if err != nil {
 		return nil, err
 	}
@@ -185,15 +181,6 @@ func (b *statefulSetBuilder) BuildElector(ctx context.Context, la reconciler.Lea
 		la:  la,
 		enq: enq,
 	}, nil
-}
-
-func controllerOrdinal() (uint64, error) {
-	v := os.Getenv(controllerOrdinalEnv)
-	if i := strings.LastIndex(v, "-"); i != -1 {
-		return strconv.ParseUint(v[i+1:], 10, 64)
-	}
-
-	return 0, fmt.Errorf("ordinal not found in %s=%s", controllerOrdinalEnv, v)
 }
 
 // unopposedElector promotes when run without needing to be elected.
