@@ -46,8 +46,11 @@ func WithStandardLeaderElectorBuilder(ctx context.Context, kc kubernetes.Interfa
 // WithStatefulSetLeaderElectorBuilder infuses a context with the ability to build
 // Electors which are assigned leadership based on the StatefulSet ordinal from
 // the provided component configuration.
-func WithStatefulSetLeaderElectorBuilder(ctx context.Context, cc ComponentConfig) context.Context {
-	return context.WithValue(ctx, builderKey{}, &statefulSetBuilder{cc})
+func WithStatefulSetLeaderElectorBuilder(ctx context.Context, cc ComponentConfig, ssc StatefulSetConfig) context.Context {
+	return context.WithValue(ctx, builderKey{}, &statefulSetBuilder{
+		lec: cc,
+		ssc: ssc,
+	})
 }
 
 // HasLeaderElection returns whether there is leader election configuration
@@ -156,27 +159,28 @@ func (b *standardBuilder) BuildElector(ctx context.Context, la reconciler.Leader
 }
 
 type statefulSetBuilder struct {
-	ComponentConfig
+	lec ComponentConfig
+	ssc StatefulSetConfig
 }
 
 func (b *statefulSetBuilder) BuildElector(ctx context.Context, la reconciler.LeaderAware, enq func(reconciler.Bucket, types.NamespacedName)) (Elector, error) {
 	logger := logging.FromContext(ctx)
 
-	ordianl, err := ControllerOrdinal()
+	ordinal, err := ControllerOrdinal()
 	if err != nil {
 		return nil, err
 	}
 
-	logger.Infof("%s will run in StatefulSet ordinal assignement mode with ordinal %d", b.Component, ordianl)
+	logger.Infof("%s will run in StatefulSet ordinal assignement mode with ordinal %d", b.lec.Component, ordinal)
 
 	return &unopposedElector{
 		bkt: &bucket{
 			// The name is the full pod DNS of the owner pod of this bucket.
-			name: fmt.Sprintf("%s://%s-%d.%s.%s.svc.%s:%s", b.StatefulSet.Protocol,
-				b.StatefulSet.StatefulSetName, ordianl, b.StatefulSet.ServiceName,
-				system.Namespace(), network.GetClusterDomainName(), b.StatefulSet.Port),
-			index: uint32(ordianl),
-			total: b.Buckets,
+			name: fmt.Sprintf("%s://%s-%d.%s.%s.svc.%s:%s", b.ssc.Protocol,
+				b.ssc.StatefulSetName, ordinal, b.ssc.ServiceName,
+				system.Namespace(), network.GetClusterDomainName(), b.ssc.Port),
+			index: uint32(ordinal),
+			total: b.lec.Buckets,
 		},
 		la:  la,
 		enq: enq,

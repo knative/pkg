@@ -117,18 +117,13 @@ func defaultConfig() *Config {
 
 // ComponentConfig represents the leader election config for a single component.
 type ComponentConfig struct {
-	Component   string
-	LeaderElect bool
-	Buckets     uint32
-
-	// The following section is for standard leader election mode only.
+	Component     string
+	LeaderElect   bool
+	Buckets       uint32
 	ResourceLock  string
 	LeaseDuration time.Duration
 	RenewDeadline time.Duration
 	RetryPeriod   time.Duration
-
-	// The following section is for StatefulSet ordinal assignment mode only.
-	StatefulSet StatefulSetConfig
 }
 
 // StatefulSetConfig represents the required information for a StatefulSet service.

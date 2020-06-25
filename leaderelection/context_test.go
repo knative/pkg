@@ -151,12 +151,6 @@ func TestWithStatefulSetBuilder(t *testing.T) {
 		Component:   "component",
 		LeaderElect: true,
 		Buckets:     1,
-		StatefulSet: StatefulSetConfig{
-			ServiceName:     "autoscaler",
-			StatefulSetName: "as",
-			Protocol:        "ws",
-			Port:            "8080",
-		},
 	}
 	podDNS := "ws://as-0.autoscaler.knative-testing.svc.cluster.local:8080"
 	ctx := context.Background()
@@ -170,7 +164,12 @@ func TestWithStatefulSetBuilder(t *testing.T) {
 	}
 	enq := func(reconciler.Bucket, types.NamespacedName) {}
 
-	ctx = WithStatefulSetLeaderElectorBuilder(ctx, cc)
+	ctx = WithStatefulSetLeaderElectorBuilder(ctx, cc, StatefulSetConfig{
+		ServiceName:     "autoscaler",
+		StatefulSetName: "as",
+		Protocol:        "ws",
+		Port:            "8080",
+	})
 	if !HasLeaderElection(ctx) {
 		t.Error("HasLeaderElection() = false, wanted true")
 	}
