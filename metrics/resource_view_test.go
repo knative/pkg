@@ -139,6 +139,24 @@ func TestSetFactor(t *testing.T) {
 	}
 }
 
+func TestResourceAsString(t *testing.T) {
+	r1 := &resource.Resource{Type: "foobar", Labels: map[string]string{"k1": "v1", "k2": "v2"}}
+	r2 := &resource.Resource{Type: "foobar", Labels: map[string]string{"k2": "v2", "k1": "v1"}}
+	r3 := &resource.Resource{Type: "foobar", Labels: map[string]string{"k1": "v1", "k3": "v3"}}
+
+	s1 := resourceAsString(r1)
+	s2 := resourceAsString(r2)
+	s3 := resourceAsString(r3)
+
+	if s1 != s2 {
+		t.Errorf("Expect same resources, but got %s and %s", s1, s2)
+	}
+
+	if s1 == s3 {
+		t.Errorf("Expect different resources, but got the same %s", s1)
+	}
+}
+
 type metricExtract struct {
 	Name   string
 	Labels map[string]string
