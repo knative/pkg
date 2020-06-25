@@ -36,7 +36,7 @@ CODEGEN_PKG=${CODEGEN_PKG:-$(cd ${REPO_ROOT_DIR}; ls -d -1 $(dirname $0)/../vend
 #                  instead of the $GOPATH directly. For normal projects this can be dropped.
 
 # Knative Injection
-${REPO_ROOT_DIR}/hack/generate-knative.sh "injection" \
+bash ${REPO_ROOT_DIR}/hack/generate-knative.sh "injection" \
   knative.dev/pkg/client knative.dev/pkg/apis \
   "duck:v1alpha1,v1beta1,v1" \
   --go-header-file ${REPO_ROOT_DIR}/hack/boilerplate/boilerplate.go.txt
@@ -44,7 +44,7 @@ ${REPO_ROOT_DIR}/hack/generate-knative.sh "injection" \
 OUTPUT_PKG="knative.dev/pkg/client/injection/kube" \
 VERSIONED_CLIENTSET_PKG="k8s.io/client-go/kubernetes" \
 EXTERNAL_INFORMER_PKG="k8s.io/client-go/informers" \
-  ${REPO_ROOT_DIR}/hack/generate-knative.sh "injection" \
+bash ${REPO_ROOT_DIR}/hack/generate-knative.sh "injection" \
     k8s.io/client-go \
     k8s.io/api \
     "admissionregistration:v1beta1,v1 apps:v1 autoscaling:v1,v2beta1 batch:v1,v1beta1 core:v1 rbac:v1" \
@@ -53,7 +53,7 @@ EXTERNAL_INFORMER_PKG="k8s.io/client-go/informers" \
 
 OUTPUT_PKG="knative.dev/pkg/client/injection/apiextensions" \
 VERSIONED_CLIENTSET_PKG="k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset" \
-  ${REPO_ROOT_DIR}/hack/generate-knative.sh "injection" \
+bash ${REPO_ROOT_DIR}/hack/generate-knative.sh "injection" \
     k8s.io/apiextensions-apiserver/pkg/client \
     k8s.io/apiextensions-apiserver/pkg/apis \
     "apiextensions:v1beta1,v1" \
@@ -61,8 +61,7 @@ VERSIONED_CLIENTSET_PKG="k8s.io/apiextensions-apiserver/pkg/client/clientset/cli
     --force-genreconciler-kinds "CustomResourceDefinition"
 
 # Only deepcopy the Duck types, as they are not real resources.
-chmod +x ${CODEGEN_PKG}/generate-groups.sh
-${CODEGEN_PKG}/generate-groups.sh "deepcopy" \
+bash ${CODEGEN_PKG}/generate-groups.sh "deepcopy" \
   knative.dev/pkg/client knative.dev/pkg/apis \
   "duck:v1alpha1,v1beta1,v1" \
   --go-header-file ${REPO_ROOT_DIR}/hack/boilerplate/boilerplate.go.txt
