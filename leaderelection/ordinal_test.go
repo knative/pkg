@@ -28,32 +28,25 @@ func TestControllerOrdinal(t *testing.T) {
 		podName  string
 		want     uint64
 		err      error
-	}{
-		{
+	}{{
 			testname: "NotSet",
 			err:      fmt.Errorf("ordinal not found in %s=", controllerOrdinalEnv),
-		},
-		{
+		},{
 			testname: "NoHyphen",
 			podName:  "as",
 			err:      fmt.Errorf("ordinal not found in %s=as", controllerOrdinalEnv),
-		},
-		{
+		},{
 			testname: "InvalidOrdinal",
 			podName:  "as-invalid",
 			err:      fmt.Errorf(`strconv.ParseUint: parsing "invalid": invalid syntax`),
-		},
-		{
+		},{
 			testname: "ValidName",
 			podName:  "as-0",
-			want:     0,
-		},
-		{
+		},{
 			testname: "ValidName",
 			podName:  "as-1",
 			want:     1,
-		},
-	}
+		}}
 
 	defer os.Unsetenv(controllerOrdinalEnv)
 	for _, tt := range testCases {
@@ -70,7 +63,7 @@ func TestControllerOrdinal(t *testing.T) {
 					t.Errorf("got %v, want = %v, ", gotErr, tt.err)
 				}
 			} else if gotErr != nil {
-				t.Errorf("unexpect err from ControllerOrdinal() = %v", gotErr)
+				t.Error("ControllerOrdinal() =", gotErr)
 			} else if got != tt.want {
 				t.Errorf("ControllerOrdinal() = %d, want = %d", got, tt.want)
 			}
