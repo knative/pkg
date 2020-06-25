@@ -59,8 +59,8 @@ type meters struct {
 // Lock regime: lock allMeters before resourceViews. The critical path is in
 // optionForResource, which must lock allMeters, but only needs to lock
 // resourceViews if a new meter needs to be created.
-var resourceViews storedViews = storedViews{}
-var allMeters meters = meters{
+var resourceViews = storedViews{}
+var allMeters = meters{
 	meters:        map[string]*meterExporter{"": &defaultMeter},
 	resourceToKey: map[*resource.Resource]string{nil: ""},
 }
@@ -95,6 +95,9 @@ func RegisterResourceView(views ...*view.View) error {
 	return nil
 }
 
+// UnrregisterResourceView is similar to view.Unregiste(), except that it will
+// unregister the view across all Resources tracked byt he system, rather than
+// simply the default view.
 func UnregisterResourceView(views ...*view.View) {
 	allMeters.lock.Lock()
 	defer allMeters.lock.Unlock()
@@ -144,22 +147,19 @@ func setFactory(f func(*resource.Resource) (view.Exporter, error)) error {
 
 	allMeters.factory = f
 
-	errs := make([]error, len(allMeters.meters))
+	var retErr error
 
 	for r, meter := range allMeters.meters {
 		e, err := f(resourceFromString(r))
 		if err != nil {
-			errs = append(errs, err)
-			continue
+			retErr = err
+			continue // Keep trying to clean up remaining Meters.
 		}
 		meter.m.UnregisterExporter(meter.e)
 		meter.m.RegisterExporter(e)
 		meter.e = e
 	}
-	if len(errs) > 0 {
-		return errs[0]
-	}
-	return nil
+	return retErr
 }
 
 func flushResourceExporters() {
@@ -259,14 +259,14 @@ func resourceFromString(s string) *resource.Resource {
 	if s == "" {
 		return nil
 	}
-	r := resource.Resource{Labels: map[string]string{}}
+	r := &resource.Resource{Labels: map[string]string{}}
 	parts := strings.Split(s, "\x01")
 	r.Type = parts[0]
 	for _, label := range parts[1:] {
 		keyValue := strings.SplitN(label, "\x02", 2)
 		r.Labels[keyValue[0]] = keyValue[1]
 	}
-	return &r
+	return r
 }
 
 // defaultMeter is a pass-through to the default worker in OpenCensus. This
@@ -276,7 +276,7 @@ type defaultMeterImpl struct{}
 
 var _ view.Meter = (*defaultMeterImpl)(nil)
 
-var defaultMeter meterExporter = meterExporter{
+var defaultMeter = meterExporter{
 	m: &defaultMeterImpl{},
 	o: stats.WithRecorder(nil),
 }

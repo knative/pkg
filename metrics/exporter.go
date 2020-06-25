@@ -199,26 +199,20 @@ func newMetricsExporter(config *metricsConfig, logger *zap.SugaredLogger) (view.
 		se.StopMetricsExporter()
 	}
 
-	var err error
-	var e view.Exporter
-	var f ResourceExporterFactory
-	switch config.backendDestination {
-	case openCensus:
-		e, f, err = newOpenCensusExporter(config, logger)
-	case stackdriver:
-		e, f, err = newStackdriverExporter(config, logger)
-	case prometheus:
-		e, f, err = newPrometheusExporter(config, logger)
-	case none:
+	factory := map[metricsBackend]func(*metricsConfig, *zap.SugaredLogger) (view.Exporter, ResourceExporterFactory, error){
+		stackdriver: newStackdriverExporter,
+		openCensus:  newOpenCensusExporter,
+		prometheus:  newPrometheusExporter,
+		none: func(*metricsConfig, *zap.SugaredLogger) (view.Exporter, ResourceExporterFactory, error) {
+			return nil, nil, nil
+		},
+	}
 
-		e, err = nil, nil
-	default:
-		err = fmt.Errorf("unsupported metrics backend %v", config.backendDestination)
+	ff := factory[config.backendDestination]
+	if ff == nil {
+		return nil, nil, fmt.Errorf("unsuppored metrics backend %v", config.backendDestination)
 	}
-	if err != nil {
-		return nil, nil, err
-	}
-	return e, f, nil
+	return ff(config, logger)
 }
 
 func getCurMetricsExporter() view.Exporter {
