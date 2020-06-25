@@ -25,6 +25,7 @@ import (
 	"net/http"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
 	"golang.org/x/sync/errgroup"
 	apixv1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -135,6 +136,10 @@ func TestConversionValidResponse(t *testing.T) {
 
 	if reviewResponse.Response.UID != "some-uid" {
 		t.Errorf("expected the response uid to be the stubbed version")
+	}
+
+	if diff := cmp.Diff(review.TypeMeta, reviewResponse.TypeMeta); diff != "" {
+		t.Errorf("expected the response typeMeta to be the same as the request (-want, +got)\n%s", diff)
 	}
 }
 
