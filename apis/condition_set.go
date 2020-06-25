@@ -194,8 +194,8 @@ func (r conditionsImpl) SetCondition(cond Condition) {
 			conditions = append(conditions, c)
 		}
 	}
-	new.LastTransitionTime = metav1.NewTime(time.Now())
-	conditions = append(conditions, new)
+	cond.LastTransitionTime = metav1.NewTime(time.Now())
+	conditions = append(conditions, cond)
 	// Sorted for convenience of the consumer, i.e. kubectl.
 	sort.Slice(conditions, func(i, j int) bool { return conditions[i].Type < conditions[j].Type })
 	r.accessor.SetConditions(conditions)
