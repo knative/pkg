@@ -67,7 +67,7 @@ func TestControllerOrdinal(t *testing.T) {
 			got, gotErr := ControllerOrdinal()
 			if tt.err != nil {
 				if gotErr == nil || gotErr.Error() != tt.err.Error() {
-					t.Errorf("expect err from ControllerOrdinal() = %v, got %v", tt.err, gotErr)
+					t.Errorf("got %v, want = %v, ", gotErr, tt.err)
 				}
 			} else if gotErr != nil {
 				t.Errorf("unexpect err from ControllerOrdinal() = %v", gotErr)

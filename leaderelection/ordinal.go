@@ -23,6 +23,8 @@ import (
 	"strings"
 )
 
+// If run a process on Kubernetes, the value of this environment variable
+// should be set to the pod name via the downward API.
 const controllerOrdinalEnv = "CONTROLLER_ORDINAL"
 
 // ControllerOrdinal tries to get ordinal from the pod name of a StatefulSet,
