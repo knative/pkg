@@ -124,7 +124,7 @@ func CheckLastValueData(t test.T, name string, wantTags map[string]string, wantV
 	CheckLastValueDataWithMeter(t, name, wantTags, wantValue, nil)
 }
 
-// CHeckLastValueDataWithMeter checks the  view with a name matching the string name in the
+// CheckLastValueDataWithMeter checks the  view with a name matching the string name in the
 // specified Meter (resource-specific view) to verify that the LastValueData stats are tagged with
 // the tags in wantTags and that wantValue matches the last reported value.
 func CheckLastValueDataWithMeter(t test.T, name string, wantTags map[string]string, wantValue float64, meter view.Meter) {

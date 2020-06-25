@@ -95,7 +95,7 @@ func RegisterResourceView(views ...*view.View) error {
 	return nil
 }
 
-// UnrregisterResourceView is similar to view.Unregiste(), except that it will
+// UnregisterResourceView is similar to view.Unregiste(), except that it will
 // unregister the view across all Resources tracked byt he system, rather than
 // simply the default view.
 func UnregisterResourceView(views ...*view.View) {
