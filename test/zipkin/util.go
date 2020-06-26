@@ -74,36 +74,37 @@ var (
 func SetupZipkinTracingFromConfigTracing(kubeClientset *kubernetes.Clientset, logf logging.FormatLogger, configMapNamespace string) error {
 	cm, err := kubeClientset.CoreV1().ConfigMaps(configMapNamespace).Get("config-tracing", metav1.GetOptions{})
 	if err != nil {
-		return fmt.Errorf("Error while retrieving config-tracing config map: %w", err)
+		return fmt.Errorf("error while retrieving config-tracing config map: %w", err)
 	}
 	c, err := tracingconfig.NewTracingConfigFromConfigMap(cm)
 	if err != nil {
-		return fmt.Errorf("Error while parsing config-tracing config map: %w", err)
+		return fmt.Errorf("error while parsing config-tracing config map: %w", err)
 	}
-	zipkinEndpointUrl, err := url.Parse(c.ZipkinEndpoint)
+	zipkinEndpointURL, err := url.Parse(c.ZipkinEndpoint)
 	if err != nil {
-		return fmt.Errorf("Error while parsing the zipkin endpoint in config-tracing config map: %w", err)
+		return fmt.Errorf("error while parsing the zipkin endpoint in config-tracing config map: %w", err)
 	}
-	unparsedPort := zipkinEndpointUrl.Port()
-	port := 80
+	unparsedPort := zipkinEndpointURL.Port()
+	port := uint64(80)
 	if unparsedPort != "" {
-		port, err = strconv.Atoi(unparsedPort)
+		port, err = strconv.ParseUint(unparsedPort, 10, 16)
 		if err != nil {
-			return fmt.Errorf("Error while parsing the zipkin endpoint port in config-tracing config map: %w", err)
+			return fmt.Errorf("error while parsing the zipkin endpoint port in config-tracing config map: %w", err)
 		}
 	}
 
-	namespace, err := parseNamespaceFromHostname(zipkinEndpointUrl.Host)
+	namespace, err := parseNamespaceFromHostname(zipkinEndpointURL.Host)
 	if err != nil {
-		return fmt.Errorf("Error while parsing the zipkin endpoint in config-tracing config map: %w", err)
+		return fmt.Errorf("error while parsing the Zipkin endpoint in config-tracing config map: %w", err)
 	}
 
-	return SetupZipkinTracing(kubeClientset, logf, port, namespace)
+	return SetupZipkinTracing(kubeClientset, logf, int(port), namespace)
 }
 
+// SetupZipkinTracingFromConfigTracingOrFail is same as SetupZipkinTracingFromConfigTracing, but fails the test if an error happens
 func SetupZipkinTracingFromConfigTracingOrFail(t testing.TB, kubeClientset *kubernetes.Clientset, configMapNamespace string) {
 	if err := SetupZipkinTracingFromConfigTracing(kubeClientset, t.Logf, configMapNamespace); err != nil {
-		t.Fatalf("Error while setup zipkin tracing: %v", err)
+		t.Fatalf("Error while setup Zipkin tracing: %v", err)
 	}
 }
 
@@ -122,13 +123,13 @@ func SetupZipkinTracing(kubeClientset *kubernetes.Clientset, logf logging.Format
 
 		zipkinPods, err := monitoring.GetPods(kubeClientset, appLabel, zipkinNamespace)
 		if err != nil {
-			err = fmt.Errorf("Error retrieving Zipkin pod details: %w", err)
+			err = fmt.Errorf("error retrieving Zipkin pod details: %w", err)
 			return
 		}
 
 		zipkinPortForwardPID, err = monitoring.PortForward(logf, zipkinPods, ZipkinPort, zipkinRemotePort, zipkinNamespace)
 		if err != nil {
-			err = fmt.Errorf("Error starting kubectl port-forward command: %w", err)
+			err = fmt.Errorf("error starting kubectl port-forward command: %w", err)
 			return
 		}
 
@@ -141,6 +142,7 @@ func SetupZipkinTracing(kubeClientset *kubernetes.Clientset, logf logging.Format
 	return err
 }
 
+// SetupZipkinTracingOrFail is same as SetupZipkinTracing, but fails the test if an error happens
 func SetupZipkinTracingOrFail(t testing.TB, kubeClientset *kubernetes.Clientset, zipkinRemotePort int, zipkinNamespace string) {
 	if err := SetupZipkinTracing(kubeClientset, t.Logf, zipkinRemotePort, zipkinNamespace); err != nil {
 		t.Fatalf("Error while setup zipkin tracing: %v", err)
