@@ -21,6 +21,7 @@ package leaderelection
 
 import (
 	"context"
+	"os"
 	"testing"
 	"time"
 
@@ -95,7 +96,7 @@ func TestWithBuilder(t *testing.T) {
 
 	le, err := BuildElector(ctx, laf, "name", enq)
 	if err != nil {
-		t.Errorf("BuildElector() = %v", err)
+		t.Fatalf("BuildElector() = %v", err)
 	}
 
 	// We shouldn't see leases until we Run the elector.
@@ -142,5 +143,73 @@ func TestWithBuilder(t *testing.T) {
 		// We expect to have been demoted.
 	case <-time.After(1 * time.Second):
 		t.Fatal("Timed out waiting for demotion.")
+	}
+}
+
+func TestWithStatefulSetBuilder(t *testing.T) {
+	cc := ComponentConfig{
+		Component:   "component",
+		LeaderElect: true,
+		Buckets:     1,
+	}
+	podDNS := "ws://as-0.autoscaler.knative-testing.svc.cluster.local:8080"
+	ctx := context.Background()
+
+	promoted := make(chan struct{})
+	laf := &reconciler.LeaderAwareFuncs{
+		PromoteFunc: func(bkt reconciler.Bucket, enq func(reconciler.Bucket, types.NamespacedName)) error {
+			close(promoted)
+			return nil
+		},
+	}
+	enq := func(reconciler.Bucket, types.NamespacedName) {}
+
+	ctx = WithStatefulSetLeaderElectorBuilder(ctx, cc, StatefulSetConfig{
+		ServiceName:     "autoscaler",
+		StatefulSetName: "as",
+		Protocol:        "ws",
+		Port:            "8080",
+	})
+	if !HasLeaderElection(ctx) {
+		t.Error("HasLeaderElection() = false, wanted true")
+	}
+
+	le, err := BuildElector(ctx, laf, "name", enq)
+	if err == nil {
+		// controller ordinal env not set
+		t.Error("expected BuildElector() returns error but got none")
+	}
+
+	os.Setenv(controllerOrdinalEnv, "as-0")
+	defer os.Unsetenv(controllerOrdinalEnv)
+	le, err = BuildElector(ctx, laf, "name", enq)
+	if err != nil {
+		t.Fatalf("BuildElector() = %v", err)
+	}
+
+	ule, ok := le.(*unopposedElector)
+	if !ok {
+		t.Fatalf("BuildElector() = %T, wanted an unopposedElector", le)
+	}
+	if got, want := ule.bkt.Name(), podDNS; got != want {
+		t.Errorf("bkt.Name() = %s, wanted %s", got, want)
+	}
+
+	// Shouldn't be promoted until we Run the elector.
+	select {
+	case <-promoted:
+		t.Error("Got promoted, want no actions.")
+	default:
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	t.Cleanup(cancel)
+	go le.Run(ctx)
+
+	select {
+	case <-promoted:
+		// We expect to have been promoted.
+	case <-time.After(1 * time.Second):
+		t.Fatal("Timed out waiting for promotion.")
 	}
 }
