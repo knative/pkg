@@ -27,20 +27,17 @@ import (
 // should be set to the pod name via the downward API.
 const controllerOrdinalEnv = "CONTROLLER_ORDINAL"
 
-// ParseControllerOrdinal returns the parts of the StatefulSet's pod name.
-func ParseControllerOrdinal() (string, uint64, error) {
-	v := os.Getenv(controllerOrdinalEnv)
-	if i := strings.LastIndex(v, "-"); i != -1 {
-		ui, err := strconv.ParseUint(v[i+1:], 10, 64)
-		return v[:i], ui, err
-	}
-
-	return "", 0, fmt.Errorf("ordinal not found in %s=%s", controllerOrdinalEnv, v)
-}
-
 // ControllerOrdinal tries to get ordinal from the pod name of a StatefulSet,
 // which is provided from the environment variable CONTROLLER_ORDINAL.
-func ControllerOrdinal() (uint64, error) {
-	_, ui, err := ParseControllerOrdinal()
-	return ui, err
+func ControllerOrdinal() (int, error) {
+	v, ok := os.LookupEnv(controllerOrdinalEnv)
+	if !ok {
+		return 0, fmt.Errorf("%s envvar is not set", controllerOrdinalEnv)
+	}
+	if i := strings.LastIndex(v, "-"); i != -1 {
+		ui, err := strconv.ParseUint(v[i+1:], 10, 64)
+		return int(ui), err
+	}
+
+	return 0, fmt.Errorf("ordinal not found in %s=%s", controllerOrdinalEnv, v)
 }

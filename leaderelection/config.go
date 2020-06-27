@@ -19,6 +19,8 @@ package leaderelection
 import (
 	"fmt"
 	"os"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/kelseyhightower/envconfig"
@@ -127,21 +129,33 @@ type ComponentConfig struct {
 	RetryPeriod   time.Duration
 }
 
-// StatefulSetConfig represents the required information for a StatefulSet service.
-type StatefulSetConfig struct {
-	StatefulSetName string
-	ServiceName     string `envconfig:"STATEFUL_SERVICE_NAME" required:"true"`
-	Port            string `envconfig:"STATEFUL_SERVICE_PORT" default:"80"`
-	Protocol        string `envconfig:"STATEFUL_SERVICE_PROTOCOL" default:"http"`
+// statefulSetID is a envconfig Decodable controller ordinal and name.
+type statefulSetID struct {
+	ssName  string
+	ordinal int
 }
 
-func NewStatefulSetConfig() (*StatefulSetConfig, error) {
-	var ssc StatefulSetConfig
-	ssn, _, err := ParseControllerOrdinal()
-	if err != nil {
-		return nil, err
+func (ssID *statefulSetID) Decode(v string) error {
+	if i := strings.LastIndex(v, "-"); i != -1 {
+		ui, err := strconv.ParseUint(v[i+1:], 10, 64)
+		ssID.ordinal = int(ui)
+		ssID.ssName = v[:i]
+		return err
 	}
-	ssc.StatefulSetName = ssn
+	return fmt.Errorf("%q is not a valid stateful set controller ordinal", v)
+}
+
+// statefulSetConfig represents the required information for a StatefulSet service.
+type statefulSetConfig struct {
+	StatefulSetID statefulSetID `envconfig:"CONTROLLER_ORDINAL" required:"true"`
+	ServiceName   string        `envconfig:"STATEFUL_SERVICE_NAME" required:"true"`
+	Port          string        `envconfig:"STATEFUL_SERVICE_PORT" default:"80"`
+	Protocol      string        `envconfig:"STATEFUL_SERVICE_PROTOCOL" default:"http"`
+}
+
+// NewStatefulSetConfig builds a stateful set LE config.
+func NewStatefulSetConfig() (*statefulSetConfig, error) {
+	var ssc statefulSetConfig
 	if err := envconfig.Process("", &ssc); err != nil {
 		return nil, err
 	}
