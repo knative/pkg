@@ -21,6 +21,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/kelseyhightower/envconfig"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/apimachinery/pkg/util/uuid"
@@ -129,9 +130,22 @@ type ComponentConfig struct {
 // StatefulSetConfig represents the required information for a StatefulSet service.
 type StatefulSetConfig struct {
 	StatefulSetName string
-	ServiceName     string
-	Port            string
-	Protocol        string
+	ServiceName     string `envconfig:"STATEFUL_SERVICE_NAME" required:"true"`
+	Port            string `envconfig:"STATEFUL_SERVICE_PORT" default:"80"`
+	Protocol        string `envconfig:"STATEFUL_SERVICE_PROTOCOL" default:"http"`
+}
+
+func NewStatefulSetConfig() (*StatefulSetConfig, error) {
+	var ssc StatefulSetConfig
+	ssn, _, err := ParseControllerOrdinal()
+	if err != nil {
+		return nil, err
+	}
+	ssc.StatefulSetName = ssn
+	if err := envconfig.Process("", &ssc); err != nil {
+		return nil, err
+	}
+	return &ssc, nil
 }
 
 func defaultComponentConfig(name string) ComponentConfig {

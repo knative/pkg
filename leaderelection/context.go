@@ -33,6 +33,16 @@ import (
 	"knative.dev/pkg/system"
 )
 
+// WithDynamicLeaderElectorBuilder sets up the statefulset elector based on environment,
+// falling back on the standard elector.
+func WithDynamicLeaderElectorBuilder(ctx context.Context, kc kubernetes.Interface, cc ComponentConfig) context.Context {
+	ssc, err := NewStatefulSetConfig()
+	if err == nil {
+		return WithStatefulSetLeaderElectorBuilder(ctx, cc, *ssc)
+	}
+	return WithStandardLeaderElectorBuilder(ctx, kc, cc)
+}
+
 // WithStandardLeaderElectorBuilder infuses a context with the ability to build
 // LeaderElectors with the provided component configuration acquiring resource
 // locks via the provided kubernetes client.

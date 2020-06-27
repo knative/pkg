@@ -89,7 +89,7 @@ func TestWithBuilder(t *testing.T) {
 		t.Errorf("BuildElector() = %T, wanted an unopposedElector", le)
 	}
 
-	ctx = WithStandardLeaderElectorBuilder(ctx, kc, cc)
+	ctx = WithDynamicLeaderElectorBuilder(ctx, kc, cc)
 	if !HasLeaderElection(ctx) {
 		t.Error("HasLeaderElection() = false, wanted true")
 	}
@@ -164,25 +164,29 @@ func TestWithStatefulSetBuilder(t *testing.T) {
 	}
 	enq := func(reconciler.Bucket, types.NamespacedName) {}
 
-	ctx = WithStatefulSetLeaderElectorBuilder(ctx, cc, StatefulSetConfig{
-		ServiceName:     "autoscaler",
-		StatefulSetName: "as",
-		Protocol:        "ws",
-		Port:            "8080",
-	})
+	if os.Setenv(controllerOrdinalEnv, "as-0") != nil {
+		t.Fatalf("fail to set env var %s=%s", controllerOrdinalEnv, "as-0")
+	}
+	defer os.Unsetenv(controllerOrdinalEnv)
+	if os.Setenv("STATEFUL_SERVICE_NAME", "autoscaler") != nil {
+		t.Fatalf("fail to set env var %s=%s", "STATEFUL_SERVICE_NAME", "autoscaler")
+	}
+	defer os.Unsetenv("STATEFUL_SERVICE_NAME")
+	if os.Setenv("STATEFUL_SERVICE_PORT", "8080") != nil {
+		t.Fatalf("fail to set env var %s=%s", "STATEFUL_SERVICE_PORT", "8080")
+	}
+	defer os.Unsetenv("STATEFUL_SERVICE_PORT")
+	if os.Setenv("STATEFUL_SERVICE_PROTOCOL", "ws") != nil {
+		t.Fatalf("fail to set env var %s=%s", "STATEFUL_SERVICE_PROTOCOL", "ws")
+	}
+	defer os.Unsetenv("STATEFUL_SERVICE_PROTOCOL")
+
+	ctx = WithDynamicLeaderElectorBuilder(ctx, nil, cc)
 	if !HasLeaderElection(ctx) {
 		t.Error("HasLeaderElection() = false, wanted true")
 	}
 
 	le, err := BuildElector(ctx, laf, "name", enq)
-	if err == nil {
-		// controller ordinal env not set
-		t.Error("expected BuildElector() returns error but got none")
-	}
-
-	os.Setenv(controllerOrdinalEnv, "as-0")
-	defer os.Unsetenv(controllerOrdinalEnv)
-	le, err = BuildElector(ctx, laf, "name", enq)
 	if err != nil {
 		t.Fatalf("BuildElector() = %v", err)
 	}
