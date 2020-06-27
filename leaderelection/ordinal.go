@@ -16,28 +16,12 @@ limitations under the License.
 
 package leaderelection
 
-import (
-	"fmt"
-	"os"
-	"strconv"
-	"strings"
-)
-
-// If run a process on Kubernetes, the value of this environment variable
-// should be set to the pod name via the downward API.
-const controllerOrdinalEnv = "STATEFUL_CONTROLLER_ORDINAL"
-
 // ControllerOrdinal tries to get ordinal from the pod name of a StatefulSet,
 // which is provided from the environment variable CONTROLLER_ORDINAL.
 func ControllerOrdinal() (int, error) {
-	v, ok := os.LookupEnv(controllerOrdinalEnv)
-	if !ok {
-		return 0, fmt.Errorf("%s envvar is not set", controllerOrdinalEnv)
+	ssc, err := newStatefulSetConfig()
+	if err != nil {
+		return 0, err
 	}
-	if i := strings.LastIndex(v, "-"); i != -1 {
-		ui, err := strconv.ParseUint(v[i+1:], 10, 64)
-		return int(ui), err
-	}
-
-	return 0, fmt.Errorf("ordinal not found in %s=%s", controllerOrdinalEnv, v)
+	return ssc.StatefulSetID.ordinal, nil
 }
