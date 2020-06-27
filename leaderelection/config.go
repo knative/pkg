@@ -145,9 +145,11 @@ func (ssID *statefulSetID) Decode(v string) error {
 	return fmt.Errorf("%q is not a valid stateful set controller ordinal", v)
 }
 
+var _ envconfig.Decoder = (*statefulSetID)(nil)
+
 // statefulSetConfig represents the required information for a StatefulSet service.
 type statefulSetConfig struct {
-	StatefulSetID statefulSetID `envconfig:"CONTROLLER_ORDINAL" required:"true"`
+	StatefulSetID statefulSetID `envconfig:"STATEFUL_CONTROLLER_ORDINAL" required:"true"`
 	ServiceName   string        `envconfig:"STATEFUL_SERVICE_NAME" required:"true"`
 	Port          string        `envconfig:"STATEFUL_SERVICE_PORT" default:"80"`
 	Protocol      string        `envconfig:"STATEFUL_SERVICE_PROTOCOL" default:"http"`
