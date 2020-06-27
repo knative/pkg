@@ -155,11 +155,11 @@ type statefulSetConfig struct {
 
 // NewStatefulSetConfig builds a stateful set LE config.
 func NewStatefulSetConfig() (*statefulSetConfig, error) {
-	var ssc statefulSetConfig
-	if err := envconfig.Process("", &ssc); err != nil {
+	ssc := &statefulSetConfig{}
+	if err := envconfig.Process("", ssc); err != nil {
 		return nil, err
 	}
-	return &ssc, nil
+	return ssc, nil
 }
 
 func defaultComponentConfig(name string) ComponentConfig {
