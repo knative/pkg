@@ -24,10 +24,11 @@ import (
 
 func TestControllerOrdinal(t *testing.T) {
 	testCases := []struct {
-		testname string
-		podName  string
-		want     uint64
-		err      error
+		testname    string
+		podName     string
+		wantName    string
+		wantOrdinal uint64
+		err         error
 	}{{
 		testname: "NotSet",
 		err:      fmt.Errorf("ordinal not found in %s=", controllerOrdinalEnv),
@@ -40,12 +41,15 @@ func TestControllerOrdinal(t *testing.T) {
 		podName:  "as-invalid",
 		err:      fmt.Errorf(`strconv.ParseUint: parsing "invalid": invalid syntax`),
 	}, {
-		testname: "ValidName",
-		podName:  "as-0",
+		testname:    "ValidName",
+		podName:     "as-0",
+		wantName:    "as",
+		wantOrdinal: 0,
 	}, {
-		testname: "ValidName",
-		podName:  "as-1",
-		want:     1,
+		testname:    "ValidName",
+		podName:     "as-1",
+		wantName:    "as",
+		wantOrdinal: 1,
 	}}
 
 	defer os.Unsetenv(controllerOrdinalEnv)
@@ -57,15 +61,26 @@ func TestControllerOrdinal(t *testing.T) {
 				}
 			}
 
-			got, gotErr := ControllerOrdinal()
+			gotOrdinal, gotOrdinalErr := ControllerOrdinal()
 			if tt.err != nil {
-				if gotErr == nil || gotErr.Error() != tt.err.Error() {
-					t.Errorf("got %v, want = %v, ", gotErr, tt.err)
+				if gotOrdinalErr == nil || gotOrdinalErr.Error() != tt.err.Error() {
+					t.Errorf("got %v, want = %v, ", gotOrdinalErr, tt.err)
 				}
-			} else if gotErr != nil {
-				t.Error("ControllerOrdinal() =", gotErr)
-			} else if got != tt.want {
-				t.Errorf("ControllerOrdinal() = %d, want = %d", got, tt.want)
+			} else if gotOrdinalErr != nil {
+				t.Error("ControllerOrdinal() = ", gotOrdinalErr)
+			} else if gotOrdinal != tt.wantOrdinal {
+				t.Errorf("ControllerOrdinal() = %d, want = %d", gotOrdinal, tt.wantOrdinal)
+			}
+
+			gotName, _, gotNameErr := ParseControllerOrdinal()
+			if tt.err != nil {
+				if gotNameErr == nil || gotNameErr.Error() != tt.err.Error() {
+					t.Errorf("got %v, want = %v, ", gotNameErr, tt.err)
+				}
+			} else if gotNameErr != nil {
+				t.Error("ParseControllerOrdinal() = ", gotNameErr)
+			} else if gotName != tt.wantName {
+				t.Errorf("ParseControllerOrdinal() = %s, want = %s", gotName, tt.wantName)
 			}
 		})
 	}
