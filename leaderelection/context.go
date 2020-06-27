@@ -37,7 +37,7 @@ import (
 // falling back on the standard elector.
 func WithDynamicLeaderElectorBuilder(ctx context.Context, kc kubernetes.Interface, cc ComponentConfig) context.Context {
 	logger := logging.FromContext(ctx)
-	ssc, err := NewStatefulSetConfig()
+	ssc, err := newStatefulSetConfig()
 	if err == nil {
 		logger.Info("Running with StatefulSet leader election")
 		return withStatefulSetElectorBuilder(ctx, cc, *ssc)

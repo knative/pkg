@@ -153,8 +153,8 @@ type statefulSetConfig struct {
 	Protocol      string        `envconfig:"STATEFUL_SERVICE_PROTOCOL" default:"http"`
 }
 
-// NewStatefulSetConfig builds a stateful set LE config.
-func NewStatefulSetConfig() (*statefulSetConfig, error) {
+// newStatefulSetConfig builds a stateful set LE config.
+func newStatefulSetConfig() (*statefulSetConfig, error) {
 	ssc := &statefulSetConfig{}
 	if err := envconfig.Process("", ssc); err != nil {
 		return nil, err
