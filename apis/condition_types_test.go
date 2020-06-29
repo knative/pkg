@@ -237,7 +237,7 @@ func TestJSON(t *testing.T) {
 		name: "LastTransitionTime",
 		raw:  `{"lastTransitionTime":"1984-02-28T18:52:00Z"}`,
 		condition: &Condition{
-			LastTransitionTime: VolatileTime{Inner: metav1.NewTime(time.Date(1984, 02, 28, 18, 52, 00, 00, time.UTC))},
+			LastTransitionTime: VolatileTime{Time: metav1.NewTime(time.Date(1984, 02, 28, 18, 52, 00, 00, time.UTC))},
 		},
 	}, {
 		name: "Reason",
@@ -263,7 +263,7 @@ func TestJSON(t *testing.T) {
 		condition: &Condition{
 			Type:               "Foo",
 			Status:             corev1.ConditionTrue,
-			LastTransitionTime: VolatileTime{Inner: metav1.NewTime(time.Date(1984, 02, 28, 18, 52, 00, 00, time.UTC))},
+			LastTransitionTime: VolatileTime{Time: metav1.NewTime(time.Date(1984, 02, 28, 18, 52, 00, 00, time.UTC))},
 			Reason:             "DatTest",
 			Message:            "this is just a test",
 		},

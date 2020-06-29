@@ -201,7 +201,7 @@ func (r conditionsImpl) SetCondition(cond Condition) {
 			}
 		}
 	}
-	cond.LastTransitionTime = VolatileTime{Inner: metav1.NewTime(time.Now())}
+	cond.LastTransitionTime = VolatileTime{Time: metav1.NewTime(time.Now())}
 	conditions = append(conditions, cond)
 	// Sorted for convenience of the consumer, i.e. kubectl.
 	sort.Slice(conditions, func(i, j int) bool { return conditions[i].Type < conditions[j].Type })
@@ -321,7 +321,7 @@ func (r conditionsImpl) findUnhappyDependent() *Condition {
 
 	// Sort set conditions by time.
 	sort.Slice(conditions, func(i, j int) bool {
-		return conditions[i].LastTransitionTime.Inner.Time.After(conditions[j].LastTransitionTime.Inner.Time)
+		return conditions[i].LastTransitionTime.Time.Time.After(conditions[j].LastTransitionTime.Time.Time)
 	})
 
 	// First check the conditions with Status == False.
