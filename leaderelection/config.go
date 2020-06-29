@@ -62,7 +62,7 @@ func NewConfigFromMap(data map[string]string) (*Config, error) {
 		return nil, fmt.Errorf("buckets: value must be between %d <= %d <= %d", 1, config.Buckets, MaxBuckets)
 	}
 	if !validResourceLocks.Has(config.ResourceLock) {
-		return nil, fmt.Errorf(`resourceLock: invalid value %q: valid values are "leases","configmaps","endpoints"`, config.ResourceLock)
+		return nil, fmt.Errorf(`resourceLock: invalid value %q: valid values are "leases"`, config.ResourceLock)
 	}
 
 	return config, nil
