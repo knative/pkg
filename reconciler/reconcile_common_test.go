@@ -114,7 +114,7 @@ func TestPostProcessReconcileBumpsGeneration(t *testing.T) {
 }
 
 func TestPostProcessReconcileUpdatesTransitionTimes(t *testing.T) {
-	oldNow := apis.VolatileTime{Inner: metav1.NewTime(time.Now())}
+	oldNow := apis.VolatileTime{Time: metav1.NewTime(time.Now())}
 	resource := makeResource()
 	oldResource := makeResource()
 	// initialize old conditions with oldNow
