@@ -113,22 +113,21 @@ func SetupZipkinTracingFromConfigTracingOrFail(t testing.TB, kubeClientset *kube
 //    (pid of the process doing Port-Forward is stored in a global variable).
 // 2. Enable AlwaysSample config for tracing for the SpoofingClient.
 // The zipkin deployment must have the label app=zipkin
-func SetupZipkinTracing(kubeClientset *kubernetes.Clientset, logf logging.FormatLogger, zipkinRemotePort int, zipkinNamespace string) error {
-	var err error
+func SetupZipkinTracing(kubeClientset *kubernetes.Clientset, logf logging.FormatLogger, zipkinRemotePort int, zipkinNamespace string) (err error) {
 	setupOnce.Do(func() {
-		if err := monitoring.CheckPortAvailability(zipkinRemotePort); err != nil {
+		if e := monitoring.CheckPortAvailability(zipkinRemotePort); e != nil {
 			err = fmt.Errorf("Zipkin port not available on the machine: %w", err)
 			return
 		}
 
-		zipkinPods, err := monitoring.GetPods(kubeClientset, appLabel, zipkinNamespace)
-		if err != nil {
+		zipkinPods, e := monitoring.GetPods(kubeClientset, appLabel, zipkinNamespace)
+		if e != nil {
 			err = fmt.Errorf("error retrieving Zipkin pod details: %w", err)
 			return
 		}
 
-		zipkinPortForwardPID, err = monitoring.PortForward(logf, zipkinPods, ZipkinPort, zipkinRemotePort, zipkinNamespace)
-		if err != nil {
+		zipkinPortForwardPID, e = monitoring.PortForward(logf, zipkinPods, ZipkinPort, zipkinRemotePort, zipkinNamespace)
+		if e != nil {
 			err = fmt.Errorf("error starting kubectl port-forward command: %w", err)
 			return
 		}
@@ -139,7 +138,7 @@ func SetupZipkinTracing(kubeClientset *kubernetes.Clientset, logf logging.Format
 		trace.ApplyConfig(trace.Config{DefaultSampler: trace.AlwaysSample()})
 		logf("Successfully setup SpoofingClient for Zipkin Tracing")
 	})
-	return err
+	return
 }
 
 // SetupZipkinTracingOrFail is same as SetupZipkinTracing, but fails the test if an error happens
