@@ -60,7 +60,7 @@ const (
 
 type resourceKey struct{}
 
-// WindResource associates the given monitoring Resource with the current
+// WithResource associates the given monitoring Resource with the current
 // context. Note that Resources do not "stack" or merge -- the closest enclosing
 // Resource is the one that all measurements are associated with.
 func WithResource(ctx context.Context, r resource.Resource) context.Context {
