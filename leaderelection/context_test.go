@@ -21,9 +21,11 @@ package leaderelection
 
 import (
 	"context"
+	"os"
 	"testing"
 	"time"
 
+	"github.com/google/go-cmp/cmp"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	fakekube "k8s.io/client-go/kubernetes/fake"
@@ -34,7 +36,7 @@ import (
 
 func TestWithBuilder(t *testing.T) {
 	cc := ComponentConfig{
-		Component:     "component",
+		Component:     "the-component",
 		LeaderElect:   true,
 		Buckets:       1,
 		ResourceLock:  "leases",
@@ -88,14 +90,14 @@ func TestWithBuilder(t *testing.T) {
 		t.Errorf("BuildElector() = %T, wanted an unopposedElector", le)
 	}
 
-	ctx = WithStandardLeaderElectorBuilder(ctx, kc, cc)
+	ctx = WithDynamicLeaderElectorBuilder(ctx, kc, cc)
 	if !HasLeaderElection(ctx) {
 		t.Error("HasLeaderElection() = false, wanted true")
 	}
 
 	le, err := BuildElector(ctx, laf, "name", enq)
 	if err != nil {
-		t.Errorf("BuildElector() = %v", err)
+		t.Fatalf("BuildElector() = %v", err)
 	}
 
 	// We shouldn't see leases until we Run the elector.
@@ -142,5 +144,96 @@ func TestWithBuilder(t *testing.T) {
 		// We expect to have been demoted.
 	case <-time.After(1 * time.Second):
 		t.Fatal("Timed out waiting for demotion.")
+	}
+}
+
+func TestWithStatefulSetBuilder(t *testing.T) {
+	cc := ComponentConfig{
+		Component:   "the-component",
+		LeaderElect: true,
+		Buckets:     1,
+	}
+	const podDNS = "ws://as-42.autoscaler.knative-testing.svc.cluster.local:8080"
+	ctx := context.Background()
+
+	promoted := make(chan struct{})
+	laf := &reconciler.LeaderAwareFuncs{
+		PromoteFunc: func(bkt reconciler.Bucket, enq func(reconciler.Bucket, types.NamespacedName)) error {
+			close(promoted)
+			return nil
+		},
+	}
+	enq := func(reconciler.Bucket, types.NamespacedName) {}
+
+	if os.Setenv(controllerOrdinalEnv, "as-42") != nil {
+		t.Fatalf("Failed to set env var %s=%s", controllerOrdinalEnv, "as-42")
+	}
+	defer os.Unsetenv(controllerOrdinalEnv)
+	if os.Setenv("STATEFUL_SERVICE_NAME", "autoscaler") != nil {
+		t.Fatalf("Failed to set env var %s=%s", "STATEFUL_SERVICE_NAME", "autoscaler")
+	}
+	defer os.Unsetenv("STATEFUL_SERVICE_NAME")
+	if os.Setenv("STATEFUL_SERVICE_PORT", "8080") != nil {
+		t.Fatalf("Failed to set env var %s=%s", "STATEFUL_SERVICE_PORT", "8080")
+	}
+	defer os.Unsetenv("STATEFUL_SERVICE_PORT")
+	if os.Setenv("STATEFUL_SERVICE_PROTOCOL", "ws") != nil {
+		t.Fatalf("Failed to set env var %s=%s", "STATEFUL_SERVICE_PROTOCOL", "ws")
+	}
+	defer os.Unsetenv("STATEFUL_SERVICE_PROTOCOL")
+
+	ctx = WithDynamicLeaderElectorBuilder(ctx, nil, cc)
+	if !HasLeaderElection(ctx) {
+		t.Error("HasLeaderElection() = false, wanted true")
+	}
+
+	b := ctx.Value(builderKey{})
+	ssb, ok := b.(*statefulSetBuilder)
+	if !ok || ssb == nil {
+		t.Fatal("StatefulSetBuilder not found on context")
+	}
+	want := statefulSetConfig{
+		StatefulSetID: statefulSetID{
+			ssName:  "as",
+			ordinal: 42,
+		},
+		ServiceName: "autoscaler",
+		Port:        "8080",
+		Protocol:    "ws",
+	}
+	if !cmp.Equal(ssb.ssc, want, cmp.AllowUnexported(statefulSetID{})) {
+		t.Errorf("StatefulSetConfig = %#v, want: %#v,diff(-want,+got)\n%s", ssb.ssc, want,
+			cmp.Diff(want, ssb.ssc, cmp.AllowUnexported(statefulSetID{})))
+	}
+
+	le, err := BuildElector(ctx, laf, "name", enq)
+	if err != nil {
+		t.Fatalf("BuildElector() = %v", err)
+	}
+
+	ule, ok := le.(*unopposedElector)
+	if !ok {
+		t.Fatalf("BuildElector() = %T, wanted an unopposedElector", le)
+	}
+	if got, want := ule.bkt.Name(), podDNS; got != want {
+		t.Errorf("bkt.Name() = %s, wanted %s", got, want)
+	}
+
+	// Shouldn't be promoted until we Run the elector.
+	select {
+	case <-promoted:
+		t.Error("Got promoted, want no actions.")
+	default:
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	t.Cleanup(cancel)
+	go le.Run(ctx)
+
+	select {
+	case <-promoted:
+		// We expect to have been promoted.
+	case <-time.After(1 * time.Second):
+		t.Fatal("Timed out waiting for promotion.")
 	}
 }
