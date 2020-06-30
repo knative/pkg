@@ -430,7 +430,7 @@ func (r *reconcilerImpl) Reconcile(ctx {{.contextContext|raw}}, key string) erro
 		reconcileEvent = rof.ObserveFinalizeKind(ctx, resource)
 	}
 
-	if r.skipStatusUpdates {
+	if !r.skipStatusUpdates {
 		// Synchronize the status.
 		if {{.equalitySemantic|raw}}.DeepEqual(original.Status, resource.Status) {
 			// If we didn't change anything then don't call updateStatus.

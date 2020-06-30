@@ -257,7 +257,7 @@ func (r *reconcilerImpl) Reconcile(ctx context.Context, key string) error {
 		reconcileEvent = rof.ObserveFinalizeKind(ctx, resource)
 	}
 
-	if r.skipStatusUpdates {
+	if !r.skipStatusUpdates {
 		// Synchronize the status.
 		if equality.Semantic.DeepEqual(original.Status, resource.Status) {
 			// If we didn't change anything then don't call updateStatus.
