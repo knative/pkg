@@ -1,8 +1,10 @@
 aliases:
   pkg-approvers:
   - evankanderson
+  - grantr
+  - markusthoemmes
   - mattmoor
-  - vaikas
+  - tcnghia
 
   apis-approvers:
   - mattmoor
