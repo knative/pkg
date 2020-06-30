@@ -259,7 +259,7 @@ func (r *reconcilerImpl) Reconcile(ctx context.Context, key string) error {
 
 	// Synchronize the status.
 	switch {
-	case !r.skipStatusUpdates:
+	case r.skipStatusUpdates:
 		// This reconciler implementation is configured to skip resource updates.
 		// This may mean this reconciler does not observe spec, but reconciles external changes.
 	case !isLeader:
