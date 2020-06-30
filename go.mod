@@ -57,7 +57,7 @@ require (
 	k8s.io/gengo v0.0.0-20200205140755-e0e292d8aa12
 	k8s.io/klog v1.0.0
 	k8s.io/utils v0.0.0-20200124190032-861946025e34 // indirect
-	knative.dev/test-infra v0.0.0-20200630000129-4b3a8597df67
+	knative.dev/test-infra v0.0.0-20200630141629-15f40fe97047
 	sigs.k8s.io/boskos v0.0.0-20200530174753-71e795271860
 )
 
