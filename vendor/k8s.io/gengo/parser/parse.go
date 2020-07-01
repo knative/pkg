@@ -33,7 +33,7 @@ import (
 	"strings"
 
 	"k8s.io/gengo/types"
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 )
 
 // This clarifies when a pkg path has been canonicalized.
@@ -335,7 +335,8 @@ func (b *Builder) addDir(dir string, userRequested bool) error {
 	return nil
 }
 
-var regexErrPackageNotFound = regexp.MustCompile(`^unable to import ".*?": cannot find package ".*?" in any of:`)
+// regexErrPackageNotFound helps test the expected error for not finding a package.
+var regexErrPackageNotFound = regexp.MustCompile(`^unable to import ".*?":.*`)
 
 func isErrPackageNotFound(err error) bool {
 	return regexErrPackageNotFound.MatchString(err.Error())
@@ -589,7 +590,7 @@ func (b *Builder) importWithMode(dir string, mode build.ImportMode) (*build.Pack
 	if err != nil {
 		return nil, fmt.Errorf("unable to get current directory: %v", err)
 	}
-	buildPkg, err := b.context.Import(dir, cwd, mode)
+	buildPkg, err := b.context.Import(filepath.ToSlash(dir), cwd, mode)
 	if err != nil {
 		return nil, err
 	}
@@ -763,7 +764,8 @@ func (b *Builder) walkType(u types.Universe, useName *types.Name, in tc.Type) *t
 				out.Methods = map[string]*types.Type{}
 			}
 			method := t.Method(i)
-			mt := b.walkType(u, nil, method.Type())
+			name := tcNameToName(method.String())
+			mt := b.walkType(u, &name, method.Type())
 			mt.CommentLines = splitLines(b.priorCommentLines(method.Pos(), 1).Text())
 			out.Methods[method.Name()] = mt
 		}
@@ -798,7 +800,8 @@ func (b *Builder) walkType(u types.Universe, useName *types.Name, in tc.Type) *t
 					out.Methods = map[string]*types.Type{}
 				}
 				method := t.Method(i)
-				mt := b.walkType(u, nil, method.Type())
+				name := tcNameToName(method.String())
+				mt := b.walkType(u, &name, method.Type())
 				mt.CommentLines = splitLines(b.priorCommentLines(method.Pos(), 1).Text())
 				out.Methods[method.Name()] = mt
 			}

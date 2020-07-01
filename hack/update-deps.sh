@@ -29,20 +29,32 @@ FLOATING_DEPS=(
   "knative.dev/test-infra@master"
 )
 
+readonly ALLOWED_UPDATE_OPTIONS=("all" "knative" "none")
 # Parse flags to determine any we should pass to dep.
-GO_GET=0
+UPDATE="none"
 while [[ $# -ne 0 ]]; do
   parameter=$1
   case ${parameter} in
-    --upgrade) GO_GET=1 ;;
+    --upgrade=*) UPDATE="${parameter#*=}";;
+    --upgrade) UPDATE="knative" ;;
     *) abort "unknown option ${parameter}" ;;
   esac
   shift
 done
-readonly GO_GET
+readonly UPDATE
 
-if (( GO_GET )); then
+if [[ ! " ${ALLOWED_UPDATE_OPTIONS[@]} " =~ " ${UPDATE} " ]]; then
+  echo "Option '${UPDATE}' is not supported. Supported update types are all, knative, and none."
+  exit 1
+fi
+
+if [[ "${UPDATE?}" != "none" ]]; then
   go get -d ${FLOATING_DEPS[@]}
+  go get -u ./...
+fi
+
+if [[ "${UPDATE?}" == "all" ]]; then
+  go get -u ./...
 fi
 
 # Prune modules.
