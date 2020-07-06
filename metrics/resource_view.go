@@ -238,20 +238,19 @@ func optionForResource(r *resource.Resource) (stats.Options, error) {
 func resourceAsString(r *resource.Resource) string {
 	var s strings.Builder
 	l := len(r.Type)
-	keys := make([]string, 0, len(r.Labels))
+	kvs := make([]string, 0, len(r.Labels))
 	for k, v := range r.Labels {
 		l += len(k) + len(v) + 2
-		keys = append(keys, k)
+		// We use byte values 1 and 2 to avoid colliding with valid resource labels
+		// and to make unpacking easy
+		kvs = append(kvs, fmt.Sprintf("\x01%s\x02%s", k, v))
 	}
 	s.Grow(l)
 	s.WriteString(r.Type)
 
-	sort.Strings(keys)
-	for _, k := range keys {
-		// We use byte values 1 and 2 to avoid colliding with valid resource labels
-		// and to make unpacking easy
-		fmt.Fprintf(&s, "\x01%s\x02%s", k, r.Labels[k])
-	}
+	sort.Strings(kvs)
+	s.WriteString(strings.Join(kvs, ""))
+
 	return s.String()
 }
 
