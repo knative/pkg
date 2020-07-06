@@ -144,7 +144,7 @@ func TestResourceAsString(t *testing.T) {
 	r2 := &resource.Resource{Type: "foobar", Labels: map[string]string{"k2": "v2", "k3": "v3", "k1": "v1"}}
 	r3 := &resource.Resource{Type: "foobar", Labels: map[string]string{"k1": "v1", "k2": "v2", "k4": "v4"}}
 
-	// Test 5 time since the iteration could be random.  https://github.com/open-telemetry/opentelemetry-collector.git
+	// Test 5 time since the iteration could be random.
 	for i := 0; i < 5; i++ {
 		s1 := resourceAsString(r1)
 		s2 := resourceAsString(r2)
