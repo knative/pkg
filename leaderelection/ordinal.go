@@ -1,5 +1,5 @@
 /*
-Copyright 2017 The Kubernetes Authors.
+Copyright 2020 The Knative Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,10 +14,14 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// +k8s:deepcopy-gen=package
-// +k8s:protobuf-gen=package
-// +k8s:openapi-gen=false
+package leaderelection
 
-// +groupName=admission.k8s.io
-
-package v1beta1 // import "k8s.io/api/admission/v1beta1"
+// ControllerOrdinal tries to get ordinal from the pod name of a StatefulSet,
+// which is provided from the environment variable CONTROLLER_ORDINAL.
+func ControllerOrdinal() (int, error) {
+	ssc, err := newStatefulSetConfig()
+	if err != nil {
+		return 0, err
+	}
+	return ssc.StatefulSetID.ordinal, nil
+}
