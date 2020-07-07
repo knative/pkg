@@ -137,7 +137,7 @@ func UnregisterResourceView(views ...*view.View) {
 	resourceViews.views = resourceViews.views[:j]
 }
 
-func setFactory(f func(*resource.Resource) (view.Exporter, error)) error {
+func setFactory(f ResourceExporterFactory) error {
 	if f == nil {
 		return errors.New("do not setFactory(nil)")
 	}
@@ -203,7 +203,8 @@ func meterExporterForResource(r *resource.Resource) *meterExporter {
 	return mE
 }
 
-// optionForResource finds or creates a stats.Option indicating which meter to record to.
+// optionForResource finds or creates a stats exporter for the resource, and
+// returns a stats.Option indicating which meter to record to.
 func optionForResource(r *resource.Resource) (stats.Options, error) {
 	allMeters.lock.Lock()
 	defer allMeters.lock.Unlock()
@@ -268,13 +269,14 @@ func resourceFromString(s string) *resource.Resource {
 	return r
 }
 
-// defaultMeter is a pass-through to the default worker in OpenCensus. This
-// allows legacy code that uses OpenCensus and does not store a Resource in the
-// context to continue to interoperate.
+// defaultMeterImpl is a pass-through to the default worker in OpenCensus.
 type defaultMeterImpl struct{}
 
 var _ view.Meter = (*defaultMeterImpl)(nil)
 
+// defaultMeter is a custom meterExporter which passes through to the default
+// worker in OpenCensus. This allows legacy code that uses OpenCensus and does
+// not store a Resource in the context to continue to interoperate.
 var defaultMeter = meterExporter{
 	m: &defaultMeterImpl{},
 	o: stats.WithRecorder(nil),

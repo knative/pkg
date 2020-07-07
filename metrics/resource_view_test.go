@@ -98,7 +98,7 @@ type testExporter struct {
 
 func (fe *testExporter) ExportView(vd *view.Data) {}
 func (fe *testExporter) Flush()                   {}
-func TestSetFactor(t *testing.T) {
+func TestSetFactory(t *testing.T) {
 	fakeFactory := func(rr *resource.Resource) (view.Exporter, error) {
 		if rr == nil {
 			return &testExporter{}, nil
