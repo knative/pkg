@@ -47,7 +47,7 @@ require (
 	golang.org/x/sync v0.0.0-20200625203802-6e8e738ad208
 	gomodules.xyz/jsonpatch/v2 v2.1.0
 	google.golang.org/api v0.28.0
-	google.golang.org/genproto v0.0.0-20200326112834-f447254575fd
+	google.golang.org/genproto v0.0.0-20200701001935-0939c5918c31
 	google.golang.org/grpc v1.30.0
 	gopkg.in/yaml.v2 v2.3.0
 	gopkg.in/yaml.v3 v3.0.0-20190709130402-674ba3eaed22
