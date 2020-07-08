@@ -30,10 +30,10 @@ eventing) to fill in. Coordinate with both serving and eventing leads.
 
 ### Cut `release-x.y` in `test-infra`, `test-pkg`, `caching`, and `networking` libraries
 
-Shared dependencies like `knative/{test-infra, pkg, caching, networking}` are kept
-up-to-date nightly in each of the releasing repositories. To stabilize things
-shortly before the release we cut the `release-x.y` branches on those 7 days
-prior to the main release.
+Shared dependencies like `knative/{test-infra, pkg, caching, networking}` are
+kept up-to-date nightly in each of the releasing repositories. To stabilize
+things shortly before the release we cut the `release-x.y` branches on those 7
+days prior to the main release.
 
 Both `pkg` and `test-infra` also need to pin each other's release branch. To do
 that, edit `hack/update-deps.sh` in the respective repo **on the newly created
