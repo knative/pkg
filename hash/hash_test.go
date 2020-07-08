@@ -31,7 +31,7 @@ import (
 
 func TestBuildHashes(t *testing.T) {
 	const target = "a target to remember"
-	set := []string{"a", "b", "c", "e", "f"}
+	set := sets.NewString("a", "b", "c", "e", "f")
 
 	hd1 := buildHashes(set, target)
 	hd2 := buildHashes(set, target)
@@ -51,31 +51,31 @@ func TestBuildHashes(t *testing.T) {
 func TestChooseSubset(t *testing.T) {
 	tests := []struct {
 		name    string
-		from    []string
+		from    sets.String
 		target  string
 		wantNum int
 		want    sets.String
 	}{{
 		name:    "return all",
-		from:    []string{"sun", "moon", "mars", "mercury"},
+		from:    sets.NewString("sun", "moon", "mars", "mercury"),
 		target:  "a target!",
 		wantNum: 4,
 		want:    sets.NewString("sun", "moon", "mars", "mercury"),
 	}, {
 		name:    "subset 1",
-		from:    []string{"sun", "moon", "mars", "mercury"},
+		from:    sets.NewString("sun", "moon", "mars", "mercury"),
 		target:  "a target!",
 		wantNum: 2,
 		want:    sets.NewString("mercury", "moon"),
 	}, {
 		name:    "subset 2",
-		from:    []string{"sun", "moon", "mars", "mercury"},
+		from:    sets.NewString("sun", "moon", "mars", "mercury"),
 		target:  "something else entirely",
 		wantNum: 2,
 		want:    sets.NewString("mercury", "mars"),
 	}, {
 		name:    "select 3",
-		from:    []string{"sun", "moon", "mars", "mercury"},
+		from:    sets.NewString("sun", "moon", "mars", "mercury"),
 		target:  "something else entirely",
 		wantNum: 3,
 		want:    sets.NewString("mars", "mercury", "sun"),
@@ -105,7 +105,7 @@ func TestCollisionHandling(t *testing.T) {
 	if h1 != h2 {
 		t.Fatalf("Baseline incorrect keys don't collide %d != %d", h1, h2)
 	}
-	hd := buildHashes([]string{key1, key2}, target)
+	hd := buildHashes(sets.NewString(key1, key2), target)
 	if got, want := len(hd.nameLookup), 2; got != want {
 		t.Error("Did not resolve collision, only 1 key in the map")
 	}
@@ -122,9 +122,9 @@ func TestOverlay(t *testing.T) {
 		want      = samples * selection / sources
 		threshold = want / 5 // 20%
 	)
-	from := make([]string, sources)
+	from := sets.NewString()
 	for i := 0; i < sources; i++ {
-		from[i] = uuid.New().String()
+		from.Insert(uuid.New().String())
 	}
 	freqs := make(map[string]int, sources)
 
@@ -158,8 +158,9 @@ func BenchmarkSelection(b *testing.B) {
 		for _, ss := range []int{1, 5, 10, 15, 20, 25} {
 			b.Run(fmt.Sprintf("pool-%d-subset-%d", v, ss), func(b *testing.B) {
 				target := uuid.New().String()
+				in := sets.NewString(from[:v]...)
 				for i := 0; i < b.N; i++ {
-					ChooseSubset(from[:v], 10, target)
+					ChooseSubset(in, 10, target)
 				}
 			})
 		}

@@ -72,12 +72,14 @@ func (hd *hashData) nameForHIndex(hi int) string {
 	return hd.nameLookup[hd.hashPool[hi]]
 }
 
-func buildHashes(from []string, target string) *hashData {
+func buildHashes(in sets.String, target string) *hashData {
 	// Any one changing this function must execute
 	// `go test -run=TestOverlay -count=200`.
 	// This is to ensure there is no regression in the selection
 	// algorithm.
 
+	// Sorted list to ensure consistent results every time.
+	from := in.List()
 	// Write in two pieces, so we don't allocate temp string which is sum of both.
 	buf := bytes.NewBufferString(target)
 	buf.WriteString(startSalt)
@@ -124,9 +126,9 @@ func buildHashes(from []string, target string) *hashData {
 // ChooseSubset is an internal function and presumes sanitized inputs.
 // TODO(vagababov): once initial impl is ready, think about how to cache
 // the prepared data.
-func ChooseSubset(from []string, n int, target string) sets.String {
+func ChooseSubset(from sets.String, n int, target string) sets.String {
 	if n >= len(from) {
-		return sets.NewString(from...)
+		return from
 	}
 
 	hashData := buildHashes(from, target)
