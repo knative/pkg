@@ -119,9 +119,9 @@ func buildHashes(from []string, target string) *hashData {
 	return hd
 }
 
-// chooseSubset consistently chooses n items from `from`, using
+// ChooseSubset consistently chooses n items from `from`, using
 // `target` as a seed value.
-// chooseSubset is an internal function and presumes sanitized inputs.
+// ChooseSubset is an internal function and presumes sanitized inputs.
 // TODO(vagababov): once initial impl is ready, think about how to cache
 // the prepared data.
 func ChooseSubset(from []string, n int, target string) sets.String {
