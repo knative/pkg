@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"strings"
 	"sync"
 
 	"contrib.go.opencensus.io/exporter/stackdriver"
@@ -118,11 +117,14 @@ func WithExporter(name string, logger *zap.SugaredLogger) ConfigOption {
 	return WithExporterFull(name, name, logger)
 }
 
-// WithExporterFull supports hostPort argument, which is used for the endpoint.
-// The hostPort allows HOST:PORT or HOST. If no port is specified, port 80 will be used.
-func WithExporterFull(name, hostPort string, logger *zap.SugaredLogger) ConfigOption {
+// WithExporterFull supports host argument for WithExporter.
+// The host arg is used for a value of tag ip="{IP}" so you can use an actual IP. Otherwise,
+// the host name must be able to be resolved.
+// e.g)
+//   "name" is a service name like activator-service.
+//   "host" is a endpoint IP like activator-service's endpint IP.
+func WithExporterFull(name, host string, logger *zap.SugaredLogger) ConfigOption {
 	return func(cfg *config.Config) error {
-		const defaultPort = ":80"
 		var (
 			exporter trace.Exporter
 			closer   io.Closer
@@ -138,23 +140,20 @@ func WithExporterFull(name, hostPort string, logger *zap.SugaredLogger) ConfigOp
 			}
 			exporter = exp
 		case config.Zipkin:
-			// If hostPort isn't specified, then zipkin.NewEndpoint will return an error saying that it
+			// If host isn't specified, then zipkin.NewEndpoint will return an error saying that it
 			// can't find the host named ''. So, if not specified, default it to this machine's
 			// hostname.
-			if hostPort == "" {
+			if host == "" {
 				n, err := os.Hostname()
 				if err != nil {
 					return fmt.Errorf("unable to get hostname: %w", err)
 				}
-				hostPort = n
+				host = n
 			}
 			if name == "" {
-				name = hostPort
+				name = host
 			}
-			if !strings.Contains(hostPort, ":") {
-				hostPort = hostPort + defaultPort
-			}
-			zipEP, err := zipkin.NewEndpoint(name, hostPort)
+			zipEP, err := zipkin.NewEndpoint(name, host)
 			if err != nil {
 				logger.Errorw("error building zipkin endpoint", zap.Error(err))
 				return err
