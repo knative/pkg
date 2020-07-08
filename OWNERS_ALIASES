@@ -1,7 +1,10 @@
 aliases:
   pkg-approvers:
   - evankanderson
+  - grantr
+  - markusthoemmes
   - mattmoor
+  - tcnghia
   - vaikas
 
   apis-approvers:
@@ -63,7 +66,6 @@ aliases:
   - coryrc
   - chizhg
   - steuhs
-  - yt3liu
 
   source-approvers:
   - n3wscott
