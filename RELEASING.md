@@ -183,4 +183,6 @@ create the respective tags.
 Revert all pins in all repositories to pin the **master** branches again, run
 `hack/update-deps.sh --upgrade` and PR the changes.
 
+### Change this file to reflect new modification to the release if applicable
+
 ---
