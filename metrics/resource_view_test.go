@@ -424,14 +424,76 @@ func TestStackDriverExports(t *testing.T) {
 		Domain:    servingDomain,
 		Component: "autoscaler",
 		ConfigMap: map[string]string{
-			BackendDestinationKey: string(stackdriver),
+			BackendDestinationKey:   string(stackdriver),
 			reportingPeriodKey:      "1",
 			stackdriverProjectIDKey: "foobar",
 		},
 	}
 
-	for _, allowCustomMetrics := range []string{"true", "false"} {
-		eo.ConfigMap[allowStackdriverCustomMetricsKey] = allowCustomMetrics
+	harness := []struct {
+		allowCustomMetrics string
+		expected           []metricExtract
+	}{{
+		allowCustomMetrics: "true",
+		expected: []metricExtract{
+			{"knative.dev/serving/autoscaler/actual_pods", map[string]string{
+				"cluster_name":       "test-cluster",
+				"configuration_name": "config",
+				"location":           "test-location",
+				"namespace_name":     "ns",
+				"project_id":         "foobar",
+				"revision_name":      "revision",
+				"service_name":       "service",
+			},
+				1,
+			},
+			{"knative.dev/serving/autoscaler/desired_pods", map[string]string{
+				"cluster_name":       "test-cluster",
+				"configuration_name": "config2",
+				"location":           "test-location",
+				"namespace_name":     "ns2",
+				"project_id":         "foobar",
+				"revision_name":      "revision2",
+				"service_name":       "service2",
+			},
+				2,
+			},
+			{"custom.googleapis.com/knative.dev/autoscaler/testing/value", map[string]string{
+				"key": "value",
+			},
+				3,
+			},
+		},
+	}, {
+		allowCustomMetrics: "false",
+		expected: []metricExtract{
+			{"knative.dev/serving/autoscaler/actual_pods", map[string]string{
+				"cluster_name":       "test-cluster",
+				"configuration_name": "config",
+				"location":           "test-location",
+				"namespace_name":     "ns",
+				"project_id":         "foobar",
+				"revision_name":      "revision",
+				"service_name":       "service",
+			},
+				1,
+			},
+			{"knative.dev/serving/autoscaler/desired_pods", map[string]string{
+				"cluster_name":       "test-cluster",
+				"configuration_name": "config2",
+				"location":           "test-location",
+				"namespace_name":     "ns2",
+				"project_id":         "foobar",
+				"revision_name":      "revision2",
+				"service_name":       "service2",
+			},
+				2,
+			},
+		},
+	}}
+
+	for _, tc := range harness {
+		eo.ConfigMap[allowStackdriverCustomMetricsKey] = tc.allowCustomMetrics
 		actualPodCountM := stats.Int64(
 			"actual_pods",
 			"Number of pods that are allocated currently",
@@ -451,6 +513,17 @@ func TestStackDriverExports(t *testing.T) {
 			Measure:     desiredPodCountM,
 			Aggregation: view.LastValue(),
 		}
+		customMeasurement := stats.Int64(
+			"testing/value",
+			"Stored value",
+			stats.UnitDimensionless)
+		customView := &view.View{
+			Name:        "testing/value",
+			Description: "Test value",
+			Measure:     customMeasurement,
+			Aggregation: view.LastValue(),
+		}
+
 		if err := initSdFake(&sdFake); err != nil {
 			t.Errorf("Init stackdriver failed %s", err)
 		}
@@ -458,7 +531,7 @@ func TestStackDriverExports(t *testing.T) {
 			t.Errorf("UpdateExporter failed %s", err)
 		}
 
-		if err := RegisterResourceView(desiredPodsCountView, actualPodsCountView); err != nil {
+		if err := RegisterResourceView(desiredPodsCountView, actualPodsCountView, customView); err != nil {
 			t.Fatalf("unable to register view: %+v", err)
 		}
 
@@ -483,6 +556,15 @@ func TestStackDriverExports(t *testing.T) {
 		ctx = metricskey.WithResource(context.Background(), r)
 		Record(ctx, desiredPodCountM.M(int64(2)))
 
+		r = resource.Resource{
+			Type: "custom_resource",
+			Labels: map[string]string{
+				"key": "value",
+			},
+		}
+		ctx = metricskey.WithResource(context.Background(), r)
+		Record(ctx, customMeasurement.M(int64(3)))
+
 		records := []metricExtract{}
 		for record := range sdFake.published {
 			for _, ts := range record.TimeSeries {
@@ -500,36 +582,11 @@ func TestStackDriverExports(t *testing.T) {
 				sdFake.srv.GracefulStop()
 			}
 		}
-		expectedRevisionResults := []metricExtract{
-			{"knative.dev/serving/autoscaler/actual_pods", map[string]string{
-				"cluster_name":       "test-cluster",
-				"configuration_name": "config",
-				"location":           "test-location",
-				"namespace_name":     "ns",
-				"project_id":         "foobar",
-				"revision_name":      "revision",
-				"service_name":       "service",
-			},
-				1,
-			},
-			{"knative.dev/serving/autoscaler/desired_pods", map[string]string{
-				"cluster_name":       "test-cluster",
-				"configuration_name": "config2",
-				"location":           "test-location",
-				"namespace_name":     "ns2",
-				"project_id":         "foobar",
-				"revision_name":      "revision2",
-				"service_name":       "service2",
-			},
-				2,
-			},
-		}
-		if diff := cmp.Diff(expectedRevisionResults, records, sortMetrics()); diff != "" {
+		if diff := cmp.Diff(tc.expected, records, sortMetrics()); diff != "" {
 			t.Errorf("Unexpected stackdriver knative exports (-want +got):\n%s", diff)
 		}
-		UnregisterResourceView(desiredPodsCountView, actualPodsCountView)
+		UnregisterResourceView(desiredPodsCountView, actualPodsCountView, customView)
 	}
-
 }
 
 type openCensusFake struct {
