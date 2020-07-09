@@ -198,7 +198,7 @@ func newStackdriverExporter(config *metricsConfig, logger *zap.SugaredLogger) (v
 		nil
 }
 
-func sdCustomMetricsRecorder(mc metricsConfig) func(context.Context, []stats.Measurement, ...stats.Options) error {
+func sdCustomMetricsRecorder(mc metricsConfig, allowCustomMetrics bool) func(context.Context, []stats.Measurement, ...stats.Options) error {
 	gm := getMergedGCPMetadata(&mc)
 	metadataMap := map[string]string{
 		metricskey.LabelProject:     gm.project,
@@ -206,25 +206,39 @@ func sdCustomMetricsRecorder(mc metricsConfig) func(context.Context, []stats.Mea
 		metricskey.LabelClusterName: gm.cluster,
 	}
 	return func(ctx context.Context, mss []stats.Measurement, ros ...stats.Options) error {
-		// Filter the measuremenst array to only include permitted metrics.
 		i := 0
 		var templ *resourceTemplate
+		var hasCustomMetrics bool
+
+		// This loop serves two purpose, filtering out custom metrics when allowCustomMetrics set to false,
+		// and find the template for the system metrics.
 		for _, m := range mss {
 			metricType := path.Join(mc.stackdriverMetricTypePrefix, m.Measure().Name())
 			if t, ok := metricToResourceLabels[metricType]; ok {
-				mss[i] = m
-				i++
+				if !allowCustomMetrics {
+					mss[i] = m
+					i++
+				}
 				if templ != nil && templ != t {
 					return fmt.Errorf("mixed resource type measurements in one report: %v", mss)
 				}
 				templ = t
+			} else {
+				hasCustomMetrics = true
 			}
 		}
-		// Trim the array
-		mss = mss[:i]
-		if i == 0 {
-			return nil
+		if !allowCustomMetrics {
+			// Trim the array
+			mss = mss[:i]
+			if i == 0 {
+				return nil
+			}
 		}
+
+		if templ != nil && hasCustomMetrics {
+			return fmt.Errorf("mixed custom and system metrics measurements in one report: %v", mss)
+		}
+
 		// Extract resource, if possible
 		if templ != nil {
 			tagMap := tag.FromContext(ctx)
@@ -261,6 +275,12 @@ func sdCustomMetricsRecorder(mc metricsConfig) func(context.Context, []stats.Mea
 			}
 
 			opt, err := optionForResource(&r)
+			if err != nil {
+				return err
+			}
+			ros = append(ros, opt)
+		} else {
+			opt, err := optionForResource(metricskey.GetResource(ctx))
 			if err != nil {
 				return err
 			}

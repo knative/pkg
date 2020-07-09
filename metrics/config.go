@@ -267,9 +267,7 @@ func createMetricsConfig(ops ExporterOptions, logger *zap.SugaredLogger) (*metri
 			}
 		}
 
-		if !allowCustomMetrics {
-			mc.recorder = sdCustomMetricsRecorder(mc)
-		}
+		mc.recorder = sdCustomMetricsRecorder(mc, allowCustomMetrics)
 
 		if scc.UseSecret {
 			secret, err := getStackdriverSecret(ops.Secrets)

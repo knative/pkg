@@ -223,7 +223,7 @@ func TestSdRecordWithResources(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			recordFunc := sdCustomMetricsRecorder(metricsConfig{
 				stackdriverMetricTypePrefix: path.Join(tc.domain, tc.component),
-			})
+			}, false)
 			m := stats.Int64(tc.metricName, "", "1")
 			v := &view.View{
 				Name:    "test_" + tc.metricName,

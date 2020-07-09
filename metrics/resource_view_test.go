@@ -424,109 +424,112 @@ func TestStackDriverExports(t *testing.T) {
 		Domain:    servingDomain,
 		Component: "autoscaler",
 		ConfigMap: map[string]string{
-			BackendDestinationKey:            string(stackdriver),
-			allowStackdriverCustomMetricsKey: "false",
-			reportingPeriodKey:               "1",
-			stackdriverProjectIDKey:          "foobar",
+			BackendDestinationKey: string(stackdriver),
+			reportingPeriodKey:      "1",
+			stackdriverProjectIDKey: "foobar",
 		},
 	}
 
-	actualPodCountM := stats.Int64(
-		"actual_pods",
-		"Number of pods that are allocated currently",
-		stats.UnitDimensionless)
-	actualPodsCountView := &view.View{
-		Description: "Number of pods that are allocated currently",
-		Measure:     actualPodCountM,
-		Aggregation: view.LastValue(),
-		TagKeys:     []tag.Key{NamespaceTagKey, ServiceTagKey, ConfigTagKey, RevisionTagKey},
-	}
-	desiredPodCountM := stats.Int64(
-		"desired_pods",
-		"Number of pods that are desired",
-		stats.UnitDimensionless)
-	desiredPodsCountView := &view.View{
-		Description: "Number of pods that are desired",
-		Measure:     desiredPodCountM,
-		Aggregation: view.LastValue(),
-	}
-	if err := initSdFake(&sdFake); err != nil {
-		t.Errorf("Init stackdriver failed %s", err)
-	}
-	if err := UpdateExporter(eo, logtesting.TestLogger(t)); err != nil {
-		t.Errorf("UpdateExporter failed %s", err)
-	}
-
-	if err := RegisterResourceView(desiredPodsCountView, actualPodsCountView); err != nil {
-		t.Fatalf("unable to register view: %+v", err)
-	}
-	defer UnregisterResourceView(desiredPodsCountView, actualPodsCountView)
-
-	ctx, err := tag.New(context.Background(), tag.Upsert(NamespaceTagKey, "ns"),
-		tag.Upsert(ServiceTagKey, "service"),
-		tag.Upsert(ConfigTagKey, "config"),
-		tag.Upsert(RevisionTagKey, "revision"))
-	if err != nil {
-		t.Fatalf("Unable to create tags %s", err)
-	}
-	Record(ctx, actualPodCountM.M(int64(1)))
-
-	r := resource.Resource{
-		Type: "knative_revision",
-		Labels: map[string]string{
-			metricskey.LabelNamespaceName:     "ns2",
-			metricskey.LabelServiceName:       "service2",
-			metricskey.LabelConfigurationName: "config2",
-			metricskey.LabelRevisionName:      "revision2",
-		},
-	}
-	ctx = metricskey.WithResource(context.Background(), r)
-	Record(ctx, desiredPodCountM.M(int64(2)))
-
-	records := []metricExtract{}
-	for record := range sdFake.published {
-		for _, ts := range record.TimeSeries {
-			records = append(records, metricExtract{
-				Name:   ts.Metric.Type,
-				Labels: ts.Resource.Labels,
-				Value:  ts.Points[0].Value.GetInt64Value(),
-			})
+	for _, allowCustomMetrics := range []string{"true", "false"} {
+		eo.ConfigMap[allowStackdriverCustomMetricsKey] = allowCustomMetrics
+		actualPodCountM := stats.Int64(
+			"actual_pods",
+			"Number of pods that are allocated currently",
+			stats.UnitDimensionless)
+		actualPodsCountView := &view.View{
+			Description: "Number of pods that are allocated currently",
+			Measure:     actualPodCountM,
+			Aggregation: view.LastValue(),
+			TagKeys:     []tag.Key{NamespaceTagKey, ServiceTagKey, ConfigTagKey, RevisionTagKey},
 		}
-		if len(records) >= 2 {
-			// There's no way to synchronize on the internal timer used
-			// by metricsexport.IntervalReader, so shut down the
-			// exporter after the first report cycle.
-			FlushExporter()
-			sdFake.srv.GracefulStop()
+		desiredPodCountM := stats.Int64(
+			"desired_pods",
+			"Number of pods that are desired",
+			stats.UnitDimensionless)
+		desiredPodsCountView := &view.View{
+			Description: "Number of pods that are desired",
+			Measure:     desiredPodCountM,
+			Aggregation: view.LastValue(),
 		}
+		if err := initSdFake(&sdFake); err != nil {
+			t.Errorf("Init stackdriver failed %s", err)
+		}
+		if err := UpdateExporter(eo, logtesting.TestLogger(t)); err != nil {
+			t.Errorf("UpdateExporter failed %s", err)
+		}
+
+		if err := RegisterResourceView(desiredPodsCountView, actualPodsCountView); err != nil {
+			t.Fatalf("unable to register view: %+v", err)
+		}
+
+		ctx, err := tag.New(context.Background(), tag.Upsert(NamespaceTagKey, "ns"),
+			tag.Upsert(ServiceTagKey, "service"),
+			tag.Upsert(ConfigTagKey, "config"),
+			tag.Upsert(RevisionTagKey, "revision"))
+		if err != nil {
+			t.Fatalf("Unable to create tags %s", err)
+		}
+		Record(ctx, actualPodCountM.M(int64(1)))
+
+		r := resource.Resource{
+			Type: "knative_revision",
+			Labels: map[string]string{
+				metricskey.LabelNamespaceName:     "ns2",
+				metricskey.LabelServiceName:       "service2",
+				metricskey.LabelConfigurationName: "config2",
+				metricskey.LabelRevisionName:      "revision2",
+			},
+		}
+		ctx = metricskey.WithResource(context.Background(), r)
+		Record(ctx, desiredPodCountM.M(int64(2)))
+
+		records := []metricExtract{}
+		for record := range sdFake.published {
+			for _, ts := range record.TimeSeries {
+				records = append(records, metricExtract{
+					Name:   ts.Metric.Type,
+					Labels: ts.Resource.Labels,
+					Value:  ts.Points[0].Value.GetInt64Value(),
+				})
+			}
+			if len(records) >= 2 {
+				// There's no way to synchronize on the internal timer used
+				// by metricsexport.IntervalReader, so shut down the
+				// exporter after the first report cycle.
+				FlushExporter()
+				sdFake.srv.GracefulStop()
+			}
+		}
+		expectedRevisionResults := []metricExtract{
+			{"knative.dev/serving/autoscaler/actual_pods", map[string]string{
+				"cluster_name":       "test-cluster",
+				"configuration_name": "config",
+				"location":           "test-location",
+				"namespace_name":     "ns",
+				"project_id":         "foobar",
+				"revision_name":      "revision",
+				"service_name":       "service",
+			},
+				1,
+			},
+			{"knative.dev/serving/autoscaler/desired_pods", map[string]string{
+				"cluster_name":       "test-cluster",
+				"configuration_name": "config2",
+				"location":           "test-location",
+				"namespace_name":     "ns2",
+				"project_id":         "foobar",
+				"revision_name":      "revision2",
+				"service_name":       "service2",
+			},
+				2,
+			},
+		}
+		if diff := cmp.Diff(expectedRevisionResults, records, sortMetrics()); diff != "" {
+			t.Errorf("Unexpected stackdriver knative exports (-want +got):\n%s", diff)
+		}
+		UnregisterResourceView(desiredPodsCountView, actualPodsCountView)
 	}
-	expectedRevisionResults := []metricExtract{
-		{"knative.dev/serving/autoscaler/actual_pods", map[string]string{
-			"cluster_name":       "test-cluster",
-			"configuration_name": "config",
-			"location":           "test-location",
-			"namespace_name":     "ns",
-			"project_id":         "foobar",
-			"revision_name":      "revision",
-			"service_name":       "service",
-		},
-			1,
-		},
-		{"knative.dev/serving/autoscaler/desired_pods", map[string]string{
-			"cluster_name":       "test-cluster",
-			"configuration_name": "config2",
-			"location":           "test-location",
-			"namespace_name":     "ns2",
-			"project_id":         "foobar",
-			"revision_name":      "revision2",
-			"service_name":       "service2",
-		},
-			2,
-		},
-	}
-	if diff := cmp.Diff(expectedRevisionResults, records, sortMetrics()); diff != "" {
-		t.Errorf("Unexpected stackdriver knative exports (-want +got):\n%s", diff)
-	}
+
 }
 
 type openCensusFake struct {
