@@ -28,7 +28,7 @@ Make a copy of the
 empty it out and send it to the WG leads of the respective project (serving or
 eventing) to fill in. Coordinate with both serving and eventing leads.
 
-### Cut `release-x.y` in `test-infra`, `test-pkg`, `caching`, and `networking` libraries
+### Cut `release-x.y` in `test-infra`, `pkg`, `caching`, and `networking` libraries
 
 Shared dependencies like `knative/{test-infra, pkg, caching, networking}` are
 kept up-to-date nightly in each of the releasing repositories. To stabilize
