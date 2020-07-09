@@ -29,6 +29,32 @@ import (
 	"k8s.io/apimachinery/pkg/util/sets"
 )
 
+func ExampleSelectOne() {
+	// This example shows how to do consistent bucket
+	// assignment using ChooseSubset.
+
+	tasks := sets.NewString("task1", "task2", "task3")
+
+	ret := ChooseSubset(tasks, 1, "my-key1")
+	fmt.Println(ret.UnsortedList()[0])
+
+	ret = ChooseSubset(tasks, 1, "somthing/another-key")
+	fmt.Println(ret.UnsortedList()[0])
+	// Output: task3
+	// task1
+}
+
+func ExampleSelectMany() {
+	// This example shows how to do consistent bucket
+	// assignment using ChooseSubset.
+
+	tasks := sets.NewString("task1", "task2", "task3", "task4", "task5")
+
+	ret := ChooseSubset(tasks, 2, "my-key1")
+	fmt.Println(ret.List())
+	// Output: [task3 task4]
+}
+
 func TestBuildHashes(t *testing.T) {
 	const target = "a target to remember"
 	set := sets.NewString("a", "b", "c", "e", "f")
