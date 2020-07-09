@@ -24,16 +24,16 @@ additional caution should be used when merging big changes.
 ### Collect release-notes
 
 Make a copy of the
-[last release notes document](https://docs.google.com/document/d/1zQYVA4IorYFsIONpY8Hb5H6gU-ND1BWfm2nOdN7jJk0/edit),
+[last release notes document](https://docs.google.com/document/d/1FTL_fMXU2hv2POh9uN_8IJe9FbqEIzFdRZZRXI0WaT4/edit),
 empty it out and send it to the WG leads of the respective project (serving or
 eventing) to fill in. Coordinate with both serving and eventing leads.
 
-### Cut `release-x.y` in `pkg` and `test-infra` libraries
+### Cut `release-x.y` in `test-infra`, `pkg`, `caching`, and `networking` libraries
 
-Shared dependencies like `knative/pkg` and `knative/test-infra` are kept
-up-to-date nightly in each of the releasing repositories. To stabilize things
-shortly before the release we cut the `release-x.y` branches on those 7 days
-prior to the main release.
+Shared dependencies like `knative/{test-infra, pkg, caching, networking}` are
+kept up-to-date nightly in each of the releasing repositories. To stabilize
+things shortly before the release we cut the `release-x.y` branches on those 7
+days prior to the main release.
 
 Both `pkg` and `test-infra` also need to pin each other's release branch. To do
 that, edit `hack/update-deps.sh` in the respective repo **on the newly created
@@ -61,7 +61,11 @@ index a39fc858..0634362f 100755
 PR the changes to each repository respectively, prepending the PR title with
 `[RELEASE]`.
 
-### Pin `pkg` and `test-infra` in downstream repositories
+After `test-infra` and `pkg` are pinned, change `caching` and `networking`'s
+`update-deps.sh` to use `release-x.y` branch of `test-infra` and `pkg`.
+Following that, cut new `release-x.y` branches for `caching` and `networking`.
+
+### Pin `test-infra`, `pkg`, `caching`, `networking` in downstream repositories
 
 Similar to how the pin between `pkg` and `test-infra` themselves work, all
 downstream users must be pinned to the newly cut `release-x.y` branches on those
@@ -79,15 +83,18 @@ index b277dd3ff..1989885ce 100755
  FLOATING_DEPS=(
 -  "knative.dev/test-infra@${VERSION}"
 -  "knative.dev/pkg@${VERSION}"
+-  "knative.dev/caching@${VERSION}"
+-  "knative.dev/networking@${VERSION}"
 +  "knative.dev/test-infra@release-x.y"
 +  "knative.dev/pkg@release-x.y"
-   "knative.dev/caching@${VERSION}"
++  "knative.dev/caching@release-x.y"
++  "knative.dev/networking@release-x.y"
  )
 ```
 
 The downstream repositories this needs to happen on are:
 
-- [knative/caching](https://github.com/knative/caching)
+- [knative/client](https://github.com/knative/client)
 - [knative/eventing-contrib](https://github.com/knative/eventing-contrib)
 - [knative/eventing](https://github.com/knative/eventing)
 - [knative/net-certmanager](https://github.com/knative/net-certmanager)
@@ -102,13 +109,6 @@ Apply the changes the the **master branches**, run
 `hack/update-deps.sh --upgrade` (and potentially `hack/update-codegen.sh` if
 necessary) and PR the changes to the **master branch**. Don't cut the release
 branch yet.
-
-### Cut and pin `caching`
-
-`caching` sees very little traffic, so we cut it 1 week prior to the actual
-release to unblock the `serving` release (it depends on caching). Cut a
-`release-x.y` branch and pin it in `serving` as shown above. You can potentially
-collapse this pin with the `pkg`/`test-infra` pin to `serving` per step 2.
 
 ### Verify nightly release automation is intact
 
@@ -182,5 +182,7 @@ create the respective tags.
 
 Revert all pins in all repositories to pin the **master** branches again, run
 `hack/update-deps.sh --upgrade` and PR the changes.
+
+### Change this file to reflect new modification to the release if applicable
 
 ---
