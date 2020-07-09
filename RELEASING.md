@@ -61,9 +61,9 @@ index a39fc858..0634362f 100755
 PR the changes to each repository respectively, prepending the PR title with
 `[RELEASE]`.
 
-After `test-infra` and `pkg` are pinned, change `caching` and `networking`'s `update-deps.sh`
-to use `release-x.y` branch of `test-infra` and `pkg`. Following that, cut new `release-x.y`
-branches for `caching` and `networking`.
+After `test-infra` and `pkg` are pinned, change `caching` and `networking`'s
+`update-deps.sh` to use `release-x.y` branch of `test-infra` and `pkg`.
+Following that, cut new `release-x.y` branches for `caching` and `networking`.
 
 ### Pin `test-infra`, `pkg`, `caching`, `networking` in downstream repositories
 
