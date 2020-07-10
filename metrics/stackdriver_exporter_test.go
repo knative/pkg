@@ -111,14 +111,15 @@ func (me *metricExtractor) ExportMetrics(ctx context.Context, data []*metricdata
 
 func TestSdRecordWithResources(t *testing.T) {
 	testCases := []struct {
-		name             string
-		domain           string
-		component        string
-		metricName       string
-		metricTags       map[string]string
-		resource         resource.Resource
-		expectedLabels   map[string]string
-		expectedResource map[string]string
+		name               string
+		domain             string
+		component          string
+		metricName         string
+		allowCustomMetrics bool
+		metricTags         map[string]string
+		resource           resource.Resource
+		expectedLabels     map[string]string
+		expectedResource   map[string]string
 	}{{
 		name:       "Serving resource and metric labels",
 		domain:     internalServingDomain,
@@ -203,6 +204,30 @@ func TestSdRecordWithResources(t *testing.T) {
 			metricskey.LabelConfigurationName, metricskey.ValueUnknown,
 			metricskey.LabelRevisionName, testRevision),
 	}, {
+		name:       "Serving only metric labels with allowCustomMetrics",
+		domain:     internalServingDomain,
+		component:  "activator",
+		metricName: "request_count",
+		allowCustomMetrics: true,
+		metricTags: map[string]string{
+			metricskey.LabelNamespaceName:     testNS,
+			metricskey.LabelServiceName:       testService,
+			metricskey.LabelRevisionName:      testRevision,
+			metricskey.ContainerName:          testContainer,
+			metricskey.PodName:                testPod,
+			metricskey.LabelResponseCodeClass: "2xx",
+			metricskey.LabelResponseCode:      "200",
+		},
+		expectedLabels: map[string]string{
+			metricskey.ContainerName:          testContainer,
+			metricskey.PodName:                testPod,
+			metricskey.LabelResponseCodeClass: "2xx",
+			metricskey.LabelResponseCode:      "200",
+		},
+		expectedResource: makeResourceLabels(metricskey.LabelServiceName, testService,
+			metricskey.LabelConfigurationName, metricskey.ValueUnknown,
+			metricskey.LabelRevisionName, testRevision),
+	}, {
 		name:       "Eventing broker metrics",
 		domain:     internalEventingDomain,
 		component:  "broker",
@@ -223,7 +248,7 @@ func TestSdRecordWithResources(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			recordFunc := sdCustomMetricsRecorder(metricsConfig{
 				stackdriverMetricTypePrefix: path.Join(tc.domain, tc.component),
-			})
+			}, tc.allowCustomMetrics)
 			m := stats.Int64(tc.metricName, "", "1")
 			v := &view.View{
 				Name:    "test_" + tc.metricName,
