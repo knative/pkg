@@ -130,7 +130,7 @@ var (
 // webhooks. Use MainWithContext if you do not need to serve webhooks.
 func MainWithContext(ctx context.Context, component string, ctors ...injection.ControllerConstructor) {
 
-	// This is a
+	// TODO(mattmoor): Remove this once HA is stable.
 	disableHighAvailability := flag.Bool("disable-ha", false,
 		"Whether to disable high-availability functionality for this component.  This flag will be deprecated "+
 			"and removed when we have promoted this feature to stable, so do not pass it without filing an "+
@@ -155,8 +155,7 @@ func WithHADisabled(ctx context.Context) context.Context {
 
 // IsHADisabled checks the context for the desired to disabled leader elector.
 func IsHADisabled(ctx context.Context) bool {
-	val := ctx.Value(haDisabledKey{})
-	return val != nil
+	return ctx.Value(haDisabledKey{}) != nil
 }
 
 // MainWithConfig runs the generic main flow for controllers and webhooks
