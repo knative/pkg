@@ -40,7 +40,7 @@ func GetLeaders(client *test.KubeClient, deploymentName, namespace string) ([]st
 		if lease.Spec.HolderIdentity == nil {
 			continue
 		}
-		pod := strings.Split(*lease.Spec.HolderIdentity, "_")[0]
+		pod := strings.SplitN(*lease.Spec.HolderIdentity, "_", 2)[0]
 
 		// Deconstruct the pod name and look for the deployment.  This won't work for very long deployment names.
 		parts := strings.Split(pod, "-")
