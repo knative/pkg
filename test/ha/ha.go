@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"testing"
 	"time"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -30,7 +31,7 @@ import (
 )
 
 // GetLeaders collects all of the leader pods from the specified deployment.
-func GetLeaders(client *test.KubeClient, deploymentName, namespace string) ([]string, error) {
+func GetLeaders(t *testing.T, client *test.KubeClient, deploymentName, namespace string) ([]string, error) {
 	leases, err := client.Kube.CoordinationV1().Leases(namespace).List(metav1.ListOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("error getting leases for deployment %q: %w", deploymentName, err)
@@ -57,21 +58,22 @@ func GetLeaders(client *test.KubeClient, deploymentName, namespace string) ([]st
 
 // WaitForNewLeaders waits until the collection of current leaders consists of "n" leaders
 // which do not include the specified prior leaders.
-func WaitForNewLeaders(client *test.KubeClient, deploymentName, namespace string, previousLeaders sets.String, n int) (sets.String, error) {
+func WaitForNewLeaders(t *testing.T, client *test.KubeClient, deploymentName, namespace string, previousLeaders sets.String, n int) (sets.String, error) {
 	span := logging.GetEmitableSpan(context.Background(), "WaitForNewLeaders/"+deploymentName)
 	defer span.End()
 
 	var leaders sets.String
 	err := wait.PollImmediate(time.Second, time.Minute, func() (bool, error) {
-		currentLeaders, err := GetLeaders(client, deploymentName, namespace)
+		currentLeaders, err := GetLeaders(t, client, deploymentName, namespace)
 		if err != nil {
 			return false, err
 		}
 		if len(currentLeaders) < n {
+			t.Logf("WaitForNewLeaders[%s] not enough leaders, got: %d, want: %d", deploymentName, len(currentLeaders), n)
 			return false, nil
 		}
 		if previousLeaders.HasAny(currentLeaders...) {
-			// TODO(mattmoor): Log overlap?
+			t.Logf("WaitForNewLeaders[%s] still see intersection: %v", deploymentName, previousLeaders.Intersection(sets.NewString(currentLeaders...)))
 			return false, nil
 		}
 		leaders = sets.NewString(currentLeaders...)
