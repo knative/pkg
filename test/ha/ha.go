@@ -49,12 +49,13 @@ func extractDeployment(pod string) string {
 }
 
 // GetLeaders collects all of the leader pods from the specified deployment.
-func GetLeaders(t *testing.T, client *test.KubeClient, deploymentName, namespace string) (sets.String, error) {
+// GetLeaders will return duplicate pods by design.
+func GetLeaders(t *testing.T, client *test.KubeClient, deploymentName, namespace string) ([]string, error) {
 	leases, err := client.Kube.CoordinationV1().Leases(namespace).List(metav1.ListOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("error getting leases for deployment %q: %w", deploymentName, err)
 	}
-	ret := sets.NewString()
+	ret := make([]string, 0, len(leases.Items))
 	for _, lease := range leases.Items {
 		if lease.Spec.HolderIdentity == nil {
 			continue
@@ -65,7 +66,7 @@ func GetLeaders(t *testing.T, client *test.KubeClient, deploymentName, namespace
 		if extractDeployment(pod) != deploymentName {
 			continue
 		}
-		ret.Insert(pod)
+		ret = append(ret, pod)
 	}
 	return ret, nil
 }
@@ -76,23 +77,22 @@ func WaitForNewLeaders(t *testing.T, client *test.KubeClient, deploymentName, na
 	span := logging.GetEmitableSpan(context.Background(), "WaitForNewLeaders/"+deploymentName)
 	defer span.End()
 
-	var (
-		leaders sets.String
-		ierr    error
-	)
+	var leaders sets.String
 	err := wait.PollImmediate(time.Second, time.Minute, func() (bool, error) {
-		leaders, ierr = GetLeaders(t, client, deploymentName, namespace)
-		if ierr != nil {
-			return false, ierr
+		currLeaders, err := GetLeaders(t, client, deploymentName, namespace)
+		if err != nil {
+			return false, err
 		}
-		if len(leaders) < n {
-			t.Logf("WaitForNewLeaders[%s] not enough leaders, got: %d, want: %d", deploymentName, len(leaders), n)
+		if len(currLeaders) < n {
+			t.Logf("WaitForNewLeaders[%s] not enough leaders, got: %d, want: %d", deploymentName, len(currLeaders), n)
 			return false, nil
 		}
-		if isect := previousLeaders.Intersection(leaders); len(isect) > 0 {
-			t.Logf("WaitForNewLeaders[%s] still see intersection: %v", deploymentName, isect)
+		l := sets.NewString(currLeaders...)
+		if previousLeaders.HasAny(currLeaders...) {
+			t.Logf("WaitForNewLeaders[%s] still see intersection: %v", deploymentName, previousLeaders.Intersection(l))
 			return false, nil
 		}
+		leaders = l
 		return true, nil
 	})
 	return leaders, err
