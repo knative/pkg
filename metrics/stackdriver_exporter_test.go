@@ -204,10 +204,10 @@ func TestSdRecordWithResources(t *testing.T) {
 			metricskey.LabelConfigurationName, metricskey.ValueUnknown,
 			metricskey.LabelRevisionName, testRevision),
 	}, {
-		name:       "Serving only metric labels with allowCustomMetrics",
-		domain:     internalServingDomain,
-		component:  "activator",
-		metricName: "request_count",
+		name:               "Serving only metric labels with allowCustomMetrics",
+		domain:             internalServingDomain,
+		component:          "activator",
+		metricName:         "request_count",
 		allowCustomMetrics: true,
 		metricTags: map[string]string{
 			metricskey.LabelNamespaceName:     testNS,
