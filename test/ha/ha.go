@@ -26,17 +26,35 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/apimachinery/pkg/util/wait"
+
 	"knative.dev/pkg/test"
 	"knative.dev/pkg/test/logging"
 )
 
+func countingRFind(wr rune, wc int) func(rune) bool {
+	cnt := 0
+	return func(r rune) bool {
+		if r == wr {
+			cnt++
+		}
+		return cnt == wc
+	}
+}
+
+func extractDeployment(pod string) string {
+	if x := strings.LastIndexFunc(pod, countingRFind('-', 2)); x != -1 {
+		return pod[:x]
+	}
+	return ""
+}
+
 // GetLeaders collects all of the leader pods from the specified deployment.
-func GetLeaders(t *testing.T, client *test.KubeClient, deploymentName, namespace string) ([]string, error) {
+func GetLeaders(t *testing.T, client *test.KubeClient, deploymentName, namespace string) (sets.String, error) {
 	leases, err := client.Kube.CoordinationV1().Leases(namespace).List(metav1.ListOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("error getting leases for deployment %q: %w", deploymentName, err)
 	}
-	var pods []string
+	ret := sets.NewString()
 	for _, lease := range leases.Items {
 		if lease.Spec.HolderIdentity == nil {
 			continue
@@ -44,16 +62,12 @@ func GetLeaders(t *testing.T, client *test.KubeClient, deploymentName, namespace
 		pod := strings.SplitN(*lease.Spec.HolderIdentity, "_", 2)[0]
 
 		// Deconstruct the pod name and look for the deployment.  This won't work for very long deployment names.
-		parts := strings.Split(pod, "-")
-		if len(parts) < 3 {
+		if extractDeployment(pod) != deploymentName {
 			continue
 		}
-		if strings.Join(parts[:len(parts)-2], "-") != deploymentName {
-			continue
-		}
-		pods = append(pods, pod)
+		ret.Insert(pod)
 	}
-	return pods, nil
+	return ret, nil
 }
 
 // WaitForNewLeaders waits until the collection of current leaders consists of "n" leaders
@@ -62,21 +76,23 @@ func WaitForNewLeaders(t *testing.T, client *test.KubeClient, deploymentName, na
 	span := logging.GetEmitableSpan(context.Background(), "WaitForNewLeaders/"+deploymentName)
 	defer span.End()
 
-	var leaders sets.String
+	var (
+		leaders sets.String
+		ierr    error
+	)
 	err := wait.PollImmediate(time.Second, time.Minute, func() (bool, error) {
-		currentLeaders, err := GetLeaders(t, client, deploymentName, namespace)
-		if err != nil {
-			return false, err
+		leaders, ierr = GetLeaders(t, client, deploymentName, namespace)
+		if ierr != nil {
+			return false, ierr
 		}
-		if len(currentLeaders) < n {
-			t.Logf("WaitForNewLeaders[%s] not enough leaders, got: %d, want: %d", deploymentName, len(currentLeaders), n)
+		if len(leaders) < n {
+			t.Logf("WaitForNewLeaders[%s] not enough leaders, got: %d, want: %d", deploymentName, len(leaders), n)
 			return false, nil
 		}
-		if previousLeaders.HasAny(currentLeaders...) {
-			t.Logf("WaitForNewLeaders[%s] still see intersection: %v", deploymentName, previousLeaders.Intersection(sets.NewString(currentLeaders...)))
+		if isect := previousLeaders.Intersection(leaders); len(isect) > 0 {
+			t.Logf("WaitForNewLeaders[%s] still see intersection: %v", deploymentName, isect)
 			return false, nil
 		}
-		leaders = sets.NewString(currentLeaders...)
 		return true, nil
 	})
 	return leaders, err
