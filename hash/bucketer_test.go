@@ -95,4 +95,8 @@ func TestBucketHas(t *testing.T) {
 	if !b.Has(thisNN) {
 		t.Errorf("Has(%v) = false", thisNN)
 	}
+	b = NewBucketSet(otherBucket, buckets)
+	if b.Has(thisNN) {
+		t.Errorf("Other bucket Has(%v) = true", thisNN)
+	}
 }

@@ -24,7 +24,10 @@ import (
 	lru "github.com/hashicorp/golang-lru"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/sets"
+	"knative.dev/pkg/reconciler"
 )
+
+var _ = (reconciler.Bucket)(nil)
 
 // BucketSet answers to what bucket does key X belong in a
 // consistent manner (consistent as in consistent hashing).
@@ -58,6 +61,11 @@ func NewBucketSet(name string, bucketList sets.String) *BucketSet {
 		cache:   newCache(),
 		buckets: bucketList,
 	}
+}
+
+// Name implements Bucket.
+func (b *BucketSet) Name() string {
+	return b.name
 }
 
 // Has returns true if this bucket owns the key and
