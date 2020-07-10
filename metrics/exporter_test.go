@@ -263,13 +263,16 @@ func TestFlushExporter(t *testing.T) {
 		reportingPeriod:    1 * time.Minute,
 		backendDestination: prometheus,
 	}
-	e, _, err := newMetricsExporter(c, TestLogger(t))
+	e, f, err := newMetricsExporter(c, TestLogger(t))
 	if err != nil {
 		t.Errorf("Expected no error. got %v", err)
 	} else {
 		setCurMetricsExporter(e)
 		if want, got := false, FlushExporter(); got != want {
 			t.Errorf("Expected %v, got %v.", want, got)
+		}
+		if f == nil { // This is tested more extensively in resource_view_test.go
+			t.Error("Expected non-nil factory, got nil.")
 		}
 	}
 
@@ -286,13 +289,16 @@ func TestFlushExporter(t *testing.T) {
 		},
 	}
 
-	e, _, err = newMetricsExporter(c, TestLogger(t))
+	e, f, err = newMetricsExporter(c, TestLogger(t))
 	if err != nil {
 		t.Errorf("Expected no error. got %v", err)
 	} else {
 		setCurMetricsExporter(e)
 		if want, got := true, FlushExporter(); got != want {
 			t.Errorf("Expected %v, got %v when calling FlushExporter().", want, got)
+		}
+		if f == nil { // This is tested more extensively in resource_view_test.go
+			t.Error("Expected non-nil factory, got nil.")
 		}
 	}
 }

@@ -102,7 +102,7 @@ func TestRecordBatch(t *testing.T) {
 		Aggregation: view.LastValue(),
 	}}
 	view.Register(v...)
-	defer view.Unregister(v...)
+	t.Cleanup(func() { view.Unregister(v...) })
 	metricsConfig := &metricsConfig{}
 	measurement1 := measure1.M(1984)
 	measurement2 := measure2.M(42)
@@ -209,7 +209,7 @@ func TestMeter(t *testing.T) {
 		Aggregation: view.LastValue(),
 	}
 	RegisterResourceView(v)
-	defer UnregisterResourceView(v)
+	t.Cleanup(func() { UnregisterResourceView(v) })
 
 	for _, test := range meterTestCases {
 		t.Run(test.name, func(t *testing.T) {

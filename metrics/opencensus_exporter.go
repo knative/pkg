@@ -42,10 +42,10 @@ func newOpenCensusExporter(config *metricsConfig, logger *zap.SugaredLogger) (vi
 	}
 	e, err := ocagent.NewExporter(opts...)
 	if err != nil {
-		logger.Errorw("failed to create the OpenCensus exporter.", zap.Error(err))
+		logger.Errorw("Failed to create the OpenCensus exporter.", zap.Error(err))
 		return nil, nil, err
 	}
-	logger.Infof("created OpenCensus exporter with config: %+v.", *config)
+	logger.Infow("Created OpenCensus exporter with config:", zap.Any("config", *config))
 	view.RegisterExporter(e)
 	return e, getFactory(opts), nil
 }
@@ -83,7 +83,7 @@ func getOpenCensusSecret(component string, lister SecretFetcher) (*corev1.Secret
 // for communicating with the OpenCensus Agent.
 func getCredentials(component string, secret *corev1.Secret, logger *zap.SugaredLogger) credentials.TransportCredentials {
 	if secret == nil {
-		logger.Errorf("no secret provided for component %q; cannot use requireSecure=true", component)
+		logger.Errorf("No secret provided for component %q; cannot use requireSecure=true", component)
 		return nil
 	}
 	return credentials.NewTLS(&tls.Config{

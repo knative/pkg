@@ -69,11 +69,9 @@ var allMeters = meters{
 // register the view across all Resources tracked by the system, rather than
 // simply the default view.
 func RegisterResourceView(views ...*view.View) error {
+	var err error
 	allMeters.lock.Lock()
 	defer allMeters.lock.Unlock()
-
-	errors := make([]error, 0, len(allMeters.meters))
-
 	resourceViews.lock.Lock()
 	defer resourceViews.lock.Unlock()
 	for _, meter := range allMeters.meters {
@@ -83,14 +81,13 @@ func RegisterResourceView(views ...*view.View) error {
 			c := *v
 			viewCopy = append(viewCopy, &c)
 		}
-		if err := meter.m.Register(viewCopy...); err != nil {
-			errors = append(errors, err)
+		if e := meter.m.Register(viewCopy...); e != nil {
+			err = e
 		}
 	}
-	if len(errors) > 0 {
-		return errors[0] // The first error is as good as any
+	if err != nil {
+		return err
 	}
-
 	resourceViews.views = append(resourceViews.views, views...)
 	return nil
 }
@@ -150,7 +147,7 @@ func setFactory(f ResourceExporterFactory) error {
 	var retErr error
 
 	for r, meter := range allMeters.meters {
-		e, err := f(resourceFromString(r))
+		e, err := f(resourceFromKey(r))
 		if err != nil {
 			retErr = err
 			continue // Keep trying to clean up remaining Meters.
@@ -174,7 +171,7 @@ func flushResourceExporters() {
 func meterExporterForResource(r *resource.Resource) *meterExporter {
 	key, ok := allMeters.resourceToKey[r]
 	if !ok {
-		key = resourceAsString(r)
+		key = resourceToKey(r)
 		allMeters.resourceToKey[r] = key
 	}
 
@@ -236,7 +233,7 @@ func optionForResource(r *resource.Resource) (stats.Options, error) {
 	return mE.o, nil
 }
 
-func resourceAsString(r *resource.Resource) string {
+func resourceToKey(r *resource.Resource) string {
 	var s strings.Builder
 	l := len(r.Type)
 	kvs := make([]string, 0, len(r.Labels))
@@ -249,13 +246,15 @@ func resourceAsString(r *resource.Resource) string {
 	s.Grow(l)
 	s.WriteString(r.Type)
 
-	sort.Strings(kvs)
-	s.WriteString(strings.Join(kvs, ""))
+	sort.Strings(kvs) // Go maps are unsorted, so sort by key to produce stable output.
+	for _, kv := range kvs {
+		s.WriteString(kv)
+	}
 
 	return s.String()
 }
 
-func resourceFromString(s string) *resource.Resource {
+func resourceFromKey(s string) *resource.Resource {
 	if s == "" {
 		return nil
 	}

@@ -153,13 +153,13 @@ func UpdateExporter(ops ExporterOptions, logger *zap.SugaredLogger) error {
 		flushGivenExporter(curMetricsExporter)
 		e, f, err := newMetricsExporter(newConfig, logger)
 		if err != nil {
-			logger.Errorf("Failed to update a new metrics exporter based on metric config %v. error: %v", newConfig, err)
+			logger.Errorw("Failed to update a new metrics exporter based on metric config", newConfig, zap.Error(err))
 			return err
 		}
 		existingConfig := curMetricsConfig
 		curMetricsExporter = e
 		if err := setFactory(f); err != nil {
-			logger.Errorf("Failed to update metrics factory when loading metric config %v. error: %v", newConfig, err)
+			logger.Errorw("Failed to update metrics factory when loading metric config", newConfig, zap.Error(err))
 			return err
 		}
 		logger.Infof("Successfully updated the metrics exporter; old config: %v; new config %v", existingConfig, newConfig)

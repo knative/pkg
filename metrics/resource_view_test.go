@@ -146,15 +146,15 @@ func TestResourceAsString(t *testing.T) {
 
 	// Test 5 time since the iteration could be random.
 	for i := 0; i < 5; i++ {
-		s1 := resourceAsString(r1)
-		s2 := resourceAsString(r2)
+		s1 := resourceToKey(r1)
+		s2 := resourceToKey(r2)
 		if s1 != s2 {
 			t.Errorf("Expect same resources, but got %s and %s", s1, s2)
 		}
 	}
 
-	s1 := resourceAsString(r1)
-	s3 := resourceAsString(r3)
+	s1 := resourceToKey(r1)
+	s3 := resourceToKey(r3)
 	if s1 == s3 {
 		t.Errorf("Expect different resources, but got the same %s", s1)
 	}
@@ -400,10 +400,10 @@ testComponent_testing_value{project="p1",revision="r2"} 1
 			if err := RegisterResourceView(gaugeView, resourceCounter); err != nil {
 				t.Fatalf("Unable to register views: %v", err)
 			}
-			defer func() {
+			t.Cleanup(func() {
 				view.Unregister(globalCounter)
 				UnregisterResourceView(gaugeView, resourceCounter)
-			}()
+			})
 
 			for i, r := range resources {
 				ctx := context.Background()
