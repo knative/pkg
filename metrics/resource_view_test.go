@@ -430,7 +430,7 @@ func TestStackDriverExports(t *testing.T) {
 		},
 	}
 
-	actualPodsLabels := map[string]string{
+	label1 := map[string]string{
 		"cluster_name":       "test-cluster",
 		"configuration_name": "config",
 		"location":           "test-location",
@@ -439,7 +439,7 @@ func TestStackDriverExports(t *testing.T) {
 		"revision_name":      "revision",
 		"service_name":       "service",
 	}
-	desiredPodsLabels := map[string]string{
+	label2 := map[string]string{
 		"cluster_name":       "test-cluster",
 		"configuration_name": "config2",
 		"location":           "test-location",
@@ -448,7 +448,7 @@ func TestStackDriverExports(t *testing.T) {
 		"revision_name":      "revision2",
 		"service_name":       "service2",
 	}
-	testingValueLabels := map[string]string{
+	label3 := map[string]string{
 		"key": "value",
 	}
 	harness := []struct {
@@ -461,15 +461,15 @@ func TestStackDriverExports(t *testing.T) {
 		expected: []metricExtract{
 			{
 				"knative.dev/serving/autoscaler/actual_pods",
-				actualPodsLabels,
+				label1,
 				1,
 			},
 			{"knative.dev/serving/autoscaler/desired_pods",
-				desiredPodsLabels,
+				label2,
 				2,
 			},
 			{"custom.googleapis.com/knative.dev/autoscaler/testing/value",
-				testingValueLabels,
+				label3,
 				3,
 			},
 		},
@@ -479,11 +479,11 @@ func TestStackDriverExports(t *testing.T) {
 		expected: []metricExtract{
 			{
 				"knative.dev/serving/autoscaler/actual_pods",
-				actualPodsLabels,
+				label1,
 				1,
 			},
 			{"knative.dev/serving/autoscaler/desired_pods",
-				desiredPodsLabels,
+				label2,
 				2,
 			},
 		},
