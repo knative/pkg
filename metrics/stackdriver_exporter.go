@@ -208,7 +208,7 @@ func sdCustomMetricsRecorder(mc metricsConfig, allowCustomMetrics bool) func(con
 	return func(ctx context.Context, mss []stats.Measurement, ros ...stats.Options) error {
 		i := 0
 		var templ *resourceTemplate
-		hasCustomMetrics := false
+		templateFound := false
 
 		// This loop serves two purpose, filtering out custom metrics when allowCustomMetrics set to false,
 		// and find the template for the system metrics.
@@ -218,23 +218,17 @@ func sdCustomMetricsRecorder(mc metricsConfig, allowCustomMetrics bool) func(con
 			if ok || allowCustomMetrics {
 				mss[i] = m
 				i++
-				hasCustomMetrics = hasCustomMetrics || !ok
-				if ok {
-					if templ != nil && templ != t {
-						return fmt.Errorf("mixed resource type measurements in one report: %v", mss)
-					}
-					templ = t
+				if templateFound && templ != t {
+					return fmt.Errorf("mixed resource type measurements in one report: %v", mss)
 				}
+				templ = t
+				templateFound = true
 			}
 		}
 		// Trim the array
 		mss = mss[:i]
 		if i == 0 {
 			return nil
-		}
-
-		if templ != nil && hasCustomMetrics {
-			return fmt.Errorf("mixed custom and system metrics measurements in one report: %v", mss)
 		}
 
 		baseResource := metricskey.GetResource(ctx)
@@ -246,12 +240,13 @@ func sdCustomMetricsRecorder(mc metricsConfig, allowCustomMetrics bool) func(con
 				Labels: map[string]string{},
 			}
 			tagMutations := make([]tag.Mutator, 0, len(templ.LabelKeys))
+			if baseResource == nil {
+				baseResource = &resource.Resource{}
+			}
 			for k := range templ.LabelKeys {
-				if baseResource != nil {
-					if v, ok := baseResource.Labels[k]; ok {
-						r.Labels[k] = v
-						continue
-					}
+				if v, ok := baseResource.Labels[k]; ok {
+					r.Labels[k] = v
+					continue
 				}
 				tagKey := tag.MustNewKey(k)
 				if v, ok := tagMap.Value(tagKey); ok {
