@@ -87,7 +87,7 @@ type Config struct {
 
 	// This field is deprecated and will be removed once downstream
 	// repositories have removed their validation of it.
-	// TODO(mattmoor): DO NOT SUBMIT open an issue to track.
+	// TODO(https://github.com/knative/pkg/issues/1478): Remove this field.
 	EnabledComponents sets.String
 }
 
