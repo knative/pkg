@@ -27,15 +27,11 @@ import (
 	"knative.dev/pkg/reconciler"
 )
 
-var _ reconciler.Bucket = (*BucketSet)(nil)
+var _ reconciler.Bucket = (*Bucket)(nil)
 
 // BucketSet answers to what bucket does key X belong in a
 // consistent manner (consistent as in consistent hashing).
-// In addition Bucket implements reconciler.Bucket interface, so it
-// can be used both in leader election and in routing applications.
 type BucketSet struct {
-	// The name of this bucket. Required to use `Has`.
-	name string
 	// Stores the cached lookups. cache is internally thread safe.
 	cache *lru.Cache
 
@@ -46,6 +42,13 @@ type BucketSet struct {
 	buckets sets.String
 }
 
+// Bucket implements reconciler.Bucket and wraps around BuketSet
+// for bucketing functions.
+type Bucket struct {
+	name    string
+	buckets *BucketSet
+}
+
 // Scientifically inferred preferred cache size.
 const cacheSize = 4096
 
@@ -54,24 +57,32 @@ func newCache() *lru.Cache {
 	return c
 }
 
-// NewBucketSet creates a new bucket set with the given name.
-func NewBucketSet(name string, bucketList sets.String) *BucketSet {
+// NewBucketSet creates a new bucket set with the given universe
+// of bucket names.
+func NewBucketSet(bucketList sets.String) *BucketSet {
 	return &BucketSet{
-		name:    name,
 		cache:   newCache(),
 		buckets: bucketList,
 	}
 }
 
+// NewBucket creates a new bucket.
+func NewBucket(name string, bl *BucketSet) *Bucket {
+	return &Bucket{
+		name:    name,
+		buckets: bl,
+	}
+}
+
 // Name implements Bucket.
-func (b *BucketSet) Name() string {
+func (b *Bucket) Name() string {
 	return b.name
 }
 
 // Has returns true if this bucket owns the key and
 // implements reconciler.Bucket interface.
-func (b *BucketSet) Has(nn types.NamespacedName) bool {
-	return b.Owner(nn.String()) == b.name
+func (b *Bucket) Has(nn types.NamespacedName) bool {
+	return b.buckets.Owner(nn.String()) == b.name
 }
 
 // Owner returns the owner of the key.

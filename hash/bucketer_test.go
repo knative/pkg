@@ -33,7 +33,7 @@ const (
 var buckets = sets.NewString(thisBucket, otherBucket, "aguacero", "chaparrón")
 
 func TestBucketOwner(t *testing.T) {
-	b := NewBucketSet(thisBucket, buckets)
+	b := NewBucketSet(buckets)
 	if got := b.Owner(knownKey); got != thisBucket {
 		t.Errorf("Owner = %q, want: %q", got, thisBucket)
 	}
@@ -63,7 +63,7 @@ func TestBucketOwner(t *testing.T) {
 }
 
 func TestBucketUpdate(t *testing.T) {
-	b := NewBucketSet(thisBucket, buckets)
+	b := NewBucketSet(buckets)
 	b.Owner(knownKey)
 
 	// Need a clone.
@@ -90,12 +90,13 @@ func TestBucketUpdate(t *testing.T) {
 }
 
 func TestBucketHas(t *testing.T) {
-	b := NewBucketSet(thisBucket, buckets)
+	bs := NewBucketSet(buckets)
+	b := NewBucket(thisBucket, bs)
 	thisNN := types.NamespacedName{Namespace: "snow", Name: "hail"}
 	if !b.Has(thisNN) {
 		t.Errorf("Has(%v) = false", thisNN)
 	}
-	b = NewBucketSet(otherBucket, buckets)
+	b = NewBucket(otherBucket, bs)
 	if b.Has(thisNN) {
 		t.Errorf("Other bucket Has(%v) = true", thisNN)
 	}
