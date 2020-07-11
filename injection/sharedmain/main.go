@@ -201,6 +201,14 @@ func MainWithConfig(ctx context.Context, component string, cfg *rest.Config, cto
 	eg, egCtx := errgroup.WithContext(ctx)
 	eg.Go(profilingServer.ListenAndServe)
 
+	// Many of the webhooks rely on configuration, e.g. configurable defaults, feature flags.
+	// So make sure that we have synchonized our configuration state before launching the
+	// webhooks, so that things are properly initialized.
+	logger.Info("Starting configuration manager...")
+	if err := cmw.Start(ctx.Done()); err != nil {
+		logger.Fatalw("Failed to start configuration manager", zap.Error(err))
+	}
+
 	// If we have one or more admission controllers, then start the webhook
 	// and pass them in.
 	var wh *webhook.Webhook
@@ -217,10 +225,6 @@ func MainWithConfig(ctx context.Context, component string, cfg *rest.Config, cto
 		})
 	}
 
-	logger.Info("Starting configuration manager...")
-	if err := cmw.Start(ctx.Done()); err != nil {
-		logger.Fatalw("Failed to start configuration manager", zap.Error(err))
-	}
 	logger.Info("Starting informers...")
 	if err := controller.StartInformers(ctx.Done(), informers...); err != nil {
 		logger.Fatalw("Failed to start informers", zap.Error(err))
