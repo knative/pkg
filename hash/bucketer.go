@@ -27,7 +27,7 @@ import (
 	"knative.dev/pkg/reconciler"
 )
 
-var _ = (reconciler.Bucket)(nil)
+var _ reconciler.Bucket = (*BucketSet)(nil)
 
 // BucketSet answers to what bucket does key X belong in a
 // consistent manner (consistent as in consistent hashing).
