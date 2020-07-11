@@ -101,3 +101,11 @@ func TestBucketHas(t *testing.T) {
 		t.Errorf("Other bucket Has(%v) = true", thisNN)
 	}
 }
+
+func TestBucketName(t *testing.T) {
+	bs := NewBucketSet(buckets)
+	b := NewBucket(thisBucket, bs)
+	if got, want := b.Name(), thisBucket; got != want {
+		t.Errorf("Name = %q, want: %q", got, want)
+	}
+}
