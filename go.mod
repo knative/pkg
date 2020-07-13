@@ -28,6 +28,7 @@ require (
 	github.com/googleapis/gnostic v0.4.0 // indirect
 	github.com/gorilla/websocket v1.4.2
 	github.com/grpc-ecosystem/grpc-gateway v1.12.1 // indirect
+	github.com/hashicorp/golang-lru v0.5.4
 	github.com/influxdata/tdigest v0.0.0-20181121200506-bf2b5ad3c0a9 // indirect
 	github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51
 	github.com/kelseyhightower/envconfig v1.4.0
@@ -42,12 +43,12 @@ require (
 	go.opencensus.io v0.22.4
 	go.uber.org/multierr v1.5.0
 	go.uber.org/zap v1.14.1
-	golang.org/x/net v0.0.0-20200625001655-4c5254603344
+	golang.org/x/net v0.0.0-20200707034311-ab3426394381
 	golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d
 	golang.org/x/sync v0.0.0-20200625203802-6e8e738ad208
 	gomodules.xyz/jsonpatch/v2 v2.1.0
-	google.golang.org/api v0.28.0
-	google.golang.org/genproto v0.0.0-20200701001935-0939c5918c31
+	google.golang.org/api v0.29.0
+	google.golang.org/genproto v0.0.0-20200710124503-20a17af7bd0e
 	google.golang.org/grpc v1.30.0
 	gopkg.in/yaml.v2 v2.3.0
 	gopkg.in/yaml.v3 v3.0.0-20190709130402-674ba3eaed22
@@ -59,7 +60,7 @@ require (
 	k8s.io/gengo v0.0.0-20200205140755-e0e292d8aa12
 	k8s.io/klog v1.0.0
 	k8s.io/utils v0.0.0-20200124190032-861946025e34 // indirect
-	knative.dev/test-infra v0.0.0-20200707183444-aed09e56ddc7
+	knative.dev/test-infra v0.0.0-20200713045417-850e4e37918d
 	sigs.k8s.io/boskos v0.0.0-20200617235605-f289ba6555ba
 )
 
