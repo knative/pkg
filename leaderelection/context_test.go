@@ -37,7 +37,6 @@ import (
 func TestWithBuilder(t *testing.T) {
 	cc := ComponentConfig{
 		Component:     "the-component",
-		LeaderElect:   true,
 		Buckets:       1,
 		ResourceLock:  "leases",
 		LeaseDuration: 15 * time.Second,
@@ -149,9 +148,8 @@ func TestWithBuilder(t *testing.T) {
 
 func TestWithStatefulSetBuilder(t *testing.T) {
 	cc := ComponentConfig{
-		Component:   "the-component",
-		LeaderElect: true,
-		Buckets:     1,
+		Component: "the-component",
+		Buckets:   1,
 	}
 	const podDNS = "ws://as-42.autoscaler.knative-testing.svc.cluster.local:8080"
 	ctx := context.Background()
