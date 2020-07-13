@@ -155,20 +155,22 @@ func TestNewStatefulSetBucketAndSet(t *testing.T) {
 	}
 
 	os.Setenv(controllerOrdinalEnv, "as-2")
-	defer os.Unsetenv(controllerOrdinalEnv)
 	os.Setenv(serviceNameEnv, "autoscaler")
-	defer os.Unsetenv(serviceNameEnv)
+	t.Cleanup(func() {
+		os.Unsetenv(controllerOrdinalEnv)
+		os.Unsetenv(serviceNameEnv)
+	})
 
 	_, _, err := NewStatefulSetBucketAndSet(2)
 	if err == nil {
 		// Ordinal 2 should be range [0, 2)
-		t.Fatal("expected error from NewStatefulSetBucketAndSet but got nil")
+		t.Fatal("Expected error from NewStatefulSetBucketAndSet but got nil")
 	}
 
 	bkt, bs, err := NewStatefulSetBucketAndSet(3)
 	if err != nil {
 		// Ordinal 2 should be range [0, 2)
-		t.Fatalf("NewStatefulSetBucketAndSet() = %d", err)
+		t.Fatal("NewStatefulSetBucketAndSet() = ", err)
 	}
 
 	if got, want := bkt.Name(), wantNames[2]; got != want {
@@ -203,11 +205,13 @@ func TestWithStatefulSetBuilder(t *testing.T) {
 	if os.Setenv(controllerOrdinalEnv, "as-2") != nil {
 		t.Fatalf("Failed to set env var %s=%s", controllerOrdinalEnv, "as-2")
 	}
-	defer os.Unsetenv(controllerOrdinalEnv)
 	if os.Setenv(serviceNameEnv, "autoscaler") != nil {
 		t.Fatalf("Failed to set env var %s=%s", serviceNameEnv, "autoscaler")
 	}
-	defer os.Unsetenv(serviceNameEnv)
+	t.Cleanup(func() {
+		os.Unsetenv(controllerOrdinalEnv)
+		os.Unsetenv(serviceNameEnv)
+	})
 
 	ctx = WithDynamicLeaderElectorBuilder(ctx, nil, cc)
 	if !HasLeaderElection(ctx) {
