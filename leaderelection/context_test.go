@@ -25,7 +25,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/google/go-cmp/cmp"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	fakekube "k8s.io/client-go/kubernetes/fake"
@@ -151,9 +150,9 @@ func TestWithStatefulSetBuilder(t *testing.T) {
 	cc := ComponentConfig{
 		Component:   "the-component",
 		LeaderElect: true,
-		Buckets:     1,
+		Buckets:     3,
 	}
-	const podDNS = "ws://as-42.autoscaler.knative-testing.svc.cluster.local:8080"
+	const podDNS = "http://as-2.autoscaler.knative-testing.svc.cluster.local:80"
 	ctx := context.Background()
 
 	promoted := make(chan struct{})
@@ -165,22 +164,14 @@ func TestWithStatefulSetBuilder(t *testing.T) {
 	}
 	enq := func(reconciler.Bucket, types.NamespacedName) {}
 
-	if os.Setenv(controllerOrdinalEnv, "as-42") != nil {
-		t.Fatalf("Failed to set env var %s=%s", controllerOrdinalEnv, "as-42")
+	if os.Setenv(controllerOrdinalEnv, "as-2") != nil {
+		t.Fatalf("Failed to set env var %s=%s", controllerOrdinalEnv, "as-2")
 	}
 	defer os.Unsetenv(controllerOrdinalEnv)
-	if os.Setenv("STATEFUL_SERVICE_NAME", "autoscaler") != nil {
-		t.Fatalf("Failed to set env var %s=%s", "STATEFUL_SERVICE_NAME", "autoscaler")
+	if os.Setenv(serviceNameEnv, "autoscaler") != nil {
+		t.Fatalf("Failed to set env var %s=%s", serviceNameEnv, "autoscaler")
 	}
-	defer os.Unsetenv("STATEFUL_SERVICE_NAME")
-	if os.Setenv("STATEFUL_SERVICE_PORT", "8080") != nil {
-		t.Fatalf("Failed to set env var %s=%s", "STATEFUL_SERVICE_PORT", "8080")
-	}
-	defer os.Unsetenv("STATEFUL_SERVICE_PORT")
-	if os.Setenv("STATEFUL_SERVICE_PROTOCOL", "ws") != nil {
-		t.Fatalf("Failed to set env var %s=%s", "STATEFUL_SERVICE_PROTOCOL", "ws")
-	}
-	defer os.Unsetenv("STATEFUL_SERVICE_PROTOCOL")
+	defer os.Unsetenv(serviceNameEnv)
 
 	ctx = WithDynamicLeaderElectorBuilder(ctx, nil, cc)
 	if !HasLeaderElection(ctx) {
@@ -191,19 +182,6 @@ func TestWithStatefulSetBuilder(t *testing.T) {
 	ssb, ok := b.(*statefulSetBuilder)
 	if !ok || ssb == nil {
 		t.Fatal("StatefulSetBuilder not found on context")
-	}
-	want := statefulSetConfig{
-		StatefulSetID: statefulSetID{
-			ssName:  "as",
-			ordinal: 42,
-		},
-		ServiceName: "autoscaler",
-		Port:        "8080",
-		Protocol:    "ws",
-	}
-	if !cmp.Equal(ssb.ssc, want, cmp.AllowUnexported(statefulSetID{})) {
-		t.Errorf("StatefulSetConfig = %#v, want: %#v,diff(-want,+got)\n%s", ssb.ssc, want,
-			cmp.Diff(want, ssb.ssc, cmp.AllowUnexported(statefulSetID{})))
 	}
 
 	le, err := BuildElector(ctx, laf, "name", enq)

@@ -21,7 +21,12 @@ import (
 	"testing"
 )
 
-const controllerOrdinalEnv = "STATEFUL_CONTROLLER_ORDINAL"
+const (
+	controllerOrdinalEnv = "STATEFUL_CONTROLLER_ORDINAL"
+	serviceNameEnv       = "STATEFUL_SERVICE_NAME"
+	servicePortEnv       = "STATEFUL_SERVICE_PORT"
+	serviceProtocolEnv   = "STATEFUL_SERVICE_PROTOCOL"
+)
 
 func TestControllerOrdinal(t *testing.T) {
 	testCases := []struct {

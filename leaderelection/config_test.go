@@ -19,6 +19,7 @@ package leaderelection
 import (
 	"errors"
 	"fmt"
+	"os"
 	"strconv"
 	"testing"
 	"time"
@@ -192,6 +193,85 @@ func TestGetComponentConfig(t *testing.T) {
 			actual := tc.config.GetComponentConfig(expectedName)
 			if got, want := actual, tc.expected; !cmp.Equal(got, want) {
 				t.Errorf("Incorrect config: diff(-want,+got):\n%s", cmp.Diff(want, got))
+			}
+		})
+	}
+}
+
+func TestNewStatefulSetConfig(t *testing.T) {
+	cases := []struct {
+		name     string
+		pod      string
+		service  string
+		port     string
+		protocol string
+		wantErr  string
+		expected statefulSetConfig
+	}{{
+		name:    "success with default",
+		pod:     "as-42",
+		service: "autoscaler",
+		expected: statefulSetConfig{
+			StatefulSetID: statefulSetID{
+				ssName:  "as",
+				ordinal: 42,
+			},
+			ServiceName: "autoscaler",
+			Port:        "80",
+			Protocol:    "http",
+		},
+	}, {
+		name:     "success with overriding",
+		pod:      "as-42",
+		service:  "autoscaler",
+		port:     "8080",
+		protocol: "ws",
+		expected: statefulSetConfig{
+			StatefulSetID: statefulSetID{
+				ssName:  "as",
+				ordinal: 42,
+			},
+			ServiceName: "autoscaler",
+			Port:        "8080",
+			Protocol:    "ws",
+		},
+	}, {
+		name:    "failure with empty envs",
+		wantErr: "required key STATEFUL_CONTROLLER_ORDINAL missing value",
+	}, {
+		name:    "failure with invalid name",
+		pod:     "as-abcd",
+		wantErr: `envconfig.Process: assigning STATEFUL_CONTROLLER_ORDINAL to StatefulSetID: converting 'as-abcd' to type leaderelection.statefulSetID. details: strconv.ParseUint: parsing "abcd": invalid syntax`,
+	}}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			if tc.pod != "" {
+				os.Setenv(controllerOrdinalEnv, tc.pod)
+				defer os.Unsetenv(controllerOrdinalEnv)
+			}
+			if tc.service != "" {
+				os.Setenv(serviceNameEnv, tc.service)
+				defer os.Unsetenv(serviceNameEnv)
+			}
+			if tc.port != "" {
+				os.Setenv(servicePortEnv, tc.port)
+				defer os.Unsetenv(servicePortEnv)
+			}
+			if tc.protocol != "" {
+				os.Setenv(serviceProtocolEnv, tc.protocol)
+				defer os.Unsetenv(serviceProtocolEnv)
+			}
+
+			ssc, err := newStatefulSetConfig()
+			if err != nil {
+				if got, want := err.Error(), tc.wantErr; got != want {
+					t.Errorf("Got error: %s. want: %s", got, want)
+				}
+			} else {
+				if got, want := *ssc, tc.expected; !cmp.Equal(got, want, cmp.AllowUnexported(statefulSetID{})) {
+					t.Errorf("Incorrect config: diff(-want,+got):\n%s", cmp.Diff(want, got))
+				}
 			}
 		})
 	}
