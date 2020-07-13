@@ -20,10 +20,10 @@ import "testing"
 
 func TestExtractDeployment(t *testing.T) {
 	const want = "gke-cluster-michigan-pool-2"
-	if got := extractDeployment("gke-cluster-michigan-pool-2-03f384a0-2zu1"); got != want {
+	if got := ExtractDeployment("gke-cluster-michigan-pool-2-03f384a0-2zu1"); got != want {
 		t.Errorf("Deployment = %q, want: %q", got, want)
 	}
-	if got := extractDeployment("a-b"); got != "" {
+	if got := ExtractDeployment("a-b"); got != "" {
 		t.Errorf("Deployment = %q, want empty string", got)
 	}
 }

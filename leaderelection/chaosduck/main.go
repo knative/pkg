@@ -36,6 +36,7 @@ import (
 	"knative.dev/pkg/injection/sharedmain"
 	"knative.dev/pkg/signals"
 	"knative.dev/pkg/system"
+	"knative.dev/pkg/test/ha"
 )
 
 // components is a mapping from component name to the collection of leader pod names.
@@ -49,19 +50,17 @@ func buildComponents(kc kubernetes.Interface) (components, error) {
 		return nil, err
 	}
 
-	cs := make(components, 5)
+	cs := components{}
 	for _, lease := range leases.Items {
 		if lease.Spec.HolderIdentity == nil {
 			log.Printf("Found lease %q held by nobody!", lease.Name)
 			continue
 		}
 		pod := strings.SplitN(*lease.Spec.HolderIdentity, "_", 2)[0]
-
-		parts := strings.Split(pod, "-")
-		if len(parts) < 3 {
+		deploymentName := ha.ExtractDeployment(pod)
+		if deploymentName == "" {
 			continue
 		}
-		deploymentName := strings.Join(parts[:len(parts)-2], "-")
 
 		set, ok := cs[deploymentName]
 		if !ok {
@@ -81,11 +80,7 @@ func quack(ctx context.Context, kc kubernetes.Interface, component string, leade
 	}
 	log.Printf("Quacking at %q leader %q", component, tribute)
 
-	err := kc.CoreV1().Pods(system.Namespace()).Delete(tribute, &metav1.DeleteOptions{})
-	if err != nil {
-		return err
-	}
-	return nil
+	return kc.CoreV1().Pods(system.Namespace()).Delete(tribute, &metav1.DeleteOptions{})
 }
 
 // frequency is the frequency with which we kill off leaders.
