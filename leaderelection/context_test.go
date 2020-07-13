@@ -22,6 +22,8 @@ package leaderelection
 import (
 	"context"
 	"os"
+	"reflect"
+	"sort"
 	"testing"
 	"time"
 
@@ -144,6 +146,42 @@ func TestWithBuilder(t *testing.T) {
 	case <-time.After(1 * time.Second):
 		t.Fatal("Timed out waiting for demotion.")
 	}
+}
+
+func TestNewStatefulSetBucketAndSet(t *testing.T) {
+	wantNames := []string{
+		"http://as-0.autoscaler.knative-testing.svc.cluster.local:80",
+		"http://as-1.autoscaler.knative-testing.svc.cluster.local:80",
+		"http://as-2.autoscaler.knative-testing.svc.cluster.local:80",
+	}
+
+	os.Setenv(controllerOrdinalEnv, "as-2")
+	defer os.Unsetenv(controllerOrdinalEnv)
+	os.Setenv(serviceNameEnv, "autoscaler")
+	defer os.Unsetenv(serviceNameEnv)
+
+	_, _, err := NewStatefulSetBucketAndSet(2)
+	if err == nil {
+		// Ordinal 2 should be range [0, 2)
+		t.Fatal("expected error from NewStatefulSetBucketAndSet but got nil")
+	}
+
+	bkt, bs, err := NewStatefulSetBucketAndSet(3)
+	if err != nil {
+		// Ordinal 2 should be range [0, 2)
+		t.Fatalf("NewStatefulSetBucketAndSet() = %d", err)
+	}
+
+	if got, want := bkt.Name(), wantNames[2]; got != want {
+		t.Errorf("Bucket.Name() = %s, want = %s", got, want)
+	}
+
+	gotNames := bs.BucketList()
+	sort.Strings(gotNames)
+	if !reflect.DeepEqual(gotNames, wantNames) {
+		t.Errorf("BucketSet.BucketList() = %q, want: %q", gotNames, wantNames)
+	}
+
 }
 
 func TestWithStatefulSetBuilder(t *testing.T) {

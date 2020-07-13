@@ -30,6 +30,13 @@ import (
 	"knative.dev/pkg/kmeta"
 )
 
+const (
+	controllerOrdinalEnv = "STATEFUL_CONTROLLER_ORDINAL"
+	serviceNameEnv       = "STATEFUL_SERVICE_NAME"
+	servicePortEnv       = "STATEFUL_SERVICE_PORT"
+	serviceProtocolEnv   = "STATEFUL_SERVICE_PROTOCOL"
+)
+
 func okConfig() *Config {
 	return &Config{
 		ResourceLock:      "leases",
