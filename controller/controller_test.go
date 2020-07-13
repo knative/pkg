@@ -918,7 +918,6 @@ func TestStartAndShutdownWithLeaderAwareWithLostElection(t *testing.T) {
 	}
 	cc := leaderelection.ComponentConfig{
 		Component:     "component",
-		ResourceLock:  "leases",
 		LeaseDuration: 15 * time.Second,
 		RenewDeadline: 10 * time.Second,
 		RetryPeriod:   2 * time.Second,
