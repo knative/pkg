@@ -42,7 +42,7 @@ import (
 	"knative.dev/pkg/configmap"
 	"knative.dev/pkg/controller"
 	"knative.dev/pkg/injection"
-	kle "knative.dev/pkg/leaderelection"
+	"knative.dev/pkg/leaderelection"
 	"knative.dev/pkg/logging"
 	"knative.dev/pkg/metrics"
 	"knative.dev/pkg/profiling"
@@ -102,14 +102,14 @@ func GetLoggingConfig(ctx context.Context) (*logging.Config, error) {
 }
 
 // GetLeaderElectionConfig gets the leader election config.
-func GetLeaderElectionConfig(ctx context.Context) (*kle.Config, error) {
-	leaderElectionConfigMap, err := kubeclient.Get(ctx).CoreV1().ConfigMaps(system.Namespace()).Get(kle.ConfigMapName(), metav1.GetOptions{})
+func GetLeaderElectionConfig(ctx context.Context) (*leaderelection.Config, error) {
+	leaderElectionConfigMap, err := kubeclient.Get(ctx).CoreV1().ConfigMaps(system.Namespace()).Get(leaderelection.ConfigMapName(), metav1.GetOptions{})
 	if apierrors.IsNotFound(err) {
-		return kle.NewConfigFromConfigMap(nil)
+		return leaderelection.NewConfigFromConfigMap(nil)
 	} else if err != nil {
 		return nil, err
 	}
-	return kle.NewConfigFromConfigMap(leaderElectionConfigMap)
+	return leaderelection.NewConfigFromConfigMap(leaderElectionConfigMap)
 }
 
 // Main runs the generic main flow with a new context.
@@ -190,7 +190,7 @@ func MainWithConfig(ctx context.Context, component string, cfg *rest.Config, cto
 
 	if !IsHADisabled(ctx) {
 		// Signal that we are executing in a context with leader election.
-		ctx = kle.WithDynamicLeaderElectorBuilder(ctx, kubeclient.Get(ctx),
+		ctx = leaderelection.WithDynamicLeaderElectorBuilder(ctx, kubeclient.Get(ctx),
 			leaderElectionConfig.GetComponentConfig(component))
 	}
 
@@ -368,7 +368,7 @@ func ControllersAndWebhooksFromCtors(ctx context.Context,
 
 	// Check whether the context has been infused with a leader elector builder.
 	// If it has, then every reconciler we plan to start MUST implement LeaderAware.
-	leEnabled := kle.HasLeaderElection(ctx)
+	leEnabled := leaderelection.HasLeaderElection(ctx)
 
 	controllers := make([]*controller.Impl, 0, len(ctors))
 	webhooks := make([]interface{}, 0)
