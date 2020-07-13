@@ -1,5 +1,5 @@
 /*
-Copyright 2019 The Knative Authors
+Copyright 2020 The Knative Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,25 +14,16 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v1beta1
+package ha
 
-import (
-	"testing"
+import "testing"
 
-	"knative.dev/pkg/apis/duck"
-)
-
-func TestTypesImplements(t *testing.T) {
-	testCases := []struct {
-		instance interface{}
-		iface    duck.Implementable
-	}{
-		{instance: &AddressableType{}, iface: &Addressable{}},
-		{instance: &KResource{}, iface: &Conditions{}},
+func TestExtractDeployment(t *testing.T) {
+	const want = "gke-cluster-michigan-pool-2"
+	if got := extractDeployment("gke-cluster-michigan-pool-2-03f384a0-2zu1"); got != want {
+		t.Errorf("Deployment = %q, want: %q", got, want)
 	}
-	for _, tc := range testCases {
-		if err := duck.VerifyType(tc.instance, tc.iface); err != nil {
-			t.Error(err)
-		}
+	if got := extractDeployment("a-b"); got != "" {
+		t.Errorf("Deployment = %q, want empty string", got)
 	}
 }
