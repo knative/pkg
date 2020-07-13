@@ -41,7 +41,7 @@ func countingRFind(wr rune, wc int) func(rune) bool {
 	}
 }
 
-func extractDeployment(pod string) string {
+func ExtractDeployment(pod string) string {
 	if x := strings.LastIndexFunc(pod, countingRFind('-', 2)); x != -1 {
 		return pod[:x]
 	}
@@ -63,7 +63,7 @@ func GetLeaders(t *testing.T, client *test.KubeClient, deploymentName, namespace
 		pod := strings.SplitN(*lease.Spec.HolderIdentity, "_", 2)[0]
 
 		// Deconstruct the pod name and look for the deployment.  This won't work for very long deployment names.
-		if extractDeployment(pod) != deploymentName {
+		if ExtractDeployment(pod) != deploymentName {
 			continue
 		}
 		ret = append(ret, pod)
