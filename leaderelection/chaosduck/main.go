@@ -76,7 +76,7 @@ func buildComponents(kc kubernetes.Interface) (components, error) {
 func quack(ctx context.Context, kc kubernetes.Interface, component string, leaders sets.String) error {
 	tribute, ok := leaders.PopAny()
 	if !ok {
-		return errors.New("this should not be possible, since components are only created when they have components.")
+		return errors.New("this should not be possible, since components are only created when they have components")
 	}
 	log.Printf("Quacking at %q leader %q", component, tribute)
 
