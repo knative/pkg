@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package duck
+package v1
 
 import (
 	"testing"
@@ -22,34 +22,35 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	batchv1 "k8s.io/api/batch/v1"
 
-	v1 "knative.dev/pkg/apis/duck/v1"
+	"knative.dev/pkg/apis/duck"
+	"knative.dev/pkg/apis/duck/ducktypes"
 )
 
 // Conditions is an Implementable "duck type".
-var _ Implementable = (*v1.Conditions)(nil)
+var _ ducktypes.Implementable = (*Conditions)(nil)
 
 // In order for Conditions to be Implementable, KResource must be Populatable.
-var _ Populatable = (*v1.KResource)(nil)
+var _ ducktypes.Populatable = (*KResource)(nil)
 
 // Source is an Implementable "duck type".
-var _ Implementable = (*v1.Source)(nil)
+var _ ducktypes.Implementable = (*Source)(nil)
 
 // Verify Source resources meet duck contracts.
-var _ Populatable = (*v1.Source)(nil)
+var _ ducktypes.Populatable = (*Source)(nil)
 
-var _ Populatable = (*v1.WithPod)(nil)
-var _ Implementable = (*v1.PodSpecable)(nil)
+var _ ducktypes.Populatable = (*WithPod)(nil)
+var _ ducktypes.Implementable = (*PodSpecable)(nil)
 
 func TestV1TypesImplements(t *testing.T) {
 	testCases := []struct {
 		instance interface{}
-		iface    Implementable
+		iface    ducktypes.Implementable
 	}{
-		{instance: &v1.AddressableType{}, iface: &v1.Addressable{}},
-		{instance: &v1.KResource{}, iface: &v1.Conditions{}},
+		{instance: &AddressableType{}, iface: &Addressable{}},
+		{instance: &KResource{}, iface: &Conditions{}},
 	}
 	for _, tc := range testCases {
-		if err := VerifyType(tc.instance, tc.iface); err != nil {
+		if err := duck.VerifyType(tc.instance, tc.iface); err != nil {
 			t.Error(err)
 		}
 	}
@@ -57,7 +58,7 @@ func TestV1TypesImplements(t *testing.T) {
 
 func TestV1ImplementsPodSpecable(t *testing.T) {
 	instances := []interface{}{
-		&v1.WithPod{},
+		&WithPod{},
 		&appsv1.ReplicaSet{},
 		&appsv1.Deployment{},
 		&appsv1.StatefulSet{},
@@ -65,14 +66,14 @@ func TestV1ImplementsPodSpecable(t *testing.T) {
 		&batchv1.Job{},
 	}
 	for _, instance := range instances {
-		if err := VerifyType(instance, &v1.PodSpecable{}); err != nil {
+		if err := duck.VerifyType(instance, &PodSpecable{}); err != nil {
 			t.Error(err)
 		}
 	}
 }
 
 // Addressable is an Implementable "duck type".
-var _ Implementable = (*v1.Addressable)(nil)
+var _ ducktypes.Implementable = (*Addressable)(nil)
 
 // Verify AddressableType resources meet duck contracts.
-var _ Populatable = (*v1.AddressableType)(nil)
+var _ ducktypes.Populatable = (*AddressableType)(nil)
