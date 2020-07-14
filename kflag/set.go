@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Knative Authors
+Copyright 2020 The Knative Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,27 +14,29 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v1alpha1
+package kflag
 
 import (
-	"testing"
+	"flag"
+	"fmt"
 
-	"knative.dev/pkg/apis/duck"
+	"k8s.io/apimachinery/pkg/util/sets"
 )
 
-func TestTypesImplements(t *testing.T) {
-	testCases := []struct {
-		instance interface{}
-		iface    duck.Implementable
-	}{
-		{instance: &AddressableType{}, iface: &Addressable{}},
-		{instance: &LegacyTarget{}, iface: &LegacyTargetable{}},
-		{instance: &Target{}, iface: &Targetable{}},
-		{instance: &Binding{}, iface: &Binding{}},
+type StringSet struct {
+	Value sets.String
+}
+
+var _ flag.Value = (*StringSet)(nil)
+
+func (i *StringSet) String() string {
+	return fmt.Sprintf("%v", i.Value)
+}
+
+func (i *StringSet) Set(value string) error {
+	if i.Value == nil {
+		i.Value = make(sets.String, 1)
 	}
-	for _, tc := range testCases {
-		if err := duck.VerifyType(tc.instance, tc.iface); err != nil {
-			t.Error(err)
-		}
-	}
+	i.Value.Insert(value)
+	return nil
 }

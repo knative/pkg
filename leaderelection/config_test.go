@@ -25,32 +25,27 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/util/sets"
 	"knative.dev/pkg/kmeta"
 )
 
 func okConfig() *Config {
 	return &Config{
-		ResourceLock:      "leases",
-		Buckets:           1,
-		LeaseDuration:     15 * time.Second,
-		RenewDeadline:     10 * time.Second,
-		RetryPeriod:       2 * time.Second,
-		EnabledComponents: sets.NewString(),
+		Buckets:       1,
+		LeaseDuration: 15 * time.Second,
+		RenewDeadline: 10 * time.Second,
+		RetryPeriod:   2 * time.Second,
 	}
 }
 
 func okData() map[string]string {
 	return map[string]string{
-		"resourceLock": "leases",
-		"buckets":      "1",
+		"buckets": "1",
 		// values in this data come from the defaults suggested in the
 		// code:
 		// https://github.com/kubernetes/client-go/blob/kubernetes-1.16.0/tools/leaderelection/leaderelection.go
-		"leaseDuration":     "15s",
-		"renewDeadline":     "10s",
-		"retryPeriod":       "2s",
-		"enabledComponents": "controller",
+		"leaseDuration": "15s",
+		"renewDeadline": "10s",
+		"retryPeriod":   "2s",
 	}
 }
 
@@ -61,21 +56,9 @@ func TestNewConfigMapFromData(t *testing.T) {
 		expected *Config
 		err      error
 	}{{
-		name: "disabled but OK config",
-		data: func() map[string]string {
-			data := okData()
-			delete(data, "enabledComponents")
-			return data
-		}(),
+		name:     "OK config - controller enabled",
+		data:     okData(),
 		expected: okConfig(),
-	}, {
-		name: "OK config - controller enabled",
-		data: okData(),
-		expected: func() *Config {
-			config := okConfig()
-			config.EnabledComponents.Insert("controller")
-			return config
-		}(),
 	}, {
 		name: "OK config - controller enabled with multiple buckets",
 		data: kmeta.UnionMaps(okData(), map[string]string{
@@ -83,16 +66,9 @@ func TestNewConfigMapFromData(t *testing.T) {
 		}),
 		expected: func() *Config {
 			config := okConfig()
-			config.EnabledComponents.Insert("controller")
 			config.Buckets = 5
 			return config
 		}(),
-	}, {
-		name: "invalid resourceLock",
-		data: kmeta.UnionMaps(okData(), map[string]string{
-			"resourceLock": "flarps",
-		}),
-		err: errors.New(`resourceLock: invalid value "flarps": valid values are "leases"`),
 	}, {
 		name: "invalid leaseDuration",
 		data: kmeta.UnionMaps(okData(), map[string]string{
@@ -158,32 +134,15 @@ func TestGetComponentConfig(t *testing.T) {
 	}{{
 		name: "component enabled",
 		config: Config{
-			ResourceLock:      "leases",
-			LeaseDuration:     15 * time.Second,
-			RenewDeadline:     10 * time.Second,
-			RetryPeriod:       2 * time.Second,
-			EnabledComponents: sets.NewString(expectedName),
-		},
-		expected: ComponentConfig{
-			Component:     expectedName,
-			LeaderElect:   true,
-			ResourceLock:  "leases",
 			LeaseDuration: 15 * time.Second,
 			RenewDeadline: 10 * time.Second,
 			RetryPeriod:   2 * time.Second,
 		},
-	}, {
-		name: "component disabled",
-		config: Config{
-			ResourceLock:      "leases",
-			LeaseDuration:     15 * time.Second,
-			RenewDeadline:     10 * time.Second,
-			RetryPeriod:       2 * time.Second,
-			EnabledComponents: sets.NewString("not-the-component"),
-		},
 		expected: ComponentConfig{
-			Component:   expectedName,
-			LeaderElect: false,
+			Component:     expectedName,
+			LeaseDuration: 15 * time.Second,
+			RenewDeadline: 10 * time.Second,
+			RetryPeriod:   2 * time.Second,
 		},
 	}}
 
