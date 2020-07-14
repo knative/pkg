@@ -204,7 +204,7 @@ func NewStatefulSetBucketAndSet(buckets int) (reconciler.Bucket, *hash.BucketSet
 			ssc.StatefulSetID.ordinal, buckets)
 	}
 
-	names := sets.String{}
+	names := make(sets.String, buckets)
 	for i := 0; i < buckets; i++ {
 		names.Insert(statefulSetPodDNS(i, ssc))
 	}
