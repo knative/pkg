@@ -24,9 +24,11 @@ import (
 	"sync"
 
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/leaderelection"
 	"k8s.io/client-go/tools/leaderelection/resourcelock"
+	"knative.dev/pkg/hash"
 	"knative.dev/pkg/logging"
 	"knative.dev/pkg/network"
 	"knative.dev/pkg/reconciler"
@@ -80,11 +82,11 @@ type Elector interface {
 
 // BuildElector builds a leaderelection.LeaderElector for the named LeaderAware
 // reconciler using a builder added to the context via WithStandardLeaderElectorBuilder.
-func BuildElector(ctx context.Context, la reconciler.LeaderAware, name string, enq func(reconciler.Bucket, types.NamespacedName)) (Elector, error) {
+func BuildElector(ctx context.Context, la reconciler.LeaderAware, queueName string, enq func(reconciler.Bucket, types.NamespacedName)) (Elector, error) {
 	if val := ctx.Value(builderKey{}); val != nil {
 		switch builder := val.(type) {
 		case *standardBuilder:
-			return builder.buildElector(ctx, la, name, enq)
+			return builder.buildElector(ctx, la, queueName, enq)
 		case *statefulSetBuilder:
 			return builder.buildElector(ctx, la, enq)
 		}
@@ -105,7 +107,7 @@ type standardBuilder struct {
 }
 
 func (b *standardBuilder) buildElector(ctx context.Context, la reconciler.LeaderAware,
-	name string, enq func(reconciler.Bucket, types.NamespacedName)) (Elector, error) {
+	queueName string, enq func(reconciler.Bucket, types.NamespacedName)) (Elector, error) {
 	logger := logging.FromContext(ctx)
 
 	id, err := UniqueID()
@@ -113,16 +115,9 @@ func (b *standardBuilder) buildElector(ctx context.Context, la reconciler.Leader
 		return nil, err
 	}
 
-	buckets := make([]Elector, 0, b.lec.Buckets)
-	for i := uint32(0); i < b.lec.Buckets; i++ {
-		bkt := &bucket{
-			// The resource name is the lowercase:
-			//   {component}.{workqueue}.{index}-of-{total}
-			name:  strings.ToLower(fmt.Sprintf("%s.%s.%02d-of-%02d", b.lec.Component, name, i, b.lec.Buckets)),
-			index: i,
-			total: b.lec.Buckets,
-		}
-
+	bkts := newStandardBuckets(queueName, b.lec)
+	elector := make([]Elector, 0, b.lec.Buckets)
+	for _, bkt := range bkts {
 		rl, err := resourcelock.New(KnativeResourceLock,
 			system.Namespace(), // use namespace we are running in
 			bkt.Name(),
@@ -166,9 +161,27 @@ func (b *standardBuilder) buildElector(ctx context.Context, la reconciler.Leader
 		// if lec.WatchDog != nil {
 		// 	lec.WatchDog.SetLeaderElection(le)
 		// }
-		buckets = append(buckets, &runUntilCancelled{Elector: le})
+		elector = append(elector, &runUntilCancelled{Elector: le})
 	}
-	return &runAll{les: buckets}, nil
+	return &runAll{les: elector}, nil
+}
+
+func newStandardBuckets(queueName string, cc ComponentConfig) []reconciler.Bucket {
+	names := make(sets.String, cc.Buckets)
+	for i := uint32(0); i < cc.Buckets; i++ {
+		names.Insert(standardBucketName(i, queueName, cc))
+	}
+	bs := hash.NewBucketSet(names)
+
+	bkts := make([]reconciler.Bucket, 0, cc.Buckets)
+	for name := range names {
+		bkts = append(bkts, hash.NewBucket(name, bs))
+	}
+	return bkts
+}
+
+func standardBucketName(ordinal uint32, queueName string, cc ComponentConfig) string {
+	return strings.ToLower(fmt.Sprintf("%s.%s.%02d-of-%02d", cc.Component, queueName, ordinal, cc.Buckets))
 }
 
 type statefulSetBuilder struct {
