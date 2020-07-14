@@ -17,13 +17,19 @@ limitations under the License.
 package metrics
 
 import (
+	"context"
 	"path"
 	"testing"
 	"time"
 
 	sd "contrib.go.opencensus.io/exporter/stackdriver"
+	"github.com/google/go-cmp/cmp"
 	"go.opencensus.io/metric/metricdata"
+	"go.opencensus.io/metric/metricexport"
+	"go.opencensus.io/resource"
+	"go.opencensus.io/stats"
 	"go.opencensus.io/stats/view"
+	"go.opencensus.io/tag"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	. "knative.dev/pkg/logging/testing"
@@ -64,71 +70,293 @@ var (
 		location: "test-location",
 		cluster:  "test-cluster",
 	}
+)
 
-	supportedServingMetricsTestCases = []struct {
-		name       string
-		domain     string
-		component  string
-		metricName string
+func fakeGcpMetadataFunc() *gcpMetadata {
+	// the caller of this function could modify the struct, so we need a copy if we don't want the original modified.
+	newTestGCPMetadata := testGcpMetadata
+	return &newTestGCPMetadata
+}
+
+type fakeExporter struct{}
+
+func (fe *fakeExporter) ExportView(vd *view.Data) {}
+func (fe *fakeExporter) Flush()                   {}
+
+func newFakeExporter(o sd.Options) (view.Exporter, error) {
+	return &fakeExporter{}, nil
+}
+
+func makeResourceLabels(kv ...string) map[string]string {
+	retval := map[string]string{
+		metricskey.LabelProject:       testGcpMetadata.project,
+		metricskey.LabelLocation:      testGcpMetadata.location,
+		metricskey.LabelClusterName:   testGcpMetadata.cluster,
+		metricskey.LabelNamespaceName: testNS,
+	}
+	for i := 0; i+1 < len(kv); i += 2 {
+		retval[kv[i]] = kv[i+1]
+	}
+	return retval
+}
+
+type metricExtractor struct {
+	data []*metricdata.Metric
+}
+
+func (me *metricExtractor) ExportMetrics(ctx context.Context, data []*metricdata.Metric) error {
+	me.data = data
+	return nil
+}
+
+func TestSdRecordWithResources(t *testing.T) {
+	testCases := []struct {
+		name               string
+		domain             string
+		component          string
+		metricName         string
+		allowCustomMetrics bool
+		metricTags         map[string]string
+		resource           resource.Resource
+		expectedLabels     map[string]string
+		expectedResource   map[string]string
 	}{{
-		name:       "activator metric",
+		name:       "Serving resource and metric labels",
 		domain:     internalServingDomain,
 		component:  "activator",
 		metricName: "request_count",
+		metricTags: map[string]string{
+			metricskey.ContainerName:          testContainer,
+			metricskey.PodName:                testPod,
+			metricskey.LabelResponseCodeClass: "2xx",
+			metricskey.LabelResponseCode:      "200",
+		},
+		resource: resource.Resource{
+			Labels: map[string]string{
+				metricskey.LabelConfigurationName: testConfiguration,
+				metricskey.LabelNamespaceName:     testNS,
+				metricskey.LabelServiceName:       testService,
+				metricskey.LabelRevisionName:      testRevision,
+			},
+		},
+		expectedLabels: map[string]string{
+			metricskey.ContainerName:          testContainer,
+			metricskey.PodName:                testPod,
+			metricskey.LabelResponseCodeClass: "2xx",
+			metricskey.LabelResponseCode:      "200",
+		},
+		expectedResource: makeResourceLabels(metricskey.LabelServiceName, testService,
+			metricskey.LabelConfigurationName, testConfiguration,
+			metricskey.LabelRevisionName, testRevision),
 	}, {
-		name:       "autoscaler metric",
-		domain:     servingDomain,
-		component:  "autoscaler",
-		metricName: "desired_pods",
-	}}
-
-	supportedEventingBrokerMetricsTestCases = []struct {
-		name       string
-		domain     string
-		component  string
-		metricName string
-	}{{
-		name:       "broker metric",
+		name:       "Serving only resource labels",
+		domain:     internalServingDomain,
+		component:  "activator",
+		metricName: "request_count",
+		resource: resource.Resource{Labels: map[string]string{
+			metricskey.LabelConfigurationName: testConfiguration,
+			metricskey.LabelNamespaceName:     testNS,
+			metricskey.LabelServiceName:       testService,
+			metricskey.LabelRevisionName:      testRevision,
+		}},
+		expectedResource: makeResourceLabels(metricskey.LabelServiceName, testService,
+			metricskey.LabelConfigurationName, testConfiguration,
+			metricskey.LabelRevisionName, testRevision),
+	}, {
+		name:       "Serving resource labels overwrite metric labels",
+		domain:     internalServingDomain,
+		component:  "activator",
+		metricName: "request_count",
+		metricTags: map[string]string{
+			metricskey.LabelNamespaceName: testNS,
+			metricskey.LabelServiceName:   testService,
+		},
+		resource: resource.Resource{Labels: map[string]string{
+			metricskey.LabelNamespaceName: "foo",
+			metricskey.LabelServiceName:   "bar",
+			metricskey.LabelRevisionName:  testRevision,
+		}},
+		expectedResource: makeResourceLabels(metricskey.LabelNamespaceName, "foo",
+			metricskey.LabelServiceName, "bar",
+			metricskey.LabelConfigurationName, metricskey.ValueUnknown,
+			metricskey.LabelRevisionName, testRevision),
+	}, {
+		name:       "Serving only metric labels",
+		domain:     internalServingDomain,
+		component:  "activator",
+		metricName: "request_count",
+		metricTags: map[string]string{
+			metricskey.LabelNamespaceName:     testNS,
+			metricskey.LabelServiceName:       testService,
+			metricskey.LabelRevisionName:      testRevision,
+			metricskey.ContainerName:          testContainer,
+			metricskey.PodName:                testPod,
+			metricskey.LabelResponseCodeClass: "2xx",
+			metricskey.LabelResponseCode:      "200",
+		},
+		expectedLabels: map[string]string{
+			metricskey.ContainerName:          testContainer,
+			metricskey.PodName:                testPod,
+			metricskey.LabelResponseCodeClass: "2xx",
+			metricskey.LabelResponseCode:      "200",
+		},
+		expectedResource: makeResourceLabels(metricskey.LabelServiceName, testService,
+			metricskey.LabelConfigurationName, metricskey.ValueUnknown,
+			metricskey.LabelRevisionName, testRevision),
+	}, {
+		name:               "Serving only metric labels with allowCustomMetrics",
+		domain:             internalServingDomain,
+		component:          "activator",
+		metricName:         "request_count",
+		allowCustomMetrics: true,
+		metricTags: map[string]string{
+			metricskey.LabelNamespaceName:     testNS,
+			metricskey.LabelServiceName:       testService,
+			metricskey.LabelRevisionName:      testRevision,
+			metricskey.ContainerName:          testContainer,
+			metricskey.PodName:                testPod,
+			metricskey.LabelResponseCodeClass: "2xx",
+			metricskey.LabelResponseCode:      "200",
+		},
+		expectedLabels: map[string]string{
+			metricskey.ContainerName:          testContainer,
+			metricskey.PodName:                testPod,
+			metricskey.LabelResponseCodeClass: "2xx",
+			metricskey.LabelResponseCode:      "200",
+		},
+		expectedResource: makeResourceLabels(metricskey.LabelServiceName, testService,
+			metricskey.LabelConfigurationName, metricskey.ValueUnknown,
+			metricskey.LabelRevisionName, testRevision),
+	}, {
+		name:       "Eventing broker metrics",
 		domain:     internalEventingDomain,
 		component:  "broker",
 		metricName: "event_count",
-	}}
-
-	supportedEventingTriggerMetricsTestCases = []struct {
-		name       string
-		domain     string
-		component  string
-		metricName string
-	}{{
-		name:       "trigger metric",
-		domain:     internalEventingDomain,
-		component:  "trigger",
-		metricName: "event_count",
 	}, {
-		name:       "trigger metric",
+		name:       "Eventing trigger metrics",
 		domain:     internalEventingDomain,
 		component:  "trigger",
 		metricName: "event_processing_latencies",
 	}, {
-		name:       "trigger metric",
-		domain:     internalEventingDomain,
-		component:  "trigger",
-		metricName: "event_dispatch_latencies",
-	}}
-
-	supportedEventingSourceMetricsTestCases = []struct {
-		name       string
-		domain     string
-		component  string
-		metricName string
-	}{{
-		name:       "source metric",
+		name:       "Eventing source metrics",
 		domain:     eventingDomain,
 		component:  "source",
 		metricName: "event_count",
 	}}
 
-	unsupportedMetricsTestCases = []struct {
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			recordFunc := sdCustomMetricsRecorder(metricsConfig{
+				stackdriverMetricTypePrefix: path.Join(tc.domain, tc.component),
+			}, tc.allowCustomMetrics)
+			m := stats.Int64(tc.metricName, "", "1")
+			v := &view.View{
+				Name:    "test_" + tc.metricName,
+				Measure: m,
+
+				Aggregation: view.Count(),
+			}
+			for k := range tc.metricTags {
+				v.TagKeys = append(v.TagKeys, tag.MustNewKey(k))
+			}
+			if err := RegisterResourceView(v); err != nil {
+				t.Errorf("Unable to register view: %v", err)
+			}
+			defer UnregisterResourceView(v)
+
+			ctx := context.Background()
+			ctx = metricskey.WithResource(ctx, tc.resource)
+			tags := make([]tag.Mutator, 0, len(tc.metricTags))
+			for k, v := range tc.metricTags {
+				tags = append(tags, tag.Upsert(tag.MustNewKey(k), v))
+			}
+			ctx, err := tag.New(ctx, tags...)
+			if err != nil {
+				t.Errorf("Unable to set tags: %v", err)
+			}
+
+			if err := recordFunc(ctx, []stats.Measurement{m.M(1)}); err != nil {
+				t.Errorf("Record %q failed: %v", tc.metricName, err)
+			}
+
+			// We need to sleep for a moment because stats.Record happens on a
+			// background thread, and ReadAndExport happens on the local thread.
+			// (This is probably an opencensus bug!)
+			time.Sleep(1 * time.Millisecond)
+
+			me := metricExtractor{}
+			metricexport.NewReader().ReadAndExport(&me)
+
+			if len(me.data) != 1 {
+				t.Fatalf("Expected exactly one metric: %+v", me.data)
+			}
+			if len(me.data[0].TimeSeries) != 1 {
+				t.Errorf("Expected exactly one row: %+v", me.data[0].TimeSeries)
+			}
+
+			if tc.expectedResource != nil {
+				if diff := cmp.Diff(tc.expectedResource, me.data[0].Resource.Labels); diff != "" {
+					t.Errorf("Wrong resource for %s (-want +got):\n%s", tc.name, diff)
+				}
+			}
+
+			if tc.expectedLabels != nil {
+				labels := make(map[string]string, len(me.data[0].Descriptor.LabelKeys))
+				for i, k := range me.data[0].Descriptor.LabelKeys {
+					if me.data[0].TimeSeries[0].LabelValues[i].Present {
+						labels[k.Key] = me.data[0].TimeSeries[0].LabelValues[i].Value
+					}
+				}
+				if diff := cmp.Diff(tc.expectedLabels, labels); diff != "" {
+					t.Errorf("Wrong labels for %s (-want + got):\n%s\n\n%+v", tc.name, diff, me.data[0].Resource.Labels)
+				}
+			}
+		})
+	}
+}
+
+func TestGetMetricPrefixFunc_UseKnativeDomain(t *testing.T) {
+	testCases := []struct {
+		name       string
+		domain     string
+		component  string
+		metricName string
+	}{{
+		name:       "both resource and metric labels",
+		domain:     internalServingDomain,
+		component:  "activator",
+		metricName: "request_count",
+	}, {
+		name:       "only resource labels",
+		domain:     internalServingDomain,
+		component:  "activator",
+		metricName: "request_count",
+	}, {
+		name:       "resource labels overwrite metric labels",
+		domain:     internalServingDomain,
+		component:  "activator",
+		metricName: "request_count",
+	}, {
+		name:       "only metric labels",
+		domain:     internalServingDomain,
+		component:  "activator",
+		metricName: "request_count",
+	}}
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+			knativePrefix := path.Join(testCase.domain, testCase.component)
+			customPrefix := path.Join(defaultCustomMetricSubDomain, testCase.component)
+			mpf := getMetricPrefixFunc(knativePrefix, customPrefix)
+
+			if got, want := mpf(testCase.metricName), knativePrefix; got != want {
+				t.Fatalf("getMetricPrefixFunc=%v, want %v", got, want)
+			}
+		})
+	}
+}
+
+func TestGetMetricPrefixFunc_UseCustomDomain(t *testing.T) {
+	testCases := []struct {
 		name       string
 		domain     string
 		component  string
@@ -159,191 +387,16 @@ var (
 		component:  "broker",
 		metricName: "unsupported",
 	}}
-)
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+			knativePrefix := path.Join(testCase.domain, testCase.component)
+			customPrefix := path.Join(defaultCustomMetricSubDomain, testCase.component)
+			mpf := getMetricPrefixFunc(knativePrefix, customPrefix)
 
-func fakeGcpMetadataFunc() *gcpMetadata {
-	return &testGcpMetadata
-}
-
-type fakeExporter struct{}
-
-func (fe *fakeExporter) ExportView(vd *view.Data) {}
-func (fe *fakeExporter) Flush()                   {}
-
-func newFakeExporter(o sd.Options) (view.Exporter, error) {
-	return &fakeExporter{}, nil
-}
-
-func TestGetResourceByDescriptorFunc_UseKnativeRevision(t *testing.T) {
-	for _, testCase := range supportedServingMetricsTestCases {
-		testDescriptor := &metricdata.Descriptor{
-			Name:        testCase.metricName,
-			Description: "Test View",
-			Type:        metricdata.TypeGaugeInt64,
-			Unit:        metricdata.UnitDimensionless,
-		}
-		rbd := getResourceByDescriptorFunc(path.Join(testCase.domain, testCase.component), &testGcpMetadata)
-
-		metricLabels, monitoredResource := rbd(testDescriptor, revisionTestTags)
-		gotResType, resourceLabels := monitoredResource.MonitoredResource()
-		wantedResType := "knative_revision"
-		if gotResType != wantedResType {
-			t.Fatalf("MonitoredResource=%v, want %v", gotResType, wantedResType)
-		}
-		// revisionTestTags includes route_name, which is not a key for knative_revision resource.
-		if got := metricLabels[metricskey.LabelRouteName]; got != testRoute {
-			t.Errorf("expected metrics label: %v, got: %v", testRoute, got)
-		}
-		if got := resourceLabels[metricskey.LabelNamespaceName]; got != testNS {
-			t.Errorf("expected resource label %v with value %v, got: %v", metricskey.LabelNamespaceName, testNS, got)
-		}
-		// configuration_name is a key required by knative_revision but missed in revisionTestTags
-		if got := resourceLabels[metricskey.LabelConfigurationName]; got != metricskey.ValueUnknown {
-			t.Errorf("expected resource label %v with value %v, got: %v", metricskey.LabelConfigurationName, metricskey.ValueUnknown, got)
-		}
-	}
-}
-
-func TestGetResourceByDescriptorFunc_UseKnativeBroker(t *testing.T) {
-	for _, testCase := range supportedEventingBrokerMetricsTestCases {
-		testDescriptor := &metricdata.Descriptor{
-			Name:        testCase.metricName,
-			Description: "Test View",
-			Type:        metricdata.TypeGaugeInt64,
-			Unit:        metricdata.UnitDimensionless,
-		}
-		rbd := getResourceByDescriptorFunc(path.Join(testCase.domain, testCase.component), &testGcpMetadata)
-
-		metricLabels, monitoredResource := rbd(testDescriptor, brokerTestTags)
-		gotResType, resourceLabels := monitoredResource.MonitoredResource()
-		wantedResType := "knative_broker"
-		if gotResType != wantedResType {
-			t.Fatalf("MonitoredResource=%v, want %v", gotResType, wantedResType)
-		}
-		// brokerTestTags includes event_type, which is not a key for knative_broker resource.
-		if got := metricLabels[metricskey.LabelEventType]; got != testEventType {
-			t.Errorf("expected metrics label: %v, got: %v", testEventType, got)
-		}
-		if got := resourceLabels[metricskey.LabelNamespaceName]; got != testNS {
-			t.Errorf("expected resource label %v with value %v, got: %v", metricskey.LabelNamespaceName, testNS, got)
-		}
-		if got := resourceLabels[metricskey.LabelBrokerName]; got != testBroker {
-			t.Errorf("expected resource label %v with value %v, got: %v", metricskey.LabelBrokerName, testBroker, got)
-		}
-	}
-}
-
-func TestGetResourceByDescriptorFunc_UseKnativeTrigger(t *testing.T) {
-	for _, testCase := range supportedEventingTriggerMetricsTestCases {
-		testDescriptor := &metricdata.Descriptor{
-			Name:        testCase.metricName,
-			Description: "Test View",
-			Type:        metricdata.TypeGaugeInt64,
-			Unit:        metricdata.UnitDimensionless,
-		}
-		rbd := getResourceByDescriptorFunc(path.Join(testCase.domain, testCase.component), &testGcpMetadata)
-
-		metricLabels, monitoredResource := rbd(testDescriptor, triggerTestTags)
-		gotResType, resourceLabels := monitoredResource.MonitoredResource()
-		wantedResType := "knative_trigger"
-		if gotResType != wantedResType {
-			t.Fatalf("MonitoredResource=%v, want %v", gotResType, wantedResType)
-		}
-		// triggerTestTags includes filter_type, which is not a key for knative_trigger resource.
-		if got := metricLabels[metricskey.LabelFilterType]; got != testFilterType {
-			t.Errorf("expected metrics label: %v, got: %v", testFilterType, got)
-		}
-		if got := resourceLabels[metricskey.LabelNamespaceName]; got != testNS {
-			t.Errorf("expected resource label %v with value %v, got: %v", metricskey.LabelNamespaceName, testNS, got)
-		}
-		if got := resourceLabels[metricskey.LabelBrokerName]; got != testBroker {
-			t.Errorf("expected resource label %v with value %v, got: %v", metricskey.LabelBrokerName, testBroker, got)
-		}
-	}
-}
-
-func TestGetResourceByDescriptorFunc_UseKnativeSource(t *testing.T) {
-	for _, testCase := range supportedEventingSourceMetricsTestCases {
-		testDescriptor := &metricdata.Descriptor{
-			Name:        testCase.metricName,
-			Description: "Test View",
-			Type:        metricdata.TypeGaugeInt64,
-			Unit:        metricdata.UnitDimensionless,
-		}
-		rbd := getResourceByDescriptorFunc(path.Join(testCase.domain, testCase.component), &testGcpMetadata)
-
-		metricLabels, monitoredResource := rbd(testDescriptor, sourceTestTags)
-		gotResType, resourceLabels := monitoredResource.MonitoredResource()
-		wantedResType := "knative_source"
-		if gotResType != wantedResType {
-			t.Fatalf("MonitoredResource=%v, want %v", gotResType, wantedResType)
-		}
-		// sourceTestTags includes event_type, which is not a key for knative_trigger resource.
-		if got := metricLabels[metricskey.LabelEventType]; got != testEventType {
-			t.Errorf("expected metrics label: %v, got: %v", testEventType, got)
-		}
-		// sourceTestTags includes event_source, which is not a key for knative_trigger resource.
-		if got := metricLabels[metricskey.LabelEventSource]; got != testEventSource {
-			t.Errorf("expected metrics label: %v, got: %v", testEventSource, got)
-		}
-		if got := resourceLabels[metricskey.LabelNamespaceName]; got != testNS {
-			t.Errorf("expected resource label %v with value %v, got: %v", metricskey.LabelNamespaceName, testNS, got)
-		}
-		if got := resourceLabels[metricskey.LabelName]; got != testSource {
-			t.Errorf("expected resource label %v with value %v, got: %v", metricskey.LabelName, testSource, got)
-		}
-		if got := resourceLabels[metricskey.LabelResourceGroup]; got != testSourceResourceGroup {
-			t.Errorf("expected resource label %v with value %v, got: %v", metricskey.LabelResourceGroup, testSourceResourceGroup, got)
-		}
-	}
-}
-
-func TestGetResourceByDescriptorFunc_UseGlobal(t *testing.T) {
-	for _, testCase := range unsupportedMetricsTestCases {
-		testDescriptor := &metricdata.Descriptor{
-			Name:        testCase.metricName,
-			Description: "Test View",
-			Type:        metricdata.TypeGaugeInt64,
-			Unit:        metricdata.UnitDimensionless,
-		}
-		mrf := getResourceByDescriptorFunc(path.Join(testCase.domain, testCase.component), &testGcpMetadata)
-
-		metricLabels, monitoredResource := mrf(testDescriptor, revisionTestTags)
-		gotResType, resourceLabels := monitoredResource.MonitoredResource()
-		wantedResType := "global"
-		if gotResType != wantedResType {
-			t.Fatalf("MonitoredResource=%v, want: %v", gotResType, wantedResType)
-		}
-		if got := metricLabels[metricskey.LabelNamespaceName]; got != testNS {
-			t.Errorf("expected new tag %v with value %v, got: %v", metricskey.LabelNamespaceName, testNS, got)
-		}
-		if len(resourceLabels) != 0 {
-			t.Errorf("expected no label, got: %v", resourceLabels)
-		}
-	}
-}
-
-func TestGetMetricPrefixFunc_UseKnativeDomain(t *testing.T) {
-	for _, testCase := range supportedServingMetricsTestCases {
-		knativePrefix := path.Join(testCase.domain, testCase.component)
-		customPrefix := path.Join(defaultCustomMetricSubDomain, testCase.component)
-		mpf := getMetricPrefixFunc(knativePrefix, customPrefix)
-
-		if got, want := mpf(testCase.metricName), knativePrefix; got != want {
-			t.Fatalf("getMetricPrefixFunc=%v, want %v", got, want)
-		}
-	}
-}
-
-func TestGetMetricPrefixFunc_UseCustomDomain(t *testing.T) {
-	for _, testCase := range unsupportedMetricsTestCases {
-		knativePrefix := path.Join(testCase.domain, testCase.component)
-		customPrefix := path.Join(defaultCustomMetricSubDomain, testCase.component)
-		mpf := getMetricPrefixFunc(knativePrefix, customPrefix)
-
-		if got, want := mpf(testCase.metricName), customPrefix; got != want {
-			t.Fatalf("getMetricPrefixFunc=%v, want %v", got, want)
-		}
+			if got, want := mpf(testCase.metricName), customPrefix; got != want {
+				t.Fatalf("getMetricPrefixFunc=%v, want %v", got, want)
+			}
+		})
 	}
 }
 
@@ -446,7 +499,7 @@ func TestNewStackdriverExporterWithMetadata(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			e, err := newStackdriverExporter(test.config, TestLogger(t))
+			e, _, err := newStackdriverExporter(test.config, TestLogger(t))
 
 			succeeded := e != nil && err == nil
 			if test.expectSuccess != succeeded {
