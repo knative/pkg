@@ -45,7 +45,7 @@ func TestNewPrometheusExporter(t *testing.T) {
 	}}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			e, err := newPrometheusExporter(&tc.config, TestLogger(t))
+			e, _, err := newPrometheusExporter(&tc.config, TestLogger(t))
 			if err != nil {
 				t.Error(err)
 			}

@@ -22,10 +22,11 @@ package leaderelection
 import (
 	"context"
 	"os"
+	"reflect"
+	"sort"
 	"testing"
 	"time"
 
-	"github.com/google/go-cmp/cmp"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	fakekube "k8s.io/client-go/kubernetes/fake"
@@ -145,12 +146,50 @@ func TestWithBuilder(t *testing.T) {
 	}
 }
 
+func TestNewStatefulSetBucketAndSet(t *testing.T) {
+	wantNames := []string{
+		"http://as-0.autoscaler.knative-testing.svc.cluster.local:80",
+		"http://as-1.autoscaler.knative-testing.svc.cluster.local:80",
+		"http://as-2.autoscaler.knative-testing.svc.cluster.local:80",
+	}
+
+	os.Setenv(controllerOrdinalEnv, "as-2")
+	os.Setenv(serviceNameEnv, "autoscaler")
+	t.Cleanup(func() {
+		os.Unsetenv(controllerOrdinalEnv)
+		os.Unsetenv(serviceNameEnv)
+	})
+
+	_, _, err := NewStatefulSetBucketAndSet(2)
+	if err == nil {
+		// Ordinal 2 should be range [0, 2)
+		t.Fatal("Expected error from NewStatefulSetBucketAndSet but got nil")
+	}
+
+	bkt, bs, err := NewStatefulSetBucketAndSet(3)
+	if err != nil {
+		// Ordinal 2 should be range [0, 2)
+		t.Fatal("NewStatefulSetBucketAndSet() = ", err)
+	}
+
+	if got, want := bkt.Name(), wantNames[2]; got != want {
+		t.Errorf("Bucket.Name() = %s, want = %s", got, want)
+	}
+
+	gotNames := bs.BucketList()
+	sort.Strings(gotNames)
+	if !reflect.DeepEqual(gotNames, wantNames) {
+		t.Errorf("BucketSet.BucketList() = %q, want: %q", gotNames, wantNames)
+	}
+
+}
+
 func TestWithStatefulSetBuilder(t *testing.T) {
 	cc := ComponentConfig{
 		Component: "the-component",
-		Buckets:   1,
+		Buckets:   3,
 	}
-	const podDNS = "ws://as-42.autoscaler.knative-testing.svc.cluster.local:8080"
+	const podDNS = "http://as-2.autoscaler.knative-testing.svc.cluster.local:80"
 	ctx := context.Background()
 
 	promoted := make(chan struct{})
@@ -162,22 +201,16 @@ func TestWithStatefulSetBuilder(t *testing.T) {
 	}
 	enq := func(reconciler.Bucket, types.NamespacedName) {}
 
-	if os.Setenv(controllerOrdinalEnv, "as-42") != nil {
-		t.Fatalf("Failed to set env var %s=%s", controllerOrdinalEnv, "as-42")
+	if os.Setenv(controllerOrdinalEnv, "as-2") != nil {
+		t.Fatalf("Failed to set env var %s=%s", controllerOrdinalEnv, "as-2")
 	}
-	defer os.Unsetenv(controllerOrdinalEnv)
-	if os.Setenv("STATEFUL_SERVICE_NAME", "autoscaler") != nil {
-		t.Fatalf("Failed to set env var %s=%s", "STATEFUL_SERVICE_NAME", "autoscaler")
+	if os.Setenv(serviceNameEnv, "autoscaler") != nil {
+		t.Fatalf("Failed to set env var %s=%s", serviceNameEnv, "autoscaler")
 	}
-	defer os.Unsetenv("STATEFUL_SERVICE_NAME")
-	if os.Setenv("STATEFUL_SERVICE_PORT", "8080") != nil {
-		t.Fatalf("Failed to set env var %s=%s", "STATEFUL_SERVICE_PORT", "8080")
-	}
-	defer os.Unsetenv("STATEFUL_SERVICE_PORT")
-	if os.Setenv("STATEFUL_SERVICE_PROTOCOL", "ws") != nil {
-		t.Fatalf("Failed to set env var %s=%s", "STATEFUL_SERVICE_PROTOCOL", "ws")
-	}
-	defer os.Unsetenv("STATEFUL_SERVICE_PROTOCOL")
+	t.Cleanup(func() {
+		os.Unsetenv(controllerOrdinalEnv)
+		os.Unsetenv(serviceNameEnv)
+	})
 
 	ctx = WithDynamicLeaderElectorBuilder(ctx, nil, cc)
 	if !HasLeaderElection(ctx) {
@@ -188,19 +221,6 @@ func TestWithStatefulSetBuilder(t *testing.T) {
 	ssb, ok := b.(*statefulSetBuilder)
 	if !ok || ssb == nil {
 		t.Fatal("StatefulSetBuilder not found on context")
-	}
-	want := statefulSetConfig{
-		StatefulSetID: statefulSetID{
-			ssName:  "as",
-			ordinal: 42,
-		},
-		ServiceName: "autoscaler",
-		Port:        "8080",
-		Protocol:    "ws",
-	}
-	if !cmp.Equal(ssb.ssc, want, cmp.AllowUnexported(statefulSetID{})) {
-		t.Errorf("StatefulSetConfig = %#v, want: %#v,diff(-want,+got)\n%s", ssb.ssc, want,
-			cmp.Diff(want, ssb.ssc, cmp.AllowUnexported(statefulSetID{})))
 	}
 
 	le, err := BuildElector(ctx, laf, "name", enq)

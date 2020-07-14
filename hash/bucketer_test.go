@@ -17,6 +17,8 @@ limitations under the License.
 package hash
 
 import (
+	"reflect"
+	"sort"
 	"testing"
 
 	"k8s.io/apimachinery/pkg/types"
@@ -32,7 +34,7 @@ const (
 
 var buckets = sets.NewString(thisBucket, otherBucket, "aguacero", "chaparrón")
 
-func TestBucketOwner(t *testing.T) {
+func TestBucketSetOwner(t *testing.T) {
 	b := NewBucketSet(buckets)
 	if got := b.Owner(knownKey); got != thisBucket {
 		t.Errorf("Owner = %q, want: %q", got, thisBucket)
@@ -62,7 +64,17 @@ func TestBucketOwner(t *testing.T) {
 	}
 }
 
-func TestBucketUpdate(t *testing.T) {
+func TestBucketSetList(t *testing.T) {
+	bs := NewBucketSet(buckets)
+
+	got := bs.BucketList()
+	sort.Strings(got)
+	if want := buckets.List(); !reflect.DeepEqual(got, want) {
+		t.Errorf("Name = %q, want: %q", got, want)
+	}
+}
+
+func TestBucketSetUpdate(t *testing.T) {
 	b := NewBucketSet(buckets)
 	b.Owner(knownKey)
 

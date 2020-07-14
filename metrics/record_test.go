@@ -26,6 +26,7 @@ import (
 	"knative.dev/pkg/metrics/metricstest"
 
 	"github.com/google/go-cmp/cmp"
+	"go.opencensus.io/resource"
 	"go.opencensus.io/stats"
 	"go.opencensus.io/stats/view"
 )
@@ -34,6 +35,7 @@ type cases struct {
 	name          string
 	metricsConfig *metricsConfig
 	measurement   stats.Measurement
+	resource      resource.Resource
 }
 
 func TestRecordServing(t *testing.T) {
@@ -100,7 +102,7 @@ func TestRecordBatch(t *testing.T) {
 		Aggregation: view.LastValue(),
 	}}
 	view.Register(v...)
-	defer view.Unregister(v...)
+	t.Cleanup(func() { view.Unregister(v...) })
 	metricsConfig := &metricsConfig{}
 	measurement1 := measure1.M(1984)
 	measurement2 := measure2.M(42)
@@ -183,6 +185,40 @@ func TestBucketsNBy10(t *testing.T) {
 			if diff := cmp.Diff(got, test.want); diff != "" {
 				t.Errorf("BucketsNBy10 (-want, +got) = %s", diff)
 			}
+		})
+	}
+}
+
+func TestMeter(t *testing.T) {
+	measure := stats.Int64("request_count", "Number of reconcile operations", stats.UnitNone)
+	// Increase the measurement value for each test case so that checking
+	// the last value ensures the measurement has been recorded.
+	meterTestCases := []cases{{
+		name:          "resource 1",
+		metricsConfig: &metricsConfig{},
+		measurement:   measure.M(1),
+		resource:      resource.Resource{Type: "resource 1", Labels: map[string]string{"bar": "foo"}},
+	}, {
+		name:          "resource 2",
+		metricsConfig: &metricsConfig{},
+		measurement:   measure.M(2),
+		resource:      resource.Resource{Type: "resource 2", Labels: map[string]string{"bar": "foo", "bar1": "foo1"}},
+	}}
+	v := &view.View{
+		Measure:     measure,
+		Aggregation: view.LastValue(),
+	}
+	RegisterResourceView(v)
+	t.Cleanup(func() { UnregisterResourceView(v) })
+
+	for _, test := range meterTestCases {
+		t.Run(test.name, func(t *testing.T) {
+			ctx := context.Background()
+			ctx = metricskey.WithResource(ctx, test.resource)
+			meter := meterExporterForResource(metricskey.GetResource(ctx)).m
+			setCurMetricsConfig(test.metricsConfig)
+			Record(ctx, test.measurement)
+			metricstest.CheckLastValueDataWithMeter(t, test.measurement.Measure().Name(), map[string]string{}, test.measurement.Value(), meter)
 		})
 	}
 }
