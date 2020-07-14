@@ -466,11 +466,13 @@ func TestStackDriverExports(t *testing.T) {
 				label1,
 				1,
 			},
-			{"knative.dev/serving/autoscaler/desired_pods",
+			{
+				"knative.dev/serving/autoscaler/desired_pods",
 				label2,
 				2,
 			},
-			{"custom.googleapis.com/knative.dev/autoscaler/testing/value",
+			{
+				"custom.googleapis.com/knative.dev/autoscaler/testing/value",
 				label3,
 				3,
 			},
@@ -484,7 +486,8 @@ func TestStackDriverExports(t *testing.T) {
 				label1,
 				1,
 			},
-			{"knative.dev/serving/autoscaler/desired_pods",
+			{
+				"knative.dev/serving/autoscaler/desired_pods",
 				label2,
 				2,
 			},
