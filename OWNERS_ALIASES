@@ -40,6 +40,10 @@ aliases:
   controller-reviewers:
   - whaught
 
+  kflag-approvers:
+  - mattmoor
+  - vagababov
+
   kmeta-approvers:
   - mattmoor
   - vagababov

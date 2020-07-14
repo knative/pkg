@@ -22,6 +22,7 @@ package main
 import (
 	"context"
 	"errors"
+	"flag"
 	"log"
 	"strings"
 	"time"
@@ -34,12 +35,24 @@ import (
 	"knative.dev/pkg/controller"
 	"knative.dev/pkg/injection"
 	"knative.dev/pkg/injection/sharedmain"
+	"knative.dev/pkg/kflag"
 	"knative.dev/pkg/signals"
 	"knative.dev/pkg/system"
 )
 
 // components is a mapping from component name to the collection of leader pod names.
 type components map[string]sets.String
+
+var (
+	disabledComponents kflag.StringSet
+	tributePeriod      time.Duration = 30 * time.Second
+)
+
+func init() {
+	// Note that we don't explicitly call flag.Parse() because ParseAndGetConfigOrDie below does this already.
+	flag.Var(&disabledComponents, "disable", "A repeatable flag to disable chaos for certain components.")
+	flag.DurationVar(&tributePeriod, "period", tributePeriod, "How frequently to terminate a leader pod per component.")
+}
 
 func countingRFind(wr rune, wc int) func(rune) bool {
 	cnt := 0
@@ -101,9 +114,6 @@ func quack(ctx context.Context, kc kubernetes.Interface, component string, leade
 	return kc.CoreV1().Pods(system.Namespace()).Delete(tribute, &metav1.DeleteOptions{})
 }
 
-// frequency is the frequency with which we kill off leaders.
-const frequency = 30 * time.Second
-
 func main() {
 	ctx := signals.NewContext()
 
@@ -118,7 +128,7 @@ func main() {
 	// of a leader at the specified frequency.
 	for {
 		select {
-		case <-time.After(frequency):
+		case <-time.After(tributePeriod):
 			components, err := buildComponents(kc)
 			if err != nil {
 				log.Printf("Error building components: %v", err)
@@ -127,6 +137,9 @@ func main() {
 
 			eg, ctx := errgroup.WithContext(ctx)
 			for name, leaders := range components {
+				if disabledComponents.Value.Has(name) {
+					continue
+				}
 				name, leaders := name, leaders
 				eg.Go(func() error {
 					return quack(ctx, kc, name, leaders)
