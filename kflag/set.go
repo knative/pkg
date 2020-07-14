@@ -35,7 +35,7 @@ func (i *StringSet) String() string {
 
 func (i *StringSet) Set(value string) error {
 	if i.Value == nil {
-		i.Value = sets.NewString()
+		i.Value = make(sets.String, 1)
 	}
 	i.Value.Insert(value)
 	return nil
