@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Knative Authors
+Copyright 2020 The Knative Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,23 +14,23 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v1alpha1
+package v1beta1
 
 import (
 	"testing"
 
 	"knative.dev/pkg/apis/duck"
+	"knative.dev/pkg/apis/duck/ducktypes"
 )
 
 func TestTypesImplements(t *testing.T) {
 	testCases := []struct {
 		instance interface{}
-		iface    duck.Implementable
+		iface    ducktypes.Implementable
 	}{
 		{instance: &AddressableType{}, iface: &Addressable{}},
-		{instance: &LegacyTarget{}, iface: &LegacyTargetable{}},
-		{instance: &Target{}, iface: &Targetable{}},
-		{instance: &Binding{}, iface: &Binding{}},
+		{instance: &KResource{}, iface: &Conditions{}},
+		{instance: &Source{}, iface: &Conditions{}},
 	}
 	for _, tc := range testCases {
 		if err := duck.VerifyType(tc.instance, tc.iface); err != nil {
