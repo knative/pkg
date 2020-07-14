@@ -19,7 +19,6 @@ package leaderelection
 import (
 	"context"
 	"fmt"
-	"hash/fnv"
 	"strings"
 	"sync"
 
@@ -279,27 +278,4 @@ func (ruc *runUntilCancelled) Run(ctx context.Context) {
 			// Context wasn't cancelled, start over.
 		}
 	}
-}
-
-type bucket struct {
-	name string
-
-	// We are bucket {index} of {total}
-	index uint32
-	total uint32
-}
-
-var _ reconciler.Bucket = (*bucket)(nil)
-
-// Name implements reconciler.Bucket
-func (b *bucket) Name() string {
-	return b.name
-}
-
-// Has implements reconciler.Bucket
-func (b *bucket) Has(nn types.NamespacedName) bool {
-	h := fnv.New32a()
-	h.Write([]byte(nn.Namespace + "." + nn.Name))
-	ii := h.Sum32() % b.total
-	return b.index == ii
 }
