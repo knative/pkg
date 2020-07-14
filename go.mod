@@ -5,13 +5,14 @@ go 1.14
 require (
 	cloud.google.com/go v0.60.0
 	cloud.google.com/go/storage v1.10.0
-	contrib.go.opencensus.io/exporter/ocagent v0.6.0
-	contrib.go.opencensus.io/exporter/prometheus v0.1.0
-	contrib.go.opencensus.io/exporter/stackdriver v0.12.9-0.20191108183826-59d068f8d8ff
+	contrib.go.opencensus.io/exporter/ocagent v0.6.1-0.20200121232419-b3d61dbd6252
+	contrib.go.opencensus.io/exporter/prometheus v0.2.1-0.20200609204449-6bcf6f8577f0
+	contrib.go.opencensus.io/exporter/stackdriver v0.13.2
 	contrib.go.opencensus.io/exporter/zipkin v0.1.1
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/bmizerany/perks v0.0.0-20141205001514-d9a9656a3a4b // indirect
+	github.com/census-instrumentation/opencensus-proto v0.2.1
 	github.com/davecgh/go-spew v1.1.1
 	github.com/dgryski/go-gk v0.0.0-20200319235926-a69029f61654 // indirect
 	github.com/evanphx/json-patch v4.5.0+incompatible
@@ -47,6 +48,7 @@ require (
 	golang.org/x/sync v0.0.0-20200625203802-6e8e738ad208
 	gomodules.xyz/jsonpatch/v2 v2.1.0
 	google.golang.org/api v0.29.0
+	google.golang.org/genproto v0.0.0-20200710124503-20a17af7bd0e
 	google.golang.org/grpc v1.30.0
 	gopkg.in/yaml.v2 v2.3.0
 	gopkg.in/yaml.v3 v3.0.0-20190709130402-674ba3eaed22
