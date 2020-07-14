@@ -27,6 +27,7 @@ import (
 	"sort"
 	"sync"
 	"testing"
+	"time"
 
 	sd "contrib.go.opencensus.io/exporter/stackdriver"
 	ocmetrics "github.com/census-instrumentation/opencensus-proto/gen-go/agent/metrics/v1"
@@ -333,6 +334,7 @@ testComponent_testing_value{project="p1",revision="r2"} 1
 			UnregisterResourceView(gaugeView, resourceCounter)
 			FlushExporter()
 
+			time.Sleep(1 * time.Millisecond)
 			ocFake.srv.Stop() // Force close connections
 			ocFake.srv.GracefulStop()
 			records := []metricExtract{}
