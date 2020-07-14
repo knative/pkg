@@ -23,25 +23,7 @@ import (
 	"knative.dev/pkg/apis/duck/ducktypes"
 )
 
-// Conditions is an Implementable "duck type".
-var _ ducktypes.Implementable = (*Conditions)(nil)
-
-// In order for Conditions to be Implementable, KResource must be Populatable.
-var _ ducktypes.Populatable = (*KResource)(nil)
-
-// Source is an Implementable "duck type".
-var _ ducktypes.Implementable = (*Source)(nil)
-
-// Verify Source resources meet duck contracts.
-var _ ducktypes.Populatable = (*Source)(nil)
-
-// Addressable is an Implementable "duck type".
-var _ ducktypes.Implementable = (*Addressable)(nil)
-
-// Verify AddressableType resources meet duck contracts.
-var _ ducktypes.Populatable = (*AddressableType)(nil)
-
-func TestV1Beta1TypesImplements(t *testing.T) {
+func TestTypesImplements(t *testing.T) {
 	testCases := []struct {
 		instance interface{}
 		iface    ducktypes.Implementable
