@@ -82,7 +82,7 @@ func buildComponents(kc kubernetes.Interface) (components, error) {
 
 		set, ok := cs[deploymentName]
 		if !ok {
-			set = sets.NewString()
+			set = make(sets.String, 1)
 			cs[deploymentName] = set
 		}
 		set.Insert(pod)
