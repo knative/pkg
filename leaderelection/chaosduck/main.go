@@ -36,11 +36,29 @@ import (
 	"knative.dev/pkg/injection/sharedmain"
 	"knative.dev/pkg/signals"
 	"knative.dev/pkg/system"
-	"knative.dev/pkg/test/ha"
 )
 
 // components is a mapping from component name to the collection of leader pod names.
 type components map[string]sets.String
+
+func countingRFind(wr rune, wc int) func(rune) bool {
+	cnt := 0
+	return func(r rune) bool {
+		if r == wr {
+			cnt++
+		}
+		return cnt == wc
+	}
+}
+
+// This is a copy of test/ha/ha.go that avoids a dependency that pulls in a
+// redefinition of the kubeconfig flag.
+func extractDeployment(pod string) string {
+	if x := strings.LastIndexFunc(pod, countingRFind('-', 2)); x != -1 {
+		return pod[:x]
+	}
+	return ""
+}
 
 // buildComponents crawls the list of leases and builds a mapping from component names
 // to the set pod names that hold one or more leases.
@@ -57,7 +75,7 @@ func buildComponents(kc kubernetes.Interface) (components, error) {
 			continue
 		}
 		pod := strings.SplitN(*lease.Spec.HolderIdentity, "_", 2)[0]
-		deploymentName := ha.ExtractDeployment(pod)
+		deploymentName := extractDeployment(pod)
 		if deploymentName == "" {
 			continue
 		}
