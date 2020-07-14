@@ -115,7 +115,7 @@ func (b *standardBuilder) buildElector(ctx context.Context, la reconciler.Leader
 	}
 
 	bkts := newStandardBuckets(queueName, b.lec)
-	elector := make([]Elector, 0, b.lec.Buckets)
+	electors := make([]Elector, 0, b.lec.Buckets)
 	for _, bkt := range bkts {
 		rl, err := resourcelock.New(KnativeResourceLock,
 			system.Namespace(), // use namespace we are running in
@@ -160,9 +160,9 @@ func (b *standardBuilder) buildElector(ctx context.Context, la reconciler.Leader
 		// if lec.WatchDog != nil {
 		// 	lec.WatchDog.SetLeaderElection(le)
 		// }
-		elector = append(elector, &runUntilCancelled{Elector: le})
+		electors = append(electors, &runUntilCancelled{Elector: le})
 	}
-	return &runAll{les: elector}, nil
+	return &runAll{les: electors}, nil
 }
 
 func newStandardBuckets(queueName string, cc ComponentConfig) []reconciler.Bucket {
