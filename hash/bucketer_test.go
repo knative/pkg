@@ -103,7 +103,7 @@ func TestBucketSetUpdate(t *testing.T) {
 
 func TestBucketHas(t *testing.T) {
 	bs := NewBucketSet(buckets)
-	b := NewBucket(thisBucket, bs)
+	b := bs.NewBucket(thisBucket)
 	thisNN := types.NamespacedName{Namespace: "snow", Name: "hail"}
 	if !b.Has(thisNN) {
 		t.Errorf("Has(%v) = false", thisNN)
