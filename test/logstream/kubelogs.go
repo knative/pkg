@@ -109,7 +109,7 @@ func (k *kubelogs) watchPods(t test.TLegacy, eg *errgroup.Group) {
 				if p.Status.Phase == corev1.PodRunning && p.DeletionTimestamp == nil {
 					for _, cond := range p.Status.Conditions {
 						if cond.Type == corev1.PodReady && cond.Status == corev1.ConditionTrue {
-							t.Log("The pod is ready", p.Name)
+							t.Log("The new knative pod is ready", p.Name)
 							k.startForPod(eg, p)
 							break
 						}
