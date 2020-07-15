@@ -5,7 +5,7 @@ go 1.14
 require (
 	cloud.google.com/go v0.60.0
 	cloud.google.com/go/storage v1.10.0
-	contrib.go.opencensus.io/exporter/ocagent v0.6.1-0.20200121232419-b3d61dbd6252
+	contrib.go.opencensus.io/exporter/ocagent v0.7.1-0.20200615190824-f8c219d2d895
 	contrib.go.opencensus.io/exporter/prometheus v0.2.1-0.20200609204449-6bcf6f8577f0
 	contrib.go.opencensus.io/exporter/stackdriver v0.13.2
 	contrib.go.opencensus.io/exporter/zipkin v0.1.1
@@ -27,7 +27,6 @@ require (
 	github.com/google/uuid v1.1.1
 	github.com/googleapis/gnostic v0.4.0 // indirect
 	github.com/gorilla/websocket v1.4.2
-	github.com/grpc-ecosystem/grpc-gateway v1.12.1 // indirect
 	github.com/hashicorp/golang-lru v0.5.4
 	github.com/influxdata/tdigest v0.0.0-20181121200506-bf2b5ad3c0a9 // indirect
 	github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51
