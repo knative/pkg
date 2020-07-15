@@ -36,9 +36,8 @@ import (
 )
 
 type kubelogs struct {
-	namespace   string
-	kc          *test.KubeClient
-	watchedPods sets.String
+	namespace string
+	kc        *test.KubeClient
 
 	once sync.Once
 	m    sync.RWMutex
@@ -54,23 +53,22 @@ var _ streamer = (*kubelogs)(nil)
 const timeFormat = "15:04:05.000"
 
 func (k *kubelogs) startForPod(eg *errgroup.Group, pod *corev1.Pod) {
-	k.watchedPods.Insert(pod.Name)
 	// Grab data from all containers in the pods.  We need this in case
 	// an envoy sidecar is injected for mesh installs.  This should be
 	// equivalent to --all-containers.
 	for _, container := range pod.Spec.Containers {
 		// Required for capture below.
-		pod, container := pod, container
+		psn, pn, cn := pod.Namespace, pod.Name, container.Name
 		eg.Go(func() error {
 			options := &corev1.PodLogOptions{
-				Container: container.Name,
+				Container: cn,
 				// Follow directs the api server to continuously stream logs back.
 				Follow: true,
 				// Only return new logs (this value is being used for "epsilon").
 				SinceSeconds: ptr.Int64(1),
 			}
 
-			req := k.kc.Kube.CoreV1().Pods(pod.Namespace).GetLogs(pod.Name, options)
+			req := k.kc.Kube.CoreV1().Pods(psn).GetLogs(pn, options)
 			stream, err := req.Stream()
 			if err != nil {
 				return err
@@ -83,69 +81,51 @@ func (k *kubelogs) startForPod(eg *errgroup.Group, pod *corev1.Pod) {
 			}
 			// Pods get killed with chaos duck, so logs might end
 			// before the test does.
+			return nil
 		})
 	}
 }
 
-func (k *kubelogs) watchPods(t test.TLegacy, eg *errgroup.Group) {
+func podIsReady(p *corev1.Pod) bool {
+	if p.Status.Phase == corev1.PodRunning && p.DeletionTimestamp == nil {
+		for _, cond := range p.Status.Conditions {
+			if cond.Type == corev1.PodReady && cond.Status == corev1.ConditionTrue {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func (k *kubelogs) watchPods(t test.TLegacy) {
 	wi, err := k.kc.Kube.CoreV1().Pods(k.namespace).Watch(metav1.ListOptions{})
 	if err != nil {
-		t.Logf("Logstream knative pod watch failed, logs might be missing: %v", err)
+		t.Error("Logstream knative pod watch failed, logs might be missing", "error", err)
 		return
 	}
+	eg := errgroup.Group{}
 	go func() {
+		watchedPods := sets.NewString()
 		for ev := range wi.ResultChan() {
 			p := ev.Object.(*corev1.Pod)
-			t.Logf("Pod event %v for %s", ev.Type, p.Name)
 			switch ev.Type {
 			case watch.Deleted:
-				k.watchedPods.Delete(p.Name)
+				watchedPods.Delete(p.Name)
 			case watch.Added, watch.Modified:
-				if k.watchedPods.Has(p.Name) {
+				if watchedPods.Has(p.Name) {
 					t.Log("Already watching pod", p.Name)
 					continue
 				}
-				// If pod is ready then start the logs.
-				if p.Status.Phase == corev1.PodRunning && p.DeletionTimestamp == nil {
-					for _, cond := range p.Status.Conditions {
-						if cond.Type == corev1.PodReady && cond.Status == corev1.ConditionTrue {
-							t.Log("The new knative pod is ready", p.Name)
-							k.startForPod(eg, p)
-							break
-						}
-					}
+				if podIsReady(p) {
+					t.Log("Watching logs for pod: ", p.Name)
+					watchedPods.Insert(p.Name)
+					k.startForPod(&eg, p)
+					continue
 				}
-				t.Log("Not ready yet pod", p.Name)
+				t.Log("Pod is not yet ready: ", p.Name)
 			}
 		}
 	}()
-}
-
-func (k *kubelogs) init(t test.TLegacy) {
-	k.keys = make(map[string]logger)
-
-	kc, err := test.NewKubeClient(test.Flags.Kubeconfig, test.Flags.Cluster)
-	if err != nil {
-		t.Error("Error loading client config", "error", err)
-		return
-	}
-	k.kc = kc
-
-	// List the pods in the given namespace.
-	pl, err := kc.Kube.CoreV1().Pods(k.namespace).List(metav1.ListOptions{})
-	if err != nil {
-		t.Error("Error listing pods", "error", err)
-	}
-
-	k.watchedPods = make(sets.String, len(pl.Items))
-
-	eg := errgroup.Group{}
-	for _, pod := range pl.Items {
-		pod := pod
-		k.startForPod(&eg, &pod)
-	}
-
-	k.watchPods(t, &eg)
 	// Monitor the error group in the background and surface an error on the kubelogs
 	// in case anything had an active stream open.
 	go func() {
@@ -155,6 +135,20 @@ func (k *kubelogs) init(t test.TLegacy) {
 			k.err = err
 		}
 	}()
+}
+
+func (k *kubelogs) init(t test.TLegacy) {
+	k.keys = make(map[string]logger, 1)
+
+	kc, err := test.NewKubeClient(test.Flags.Kubeconfig, test.Flags.Cluster)
+	if err != nil {
+		t.Error("Error loading client config", "error", err)
+		return
+	}
+	k.kc = kc
+
+	// watchPods will start logging for existing pods as well.
+	k.watchPods(t)
 }
 
 func (k *kubelogs) handleLine(l []byte) {
