@@ -25,6 +25,7 @@ import (
 	"net/http"
 	"os"
 	"sort"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -450,8 +451,11 @@ func TestStackDriverExports(t *testing.T) {
 		"revision_name":      "revision2",
 		"service_name":       "service2",
 	}
-	label3 := map[string]string{
-		"key": "value",
+	batchLabels := map[string]string{
+		"namespace_name":     "ns2",
+		"configuration_name": "config2",
+		"revision_name":      "revision2",
+		"service_name":       "service2",
 	}
 	harness := []struct {
 		name               string
@@ -472,8 +476,8 @@ func TestStackDriverExports(t *testing.T) {
 				2,
 			},
 			{
-				"custom.googleapis.com/knative.dev/autoscaler/testing/value",
-				label3,
+				"custom.googleapis.com/knative.dev/autoscaler/not_ready_pods",
+				batchLabels,
 				3,
 			},
 		},
@@ -516,14 +520,13 @@ func TestStackDriverExports(t *testing.T) {
 				Measure:     desiredPodCountM,
 				Aggregation: view.LastValue(),
 			}
-			customMeasurement := stats.Int64(
-				"testing/value",
-				"Stored value",
+			notReadyPodCountM := stats.Int64(
+				"not_ready_pods",
+				"Number of pods that are not ready",
 				stats.UnitDimensionless)
 			customView := &view.View{
-				Name:        "testing/value",
-				Description: "Test value",
-				Measure:     customMeasurement,
+				Description: "non-knative-revision metric per KnativeRevisionMetrics",
+				Measure:     notReadyPodCountM,
 				Aggregation: view.LastValue(),
 			}
 
@@ -551,23 +554,13 @@ func TestStackDriverExports(t *testing.T) {
 			Record(ctx, actualPodCountM.M(int64(1)))
 
 			r := resource.Resource{
-				Type: "knative_revision",
-				Labels: map[string]string{
-					metricskey.LabelNamespaceName:     "ns2",
-					metricskey.LabelServiceName:       "service2",
-					metricskey.LabelConfigurationName: "config2",
-					metricskey.LabelRevisionName:      "revision2",
-				},
+				Type:   "testing",
+				Labels: batchLabels,
 			}
-			Record(metricskey.WithResource(context.Background(), r), desiredPodCountM.M(int64(2)))
-
-			r = resource.Resource{
-				Type: "custom_resource",
-				Labels: map[string]string{
-					"key": "value",
-				},
-			}
-			Record(metricskey.WithResource(context.Background(), r), customMeasurement.M(int64(3)))
+			RecordBatch(
+				metricskey.WithResource(context.Background(), r),
+				desiredPodCountM.M(int64(2)),
+				notReadyPodCountM.M(int64(3)))
 
 			records := []metricExtract{}
 			for record := range sdFake.published {
@@ -577,6 +570,11 @@ func TestStackDriverExports(t *testing.T) {
 						Labels: ts.Resource.Labels,
 						Value:  ts.Points[0].Value.GetInt64Value(),
 					})
+					if strings.HasPrefix(ts.Metric.Type, "knative.dev/") {
+						if diff := cmp.Diff(ts.Resource.Type, metricskey.ResourceTypeKnativeRevision); diff != "" {
+							t.Errorf("Incorrect resource type for %q: (-want +got): %s", ts.Metric.Type, diff)
+						}
+					}
 				}
 				if len(records) >= 2 {
 					// There's no way to synchronize on the internal timer used
