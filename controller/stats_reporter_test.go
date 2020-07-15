@@ -68,7 +68,6 @@ func TestReportReconcile(t *testing.T) {
 	r, _ := NewStatsReporter("testreconciler")
 	wantTags := map[string]string{
 		"reconciler": "testreconciler",
-		"key":        "test/key",
 		"success":    "true",
 	}
 
@@ -81,11 +80,11 @@ func TestReportReconcile(t *testing.T) {
 		initialReconcileLatency = d[0].Data.(*view.DistributionData).Sum()
 	}
 
-	expectSuccess(t, func() error { return r.ReportReconcile(10*time.Millisecond, "test/key", "true") })
+	expectSuccess(t, func() error { return r.ReportReconcile(10*time.Millisecond, "true") })
 	metricstest.CheckCountData(t, "reconcile_count", wantTags, initialReconcileCount+1)
 	metricstest.CheckDistributionData(t, "reconcile_latency", wantTags, 1, initialReconcileLatency+10, initialReconcileLatency+10)
 
-	expectSuccess(t, func() error { return r.ReportReconcile(15*time.Millisecond, "test/key", "true") })
+	expectSuccess(t, func() error { return r.ReportReconcile(15*time.Millisecond, "true") })
 	metricstest.CheckCountData(t, "reconcile_count", wantTags, initialReconcileCount+2)
 	metricstest.CheckDistributionData(t, "reconcile_latency", wantTags, 2, initialReconcileLatency+10, initialReconcileLatency+15)
 }

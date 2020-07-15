@@ -192,7 +192,7 @@ type StatsReporter interface {
 	ReportQueueDepth(v int64) error
 
 	// ReportReconcile reports the count and latency metrics for a reconcile operation
-	ReportReconcile(duration time.Duration, key, success string) error
+	ReportReconcile(duration time.Duration, success string) error
 }
 
 // Reporter holds cached metric objects to report metrics
@@ -234,11 +234,10 @@ func (r *reporter) ReportQueueDepth(v int64) error {
 }
 
 // ReportReconcile reports the count and latency metrics for a reconcile operation
-func (r *reporter) ReportReconcile(duration time.Duration, key, success string) error {
+func (r *reporter) ReportReconcile(duration time.Duration, success string) error {
 	ctx, err := tag.New(
 		context.Background(),
 		tag.Insert(reconcilerTagKey, r.reconciler),
-		tag.Insert(keyTagKey, key),
 		tag.Insert(successTagKey, success))
 	if err != nil {
 		return err
