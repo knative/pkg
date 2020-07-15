@@ -19,6 +19,7 @@ limitations under the License.
 package hash
 
 import (
+	"errors"
 	"sync"
 
 	lru "github.com/hashicorp/golang-lru"
@@ -87,11 +88,16 @@ func (b *Bucket) Has(nn types.NamespacedName) bool {
 }
 
 // NewBucket creates a new Bucket with given name based on this bucketset.
-func (bs *BucketSet) NewBucket(name string) *Bucket {
+func (bs *BucketSet) NewBucket(name string) (*Bucket, error) {
+	bs.mu.RLock()
+	defer bs.mu.RUnlock()
+	if !bs.buckets.Has(name) {
+		return nil, errors.New(name + " is not a valid bucket in the bucketset")
+	}
 	return &Bucket{
 		name:    name,
 		buckets: bs,
-	}
+	}, nil
 }
 
 // Owner returns the owner of the key.
