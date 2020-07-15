@@ -46,7 +46,6 @@ var (
 	// - length between 1 and 255 inclusive
 	// - characters are printable US-ASCII
 	reconcilerTagKey = tag.MustNewKey("reconciler")
-	keyTagKey        = tag.MustNewKey("key")
 	successTagKey    = tag.MustNewKey("success")
 )
 
@@ -167,12 +166,12 @@ func init() {
 		Description: "Number of reconcile operations",
 		Measure:     reconcileCountStat,
 		Aggregation: view.Count(),
-		TagKeys:     []tag.Key{reconcilerTagKey, keyTagKey, successTagKey},
+		TagKeys:     []tag.Key{reconcilerTagKey, successTagKey},
 	}, {
 		Description: "Latency of reconcile operations",
 		Measure:     reconcileLatencyStat,
 		Aggregation: reconcileDistribution,
-		TagKeys:     []tag.Key{reconcilerTagKey, keyTagKey, successTagKey},
+		TagKeys:     []tag.Key{reconcilerTagKey, successTagKey},
 	}}
 	views = append(views, wp.DefaultViews()...)
 	views = append(views, rp.DefaultViews()...)
