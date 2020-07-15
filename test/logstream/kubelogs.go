@@ -80,7 +80,7 @@ func (k *kubelogs) startForPod(eg *errgroup.Group, pod *corev1.Pod) {
 				k.handleLine(scanner.Bytes())
 			}
 			// Pods get killed with chaos duck, so logs might end
-			// before the test does.
+			// before the test does. So don't report an error here.
 			return nil
 		})
 	}
