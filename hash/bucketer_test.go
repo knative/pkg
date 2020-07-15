@@ -120,7 +120,7 @@ func TestBucketHas(t *testing.T) {
 	if !b.Has(thisNN) {
 		t.Errorf("Has(%v) = false", thisNN)
 	}
-	b = NewBucket(otherBucket, bs)
+	b, _ = bs.NewBucket(otherBucket)
 	if b.Has(thisNN) {
 		t.Errorf("Other bucket Has(%v) = true", thisNN)
 	}
@@ -128,7 +128,7 @@ func TestBucketHas(t *testing.T) {
 
 func TestBucketName(t *testing.T) {
 	bs := NewBucketSet(buckets)
-	b := NewBucket(thisBucket, bs)
+	b, _ := bs.NewBucket(thisBucket)
 	if got, want := b.Name(), thisBucket; got != want {
 		t.Errorf("Name = %q, want: %q", got, want)
 	}
