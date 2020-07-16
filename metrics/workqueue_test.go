@@ -35,17 +35,17 @@ func newFloat64(name string) *stats.Float64Measure {
 	return stats.Float64(name, "bar", "wtfs/s")
 }
 
-type FixedRateLimiter struct {
+type fixedRateLimiter struct {
 	delay time.Duration
 }
 
-func (f *FixedRateLimiter) When(item interface{}) time.Duration {
+func (f *fixedRateLimiter) When(item interface{}) time.Duration {
 	return f.delay
 }
 
-func (f *FixedRateLimiter) Forget(item interface{}) {}
+func (f *fixedRateLimiter) Forget(item interface{}) {}
 
-func (f *FixedRateLimiter) NumRequeues(item interface{}) int {
+func (f *fixedRateLimiter) NumRequeues(item interface{}) int {
 	return 0
 }
 
@@ -74,7 +74,7 @@ func TestWorkqueueMetrics(t *testing.T) {
 	defer view.Unregister(views...)
 
 	queueName := t.Name()
-	limiter := &FixedRateLimiter{delay: 200 * time.Millisecond}
+	limiter := &fixedRateLimiter{delay: 200 * time.Millisecond}
 	wq := workqueue.NewNamedRateLimitingQueue(limiter, queueName)
 
 	metricstest.CheckStatsNotReported(t, "adds", "depth", "latency", "retries", "work_duration",
