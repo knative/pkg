@@ -27,12 +27,18 @@ import (
 	jsonpatch "gomodules.xyz/jsonpatch/v2"
 	admissionv1 "k8s.io/api/admission/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"knative.dev/pkg/controller"
 	"knative.dev/pkg/system"
 	pkgtest "knative.dev/pkg/testing"
 
 	// Makes system.Namespace work in tests.
 	_ "knative.dev/pkg/system/testing"
 )
+
+func init() {
+	// Disable jittering for faster more deterministic testing.
+	controller.DefaultFailoverJitterSeconds = 0.0
+}
 
 // CreateResource creates a testing.Resource with the given name in the system namespace.
 func CreateResource(name string) *pkgtest.Resource {
