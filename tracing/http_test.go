@@ -148,7 +148,7 @@ func TestHTTPSpanIgnoringPaths(t *testing.T) {
 			middleware.ServeHTTP(fw, req)
 
 			// Assert our next handler was called
-			if got, want := string(fw.lastWrite), "fake"; got != want {
+			if got, want := fw.lastWrite, "fake"; got != want {
 				t.Errorf("HTTP response: %q, want: %q", got, want)
 			}
 
