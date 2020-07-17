@@ -661,6 +661,7 @@ func NewTestResourceAdmissionController(t *testing.T) *reconciler {
 		t.Errorf("Promote() = %v", err)
 	}
 
+	// Queue has async moving parts so if we check at the wrong moment, this might still be 0.
 	if wait.PollImmediate(10*time.Millisecond, 250*time.Millisecond, func() (bool, error) {
 		return c.WorkQueue.Len() == 1, nil
 	}) != nil {
