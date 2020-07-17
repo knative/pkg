@@ -170,7 +170,7 @@ func newStandardBuckets(queueName string, cc ComponentConfig) []reconciler.Bucke
 	for i := uint32(0); i < cc.Buckets; i++ {
 		names.Insert(standardBucketName(i, queueName, cc))
 	}
-	return hash.NewBucketSet(names).ActualBucketList()
+	return hash.NewBucketSet(names).Buckets()
 }
 
 func standardBucketName(ordinal uint32, queueName string, cc ComponentConfig) string {
@@ -214,9 +214,9 @@ func NewStatefulSetBucketAndSet(buckets int) (reconciler.Bucket, *hash.BucketSet
 	}
 
 	bs := hash.NewBucketSet(names)
-	// ActualBucketList is sorted in order of names so we can use ordinal to
+	// Buckets is sorted in order of names so we can use ordinal to
 	// get the correct Bucket for this binary.
-	return bs.ActualBucketList()[ssc.StatefulSetID.ordinal], bs, nil
+	return bs.Buckets()[ssc.StatefulSetID.ordinal], bs, nil
 }
 
 func statefulSetPodDNS(ordinal int, ssc *statefulSetConfig) string {

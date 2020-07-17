@@ -77,15 +77,15 @@ func (b *Bucket) Has(nn types.NamespacedName) bool {
 	return b.buckets.Owner(nn.String()) == b.name
 }
 
-// ActualBucketList creates a new list of all possible Bucket based on this bucketset
+// Buckets creates a new list of all possible Bucket based on this bucketset
 // in the order of sorted bucket name.
-func (bs *BucketSet) ActualBucketList() []reconciler.Bucket {
-	bkts := make([]reconciler.Bucket, 0, len(bs.buckets))
-	for _, n := range bs.sortedBucketNames() {
-		bkts = append(bkts, &Bucket{
+func (bs *BucketSet) Buckets() []reconciler.Bucket {
+	bkts := make([]reconciler.Bucket, len(bs.buckets))
+	for i, n := range bs.sortedBucketNames() {
+		bkts[i] = &Bucket{
 			name:    n,
 			buckets: bs,
-		})
+		}
 	}
 	return bkts
 }

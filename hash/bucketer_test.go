@@ -101,15 +101,15 @@ func TestBucketSetUpdate(t *testing.T) {
 	}
 }
 
-func TestBucketSetActualBucketList(t *testing.T) {
+func TestBucketSetBuckets(t *testing.T) {
 	bs := NewBucketSet(buckets)
-	bkts := bs.ActualBucketList()
+	bkts := bs.Buckets()
 
 	// Sorted
 	want := []string{"aguacero", "chaparrón", "chubasco", "monsoon"}
-	got := make([]string, 0, 4)
-	for _, b := range bkts {
-		got = append(got, b.Name())
+	got := make([]string, 4)
+	for i, b := range bkts {
+		got[i] = b.Name()
 	}
 
 	if !reflect.DeepEqual(got, want) {
