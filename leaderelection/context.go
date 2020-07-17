@@ -114,11 +114,7 @@ func (b *standardBuilder) buildElector(ctx context.Context, la reconciler.Leader
 		return nil, err
 	}
 
-	bkts, err := newStandardBuckets(queueName, b.lec)
-	if err != nil {
-		return nil, err
-	}
-
+	bkts := newStandardBuckets(queueName, b.lec)
 	electors := make([]Elector, 0, b.lec.Buckets)
 	for _, bkt := range bkts {
 		rl, err := resourcelock.New(KnativeResourceLock,
@@ -169,7 +165,7 @@ func (b *standardBuilder) buildElector(ctx context.Context, la reconciler.Leader
 	return &runAll{les: electors}, nil
 }
 
-func newStandardBuckets(queueName string, cc ComponentConfig) ([]reconciler.Bucket, error) {
+func newStandardBuckets(queueName string, cc ComponentConfig) []reconciler.Bucket {
 	names := make(sets.String, cc.Buckets)
 	for i := uint32(0); i < cc.Buckets; i++ {
 		names.Insert(standardBucketName(i, queueName, cc))
@@ -177,14 +173,12 @@ func newStandardBuckets(queueName string, cc ComponentConfig) ([]reconciler.Buck
 	bs := hash.NewBucketSet(names)
 
 	bkts := make([]reconciler.Bucket, 0, cc.Buckets)
-	for name := range names {
-		bkt, err := bs.NewBucket(name)
-		if err != nil {
-			return nil, err
-		}
+	for _, name := range names.List() {
+		// The error shouldn't happen as we make sure that `name` is in the BucketSet.
+		bkt, _ := bs.NewBucket(name)
 		bkts = append(bkts, bkt)
 	}
-	return bkts, nil
+	return bkts
 }
 
 func standardBucketName(ordinal uint32, queueName string, cc ComponentConfig) string {
