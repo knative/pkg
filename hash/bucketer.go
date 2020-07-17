@@ -19,7 +19,6 @@ limitations under the License.
 package hash
 
 import (
-	"errors"
 	"sync"
 
 	lru "github.com/hashicorp/golang-lru"
@@ -78,17 +77,24 @@ func (b *Bucket) Has(nn types.NamespacedName) bool {
 	return b.buckets.Owner(nn.String()) == b.name
 }
 
-// NewBucket creates a new Bucket with given name based on this bucketset.
-func (bs *BucketSet) NewBucket(name string) (*Bucket, error) {
+// ActualBucketList creates a new list of all possible Bucket based on this bucketset
+// in the order of sorted bucket name.
+func (bs *BucketSet) ActualBucketList() []reconciler.Bucket {
+	bkts := make([]reconciler.Bucket, 0, len(bs.buckets))
+	for _, n := range bs.sortedBucketNames() {
+		bkts = append(bkts, &Bucket{
+			name:    n,
+			buckets: bs,
+		})
+	}
+	return bkts
+}
+
+func (bs *BucketSet) sortedBucketNames() []string {
 	bs.mu.RLock()
 	defer bs.mu.RUnlock()
-	if !bs.buckets.Has(name) {
-		return nil, errors.New(name + " is not a valid bucket in the bucketset")
-	}
-	return &Bucket{
-		name:    name,
-		buckets: bs,
-	}, nil
+
+	return bs.buckets.List()
 }
 
 // Owner returns the owner of the key.
