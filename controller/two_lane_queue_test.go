@@ -75,7 +75,7 @@ func TestDoubleKey(t *testing.T) {
 	select {
 	case <-sentinel:
 		t.Error("The sentinel should not have fired")
-	case <-time.After(400 * time.Millisecond):
+	case <-time.After(600 * time.Millisecond):
 		// Expected.
 	}
 	// This should permit the re-reading of the same key.
