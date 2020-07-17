@@ -55,8 +55,11 @@ func newTwoLaneWorkQueue(name string) *twoLaneQueue {
 		fastChan:      make(chan interface{}),
 		slowChan:      make(chan interface{}),
 	}
-	tlq.runConsumer()
-	tlq.runProducers()
+	// Run consumer thread.
+	go tlq.runConsumer()
+	// Run producer threads.
+	go process(tlq.RateLimitingInterface, tlq.fastChan)
+	go process(tlq.slowLane, tlq.slowChan)
 	return tlq
 }
 
@@ -74,42 +77,17 @@ func process(q workqueue.Interface, ch chan interface{}) {
 	}
 }
 
-func (tlq *twoLaneQueue) runProducers() {
-	go process(tlq.RateLimitingInterface, tlq.fastChan)
-	go process(tlq.slowLane, tlq.slowChan)
-}
-
 func (tlq *twoLaneQueue) runConsumer() {
-	tlq.consumerQueue = workqueue.NewNamed(tlq.name + "consumer")
 	// Shutdown flags.
 	fast, slow := true, true
-	go func() {
-		// When both producer queues are shutdown stop the consumerQueue.
-		defer tlq.consumerQueue.ShutDown()
-		// While any of the queues is still running, try to read off of them.
-		for fast || slow {
-			// By default drain the fast lane.
-			// Channels in select are picked random, so first
-			// we have a select that only looks at the fast lane queue.
-			if fast {
-				select {
-				case item, ok := <-tlq.fastChan:
-					if !ok {
-						// This queue is shutdown and drained. Stop looking at it.
-						fast = false
-						continue
-					}
-					tlq.consumerQueue.Add(item)
-					continue
-				default:
-					// This immediately exits the wait if the fast chan is empty.
-				}
-			}
-
-			// If the fast lane queue had no items, we can select from both.
-			// Obviously if suddenly both are populated at the same time there's a
-			// 50% chance that the slow would be picked first, but this should be
-			// a rare occasion not to really worry about it.
+	// When both producer queues are shutdown stop the consumerQueue.
+	defer tlq.consumerQueue.ShutDown()
+	// While any of the queues is still running, try to read off of them.
+	for fast || slow {
+		// By default drain the fast lane.
+		// Channels in select are picked random, so first
+		// we have a select that only looks at the fast lane queue.
+		if fast {
 			select {
 			case item, ok := <-tlq.fastChan:
 				if !ok {
@@ -118,16 +96,33 @@ func (tlq *twoLaneQueue) runConsumer() {
 					continue
 				}
 				tlq.consumerQueue.Add(item)
-			case item, ok := <-tlq.slowChan:
-				if !ok {
-					// This queue is shutdown and drained. Stop looking at it.
-					slow = false
-					continue
-				}
-				tlq.consumerQueue.Add(item)
+				continue
+			default:
+				// This immediately exits the wait if the fast chan is empty.
 			}
 		}
-	}()
+
+		// If the fast lane queue had no items, we can select from both.
+		// Obviously if suddenly both are populated at the same time there's a
+		// 50% chance that the slow would be picked first, but this should be
+		// a rare occasion not to really worry about it.
+		select {
+		case item, ok := <-tlq.fastChan:
+			if !ok {
+				// This queue is shutdown and drained. Stop looking at it.
+				fast = false
+				continue
+			}
+			tlq.consumerQueue.Add(item)
+		case item, ok := <-tlq.slowChan:
+			if !ok {
+				// This queue is shutdown and drained. Stop looking at it.
+				slow = false
+				continue
+			}
+			tlq.consumerQueue.Add(item)
+		}
+	}
 }
 
 // Shutdown implements workqueue.Interace.
