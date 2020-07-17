@@ -49,7 +49,6 @@ func TestDoubleKey(t *testing.T) {
 	// Verifies that we don't get double concurrent processing of the same key.
 	q := newTwoLaneWorkQueue("live-in-the-fast-lane")
 	q.Add("1")
-	q.SlowLane().Add("1")
 	t.Cleanup(q.ShutDown)
 
 	k, done := q.Get()
@@ -60,6 +59,8 @@ func TestDoubleKey(t *testing.T) {
 		t.Error("The queue is unexpectedly shutdown")
 	}
 
+	// This should not be read from the queue until we actually call `Done`.
+	q.SlowLane().Add("1")
 	sentinel := make(chan struct{})
 	go func() {
 		defer close(sentinel)
@@ -75,12 +76,17 @@ func TestDoubleKey(t *testing.T) {
 	select {
 	case <-sentinel:
 		t.Error("The sentinel should not have fired")
-	case <-time.After(500 * time.Millisecond):
+	case <-time.After(600 * time.Millisecond):
 		// Expected.
 	}
 	// This should permit the re-reading of the same key.
 	q.Done(k)
-	<-sentinel
+	select {
+	case <-sentinel:
+		// Expected.
+	case <-time.After(200 * time.Millisecond):
+		t.Error("The item was not processed as expected")
+	}
 }
 
 func TestOrder(t *testing.T) {
