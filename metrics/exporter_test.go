@@ -27,19 +27,10 @@ import (
 const (
 	testNS            = "test"
 	testService       = "test-service"
-	testRoute         = "test-route"
 	testRevision      = "test-revision"
 	testConfiguration = "test-configuration"
 	testContainer     = "test-container"
 	testPod           = "test-pod"
-
-	testBroker              = "test-broker"
-	testEventType           = "test-eventtype"
-	testEventSource         = "test-eventsource"
-	testTrigger             = "test-trigger"
-	testFilterType          = "test-filtertype"
-	testSource              = "test-source"
-	testSourceResourceGroup = "test-source-rg"
 )
 
 func TestMain(m *testing.M) {

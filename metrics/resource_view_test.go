@@ -646,11 +646,11 @@ type stackDriverFake struct {
 	address   string
 	srv       *grpc.Server
 	t         *testing.T
-	published chan stackdriverpb.CreateTimeSeriesRequest
+	published chan *stackdriverpb.CreateTimeSeriesRequest
 }
 
 func (sd *stackDriverFake) start() error {
-	sd.published = make(chan stackdriverpb.CreateTimeSeriesRequest, 100)
+	sd.published = make(chan *stackdriverpb.CreateTimeSeriesRequest, 100)
 	ln, err := net.Listen("tcp", sd.address)
 	if err != nil {
 		return err
@@ -666,7 +666,7 @@ func (sd *stackDriverFake) start() error {
 }
 
 func (sd *stackDriverFake) CreateTimeSeries(ctx context.Context, req *stackdriverpb.CreateTimeSeriesRequest) (*emptypb.Empty, error) {
-	sd.published <- *req
+	sd.published <- req
 	return nil, nil
 }
 
@@ -688,8 +688,7 @@ func (sd *stackDriverFake) GetMetricDescriptor(context.Context, *stackdriverpb.G
 	return nil, fmt.Errorf("Unimplemented")
 }
 func (sd *stackDriverFake) CreateMetricDescriptor(ctx context.Context, req *stackdriverpb.CreateMetricDescriptorRequest) (*metricpb.MetricDescriptor, error) {
-	resp := *req.MetricDescriptor
-	return &resp, nil
+	return req.MetricDescriptor, nil
 }
 func (sd *stackDriverFake) DeleteMetricDescriptor(context.Context, *stackdriverpb.DeleteMetricDescriptorRequest) (*emptypb.Empty, error) {
 	sd.t.Fatalf("DeleteMetricDescriptor")

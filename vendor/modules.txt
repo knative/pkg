@@ -1,4 +1,4 @@
-# cloud.google.com/go v0.60.0
+# cloud.google.com/go v0.61.0
 ## explicit
 cloud.google.com/go
 cloud.google.com/go/compute/metadata
@@ -363,7 +363,7 @@ golang.org/x/text/unicode/norm
 golang.org/x/text/width
 # golang.org/x/time v0.0.0-20200416051211-89c76fbcd5d1
 golang.org/x/time/rate
-# golang.org/x/tools v0.0.0-20200710042808-f1c4188a97a1
+# golang.org/x/tools v0.0.0-20200714190737-9048b464a08d
 golang.org/x/tools/cmd/goimports
 golang.org/x/tools/go/ast/astutil
 golang.org/x/tools/go/gcexportdata
@@ -438,7 +438,7 @@ google.golang.org/appengine/internal/socket
 google.golang.org/appengine/internal/urlfetch
 google.golang.org/appengine/socket
 google.golang.org/appengine/urlfetch
-# google.golang.org/genproto v0.0.0-20200710124503-20a17af7bd0e
+# google.golang.org/genproto v0.0.0-20200715011427-11fb19a81f2c
 ## explicit
 google.golang.org/genproto/googleapis/api
 google.golang.org/genproto/googleapis/api/annotations
@@ -945,7 +945,7 @@ k8s.io/kube-openapi/pkg/generators
 k8s.io/kube-openapi/pkg/generators/rules
 k8s.io/kube-openapi/pkg/util/proto
 k8s.io/kube-openapi/pkg/util/sets
-# k8s.io/test-infra v0.0.0-20200710134549-5891a1a4cc17
+# k8s.io/test-infra v0.0.0-20200715094037-cc150f5ae724
 k8s.io/test-infra/prow/config/secret
 k8s.io/test-infra/prow/logrusutil
 k8s.io/test-infra/prow/version
@@ -955,10 +955,10 @@ k8s.io/utils/buffer
 k8s.io/utils/integer
 k8s.io/utils/pointer
 k8s.io/utils/trace
-# knative.dev/test-infra v0.0.0-20200713220518-5a4c4cad5372
+# knative.dev/test-infra v0.0.0-20200715185233-6964ba126fee
 ## explicit
 knative.dev/test-infra/scripts
-# sigs.k8s.io/boskos v0.0.0-20200617235605-f289ba6555ba
+# sigs.k8s.io/boskos v0.0.0-20200710214748-f5935686c7fc
 ## explicit
 sigs.k8s.io/boskos/client
 sigs.k8s.io/boskos/common
