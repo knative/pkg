@@ -49,7 +49,6 @@ func TestDoubleKey(t *testing.T) {
 	// Verifies that we don't get double concurrent processing of the same key.
 	q := newTwoLaneWorkQueue("live-in-the-fast-lane")
 	q.Add("1")
-	q.SlowLane().Add("1")
 	t.Cleanup(q.ShutDown)
 
 	k, done := q.Get()
@@ -60,6 +59,8 @@ func TestDoubleKey(t *testing.T) {
 		t.Error("The queue is unexpectedly shutdown")
 	}
 
+	// This should not be read from the queue until we actually call `Done`.
+	q.SlowLane().Add("1")
 	sentinel := make(chan struct{})
 	go func() {
 		defer close(sentinel)
