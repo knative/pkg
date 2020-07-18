@@ -75,7 +75,7 @@ func TestDrainMechanics(t *testing.T) {
 	// Check for 400 shutting down
 	resp = httptest.NewRecorder()
 	drainer.ServeHTTP(resp, probe)
-	if got, want := resp.Code, http.StatusInternalServerError; got != want {
+	if got, want := resp.Code, http.StatusServiceUnavailable; got != want {
 		t.Errorf("probe status = %d, wanted %d", got, want)
 	}
 
@@ -107,7 +107,7 @@ func TestDrainMechanics(t *testing.T) {
 	// Check for 500 shutting down
 	resp = httptest.NewRecorder()
 	drainer.ServeHTTP(resp, probe)
-	if got, want := resp.Code, http.StatusInternalServerError; got != want {
+	if got, want := resp.Code, http.StatusServiceUnavailable; got != want {
 		t.Errorf("probe status = %d, wanted %d", got, want)
 	}
 

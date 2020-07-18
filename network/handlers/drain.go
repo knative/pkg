@@ -32,7 +32,7 @@ import (
 // network.DefaultDrainTimeout).
 type Drainer struct {
 	// Mutex guards the initialization and resets of the timer
-	sync.Mutex
+	sync.RWMutex
 
 	// Inner is the http.Handler to which we delegate actual requests.
 	Inner http.Handler
@@ -55,7 +55,7 @@ var _ http.Handler = (*Drainer)(nil)
 func (d *Drainer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if network.IsKubeletProbe(r) { // Respond to probes regardless of path.
 		if d.draining() {
-			http.Error(w, "shutting down", http.StatusInternalServerError)
+			http.Error(w, "shutting down", http.StatusServiceUnavailable)
 		} else {
 			w.WriteHeader(http.StatusOK)
 		}
@@ -73,7 +73,7 @@ func (d *Drainer) Drain() {
 		t := func() *time.Timer {
 			d.Lock()
 			defer d.Unlock()
-			if d.QuietPeriod == 0 {
+			if d.QuietPeriod <= 0 {
 				d.QuietPeriod = network.DefaultDrainTimeout
 			}
 			d.timer = time.NewTimer(d.QuietPeriod)
@@ -86,11 +86,16 @@ func (d *Drainer) Drain() {
 
 // reset resets the drain timer to the full amount of time.
 func (d *Drainer) reset() {
-	d.Lock()
-	defer d.Unlock()
-	if d.timer == nil {
+	if func() bool {
+		d.RLock()
+		defer d.RUnlock()
+		return d.timer == nil
+	}() {
 		return
 	}
+
+	d.Lock()
+	defer d.Unlock()
 	if d.timer.Stop() {
 		d.timer.Reset(d.QuietPeriod)
 	}
@@ -98,8 +103,8 @@ func (d *Drainer) reset() {
 
 // draining returns whether we are draining the handler.
 func (d *Drainer) draining() bool {
-	d.Lock()
-	defer d.Unlock()
+	d.RLock()
+	defer d.RUnlock()
 
 	return d.timer != nil
 }
