@@ -17,7 +17,6 @@ limitations under the License.
 package handlers
 
 import (
-	"context"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -49,109 +48,96 @@ func TestDrainMechanics(t *testing.T) {
 	drainer.ServeHTTP(w, req)
 	drainer.ServeHTTP(w, req)
 
-	// Check for 200 OK
+	// Check for 200 OK.
 	resp := httptest.NewRecorder()
 	drainer.ServeHTTP(resp, probe)
 	if got, want := resp.Code, http.StatusOK; got != want {
-		t.Errorf("probe status = %d, wanted %d", got, want)
+		t.Errorf("Probe status = %d, wanted %d", got, want)
 	}
 
 	// Start to drain, and cancel the context when it returns.
-	ctx, cancel := context.WithCancel(context.Background())
+	done := make(chan struct{})
 	go func() {
+		defer close(done)
 		drainer.Drain()
-		cancel()
 	}()
 
 	select {
 	case <-time.After(40 * time.Millisecond):
 		// Drain is blocking.
-	case <-ctx.Done():
+	case <-done:
 		t.Error("Drain terminated prematurely.")
 	}
 	// Now send a request to reset things.
 	drainer.ServeHTTP(w, req)
 
-	// Check for 400 shutting down
+	// Check for 503 as a probe response when shutting down.
 	resp = httptest.NewRecorder()
 	drainer.ServeHTTP(resp, probe)
 	if got, want := resp.Code, http.StatusServiceUnavailable; got != want {
-		t.Errorf("probe status = %d, wanted %d", got, want)
+		t.Errorf("Probe status = %d, wanted %d", got, want)
 	}
 
-	select {
-	case <-time.After(40 * time.Millisecond):
-		// Drain is blocking.
-	case <-ctx.Done():
-		t.Error("Drain terminated prematurely.")
-	}
-	// Now send a request to reset things.
-	drainer.ServeHTTP(w, req)
-
-	select {
-	case <-time.After(40 * time.Millisecond):
-		// Drain is blocking.
-	case <-ctx.Done():
-		t.Error("Drain terminated prematurely.")
-	}
-	// Now send a request to reset things.
-	drainer.ServeHTTP(w, req)
-
-	select {
-	case <-time.After(40 * time.Millisecond):
-		// Drain is blocking.
-	case <-ctx.Done():
-		t.Error("Drain terminated prematurely.")
+	for i := 0; i < 3; i++ {
+		select {
+		case <-time.After(40 * time.Millisecond):
+			// Drain is blocking.
+		case <-done:
+			t.Error("Drain terminated prematurely.")
+		}
+		// For the last one we don't want to reset the drain timer.
+		if i < 2 {
+			drainer.ServeHTTP(w, req)
+		}
 	}
 	// Probing does not reset the clock.
-	// Check for 500 shutting down
+	// Check for 503 on a probe when shutting down.
 	resp = httptest.NewRecorder()
 	drainer.ServeHTTP(resp, probe)
 	if got, want := resp.Code, http.StatusServiceUnavailable; got != want {
-		t.Errorf("probe status = %d, wanted %d", got, want)
+		t.Errorf("Probe status = %d, wanted %d", got, want)
 	}
 
 	// Big finish, test that multiple invocations of Drain all block.
-	ctx1, cancel1 := context.WithCancel(context.Background())
+	done1 := make(chan struct{})
 	go func() {
+		defer close(done1)
 		drainer.Drain()
-		cancel1()
 	}()
-	ctx2, cancel2 := context.WithCancel(context.Background())
+	done2 := make(chan struct{})
 	go func() {
+		defer close(done2)
 		drainer.Drain()
-		cancel2()
 	}()
-	ctx3, cancel3 := context.WithCancel(context.Background())
+	done3 := make(chan struct{})
 	go func() {
+		defer close(done3)
 		drainer.Drain()
-		cancel3()
 	}()
 
 	select {
-	case <-time.After(70 * time.Millisecond):
+	case <-time.After(80 * time.Millisecond):
 		t.Error("Timed out waiting for Drain to return.")
-
-	case <-ctx.Done():
-	case <-ctx1.Done():
-	case <-ctx2.Done():
-	case <-ctx3.Done():
+	case <-done:
+	case <-done1:
+	case <-done2:
+	case <-done3:
 		// Once the first context is cancelled, check that all of them are cancelled.
 	}
 
 	// Check that a 4th and final one after things complete finishes instantly.
-	ctx4, cancel4 := context.WithCancel(context.Background())
+	done4 := make(chan struct{})
 	go func() {
+		defer close(done4)
 		drainer.Drain()
-		cancel4()
 	}()
 
-	// Give the rest a short window to complete.
-	time.Sleep(time.Millisecond)
+	// Give the test a short window to launch and execute the go routine.
+	time.Sleep(5 * time.Millisecond)
 
-	for idx, ictx := range []context.Context{ctx, ctx1, ctx2, ctx3, ctx4} {
+	for idx, dch := range []chan struct{}{done, done1, done2, done3, done4} {
 		select {
-		case <-ictx.Done():
+		case <-dch:
 			// Should be done.
 		default:
 			t.Errorf("Drain[%d] did not complete.", idx)
