@@ -1038,7 +1038,7 @@ func TestNew(t *testing.T) {
 		t.Fatal("Expected NewController to return a non-nil value")
 	}
 
-	if want, got := 0, c.WorkQueue.Len(); want != got {
+	if want, got := 0, c.WorkQueue().Len(); want != got {
 		t.Errorf("WorkQueue.Len() = %d, wanted %d", got, want)
 	}
 
@@ -1051,7 +1051,7 @@ func TestNew(t *testing.T) {
 		t.Errorf("Promote() = %v", err)
 	}
 
-	if want, got := 1, c.WorkQueue.Len(); want != got {
+	if want, got := 1, c.WorkQueue().Len(); want != got {
 		t.Errorf("WorkQueue.Len() = %d, wanted %d", got, want)
 	}
 }
