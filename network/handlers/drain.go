@@ -24,6 +24,26 @@ import (
 	"knative.dev/pkg/network"
 )
 
+type timer interface {
+	Stop() bool
+	Reset(time.Duration) bool
+	tickChan() <-chan time.Time
+}
+
+type sysTimer struct {
+	*time.Timer
+}
+
+func (s *sysTimer) tickChan() <-chan time.Time {
+	return s.Timer.C
+}
+
+var newTimer = func(d time.Duration) timer {
+	return &sysTimer{
+		time.NewTimer(d),
+	}
+}
+
 // Drainer wraps an inner http.Handler to support responding to kubelet
 // probes with a "200 OK" until the handler is told to Drain.
 // When the Drainer is told to Drain, it will immediately start to fail
@@ -45,7 +65,7 @@ type Drainer struct {
 	once sync.Once
 
 	// timer is used to orchestrate the drain.
-	timer *time.Timer
+	timer timer
 }
 
 // Ensure Drainer implements http.Handler
@@ -69,18 +89,20 @@ func (d *Drainer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 // Drain blocks until QuietPeriod has elapsed since the last request,
 // starting when this is invoked.
 func (d *Drainer) Drain() {
+	// Note: until the first caller exits, the others
+	// will wait blocked as well.
 	d.once.Do(func() {
-		t := func() *time.Timer {
+		t := func() timer {
 			d.Lock()
 			defer d.Unlock()
 			if d.QuietPeriod <= 0 {
 				d.QuietPeriod = network.DefaultDrainTimeout
 			}
-			d.timer = time.NewTimer(d.QuietPeriod)
+			d.timer = newTimer(d.QuietPeriod)
 			return d.timer
 		}()
 
-		<-t.C
+		<-t.tickChan()
 	})
 }
 
