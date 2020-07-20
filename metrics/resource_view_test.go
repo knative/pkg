@@ -334,7 +334,8 @@ testComponent_testing_value{project="p1",revision="r2"} 1
 			UnregisterResourceView(gaugeView, resourceCounter)
 			FlushExporter()
 
-			time.Sleep(1 * time.Millisecond)
+			// Give some time for the flush RPCs to actually reach the server before shutting down.
+			time.Sleep(10 * time.Millisecond)
 			ocFake.srv.Stop() // Force close connections
 			ocFake.srv.GracefulStop()
 			records := []metricExtract{}
@@ -669,7 +670,7 @@ func (sd *stackDriverFake) start() error {
 
 func (sd *stackDriverFake) CreateTimeSeries(ctx context.Context, req *stackdriverpb.CreateTimeSeriesRequest) (*emptypb.Empty, error) {
 	sd.published <- *req
-	return nil, nil
+	return &emptypb.Empty{}, nil
 }
 
 func (sd *stackDriverFake) ListMonitoredResourceDescriptors(ctx context.Context, req *stackdriverpb.ListMonitoredResourceDescriptorsRequest) (*stackdriverpb.ListMonitoredResourceDescriptorsResponse, error) {
@@ -690,8 +691,7 @@ func (sd *stackDriverFake) GetMetricDescriptor(context.Context, *stackdriverpb.G
 	return nil, fmt.Errorf("Unimplemented")
 }
 func (sd *stackDriverFake) CreateMetricDescriptor(ctx context.Context, req *stackdriverpb.CreateMetricDescriptorRequest) (*metricpb.MetricDescriptor, error) {
-	resp := *req.MetricDescriptor
-	return &resp, nil
+	return req.MetricDescriptor, nil
 }
 func (sd *stackDriverFake) DeleteMetricDescriptor(context.Context, *stackdriverpb.DeleteMetricDescriptorRequest) (*emptypb.Empty, error) {
 	sd.t.Fatalf("DeleteMetricDescriptor")
