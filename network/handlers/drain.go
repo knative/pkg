@@ -38,6 +38,8 @@ func (s *sysTimer) tickChan() <-chan time.Time {
 	return s.Timer.C
 }
 
+// This constructor is overridden in tests to control the progress
+// of time in the test.
 var newTimer = func(d time.Duration) timer {
 	return &sysTimer{
 		time.NewTimer(d),
