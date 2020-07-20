@@ -74,6 +74,11 @@ func TestDrainMechanics(t *testing.T) {
 		}
 	)
 
+	const (
+		timeout   = 100 * time.Millisecond
+		razorThin = timeout - time.Nanosecond
+	)
+
 	inner := http.HandlerFunc(func(http.ResponseWriter, *http.Request) {})
 
 	// We need init channel to signal the main thread that the drain
@@ -83,10 +88,12 @@ func TestDrainMechanics(t *testing.T) {
 	t.Cleanup(func() {
 		newTimer = nt
 	})
+	// The mock timer will only fire when we advance it past timeout.
 	mt := &mockTimer{
 		c: make(chan time.Time),
 	}
 	newTimer = func(d time.Duration) timer {
+		// When we close the init channel, we know that first drain has been called, and the test can progress.
 		defer close(init)
 		mt.now = time.Now()
 		mt.deadline = mt.now.Add(d)
@@ -94,7 +101,7 @@ func TestDrainMechanics(t *testing.T) {
 	}
 	drainer := &Drainer{
 		Inner:       inner,
-		QuietPeriod: 100 * time.Millisecond,
+		QuietPeriod: timeout,
 	}
 
 	// Works before Drain is called.
@@ -122,7 +129,7 @@ func TestDrainMechanics(t *testing.T) {
 	case <-init:
 		// OK.
 	}
-	mt.advance(40 * time.Millisecond)
+	mt.advance(razorThin)
 
 	// Now send a request to reset things.
 	rc := mt.resetCalls
@@ -138,12 +145,13 @@ func TestDrainMechanics(t *testing.T) {
 		t.Errorf("Probe status = %d, wanted %d", got, want)
 	}
 	// Verify no reset was called.
-	if mt.resetCalls != rc+1 {
-		t.Errorf("ResetCalls = %d, want: %d", mt.resetCalls, rc+1)
+	if got, want := mt.resetCalls, rc+1; got != want {
+		t.Errorf("ResetCalls = %d, want: %d", got, want)
 	}
+	rc++
 
 	for i := 0; i < 3; i++ {
-		mt.advance(40 * time.Millisecond)
+		mt.advance(razorThin)
 		select {
 		case <-done:
 			t.Error("Drain terminated prematurely.")
@@ -155,8 +163,9 @@ func TestDrainMechanics(t *testing.T) {
 			drainer.ServeHTTP(w, req)
 		}
 	}
-	if mt.resetCalls != rc+3 {
-		t.Errorf("ResetCalls = %d, want: %d", mt.resetCalls, rc+1)
+	// Two more drains should have been called.
+	if got, want := mt.resetCalls, rc+2; got != want {
+		t.Errorf("ResetCalls = %d, want: %d", got, want)
 	}
 
 	// Probing does not reset the clock.
@@ -193,7 +202,7 @@ func TestDrainMechanics(t *testing.T) {
 		// Expected.
 	}
 
-	mt.advance(61 * time.Millisecond)
+	mt.advance(60 * time.Millisecond)
 	select {
 	case <-done:
 	case <-done1:
