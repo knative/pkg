@@ -75,8 +75,8 @@ func TestDrainMechanics(t *testing.T) {
 	)
 
 	const (
-		timeout   = 100 * time.Millisecond
-		razorThin = timeout - time.Nanosecond
+		timeout = 100 * time.Millisecond
+		epsilon = time.Nanosecond
 	)
 
 	inner := http.HandlerFunc(func(http.ResponseWriter, *http.Request) {})
@@ -129,7 +129,7 @@ func TestDrainMechanics(t *testing.T) {
 	case <-init:
 		// OK.
 	}
-	mt.advance(razorThin)
+	mt.advance(timeout - epsilon)
 
 	// Now send a request to reset things.
 	rc := mt.resetCalls
@@ -151,7 +151,7 @@ func TestDrainMechanics(t *testing.T) {
 	rc++
 
 	for i := 0; i < 3; i++ {
-		mt.advance(razorThin)
+		mt.advance(timeout - epsilon)
 		select {
 		case <-done:
 			t.Error("Drain terminated prematurely.")
