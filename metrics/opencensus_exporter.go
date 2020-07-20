@@ -35,8 +35,15 @@ func newOpenCensusExporter(config *metricsConfig, logger *zap.SugaredLogger) (vi
 	if config.collectorAddress != "" {
 		opts = append(opts, ocagent.WithAddress(config.collectorAddress))
 	}
-	if config.component != "" {
-		opts = append(opts, ocagent.WithMetricNamePrefix(config.component))
+	metrixPrefix := ""
+	if config.domain != "" {
+		metrixPrefix = config.domain
+	}
+	if config.domain != "" {
+		metrixPrefix += "/" + config.component
+	}
+	if metrixPrefix != "" {
+		opts = append(opts, ocagent.WithMetricNamePrefix(metrixPrefix))
 	}
 	if config.requireSecure {
 		opts = append(opts, ocagent.WithTLSCredentials(getCredentials(config.component, config.secret, logger)))
