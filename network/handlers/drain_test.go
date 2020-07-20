@@ -72,14 +72,14 @@ func TestDrainMechanics(t *testing.T) {
 				"User-Agent": []string{network.KubeProbeUAPrefix},
 			},
 		}
+		cnt   = 0
+		inner = http.HandlerFunc(func(http.ResponseWriter, *http.Request) { cnt++ })
 	)
 
 	const (
 		timeout = 100 * time.Millisecond
 		epsilon = time.Nanosecond
 	)
-
-	inner := http.HandlerFunc(func(http.ResponseWriter, *http.Request) {})
 
 	// We need init channel to signal the main thread that the drain
 	// has been initialized in the background thread.
@@ -108,6 +108,9 @@ func TestDrainMechanics(t *testing.T) {
 	drainer.ServeHTTP(w, req)
 	drainer.ServeHTTP(w, req)
 	drainer.ServeHTTP(w, req)
+	if cnt != 3 {
+		t.Error("Inner handler was not properly invoked")
+	}
 
 	// Check for 200 OK.
 	resp := httptest.NewRecorder()
@@ -161,11 +164,13 @@ func TestDrainMechanics(t *testing.T) {
 		// For the last one we don't want to reset the drain timer.
 		if i < 2 {
 			drainer.ServeHTTP(w, req)
+
+			// Two more drains should have been called.
+			if got, want := mt.resetCalls, rc+1; got != want {
+				t.Errorf("ResetCalls = %d, want: %d", got, want)
+			}
+			rc++
 		}
-	}
-	// Two more drains should have been called.
-	if got, want := mt.resetCalls, rc+2; got != want {
-		t.Errorf("ResetCalls = %d, want: %d", got, want)
 	}
 
 	// Probing does not reset the clock.
@@ -202,7 +207,8 @@ func TestDrainMechanics(t *testing.T) {
 		// Expected.
 	}
 
-	mt.advance(60 * time.Millisecond)
+	// Finally we made it there!
+	mt.advance(epsilon)
 	select {
 	case <-done:
 	case <-done1:
@@ -228,4 +234,34 @@ func TestDrainMechanics(t *testing.T) {
 			t.Errorf("Drain[%d] did not complete.", idx)
 		}
 	}
+}
+
+func TestDefaultQuietPeriod(t *testing.T) {
+	nt := newTimer
+	t.Cleanup(func() {
+		newTimer = nt
+	})
+	mt := &mockTimer{
+		c: make(chan time.Time),
+	}
+	init := make(chan struct{})
+	newTimer = func(d time.Duration) timer {
+		defer close(init)
+		mt.now = time.Now()
+		mt.deadline = mt.now.Add(d)
+		return mt
+	}
+	drainer := &Drainer{
+		Inner: http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}),
+	}
+	go drainer.Drain()
+	select {
+	case <-init:
+		if got, want := mt.deadline.Sub(mt.now), network.DefaultDrainTimeout; got != want {
+			t.Errorf("DefaultDrainTimeout = %v, want: %v", got, want)
+		}
+	case <-time.After(time.Second):
+		t.Fatal("Failed to call drain in 1s")
+	}
+	mt.advance(network.DefaultDrainTimeout)
 }
