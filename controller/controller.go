@@ -30,7 +30,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/runtime"
-	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/workqueue"
@@ -228,17 +227,6 @@ func (c *Impl) WorkQueue() workqueue.RateLimitingInterface {
 	return c.workQueue
 }
 
-// EnqueueSlowAfter takes a resource, converts it into a namespace/name string,
-// and passes it to the slow queue.
-func (c *Impl) EnqueueSlowAfter(obj interface{}, after time.Duration) {
-	object, err := kmeta.DeletionHandlingAccessor(obj)
-	if err != nil {
-		c.logger.Errorw("Enqueue", zap.Error(err))
-		return
-	}
-	c.EnqueueSlowKeyAfter(types.NamespacedName{Namespace: object.GetNamespace(), Name: object.GetName()}, after)
-}
-
 // EnqueueAfter takes a resource, converts it into a namespace/name string,
 // and passes it to EnqueueKey.
 func (c *Impl) EnqueueAfter(obj interface{}, after time.Duration) {
@@ -364,19 +352,13 @@ func (c *Impl) EnqueueKey(key types.NamespacedName) {
 	c.logger.Debugf("Adding to queue %s (depth: %d)", safeKey(key), c.workQueue.Len())
 }
 
-// MaybeEnqueueBucketKey takes a Bucket and namespace/name string and puts it onto the work queue.
-func (c *Impl) MaybeEnqueueBucketKey(bkt reconciler.Bucket, key types.NamespacedName) {
+// MaybeEnqueueBucketKey takes a Bucket and namespace/name string and puts it onto
+// the slow work queue.
+func (c *Impl) maybeEnqueueBucketKey(bkt reconciler.Bucket, key types.NamespacedName) {
 	if bkt.Has(key) {
-		c.workQueue.Add(key)
+		c.workQueue.SlowLane().Add(key)
 		c.logger.Debugf("Adding to queue %s (depth: %d)", safeKey(key), c.workQueue.Len())
 	}
-}
-
-// EnqueueSlowKeyAfter takes a namespace/name string and schedules its execution in
-// the slow work queue after given delay.
-func (c *Impl) EnqueueSlowKeyAfter(key types.NamespacedName, delay time.Duration) {
-	c.workQueue.SlowLane().AddAfter(key, delay)
-	c.logger.Debugf("Adding to slow lane queue %s (delay: %v, depth: %d)", safeKey(key), delay, c.workQueue.SlowLane().Len())
 }
 
 // EnqueueKeyAfter takes a namespace/name string and schedules its execution in
@@ -405,7 +387,7 @@ func (c *Impl) RunContext(ctx context.Context, threadiness int) error {
 
 	if la, ok := c.Reconciler.(reconciler.LeaderAware); ok {
 		// Build and execute an elector.
-		le, err := kle.BuildElector(ctx, la, c.Name, c.MaybeEnqueueBucketKey)
+		le, err := kle.BuildElector(ctx, la, c.Name, c.maybeEnqueueBucketKey)
 		if err != nil {
 			return err
 		}
@@ -514,7 +496,7 @@ func (c *Impl) handleErr(err error, key types.NamespacedName) {
 	c.workQueue.Forget(key)
 }
 
-// GlobalResync enqueues (with a delay) all objects from the passed SharedInformer
+// GlobalResync enqueues into the slow lane all objects from the passed SharedInformer
 func (c *Impl) GlobalResync(si cache.SharedInformer) {
 	alwaysTrue := func(interface{}) bool { return true }
 	c.FilteredGlobalResync(alwaysTrue, si)
@@ -527,10 +509,9 @@ func (c *Impl) FilteredGlobalResync(f func(interface{}) bool, si cache.SharedInf
 		return
 	}
 	list := si.GetStore().List()
-	count := float64(len(list))
 	for _, obj := range list {
 		if f(obj) {
-			c.EnqueueSlowAfter(obj, wait.Jitter(time.Second, count))
+			c.workQueue.SlowLane().Add(obj)
 		}
 	}
 }

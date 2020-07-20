@@ -730,42 +730,6 @@ func TestEnqueues(t *testing.T) {
 	}
 }
 
-func TestEnqueueSlowAfter(t *testing.T) {
-	t.Cleanup(ClearAll)
-	impl := NewImplWithStats(&NopReconciler{}, TestLogger(t), "Testing", &FakeStatsReporter{})
-	impl.EnqueueSlowAfter(&Resource{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "for",
-			Namespace: "waiting",
-		},
-	}, 5*time.Second)
-	impl.EnqueueSlowAfter(&Resource{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "waterfall",
-			Namespace: "the",
-		},
-	}, 500*time.Millisecond)
-	impl.EnqueueSlowAfter(&Resource{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "to",
-			Namespace: "fall",
-		},
-	}, 20*time.Second)
-	time.Sleep(10 * time.Millisecond)
-	if got, want := impl.WorkQueue().Len(), 0; got != want {
-		t.Errorf("|Queue| = %d, want: %d", got, want)
-	}
-	// Sleep the remaining time.
-	time.Sleep(time.Second)
-	if got, want := impl.WorkQueue().Len(), 1; got != want {
-		t.Errorf("|Queue| = %d, want: %d", got, want)
-	}
-	impl.WorkQueue().ShutDown()
-	if got, want := drainWorkQueue(impl.WorkQueue()), []types.NamespacedName{{Namespace: "the", Name: "waterfall"}}; !cmp.Equal(got, want) {
-		t.Errorf("Queue = %v, want: %v, diff: %s", got, want, cmp.Diff(got, want))
-	}
-}
-
 func TestEnqueueAfter(t *testing.T) {
 	t.Cleanup(ClearAll)
 	impl := NewImplWithStats(&NopReconciler{}, TestLogger(t), "Testing", &FakeStatsReporter{})
