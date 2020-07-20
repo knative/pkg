@@ -21,6 +21,7 @@ import (
 	"encoding/json"
 	"errors"
 	"testing"
+	"time"
 
 	// Injection stuff
 	_ "knative.dev/pkg/client/injection/kube/client/fake"
@@ -35,6 +36,7 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/util/wait"
 	fakekubeclientset "k8s.io/client-go/kubernetes/fake"
 	"knative.dev/pkg/apis"
 	"knative.dev/pkg/system"
@@ -659,8 +661,11 @@ func NewTestResourceAdmissionController(t *testing.T) *reconciler {
 		t.Errorf("Promote() = %v", err)
 	}
 
-	if want, got := 1, c.WorkQueue.Len(); want != got {
-		t.Errorf("WorkQueue.Len() = %d, wanted %d", got, want)
+	// Queue has async moving parts so if we check at the wrong moment, this might still be 0.
+	if wait.PollImmediate(10*time.Millisecond, 250*time.Millisecond, func() (bool, error) {
+		return c.WorkQueue.Len() == 1, nil
+	}) != nil {
+		t.Error("Queue length was never 1")
 	}
 
 	return c.Reconciler.(*reconciler)

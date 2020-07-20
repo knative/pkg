@@ -35,6 +35,20 @@ func newFloat64(name string) *stats.Float64Measure {
 	return stats.Float64(name, "bar", "wtfs/s")
 }
 
+type fixedRateLimiter struct {
+	delay time.Duration
+}
+
+func (f *fixedRateLimiter) When(item interface{}) time.Duration {
+	return f.delay
+}
+
+func (f *fixedRateLimiter) Forget(item interface{}) {}
+
+func (f *fixedRateLimiter) NumRequeues(item interface{}) int {
+	return 0
+}
+
 func TestWorkqueueMetrics(t *testing.T) {
 	wp := &WorkqueueProvider{
 		Adds:                           newInt64("adds"),
@@ -60,10 +74,8 @@ func TestWorkqueueMetrics(t *testing.T) {
 	defer view.Unregister(views...)
 
 	queueName := t.Name()
-	wq := workqueue.NewNamedRateLimitingQueue(
-		workqueue.DefaultControllerRateLimiter(),
-		queueName,
-	)
+	limiter := &fixedRateLimiter{delay: 200 * time.Millisecond}
+	wq := workqueue.NewNamedRateLimitingQueue(limiter, queueName)
 
 	metricstest.CheckStatsNotReported(t, "adds", "depth", "latency", "retries", "work_duration",
 		"unfinished_work_seconds", "longest_running_processor_seconds")
@@ -114,7 +126,7 @@ func TestWorkqueueMetrics(t *testing.T) {
 	metricstest.CheckCountData(t, "adds", map[string]string{"name": queueName}, 2)
 
 	// It doesn't show up as an "add" until the rate limit has elapsed.
-	time.Sleep(1 * time.Second)
+	time.Sleep(2 * limiter.delay)
 	metricstest.CheckCountData(t, "adds", map[string]string{"name": queueName}, 3)
 
 	wq.ShutDown()

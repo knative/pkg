@@ -30,8 +30,8 @@ type FakeStatsReporter struct {
 
 // FakeReconcileStatData is used to record the calls to ReportReconcile
 type FakeReconcileStatData struct {
-	Duration     time.Duration
-	Key, Success string
+	Duration time.Duration
+	Success  string
 }
 
 // ReportQueueDepth records the call and returns success.
@@ -43,10 +43,10 @@ func (r *FakeStatsReporter) ReportQueueDepth(v int64) error {
 }
 
 // ReportReconcile records the call and returns success.
-func (r *FakeStatsReporter) ReportReconcile(duration time.Duration, key, success string) error {
+func (r *FakeStatsReporter) ReportReconcile(duration time.Duration, success string) error {
 	r.Lock.Lock()
 	defer r.Lock.Unlock()
-	r.reconcileData = append(r.reconcileData, FakeReconcileStatData{duration, key, success})
+	r.reconcileData = append(r.reconcileData, FakeReconcileStatData{duration, success})
 	return nil
 }
 

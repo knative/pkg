@@ -39,38 +39,11 @@ import (
 // TODO UTs should move to eventing and serving, as appropriate.
 // 	See https://github.com/knative/pkg/issues/608
 
-var (
-	revisionTestTags = map[string]string{
-		metricskey.LabelNamespaceName: testNS,
-		metricskey.LabelServiceName:   testService,
-		metricskey.LabelRouteName:     testRoute, // Not a label key for knative_revision resource
-		metricskey.LabelRevisionName:  testRevision,
-	}
-	brokerTestTags = map[string]string{
-		metricskey.LabelNamespaceName: testNS,
-		metricskey.LabelBrokerName:    testBroker,
-		metricskey.LabelEventType:     testEventType, // Not a label key for knative_broker resource
-	}
-	triggerTestTags = map[string]string{
-		metricskey.LabelNamespaceName: testNS,
-		metricskey.LabelTriggerName:   testTrigger,
-		metricskey.LabelBrokerName:    testBroker,
-		metricskey.LabelFilterType:    testFilterType, // Not a label key for knative_trigger resource
-	}
-	sourceTestTags = map[string]string{
-		metricskey.LabelNamespaceName: testNS,
-		metricskey.LabelName:          testSource,
-		metricskey.LabelResourceGroup: testSourceResourceGroup,
-		metricskey.LabelEventType:     testEventType,   // Not a label key for knative_source resource
-		metricskey.LabelEventSource:   testEventSource, // Not a label key for knative_source resource
-	}
-
-	testGcpMetadata = gcpMetadata{
-		project:  "test-project",
-		location: "test-location",
-		cluster:  "test-cluster",
-	}
-)
+var testGcpMetadata = gcpMetadata{
+	project:  "test-project",
+	location: "test-location",
+	cluster:  "test-cluster",
+}
 
 func fakeGcpMetadataFunc() *gcpMetadata {
 	// the caller of this function could modify the struct, so we need a copy if we don't want the original modified.

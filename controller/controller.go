@@ -213,12 +213,9 @@ func NewImpl(r Reconciler, logger *zap.SugaredLogger, workQueueName string) *Imp
 func NewImplWithStats(r Reconciler, logger *zap.SugaredLogger, workQueueName string, reporter StatsReporter) *Impl {
 	logger = logger.Named(workQueueName)
 	return &Impl{
-		Name:       workQueueName,
-		Reconciler: r,
-		WorkQueue: workqueue.NewNamedRateLimitingQueue(
-			workqueue.DefaultControllerRateLimiter(),
-			workQueueName,
-		),
+		Name:          workQueueName,
+		Reconciler:    r,
+		WorkQueue:     newTwoLaneWorkQueue(workQueueName),
 		logger:        logger,
 		statsReporter: reporter,
 	}
@@ -452,7 +449,7 @@ func (c *Impl) processNextWorkItem() bool {
 		if err != nil {
 			status = falseString
 		}
-		c.statsReporter.ReportReconcile(time.Since(startTime), keyStr, status)
+		c.statsReporter.ReportReconcile(time.Since(startTime), status)
 	}()
 
 	// Embed the key into the logger and attach that to the context we pass
