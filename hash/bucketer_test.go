@@ -71,7 +71,7 @@ func TestBucketSetList(t *testing.T) {
 	got := bs.BucketList()
 	sort.Strings(got)
 	if want := buckets.List(); !reflect.DeepEqual(got, want) {
-		t.Errorf("Name = %q, want: %q", got, want)
+		t.Errorf("Name = %q, want: %q, diff(-want,+got):\n%s", got, want, cmp.Diff(want, got))
 	}
 }
 
@@ -114,7 +114,7 @@ func TestBucketSetBuckets(t *testing.T) {
 	}
 
 	if !reflect.DeepEqual(got, want) {
-		t.Errorf("Got %v, want %v, diff(-want,+got):\n%s", got, want, cmp.Diff(want, got))
+		t.Errorf("Got %q, want %q, diff(-want,+got):\n%s", got, want, cmp.Diff(want, got))
 	}
 }
 
