@@ -238,12 +238,12 @@ func (c *Impl) EnqueueAfter(obj interface{}, after time.Duration) {
 	c.EnqueueKeyAfter(types.NamespacedName{Namespace: object.GetNamespace(), Name: object.GetName()}, after)
 }
 
-// EnqueueSlow takes a resource, converts it into a namespace/name string,
-// and enqueues it in the slow lane.
-func (c *Impl) EnqueueSlow(obj interface{}) {
+// EnqueueSlowKey takes a resource, converts it into a namespace/name string,
+// and enqueues that key in the slow lane.
+func (c *Impl) EnqueueSlowKey(obj interface{}) {
 	object, err := kmeta.DeletionHandlingAccessor(obj)
 	if err != nil {
-		c.logger.Errorw("EnqueueSlow", zap.Error(err))
+		c.logger.Errorw("EnqueueSlowKey", zap.Error(err))
 		return
 	}
 	key := types.NamespacedName{Namespace: object.GetNamespace(), Name: object.GetName()}
@@ -365,7 +365,7 @@ func (c *Impl) EnqueueKey(key types.NamespacedName) {
 	c.logger.Debugf("Adding to queue %s (depth: %d)", safeKey(key), c.workQueue.Len())
 }
 
-// MaybeEnqueueBucketKey takes a Bucket and namespace/name string and puts it onto
+// maybeEnqueueBucketKey takes a Bucket and namespace/name string and puts it onto
 // the slow work queue.
 func (c *Impl) maybeEnqueueBucketKey(bkt reconciler.Bucket, key types.NamespacedName) {
 	if bkt.Has(key) {
@@ -524,7 +524,7 @@ func (c *Impl) FilteredGlobalResync(f func(interface{}) bool, si cache.SharedInf
 	list := si.GetStore().List()
 	for _, obj := range list {
 		if f(obj) {
-			c.EnqueueSlow(obj)
+			c.EnqueueSlowKey(obj)
 		}
 	}
 }
