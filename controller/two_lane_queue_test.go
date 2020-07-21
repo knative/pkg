@@ -20,14 +20,20 @@ import (
 	"strconv"
 	"testing"
 	"time"
+
+	"k8s.io/apimachinery/pkg/util/wait"
 )
 
 func TestSlowQueue(t *testing.T) {
 	q := newTwoLaneWorkQueue("live-in-the-fast-lane")
 	q.SlowLane().Add("1")
-	if got, want := q.Len(), 1; got != want {
-		t.Errorf("Len = %d, want: 1", got)
+	// Queue has async moving parts so if we check at the wrong moment, this might still be 0.
+	if wait.PollImmediate(10*time.Millisecond, 250*time.Millisecond, func() (bool, error) {
+		return q.Len() == 1, nil
+	}) != nil {
+		t.Error("Queue length was never 1")
 	}
+
 	k, done := q.Get()
 	if got, want := k.(string), "1"; got != want {
 		t.Errorf(`Got = %q, want: "1"`, got)

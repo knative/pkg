@@ -358,7 +358,7 @@ func TestNew(t *testing.T) {
 		t.Fatal("Expected NewController to return a non-nil value")
 	}
 
-	if want, got := 0, c.WorkQueue.Len(); want != got {
+	if want, got := 0, c.WorkQueue().Len(); want != got {
 		t.Errorf("WorkQueue.Len() = %d, wanted %d", got, want)
 	}
 
@@ -373,7 +373,7 @@ func TestNew(t *testing.T) {
 
 	// Queue has async moving parts so if we check at the wrong moment, thist might still be 0.
 	if wait.PollImmediate(10*time.Millisecond, 250*time.Millisecond, func() (bool, error) {
-		return c.WorkQueue.Len() == 1, nil
+		return c.WorkQueue().Len() == 1, nil
 	}) != nil {
 		t.Error("Queue length was never 1")
 	}
