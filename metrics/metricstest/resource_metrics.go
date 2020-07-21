@@ -1,5 +1,5 @@
 /*
-Copyright 2019 The Knative Authors
+Copyright 2020 The Knative Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@ package metricstest
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 
 	"github.com/google/go-cmp/cmp"
@@ -139,26 +140,10 @@ func (v *Value) VisitSummaryValue(*metricdata.Summary) {
 	panic("Attempted to fetch summary value, which we never use!")
 }
 
-// Equal provides a contract for use with github.com/google/go-cmp/cmp. It
-// accepts either another Metric, or a metricdata.Metric (or equivalent
-// pointers).
-func (m Metric) Equal(data interface{}) bool {
-	var other *Metric
-	switch o := data.(type) {
-	case Metric:
-		other = &o
-	case *Metric:
-		other = o
-	case metricdata.Metric:
-		temp := NewMetric(&o)
-		other = &temp
-	case *metricdata.Metric:
-		temp := NewMetric(o)
-		other = &temp
-	default:
-		panic(fmt.Sprintf("Unexpected type: %T", o))
-	}
-
+// Equal provides a contract for use with github.com/google/go-cmp/cmp. Due to
+// the reflection in cmp, it only works if the type of the two arguments to cmp
+// are the same.
+func (m Metric) Equal(other Metric) bool {
 	if m.Name != other.Name {
 		return false
 	}
@@ -255,5 +240,6 @@ func tagsToString(tags map[string]string) string {
 	for k, v := range tags {
 		pairs = append(pairs, fmt.Sprintf("%s=%s", k, v))
 	}
+	sort.Strings(pairs)
 	return strings.Join(pairs, ",")
 }

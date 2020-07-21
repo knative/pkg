@@ -1,5 +1,5 @@
 /*
-Copyright 2019 The Knative Authors
+Copyright 2020 The Knative Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -24,20 +24,12 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/go-cmp/cmp"
 	"go.opencensus.io/metric/metricdata"
 	"go.opencensus.io/resource"
 )
 
-func TestMetric_Equal(t *testing.T) {
-	type fields struct {
-		Name           string
-		Unit           metricdata.Unit
-		Type           metricdata.Type
-		Resource       *resource.Resource
-		Values         []Value
-		VerifyMetadata bool
-		VerifyResource bool
-	}
+func TestMetricEqual(t *testing.T) {
 	pointValues := []int64{127, -1}
 	baseValue := &metricdata.Metric{
 		Descriptor: metricdata.Descriptor{
@@ -64,23 +56,47 @@ func TestMetric_Equal(t *testing.T) {
 
 	tests := []struct {
 		name     string
-		want     Metric
+		want     *Metric
 		notEqual bool
 	}{{
 		name: "Minimal test",
-		want: Metric{
+		want: &Metric{
 			Name: "testing/metric",
 		},
 	}, {
 		name: "Test resource not equal",
-		want: Metric{
+		want: &Metric{
 			Name:           "testing/metric",
 			VerifyResource: true,
 		},
 		notEqual: true,
 	}, {
+		name: "Test unit not equal",
+		want: &Metric{
+			Name: "testing/metric",
+			Unit: metricdata.UnitBytes,
+		},
+		notEqual: true,
+	}, {
+		name: "Test unit missing",
+		want: &Metric{
+			Name:           "testing/metric",
+			Type:           metricdata.TypeGaugeInt64,
+			VerifyMetadata: true,
+		},
+		notEqual: true,
+	}, {
+		name: "Test type not equal",
+		want: &Metric{
+			Name:           "testing/metric",
+			Unit:           metricdata.UnitMilliseconds,
+			Type:           metricdata.TypeCumulativeInt64,
+			VerifyMetadata: true,
+		},
+		notEqual: true,
+	}, {
 		name: "Check resource",
-		want: Metric{
+		want: &Metric{
 			Name: "testing/metric",
 			Resource: &resource.Resource{
 				Type:   "testObject",
@@ -89,7 +105,7 @@ func TestMetric_Equal(t *testing.T) {
 		},
 	}, {
 		name: "Mismatched resource",
-		want: Metric{
+		want: &Metric{
 			Name: "testing/metric",
 			Resource: &resource.Resource{
 				Type:   "testObject",
@@ -99,24 +115,162 @@ func TestMetric_Equal(t *testing.T) {
 		notEqual: true,
 	}, {
 		name: "Test value match",
-		want: Metric{
+		want: &Metric{
 			Name: "testing/metric",
 			Values: []Value{
 				{
 					Tags:  map[string]string{"key1": "val1", "key2": "val2"},
-					Int64: &pointValues[0]},
-				{
+					Int64: &pointValues[0],
+				}, {
 					Tags:  map[string]string{"key1": "val1", "key2": "val3"},
 					Int64: &pointValues[1],
 				},
 			},
 		},
+	}, {
+		name: "Too few values",
+		want: &Metric{
+			Name: "testing/metric",
+			Values: []Value{
+				{
+					Tags:  map[string]string{"key1": "val1", "key2": "val2"},
+					Int64: &pointValues[0],
+				},
+			},
+		},
+		notEqual: true,
+	}, {
+		name: "Wrong tags",
+		want: &Metric{
+			Name: "testing/metric",
+			Values: []Value{
+				{
+					Tags:  map[string]string{"key1": "val1", "key2": "val2"},
+					Int64: &pointValues[0],
+				},
+				{
+					Tags:  map[string]string{"key1": "val1", "key2": "bbb"},
+					Int64: &pointValues[1],
+				},
+			},
+		},
+		notEqual: true,
 	}}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			m := NewMetric(baseValue) // cmp needs to match types to find the Equal method.
+			if diff := cmp.Diff(tc.want, &m); (diff == "") == tc.notEqual {
+				t.Errorf("Metric.Equal() = %t failed (-want +base):\n%s", !tc.notEqual, diff)
+			}
+		})
+	}
+}
 
-			if tt.want.Equal(baseValue) == tt.notEqual {
-				t.Errorf("Metric.Equal() = %v, want %v", baseValue, tt.want)
+func buckets(v ...int64) []metricdata.Bucket {
+	ret := []metricdata.Bucket{}
+	for _, c := range v {
+		ret = append(ret, metricdata.Bucket{Count: c})
+	}
+	return ret
+}
+
+func bucketOpts(bounds ...float64) *metricdata.BucketOptions {
+	return &metricdata.BucketOptions{Bounds: bounds}
+}
+
+func TestDistributionEqual(t *testing.T) {
+	baseValue := NewMetric(&metricdata.Metric{
+		Descriptor: metricdata.Descriptor{
+			Name:      "testing/distribution",
+			LabelKeys: []metricdata.LabelKey{{"key1", ""}},
+		},
+		TimeSeries: []*metricdata.TimeSeries{
+			{
+				LabelValues: []metricdata.LabelValue{{"val1", true}},
+				Points: []metricdata.Point{metricdata.NewDistributionPoint(
+					time.Now(),
+					&metricdata.Distribution{
+						Count:                 5, // Values: 0.5, 5, 5, 5, 10
+						Sum:                   25.5,
+						SumOfSquaredDeviation: 45.2,
+						BucketOptions:         bucketOpts(2, 4, 8),
+						Buckets:               buckets(1, 0, 3, 1),
+					},
+				)},
+			},
+		},
+	})
+	floatVal := -3.22
+
+	tests := []struct {
+		name     string
+		want     Value
+		notEqual bool
+	}{{
+		name: "Equal",
+		want: Value{
+			Tags: map[string]string{"key1": "val1"},
+			Distribution: &metricdata.Distribution{
+				Count:                 5,
+				Sum:                   25.5,
+				SumOfSquaredDeviation: 45.2,
+				BucketOptions:         bucketOpts(2, 4, 8),
+				Buckets:               buckets(1, 0, 3, 1),
+			},
+		},
+	}, {
+		name: "Missing summary",
+		want: Value{
+			Tags: map[string]string{"key1": "val1"},
+			Distribution: &metricdata.Distribution{
+				BucketOptions: bucketOpts(2, 4, 8),
+				Buckets:       buckets(1, 0, 3, 1),
+			},
+		},
+		notEqual: true,
+	}, {
+		name: "Wrong bucket splits",
+		want: Value{
+			Tags: map[string]string{"key1": "val1"},
+			Distribution: &metricdata.Distribution{
+				Count:                 5,
+				Sum:                   25.5,
+				SumOfSquaredDeviation: 45.2,
+				BucketOptions:         bucketOpts(1, 2, 3, 5, 8),
+				Buckets:               buckets(1, 0, 3, 1),
+			},
+		},
+		notEqual: true,
+	}, {
+		name: "Wrong bucket values",
+		want: Value{
+			Tags: map[string]string{"key1": "val1"},
+			Distribution: &metricdata.Distribution{
+				Count:                 5,
+				Sum:                   25.5,
+				SumOfSquaredDeviation: 45.2,
+				BucketOptions:         bucketOpts(2, 4, 8),
+				Buckets:               buckets(1, 3, 1, 0),
+			},
+		},
+		notEqual: true,
+	}, {
+		name: "Wrong type",
+		want: Value{
+			Tags:    map[string]string{"key1": "val1"},
+			Float64: &floatVal,
+		},
+		notEqual: true,
+	}}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			wantMetric := Metric{
+				Name:   "testing/distribution",
+				Values: []Value{tc.want},
+			}
+			if diff := cmp.Diff(&wantMetric, &baseValue); (diff == "") == tc.notEqual {
+				t.Errorf("Value.Equal() = %t failed (-want +base):\n%s", !tc.notEqual, diff)
 			}
 		})
 	}
