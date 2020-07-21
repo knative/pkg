@@ -40,7 +40,7 @@ func TestResourceContext(t *testing.T) {
 
 	r := metricskey.GetResource(ctx)
 	if r == nil {
-		t.Error("Expected non-nil Resource from context, got nil")
+		t.Fatal("Expected non-nil Resource from context, got nil")
 	}
 
 	if diff := cmp.Diff(orig, *r); diff != "" {
