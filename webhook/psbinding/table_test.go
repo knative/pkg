@@ -47,6 +47,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/wait"
 	clientgotesting "k8s.io/client-go/testing"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/record"
@@ -1051,8 +1052,11 @@ func TestNew(t *testing.T) {
 		t.Errorf("Promote() = %v", err)
 	}
 
-	if want, got := 1, c.WorkQueue.Len(); want != got {
-		t.Errorf("WorkQueue.Len() = %d, wanted %d", got, want)
+	// Queue has async moving parts so if we check at the wrong moment, this might still be 0.
+	if wait.PollImmediate(10*time.Millisecond, 250*time.Millisecond, func() (bool, error) {
+		return c.WorkQueue.Len() == 1, nil
+	}) != nil {
+		t.Error("Queue length was never 1")
 	}
 }
 

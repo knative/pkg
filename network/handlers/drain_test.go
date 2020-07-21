@@ -25,6 +25,44 @@ import (
 	"knative.dev/pkg/network"
 )
 
+type mockTimer struct {
+	now        time.Time // our current time.
+	deadline   time.Time // when we're supposed to fire
+	c          chan time.Time
+	resetCalls int
+	stopped    bool
+}
+
+func (mt *mockTimer) advance(d time.Duration) {
+	mt.now = mt.now.Add(d)
+	if !mt.now.Before(mt.deadline) {
+		mt.stopped = true
+		mt.c <- mt.now
+	}
+}
+
+func (mt *mockTimer) Reset(d time.Duration) bool {
+	mt.resetCalls++
+	if mt.stopped {
+		mt.now = time.Now()
+		mt.deadline = mt.now.Add(d)
+		mt.stopped = false
+	}
+	return !mt.stopped
+}
+
+func (mt *mockTimer) Stop() bool {
+	if mt.stopped {
+		return false
+	}
+	mt.stopped = true
+	return true
+}
+
+func (mt *mockTimer) tickChan() <-chan time.Time {
+	return mt.c
+}
+
 func TestDrainMechanics(t *testing.T) {
 	var (
 		w     http.ResponseWriter
@@ -34,19 +72,45 @@ func TestDrainMechanics(t *testing.T) {
 				"User-Agent": []string{network.KubeProbeUAPrefix},
 			},
 		}
+		cnt   = 0
+		inner = http.HandlerFunc(func(http.ResponseWriter, *http.Request) { cnt++ })
 	)
 
-	inner := http.HandlerFunc(func(http.ResponseWriter, *http.Request) {})
+	const (
+		timeout = 100 * time.Millisecond
+		epsilon = time.Nanosecond
+	)
 
+	// We need init channel to signal the main thread that the drain
+	// has been initialized in the background thread.
+	init := make(chan struct{})
+	nt := newTimer
+	t.Cleanup(func() {
+		newTimer = nt
+	})
+	// The mock timer will only fire when we advance it past timeout.
+	mt := &mockTimer{
+		c: make(chan time.Time),
+	}
+	newTimer = func(d time.Duration) timer {
+		// When we close the init channel, we know that first drain has been called, and the test can progress.
+		defer close(init)
+		mt.now = time.Now()
+		mt.deadline = mt.now.Add(d)
+		return mt
+	}
 	drainer := &Drainer{
 		Inner:       inner,
-		QuietPeriod: 100 * time.Millisecond,
+		QuietPeriod: timeout,
 	}
 
 	// Works before Drain is called.
 	drainer.ServeHTTP(w, req)
 	drainer.ServeHTTP(w, req)
 	drainer.ServeHTTP(w, req)
+	if cnt != 3 {
+		t.Error("Inner handler was not properly invoked")
+	}
 
 	// Check for 200 OK.
 	resp := httptest.NewRecorder()
@@ -55,7 +119,7 @@ func TestDrainMechanics(t *testing.T) {
 		t.Errorf("Probe status = %d, wanted %d", got, want)
 	}
 
-	// Start to drain, and cancel the context when it returns.
+	// Start to drain, and close the channel when it returns.
 	done := make(chan struct{})
 	go func() {
 		defer close(done)
@@ -63,13 +127,19 @@ func TestDrainMechanics(t *testing.T) {
 	}()
 
 	select {
-	case <-time.After(40 * time.Millisecond):
-		// Drain is blocking.
 	case <-done:
 		t.Error("Drain terminated prematurely.")
+	case <-init:
+		// OK.
 	}
+	mt.advance(timeout - epsilon)
+
 	// Now send a request to reset things.
+	rc := mt.resetCalls
 	drainer.ServeHTTP(w, req)
+	if mt.resetCalls != rc+1 {
+		t.Errorf("ResetCalls = %d, want: %d", mt.resetCalls, rc+1)
+	}
 
 	// Check for 503 as a probe response when shutting down.
 	resp = httptest.NewRecorder()
@@ -77,19 +147,32 @@ func TestDrainMechanics(t *testing.T) {
 	if got, want := resp.Code, http.StatusServiceUnavailable; got != want {
 		t.Errorf("Probe status = %d, wanted %d", got, want)
 	}
+	// Verify no reset was called.
+	if got, want := mt.resetCalls, rc+1; got != want {
+		t.Errorf("ResetCalls = %d, want: %d", got, want)
+	}
+	rc++
 
 	for i := 0; i < 3; i++ {
+		mt.advance(timeout - epsilon)
 		select {
-		case <-time.After(40 * time.Millisecond):
-			// Drain is blocking.
 		case <-done:
 			t.Error("Drain terminated prematurely.")
+		default:
+			// OK
 		}
 		// For the last one we don't want to reset the drain timer.
 		if i < 2 {
 			drainer.ServeHTTP(w, req)
+
+			// Two more drains should have been called.
+			if got, want := mt.resetCalls, rc+1; got != want {
+				t.Errorf("ResetCalls = %d, want: %d", got, want)
+			}
+			rc++
 		}
 	}
+
 	// Probing does not reset the clock.
 	// Check for 503 on a probe when shutting down.
 	resp = httptest.NewRecorder()
@@ -116,13 +199,23 @@ func TestDrainMechanics(t *testing.T) {
 	}()
 
 	select {
-	case <-time.After(80 * time.Millisecond):
-		t.Error("Timed out waiting for Drain to return.")
 	case <-done:
 	case <-done1:
 	case <-done2:
 	case <-done3:
-		// Once the first context is cancelled, check that all of them are cancelled.
+	default:
+		// Expected.
+	}
+
+	// Finally we made it there!
+	mt.advance(epsilon)
+	select {
+	case <-done:
+	case <-done1:
+	case <-done2:
+	case <-done3:
+	case <-time.After(time.Second): // We can't use default here, since it will race the tick in the drainer.
+		t.Error("Drains should have happened!")
 	}
 
 	// Check that a 4th and final one after things complete finishes instantly.
@@ -132,15 +225,43 @@ func TestDrainMechanics(t *testing.T) {
 		drainer.Drain()
 	}()
 
-	// Give the test a short window to launch and execute the go routine.
-	time.Sleep(5 * time.Millisecond)
-
+	// We need to ensure all the go routines complete, so give them ample time.
 	for idx, dch := range []chan struct{}{done, done1, done2, done3, done4} {
 		select {
 		case <-dch:
 			// Should be done.
-		default:
+		case <-time.After(time.Second):
 			t.Errorf("Drain[%d] did not complete.", idx)
 		}
 	}
+}
+
+func TestDefaultQuietPeriod(t *testing.T) {
+	nt := newTimer
+	t.Cleanup(func() {
+		newTimer = nt
+	})
+	mt := &mockTimer{
+		c: make(chan time.Time),
+	}
+	init := make(chan struct{})
+	newTimer = func(d time.Duration) timer {
+		defer close(init)
+		mt.now = time.Now()
+		mt.deadline = mt.now.Add(d)
+		return mt
+	}
+	drainer := &Drainer{
+		Inner: http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}),
+	}
+	go drainer.Drain()
+	select {
+	case <-init:
+		if got, want := mt.deadline.Sub(mt.now), network.DefaultDrainTimeout; got != want {
+			t.Errorf("DefaultDrainTimeout = %v, want: %v", got, want)
+		}
+	case <-time.After(time.Second):
+		t.Fatal("Failed to call drain in 1s")
+	}
+	mt.advance(network.DefaultDrainTimeout)
 }
