@@ -465,6 +465,17 @@ func TestEnqueues(t *testing.T) {
 		},
 		wantQueue: []types.NamespacedName{{Namespace: "bar", Name: "foo"}},
 	}, {
+		name: "enqueue resource slow",
+		work: func(impl *Impl) {
+			impl.EnqueueSlow(&Resource{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "foo",
+					Namespace: "bar",
+				},
+			})
+		},
+		wantQueue: []types.NamespacedName{{Namespace: "bar", Name: "foo"}},
+	}, {
 		name: "enqueue sentinel resource",
 		work: func(impl *Impl) {
 			e := impl.EnqueueSentinel(types.NamespacedName{Namespace: "foo", Name: "bar"})
@@ -720,8 +731,8 @@ func TestEnqueues(t *testing.T) {
 
 			// The rate limit on our queue delays when things are added to the queue.
 			time.Sleep(50 * time.Millisecond)
-			impl.WorkQueue.ShutDown()
-			gotQueue := drainWorkQueue(impl.WorkQueue)
+			impl.WorkQueue().ShutDown()
+			gotQueue := drainWorkQueue(impl.WorkQueue())
 
 			if diff := cmp.Diff(test.wantQueue, gotQueue); diff != "" {
 				t.Errorf("unexpected queue (-want +got): %s", diff)
@@ -730,7 +741,7 @@ func TestEnqueues(t *testing.T) {
 	}
 }
 
-func TestEnqeueAfter(t *testing.T) {
+func TestEnqueueAfter(t *testing.T) {
 	t.Cleanup(ClearAll)
 	impl := NewImplWithStats(&NopReconciler{}, TestLogger(t), "Testing", &FakeStatsReporter{})
 	impl.EnqueueAfter(&Resource{
@@ -752,16 +763,16 @@ func TestEnqeueAfter(t *testing.T) {
 		},
 	}, 20*time.Second)
 	time.Sleep(10 * time.Millisecond)
-	if got, want := impl.WorkQueue.Len(), 0; got != want {
+	if got, want := impl.WorkQueue().Len(), 0; got != want {
 		t.Errorf("|Queue| = %d, want: %d", got, want)
 	}
 	// Sleep the remaining time.
 	time.Sleep(time.Second)
-	if got, want := impl.WorkQueue.Len(), 1; got != want {
+	if got, want := impl.WorkQueue().Len(), 1; got != want {
 		t.Errorf("|Queue| = %d, want: %d", got, want)
 	}
-	impl.WorkQueue.ShutDown()
-	if got, want := drainWorkQueue(impl.WorkQueue), []types.NamespacedName{{Namespace: "the", Name: "waterfall"}}; !cmp.Equal(got, want) {
+	impl.WorkQueue().ShutDown()
+	if got, want := drainWorkQueue(impl.WorkQueue()), []types.NamespacedName{{Namespace: "the", Name: "waterfall"}}; !cmp.Equal(got, want) {
 		t.Errorf("Queue = %v, want: %v, diff: %s", got, want, cmp.Diff(got, want))
 	}
 }
@@ -773,16 +784,16 @@ func TestEnqeueKeyAfter(t *testing.T) {
 	impl.EnqueueKeyAfter(types.NamespacedName{Namespace: "the", Name: "waterfall"}, 500*time.Millisecond)
 	impl.EnqueueKeyAfter(types.NamespacedName{Namespace: "to", Name: "fall"}, 20*time.Second)
 	time.Sleep(10 * time.Millisecond)
-	if got, want := impl.WorkQueue.Len(), 0; got != want {
+	if got, want := impl.WorkQueue().Len(), 0; got != want {
 		t.Errorf("|Queue| = %d, want: %d", got, want)
 	}
 	// Sleep the remaining time.
 	time.Sleep(time.Second)
-	if got, want := impl.WorkQueue.Len(), 1; got != want {
+	if got, want := impl.WorkQueue().Len(), 1; got != want {
 		t.Errorf("|Queue| = %d, want: %d", got, want)
 	}
-	impl.WorkQueue.ShutDown()
-	if got, want := drainWorkQueue(impl.WorkQueue), []types.NamespacedName{{Namespace: "the", Name: "waterfall"}}; !cmp.Equal(got, want) {
+	impl.WorkQueue().ShutDown()
+	if got, want := drainWorkQueue(impl.WorkQueue()), []types.NamespacedName{{Namespace: "the", Name: "waterfall"}}; !cmp.Equal(got, want) {
 		t.Errorf("Queue = %v, want: %v, diff: %s", got, want, cmp.Diff(got, want))
 	}
 }
@@ -1007,7 +1018,7 @@ func TestStartAndShutdownWithWork(t *testing.T) {
 	if got, want := r.count, 1; got != want {
 		t.Errorf("reconcile count = %v, wanted %v", got, want)
 	}
-	if got, want := impl.WorkQueue.NumRequeues(types.NamespacedName{Namespace: "foo", Name: "bar"}), 0; got != want {
+	if got, want := impl.WorkQueue().NumRequeues(types.NamespacedName{Namespace: "foo", Name: "bar"}), 0; got != want {
 		t.Errorf("requeues = %v, wanted %v", got, want)
 	}
 
@@ -1093,7 +1104,7 @@ func TestStartAndShutdownWithErroringWork(t *testing.T) {
 	// As NumRequeues can't fully reflect the real state of queue length.
 	// Here we need to wait for NumRequeues to be more than 1, to ensure
 	// the key get re-queued and reprocessed as expect.
-	if got, wantAtLeast := impl.WorkQueue.NumRequeues(types.NamespacedName{Namespace: "", Name: "bar"}), 2; got < wantAtLeast {
+	if got, wantAtLeast := impl.WorkQueue().NumRequeues(types.NamespacedName{Namespace: "", Name: "bar"}), 2; got < wantAtLeast {
 		t.Errorf("Requeue count = %v, wanted at least %v", got, wantAtLeast)
 	}
 }
@@ -1137,7 +1148,7 @@ func TestStartAndShutdownWithPermanentErroringWork(t *testing.T) {
 	}
 
 	// Check that the work was not requeued in RateLimiter.
-	if got, want := impl.WorkQueue.NumRequeues(types.NamespacedName{Namespace: "foo", Name: "bar"}), 0; got != want {
+	if got, want := impl.WorkQueue().NumRequeues(types.NamespacedName{Namespace: "foo", Name: "bar"}), 0; got != want {
 		t.Errorf("Requeue count = %v, wanted %v", got, want)
 	}
 
