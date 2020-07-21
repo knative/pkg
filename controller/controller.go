@@ -365,9 +365,9 @@ func (c *Impl) EnqueueKey(key types.NamespacedName) {
 	c.logger.Debugf("Adding to queue %s (depth: %d)", safeKey(key), c.workQueue.Len())
 }
 
-// maybeEnqueueBucketKey takes a Bucket and namespace/name string and puts it onto
+// MaybeEnqueueBucketKey takes a Bucket and namespace/name string and puts it onto
 // the slow work queue.
-func (c *Impl) maybeEnqueueBucketKey(bkt reconciler.Bucket, key types.NamespacedName) {
+func (c *Impl) MaybeEnqueueBucketKey(bkt reconciler.Bucket, key types.NamespacedName) {
 	if bkt.Has(key) {
 		c.workQueue.SlowLane().Add(key)
 		c.logger.Debugf("Adding to queue %s (depth: %d)", safeKey(key), c.workQueue.Len())
@@ -400,7 +400,7 @@ func (c *Impl) RunContext(ctx context.Context, threadiness int) error {
 
 	if la, ok := c.Reconciler.(reconciler.LeaderAware); ok {
 		// Build and execute an elector.
-		le, err := kle.BuildElector(ctx, la, c.Name, c.maybeEnqueueBucketKey)
+		le, err := kle.BuildElector(ctx, la, c.Name, c.MaybeEnqueueBucketKey)
 		if err != nil {
 			return err
 		}
