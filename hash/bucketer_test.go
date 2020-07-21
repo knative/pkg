@@ -113,7 +113,7 @@ func TestBucketSetBuckets(t *testing.T) {
 	}
 
 	if !reflect.DeepEqual(got, want) {
-		t.Errorf("got %v, want %v", got, want)
+		t.Errorf("Got %v, want %v", got, want)
 	}
 }
 
