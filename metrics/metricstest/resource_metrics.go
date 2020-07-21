@@ -24,6 +24,7 @@ import (
 	"fmt"
 	"sort"
 	"strings"
+	"testing"
 
 	"github.com/google/go-cmp/cmp"
 	"go.opencensus.io/metric/metricdata"
@@ -106,12 +107,79 @@ func GetMetric(name string) []Metric {
 	retval := make([]Metric, 0, len(producers))
 	for _, p := range producers {
 		for _, m := range p.Read() {
-			if m.Descriptor.Name == name {
+			if m.Descriptor.Name == name && len(m.TimeSeries) > 0 {
 				retval = append(retval, NewMetric(m))
 			}
 		}
 	}
 	return retval
+}
+
+// GetOneMetric is like GetMetric, but it ensures that a single Metric is found
+func GetOneMetric(name string) Metric {
+	m := GetMetric(name)
+	if len(m) != 1 {
+		panic(fmt.Sprintf("Got wrong number of metrics: %v", m))
+	}
+	return m[0]
+}
+
+func genericMetricFactory(name string, v Value, keyvalues ...string) Metric {
+	if len(keyvalues)%2 != 0 {
+		panic("Odd number of arguments to CountMetric")
+	}
+	if v.Tags == nil {
+		v.Tags = make(map[string]string, len(keyvalues)/2)
+	}
+	for i := 0; i < len(keyvalues); i += 2 {
+		v.Tags[keyvalues[i]] = keyvalues[i+1]
+	}
+	return Metric{
+		Name:   name,
+		Values: []Value{v},
+	}
+}
+
+// IntMetric is a shortcut factory for creating an Int64 metric.
+func IntMetric(name string, value int64, keyvalues ...string) Metric {
+	return genericMetricFactory(name, Value{Int64: &value}, keyvalues...)
+}
+
+// FloatMetric is a shortcut factor for creating a Float64 metric
+func FloatMetric(name string, value float64, keyvalues ...string) Metric {
+	return genericMetricFactory(name, Value{Float64: &value}, keyvalues...)
+}
+
+// AssertMetric verifies that the metrics have the specified values.
+func AssertMetric(t *testing.T, values ...Metric) {
+	t.Helper()
+	for _, v := range values {
+		if diff := cmp.Diff(v, GetOneMetric(v.Name)); diff != "" {
+			t.Errorf("Wrong adds (-want +got): %s", diff)
+		}
+	}
+}
+
+// AssertMetricExists verifies that at least one metric values has been reported for
+// each of metric names.
+func AssertMetricExists(t *testing.T, names ...string) {
+	t.Helper()
+	for _, name := range names {
+		if len(GetMetric(name)) == 0 {
+			t.Errorf("No metrics found for %q", name)
+		}
+	}
+}
+
+// AssertNoMetric verifies that no metrics have been reported for any of the
+// metric names.
+func AssertNoMetric(t *testing.T, names ...string) {
+	t.Helper()
+	for _, name := range names {
+		if m := GetMetric(name); len(m) != 0 {
+			t.Error("Found unexpected data for:", m)
+		}
+	}
 }
 
 // VisitFloat64Value implements metricdata.ValueVisitor.
