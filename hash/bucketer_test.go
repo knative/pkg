@@ -21,6 +21,7 @@ import (
 	"sort"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/sets"
 )
@@ -113,7 +114,7 @@ func TestBucketSetBuckets(t *testing.T) {
 	}
 
 	if !reflect.DeepEqual(got, want) {
-		t.Errorf("Got %v, want %v", got, want)
+		t.Errorf("Got %v, want %v, diff(-want,+got):\n%s", got, want, cmp.Diff(want, got))
 	}
 }
 
