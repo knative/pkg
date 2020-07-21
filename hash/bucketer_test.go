@@ -101,26 +101,36 @@ func TestBucketSetUpdate(t *testing.T) {
 	}
 }
 
-func TestBucketSetNewBucket(t *testing.T) {
+func TestBucketSetBuckets(t *testing.T) {
 	bs := NewBucketSet(buckets)
-	_, err := bs.NewBucket(thisBucket)
-	if err != nil {
-		t.Error("NewBucket = ", err)
+	bkts := bs.Buckets()
+
+	// Sorted
+	want := []string{"aguacero", "chaparrón", "chubasco", "monsoon"}
+	got := make([]string, 4)
+	for i, b := range bkts {
+		got[i] = b.Name()
 	}
-	_, err = bs.NewBucket("giboulée")
-	if err == nil {
-		t.Error("NewBucket unexpectedly succeeded")
+
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("got %v, want %v", got, want)
 	}
 }
 
 func TestBucketHas(t *testing.T) {
 	bs := NewBucketSet(buckets)
-	b, _ := bs.NewBucket(thisBucket)
+	b := Bucket{
+		name:    thisBucket,
+		buckets: bs,
+	}
 	thisNN := types.NamespacedName{Namespace: "snow", Name: "hail"}
 	if !b.Has(thisNN) {
 		t.Errorf("Has(%v) = false", thisNN)
 	}
-	b = NewBucket(otherBucket, bs)
+	b = Bucket{
+		name:    otherBucket,
+		buckets: bs,
+	}
 	if b.Has(thisNN) {
 		t.Errorf("Other bucket Has(%v) = true", thisNN)
 	}
@@ -128,7 +138,10 @@ func TestBucketHas(t *testing.T) {
 
 func TestBucketName(t *testing.T) {
 	bs := NewBucketSet(buckets)
-	b := NewBucket(thisBucket, bs)
+	b := Bucket{
+		name:    thisBucket,
+		buckets: bs,
+	}
 	if got, want := b.Name(), thisBucket; got != want {
 		t.Errorf("Name = %q, want: %q", got, want)
 	}
