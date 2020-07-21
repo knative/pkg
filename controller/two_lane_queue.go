@@ -70,8 +70,8 @@ func process(q workqueue.Interface, ch chan interface{}) {
 		if d {
 			break
 		}
-		ch <- i
 		q.Done(i)
+		ch <- i
 	}
 }
 
