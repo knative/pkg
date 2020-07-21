@@ -107,7 +107,7 @@ func TestBucketSetBuckets(t *testing.T) {
 
 	// Sorted
 	want := []string{"aguacero", "chaparrón", "chubasco", "monsoon"}
-	got := make([]string, 4)
+	got := make([]string, len(bkts))
 	for i, b := range bkts {
 		got[i] = b.Name()
 	}
