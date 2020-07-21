@@ -20,8 +20,13 @@ package serviceaccount
 
 import (
 	context "context"
+	fmt "fmt"
+	reflect "reflect"
+	strings "strings"
 
 	corev1 "k8s.io/api/core/v1"
+	labels "k8s.io/apimachinery/pkg/labels"
+	types "k8s.io/apimachinery/pkg/types"
 	watch "k8s.io/apimachinery/pkg/watch"
 	scheme "k8s.io/client-go/kubernetes/scheme"
 	v1 "k8s.io/client-go/kubernetes/typed/core/v1"
@@ -30,12 +35,12 @@ import (
 	serviceaccount "knative.dev/pkg/client/injection/kube/informers/core/v1/serviceaccount"
 	controller "knative.dev/pkg/controller"
 	logging "knative.dev/pkg/logging"
+	reconciler "knative.dev/pkg/reconciler"
 )
 
 const (
 	defaultControllerAgentName = "serviceaccount-controller"
 	defaultFinalizerName       = "serviceaccounts.core"
-	defaultQueueName           = "serviceaccounts"
 )
 
 // NewImpl returns a controller.Impl that handles queuing and feeding work from
@@ -52,6 +57,62 @@ func NewImpl(ctx context.Context, r Interface, optionsFns ...controller.OptionsF
 
 	serviceaccountInformer := serviceaccount.Get(ctx)
 
+	lister := serviceaccountInformer.Lister()
+
+	rec := &reconcilerImpl{
+		LeaderAwareFuncs: reconciler.LeaderAwareFuncs{
+			PromoteFunc: func(bkt reconciler.Bucket, enq func(reconciler.Bucket, types.NamespacedName)) error {
+				all, err := lister.List(labels.Everything())
+				if err != nil {
+					return err
+				}
+				for _, elt := range all {
+					// TODO: Consider letting users specify a filter in options.
+					enq(bkt, types.NamespacedName{
+						Namespace: elt.GetNamespace(),
+						Name:      elt.GetName(),
+					})
+				}
+				return nil
+			},
+		},
+		Client:        client.Get(ctx),
+		Lister:        lister,
+		reconciler:    r,
+		finalizerName: defaultFinalizerName,
+	}
+
+	t := reflect.TypeOf(r).Elem()
+	queueName := fmt.Sprintf("%s.%s", strings.ReplaceAll(t.PkgPath(), "/", "-"), t.Name())
+
+	impl := controller.NewImpl(rec, logger, queueName)
+	agentName := defaultControllerAgentName
+
+	// Pass impl to the options. Save any optional results.
+	for _, fn := range optionsFns {
+		opts := fn(impl)
+		if opts.ConfigStore != nil {
+			rec.configStore = opts.ConfigStore
+		}
+		if opts.FinalizerName != "" {
+			rec.finalizerName = opts.FinalizerName
+		}
+		if opts.AgentName != "" {
+			agentName = opts.AgentName
+		}
+		if opts.SkipStatusUpdates {
+			rec.skipStatusUpdates = true
+		}
+	}
+
+	rec.Recorder = createRecorder(ctx, agentName)
+
+	return impl
+}
+
+func createRecorder(ctx context.Context, agentName string) record.EventRecorder {
+	logger := logging.FromContext(ctx)
+
 	recorder := controller.GetEventRecorder(ctx)
 	if recorder == nil {
 		// Create event broadcaster
@@ -62,7 +123,7 @@ func NewImpl(ctx context.Context, r Interface, optionsFns ...controller.OptionsF
 			eventBroadcaster.StartRecordingToSink(
 				&v1.EventSinkImpl{Interface: client.Get(ctx).CoreV1().Events("")}),
 		}
-		recorder = eventBroadcaster.NewRecorder(scheme.Scheme, corev1.EventSource{Component: defaultControllerAgentName})
+		recorder = eventBroadcaster.NewRecorder(scheme.Scheme, corev1.EventSource{Component: agentName})
 		go func() {
 			<-ctx.Done()
 			for _, w := range watches {
@@ -71,23 +132,7 @@ func NewImpl(ctx context.Context, r Interface, optionsFns ...controller.OptionsF
 		}()
 	}
 
-	rec := &reconcilerImpl{
-		Client:     client.Get(ctx),
-		Lister:     serviceaccountInformer.Lister(),
-		Recorder:   recorder,
-		reconciler: r,
-	}
-	impl := controller.NewImpl(rec, logger, defaultQueueName)
-
-	// Pass impl to the options. Save any optional results.
-	for _, fn := range optionsFns {
-		opts := fn(impl)
-		if opts.ConfigStore != nil {
-			rec.configStore = opts.ConfigStore
-		}
-	}
-
-	return impl
+	return recorder
 }
 
 func init() {

@@ -20,16 +20,18 @@ package rolebinding
 
 import (
 	context "context"
-	"encoding/json"
-	"reflect"
+	json "encoding/json"
+	fmt "fmt"
+	reflect "reflect"
 
 	zap "go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/rbac/v1"
-	"k8s.io/apimachinery/pkg/api/equality"
+	equality "k8s.io/apimachinery/pkg/api/equality"
 	errors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/types"
+	labels "k8s.io/apimachinery/pkg/labels"
+	types "k8s.io/apimachinery/pkg/types"
 	sets "k8s.io/apimachinery/pkg/util/sets"
 	kubernetes "k8s.io/client-go/kubernetes"
 	rbacv1 "k8s.io/client-go/listers/rbac/v1"
@@ -63,8 +65,30 @@ type Finalizer interface {
 	FinalizeKind(ctx context.Context, o *v1.RoleBinding) reconciler.Event
 }
 
+// ReadOnlyInterface defines the strongly typed interfaces to be implemented by a
+// controller reconciling v1.RoleBinding if they want to process resources for which
+// they are not the leader.
+type ReadOnlyInterface interface {
+	// ObserveKind implements logic to observe v1.RoleBinding.
+	// This method should not write to the API.
+	ObserveKind(ctx context.Context, o *v1.RoleBinding) reconciler.Event
+}
+
+// ReadOnlyFinalizer defines the strongly typed interfaces to be implemented by a
+// controller finalizing v1.RoleBinding if they want to process tombstoned resources
+// even when they are not the leader.  Due to the nature of how finalizers are handled
+// there are no guarantees that this will be called.
+type ReadOnlyFinalizer interface {
+	// ObserveFinalizeKind implements custom logic to observe the final state of v1.RoleBinding.
+	// This method should not write to the API.
+	ObserveFinalizeKind(ctx context.Context, o *v1.RoleBinding) reconciler.Event
+}
+
 // reconcilerImpl implements controller.Reconciler for v1.RoleBinding resources.
 type reconcilerImpl struct {
+	// LeaderAwareFuncs is inlined to help us implement reconciler.LeaderAware
+	reconciler.LeaderAwareFuncs
+
 	// Client is used to write back status updates.
 	Client kubernetes.Interface
 
@@ -81,10 +105,20 @@ type reconcilerImpl struct {
 
 	// reconciler is the implementation of the business logic of the resource.
 	reconciler Interface
+
+	// finalizerName is the name of the finalizer to reconcile.
+	finalizerName string
+
+	// skipStatusUpdates configures whether or not this reconciler automatically updates
+	// the status of the reconciled resource.
+	skipStatusUpdates bool
 }
 
 // Check that our Reconciler implements controller.Reconciler
 var _ controller.Reconciler = (*reconcilerImpl)(nil)
+
+// Check that our generated Reconciler is always LeaderAware.
+var _ reconciler.LeaderAware = (*reconcilerImpl)(nil)
 
 func NewReconciler(ctx context.Context, logger *zap.SugaredLogger, client kubernetes.Interface, lister rbacv1.RoleBindingLister, recorder record.EventRecorder, r Interface, options ...controller.Options) controller.Reconciler {
 	// Check the options function input. It should be 0 or 1.
@@ -92,16 +126,46 @@ func NewReconciler(ctx context.Context, logger *zap.SugaredLogger, client kubern
 		logger.Fatalf("up to one options struct is supported, found %d", len(options))
 	}
 
+	// Fail fast when users inadvertently implement the other LeaderAware interface.
+	// For the typed reconcilers, Promote shouldn't take any arguments.
+	if _, ok := r.(reconciler.LeaderAware); ok {
+		logger.Fatalf("%T implements the incorrect LeaderAware interface.  Promote() should not take an argument as genreconciler handles the enqueuing automatically.", r)
+	}
+	// TODO: Consider validating when folks implement ReadOnlyFinalizer, but not Finalizer.
+
 	rec := &reconcilerImpl{
-		Client:     client,
-		Lister:     lister,
-		Recorder:   recorder,
-		reconciler: r,
+		LeaderAwareFuncs: reconciler.LeaderAwareFuncs{
+			PromoteFunc: func(bkt reconciler.Bucket, enq func(reconciler.Bucket, types.NamespacedName)) error {
+				all, err := lister.List(labels.Everything())
+				if err != nil {
+					return err
+				}
+				for _, elt := range all {
+					// TODO: Consider letting users specify a filter in options.
+					enq(bkt, types.NamespacedName{
+						Namespace: elt.GetNamespace(),
+						Name:      elt.GetName(),
+					})
+				}
+				return nil
+			},
+		},
+		Client:        client,
+		Lister:        lister,
+		Recorder:      recorder,
+		reconciler:    r,
+		finalizerName: defaultFinalizerName,
 	}
 
 	for _, opts := range options {
 		if opts.ConfigStore != nil {
 			rec.configStore = opts.ConfigStore
+		}
+		if opts.FinalizerName != "" {
+			rec.finalizerName = opts.FinalizerName
+		}
+		if opts.SkipStatusUpdates {
+			rec.skipStatusUpdates = true
 		}
 	}
 
@@ -112,6 +176,25 @@ func NewReconciler(ctx context.Context, logger *zap.SugaredLogger, client kubern
 func (r *reconcilerImpl) Reconcile(ctx context.Context, key string) error {
 	logger := logging.FromContext(ctx)
 
+	// Convert the namespace/name string into a distinct namespace and name
+	namespace, name, err := cache.SplitMetaNamespaceKey(key)
+	if err != nil {
+		logger.Errorf("invalid resource key: %s", key)
+		return nil
+	}
+	// Establish whether we are the leader for use below.
+	isLeader := r.IsLeaderFor(types.NamespacedName{
+		Namespace: namespace,
+		Name:      name,
+	})
+	roi, isROI := r.reconciler.(ReadOnlyInterface)
+	rof, isROF := r.reconciler.(ReadOnlyFinalizer)
+	if !isLeader && !isROI && !isROF {
+		// If we are not the leader, and we don't implement either ReadOnly
+		// interface, then take a fast-path out.
+		return nil
+	}
+
 	// If configStore is set, attach the frozen configuration to the context.
 	if r.configStore != nil {
 		ctx = r.configStore.ToContext(ctx)
@@ -119,15 +202,6 @@ func (r *reconcilerImpl) Reconcile(ctx context.Context, key string) error {
 
 	// Add the recorder to context.
 	ctx = controller.WithEventRecorder(ctx, r.Recorder)
-
-	// Convert the namespace/name string into a distinct namespace and name
-
-	namespace, name, err := cache.SplitMetaNamespaceKey(key)
-
-	if err != nil {
-		logger.Errorf("invalid resource key: %s", key)
-		return nil
-	}
 
 	// Get the resource with this namespace/name.
 
@@ -137,7 +211,7 @@ func (r *reconcilerImpl) Reconcile(ctx context.Context, key string) error {
 
 	if errors.IsNotFound(err) {
 		// The resource may no longer exist, in which case we stop processing.
-		logger.Errorf("resource %q no longer exists", key)
+		logger.Debugf("resource %q no longer exists", key)
 		return nil
 	} else if err != nil {
 		return err
@@ -148,19 +222,28 @@ func (r *reconcilerImpl) Reconcile(ctx context.Context, key string) error {
 
 	var reconcileEvent reconciler.Event
 	if resource.GetDeletionTimestamp().IsZero() {
-		// Append the target method to the logger.
-		logger = logger.With(zap.String("targetMethod", "ReconcileKind"))
+		if isLeader {
+			// Append the target method to the logger.
+			logger = logger.With(zap.String("targetMethod", "ReconcileKind"))
 
-		// Set and update the finalizer on resource if r.reconciler
-		// implements Finalizer.
-		if resource, err = r.setFinalizerIfFinalizer(ctx, resource); err != nil {
-			logger.Warnw("Failed to set finalizers", zap.Error(err))
+			// Set and update the finalizer on resource if r.reconciler
+			// implements Finalizer.
+			if resource, err = r.setFinalizerIfFinalizer(ctx, resource); err != nil {
+				return fmt.Errorf("failed to set finalizers: %w", err)
+			}
+
+			// Reconcile this copy of the resource and then write back any status
+			// updates regardless of whether the reconciliation errored out.
+			reconcileEvent = r.reconciler.ReconcileKind(ctx, resource)
+
+		} else if isROI {
+			// Append the target method to the logger.
+			logger = logger.With(zap.String("targetMethod", "ObserveKind"))
+
+			// Observe any changes to this resource, since we are not the leader.
+			reconcileEvent = roi.ObserveKind(ctx, resource)
 		}
-
-		// Reconcile this copy of the resource and then write back any status
-		// updates regardless of whether the reconciliation errored out.
-		reconcileEvent = r.reconciler.ReconcileKind(ctx, resource)
-	} else if fin, ok := r.reconciler.(Finalizer); ok {
+	} else if fin, ok := r.reconciler.(Finalizer); isLeader && ok {
 		// Append the target method to the logger.
 		logger = logger.With(zap.String("targetMethod", "FinalizeKind"))
 
@@ -168,36 +251,58 @@ func (r *reconcilerImpl) Reconcile(ctx context.Context, key string) error {
 		// and reconciled cleanly (nil or normal event), remove the finalizer.
 		reconcileEvent = fin.FinalizeKind(ctx, resource)
 		if resource, err = r.clearFinalizer(ctx, resource, reconcileEvent); err != nil {
-			logger.Warnw("Failed to clear finalizers", zap.Error(err))
+			return fmt.Errorf("failed to clear finalizers: %w", err)
 		}
+	} else if !isLeader && isROF {
+		// Append the target method to the logger.
+		logger = logger.With(zap.String("targetMethod", "ObserveFinalizeKind"))
+
+		// For finalizing reconcilers, just observe when we aren't the leader.
+		reconcileEvent = rof.ObserveFinalizeKind(ctx, resource)
 	}
 
 	// Synchronize the status.
-	if equality.Semantic.DeepEqual(original.Status, resource.Status) {
+	switch {
+	case r.skipStatusUpdates:
+		// This reconciler implementation is configured to skip resource updates.
+		// This may mean this reconciler does not observe spec, but reconciles external changes.
+	case equality.Semantic.DeepEqual(original.Status, resource.Status):
 		// If we didn't change anything then don't call updateStatus.
 		// This is important because the copy we loaded from the injectionInformer's
 		// cache may be stale and we don't want to overwrite a prior update
 		// to status with this stale state.
-	} else if err = r.updateStatus(original, resource); err != nil {
-		logger.Warnw("Failed to update resource status", zap.Error(err))
-		r.Recorder.Eventf(resource, corev1.EventTypeWarning, "UpdateFailed",
-			"Failed to update status for %q: %v", resource.Name, err)
-		return err
+	case !isLeader:
+		// High-availability reconcilers may have many replicas watching the resource, but only
+		// the elected leader is expected to write modifications.
+		logger.Warn("Saw status changes when we aren't the leader!")
+	default:
+		if err = r.updateStatus(original, resource); err != nil {
+			logger.Warnw("Failed to update resource status", zap.Error(err))
+			r.Recorder.Eventf(resource, corev1.EventTypeWarning, "UpdateFailed",
+				"Failed to update status for %q: %v", resource.Name, err)
+			return err
+		}
 	}
 
 	// Report the reconciler event, if any.
 	if reconcileEvent != nil {
 		var event *reconciler.ReconcilerEvent
 		if reconciler.EventAs(reconcileEvent, &event) {
-			logger.Infow("returned an event", zap.Any("event", reconcileEvent))
+			logger.Infow("Returned an event", zap.Any("event", reconcileEvent))
 			r.Recorder.Eventf(resource, event.EventType, event.Reason, event.Format, event.Args...)
+
+			// the event was wrapped inside an error, consider the reconciliation as failed
+			if _, isEvent := reconcileEvent.(*reconciler.ReconcilerEvent); !isEvent {
+				return reconcileEvent
+			}
 			return nil
-		} else {
-			logger.Errorw("returned an error", zap.Error(reconcileEvent))
-			r.Recorder.Event(resource, corev1.EventTypeWarning, "InternalError", reconcileEvent.Error())
-			return reconcileEvent
 		}
+
+		logger.Errorw("Returned an error", zap.Error(reconcileEvent))
+		r.Recorder.Event(resource, corev1.EventTypeWarning, "InternalError", reconcileEvent.Error())
+		return reconcileEvent
 	}
+
 	return nil
 }
 
@@ -231,9 +336,8 @@ func (r *reconcilerImpl) updateStatus(existing *v1.RoleBinding, desired *v1.Role
 
 // updateFinalizersFiltered will update the Finalizers of the resource.
 // TODO: this method could be generic and sync all finalizers. For now it only
-// updates defaultFinalizerName.
+// updates defaultFinalizerName or its override.
 func (r *reconcilerImpl) updateFinalizersFiltered(ctx context.Context, resource *v1.RoleBinding) (*v1.RoleBinding, error) {
-	finalizerName := defaultFinalizerName
 
 	getter := r.Lister.RoleBindings(resource.Namespace)
 
@@ -251,20 +355,20 @@ func (r *reconcilerImpl) updateFinalizersFiltered(ctx context.Context, resource 
 	existingFinalizers := sets.NewString(existing.Finalizers...)
 	desiredFinalizers := sets.NewString(resource.Finalizers...)
 
-	if desiredFinalizers.Has(finalizerName) {
-		if existingFinalizers.Has(finalizerName) {
+	if desiredFinalizers.Has(r.finalizerName) {
+		if existingFinalizers.Has(r.finalizerName) {
 			// Nothing to do.
 			return resource, nil
 		}
 		// Add the finalizer.
-		finalizers = append(existing.Finalizers, finalizerName)
+		finalizers = append(existing.Finalizers, r.finalizerName)
 	} else {
-		if !existingFinalizers.Has(finalizerName) {
+		if !existingFinalizers.Has(r.finalizerName) {
 			// Nothing to do.
 			return resource, nil
 		}
 		// Remove the finalizer.
-		existingFinalizers.Delete(finalizerName)
+		existingFinalizers.Delete(r.finalizerName)
 		finalizers = existingFinalizers.List()
 	}
 
@@ -282,10 +386,11 @@ func (r *reconcilerImpl) updateFinalizersFiltered(ctx context.Context, resource 
 
 	patcher := r.Client.RbacV1().RoleBindings(resource.Namespace)
 
-	resource, err = patcher.Patch(resource.Name, types.MergePatchType, patch)
+	resourceName := resource.Name
+	resource, err = patcher.Patch(resourceName, types.MergePatchType, patch)
 	if err != nil {
 		r.Recorder.Eventf(resource, corev1.EventTypeWarning, "FinalizerUpdateFailed",
-			"Failed to update finalizers for %q: %v", resource.Name, err)
+			"Failed to update finalizers for %q: %v", resourceName, err)
 	} else {
 		r.Recorder.Eventf(resource, corev1.EventTypeNormal, "FinalizerUpdate",
 			"Updated %q finalizers", resource.GetName())
@@ -302,12 +407,12 @@ func (r *reconcilerImpl) setFinalizerIfFinalizer(ctx context.Context, resource *
 
 	// If this resource is not being deleted, mark the finalizer.
 	if resource.GetDeletionTimestamp().IsZero() {
-		finalizers.Insert(defaultFinalizerName)
+		finalizers.Insert(r.finalizerName)
 	}
 
 	resource.Finalizers = finalizers.List()
 
-	// Synchronize the finalizers filtered by defaultFinalizerName.
+	// Synchronize the finalizers filtered by r.finalizerName.
 	return r.updateFinalizersFiltered(ctx, resource)
 }
 
@@ -325,15 +430,15 @@ func (r *reconcilerImpl) clearFinalizer(ctx context.Context, resource *v1.RoleBi
 		var event *reconciler.ReconcilerEvent
 		if reconciler.EventAs(reconcileEvent, &event) {
 			if event.EventType == corev1.EventTypeNormal {
-				finalizers.Delete(defaultFinalizerName)
+				finalizers.Delete(r.finalizerName)
 			}
 		}
 	} else {
-		finalizers.Delete(defaultFinalizerName)
+		finalizers.Delete(r.finalizerName)
 	}
 
 	resource.Finalizers = finalizers.List()
 
-	// Synchronize the finalizers filtered by defaultFinalizerName.
+	// Synchronize the finalizers filtered by r.finalizerName.
 	return r.updateFinalizersFiltered(ctx, resource)
 }
