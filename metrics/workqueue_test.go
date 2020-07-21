@@ -98,6 +98,7 @@ func TestWorkqueueMetrics(t *testing.T) {
 	metricstest.AssertMetric(t, wantAdd, wantDepth)
 
 	wq.Add("bar")
+	ensureRecorded()
 
 	metricstest.AssertNoMetric(t, "latency", "retries", "work_duration",
 		"unfinished_work_seconds", "longest_running_processor_seconds")
