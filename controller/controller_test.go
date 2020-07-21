@@ -467,7 +467,7 @@ func TestEnqueues(t *testing.T) {
 	}, {
 		name: "enqueue resource slow",
 		work: func(impl *Impl) {
-			impl.EnqueueSlowKey(&Resource{
+			impl.EnqueueSlow(&Resource{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "foo",
 					Namespace: "bar",

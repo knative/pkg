@@ -240,15 +240,21 @@ func (c *Impl) EnqueueAfter(obj interface{}, after time.Duration) {
 
 // EnqueueSlowKey takes a resource, converts it into a namespace/name string,
 // and enqueues that key in the slow lane.
-func (c *Impl) EnqueueSlowKey(obj interface{}) {
+func (c *Impl) EnqueueSlowKey(key types.NamespacedName) {
+	c.workQueue.SlowLane().Add(key)
+	c.logger.Debugf("Adding to the slow queue %s (depth(total/slow): %d/%d)", safeKey(key), c.workQueue.Len(), c.workQueue.SlowLane().Len())
+}
+
+// EnqueueSlow extracts namesspeced name from the object and enqueues it on the slow
+// work queue.
+func (c *Impl) EnqueueSlow(obj interface{}) {
 	object, err := kmeta.DeletionHandlingAccessor(obj)
 	if err != nil {
-		c.logger.Errorw("EnqueueSlowKey", zap.Error(err))
+		c.logger.Errorw("EnqueueSlow", zap.Error(err))
 		return
 	}
 	key := types.NamespacedName{Namespace: object.GetNamespace(), Name: object.GetName()}
-	c.workQueue.SlowLane().Add(key)
-	c.logger.Debugf("Adding to the slow queue %s (depth: %d)", safeKey(key), c.workQueue.Len())
+	c.EnqueueSlowKey(key)
 }
 
 // Enqueue takes a resource, converts it into a namespace/name string,
@@ -369,8 +375,7 @@ func (c *Impl) EnqueueKey(key types.NamespacedName) {
 // the slow work queue.
 func (c *Impl) MaybeEnqueueBucketKey(bkt reconciler.Bucket, key types.NamespacedName) {
 	if bkt.Has(key) {
-		c.workQueue.SlowLane().Add(key)
-		c.logger.Debugf("Adding to queue %s (depth: %d)", safeKey(key), c.workQueue.Len())
+		c.EnqueueSlowKey(key)
 	}
 }
 
@@ -524,7 +529,7 @@ func (c *Impl) FilteredGlobalResync(f func(interface{}) bool, si cache.SharedInf
 	list := si.GetStore().List()
 	for _, obj := range list {
 		if f(obj) {
-			c.EnqueueSlowKey(obj)
+			c.EnqueueSlow(obj)
 		}
 	}
 }
