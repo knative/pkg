@@ -185,7 +185,7 @@ type Impl struct {
 	// from the workqueue to process.  Public for testing.
 	Reconciler Reconciler
 
-	// workQueue is a rate limited two land work queue.
+	// workQueue is a rate-limited two-lane work queue.
 	// This is used to queue work to be processed instead of performing it as
 	// soon as a change happens. This means we can ensure we only process a
 	// fixed amount of resources at a time, and makes it easy to ensure we are
