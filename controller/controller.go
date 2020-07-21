@@ -243,7 +243,7 @@ func (c *Impl) EnqueueAfter(obj interface{}, after time.Duration) {
 func (c *Impl) EnqueueSlow(obj interface{}) {
 	object, err := kmeta.DeletionHandlingAccessor(obj)
 	if err != nil {
-		c.logger.Errorw("Enqueue", zap.Error(err))
+		c.logger.Errorw("EnqueueSlow", zap.Error(err))
 		return
 	}
 	key := types.NamespacedName{Namespace: object.GetNamespace(), Name: object.GetName()}
