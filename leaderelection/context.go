@@ -118,7 +118,7 @@ func (b *standardBuilder) buildElector(ctx context.Context, la reconciler.Leader
 	electors := make([]Elector, 0, b.lec.Buckets)
 	for i := range bkts {
 		// Use a local var which won't change across the for loop since it is
-		// used as a callback asynchronously.
+		// used in a callback asynchronously.
 		bkt := bkts[i]
 		rl, err := resourcelock.New(KnativeResourceLock,
 			system.Namespace(), // use namespace we are running in
