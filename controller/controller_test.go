@@ -465,6 +465,17 @@ func TestEnqueues(t *testing.T) {
 		},
 		wantQueue: []types.NamespacedName{{Namespace: "bar", Name: "foo"}},
 	}, {
+		name: "enqueue resource slow",
+		work: func(impl *Impl) {
+			impl.EnqueueSlow(&Resource{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "foo",
+					Namespace: "bar",
+				},
+			})
+		},
+		wantQueue: []types.NamespacedName{{Namespace: "bar", Name: "foo"}},
+	}, {
 		name: "enqueue sentinel resource",
 		work: func(impl *Impl) {
 			e := impl.EnqueueSentinel(types.NamespacedName{Namespace: "foo", Name: "bar"})
