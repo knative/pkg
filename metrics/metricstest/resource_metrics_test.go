@@ -275,3 +275,43 @@ func TestDistributionEqual(t *testing.T) {
 		})
 	}
 }
+
+func TestMetricShortcuts(t *testing.T) {
+	tests := []struct {
+		name string
+		want Metric
+		got  metricdata.Metric
+	}{{
+		name: "IntMetric",
+		want: IntMetric("test/int", 17, "key1", "val1", "key2", "val2"),
+		got: metricdata.Metric{
+			Descriptor: metricdata.Descriptor{
+				Name:      "test/int",
+				LabelKeys: []metricdata.LabelKey{{"key1", ""}, {"key2", ""}},
+			},
+			TimeSeries: []*metricdata.TimeSeries{{
+				LabelValues: []metricdata.LabelValue{{"val1", true}, {"val2", true}},
+				Points:      []metricdata.Point{metricdata.NewInt64Point(time.Now(), 17)},
+			}},
+		},
+	}, {
+		name: "FloatMetric",
+		want: FloatMetric("test/float", 0.17, "key1", "val1", "key2", "val2"),
+		got: metricdata.Metric{
+			Descriptor: metricdata.Descriptor{
+				Name:      "test/float",
+				LabelKeys: []metricdata.LabelKey{{"key1", ""}, {"key2", ""}},
+			},
+			TimeSeries: []*metricdata.TimeSeries{{
+				LabelValues: []metricdata.LabelValue{{"val1", true}, {"val2", true}},
+				Points:      []metricdata.Point{metricdata.NewFloat64Point(time.Now(), 0.17)},
+			}},
+		},
+	}}
+
+	for _, tc := range tests {
+		if diff := cmp.Diff(tc.want, NewMetric(&tc.got)); diff != "" {
+			t.Errorf("Metric.Equal() failed (-want +got): %s", diff)
+		}
+	}
+}
