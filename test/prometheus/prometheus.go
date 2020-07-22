@@ -27,6 +27,8 @@ import (
 	v1 "github.com/prometheus/client_golang/api/prometheus/v1"
 	"github.com/prometheus/common/model"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
+
 	"knative.dev/pkg/test/logging"
 	"knative.dev/pkg/test/monitoring"
 )
@@ -51,7 +53,7 @@ type PromProxy struct {
 }
 
 // Setup performs a port forwarding for app prometheus-test in given namespace
-func (p *PromProxy) Setup(kubeClientset *kubernetes.Clientset, logf logging.FormatLogger) {
+func (p *PromProxy) Setup(kubeconfig *rest.Config, kubeClientset *kubernetes.Clientset, logf logging.FormatLogger) {
 	setupOnce.Do(func() {
 		if err := monitoring.CheckPortAvailability(prometheusPort); err != nil {
 			logf("Prometheus port not available: %v", err)
@@ -64,7 +66,7 @@ func (p *PromProxy) Setup(kubeClientset *kubernetes.Clientset, logf logging.Form
 			return
 		}
 
-		p.stopCh, err = monitoring.PortForward(logf, kubeClientset, &promPods.Items[0], prometheusPort, prometheusPort)
+		p.stopCh, err = monitoring.PortForward(logf, kubeconfig, kubeClientset, &promPods.Items[0], prometheusPort, prometheusPort)
 		if err != nil {
 			logf("Error starting kubectl port-forward command: %v", err)
 			return

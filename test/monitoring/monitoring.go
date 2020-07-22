@@ -22,6 +22,7 @@ import (
 	"net"
 	"net/http"
 
+	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/portforward"
 	"k8s.io/client-go/transport/spdy"
 
@@ -29,7 +30,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
-	"knative.dev/pkg/test"
 	"knative.dev/pkg/test/logging"
 )
 
@@ -58,18 +58,13 @@ func GetPods(kubeClientset *kubernetes.Clientset, app, namespace string) (*v1.Po
 
 // PortForward sets up local port forward to the pod specified by the "app" label in the given namespace
 // To close the port forwarding, just close the channel
-func PortForward(logf logging.FormatLogger, kubeClientset *kubernetes.Clientset, pod *v1.Pod, localPort, remotePort int) (chan struct{}, error) {
-	req := kubeClientset.RESTClient().Post().Resource("pods").Namespace(pod.Namespace).Name(pod.Name).SubResource("portforward")
-
-	conf, err := test.BuildClientConfig(test.Flags.Kubeconfig, test.Flags.Cluster)
-	if err != nil {
-		return nil, err
-	}
+func PortForward(logf logging.FormatLogger, config *rest.Config, clientSet *kubernetes.Clientset, pod *v1.Pod, localPort, remotePort int) (chan struct{}, error) {
+	req := clientSet.RESTClient().Post().Resource("pods").Namespace(pod.Namespace).Name(pod.Name).SubResource("portforward")
 
 	stopChan := make(chan struct{})
 	readyChan := make(chan struct{})
 
-	transport, upgrader, err := spdy.RoundTripperFor(conf)
+	transport, upgrader, err := spdy.RoundTripperFor(config)
 	dialer := spdy.NewDialer(upgrader, &http.Client{Transport: transport}, http.MethodPost, req.URL())
 	fw, err := portforward.New(
 		dialer,

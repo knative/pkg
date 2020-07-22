@@ -30,12 +30,15 @@ import (
 	"testing"
 	"time"
 
+	"k8s.io/client-go/rest"
+
 	tracingconfig "knative.dev/pkg/tracing/config"
 
 	"github.com/openzipkin/zipkin-go/model"
 	"go.opencensus.io/trace"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
+
 	"knative.dev/pkg/test/logging"
 	"knative.dev/pkg/test/monitoring"
 )
@@ -71,7 +74,7 @@ var (
 
 // SetupZipkinTracingFromConfigTracing setups zipkin tracing like SetupZipkinTracing but retrieving the zipkin configuration
 // from config-tracing config map
-func SetupZipkinTracingFromConfigTracing(kubeClientset *kubernetes.Clientset, logf logging.FormatLogger, configMapNamespace string) error {
+func SetupZipkinTracingFromConfigTracing(kubeconfig *rest.Config, kubeClientset *kubernetes.Clientset, logf logging.FormatLogger, configMapNamespace string) error {
 	cm, err := kubeClientset.CoreV1().ConfigMaps(configMapNamespace).Get("config-tracing", metav1.GetOptions{})
 	if err != nil {
 		return fmt.Errorf("error while retrieving config-tracing config map: %w", err)
@@ -98,12 +101,12 @@ func SetupZipkinTracingFromConfigTracing(kubeClientset *kubernetes.Clientset, lo
 		return fmt.Errorf("error while parsing the Zipkin endpoint in config-tracing config map: %w", err)
 	}
 
-	return SetupZipkinTracing(kubeClientset, logf, int(port), namespace)
+	return SetupZipkinTracing(kubeconfig, kubeClientset, logf, int(port), namespace)
 }
 
 // SetupZipkinTracingFromConfigTracingOrFail is same as SetupZipkinTracingFromConfigTracing, but fails the test if an error happens
-func SetupZipkinTracingFromConfigTracingOrFail(t testing.TB, kubeClientset *kubernetes.Clientset, configMapNamespace string) {
-	if err := SetupZipkinTracingFromConfigTracing(kubeClientset, t.Logf, configMapNamespace); err != nil {
+func SetupZipkinTracingFromConfigTracingOrFail(t testing.TB, kubeconfig *rest.Config, kubeClientset *kubernetes.Clientset, configMapNamespace string) {
+	if err := SetupZipkinTracingFromConfigTracing(kubeconfig, kubeClientset, t.Logf, configMapNamespace); err != nil {
 		t.Fatalf("Error while setup Zipkin tracing: %v", err)
 	}
 }
@@ -113,7 +116,7 @@ func SetupZipkinTracingFromConfigTracingOrFail(t testing.TB, kubeClientset *kube
 //    (pid of the process doing Port-Forward is stored in a global variable).
 // 2. Enable AlwaysSample config for tracing for the SpoofingClient.
 // The zipkin deployment must have the label app=zipkin
-func SetupZipkinTracing(kubeClientset *kubernetes.Clientset, logf logging.FormatLogger, zipkinRemotePort int, zipkinNamespace string) (err error) {
+func SetupZipkinTracing(kubeconfig *rest.Config, kubeClientset *kubernetes.Clientset, logf logging.FormatLogger, zipkinRemotePort int, zipkinNamespace string) (err error) {
 	setupOnce.Do(func() {
 		if e := monitoring.CheckPortAvailability(zipkinRemotePort); e != nil {
 			err = fmt.Errorf("Zipkin port not available on the machine: %w", err)
@@ -126,7 +129,7 @@ func SetupZipkinTracing(kubeClientset *kubernetes.Clientset, logf logging.Format
 			return
 		}
 
-		zipkinPortForwardStopCh, e = monitoring.PortForward(logf, kubeClientset, &zipkinPods.Items[0], ZipkinPort, zipkinRemotePort)
+		zipkinPortForwardStopCh, e = monitoring.PortForward(logf, kubeconfig, kubeClientset, &zipkinPods.Items[0], ZipkinPort, zipkinRemotePort)
 		if e != nil {
 			err = fmt.Errorf("error starting kubectl port-forward command: %w", err)
 			return
@@ -142,8 +145,8 @@ func SetupZipkinTracing(kubeClientset *kubernetes.Clientset, logf logging.Format
 }
 
 // SetupZipkinTracingOrFail is same as SetupZipkinTracing, but fails the test if an error happens
-func SetupZipkinTracingOrFail(t testing.TB, kubeClientset *kubernetes.Clientset, zipkinRemotePort int, zipkinNamespace string) {
-	if err := SetupZipkinTracing(kubeClientset, t.Logf, zipkinRemotePort, zipkinNamespace); err != nil {
+func SetupZipkinTracingOrFail(t testing.TB, kubeconfig *rest.Config, kubeClientset *kubernetes.Clientset, zipkinRemotePort int, zipkinNamespace string) {
+	if err := SetupZipkinTracing(kubeconfig, kubeClientset, t.Logf, zipkinRemotePort, zipkinNamespace); err != nil {
 		t.Fatalf("Error while setup zipkin tracing: %v", err)
 	}
 }
