@@ -17,9 +17,7 @@ limitations under the License.
 package monitoring
 
 import (
-	"bufio"
 	"fmt"
-	"io"
 	"net"
 	"os"
 	"os/exec"
@@ -64,9 +62,7 @@ func Cleanup(pid int) error {
 func PortForward(logf logging.FormatLogger, podList *v1.PodList, localPort, remotePort int, namespace string) (int, error) {
 	podName := podList.Items[0].Name
 	portFwdCmd := fmt.Sprintf("kubectl port-forward %s %d:%d -n %s", podName, localPort, remotePort, namespace)
-	portFwdProcess, err := executeCmdBackground(func(template string, args ...interface{}) {
-		logf("port-forward-"+podName+": "+template, args...)
-	}, portFwdCmd)
+	portFwdProcess, err := executeCmdBackground(logf, portFwdCmd)
 
 	if err != nil {
 		return 0, fmt.Errorf("failed to port forward: %w", err)
@@ -82,26 +78,8 @@ func executeCmdBackground(logf logging.FormatLogger, format string, args ...inte
 	logf("Executing command: %s", cmd)
 	parts := strings.Split(cmd, " ")
 	c := exec.Command(parts[0], parts[1:]...) // #nosec
-	outPipe, err := c.StdoutPipe()
-	if err != nil {
-		return nil, fmt.Errorf("%s cannot get stdout pipe: %w", cmd, err)
-	}
-	go printPipe(logf, outPipe)
-	errPipe, err := c.StderrPipe()
-	if err != nil {
-		return nil, fmt.Errorf("%s cannot get stderr pipe: %w", cmd, err)
-	}
-	go printPipe(logf, errPipe)
 	if err := c.Start(); err != nil {
 		return nil, fmt.Errorf("%s command failed: %w", cmd, err)
 	}
 	return c.Process, nil
-}
-
-func printPipe(logf logging.FormatLogger, reader io.ReadCloser) {
-	defer reader.Close()
-	scanner := bufio.NewScanner(reader)
-	for scanner.Scan() {
-		logf(scanner.Text())
-	}
 }

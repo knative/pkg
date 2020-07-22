@@ -64,13 +64,7 @@ func (p *PromProxy) Setup(kubeClientset *kubernetes.Clientset, logf logging.Form
 			return
 		}
 
-		p.processID, err = monitoring.PortForward(
-			logf,
-			promPods,
-			prometheusPort,
-			prometheusPort,
-			p.Namespace,
-		)
+		p.processID, err = monitoring.PortForward(logf, promPods, prometheusPort, prometheusPort, p.Namespace)
 		if err != nil {
 			logf("Error starting kubectl port-forward command: %v", err)
 			return
