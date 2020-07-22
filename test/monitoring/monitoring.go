@@ -18,14 +18,18 @@ package monitoring
 
 import (
 	"fmt"
+	"log"
 	"net"
-	"os"
-	"os/exec"
-	"strings"
+	"net/http"
+
+	"k8s.io/client-go/tools/portforward"
+	"k8s.io/client-go/transport/spdy"
 
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
+
+	"knative.dev/pkg/test"
 	"knative.dev/pkg/test/logging"
 )
 
@@ -52,34 +56,40 @@ func GetPods(kubeClientset *kubernetes.Clientset, app, namespace string) (*v1.Po
 	return pods, err
 }
 
-// Cleanup will clean the background process used for port forwarding
-func Cleanup(pid int) error {
-	ps := os.Process{Pid: pid}
-	return ps.Kill()
-}
-
 // PortForward sets up local port forward to the pod specified by the "app" label in the given namespace
-func PortForward(logf logging.FormatLogger, podList *v1.PodList, localPort, remotePort int, namespace string) (int, error) {
-	podName := podList.Items[0].Name
-	portFwdCmd := fmt.Sprintf("kubectl port-forward %s %d:%d -n %s", podName, localPort, remotePort, namespace)
-	portFwdProcess, err := executeCmdBackground(logf, portFwdCmd)
+// To close the port forwarding, just close the channel
+func PortForward(logf logging.FormatLogger, kubeClientset *kubernetes.Clientset, pod *v1.Pod, localPort, remotePort int) (chan struct{}, error) {
+	req := kubeClientset.RESTClient().Post().Resource("pods").Namespace(pod.Namespace).Name(pod.Name).SubResource("portforward")
 
+	conf, err := test.BuildClientConfig(test.Flags.Kubeconfig, test.Flags.Cluster)
 	if err != nil {
-		return 0, fmt.Errorf("failed to port forward: %w", err)
+		return nil, err
 	}
 
-	logf("running %s port-forward in background, pid = %d", podName, portFwdProcess.Pid)
-	return portFwdProcess.Pid, nil
-}
+	stopChan := make(chan struct{})
+	readyChan := make(chan struct{})
 
-// RunBackground starts a background process and returns the Process if succeed
-func executeCmdBackground(logf logging.FormatLogger, format string, args ...interface{}) (*os.Process, error) {
-	cmd := fmt.Sprintf(format, args...)
-	logf("Executing command: %s", cmd)
-	parts := strings.Split(cmd, " ")
-	c := exec.Command(parts[0], parts[1:]...) // #nosec
-	if err := c.Start(); err != nil {
-		return nil, fmt.Errorf("%s command failed: %w", cmd, err)
+	transport, upgrader, err := spdy.RoundTripperFor(conf)
+	dialer := spdy.NewDialer(upgrader, &http.Client{Transport: transport}, http.MethodPost, req.URL())
+	fw, err := portforward.New(
+		dialer,
+		[]string{fmt.Sprintf("%d:%d", localPort, remotePort)},
+		stopChan,
+		readyChan,
+		logging.NewLoggerWriter("port-forward-"+pod.Name, logf),
+		logging.NewLoggerWriter("port-forward-"+pod.Name, logf),
+	)
+	if err != nil {
+		return nil, err
 	}
-	return c.Process, nil
+	go func() {
+		err := fw.ForwardPorts()
+		if err != nil {
+			log.Fatalf("Error opening the port forward for pod %s in ns %s with ports %d:%d", pod.Name, pod.Namespace, localPort, remotePort)
+		}
+	}()
+
+	<-readyChan
+	logf("Started port forwarding for pod %s in ns %s with ports %d:%d", pod.Name, pod.Namespace, localPort, remotePort)
+	return stopChan, nil
 }
