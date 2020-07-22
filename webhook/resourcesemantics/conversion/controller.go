@@ -34,9 +34,7 @@ import (
 	"knative.dev/pkg/webhook"
 )
 
-const (
-	workQueueName = "ConversionWebhook"
-)
+const workQueueName = "ConversionWebhook"
 
 // ConvertibleObject defines the functionality our API types
 // are required to implement in order to be convertible from

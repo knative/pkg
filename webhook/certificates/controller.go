@@ -33,9 +33,7 @@ import (
 	"knative.dev/pkg/webhook"
 )
 
-const (
-	workQueueName = "WebhookCertificates"
-)
+const workQueueName = "WebhookCertificates"
 
 // NewController constructs a controller for materializing webhook certificates.
 // In order for it to bootstrap, an empty secret should be created with the

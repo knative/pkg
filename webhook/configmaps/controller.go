@@ -35,9 +35,7 @@ import (
 	"knative.dev/pkg/webhook"
 )
 
-const (
-	workQueueName = "ConfigMapWebhook"
-)
+const workQueueName = "ConfigMapWebhook"
 
 // NewAdmissionController constructs a reconciler
 func NewAdmissionController(

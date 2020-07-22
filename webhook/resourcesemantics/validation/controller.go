@@ -35,9 +35,7 @@ import (
 	"knative.dev/pkg/webhook/resourcesemantics"
 )
 
-const (
-	workQueueName = "ValidationWebhook"
-)
+const workQueueName = "ValidationWebhook"
 
 // NewAdmissionController constructs a reconciler
 func NewAdmissionController(

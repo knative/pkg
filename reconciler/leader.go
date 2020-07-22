@@ -125,7 +125,7 @@ func (laf *LeaderAwareFuncs) Demote(b Bucket) {
 
 func (laf *LeaderAwareFuncs) reportBucketCount(count int) {
 	if laf.metricsCtx == nil {
-		// If any of WorkQueueName or podName is empty, it's meanless to report.
+		// If any of WorkQueueName or podName is empty, it's meaningless to report.
 		if laf.WorkQueueName == "" || podName == "" {
 			return
 		}

@@ -25,9 +25,7 @@ import (
 	"knative.dev/pkg/metrics"
 )
 
-const (
-	podNameEnvKey = "POD_NAME"
-)
+const podNameEnvKey = "POD_NAME"
 
 var (
 	controllerOwnedBucketCountM = stats.Int64(
@@ -44,10 +42,6 @@ var (
 )
 
 func init() {
-	register()
-}
-
-func register() {
 	// Create views to see our measurements. This can return an error if
 	// a previously-registered view has the same name with a different value.
 	// View name defaults to the measure name if unspecified.
