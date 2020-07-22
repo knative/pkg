@@ -21,6 +21,8 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"k8s.io/apimachinery/pkg/types"
+	"knative.dev/pkg/metrics/metricstest"
+	_ "knative.dev/pkg/metrics/testing"
 )
 
 func TestLeaderAwareFuncs(t *testing.T) {
@@ -79,4 +81,29 @@ func TestLeaderAwareFuncs(t *testing.T) {
 	if laf.IsLeaderFor(wantKey) {
 		t.Error("IsLeaderFor() = true, wanted false")
 	}
+}
+
+func TestLeaderAwareFuncsReportingMetrics(t *testing.T) {
+	laf := LeaderAwareFuncs{}
+	bkt := UniversalBucket()
+	enqueue := func(bkt Bucket, key types.NamespacedName) {}
+
+	// No reporting if work queue name is not set.
+	laf.Promote(bkt, enqueue)
+	metricstest.CheckStatsNotReported(t, "controller_owned_bucket_count")
+
+	// No reporting if pod name is not set.
+	laf.WorkQueueName = "WorkQueue"
+	laf.Promote(bkt, enqueue)
+	metricstest.CheckStatsNotReported(t, "controller_owned_bucket_count")
+
+	// Report when both work queue name and pod name are set.
+	podName = "SomePod"
+	laf.Promote(bkt, enqueue)
+	metricstest.CheckLastValueData(t, "controller_owned_bucket_count",
+		map[string]string{"pod_name": "SomePod", "reconciler_name": "WorkQueue"}, 1)
+
+	laf.Demote(bkt)
+	metricstest.CheckLastValueData(t, "controller_owned_bucket_count",
+		map[string]string{"pod_name": "SomePod", "reconciler_name": "WorkQueue"}, 0)
 }
