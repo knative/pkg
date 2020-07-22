@@ -57,7 +57,7 @@ const (
 )
 
 var (
-	zipkinPortForwardPID int
+	zipkinPortForwardStopCh chan struct{}
 
 	// ZipkinTracingEnabled variable indicating if zipkin tracing is enabled.
 	ZipkinTracingEnabled = false
@@ -126,13 +126,13 @@ func SetupZipkinTracing(kubeClientset *kubernetes.Clientset, logf logging.Format
 			return
 		}
 
-		zipkinPortForwardPID, e = monitoring.PortForward(logf, zipkinPods, ZipkinPort, zipkinRemotePort, zipkinNamespace)
+		zipkinPortForwardStopCh, e = monitoring.PortForward(logf, kubeClientset, &zipkinPods.Items[0], ZipkinPort, zipkinRemotePort)
 		if e != nil {
 			err = fmt.Errorf("error starting kubectl port-forward command: %w", err)
 			return
 		}
 
-		logf("Zipkin port-forward process started with PID: %d", zipkinPortForwardPID)
+		logf("Zipkin port-forward started")
 
 		// Applying AlwaysSample config to ensure we propagate zipkin header for every request made by this client.
 		trace.ApplyConfig(trace.Config{DefaultSampler: trace.AlwaysSample()})
@@ -168,9 +168,9 @@ func CleanupZipkinTracingSetup(logf logging.FormatLogger) {
 			return
 		}
 
-		if err := monitoring.Cleanup(zipkinPortForwardPID); err != nil {
-			logf("Encountered error killing port-forward process in CleanupZipkinTracingSetup() : %v", err)
-			return
+		if zipkinPortForwardStopCh != nil {
+			close(zipkinPortForwardStopCh)
+			logf("Stopped zipkin port-forward")
 		}
 
 		ZipkinTracingEnabled = false

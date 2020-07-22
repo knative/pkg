@@ -47,7 +47,7 @@ var (
 // PromProxy defines a proxy to the prometheus server
 type PromProxy struct {
 	Namespace string
-	processID int
+	stopCh    chan struct{}
 }
 
 // Setup performs a port forwarding for app prometheus-test in given namespace
@@ -64,7 +64,7 @@ func (p *PromProxy) Setup(kubeClientset *kubernetes.Clientset, logf logging.Form
 			return
 		}
 
-		p.processID, err = monitoring.PortForward(logf, promPods, prometheusPort, prometheusPort, p.Namespace)
+		p.stopCh, err = monitoring.PortForward(logf, kubeClientset, &promPods.Items[0], prometheusPort, prometheusPort)
 		if err != nil {
 			logf("Error starting kubectl port-forward command: %v", err)
 			return
@@ -75,10 +75,8 @@ func (p *PromProxy) Setup(kubeClientset *kubernetes.Clientset, logf logging.Form
 // Teardown will kill the port forwarding process if running.
 func (p *PromProxy) Teardown(logf logging.FormatLogger) {
 	teardownOnce.Do(func() {
-		if err := monitoring.Cleanup(p.processID); err != nil {
-			logf("Encountered error killing port-forward process: %v", err)
-			return
-		}
+		close(p.stopCh)
+		logf("Prometheus port-forward closed")
 	})
 }
 
