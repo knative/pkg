@@ -84,21 +84,22 @@ func TestLeaderAwareFuncs(t *testing.T) {
 }
 
 func TestLeaderAwareFuncsReportingMetrics(t *testing.T) {
-	laf := LeaderAwareFuncs{}
 	bkt := UniversalBucket()
 	enqueue := func(bkt Bucket, key types.NamespacedName) {}
 
 	// No reporting if work queue name is not set.
+	laf := LeaderAwareFuncs{}
 	laf.Promote(bkt, enqueue)
 	metricstest.CheckStatsNotReported(t, "controller_owned_bucket_count")
 
 	// No reporting if pod name is not set.
-	laf.WorkQueueName = "WorkQueue"
+	laf = LeaderAwareFuncs{WorkQueueName: "WorkQueue"}
 	laf.Promote(bkt, enqueue)
 	metricstest.CheckStatsNotReported(t, "controller_owned_bucket_count")
 
 	// Report when both work queue name and pod name are set.
 	podName = "SomePod"
+	laf = LeaderAwareFuncs{WorkQueueName: "WorkQueue"}
 	laf.Promote(bkt, enqueue)
 	metricstest.CheckLastValueData(t, "controller_owned_bucket_count",
 		map[string]string{"pod_name": "SomePod", "reconciler_name": "WorkQueue"}, 1)

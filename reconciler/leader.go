@@ -70,6 +70,7 @@ type LeaderAwareFuncs struct {
 	sync.RWMutex
 	buckets    map[string]Bucket
 	metricsCtx context.Context
+	once       sync.Once
 
 	WorkQueueName string
 	PromoteFunc   func(b Bucket, enq func(Bucket, types.NamespacedName)) error
@@ -124,7 +125,7 @@ func (laf *LeaderAwareFuncs) Demote(b Bucket) {
 }
 
 func (laf *LeaderAwareFuncs) reportBucketCount(count int) {
-	if laf.metricsCtx == nil {
+	laf.once.Do(func() {
 		// If any of WorkQueueName or podName is empty, it's meaningless to report.
 		if laf.WorkQueueName == "" || podName == "" {
 			return
@@ -139,6 +140,10 @@ func (laf *LeaderAwareFuncs) reportBucketCount(count int) {
 		}
 
 		laf.metricsCtx = ctx
+	})
+
+	if laf.metricsCtx == nil {
+		return
 	}
 
 	metrics.RecordBatch(laf.metricsCtx, controllerOwnedBucketCountM.M(int64(count)))
