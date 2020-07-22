@@ -59,7 +59,8 @@ type Metric struct {
 	// both Metrics.
 	Resource *resource.Resource
 
-	// Values contains the values recorded for different Key=Value Tag combinations. Value is checked for equality if
+	// Values contains the values recorded for different Key=Value Tag
+	// combinations. Value is checked for equality if present.
 	Values []Value
 
 	// Equality testing/validation settings on the Metric. These are used to
@@ -115,11 +116,12 @@ func GetMetric(name string) []Metric {
 	return retval
 }
 
-// GetOneMetric is like GetMetric, but it ensures that a single Metric is found
+// GetOneMetric is like GetMetric, but it panics if more than a single Metric is
+// found.
 func GetOneMetric(name string) Metric {
 	m := GetMetric(name)
 	if len(m) != 1 {
-		panic(fmt.Sprintf("Got wrong number of metrics: %v", m))
+		panic(fmt.Sprint("Got wrong number of metrics:", m))
 	}
 	return m[0]
 }
