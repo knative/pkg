@@ -70,8 +70,6 @@ func (p *PromProxy) Setup(kubeClientset *kubernetes.Clientset, logf logging.Form
 			prometheusPort,
 			prometheusPort,
 			p.Namespace,
-			logging.NewLoggerWriter("prometheus-port-forward-stdout", logf),
-			logging.NewLoggerWriter("prometheus-port-forward-stderr", logf),
 		)
 		if err != nil {
 			logf("Error starting kubectl port-forward command: %v", err)
