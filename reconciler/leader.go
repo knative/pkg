@@ -17,9 +17,12 @@ limitations under the License.
 package reconciler
 
 import (
+	"context"
 	"sync"
 
+	"go.opencensus.io/tag"
 	"k8s.io/apimachinery/pkg/types"
+	"knative.dev/pkg/metrics"
 )
 
 // Bucket is an opaque type used to scope leadership.
@@ -65,10 +68,12 @@ type LeaderAware interface {
 // promotion and demotion.
 type LeaderAwareFuncs struct {
 	sync.RWMutex
-	buckets map[string]Bucket
+	buckets    map[string]Bucket
+	metricsCtx context.Context
 
-	PromoteFunc func(b Bucket, enq func(Bucket, types.NamespacedName)) error
-	DemoteFunc  func(b Bucket)
+	WorkQueueName string
+	PromoteFunc   func(b Bucket, enq func(Bucket, types.NamespacedName)) error
+	DemoteFunc    func(b Bucket)
 }
 
 var _ LeaderAware = (*LeaderAwareFuncs)(nil)
@@ -95,6 +100,7 @@ func (laf *LeaderAwareFuncs) Promote(b Bucket, enq func(Bucket, types.Namespaced
 			laf.buckets = make(map[string]Bucket, 1)
 		}
 		laf.buckets[b.Name()] = b
+		laf.reportBucketCount(len(laf.buckets))
 	}()
 
 	if promote := laf.PromoteFunc; promote != nil {
@@ -109,9 +115,31 @@ func (laf *LeaderAwareFuncs) Demote(b Bucket) {
 		laf.Lock()
 		defer laf.Unlock()
 		delete(laf.buckets, b.Name())
+		laf.reportBucketCount(len(laf.buckets))
 	}()
 
 	if demote := laf.DemoteFunc; demote != nil {
 		demote(b)
 	}
+}
+
+func (laf *LeaderAwareFuncs) reportBucketCount(count int) {
+	if laf.metricsCtx == nil {
+		// If any of WorkQueueName or podName is empty, it's meanless to report.
+		if laf.WorkQueueName == "" || podName == "" {
+			return
+		}
+
+		ctx, err := tag.New(
+			context.Background(),
+			tag.Upsert(podNameKey, podName),
+			tag.Upsert(reconcilerNameKey, laf.WorkQueueName))
+		if err != nil {
+			return
+		}
+
+		laf.metricsCtx = ctx
+	}
+
+	metrics.RecordBatch(laf.metricsCtx, controllerOwnedBucketCountM.M(int64(count)))
 }

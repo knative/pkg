@@ -35,6 +35,10 @@ import (
 	"knative.dev/pkg/webhook"
 )
 
+const (
+	workQueueName = "ConfigMapWebhook"
+)
+
 // NewAdmissionController constructs a reconciler
 func NewAdmissionController(
 	ctx context.Context,
@@ -51,6 +55,7 @@ func NewAdmissionController(
 
 	wh := &reconciler{
 		LeaderAwareFuncs: pkgreconciler.LeaderAwareFuncs{
+			WorkQueueName: workQueueName,
 			// Have this reconciler enqueue our singleton whenever it becomes leader.
 			PromoteFunc: func(bkt pkgreconciler.Bucket, enq func(pkgreconciler.Bucket, types.NamespacedName)) error {
 				enq(bkt, key)
@@ -73,7 +78,7 @@ func NewAdmissionController(
 		wh.registerConfig(configName, constructor)
 	}
 
-	c := controller.NewImpl(wh, logging.FromContext(ctx), "ConfigMapWebhook")
+	c := controller.NewImpl(wh, logging.FromContext(ctx), workQueueName)
 
 	// Reconcile when the named ValidatingWebhookConfiguration changes.
 	vwhInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{

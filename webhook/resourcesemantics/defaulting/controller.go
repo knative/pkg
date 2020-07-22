@@ -35,6 +35,10 @@ import (
 	"knative.dev/pkg/webhook/resourcesemantics"
 )
 
+const (
+	workQueueName = "DefaultingWebhook"
+)
+
 // NewAdmissionController constructs a reconciler
 func NewAdmissionController(
 	ctx context.Context,
@@ -53,6 +57,7 @@ func NewAdmissionController(
 
 	wh := &reconciler{
 		LeaderAwareFuncs: pkgreconciler.LeaderAwareFuncs{
+			WorkQueueName: workQueueName,
 			// Have this reconciler enqueue our singleton whenever it becomes leader.
 			PromoteFunc: func(bkt pkgreconciler.Bucket, enq func(pkgreconciler.Bucket, types.NamespacedName)) error {
 				enq(bkt, key)
@@ -74,7 +79,7 @@ func NewAdmissionController(
 	}
 
 	logger := logging.FromContext(ctx)
-	c := controller.NewImpl(wh, logger, "DefaultingWebhook")
+	c := controller.NewImpl(wh, logger, workQueueName)
 
 	// Reconcile when the named MutatingWebhookConfiguration changes.
 	mwhInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{

@@ -33,6 +33,10 @@ import (
 	"knative.dev/pkg/webhook"
 )
 
+const (
+	workQueueName = "WebhookCertificates"
+)
+
 // NewController constructs a controller for materializing webhook certificates.
 // In order for it to bootstrap, an empty secret should be created with the
 // expected name (and lifecycle managed accordingly), and thereafter this controller
@@ -53,6 +57,7 @@ func NewController(
 
 	wh := &reconciler{
 		LeaderAwareFuncs: pkgreconciler.LeaderAwareFuncs{
+			WorkQueueName: workQueueName,
 			// Enqueue the key whenever we become leader.
 			PromoteFunc: func(bkt pkgreconciler.Bucket, enq func(pkgreconciler.Bucket, types.NamespacedName)) error {
 				enq(bkt, key)
@@ -66,7 +71,7 @@ func NewController(
 		secretlister: secretInformer.Lister(),
 	}
 
-	c := controller.NewImpl(wh, logging.FromContext(ctx), "WebhookCertificates")
+	c := controller.NewImpl(wh, logging.FromContext(ctx), workQueueName)
 
 	// Reconcile when the cert bundle changes.
 	secretInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{

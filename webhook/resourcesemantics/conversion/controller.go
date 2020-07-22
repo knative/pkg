@@ -34,6 +34,10 @@ import (
 	"knative.dev/pkg/webhook"
 )
 
+const (
+	workQueueName = "ConversionWebhook"
+)
+
 // ConvertibleObject defines the functionality our API types
 // are required to implement in order to be convertible from
 // one version to another
@@ -97,6 +101,7 @@ func NewConversionController(
 
 	r := &reconciler{
 		LeaderAwareFuncs: pkgreconciler.LeaderAwareFuncs{
+			WorkQueueName: workQueueName,
 			// Have this reconciler enqueue our types whenever it becomes leader.
 			PromoteFunc: func(bkt pkgreconciler.Bucket, enq func(pkgreconciler.Bucket, types.NamespacedName)) error {
 				for _, gkc := range kinds {
@@ -117,7 +122,7 @@ func NewConversionController(
 		crdLister:    crdInformer.Lister(),
 	}
 
-	c := controller.NewImpl(r, logging.FromContext(ctx), "ConversionWebhook")
+	c := controller.NewImpl(r, logging.FromContext(ctx), workQueueName)
 
 	// Reconciler when the named CRDs change.
 	for _, gkc := range kinds {
