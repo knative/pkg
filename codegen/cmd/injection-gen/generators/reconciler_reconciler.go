@@ -230,7 +230,7 @@ type ReadOnlyFinalizer interface {
 	ObserveFinalizeKind(ctx {{.contextContext|raw}}, o *{{.type|raw}}) {{.reconcilerEvent|raw}}
 }
 
-type doReconcile func(ctx context.Context, o *{{.type|raw}}) {{.reconcilerEvent|raw}}
+type doReconcile func(ctx {{.contextContext|raw}}, o *{{.type|raw}}) {{.reconcilerEvent|raw}}
 
 const (
 	doReconcileKind       = "ReconcileKind"
