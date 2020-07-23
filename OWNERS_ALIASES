@@ -65,6 +65,7 @@ aliases:
   productivity-approvers:
   - chaodaiG
   - chizhg
+  - vagababov # For test tools (logstream, ha, etc).
   productivity-reviewers:
   - chaodaiG
   - coryrc
