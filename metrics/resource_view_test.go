@@ -18,6 +18,7 @@ package metrics
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -336,9 +337,8 @@ testComponent_testing_value{project="p1",revision="r2"} 1
 			UnregisterResourceView(gaugeView, resourceCounter)
 			FlushExporter()
 
-			time.Sleep(1 * time.Millisecond)
+			time.Sleep(time.Millisecond)
 			ocFake.srv.Stop() // Force close connections
-			ocFake.srv.GracefulStop()
 			records := []metricExtract{}
 			for record := range ocFake.published {
 				for _, m := range record.Metrics {
@@ -600,16 +600,16 @@ type openCensusFake struct {
 }
 
 func (oc *openCensusFake) start() error {
-	oc.published = make(chan ocmetrics.ExportMetricsServiceRequest, 100)
-	oc.wg.Add(1) // Make sure that add is called before Done
 	ln, err := net.Listen("tcp", oc.address)
 	if err != nil {
 		return err
 	}
+	oc.published = make(chan ocmetrics.ExportMetricsServiceRequest, 100)
 	oc.srv = grpc.NewServer()
 	ocmetrics.RegisterMetricsServiceServer(oc.srv, oc)
 	// Run the server in the background.
 	go func() {
+		oc.wg.Add(1)
 		oc.srv.Serve(ln)
 		oc.wg.Done()
 		oc.wg.Wait()
@@ -672,30 +672,30 @@ func (sd *stackDriverFake) CreateTimeSeries(ctx context.Context, req *stackdrive
 }
 
 func (sd *stackDriverFake) ListMonitoredResourceDescriptors(ctx context.Context, req *stackdriverpb.ListMonitoredResourceDescriptorsRequest) (*stackdriverpb.ListMonitoredResourceDescriptorsResponse, error) {
-	sd.t.Fatalf("ListMonitoredResourceDescriptors")
-	return nil, fmt.Errorf("Unimplemented")
+	sd.t.Fatal("ListMonitoredResourceDescriptors")
+	return nil, errors.New("Unimplemented")
 }
 
 func (sd *stackDriverFake) GetMonitoredResourceDescriptor(context.Context, *stackdriverpb.GetMonitoredResourceDescriptorRequest) (*monitoredrespb.MonitoredResourceDescriptor, error) {
-	sd.t.Fatalf("GetMonitoredResourceDescriptor")
-	return nil, fmt.Errorf("Unimplemented")
+	sd.t.Fatal("GetMonitoredResourceDescriptor")
+	return nil, errors.New("Unimplemented")
 }
 func (sd *stackDriverFake) ListMetricDescriptors(context.Context, *stackdriverpb.ListMetricDescriptorsRequest) (*stackdriverpb.ListMetricDescriptorsResponse, error) {
-	sd.t.Fatalf("ListMetricDescriptors")
-	return nil, fmt.Errorf("Unimplemented")
+	sd.t.Fatal("ListMetricDescriptors")
+	return nil, errors.New("Unimplemented")
 }
 func (sd *stackDriverFake) GetMetricDescriptor(context.Context, *stackdriverpb.GetMetricDescriptorRequest) (*metricpb.MetricDescriptor, error) {
-	sd.t.Fatalf("GetMetricDescriptor")
-	return nil, fmt.Errorf("Unimplemented")
+	sd.t.Fatal("GetMetricDescriptor")
+	return nil, errors.New("Unimplemented")
 }
 func (sd *stackDriverFake) CreateMetricDescriptor(ctx context.Context, req *stackdriverpb.CreateMetricDescriptorRequest) (*metricpb.MetricDescriptor, error) {
 	return req.MetricDescriptor, nil
 }
 func (sd *stackDriverFake) DeleteMetricDescriptor(context.Context, *stackdriverpb.DeleteMetricDescriptorRequest) (*emptypb.Empty, error) {
-	sd.t.Fatalf("DeleteMetricDescriptor")
-	return nil, fmt.Errorf("Unimplemented")
+	sd.t.Fatal("DeleteMetricDescriptor")
+	return nil, errors.New("Unimplemented")
 }
 func (sd *stackDriverFake) ListTimeSeries(context.Context, *stackdriverpb.ListTimeSeriesRequest) (*stackdriverpb.ListTimeSeriesResponse, error) {
-	sd.t.Fatalf("ListTimeSeries")
-	return nil, fmt.Errorf("Unimplemented")
+	sd.t.Fatal("ListTimeSeries")
+	return nil, errors.New("Unimplemented")
 }
