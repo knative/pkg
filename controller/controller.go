@@ -208,15 +208,29 @@ type Impl struct {
 // NewImpl instantiates an instance of our controller that will feed work to the
 // provided Reconciler as it is enqueued.
 func NewImpl(r Reconciler, logger *zap.SugaredLogger, workQueueName string) *Impl {
-	return NewImplWithStats(r, logger, workQueueName, MustNewStatsReporter(workQueueName, logger))
+	return NewImplFull(r, logger, workQueueName, MustNewStatsReporter(workQueueName, logger), nil)
 }
 
 func NewImplWithStats(r Reconciler, logger *zap.SugaredLogger, workQueueName string, reporter StatsReporter) *Impl {
+        return NewImplFull(r, logger, workQueueName, reporter, nil)
+}
+
+func NewImplWithLimiter(r Reconciler, logger *zap.SugaredLogger, workQueueName string, ratelimiter *workqueue.RateLimiter) *Impl {
+        return NewImplFull(r, logger, workQueueName, MustNewStatsReporter(workQueueName, logger), ratelimiter)
+}
+
+func NewImplFull(r Reconciler, logger *zap.SugaredLogger, workQueueName string, reporter StatsReporter, rateLimiter *workqueue.RateLimiter) *Impl {
 	logger = logger.Named(workQueueName)
+	var rl workqueue.RateLimiter
+	if rateLimiter == nil {
+		rl = workqueue.DefaultControllerRateLimiter()
+	} else {
+		rl = *rateLimiter
+	}
 	return &Impl{
 		Name:          workQueueName,
 		Reconciler:    r,
-		workQueue:     newTwoLaneWorkQueue(workQueueName),
+		workQueue:     newTwoLaneWorkQueue(workQueueName, rl),
 		logger:        logger,
 		statsReporter: reporter,
 	}

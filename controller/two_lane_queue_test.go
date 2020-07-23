@@ -22,10 +22,11 @@ import (
 	"time"
 
 	"k8s.io/apimachinery/pkg/util/wait"
+        "k8s.io/client-go/util/workqueue"
 )
 
 func TestSlowQueue(t *testing.T) {
-	q := newTwoLaneWorkQueue("live-in-the-fast-lane")
+	q := newTwoLaneWorkQueue("live-in-the-fast-lane", workqueue.DefaultControllerRateLimiter())
 	q.SlowLane().Add("1")
 	// Queue has async moving parts so if we check at the wrong moment, this might still be 0.
 	if wait.PollImmediate(10*time.Millisecond, 250*time.Millisecond, func() (bool, error) {
@@ -53,7 +54,7 @@ func TestSlowQueue(t *testing.T) {
 
 func TestDoubleKey(t *testing.T) {
 	// Verifies that we don't get double concurrent processing of the same key.
-	q := newTwoLaneWorkQueue("live-in-the-fast-lane")
+	q := newTwoLaneWorkQueue("live-in-the-fast-lane", workqueue.DefaultControllerRateLimiter())
 	q.Add("1")
 	t.Cleanup(q.ShutDown)
 
@@ -97,7 +98,7 @@ func TestDoubleKey(t *testing.T) {
 
 func TestOrder(t *testing.T) {
 	// Verifies that we read from the fast queue first.
-	q := newTwoLaneWorkQueue("live-in-the-fast-lane")
+	q := newTwoLaneWorkQueue("live-in-the-fast-lane", workqueue.DefaultControllerRateLimiter())
 	stop := make(chan struct{})
 	t.Cleanup(func() {
 		close(stop)
