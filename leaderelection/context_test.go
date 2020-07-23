@@ -22,11 +22,11 @@ package leaderelection
 import (
 	"context"
 	"os"
-	"reflect"
 	"sort"
 	"testing"
 	"time"
 
+	"github.com/google/go-cmp/cmp"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/sets"
@@ -37,10 +37,10 @@ import (
 )
 
 func TestWithBuilder(t *testing.T) {
-	buckets := 3
+	const buckets = 3
 	cc := ComponentConfig{
 		Component:     "the-component",
-		Buckets:       uint32(buckets),
+		Buckets:       buckets,
 		LeaseDuration: 15 * time.Second,
 		RenewDeadline: 10 * time.Second,
 		RetryPeriod:   2 * time.Second,
@@ -48,13 +48,12 @@ func TestWithBuilder(t *testing.T) {
 	kc := fakekube.NewSimpleClientset()
 	ctx := context.Background()
 
-	gotNames := make(sets.String, 3)
-	promoted := make(chan struct{})
+	gotNames := make(sets.String, buckets)
+	promoted := make(chan string)
 	demoted := make(chan struct{})
 	laf := &reconciler.LeaderAwareFuncs{
 		PromoteFunc: func(bkt reconciler.Bucket, enq func(reconciler.Bucket, types.NamespacedName)) error {
-			gotNames.Insert(bkt.Name())
-			promoted <- struct{}{}
+			promoted <- bkt.Name()
 			return nil
 		},
 		DemoteFunc: func(bkt reconciler.Bucket) {
@@ -105,7 +104,8 @@ func TestWithBuilder(t *testing.T) {
 
 	// We shouldn't see leases until we Run the elector.
 	select {
-	case <-promoted:
+	case s := <-promoted:
+		gotNames.Insert(s)
 		t.Error("Got promoted, want no actions.")
 	case <-demoted:
 		t.Error("Got demoted, want no actions.")
@@ -131,8 +131,9 @@ func TestWithBuilder(t *testing.T) {
 	// We expect to have been promoted 3 times.
 	for i := 0; i < buckets; i++ {
 		select {
-		case <-promoted:
-		case <-time.After(1 * time.Second):
+		case s := <-promoted:
+			gotNames.Insert(s)
+		case <-time.After(time.Second):
 			t.Fatal("Timed out waiting for promotion.")
 		}
 	}
@@ -143,25 +144,25 @@ func TestWithBuilder(t *testing.T) {
 	select {
 	case <-updated:
 		// We expect the lease to be updated.
-	case <-time.After(1 * time.Second):
+	case <-time.After(time.Second):
 		t.Fatal("Timed out waiting for lease update.")
 	}
 	// We expect to have been demoted 3 times.
 	for i := 0; i < buckets; i++ {
 		select {
 		case <-demoted:
-		case <-time.After(1 * time.Second):
+		case <-time.After(time.Second):
 			t.Fatal("Timed out waiting for demotion.")
 		}
 	}
 
-	want := []string{
+	want := sets.NewString(
 		"the-component.name.00-of-03",
 		"the-component.name.01-of-03",
 		"the-component.name.02-of-03",
-	}
-	if got := gotNames.List(); !reflect.DeepEqual(got, want) {
-		t.Errorf("BucketSet.BucketList() = %q, want: %q", got, want)
+	)
+	if !gotNames.Equal(want) {
+		t.Errorf("BucketSet.BucketList() = %q, want: %q", gotNames, want)
 	}
 }
 
@@ -197,7 +198,7 @@ func TestNewStatefulSetBucketAndSet(t *testing.T) {
 
 	gotNames := bs.BucketList()
 	sort.Strings(gotNames)
-	if !reflect.DeepEqual(gotNames, wantNames) {
+	if !cmp.Equal(gotNames, wantNames) {
 		t.Errorf("BucketSet.BucketList() = %q, want: %q", gotNames, wantNames)
 	}
 }
@@ -268,7 +269,7 @@ func TestWithStatefulSetBuilder(t *testing.T) {
 	select {
 	case <-promoted:
 		// We expect to have been promoted.
-	case <-time.After(1 * time.Second):
+	case <-time.After(time.Second):
 		t.Fatal("Timed out waiting for promotion.")
 	}
 }
