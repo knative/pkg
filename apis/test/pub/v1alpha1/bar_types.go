@@ -27,7 +27,7 @@ import (
 )
 
 // +genclient
-// +genreconciler:class=example.com/filter.class
+// +genreconciler:class=example.com/filter.class,stubs
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
 // Bar is for testing.
