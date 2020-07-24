@@ -41,23 +41,19 @@ func TestHTTPRoundTripper(t *testing.T) {
 		label      string
 		protoMajor int
 		want       string
-	}{
-		{
-			label:      "use default transport for HTTP1",
-			protoMajor: 1,
-			want:       "v1",
-		},
-		{
-			label:      "use h2c transport for HTTP2",
-			protoMajor: 2,
-			want:       "v2",
-		},
-		{
-			label:      "use default transport for all others",
-			protoMajor: 99,
-			want:       "v1",
-		},
-	}
+	}{{
+		label:      "use default transport for HTTP1",
+		protoMajor: 1,
+		want:       "v1",
+	}, {
+		label:      "use h2c transport for HTTP2",
+		protoMajor: 2,
+		want:       "v2",
+	}, {
+		label:      "use default transport for all others",
+		protoMajor: 99,
+		want:       "v1",
+	}}
 
 	for _, e := range examples {
 		t.Run(e.label, func(t *testing.T) {
@@ -100,7 +96,7 @@ func TestDialWithBackoff(t *testing.T) {
 
 	c, err = DialWithBackOff(context.Background(), "tcp4", strings.TrimPrefix(s.URL, "http://"))
 	if err != nil {
-		t.Fatalf("dial error = %v, want nil", err)
+		t.Fatal("Dial error =", err)
 	}
 	c.Close()
 }
