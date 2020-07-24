@@ -49,13 +49,6 @@ func (f *fixedRateLimiter) NumRequeues(item interface{}) int {
 	return 0
 }
 
-func ensureRecorded() {
-	// stats.Record queues the actual record to a channel to be accounted for by
-	// a background goroutine (nonblocking). Call a method which does a
-	// round-trip to that goroutine to ensure that records have been flushed.
-	view.Find("nonexistent")
-}
-
 func TestWorkqueueMetrics(t *testing.T) {
 	wp := &WorkqueueProvider{
 		Adds:                           newInt64("adds"),
@@ -88,7 +81,6 @@ func TestWorkqueueMetrics(t *testing.T) {
 		"unfinished_work_seconds", "longest_running_processor_seconds")
 
 	wq.Add("foo")
-	ensureRecorded()
 
 	metricstest.AssertMetricExists(t, "adds", "depth")
 	metricstest.AssertNoMetric(t, "latency", "retries", "work_duration",
@@ -98,7 +90,6 @@ func TestWorkqueueMetrics(t *testing.T) {
 	metricstest.AssertMetric(t, wantAdd, wantDepth)
 
 	wq.Add("bar")
-	ensureRecorded()
 
 	metricstest.AssertNoMetric(t, "latency", "retries", "work_duration",
 		"unfinished_work_seconds", "longest_running_processor_seconds")
@@ -114,7 +105,6 @@ func TestWorkqueueMetrics(t *testing.T) {
 		wq.Forget(got)
 		wq.Done(got)
 	}
-	ensureRecorded()
 
 	metricstest.AssertMetricExists(t, "latency", "work_duration")
 	metricstest.AssertNoMetric(t, "retries",
@@ -129,7 +119,6 @@ func TestWorkqueueMetrics(t *testing.T) {
 		wq.AddRateLimited(got)
 		wq.Done(got)
 	}
-	ensureRecorded()
 
 	// It should show up as a retry now.
 	metricstest.AssertMetricExists(t, "retries")
