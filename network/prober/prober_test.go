@@ -77,7 +77,7 @@ func TestDoServing(t *testing.T) {
 	}}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			got, err := Do(context.Background(), network.NewAutoTransport(), ts.URL, WithHeader(network.ProbeHeaderName, test.headerValue), ExpectsBody(systemName), ExpectsStatusCodes([]int{http.StatusOK}))
+			got, err := Do(context.Background(), network.NewProberTransport(), ts.URL, WithHeader(network.ProbeHeaderName, test.headerValue), ExpectsBody(systemName), ExpectsStatusCodes([]int{http.StatusOK}))
 			if want := test.want; got != want {
 				t.Errorf("Got = %v, want: %v", got, want)
 			}
@@ -107,7 +107,7 @@ func TestBlackHole(t *testing.T) {
 }
 
 func TestBadURL(t *testing.T) {
-	_, err := Do(context.Background(), network.NewAutoTransport(), ":foo", ExpectsStatusCodes([]int{http.StatusOK}))
+	_, err := Do(context.Background(), network.NewProberTransport(), ":foo", ExpectsStatusCodes([]int{http.StatusOK}))
 	if err == nil {
 		t.Error("Do did not return an error")
 	}
