@@ -165,14 +165,16 @@ func FloatMetric(name string, value float64, keyvalues ...string) Metric {
 	return genericMetricFactory(name, Value{Float64: &value}, keyvalues...)
 }
 
-// AssertMetric verifies that the metrics have the specified values.
-// Calls EnsureRecorded internally before fetching the batch of metrics.
+// AssertMetric verifies that the metrics have the specified values. Note that
+// this method will spuriously fail if there are multiple metrics with the same
+// name on different Meters. Calls EnsureRecorded internally before fetching the
+// batch of metrics.
 func AssertMetric(t *testing.T, values ...Metric) {
 	t.Helper()
 	EnsureRecorded()
 	for _, v := range values {
 		if diff := cmp.Diff(v, GetOneMetric(v.Name)); diff != "" {
-			t.Errorf("Wrong adds (-want +got): %s", diff)
+			t.Errorf("Wrong metric (-want +got): %s", diff)
 		}
 	}
 }
@@ -181,13 +183,11 @@ func AssertMetric(t *testing.T, values ...Metric) {
 // each of metric names.
 // Calls EnsureRecorded internally before fetching the batch of metrics.
 func AssertMetricExists(t *testing.T, names ...string) {
-	t.Helper()
-	EnsureRecorded()
-	for _, name := range names {
-		if len(GetMetric(name)) == 0 {
-			t.Errorf("No metrics found for %q", name)
-		}
+	metrics := make([]Metric, 0, len(names))
+	for _, n := range names {
+		metrics = append(metrics, Metric{Name: n})
 	}
+	AssertMetric(t, metrics...)
 }
 
 // AssertNoMetric verifies that no metrics have been reported for any of the

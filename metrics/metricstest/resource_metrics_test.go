@@ -338,7 +338,7 @@ func TestMetricFetch(t *testing.T) {
 	stats.Record(ctx, count.M(5))
 	stats.Record(ctx, count.M(3))
 
-	AssertMetric(t, Metric{Name: "count"})
+	AssertMetricExists(t, "count")
 	AssertNoMetric(t, "other")
 
 	ctx, err = tag.New(ctx, tag.Upsert(tagKey, "beta"))
