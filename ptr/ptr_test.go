@@ -21,9 +21,8 @@ import (
 	"time"
 )
 
-const want = 55
-
 func TestInt32(t *testing.T) {
+	const want = 55
 	gotPtr := Int32(want)
 	if want != *gotPtr {
 		t.Errorf("Int32() = &%v, wanted %v", *gotPtr, want)
@@ -31,9 +30,26 @@ func TestInt32(t *testing.T) {
 }
 
 func TestInt64(t *testing.T) {
+	const want = 55
 	gotPtr := Int64(want)
 	if want != *gotPtr {
 		t.Errorf("Int64() = &%v, wanted %v", *gotPtr, want)
+	}
+}
+
+func TestFloat32(t *testing.T) {
+	const want = 1.25
+	gotPtr := Float32(want)
+	if want != *gotPtr {
+		t.Errorf("Float32() = &%v, wanted %v", *gotPtr, want)
+	}
+}
+
+func TestFloat64(t *testing.T) {
+	const want = 1.25
+	gotPtr := Float64(want)
+	if want != *gotPtr {
+		t.Errorf("Float64() = &%v, wanted %v", *gotPtr, want)
 	}
 }
 
