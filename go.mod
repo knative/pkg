@@ -47,7 +47,7 @@ require (
 	golang.org/x/sync v0.0.0-20200625203802-6e8e738ad208
 	gomodules.xyz/jsonpatch/v2 v2.1.0
 	google.golang.org/api v0.29.0
-	google.golang.org/genproto v0.0.0-20200722002428-88e341933a54
+	google.golang.org/genproto v0.0.0-20200724131911-43cab4749ae7
 	google.golang.org/grpc v1.30.0
 	gopkg.in/yaml.v2 v2.3.0
 	gopkg.in/yaml.v3 v3.0.0-20190709130402-674ba3eaed22
@@ -59,7 +59,7 @@ require (
 	k8s.io/gengo v0.0.0-20200205140755-e0e292d8aa12
 	k8s.io/klog v1.0.0
 	k8s.io/utils v0.0.0-20200124190032-861946025e34 // indirect
-	knative.dev/test-infra v0.0.0-20200724213858-d5ec9cdc6b33
+	knative.dev/test-infra v0.0.0-20200725213358-8557dab80d7a
 	sigs.k8s.io/boskos v0.0.0-20200717180850-7299d535c033
 )
 
