@@ -62,6 +62,28 @@ func TestEnsureTypeMeta(t *testing.T) {
 			},
 		},
 	}, {
+		name: "called with wrong type meta",
+		obj: &Resource{
+			TypeMeta: metav1.TypeMeta{
+				APIVersion: "foo",
+				Kind:       "bar",
+			},
+			ObjectMeta: metav1.ObjectMeta{
+				Namespace: "default",
+				Name:      "thing",
+			},
+		},
+		want: &Resource{
+			TypeMeta: metav1.TypeMeta{
+				APIVersion: apiVersion,
+				Kind:       kind,
+			},
+			ObjectMeta: metav1.ObjectMeta{
+				Namespace: "default",
+				Name:      "thing",
+			},
+		},
+	}, {
 		name: "called with deleted obj",
 		obj: cache.DeletedFinalStateUnknown{
 			Key: "default/thing",
