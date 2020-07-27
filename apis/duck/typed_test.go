@@ -151,7 +151,7 @@ func TestAsStructuredWatcherClosedChannel(t *testing.T) {
 func TestAsStructuredWatcherPassThru(t *testing.T) {
 	unstructuredCh := make(chan watch.Event)
 	nwf := func(lo metav1.ListOptions) (watch.Interface, error) {
-		return duck.NewProxyWatcher(unstructuredCh), nil
+		return watch.NewProxyWatcher(unstructuredCh), nil
 	}
 
 	wf := duck.AsStructuredWatcher(nwf, &duckv1alpha1.AddressableType{})
@@ -197,7 +197,7 @@ func TestAsStructuredWatcherPassThru(t *testing.T) {
 func TestAsStructuredWatcherPassThruErrors(t *testing.T) {
 	unstructuredCh := make(chan watch.Event)
 	nwf := func(lo metav1.ListOptions) (watch.Interface, error) {
-		return duck.NewProxyWatcher(unstructuredCh), nil
+		return watch.NewProxyWatcher(unstructuredCh), nil
 	}
 
 	wf := duck.AsStructuredWatcher(nwf, &duckv1alpha1.AddressableType{})
@@ -234,7 +234,7 @@ func TestAsStructuredWatcherPassThruErrors(t *testing.T) {
 func TestAsStructuredWatcherErrorConverting(t *testing.T) {
 	unstructuredCh := make(chan watch.Event)
 	nwf := func(lo metav1.ListOptions) (watch.Interface, error) {
-		return duck.NewProxyWatcher(unstructuredCh), nil
+		return watch.NewProxyWatcher(unstructuredCh), nil
 	}
 
 	wf := duck.AsStructuredWatcher(nwf, &badObject{})
