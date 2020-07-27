@@ -21,12 +21,16 @@ limitations under the License.
 package metricstest
 
 import (
+	"context"
 	"testing"
 	"time"
 
 	"github.com/google/go-cmp/cmp"
 	"go.opencensus.io/metric/metricdata"
 	"go.opencensus.io/resource"
+	"go.opencensus.io/stats"
+	"go.opencensus.io/stats/view"
+	"go.opencensus.io/tag"
 )
 
 func TestMetricEqual(t *testing.T) {
@@ -314,4 +318,54 @@ func TestMetricShortcuts(t *testing.T) {
 			t.Errorf("Metric.Equal() failed (-want +got): %s", diff)
 		}
 	}
+}
+
+func TestMetricFetch(t *testing.T) {
+	count := stats.Int64("count", "Test count metric", stats.UnitBytes)
+	tagKey := tag.MustNewKey("tag")
+	countView := &view.View{
+		Measure:     count,
+		Aggregation: view.Sum(),
+		TagKeys:     []tag.Key{tagKey},
+	}
+
+	view.Register(countView)
+
+	ctx, err := tag.New(context.Background(), tag.Upsert(tagKey, "alpha"))
+	if err != nil {
+		t.Errorf("Unable to create context: %v", err)
+	}
+	stats.Record(ctx, count.M(5))
+	stats.Record(ctx, count.M(3))
+
+	AssertMetricExists(t, "count")
+	AssertNoMetric(t, "other")
+
+	ctx, err = tag.New(ctx, tag.Upsert(tagKey, "beta"))
+	if err != nil {
+		t.Errorf("Unable to create context: %v", err)
+	}
+	stats.Record(ctx, count.M(20))
+	EnsureRecorded()
+	m := GetMetric("count")
+
+	if len(m) != 1 {
+		t.Errorf("Unexpected number of found metrics (%d): %+v", len(m), m)
+	}
+
+	alphaValue, betaValue := int64(8), int64(20)
+
+	want := Metric{
+		Name: "count",
+		Type: metricdata.TypeCumulativeInt64,
+		Unit: metricdata.UnitBytes,
+		Values: []Value{
+			{Tags: map[string]string{"tag": "alpha"}, Int64: &alphaValue},
+			{Tags: map[string]string{"tag": "beta"}, Int64: &betaValue},
+		},
+	}
+	if diff := cmp.Diff(want, m[0]); diff != "" {
+		t.Errorf("Incorrect received metrics (-want +got): %s", diff)
+	}
+
 }

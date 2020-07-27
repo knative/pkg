@@ -47,6 +47,7 @@ import (
 	"google.golang.org/grpc"
 	logtesting "knative.dev/pkg/logging/testing"
 	"knative.dev/pkg/metrics/metricskey"
+	"knative.dev/pkg/metrics/metricstest"
 	//_ "knative.dev/pkg/metrics/testing"
 )
 
@@ -295,6 +296,7 @@ func TestMetricsExport(t *testing.T) {
 			return UpdateExporter(configForBackend(prometheus), logtesting.TestLogger(t))
 		},
 		validate: func(t *testing.T) {
+			metricstest.EnsureRecorded()
 			resp, err := http.Get(fmt.Sprintf("http://localhost:%d/metrics", prometheusPort))
 			if err != nil {
 				t.Fatalf("failed to fetch prometheus metrics: %+v", err)
