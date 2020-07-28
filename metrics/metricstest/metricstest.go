@@ -151,14 +151,8 @@ func CheckLastValueData(t test.T, name string, wantTags map[string]string, wantV
 // the tags in wantTags and that wantValue matches the last reported value.
 func CheckLastValueDataWithMeter(t test.T, name string, wantTags map[string]string, wantValue float64, meter view.Meter) {
 	t.Helper()
-	if row := lastRow(t, name, meter); row != nil {
-		checkRowTags(t, row, name, wantTags)
-
-		if s, ok := row.Data.(*view.LastValueData); !ok {
-			t.Error("want LastValueData", "metric", name, "got", reflect.TypeOf(row.Data))
-		} else if s.Value != wantValue {
-			t.Error("Reporter.Report() wrong value", "metric", name, "got", s.Value, "want", wantValue)
-		}
+	if v := GetLastValueDataWithMeter(t, name, wantTags, meter); v != wantValue {
+		t.Error("Reporter.Report() wrong value", "metric", name, "got", v, "want", wantValue)
 	}
 }
 
