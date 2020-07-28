@@ -211,12 +211,12 @@ func NewImpl(r Reconciler, logger *zap.SugaredLogger, workQueueName string) *Imp
 	return NewImplFull(r, logger, workQueueName, MustNewStatsReporter(workQueueName, logger), nil)
 }
 
-func NewImplWithStats(r Reconciler, logger *zap.SugaredLogger, workQueueName string, reporter StatsReporter) *Impl {
-        return NewImplFull(r, logger, workQueueName, reporter, nil)
+func NewImplWithRateLimiter(r Reconciler, logger *zap.SugaredLogger, workQueueName string, rateLimiter *workqueue.RateLimiter) *Impl {
+	return NewImplFull(r, logger, workQueueName, nil, rateLimiter)
 }
 
-func NewImplWithLimiter(r Reconciler, logger *zap.SugaredLogger, workQueueName string, ratelimiter *workqueue.RateLimiter) *Impl {
-        return NewImplFull(r, logger, workQueueName, MustNewStatsReporter(workQueueName, logger), ratelimiter)
+func NewImplWithStats(r Reconciler, logger *zap.SugaredLogger, workQueueName string, reporter StatsReporter) *Impl {
+	return NewImplFull(r, logger, workQueueName, reporter, nil)
 }
 
 func NewImplFull(r Reconciler, logger *zap.SugaredLogger, workQueueName string, reporter StatsReporter, rateLimiter *workqueue.RateLimiter) *Impl {
