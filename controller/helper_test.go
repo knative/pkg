@@ -44,8 +44,52 @@ func TestEnsureTypeMeta(t *testing.T) {
 		name: "not a runtime.Object",
 		obj:  struct{}{},
 	}, {
-		name: "called with type meta",
+		name: "called without type meta",
 		obj: &Resource{
+			ObjectMeta: metav1.ObjectMeta{
+				Namespace: "default",
+				Name:      "thing",
+			},
+		},
+		want: &Resource{
+			TypeMeta: metav1.TypeMeta{
+				APIVersion: apiVersion,
+				Kind:       kind,
+			},
+			ObjectMeta: metav1.ObjectMeta{
+				Namespace: "default",
+				Name:      "thing",
+			},
+		},
+	}, {
+		name: "called with correct type meta",
+		obj: &Resource{
+			TypeMeta: metav1.TypeMeta{
+				APIVersion: apiVersion,
+				Kind:       kind,
+			},
+			ObjectMeta: metav1.ObjectMeta{
+				Namespace: "default",
+				Name:      "thing",
+			},
+		},
+		want: &Resource{
+			TypeMeta: metav1.TypeMeta{
+				APIVersion: apiVersion,
+				Kind:       kind,
+			},
+			ObjectMeta: metav1.ObjectMeta{
+				Namespace: "default",
+				Name:      "thing",
+			},
+		},
+	}, {
+		name: "called with wrong type meta",
+		obj: &Resource{
+			TypeMeta: metav1.TypeMeta{
+				APIVersion: "foo",
+				Kind:       "bar",
+			},
 			ObjectMeta: metav1.ObjectMeta{
 				Namespace: "default",
 				Name:      "thing",
