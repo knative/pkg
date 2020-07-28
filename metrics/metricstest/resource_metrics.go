@@ -145,54 +145,37 @@ func GetOneMetric(name string) Metric {
 	return m[0]
 }
 
-func genericMetricFactory(name string, v Value, keyvalues ...string) Metric {
-	if len(keyvalues)%2 != 0 {
-		panic("Odd number of arguments to CountMetric")
-	}
-	if v.Tags == nil {
-		v.Tags = make(map[string]string, len(keyvalues)/2)
-	}
-	for i := 0; i < len(keyvalues); i += 2 {
-		v.Tags[keyvalues[i]] = keyvalues[i+1]
-	}
+// IntMetric creates an Int64 metric.
+func IntMetric(name string, value int64, tags map[string]string) Metric {
 	return Metric{
 		Name:   name,
-		Values: []Value{v},
+		Values: []Value{{Int64: &value, Tags: tags}},
 	}
 }
 
-// IntMetric is a shortcut factory for creating an Int64 metric.
-func IntMetric(name string, value int64, keyvalues ...string) Metric {
-	return genericMetricFactory(name, Value{Int64: &value}, keyvalues...)
-}
-
-// FloatMetric is a shortcut factor for creating a Float64 metric
-func FloatMetric(name string, value float64, keyvalues ...string) Metric {
-	return genericMetricFactory(name, Value{Float64: &value}, keyvalues...)
-}
-
-func metricWithResourceFactory(name string, v Value, r *resource.Resource, tags map[string]string) Metric {
+// FloatMetric creates a Float64 metric
+func FloatMetric(name string, value float64, tags map[string]string) Metric {
 	return Metric{
-		Name:           name,
-		Values:         []Value{v},
-		VerifyResource: true,
-		Resource:       r,
+		Name:   name,
+		Values: []Value{{Float64: &value, Tags: tags}},
 	}
 }
 
-// IntMetricWithResource is a shortcut factory for creating an Int64 metric with resource.
-func IntMetricWithResource(name string, value int64, tags map[string]string, r *resource.Resource) Metric {
-	return metricWithResourceFactory(name, Value{Int64: &value, Tags: tags}, r, tags)
+// DistributionCountOnlyMetric creates a distrubtion metric for test, and verifying only the count.
+func DistributionCountOnlyMetric(name string, count int64, tags map[string]string) Metric {
+	return Metric{
+		Name: name,
+		Values: []Value{{
+			Distribution:                &metricdata.Distribution{Count: count},
+			Tags:                        tags,
+			VerifyDistributionCountOnly: true}},
+	}
 }
 
-// FloatMetricWithResource is a shortcut factory for creating a Float64 metric with resource.
-func FloatMetricWithResource(name string, value float64, tags map[string]string, r *resource.Resource) Metric {
-	return metricWithResourceFactory(name, Value{Float64: &value, Tags: tags}, r, tags)
-}
-
-// DistributionCountOnlyMetricWithResource is a shortcut factory for creating a Distribution metric with resource, and verifying only the count.
-func DistributionCountOnlyMetricWithResource(name string, count int64, tags map[string]string, r *resource.Resource) Metric {
-	return metricWithResourceFactory(name, Value{Distribution: &metricdata.Distribution{Count: count}, Tags: tags, VerifyDistributionCountOnly: true}, r, tags)
+// WithResource sets the resource of the metric.
+func (m Metric) WithResource(r *resource.Resource) Metric {
+	m.Resource = r
+	return m
 }
 
 // AssertMetric verifies that the metrics have the specified values. Note that
@@ -328,27 +311,28 @@ func (v Value) Equal(other Value) bool {
 		if v.Distribution.Count != other.Distribution.Count {
 			return false
 		}
-		if !v.VerifyDistributionCountOnly && !other.VerifyDistributionCountOnly {
-			if v.Distribution.Sum != other.Distribution.Sum {
+		if v.VerifyDistributionCountOnly || other.VerifyDistributionCountOnly {
+			return true
+		}
+		if v.Distribution.Sum != other.Distribution.Sum {
+			return false
+		}
+		if v.Distribution.SumOfSquaredDeviation != other.Distribution.SumOfSquaredDeviation {
+			return false
+		}
+		if v.Distribution.BucketOptions != nil {
+			if other.Distribution.BucketOptions == nil {
 				return false
 			}
-			if v.Distribution.SumOfSquaredDeviation != other.Distribution.SumOfSquaredDeviation {
+			for i, bo := range v.Distribution.BucketOptions.Bounds {
+				if bo != other.Distribution.BucketOptions.Bounds[i] {
+					return false
+				}
+			}
+		}
+		for i, b := range v.Distribution.Buckets {
+			if b.Count != other.Distribution.Buckets[i].Count {
 				return false
-			}
-			if v.Distribution.BucketOptions != nil {
-				if other.Distribution.BucketOptions == nil {
-					return false
-				}
-				for i, bo := range v.Distribution.BucketOptions.Bounds {
-					if bo != other.Distribution.BucketOptions.Bounds[i] {
-						return false
-					}
-				}
-			}
-			for i, b := range v.Distribution.Buckets {
-				if b.Count != other.Distribution.Buckets[i].Count {
-					return false
-				}
 			}
 		}
 	}

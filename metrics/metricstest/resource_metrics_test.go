@@ -312,7 +312,7 @@ func TestMetricShortcuts(t *testing.T) {
 		got  metricdata.Metric
 	}{{
 		name: "IntMetric",
-		want: IntMetric("test/int", 17, "key1", "val1", "key2", "val2"),
+		want: IntMetric("test/int", 17, map[string]string{"key1": "val1", "key2": "val2"}),
 		got: metricdata.Metric{
 			Descriptor: metricdata.Descriptor{
 				Name:      "test/int",
@@ -325,7 +325,7 @@ func TestMetricShortcuts(t *testing.T) {
 		},
 	}, {
 		name: "FloatMetric",
-		want: FloatMetric("test/float", 0.17, "key1", "val1", "key2", "val2"),
+		want: FloatMetric("test/float", 0.17, map[string]string{"key1": "val1", "key2": "val2"}),
 		got: metricdata.Metric{
 			Descriptor: metricdata.Descriptor{
 				Name:      "test/float",
@@ -338,7 +338,7 @@ func TestMetricShortcuts(t *testing.T) {
 		},
 	}, {
 		name: "IntMetricWithResource",
-		want: IntMetricWithResource("test/int", 18, tags, r),
+		want: IntMetric("test/int", 18, tags).WithResource(r),
 		got: metricdata.Metric{
 			Descriptor: metricdata.Descriptor{
 				Name:      "test/int",
@@ -352,7 +352,7 @@ func TestMetricShortcuts(t *testing.T) {
 		},
 	}, {
 		name: "FloatMetricWithResource",
-		want: FloatMetricWithResource("test/float", 0.18, tags, r),
+		want: FloatMetric("test/float", 0.18, tags).WithResource(r),
 		got: metricdata.Metric{
 			Descriptor: metricdata.Descriptor{
 				Name:      "test/float",
@@ -366,7 +366,7 @@ func TestMetricShortcuts(t *testing.T) {
 		},
 	}, {
 		name: "DistributionCountOnlyMetricWithResource",
-		want: DistributionCountOnlyMetricWithResource("test/distribution", 19, tags, r),
+		want: DistributionCountOnlyMetric("test/distribution", 19, tags).WithResource(r),
 		got: metricdata.Metric{
 			Descriptor: metricdata.Descriptor{
 				Name:      "test/distribution",

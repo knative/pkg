@@ -85,8 +85,8 @@ func TestWorkqueueMetrics(t *testing.T) {
 	metricstest.AssertMetricExists(t, "adds", "depth")
 	metricstest.AssertNoMetric(t, "latency", "retries", "work_duration",
 		"unfinished_work_seconds", "longest_running_processor_seconds")
-	wantAdd := metricstest.IntMetric("adds", 1, "name", queueName)
-	wantDepth := metricstest.IntMetric("depth", 1, "name", queueName)
+	wantAdd := metricstest.IntMetric("adds", 1, map[string]string{"name": queueName})
+	wantDepth := metricstest.IntMetric("depth", 1, map[string]string{"name": queueName})
 	metricstest.AssertMetric(t, wantAdd, wantDepth)
 
 	wq.Add("bar")
@@ -123,7 +123,7 @@ func TestWorkqueueMetrics(t *testing.T) {
 	// It should show up as a retry now.
 	metricstest.AssertMetricExists(t, "retries")
 	metricstest.AssertNoMetric(t, "unfinished_work_seconds", "longest_running_processor_seconds")
-	wantRetries := metricstest.IntMetric("retries", 1, "name", queueName)
+	wantRetries := metricstest.IntMetric("retries", 1, map[string]string{"name": queueName})
 	metricstest.AssertMetric(t, wantRetries, wantAdd) // It is not added right away.
 
 	// It doesn't show up as an "add" until the rate limit has elapsed.
