@@ -41,6 +41,10 @@ type Value struct {
 	Int64        *int64
 	Float64      *float64
 	Distribution *metricdata.Distribution
+	// VerifyDistributionCountOnly makes Equal compare the Distribution with the
+	// field Count only, and ingore all other fields of Distribution.
+	// This is ingored when the value is not a Distribution.
+	VerifyDistributionCountOnly bool
 }
 
 // Metric provides a simplified (for testing) implementation of a metric report
@@ -93,7 +97,9 @@ func NewMetric(metric *metricdata.Metric) Metric {
 	for _, ts := range metric.TimeSeries {
 		tags := make(map[string]string, len(metric.Descriptor.LabelKeys))
 		for i, k := range metric.Descriptor.LabelKeys {
-			tags[k.Key] = ts.LabelValues[i].Value
+			if ts.LabelValues[i].Present {
+				tags[k.Key] = ts.LabelValues[i].Value
+			}
 		}
 		v := Value{Tags: tags}
 		ts.Points[0].ReadValue(&v)
@@ -163,6 +169,30 @@ func IntMetric(name string, value int64, keyvalues ...string) Metric {
 // FloatMetric is a shortcut factor for creating a Float64 metric
 func FloatMetric(name string, value float64, keyvalues ...string) Metric {
 	return genericMetricFactory(name, Value{Float64: &value}, keyvalues...)
+}
+
+func metricWithResourceFactory(name string, v Value, r *resource.Resource, tags map[string]string) Metric {
+	return Metric{
+		Name:           name,
+		Values:         []Value{v},
+		VerifyResource: true,
+		Resource:       r,
+	}
+}
+
+// IntMetricWithResource is a shortcut factory for creating an Int64 metric with resource.
+func IntMetricWithResource(name string, value int64, tags map[string]string, r *resource.Resource) Metric {
+	return metricWithResourceFactory(name, Value{Int64: &value, Tags: tags}, r, tags)
+}
+
+// FloatMetricWithResource is a shortcut factory for creating a Float64 metric with resource.
+func FloatMetricWithResource(name string, value float64, tags map[string]string, r *resource.Resource) Metric {
+	return metricWithResourceFactory(name, Value{Float64: &value, Tags: tags}, r, tags)
+}
+
+// FloatMetricWithResource is a shortcut factory for creating a Distribution metric with resource, and verifying only the count.
+func DistributionCountOnlyMetricWithResource(name string, count int64, tags map[string]string, r *resource.Resource) Metric {
+	return metricWithResourceFactory(name, Value{Distribution: &metricdata.Distribution{Count: count}, Tags: tags, VerifyDistributionCountOnly: true}, r, tags)
 }
 
 // AssertMetric verifies that the metrics have the specified values. Note that
@@ -298,25 +328,27 @@ func (v Value) Equal(other Value) bool {
 		if v.Distribution.Count != other.Distribution.Count {
 			return false
 		}
-		if v.Distribution.Sum != other.Distribution.Sum {
-			return false
-		}
-		if v.Distribution.SumOfSquaredDeviation != other.Distribution.SumOfSquaredDeviation {
-			return false
-		}
-		if v.Distribution.BucketOptions != nil {
-			if other.Distribution.BucketOptions == nil {
+		if !v.VerifyDistributionCountOnly && !other.VerifyDistributionCountOnly {
+			if v.Distribution.Sum != other.Distribution.Sum {
 				return false
 			}
-			for i, bo := range v.Distribution.BucketOptions.Bounds {
-				if bo != other.Distribution.BucketOptions.Bounds[i] {
+			if v.Distribution.SumOfSquaredDeviation != other.Distribution.SumOfSquaredDeviation {
+				return false
+			}
+			if v.Distribution.BucketOptions != nil {
+				if other.Distribution.BucketOptions == nil {
 					return false
 				}
+				for i, bo := range v.Distribution.BucketOptions.Bounds {
+					if bo != other.Distribution.BucketOptions.Bounds[i] {
+						return false
+					}
+				}
 			}
-		}
-		for i, b := range v.Distribution.Buckets {
-			if b.Count != other.Distribution.Buckets[i].Count {
-				return false
+			for i, b := range v.Distribution.Buckets {
+				if b.Count != other.Distribution.Buckets[i].Count {
+					return false
+				}
 			}
 		}
 	}

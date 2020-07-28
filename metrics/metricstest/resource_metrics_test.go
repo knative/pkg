@@ -223,6 +223,24 @@ func TestDistributionEqual(t *testing.T) {
 			},
 		},
 	}, {
+		name: "Equal when count only is set",
+		want: Value{
+			Tags: map[string]string{"key1": "val1"},
+			Distribution: &metricdata.Distribution{
+				Count: 5,
+			},
+			VerifyDistributionCountOnly: true,
+		},
+	}, {
+		name: "Not equal when count only is not set",
+		want: Value{
+			Tags: map[string]string{"key1": "val1"},
+			Distribution: &metricdata.Distribution{
+				Count: 5,
+			},
+		},
+		notEqual: true,
+	}, {
 		name: "Missing summary",
 		want: Value{
 			Tags: map[string]string{"key1": "val1"},
@@ -281,6 +299,13 @@ func TestDistributionEqual(t *testing.T) {
 }
 
 func TestMetricShortcuts(t *testing.T) {
+	tags := map[string]string{
+		"foo": "bar",
+	}
+	r := &resource.Resource{
+		Type:   "test-resource",
+		Labels: map[string]string{"foo1": "bar1"},
+	}
 	tests := []struct {
 		name string
 		want Metric
@@ -309,6 +334,54 @@ func TestMetricShortcuts(t *testing.T) {
 			TimeSeries: []*metricdata.TimeSeries{{
 				LabelValues: []metricdata.LabelValue{{"val1", true}, {"val2", true}},
 				Points:      []metricdata.Point{metricdata.NewFloat64Point(time.Now(), 0.17)},
+			}},
+		},
+	}, {
+		name: "IntMetricWithResource",
+		want: IntMetricWithResource("test/int", 18, tags, r),
+		got: metricdata.Metric{
+			Descriptor: metricdata.Descriptor{
+				Name:      "test/int",
+				LabelKeys: []metricdata.LabelKey{{"foo", ""}},
+			},
+			Resource: r,
+			TimeSeries: []*metricdata.TimeSeries{{
+				LabelValues: []metricdata.LabelValue{{"bar", true}},
+				Points:      []metricdata.Point{metricdata.NewInt64Point(time.Now(), 18)},
+			}},
+		},
+	}, {
+		name: "FloatMetricWithResource",
+		want: FloatMetricWithResource("test/float", 0.18, tags, r),
+		got: metricdata.Metric{
+			Descriptor: metricdata.Descriptor{
+				Name:      "test/float",
+				LabelKeys: []metricdata.LabelKey{{"foo", ""}},
+			},
+			Resource: r,
+			TimeSeries: []*metricdata.TimeSeries{{
+				LabelValues: []metricdata.LabelValue{{"bar", true}},
+				Points:      []metricdata.Point{metricdata.NewFloat64Point(time.Now(), 0.18)},
+			}},
+		},
+	}, {
+		name: "DistributionCountOnlyMetricWithResource",
+		want: DistributionCountOnlyMetricWithResource("test/distribution", 19, tags, r),
+		got: metricdata.Metric{
+			Descriptor: metricdata.Descriptor{
+				Name:      "test/distribution",
+				LabelKeys: []metricdata.LabelKey{{"foo", ""}},
+			},
+			Resource: r,
+			TimeSeries: []*metricdata.TimeSeries{{
+				LabelValues: []metricdata.LabelValue{{"bar", true}},
+				Points: []metricdata.Point{metricdata.NewDistributionPoint(time.Now(), &metricdata.Distribution{
+					Count:                 19,
+					Sum:                   25.5,
+					SumOfSquaredDeviation: 45.2,
+					BucketOptions:         bucketOpts(2, 4, 8),
+					Buckets:               buckets(1, 3, 1, 0),
+				})},
 			}},
 		},
 	}}
