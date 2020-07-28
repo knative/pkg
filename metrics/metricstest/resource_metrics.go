@@ -190,7 +190,7 @@ func FloatMetricWithResource(name string, value float64, tags map[string]string,
 	return metricWithResourceFactory(name, Value{Float64: &value, Tags: tags}, r, tags)
 }
 
-// FloatMetricWithResource is a shortcut factory for creating a Distribution metric with resource, and verifying only the count.
+// DistributionCountOnlyMetricWithResource is a shortcut factory for creating a Distribution metric with resource, and verifying only the count.
 func DistributionCountOnlyMetricWithResource(name string, count int64, tags map[string]string, r *resource.Resource) Metric {
 	return metricWithResourceFactory(name, Value{Distribution: &metricdata.Distribution{Count: count}, Tags: tags, VerifyDistributionCountOnly: true}, r, tags)
 }
