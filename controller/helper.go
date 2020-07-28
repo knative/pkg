@@ -26,7 +26,7 @@ import (
 // Callback is a function that is passed to an informer's event handler.
 type Callback func(interface{})
 
-// EnsureTypeMeta augments the passed in callback, ensuring that all objects that pass
+// EnsureTypeMeta augments the passed-in callback, ensuring that all objects that pass
 // through this callback have their TypeMeta set according to the provided GVK.
 func EnsureTypeMeta(f Callback, gvk schema.GroupVersionKind) Callback {
 	apiVersion, kind := gvk.ToAPIVersionAndKind()
@@ -49,7 +49,7 @@ func EnsureTypeMeta(f Callback, gvk schema.GroupVersionKind) Callback {
 			return
 		}
 
-		// We need to populated TypeMeta, but cannot trample the
+		// We need to populate TypeMeta, but cannot trample the
 		// informer's copy.
 		copy := typed.DeepCopyObject()
 
