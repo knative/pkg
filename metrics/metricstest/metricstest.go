@@ -118,9 +118,31 @@ func CheckDistributionCount(t test.T, name string, wantTags map[string]string, e
 
 }
 
+// GetLastValueData returns the last value for the given metric, verifying tags.
+func GetLastValueData(t test.T, name string, tags map[string]string) float64 {
+	t.Helper()
+	return GetLastValueDataWithMeter(t, name, tags, nil)
+}
+
+// GetLastValueDataWithMeter returns the last value of the given metric using meter, verifying tags.
+func GetLastValueDataWithMeter(t test.T, name string, tags map[string]string, meter view.Meter) float64 {
+	t.Helper()
+	if row := lastRow(t, name, meter); row != nil {
+		checkRowTags(t, row, name, tags)
+
+		s, ok := row.Data.(*view.LastValueData)
+		if !ok {
+			t.Error("want LastValueData", "metric", name, "got", reflect.TypeOf(row.Data))
+		}
+		return s.Value
+	}
+	return 0
+}
+
 // CheckLastValueData checks the view with a name matching string name to verify that the LastValueData stats
 // reported are tagged with the tags in wantTags and that wantValue matches reported last value.
 func CheckLastValueData(t test.T, name string, wantTags map[string]string, wantValue float64) {
+	t.Helper()
 	CheckLastValueDataWithMeter(t, name, wantTags, wantValue, nil)
 }
 

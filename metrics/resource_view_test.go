@@ -34,21 +34,22 @@ import (
 	sd "contrib.go.opencensus.io/exporter/stackdriver"
 	ocmetrics "github.com/census-instrumentation/opencensus-proto/gen-go/agent/metrics/v1"
 	ocresource "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
-	emptypb "github.com/golang/protobuf/ptypes/empty"
-	"github.com/google/go-cmp/cmp"
 	"go.opencensus.io/resource"
 	"go.opencensus.io/stats"
 	"go.opencensus.io/stats/view"
 	"go.opencensus.io/tag"
+
+	emptypb "github.com/golang/protobuf/ptypes/empty"
+	"github.com/google/go-cmp/cmp"
 	"google.golang.org/api/option"
 	metricpb "google.golang.org/genproto/googleapis/api/metric"
 	monitoredrespb "google.golang.org/genproto/googleapis/api/monitoredres"
 	stackdriverpb "google.golang.org/genproto/googleapis/monitoring/v3"
 	"google.golang.org/grpc"
+
 	logtesting "knative.dev/pkg/logging/testing"
 	"knative.dev/pkg/metrics/metricskey"
 	"knative.dev/pkg/metrics/metricstest"
-	//_ "knative.dev/pkg/metrics/testing"
 )
 
 var (
@@ -64,11 +65,12 @@ func TestRegisterResourceView(t *testing.T) {
 
 	m := stats.Int64("testView_sum", "", stats.UnitDimensionless)
 	view := view.View{Name: "testView", Measure: m, Aggregation: view.Sum()}
-	err := RegisterResourceView(&view)
 
+	err := RegisterResourceView(&view)
 	if err != nil {
-		t.Errorf("RegisterResourceView with error %v.", err)
+		t.Fatal("RegisterResourceView =", err)
 	}
+	t.Cleanup(func() { UnregisterResourceView(&view) })
 
 	viewToFind := defaultMeter.m.Find("testView")
 	if viewToFind == nil || viewToFind.Name != "testView" {
@@ -404,7 +406,7 @@ testComponent_testing_value{project="p1",revision="r2"} 1
 
 			view.Register(globalCounter)
 			if err := RegisterResourceView(gaugeView, resourceCounter); err != nil {
-				t.Fatalf("Unable to register views: %v", err)
+				t.Fatal("Unable to register views:", err)
 			}
 			t.Cleanup(func() {
 				view.Unregister(globalCounter)
@@ -610,8 +612,8 @@ func (oc *openCensusFake) start() error {
 	oc.srv = grpc.NewServer()
 	ocmetrics.RegisterMetricsServiceServer(oc.srv, oc)
 	// Run the server in the background.
+	oc.wg.Add(1)
 	go func() {
-		oc.wg.Add(1)
 		oc.srv.Serve(ln)
 		oc.wg.Done()
 		oc.wg.Wait()
