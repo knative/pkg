@@ -425,12 +425,14 @@ func (nr *NopReconciler) Reconcile(context.Context, string) error {
 }
 
 type testRateLimiter struct {
-	t *testing.T
-        delay time.Duration
+	t     *testing.T
+	delay time.Duration
 }
-func (t testRateLimiter) When(interface {}) time.Duration {  return t.delay }
-func (t testRateLimiter) Forget(interface {}) {}
-func (t testRateLimiter) NumRequeues(interface{}) int { return 0 }
+
+func (t testRateLimiter) When(interface{}) time.Duration { return t.delay }
+func (t testRateLimiter) Forget(interface{})             {}
+func (t testRateLimiter) NumRequeues(interface{}) int    { return 0 }
+
 var _ workqueue.RateLimiter = &testRateLimiter{}
 
 func TestEnqueues(t *testing.T) {
@@ -736,7 +738,7 @@ func TestEnqueues(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			t.Cleanup(ClearAll)
 			var rl workqueue.RateLimiter = testRateLimiter{t, 100 * time.Millisecond}
-			impl := NewImplWithRateLimiter(&NopReconciler{}, TestLogger(t), "Testing", &rl)
+			impl := NewImplFull(&NopReconciler{}, TestLogger(t), "Testing", GenericOptions{rateLimiter: rl})
 			test.work(impl)
 
 			// The rate limit on our queue delays when things are added to the queue.

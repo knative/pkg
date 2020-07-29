@@ -31,8 +31,9 @@ type chanRateLimiter struct {
 	whenCalled chan interface{}
 	retryCount map[interface{}]int
 }
+
 func (r chanRateLimiter) When(item interface{}) time.Duration {
-	r.whenCalled<- item
+	r.whenCalled <- item
 	return 0 * time.Second
 }
 func (r chanRateLimiter) Forget(item interface{}) {
@@ -41,6 +42,7 @@ func (r chanRateLimiter) Forget(item interface{}) {
 func (r chanRateLimiter) NumRequeues(item interface{}) int {
 	return r.retryCount[item]
 }
+
 var _ workqueue.RateLimiter = &chanRateLimiter{}
 
 func TestRateLimit(t *testing.T) {

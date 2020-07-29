@@ -205,34 +205,37 @@ type Impl struct {
 	statsReporter StatsReporter
 }
 
+// Encapsulates options for creating a new controller, including
+// throttling and stats behavior.
+type GenericOptions struct {
+	reporter StatsReporter
+        rateLimiter workqueue.RateLimiter
+}
+
 // NewImpl instantiates an instance of our controller that will feed work to the
 // provided Reconciler as it is enqueued.
 func NewImpl(r Reconciler, logger *zap.SugaredLogger, workQueueName string) *Impl {
-	return NewImplFull(r, logger, workQueueName, MustNewStatsReporter(workQueueName, logger), nil)
-}
-
-func NewImplWithRateLimiter(r Reconciler, logger *zap.SugaredLogger, workQueueName string, rateLimiter *workqueue.RateLimiter) *Impl {
-	return NewImplFull(r, logger, workQueueName, nil, rateLimiter)
+	return NewImplFull(r, logger, workQueueName, GenericOptions{})
 }
 
 func NewImplWithStats(r Reconciler, logger *zap.SugaredLogger, workQueueName string, reporter StatsReporter) *Impl {
-	return NewImplFull(r, logger, workQueueName, reporter, nil)
+	return NewImplFull(r, logger, workQueueName, GenericOptions{reporter: reporter})
 }
 
-func NewImplFull(r Reconciler, logger *zap.SugaredLogger, workQueueName string, reporter StatsReporter, rateLimiter *workqueue.RateLimiter) *Impl {
+func NewImplFull(r Reconciler, logger *zap.SugaredLogger, workQueueName string, options GenericOptions) *Impl {
 	logger = logger.Named(workQueueName)
-	var rl workqueue.RateLimiter
-	if rateLimiter == nil {
-		rl = workqueue.DefaultControllerRateLimiter()
-	} else {
-		rl = *rateLimiter
+	if options.rateLimiter == nil {
+		options.rateLimiter = workqueue.DefaultControllerRateLimiter()
+	}
+	if options.reporter == nil {
+		options.reporter = MustNewStatsReporter(workQueueName, logger)
 	}
 	return &Impl{
 		Name:          workQueueName,
 		Reconciler:    r,
-		workQueue:     newTwoLaneWorkQueue(workQueueName, rl),
+		workQueue:     newTwoLaneWorkQueue(workQueueName, options.rateLimiter),
 		logger:        logger,
-		statsReporter: reporter,
+		statsReporter: options.reporter,
 	}
 }
 
