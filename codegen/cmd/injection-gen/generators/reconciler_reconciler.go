@@ -176,6 +176,22 @@ func (g *reconcilerReconcilerGenerator) GenerateType(c *generator.Context, t *ty
 			Package: "k8s.io/apimachinery/pkg/labels",
 			Name:    "Everything",
 		}),
+		"doReconcileKind": c.Universe.Type(types.Name{
+			Package: "knative.dev/pkg/reconciler",
+			Name:    "DoReconcileKind",
+		}),
+		"doObserveKind": c.Universe.Type(types.Name{
+			Package: "knative.dev/pkg/reconciler",
+			Name:    "DoObserveKind",
+		}),
+		"doFinalizeKind": c.Universe.Type(types.Name{
+			Package: "knative.dev/pkg/reconciler",
+			Name:    "DoFinalizeKind",
+		}),
+		"doObserveFinalizeKind": c.Universe.Type(types.Name{
+			Package: "knative.dev/pkg/reconciler",
+			Name:    "DoObserveFinalizeKind",
+		}),
 	}
 
 	sw.Do(reconcilerInterfaceFactory, m)
@@ -391,7 +407,7 @@ func (r *reconcilerImpl) Reconcile(ctx {{.contextContext|raw}}, key string) erro
 	// Append the target method to the logger.
 	logger = logger.With(zap.String("targetMethod", name))
 	switch name {
-	case reconciler.DoReconcileKind:
+	case {{.doReconcileKind|raw}}:
 		// Append the target method to the logger.
 		logger = logger.With(zap.String("targetMethod", "ReconcileKind"))
 
@@ -412,7 +428,7 @@ func (r *reconcilerImpl) Reconcile(ctx {{.contextContext|raw}}, key string) erro
 		reconciler.PostProcessReconcile(ctx, resource, original)
 		{{end}}
 
-	case reconciler.DoFinalizeKind:
+	case {{.doFinalizeKind|raw}}:
 		// For finalizing reconcilers, if this resource being marked for deletion
 		// and reconciled cleanly (nil or normal event), remove the finalizer.
 		reconcileEvent = do(ctx, resource)
@@ -421,7 +437,7 @@ func (r *reconcilerImpl) Reconcile(ctx {{.contextContext|raw}}, key string) erro
 			return {{.fmtErrorf|raw}}("failed to clear finalizers: %w", err)
 		}
 
-	case reconciler.DoObserveKind, reconciler.DoObserveFinalizeKind:
+	case {{.doObserveKind|raw}}, {{.doObserveFinalizeKind|raw}}:
 		// Observe any changes to this resource, since we are not the leader.
 		reconcileEvent = do(ctx, resource)
 
