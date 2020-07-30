@@ -101,10 +101,11 @@ type reconcilerImpl struct {
 	Recorder record.EventRecorder
 
 	// configStore allows for decorating a context with config maps.
+	// [deprecated] in favor of configStores
 	// +optional
 	configStore reconciler.ConfigStore
 
-	// configStore allows for decorating a context with config maps.
+	// configStores allows for decorating a context with config maps.
 	// +optional
 	configStores []reconciler.ConfigStore
 
@@ -201,13 +202,13 @@ func (r *reconcilerImpl) Reconcile(ctx context.Context, key string) error {
 	}
 
 	// If configStore is set, attach the frozen configuration to the context.
-	for _, cs := range r.configStores {
-		ctx = cs.ToContext(ctx)
-	}
-
-	// If configStore is set, attach the frozen configuration to the context.
 	if r.configStore != nil {
 		ctx = r.configStore.ToContext(ctx)
+	}
+
+	// Attach the frozen configuration to the context.
+	for _, cs := range r.configStores {
+		ctx = cs.ToContext(ctx)
 	}
 
 	// Add the recorder to context.

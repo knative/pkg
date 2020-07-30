@@ -265,12 +265,13 @@ type reconcilerImpl struct {
 	Recorder {{.recordEventRecorder|raw}}
 
 	// configStore allows for decorating a context with config maps.
+	// [deprecated] in favor of configStores
 	// +optional
 	configStore {{.reconcilerConfigStore|raw}}
 
-	// configStore allows for decorating a context with config maps.
+	// configStores allows for decorating a context with config maps.
 	// +optional
-	configStores {{.reconcilerConfigStores|raw}}
+	configStores []{{.reconcilerConfigStore|raw}}
 
 	// reconciler is the implementation of the business logic of the resource.
 	reconciler Interface
@@ -336,10 +337,10 @@ func NewReconciler(ctx {{.contextContext|raw}}, logger *{{.zapSugaredLogger|raw}
 
 	for _, opts := range options {
 		if opts.ConfigStore != nil {
-			rec.configStore = {{.reconcilerConfigStore|raw}}
+			rec.configStore = opts.ConfigStore
 		}
 		if len(opts.ConfigStores) != 0 {
-			rec.configStores = {{.reconcilerConfigStores|raw}}
+			rec.configStores = opts.ConfigStores
 		}
 		if opts.FinalizerName != "" {
 			rec.finalizerName = opts.FinalizerName
@@ -379,7 +380,7 @@ func (r *reconcilerImpl) Reconcile(ctx {{.contextContext|raw}}, key string) erro
 		ctx = r.configStore.ToContext(ctx)
 	}
 
-	// If configStore is set, attach the frozen configuration to the context.
+	// Attach the frozen configuration to the context.
 	for _, cs := range r.configStores {
 		ctx = cs.ToContext(ctx)
 	}
