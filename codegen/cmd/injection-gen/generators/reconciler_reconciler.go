@@ -105,6 +105,7 @@ func (g *reconcilerReconcilerGenerator) GenerateType(c *generator.Context, t *ty
 		"reconcilerReconcilerEvent":      c.Universe.Type(types.Name{Package: "knative.dev/pkg/reconciler", Name: "ReconcilerEvent"}),
 		"reconcilerRetryUpdateConflicts": c.Universe.Function(types.Name{Package: "knative.dev/pkg/reconciler", Name: "RetryUpdateConflicts"}),
 		"reconcilerConfigStore":          c.Universe.Type(types.Name{Name: "ConfigStore", Package: "knative.dev/pkg/reconciler"}),
+		"reconcilerConfigStores":         c.Universe.Type(types.Name{Name: "ConfigStores", Package: "knative.dev/pkg/reconciler"}),
 		// Deps
 		"clientsetInterface": c.Universe.Type(types.Name{Name: "Interface", Package: g.clientsetPkg}),
 		"resourceLister":     c.Universe.Type(types.Name{Name: g.listerName, Package: g.listerPkg}),
@@ -267,6 +268,10 @@ type reconcilerImpl struct {
 	// +optional
 	configStore {{.reconcilerConfigStore|raw}}
 
+	// configStore allows for decorating a context with config maps.
+	// +optional
+	configStores {{.reconcilerConfigStores|raw}}
+
 	// reconciler is the implementation of the business logic of the resource.
 	reconciler Interface
 
@@ -331,7 +336,10 @@ func NewReconciler(ctx {{.contextContext|raw}}, logger *{{.zapSugaredLogger|raw}
 
 	for _, opts := range options {
 		if opts.ConfigStore != nil {
-			rec.configStore = opts.ConfigStore
+			rec.configStore = {{.reconcilerConfigStore|raw}}
+		}
+		if len(opts.ConfigStores) != 0 {
+			rec.configStores = {{.reconcilerConfigStores|raw}}
 		}
 		if opts.FinalizerName != "" {
 			rec.finalizerName = opts.FinalizerName
@@ -350,7 +358,7 @@ var reconcilerImplFactory = `
 func (r *reconcilerImpl) Reconcile(ctx {{.contextContext|raw}}, key string) error {
 	logger := {{.loggingFromContext|raw}}(ctx)
 
-	// Initialize the reconciler state. This will convert the namespace/name 
+	// Initialize the reconciler state. This will convert the namespace/name
 	// string into a distinct namespace and name, determin if this instance of
 	// the reconciler is the leader, and any additional interfaces implemented
 	// by the reconciler. Returns an error is the resource key is invalid.
@@ -359,7 +367,7 @@ func (r *reconcilerImpl) Reconcile(ctx {{.contextContext|raw}}, key string) erro
 		logger.Errorf("invalid resource key: %s", key)
 		return nil
 	}
-	
+
 	// If we are not the leader, and we don't implement either ReadOnly
 	// observer interfaces, then take a fast-path out.
 	if s.isNotLeaderNorObserver() {
@@ -369,6 +377,11 @@ func (r *reconcilerImpl) Reconcile(ctx {{.contextContext|raw}}, key string) erro
 	// If configStore is set, attach the frozen configuration to the context.
 	if r.configStore != nil {
 		ctx = r.configStore.ToContext(ctx)
+	}
+
+	// If configStore is set, attach the frozen configuration to the context.
+	for _, cs := range r.configStores {
+		ctx = cs.ToContext(ctx)
 	}
 
 	// Add the recorder to context.

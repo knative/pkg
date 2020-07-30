@@ -22,7 +22,12 @@ import "knative.dev/pkg/reconciler"
 // on implementation.
 type Options struct {
 	// ConfigStore is used to attach the frozen configuration to the context.
+	// [Deprecated]: Use ConfigStores instead.
+	//               This will be removed once downstream references are addressed.
 	ConfigStore reconciler.ConfigStore
+
+	// ConfigStore is used to attach the frozen configuration to the context.
+	ConfigStores []reconciler.ConfigStore
 
 	// FinalizerName is the name of the finalizer this reconciler uses. This
 	// overrides a default finalizer name assigned by the generator if needed.

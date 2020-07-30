@@ -104,6 +104,10 @@ type reconcilerImpl struct {
 	// +optional
 	configStore reconciler.ConfigStore
 
+	// configStore allows for decorating a context with config maps.
+	// +optional
+	configStores []reconciler.ConfigStore
+
 	// reconciler is the implementation of the business logic of the resource.
 	reconciler Interface
 
@@ -162,6 +166,9 @@ func NewReconciler(ctx context.Context, logger *zap.SugaredLogger, client client
 		if opts.ConfigStore != nil {
 			rec.configStore = opts.ConfigStore
 		}
+		if len(opts.ConfigStores) != 0 {
+			rec.configStores = opts.ConfigStores
+		}
 		if opts.FinalizerName != "" {
 			rec.finalizerName = opts.FinalizerName
 		}
@@ -191,6 +198,11 @@ func (r *reconcilerImpl) Reconcile(ctx context.Context, key string) error {
 	// observer interfaces, then take a fast-path out.
 	if s.isNotLeaderNorObserver() {
 		return nil
+	}
+
+	// If configStore is set, attach the frozen configuration to the context.
+	for _, cs := range r.configStores {
+		ctx = cs.ToContext(ctx)
 	}
 
 	// If configStore is set, attach the frozen configuration to the context.
