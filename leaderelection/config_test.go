@@ -17,10 +17,10 @@ limitations under the License.
 package leaderelection
 
 import (
-	"errors"
 	"fmt"
 	"os"
 	"strconv"
+	"strings"
 	"testing"
 	"time"
 
@@ -62,7 +62,7 @@ func TestNewConfigMapFromData(t *testing.T) {
 		name     string
 		data     map[string]string
 		expected *Config
-		err      error
+		err      string
 	}{{
 		name:     "OK config - controller enabled",
 		data:     okData(),
@@ -82,37 +82,37 @@ func TestNewConfigMapFromData(t *testing.T) {
 		data: kmeta.UnionMaps(okData(), map[string]string{
 			"leaseDuration": "flops",
 		}),
-		err: errors.New(`failed to parse "leaseDuration": time: invalid duration flops`),
+		err: `failed to parse "leaseDuration": time: invalid duration`,
 	}, {
 		name: "invalid renewDeadline",
 		data: kmeta.UnionMaps(okData(), map[string]string{
 			"renewDeadline": "flops",
 		}),
-		err: errors.New(`failed to parse "renewDeadline": time: invalid duration flops`),
+		err: `failed to parse "renewDeadline": time: invalid duration`,
 	}, {
 		name: "invalid retryPeriod",
 		data: kmeta.UnionMaps(okData(), map[string]string{
 			"retryPeriod": "flops",
 		}),
-		err: errors.New(`failed to parse "retryPeriod": time: invalid duration flops`),
+		err: `failed to parse "retryPeriod": time: invalid duration`,
 	}, {
 		name: "invalid buckets - not an int",
 		data: kmeta.UnionMaps(okData(), map[string]string{
 			"buckets": "not-an-int",
 		}),
-		err: errors.New(`failed to parse "buckets": strconv.ParseUint: parsing "not-an-int": invalid syntax`),
+		err: `failed to parse "buckets": strconv.ParseUint: parsing "not-an-int": invalid syntax`,
 	}, {
 		name: "invalid buckets - too small",
 		data: kmeta.UnionMaps(okData(), map[string]string{
 			"buckets": "0",
 		}),
-		err: fmt.Errorf("buckets: value must be between 1 <= 0 <= %d", MaxBuckets),
+		err: fmt.Sprint("buckets: value must be between 1 <= 0 <= ", MaxBuckets),
 	}, {
 		name: "invalid buckets - too large",
 		data: kmeta.UnionMaps(okData(), map[string]string{
 			"buckets": strconv.Itoa(int(MaxBuckets + 1)),
 		}),
-		err: fmt.Errorf(`buckets: value must be between 1 <= %d <= %d`, MaxBuckets+1, MaxBuckets),
+		err: fmt.Sprintf("buckets: value must be between 1 <= %d <= %d", MaxBuckets+1, MaxBuckets),
 	}}
 
 	for _, tc := range cases {
@@ -122,8 +122,12 @@ func TestNewConfigMapFromData(t *testing.T) {
 					Data: tc.data,
 				})
 
-			if tc.err != nil && tc.err.Error() != actualErr.Error() {
-				t.Fatalf("Error = %v, want: %v", actualErr, tc.err)
+			if actualErr != nil {
+				if got, want := actualErr.Error(), tc.err; !strings.HasPrefix(got, want) {
+					t.Fatalf("Err = '%s', want: '%s'", got, want)
+				}
+			} else if tc.err != "" {
+				t.Fatal("Expected an error, got none")
 			}
 
 			if got, want := actualConfig, tc.expected; !cmp.Equal(got, want) {
