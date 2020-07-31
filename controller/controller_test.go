@@ -433,7 +433,7 @@ func (t testRateLimiter) When(interface{}) time.Duration { return t.delay }
 func (t testRateLimiter) Forget(interface{})             {}
 func (t testRateLimiter) NumRequeues(interface{}) int    { return 0 }
 
-var _ workqueue.RateLimiter = &testRateLimiter{}
+var _ workqueue.RateLimiter = (*testRateLimiter)(nil)
 
 func TestEnqueues(t *testing.T) {
 	tests := []struct {
