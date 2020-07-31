@@ -208,37 +208,37 @@ type Impl struct {
 // ControllerOptions encapsulates options for creating a new controller,
 // including throttling and stats behavior.
 type ControllerOptions struct {
-	workQueueName string
-	logger        *zap.SugaredLogger
-	reporter      StatsReporter
-	rateLimiter   workqueue.RateLimiter
+	WorkQueueName string
+	Logger        *zap.SugaredLogger
+	Reporter      StatsReporter
+	RateLimiter   workqueue.RateLimiter
 }
 
 // NewImpl instantiates an instance of our controller that will feed work to the
 // provided Reconciler as it is enqueued.
 func NewImpl(r Reconciler, logger *zap.SugaredLogger, workQueueName string) *Impl {
-	return NewImplFull(r, ControllerOptions{workQueueName: workQueueName, logger: logger})
+	return NewImplFull(r, ControllerOptions{WorkQueueName: workQueueName, Logger: logger})
 }
 
 func NewImplWithStats(r Reconciler, logger *zap.SugaredLogger, workQueueName string, reporter StatsReporter) *Impl {
-	return NewImplFull(r, ControllerOptions{workQueueName: workQueueName, logger: logger, reporter: reporter})
+	return NewImplFull(r, ControllerOptions{WorkQueueName: workQueueName, Logger: logger, Reporter: reporter})
 }
 
 // NewImplFull accepts the full set of options available to all controllers.
 func NewImplFull(r Reconciler, options ControllerOptions) *Impl {
-	logger := options.logger.Named(options.workQueueName)
-	if options.rateLimiter == nil {
-		options.rateLimiter = workqueue.DefaultControllerRateLimiter()
+	logger := options.Logger.Named(options.WorkQueueName)
+	if options.RateLimiter == nil {
+		options.RateLimiter = workqueue.DefaultControllerRateLimiter()
 	}
-	if options.reporter == nil {
-		options.reporter = MustNewStatsReporter(options.workQueueName, options.logger)
+	if options.Reporter == nil {
+		options.Reporter = MustNewStatsReporter(options.WorkQueueName, options.Logger)
 	}
 	return &Impl{
-		Name:          options.workQueueName,
+		Name:          options.WorkQueueName,
 		Reconciler:    r,
-		workQueue:     newTwoLaneWorkQueue(options.workQueueName, options.rateLimiter),
+		workQueue:     newTwoLaneWorkQueue(options.WorkQueueName, options.RateLimiter),
 		logger:        logger,
-		statsReporter: options.reporter,
+		statsReporter: options.Reporter,
 	}
 }
 
