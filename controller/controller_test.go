@@ -738,7 +738,7 @@ func TestEnqueues(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			t.Cleanup(ClearAll)
 			var rl workqueue.RateLimiter = testRateLimiter{t, 100 * time.Millisecond}
-			impl := NewImplFull(&NopReconciler{}, GenericOptions{workQueueName: "Testing", logger: TestLogger(t), rateLimiter: rl})
+			impl := NewImplFull(&NopReconciler{}, ControllerOptions{workQueueName: "Testing", logger: TestLogger(t), rateLimiter: rl})
 			test.work(impl)
 
 			// The rate limit on our queue delays when things are added to the queue.

@@ -205,9 +205,9 @@ type Impl struct {
 	statsReporter StatsReporter
 }
 
-// GenericOptions encapsulates options for creating a new controller,
+// ControllerOptions encapsulates options for creating a new controller,
 // including throttling and stats behavior.
-type GenericOptions struct {
+type ControllerOptions struct {
 	workQueueName string
 	logger        *zap.SugaredLogger
 	reporter      StatsReporter
@@ -217,15 +217,15 @@ type GenericOptions struct {
 // NewImpl instantiates an instance of our controller that will feed work to the
 // provided Reconciler as it is enqueued.
 func NewImpl(r Reconciler, logger *zap.SugaredLogger, workQueueName string) *Impl {
-	return NewImplFull(r, GenericOptions{workQueueName: workQueueName, logger: logger})
+	return NewImplFull(r, ControllerOptions{workQueueName: workQueueName, logger: logger})
 }
 
 func NewImplWithStats(r Reconciler, logger *zap.SugaredLogger, workQueueName string, reporter StatsReporter) *Impl {
-	return NewImplFull(r, GenericOptions{workQueueName: workQueueName, logger: logger, reporter: reporter})
+	return NewImplFull(r, ControllerOptions{workQueueName: workQueueName, logger: logger, reporter: reporter})
 }
 
 // NewImplFull accepts the full set of options available to all controllers.
-func NewImplFull(r Reconciler, options GenericOptions) *Impl {
+func NewImplFull(r Reconciler, options ControllerOptions) *Impl {
 	logger := options.logger.Named(options.workQueueName)
 	if options.rateLimiter == nil {
 		options.rateLimiter = workqueue.DefaultControllerRateLimiter()
