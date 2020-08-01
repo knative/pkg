@@ -281,6 +281,7 @@ var (
 			domain:             servingDomain,
 			component:          testComponent,
 			backendDestination: openCensus,
+			reportingPeriod:    60 * time.Second,
 			collectorAddress:   "external-svc:55678",
 			requireSecure:      true,
 			secret: &corev1.Secret{

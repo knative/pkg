@@ -296,6 +296,8 @@ func createMetricsConfig(ops ExporterOptions, logger *zap.SugaredLogger) (*metri
 		mc.reportingPeriod = 60 * time.Second
 	} else if mc.backendDestination == prometheus {
 		mc.reportingPeriod = 5 * time.Second
+	} else if mc.backendDestination == openCensus {
+		mc.reportingPeriod = 60 * time.Second
 	}
 
 	return &mc, nil
