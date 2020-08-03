@@ -59,6 +59,9 @@ type ObservabilityConfig struct {
 	// EnableProfiling indicates whether it is allowed to retrieve runtime profiling data from
 	// the pods via an HTTP server in the format expected by the pprof visualization tool.
 	EnableProfiling bool
+
+	// EnableRequestLogging enables activator/queue-proxy to write request logs.
+	EnableRequestLogging bool
 }
 
 func defaultConfig() *ObservabilityConfig {
@@ -77,6 +80,7 @@ func NewObservabilityConfigFromConfigMap(configMap *corev1.ConfigMap) (*Observab
 		cm.AsString("logging.revision-url-template", &oc.LoggingURLTemplate),
 		cm.AsString("logging.request-log-template", &oc.RequestLogTemplate),
 		cm.AsBool("logging.enable-probe-request-log", &oc.EnableProbeRequestLog),
+		cm.AsBool("logging.enable-request-logging", &oc.EnableRequestLogging),
 		cm.AsString("metrics.request-metrics-backend-destination", &oc.RequestMetricsBackend),
 		cm.AsBool("profiling.enable", &oc.EnableProfiling),
 	); err != nil {

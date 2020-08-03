@@ -37,6 +37,7 @@ func TestObservabilityConfiguration(t *testing.T) {
 		wantConfig: &ObservabilityConfig{
 			EnableProbeRequestLog:  true,
 			EnableProfiling:        true,
+			EnableRequestLogging:   true,
 			EnableVarLogCollection: true,
 			LoggingURLTemplate:     "https://logging.io",
 			RequestLogTemplate:     `{"requestMethod": "{{.Request.Method}}"}`,
@@ -48,6 +49,7 @@ func TestObservabilityConfiguration(t *testing.T) {
 			"logging.request-log-template":                `{"requestMethod": "{{.Request.Method}}"}`,
 			"logging.revision-url-template":               "https://logging.io",
 			"logging.write-request-logs":                  "true",
+			"logging.enable-request-logging":              "true",
 			"metrics.request-metrics-backend-destination": "stackdriver",
 			"profiling.enable":                            "true",
 		},
