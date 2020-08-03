@@ -59,6 +59,14 @@ func (k *kubelogs) startForPod(eg *errgroup.Group, pod *corev1.Pod) {
 	for _, container := range pod.Spec.Containers {
 		// Required for capture below.
 		psn, pn, cn := pod.Namespace, pod.Name, container.Name
+
+		handleLine := k.handleLine
+		if cn == "chaosduck" {
+			// Specialcase logs from chaosduck to be able to easily see when pods
+			// have been killed throughout all tests.
+			handleLine = k.handleGenericLine
+		}
+
 		eg.Go(func() error {
 			options := &corev1.PodLogOptions{
 				Container: cn,
@@ -77,13 +85,7 @@ func (k *kubelogs) startForPod(eg *errgroup.Group, pod *corev1.Pod) {
 			// Read this container's stream.
 			scanner := bufio.NewScanner(stream)
 			for scanner.Scan() {
-				// Specialcase logs from chaosduck to be able to easily see when pods
-				// have been killed throughout all tests.
-				if cn == "chaosduck" {
-					k.handleGenericLine(scanner.Bytes(), pn)
-				} else {
-					k.handleLine(scanner.Bytes(), pn)
-				}
+				handleLine(scanner.Bytes(), pn)
 			}
 			// Pods get killed with chaos duck, so logs might end
 			// before the test does. So don't report an error here.
@@ -215,7 +217,7 @@ func (k *kubelogs) handleGenericLine(l []byte, pod string) {
 
 	for _, logf := range k.keys {
 		// I 15:04:05.000 webhook-699b7b668d-9smk2 this is my message
-		logf(fmt.Sprintf("I %s %s %s", time.Now().Format(timeFormat), pod, string(l)))
+		logf("I %s %s %s", time.Now().Format(timeFormat), pod, string(l))
 	}
 }
 
