@@ -18,6 +18,7 @@ package metrics
 
 import (
 	"os"
+	"strings"
 	texttemplate "text/template"
 
 	corev1 "k8s.io/api/core/v1"
@@ -68,7 +69,6 @@ func defaultConfig() *ObservabilityConfig {
 	return &ObservabilityConfig{
 		LoggingURLTemplate:    DefaultLogURLTemplate,
 		RequestMetricsBackend: defaultRequestMetricsBackend,
-		EnableRequestLog:      true,
 	}
 }
 
@@ -81,11 +81,20 @@ func NewObservabilityConfigFromConfigMap(configMap *corev1.ConfigMap) (*Observab
 		cm.AsString("logging.revision-url-template", &oc.LoggingURLTemplate),
 		cm.AsString("logging.request-log-template", &oc.RequestLogTemplate),
 		cm.AsBool("logging.enable-probe-request-log", &oc.EnableProbeRequestLog),
-		cm.AsBool("logging.enable-request-log", &oc.EnableRequestLog),
 		cm.AsString("metrics.request-metrics-backend-destination", &oc.RequestMetricsBackend),
 		cm.AsBool("profiling.enable", &oc.EnableProfiling),
 	); err != nil {
 		return nil, err
+	}
+
+	if raw, ok := configMap.Data["logging.enable-request-log"]; ok {
+		if strings.EqualFold(raw, "true") && oc.RequestLogTemplate != "" {
+			oc.EnableRequestLog = true
+		}
+	} else {
+		if oc.RequestLogTemplate != "" {
+			oc.EnableRequestLog = true
+		}
 	}
 
 	if oc.RequestLogTemplate != "" {
