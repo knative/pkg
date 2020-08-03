@@ -3,7 +3,7 @@ module knative.dev/pkg
 go 1.14
 
 require (
-	cloud.google.com/go v0.61.0
+	cloud.google.com/go v0.62.0
 	cloud.google.com/go/storage v1.10.0
 	contrib.go.opencensus.io/exporter/ocagent v0.7.1-0.20200615190824-f8c219d2d895
 	contrib.go.opencensus.io/exporter/prometheus v0.2.1-0.20200609204449-6bcf6f8577f0
@@ -47,8 +47,8 @@ require (
 	golang.org/x/sync v0.0.0-20200625203802-6e8e738ad208
 	gomodules.xyz/jsonpatch/v2 v2.1.0
 	google.golang.org/api v0.29.0
-	google.golang.org/genproto v0.0.0-20200728010541-3dc8dca74b7b
-	google.golang.org/grpc v1.30.0
+	google.golang.org/genproto v0.0.0-20200731012542-8145dea6a485
+	google.golang.org/grpc v1.31.0
 	gopkg.in/yaml.v2 v2.3.0
 	gopkg.in/yaml.v3 v3.0.0-20190709130402-674ba3eaed22
 	k8s.io/api v0.17.6
@@ -59,8 +59,8 @@ require (
 	k8s.io/gengo v0.0.0-20200205140755-e0e292d8aa12
 	k8s.io/klog v1.0.0
 	k8s.io/utils v0.0.0-20200124190032-861946025e34 // indirect
-	knative.dev/test-infra v0.0.0-20200729161259-d21e6ed450cb
-	sigs.k8s.io/boskos v0.0.0-20200717180850-7299d535c033
+	knative.dev/test-infra v0.0.0-20200731141600-8bb2015c65e2
+	sigs.k8s.io/boskos v0.0.0-20200729174948-794df80db9c9
 )
 
 replace (

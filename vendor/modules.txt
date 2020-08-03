@@ -1,4 +1,4 @@
-# cloud.google.com/go v0.61.0
+# cloud.google.com/go v0.62.0
 ## explicit
 cloud.google.com/go
 cloud.google.com/go/compute/metadata
@@ -311,7 +311,7 @@ go.uber.org/zap/internal/exit
 go.uber.org/zap/internal/ztest
 go.uber.org/zap/zapcore
 go.uber.org/zap/zaptest
-# golang.org/x/crypto v0.0.0-20200709230013-948cd5f35899
+# golang.org/x/crypto v0.0.0-20200728195943-123391ffb6de
 golang.org/x/crypto/cast5
 golang.org/x/crypto/openpgp
 golang.org/x/crypto/openpgp/armor
@@ -362,7 +362,7 @@ golang.org/x/text/unicode/norm
 golang.org/x/text/width
 # golang.org/x/time v0.0.0-20200630173020-3af7569d3a1e
 golang.org/x/time/rate
-# golang.org/x/tools v0.0.0-20200727233628-55644ead90ce
+# golang.org/x/tools v0.0.0-20200731060945-b5fad4ed8dd6
 golang.org/x/tools/cmd/goimports
 golang.org/x/tools/go/ast/astutil
 golang.org/x/tools/go/gcexportdata
@@ -437,7 +437,7 @@ google.golang.org/appengine/internal/socket
 google.golang.org/appengine/internal/urlfetch
 google.golang.org/appengine/socket
 google.golang.org/appengine/urlfetch
-# google.golang.org/genproto v0.0.0-20200728010541-3dc8dca74b7b
+# google.golang.org/genproto v0.0.0-20200731012542-8145dea6a485
 ## explicit
 google.golang.org/genproto/googleapis/api
 google.golang.org/genproto/googleapis/api/annotations
@@ -455,7 +455,7 @@ google.golang.org/genproto/googleapis/rpc/status
 google.golang.org/genproto/googleapis/type/calendarperiod
 google.golang.org/genproto/googleapis/type/expr
 google.golang.org/genproto/protobuf/field_mask
-# google.golang.org/grpc v1.30.0
+# google.golang.org/grpc v1.31.0
 ## explicit
 google.golang.org/grpc
 google.golang.org/grpc/attributes
@@ -489,6 +489,7 @@ google.golang.org/grpc/internal/balancerload
 google.golang.org/grpc/internal/binarylog
 google.golang.org/grpc/internal/buffer
 google.golang.org/grpc/internal/channelz
+google.golang.org/grpc/internal/credentials
 google.golang.org/grpc/internal/envconfig
 google.golang.org/grpc/internal/grpclog
 google.golang.org/grpc/internal/grpcrand
@@ -944,7 +945,7 @@ k8s.io/kube-openapi/pkg/generators
 k8s.io/kube-openapi/pkg/generators/rules
 k8s.io/kube-openapi/pkg/util/proto
 k8s.io/kube-openapi/pkg/util/sets
-# k8s.io/test-infra v0.0.0-20200728085909-4407d8aec1ee
+# k8s.io/test-infra v0.0.0-20200731093307-ac6260b71531
 k8s.io/test-infra/prow/config/secret
 k8s.io/test-infra/prow/logrusutil
 k8s.io/test-infra/prow/version
@@ -954,10 +955,10 @@ k8s.io/utils/buffer
 k8s.io/utils/integer
 k8s.io/utils/pointer
 k8s.io/utils/trace
-# knative.dev/test-infra v0.0.0-20200729161259-d21e6ed450cb
+# knative.dev/test-infra v0.0.0-20200731141600-8bb2015c65e2
 ## explicit
 knative.dev/test-infra/scripts
-# sigs.k8s.io/boskos v0.0.0-20200717180850-7299d535c033
+# sigs.k8s.io/boskos v0.0.0-20200729174948-794df80db9c9
 ## explicit
 sigs.k8s.io/boskos/client
 sigs.k8s.io/boskos/common
