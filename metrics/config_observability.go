@@ -60,14 +60,15 @@ type ObservabilityConfig struct {
 	// the pods via an HTTP server in the format expected by the pprof visualization tool.
 	EnableProfiling bool
 
-	// EnableRequestLogging enables activator/queue-proxy to write request logs.
-	EnableRequestLogging bool
+	// EnableRequestLog enables activator/queue-proxy to write request logs.
+	EnableRequestLog bool
 }
 
 func defaultConfig() *ObservabilityConfig {
 	return &ObservabilityConfig{
 		LoggingURLTemplate:    DefaultLogURLTemplate,
 		RequestMetricsBackend: defaultRequestMetricsBackend,
+		EnableRequestLog:      true,
 	}
 }
 
@@ -80,7 +81,7 @@ func NewObservabilityConfigFromConfigMap(configMap *corev1.ConfigMap) (*Observab
 		cm.AsString("logging.revision-url-template", &oc.LoggingURLTemplate),
 		cm.AsString("logging.request-log-template", &oc.RequestLogTemplate),
 		cm.AsBool("logging.enable-probe-request-log", &oc.EnableProbeRequestLog),
-		cm.AsBool("logging.enable-request-logging", &oc.EnableRequestLogging),
+		cm.AsBool("logging.enable-request-log", &oc.EnableRequestLog),
 		cm.AsString("metrics.request-metrics-backend-destination", &oc.RequestMetricsBackend),
 		cm.AsBool("profiling.enable", &oc.EnableProfiling),
 	); err != nil {
