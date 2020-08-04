@@ -354,6 +354,23 @@ var (
 		},
 		expectedNewExporter: true,
 	}, {
+		name: "overriddenReportingPeriodOpencensus",
+		ops: ExporterOptions{
+			ConfigMap: map[string]string{
+				BackendDestinationKey: string(openCensus),
+				reportingPeriodKey:    "8",
+			},
+			Domain:    servingDomain,
+			Component: testComponent,
+		},
+		expectedConfig: metricsConfig{
+			domain:             servingDomain,
+			component:          testComponent,
+			backendDestination: openCensus,
+			reportingPeriod:    8 * time.Second,
+		},
+		expectedNewExporter: true,
+	}, {
 		name: "overriddenReportingPeriodStackdriver",
 		ops: ExporterOptions{
 			ConfigMap: map[string]string{
