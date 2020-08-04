@@ -92,6 +92,9 @@ func NewObservabilityConfigFromConfigMap(configMap *corev1.ConfigMap) (*Observab
 			oc.EnableRequestLog = true
 		}
 	} else if oc.RequestLogTemplate != "" {
+		// TODO: remove this after 0.17 cuts, this is meant only for smooth transition to the new flag.
+		// Once 0.17 cuts we should set a proper default value and users will need to set the flag explicitly
+		// to enable request logging.
 		oc.EnableRequestLog = true
 	}
 
