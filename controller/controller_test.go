@@ -424,6 +424,17 @@ func (nr *NopReconciler) Reconcile(context.Context, string) error {
 	return nil
 }
 
+type testRateLimiter struct {
+	t     *testing.T
+	delay time.Duration
+}
+
+func (t testRateLimiter) When(interface{}) time.Duration { return t.delay }
+func (t testRateLimiter) Forget(interface{})             {}
+func (t testRateLimiter) NumRequeues(interface{}) int    { return 0 }
+
+var _ workqueue.RateLimiter = (*testRateLimiter)(nil)
+
 func TestEnqueues(t *testing.T) {
 	tests := []struct {
 		name      string
@@ -722,6 +733,24 @@ func TestEnqueues(t *testing.T) {
 			})
 		},
 	}}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			t.Cleanup(ClearAll)
+			var rl workqueue.RateLimiter = testRateLimiter{t, 100 * time.Millisecond}
+			impl := NewImplFull(&NopReconciler{}, ControllerOptions{WorkQueueName: "Testing", Logger: TestLogger(t), RateLimiter: rl})
+			test.work(impl)
+
+			// The rate limit on our queue delays when things are added to the queue.
+			time.Sleep(150 * time.Millisecond)
+			impl.WorkQueue().ShutDown()
+			gotQueue := drainWorkQueue(impl.WorkQueue())
+
+			if diff := cmp.Diff(test.wantQueue, gotQueue); diff != "" {
+				t.Errorf("unexpected queue (-want +got): %s", diff)
+			}
+		})
+	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
