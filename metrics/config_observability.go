@@ -91,10 +91,8 @@ func NewObservabilityConfigFromConfigMap(configMap *corev1.ConfigMap) (*Observab
 		if strings.EqualFold(raw, "true") && oc.RequestLogTemplate != "" {
 			oc.EnableRequestLog = true
 		}
-	} else {
-		if oc.RequestLogTemplate != "" {
-			oc.EnableRequestLog = true
-		}
+	} else if oc.RequestLogTemplate != "" {
+		oc.EnableRequestLog = true
 	}
 
 	if oc.RequestLogTemplate != "" {
