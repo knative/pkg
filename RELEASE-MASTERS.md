@@ -67,7 +67,7 @@ release.
 - [knative-sandbox/net-kourier](https://github.com/knative-sandbox/net-kourier)
 - [knative/caching](https://github.com/knative/caching)
 - [knative/client](https://github.com/knative/client)
-- [knative/eventing-contrib](https://github.com/knative-sandbox/eventing-contrib)
+- [knative/eventing-contrib](https://github.com/knative/eventing-contrib)
 - [knative/eventing](https://github.com/knative/eventing)
 - [knative/networking](https://github.com/knative/networking)
 - [knative/operator](https://github.com/knative/operator)
