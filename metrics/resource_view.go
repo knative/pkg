@@ -40,6 +40,7 @@ type meterExporter struct {
 	m view.Meter    // NOTE: DO NOT RETURN THIS DIRECTLY; the view.Meter will not work for the empty Resource
 	o stats.Options // Cache the option to reduce allocations
 	e view.Exporter
+	t time.Time // Last access time
 }
 
 // ResourceExporterFactory provides a hook for producing separate view.Exporters
@@ -59,6 +60,17 @@ type meters struct {
 var resourceViews = storedViews{}
 var allMeters = meters{
 	meters: map[string]*meterExporter{"": &defaultMeter},
+}
+
+func init() {
+	go garbageCollectMeters(10*time.Minute, time.Hour)
+}
+
+func garbageCollectMeters(frequency time.Duration, inactiveThreshold time.Duration) {
+	for {
+		time.Sleep(frequency)
+		removeInactiveMeter(inactiveThreshold)
+	}
 }
 
 // RegisterResourceView is similar to view.Register(), except that it will
@@ -202,6 +214,7 @@ func optionForResource(r *resource.Resource) (stats.Options, error) {
 		return nil, fmt.Errorf("failed lookup for resource %v", r)
 	}
 
+	mE.t = time.Now()
 	if mE.e != nil {
 		// Assume the exporter is already started.
 		return mE.o, nil
@@ -260,6 +273,21 @@ func resourceFromKey(s string) *resource.Resource {
 		r.Labels[keyValue[0]] = keyValue[1]
 	}
 	return r
+}
+
+func removeInactiveMeter(inactiveThreshold time.Duration) {
+	keys := []string{}
+	for k, v := range allMeters.meters {
+		if k != "" && time.Since(v.t) >= inactiveThreshold {
+			keys = append(keys, k)
+		}
+	}
+
+	allMeters.lock.Lock()
+	defer allMeters.lock.Unlock()
+	for _, k := range keys {
+		delete(allMeters.meters, k)
+	}
 }
 
 // defaultMeterImpl is a pass-through to the default worker in OpenCensus.
