@@ -60,16 +60,16 @@ release.
 
 ###  Make sure you are in the release-masters OWNER_ALIASES
 
-- [knative-sandbox/eventing-contrib](https://github.com/knative-sandbox/eventing-contrib)
 - [knative-sandbox/net-certmanager](https://github.com/knative-sandbox/net-certmanager)
 - [knative-sandbox/net-contour](https://github.com/knative-sandbox/net-contour)
 - [knative-sandbox/net-http01](https://github.com/knative-sandbox/net-http01)
 - [knative-sandbox/net-istio](https://github.com/knative-sandbox/net-istio)
 - [knative-sandbox/net-kourier](https://github.com/knative-sandbox/net-kourier)
-- [knative-sandbox/networking](https://github.com/knative-sandbox/networking)
 - [knative/caching](https://github.com/knative/caching)
 - [knative/client](https://github.com/knative/client)
+- [knative/eventing-contrib](https://github.com/knative-sandbox/eventing-contrib)
 - [knative/eventing](https://github.com/knative/eventing)
+- [knative/networking](https://github.com/knative/networking)
 - [knative/operator](https://github.com/knative/operator)
 - [knative/pkg](https://github.com/knative/pkg)
 - [knative/serving](https://github.com/knative/serving)
@@ -170,7 +170,7 @@ index b277dd3ff..1989885ce 100755
 The downstream repositories this needs to happen on are:
 
 - [knative/client](https://github.com/knative/client)
-- [knative-sandbox/eventing-contrib](https://github.com/knative-sandbox/eventing-contrib)
+- [knative/eventing-contrib](https://github.com/knative/eventing-contrib)
 - [knative/eventing](https://github.com/knative/eventing)
 - [knative-sandbox/net-certmanager](https://github.com/knative-sandbox/net-certmanager)
 - [knative-sandbox/net-contour](https://github.com/knative-sandbox/net-contour)
@@ -219,16 +219,16 @@ to be pinned in all repositories that depend on them.
 
 For **serving** that is:
 
-- [knative-sandbox/eventing-contrib](https://github.com/knative-sandbox/eventing-contrib)
 - [knative-sandbox/net-certmanager](https://github.com/knative-sandbox/net-certmanager)
 - [knative-sandbox/net-contour](https://github.com/knative-sandbox/net-contour)
 - [knative-sandbox/net-http01](https://github.com/knative-sandbox/net-http01)
 - [knative-sandbox/net-istio](https://github.com/knative-sandbox/net-istio)
 - [knative-sandbox/net-kourier](https://github.com/knative-sandbox/net-kourier)
+- [knative/eventing-contrib](https://github.com/knative/eventing-contrib)
 
 For **eventing** that is:
 
-- [knative-sandbox/eventing-contrib](https://github.com/knative-sandbox/eventing-contrib)
+- [knative/eventing-contrib](https://github.com/knative/eventing-contrib)
 
 The pins are similar to step 5 above, but now we're pinning `serving` and
 `eventing` respectively. Again, the pin PRs are sent against the **master**
@@ -239,12 +239,12 @@ branch of each repository respectively.
 After the pin PRs are merged, cut the `release-x.y` branch in each of the
 remaining repositories (except `operator`):
 
-- [knative-sandbox/eventing-contrib](https://github.com/knative-sandbox/eventing-contrib)
 - [knative-sandbox/net-certmanager](https://github.com/knative-sandbox/net-certmanager)
 - [knative-sandbox/net-contour](https://github.com/knative-sandbox/net-contour)
 - [knative-sandbox/net-http01](https://github.com/knative-sandbox/net-http01)
 - [knative-sandbox/net-istio](https://github.com/knative-sandbox/net-istio)
 - [knative-sandbox/net-kourier](https://github.com/knative-sandbox/net-kourier)
+- [knative/eventing-contrib](https://github.com/knative/eventing-contrib)
 
 Release automation will automatically pick up the branches and will likewise
 create the respective tags.
