@@ -1,10 +1,85 @@
-# Releasing Knative
+# Release Masters
+
+For each release cycle, we dedicate a team of two individuals, one from Eventing
+and one from Serving, to shepherd the release process. Participation is
+voluntary and based on good faith. We are only expected to participate during
+our local office hour.
+
+# Roster
+
+We seed this rotation with all approvers from all the Serving and Eventing
+workgroups, excluding productivity. If you are no longer active in Knative, or
+if you are contributing on personal capacity and do not have time to contribute
+in the rotation, feel free to send a PR to remove yourself.
+
+## Serving roster
+- dprotaso
+- julz
+- JRBANCEL
+- markusthoemmes
+- mattmoor
+- nak3
+- tcnghia
+- vagababov
+- yanweiguo
+- ZhiminXiang
+
+## Eventing roster
+- evankanderson
+- grantr
+- Harwayne
+- lionelvillard
+- matzew
+- n3wscott
+- nachocano
+- slinkydeveloper
+- vaikas
+
+## Schedule
+
+| Release | Release Date | Serving        | Eventing        |
+|---------|--------------|----------------|-----------------|
+| v0.17   | 2020-08-18   | yanweiguo      | Harwayne        |
+| v0.18   | 2020-09-29   | ZhiminXiang    | n3wscott        |
+| v0.19   | 2020-11-10   | julz           | nachocano       |
+| v0.20   | 2020-12-22   | nak3           | slinkydeveloper |
+| v0.21   | 2021-02-02   | mattmoor       | lionelvillard   |
+| v0.22   | 2021-03-16   | markusthoemmes | evankanderson   |
+| v0.23   | 2021-04-27   | tcnghia        | vaikas          |
+| v0.24   | 2021-06-08   | dprotaso       | matzew          |
+| v0.25   | 2021-07-20   | vagababov      | grantr          |
+| v0.26   | 2021-08-31   | JRBANCEL       | ...             |
+
+# Release instruction
 
 We release the components of Knative every 6 weeks. All of these components must
 be moved to the latest "release" of all shared dependencies prior to each
 release.
 
----
+## 5 weeks prior to the release
+
+###  Make sure you are in the release-masters OWNER_ALIASES
+
+- [knative-sandbox/eventing-contrib](https://github.com/knative-sandbox/eventing-contrib)
+- [knative-sandbox/net-certmanager](https://github.com/knative-sandbox/net-certmanager)
+- [knative-sandbox/net-contour](https://github.com/knative-sandbox/net-contour)
+- [knative-sandbox/net-http01](https://github.com/knative-sandbox/net-http01)
+- [knative-sandbox/net-istio](https://github.com/knative-sandbox/net-istio)
+- [knative-sandbox/net-kourier](https://github.com/knative-sandbox/net-kourier)
+- [knative-sandbox/networking](https://github.com/knative-sandbox/networking)
+- [knative/caching](https://github.com/knative/caching)
+- [knative/client](https://github.com/knative/client)
+- [knative/eventing](https://github.com/knative/eventing)
+- [knative/operator](https://github.com/knative/operator)
+- [knative/pkg](https://github.com/knative/pkg)
+- [knative/serving](https://github.com/knative/serving)
+- [knative/serving](https://github.com/knative/serving)
+- [knative/test-infra](https://github.com/knative/test-infra)
+
+### Revert all pins to pin master branches again
+
+Revert all pins in all repositories to pin the **master** branches again, run
+`hack/update-deps.sh --upgrade` and PR the changes.
 
 ## 14 days prior to the release
 
@@ -95,13 +170,13 @@ index b277dd3ff..1989885ce 100755
 The downstream repositories this needs to happen on are:
 
 - [knative/client](https://github.com/knative/client)
-- [knative/eventing-contrib](https://github.com/knative/eventing-contrib)
+- [knative-sandbox/eventing-contrib](https://github.com/knative-sandbox/eventing-contrib)
 - [knative/eventing](https://github.com/knative/eventing)
-- [knative/net-certmanager](https://github.com/knative/net-certmanager)
-- [knative/net-contour](https://github.com/knative/net-contour)
-- [knative/net-http01](https://github.com/knative/net-http01)
-- [knative/net-istio](https://github.com/knative/net-istio)
-- [knative/net-kourier](https://github.com/knative/net-kourier)
+- [knative-sandbox/net-certmanager](https://github.com/knative-sandbox/net-certmanager)
+- [knative-sandbox/net-contour](https://github.com/knative-sandbox/net-contour)
+- [knative-sandbox/net-http01](https://github.com/knative-sandbox/net-http01)
+- [knative-sandbox/net-istio](https://github.com/knative-sandbox/net-istio)
+- [knative-sandbox/net-kourier](https://github.com/knative-sandbox/net-kourier)
 - [knative/operator](https://github.com/knative/operator)
 - [knative/serving](https://github.com/knative/serving)
 
@@ -144,16 +219,16 @@ to be pinned in all repositories that depend on them.
 
 For **serving** that is:
 
-- [knative/eventing-contrib](https://github.com/knative/eventing-contrib)
-- [knative/net-certmanager](https://github.com/knative/net-certmanager)
-- [knative/net-contour](https://github.com/knative/net-contour)
-- [knative/net-http01](https://github.com/knative/net-http01)
-- [knative/net-istio](https://github.com/knative/net-istio)
-- [knative/net-kourier](https://github.com/knative/net-kourier)
+- [knative-sandbox/eventing-contrib](https://github.com/knative-sandbox/eventing-contrib)
+- [knative-sandbox/net-certmanager](https://github.com/knative-sandbox/net-certmanager)
+- [knative-sandbox/net-contour](https://github.com/knative-sandbox/net-contour)
+- [knative-sandbox/net-http01](https://github.com/knative-sandbox/net-http01)
+- [knative-sandbox/net-istio](https://github.com/knative-sandbox/net-istio)
+- [knative-sandbox/net-kourier](https://github.com/knative-sandbox/net-kourier)
 
 For **eventing** that is:
 
-- [knative/eventing-contrib](https://github.com/knative/eventing-contrib)
+- [knative-sandbox/eventing-contrib](https://github.com/knative-sandbox/eventing-contrib)
 
 The pins are similar to step 5 above, but now we're pinning `serving` and
 `eventing` respectively. Again, the pin PRs are sent against the **master**
@@ -164,25 +239,16 @@ branch of each repository respectively.
 After the pin PRs are merged, cut the `release-x.y` branch in each of the
 remaining repositories (except `operator`):
 
-- [knative/eventing-contrib](https://github.com/knative/eventing-contrib)
-- [knative/net-certmanager](https://github.com/knative/net-certmanager)
-- [knative/net-contour](https://github.com/knative/net-contour)
-- [knative/net-http01](https://github.com/knative/net-http01)
-- [knative/net-istio](https://github.com/knative/net-istio)
-- [knative/net-kourier](https://github.com/knative/net-kourier)
+- [knative-sandbox/eventing-contrib](https://github.com/knative-sandbox/eventing-contrib)
+- [knative-sandbox/net-certmanager](https://github.com/knative-sandbox/net-certmanager)
+- [knative-sandbox/net-contour](https://github.com/knative-sandbox/net-contour)
+- [knative-sandbox/net-http01](https://github.com/knative-sandbox/net-http01)
+- [knative-sandbox/net-istio](https://github.com/knative-sandbox/net-istio)
+- [knative-sandbox/net-kourier](https://github.com/knative-sandbox/net-kourier)
 
 Release automation will automatically pick up the branches and will likewise
 create the respective tags.
 
----
-
-## After the release
-
-### Revert all pins to pin master branches again
-
-Revert all pins in all repositories to pin the **master** branches again, run
-`hack/update-deps.sh --upgrade` and PR the changes.
-
-### Change this file to reflect new modification to the release if applicable
+### Ping and remind the next release masters on the rotation
 
 ---
