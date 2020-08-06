@@ -1,4 +1,4 @@
-# Release Masters
+# Release Leads
 
 For each release cycle, we dedicate a team of two individuals, one from Eventing
 and one from Serving, to shepherd the release process. Participation is
@@ -37,18 +37,18 @@ in the rotation, feel free to send a PR to remove yourself.
 
 ## Schedule
 
-| Release | Release Date | Serving        | Eventing        |
-|---------|--------------|----------------|-----------------|
-| v0.17   | 2020-08-18   | yanweiguo      | Harwayne        |
-| v0.18   | 2020-09-29   | ZhiminXiang    | n3wscott        |
-| v0.19   | 2020-11-10   | julz           | nachocano       |
-| v0.20   | 2020-12-22   | nak3           | slinkydeveloper |
-| v0.21   | 2021-02-02   | mattmoor       | lionelvillard   |
-| v0.22   | 2021-03-16   | markusthoemmes | evankanderson   |
-| v0.23   | 2021-04-27   | tcnghia        | vaikas          |
-| v0.24   | 2021-06-08   | dprotaso       | matzew          |
-| v0.25   | 2021-07-20   | vagababov      | grantr          |
-| v0.26   | 2021-08-31   | JRBANCEL       | ...             |
+| Release | Release Date | Serving        | Eventing        | Unpin repos | PKG cut      |
+|---------|--------------|----------------|-----------------|-------------|--------------|
+| v0.17   | 2020-08-18   | yanweiguo      | Harwayne        | -           | 2020-08-11   |
+| v0.18   | 2020-09-29   | ZhiminXiang    | n3wscott        | 2020-08-19  | 2020-09-22   |
+| v0.19   | 2020-11-10   | julz           | nachocano       | 2020-09-30  | 2020-11-03   |
+| v0.20   | 2020-12-22   | nak3           | slinkydeveloper | 2020-11-11  | 2020-12-15   |
+| v0.21   | 2021-02-02   | mattmoor       | lionelvillard   | 2020-12-23  | 2021-01-26   |
+| v0.22   | 2021-03-16   | markusthoemmes | evankanderson   | 2020-02-03  | 2021-03-09   |
+| v0.23   | 2021-04-27   | tcnghia        | vaikas          | 2020-03-17  | 2021-04-20   |
+| v0.24   | 2021-06-08   | dprotaso       | matzew          | 2020-04-28  | 2021-06-01   |
+| v0.25   | 2021-07-20   | vagababov      | grantr          | 2020-06-09  | 2021-07-13   |
+| v0.26   | 2021-08-31   | JRBANCEL       | ...             | 2020-07-21  | 2021-08-24   |
 
 # Release instruction
 
@@ -56,30 +56,29 @@ We release the components of Knative every 6 weeks. All of these components must
 be moved to the latest "release" of all shared dependencies prior to each
 release.
 
-## 5 weeks prior to the release
+## First week of the rotation
 
-###  Make sure you are in the release-masters OWNER_ALIASES
-
-- [knative-sandbox/net-certmanager](https://github.com/knative-sandbox/net-certmanager)
-- [knative-sandbox/net-contour](https://github.com/knative-sandbox/net-contour)
-- [knative-sandbox/net-http01](https://github.com/knative-sandbox/net-http01)
-- [knative-sandbox/net-istio](https://github.com/knative-sandbox/net-istio)
-- [knative-sandbox/net-kourier](https://github.com/knative-sandbox/net-kourier)
-- [knative/caching](https://github.com/knative/caching)
-- [knative/client](https://github.com/knative/client)
-- [knative/eventing-contrib](https://github.com/knative/eventing-contrib)
-- [knative/eventing](https://github.com/knative/eventing)
-- [knative/networking](https://github.com/knative/networking)
-- [knative/operator](https://github.com/knative/operator)
-- [knative/pkg](https://github.com/knative/pkg)
-- [knative/serving](https://github.com/knative/serving)
-- [knative/serving](https://github.com/knative/serving)
-- [knative/test-infra](https://github.com/knative/test-infra)
+###  Make sure you have the right permission
+TBD after we add a Peribolos role.
 
 ### Revert all pins to pin master branches again
 
 Revert all pins in all repositories to pin the **master** branches again, run
 `hack/update-deps.sh --upgrade` and PR the changes.
+
+You should only need to do this for `knative/{serving,eventing-contrib,eventing}` and `knative-sandbox/net-{istio,contour,kourier,http01,certmanager}`. However, you may want to double check `knative/{pkg,caching,networking}` as well in case the previous release leads missed a step during their last rotation.
+
+Example PRs:
+
+* [knative/serving](https://github.com/knative/serving/pull/8579)
+* [knative/eventing](https://github.com/knative/eventing/pull/3546)
+* [knative/eventing-contrib](https://github.com/knative/eventing-contrib/pull/1272)
+* [knative-sandbox/net-istio](https://github.com/knative-sandbox/net-istio/pull/172)
+* [knative-sandbox/net-contour](https://github.com/knative-sandbox/net-contour/pull/154)
+* [knative-sandbox/net-kourier](https://github.com/knative-sandbox/net-kourier/pull/84)
+* [knative-sandbox/net-http01](https://github.com/knative-sandbox/net-http01/pull/42)
+* [knative-sandbox/net-certmanager](https://github.com/knative-sandbox/net-certmanager/pull/39)
+
 
 ## 14 days prior to the release
 
