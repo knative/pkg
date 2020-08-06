@@ -29,7 +29,6 @@ import (
 	"strings"
 	"sync"
 	"testing"
-	"time"
 
 	sd "contrib.go.opencensus.io/exporter/stackdriver"
 	ocmetrics "github.com/census-instrumentation/opencensus-proto/gen-go/agent/metrics/v1"
@@ -326,7 +325,7 @@ testComponent_testing_value{project="p1",revision="r2"} 1
 	}, {
 		name: "OpenCensus",
 		init: func() error {
-			if err := ocFake.start(); err != nil {
+			if err := ocFake.start(len(expected)); err != nil {
 				return err
 			}
 			t.Logf("Created exporter at %s", ocFake.address)
@@ -341,8 +340,6 @@ testComponent_testing_value{project="p1",revision="r2"} 1
 			UnregisterResourceView(gaugeView, resourceCounter)
 			FlushExporter()
 
-			time.Sleep(10 * time.Millisecond)
-			ocFake.srv.Stop() // Force close connections
 			records := []metricExtract{}
 			for record := range ocFake.published {
 				for _, m := range record.Metrics {
@@ -599,11 +596,12 @@ func TestStackDriverExports(t *testing.T) {
 type openCensusFake struct {
 	address   string
 	srv       *grpc.Server
+	exports   sync.WaitGroup
 	wg        sync.WaitGroup
 	published chan ocmetrics.ExportMetricsServiceRequest
 }
 
-func (oc *openCensusFake) start() error {
+func (oc *openCensusFake) start(expectedMetrics int) error {
 	ln, err := net.Listen("tcp", oc.address)
 	if err != nil {
 		return err
@@ -619,7 +617,14 @@ func (oc *openCensusFake) start() error {
 		oc.wg.Wait()
 		close(oc.published)
 	}()
+	oc.exports.Add(expectedMetrics)
+	go oc.stop()
 	return nil
+}
+
+func (oc *openCensusFake) stop() {
+	oc.exports.Wait()
+	oc.srv.Stop()
 }
 
 func (oc *openCensusFake) Export(stream ocmetrics.MetricsService_ExportServer) error {
@@ -643,6 +648,7 @@ func (oc *openCensusFake) Export(stream ocmetrics.MetricsService_ExportServer) e
 				in.Resource = streamResource
 			}
 			oc.published <- *in
+			oc.exports.Done()
 		}
 	}
 }
