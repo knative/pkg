@@ -34,8 +34,7 @@ type Canceler func()
 func Start(t test.TLegacy) Canceler {
 	// Do this lazily to make import ordering less important.
 	once.Do(func() {
-		ns := os.Getenv(system.NamespaceEnvKey)
-		if ns != "" {
+		if ns := os.Getenv(system.NamespaceEnvKey); ns != "" {
 			// If SYSTEM_NAMESPACE is set, then start the stream.
 			stream = &kubelogs{namespace: ns}
 		} else {
