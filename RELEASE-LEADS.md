@@ -13,6 +13,9 @@ if you are contributing on personal capacity and do not have time to contribute
 in the rotation, feel free to send a PR to remove yourself.
 
 ## Serving roster
+
+This roster is seeded with all approvers from Serving workgroups.
+
 - dprotaso
 - julz
 - JRBANCEL
@@ -25,6 +28,9 @@ in the rotation, feel free to send a PR to remove yourself.
 - ZhiminXiang
 
 ## Eventing roster
+
+This roster is seeded with all approvers from Eventing workgroups.
+
 - evankanderson
 - grantr
 - Harwayne
