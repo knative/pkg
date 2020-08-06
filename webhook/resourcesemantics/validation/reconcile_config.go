@@ -149,6 +149,9 @@ func (ac *reconciler) reconcileValidatingWebhook(ctx context.Context, caCert []b
 			MatchExpressions: []metav1.LabelSelectorRequirement{{
 				Key:      "webhooks.knative.dev/exclude",
 				Operator: metav1.LabelSelectorOpDoesNotExist,
+			},{
+				Key:      "control-plane",
+				Operator: metav1.LabelSelectorOpDoesNotExist,
 			}},
 		}
 		webhook.Webhooks[i].ClientConfig.CABundle = caCert
