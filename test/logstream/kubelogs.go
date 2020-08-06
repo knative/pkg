@@ -78,9 +78,11 @@ func (k *kubelogs) startForPod(pod *corev1.Pod) {
 			req := k.kc.Kube.CoreV1().Pods(psn).GetLogs(pn, options)
 			stream, err := req.Stream()
 			if err != nil {
-				k.m.Lock()
-				defer k.m.Unlock()
-				k.err = err
+				func() {
+					k.m.Lock()
+					defer k.m.Unlock()
+					k.err = err
+				}()
 			}
 			defer stream.Close()
 			// Read this container's stream.
