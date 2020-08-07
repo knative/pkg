@@ -32,6 +32,7 @@ require (
 	github.com/spf13/pflag v1.0.5
 	github.com/tsenart/vegeta v12.7.1-0.20190725001342-b5f4fca92137+incompatible
 	go.opencensus.io v0.22.4
+	go.uber.org/atomic v1.6.0
 	go.uber.org/multierr v1.5.0
 	go.uber.org/zap v1.15.0
 	golang.org/x/net v0.0.0-20200707034311-ab3426394381
@@ -50,7 +51,7 @@ require (
 	k8s.io/code-generator v0.18.6
 	k8s.io/gengo v0.0.0-20200205140755-e0e292d8aa12
 	k8s.io/klog v1.0.0
-	knative.dev/test-infra v0.0.0-20200803175002-5efff0c4bd0a
+	knative.dev/test-infra v0.0.0-20200806191129-68b7defbd189
 	sigs.k8s.io/boskos v0.0.0-20200729174948-794df80db9c9
 )
 

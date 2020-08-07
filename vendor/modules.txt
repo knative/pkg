@@ -286,6 +286,7 @@ go.opencensus.io/trace/internal
 go.opencensus.io/trace/propagation
 go.opencensus.io/trace/tracestate
 # go.uber.org/atomic v1.6.0
+## explicit
 go.uber.org/atomic
 # go.uber.org/multierr v1.5.0
 ## explicit
@@ -945,7 +946,7 @@ k8s.io/utils/buffer
 k8s.io/utils/integer
 k8s.io/utils/pointer
 k8s.io/utils/trace
-# knative.dev/test-infra v0.0.0-20200803175002-5efff0c4bd0a
+# knative.dev/test-infra v0.0.0-20200806191129-68b7defbd189
 ## explicit
 knative.dev/test-infra/scripts
 # sigs.k8s.io/boskos v0.0.0-20200729174948-794df80db9c9
