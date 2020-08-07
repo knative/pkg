@@ -190,6 +190,19 @@ func setFactory(f ResourceExporterFactory) error {
 	return retErr
 }
 
+func setReportingPeriod(mc *metricsConfig) {
+	allMeters.lock.Lock()
+	defer allMeters.lock.Unlock()
+
+	rp := time.Duration(0)
+	if mc != nil {
+		rp = mc.reportingPeriod
+	}
+	for _, meter := range allMeters.meters {
+		meter.m.SetReportingPeriod(rp)
+	}
+}
+
 func flushResourceExporters() {
 	allMeters.lock.Lock()
 	defer allMeters.lock.Unlock()
@@ -212,6 +225,11 @@ func meterExporterForResource(r *resource.Resource) *meterExporter {
 	mE.m = view.NewMeter()
 	mE.m.SetResource(r)
 	mE.m.Start()
+
+	mc := getCurMetricsConfig()
+	if mc != nil {
+		mE.m.SetReportingPeriod(mc.reportingPeriod)
+	}
 	resourceViews.lock.Lock()
 	defer resourceViews.lock.Unlock()
 	// make a copy of views to avoid data races

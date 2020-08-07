@@ -19,6 +19,7 @@ package metrics
 import (
 	"context"
 	"runtime"
+	"runtime/debug"
 	"testing"
 	"time"
 
@@ -28,6 +29,8 @@ import (
 )
 
 func TestMemStatsMetrics(t *testing.T) {
+	oldV := debug.SetGCPercent(-1)
+	t.Cleanup(func() { debug.SetGCPercent(oldV) })
 	ctx, cancel := context.WithCancel(context.Background())
 	t.Cleanup(cancel)
 

@@ -37,6 +37,7 @@ func TestObservabilityConfiguration(t *testing.T) {
 		wantConfig: &ObservabilityConfig{
 			EnableProbeRequestLog:  true,
 			EnableProfiling:        true,
+			EnableRequestLog:       false,
 			EnableVarLogCollection: true,
 			LoggingURLTemplate:     "https://logging.io",
 			RequestLogTemplate:     `{"requestMethod": "{{.Request.Method}}"}`,
@@ -47,7 +48,7 @@ func TestObservabilityConfiguration(t *testing.T) {
 			"logging.enable-var-log-collection":           "true",
 			"logging.request-log-template":                `{"requestMethod": "{{.Request.Method}}"}`,
 			"logging.revision-url-template":               "https://logging.io",
-			"logging.write-request-logs":                  "true",
+			"logging.enable-request-log":                  "false",
 			"metrics.request-metrics-backend-destination": "stackdriver",
 			"profiling.enable":                            "true",
 		},
@@ -61,6 +62,46 @@ func TestObservabilityConfiguration(t *testing.T) {
 		wantConfig: nil,
 		data: map[string]string{
 			"logging.request-log-template": `{{ something }}`,
+		},
+	}, {
+		name:    "observability configuration with request log set and with template not set",
+		wantErr: false,
+		wantConfig: &ObservabilityConfig{
+			EnableProbeRequestLog:  true,
+			EnableProfiling:        true,
+			EnableRequestLog:       false,
+			EnableVarLogCollection: true,
+			LoggingURLTemplate:     "https://logging.io",
+			RequestLogTemplate:     "",
+			RequestMetricsBackend:  "stackdriver",
+		},
+		data: map[string]string{
+			"logging.enable-probe-request-log":            "true",
+			"logging.enable-var-log-collection":           "true",
+			"logging.revision-url-template":               "https://logging.io",
+			"logging.enable-request-log":                  "false",
+			"metrics.request-metrics-backend-destination": "stackdriver",
+			"profiling.enable":                            "true",
+		},
+	}, {
+		name:    "observability configuration with request log not set and with template set",
+		wantErr: false,
+		wantConfig: &ObservabilityConfig{
+			EnableProbeRequestLog:  true,
+			EnableProfiling:        true,
+			EnableRequestLog:       true,
+			EnableVarLogCollection: true,
+			LoggingURLTemplate:     "https://logging.io",
+			RequestLogTemplate:     `{"requestMethod": "{{.Request.Method}}"}`,
+			RequestMetricsBackend:  "stackdriver",
+		},
+		data: map[string]string{
+			"logging.enable-probe-request-log":            "true",
+			"logging.enable-var-log-collection":           "true",
+			"logging.request-log-template":                `{"requestMethod": "{{.Request.Method}}"}`,
+			"logging.revision-url-template":               "https://logging.io",
+			"metrics.request-metrics-backend-destination": "stackdriver",
+			"profiling.enable":                            "true",
 		},
 	}}
 
