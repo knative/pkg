@@ -62,6 +62,9 @@ var allMeters = meters{
 	meters: map[string]*meterExporter{"": &defaultMeter},
 }
 
+// A way to mock time.Now in test
+var timeNow = time.Now
+
 func init() {
 	go garbageCollectMeters(10*time.Minute, time.Hour)
 }
@@ -73,9 +76,6 @@ func garbageCollectMeters(frequency time.Duration, inactiveThreshold time.Durati
 	}
 }
 
-// For mock out time.Now in tests
-var timeNow = time.Now
-
 func removeInactiveMeters(inactiveThreshold time.Duration, ms *meters) {
 	keys := []string{}
 
@@ -85,6 +85,7 @@ func removeInactiveMeters(inactiveThreshold time.Duration, ms *meters) {
 	for k, v := range ms.meters {
 		if k != "" && timeNow().Sub(v.t) >= inactiveThreshold {
 			keys = append(keys, k)
+			flushGivenExporter(v.e)
 			v.m.UnregisterExporter(v.e)
 			v.m.Stop()
 		}
@@ -236,7 +237,7 @@ func optionForResource(r *resource.Resource) (stats.Options, error) {
 		return nil, fmt.Errorf("failed lookup for resource %v", r)
 	}
 
-	mE.t = time.Now()
+	mE.t = timeNow()
 	if mE.e != nil {
 		// Assume the exporter is already started.
 		return mE.o, nil

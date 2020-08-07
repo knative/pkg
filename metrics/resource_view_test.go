@@ -167,6 +167,8 @@ func TestResourceAsString(t *testing.T) {
 }
 
 func TestRemoveInactiveMeter(t *testing.T) {
+	testNow := time.Date(2050, time.August, 7, 9, 0, 0, 0, time.UTC)
+	timeNow = func() time.Time { return testNow }
 	testCases := []struct {
 		name              string
 		metersForTest     *meters
@@ -177,10 +179,10 @@ func TestRemoveInactiveMeter(t *testing.T) {
 			name: "all inactive",
 			metersForTest: &meters{
 				meters: map[string]*meterExporter{
-					"":    {m: &defaultMeterImpl{}, t: time.Now()},
+					"": {m: &defaultMeterImpl{}, t: timeNow()},
 					// using defaulteMeterImple as we don't want to add real meters to global states.
-					"foo": {m: &defaultMeterImpl{}, t: time.Now().Add(-2 * time.Hour)},
-					"bar": {m: &defaultMeterImpl{}, t: time.Now().Add(-time.Hour - time.Second)},
+					"foo": {m: &defaultMeterImpl{}, t: timeNow().Add(-2 * time.Hour)},
+					"bar": {m: &defaultMeterImpl{}, t: timeNow().Add(-time.Hour - time.Microsecond)},
 				}},
 			inactiveThreshold: time.Hour,
 			remainingMeters:   1, // we don't delete the default one
@@ -189,23 +191,23 @@ func TestRemoveInactiveMeter(t *testing.T) {
 			name: "all active",
 			metersForTest: &meters{
 				meters: map[string]*meterExporter{
-					"":    {m: &defaultMeterImpl{}, t: time.Now()},
-					"foo": {m: &defaultMeterImpl{}, t: time.Now().Add(-time.Hour)},
-					"bar": {m: &defaultMeterImpl{}, t: time.Now().Add(-time.Hour - 30*time.Minute)},
+					"":    {m: &defaultMeterImpl{}, t: timeNow()},
+					"foo": {m: &defaultMeterImpl{}, t: timeNow().Add(-30 * time.Minute)},
+					"bar": {m: &defaultMeterImpl{}, t: timeNow().Add(-time.Hour + time.Millisecond)},
 				}},
-			inactiveThreshold: 2 * time.Hour,
-			remainingMeters:   3, // we don't delete the default one
+			inactiveThreshold: time.Hour,
+			remainingMeters:   3,
 		},
 		{
 			name: "With both active and inactive meters",
 			metersForTest: &meters{
 				meters: map[string]*meterExporter{
-					"":    {m: &defaultMeterImpl{}, t: time.Now()},
-					"foo": {m: &defaultMeterImpl{}, t: time.Now().Add(-2 * time.Hour)},
-					"bar": {m: &defaultMeterImpl{}, t: time.Now().Add(-30 * time.Minute)},
+					"":    {m: &defaultMeterImpl{}, t: timeNow()},
+					"foo": {m: &defaultMeterImpl{}, t: timeNow().Add(-2 * time.Hour)},
+					"bar": {m: &defaultMeterImpl{}, t: timeNow().Add(-30 * time.Minute)},
 				}},
 			inactiveThreshold: time.Hour,
-			remainingMeters:   2, // we don't delete the default one
+			remainingMeters:   2,
 		},
 	}
 
@@ -215,9 +217,10 @@ func TestRemoveInactiveMeter(t *testing.T) {
 			t.Fatalf("Expect %d remaining meters, but got %d", tc.remainingMeters, len(tc.metersForTest.meters))
 		}
 	}
+	timeNow = time.Now
 }
 
-func aTestGarbageCollectMeters(t *testing.T) {
+func TestGarbageCollectMeters(t *testing.T) {
 	r1 := &resource.Resource{
 		Type:   "r1",
 		Labels: map[string]string{"r1key": "r1val"},
@@ -227,12 +230,24 @@ func aTestGarbageCollectMeters(t *testing.T) {
 		Labels: map[string]string{"r2key": "r2val"},
 	}
 
-	go garbageCollectMeters(10*time.Millisecond, time.Second)
-
+	// Pick a future date far away to not delete other meters.
+	testNow := time.Date(2050, time.August, 7, 9, 0, 0, 0, time.UTC)
+	timeNow = func() time.Time { return testNow.Add(-3 * time.Hour) }
 	optionForResource(r1)
-	time.Sleep(time.Second)
+	timeNow = func() time.Time { return testNow.Add(-time.Hour) }
 	optionForResource(r2)
-	
+
+	timeNow = func() time.Time { return testNow }
+	removeInactiveMeters(2*time.Hour, &allMeters)
+	timeNow = time.Now
+
+	if _, ok := allMeters.meters[resourceToKey(r1)]; ok {
+		t.Fatal("Meter for r1 should be garbage-collected")
+	}
+	if _, ok := allMeters.meters[resourceToKey(r2)]; !ok {
+		t.Fatal("Meter for r2 should not be garbage-collected")
+	}
+
 }
 
 type metricExtract struct {
