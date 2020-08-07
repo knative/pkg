@@ -325,7 +325,7 @@ testComponent_testing_value{project="p1",revision="r2"} 1
 	}, {
 		name: "OpenCensus",
 		init: func() error {
-			if err := ocFake.start(len(expected)); err != nil {
+			if err := ocFake.start(len(resources) + 1); err != nil {
 				return err
 			}
 			t.Logf("Created exporter at %s", ocFake.address)
@@ -338,7 +338,6 @@ testComponent_testing_value{project="p1",revision="r2"} 1
 			// [new duration] in the future.
 			view.Unregister(globalCounter)
 			UnregisterResourceView(gaugeView, resourceCounter)
-			FlushExporter()
 
 			records := []metricExtract{}
 			for record := range ocFake.published {
@@ -396,6 +395,7 @@ testComponent_testing_value{project="p1",revision="r2"} 1
 
 	for _, c := range harnesses {
 		t.Run(c.name, func(t *testing.T) {
+			ClearMetersForTest()
 			sdFake.t = t
 			if err := c.init(); err != nil {
 				t.Fatalf("unable to init: %+v", err)
@@ -601,7 +601,7 @@ type openCensusFake struct {
 	published chan ocmetrics.ExportMetricsServiceRequest
 }
 
-func (oc *openCensusFake) start(expectedMetrics int) error {
+func (oc *openCensusFake) start(expectedStreams int) error {
 	ln, err := net.Listen("tcp", oc.address)
 	if err != nil {
 		return err
@@ -617,7 +617,7 @@ func (oc *openCensusFake) start(expectedMetrics int) error {
 		oc.wg.Wait()
 		close(oc.published)
 	}()
-	oc.exports.Add(expectedMetrics)
+	oc.exports.Add(expectedStreams)
 	go oc.stop()
 	return nil
 }
@@ -631,6 +631,7 @@ func (oc *openCensusFake) Export(stream ocmetrics.MetricsService_ExportServer) e
 	var streamResource *ocresource.Resource
 	oc.wg.Add(1)
 	defer oc.wg.Done()
+	metricSeen := false
 	for {
 		in, err := stream.Recv()
 		if err == io.EOF {
@@ -648,7 +649,10 @@ func (oc *openCensusFake) Export(stream ocmetrics.MetricsService_ExportServer) e
 				in.Resource = streamResource
 			}
 			oc.published <- *in
-			oc.exports.Done()
+			if !metricSeen {
+				oc.exports.Done()
+				metricSeen = true
+			}
 		}
 	}
 }
