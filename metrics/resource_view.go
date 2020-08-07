@@ -69,7 +69,29 @@ func init() {
 func garbageCollectMeters(frequency time.Duration, inactiveThreshold time.Duration) {
 	for {
 		time.Sleep(frequency)
-		removeInactiveMeter(inactiveThreshold)
+		removeInactiveMeters(inactiveThreshold, &allMeters)
+	}
+}
+
+// For mock out time.Now in tests
+var timeNow = time.Now
+
+func removeInactiveMeters(inactiveThreshold time.Duration, ms *meters) {
+	keys := []string{}
+
+	ms.lock.Lock()
+	defer ms.lock.Unlock()
+
+	for k, v := range ms.meters {
+		if k != "" && timeNow().Sub(v.t) >= inactiveThreshold {
+			keys = append(keys, k)
+			v.m.UnregisterExporter(v.e)
+			v.m.Stop()
+		}
+	}
+
+	for _, k := range keys {
+		delete(ms.meters, k)
 	}
 }
 
@@ -273,21 +295,6 @@ func resourceFromKey(s string) *resource.Resource {
 		r.Labels[keyValue[0]] = keyValue[1]
 	}
 	return r
-}
-
-func removeInactiveMeter(inactiveThreshold time.Duration) {
-	keys := []string{}
-	for k, v := range allMeters.meters {
-		if k != "" && time.Since(v.t) >= inactiveThreshold {
-			keys = append(keys, k)
-		}
-	}
-
-	allMeters.lock.Lock()
-	defer allMeters.lock.Unlock()
-	for _, k := range keys {
-		delete(allMeters.meters, k)
-	}
 }
 
 // defaultMeterImpl is a pass-through to the default worker in OpenCensus.

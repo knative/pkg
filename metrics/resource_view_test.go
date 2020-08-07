@@ -166,6 +166,75 @@ func TestResourceAsString(t *testing.T) {
 	}
 }
 
+func TestRemoveInactiveMeter(t *testing.T) {
+	testCases := []struct {
+		name              string
+		metersForTest     *meters
+		inactiveThreshold time.Duration
+		remainingMeters   int
+	}{
+		{
+			name: "all inactive",
+			metersForTest: &meters{
+				meters: map[string]*meterExporter{
+					"":    {m: &defaultMeterImpl{}, t: time.Now()},
+					// using defaulteMeterImple as we don't want to add real meters to global states.
+					"foo": {m: &defaultMeterImpl{}, t: time.Now().Add(-2 * time.Hour)},
+					"bar": {m: &defaultMeterImpl{}, t: time.Now().Add(-time.Hour - time.Second)},
+				}},
+			inactiveThreshold: time.Hour,
+			remainingMeters:   1, // we don't delete the default one
+		},
+		{
+			name: "all active",
+			metersForTest: &meters{
+				meters: map[string]*meterExporter{
+					"":    {m: &defaultMeterImpl{}, t: time.Now()},
+					"foo": {m: &defaultMeterImpl{}, t: time.Now().Add(-time.Hour)},
+					"bar": {m: &defaultMeterImpl{}, t: time.Now().Add(-time.Hour - 30*time.Minute)},
+				}},
+			inactiveThreshold: 2 * time.Hour,
+			remainingMeters:   3, // we don't delete the default one
+		},
+		{
+			name: "With both active and inactive meters",
+			metersForTest: &meters{
+				meters: map[string]*meterExporter{
+					"":    {m: &defaultMeterImpl{}, t: time.Now()},
+					"foo": {m: &defaultMeterImpl{}, t: time.Now().Add(-2 * time.Hour)},
+					"bar": {m: &defaultMeterImpl{}, t: time.Now().Add(-30 * time.Minute)},
+				}},
+			inactiveThreshold: time.Hour,
+			remainingMeters:   2, // we don't delete the default one
+		},
+	}
+
+	for _, tc := range testCases {
+		removeInactiveMeters(tc.inactiveThreshold, tc.metersForTest)
+		if len(tc.metersForTest.meters) != tc.remainingMeters {
+			t.Fatalf("Expect %d remaining meters, but got %d", tc.remainingMeters, len(tc.metersForTest.meters))
+		}
+	}
+}
+
+func aTestGarbageCollectMeters(t *testing.T) {
+	r1 := &resource.Resource{
+		Type:   "r1",
+		Labels: map[string]string{"r1key": "r1val"},
+	}
+	r2 := &resource.Resource{
+		Type:   "r2",
+		Labels: map[string]string{"r2key": "r2val"},
+	}
+
+	go garbageCollectMeters(10*time.Millisecond, time.Second)
+
+	optionForResource(r1)
+	time.Sleep(time.Second)
+	optionForResource(r2)
+	
+}
+
 type metricExtract struct {
 	Name   string
 	Labels map[string]string
