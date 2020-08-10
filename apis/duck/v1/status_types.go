@@ -78,8 +78,6 @@ func (*Conditions) GetFullType() ducktypes.Populatable {
 func (s *Status) GetCondition(t apis.ConditionType) *apis.Condition {
 	for _, cond := range s.Conditions {
 		if cond.Type == t {
-			// Make sure we return the actual object, rather than the pointer to the
-			// temp loop variable.
 			return &cond
 		}
 	}
