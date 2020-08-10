@@ -23,6 +23,8 @@ import (
 	"time"
 
 	"k8s.io/apimachinery/pkg/api/resource"
+	"k8s.io/apimachinery/pkg/api/validation"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/sets"
 )
 
@@ -140,6 +142,45 @@ func AsQuantity(key string, target **resource.Quantity) ParseFunc {
 
 			*target = &val
 		}
+		return nil
+	}
+}
+
+func AsNamespacedName(key string, target *types.NamespacedName) ParseFunc {
+	return func(data map[string]string) error {
+		var (
+			name      string
+			namespace string
+			raw       string
+			ok        bool
+		)
+
+		if raw, ok = data[key]; !ok {
+			return nil
+		}
+
+		v := strings.Split(raw, string(types.Separator))
+		switch len(v) {
+		// No '/' separator.
+		case 1:
+			name = v[0]
+		case 2:
+			name = v[1]
+			namespace = v[0]
+		default:
+			return fmt.Errorf("failed to parse %q: %s ", key, "expected 'namespace/name' format")
+		}
+
+		// note this skips validating empty namespaces
+		for _, val := range v {
+			if errs := validation.ValidateNamespaceName(val, false); len(errs) > 0 {
+				return fmt.Errorf("failed to parse %q: %s ", key, strings.Join(errs, ", "))
+			}
+		}
+
+		target.Name = name
+		target.Namespace = namespace
+
 		return nil
 	}
 }
