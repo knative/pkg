@@ -29,7 +29,6 @@ import (
 	"strings"
 	"sync"
 	"testing"
-	"time"
 
 	sd "contrib.go.opencensus.io/exporter/stackdriver"
 	ocmetrics "github.com/census-instrumentation/opencensus-proto/gen-go/agent/metrics/v1"
@@ -410,7 +409,7 @@ testComponent_testing_value{project="p1",revision="r2"} 1
 	}, {
 		name: "OpenCensus",
 		init: func() error {
-			if err := ocFake.start(); err != nil {
+			if err := ocFake.start(len(resources) + 1); err != nil {
 				return err
 			}
 			t.Logf("Created exporter at %s", ocFake.address)
@@ -423,10 +422,7 @@ testComponent_testing_value{project="p1",revision="r2"} 1
 			// [new duration] in the future.
 			view.Unregister(globalCounter)
 			UnregisterResourceView(gaugeView, resourceCounter)
-			FlushExporter()
 
-			time.Sleep(10 * time.Millisecond)
-			ocFake.srv.Stop() // Force close connections
 			records := []metricExtract{}
 			for record := range ocFake.published {
 				for _, m := range record.Metrics {
@@ -483,6 +479,7 @@ testComponent_testing_value{project="p1",revision="r2"} 1
 
 	for _, c := range harnesses {
 		t.Run(c.name, func(t *testing.T) {
+			ClearMetersForTest()
 			sdFake.t = t
 			if err := c.init(); err != nil {
 				t.Fatalf("unable to init: %+v", err)
@@ -683,11 +680,12 @@ func TestStackDriverExports(t *testing.T) {
 type openCensusFake struct {
 	address   string
 	srv       *grpc.Server
+	exports   sync.WaitGroup
 	wg        sync.WaitGroup
 	published chan ocmetrics.ExportMetricsServiceRequest
 }
 
-func (oc *openCensusFake) start() error {
+func (oc *openCensusFake) start(expectedStreams int) error {
 	ln, err := net.Listen("tcp", oc.address)
 	if err != nil {
 		return err
@@ -703,13 +701,21 @@ func (oc *openCensusFake) start() error {
 		oc.wg.Wait()
 		close(oc.published)
 	}()
+	oc.exports.Add(expectedStreams)
+	go oc.stop()
 	return nil
+}
+
+func (oc *openCensusFake) stop() {
+	oc.exports.Wait()
+	oc.srv.Stop()
 }
 
 func (oc *openCensusFake) Export(stream ocmetrics.MetricsService_ExportServer) error {
 	var streamResource *ocresource.Resource
 	oc.wg.Add(1)
 	defer oc.wg.Done()
+	metricSeen := false
 	for {
 		in, err := stream.Recv()
 		if err == io.EOF {
@@ -727,6 +733,10 @@ func (oc *openCensusFake) Export(stream ocmetrics.MetricsService_ExportServer) e
 				in.Resource = streamResource
 			}
 			oc.published <- *in
+			if !metricSeen {
+				oc.exports.Done()
+				metricSeen = true
+			}
 		}
 	}
 }

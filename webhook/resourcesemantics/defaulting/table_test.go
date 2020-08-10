@@ -66,6 +66,9 @@ func TestReconcile(t *testing.T) {
 		MatchExpressions: []metav1.LabelSelectorRequirement{{
 			Key:      "webhooks.knative.dev/exclude",
 			Operator: metav1.LabelSelectorOpDoesNotExist,
+		}, {
+			Key:      "control-plane",
+			Operator: metav1.LabelSelectorOpDoesNotExist,
 		}},
 	}
 
