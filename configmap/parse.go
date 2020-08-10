@@ -154,7 +154,7 @@ func AsNamespacedName(key string, target *types.NamespacedName) ParseFunc {
 			return nil
 		}
 
-		v := strings.Split(raw, string(types.Separator))
+		v := strings.SplitN(raw, string(types.Separator), 3)
 
 		if len(v) != 2 {
 			return fmt.Errorf("failed to parse %q: expected 'namespace/name' format", key)
