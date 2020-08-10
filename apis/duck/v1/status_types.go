@@ -76,9 +76,9 @@ func (*Conditions) GetFullType() ducktypes.Populatable {
 
 // GetCondition fetches the condition of the specified type.
 func (s *Status) GetCondition(t apis.ConditionType) *apis.Condition {
-	for _, cond := range s.Conditions {
+	for i, cond := range s.Conditions {
 		if cond.Type == t {
-			return &cond
+			return &s.Conditions[i]
 		}
 	}
 	return nil
