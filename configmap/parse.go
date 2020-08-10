@@ -156,15 +156,14 @@ func AsNamespacedName(key string, target *types.NamespacedName) ParseFunc {
 
 		v := strings.Split(raw, string(types.Separator))
 
-		// note this skips validating empty namespaces
+		if len(v) != 2 {
+			return fmt.Errorf("failed to parse %q: expected 'namespace/name' format", key)
+		}
+
 		for _, val := range v {
 			if errs := validation.ValidateNamespaceName(val, false); len(errs) > 0 {
 				return fmt.Errorf("failed to parse %q: %s", key, strings.Join(errs, ", "))
 			}
-		}
-
-		if len(v) != 2 {
-			return fmt.Errorf("failed to parse %q: expected 'namespace/name' format", key)
 		}
 
 		target.Namespace = v[0]
