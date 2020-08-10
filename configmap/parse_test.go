@@ -97,16 +97,6 @@ func TestParse(t *testing.T) {
 			qua: &fiveHundredM,
 		},
 	}, {
-		name: "types.NamespacedName with no namespace is ok",
-		data: map[string]string{
-			"test-namespaced-name": "resource",
-		},
-		want: testConfig{
-			nsn: types.NamespacedName{
-				Name: "resource",
-			},
-		},
-	}, {
 		name: "bool defaults to false",
 		data: map[string]string{
 			"test-bool": "foo",

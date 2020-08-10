@@ -146,40 +146,29 @@ func AsQuantity(key string, target **resource.Quantity) ParseFunc {
 	}
 }
 
+// AsNamespacedName parses the value at key as a types.NamespacedName into the target, if it exists
 func AsNamespacedName(key string, target *types.NamespacedName) ParseFunc {
 	return func(data map[string]string) error {
-		var (
-			name      string
-			namespace string
-			raw       string
-			ok        bool
-		)
-
-		if raw, ok = data[key]; !ok {
+		raw, ok := data[key]
+		if !ok {
 			return nil
 		}
 
 		v := strings.Split(raw, string(types.Separator))
-		switch len(v) {
-		// No '/' separator.
-		case 1:
-			name = v[0]
-		case 2:
-			name = v[1]
-			namespace = v[0]
-		default:
-			return fmt.Errorf("failed to parse %q: %s ", key, "expected 'namespace/name' format")
-		}
 
 		// note this skips validating empty namespaces
 		for _, val := range v {
 			if errs := validation.ValidateNamespaceName(val, false); len(errs) > 0 {
-				return fmt.Errorf("failed to parse %q: %s ", key, strings.Join(errs, ", "))
+				return fmt.Errorf("failed to parse %q: %s", key, strings.Join(errs, ", "))
 			}
 		}
 
-		target.Name = name
-		target.Namespace = namespace
+		if len(v) != 2 {
+			return fmt.Errorf("failed to parse %q: expected 'namespace/name' format", key)
+		}
+
+		target.Namespace = v[0]
+		target.Name = v[1]
 
 		return nil
 	}
