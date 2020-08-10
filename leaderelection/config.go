@@ -34,13 +34,17 @@ import (
 
 const (
 	configMapNameEnv = "CONFIG_LEADERELECTION_NAME"
-	// KnativeResourceLock is the only supported lock mechanism for Knative.
-	KnativeResourceLock = resourcelock.LeasesResourceLock
+	// defaultKnativeResourceLock is the default lock mechanism for Knative.
+	defaultKnativeResourceLock = resourcelock.LeasesResourceLock
 )
 
-// MaxBuckets is the maximum number of buckets to allow users to define.
-// This is a variable so that it may be customized in the binary entrypoint.
-var MaxBuckets uint32 = 10
+var (
+	// MaxBuckets is the maximum number of buckets to allow users to define.
+	// This is a variable so that it may be customized in the binary entrypoint.
+	MaxBuckets uint32 = 10
+	// supportedResourceLocks is the supported resource lock types for Knative.
+	supportedResourceLocks = sets.NewString(defaultKnativeResourceLock, resourcelock.EndpointsResourceLock)
+)
 
 // NewConfigFromMap returns a Config for the given map, or an error.
 func NewConfigFromMap(data map[string]string) (*Config, error) {
@@ -112,6 +116,13 @@ type ComponentConfig struct {
 	LeaseDuration time.Duration
 	RenewDeadline time.Duration
 	RetryPeriod   time.Duration
+	// LockType is the resource lock type that will be used for locking.
+	// It defaults to resourcelock.LeasesResourceLock.
+	LockType string
+	// Identity is the unique string identifying a resource lock holder across
+	// all participants in an election. If not present, a new unique string will
+	// be generated to be used as identity for each BuildElector call.
+	Identity string
 }
 
 // statefulSetID is a envconfig Decodable controller ordinal and name.

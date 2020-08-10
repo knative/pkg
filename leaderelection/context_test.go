@@ -32,137 +32,192 @@ import (
 	"k8s.io/apimachinery/pkg/util/sets"
 	fakekube "k8s.io/client-go/kubernetes/fake"
 	ktesting "k8s.io/client-go/testing"
+	"k8s.io/client-go/tools/leaderelection/resourcelock"
 	"knative.dev/pkg/reconciler"
 	_ "knative.dev/pkg/system/testing"
 )
 
 func TestWithBuilder(t *testing.T) {
 	const buckets = 3
-	cc := ComponentConfig{
-		Component:     "the-component",
-		Buckets:       buckets,
-		LeaseDuration: 15 * time.Second,
-		RenewDeadline: 10 * time.Second,
-		RetryPeriod:   2 * time.Second,
-	}
 	kc := fakekube.NewSimpleClientset()
-	ctx := context.Background()
-
-	gotNames := make(sets.String, buckets)
-	promoted := make(chan string)
-	demoted := make(chan struct{})
-	laf := &reconciler.LeaderAwareFuncs{
-		PromoteFunc: func(bkt reconciler.Bucket, enq func(reconciler.Bucket, types.NamespacedName)) error {
-			promoted <- bkt.Name()
-			return nil
+	cases := []struct {
+		name       string
+		cc         ComponentConfig
+		lockObject string
+		wantNames  sets.String
+		wantErr    string
+	}{{
+		name: "default lock type",
+		cc: ComponentConfig{
+			Component:     "the-component",
+			Buckets:       buckets,
+			LeaseDuration: 15 * time.Second,
+			RenewDeadline: 10 * time.Second,
+			RetryPeriod:   2 * time.Second,
 		},
-		DemoteFunc: func(bkt reconciler.Bucket) {
-			demoted <- struct{}{}
+		lockObject: "leases",
+		wantNames: sets.NewString(
+			"the-component.name.00-of-03",
+			"the-component.name.01-of-03",
+			"the-component.name.02-of-03",
+		),
+	}, {
+		name: "endpoints lock type",
+		cc: ComponentConfig{
+			Component:     "the-component",
+			Buckets:       buckets,
+			LeaseDuration: 15 * time.Second,
+			RenewDeadline: 10 * time.Second,
+			RetryPeriod:   2 * time.Second,
+			LockType:      resourcelock.EndpointsResourceLock,
 		},
-	}
-	enq := func(reconciler.Bucket, types.NamespacedName) {}
-
-	created := make(chan struct{})
-	kc.PrependReactor("create", "leases",
-		func(action ktesting.Action) (bool, runtime.Object, error) {
-			created <- struct{}{}
-			return false, nil, nil
+		lockObject: "endpoints",
+		wantNames: sets.NewString(
+			"the-component-bucket-00-of-03",
+			"the-component-bucket-01-of-03",
+			"the-component-bucket-02-of-03",
+		),
+	}, {
+		name: "unsupported lock type",
+		cc: ComponentConfig{
+			Component:     "the-component",
+			Buckets:       buckets,
+			LeaseDuration: 15 * time.Second,
+			RenewDeadline: 10 * time.Second,
+			RetryPeriod:   2 * time.Second,
+			LockType:      "some-lock",
 		},
-	)
+		wantErr: "unsupported resource lock type: some-lock",
+	}}
 
-	updated := make(chan struct{})
-	kc.PrependReactor("update", "leases",
-		func(action ktesting.Action) (bool, runtime.Object, error) {
-			// Only close updated once.
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			ctx := context.Background()
+
+			gotNames := make(sets.String, buckets)
+			promoted := make(chan string)
+			demoted := make(chan struct{})
+			laf := &reconciler.LeaderAwareFuncs{
+				PromoteFunc: func(bkt reconciler.Bucket, enq func(reconciler.Bucket, types.NamespacedName)) error {
+					promoted <- bkt.Name()
+					return nil
+				},
+				DemoteFunc: func(bkt reconciler.Bucket) {
+					demoted <- struct{}{}
+				},
+			}
+			enq := func(reconciler.Bucket, types.NamespacedName) {}
+
+			created := make(chan struct{})
+			kc.PrependReactor("create", tc.lockObject,
+				func(action ktesting.Action) (bool, runtime.Object, error) {
+					created <- struct{}{}
+					return false, nil, nil
+				},
+			)
+
+			updated := make(chan struct{})
+			kc.PrependReactor("update", tc.lockObject,
+				func(action ktesting.Action) (bool, runtime.Object, error) {
+					// Only close updated once.
+					select {
+					case <-updated:
+					default:
+						close(updated)
+					}
+					return false, nil, nil
+				},
+			)
+
+			if HasLeaderElection(ctx) {
+				t.Error("HasLeaderElection() = true, wanted false")
+			}
+			if le, err := BuildElector(ctx, laf, "name", enq); err != nil {
+				t.Errorf("BuildElector() = %v, wanted an unopposedElector", err)
+			} else if _, ok := le.(*unopposedElector); !ok {
+				t.Errorf("BuildElector() = %T, wanted an unopposedElector", le)
+			}
+
+			ctx = WithDynamicLeaderElectorBuilder(ctx, kc, tc.cc)
+			if !HasLeaderElection(ctx) {
+				t.Error("HasLeaderElection() = false, wanted true")
+			}
+
+			le, err := BuildElector(ctx, laf, "name", enq)
+			if tc.wantErr != "" {
+				if err == nil {
+					t.Fatal("Expected error from NewStatefulSetBucketAndSet but got nil")
+				}
+				if got := err.Error(); got != tc.wantErr {
+					t.Fatalf("BuildElector() = %v, want %v", got, tc.wantErr)
+				}
+
+				// Errors match, succeed.
+				return
+			}
+
+			if err != nil {
+				t.Fatalf("BuildElector() = %v", err)
+			}
+
+			// We shouldn't see leases until we Run the elector.
+			select {
+			case s := <-promoted:
+				gotNames.Insert(s)
+				t.Error("Got promoted, want no actions.")
+			case <-demoted:
+				t.Error("Got demoted, want no actions.")
+			case <-created:
+				t.Error("Got created, want no actions.")
+			case <-updated:
+				t.Error("Got updated, want no actions.")
+			default:
+			}
+
+			ctx, cancel := context.WithCancel(context.Background())
+			t.Cleanup(cancel)
+			go le.Run(ctx)
+
+			// We expect 3 lease to be created.
+			for i := 0; i < buckets; i++ {
+				select {
+				case <-created:
+				case <-time.After(1 * time.Second):
+					t.Fatal("Timed out waiting for lease creation.")
+				}
+			}
+			// We expect to have been promoted 3 times.
+			for i := 0; i < buckets; i++ {
+				select {
+				case s := <-promoted:
+					gotNames.Insert(s)
+				case <-time.After(time.Second):
+					t.Fatal("Timed out waiting for promotion.")
+				}
+			}
+
+			// Cancelling the context should case us to give up leadership.
+			cancel()
+
 			select {
 			case <-updated:
-			default:
-				close(updated)
+				// We expect the lease to be updated.
+			case <-time.After(time.Second):
+				t.Fatal("Timed out waiting for lease update.")
 			}
-			return false, nil, nil
-		},
-	)
+			// We expect to have been demoted 3 times.
+			for i := 0; i < buckets; i++ {
+				select {
+				case <-demoted:
+				case <-time.After(time.Second):
+					t.Fatal("Timed out waiting for demotion.")
+				}
+			}
 
-	if HasLeaderElection(ctx) {
-		t.Error("HasLeaderElection() = true, wanted false")
-	}
-	if le, err := BuildElector(ctx, laf, "name", enq); err != nil {
-		t.Errorf("BuildElector() = %v, wanted an unopposedElector", err)
-	} else if _, ok := le.(*unopposedElector); !ok {
-		t.Errorf("BuildElector() = %T, wanted an unopposedElector", le)
-	}
-
-	ctx = WithDynamicLeaderElectorBuilder(ctx, kc, cc)
-	if !HasLeaderElection(ctx) {
-		t.Error("HasLeaderElection() = false, wanted true")
-	}
-
-	le, err := BuildElector(ctx, laf, "name", enq)
-	if err != nil {
-		t.Fatalf("BuildElector() = %v", err)
-	}
-
-	// We shouldn't see leases until we Run the elector.
-	select {
-	case s := <-promoted:
-		gotNames.Insert(s)
-		t.Error("Got promoted, want no actions.")
-	case <-demoted:
-		t.Error("Got demoted, want no actions.")
-	case <-created:
-		t.Error("Got created, want no actions.")
-	case <-updated:
-		t.Error("Got updated, want no actions.")
-	default:
-	}
-
-	ctx, cancel := context.WithCancel(context.Background())
-	t.Cleanup(cancel)
-	go le.Run(ctx)
-
-	// We expect 3 lease to be created.
-	for i := 0; i < buckets; i++ {
-		select {
-		case <-created:
-		case <-time.After(1 * time.Second):
-			t.Fatal("Timed out waiting for lease creation.")
-		}
-	}
-	// We expect to have been promoted 3 times.
-	for i := 0; i < buckets; i++ {
-		select {
-		case s := <-promoted:
-			gotNames.Insert(s)
-		case <-time.After(time.Second):
-			t.Fatal("Timed out waiting for promotion.")
-		}
-	}
-
-	// Cancelling the context should case us to give up leadership.
-	cancel()
-
-	select {
-	case <-updated:
-		// We expect the lease to be updated.
-	case <-time.After(time.Second):
-		t.Fatal("Timed out waiting for lease update.")
-	}
-	// We expect to have been demoted 3 times.
-	for i := 0; i < buckets; i++ {
-		select {
-		case <-demoted:
-		case <-time.After(time.Second):
-			t.Fatal("Timed out waiting for demotion.")
-		}
-	}
-
-	want := sets.NewString(
-		"the-component.name.00-of-03",
-		"the-component.name.01-of-03",
-		"the-component.name.02-of-03",
-	)
-	if !gotNames.Equal(want) {
-		t.Errorf("BucketSet.BucketList() = %q, want: %q", gotNames, want)
+			if !gotNames.Equal(tc.wantNames) {
+				t.Errorf("BucketSet.BucketList() = %q, want: %q", gotNames, tc.wantNames)
+			}
+		})
 	}
 }
 
