@@ -146,7 +146,21 @@ func AsQuantity(key string, target **resource.Quantity) ParseFunc {
 	}
 }
 
+// AsOptionalNamespacedName parses the value at key as a types.NamespacedName into the target, if it exists
+// The namespace and name are both required and expected to be valid DNS labels
+func AsOptionalNamespacedName(key string, target **types.NamespacedName) ParseFunc {
+	return func(data map[string]string) error {
+		if _, ok := data[key]; !ok {
+			return nil
+		}
+
+		*target = &types.NamespacedName{}
+		return AsNamespacedName(key, *target)(data)
+	}
+}
+
 // AsNamespacedName parses the value at key as a types.NamespacedName into the target, if it exists
+// The namespace and name are both required and expected to be valid DNS labels
 func AsNamespacedName(key string, target *types.NamespacedName) ParseFunc {
 	return func(data map[string]string) error {
 		raw, ok := data[key]
