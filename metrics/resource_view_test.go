@@ -29,6 +29,7 @@ import (
 	"strings"
 	"sync"
 	"testing"
+	"time"
 
 	sd "contrib.go.opencensus.io/exporter/stackdriver"
 	ocmetrics "github.com/census-instrumentation/opencensus-proto/gen-go/agent/metrics/v1"
@@ -166,6 +167,7 @@ func TestResourceAsString(t *testing.T) {
 }
 
 func TestRemoveInactiveMeter(t *testing.T) {
+	defer func() { timeNow = time.Now }()
 	testNow := time.Date(2050, time.August, 7, 9, 0, 0, 0, time.UTC)
 	timeNow = func() time.Time { return testNow }
 	testCases := []struct {
@@ -216,7 +218,6 @@ func TestRemoveInactiveMeter(t *testing.T) {
 			t.Fatalf("Expect %d remaining meters, but got %d", tc.remainingMeters, len(tc.metersForTest.meters))
 		}
 	}
-	timeNow = time.Now
 }
 
 func TestGarbageCollectMeters(t *testing.T) {
@@ -229,6 +230,7 @@ func TestGarbageCollectMeters(t *testing.T) {
 		Labels: map[string]string{"r2key": "r2val"},
 	}
 
+	defer func() { timeNow = time.Now }()
 	// Pick a future date far away to not delete other meters.
 	testNow := time.Date(2050, time.August, 7, 9, 0, 0, 0, time.UTC)
 	timeNow = func() time.Time { return testNow.Add(-3 * time.Hour) }
@@ -238,7 +240,6 @@ func TestGarbageCollectMeters(t *testing.T) {
 
 	timeNow = func() time.Time { return testNow }
 	removeInactiveMeters(2*time.Hour, &allMeters)
-	timeNow = time.Now
 
 	if _, ok := allMeters.meters[resourceToKey(r1)]; ok {
 		t.Fatal("Meter for r1 should be garbage-collected")
