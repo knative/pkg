@@ -74,13 +74,13 @@ func (*Conditions) GetFullType() ducktypes.Populatable {
 	return &KResource{}
 }
 
-// GetCondition fetches the condition of the specified type.
+// GetCondition fetches the copy of the condition of the specified type.
 func (s *Status) GetCondition(t apis.ConditionType) *apis.Condition {
-	for i, cond := range s.Conditions {
+	for _, cond := range s.Conditions {
 		if cond.Type == t {
 			// Make sure we return the actual object, rather than the pointer to the
 			// temp loop variable.
-			return &s.Conditions[i]
+			return &cond
 		}
 	}
 	return nil
