@@ -1343,9 +1343,10 @@ func TestImplGlobalResync(t *testing.T) {
 	impl.GlobalResync(&dummyInformer{})
 
 	// The global resync delays enqueuing things by a second with a jitter that
-	// goes up to len(dummyObjs) times a second.
+	// goes up to len(dummyObjs) times a second: time.Duration(1+len(dummyObjs)) * time.Second.
+	// In this test, the fast lane is empty, so we can assume immediate enqueuing.
 	select {
-	case <-time.After((1 + 3) * time.Second):
+	case <-time.After(50 * time.Millisecond):
 		// We don't expect completion before the context is cancelled.
 	case <-doneCh:
 		t.Error("StartAll finished early.")
