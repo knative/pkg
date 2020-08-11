@@ -1173,17 +1173,19 @@ func (er *ErrorReconciler) Reconcile(context.Context, string) error {
 }
 
 func TestStartAndShutdownWithErroringWork(t *testing.T) {
+	const testTimeout = 500 * time.Millisecond
+
+	item := types.NamespacedName{Namespace: "", Name: "bar"}
+
 	t.Cleanup(ClearAll)
-	r := &ErrorReconciler{}
-	reporter := &FakeStatsReporter{}
-	impl := NewImplWithStats(r, TestLogger(t), "Testing", reporter)
 
-	ctx, cancel := context.WithCancel(context.Background())
+	impl := NewImplWithStats(&ErrorReconciler{}, TestLogger(t), "Testing", &FakeStatsReporter{})
+	impl.EnqueueKey(item)
+
+	ctx, cancel := context.WithTimeout(context.Background(), testTimeout)
 	t.Cleanup(cancel)
+
 	doneCh := make(chan struct{})
-
-	impl.EnqueueKey(types.NamespacedName{Namespace: "", Name: "bar"})
-
 	go func() {
 		defer close(doneCh)
 		// StartAll blocks until all the worker threads finish, which shouldn't
@@ -1191,33 +1193,37 @@ func TestStartAndShutdownWithErroringWork(t *testing.T) {
 		StartAll(ctx, impl)
 	}()
 
+	// Keep checking the number of requeues, send to channel to indicate success.
+	itemRequeued := make(chan struct{})
+	defer close(itemRequeued)
+	go func() {
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-time.After(5 * time.Millisecond):
+				// Check that the work was requeued in RateLimiter, as NumRequeues
+				// can't fully reflect the real state of queue length.
+				// Here we need to wait for NumRequeues to be more than 1, to ensure
+				// the key get re-queued and reprocessed as expect.
+				if impl.WorkQueue().NumRequeues(item) > 1 {
+					itemRequeued <- struct{}{}
+					return
+				}
+			}
+		}
+	}()
+
 	select {
-	case <-time.After(1 * time.Second):
-		// We don't expect completion before the context is cancelled,
-		// but the workers should spin on the erroring work.
+	case <-itemRequeued:
+		// shut down reconciler
+		cancel()
 
 	case <-doneCh:
-		t.Error("StartAll finished early.")
-	}
+		t.Fatal("StartAll finished early")
 
-	// By cancelling the context all the workers should complete and
-	// we should close the doneCh.
-	cancel()
-
-	select {
-	case <-time.After(1 * time.Second):
-		t.Error("Timed out waiting for controller to finish.")
-	case <-doneCh:
-		// We expect any outstanding work to complete, for the worker
-		// threads to complete and for doneCh to close in a timely manner.
-	}
-
-	// Check that the work was requeued in RateLimiter.
-	// As NumRequeues can't fully reflect the real state of queue length.
-	// Here we need to wait for NumRequeues to be more than 1, to ensure
-	// the key get re-queued and reprocessed as expect.
-	if got, wantAtLeast := impl.WorkQueue().NumRequeues(types.NamespacedName{Namespace: "", Name: "bar"}), 2; got < wantAtLeast {
-		t.Errorf("Requeue count = %v, wanted at least %v", got, wantAtLeast)
+	case <-ctx.Done():
+		t.Fatal("Timed out waiting for item to be requeued")
 	}
 }
 
