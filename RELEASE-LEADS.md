@@ -65,7 +65,13 @@ release.
 ## First week of the rotation
 
 ###  Make sure you have the right permission
-TBD after we add a Peribolos role.
+
+Check to make sure you already are in the "Knative Release Leads" team in
+https://github.com/knative/community/blob/master/peribolos/knative.yaml and
+https://github.com/knative/community/blob/master/peribolos/knative-sandbox.yaml
+. If not, send a PR like [this
+one](https://github.com/knative/community/pull/209) to grant yourself some super
+power.
 
 ### Revert all pins to pin master branches again
 
@@ -254,6 +260,10 @@ remaining repositories (except `operator`):
 Release automation will automatically pick up the branches and will likewise
 create the respective tags.
 
-### Ping and remind the next release masters on the rotation
+## Right after the release
+
+Send a PR like [this one](https://github.com/knative/community/pull/209) to
+grant ACLs for the next release leads, and to remove yourself from the
+rotation. Include the next release leads in the PR as a reminder.
 
 ---
