@@ -828,9 +828,8 @@ func TestEnqueueAfter(t *testing.T) {
 
 	select {
 	case <-queuePopulated:
-		cancel()
 		if enqueueDelay := time.Since(enqueueTime); enqueueDelay < shortDelay {
-			t.Errorf("Item enqueued within %s, expected at least a %s delay", enqueueDelay, shortDelay)
+			t.Errorf("Item enqueued within %v, expected at least a %v delay", enqueueDelay, shortDelay)
 		}
 		if got, want := impl.WorkQueue().Len(), 1; got != want {
 			t.Errorf("|Queue| = %d, want: %d", got, want)
@@ -848,24 +847,66 @@ func TestEnqueueAfter(t *testing.T) {
 	}
 }
 
-func TestEnqeueKeyAfter(t *testing.T) {
+func TestEnqueueKeyAfter(t *testing.T) {
+	const (
+		// longDelay is longer than we expect the test to run.
+		longDelay = 1 * time.Minute
+		// shortDelay is short enough for the test to execute quickly, but long
+		// enough to reasonably delay the enqueuing of an item.
+		shortDelay = 50 * time.Millisecond
+	)
+
 	t.Cleanup(ClearAll)
+
 	impl := NewImplWithStats(&NopReconciler{}, TestLogger(t), "Testing", &FakeStatsReporter{})
-	impl.EnqueueKeyAfter(types.NamespacedName{Namespace: "waiting", Name: "for"}, 5*time.Second)
-	impl.EnqueueKeyAfter(types.NamespacedName{Namespace: "the", Name: "waterfall"}, 500*time.Millisecond)
-	impl.EnqueueKeyAfter(types.NamespacedName{Namespace: "to", Name: "fall"}, 20*time.Second)
-	time.Sleep(10 * time.Millisecond)
-	if got, want := impl.WorkQueue().Len(), 0; got != want {
-		t.Errorf("|Queue| = %d, want: %d", got, want)
+	defer impl.WorkQueue().ShutDown()
+
+	// Enqueue two items with a long delay.
+	impl.EnqueueKeyAfter(types.NamespacedName{Namespace: "waiting", Name: "for"}, longDelay)
+	impl.EnqueueKeyAfter(types.NamespacedName{Namespace: "the", Name: "waterfall"}, longDelay)
+
+	// Enqueue one item with a short delay.
+	enqueueTime := time.Now()
+	impl.EnqueueKeyAfter(types.NamespacedName{Namespace: "to", Name: "fall"}, shortDelay)
+
+	// Keep checking the queue length until 'to/fall' gets enqueued, send to channel to indicate success.
+	queuePopulated := make(chan struct{})
+	defer close(queuePopulated)
+	const queueCheckTimeout = shortDelay + 500*time.Millisecond
+	ctx, cancel := context.WithTimeout(context.Background(), queueCheckTimeout)
+	t.Cleanup(cancel)
+	go func() {
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-time.After(5 * time.Millisecond):
+				if impl.WorkQueue().Len() > 0 {
+					queuePopulated <- struct{}{}
+					return
+				}
+			}
+		}
+	}()
+
+	select {
+	case <-queuePopulated:
+		if enqueueDelay := time.Since(enqueueTime); enqueueDelay < shortDelay {
+			t.Errorf("Item enqueued within %v, expected at least a %v delay", enqueueDelay, shortDelay)
+		}
+		if got, want := impl.WorkQueue().Len(), 1; got != want {
+			t.Errorf("|Queue| = %d, want: %d", got, want)
+		}
+
+	case <-ctx.Done():
+		t.Fatal("Timed out waiting for item to be put onto the workqueue")
 	}
-	// Sleep the remaining time.
-	time.Sleep(time.Second)
-	if got, want := impl.WorkQueue().Len(), 1; got != want {
-		t.Errorf("|Queue| = %d, want: %d", got, want)
-	}
+
 	impl.WorkQueue().ShutDown()
-	if got, want := drainWorkQueue(impl.WorkQueue()), []types.NamespacedName{{Namespace: "the", Name: "waterfall"}}; !cmp.Equal(got, want) {
-		t.Errorf("Queue = %v, want: %v, diff: %s", got, want, cmp.Diff(got, want))
+
+	got, want := drainWorkQueue(impl.WorkQueue()), []types.NamespacedName{{Namespace: "to", Name: "fall"}}
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("Unexpected workqueue state (-:expect, +:got):\n%s", diff)
 	}
 }
 
