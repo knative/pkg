@@ -1450,10 +1450,10 @@ func TestStartInformersEventualSuccess(t *testing.T) {
 	}()
 
 	select {
-	case err := <-errCh:
-		t.Errorf("Unexpected send on errCh: %v", err)
-	case <-time.After(1 * time.Second):
+	case <-time.After(50 * time.Millisecond):
 		// Wait a brief period to ensure nothing is sent.
+	case err := <-errCh:
+		t.Fatal("Unexpected send on errCh:", err)
 	}
 
 	// Let the Sync complete.
@@ -1481,10 +1481,10 @@ func TestStartInformersFailure(t *testing.T) {
 	}()
 
 	select {
-	case err := <-errCh:
-		t.Errorf("Unexpected send on errCh: %v", err)
-	case <-time.After(1 * time.Second):
+	case <-time.After(50 * time.Millisecond):
 		// Wait a brief period to ensure nothing is sent.
+	case err := <-errCh:
+		t.Fatal("Unexpected send on errCh:", err)
 	}
 
 	// Now close the stopCh and we should see an error sent.
@@ -1537,10 +1537,10 @@ func TestRunInformersEventualSuccess(t *testing.T) {
 	}()
 
 	select {
-	case err := <-errCh:
-		t.Fatalf("Unexpected send on errCh: %v", err)
-	case <-time.After(1 * time.Second):
+	case <-time.After(50 * time.Millisecond):
 		// Wait a brief period to ensure nothing is sent.
+	case err := <-errCh:
+		t.Fatal("Unexpected send on errCh:", err)
 	}
 
 	// Let the Sync complete.
@@ -1571,10 +1571,10 @@ func TestRunInformersFailure(t *testing.T) {
 	}()
 
 	select {
-	case err := <-errCh:
-		t.Errorf("Unexpected send on errCh: %v", err)
-	case <-time.After(1 * time.Second):
+	case <-time.After(50 * time.Millisecond):
 		// Wait a brief period to ensure nothing is sent.
+	case err := <-errCh:
+		t.Fatal("Unexpected send on errCh:", err)
 	}
 
 	// Now close the stopCh and we should see an error sent.
