@@ -435,7 +435,7 @@ func (t testRateLimiter) NumRequeues(interface{}) int    { return 0 }
 
 var _ workqueue.RateLimiter = (*testRateLimiter)(nil)
 
-func TestEnqueues(t *testing.T) {
+func TestEnqueue(t *testing.T) {
 	tests := []struct {
 		name      string
 		work      func(*Impl)
@@ -741,8 +741,6 @@ func TestEnqueues(t *testing.T) {
 			impl := NewImplFull(&NopReconciler{}, ControllerOptions{WorkQueueName: "Testing", Logger: TestLogger(t), RateLimiter: rl})
 			test.work(impl)
 
-			// The rate limit on our queue delays when things are added to the queue.
-			time.Sleep(150 * time.Millisecond)
 			impl.WorkQueue().ShutDown()
 			gotQueue := drainWorkQueue(impl.WorkQueue())
 
@@ -758,8 +756,6 @@ func TestEnqueues(t *testing.T) {
 			impl := NewImplWithStats(&NopReconciler{}, TestLogger(t), "Testing", &FakeStatsReporter{})
 			test.work(impl)
 
-			// The rate limit on our queue delays when things are added to the queue.
-			time.Sleep(50 * time.Millisecond)
 			impl.WorkQueue().ShutDown()
 			gotQueue := drainWorkQueue(impl.WorkQueue())
 
