@@ -39,7 +39,6 @@ import (
 
 func TestWithBuilder(t *testing.T) {
 	const buckets = 3
-	kc := fakekube.NewSimpleClientset()
 	cases := []struct {
 		name       string
 		cc         ComponentConfig
@@ -54,6 +53,22 @@ func TestWithBuilder(t *testing.T) {
 			LeaseDuration: 15 * time.Second,
 			RenewDeadline: 10 * time.Second,
 			RetryPeriod:   2 * time.Second,
+		},
+		lockObject: "leases",
+		wantNames: sets.NewString(
+			"the-component.name.00-of-03",
+			"the-component.name.01-of-03",
+			"the-component.name.02-of-03",
+		),
+	}, {
+		name: "leases lock type",
+		cc: ComponentConfig{
+			Component:     "the-component",
+			Buckets:       buckets,
+			LeaseDuration: 15 * time.Second,
+			RenewDeadline: 10 * time.Second,
+			RetryPeriod:   2 * time.Second,
+			LockType:      resourcelock.LeasesResourceLock,
 		},
 		lockObject: "leases",
 		wantNames: sets.NewString(
@@ -93,6 +108,7 @@ func TestWithBuilder(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			ctx := context.Background()
+			kc := fakekube.NewSimpleClientset()
 
 			gotNames := make(sets.String, buckets)
 			promoted := make(chan string)

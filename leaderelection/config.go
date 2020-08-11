@@ -38,13 +38,9 @@ const (
 	defaultKnativeResourceLock = resourcelock.LeasesResourceLock
 )
 
-var (
-	// MaxBuckets is the maximum number of buckets to allow users to define.
-	// This is a variable so that it may be customized in the binary entrypoint.
-	MaxBuckets uint32 = 10
-	// supportedResourceLocks is the supported resource lock types for Knative.
-	supportedResourceLocks = sets.NewString(defaultKnativeResourceLock, resourcelock.EndpointsResourceLock)
-)
+// MaxBuckets is the maximum number of buckets to allow users to define.
+// This is a variable so that it may be customized in the binary entrypoint.
+var MaxBuckets uint32 = 10
 
 // NewConfigFromMap returns a Config for the given map, or an error.
 func NewConfigFromMap(data map[string]string) (*Config, error) {

@@ -170,13 +170,6 @@ func (b *standardBuilder) buildElector(ctx context.Context, la reconciler.Leader
 // electorConfig returns the resource lock type, an unique ID and a list of Buckets based on
 // the ComponentConfig the standarBuiler has.
 func (b *standardBuilder) electorConfig(queueName string) (string, string, []reconciler.Bucket, error) {
-	lock := b.lec.LockType
-	if lock == "" {
-		lock = defaultKnativeResourceLock
-	} else if !supportedResourceLocks.Has(lock) {
-		return "", "", nil, fmt.Errorf("unsupported resource lock type: %s", b.lec.LockType)
-	}
-
 	id := b.lec.Identity
 	if id == "" {
 		uid, err := UniqueID()
@@ -186,11 +179,14 @@ func (b *standardBuilder) electorConfig(queueName string) (string, string, []rec
 		id = uid
 	}
 
-	if lock == resourcelock.EndpointsResourceLock {
-		return lock, id, newEndpointsBuckets(b.lec), nil
-
+	switch b.lec.LockType {
+	case "", defaultKnativeResourceLock:
+		return defaultKnativeResourceLock, id, newStandardBuckets(queueName, b.lec), nil
+	case resourcelock.EndpointsResourceLock:
+		return b.lec.LockType, id, newEndpointsBuckets(b.lec), nil
+	default:
+		return "", "", nil, fmt.Errorf("unsupported resource lock type: %s", b.lec.LockType)
 	}
-	return lock, id, newStandardBuckets(queueName, b.lec), nil
 }
 
 func newStandardBuckets(queueName string, cc ComponentConfig) []reconciler.Bucket {
