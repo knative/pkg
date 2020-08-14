@@ -1,0 +1,51 @@
+name: Code Style
+
+on:
+  pull_request:
+    branches: [ master ]
+
+jobs:
+
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+
+    env:
+      GOPATH: ${{ github.workspace }}
+      GO111MODULE: off
+
+    steps:
+
+      - name: Set up Go 1.14.x
+        uses: actions/setup-go@v2
+        with:
+          go-version: 1.14.x
+        id: go
+
+      - name: Check out code onto GOPATH
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 1
+          path: ./src/knative.dev/${{github.event.pull_request.head.repo.name}}
+
+      # TODO: add pretter step
+
+      - name: Go Format
+        shell: bash
+        run: |
+          pushd ./src/knative.dev/${{github.event.pull_request.head.repo.name}}
+          gofmt -s -w $(find -path './vendor' -prune -o -path './third_party' -prune -o -type f -name '*.go' -print)
+          popd
+
+      - name: Verify
+        shell: bash
+        run: |
+          pushd ./src/knative.dev/${{github.event.pull_request.head.repo.name}}
+          if [[ $(git diff-index --name-only HEAD --) ]]; then
+              echo "Found diffs in:"
+              git diff-index --name-only HEAD --
+              echo "${{ github.repository }} is out of style. Please run go fmt."
+              exit 1
+          fi
+          echo "${{ github.repository }} is formatted correctly."
+          popd

@@ -1,0 +1,61 @@
+name: Verify
+
+on:
+  pull_request:
+    branches: [ master ]
+
+jobs:
+
+  verify:
+    name: Verify Deps and Codegen
+    strategy:
+      matrix:
+        go-version: [1.14.x]
+        platform: [ubuntu-latest]
+
+    runs-on: ${{ matrix.platform }}
+
+    env:
+      GOPATH: ${{ github.workspace }}
+      GO111MODULE: off
+
+    steps:
+
+    - name: Set up Go ${{ matrix.go-version }}
+      uses: actions/setup-go@v2
+      with:
+        go-version: ${{ matrix.go-version }}
+      id: go
+
+    - name: Install Dependencies
+      run: |
+        go get github.com/google/ko/cmd/ko
+        go get github.com/otiai10/copy
+        go get github.com/google/go-licenses
+
+    - name: Check out code onto GOPATH
+      uses: actions/checkout@v2
+      with:
+        fetch-depth: 2
+        path: ./src/knative.dev/${{github.event.pull_request.head.repo.name}}
+
+    - name: Update Codegen
+      shell: bash
+      run: |
+        pushd ./src/knative.dev/${{github.event.pull_request.head.repo.name}}
+        ./hack/update-codegen.sh
+        popd
+
+    - name: Verify
+      shell: bash
+      run: |
+        pushd ./src/knative.dev/${{github.event.pull_request.head.repo.name}}
+        if [[ -z "$(git status --porcelain)" ]]; then
+            echo "${{ github.repository }} up to date."
+        else
+            repoDiff=$(git diff-index --name-only HEAD --)
+            echo "Found diffs in: $repoDiff"
+            echo "${{ github.repository }} is out of date. Please run hack/update-codegen.sh"
+            exit 1
+        fi
+        popd

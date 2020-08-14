@@ -1,0 +1,40 @@
+name: Build
+
+on:
+  pull_request:
+    branches: [ master ]
+
+jobs:
+
+  build:
+    name: Build
+    strategy:
+      matrix:
+        go-version: [1.14.x]
+        platform: [ubuntu-latest]
+
+    runs-on: ${{ matrix.platform }}
+
+    env:
+      GOPATH: ${{ github.workspace }}
+      GO111MODULE: off
+
+    steps:
+
+      - name: Set up Go ${{ matrix.go-version }}
+        uses: actions/setup-go@v2
+        with:
+          go-version: ${{ matrix.go-version }}
+        id: go
+
+      - name: Check out code onto GOPATH
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 1
+          path: ./src/knative.dev/${{github.event.pull_request.head.repo.name}}
+
+      - name: Vet
+        run: go vet knative.dev/${{github.event.pull_request.head.repo.name}}/...
+
+      - name: Build
+        run: go build -v knative.dev/${{github.event.pull_request.head.repo.name}}/...
