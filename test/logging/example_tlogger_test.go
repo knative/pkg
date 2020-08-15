@@ -35,7 +35,7 @@ var (
 func init() { someStruct = testStruct{"hello", 42.0} }
 
 // nolint:govet // godoc limitation; this would be named Test*(), of course
-func Example(legacy *testing.T) {
+func SampleTest(legacy *testing.T) {
 	// Get our TLogger and ready the cleanup function
 	t, cancel := logging.NewTLogger(legacy)
 	defer cancel()

@@ -40,7 +40,7 @@ func TestMetricEqual(t *testing.T) {
 			Name:      "testing/metric",
 			Unit:      metricdata.UnitMilliseconds,
 			Type:      metricdata.TypeGaugeInt64,
-			LabelKeys: []metricdata.LabelKey{{"key1", ""}, {"key2", ""}},
+			LabelKeys: []metricdata.LabelKey{{Key: "key1"}, {Key: "key2"}},
 		},
 		Resource: &resource.Resource{
 			Type:   "testObject",
@@ -48,11 +48,11 @@ func TestMetricEqual(t *testing.T) {
 		},
 		TimeSeries: []*metricdata.TimeSeries{
 			{
-				LabelValues: []metricdata.LabelValue{{"val1", true}, {"val2", true}},
+				LabelValues: []metricdata.LabelValue{{Value: "val1", Present: true}, {Value: "val2", Present: true}},
 				Points:      []metricdata.Point{metricdata.NewInt64Point(time.Now(), pointValues[0])},
 			},
 			{
-				LabelValues: []metricdata.LabelValue{{"val1", true}, {"val3", true}},
+				LabelValues: []metricdata.LabelValue{{Value: "val1", Present: true}, {Value: "val3", Present: true}},
 				Points:      []metricdata.Point{metricdata.NewInt64Point(time.Now(), pointValues[1])},
 			},
 		},
@@ -186,11 +186,11 @@ func TestDistributionEqual(t *testing.T) {
 	baseValue := NewMetric(&metricdata.Metric{
 		Descriptor: metricdata.Descriptor{
 			Name:      "testing/distribution",
-			LabelKeys: []metricdata.LabelKey{{"key1", ""}},
+			LabelKeys: []metricdata.LabelKey{{Key: "key1"}},
 		},
 		TimeSeries: []*metricdata.TimeSeries{
 			{
-				LabelValues: []metricdata.LabelValue{{"val1", true}},
+				LabelValues: []metricdata.LabelValue{{Value: "val1", Present: true}},
 				Points: []metricdata.Point{metricdata.NewDistributionPoint(
 					time.Now(),
 					&metricdata.Distribution{
@@ -316,10 +316,10 @@ func TestMetricShortcuts(t *testing.T) {
 		got: metricdata.Metric{
 			Descriptor: metricdata.Descriptor{
 				Name:      "test/int",
-				LabelKeys: []metricdata.LabelKey{{"key1", ""}, {"key2", ""}},
+				LabelKeys: []metricdata.LabelKey{{Key: "key1"}, {Key: "key2"}},
 			},
 			TimeSeries: []*metricdata.TimeSeries{{
-				LabelValues: []metricdata.LabelValue{{"val1", true}, {"val2", true}},
+				LabelValues: []metricdata.LabelValue{{Value: "val1", Present: true}, {Value: "val2", Present: true}},
 				Points:      []metricdata.Point{metricdata.NewInt64Point(time.Now(), 17)},
 			}},
 		},
@@ -329,10 +329,10 @@ func TestMetricShortcuts(t *testing.T) {
 		got: metricdata.Metric{
 			Descriptor: metricdata.Descriptor{
 				Name:      "test/float",
-				LabelKeys: []metricdata.LabelKey{{"key1", ""}, {"key2", ""}},
+				LabelKeys: []metricdata.LabelKey{{Key: "key1"}, {Key: "key2"}},
 			},
 			TimeSeries: []*metricdata.TimeSeries{{
-				LabelValues: []metricdata.LabelValue{{"val1", true}, {"val2", true}},
+				LabelValues: []metricdata.LabelValue{{Value: "val1", Present: true}, {Value: "val2", Present: true}},
 				Points:      []metricdata.Point{metricdata.NewFloat64Point(time.Now(), 0.17)},
 			}},
 		},
@@ -342,11 +342,11 @@ func TestMetricShortcuts(t *testing.T) {
 		got: metricdata.Metric{
 			Descriptor: metricdata.Descriptor{
 				Name:      "test/int",
-				LabelKeys: []metricdata.LabelKey{{"foo", ""}},
+				LabelKeys: []metricdata.LabelKey{{Key: "foo"}},
 			},
 			Resource: r,
 			TimeSeries: []*metricdata.TimeSeries{{
-				LabelValues: []metricdata.LabelValue{{"bar", true}},
+				LabelValues: []metricdata.LabelValue{{Value: "bar", Present: true}},
 				Points:      []metricdata.Point{metricdata.NewInt64Point(time.Now(), 18)},
 			}},
 		},
@@ -356,11 +356,11 @@ func TestMetricShortcuts(t *testing.T) {
 		got: metricdata.Metric{
 			Descriptor: metricdata.Descriptor{
 				Name:      "test/float",
-				LabelKeys: []metricdata.LabelKey{{"foo", ""}},
+				LabelKeys: []metricdata.LabelKey{{Key: "foo"}},
 			},
 			Resource: r,
 			TimeSeries: []*metricdata.TimeSeries{{
-				LabelValues: []metricdata.LabelValue{{"bar", true}},
+				LabelValues: []metricdata.LabelValue{{Value: "bar", Present: true}},
 				Points:      []metricdata.Point{metricdata.NewFloat64Point(time.Now(), 0.18)},
 			}},
 		},
@@ -370,11 +370,11 @@ func TestMetricShortcuts(t *testing.T) {
 		got: metricdata.Metric{
 			Descriptor: metricdata.Descriptor{
 				Name:      "test/distribution",
-				LabelKeys: []metricdata.LabelKey{{"foo", ""}},
+				LabelKeys: []metricdata.LabelKey{{Key: "foo"}},
 			},
 			Resource: r,
 			TimeSeries: []*metricdata.TimeSeries{{
-				LabelValues: []metricdata.LabelValue{{"bar", true}},
+				LabelValues: []metricdata.LabelValue{{Value: "bar", Present: true}},
 				Points: []metricdata.Point{metricdata.NewDistributionPoint(time.Now(), &metricdata.Distribution{
 					Count:                 19,
 					Sum:                   25.5,
