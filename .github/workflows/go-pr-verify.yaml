@@ -49,19 +49,19 @@ jobs:
       uses: actions/checkout@v2
       with:
         fetch-depth: 1
-        path: ./src/knative.dev/${{github.event.pull_request.head.repo.name}}
+        path: ./src/knative.dev/${{ github.event.repository.name }}
 
     - name: Update Codegen
       shell: bash
       run: |
-        pushd ./src/knative.dev/${{github.event.pull_request.head.repo.name}}
+        pushd ./src/knative.dev/${{ github.event.repository.name }}
         ./hack/update-codegen.sh
         popd
 
     - name: Verify
       shell: bash
       run: |
-        pushd ./src/knative.dev/${{github.event.pull_request.head.repo.name}}
+        pushd ./src/knative.dev/${{ github.event.repository.name }}
         if [[ -z "$(git status --porcelain)" ]]; then
             echo "${{ github.repository }} up to date."
         else

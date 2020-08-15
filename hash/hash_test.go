@@ -29,7 +29,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/sets"
 )
 
-func ExampleSelectOne() {
+func ExampleChooseSubset_selectOne() {
 	// This example shows how to do consistent bucket
 	// assignment using ChooseSubset.
 
@@ -44,7 +44,7 @@ func ExampleSelectOne() {
 	// task1
 }
 
-func ExampleSelectMany() {
+func ExampleChooseSubset_selectMany() {
 	// This example shows how to do consistent bucket
 	// assignment using ChooseSubset.
 

@@ -39,21 +39,21 @@ jobs:
         uses: actions/checkout@v2
         with:
           fetch-depth: 1
-          path: ./src/knative.dev/${{github.event.pull_request.head.repo.name}}
+          path: ./src/knative.dev/${{ github.event.repository.name }}
 
       # TODO: add pretter step
 
       - name: Go Format
         shell: bash
         run: |
-          pushd ./src/knative.dev/${{github.event.pull_request.head.repo.name}}
+          pushd ./src/knative.dev/${{ github.event.repository.name }}
           gofmt -s -w $(find -path './vendor' -prune -o -path './third_party' -prune -o -type f -name '*.go' -print)
           popd
 
       - name: Verify
         shell: bash
         run: |
-          pushd ./src/knative.dev/${{github.event.pull_request.head.repo.name}}
+          pushd ./src/knative.dev/${{ github.event.repository.name }}
           if [[ $(git diff-index --name-only HEAD --) ]]; then
               echo "Found diffs in:"
               git diff-index --name-only HEAD --
