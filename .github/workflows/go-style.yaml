@@ -15,8 +15,10 @@
 name: Code Style
 
 on:
+  push:
+    branches: [ 'master', 'release-*' ]
   pull_request:
-    branches: [ master ]
+    branches: [ 'master', 'release-*' ]
 
 jobs:
 
@@ -24,36 +26,30 @@ jobs:
     name: Lint
     runs-on: ubuntu-latest
 
-    env:
-      GOPATH: ${{ github.workspace }}
-
     steps:
 
-      - name: Set up Go 1.14.x
+      - name: Set up Go 1.15.x
         uses: actions/setup-go@v2
         with:
-          go-version: 1.14.x
+          go-version: 1.15.x
         id: go
 
-      - name: Check out code onto GOPATH
+      - name: Check out code
         uses: actions/checkout@v2
         with:
           fetch-depth: 1
-          path: ./src/knative.dev/${{ github.event.repository.name }}
 
-      # TODO: add pretter step
+      # TODO: add prettier step
+      # TODO: add goimports step
 
       - name: Go Format
         shell: bash
         run: |
-          pushd ./src/knative.dev/${{ github.event.repository.name }}
           gofmt -s -w $(find -path './vendor' -prune -o -path './third_party' -prune -o -type f -name '*.go' -print)
-          popd
 
       - name: Verify
         shell: bash
         run: |
-          pushd ./src/knative.dev/${{ github.event.repository.name }}
           if [[ $(git diff-index --name-only HEAD --) ]]; then
               echo "Found diffs in:"
               git diff-index --name-only HEAD --
@@ -61,4 +57,3 @@ jobs:
               exit 1
           fi
           echo "${{ github.repository }} is formatted correctly."
-          popd

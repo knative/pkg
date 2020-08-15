@@ -15,8 +15,10 @@
 name: Test
 
 on:
+  push:
+    branches: [ 'master', 'release-*' ]
   pull_request:
-    branches: [ master ]
+    branches: [ 'master', 'release-*' ]
 
 jobs:
 
@@ -24,13 +26,10 @@ jobs:
     name: Test
     strategy:
       matrix:
-        go-version: [1.14.x]
+        go-version: [1.15.x]
         platform: [ubuntu-latest]
 
     runs-on: ${{ matrix.platform }}
-
-    env:
-      GOPATH: ${{ github.workspace }}
 
     steps:
 
@@ -40,11 +39,10 @@ jobs:
           go-version: ${{ matrix.go-version }}
         id: go
 
-      - name: Check out code onto GOPATH
+      - name: Check out code
         uses: actions/checkout@v2
         with:
           fetch-depth: 1
-          path: ./src/knative.dev/${{ github.event.repository.name }}
 
       - name: Test
-        run: go test -race knative.dev/${{ github.event.repository.name }}/...
+        run: go test -race ./...
