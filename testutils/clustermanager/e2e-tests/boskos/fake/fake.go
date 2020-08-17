@@ -65,9 +65,8 @@ func (c *FakeBoskosClient) ReleaseGKEProject(name string) error {
 				res.Owner = ""
 				res.State = boskoscommon.Free
 				return nil
-			} else {
-				return fmt.Errorf("Got owner: '%s', expect owner: '%s'", res.Owner, owner)
 			}
+			return fmt.Errorf("Got owner: '%s', expect owner: '%s'", res.Owner, owner)
 		}
 	}
 	return fmt.Errorf("resource doesn't exist yet: '%s'", name)

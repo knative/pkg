@@ -78,7 +78,7 @@ func TestSetUserInfoAnnotationsWhenWithinCreate(t *testing.T) {
 
 			tc.setup(ctx, r)
 
-			SetUserInfoAnnotations(r, ctx, "pkg.knative.dev")
+			setUserInfoAnnotations(ctx, r, "pkg.knative.dev")
 
 			if !reflect.DeepEqual(r.Annotations, tc.expectedAnnotations) {
 				t.Logf("Got :  %#v", r.Annotations)
@@ -158,21 +158,20 @@ func TestSetUserInfoAnnotationsWhenWithinUpdate(t *testing.T) {
 
 			ctx := tc.configureContext(TestContextWithLogger(t), r)
 
-			new := r.DeepCopy()
+			newObj := r.DeepCopy()
 
-			tc.setup(ctx, new)
+			tc.setup(ctx, newObj)
 
-			SetUserInfoAnnotations(new, ctx, "pkg.knative.dev")
+			setUserInfoAnnotations(ctx, newObj, "pkg.knative.dev")
 
-			if !reflect.DeepEqual(new.Annotations, tc.expectedAnnotations) {
-				t.Logf("Got :  %#v", new.Annotations)
+			if !reflect.DeepEqual(newObj.Annotations, tc.expectedAnnotations) {
+				t.Logf("Got :  %#v", newObj.Annotations)
 				t.Logf("Want: %#v", tc.expectedAnnotations)
-				if diff := cmp.Diff(tc.expectedAnnotations, new.Annotations, cmpopts.EquateEmpty()); diff != "" {
-					t.Logf("diff: %v", diff)
+				if diff := cmp.Diff(tc.expectedAnnotations, newObj.Annotations, cmpopts.EquateEmpty()); diff != "" {
+					t.Logf("diff:\n%s", diff)
 				}
 				t.Fatalf("Annotations don't match")
 			}
-
 		})
 	}
 }

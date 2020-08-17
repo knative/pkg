@@ -278,9 +278,8 @@ func resourceCallback(ctx context.Context, uns *unstructured.Unstructured) error
 	if apis.IsInDelete(ctx) {
 		if resource.Spec.FieldForCallbackValidation != "magic delete" {
 			return errors.New("no magic delete")
-		} else {
-			return nil
 		}
+		return nil
 	}
 
 	if apis.IsDryRun(ctx) {
