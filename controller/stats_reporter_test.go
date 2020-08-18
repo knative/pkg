@@ -38,7 +38,6 @@ func TestNewStatsReporterErrors(t *testing.T) {
 		if err == nil {
 			t.Errorf("Expected err to not be nil for value %q, got nil", v)
 		}
-
 	}
 }
 
