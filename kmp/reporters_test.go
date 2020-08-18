@@ -183,7 +183,7 @@ func TestFieldListReporter(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			reporter := new(FieldListReporter)
+			reporter := new(fieldListReporter)
 			cmp.Equal(test.x, test.y, append(test.opts, cmp.Reporter(reporter))...)
 			got := reporter.Fields()
 			if diff := cmp.Diff(got, test.want); diff != "" {
@@ -343,7 +343,7 @@ func TestImmutableReporter(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			reporter := new(ShortDiffReporter)
+			reporter := new(shortDiffReporter)
 			cmp.Equal(test.x, test.y, append(test.opts, cmp.Reporter(reporter))...)
 			got, err := reporter.Diff()
 			if test.expectErr {
