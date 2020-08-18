@@ -227,6 +227,16 @@ automation to kick in (runs on a 2 hour interval). Once the release automation
 passed, it will create a release tag in both repositories. Enhance the
 respective tags with the collected release-notes using the Github UI.
 
+### Cut `release-x.y` branches of `net-*`
+
+Cut a `release-x.y` branch in each of the following repositories which do not
+depend on `serving` or `eventing`:
+
+- [knative-sandbox/net-certmanager](https://github.com/knative-sandbox/net-certmanager)
+- [knative-sandbox/net-contour](https://github.com/knative-sandbox/net-contour)
+- [knative-sandbox/net-http01](https://github.com/knative-sandbox/net-http01)
+- [knative-sandbox/net-istio](https://github.com/knative-sandbox/net-istio)
+
 ### Pin `serving` and `eventing` releases in dependent repositories
 
 **After** the tags for `serving` and `eventing` are created, their version needs
@@ -234,10 +244,6 @@ to be pinned in all repositories that depend on them.
 
 For **serving** that is:
 
-- [knative-sandbox/net-certmanager](https://github.com/knative-sandbox/net-certmanager)
-- [knative-sandbox/net-contour](https://github.com/knative-sandbox/net-contour)
-- [knative-sandbox/net-http01](https://github.com/knative-sandbox/net-http01)
-- [knative-sandbox/net-istio](https://github.com/knative-sandbox/net-istio)
 - [knative-sandbox/net-kourier](https://github.com/knative-sandbox/net-kourier)
 - [knative/eventing-contrib](https://github.com/knative/eventing-contrib)
 
@@ -255,10 +261,6 @@ branch of each repository respectively.
 After the pin PRs are merged, cut the `release-x.y` branch in each of the
 remaining repositories (except `operator`):
 
-- [knative-sandbox/net-certmanager](https://github.com/knative-sandbox/net-certmanager)
-- [knative-sandbox/net-contour](https://github.com/knative-sandbox/net-contour)
-- [knative-sandbox/net-http01](https://github.com/knative-sandbox/net-http01)
-- [knative-sandbox/net-istio](https://github.com/knative-sandbox/net-istio)
 - [knative-sandbox/net-kourier](https://github.com/knative-sandbox/net-kourier)
 - [knative/eventing-contrib](https://github.com/knative/eventing-contrib)
 - [knative-sandbox/eventing-kafka-broker](https://github.com/knative-sandbox/eventing-kafka-broker)
