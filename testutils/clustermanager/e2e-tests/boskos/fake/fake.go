@@ -66,10 +66,10 @@ func (c *FakeBoskosClient) ReleaseGKEProject(name string) error {
 				res.State = boskoscommon.Free
 				return nil
 			}
-			return fmt.Errorf("Got owner: '%s', expect owner: '%s'", res.Owner, owner)
+			return fmt.Errorf("Got owner: %q, expect owner: %q", res.Owner, owner)
 		}
 	}
-	return fmt.Errorf("resource doesn't exist yet: '%s'", name)
+	return fmt.Errorf("resource doesn't exist yet: %q", name)
 }
 
 // NewGKEProject adds Boskos resources for testing purpose
