@@ -118,6 +118,16 @@ func TestBucketSetBuckets(t *testing.T) {
 	}
 }
 
+func TestBucketSetHasBucket(t *testing.T) {
+	bs := NewBucketSet(sets.NewString(thisBucket, "aguacero", "chaparrón"))
+	if !bs.HasBucket(thisBucket) {
+		t.Errorf("HasBucket(%v) = false", thisBucket)
+	}
+	if bs.HasBucket(otherBucket) {
+		t.Errorf("HasBucket(%v) = true", otherBucket)
+	}
+}
+
 func TestBucketHas(t *testing.T) {
 	bs := NewBucketSet(buckets)
 	b := Bucket{

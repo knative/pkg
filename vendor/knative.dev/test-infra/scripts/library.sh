@@ -21,10 +21,6 @@
 # GCP project where all tests related resources live
 readonly KNATIVE_TESTS_PROJECT=knative-tests
 
-# Default GKE version to be used with Knative Serving
-readonly SERVING_GKE_VERSION=gke-latest
-readonly SERVING_GKE_IMAGE=cos
-
 # Conveniently set GOPATH if unset
 if [[ ! -v GOPATH ]]; then
   export GOPATH="$(go env GOPATH)"
@@ -67,6 +63,22 @@ fi
 function abort() {
   echo "error: $*"
   exit 1
+}
+
+# Build a resource name based on $REPO_NAME, a suffix and $BUILD_NUMBER.
+# Restricts the name length to 40 chars (the limit for resource names in GCP).
+# Name will have the form $REPO_NAME-<PREFIX>$BUILD_NUMBER.
+# Parameters: $1 - name suffix
+function build_resource_name() {
+  local prefix=${REPO_NAME}-$1
+  local suffix=${BUILD_NUMBER}
+  # Restrict suffix length to 20 chars
+  if [[ -n "${suffix}" ]]; then
+    suffix=${suffix:${#suffix}<20?0:-20}
+  fi
+  local name="${prefix:0:20}${suffix}"
+  # Ensure name doesn't end with "-"
+  echo "${name%-}"
 }
 
 # Display a box banner.
@@ -408,10 +420,13 @@ function report_go_test() {
   report="$(mktemp)"
   local xml
   xml="$(mktemp_with_extension "${ARTIFACTS}"/junit_XXXXXXXX xml)"
+  local json
+  json="$(mktemp_with_extension "${ARTIFACTS}"/json_XXXXXXXX json)"
   echo "Running go test with args: ${go_test_args[*]}"
   # TODO(chizhg): change to `--format testname`?
-  capture_output "${report}" gotestsum --format standard-verbose \
+  capture_output "${report}" gotestsum --format "${GO_TEST_VERBOSITY:-standard-verbose}" \
     --junitfile "${xml}" --junitfile-testsuite-name relative --junitfile-testcase-classname relative \
+    --jsonfile "${json}" \
     -- "${go_test_args[@]}"
   local failed=$?
   echo "Finished run, return code is ${failed}"
@@ -548,6 +563,21 @@ function run_go_tool() {
   (( install_failed )) && return ${install_failed}
   shift 2
   ${tool} "$@"
+}
+
+# Add function call to trap
+# Parameters: $1 - Function to call
+#             $2...$n - Signals for trap
+function add_trap {
+  local cmd=$1
+  shift
+  for trap_signal in "$@"; do
+    local current_trap
+    current_trap="$(trap -p "$trap_signal" | cut -d\' -f2)"
+    local new_cmd="($cmd)"
+    [[ -n "${current_trap}" ]] && new_cmd="${current_trap};${new_cmd}"
+    trap -- "${new_cmd}" "$trap_signal"
+  done
 }
 
 # Run kntest tool, error out and ask users to install it if it's not currently installed.

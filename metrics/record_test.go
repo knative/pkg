@@ -148,6 +148,10 @@ func testRecord(t *testing.T, measure *stats.Int64Measure, shouldReportCases []c
 	}, {
 		name:        "empty metricsConfig",
 		measurement: measure.M(4),
+	}, {
+		name:          "none backend",
+		metricsConfig: &metricsConfig{backendDestination: none},
+		measurement:   measure.M(4),
 	}}
 
 	for _, test := range shouldNotReportCases {
