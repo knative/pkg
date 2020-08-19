@@ -103,6 +103,23 @@ func TestObservabilityConfiguration(t *testing.T) {
 			"metrics.request-metrics-backend-destination": "stackdriver",
 			"profiling.enable":                            "true",
 		},
+	}, {
+		name:    "observability configuration with collector address",
+		wantErr: false,
+		wantConfig: &ObservabilityConfig{
+			EnableProbeRequestLog:   false,
+			EnableProfiling:         false,
+			EnableRequestLog:        false,
+			EnableVarLogCollection:  false,
+			LoggingURLTemplate:      DefaultLogURLTemplate,
+			RequestLogTemplate:      "",
+			RequestMetricsBackend:   "opencensus",
+			MetricsCollectorAddress: "otel:55678",
+		},
+		data: map[string]string{
+			"metrics.request-metrics-backend-destination": "opencensus",
+			"metrics.opencensus-address":                  "otel:55678",
+		},
 	}}
 
 	for _, tt := range observabilityConfigTests {
