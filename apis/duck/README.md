@@ -1,7 +1,7 @@
 # Duck Types
 
 Knative leverages duck-typing to interact with resources inside of Kubernetes
-without explicit knowlage of the full resource shape. `knative/pkg` defines
+without explicit knowledge of the full resource shape. `knative/pkg` defines
 three duck types that are used throughout Knative: `Addressable`, `Binding`, and
 `Source`.
 
