@@ -29,6 +29,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/wait"
 	fakekube "k8s.io/client-go/kubernetes/fake"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/record"
@@ -812,19 +813,15 @@ func TestEnqueueAfter(t *testing.T) {
 	defer close(queuePopulated)
 	ctx, cancel := context.WithTimeout(context.Background(), queueCheckTimeout)
 	t.Cleanup(cancel)
-	go func() {
-		for {
-			select {
-			case <-ctx.Done():
-				return
-			case <-time.After(5 * time.Millisecond):
-				if impl.WorkQueue().Len() > 0 {
-					queuePopulated <- struct{}{}
-					return
-				}
-			}
+
+	var successCheck wait.ConditionFunc = func() (bool, error) {
+		if impl.WorkQueue().Len() > 0 {
+			queuePopulated <- struct{}{}
+			return true, nil
 		}
-	}()
+		return false, nil
+	}
+	go wait.PollImmediateUntil(5*time.Millisecond, successCheck, ctx.Done())
 
 	select {
 	case <-queuePopulated:
@@ -875,19 +872,15 @@ func TestEnqueueKeyAfter(t *testing.T) {
 	const queueCheckTimeout = shortDelay + 500*time.Millisecond
 	ctx, cancel := context.WithTimeout(context.Background(), queueCheckTimeout)
 	t.Cleanup(cancel)
-	go func() {
-		for {
-			select {
-			case <-ctx.Done():
-				return
-			case <-time.After(5 * time.Millisecond):
-				if impl.WorkQueue().Len() > 0 {
-					queuePopulated <- struct{}{}
-					return
-				}
-			}
+
+	var successCheck wait.ConditionFunc = func() (bool, error) {
+		if impl.WorkQueue().Len() > 0 {
+			queuePopulated <- struct{}{}
+			return true, nil
 		}
-	}()
+		return false, nil
+	}
+	go wait.PollImmediateUntil(5*time.Millisecond, successCheck, ctx.Done())
 
 	select {
 	case <-queuePopulated:
@@ -1196,23 +1189,19 @@ func TestStartAndShutdownWithErroringWork(t *testing.T) {
 	// Keep checking the number of requeues, send to channel to indicate success.
 	itemRequeued := make(chan struct{})
 	defer close(itemRequeued)
-	go func() {
-		for {
-			select {
-			case <-ctx.Done():
-				return
-			case <-time.After(5 * time.Millisecond):
-				// Check that the work was requeued in RateLimiter, as NumRequeues
-				// can't fully reflect the real state of queue length.
-				// Here we need to wait for NumRequeues to be more than 1, to ensure
-				// the key get re-queued and reprocessed as expect.
-				if impl.WorkQueue().NumRequeues(item) > 1 {
-					itemRequeued <- struct{}{}
-					return
-				}
-			}
+
+	var successCheck wait.ConditionFunc = func() (bool, error) {
+		// Check that the work was requeued in RateLimiter, as NumRequeues
+		// can't fully reflect the real state of queue length.
+		// Here we need to wait for NumRequeues to be more than 1, to ensure
+		// the key get re-queued and reprocessed as expect.
+		if impl.WorkQueue().NumRequeues(item) > 1 {
+			itemRequeued <- struct{}{}
+			return true, nil
 		}
-	}()
+		return false, nil
+	}
+	go wait.PollImmediateUntil(5*time.Millisecond, successCheck, ctx.Done())
 
 	select {
 	case <-itemRequeued:
