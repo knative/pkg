@@ -73,9 +73,10 @@ func TestObservabilityConfiguration(t *testing.T) {
 		},
 		data: map[string]string{
 			"logging.enable-probe-request-log":            "true",
-			"logging.enable-var-log-collection":           "true",
-			"logging.revision-url-template":               "https://logging.io",
 			"logging.enable-request-log":                  "false",
+			"logging.enable-var-log-collection":           "true",
+			"logging.request-log-template":                "",
+			"logging.revision-url-template":               "https://logging.io",
 			"metrics.request-metrics-backend-destination": "stackdriver",
 			"profiling.enable":                            "true",
 		},
@@ -84,9 +85,10 @@ func TestObservabilityConfiguration(t *testing.T) {
 		wantErr: true,
 		data: map[string]string{
 			"logging.enable-probe-request-log":            "true",
-			"logging.enable-var-log-collection":           "true",
-			"logging.revision-url-template":               "https://logging.io",
 			"logging.enable-request-log":                  "true",
+			"logging.enable-var-log-collection":           "true",
+			"logging.request-log-template":                "",
+			"logging.revision-url-template":               "https://logging.io",
 			"metrics.request-metrics-backend-destination": "stackdriver",
 			"profiling.enable":                            "true",
 		},
@@ -110,10 +112,10 @@ func TestObservabilityConfiguration(t *testing.T) {
 			"profiling.enable":                            "true",
 		},
 	}, {
-		name:    "observability configuration with collector address",
-		wantErr: false,
+		name: "observability configuration with collector address",
 		wantConfig: &ObservabilityConfig{
 			LoggingURLTemplate:      DefaultLogURLTemplate,
+			RequestLogTemplate:      DefaultRequestLogTemplate,
 			RequestMetricsBackend:   "opencensus",
 			MetricsCollectorAddress: "otel:55678",
 		},
