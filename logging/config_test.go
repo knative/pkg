@@ -18,6 +18,7 @@ package logging
 
 import (
 	"fmt"
+	"os"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -474,5 +475,22 @@ func withComponentLevel(name, lvl string) testConfigOption {
 		}
 		cfg.LoggingLevel[name] = *logLvl
 		return cfg
+	}
+}
+
+func TestConfigMapName(t *testing.T) {
+	if got, want := ConfigMapName(), "config-logging"; got != want {
+		t.Errorf("ConfigMapName = %q, want: %q", got, want)
+	}
+	t.Cleanup(func() {
+		os.Unsetenv(configMapNameEnv)
+	})
+	os.Setenv(configMapNameEnv, "")
+	if got, want := ConfigMapName(), "config-logging"; got != want {
+		t.Errorf("ConfigMapName = %q, want: %q", got, want)
+	}
+	os.Setenv(configMapNameEnv, "slowly-dying-inside")
+	if got, want := ConfigMapName(), "slowly-dying-inside"; got != want {
+		t.Errorf("ConfigMapName = %q, want: %q", got, want)
 	}
 }
