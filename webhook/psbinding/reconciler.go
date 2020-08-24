@@ -361,7 +361,7 @@ func (r *BaseReconciler) ReconcileSubject(ctx context.Context, fb Bindable, muta
 	if r.WithContext != nil {
 		ctx, err = r.WithContext(ctx, fb)
 		if err != nil {
-			return err
+			return apierrs.NewNotFound(gvr.GroupResource(), subject.Name)
 		}
 	}
 
