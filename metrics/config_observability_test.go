@@ -17,6 +17,7 @@ limitations under the License.
 package metrics
 
 import (
+	"os"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -136,5 +137,22 @@ func TestObservabilityConfiguration(t *testing.T) {
 				t.Errorf("Got = %v, want: %v, diff(-want,+got)\n%s", got, want, cmp.Diff(want, got))
 			}
 		})
+	}
+}
+
+func TestConfigMapName(t *testing.T) {
+	if got, want := ConfigMapName(), "config-observability"; got != want {
+		t.Errorf("ConfigMapName = %q, want: %q", got, want)
+	}
+	t.Cleanup(func() {
+		os.Unsetenv(configMapNameEnv)
+	})
+	os.Setenv(configMapNameEnv, "")
+	if got, want := ConfigMapName(), "config-observability"; got != want {
+		t.Errorf("ConfigMapName = %q, want: %q", got, want)
+	}
+	os.Setenv(configMapNameEnv, "why-is-living-so-hard?")
+	if got, want := ConfigMapName(), "why-is-living-so-hard?"; got != want {
+		t.Errorf("ConfigMapName = %q, want: %q", got, want)
 	}
 }
