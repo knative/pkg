@@ -17,6 +17,7 @@ limitations under the License.
 package ingress
 
 import (
+	"context"
 	"fmt"
 	"os"
 
@@ -42,7 +43,7 @@ func GetIngressEndpoint(kubeClientset *kubernetes.Clientset) (string, error) {
 		ingressNamespace = gatewayNsOverride
 	}
 
-	ingress, err := kubeClientset.CoreV1().Services(ingressNamespace).Get(ingressName, metav1.GetOptions{})
+	ingress, err := kubeClientset.CoreV1().Services(ingressNamespace).Get(context.Background(), ingressName, metav1.GetOptions{})
 	if err != nil {
 		return "", err
 	}

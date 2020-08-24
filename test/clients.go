@@ -19,6 +19,7 @@ limitations under the License.
 package test
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
@@ -71,7 +72,7 @@ func BuildClientConfig(kubeConfigPath string, clusterName string) (*rest.Config,
 
 // UpdateConfigMap updates the config map for specified @name with values
 func (client *KubeClient) UpdateConfigMap(name string, configName string, values map[string]string) error {
-	configMap, err := client.GetConfigMap(name).Get(configName, metav1.GetOptions{})
+	configMap, err := client.GetConfigMap(name).Get(context.Background(), configName, metav1.GetOptions{})
 	if err != nil {
 		return err
 	}
@@ -80,7 +81,7 @@ func (client *KubeClient) UpdateConfigMap(name string, configName string, values
 		configMap.Data[key] = value
 	}
 
-	_, err = client.GetConfigMap(name).Update(configMap)
+	_, err = client.GetConfigMap(name).Update(context.Background(), configMap, metav1.UpdateOptions{})
 	return err
 }
 
@@ -92,13 +93,13 @@ func (client *KubeClient) GetConfigMap(name string) k8styped.ConfigMapInterface 
 // CreatePod will create a Pod
 func (client *KubeClient) CreatePod(pod *corev1.Pod) (*corev1.Pod, error) {
 	pods := client.Kube.CoreV1().Pods(pod.GetNamespace())
-	return pods.Create(pod)
+	return pods.Create(context.Background(), pod, metav1.CreateOptions{})
 }
 
 // PodLogs returns Pod logs for given Pod and Container in the namespace
 func (client *KubeClient) PodLogs(podName, containerName, namespace string) ([]byte, error) {
 	pods := client.Kube.CoreV1().Pods(namespace)
-	podList, err := pods.List(metav1.ListOptions{})
+	podList, err := pods.List(context.Background(), metav1.ListOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -108,7 +109,7 @@ func (client *KubeClient) PodLogs(podName, containerName, namespace string) ([]b
 		if strings.Contains(pod.Name, podName) {
 			result := pods.GetLogs(pod.Name, &corev1.PodLogOptions{
 				Container: containerName,
-			}).Do()
+			}).Do(context.Background())
 			return result.Raw()
 		}
 	}

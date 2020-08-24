@@ -17,6 +17,7 @@ limitations under the License.
 package configmap
 
 import (
+	"context"
 	"sync"
 	"testing"
 
@@ -418,7 +419,7 @@ func TestDefaultConfigMapDeleted(t *testing.T) {
 	foo1.wg = &sync.WaitGroup{}
 	foo1.mu.Unlock()
 	foo1.wg.Add(1)
-	err = kc.CoreV1().ConfigMaps(fooCM.Namespace).Delete(fooCM.Name, nil)
+	err = kc.CoreV1().ConfigMaps(fooCM.Namespace).Delete(context.Background(), fooCM.Name, metav1.DeleteOptions{})
 	if err != nil {
 		t.Fatalf("Error deleting fooCM: %v", err)
 	}

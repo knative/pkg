@@ -19,6 +19,7 @@ limitations under the License.
 package zipkin
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -72,7 +73,7 @@ var (
 // SetupZipkinTracingFromConfigTracing setups zipkin tracing like SetupZipkinTracing but retrieving the zipkin configuration
 // from config-tracing config map
 func SetupZipkinTracingFromConfigTracing(kubeClientset *kubernetes.Clientset, logf logging.FormatLogger, configMapNamespace string) error {
-	cm, err := kubeClientset.CoreV1().ConfigMaps(configMapNamespace).Get("config-tracing", metav1.GetOptions{})
+	cm, err := kubeClientset.CoreV1().ConfigMaps(configMapNamespace).Get(context.Background(), "config-tracing", metav1.GetOptions{})
 	if err != nil {
 		return fmt.Errorf("error while retrieving config-tracing config map: %w", err)
 	}

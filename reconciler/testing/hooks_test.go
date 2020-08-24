@@ -17,6 +17,7 @@ limitations under the License.
 package testing
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"testing"
@@ -57,13 +58,13 @@ func ExampleHooks() {
 			RestartPolicy: v1.RestartPolicyAlways,
 		},
 	}
-	f.CoreV1().Pods("test").Create(pod)
+	f.CoreV1().Pods("test").Create(context.Background(), pod, metav1.CreateOptions{})
 
 	updatedPod := pod.DeepCopy()
 	updatedPod.Spec.RestartPolicy = v1.RestartPolicyNever
-	f.CoreV1().Pods("test").Update(updatedPod)
+	f.CoreV1().Pods("test").Update(context.Background(), updatedPod, metav1.UpdateOptions{})
 
-	f.CoreV1().Pods("test").Delete(pod.Name, &metav1.DeleteOptions{})
+	f.CoreV1().Pods("test").Delete(context.Background(), pod.Name, metav1.DeleteOptions{})
 	if err := h.WaitForHooks(time.Second); err != nil {
 		log.Fatal(err)
 	}
@@ -117,7 +118,7 @@ func TestWaitPartialCompletion(t *testing.T) {
 			RestartPolicy: v1.RestartPolicyAlways,
 		},
 	}
-	f.CoreV1().Pods("test").Create(pod)
+	f.CoreV1().Pods("test").Create(context.Background(), pod, metav1.CreateOptions{})
 
 	err := h.WaitForHooks(time.Millisecond)
 	if err == nil {
@@ -151,17 +152,17 @@ func TestMultiUpdate(t *testing.T) {
 			RestartPolicy: v1.RestartPolicyAlways,
 		},
 	}
-	f.CoreV1().Pods("test").Create(pod)
+	f.CoreV1().Pods("test").Create(context.Background(), pod, metav1.CreateOptions{})
 
 	updatedPod := pod.DeepCopy()
 	updatedPod.Spec.RestartPolicy = v1.RestartPolicyNever
-	f.CoreV1().Pods("test").Update(updatedPod)
+	f.CoreV1().Pods("test").Update(context.Background(), updatedPod, metav1.UpdateOptions{})
 
 	updatedPod = pod.DeepCopy()
 	updatedPod.Spec.RestartPolicy = v1.RestartPolicyAlways
-	f.CoreV1().Pods("test").Update(updatedPod)
+	f.CoreV1().Pods("test").Update(context.Background(), updatedPod, metav1.UpdateOptions{})
 
-	f.CoreV1().Pods("test").Delete(pod.Name, &metav1.DeleteOptions{})
+	f.CoreV1().Pods("test").Delete(context.Background(), pod.Name, metav1.DeleteOptions{})
 	if err := h.WaitForHooks(time.Second); err != nil {
 		t.Error(err)
 	}
@@ -191,7 +192,7 @@ func TestWaitNoExecutionAfterWait(t *testing.T) {
 	}
 	err := h.WaitForHooks(time.Millisecond)
 
-	f.CoreV1().Pods("test").Create(pod)
+	f.CoreV1().Pods("test").Create(context.Background(), pod, metav1.CreateOptions{})
 
 	if err == nil {
 		t.Error("expected uncalled hook to cause a timeout error")

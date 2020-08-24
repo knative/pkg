@@ -51,7 +51,7 @@ func WaitForDeploymentState(client *KubeClient, name string, inState func(d *app
 	defer span.End()
 
 	return wait.PollImmediate(interval, timeout, func() (bool, error) {
-		d, err := d.Get(name, metav1.GetOptions{})
+		d, err := d.Get(context.Background(), name, metav1.GetOptions{})
 		if err != nil {
 			return true, err
 		}
@@ -69,7 +69,7 @@ func WaitForPodListState(client *KubeClient, inState func(p *corev1.PodList) (bo
 	defer span.End()
 
 	return wait.PollImmediate(interval, podTimeout, func() (bool, error) {
-		p, err := p.List(metav1.ListOptions{})
+		p, err := p.List(context.Background(), metav1.ListOptions{})
 		if err != nil {
 			return true, err
 		}
@@ -87,7 +87,7 @@ func WaitForPodState(client *KubeClient, inState func(p *corev1.Pod) (bool, erro
 	defer span.End()
 
 	return wait.PollImmediate(interval, podTimeout, func() (bool, error) {
-		p, err := p.Get(name, metav1.GetOptions{})
+		p, err := p.Get(context.Background(), name, metav1.GetOptions{})
 		if err != nil {
 			return false, err
 		}
@@ -116,7 +116,7 @@ func WaitForServiceEndpoints(client *KubeClient, svcName string, svcNamespace st
 	defer span.End()
 
 	return wait.PollImmediate(interval, podTimeout, func() (bool, error) {
-		endpoint, err := endpointsService.Get(svcName, metav1.GetOptions{})
+		endpoint, err := endpointsService.Get(context.Background(), svcName, metav1.GetOptions{})
 		if err != nil {
 			return false, err
 		}
@@ -138,7 +138,7 @@ func countEndpointsNum(e *corev1.Endpoints) int {
 
 // GetEndpointAddresses returns addresses of endpoints for the given service.
 func GetEndpointAddresses(client *KubeClient, svcName, svcNamespace string) ([]string, error) {
-	endpoints, err := client.Kube.CoreV1().Endpoints(svcNamespace).Get(svcName, metav1.GetOptions{})
+	endpoints, err := client.Kube.CoreV1().Endpoints(svcNamespace).Get(context.Background(), svcName, metav1.GetOptions{})
 	if err != nil || countEndpointsNum(endpoints) == 0 {
 		return nil, fmt.Errorf("no endpoints or error: %w", err)
 	}
@@ -192,7 +192,7 @@ func WaitForAllPodsRunning(client *KubeClient, namespace string) error {
 func WaitForPodRunning(client *KubeClient, name string, namespace string) error {
 	p := client.Kube.CoreV1().Pods(namespace)
 	return wait.PollImmediate(interval, podTimeout, func() (bool, error) {
-		p, err := p.Get(name, metav1.GetOptions{})
+		p, err := p.Get(context.Background(), name, metav1.GetOptions{})
 		if err != nil {
 			return true, err
 		}

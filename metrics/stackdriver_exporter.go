@@ -354,7 +354,7 @@ func getStackdriverSecret(secretFetcher SecretFetcher) (*corev1.Secret, error) {
 			return nil, err
 		}
 
-		sec, secErr = kubeclient.CoreV1().Secrets(secretNamespace).Get(secretName, metav1.GetOptions{})
+		sec, secErr = kubeclient.CoreV1().Secrets(secretNamespace).Get(context.Background(), secretName, metav1.GetOptions{})
 	}
 
 	if secErr != nil {

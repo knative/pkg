@@ -51,7 +51,7 @@ func extractDeployment(pod string) string {
 // GetLeaders collects all of the leader pods from the specified deployment.
 // GetLeaders will return duplicate pods by design.
 func GetLeaders(t *testing.T, client *test.KubeClient, deploymentName, namespace string) ([]string, error) {
-	leases, err := client.Kube.CoordinationV1().Leases(namespace).List(metav1.ListOptions{})
+	leases, err := client.Kube.CoordinationV1().Leases(namespace).List(context.Background(), metav1.ListOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("error getting leases for deployment %q: %w", deploymentName, err)
 	}
@@ -104,7 +104,7 @@ func WaitForNewLeader(client *test.KubeClient, lease, namespace, previousLeader 
 	defer span.End()
 	var leader string
 	err := wait.PollImmediate(time.Second, time.Minute, func() (bool, error) {
-		lease, err := client.Kube.CoordinationV1().Leases(namespace).Get(lease, metav1.GetOptions{})
+		lease, err := client.Kube.CoordinationV1().Leases(namespace).Get(context.Background(), lease, metav1.GetOptions{})
 		if err != nil {
 			return false, fmt.Errorf("error getting lease %s: %w", lease, err)
 		}
