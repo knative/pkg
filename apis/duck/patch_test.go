@@ -70,7 +70,7 @@ func TestCreateMergePatch(t *testing.T) {
 		},
 		want: []byte(`{"status":{"patchable":{"field1":42,"field2":null}}}`),
 	}, {
-		name: "patch array",
+		name: "patch slice bigger",
 		before: &Patch{
 			Spec: PatchSpec{
 				Patchable: &Patchable{
@@ -86,6 +86,23 @@ func TestCreateMergePatch(t *testing.T) {
 			},
 		},
 		want: []byte(`{"status":{"patchable":{"array":["foo","bar","baz"]}}}`),
+	}, {
+		name: "patch array smaller",
+		before: &Patch{
+			Spec: PatchSpec{
+				Patchable: &Patchable{
+					Array: []string{"foo", "bar", "baz", "jimmy"},
+				},
+			},
+		},
+		after: &Patch{
+			Spec: PatchSpec{
+				Patchable: &Patchable{
+					Array: []string{"foo", "baz"},
+				},
+			},
+		},
+		want: []byte(`{"status":{"patchable":{"array":["foo","baz"]}}}`),
 	}, {
 		name:    "before doesn't marshal",
 		before:  &DoesntMarshal{},
@@ -111,8 +128,8 @@ func TestCreateMergePatch(t *testing.T) {
 				return
 			}
 
-			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("CreatePatch (-want, +got) = %v, %s", diff, got)
+			if !cmp.Equal(test.want, got) {
+				t.Errorf("CreatePatch = ->%s<-, diff: (-want, +got) =\n%s", string(got), cmp.Diff(string(test.want), string(got)))
 			}
 		})
 	}
