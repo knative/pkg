@@ -62,8 +62,26 @@ func TestObservabilityConfiguration(t *testing.T) {
 			"logging.request-log-template": `{{ something }}`,
 		},
 	}, {
-		name:    "observability configuration with request log and template not set",
-		wantErr: false,
+		name: "observability configuration with request log set and template default",
+		data: map[string]string{
+			"logging.enable-probe-request-log":            "true",
+			"logging.enable-request-log":                  "true",
+			"logging.enable-var-log-collection":           "true",
+			"logging.revision-url-template":               "https://logging.io",
+			"metrics.request-metrics-backend-destination": "stackdriver",
+			"profiling.enable":                            "true",
+		},
+		wantConfig: &ObservabilityConfig{
+			EnableProbeRequestLog:  true,
+			EnableProfiling:        true,
+			EnableRequestLog:       true,
+			EnableVarLogCollection: true,
+			LoggingURLTemplate:     "https://logging.io",
+			RequestLogTemplate:     DefaultRequestLogTemplate,
+			RequestMetricsBackend:  "stackdriver",
+		},
+	}, {
+		name: "observability configuration with request log and template not set",
 		wantConfig: &ObservabilityConfig{
 			EnableProbeRequestLog:  true,
 			EnableProfiling:        true,
