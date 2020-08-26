@@ -27,15 +27,15 @@ import (
 )
 
 type testConfig struct {
-	str string
-	boo bool
-	i32 int32
-	i64 int64
-	u32 uint32
-	f64 float64
-	dur time.Duration
-	set sets.String
-	qua *resource.Quantity
+	str    string
+	toggle bool
+	i32    int32
+	i64    int64
+	u32    uint32
+	f64    float64
+	dur    time.Duration
+	set    sets.String
+	qua    *resource.Quantity
 
 	nsn  types.NamespacedName
 	onsn *types.NamespacedName
@@ -66,15 +66,15 @@ func TestParse(t *testing.T) {
 			"test-optional-namespaced-name": "some-other-namespace/some-other-name",
 		},
 		want: testConfig{
-			str: "foo.bar",
-			boo: true,
-			i32: 1,
-			i64: 2,
-			u32: 3,
-			f64: 1.0,
-			dur: time.Minute,
-			set: sets.NewString("a", "b", "c"),
-			qua: &fiveHundredM,
+			str:    "foo.bar",
+			toggle: true,
+			i32:    1,
+			i64:    2,
+			u32:    3,
+			f64:    1.0,
+			dur:    time.Minute,
+			set:    sets.NewString("a", "b", "c"),
+			qua:    &fiveHundredM,
 			nsn: types.NamespacedName{
 				Name:      "some-name",
 				Namespace: "some-namespace",
@@ -87,31 +87,29 @@ func TestParse(t *testing.T) {
 	}, {
 		name: "respect defaults",
 		conf: testConfig{
-			str: "foo.bar",
-			boo: true,
-			i32: 1,
-			i64: 2,
-			f64: 1.0,
-			dur: time.Minute,
-			qua: &fiveHundredM,
+			str:    "foo.bar",
+			toggle: true,
+			i32:    1,
+			i64:    2,
+			f64:    1.0,
+			dur:    time.Minute,
+			qua:    &fiveHundredM,
 		},
 		want: testConfig{
-			str: "foo.bar",
-			boo: true,
-			i32: 1,
-			i64: 2,
-			f64: 1.0,
-			dur: time.Minute,
-			qua: &fiveHundredM,
+			str:    "foo.bar",
+			toggle: true,
+			i32:    1,
+			i64:    2,
+			f64:    1.0,
+			dur:    time.Minute,
+			qua:    &fiveHundredM,
 		},
 	}, {
-		name: "bool defaults to false",
+		name: "junk bool fails",
 		data: map[string]string{
 			"test-bool": "foo",
 		},
-		want: testConfig{
-			boo: false,
-		},
+		expectErr: true,
 	}, {
 		name: "int32 error",
 		data: map[string]string{
@@ -166,7 +164,7 @@ func TestParse(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			if err := Parse(test.data,
 				AsString("test-string", &test.conf.str),
-				AsBool("test-bool", &test.conf.boo),
+				AsBool("test-bool", &test.conf.toggle),
 				AsInt32("test-int32", &test.conf.i32),
 				AsInt64("test-int64", &test.conf.i64),
 				AsUint32("test-uint32", &test.conf.u32),
