@@ -770,7 +770,7 @@ func TestEnqueue(t *testing.T) {
 func TestEnqueueAfter(t *testing.T) {
 	const (
 		// longDelay is longer than we expect the test to run.
-		longDelay = 1 * time.Minute
+		longDelay = time.Minute
 		// shortDelay is short enough for the test to execute quickly, but long
 		// enough to reasonably delay the enqueuing of an item.
 		shortDelay = 50 * time.Millisecond
@@ -847,7 +847,7 @@ func TestEnqueueAfter(t *testing.T) {
 func TestEnqueueKeyAfter(t *testing.T) {
 	const (
 		// longDelay is longer than we expect the test to run.
-		longDelay = 1 * time.Minute
+		longDelay = time.Minute
 		// shortDelay is short enough for the test to execute quickly, but long
 		// enough to reasonably delay the enqueuing of an item.
 		shortDelay = 50 * time.Millisecond
