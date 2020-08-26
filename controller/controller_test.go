@@ -783,7 +783,9 @@ func TestEnqueueAfter(t *testing.T) {
 	t.Cleanup(ClearAll)
 
 	impl := NewImplWithStats(&NopReconciler{}, TestLogger(t), "Testing", &FakeStatsReporter{})
-	defer impl.WorkQueue().ShutDown()
+	t.Cleanup(func() {
+		impl.WorkQueue().ShutDown()
+	})
 
 	// Enqueue two items with a long delay.
 	impl.EnqueueAfter(&Resource{
@@ -810,9 +812,12 @@ func TestEnqueueAfter(t *testing.T) {
 
 	// Keep checking the queue length until 'to/fall' gets enqueued, send to channel to indicate success.
 	queuePopulated := make(chan struct{})
-	defer close(queuePopulated)
 	ctx, cancel := context.WithTimeout(context.Background(), queueCheckTimeout)
-	t.Cleanup(cancel)
+
+	t.Cleanup(func() {
+		close(queuePopulated)
+		cancel()
+	})
 
 	var successCheck wait.ConditionFunc = func() (bool, error) {
 		if impl.WorkQueue().Len() > 0 {
@@ -856,7 +861,9 @@ func TestEnqueueKeyAfter(t *testing.T) {
 	t.Cleanup(ClearAll)
 
 	impl := NewImplWithStats(&NopReconciler{}, TestLogger(t), "Testing", &FakeStatsReporter{})
-	defer impl.WorkQueue().ShutDown()
+	t.Cleanup(func() {
+		impl.WorkQueue().ShutDown()
+	})
 
 	// Enqueue two items with a long delay.
 	impl.EnqueueKeyAfter(types.NamespacedName{Namespace: "waiting", Name: "for"}, longDelay)
@@ -868,10 +875,14 @@ func TestEnqueueKeyAfter(t *testing.T) {
 
 	// Keep checking the queue length until 'to/fall' gets enqueued, send to channel to indicate success.
 	queuePopulated := make(chan struct{})
-	defer close(queuePopulated)
+
 	const queueCheckTimeout = shortDelay + 500*time.Millisecond
 	ctx, cancel := context.WithTimeout(context.Background(), queueCheckTimeout)
-	t.Cleanup(cancel)
+
+	t.Cleanup(func() {
+		close(queuePopulated)
+		cancel()
+	})
 
 	var successCheck wait.ConditionFunc = func() (bool, error) {
 		if impl.WorkQueue().Len() > 0 {
