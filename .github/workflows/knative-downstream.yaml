@@ -1,0 +1,88 @@
+# Copyright 2020 The Knative Authors.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+name: Downstream Test
+
+on:
+  push:
+    branches: [ 'master', 'release-*' ]
+  pull_request:
+    branches: [ 'master', 'release-*' ]
+
+jobs:
+
+  downstream:
+    name: Verify Downstream
+    strategy:
+      matrix:
+        go-version: [1.15.x]
+        platform: [ubuntu-latest]
+
+    runs-on: ${{ matrix.platform }}
+
+    env:
+      GOPATH: ${{ github.workspace }}
+
+    steps:
+
+    - name: Set up Go ${{ matrix.go-version }}
+      uses: actions/setup-go@v2
+      with:
+        go-version: ${{ matrix.go-version }}
+      id: go
+
+    - name: Install Dependencies
+      run: |
+        go get github.com/google/ko/cmd/ko
+        go get github.com/google/go-licenses
+
+    - name: Check upstream repo into onto GOPATH
+      uses: actions/checkout@v2
+      with:
+        path: ./src/knative.dev/${{ github.event.repository.name }}
+
+    - name: Check downstream repo into onto GOPATH
+      uses: actions/checkout@v2
+      with:
+        repository: knative-sandbox/sample-controller     # TODO: gonna hardcode for now.
+        path: ./src/knative.dev/sample-controller         # TODO: gonna hardcode for now.
+
+
+    - name: Replace Downstream with Local Upstream
+      shell: bash
+      run: |
+        pushd ./src/knative.dev/sample-controller         # TODO: gonna hardcode for now.
+        go mod edit -replace knative.dev/${{ github.event.repository.name }}=$GITHUB_WORKSPACE/src/knative.dev/${{ github.event.repository.name }}
+        popd
+
+    - name: Downstream Update Deps
+      shell: bash
+      run: |
+        pushd ./src/knative.dev/sample-controller        # TODO: gonna hardcode for now.
+        ./hack/update-deps.sh
+        popd
+
+    - name:  Downstream Update Codegen
+      shell: bash
+      run: |
+        pushd ./src/knative.dev/sample-controller       # TODO: gonna hardcode for now.
+        ./hack/update-codegen.sh
+        popd
+
+    - name: Test Downstream
+      shell: bash
+      run: |
+        pushd ./src/knative.dev/sample-controller       # TODO: gonna hardcode for now.
+        go test -race ./...
+        popd
