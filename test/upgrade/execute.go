@@ -17,22 +17,37 @@
 package upgrade
 
 import (
+	"testing"
+
 	"go.uber.org/zap"
 )
 
 func (s *Suite) Execute(c Configuration) {
-	c.Log.Info("🏃 Running upgrade suite...")
-	c.Log.Info("🥳🎉 Success! Upgrade suite completed without errors.")
+	l := c.logger()
+	se := suiteExecution{
+		suite:         s,
+		configuration: c,
+		failed:        false,
+		logger:        l,
+	}
+	l.Info("🏃 Running upgrade suite...")
+
+	for i, operation := range []func(num int){
+		se.installingBase,
+		se.preUpgradeTests,
+	} {
+		operation(i + 1)
+		if se.failed {
+			return
+		}
+	}
+
+	if !se.failed {
+		l.Info("🥳🎉 Success! Upgrade suite completed without errors.")
+	}
+
 	if len(s.Tests.PreUpgrade) > 0 {
 		texts := []string{
-			"1) 💿 Installing base installations. 2 are registered.",
-			`1.1) Installing base install of "Serving latest stable release".`,
-			"Installing Serving stable 0.17.1",
-			`1.2) Installing base install of "Eventing latest stable release".`,
-			"Installing Eventing stable 0.17.2",
-			"2) ✅️️ Testing functionality before upgrade is performed. 2 tests are registered.",
-			`2.1) Testing with "Serving pre upgrade test"`,
-			`2.2) Testing with "Eventing pre upgrade test"`,
 			"3) 🔄 Staring continual tests to run in background. 2 tests are registered.",
 			`3.1) Staring continual tests of "Serving continual test"`,
 			"Running Serving continual test",
@@ -65,8 +80,6 @@ func (s *Suite) Execute(c Configuration) {
 		}
 	} else {
 		texts := []string{
-			"1) 💿 No base installation registered. Skipping.",
-			"2) ✅️️ No pre upgrade tests registered. Skipping.",
 			"3) 🔄 No continual tests registered. Skipping.",
 			"4) 📀 No upgrade installations registered. Skipping.",
 			"5) ✅️️ No post upgrade tests registered. Skipping.",
@@ -84,14 +97,56 @@ func NewOperation(name string, handler func(c Context)) Operation {
 	return &operationHolder{name: name, handler: handler}
 }
 
-// NewStoppableOperation creates a new upgrade operation or test that can be
+// NewBackgroundOperation creates a new upgrade operation or test that can be
 // notified to stop operating
-func NewStoppableOperation(name string, handler func(c StoppableContext)) StoppableOperation {
+func NewBackgroundOperation(name string, handler func(bc BackgroundContext)) BackgroundOperation {
 	return &stoppableOperationHolder{name: name, handler: handler}
 }
 
 func (c Configuration) logger() *zap.SugaredLogger {
 	return c.Log.Sugar()
+}
+
+type suiteExecution struct {
+	suite         *Suite
+	configuration Configuration
+	failed        bool
+	logger        *zap.SugaredLogger
+}
+
+func (se *suiteExecution) processOperationGroup(op operationGroup) {
+	l := se.logger
+	se.configuration.T.Run(op.groupName, func(t *testing.T) {
+		if len(op.operations) > 0 {
+			l.Infof(op.groupTemplate, op.num, len(op.operations))
+			for i, operation := range op.operations {
+				l.Infof(op.elementTemplate, op.num, i+1, operation.Name())
+				if se.failed {
+					l.Debugf(`Skipping "%s" as previous operation have failed`, operation.Name())
+					return
+				}
+				handler := operation.Handler()
+				t.Run(operation.Name(), func(t *testing.T) {
+					handler(Context{T: t, Log: l})
+				})
+				se.failed = se.failed || t.Failed()
+				if se.failed {
+					return
+				}
+			}
+		} else {
+			l.Infof(op.skippingGroupTemplate, op.num)
+		}
+	})
+}
+
+type operationGroup struct {
+	num                   int
+	operations            []Operation
+	groupName             string
+	groupTemplate         string
+	elementTemplate       string
+	skippingGroupTemplate string
 }
 
 type operationHolder struct {
@@ -101,7 +156,7 @@ type operationHolder struct {
 
 type stoppableOperationHolder struct {
 	name    string
-	handler func(c StoppableContext)
+	handler func(bc BackgroundContext)
 }
 
 func (h *operationHolder) Name() string {
@@ -116,6 +171,6 @@ func (s *stoppableOperationHolder) Name() string {
 	return s.name
 }
 
-func (s *stoppableOperationHolder) Handler() func(c StoppableContext) {
+func (s *stoppableOperationHolder) Handler() func(bc BackgroundContext) {
 	return s.handler
 }

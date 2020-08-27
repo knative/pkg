@@ -34,7 +34,7 @@ type Tests struct {
 	PreUpgrade     []Operation
 	PostUpgrade    []Operation
 	PostDowngrade  []Operation
-	ContinualTests []StoppableOperation
+	ContinualTests []BackgroundOperation
 }
 
 // Installations holds a list of operations that will install Knative components
@@ -52,9 +52,13 @@ type Operation interface {
 	Handler() func(c Context)
 }
 
-type StoppableOperation interface {
+// BackgroundOperation represents a upgrade test operation that will be
+// performed in background while other operations is running. To achieve that
+// a passed BackgroundContext should be used to synchronize it's operations with
+// Ready and Stop channels.
+type BackgroundOperation interface {
 	Name() string
-	Handler() func(c StoppableContext)
+	Handler() func(bc BackgroundContext)
 }
 
 // Context is an object that is passed to every operation
@@ -63,12 +67,13 @@ type Context struct {
 	Log *zap.SugaredLogger
 }
 
-// StoppableContext is a upgrade test execution context that will be passed down to each
+// BackgroundContext is a upgrade test execution context that will be passed down to each
 // handler of StoppableOperation. It contains a T reference and a stop channel
 // which handler should listen to to know when to stop its operations.
-type StoppableContext struct {
+type BackgroundContext struct {
 	Context
-	Stop chan string
+	Ready chan string
+	Stop  chan string
 }
 
 // Configuration holds required and optional configuration to run upgrade tests

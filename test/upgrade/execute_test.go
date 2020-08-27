@@ -19,6 +19,7 @@ package upgrade
 import (
 	"bytes"
 	"fmt"
+	"os"
 	"testing"
 	"time"
 
@@ -68,7 +69,7 @@ func TestSuiteExecuteWithTestsAndInstallations(t *testing.T) {
 			PostDowngrade: []Operation{
 				servingPostDowngradeTest, eventingPostDowngradeTest,
 			},
-			ContinualTests: []StoppableOperation{
+			ContinualTests: []BackgroundOperation{
 				servingContinualTest, eventingContinualTest,
 			},
 		},
@@ -146,7 +147,8 @@ func newExampleZap() (*zap.Logger, *zaptest.Buffer) {
 		Buffer: bytes.Buffer{},
 		Syncer: zaptest.Syncer{},
 	}
-	core := zapcore.NewCore(encoder, buf, zap.DebugLevel)
+	ws := zapcore.NewMultiWriteSyncer(buf, os.Stdout)
+	core := zapcore.NewCore(encoder, ws, zap.DebugLevel)
 	return zap.New(core).WithOptions(), buf
 }
 
@@ -191,28 +193,28 @@ var (
 		c.Log.Info("Running Eventing post downgrade test")
 		time.Sleep(5 * time.Millisecond)
 	})
-	servingContinualTest = NewStoppableOperation("Serving continual test", func(c StoppableContext) {
-		c.Log.Info("Running Serving continual test")
+	servingContinualTest = NewBackgroundOperation("Serving continual test", func(bc BackgroundContext) {
+		bc.Log.Info("Running Serving continual test")
 		for {
 			select {
-			case msg := <-c.Stop:
-				c.Log.Info("Serving probe test have received a stop message", msg)
+			case msg := <-bc.Stop:
+				bc.Log.Info("Serving probe test have received a stop message", msg)
 				return
 			default:
-				c.Log.Debug("Probing serving functionality...")
+				bc.Log.Debug("Probing serving functionality...")
 			}
 			time.Sleep(5 * time.Millisecond)
 		}
 	})
-	eventingContinualTest = NewStoppableOperation("Eventing continual test", func(c StoppableContext) {
-		c.Log.Info("Running Eventing continual test")
+	eventingContinualTest = NewBackgroundOperation("Eventing continual test", func(bc BackgroundContext) {
+		bc.Log.Info("Running Eventing continual test")
 		for {
 			select {
-			case msg := <-c.Stop:
-				c.Log.Info("Eventing probe test have received a stop message", msg)
+			case msg := <-bc.Stop:
+				bc.Log.Info("Eventing probe test have received a stop message", msg)
 				return
 			default:
-				c.Log.Debug("Probing eventing functionality...")
+				bc.Log.Debug("Probing eventing functionality...")
 			}
 			time.Sleep(5 * time.Millisecond)
 		}
