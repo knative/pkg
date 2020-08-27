@@ -21,6 +21,7 @@ package leaderelection
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"sort"
 	"testing"
@@ -160,6 +161,60 @@ func TestWithBuilder(t *testing.T) {
 		"the-component.name.00-of-03",
 		"the-component.name.01-of-03",
 		"the-component.name.02-of-03",
+	)
+	if !gotNames.Equal(want) {
+		t.Errorf("BucketSet.BucketList() = %q, want: %q", gotNames, want)
+	}
+}
+
+func TestBuilderWithCustomizedLeaseName(t *testing.T) {
+	const buckets = 3
+	cc := ComponentConfig{
+		Component:     "the-component",
+		Buckets:       buckets,
+		LeaseDuration: 15 * time.Second,
+		RenewDeadline: 10 * time.Second,
+		RetryPeriod:   2 * time.Second,
+		LeaseName: func(i uint32) string {
+			return fmt.Sprintf("bucket-%02d", i)
+		},
+	}
+	kc := fakekube.NewSimpleClientset()
+	ctx := context.Background()
+
+	gotNames := make(sets.String, buckets)
+	promoted := make(chan string)
+	laf := &reconciler.LeaderAwareFuncs{
+		PromoteFunc: func(bkt reconciler.Bucket, enq func(reconciler.Bucket, types.NamespacedName)) error {
+			promoted <- bkt.Name()
+			return nil
+		},
+	}
+	enq := func(reconciler.Bucket, types.NamespacedName) {}
+	ctx = WithDynamicLeaderElectorBuilder(ctx, kc, cc)
+	le, err := BuildElector(ctx, laf, "name", enq)
+	if err != nil {
+		t.Fatalf("BuildElector() = %v", err)
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	t.Cleanup(cancel)
+	go le.Run(ctx)
+
+	// We expect to have been promoted 3 times.
+	for i := 0; i < buckets; i++ {
+		select {
+		case s := <-promoted:
+			gotNames.Insert(s)
+		case <-time.After(time.Second):
+			t.Fatal("Timed out waiting for promotion.")
+		}
+	}
+
+	want := sets.NewString(
+		"bucket-00",
+		"bucket-01",
+		"bucket-02",
 	)
 	if !gotNames.Equal(want) {
 		t.Errorf("BucketSet.BucketList() = %q, want: %q", gotNames, want)
