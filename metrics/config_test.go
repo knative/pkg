@@ -535,7 +535,6 @@ func successTestsInit() {
 func TestGetMetricsConfig(t *testing.T) {
 	for _, test := range errorTests {
 		t.Run(test.name, func(t *testing.T) {
-			defer ClearAll()
 			_, err := createMetricsConfig(test.ops, TestLogger(t))
 			if err == nil || err.Error() != test.expectedErr {
 				t.Errorf("Wanted err: %v, got: %v", test.expectedErr, err)
@@ -546,7 +545,6 @@ func TestGetMetricsConfig(t *testing.T) {
 	successTestsInit()
 	for _, test := range successTests {
 		t.Run(test.name, func(t *testing.T) {
-			defer ClearAll()
 			mc, err := createMetricsConfig(test.ops, TestLogger(t))
 			if err != nil {
 				t.Errorf("Wanted valid config %v, got error %v", test.expectedConfig, err)
@@ -640,7 +638,6 @@ func TestGetMetricsConfig_fromEnv(t *testing.T) {
 			os.Setenv(test.varName, test.varValue)
 			defer os.Unsetenv(test.varName)
 
-			defer ClearAll()
 			mc, err := createMetricsConfig(test.ops, TestLogger(t))
 			if err != nil {
 				t.Errorf("Wanted valid config %v, got error %v", test.expectedConfig, err)
@@ -656,7 +653,6 @@ func TestGetMetricsConfig_fromEnv(t *testing.T) {
 			os.Setenv(test.varName, test.varValue)
 			defer os.Unsetenv(test.varName)
 
-			defer ClearAll()
 			mc, err := createMetricsConfig(test.ops, TestLogger(t))
 			if mc != nil {
 				t.Errorf("Wanted no config, got %v", mc)
@@ -673,7 +669,6 @@ func TestIsNewExporterRequiredFromNilConfig(t *testing.T) {
 	successTestsInit()
 	for _, test := range successTests {
 		t.Run(test.name, func(t *testing.T) {
-			defer ClearAll()
 			mc, err := createMetricsConfig(test.ops, TestLogger(t))
 			if err != nil {
 				t.Errorf("Wanted valid config %v, got error %v", test.expectedConfig, err)
@@ -801,7 +796,6 @@ func TestUpdateExporter(t *testing.T) {
 	successTestsInit()
 	for _, test := range successTests[1:] {
 		t.Run(test.name, func(t *testing.T) {
-			defer ClearAll()
 			UpdateExporter(test.ops, TestLogger(t))
 			mConfig := getCurMetricsConfig()
 			if mConfig == oldConfig {
@@ -816,7 +810,6 @@ func TestUpdateExporter(t *testing.T) {
 
 	for _, test := range errorTests {
 		t.Run(test.name, func(t *testing.T) {
-			defer ClearAll()
 			UpdateExporter(test.ops, TestLogger(t))
 			mConfig := getCurMetricsConfig()
 			if mConfig != oldConfig {
@@ -832,7 +825,6 @@ func TestUpdateExporterFromConfigMapWithOpts(t *testing.T) {
 	successTestsInit()
 	for _, test := range successTests[1:] {
 		t.Run(test.name, func(t *testing.T) {
-			defer ClearAll()
 			opts := ExporterOptions{
 				Component:      test.ops.Component,
 				Domain:         test.ops.Domain,
@@ -856,7 +848,6 @@ func TestUpdateExporterFromConfigMapWithOpts(t *testing.T) {
 	}
 
 	t.Run("ConfigMapSetErr", func(t *testing.T) {
-		defer ClearAll()
 		opts := ExporterOptions{
 			Component:      testComponent,
 			Domain:         servingDomain,
@@ -870,7 +861,6 @@ func TestUpdateExporterFromConfigMapWithOpts(t *testing.T) {
 	})
 
 	t.Run("MissingComponentErr", func(t *testing.T) {
-		defer ClearAll()
 		opts := ExporterOptions{
 			Component:      "",
 			Domain:         servingDomain,
@@ -887,7 +877,6 @@ func TestUpdateExporter_doesNotCreateExporter(t *testing.T) {
 	setCurMetricsConfig(nil)
 	for _, test := range errorTests {
 		t.Run(test.name, func(t *testing.T) {
-			defer ClearAll()
 			UpdateExporter(test.ops, TestLogger(t))
 			mConfig := getCurMetricsConfig()
 			if mConfig != nil {
@@ -1047,7 +1036,6 @@ func TestStackdriverRecord(t *testing.T) {
 
 	for name, data := range testCases {
 		t.Run(name, func(t *testing.T) {
-			defer ClearAll()
 			opts := ExporterOptions{
 				ConfigMap: data.opts,
 				Domain:    "knative.dev/internal/serving",

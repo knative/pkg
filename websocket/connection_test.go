@@ -339,8 +339,7 @@ func TestDoubleShutdown(t *testing.T) {
 }
 
 func TestDurableConnectionWhenConnectionBreaksDown(t *testing.T) {
-	defer ktesting.ClearAll()
-	testPayload := "test"
+	const testPayload = "test"
 	reconnectChan := make(chan struct{})
 
 	upgrader := websocket.Upgrader{}
@@ -379,9 +378,8 @@ func TestDurableConnectionWhenConnectionBreaksDown(t *testing.T) {
 }
 
 func TestDurableConnectionSendsPingsRegularly(t *testing.T) {
-	defer ktesting.ClearAll()
 	// Reset pongTimeout to something quite short.
-	pongTimeout = 100 * time.Millisecond
+	const pongTimeout = 100 * time.Millisecond
 
 	upgrader := websocket.Upgrader{}
 

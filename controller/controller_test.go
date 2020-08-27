@@ -736,7 +736,6 @@ func TestEnqueues(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			t.Cleanup(ClearAll)
 			var rl workqueue.RateLimiter = testRateLimiter{t, 100 * time.Millisecond}
 			impl := NewImplFull(&NopReconciler{}, ControllerOptions{WorkQueueName: "Testing", Logger: TestLogger(t), RateLimiter: rl})
 			test.work(impl)
@@ -754,7 +753,6 @@ func TestEnqueues(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			t.Cleanup(ClearAll)
 			impl := NewImplWithStats(&NopReconciler{}, TestLogger(t), "Testing", &FakeStatsReporter{})
 			test.work(impl)
 
@@ -771,7 +769,6 @@ func TestEnqueues(t *testing.T) {
 }
 
 func TestEnqueueAfter(t *testing.T) {
-	t.Cleanup(ClearAll)
 	impl := NewImplWithStats(&NopReconciler{}, TestLogger(t), "Testing", &FakeStatsReporter{})
 	impl.EnqueueAfter(&Resource{
 		ObjectMeta: metav1.ObjectMeta{
@@ -807,7 +804,6 @@ func TestEnqueueAfter(t *testing.T) {
 }
 
 func TestEnqeueKeyAfter(t *testing.T) {
-	t.Cleanup(ClearAll)
 	impl := NewImplWithStats(&NopReconciler{}, TestLogger(t), "Testing", &FakeStatsReporter{})
 	impl.EnqueueKeyAfter(types.NamespacedName{Namespace: "waiting", Name: "for"}, 5*time.Second)
 	impl.EnqueueKeyAfter(types.NamespacedName{Namespace: "the", Name: "waterfall"}, 500*time.Millisecond)
@@ -840,7 +836,6 @@ func (cr *CountingReconciler) Reconcile(context.Context, string) error {
 }
 
 func TestStartAndShutdown(t *testing.T) {
-	t.Cleanup(ClearAll)
 	r := &CountingReconciler{}
 	impl := NewImplWithStats(r, TestLogger(t), "Testing", &FakeStatsReporter{})
 
@@ -900,7 +895,6 @@ func (cr *countingLeaderAwareReconciler) Reconcile(ctx context.Context, key stri
 }
 
 func TestStartAndShutdownWithLeaderAwareNoElection(t *testing.T) {
-	t.Cleanup(ClearAll)
 	promoted := make(chan struct{})
 	r := &countingLeaderAwareReconciler{
 		LeaderAwareFuncs: reconciler.LeaderAwareFuncs{
@@ -946,7 +940,6 @@ func TestStartAndShutdownWithLeaderAwareNoElection(t *testing.T) {
 }
 
 func TestStartAndShutdownWithLeaderAwareWithLostElection(t *testing.T) {
-	t.Cleanup(ClearAll)
 	promoted := make(chan struct{})
 	r := &countingLeaderAwareReconciler{
 		LeaderAwareFuncs: reconciler.LeaderAwareFuncs{
@@ -1013,7 +1006,6 @@ func TestStartAndShutdownWithLeaderAwareWithLostElection(t *testing.T) {
 }
 
 func TestStartAndShutdownWithWork(t *testing.T) {
-	t.Cleanup(ClearAll)
 	r := &CountingReconciler{}
 	reporter := &FakeStatsReporter{}
 	impl := NewImplWithStats(r, TestLogger(t), "Testing", reporter)
@@ -1090,7 +1082,6 @@ func (er *ErrorReconciler) Reconcile(context.Context, string) error {
 }
 
 func TestStartAndShutdownWithErroringWork(t *testing.T) {
-	t.Cleanup(ClearAll)
 	r := &ErrorReconciler{}
 	reporter := &FakeStatsReporter{}
 	impl := NewImplWithStats(r, TestLogger(t), "Testing", reporter)
@@ -1145,7 +1136,6 @@ func (er *PermanentErrorReconciler) Reconcile(context.Context, string) error {
 }
 
 func TestStartAndShutdownWithPermanentErroringWork(t *testing.T) {
-	t.Cleanup(ClearAll)
 	r := &PermanentErrorReconciler{}
 	reporter := &FakeStatsReporter{}
 	impl := NewImplWithStats(r, TestLogger(t), "Testing", reporter)
@@ -1238,7 +1228,6 @@ func (*dummyStore) List() []interface{} {
 }
 
 func TestImplGlobalResync(t *testing.T) {
-	t.Cleanup(ClearAll)
 	r := &CountingReconciler{}
 	impl := NewImplWithStats(r, TestLogger(t), "Testing", &FakeStatsReporter{})
 

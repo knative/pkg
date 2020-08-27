@@ -489,7 +489,6 @@ func TestStrictValidation(t *testing.T) {
 
 	for n, tc := range testCases {
 		t.Run(n, func(t *testing.T) {
-			defer ClearAll()
 			ctx := TestContextWithLogger(t)
 			if tc.strict {
 				ctx = apis.DisallowDeprecated(ctx)
