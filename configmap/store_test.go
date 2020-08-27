@@ -78,7 +78,6 @@ func TestStoreBadConstructors(t *testing.T) {
 }
 
 func TestStoreWatchConfigs(t *testing.T) {
-	defer ClearAll()
 	store := NewUntypedStore(
 		"name",
 		TestLogger(t),
@@ -99,7 +98,7 @@ func TestStoreWatchConfigs(t *testing.T) {
 	got := watcher.watches
 
 	if diff := cmp.Diff(want, got, sortStrings); diff != "" {
-		t.Errorf("Unexpected configmap watches (-want, +got): %v", diff)
+		t.Errorf("Unexpected configmap watches (-want, +got):\n%s", diff)
 	}
 }
 
