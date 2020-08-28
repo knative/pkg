@@ -36,8 +36,6 @@ jobs:
 
       - name: Check out code
         uses: actions/checkout@v2
-        with:
-          fetch-depth: 1
 
       # TODO: add prettier step
       # TODO: add goimports step

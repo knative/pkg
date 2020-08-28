@@ -41,8 +41,6 @@ jobs:
 
       - name: Check out code
         uses: actions/checkout@v2
-        with:
-          fetch-depth: 1
 
       - name: Vet
         run: go vet ./...
