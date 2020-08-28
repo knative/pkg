@@ -50,7 +50,6 @@ jobs:
     - name: Check out code onto GOPATH
       uses: actions/checkout@v2
       with:
-        fetch-depth: 1
         path: ./src/knative.dev/${{ github.event.repository.name }}
 
     - name: Update Codegen
