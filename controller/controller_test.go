@@ -25,6 +25,8 @@ import (
 	"time"
 
 	"github.com/google/go-cmp/cmp"
+	"go.uber.org/atomic"
+
 	coordinationv1 "k8s.io/api/coordination/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -34,52 +36,48 @@ import (
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/workqueue"
+
+	"knative.dev/pkg/leaderelection"
 	"knative.dev/pkg/ptr"
+	"knative.dev/pkg/reconciler"
 	"knative.dev/pkg/system"
-	_ "knative.dev/pkg/system/testing"
 
 	. "knative.dev/pkg/controller/testing"
-	"knative.dev/pkg/leaderelection"
 	. "knative.dev/pkg/logging/testing"
-	"knative.dev/pkg/reconciler"
+	_ "knative.dev/pkg/system/testing"
 	. "knative.dev/pkg/testing"
 )
 
-func TestPassNew(t *testing.T) {
-	old := "foo"
-	new := "bar"
+const (
+	oldObj = "foo"
+	newObj = "bar"
+)
 
+func TestPassNew(t *testing.T) {
 	PassNew(func(got interface{}) {
-		if new != got.(string) {
-			t.Errorf("PassNew() = %v, wanted %v", got, new)
+		if newObj != got.(string) {
+			t.Errorf("PassNew() = %v, wanted %v", got, newObj)
 		}
-	})(old, new)
+	})(oldObj, newObj)
 }
 
 func TestHandleAll(t *testing.T) {
-	old := "foo"
-	new := "bar"
-
 	ha := HandleAll(func(got interface{}) {
-		if new != got.(string) {
-			t.Errorf("HandleAll() = %v, wanted %v", got, new)
+		if newObj != got.(string) {
+			t.Errorf("HandleAll() = %v, wanted %v", got, newObj)
 		}
 	})
 
-	ha.OnAdd(new)
-	ha.OnUpdate(old, new)
-	ha.OnDelete(new)
+	ha.OnAdd(newObj)
+	ha.OnUpdate(oldObj, newObj)
+	ha.OnDelete(newObj)
 }
 
-var (
-	boolTrue  = true
-	boolFalse = false
-	gvk       = schema.GroupVersionKind{
-		Group:   "pkg.knative.dev",
-		Version: "v1meta1",
-		Kind:    "Parent",
-	}
-)
+var gvk = schema.GroupVersionKind{
+	Group:   "pkg.knative.dev",
+	Version: "v1meta1",
+	Kind:    "Parent",
+}
 
 func TestFilterWithNameAndNamespace(t *testing.T) {
 	filter := FilterWithNameAndNamespace("test-namespace", "test-name")
@@ -91,11 +89,9 @@ func TestFilterWithNameAndNamespace(t *testing.T) {
 	}{{
 		name:  "not a metav1.Object",
 		input: "foo",
-		want:  false,
 	}, {
 		name:  "nil",
 		input: nil,
-		want:  false,
 	}, {
 		name: "name matches, namespace does not",
 		input: &Resource{
@@ -104,7 +100,6 @@ func TestFilterWithNameAndNamespace(t *testing.T) {
 				Namespace: "wrong-namespace",
 			},
 		},
-		want: false,
 	}, {
 		name: "namespace matches, name does not",
 		input: &Resource{
@@ -113,7 +108,6 @@ func TestFilterWithNameAndNamespace(t *testing.T) {
 				Namespace: "test-namespace",
 			},
 		},
-		want: false,
 	}, {
 		name: "neither matches",
 		input: &Resource{
@@ -122,7 +116,6 @@ func TestFilterWithNameAndNamespace(t *testing.T) {
 				Namespace: "wrong-namespace",
 			},
 		},
-		want: false,
 	}, {
 		name: "matches",
 		input: &Resource{
@@ -154,11 +147,9 @@ func TestFilterWithName(t *testing.T) {
 	}{{
 		name:  "not a metav1.Object",
 		input: "foo",
-		want:  false,
 	}, {
 		name:  "nil",
 		input: nil,
-		want:  false,
 	}, {
 		name: "name matches, namespace does not",
 		input: &Resource{
@@ -176,7 +167,6 @@ func TestFilterWithName(t *testing.T) {
 				Namespace: "test-namespace",
 			},
 		},
-		want: false,
 	}, {
 		name: "neither matches",
 		input: &Resource{
@@ -185,7 +175,6 @@ func TestFilterWithName(t *testing.T) {
 				Namespace: "wrong-namespace",
 			},
 		},
-		want: false,
 	}, {
 		name: "matches",
 		input: &Resource{
@@ -217,11 +206,9 @@ func TestFilterGroupKind(t *testing.T) {
 	}{{
 		name:  "not a metav1.Object",
 		input: "foo",
-		want:  false,
 	}, {
 		name:  "nil",
 		input: nil,
-		want:  false,
 	}, {
 		name: "no owner reference",
 		input: &Resource{
@@ -230,7 +217,6 @@ func TestFilterGroupKind(t *testing.T) {
 				Namespace: "bar",
 			},
 		},
-		want: false,
 	}, {
 		name: "wrong owner reference, not controller",
 		input: &Resource{
@@ -240,11 +226,10 @@ func TestFilterGroupKind(t *testing.T) {
 				OwnerReferences: []metav1.OwnerReference{{
 					APIVersion: "another.knative.dev/v1beta3",
 					Kind:       "Parent",
-					Controller: &boolFalse,
+					Controller: ptr.Bool(false),
 				}},
 			},
 		},
-		want: false,
 	}, {
 		name: "right owner reference, not controller",
 		input: &Resource{
@@ -254,11 +239,10 @@ func TestFilterGroupKind(t *testing.T) {
 				OwnerReferences: []metav1.OwnerReference{{
 					APIVersion: gvk.GroupVersion().String(),
 					Kind:       gvk.Kind,
-					Controller: &boolFalse,
+					Controller: ptr.Bool(false),
 				}},
 			},
 		},
-		want: false,
 	}, {
 		name: "wrong owner reference, but controller",
 		input: &Resource{
@@ -268,7 +252,7 @@ func TestFilterGroupKind(t *testing.T) {
 				OwnerReferences: []metav1.OwnerReference{{
 					APIVersion: "another.knative.dev/v1beta3",
 					Kind:       "Parent",
-					Controller: &boolTrue,
+					Controller: ptr.Bool(true),
 				}},
 			},
 		},
@@ -282,7 +266,7 @@ func TestFilterGroupKind(t *testing.T) {
 				OwnerReferences: []metav1.OwnerReference{{
 					APIVersion: gvk.GroupVersion().String(),
 					Kind:       gvk.Kind,
-					Controller: &boolTrue,
+					Controller: ptr.Bool(true),
 				}},
 			},
 		},
@@ -296,7 +280,7 @@ func TestFilterGroupKind(t *testing.T) {
 				OwnerReferences: []metav1.OwnerReference{{
 					APIVersion: schema.GroupVersion{Group: gvk.Group, Version: "other"}.String(),
 					Kind:       gvk.Kind,
-					Controller: &boolTrue,
+					Controller: ptr.Bool(true),
 				}},
 			},
 		},
@@ -323,11 +307,9 @@ func TestFilterGroupVersionKind(t *testing.T) {
 	}{{
 		name:  "not a metav1.Object",
 		input: "foo",
-		want:  false,
 	}, {
 		name:  "nil",
 		input: nil,
-		want:  false,
 	}, {
 		name: "no owner reference",
 		input: &Resource{
@@ -336,7 +318,6 @@ func TestFilterGroupVersionKind(t *testing.T) {
 				Namespace: "bar",
 			},
 		},
-		want: false,
 	}, {
 		name: "wrong owner reference, not controller",
 		input: &Resource{
@@ -346,11 +327,10 @@ func TestFilterGroupVersionKind(t *testing.T) {
 				OwnerReferences: []metav1.OwnerReference{{
 					APIVersion: "another.knative.dev/v1beta3",
 					Kind:       "Parent",
-					Controller: &boolFalse,
+					Controller: ptr.Bool(false),
 				}},
 			},
 		},
-		want: false,
 	}, {
 		name: "right owner reference, not controller",
 		input: &Resource{
@@ -360,11 +340,10 @@ func TestFilterGroupVersionKind(t *testing.T) {
 				OwnerReferences: []metav1.OwnerReference{{
 					APIVersion: gvk.GroupVersion().String(),
 					Kind:       gvk.Kind,
-					Controller: &boolFalse,
+					Controller: ptr.Bool(false),
 				}},
 			},
 		},
-		want: false,
 	}, {
 		name: "wrong owner reference, but controller",
 		input: &Resource{
@@ -374,11 +353,10 @@ func TestFilterGroupVersionKind(t *testing.T) {
 				OwnerReferences: []metav1.OwnerReference{{
 					APIVersion: "another.knative.dev/v1beta3",
 					Kind:       "Parent",
-					Controller: &boolTrue,
+					Controller: ptr.Bool(true),
 				}},
 			},
 		},
-		want: false,
 	}, {
 		name: "right owner reference, is controller",
 		input: &Resource{
@@ -388,7 +366,7 @@ func TestFilterGroupVersionKind(t *testing.T) {
 				OwnerReferences: []metav1.OwnerReference{{
 					APIVersion: gvk.GroupVersion().String(),
 					Kind:       gvk.Kind,
-					Controller: &boolTrue,
+					Controller: ptr.Bool(true),
 				}},
 			},
 		},
@@ -402,11 +380,10 @@ func TestFilterGroupVersionKind(t *testing.T) {
 				OwnerReferences: []metav1.OwnerReference{{
 					APIVersion: schema.GroupVersion{Group: gvk.Group, Version: "other"}.String(),
 					Kind:       gvk.Kind,
-					Controller: &boolTrue,
+					Controller: ptr.Bool(true),
 				}},
 			},
 		},
-		want: false,
 	}}
 
 	for _, test := range tests {
@@ -419,9 +396,9 @@ func TestFilterGroupVersionKind(t *testing.T) {
 	}
 }
 
-type NopReconciler struct{}
+type nopReconciler struct{}
 
-func (nr *NopReconciler) Reconcile(context.Context, string) error {
+func (nr *nopReconciler) Reconcile(context.Context, string) error {
 	return nil
 }
 
@@ -548,7 +525,7 @@ func TestEnqueue(t *testing.T) {
 						APIVersion: gvk.GroupVersion().String(),
 						Kind:       gvk.Kind,
 						Name:       "baz",
-						Controller: &boolTrue,
+						Controller: ptr.Bool(true),
 					}},
 				},
 			})
@@ -567,7 +544,7 @@ func TestEnqueue(t *testing.T) {
 							APIVersion: gvk.GroupVersion().String(),
 							Kind:       gvk.Kind,
 							Name:       "baz",
-							Controller: &boolTrue,
+							Controller: ptr.Bool(true),
 						}},
 					},
 				},
@@ -738,7 +715,7 @@ func TestEnqueue(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			var rl workqueue.RateLimiter = testRateLimiter{t, 100 * time.Millisecond}
-			impl := NewImplFull(&NopReconciler{}, ControllerOptions{WorkQueueName: "Testing", Logger: TestLogger(t), RateLimiter: rl})
+			impl := NewImplFull(&nopReconciler{}, ControllerOptions{WorkQueueName: "Testing", Logger: TestLogger(t), RateLimiter: rl})
 			test.work(impl)
 
 			impl.WorkQueue().ShutDown()
@@ -752,7 +729,7 @@ func TestEnqueue(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			impl := NewImplWithStats(&NopReconciler{}, TestLogger(t), "Testing", &FakeStatsReporter{})
+			impl := NewImplWithStats(&nopReconciler{}, TestLogger(t), "Testing", &FakeStatsReporter{})
 			test.work(impl)
 
 			impl.WorkQueue().ShutDown()
@@ -778,7 +755,7 @@ func TestEnqueueAfter(t *testing.T) {
 		queueCheckTimeout = shortDelay + 500*time.Millisecond
 	)
 
-	impl := NewImplWithStats(&NopReconciler{}, TestLogger(t), "Testing", &FakeStatsReporter{})
+	impl := NewImplWithStats(&nopReconciler{}, TestLogger(t), "Testing", &FakeStatsReporter{})
 	t.Cleanup(func() {
 		impl.WorkQueue().ShutDown()
 	})
@@ -854,7 +831,7 @@ func TestEnqueueKeyAfter(t *testing.T) {
 		shortDelay = 50 * time.Millisecond
 	)
 
-	impl := NewImplWithStats(&NopReconciler{}, TestLogger(t), "Testing", &FakeStatsReporter{})
+	impl := NewImplWithStats(&nopReconciler{}, TestLogger(t), "Testing", &FakeStatsReporter{})
 	t.Cleanup(func() {
 		impl.WorkQueue().ShutDown()
 	})
@@ -909,14 +886,11 @@ func TestEnqueueKeyAfter(t *testing.T) {
 }
 
 type CountingReconciler struct {
-	m     sync.Mutex
-	count int
+	count atomic.Int32
 }
 
 func (cr *CountingReconciler) Reconcile(context.Context, string) error {
-	cr.m.Lock()
-	defer cr.m.Unlock()
-	cr.count++
+	cr.count.Inc()
 	return nil
 }
 
@@ -926,6 +900,7 @@ func TestStartAndShutdown(t *testing.T) {
 
 	ctx, cancel := context.WithCancel(context.Background())
 	t.Cleanup(cancel)
+
 	doneCh := make(chan struct{})
 
 	go func() {
@@ -942,13 +917,13 @@ func TestStartAndShutdown(t *testing.T) {
 	cancel()
 
 	select {
-	case <-time.After(1 * time.Second):
+	case <-time.After(time.Second):
 		t.Error("Timed out waiting for controller to finish.")
 	case <-doneCh:
 		// We expect the work to complete.
 	}
 
-	if got, want := r.count, 0; got != want {
+	if got, want := r.count.Load(), int32(0); got != want {
 		t.Errorf("count = %v, wanted %v", got, want)
 	}
 }
@@ -956,8 +931,7 @@ func TestStartAndShutdown(t *testing.T) {
 type countingLeaderAwareReconciler struct {
 	reconciler.LeaderAwareFuncs
 
-	m     sync.Mutex
-	count int
+	count atomic.Int32
 }
 
 var _ reconciler.LeaderAware = (*countingLeaderAwareReconciler)(nil)
@@ -972,9 +946,7 @@ func (cr *countingLeaderAwareReconciler) Reconcile(ctx context.Context, key stri
 		Namespace: namespace,
 		Name:      name,
 	}) {
-		cr.m.Lock()
-		defer cr.m.Unlock()
-		cr.count++
+		cr.count.Inc()
 	}
 	return nil
 }
@@ -1013,13 +985,13 @@ func TestStartAndShutdownWithLeaderAwareNoElection(t *testing.T) {
 	cancel()
 
 	select {
-	case <-time.After(1 * time.Second):
+	case <-time.After(time.Second):
 		t.Error("Timed out waiting for controller to finish.")
 	case <-doneCh:
 		// We expect the work to complete.
 	}
 
-	if got, want := r.count, 0; got != want {
+	if got, want := r.count.Load(), int32(0); got != want {
 		t.Errorf("reconcile count = %v, wanted %v", got, want)
 	}
 }
@@ -1079,13 +1051,13 @@ func TestStartAndShutdownWithLeaderAwareWithLostElection(t *testing.T) {
 	cancel()
 
 	select {
-	case <-time.After(1 * time.Second):
+	case <-time.After(time.Second):
 		t.Error("Timed out waiting for controller to finish.")
 	case <-doneCh:
 		// We expect the work to complete.
 	}
 
-	if got, want := r.count, 0; got != want {
+	if got, want := r.count.Load(), int32(0); got != want {
 		t.Errorf("reconcile count = %v, wanted %v", got, want)
 	}
 }
@@ -1115,13 +1087,13 @@ func TestStartAndShutdownWithWork(t *testing.T) {
 	cancel()
 
 	select {
-	case <-time.After(1 * time.Second):
+	case <-time.After(time.Second):
 		t.Error("Timed out waiting for controller to finish.")
 	case <-doneCh:
 		// We expect the work to complete.
 	}
 
-	if got, want := r.count, 1; got != want {
+	if got, want := r.count.Load(), int32(1); got != want {
 		t.Errorf("reconcile count = %v, wanted %v", got, want)
 	}
 	if got, want := impl.WorkQueue().NumRequeues(types.NamespacedName{Namespace: "foo", Name: "bar"}), 0; got != want {
@@ -1160,9 +1132,9 @@ func TestPermanentError(t *testing.T) {
 	}
 }
 
-type ErrorReconciler struct{}
+type errorReconciler struct{}
 
-func (er *ErrorReconciler) Reconcile(context.Context, string) error {
+func (er *errorReconciler) Reconcile(context.Context, string) error {
 	return new(fakeError)
 }
 
@@ -1171,7 +1143,7 @@ func TestStartAndShutdownWithErroringWork(t *testing.T) {
 
 	item := types.NamespacedName{Namespace: "", Name: "bar"}
 
-	impl := NewImplWithStats(&ErrorReconciler{}, TestLogger(t), "Testing", &FakeStatsReporter{})
+	impl := NewImplWithStats(&errorReconciler{}, TestLogger(t), "Testing", &FakeStatsReporter{})
 	impl.EnqueueKey(item)
 
 	ctx, cancel := context.WithTimeout(context.Background(), testTimeout)
@@ -1215,14 +1187,14 @@ func TestStartAndShutdownWithErroringWork(t *testing.T) {
 	}
 }
 
-type PermanentErrorReconciler struct{}
+type permanentErrorReconciler struct{}
 
-func (er *PermanentErrorReconciler) Reconcile(context.Context, string) error {
+func (er *permanentErrorReconciler) Reconcile(context.Context, string) error {
 	return NewPermanentError(new(fakeError))
 }
 
 func TestStartAndShutdownWithPermanentErroringWork(t *testing.T) {
-	r := &PermanentErrorReconciler{}
+	r := &permanentErrorReconciler{}
 	reporter := &FakeStatsReporter{}
 	impl := NewImplWithStats(r, TestLogger(t), "Testing", reporter)
 
@@ -1246,7 +1218,7 @@ func TestStartAndShutdownWithPermanentErroringWork(t *testing.T) {
 	cancel()
 
 	select {
-	case <-time.After(1 * time.Second):
+	case <-time.After(time.Second):
 		t.Error("Timed out waiting for controller to finish.")
 	case <-doneCh:
 		// We expect the work to complete.
@@ -1283,27 +1255,29 @@ func (*dummyInformer) GetStore() cache.Store {
 	return &dummyStore{}
 }
 
-var dummyKeys = []string{"foo/bar", "bar/foo", "fizz/buzz"}
-var dummyObjs = []interface{}{
-	&Resource{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "bar",
-			Namespace: "foo",
+var (
+	dummyKeys = []string{"foo/bar", "bar/foo", "fizz/buzz"}
+	dummyObjs = []interface{}{
+		&Resource{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "bar",
+				Namespace: "foo",
+			},
 		},
-	},
-	&Resource{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "foo",
-			Namespace: "bar",
+		&Resource{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "foo",
+				Namespace: "bar",
+			},
 		},
-	},
-	&Resource{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "buzz",
-			Namespace: "fizz",
+		&Resource{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "buzz",
+				Namespace: "fizz",
+			},
 		},
-	},
-}
+	}
+)
 
 func (*dummyStore) ListKeys() []string {
 	return dummyKeys
@@ -1340,13 +1314,13 @@ func TestImplGlobalResync(t *testing.T) {
 	cancel()
 
 	select {
-	case <-time.After(1 * time.Second):
+	case <-time.After(time.Second):
 		t.Error("Timed out waiting for controller to finish.")
 	case <-doneCh:
 		// We expect the work to complete.
 	}
 
-	if want, got := 3, r.count; want != got {
+	if got, want := r.count.Load(), int32(3); want != got {
 		t.Errorf("GlobalResync: want = %v, got = %v", want, got)
 	}
 }
@@ -1419,7 +1393,7 @@ func TestStartInformersSuccess(t *testing.T) {
 		if err != nil {
 			t.Errorf("Unexpected error: %v", err)
 		}
-	case <-time.After(1 * time.Second):
+	case <-time.After(time.Second):
 		t.Error("Timed out waiting for informers to sync.")
 	}
 }
@@ -1451,7 +1425,7 @@ func TestStartInformersEventualSuccess(t *testing.T) {
 		if err != nil {
 			t.Errorf("Unexpected error: %v", err)
 		}
-	case <-time.After(1 * time.Second):
+	case <-time.After(time.Second):
 		t.Error("Timed out waiting for informers to sync.")
 	}
 }
@@ -1482,7 +1456,7 @@ func TestStartInformersFailure(t *testing.T) {
 		if err == nil {
 			t.Error("Unexpected success syncing informers after stopCh closed.")
 		}
-	case <-time.After(1 * time.Second):
+	case <-time.After(time.Second):
 		t.Error("Timed out waiting for informers to sync.")
 	}
 }
@@ -1504,7 +1478,7 @@ func TestRunInformersSuccess(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Unexpected error: %v", err)
 		}
-	case <-time.After(1 * time.Second):
+	case <-time.After(time.Second):
 		t.Fatal("Timed out waiting for informers to sync.")
 	}
 
@@ -1538,7 +1512,7 @@ func TestRunInformersEventualSuccess(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Unexpected error: %v", err)
 		}
-	case <-time.After(1 * time.Second):
+	case <-time.After(time.Second):
 		t.Fatal("Timed out waiting for informers to sync.")
 	}
 
@@ -1572,7 +1546,7 @@ func TestRunInformersFailure(t *testing.T) {
 		if err == nil {
 			t.Fatal("Unexpected success syncing informers after stopCh closed.")
 		}
-	case <-time.After(1 * time.Second):
+	case <-time.After(time.Second):
 		t.Fatal("Timed out waiting for informers to sync.")
 	}
 }
@@ -1603,7 +1577,7 @@ func TestRunInformersFinished(t *testing.T) {
 
 	select {
 	case <-ch:
-	case <-time.After(1 * time.Second):
+	case <-time.After(time.Second):
 		t.Fatal("Timed out waiting for informers to finish.")
 	}
 }
