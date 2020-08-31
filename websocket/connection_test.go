@@ -379,7 +379,11 @@ func TestDurableConnectionWhenConnectionBreaksDown(t *testing.T) {
 
 func TestDurableConnectionSendsPingsRegularly(t *testing.T) {
 	// Reset pongTimeout to something quite short.
+	pingTimeoutBackup := pongTimeout
 	pongTimeout = 100 * time.Millisecond
+	t.Cleanup(func() {
+		pongTimeout = pingTimeoutBackup
+	})
 
 	upgrader := websocket.Upgrader{}
 
