@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-name: Downstream Test
+name: Downstream Eventing
 
 on:
   push:
@@ -46,10 +46,19 @@ jobs:
       run: |
         go get github.com/google/go-licenses
 
-    - name: Test Downstream
-      uses: knative-sandbox/downstream-test-go@v1.0.0
+    - name: Checkout Upstream
+      uses: actions/checkout@v2
       with:
-        upstream-module: knative.dev/pkg
-        downstream-repository: knative/eventing
-        downstream-module: knative.dev/eventing
+        path: ./src/knative.dev/${{ github.event.repository.name }}
 
+    - name: Checkout Downstream
+      uses: actions/checkout@v2
+      with:
+        repository: knative/eventing
+        path: ./src/knative.dev/eventing
+
+    - name: Test Downstream
+      uses: knative-sandbox/downstream-test-go@v1.0.1
+      with:
+        upstream-module: knative.dev/${{ github.event.repository.name }}
+        downstream-module: knative.dev/eventing
