@@ -17,6 +17,7 @@ limitations under the License.
 package controller
 
 import (
+	"math"
 	"strings"
 	"testing"
 	"time"
@@ -74,18 +75,25 @@ func TestReportReconcile(t *testing.T) {
 	if d, err := view.RetrieveData("reconcile_count"); err == nil && len(d) == 1 {
 		initialReconcileCount = d[0].Data.(*view.CountData).Value
 	}
-	initialReconcileLatency := float64(0)
+	initialMin, initialMax := math.SmallestNonzeroFloat64, math.SmallestNonzeroFloat64
+	initialDistributionCount := int64(0)
 	if d, err := view.RetrieveData("reconcile_latency"); err == nil && len(d) == 1 {
-		initialReconcileLatency = d[0].Data.(*view.DistributionData).Sum()
+		dd := d[0].Data.(*view.DistributionData)
+		initialMin, initialMax = dd.Min, dd.Max
+		initialDistributionCount = dd.Count
 	}
 
-	expectSuccess(t, func() error { return r.ReportReconcile(10*time.Millisecond, "true") })
-	metricstest.CheckCountData(t, "reconcile_count", wantTags, initialReconcileCount+1)
-	metricstest.CheckDistributionData(t, "reconcile_latency", wantTags, 1, initialReconcileLatency+10, initialReconcileLatency+10)
+	slow, fast := initialMax+5, initialMin-5
 
-	expectSuccess(t, func() error { return r.ReportReconcile(15*time.Millisecond, "true") })
+	expectSuccess(t, func() error { return r.ReportReconcile(time.Duration(fast)*time.Millisecond, "true") })
+	metricstest.CheckCountData(t, "reconcile_count", wantTags, initialReconcileCount+1)
+	metricstest.CheckDistributionData(t, "reconcile_latency", wantTags, initialDistributionCount+1,
+		fast, initialMax)
+
+	expectSuccess(t, func() error { return r.ReportReconcile(time.Duration(slow)*time.Millisecond, "true") })
 	metricstest.CheckCountData(t, "reconcile_count", wantTags, initialReconcileCount+2)
-	metricstest.CheckDistributionData(t, "reconcile_latency", wantTags, 2, initialReconcileLatency+10, initialReconcileLatency+15)
+	metricstest.CheckDistributionData(t, "reconcile_latency", wantTags, initialDistributionCount+2,
+		fast, slow)
 }
 
 func expectSuccess(t *testing.T, f func() error) {
