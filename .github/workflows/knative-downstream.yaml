@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-name: Downstream Eventing
+name: Downstream
 
 on:
   push:
@@ -22,8 +22,8 @@ on:
 
 jobs:
 
-  downstream:
-    name: Downstream Eventing
+  downstream-eventing:
+    name: Eventing
     strategy:
       matrix:
         go-version: [1.15.x]
@@ -62,3 +62,44 @@ jobs:
       with:
         upstream-module: knative.dev/${{ github.event.repository.name }}
         downstream-module: knative.dev/eventing
+
+  downstream-serving:
+    name: Serving
+    strategy:
+      matrix:
+        go-version: [1.15.x]
+        platform: [ubuntu-latest]
+
+    runs-on: ${{ matrix.platform }}
+
+    env:
+      GOPATH: ${{ github.workspace }}
+
+    steps:
+
+    - name: Set up Go ${{ matrix.go-version }}
+      uses: actions/setup-go@v2
+      with:
+        go-version: ${{ matrix.go-version }}
+      id: go
+
+    - name: Install Dependencies
+      run: |
+        go get github.com/google/go-licenses
+
+    - name: Checkout Upstream
+      uses: actions/checkout@v2
+      with:
+        path: ./src/knative.dev/${{ github.event.repository.name }}
+
+    - name: Checkout Downstream
+      uses: actions/checkout@v2
+      with:
+        repository: knative/serving
+        path: ./src/knative.dev/serving
+
+    - name: Test Downstream
+      uses: knative-sandbox/downstream-test-go@v1.0.1
+      with:
+        upstream-module: knative.dev/${{ github.event.repository.name }}
+        downstream-module: knative.dev/serving
