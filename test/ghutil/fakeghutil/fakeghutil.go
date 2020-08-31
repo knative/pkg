@@ -22,8 +22,10 @@ import (
 	"fmt"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/google/go-github/v27/github"
+	"knative.dev/pkg/ptr"
 	"knative.dev/pkg/test/ghutil"
 )
 
@@ -377,7 +379,7 @@ func (fgc *FakeGithubClient) AddCommitToPullRequest(org, repo string, ID int, SH
 		return fmt.Errorf("Pull Request %d not exist", ID)
 	}
 	if _, ok = fgc.PRCommits[ID]; !ok {
-		fgc.PRCommits[ID] = make([]*github.RepositoryCommit, 0)
+		fgc.PRCommits[ID] = make([]*github.RepositoryCommit, 0, 1)
 	}
 	fgc.PRCommits[ID] = append(fgc.PRCommits[ID], &github.RepositoryCommit{SHA: &SHA})
 	return nil
@@ -386,10 +388,11 @@ func (fgc *FakeGithubClient) AddCommitToPullRequest(org, repo string, ID int, SH
 func (fgc *FakeGithubClient) updateIssueState(org, repo string, state ghutil.IssueStateEnum, issueNumber int) error {
 	targetIssue := fgc.Issues[repo][issueNumber]
 	if nil == targetIssue {
-		return fmt.Errorf("cannot find issue")
+		return fmt.Errorf("cannot find issue %d", issueNumber)
 	}
 	stateStr := string(state)
 	targetIssue.State = &stateStr
+	targetIssue.UpdatedAt = ptr.Time(time.Now())
 	return nil
 }
 
