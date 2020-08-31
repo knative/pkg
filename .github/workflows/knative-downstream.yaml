@@ -58,7 +58,7 @@ jobs:
         path: ./src/knative.dev/serving
 
     - name: Test Downstream
-      uses: knative-sandbox/downstream-test-go@v1
+      uses: knative-sandbox/downstream-test-go@v1.0.1
       with:
         upstream-module: knative.dev/${{ github.event.repository.name }}
         downstream-module: knative.dev/serving
@@ -99,7 +99,7 @@ jobs:
         path: ./src/knative.dev/eventing
 
     - name: Test Downstream
-      uses: knative-sandbox/downstream-test-go@v1
+      uses: knative-sandbox/downstream-test-go@v1.0.1
       with:
         upstream-module: knative.dev/${{ github.event.repository.name }}
         downstream-module: knative.dev/eventing
@@ -140,7 +140,7 @@ jobs:
         path: ./src/knative.dev/eventing-contrib
 
     - name: Test Downstream
-      uses: knative-sandbox/downstream-test-go@v1
+      uses: knative-sandbox/downstream-test-go@v1.0.1
       with:
         upstream-module: knative.dev/${{ github.event.repository.name }}
         downstream-module: knative.dev/eventing-contrib
@@ -182,7 +182,7 @@ jobs:
         path: ./src/knative.dev/sample-controller
 
     - name: Test Downstream
-      uses: knative-sandbox/downstream-test-go@v1
+      uses: knative-sandbox/downstream-test-go@v1.0.1
       with:
         upstream-module: knative.dev/${{ github.event.repository.name }}
         downstream-module: knative.dev/sample-controller
@@ -224,7 +224,7 @@ jobs:
         path: ./src/knative.dev/sample-source
 
     - name: Test Downstream
-      uses: knative-sandbox/downstream-test-go@v1
+      uses: knative-sandbox/downstream-test-go@v1.0.1
       with:
         upstream-module: knative.dev/${{ github.event.repository.name }}
         downstream-module: knative.dev/sample-source
