@@ -742,18 +742,29 @@ func TestEnqueue(t *testing.T) {
 	}
 }
 
-func TestEnqueueAfter(t *testing.T) {
-	const (
-		// longDelay is longer than we expect the test to run.
-		longDelay = time.Minute
-		// shortDelay is short enough for the test to execute quickly, but long
-		// enough to reasonably delay the enqueuing of an item.
-		shortDelay = 50 * time.Millisecond
+const (
+	// longDelay is longer than we expect the test to run.
+	longDelay = time.Minute
+	// shortDelay is short enough for the test to execute quickly, but long
+	// enough to reasonably delay the enqueuing of an item.
+	shortDelay = 50 * time.Millisecond
 
-		// time we allow the queue length checker to keep polling the
-		// workqueue.
-		queueCheckTimeout = shortDelay + 500*time.Millisecond
-	)
+	// time we allow the queue length checker to keep polling the
+	// workqueue.
+	queueCheckTimeout = shortDelay + 500*time.Millisecond
+)
+
+func pollQ(q workqueue.RateLimitingInterface, sig chan struct{}) func() (bool, error) {
+	return func() (bool, error) {
+		if q.Len() > 0 {
+			sig <- struct{}{}
+			return true, nil
+		}
+		return false, nil
+	}
+}
+
+func TestEnqueueAfter(t *testing.T) {
 
 	impl := NewImplWithStats(&nopReconciler{}, TestLogger(t), "Testing", &FakeStatsReporter{})
 	t.Cleanup(func() {
@@ -792,14 +803,8 @@ func TestEnqueueAfter(t *testing.T) {
 		cancel()
 	})
 
-	var successCheck wait.ConditionFunc = func() (bool, error) {
-		if impl.WorkQueue().Len() > 0 {
-			queuePopulated <- struct{}{}
-			return true, nil
-		}
-		return false, nil
-	}
-	go wait.PollImmediateUntil(5*time.Millisecond, successCheck, ctx.Done())
+	go wait.PollImmediateUntil(5*time.Millisecond,
+		pollQ(impl.WorkQueue(), queuePopulated), ctx.Done())
 
 	select {
 	case <-queuePopulated:
@@ -823,14 +828,6 @@ func TestEnqueueAfter(t *testing.T) {
 }
 
 func TestEnqueueKeyAfter(t *testing.T) {
-	const (
-		// longDelay is longer than we expect the test to run.
-		longDelay = time.Minute
-		// shortDelay is short enough for the test to execute quickly, but long
-		// enough to reasonably delay the enqueuing of an item.
-		shortDelay = 50 * time.Millisecond
-	)
-
 	impl := NewImplWithStats(&nopReconciler{}, TestLogger(t), "Testing", &FakeStatsReporter{})
 	t.Cleanup(func() {
 		impl.WorkQueue().ShutDown()
@@ -847,7 +844,6 @@ func TestEnqueueKeyAfter(t *testing.T) {
 	// Keep checking the queue length until 'to/fall' gets enqueued, send to channel to indicate success.
 	queuePopulated := make(chan struct{})
 
-	const queueCheckTimeout = shortDelay + 500*time.Millisecond
 	ctx, cancel := context.WithTimeout(context.Background(), queueCheckTimeout)
 
 	t.Cleanup(func() {
@@ -855,14 +851,8 @@ func TestEnqueueKeyAfter(t *testing.T) {
 		cancel()
 	})
 
-	var successCheck wait.ConditionFunc = func() (bool, error) {
-		if impl.WorkQueue().Len() > 0 {
-			queuePopulated <- struct{}{}
-			return true, nil
-		}
-		return false, nil
-	}
-	go wait.PollImmediateUntil(5*time.Millisecond, successCheck, ctx.Done())
+	go wait.PollImmediateUntil(5*time.Millisecond,
+		pollQ(impl.WorkQueue(), queuePopulated), ctx.Done())
 
 	select {
 	case <-queuePopulated:
