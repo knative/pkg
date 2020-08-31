@@ -379,7 +379,7 @@ func TestDurableConnectionWhenConnectionBreaksDown(t *testing.T) {
 
 func TestDurableConnectionSendsPingsRegularly(t *testing.T) {
 	// Reset pongTimeout to something quite short.
-	const pongTimeout = 100 * time.Millisecond
+	pongTimeout = 100 * time.Millisecond
 
 	upgrader := websocket.Upgrader{}
 
