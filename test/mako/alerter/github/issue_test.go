@@ -26,19 +26,23 @@ import (
 	"knative.dev/pkg/test/ghutil/fakeghutil"
 )
 
-var gih IssueHandler
+var gih *IssueHandler
 
 func TestMain(m *testing.M) {
-	gih = IssueHandler{
-		client: fakeghutil.NewFakeGithubClient(),
-		config: config{org: "test_org", repo: "test_repo", dryrun: false},
+	if gih == nil {
+		gih = &IssueHandler{
+			client: fakeghutil.NewFakeGithubClient(),
+			config: config{org: "test_org", repo: "test_repo", dryrun: false},
+		}
 	}
 	os.Exit(m.Run())
 }
 
 func TestNewIssueWillBeAdded(t *testing.T) {
-	testName := "test add new issue"
-	testDesc := "test add new issue desc"
+	const (
+		testName = "test add new issue"
+		testDesc = "test add new issue desc"
+	)
 	if err := gih.CreateIssueForTest(testName, testDesc); err != nil {
 		t.Fatalf("expected to create a new issue %v, but failed", testName)
 	}
@@ -50,8 +54,10 @@ func TestNewIssueWillBeAdded(t *testing.T) {
 }
 
 func TestOldIssueWillBeEdited(t *testing.T) {
-	testName := "test old issue will be edited"
-	testDesc := "test old issue will be edited desc"
+	const (
+		testName = "test old issue will be edited"
+		testDesc = "test old issue will be edited desc"
+	)
 	if err := gih.CreateIssueForTest(testName, testDesc); err != nil {
 		t.Fatalf("expected to create a new issue %v, but failed", testName)
 	}
@@ -69,8 +75,10 @@ func TestOldIssueWillBeEdited(t *testing.T) {
 func TestClosedIssueWillBeReopened(t *testing.T) {
 	org := gih.config.org
 	repo := gih.config.repo
-	testName := "test reopening close issue"
-	testDesc := "test reopening close issue desc"
+	const (
+		testName = "test reopening close issue"
+		testDesc = "test reopening close issue desc"
+	)
 	issueTitle := fmt.Sprintf(issueTitleTemplate, testName)
 	issue, _ := gih.client.CreateIssue(org, repo, issueTitle, testDesc)
 	gih.client.AddLabelsToIssue(org, repo, *issue.Number, []string{perfLabel})
@@ -90,8 +98,10 @@ func TestClosedIssueWillBeReopened(t *testing.T) {
 }
 
 func TestIssueCanBeClosed(t *testing.T) {
-	testName := "test closing existed issue"
-	testDesc := "test closing existed issue desc"
+	const (
+		testName = "test closing existed issue"
+		testDesc = "test closing existed issue desc"
+	)
 	if err := gih.CreateIssueForTest(testName, testDesc); err != nil {
 		t.Fatalf("expected to create a new issue %v, but failed", testName)
 	}
@@ -99,4 +109,54 @@ func TestIssueCanBeClosed(t *testing.T) {
 	if err := gih.CloseIssueForTest(testName); err != nil {
 		t.Fatalf("tried to close the existed issue %v, but got an error %v", testName, err)
 	}
+}
+
+// CreateIssueForTest will try to add an issue with the given testName and description.
+// If there is already an issue related to the test, it will try to update that issue.
+func (gih *IssueHandler) CreateIssueForTest(testName, desc string) error {
+	title := fmt.Sprintf(issueTitleTemplate, testName)
+	issue, err := gih.findIssue(title)
+	if err != nil {
+		return fmt.Errorf("failed to find issues for test %q: %w, skipped creating new issue", testName, err)
+	}
+	// If the issue hasn't been created, create one
+	if issue == nil {
+		commentBody := fmt.Sprintf(issueBodyTemplate, gih.config.repo, testName)
+		issue, err := gih.createNewIssue(title, commentBody)
+		if err != nil {
+			return fmt.Errorf("failed to create a new issue for test %q: %w", testName, err)
+		}
+		commentBody = fmt.Sprintf(issueSummaryCommentTemplate, desc)
+		if err := gih.addComment(*issue.Number, commentBody); err != nil {
+			return fmt.Errorf("failed to add comment for new issue %d: %w", *issue.Number, err)
+		}
+		return nil
+	}
+
+	// If the issue has been created, edit it
+	issueNumber := *issue.Number
+
+	// If the issue has been closed, reopen it
+	if *issue.State == string(ghutil.IssueCloseState) {
+		if err := gih.reopenIssue(issueNumber); err != nil {
+			return fmt.Errorf("failed to reopen issue %d: %w", issueNumber, err)
+		}
+		if err := gih.addComment(issueNumber, reopenIssueComment); err != nil {
+			return fmt.Errorf("failed to add comment for reopened issue %d: %w", issueNumber, err)
+		}
+	}
+
+	// Edit the old comment
+	comments, err := gih.getComments(issueNumber)
+	if err != nil {
+		return fmt.Errorf("failed to get comments from issue %d: %w", issueNumber, err)
+	}
+	if len(comments) < 1 {
+		return fmt.Errorf("existing issue %d is malformed, cannot update", issueNumber)
+	}
+	commentBody := fmt.Sprintf(issueSummaryCommentTemplate, desc)
+	if err := gih.editComment(issueNumber, *comments[0].ID, commentBody); err != nil {
+		return fmt.Errorf("failed to edit the comment for issue %d: %w", issueNumber, err)
+	}
+	return nil
 }
