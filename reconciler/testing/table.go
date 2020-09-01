@@ -307,10 +307,10 @@ func (r *TableRow) Test(t *testing.T, factory Factory) {
 	}
 	if !gotDeletes.Equal(wantDeletes) {
 		if extra := gotDeletes.Difference(wantDeletes); len(extra) > 0 {
-			t.Errorf("Extra or unexpected deletes: %v", extra)
+			t.Errorf("Extra or unexpected deletes: %v", extra.UnsortedList())
 		}
 		if missing := wantDeletes.Difference(gotDeletes); len(missing) > 0 {
-			t.Errorf("Missing deletes: %v", missing)
+			t.Errorf("Missing deletes: %v", missing.UnsortedList())
 		}
 	}
 
