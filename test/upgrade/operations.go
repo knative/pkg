@@ -16,6 +16,10 @@
 
 package upgrade
 
+import (
+	"testing"
+)
+
 func (se *suiteExecution) installingBase(num int) {
 	se.processOperationGroup(operationGroup{
 		num:                   num,
@@ -37,4 +41,72 @@ func (se *suiteExecution) preUpgradeTests(num int) {
 		groupTemplate: "%d) ✅️️ Testing functionality before upgrade is performed." +
 			" %d tests are registered.",
 	})
+}
+
+func (se *suiteExecution) startContinualTests(num int) {
+	l := se.logger
+	operations := se.suite.Tests.ContinualTests
+	groupTemplate := "%d) 🔄 Staring continual tests to run in background. " +
+		"%d tests are registered."
+	elementTemplate := `%d.%d) Staring continual tests of "%s"`
+	noOperations := len(operations)
+	se.configuration.T.Run("ContinualTests", func(t *testing.T) {
+		if noOperations > 0 {
+			l.Infof(groupTemplate, num, noOperations)
+			for i, operation := range operations {
+				l.Infof(elementTemplate, num, i+1, operation.Name())
+				if se.failed {
+					l.Debugf(skippingOperationTemplate, operation.Name())
+					return
+				}
+				setup := operation.Setup()
+				t.Run("Setup"+operation.Name(), func(t *testing.T) {
+					setup(Context{T: t, Log: l})
+				})
+				if se.failed {
+					l.Debugf(skippingOperationTemplate, operation.Name())
+					return
+				}
+				stop := make(chan StopSignal)
+				se.stopSignals = append(se.stopSignals, StopSignal{
+					T:       nil,
+					name:    operation.Name(),
+					channel: stop,
+				})
+				handler := operation.Handler()
+				go func() {
+					bc := BackgroundContext{Log: l, Stop: stop}
+					handler(bc)
+				}()
+
+				se.failed = se.failed || t.Failed()
+				if se.failed {
+					return
+				}
+			}
+
+		} else {
+			l.Infof("%d) 🔄 No continual tests registered. Skipping.", num)
+		}
+	})
+}
+
+func (se *suiteExecution) stopContinualTests(num int) {
+	l := se.logger
+	testsCount := len(se.suite.Tests.ContinualTests)
+	if testsCount > 0 {
+		se.configuration.T.Run("VerifyContinualTests", func(t *testing.T) {
+			l.Infof("%d) ✋ Verifying %d running continual tests", num, testsCount)
+			for i, signal := range se.stopSignals {
+				t.Run(signal.name, func(t *testing.T) {
+					l.Infof(`%d.%d) Verifying "%s"`, num, i+1, signal.name)
+					signal.T = t
+					signal.Finished = make(chan int)
+					signal.channel <- signal
+					retcode := <-signal.Finished
+					l.Debugf(`Finished "%s" with: %d`, signal.name, retcode)
+				})
+			}
+		})
+	}
 }

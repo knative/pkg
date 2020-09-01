@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package upgrade
+package upgrade_test
 
 import (
 	"bytes"
@@ -27,13 +27,14 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest"
+	"knative.dev/pkg/test/upgrade"
 )
 
 func TestSuiteExecuteEmpty(t *testing.T) {
 	c, buf := newConfig(t)
-	suite := Suite{
-		Tests:         Tests{},
-		Installations: Installations{},
+	suite := upgrade.Suite{
+		Tests:         upgrade.Tests{},
+		Installations: upgrade.Installations{},
 	}
 	suite.Execute(c)
 	output := buf.String()
@@ -58,29 +59,29 @@ func TestSuiteExecuteEmpty(t *testing.T) {
 
 func TestSuiteExecuteWithTestsAndInstallations(t *testing.T) {
 	c, buf := newConfig(t)
-	suite := Suite{
-		Tests: Tests{
-			PreUpgrade: []Operation{
+	suite := upgrade.Suite{
+		Tests: upgrade.Tests{
+			PreUpgrade: []upgrade.Operation{
 				servingPreUpgradeTest, eventingPreUpgradeTest,
 			},
-			PostUpgrade: []Operation{
+			PostUpgrade: []upgrade.Operation{
 				servingPostUpgradeTest, eventingPostUpgradeTest,
 			},
-			PostDowngrade: []Operation{
+			PostDowngrade: []upgrade.Operation{
 				servingPostDowngradeTest, eventingPostDowngradeTest,
 			},
-			ContinualTests: []BackgroundOperation{
+			ContinualTests: []upgrade.BackgroundOperation{
 				servingContinualTest, eventingContinualTest,
 			},
 		},
-		Installations: Installations{
-			Base: []Operation{
+		Installations: upgrade.Installations{
+			Base: []upgrade.Operation{
 				servingStableInstall, eventingStableInstall,
 			},
-			UpgradeWith: []Operation{
+			UpgradeWith: []upgrade.Operation{
 				servingHeadInstall, eventingHeadInstall,
 			},
-			DowngradeWith: []Operation{
+			DowngradeWith: []upgrade.Operation{
 				servingStableInstall, eventingStableInstall,
 			},
 		},
@@ -121,10 +122,10 @@ func TestSuiteExecuteWithTestsAndInstallations(t *testing.T) {
 		"7) ✅️️ Testing functionality after downgrade is performed. 2 tests are registered.",
 		`7.1) Testing with "Serving post downgrade test"`,
 		`7.2) Testing with "Eventing post downgrade test"`,
-		"8) ✋ Stopping 2 running continual tests",
-		`8.1) Stopping "Serving continual test"`,
+		"8) ✋ Verifying 2 running continual tests",
+		`8.1) Verifying "Serving continual test"`,
 		"Serving probe test have received a stop message",
-		`8.2) Stopping "Eventing continual test"`,
+		`8.2) Verifying "Eventing continual test"`,
 		"Eventing probe test have received a stop message",
 		"🥳🎉 Success! Upgrade suite completed without errors.",
 	}
@@ -133,9 +134,9 @@ func TestSuiteExecuteWithTestsAndInstallations(t *testing.T) {
 	}
 }
 
-func newConfig(t *testing.T) (Configuration, fmt.Stringer) {
+func newConfig(t *testing.T) (upgrade.Configuration, fmt.Stringer) {
 	log, buf := newExampleZap()
-	c := Configuration{T: t, Log: log}
+	c := upgrade.Configuration{T: t, Log: log}
 	return c, buf
 }
 
@@ -153,70 +154,80 @@ func newExampleZap() (*zap.Logger, *zaptest.Buffer) {
 }
 
 var (
-	servingStableInstall = NewOperation("Serving latest stable release", func(c Context) {
+	servingStableInstall = upgrade.NewOperation("Serving latest stable release", func(c upgrade.Context) {
 		c.Log.Info("Installing Serving stable 0.17.1")
 		time.Sleep(20 * time.Millisecond)
 	})
-	servingHeadInstall = NewOperation("Serving HEAD", func(c Context) {
+	servingHeadInstall = upgrade.NewOperation("Serving HEAD", func(c upgrade.Context) {
 		c.Log.Info("Installing Serving HEAD at e3c4563")
 		time.Sleep(20 * time.Millisecond)
 	})
-	eventingStableInstall = NewOperation("Eventing latest stable release", func(c Context) {
+	eventingStableInstall = upgrade.NewOperation("Eventing latest stable release", func(c upgrade.Context) {
 		c.Log.Info("Installing Eventing stable 0.17.2")
 		time.Sleep(20 * time.Millisecond)
 	})
-	eventingHeadInstall = NewOperation("Eventing HEAD", func(c Context) {
+	eventingHeadInstall = upgrade.NewOperation("Eventing HEAD", func(c upgrade.Context) {
 		c.Log.Info("Installing Eventing HEAD at 12f67cc")
 		time.Sleep(20 * time.Millisecond)
 	})
-	servingPreUpgradeTest = NewOperation("Serving pre upgrade test", func(c Context) {
+	servingPreUpgradeTest = upgrade.NewOperation("Serving pre upgrade test", func(c upgrade.Context) {
 		c.Log.Info("Running Serving pre upgrade test")
 		time.Sleep(5 * time.Millisecond)
 	})
-	eventingPreUpgradeTest = NewOperation("Eventing pre upgrade test", func(c Context) {
+	eventingPreUpgradeTest = upgrade.NewOperation("Eventing pre upgrade test", func(c upgrade.Context) {
 		c.Log.Info("Running Eventing pre upgrade test")
 		time.Sleep(5 * time.Millisecond)
 	})
-	servingPostUpgradeTest = NewOperation("Serving post upgrade test", func(c Context) {
+	servingPostUpgradeTest = upgrade.NewOperation("Serving post upgrade test", func(c upgrade.Context) {
 		c.Log.Info("Running Serving post upgrade test")
 		time.Sleep(5 * time.Millisecond)
 	})
-	eventingPostUpgradeTest = NewOperation("Eventing post upgrade test", func(c Context) {
+	eventingPostUpgradeTest = upgrade.NewOperation("Eventing post upgrade test", func(c upgrade.Context) {
 		c.Log.Info("Running Eventing post upgrade test")
 		time.Sleep(5 * time.Millisecond)
 	})
-	servingPostDowngradeTest = NewOperation("Serving post downgrade test", func(c Context) {
+	servingPostDowngradeTest = upgrade.NewOperation("Serving post downgrade test", func(c upgrade.Context) {
 		c.Log.Info("Running Serving post downgrade test")
 		time.Sleep(5 * time.Millisecond)
 	})
-	eventingPostDowngradeTest = NewOperation("Eventing post downgrade test", func(c Context) {
+	eventingPostDowngradeTest = upgrade.NewOperation("Eventing post downgrade test", func(c upgrade.Context) {
 		c.Log.Info("Running Eventing post downgrade test")
 		time.Sleep(5 * time.Millisecond)
 	})
-	servingContinualTest = NewBackgroundOperation("Serving continual test", func(bc BackgroundContext) {
-		bc.Log.Info("Running Serving continual test")
-		for {
-			select {
-			case msg := <-bc.Stop:
-				bc.Log.Info("Serving probe test have received a stop message", msg)
-				return
-			default:
-				bc.Log.Debug("Probing serving functionality...")
+	servingContinualTest = upgrade.NewBackgroundOperation("Serving continual test",
+		func(c upgrade.Context) {
+			c.Log.Info("Setup of Serving continual test")
+		},
+		func(bc upgrade.BackgroundContext) {
+			bc.Log.Info("Running Serving continual test")
+			for {
+				select {
+				case sig := <-bc.Stop:
+					bc.Log.Infof("Serving probe test have received a stop message: %s", sig.String())
+					sig.Finished <- 12
+					return
+				default:
+					bc.Log.Debug("Probing Serving functionality...")
+				}
+				time.Sleep(5 * time.Millisecond)
 			}
-			time.Sleep(5 * time.Millisecond)
-		}
-	})
-	eventingContinualTest = NewBackgroundOperation("Eventing continual test", func(bc BackgroundContext) {
-		bc.Log.Info("Running Eventing continual test")
-		for {
-			select {
-			case msg := <-bc.Stop:
-				bc.Log.Info("Eventing probe test have received a stop message", msg)
-				return
-			default:
-				bc.Log.Debug("Probing eventing functionality...")
+		})
+	eventingContinualTest = upgrade.NewBackgroundOperation("Eventing continual test",
+		func(c upgrade.Context) {
+			c.Log.Info("Setup of Eventing continual test")
+		},
+		func(bc upgrade.BackgroundContext) {
+			bc.Log.Info("Running Eventing continual test")
+			for {
+				select {
+				case sig := <-bc.Stop:
+					bc.Log.Infof("Eventing probe test have received a stop message: %s", sig.String())
+					sig.Finished <- 13
+					return
+				default:
+					bc.Log.Debug("Probing Eventing functionality...")
+				}
+				time.Sleep(5 * time.Millisecond)
 			}
-			time.Sleep(5 * time.Millisecond)
-		}
-	})
+		})
 )

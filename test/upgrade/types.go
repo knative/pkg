@@ -45,10 +45,15 @@ type Installations struct {
 	DowngradeWith []Operation
 }
 
+// Named interface represents a type that is named in user friendly way
+type Named interface {
+	Name() string
+}
+
 // Operation represents a upgrade test operation like test or installation that
 // can be provided by specific component or reused in aggregating components
 type Operation interface {
-	Name() string
+	Named
 	Handler() func(c Context)
 }
 
@@ -57,7 +62,8 @@ type Operation interface {
 // a passed BackgroundContext should be used to synchronize it's operations with
 // Ready and Stop channels.
 type BackgroundOperation interface {
-	Name() string
+	Named
+	Setup() func(c Context)
 	Handler() func(bc BackgroundContext)
 }
 
@@ -71,9 +77,18 @@ type Context struct {
 // handler of StoppableOperation. It contains a T reference and a stop channel
 // which handler should listen to to know when to stop its operations.
 type BackgroundContext struct {
-	Context
-	Ready chan string
-	Stop  chan string
+	Log  *zap.SugaredLogger
+	Stop chan StopSignal
+}
+
+// StopSignal represents a signal that is to be received by background operation
+// to indicate that is should stop it's operations and validate results using
+// passed T
+type StopSignal struct {
+	T        *testing.T
+	Finished chan int
+	name     string
+	channel  chan StopSignal
 }
 
 // Configuration holds required and optional configuration to run upgrade tests

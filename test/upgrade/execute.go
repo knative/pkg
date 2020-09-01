@@ -22,6 +22,8 @@ import (
 	"go.uber.org/zap"
 )
 
+const skippingOperationTemplate = `Skipping "%s" as previous operation have failed`
+
 func (s *Suite) Execute(c Configuration) {
 	l := c.logger()
 	se := suiteExecution{
@@ -29,12 +31,14 @@ func (s *Suite) Execute(c Configuration) {
 		configuration: c,
 		failed:        false,
 		logger:        l,
+		stopSignals:   make([]StopSignal, 0),
 	}
 	l.Info("🏃 Running upgrade suite...")
 
 	for i, operation := range []func(num int){
 		se.installingBase,
 		se.preUpgradeTests,
+		se.startContinualTests,
 	} {
 		operation(i + 1)
 		if se.failed {
@@ -42,17 +46,14 @@ func (s *Suite) Execute(c Configuration) {
 		}
 	}
 
+	se.stopContinualTests(8)
+
 	if !se.failed {
 		l.Info("🥳🎉 Success! Upgrade suite completed without errors.")
 	}
 
 	if len(s.Tests.PreUpgrade) > 0 {
 		texts := []string{
-			"3) 🔄 Staring continual tests to run in background. 2 tests are registered.",
-			`3.1) Staring continual tests of "Serving continual test"`,
-			"Running Serving continual test",
-			`3.2) Staring continual tests of "Eventing continual test"`,
-			"Running Eventing continual test",
 			"4) 📀 Upgrading with 2 registered installations.",
 			`4.1) Upgrading with "Serving HEAD"`,
 			"Installing Serving HEAD at e3c4563",
@@ -69,18 +70,12 @@ func (s *Suite) Execute(c Configuration) {
 			"7) ✅️️ Testing functionality after downgrade is performed. 2 tests are registered.",
 			`7.1) Testing with "Serving post downgrade test"`,
 			`7.2) Testing with "Eventing post downgrade test"`,
-			"8) ✋ Stopping 2 running continual tests",
-			`8.1) Stopping "Serving continual test"`,
-			"Serving probe test have received a stop message",
-			`8.2) Stopping "Eventing continual test"`,
-			"Eventing probe test have received a stop message",
 		}
 		for _, text := range texts {
 			c.Log.Info(text)
 		}
 	} else {
 		texts := []string{
-			"3) 🔄 No continual tests registered. Skipping.",
 			"4) 📀 No upgrade installations registered. Skipping.",
 			"5) ✅️️ No post upgrade tests registered. Skipping.",
 			"6) 💿 No downgrade installations registered. Skipping.",
@@ -99,8 +94,16 @@ func NewOperation(name string, handler func(c Context)) Operation {
 
 // NewBackgroundOperation creates a new upgrade operation or test that can be
 // notified to stop operating
-func NewBackgroundOperation(name string, handler func(bc BackgroundContext)) BackgroundOperation {
-	return &stoppableOperationHolder{name: name, handler: handler}
+func NewBackgroundOperation(
+	name string,
+	setup func(c Context),
+	handler func(bc BackgroundContext),
+) BackgroundOperation {
+	return &backgroundOperationHolder{
+		name:    name,
+		setup:   setup,
+		handler: handler,
+	}
 }
 
 func (c Configuration) logger() *zap.SugaredLogger {
@@ -112,6 +115,7 @@ type suiteExecution struct {
 	configuration Configuration
 	failed        bool
 	logger        *zap.SugaredLogger
+	stopSignals   []StopSignal
 }
 
 func (se *suiteExecution) processOperationGroup(op operationGroup) {
@@ -122,7 +126,7 @@ func (se *suiteExecution) processOperationGroup(op operationGroup) {
 			for i, operation := range op.operations {
 				l.Infof(op.elementTemplate, op.num, i+1, operation.Name())
 				if se.failed {
-					l.Debugf(`Skipping "%s" as previous operation have failed`, operation.Name())
+					l.Debugf(skippingOperationTemplate, operation.Name())
 					return
 				}
 				handler := operation.Handler()
@@ -154,8 +158,9 @@ type operationHolder struct {
 	handler func(c Context)
 }
 
-type stoppableOperationHolder struct {
+type backgroundOperationHolder struct {
 	name    string
+	setup   func(c Context)
 	handler func(bc BackgroundContext)
 }
 
@@ -167,10 +172,18 @@ func (h *operationHolder) Handler() func(c Context) {
 	return h.handler
 }
 
-func (s *stoppableOperationHolder) Name() string {
+func (s *backgroundOperationHolder) Name() string {
 	return s.name
 }
 
-func (s *stoppableOperationHolder) Handler() func(bc BackgroundContext) {
+func (s *backgroundOperationHolder) Setup() func(c Context) {
+	return s.setup
+}
+
+func (s *backgroundOperationHolder) Handler() func(bc BackgroundContext) {
 	return s.handler
+}
+
+func (s *StopSignal) String() string {
+	return s.name
 }
