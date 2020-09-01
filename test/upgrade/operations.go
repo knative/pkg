@@ -118,7 +118,7 @@ func (se *suiteExecution) upgradeWith(num int) {
 		groupName:             "UpgradeWith",
 		elementTemplate:       `%d.%d) Upgrading with "%s"`,
 		skippingGroupTemplate: "%d) 📀 No upgrade installations registered. Skipping.",
-		groupTemplate: "%d) 📀 Upgrading with %d registered installations.",
+		groupTemplate:         "%d) 📀 Upgrading with %d registered installations.",
 	})
 }
 
@@ -130,6 +130,29 @@ func (se *suiteExecution) postUpgradeTests(num int) {
 		elementTemplate:       `%d.%d) Testing with "%s"`,
 		skippingGroupTemplate: "%d) ✅️️ No post upgrade tests registered. Skipping.",
 		groupTemplate: "%d) ✅️️ Testing functionality after upgrade is performed." +
+			" %d tests are registered.",
+	})
+}
+
+func (se *suiteExecution) downgradeWith(num int) {
+	se.processOperationGroup(operationGroup{
+		num:                   num,
+		operations:            se.suite.Installations.DowngradeWith,
+		groupName:             "DowngradeWith",
+		elementTemplate:       `%d.%d) Downgrading with "%s"`,
+		skippingGroupTemplate: "%d) 💿 No downgrade installations registered. Skipping.",
+		groupTemplate:         "%d) 💿 Downgrading with %d registered installations.",
+	})
+}
+
+func (se *suiteExecution) postDowngradeTests(num int) {
+	se.processOperationGroup(operationGroup{
+		num:                   num,
+		operations:            se.suite.Tests.PostDowngrade,
+		groupName:             "PostDowngradeTests",
+		elementTemplate:       `%d.%d) Testing with "%s"`,
+		skippingGroupTemplate: "%d) ✅️️ No post downgrade tests registered. Skipping.",
+		groupTemplate: "%d) ✅️️ Testing functionality after downgrade is performed." +
 			" %d tests are registered.",
 	})
 }

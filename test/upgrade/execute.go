@@ -41,6 +41,9 @@ func (s *Suite) Execute(c Configuration) {
 		se.startContinualTests,
 		se.upgradeWith,
 		se.postUpgradeTests,
+		se.downgradeWith,
+		se.postDowngradeTests,
+		se.verifyContinualTests,
 	} {
 		operation(i + 1)
 		if se.failed {
@@ -48,36 +51,8 @@ func (s *Suite) Execute(c Configuration) {
 		}
 	}
 
-	se.verifyContinualTests(8)
-
 	if !se.failed {
 		l.Info("🥳🎉 Success! Upgrade suite completed without errors.")
-	}
-
-	if len(s.Tests.PreUpgrade) > 0 {
-		texts := []string{
-			"6) 💿 Downgrading with 2 registered installations.",
-			`6.1) Downgrading with "Serving latest stable release".`,
-			"Installing Serving stable 0.17.1",
-			`6.2) Downgrading with "Eventing latest stable release".`,
-			"Installing Eventing stable 0.17.2",
-			"7) ✅️️ Testing functionality after downgrade is performed. 2 tests are registered.",
-			`7.1) Testing with "Serving post downgrade test"`,
-			`7.2) Testing with "Eventing post downgrade test"`,
-		}
-		for _, text := range texts {
-			c.Log.Info(text)
-		}
-	} else {
-		texts := []string{
-			"4) 📀 No upgrade installations registered. Skipping.",
-			"5) ✅️️ No post upgrade tests registered. Skipping.",
-			"6) 💿 No downgrade installations registered. Skipping.",
-			"7) ✅️️ No post downgrade tests registered. Skipping.",
-		}
-		for _, text := range texts {
-			c.Log.Info(text)
-		}
 	}
 }
 
