@@ -91,7 +91,7 @@ func (se *suiteExecution) startContinualTests(num int) {
 	})
 }
 
-func (se *suiteExecution) stopContinualTests(num int) {
+func (se *suiteExecution) verifyContinualTests(num int) {
 	l := se.logger
 	testsCount := len(se.suite.Tests.ContinualTests)
 	if testsCount > 0 {
@@ -109,4 +109,27 @@ func (se *suiteExecution) stopContinualTests(num int) {
 			}
 		})
 	}
+}
+
+func (se *suiteExecution) upgradeWith(num int) {
+	se.processOperationGroup(operationGroup{
+		num:                   num,
+		operations:            se.suite.Installations.UpgradeWith,
+		groupName:             "UpgradeWith",
+		elementTemplate:       `%d.%d) Upgrading with "%s"`,
+		skippingGroupTemplate: "%d) 📀 No upgrade installations registered. Skipping.",
+		groupTemplate: "%d) 📀 Upgrading with %d registered installations.",
+	})
+}
+
+func (se *suiteExecution) postUpgradeTests(num int) {
+	se.processOperationGroup(operationGroup{
+		num:                   num,
+		operations:            se.suite.Tests.PostUpgrade,
+		groupName:             "PostUpgradeTests",
+		elementTemplate:       `%d.%d) Testing with "%s"`,
+		skippingGroupTemplate: "%d) ✅️️ No post upgrade tests registered. Skipping.",
+		groupTemplate: "%d) ✅️️ Testing functionality after upgrade is performed." +
+			" %d tests are registered.",
+	})
 }

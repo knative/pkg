@@ -39,6 +39,8 @@ func (s *Suite) Execute(c Configuration) {
 		se.installingBase,
 		se.preUpgradeTests,
 		se.startContinualTests,
+		se.upgradeWith,
+		se.postUpgradeTests,
 	} {
 		operation(i + 1)
 		if se.failed {
@@ -46,7 +48,7 @@ func (s *Suite) Execute(c Configuration) {
 		}
 	}
 
-	se.stopContinualTests(8)
+	se.verifyContinualTests(8)
 
 	if !se.failed {
 		l.Info("🥳🎉 Success! Upgrade suite completed without errors.")
@@ -54,14 +56,6 @@ func (s *Suite) Execute(c Configuration) {
 
 	if len(s.Tests.PreUpgrade) > 0 {
 		texts := []string{
-			"4) 📀 Upgrading with 2 registered installations.",
-			`4.1) Upgrading with "Serving HEAD"`,
-			"Installing Serving HEAD at e3c4563",
-			`4.1) Upgrading with "Eventing HEAD"`,
-			"Installing Eventing HEAD at 12f67cc",
-			"5) ✅️️ Testing functionality after upgrade is performed. 2 tests are registered.",
-			`5.1) Testing with "Serving post upgrade test"`,
-			`5.2) Testing with "Eventing post upgrade test"`,
 			"6) 💿 Downgrading with 2 registered installations.",
 			`6.1) Downgrading with "Serving latest stable release".`,
 			"Installing Serving stable 0.17.1",

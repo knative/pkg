@@ -109,7 +109,7 @@ func TestSuiteExecuteWithTestsAndInstallations(t *testing.T) {
 		"4) 📀 Upgrading with 2 registered installations.",
 		`4.1) Upgrading with "Serving HEAD"`,
 		"Installing Serving HEAD at e3c4563",
-		`4.1) Upgrading with "Eventing HEAD"`,
+		`4.2) Upgrading with "Eventing HEAD"`,
 		"Installing Eventing HEAD at 12f67cc",
 		"5) ✅️️ Testing functionality after upgrade is performed. 2 tests are registered.",
 		`5.1) Testing with "Serving post upgrade test"`,
