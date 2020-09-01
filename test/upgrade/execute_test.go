@@ -20,6 +20,7 @@ import (
 	"bytes"
 	"fmt"
 	"os"
+	"sync"
 	"testing"
 	"time"
 
@@ -140,17 +141,41 @@ func newConfig(t *testing.T) (upgrade.Configuration, fmt.Stringer) {
 	return c, buf
 }
 
-func newExampleZap() (*zap.Logger, *zaptest.Buffer) {
+func newExampleZap() (*zap.Logger, fmt.Stringer) {
 	ec := zap.NewDevelopmentEncoderConfig()
 	ec.TimeKey = ""
 	encoder := zapcore.NewConsoleEncoder(ec)
-	buf := &zaptest.Buffer{
+	buf := &buffer{
 		Buffer: bytes.Buffer{},
+		Mutex:  sync.Mutex{},
 		Syncer: zaptest.Syncer{},
 	}
 	ws := zapcore.NewMultiWriteSyncer(buf, os.Stdout)
 	core := zapcore.NewCore(encoder, ws, zap.DebugLevel)
 	return zap.New(core).WithOptions(), buf
+}
+
+// To avoid race condition on zaptest.Buffer, see: https://stackoverflow.com/a/36226525/844449
+type buffer struct {
+	bytes.Buffer
+	sync.Mutex
+	zaptest.Syncer
+}
+
+func (b *buffer) Read(p []byte) (n int, err error) {
+	b.Mutex.Lock()
+	defer b.Mutex.Unlock()
+	return b.Buffer.Read(p)
+}
+func (b *buffer) Write(p []byte) (n int, err error) {
+	b.Mutex.Lock()
+	defer b.Mutex.Unlock()
+	return b.Buffer.Write(p)
+}
+func (b *buffer) String() string {
+	b.Mutex.Lock()
+	defer b.Mutex.Unlock()
+	return b.Buffer.String()
 }
 
 var (
