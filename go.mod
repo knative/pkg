@@ -10,6 +10,7 @@ require (
 	contrib.go.opencensus.io/exporter/stackdriver v0.13.2
 	contrib.go.opencensus.io/exporter/zipkin v0.1.1
 	github.com/blang/semver v3.5.1+incompatible
+	github.com/blendle/zapdriver v1.3.1
 	github.com/census-instrumentation/opencensus-proto v0.2.1
 	github.com/davecgh/go-spew v1.1.1
 	github.com/evanphx/json-patch v4.5.0+incompatible

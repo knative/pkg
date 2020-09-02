@@ -21,6 +21,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 
 	"go.uber.org/zap"
@@ -29,12 +30,15 @@ import (
 
 	"knative.dev/pkg/changeset"
 	"knative.dev/pkg/logging/logkey"
+
+	"github.com/blendle/zapdriver"
 )
 
 const (
-	configMapNameEnv   = "CONFIG_LOGGING_NAME"
-	loggerConfigKey    = "zap-logger-config"
-	fallbackLoggerName = "fallback-logger"
+	configMapNameEnv     = "CONFIG_LOGGING_NAME"
+	loggerConfigKey      = "zap-logger-config"
+	stackdriverFormatKey = "use-stackdriver-format"
+	fallbackLoggerName   = "fallback-logger"
 )
 
 var (
@@ -54,7 +58,19 @@ func NewLogger(configJSON string, levelOverride string, opts ...zap.Option) (*za
 		return enrichLoggerWithCommitID(logger), atomicLevel
 	}
 
-	loggingCfg := zap.NewProductionConfig()
+	config := zap.NewProductionConfig()
+	return newLoggerFromZapConfig(&config, levelOverride)
+}
+
+// NewStackdriverLogger creates a logger using a configuration suitable for collection by
+// Stackdriver. In addition to the logger, it returns AtomicLevel that can be used to change the
+// logging level at runtime.
+func NewStackdriverLogger(levelOverride string, opts ...zap.Option) (*zap.SugaredLogger, zap.AtomicLevel) {
+	config := zapdriver.NewProductionConfig()
+	return newLoggerFromZapConfig(&config, levelOverride, append(opts, zapdriver.WrapCore())...)
+}
+
+func newLoggerFromZapConfig(loggingCfg *zap.Config, levelOverride string, opts ...zap.Option) (*zap.SugaredLogger, zap.AtomicLevel) {
 	if levelOverride != "" {
 		if level, err := levelFromString(levelOverride); err == nil {
 			loggingCfg.Level = zap.NewAtomicLevelAt(*level)
@@ -80,13 +96,17 @@ func enrichLoggerWithCommitID(logger *zap.Logger) *zap.SugaredLogger {
 }
 
 // NewLoggerFromConfig creates a logger using the provided Config
-func NewLoggerFromConfig(config *Config, name string, opts ...zap.Option) (*zap.SugaredLogger, zap.AtomicLevel) {
+func NewLoggerFromConfig(config *Config, name string, opts ...zap.Option) (logger *zap.SugaredLogger, level zap.AtomicLevel) {
 	var componentLvl string
 	if lvl, defined := config.LoggingLevel[name]; defined {
 		componentLvl = lvl.String()
 	}
 
-	logger, level := NewLogger(config.LoggingConfig, componentLvl, opts...)
+	if config.StackdriverFormat {
+		logger, level = NewStackdriverLogger(componentLvl, opts...)
+	} else {
+		logger, level = NewLogger(config.LoggingConfig, componentLvl, opts...)
+	}
 	return logger.Named(name), level
 }
 
@@ -127,8 +147,9 @@ func zapConfigFromJSON(configJSON string) (*zap.Config, error) {
 // Config contains the configuration defined in the logging ConfigMap.
 // +k8s:deepcopy-gen=true
 type Config struct {
-	LoggingConfig string
-	LoggingLevel  map[string]zapcore.Level
+	LoggingConfig     string
+	LoggingLevel      map[string]zapcore.Level
+	StackdriverFormat bool
 }
 
 const defaultZLC = `{
@@ -165,6 +186,9 @@ func NewConfigFromMap(data map[string]string) (*Config, error) {
 	lc := defaultConfig()
 	if zlc, ok := data[loggerConfigKey]; ok {
 		lc.LoggingConfig = zlc
+	}
+	if b, err := strconv.ParseBool(data[stackdriverFormatKey]); err == nil {
+		lc.StackdriverFormat = b
 	}
 
 	for k, v := range data {
