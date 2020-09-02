@@ -20,6 +20,8 @@ import (
 	"testing"
 )
 
+const skippingOperationTemplate = `Skipping "%s" as previous operation have failed`
+
 func (se *suiteExecution) installingBase(num int) {
 	se.processOperationGroup(operationGroup{
 		num:                   num,
@@ -155,4 +157,44 @@ func (se *suiteExecution) postDowngradeTests(num int) {
 		groupTemplate: "%d) ✅️️ Testing functionality after downgrade is performed." +
 			" %d tests are registered.",
 	})
+}
+
+type operationGroup struct {
+	num                   int
+	operations            []Operation
+	groupName             string
+	groupTemplate         string
+	elementTemplate       string
+	skippingGroupTemplate string
+}
+
+type operationHolder struct {
+	name    string
+	handler func(c Context)
+}
+
+type backgroundOperationHolder struct {
+	name    string
+	setup   func(c Context)
+	handler func(bc BackgroundContext)
+}
+
+func (h *operationHolder) Name() string {
+	return h.name
+}
+
+func (h *operationHolder) Handler() func(c Context) {
+	return h.handler
+}
+
+func (s *backgroundOperationHolder) Name() string {
+	return s.name
+}
+
+func (s *backgroundOperationHolder) Setup() func(c Context) {
+	return s.setup
+}
+
+func (s *backgroundOperationHolder) Handler() func(bc BackgroundContext) {
+	return s.handler
 }
