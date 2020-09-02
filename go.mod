@@ -30,7 +30,6 @@ require (
 	github.com/prometheus/client_golang v1.6.0
 	github.com/prometheus/common v0.9.1
 	github.com/spf13/pflag v1.0.5
-	github.com/stretchr/testify v1.5.1
 	github.com/tsenart/vegeta v12.7.1-0.20190725001342-b5f4fca92137+incompatible
 	go.opencensus.io v0.22.4
 	go.uber.org/atomic v1.6.0

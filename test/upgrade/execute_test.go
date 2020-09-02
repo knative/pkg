@@ -20,11 +20,11 @@ import (
 	"bytes"
 	"fmt"
 	"os"
+	"strings"
 	"sync"
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest"
@@ -54,7 +54,7 @@ func TestSuiteExecuteEmpty(t *testing.T) {
 		"🥳🎉 Success! Upgrade suite completed without errors.",
 	}
 	for _, text := range texts {
-		assert.Contains(t, output, text)
+		assertTextContains(t, output, text)
 	}
 }
 
@@ -131,7 +131,16 @@ func TestSuiteExecuteWithTestsAndInstallations(t *testing.T) {
 		"🥳🎉 Success! Upgrade suite completed without errors.",
 	}
 	for _, text := range texts {
-		assert.Contains(t, output, text)
+		assertTextContains(t, output, text)
+	}
+}
+
+func assertTextContains(t *testing.T, output string, expectedText string) {
+	if !strings.Contains(output, expectedText) {
+		t.Errorf(
+			`output of: "%s" doesn't contain expected text of "%s"`,
+			output, expectedText,
+		)
 	}
 }
 
