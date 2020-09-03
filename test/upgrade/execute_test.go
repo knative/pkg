@@ -35,14 +35,13 @@ import (
 const (
 	upgradeTestRunning = "🏃 Running upgrade test suite..."
 	upgradeTestSuccess = "🥳🎉 Success! Upgrade suite completed without errors."
+	upgradeTestFailure = "💣🤬💔️ Upgrade suite have failed!"
 )
 
 func TestExpectedTextsForEmptySuite(t *testing.T) {
-	suite := upgrade.Suite{
-		Tests:         upgrade.Tests{},
-		Installations: upgrade.Installations{},
-	}
-	txt := expectedTexts(suite, notFailing)
+	fp := notFailing
+	suite := sampler{}.empty()
+	txt := expectedTexts(suite, fp)
 	expected := []string{
 		"1) 💿 No base installation registered. Skipping.",
 		"2) ✅️️ No pre upgrade tests registered. Skipping.",
@@ -56,34 +55,9 @@ func TestExpectedTextsForEmptySuite(t *testing.T) {
 }
 
 func TestExpectedTextsForCompleteSuite(t *testing.T) {
-	suite := upgrade.Suite{
-		Tests: upgrade.Tests{
-			PreUpgrade: []upgrade.Operation{
-				serving.tests.preUpgrade, eventing.tests.preUpgrade,
-			},
-			PostUpgrade: []upgrade.Operation{
-				serving.tests.postUpgrade, eventing.tests.postUpgrade,
-			},
-			PostDowngrade: []upgrade.Operation{
-				serving.tests.postDowngrade, eventing.tests.postDowngrade,
-			},
-			ContinualTests: []upgrade.BackgroundOperation{
-				serving.tests.continual, eventing.tests.continual,
-			},
-		},
-		Installations: upgrade.Installations{
-			Base: []upgrade.Operation{
-				serving.installs.stable, eventing.installs.stable,
-			},
-			UpgradeWith: []upgrade.Operation{
-				serving.installs.head, eventing.installs.head,
-			},
-			DowngradeWith: []upgrade.Operation{
-				serving.installs.stable, eventing.installs.stable,
-			},
-		},
-	}
-	txt := expectedTexts(suite, notFailing)
+	fp := notFailing
+	suite := sampler{}.complete(fp)
+	txt := expectedTexts(suite, fp)
 	expected := []string{
 		"1) 💿 Installing base installations. 2 are registered.",
 		`1.1) Installing base install of "Serving latest stable release".`,
@@ -113,19 +87,34 @@ func TestExpectedTextsForCompleteSuite(t *testing.T) {
 	assertArraysEqual(t, txt.elms, expected)
 }
 
+func TestExpectedTextsForFailingCompleteSuite(t *testing.T) {
+	fp := failurePoint{
+		step:    2,
+		element: 1,
+	}
+	suite := sampler{}.complete(fp)
+	txt := expectedTexts(suite, fp)
+	expected := []string{
+		"1) 💿 Installing base installations. 2 are registered.",
+		`1.1) Installing base install of "Serving latest stable release".`,
+		`1.2) Installing base install of "Eventing latest stable release".`,
+		"2) ✅️️ Testing functionality before upgrade is performed. 2 tests are registered.",
+		`2.1) Testing with "Serving pre upgrade test".`,
+	}
+	assertArraysEqual(t, txt.elms, expected)
+}
+
 func TestSuiteExecuteEmpty(t *testing.T) {
 	c, buf := newConfig(t)
-	suite := upgrade.Suite{
-		Tests:         upgrade.Tests{},
-		Installations: upgrade.Installations{},
-	}
+	fp := notFailing
+	suite := sampler{}.empty()
 	suite.Execute(c)
 	output := buf.String()
 	if c.T.Failed() {
 		return
 	}
 
-	txt := expectedTexts(suite, notFailing)
+	txt := expectedTexts(suite, fp)
 	txt.append(upgradeTestRunning, upgradeTestSuccess)
 
 	assertTextContains(t, output, txt)
@@ -133,39 +122,14 @@ func TestSuiteExecuteEmpty(t *testing.T) {
 
 func TestSuiteExecuteWithComplete(t *testing.T) {
 	c, buf := newConfig(t)
-	suite := upgrade.Suite{
-		Tests: upgrade.Tests{
-			PreUpgrade: []upgrade.Operation{
-				serving.tests.preUpgrade, eventing.tests.preUpgrade,
-			},
-			PostUpgrade: []upgrade.Operation{
-				serving.tests.postUpgrade, eventing.tests.postUpgrade,
-			},
-			PostDowngrade: []upgrade.Operation{
-				serving.tests.postDowngrade, eventing.tests.postDowngrade,
-			},
-			ContinualTests: []upgrade.BackgroundOperation{
-				serving.tests.continual, eventing.tests.continual,
-			},
-		},
-		Installations: upgrade.Installations{
-			Base: []upgrade.Operation{
-				serving.installs.stable, eventing.installs.stable,
-			},
-			UpgradeWith: []upgrade.Operation{
-				serving.installs.head, eventing.installs.head,
-			},
-			DowngradeWith: []upgrade.Operation{
-				serving.installs.stable, eventing.installs.stable,
-			},
-		},
-	}
+	fp := notFailing
+	suite := sampler{}.complete(fp)
 	suite.Execute(c)
 	output := buf.String()
 	if c.T.Failed() {
 		return
 	}
-	txt := expectedTexts(suite, notFailing)
+	txt := expectedTexts(suite, fp)
 	txt.append(upgradeTestRunning, upgradeTestSuccess)
 	txt.append(
 		"Installing Serving stable 0.17.1",
@@ -183,12 +147,31 @@ func TestSuiteExecuteWithComplete(t *testing.T) {
 	assertTextContains(t, output, txt)
 }
 
-func assertTextContains(t *testing.T, output string, expectedTexts texts) {
-	for _, expectedText := range expectedTexts.elms {
-		if !strings.Contains(output, expectedText) {
+func TestSuiteExecuteWithFailingStep(t *testing.T) {
+	t.Skip("not yet implemented")
+	c, buf := newConfig(t)
+	fp := failurePoint{
+		step:    5,
+		element: 1,
+	}
+	suite := sampler{}.complete(fp)
+	suite.Execute(c)
+	output := buf.String()
+	if !c.T.Failed() {
+		t.Fatal("didn't failed, but should")
+	}
+	txt := expectedTexts(suite, fp)
+	txt.append(upgradeTestRunning, upgradeTestFailure)
+
+	assertTextContains(t, output, txt)
+}
+
+func assertTextContains(t *testing.T, haystack string, needles texts) {
+	for _, needle := range needles.elms {
+		if !strings.Contains(haystack, needle) {
 			t.Errorf(
-				`output of: "%s" doesn't contain expected text of "%s"`,
-				output, expectedText,
+				"expected \"%s\" is not in: `%s`",
+				needle, haystack,
 			)
 		}
 	}
@@ -259,7 +242,7 @@ func waitForStopSignal(bc upgrade.BackgroundContext, name string, retcode int) {
 	}
 }
 
-func expectedTexts(s upgrade.Suite, failing failIndex) texts {
+func expectedTexts(s upgrade.Suite, fp failurePoint) texts {
 	steps := []step{{
 		messages: messageFormatters.baseInstall,
 		ops:      asNamed(s.Installations.Base),
@@ -295,7 +278,7 @@ func expectedTexts(s upgrade.Suite, failing failIndex) texts {
 			for j, named := range st.ops {
 				elemIdx := j + 1
 				tt.append(st.element(stepIdx, elemIdx, named.Name()))
-				if failing.step == stepIdx && failing.element == elemIdx {
+				if fp.step == stepIdx && fp.element == elemIdx {
 					return tt
 				}
 			}
@@ -338,7 +321,7 @@ func createMessages(mf formats) messages {
 	}
 }
 
-type failIndex struct {
+type failurePoint struct {
 	step    int
 	element int
 }
@@ -358,6 +341,50 @@ func (tt *texts) append(msgs ...string) *texts {
 }
 
 type messageFormatter func(args ...interface{}) string
+
+type suiteSampler interface {
+	complete(fp failurePoint) upgrade.Suite
+	empty()
+}
+
+type sampler struct{}
+
+func (s sampler) complete(fp failurePoint) upgrade.Suite {
+	return upgrade.Suite{
+		Tests: upgrade.Tests{
+			PreUpgrade: []upgrade.Operation{
+				serving.tests.preUpgrade, eventing.tests.preUpgrade,
+			},
+			PostUpgrade: []upgrade.Operation{
+				serving.tests.postUpgrade, eventing.tests.postUpgrade,
+			},
+			PostDowngrade: []upgrade.Operation{
+				serving.tests.postDowngrade, eventing.tests.postDowngrade,
+			},
+			ContinualTests: []upgrade.BackgroundOperation{
+				serving.tests.continual, eventing.tests.continual,
+			},
+		},
+		Installations: upgrade.Installations{
+			Base: []upgrade.Operation{
+				serving.installs.stable, eventing.installs.stable,
+			},
+			UpgradeWith: []upgrade.Operation{
+				serving.installs.head, eventing.installs.head,
+			},
+			DowngradeWith: []upgrade.Operation{
+				serving.installs.stable, eventing.installs.stable,
+			},
+		},
+	}
+}
+
+func (s sampler) empty() upgrade.Suite {
+	return upgrade.Suite{
+		Tests:         upgrade.Tests{},
+		Installations: upgrade.Installations{},
+	}
+}
 
 type step struct {
 	messages
@@ -405,7 +432,7 @@ type tests struct {
 }
 
 var (
-	notFailing        = failIndex{step: -1, element: -1}
+	notFailing        = failurePoint{step: -1, element: -1}
 	messageFormatters = messageFormatterRepository{
 		baseInstall: createMessages(formats{
 			starting: "%d) 💿 Installing base installations. %d are registered.",

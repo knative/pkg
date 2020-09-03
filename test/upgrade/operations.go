@@ -51,10 +51,10 @@ func (se *suiteExecution) startContinualTests(num int) {
 	groupTemplate := "%d) 🔄 Starting continual tests to run in background. " +
 		"%d tests are registered."
 	elementTemplate := `%d.%d) Starting continual tests of "%s".`
-	noOperations := len(operations)
+	numOps := len(operations)
 	se.configuration.T.Run("ContinualTests", func(t *testing.T) {
-		if noOperations > 0 {
-			l.Infof(groupTemplate, num, noOperations)
+		if numOps > 0 {
+			l.Infof(groupTemplate, num, numOps)
 			for i, operation := range operations {
 				l.Infof(elementTemplate, num, i+1, operation.Name())
 				if se.failed {
