@@ -401,16 +401,20 @@ testComponent_testing_value{project="p1",revision="r2"} 1
 				t.Fatalf("unable to init: %+v", err)
 			}
 
+			t.Logf("## init done")
 			view.Register(globalCounter)
 			if err := RegisterResourceView(gaugeView, resourceCounter); err != nil {
 				t.Fatal("Unable to register views:", err)
 			}
+			t.Logf("## register done")
 			t.Cleanup(func() {
 				view.Unregister(globalCounter)
 				UnregisterResourceView(gaugeView, resourceCounter)
 			})
 
+			t.Logf("## start for")
 			for i, r := range resources {
+				t.Logf("## i = %d", i)
 				ctx := context.Background()
 				Record(ctx, counter.M(int64(1)))
 				if r != nil {
@@ -418,6 +422,7 @@ testComponent_testing_value{project="p1",revision="r2"} 1
 				}
 				Record(ctx, gauge.M(int64(i)))
 			}
+			t.Logf("## start validate")
 			c.validate(t)
 		})
 	}
