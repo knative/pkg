@@ -20,6 +20,7 @@ import (
 	"bytes"
 	"fmt"
 	"os"
+	"reflect"
 	"strings"
 	"sync"
 	"testing"
@@ -32,9 +33,85 @@ import (
 )
 
 const (
-	upgradeTestRunning = "🏃 Running upgrade suite..."
+	upgradeTestRunning = "🏃 Running upgrade test suite..."
 	upgradeTestSuccess = "🥳🎉 Success! Upgrade suite completed without errors."
 )
+
+func TestExpectedTextsForEmptySuite(t *testing.T) {
+	suite := upgrade.Suite{
+		Tests:         upgrade.Tests{},
+		Installations: upgrade.Installations{},
+	}
+	txt := expectedTexts(suite, notFailing)
+	expected := []string{
+		"1) 💿 No base installation registered. Skipping.",
+		"2) ✅️️ No pre upgrade tests registered. Skipping.",
+		"3) 🔄 No continual tests registered. Skipping.",
+		"4) 📀 No upgrade operations registered. Skipping.",
+		"5) ✅️️ No post upgrade tests registered. Skipping.",
+		"6) 💿 No downgrade operations registered. Skipping.",
+		"7) ✅️️ No post downgrade tests registered. Skipping.",
+	}
+	assertArraysEqual(t, txt.elms, expected)
+}
+
+func TestExpectedTextsForCompleteSuite(t *testing.T) {
+	suite := upgrade.Suite{
+		Tests: upgrade.Tests{
+			PreUpgrade: []upgrade.Operation{
+				serving.tests.preUpgrade, eventing.tests.preUpgrade,
+			},
+			PostUpgrade: []upgrade.Operation{
+				serving.tests.postUpgrade, eventing.tests.postUpgrade,
+			},
+			PostDowngrade: []upgrade.Operation{
+				serving.tests.postDowngrade, eventing.tests.postDowngrade,
+			},
+			ContinualTests: []upgrade.BackgroundOperation{
+				serving.tests.continual, eventing.tests.continual,
+			},
+		},
+		Installations: upgrade.Installations{
+			Base: []upgrade.Operation{
+				serving.installs.stable, eventing.installs.stable,
+			},
+			UpgradeWith: []upgrade.Operation{
+				serving.installs.head, eventing.installs.head,
+			},
+			DowngradeWith: []upgrade.Operation{
+				serving.installs.stable, eventing.installs.stable,
+			},
+		},
+	}
+	txt := expectedTexts(suite, notFailing)
+	expected := []string{
+		"1) 💿 Installing base installations. 2 are registered.",
+		`1.1) Installing base install of "Serving latest stable release".`,
+		`1.2) Installing base install of "Eventing latest stable release".`,
+		"2) ✅️️ Testing functionality before upgrade is performed. 2 tests are registered.",
+		`2.1) Testing with "Serving pre upgrade test".`,
+		`2.2) Testing with "Eventing pre upgrade test".`,
+		"3) 🔄 Starting continual tests to run in background. 2 tests are registered.",
+		`3.1) Starting continual tests of "Serving continual test".`,
+		`3.2) Starting continual tests of "Eventing continual test".`,
+		"4) 📀 Upgrading with 2 registered operations.",
+		`4.1) Upgrading with "Serving HEAD".`,
+		`4.2) Upgrading with "Eventing HEAD".`,
+		"5) ✅️️ Testing functionality after upgrade is performed. 2 tests are registered.",
+		`5.1) Testing with "Serving post upgrade test".`,
+		`5.2) Testing with "Eventing post upgrade test".`,
+		"6) 💿 Downgrading with 2 registered operations.",
+		`6.1) Downgrading with "Serving latest stable release".`,
+		`6.2) Downgrading with "Eventing latest stable release".`,
+		"7) ✅️️ Testing functionality after downgrade is performed. 2 tests are registered.",
+		`7.1) Testing with "Serving post downgrade test".`,
+		`7.2) Testing with "Eventing post downgrade test".`,
+		"8) ✋ Verifying 2 running continual tests.",
+		`8.1) Verifying "Serving continual test".`,
+		`8.2) Verifying "Eventing continual test".`,
+	}
+	assertArraysEqual(t, txt.elms, expected)
+}
 
 func TestSuiteExecuteEmpty(t *testing.T) {
 	c, buf := newConfig(t)
@@ -48,23 +125,13 @@ func TestSuiteExecuteEmpty(t *testing.T) {
 		return
 	}
 
-	texts := []string{
-		upgradeTestRunning,
-		"1) 💿 No base installation registered. Skipping.",
-		"2) ✅️️ No pre upgrade tests registered. Skipping.",
-		"3) 🔄 No continual tests registered. Skipping.",
-		"4) 📀 No upgrade installations registered. Skipping.",
-		"5) ✅️️ No post upgrade tests registered. Skipping.",
-		"6) 💿 No downgrade installations registered. Skipping.",
-		"7) ✅️️ No post downgrade tests registered. Skipping.",
-		upgradeTestSuccess,
-	}
-	for _, text := range texts {
-		assertTextContains(t, output, text)
-	}
+	txt := expectedTexts(suite, notFailing)
+	txt.append(upgradeTestRunning, upgradeTestSuccess)
+
+	assertTextContains(t, output, txt)
 }
 
-func TestSuiteExecuteWithTestsAndInstallations(t *testing.T) {
+func TestSuiteExecuteWithComplete(t *testing.T) {
 	c, buf := newConfig(t)
 	suite := upgrade.Suite{
 		Tests: upgrade.Tests{
@@ -98,55 +165,38 @@ func TestSuiteExecuteWithTestsAndInstallations(t *testing.T) {
 	if c.T.Failed() {
 		return
 	}
-	texts := []string{
-		upgradeTestRunning,
-		"1) 💿 Installing base installations. 2 are registered.",
-		`1.1) Installing base install of "Serving latest stable release".`,
+	txt := expectedTexts(suite, notFailing)
+	txt.append(upgradeTestRunning, upgradeTestSuccess)
+	txt.append(
 		"Installing Serving stable 0.17.1",
-		`1.2) Installing base install of "Eventing latest stable release".`,
 		"Installing Eventing stable 0.17.2",
-		"2) ✅️️ Testing functionality before upgrade is performed. 2 tests are registered.",
-		`2.1) Testing with "Serving pre upgrade test"`,
-		`2.2) Testing with "Eventing pre upgrade test"`,
-		"3) 🔄 Staring continual tests to run in background. 2 tests are registered.",
-		`3.1) Staring continual tests of "Serving continual test"`,
 		"Running Serving continual test",
-		`3.2) Staring continual tests of "Eventing continual test"`,
 		"Running Eventing continual test",
-		"4) 📀 Upgrading with 2 registered installations.",
-		`4.1) Upgrading with "Serving HEAD"`,
 		"Installing Serving HEAD at e3c4563",
-		`4.2) Upgrading with "Eventing HEAD"`,
 		"Installing Eventing HEAD at 12f67cc",
-		"5) ✅️️ Testing functionality after upgrade is performed. 2 tests are registered.",
-		`5.1) Testing with "Serving post upgrade test"`,
-		`5.2) Testing with "Eventing post upgrade test"`,
-		"6) 💿 Downgrading with 2 registered installations.",
-		`6.1) Downgrading with "Serving latest stable release"`,
 		"Installing Serving stable 0.17.1",
-		`6.2) Downgrading with "Eventing latest stable release"`,
 		"Installing Eventing stable 0.17.2",
-		"7) ✅️️ Testing functionality after downgrade is performed. 2 tests are registered.",
-		`7.1) Testing with "Serving post downgrade test"`,
-		`7.2) Testing with "Eventing post downgrade test"`,
-		"8) ✋ Verifying 2 running continual tests",
-		`8.1) Verifying "Serving continual test"`,
 		"Serving probe test have received a stop message",
-		`8.2) Verifying "Eventing continual test"`,
 		"Eventing probe test have received a stop message",
-		upgradeTestSuccess,
-	}
-	for _, text := range texts {
-		assertTextContains(t, output, text)
+	)
+
+	assertTextContains(t, output, txt)
+}
+
+func assertTextContains(t *testing.T, output string, expectedTexts texts) {
+	for _, expectedText := range expectedTexts.elms {
+		if !strings.Contains(output, expectedText) {
+			t.Errorf(
+				`output of: "%s" doesn't contain expected text of "%s"`,
+				output, expectedText,
+			)
+		}
 	}
 }
 
-func assertTextContains(t *testing.T, output string, expectedText string) {
-	if !strings.Contains(output, expectedText) {
-		t.Errorf(
-			`output of: "%s" doesn't contain expected text of "%s"`,
-			output, expectedText,
-		)
+func assertArraysEqual(t *testing.T, actual []string, expected []string) {
+	if !reflect.DeepEqual(actual, expected) {
+		t.Errorf("arrays differ:\n  actual: %#v\nexpected: %#v", actual, expected)
 	}
 }
 
@@ -193,26 +243,213 @@ func (b *buffer) String() string {
 	return b.Buffer.String()
 }
 
-type componentInstalls struct {
+func waitForStopSignal(bc upgrade.BackgroundContext, name string, retcode int) {
+	for {
+		select {
+		case sig := <-bc.Stop:
+			bc.Log.Infof(
+				"%s probe test have received a stop message: %s",
+				name, sig.String())
+			sig.Finished <- retcode
+			return
+		default:
+			bc.Log.Debugf("Probing %s functionality...", name)
+		}
+		time.Sleep(5 * time.Millisecond)
+	}
+}
+
+func expectedTexts(s upgrade.Suite, failing failIndex) texts {
+	steps := []step{{
+		messages: messageFormatters.baseInstall,
+		ops:      asNamed(s.Installations.Base),
+	}, {
+		messages: messageFormatters.preUpgrade,
+		ops:      asNamed(s.Tests.PreUpgrade),
+	}, {
+		messages: messageFormatters.startContinual,
+		ops:      asNamedFromBg(s.Tests.ContinualTests),
+	}, {
+		messages: messageFormatters.upgrade,
+		ops:      asNamed(s.Installations.UpgradeWith),
+	}, {
+		messages: messageFormatters.postUpgrade,
+		ops:      asNamed(s.Tests.PostUpgrade),
+	}, {
+		messages: messageFormatters.downgrade,
+		ops:      asNamed(s.Installations.DowngradeWith),
+	}, {
+		messages: messageFormatters.postDowngrade,
+		ops:      asNamed(s.Tests.PostDowngrade),
+	}, {
+		messages: messageFormatters.verifyContinual,
+		ops:      asNamedFromBg(s.Tests.ContinualTests),
+	}}
+	tt := texts{elms: nil}
+	for i, st := range steps {
+		stepIdx := i + 1
+		if len(st.ops) == 0 {
+			tt.append(st.skipped(stepIdx))
+		} else {
+			tt.append(st.starting(stepIdx, len(st.ops)))
+			for j, named := range st.ops {
+				elemIdx := j + 1
+				tt.append(st.element(stepIdx, elemIdx, named.Name()))
+				if failing.step == stepIdx && failing.element == elemIdx {
+					return tt
+				}
+			}
+		}
+	}
+	return tt
+}
+
+func asNamed(ops []upgrade.Operation) []upgrade.Named {
+	names := make([]upgrade.Named, len(ops))
+	for idx, op := range ops {
+		names[idx] = op
+	}
+	return names
+}
+
+func asNamedFromBg(ops []upgrade.BackgroundOperation) []upgrade.Named {
+	names := make([]upgrade.Named, len(ops))
+	for idx, op := range ops {
+		names[idx] = op
+	}
+	return names
+}
+
+func createMessages(mf formats) messages {
+	return messages{
+		skipped: func(args ...interface{}) string {
+			empty := ""
+			if mf.skipped == empty {
+				return empty
+			}
+			return fmt.Sprintf(mf.skipped, args...)
+		},
+		starting: func(args ...interface{}) string {
+			return fmt.Sprintf(mf.starting, args...)
+		},
+		element: func(args ...interface{}) string {
+			return fmt.Sprintf(mf.element, args...)
+		},
+	}
+}
+
+type failIndex struct {
+	step    int
+	element int
+}
+
+type texts struct {
+	elms []string
+}
+
+func (tt *texts) append(msgs ...string) *texts {
+	for _, msg := range msgs {
+		if msg == "" {
+			continue
+		}
+		tt.elms = append(tt.elms, msg)
+	}
+	return tt
+}
+
+type messageFormatter func(args ...interface{}) string
+
+type step struct {
+	messages
+	ops []upgrade.Named
+}
+
+type formats struct {
+	skipped  string
+	starting string
+	element  string
+}
+
+type messages struct {
+	starting messageFormatter
+	element  messageFormatter
+	skipped  messageFormatter
+}
+
+type messageFormatterRepository struct {
+	baseInstall     messages
+	preUpgrade      messages
+	startContinual  messages
+	upgrade         messages
+	postUpgrade     messages
+	downgrade       messages
+	postDowngrade   messages
+	verifyContinual messages
+}
+
+type component struct {
+	installs
+	tests
+}
+
+type installs struct {
 	stable upgrade.Operation
 	head   upgrade.Operation
 }
 
-type componentTests struct {
+type tests struct {
 	preUpgrade    upgrade.Operation
 	postUpgrade   upgrade.Operation
 	continual     upgrade.BackgroundOperation
 	postDowngrade upgrade.Operation
 }
 
-type componentTestOperations struct {
-	installs componentInstalls
-	tests    componentTests
-}
-
 var (
-	serving = componentTestOperations{
-		installs: componentInstalls{
+	notFailing        = failIndex{step: -1, element: -1}
+	messageFormatters = messageFormatterRepository{
+		baseInstall: createMessages(formats{
+			starting: "%d) 💿 Installing base installations. %d are registered.",
+			element:  `%d.%d) Installing base install of "%s".`,
+			skipped:  "%d) 💿 No base installation registered. Skipping.",
+		}),
+		preUpgrade: createMessages(formats{
+			starting: "%d) ✅️️ Testing functionality before upgrade is performed. %d tests are registered.",
+			element:  `%d.%d) Testing with "%s".`,
+			skipped:  "%d) ✅️️ No pre upgrade tests registered. Skipping.",
+		}),
+		startContinual: createMessages(formats{
+			starting: "%d) 🔄 Starting continual tests to run in background. %d tests are registered.",
+			element:  `%d.%d) Starting continual tests of "%s".`,
+			skipped:  "%d) 🔄 No continual tests registered. Skipping.",
+		}),
+		upgrade: createMessages(formats{
+			starting: "%d) 📀 Upgrading with %d registered operations.",
+			element:  `%d.%d) Upgrading with "%s".`,
+			skipped:  "%d) 📀 No upgrade operations registered. Skipping.",
+		}),
+		postUpgrade: createMessages(formats{
+			starting: "%d) ✅️️ Testing functionality after upgrade is performed. %d tests are registered.",
+			element:  `%d.%d) Testing with "%s".`,
+			skipped:  "%d) ✅️️ No post upgrade tests registered. Skipping.",
+		}),
+		downgrade: createMessages(formats{
+			starting: "%d) 💿 Downgrading with %d registered operations.",
+			element:  `%d.%d) Downgrading with "%s".`,
+			skipped:  "%d) 💿 No downgrade operations registered. Skipping.",
+		}),
+		postDowngrade: createMessages(formats{
+			starting: "%d) ✅️️ Testing functionality after downgrade is performed. %d tests are registered.",
+			element:  `%d.%d) Testing with "%s".`,
+			skipped:  "%d) ✅️️ No post downgrade tests registered. Skipping.",
+		}),
+		verifyContinual: createMessages(formats{
+			starting: "%d) ✋ Verifying %d running continual tests.",
+			element:  `%d.%d) Verifying "%s".`,
+			skipped:  "",
+		}),
+	}
+	serving = component{
+		installs: installs{
 			stable: upgrade.NewOperation("Serving latest stable release", func(c upgrade.Context) {
 				c.Log.Info("Installing Serving stable 0.17.1")
 				time.Sleep(20 * time.Millisecond)
@@ -222,7 +459,7 @@ var (
 				time.Sleep(20 * time.Millisecond)
 			}),
 		},
-		tests: componentTests{
+		tests: tests{
 			preUpgrade: upgrade.NewOperation("Serving pre upgrade test", func(c upgrade.Context) {
 				c.Log.Info("Running Serving pre upgrade test")
 				time.Sleep(5 * time.Millisecond)
@@ -238,25 +475,16 @@ var (
 			continual: upgrade.NewBackgroundOperation("Serving continual test",
 				func(c upgrade.Context) {
 					c.Log.Info("Setup of Serving continual test")
+					time.Sleep(5 * time.Millisecond)
 				},
 				func(bc upgrade.BackgroundContext) {
 					bc.Log.Info("Running Serving continual test")
-					for {
-						select {
-						case sig := <-bc.Stop:
-							bc.Log.Infof("Serving probe test have received a stop message: %s", sig.String())
-							sig.Finished <- 12
-							return
-						default:
-							bc.Log.Debug("Probing Serving functionality...")
-						}
-						time.Sleep(5 * time.Millisecond)
-					}
+					waitForStopSignal(bc, "Serving", 12)
 				}),
 		},
 	}
-	eventing = componentTestOperations{
-		installs: componentInstalls{
+	eventing = component{
+		installs: installs{
 			stable: upgrade.NewOperation("Eventing latest stable release", func(c upgrade.Context) {
 				c.Log.Info("Installing Eventing stable 0.17.2")
 				time.Sleep(20 * time.Millisecond)
@@ -266,7 +494,7 @@ var (
 				time.Sleep(20 * time.Millisecond)
 			}),
 		},
-		tests: componentTests{
+		tests: tests{
 			preUpgrade: upgrade.NewOperation("Eventing pre upgrade test", func(c upgrade.Context) {
 				c.Log.Info("Running Eventing pre upgrade test")
 				time.Sleep(5 * time.Millisecond)
@@ -282,20 +510,11 @@ var (
 			continual: upgrade.NewBackgroundOperation("Eventing continual test",
 				func(c upgrade.Context) {
 					c.Log.Info("Setup of Eventing continual test")
+					time.Sleep(5 * time.Millisecond)
 				},
 				func(bc upgrade.BackgroundContext) {
 					bc.Log.Info("Running Eventing continual test")
-					for {
-						select {
-						case sig := <-bc.Stop:
-							bc.Log.Infof("Eventing probe test have received a stop message: %s", sig.String())
-							sig.Finished <- 13
-							return
-						default:
-							bc.Log.Debug("Probing Eventing functionality...")
-						}
-						time.Sleep(5 * time.Millisecond)
-					}
+					waitForStopSignal(bc, "Eventing", 13)
 				}),
 		},
 	}

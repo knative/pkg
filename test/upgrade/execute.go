@@ -29,12 +29,14 @@ func (s *Suite) Execute(c Configuration) {
 		logger:        l,
 		stopSignals:   make([]StopSignal, 0),
 	}
-	l.Info("🏃 Running upgrade suite...")
+	l.Info("🏃 Running upgrade test suite...")
 
 	se.execute()
 
 	if !se.failed {
 		l.Info("🥳🎉 Success! Upgrade suite completed without errors.")
+	} else {
+		l.Error("💣🤬💔️ Upgrade suite have failed!")
 	}
 }
 

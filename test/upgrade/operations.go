@@ -38,7 +38,7 @@ func (se *suiteExecution) preUpgradeTests(num int) {
 		num:                   num,
 		operations:            se.suite.Tests.PreUpgrade,
 		groupName:             "PreUpgradeTests",
-		elementTemplate:       `%d.%d) Testing with "%s"`,
+		elementTemplate:       `%d.%d) Testing with "%s".`,
 		skippingGroupTemplate: "%d) ✅️️ No pre upgrade tests registered. Skipping.",
 		groupTemplate: "%d) ✅️️ Testing functionality before upgrade is performed." +
 			" %d tests are registered.",
@@ -48,9 +48,9 @@ func (se *suiteExecution) preUpgradeTests(num int) {
 func (se *suiteExecution) startContinualTests(num int) {
 	l := se.logger
 	operations := se.suite.Tests.ContinualTests
-	groupTemplate := "%d) 🔄 Staring continual tests to run in background. " +
+	groupTemplate := "%d) 🔄 Starting continual tests to run in background. " +
 		"%d tests are registered."
-	elementTemplate := `%d.%d) Staring continual tests of "%s"`
+	elementTemplate := `%d.%d) Starting continual tests of "%s".`
 	noOperations := len(operations)
 	se.configuration.T.Run("ContinualTests", func(t *testing.T) {
 		if noOperations > 0 {
@@ -98,14 +98,15 @@ func (se *suiteExecution) verifyContinualTests(num int) {
 	testsCount := len(se.suite.Tests.ContinualTests)
 	if testsCount > 0 {
 		se.configuration.T.Run("VerifyContinualTests", func(t *testing.T) {
-			l.Infof("%d) ✋ Verifying %d running continual tests", num, testsCount)
+			l.Infof("%d) ✋ Verifying %d running continual tests.", num, testsCount)
 			for i, signal := range se.stopSignals {
 				t.Run(signal.name, func(t *testing.T) {
-					l.Infof(`%d.%d) Verifying "%s"`, num, i+1, signal.name)
+					l.Infof(`%d.%d) Verifying "%s".`, num, i+1, signal.name)
 					signal.T = t
 					signal.Finished = make(chan int)
 					signal.channel <- signal
 					retcode := <-signal.Finished
+					se.failed = se.failed || t.Failed()
 					l.Debugf(`Finished "%s" with: %d`, signal.name, retcode)
 				})
 			}
@@ -118,9 +119,9 @@ func (se *suiteExecution) upgradeWith(num int) {
 		num:                   num,
 		operations:            se.suite.Installations.UpgradeWith,
 		groupName:             "UpgradeWith",
-		elementTemplate:       `%d.%d) Upgrading with "%s"`,
-		skippingGroupTemplate: "%d) 📀 No upgrade installations registered. Skipping.",
-		groupTemplate:         "%d) 📀 Upgrading with %d registered installations.",
+		elementTemplate:       `%d.%d) Upgrading with "%s".`,
+		skippingGroupTemplate: "%d) 📀 No upgrade operations registered. Skipping.",
+		groupTemplate:         "%d) 📀 Upgrading with %d registered operations.",
 	})
 }
 
@@ -129,7 +130,7 @@ func (se *suiteExecution) postUpgradeTests(num int) {
 		num:                   num,
 		operations:            se.suite.Tests.PostUpgrade,
 		groupName:             "PostUpgradeTests",
-		elementTemplate:       `%d.%d) Testing with "%s"`,
+		elementTemplate:       `%d.%d) Testing with "%s".`,
 		skippingGroupTemplate: "%d) ✅️️ No post upgrade tests registered. Skipping.",
 		groupTemplate: "%d) ✅️️ Testing functionality after upgrade is performed." +
 			" %d tests are registered.",
@@ -141,9 +142,9 @@ func (se *suiteExecution) downgradeWith(num int) {
 		num:                   num,
 		operations:            se.suite.Installations.DowngradeWith,
 		groupName:             "DowngradeWith",
-		elementTemplate:       `%d.%d) Downgrading with "%s"`,
-		skippingGroupTemplate: "%d) 💿 No downgrade installations registered. Skipping.",
-		groupTemplate:         "%d) 💿 Downgrading with %d registered installations.",
+		elementTemplate:       `%d.%d) Downgrading with "%s".`,
+		skippingGroupTemplate: "%d) 💿 No downgrade operations registered. Skipping.",
+		groupTemplate:         "%d) 💿 Downgrading with %d registered operations.",
 	})
 }
 
@@ -152,7 +153,7 @@ func (se *suiteExecution) postDowngradeTests(num int) {
 		num:                   num,
 		operations:            se.suite.Tests.PostDowngrade,
 		groupName:             "PostDowngradeTests",
-		elementTemplate:       `%d.%d) Testing with "%s"`,
+		elementTemplate:       `%d.%d) Testing with "%s".`,
 		skippingGroupTemplate: "%d) ✅️️ No post downgrade tests registered. Skipping.",
 		groupTemplate: "%d) ✅️️ Testing functionality after downgrade is performed." +
 			" %d tests are registered.",
