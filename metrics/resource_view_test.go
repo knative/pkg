@@ -225,6 +225,7 @@ func sortMetrics() cmp.Option {
 
 // Begin table tests for exporters
 func TestMetricsExport(t *testing.T) {
+	t.Skip("Unskip after #1672 is done")
 	ocFake := openCensusFake{address: "localhost:12345"}
 	sdFake := stackDriverFake{address: "localhost:12346"}
 	prometheusPort := 19090

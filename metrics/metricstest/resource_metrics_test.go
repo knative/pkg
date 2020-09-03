@@ -402,7 +402,13 @@ func TestMetricFetch(t *testing.T) {
 		TagKeys:     []tag.Key{tagKey},
 	}
 
+	m := GetMetric("count")
+	if len(m) != 0 {
+		t.Errorf("Unexpected number of found metrics (%d): %+v", len(m), m)
+	}
+
 	view.Register(countView)
+	t.Cleanup(func() { view.Unregister(countView) })
 
 	ctx, err := tag.New(context.Background(), tag.Upsert(tagKey, "alpha"))
 	if err != nil {
@@ -420,8 +426,8 @@ func TestMetricFetch(t *testing.T) {
 	}
 	stats.Record(ctx, count.M(20))
 	EnsureRecorded()
-	m := GetMetric("count")
 
+	m = GetMetric("count")
 	if len(m) != 1 {
 		t.Errorf("Unexpected number of found metrics (%d): %+v", len(m), m)
 	}
