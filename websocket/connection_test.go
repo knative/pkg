@@ -418,3 +418,17 @@ func TestDurableConnectionSendsPingsRegularly(t *testing.T) {
 		<-pingReceived
 	}
 }
+
+func TestIsEstablished(t *testing.T) {
+	c := &ManagedConnection{}
+	if got, want := c.IsEstablished(), false; got != want {
+		t.Errorf("IsEstablished() = %v, want = %v", got, want)
+	}
+
+	c.connection = &inspectableConnection{
+		writeMessageCalls: make(chan struct{}, 1),
+	}
+	if got, want := c.IsEstablished(), true; got != want {
+		t.Errorf("IsEstablished() = %v, want = %v", got, want)
+	}
+}
