@@ -395,7 +395,9 @@ testComponent_testing_value{project="p1",revision="r2"} 1
 
 	for _, c := range harnesses {
 		t.Run(c.name, func(t *testing.T) {
+			t.Logf("## name = %s", c.name)
 			ClearMetersForTest()
+			t.Logf("## clear done")
 			sdFake.t = t
 			if err := c.init(); err != nil {
 				t.Fatalf("unable to init: %+v", err)
