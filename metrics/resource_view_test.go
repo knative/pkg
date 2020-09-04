@@ -336,8 +336,11 @@ testComponent_testing_value{project="p1",revision="r2"} 1
 			// the internal aggregation buffers; the other is to have the
 			// internal reporting period duration tick, which is at least
 			// [new duration] in the future.
+			t.Logf("## in validate")
 			view.Unregister(globalCounter)
+			t.Logf("## Unregister done")
 			UnregisterResourceView(gaugeView, resourceCounter)
+			t.Logf("## UnregisterResourceView done")
 
 			records := []metricExtract{}
 			for record := range ocFake.published {
@@ -356,6 +359,7 @@ testComponent_testing_value{project="p1",revision="r2"} 1
 				}
 			}
 
+			t.Logf("## for loop done")
 			if diff := cmp.Diff(expected, records, sortMetrics()); diff != "" {
 				t.Errorf("Unexpected OpenCensus exports (-want +got):\n%s", diff)
 			}
