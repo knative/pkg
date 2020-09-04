@@ -40,7 +40,7 @@ const (
 
 func TestExpectedTextsForEmptySuite(t *testing.T) {
 	fp := notFailing
-	suite := sampler{}.empty()
+	suite := suiteSampler{}.empty()
 	txt := expectedTexts(suite, fp)
 	expected := []string{
 		"1) 💿 No base installation registered. Skipping.",
@@ -56,7 +56,7 @@ func TestExpectedTextsForEmptySuite(t *testing.T) {
 
 func TestExpectedTextsForCompleteSuite(t *testing.T) {
 	fp := notFailing
-	suite := sampler{}.complete(fp)
+	suite := suiteSampler{}.complete(fp)
 	txt := expectedTexts(suite, fp)
 	expected := []string{
 		"1) 💿 Installing base installations. 2 are registered.",
@@ -92,7 +92,7 @@ func TestExpectedTextsForFailingCompleteSuite(t *testing.T) {
 		step:    2,
 		element: 1,
 	}
-	suite := sampler{}.complete(fp)
+	suite := suiteSampler{}.complete(fp)
 	txt := expectedTexts(suite, fp)
 	expected := []string{
 		"1) 💿 Installing base installations. 2 are registered.",
@@ -107,7 +107,7 @@ func TestExpectedTextsForFailingCompleteSuite(t *testing.T) {
 func TestSuiteExecuteEmpty(t *testing.T) {
 	c, buf := newConfig(t)
 	fp := notFailing
-	suite := sampler{}.empty()
+	suite := suiteSampler{}.empty()
 	suite.Execute(c)
 	output := buf.String()
 	if c.T.Failed() {
@@ -123,7 +123,7 @@ func TestSuiteExecuteEmpty(t *testing.T) {
 func TestSuiteExecuteWithComplete(t *testing.T) {
 	c, buf := newConfig(t)
 	fp := notFailing
-	suite := sampler{}.complete(fp)
+	suite := suiteSampler{}.complete(fp)
 	suite.Execute(c)
 	output := buf.String()
 	if c.T.Failed() {
@@ -149,12 +149,13 @@ func TestSuiteExecuteWithComplete(t *testing.T) {
 
 func TestSuiteExecuteWithFailingStep(t *testing.T) {
 	t.Skip("not yet implemented")
-	c, buf := newConfig(t)
+	mt := newMockT(t)
+	c, buf := newConfig(mt)
 	fp := failurePoint{
 		step:    5,
 		element: 1,
 	}
-	suite := sampler{}.complete(fp)
+	suite := suiteSampler{}.complete(fp)
 	suite.Execute(c)
 	output := buf.String()
 	if !c.T.Failed() {
@@ -183,7 +184,12 @@ func assertArraysEqual(t *testing.T, actual []string, expected []string) {
 	}
 }
 
-func newConfig(t *testing.T) (upgrade.Configuration, fmt.Stringer) {
+func newMockT(t *testing.T) upgrade.T {
+	t.Log("TODO: implement a mock testing.T")
+	return t
+}
+
+func newConfig(t upgrade.T) (upgrade.Configuration, fmt.Stringer) {
 	log, buf := newExampleZap()
 	c := upgrade.Configuration{T: t, Log: log}
 	return c, buf
@@ -226,14 +232,14 @@ func (b *buffer) String() string {
 	return b.Buffer.String()
 }
 
-func waitForStopSignal(bc upgrade.BackgroundContext, name string, retcode int) {
+func waitForStopSignal(bc upgrade.BackgroundContext, name string, handler func(sig upgrade.StopSignal) int) {
 	for {
 		select {
 		case sig := <-bc.Stop:
 			bc.Log.Infof(
 				"%s probe test have received a stop message: %s",
 				name, sig.String())
-			sig.Finished <- retcode
+			sig.Finished <- handler(sig)
 			return
 		default:
 			bc.Log.Debugf("Probing %s functionality...", name)
@@ -242,42 +248,70 @@ func waitForStopSignal(bc upgrade.BackgroundContext, name string, retcode int) {
 	}
 }
 
-func expectedTexts(s upgrade.Suite, fp failurePoint) texts {
-	steps := []step{{
+func createSteps(s upgrade.Suite) []step {
+	return []step{{
 		messages: messageFormatters.baseInstall,
-		ops:      asNamed(s.Installations.Base),
+		ops:      generalizeOps(s.Installations.Base),
+		updateSuite: func(ops operations, s *upgrade.Suite) {
+			s.Installations.Base = ops.asOperations()
+		},
 	}, {
 		messages: messageFormatters.preUpgrade,
-		ops:      asNamed(s.Tests.PreUpgrade),
+		ops:      generalizeOps(s.Tests.PreUpgrade),
+		updateSuite: func(ops operations, s *upgrade.Suite) {
+			s.Tests.PreUpgrade = ops.asOperations()
+		},
 	}, {
 		messages: messageFormatters.startContinual,
-		ops:      asNamedFromBg(s.Tests.ContinualTests),
+		ops:      generalizeOpsFromBg(s.Tests.ContinualTests),
+		updateSuite: func(ops operations, s *upgrade.Suite) {
+			s.Tests.ContinualTests = ops.asBackgroundOperation()
+		},
 	}, {
 		messages: messageFormatters.upgrade,
-		ops:      asNamed(s.Installations.UpgradeWith),
+		ops:      generalizeOps(s.Installations.UpgradeWith),
+		updateSuite: func(ops operations, s *upgrade.Suite) {
+			s.Installations.UpgradeWith = ops.asOperations()
+		},
 	}, {
 		messages: messageFormatters.postUpgrade,
-		ops:      asNamed(s.Tests.PostUpgrade),
+		ops:      generalizeOps(s.Tests.PostUpgrade),
+		updateSuite: func(ops operations, s *upgrade.Suite) {
+			s.Tests.PostUpgrade = ops.asOperations()
+		},
 	}, {
 		messages: messageFormatters.downgrade,
-		ops:      asNamed(s.Installations.DowngradeWith),
+		ops:      generalizeOps(s.Installations.DowngradeWith),
+		updateSuite: func(ops operations, s *upgrade.Suite) {
+			s.Installations.DowngradeWith = ops.asOperations()
+		},
 	}, {
 		messages: messageFormatters.postDowngrade,
-		ops:      asNamed(s.Tests.PostDowngrade),
+		ops:      generalizeOps(s.Tests.PostDowngrade),
+		updateSuite: func(ops operations, s *upgrade.Suite) {
+			s.Tests.PostDowngrade = ops.asOperations()
+		},
 	}, {
 		messages: messageFormatters.verifyContinual,
-		ops:      asNamedFromBg(s.Tests.ContinualTests),
+		ops:      generalizeOpsFromBg(s.Tests.ContinualTests),
+		updateSuite: func(ops operations, s *upgrade.Suite) {
+			s.Tests.ContinualTests = ops.asBackgroundOperation()
+		},
 	}}
+}
+
+func expectedTexts(s upgrade.Suite, fp failurePoint) texts {
+	steps := createSteps(s)
 	tt := texts{elms: nil}
 	for i, st := range steps {
 		stepIdx := i + 1
-		if len(st.ops) == 0 {
+		if st.ops.length() == 0 {
 			tt.append(st.skipped(stepIdx))
 		} else {
-			tt.append(st.starting(stepIdx, len(st.ops)))
-			for j, named := range st.ops {
+			tt.append(st.starting(stepIdx, st.ops.length()))
+			for j, op := range st.ops.ops {
 				elemIdx := j + 1
-				tt.append(st.element(stepIdx, elemIdx, named.Name()))
+				tt.append(st.element(stepIdx, elemIdx, op.Name()))
 				if fp.step == stepIdx && fp.element == elemIdx {
 					return tt
 				}
@@ -287,20 +321,20 @@ func expectedTexts(s upgrade.Suite, fp failurePoint) texts {
 	return tt
 }
 
-func asNamed(ops []upgrade.Operation) []upgrade.Named {
-	names := make([]upgrade.Named, len(ops))
+func generalizeOps(ops []upgrade.Operation) operations {
+	names := make([]operation, len(ops))
 	for idx, op := range ops {
-		names[idx] = op
+		names[idx] = operation{op: op}
 	}
-	return names
+	return operations{ops: names}
 }
 
-func asNamedFromBg(ops []upgrade.BackgroundOperation) []upgrade.Named {
-	names := make([]upgrade.Named, len(ops))
+func generalizeOpsFromBg(ops []upgrade.BackgroundOperation) operations {
+	names := make([]operation, len(ops))
 	for idx, op := range ops {
-		names[idx] = op
+		names[idx] = operation{bg: op}
 	}
-	return names
+	return operations{ops: names}
 }
 
 func createMessages(mf formats) messages {
@@ -342,15 +376,10 @@ func (tt *texts) append(msgs ...string) *texts {
 
 type messageFormatter func(args ...interface{}) string
 
-type suiteSampler interface {
-	complete(fp failurePoint) upgrade.Suite
-	empty()
-}
+type suiteSampler struct{}
 
-type sampler struct{}
-
-func (s sampler) complete(fp failurePoint) upgrade.Suite {
-	return upgrade.Suite{
+func (s suiteSampler) complete(fp failurePoint) upgrade.Suite {
+	suite := upgrade.Suite{
 		Tests: upgrade.Tests{
 			PreUpgrade: []upgrade.Operation{
 				serving.tests.preUpgrade, eventing.tests.preUpgrade,
@@ -377,18 +406,104 @@ func (s sampler) complete(fp failurePoint) upgrade.Suite {
 			},
 		},
 	}
+	return inlaySuite(suite, fp)
 }
 
-func (s sampler) empty() upgrade.Suite {
+func (s suiteSampler) empty() upgrade.Suite {
 	return upgrade.Suite{
 		Tests:         upgrade.Tests{},
 		Installations: upgrade.Installations{},
 	}
 }
 
+func inlaySuite(suite upgrade.Suite, fp failurePoint) upgrade.Suite {
+	steps := createSteps(suite)
+	for i, st := range steps {
+		for j, op := range st.ops.ops {
+			if fp.step == i+1 && fp.element == j+1 {
+				op.fail()
+			}
+		}
+	}
+	return recreateSuite(steps)
+}
+
+func recreateSuite(steps []step) upgrade.Suite {
+	suite := &upgrade.Suite{
+		Tests:         upgrade.Tests{},
+		Installations: upgrade.Installations{},
+	}
+	for _, st := range steps {
+		st.updateSuite(st.ops, suite)
+	}
+	return *suite
+}
+
 type step struct {
 	messages
-	ops []upgrade.Named
+	ops         operations
+	updateSuite func(ops operations, s *upgrade.Suite)
+}
+
+type operations struct {
+	ops []operation
+}
+
+func (o operations) length() int {
+	return len(o.ops)
+}
+
+func (o operations) asOperations() []upgrade.Operation {
+	ops := make([]upgrade.Operation, o.length())
+	for i, op := range o.ops {
+		ops[i] = op.op
+	}
+	return ops
+}
+
+func (o operations) asBackgroundOperation() []upgrade.BackgroundOperation {
+	ops := make([]upgrade.BackgroundOperation, o.length())
+	for i, op := range o.ops {
+		ops[i] = op.bg
+	}
+	return ops
+}
+
+type operation struct {
+	op upgrade.Operation
+	bg upgrade.BackgroundOperation
+}
+
+func (o operation) Name() string {
+	if o.op != nil {
+		return o.op.Name()
+	} else {
+		return o.bg.Name()
+	}
+}
+
+func (o operation) fail() {
+	failureTestingMessage := "Testing a failure"
+	if o.op != nil {
+		prev := o.op
+		o.op = upgrade.NewOperation(prev.Name(), func(c upgrade.Context) {
+			handler := prev.Handler()
+			handler(c)
+			c.T.Error(failureTestingMessage)
+		})
+	} else {
+		prev := o.bg
+		o.bg = upgrade.NewBackgroundOperation(prev.Name(), func(c upgrade.Context) {
+			handler := prev.Setup()
+			handler(c)
+			c.T.Error(failureTestingMessage)
+		}, func(bc upgrade.BackgroundContext) {
+			waitForStopSignal(bc, prev.Name(), func(sig upgrade.StopSignal) int {
+				sig.T.Error(failureTestingMessage)
+				return 17
+			})
+		})
+	}
 }
 
 type formats struct {
@@ -506,7 +621,9 @@ var (
 				},
 				func(bc upgrade.BackgroundContext) {
 					bc.Log.Info("Running Serving continual test")
-					waitForStopSignal(bc, "Serving", 12)
+					waitForStopSignal(bc, "Serving", func(sig upgrade.StopSignal) int {
+						return 0
+					})
 				}),
 		},
 	}
@@ -541,7 +658,9 @@ var (
 				},
 				func(bc upgrade.BackgroundContext) {
 					bc.Log.Info("Running Eventing continual test")
-					waitForStopSignal(bc, "Eventing", 13)
+					waitForStopSignal(bc, "Eventing", func(sig upgrade.StopSignal) int {
+						return 0
+					})
 				}),
 		},
 	}

@@ -85,7 +85,7 @@ type BackgroundContext struct {
 // to indicate that is should stop it's operations and validate results using
 // passed T
 type StopSignal struct {
-	T        *testing.T
+	T        T
 	Finished chan int
 	name     string
 	channel  chan StopSignal
@@ -93,11 +93,32 @@ type StopSignal struct {
 
 // Configuration holds required and optional configuration to run upgrade tests
 type Configuration struct {
-	T   *testing.T
+	T   T
 	Log *zap.Logger
 }
 
 // SuiteExecutor is to execute upgrade test suite
 type SuiteExecutor interface {
 	Execute(c Configuration)
+}
+
+// T is the interface of testing.T (copy of it).
+type T interface {
+	Cleanup(func())
+	Error(args ...interface{})
+	Errorf(format string, args ...interface{})
+	Fail()
+	FailNow()
+	Failed() bool
+	Fatal(args ...interface{})
+	Fatalf(format string, args ...interface{})
+	Helper()
+	Log(args ...interface{})
+	Logf(format string, args ...interface{})
+	Name() string
+	Skip(args ...interface{})
+	SkipNow()
+	Skipf(format string, args ...interface{})
+	Skipped() bool
+	Run(name string, f func(t *testing.T)) bool
 }
