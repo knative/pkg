@@ -18,6 +18,7 @@ package upgrade_test
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"os"
 	"reflect"
@@ -148,23 +149,29 @@ func TestSuiteExecuteWithComplete(t *testing.T) {
 }
 
 func TestSuiteExecuteWithFailingStep(t *testing.T) {
-	t.Skip("not yet implemented")
-	mt := newMockT(t)
-	c, buf := newConfig(mt)
-	fp := failurePoint{
-		step:    5,
-		element: 1,
-	}
-	suite := completeSuiteExample(fp)
-	suite.Execute(c)
-	output := buf.String()
-	if !c.T.Failed() {
-		t.Fatal("didn't failed, but should")
-	}
-	txt := expectedTexts(suite, fp)
-	txt.append(upgradeTestRunning, upgradeTestFailure)
+	for i := 1; i < 8; i++ {
+		for j := 1; j <= 2; j++ {
+			t.Run(fmt.Sprintf("FailAt-%d-%d", i, j), func(t *testing.T) {
+				t.Skip("not yet implemented")
+				mt := &mockt{t: t}
+				c, buf := newConfig(mt)
+				fp := failurePoint{
+					step:    i,
+					element: j,
+				}
+				suite := completeSuiteExample(fp)
+				suite.Execute(c)
+				if !mt.Failed() {
+					t.Fatal("didn't failed, but should")
+				}
+				output := buf.String()
+				txt := expectedTexts(suite, fp)
+				txt.append(upgradeTestRunning, upgradeTestFailure)
 
-	assertTextContains(t, output, txt)
+				assertTextContains(t, output, txt)
+			})
+		}
+	}
 }
 
 func assertTextContains(t *testing.T, haystack string, needles texts) {
@@ -182,11 +189,6 @@ func assertArraysEqual(t *testing.T, actual []string, expected []string) {
 	if !reflect.DeepEqual(actual, expected) {
 		t.Errorf("arrays differ:\n  actual: %#v\nexpected: %#v", actual, expected)
 	}
-}
-
-func newMockT(t *testing.T) upgrade.T {
-	t.Log("TODO: implement a mock testing.T")
-	return t
 }
 
 func newConfig(t upgrade.T) (upgrade.Configuration, fmt.Stringer) {
@@ -435,6 +437,80 @@ func recreateSuite(steps []*step) upgrade.Suite {
 		st.updateSuite(st.ops, suite)
 	}
 	return *suite
+}
+
+type mockt struct {
+	t     *testing.T
+	errs  []error
+	skips []error
+}
+
+func (m *mockt) Cleanup(f func()) {
+	m.t.Cleanup(f)
+}
+
+func (m *mockt) Error(args ...interface{}) {
+	m.errs = append(m.errs, errors.New(fmt.Sprintln(args...)))
+}
+
+func (m *mockt) Errorf(format string, args ...interface{}) {
+	m.Error(fmt.Errorf(format, args...))
+}
+
+func (m *mockt) Fail() {
+	m.t.Fail()
+}
+
+func (m *mockt) FailNow() {
+	m.t.FailNow()
+}
+
+func (m *mockt) Failed() bool {
+	return m.t.Failed() || len(m.errs) > 0
+}
+
+func (m *mockt) Fatal(args ...interface{}) {
+	m.t.Fatal(args...)
+}
+
+func (m *mockt) Fatalf(format string, args ...interface{}) {
+	m.t.Fatalf(format, args...)
+}
+
+func (m *mockt) Helper() {
+	m.t.Helper()
+}
+
+func (m *mockt) Log(args ...interface{}) {
+	m.t.Log(args...)
+}
+
+func (m *mockt) Logf(format string, args ...interface{}) {
+	m.t.Logf(format, args...)
+}
+
+func (m *mockt) Name() string {
+	return m.t.Name()
+}
+
+func (m *mockt) Skip(args ...interface{}) {
+	m.skips = append(m.skips, errors.New(fmt.Sprintln(args...)))
+}
+
+func (m *mockt) SkipNow() {
+	m.t.SkipNow()
+}
+
+func (m *mockt) Skipf(format string, args ...interface{}) {
+	m.Skip(fmt.Errorf(format, args...))
+}
+
+func (m *mockt) Skipped() bool {
+	return m.t.Skipped() || len(m.skips) > 0
+}
+
+func (m *mockt) Run(name string, f func(t *testing.T)) bool {
+	return m.t.Run(name, f)
 }
 
 type step struct {
