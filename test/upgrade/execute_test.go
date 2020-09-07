@@ -40,7 +40,7 @@ const (
 
 func TestExpectedTextsForEmptySuite(t *testing.T) {
 	fp := notFailing
-	suite := suiteSampler{}.empty()
+	suite := emptySuiteExample()
 	txt := expectedTexts(suite, fp)
 	expected := []string{
 		"1) 💿 No base installation registered. Skipping.",
@@ -56,7 +56,7 @@ func TestExpectedTextsForEmptySuite(t *testing.T) {
 
 func TestExpectedTextsForCompleteSuite(t *testing.T) {
 	fp := notFailing
-	suite := suiteSampler{}.complete(fp)
+	suite := completeSuiteExample(fp)
 	txt := expectedTexts(suite, fp)
 	expected := []string{
 		"1) 💿 Installing base installations. 2 are registered.",
@@ -92,7 +92,7 @@ func TestExpectedTextsForFailingCompleteSuite(t *testing.T) {
 		step:    2,
 		element: 1,
 	}
-	suite := suiteSampler{}.complete(fp)
+	suite := completeSuiteExample(fp)
 	txt := expectedTexts(suite, fp)
 	expected := []string{
 		"1) 💿 Installing base installations. 2 are registered.",
@@ -107,7 +107,7 @@ func TestExpectedTextsForFailingCompleteSuite(t *testing.T) {
 func TestSuiteExecuteEmpty(t *testing.T) {
 	c, buf := newConfig(t)
 	fp := notFailing
-	suite := suiteSampler{}.empty()
+	suite := emptySuiteExample()
 	suite.Execute(c)
 	output := buf.String()
 	if c.T.Failed() {
@@ -123,7 +123,7 @@ func TestSuiteExecuteEmpty(t *testing.T) {
 func TestSuiteExecuteWithComplete(t *testing.T) {
 	c, buf := newConfig(t)
 	fp := notFailing
-	suite := suiteSampler{}.complete(fp)
+	suite := completeSuiteExample(fp)
 	suite.Execute(c)
 	output := buf.String()
 	if c.T.Failed() {
@@ -155,7 +155,7 @@ func TestSuiteExecuteWithFailingStep(t *testing.T) {
 		step:    5,
 		element: 1,
 	}
-	suite := suiteSampler{}.complete(fp)
+	suite := completeSuiteExample(fp)
 	suite.Execute(c)
 	output := buf.String()
 	if !c.T.Failed() {
@@ -248,8 +248,8 @@ func waitForStopSignal(bc upgrade.BackgroundContext, name string, handler func(s
 	}
 }
 
-func createSteps(s upgrade.Suite) []step {
-	return []step{{
+func createSteps(s upgrade.Suite) []*step {
+	return []*step{{
 		messages: messageFormatters.baseInstall,
 		ops:      generalizeOps(s.Installations.Base),
 		updateSuite: func(ops operations, s *upgrade.Suite) {
@@ -322,19 +322,19 @@ func expectedTexts(s upgrade.Suite, fp failurePoint) texts {
 }
 
 func generalizeOps(ops []upgrade.Operation) operations {
-	names := make([]operation, len(ops))
+	gen := make([]*operation, len(ops))
 	for idx, op := range ops {
-		names[idx] = operation{op: op}
+		gen[idx] = &operation{op: op}
 	}
-	return operations{ops: names}
+	return operations{ops: gen}
 }
 
 func generalizeOpsFromBg(ops []upgrade.BackgroundOperation) operations {
-	names := make([]operation, len(ops))
+	gen := make([]*operation, len(ops))
 	for idx, op := range ops {
-		names[idx] = operation{bg: op}
+		gen[idx] = &operation{bg: op}
 	}
-	return operations{ops: names}
+	return operations{ops: gen}
 }
 
 func createMessages(mf formats) messages {
@@ -376,9 +376,7 @@ func (tt *texts) append(msgs ...string) *texts {
 
 type messageFormatter func(args ...interface{}) string
 
-type suiteSampler struct{}
-
-func (s suiteSampler) complete(fp failurePoint) upgrade.Suite {
+func completeSuiteExample(fp failurePoint) upgrade.Suite {
 	suite := upgrade.Suite{
 		Tests: upgrade.Tests{
 			PreUpgrade: []upgrade.Operation{
@@ -409,7 +407,7 @@ func (s suiteSampler) complete(fp failurePoint) upgrade.Suite {
 	return inlaySuite(suite, fp)
 }
 
-func (s suiteSampler) empty() upgrade.Suite {
+func emptySuiteExample() upgrade.Suite {
 	return upgrade.Suite{
 		Tests:         upgrade.Tests{},
 		Installations: upgrade.Installations{},
@@ -428,7 +426,7 @@ func inlaySuite(suite upgrade.Suite, fp failurePoint) upgrade.Suite {
 	return recreateSuite(steps)
 }
 
-func recreateSuite(steps []step) upgrade.Suite {
+func recreateSuite(steps []*step) upgrade.Suite {
 	suite := &upgrade.Suite{
 		Tests:         upgrade.Tests{},
 		Installations: upgrade.Installations{},
@@ -446,7 +444,7 @@ type step struct {
 }
 
 type operations struct {
-	ops []operation
+	ops []*operation
 }
 
 func (o operations) length() int {
@@ -482,7 +480,7 @@ func (o operation) Name() string {
 	}
 }
 
-func (o operation) fail() {
+func (o *operation) fail() {
 	failureTestingMessage := "Testing a failure"
 	if o.op != nil {
 		prev := o.op
