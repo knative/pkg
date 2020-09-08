@@ -18,8 +18,8 @@ package upgrade_test
 
 import (
 	"bytes"
-	"errors"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"reflect"
 	"strings"
@@ -37,6 +37,9 @@ const (
 	upgradeTestRunning = "🏃 Running upgrade test suite..."
 	upgradeTestSuccess = "🥳🎉 Success! Upgrade suite completed without errors."
 	upgradeTestFailure = "💣🤬💔️ Upgrade suite have failed!"
+
+	shortWait = time.Millisecond
+	longWait  = 5 * time.Millisecond
 )
 
 func TestExpectedTextsForEmptySuite(t *testing.T) {
@@ -149,29 +152,70 @@ func TestSuiteExecuteWithComplete(t *testing.T) {
 }
 
 func TestSuiteExecuteWithFailingStep(t *testing.T) {
-	for i := 1; i < 8; i++ {
-		for j := 1; j <= 2; j++ {
-			t.Run(fmt.Sprintf("FailAt-%d-%d", i, j), func(t *testing.T) {
-				t.Skip("not yet implemented")
-				mt := &mockt{t: t}
-				c, buf := newConfig(mt)
-				fp := failurePoint{
-					step:    i,
-					element: j,
-				}
-				suite := completeSuiteExample(fp)
-				suite.Execute(c)
-				if !mt.Failed() {
-					t.Fatal("didn't failed, but should")
-				}
-				output := buf.String()
-				txt := expectedTexts(suite, fp)
-				txt.append(upgradeTestRunning, upgradeTestFailure)
-
-				assertTextContains(t, output, txt)
-			})
-		}
+	// for i := 1; i < 8; i++ {
+	// 	for j := 1; j <= 2; j++ {
+	// 		fp := failurePoint{
+	// 			step:    i,
+	// 			element: j,
+	// 		}
+	// 		testSuiteExecuteWithFailingStep(fp, t)
+	// 	}
+	// }
+	fp := failurePoint{
+		step:    1,
+		element: 2,
 	}
+	testSuiteExecuteWithFailingStep(fp, t)
+}
+
+func testSuiteExecuteWithFailingStep(fp failurePoint, t *testing.T) {
+	t.Run(fmt.Sprintf("FailAt-%d-%d", fp.step, fp.element), func(t *testing.T) {
+		var output string
+		suite := completeSuiteExample(fp)
+		txt := expectedTexts(suite, fp)
+		txt.append(upgradeTestRunning, upgradeTestFailure)
+		log, buf := newExampleZap()
+
+		tests := []testing.InternalTest{{
+			Name: fmt.Sprintf("FailAt-%d-%d", fp.step, fp.element),
+			F: func(t *testing.T) {
+				c, _ := newConfig(t)
+				c.Log = log
+				suite.Execute(c)
+			},
+		}}
+		var ok bool
+		testOutput := captureStdOutput(func() {
+			ok = testing.RunTests(allTestsFilter, tests)
+		})
+		output = buf.String()
+
+		if ok {
+			t.Fatal("didn't failed, but should")
+		}
+
+		assertTextContains(t, output, txt)
+		assertTextContains(t, testOutput, texts{
+			elms: []string{
+				fmt.Sprintf("--- FAIL: FailAt-%d-%d", fp.step, fp.element),
+			},
+		})
+	})
+}
+
+func captureStdOutput(call func()) string {
+	rescueStdout := os.Stdout
+	r, w, _ := os.Pipe()
+	os.Stdout = w
+	defer func() {
+		os.Stdout = rescueStdout
+	}()
+
+	call()
+
+	_ = w.Close()
+	out, _ := ioutil.ReadAll(r)
+	return string(out)
 }
 
 func assertTextContains(t *testing.T, haystack string, needles texts) {
@@ -191,7 +235,9 @@ func assertArraysEqual(t *testing.T, actual []string, expected []string) {
 	}
 }
 
-func newConfig(t upgrade.T) (upgrade.Configuration, fmt.Stringer) {
+var allTestsFilter = func(_, _ string) (bool, error) { return true, nil }
+
+func newConfig(t *testing.T) (upgrade.Configuration, fmt.Stringer) {
 	log, buf := newExampleZap()
 	c := upgrade.Configuration{T: t, Log: log}
 	return c, buf
@@ -246,7 +292,7 @@ func waitForStopSignal(bc upgrade.BackgroundContext, name string, handler func(s
 		default:
 			bc.Log.Debugf("Probing %s functionality...", name)
 		}
-		time.Sleep(5 * time.Millisecond)
+		time.Sleep(shortWait)
 	}
 }
 
@@ -439,80 +485,6 @@ func recreateSuite(steps []*step) upgrade.Suite {
 	return *suite
 }
 
-type mockt struct {
-	t     *testing.T
-	errs  []error
-	skips []error
-}
-
-func (m *mockt) Cleanup(f func()) {
-	m.t.Cleanup(f)
-}
-
-func (m *mockt) Error(args ...interface{}) {
-	m.errs = append(m.errs, errors.New(fmt.Sprintln(args...)))
-}
-
-func (m *mockt) Errorf(format string, args ...interface{}) {
-	m.Error(fmt.Errorf(format, args...))
-}
-
-func (m *mockt) Fail() {
-	m.t.Fail()
-}
-
-func (m *mockt) FailNow() {
-	m.t.FailNow()
-}
-
-func (m *mockt) Failed() bool {
-	return m.t.Failed() || len(m.errs) > 0
-}
-
-func (m *mockt) Fatal(args ...interface{}) {
-	m.t.Fatal(args...)
-}
-
-func (m *mockt) Fatalf(format string, args ...interface{}) {
-	m.t.Fatalf(format, args...)
-}
-
-func (m *mockt) Helper() {
-	m.t.Helper()
-}
-
-func (m *mockt) Log(args ...interface{}) {
-	m.t.Log(args...)
-}
-
-func (m *mockt) Logf(format string, args ...interface{}) {
-	m.t.Logf(format, args...)
-}
-
-func (m *mockt) Name() string {
-	return m.t.Name()
-}
-
-func (m *mockt) Skip(args ...interface{}) {
-	m.skips = append(m.skips, errors.New(fmt.Sprintln(args...)))
-}
-
-func (m *mockt) SkipNow() {
-	m.t.SkipNow()
-}
-
-func (m *mockt) Skipf(format string, args ...interface{}) {
-	m.Skip(fmt.Errorf(format, args...))
-}
-
-func (m *mockt) Skipped() bool {
-	return m.t.Skipped() || len(m.skips) > 0
-}
-
-func (m *mockt) Run(name string, f func(t *testing.T)) bool {
-	return m.t.Run(name, f)
-}
-
 type step struct {
 	messages
 	ops         operations
@@ -668,30 +640,30 @@ var (
 		installs: installs{
 			stable: upgrade.NewOperation("Serving latest stable release", func(c upgrade.Context) {
 				c.Log.Info("Installing Serving stable 0.17.1")
-				time.Sleep(20 * time.Millisecond)
+				time.Sleep(longWait)
 			}),
 			head: upgrade.NewOperation("Serving HEAD", func(c upgrade.Context) {
 				c.Log.Info("Installing Serving HEAD at e3c4563")
-				time.Sleep(20 * time.Millisecond)
+				time.Sleep(longWait)
 			}),
 		},
 		tests: tests{
 			preUpgrade: upgrade.NewOperation("Serving pre upgrade test", func(c upgrade.Context) {
 				c.Log.Info("Running Serving pre upgrade test")
-				time.Sleep(5 * time.Millisecond)
+				time.Sleep(shortWait)
 			}),
 			postUpgrade: upgrade.NewOperation("Serving post upgrade test", func(c upgrade.Context) {
 				c.Log.Info("Running Serving post upgrade test")
-				time.Sleep(5 * time.Millisecond)
+				time.Sleep(shortWait)
 			}),
 			postDowngrade: upgrade.NewOperation("Serving post downgrade test", func(c upgrade.Context) {
 				c.Log.Info("Running Serving post downgrade test")
-				time.Sleep(5 * time.Millisecond)
+				time.Sleep(shortWait)
 			}),
 			continual: upgrade.NewBackgroundOperation("Serving continual test",
 				func(c upgrade.Context) {
 					c.Log.Info("Setup of Serving continual test")
-					time.Sleep(5 * time.Millisecond)
+					time.Sleep(shortWait)
 				},
 				func(bc upgrade.BackgroundContext) {
 					bc.Log.Info("Running Serving continual test")
@@ -705,30 +677,30 @@ var (
 		installs: installs{
 			stable: upgrade.NewOperation("Eventing latest stable release", func(c upgrade.Context) {
 				c.Log.Info("Installing Eventing stable 0.17.2")
-				time.Sleep(20 * time.Millisecond)
+				time.Sleep(longWait)
 			}),
 			head: upgrade.NewOperation("Eventing HEAD", func(c upgrade.Context) {
 				c.Log.Info("Installing Eventing HEAD at 12f67cc")
-				time.Sleep(20 * time.Millisecond)
+				time.Sleep(longWait)
 			}),
 		},
 		tests: tests{
 			preUpgrade: upgrade.NewOperation("Eventing pre upgrade test", func(c upgrade.Context) {
 				c.Log.Info("Running Eventing pre upgrade test")
-				time.Sleep(5 * time.Millisecond)
+				time.Sleep(shortWait)
 			}),
 			postUpgrade: upgrade.NewOperation("Eventing post upgrade test", func(c upgrade.Context) {
 				c.Log.Info("Running Eventing post upgrade test")
-				time.Sleep(5 * time.Millisecond)
+				time.Sleep(shortWait)
 			}),
 			postDowngrade: upgrade.NewOperation("Eventing post downgrade test", func(c upgrade.Context) {
 				c.Log.Info("Running Eventing post downgrade test")
-				time.Sleep(5 * time.Millisecond)
+				time.Sleep(shortWait)
 			}),
 			continual: upgrade.NewBackgroundOperation("Eventing continual test",
 				func(c upgrade.Context) {
 					c.Log.Info("Setup of Eventing continual test")
-					time.Sleep(5 * time.Millisecond)
+					time.Sleep(shortWait)
 				},
 				func(bc upgrade.BackgroundContext) {
 					bc.Log.Info("Running Eventing continual test")
