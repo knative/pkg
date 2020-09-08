@@ -138,7 +138,7 @@ func (r *URIResolver) URIFromKReference(ref *duckv1.KReference, parent interface
 // URIFromObjectReference resolves an ObjectReference to a URI string.
 func (r *URIResolver) URIFromObjectReference(ref *corev1.ObjectReference, parent interface{}) (*apis.URL, error) {
 	if ref == nil {
-		return nil, apierrs.NewBadRequest(fmt.Sprintf("ref is nil"))
+		return nil, apierrs.NewBadRequest("ref is nil")
 	}
 
 	gvr, _ := meta.UnsafeGuessKindToResource(ref.GroupVersionKind())
