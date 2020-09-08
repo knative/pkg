@@ -45,6 +45,7 @@ require (
 	google.golang.org/api v0.31.0
 	google.golang.org/genproto v0.0.0-20200904004341-0bd0a958aa1d
 	google.golang.org/grpc v1.31.1
+	google.golang.org/protobuf v1.25.0
 	gopkg.in/yaml.v2 v2.3.0
 	gopkg.in/yaml.v3 v3.0.0-20190709130402-674ba3eaed22
 	k8s.io/api v0.18.7-rc.0

@@ -44,6 +44,7 @@ import (
 	metricpb "google.golang.org/genproto/googleapis/api/metric"
 	stackdriverpb "google.golang.org/genproto/googleapis/monitoring/v3"
 	"google.golang.org/grpc"
+	proto "google.golang.org/protobuf/proto"
 
 	logtesting "knative.dev/pkg/logging/testing"
 	"knative.dev/pkg/metrics/metricskey"
@@ -438,7 +439,6 @@ testComponent_testing_value{project="p1",revision="r2"} 1
 func TestStackDriverExports(t *testing.T) {
 	TestOverrideBundleCount = 1
 	t.Cleanup(func() { TestOverrideBundleCount = 0 })
-	sdFake := stackDriverFake{t: t}
 	eo := ExporterOptions{
 		Domain:    servingDomain,
 		Component: "autoscaler",
@@ -548,6 +548,7 @@ func TestStackDriverExports(t *testing.T) {
 				Aggregation: view.LastValue(),
 			}
 
+			sdFake := stackDriverFake{t: t}
 			if err := initSdFake(&sdFake); err != nil {
 				t.Errorf("Init stackdriver failed %s", err)
 			}
@@ -628,7 +629,7 @@ type openCensusFake struct {
 	srv       *grpc.Server
 	exports   sync.WaitGroup
 	wg        sync.WaitGroup
-	published chan ocmetrics.ExportMetricsServiceRequest
+	published chan *ocmetrics.ExportMetricsServiceRequest
 }
 
 func (oc *openCensusFake) start(expectedStreams int) error {
@@ -636,7 +637,7 @@ func (oc *openCensusFake) start(expectedStreams int) error {
 	if err != nil {
 		return err
 	}
-	oc.published = make(chan ocmetrics.ExportMetricsServiceRequest, 100)
+	oc.published = make(chan *ocmetrics.ExportMetricsServiceRequest, 100)
 	oc.srv = grpc.NewServer()
 	ocmetrics.RegisterMetricsServiceServer(oc.srv, oc)
 	// Run the server in the background.
@@ -678,7 +679,7 @@ func (oc *openCensusFake) Export(stream ocmetrics.MetricsService_ExportServer) e
 			if in.Resource == nil {
 				in.Resource = streamResource
 			}
-			oc.published <- *in
+			oc.published <- proto.Clone(in).(*ocmetrics.ExportMetricsServiceRequest)
 			if !metricSeen {
 				oc.exports.Done()
 				metricSeen = true
