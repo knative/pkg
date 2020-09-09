@@ -29,6 +29,7 @@ import (
 	admissionv1 "k8s.io/api/admission/v1"
 	admissionregistrationv1 "k8s.io/api/admissionregistration/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
+	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -221,7 +222,10 @@ func (ac *Reconciler) Admit(ctx context.Context, request *admissionv1.AdmissionR
 	if ac.WithContext != nil {
 		var err error
 		ctx, err = ac.WithContext(ctx, fb)
-		if err != nil {
+		if apierrs.IsNotFound(err) {
+			//Allow request for now as the resource might not exist yet
+			return &admissionv1.AdmissionResponse{Allowed: true}
+		} else if err != nil {
 			return webhook.MakeErrorStatus("unable to setup binding context: %v", err)
 		}
 	}
