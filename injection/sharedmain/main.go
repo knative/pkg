@@ -58,11 +58,11 @@ import (
 
 // GetConfig returns a rest.Config to be used for kubernetes client creation.
 // It does so in the following order:
-//   1. Use the passed kubeconfig/masterURL.
+//   1. Use the passed kubeconfig/serverURL.
 //   2. Fallback to the KUBECONFIG environment variable.
 //   3. Fallback to in-cluster config.
 //   4. Fallback to the ~/.kube/config.
-func GetConfig(masterURL, kubeconfig string) (*rest.Config, error) {
+func GetConfig(serverURL, kubeconfig string) (*rest.Config, error) {
 	if kubeconfig == "" {
 		kubeconfig = os.Getenv("KUBECONFIG")
 	}
@@ -75,7 +75,7 @@ func GetConfig(masterURL, kubeconfig string) (*rest.Config, error) {
 
 	// If we have an explicit indication of where the kubernetes config lives, read that.
 	if kubeconfig != "" {
-		c, err := clientcmd.BuildConfigFromFlags(masterURL, kubeconfig)
+		c, err := clientcmd.BuildConfigFromFlags(serverURL, kubeconfig)
 		if err != nil {
 			return nil, err
 		}
@@ -306,6 +306,8 @@ func flush(logger *zap.SugaredLogger) {
 func ParseAndGetConfigOrDie() *rest.Config {
 	var (
 		masterURL = flag.String("master", "",
+			"DEPRECATED: Use --server instead. The address of the Kubernetes API server. Overrides any value in kubeconfig. Only required if out-of-cluster.")
+		serverURL = flag.String("server", "",
 			"The address of the Kubernetes API server. Overrides any value in kubeconfig. Only required if out-of-cluster.")
 		kubeconfig = flag.String("kubeconfig", "",
 			"Path to a kubeconfig. Only required if out-of-cluster.")
@@ -313,7 +315,16 @@ func ParseAndGetConfigOrDie() *rest.Config {
 	klog.InitFlags(flag.CommandLine)
 	flag.Parse()
 
-	cfg, err := GetConfig(*masterURL, *kubeconfig)
+	var server string
+	if *masterURL != "" {
+		log.Println("--master is deprecated, please use --server instead")
+		server = *masterURL
+	}
+	if *serverURL != "" {
+		server = *serverURL
+	}
+
+	cfg, err := GetConfig(server, *kubeconfig)
 	if err != nil {
 		log.Fatalf("Error building kubeconfig: %v", err)
 	}
