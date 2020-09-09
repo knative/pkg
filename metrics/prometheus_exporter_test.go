@@ -68,6 +68,7 @@ func expectPromSrv(t *testing.T, expectedAddr string) {
 	}
 }
 
+// nolint // TODO: Test is currently skipped.
 func expectNoPromSrv(t *testing.T) {
 	time.Sleep(200 * time.Millisecond)
 	srv := getCurPromSrv()
