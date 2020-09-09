@@ -67,12 +67,3 @@ func expectPromSrv(t *testing.T, expectedAddr string) {
 		t.Errorf("metrics port addresses diff, got=%v, want=%v", got, want)
 	}
 }
-
-// nolint // TODO: Test is currently skipped.
-func expectNoPromSrv(t *testing.T) {
-	time.Sleep(200 * time.Millisecond)
-	srv := getCurPromSrv()
-	if srv != nil {
-		t.Error("expected no server for stackdriver exporter")
-	}
-}
