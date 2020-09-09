@@ -47,7 +47,7 @@ func RetryErrors(updater func(int) error, fns ...func(error) bool) error {
 
 // RetryTestErrors retries the inner function if it hits an error type that is
 // common in our test environments.
-func RetryTestErrors(updater func(int) error, fns ...func(error) bool) error {
+func RetryTestErrors(updater func(int) error) error {
 	return RetryErrors(updater,
 		// Example: conflicts updating `gke-resource-quotas` (implicit on Service/Pod/Ingress creations)
 		apierrs.IsConflict,
