@@ -27,6 +27,13 @@ const (
 	longWait  = 750 * time.Microsecond
 )
 
+func init() {
+	upgrade.DefaultOnWait = func(bc upgrade.BackgroundContext, self upgrade.WaitOnStopEventConfiguration) {
+		bc.Log.Debugf("%s - probing functionality...", self.Name)
+	}
+	upgrade.DefaultWaitTime = shortWait
+}
+
 var (
 	notFailing        = failurePoint{step: -1, element: -1}
 	messageFormatters = messageFormatterRepository{
@@ -102,8 +109,15 @@ var (
 				},
 				func(bc upgrade.BackgroundContext) {
 					bc.Log.Info("Running Serving continual test")
-					waitForStopSignal(bc, "Serving", func(sig upgrade.StopEvent) interface{} {
-						return 0
+					upgrade.WaitForStopEvent(bc, upgrade.WaitOnStopEventConfiguration{
+						Name: "Serving",
+						Handler: func(event upgrade.StopEvent) interface{} {
+							return 0
+						},
+						OnWait: func(bc upgrade.BackgroundContext, self upgrade.WaitOnStopEventConfiguration) {
+							bc.Log.Debugf("%s - probing functionality...", self.Name)
+						},
+						WaitTime: shortWait,
 					})
 				}),
 		},
@@ -132,17 +146,16 @@ var (
 				c.Log.Info("Running Eventing post downgrade test")
 				time.Sleep(shortWait)
 			}),
-			continual: upgrade.NewBackgroundOperation("Eventing continual test",
+			continual: upgrade.NewBackgroundVerification("Eventing continual test",
 				func(c upgrade.Context) {
 					c.Log.Info("Setup of Eventing continual test")
 					time.Sleep(shortWait)
 				},
-				func(bc upgrade.BackgroundContext) {
-					bc.Log.Info("Running Eventing continual test")
-					waitForStopSignal(bc, "Eventing", func(sig upgrade.StopEvent) interface{} {
-						return 0
-					})
-				}),
+				func(c upgrade.Context) {
+					c.Log.Info("Stopping and verify of Eventing continual test")
+					time.Sleep(shortWait)
+				},
+			),
 		},
 	}
 )

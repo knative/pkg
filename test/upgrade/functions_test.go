@@ -126,13 +126,15 @@ func TestSuiteExecuteWithComplete(t *testing.T) {
 		"Installing Serving stable 0.17.1",
 		"Installing Eventing stable 0.17.2",
 		"Running Serving continual test",
-		"Running Eventing continual test",
+		"Stopping and verify of Eventing continual test",
 		"Installing Serving HEAD at e3c4563",
 		"Installing Eventing HEAD at 12f67cc",
 		"Installing Serving stable 0.17.1",
 		"Installing Eventing stable 0.17.2",
-		"Serving probe test have received a stop message",
-		"Eventing probe test have received a stop message",
+		"Serving have received a stop event",
+		"Eventing continual test have received a stop event",
+		"Serving - probing functionality...",
+		"Eventing continual test - probing functionality...",
 	)
 
 	assert.textContains(output, txt)

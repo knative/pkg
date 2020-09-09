@@ -18,6 +18,7 @@ package upgrade
 
 import (
 	"testing"
+	"time"
 
 	"go.uber.org/zap"
 )
@@ -89,6 +90,17 @@ type StopEvent struct {
 	T        *testing.T
 	Finished chan<- interface{}
 	name     string
+}
+
+// WaitOnStopEventConfiguration holds a values to be used be WaitForStopEvent
+// function. Handler will be called when StopEvent is sent. OnWait will be
+// invoked in a loop while waiting, and each wait act is driven by WaitTime
+// amount.
+type WaitOnStopEventConfiguration struct {
+	Name     string
+	Handler  func(event StopEvent) interface{}
+	OnWait   func(bc BackgroundContext, self WaitOnStopEventConfiguration)
+	WaitTime time.Duration
 }
 
 // Configuration holds required and optional configuration to run upgrade tests

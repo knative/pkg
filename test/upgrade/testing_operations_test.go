@@ -22,7 +22,6 @@ import (
 	"os"
 	"sync"
 	"testing"
-	"time"
 
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -48,22 +47,6 @@ func newExampleZap() (*zap.Logger, fmt.Stringer) {
 	ws := zapcore.NewMultiWriteSyncer(buf, os.Stdout)
 	core := zapcore.NewCore(encoder, ws, zap.DebugLevel)
 	return zap.New(core).WithOptions(), buf
-}
-
-func waitForStopSignal(bc upgrade.BackgroundContext, name string, handler func(sig upgrade.StopEvent) interface{}) {
-	for {
-		select {
-		case stopEvent := <-bc.Stop:
-			bc.Log.Infof(
-				"%s probe test have received a stop message: %s",
-				name, stopEvent.Name())
-			stopEvent.Finished <- handler(stopEvent)
-			return
-		default:
-			bc.Log.Debugf("Probing %s functionality...", name)
-		}
-		time.Sleep(shortWait)
-	}
 }
 
 func createSteps(s upgrade.Suite) []*step {
@@ -274,14 +257,21 @@ func (o *operation) fail(setupFail bool) {
 				c.Log.Error(failureTestingMessage)
 			}
 		}, func(bc upgrade.BackgroundContext) {
-			waitForStopSignal(bc, prev.Name(), func(sig upgrade.StopEvent) interface{} {
-				if !setupFail {
-					sig.T.Error(failureTestingMessage)
-					bc.Log.Error(failureTestingMessage)
-					return 17
-				} else {
-					return 0
-				}
+			upgrade.WaitForStopEvent(bc, upgrade.WaitOnStopEventConfiguration{
+				Name: testName,
+				Handler: func(event upgrade.StopEvent) interface{} {
+					if !setupFail {
+						event.T.Error(failureTestingMessage)
+						bc.Log.Error(failureTestingMessage)
+						return 17
+					} else {
+						return 0
+					}
+				},
+				OnWait: func(bc upgrade.BackgroundContext, self upgrade.WaitOnStopEventConfiguration) {
+					bc.Log.Debugf("%s - probing functionality...", self.Name)
+				},
+				WaitTime: shortWait,
 			})
 		})
 	}
