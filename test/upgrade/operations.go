@@ -65,10 +65,6 @@ func (se *suiteExecution) startContinualTests(num int) {
 				t.Run("Setup"+operation.Name(), func(t *testing.T) {
 					setup(Context{T: t, Log: l})
 				})
-				if se.failed {
-					l.Debugf(skippingOperationTemplate, operation.Name())
-					return
-				}
 				stop := make(chan StopSignal)
 				se.stopSignals = append(se.stopSignals, StopSignal{
 					T:       nil,

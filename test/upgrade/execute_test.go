@@ -88,7 +88,7 @@ func TestExpectedTextsForFailingCompleteSuite(t *testing.T) {
 		`1.1) Installing base install of "Serving latest stable release".`,
 		`1.2) Installing base install of "Eventing latest stable release".`,
 		"2) ✅️️ Testing functionality before upgrade is performed. 2 tests are registered.",
-		`2.1) Testing with "Serving pre upgrade test".`,
+		`2.1) Testing with "FailingOfServing pre upgrade test".`,
 	}
 	assert.arraysEqual(txt.elms, expected)
 }

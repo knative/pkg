@@ -25,7 +25,6 @@ import (
 
 func TestSuiteExecuteWithFailures(t *testing.T) {
 	for i := 1; i <= 8; i++ {
-
 		for j := 1; j <= 2; j++ {
 			fp := failurePoint{
 				step:    i,
@@ -42,10 +41,6 @@ func testSuiteExecuteWithFailingStep(fp failurePoint, t *testing.T) {
 	assert := assert{t: t}
 	testName := fmt.Sprintf("FailAt-%d-%d", fp.step, fp.element)
 	t.Run(testName, func(t *testing.T) {
-		if fp.step == 3 || fp.step == 8 {
-			// FIXME(ksuszyns): Test is failing for background operations for some reason
-			t.Skip("FIXME(ksuszyns): Test is failing for background operations for some reason")
-		}
 		var output string
 		suite := completeSuiteExample(fp)
 		txt := expectedTexts(suite, fp)

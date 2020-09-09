@@ -67,6 +67,7 @@ func waitForStopSignal(bc upgrade.BackgroundContext, name string, handler func(s
 }
 
 func createSteps(s upgrade.Suite) []*step {
+	continualTestsGeneralized := generalizeOpsFromBg(s.Tests.ContinualTests)
 	return []*step{{
 		messages: messageFormatters.baseInstall,
 		ops:      generalizeOps(s.Installations.Base),
@@ -81,7 +82,7 @@ func createSteps(s upgrade.Suite) []*step {
 		},
 	}, {
 		messages: messageFormatters.startContinual,
-		ops:      generalizeOpsFromBg(s.Tests.ContinualTests),
+		ops:      continualTestsGeneralized,
 		updateSuite: func(ops operations, s *upgrade.Suite) {
 			s.Tests.ContinualTests = ops.asBackgroundOperation()
 		},
@@ -111,7 +112,7 @@ func createSteps(s upgrade.Suite) []*step {
 		},
 	}, {
 		messages: messageFormatters.verifyContinual,
-		ops:      generalizeOpsFromBg(s.Tests.ContinualTests),
+		ops:      continualTestsGeneralized,
 		updateSuite: func(ops operations, s *upgrade.Suite) {
 			s.Tests.ContinualTests = ops.asBackgroundOperation()
 		},
@@ -226,7 +227,7 @@ func enrichSuiteWithFailures(suite upgrade.Suite, fp failurePoint) upgrade.Suite
 	for i, st := range steps {
 		for j, op := range st.ops.ops {
 			if fp.step == i+1 && fp.element == j+1 {
-				op.fail()
+				op.fail(fp.step == 3)
 			}
 		}
 	}
@@ -242,4 +243,66 @@ func recreateSuite(steps []*step) upgrade.Suite {
 		st.updateSuite(st.ops, suite)
 	}
 	return *suite
+}
+
+func (o operation) Name() string {
+	if o.op != nil {
+		return o.op.Name()
+	} else {
+		return o.bg.Name()
+	}
+}
+
+func (o *operation) fail(setupFail bool) {
+	failureTestingMessage := "This error is expected to be seen. Upgrade suite should fail."
+	testName := fmt.Sprintf("FailingOf%s", o.Name())
+	if o.op != nil {
+		prev := o.op
+		o.op = upgrade.NewOperation(testName, func(c upgrade.Context) {
+			handler := prev.Handler()
+			handler(c)
+			c.T.Error(failureTestingMessage)
+			c.Log.Error(failureTestingMessage)
+		})
+	} else {
+		prev := o.bg
+		o.bg = upgrade.NewBackgroundOperation(testName, func(c upgrade.Context) {
+			handler := prev.Setup()
+			handler(c)
+			if setupFail {
+				c.T.Error(failureTestingMessage)
+				c.Log.Error(failureTestingMessage)
+			}
+		}, func(bc upgrade.BackgroundContext) {
+			waitForStopSignal(bc, prev.Name(), func(sig upgrade.StopSignal) int {
+				if !setupFail {
+					sig.T.Error(failureTestingMessage)
+					bc.Log.Error(failureTestingMessage)
+					return 17
+				} else {
+					return 0
+				}
+			})
+		})
+	}
+}
+
+func (o operations) length() int {
+	return len(o.ops)
+}
+
+func (o operations) asOperations() []upgrade.Operation {
+	ops := make([]upgrade.Operation, o.length())
+	for i, op := range o.ops {
+		ops[i] = op.op
+	}
+	return ops
+}
+
+func (o operations) asBackgroundOperation() []upgrade.BackgroundOperation {
+	ops := make([]upgrade.BackgroundOperation, o.length())
+	for i, op := range o.ops {
+		ops[i] = op.bg
+	}
+	return ops
 }
