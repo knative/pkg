@@ -328,7 +328,7 @@ func TestGetURIDestinationV1Beta1(t *testing.T) {
 			wantErr: fmt.Sprintf("address not set for %+v", getUnaddressableRef()),
 		}, "notFound": {
 			dest:    duckv1beta1.Destination{Ref: getUnaddressableRef()},
-			wantErr: fmt.Sprintf("failed to get ref %+v: %s %q not found", getUnaddressableRef(), unaddressableResource, unaddressableName),
+			wantErr: fmt.Sprintf("%s %q not found", unaddressableResource, unaddressableName),
 		}}
 
 	for n, tc := range tests {
@@ -510,7 +510,7 @@ func TestGetURIDestinationV1(t *testing.T) {
 			wantErr: fmt.Sprintf("address not set for %+v", getUnaddressableRef()),
 		}, "notFound": {
 			dest:    duckv1.Destination{Ref: getUnaddressableKnativeRef()},
-			wantErr: fmt.Sprintf("failed to get ref %+v: %s %q not found", getUnaddressableRef(), unaddressableResource, unaddressableName),
+			wantErr: fmt.Sprintf("%s %q not found", unaddressableResource, unaddressableName),
 		}}
 
 	for n, tc := range tests {
@@ -548,12 +548,11 @@ func TestURIFromObjectReferenceErrors(t *testing.T) {
 	}{"nil": {
 		wantErr: "ref is nil",
 	}, "fail tracker with bad object": {
-		ref: getInvalidObjectReference(),
-		wantErr: fmt.Sprintf(`failed to track %+v: invalid Reference:
-Namespace: a DNS-1123 label must consist of lower case alphanumeric characters or '-', and must start and end with an alphanumeric character (e.g. 'my-name',  or '123-abc', regex used for validation is '[a-z0-9]([-a-z0-9]*[a-z0-9])?')`, getInvalidObjectReference()),
+		ref:     getInvalidObjectReference(),
+		wantErr: `sinks.duck.knative.dev "testsink" not found`,
 	}, "fail get": {
 		ref:     getAddressableRef(),
-		wantErr: fmt.Sprintf(`failed to get ref %+v: sinks.duck.knative.dev "testsink" not found`, getAddressableRef()),
+		wantErr: `sinks.duck.knative.dev "testsink" not found`,
 	}}
 
 	for n, tc := range tests {
