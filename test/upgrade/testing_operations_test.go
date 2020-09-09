@@ -259,13 +259,10 @@ func (o *operation) fail(setupFail bool) {
 		}, func(bc upgrade.BackgroundContext) {
 			upgrade.WaitForStopEvent(bc, upgrade.WaitOnStopEventConfiguration{
 				Name: testName,
-				Handler: func(event upgrade.StopEvent) interface{} {
+				Handler: func(event upgrade.StopEvent) {
 					if !setupFail {
 						event.T.Error(failureTestingMessage)
 						bc.Log.Error(failureTestingMessage)
-						return 17
-					} else {
-						return 0
 					}
 				},
 				OnWait: func(bc upgrade.BackgroundContext, self upgrade.WaitOnStopEventConfiguration) {

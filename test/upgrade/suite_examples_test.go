@@ -111,8 +111,9 @@ var (
 					bc.Log.Info("Running Serving continual test")
 					upgrade.WaitForStopEvent(bc, upgrade.WaitOnStopEventConfiguration{
 						Name: "Serving",
-						Handler: func(event upgrade.StopEvent) interface{} {
-							return 0
+						Handler: func(event upgrade.StopEvent) {
+							bc.Log.Info("Stopping and verify of Serving continual test")
+							time.Sleep(shortWait)
 						},
 						OnWait: func(bc upgrade.BackgroundContext, self upgrade.WaitOnStopEventConfiguration) {
 							bc.Log.Debugf("%s - probing functionality...", self.Name)

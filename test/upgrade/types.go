@@ -88,7 +88,7 @@ type BackgroundContext struct {
 // all stop & verify operations are finished and it is safe to end tests.
 type StopEvent struct {
 	T        *testing.T
-	Finished chan<- interface{}
+	Finished chan<- struct{}
 	name     string
 }
 
@@ -98,7 +98,7 @@ type StopEvent struct {
 // amount.
 type WaitOnStopEventConfiguration struct {
 	Name     string
-	Handler  func(event StopEvent) interface{}
+	Handler  func(event StopEvent)
 	OnWait   func(bc BackgroundContext, self WaitOnStopEventConfiguration)
 	WaitTime time.Duration
 }

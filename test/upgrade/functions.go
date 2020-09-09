@@ -17,7 +17,6 @@
 package upgrade
 
 import (
-	"testing"
 	"time"
 
 	"go.uber.org/zap"
@@ -55,12 +54,11 @@ func NewBackgroundVerification(name string, setup func(c Context), verify func(c
 	return NewBackgroundOperation(name, setup, func(bc BackgroundContext) {
 		WaitForStopEvent(bc, WaitOnStopEventConfiguration{
 			Name: name,
-			Handler: func(event StopEvent) interface{} {
+			Handler: func(event StopEvent) {
 				verify(Context{
 					T:   event.T,
 					Log: bc.Log,
 				})
-				return retCodeFrom(event.T)
 			},
 			OnWait:   DefaultOnWait,
 			WaitTime: DefaultWaitTime,
@@ -87,24 +85,14 @@ func WaitForStopEvent(bc BackgroundContext, w WaitOnStopEventConfiguration) {
 		select {
 		case stopEvent := <-bc.Stop:
 			log.Infof("%s have received a stop event: %s", w.Name, stopEvent.Name())
-			stopEvent.Finished <- w.Handler(stopEvent)
+			w.Handler(stopEvent)
+			close(stopEvent.Finished)
 			return
 		default:
 			w.OnWait(bc, w)
 		}
 		time.Sleep(w.WaitTime)
 	}
-}
-
-func retCodeFrom(t *testing.T) int8 {
-	code := int8(0)
-	if t.Failed() {
-		code += 1
-	}
-	if t.Skipped() {
-		code += 2
-	}
-	return code
 }
 
 func (c Configuration) logger() *zap.SugaredLogger {

@@ -97,15 +97,15 @@ func (se *suiteExecution) verifyContinualTests(num int) {
 			for i, stoppable := range se.stoppables {
 				t.Run(stoppable.name, func(t *testing.T) {
 					l.Infof(`%d.%d) Verifying "%s".`, num, i+1, stoppable.name)
-					finished := make(chan interface{})
+					finished := make(chan struct{})
 					stoppable.channel <- StopEvent{
 						T:        t,
 						Finished: finished,
 						name:     "Stop of " + stoppable.name,
 					}
-					retval := <-finished
+					<-finished
 					se.failed = se.failed || t.Failed()
-					l.Debugf(`Finished "%s" with: %v`, stoppable.name, retval)
+					l.Debugf(`Finished "%s"`, stoppable.name)
 				})
 			}
 		})
