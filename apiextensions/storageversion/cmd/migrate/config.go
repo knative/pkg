@@ -31,8 +31,6 @@ import (
 
 func configOrDie() *rest.Config {
 	var (
-		masterURL = flag.String("master", "",
-			"DEPRECATED: Use --server instead. The address of the Kubernetes API server. Overrides any value in kubeconfig. Only required if out-of-cluster.")
 		serverURL = flag.String("server", "",
 			"The address of the Kubernetes API server. Overrides any value in kubeconfig. Only required if out-of-cluster.")
 		kubeconfig = flag.String("kubeconfig", "",
@@ -41,12 +39,7 @@ func configOrDie() *rest.Config {
 
 	flag.Parse()
 
-	server := *masterURL
-	if *serverURL != "" {
-		server = *serverURL
-	}
-
-	cfg, err := getConfig(server, *kubeconfig)
+	cfg, err := getConfig(*serverURL, *kubeconfig)
 	if err != nil {
 		panic(fmt.Sprintf("Error building kubeconfig: %v", err))
 	}

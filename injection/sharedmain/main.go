@@ -305,8 +305,6 @@ func flush(logger *zap.SugaredLogger) {
 // dies by calling log.Fatalf.
 func ParseAndGetConfigOrDie() *rest.Config {
 	var (
-		masterURL = flag.String("master", "",
-			"DEPRECATED: Use --server instead. The address of the Kubernetes API server. Overrides any value in kubeconfig. Only required if out-of-cluster.")
 		serverURL = flag.String("server", "",
 			"The address of the Kubernetes API server. Overrides any value in kubeconfig. Only required if out-of-cluster.")
 		kubeconfig = flag.String("kubeconfig", "",
@@ -315,16 +313,7 @@ func ParseAndGetConfigOrDie() *rest.Config {
 	klog.InitFlags(flag.CommandLine)
 	flag.Parse()
 
-	var server string
-	if *masterURL != "" {
-		log.Println("--master is deprecated, please use --server instead")
-		server = *masterURL
-	}
-	if *serverURL != "" {
-		server = *serverURL
-	}
-
-	cfg, err := GetConfig(server, *kubeconfig)
+	cfg, err := GetConfig(*serverURL, *kubeconfig)
 	if err != nil {
 		log.Fatalf("Error building kubeconfig: %v", err)
 	}
