@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+// nolint
 package logging_test
 
 import (
@@ -34,7 +35,7 @@ var (
 
 func init() { someStruct = testStruct{"hello", 42.0} }
 
-// nolint:govet // godoc limitation; this would be named Test*(), of course
+// godoc limitation; this would be named Test*(), of course
 func SampleTest(legacy *testing.T) {
 	// Get our TLogger and ready the cleanup function
 	t, cancel := logging.NewTLogger(legacy)

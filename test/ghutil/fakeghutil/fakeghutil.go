@@ -241,11 +241,11 @@ func (fgc *FakeGithubClient) ListCommits(org, repo string, ID int) ([]*github.Re
 
 // ListFiles lists files from a pull request
 func (fgc *FakeGithubClient) ListFiles(org, repo string, ID int) ([]*github.CommitFile, error) {
-	var res []*github.CommitFile
 	commits, err := fgc.ListCommits(org, repo, ID)
 	if nil != err {
 		return nil, err
 	}
+	res := make([]*github.CommitFile, 0, len(commits))
 	for _, commit := range commits {
 		files, ok := fgc.CommitFiles[*commit.SHA]
 		if !ok {
