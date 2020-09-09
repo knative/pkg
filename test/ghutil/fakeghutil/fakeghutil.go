@@ -209,7 +209,7 @@ func (fgc *FakeGithubClient) RemoveLabelForIssue(org, repo string, issueNumber i
 }
 
 // ListPullRequests lists pull requests within given repo, filters by head user and branch name if
-// provided as "user:ref-name", and by base name if provided, i.e. "master"
+// provided as "user:ref-name", and by base name if provided, i.e. "release-0.19"
 func (fgc *FakeGithubClient) ListPullRequests(org, repo, head, base string) ([]*github.PullRequest, error) {
 	var res []*github.PullRequest
 	PRs, ok := fgc.PullRequests[repo]
@@ -296,7 +296,7 @@ func (fgc *FakeGithubClient) EditPullRequest(org, repo string, ID int, title, bo
 	return PR, nil
 }
 
-// CreatePullRequest creates PullRequest, passing head user and branch name "user:ref-name", and base branch name like "master"
+// CreatePullRequest creates PullRequest, passing head user and branch name "user:ref-name", and base branch name like "release-0.19"
 func (fgc *FakeGithubClient) CreatePullRequest(org, repo, head, base, title, body string) (*github.PullRequest, error) {
 	PRNumber := fgc.getNextNumber()
 	stateStr := string(ghutil.PullRequestOpenState)
