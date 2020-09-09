@@ -78,3 +78,59 @@ func TestRetryUpdateConflicts(t *testing.T) {
 		})
 	}
 }
+
+func TestRetryTestErrors(t *testing.T) {
+	errAny := errors.New("foo")
+	errGKE := errors.New(`Operation cannot be fulfilled on resourcequotas "gke-resource-quotas": StorageError: invalid object, Code: 4, Key: /registry/resourcequotas/serving-tests/gke-resource-quotas, ResourceVersion: 0, AdditionalErrorMsg: Precondition failed: UID in precondition: 7aaedbdf-caa8-41e7-94cb-f8c053038e86, UID in object meta:`)
+	errEtcd := errors.New("etcdserver: request timed out")
+	errConflict := apierrs.NewConflict(v1.Resource("foo"), "bar", errAny)
+
+	tests := []struct {
+		name         string
+		returns      []error
+		want         error
+		wantAttempts int
+	}{{
+		name:         "all good",
+		returns:      []error{nil},
+		want:         nil,
+		wantAttempts: 1,
+	}, {
+		name:         "not retry on non-conflict error",
+		returns:      []error{errAny},
+		want:         errAny,
+		wantAttempts: 1,
+	}, {
+		name:         "retry up to 5 times",
+		returns:      []error{errConflict, errGKE, errEtcd, errConflict, errGKE, errEtcd},
+		want:         errGKE,
+		wantAttempts: 5,
+	}, {
+		name:         "eventually succeed",
+		returns:      []error{errConflict, errGKE, errEtcd, nil},
+		want:         nil,
+		wantAttempts: 4,
+	}, {
+		name:         "eventually fail",
+		returns:      []error{errConflict, errConflict, errAny},
+		want:         errAny,
+		wantAttempts: 3,
+	}}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			attempts := 0
+			got := RetryTestErrors(func(i int) error {
+				attempts++
+				return test.returns[i]
+			})
+
+			if got != test.want {
+				t.Errorf("RetryTestErrors() = %v, want %v", got, test.want)
+			}
+			if attempts != test.wantAttempts {
+				t.Errorf("attempts = %d, want %d", attempts, test.wantAttempts)
+			}
+		})
+	}
+}
