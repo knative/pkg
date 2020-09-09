@@ -48,7 +48,7 @@ func (se *suiteExecution) preUpgradeTests(num int) {
 func (se *suiteExecution) startContinualTests(num int) {
 	l := se.logger
 	operations := se.suite.Tests.ContinualTests
-	groupTemplate := "%d) 🔄 Starting continual tests to run in background. " +
+	groupTemplate := "%d) 🔄 Starting continual tests. " +
 		"%d tests are registered."
 	elementTemplate := `%d.%d) Starting continual tests of "%s".`
 	numOps := len(operations)

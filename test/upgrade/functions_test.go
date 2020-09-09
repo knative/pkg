@@ -53,7 +53,7 @@ func TestExpectedTextsForCompleteSuite(t *testing.T) {
 		"2) ✅️️ Testing functionality before upgrade is performed. 2 tests are registered.",
 		`2.1) Testing with "Serving pre upgrade test".`,
 		`2.2) Testing with "Eventing pre upgrade test".`,
-		"3) 🔄 Starting continual tests to run in background. 2 tests are registered.",
+		"3) 🔄 Starting continual tests. 2 tests are registered.",
 		`3.1) Starting continual tests of "Serving continual test".`,
 		`3.2) Starting continual tests of "Eventing continual test".`,
 		"4) 📀 Upgrading with 2 registered operations.",

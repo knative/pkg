@@ -48,7 +48,7 @@ var (
 			skipped:  "%d) ✅️️ No pre upgrade tests registered. Skipping.",
 		}),
 		startContinual: createMessages(formats{
-			starting: "%d) 🔄 Starting continual tests to run in background. %d tests are registered.",
+			starting: "%d) 🔄 Starting continual tests. %d tests are registered.",
 			element:  `%d.%d) Starting continual tests of "%s".`,
 			skipped:  "%d) 🔄 No continual tests registered. Skipping.",
 		}),
