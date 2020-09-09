@@ -50,14 +50,14 @@ func newExampleZap() (*zap.Logger, fmt.Stringer) {
 	return zap.New(core).WithOptions(), buf
 }
 
-func waitForStopSignal(bc upgrade.BackgroundContext, name string, handler func(sig upgrade.StopSignal) int) {
+func waitForStopSignal(bc upgrade.BackgroundContext, name string, handler func(sig upgrade.StopEvent) interface{}) {
 	for {
 		select {
-		case sig := <-bc.Stop:
+		case stopEvent := <-bc.Stop:
 			bc.Log.Infof(
 				"%s probe test have received a stop message: %s",
-				name, sig.String())
-			sig.Finished <- handler(sig)
+				name, stopEvent.Name())
+			stopEvent.Finished <- handler(stopEvent)
 			return
 		default:
 			bc.Log.Debugf("Probing %s functionality...", name)
@@ -274,7 +274,7 @@ func (o *operation) fail(setupFail bool) {
 				c.Log.Error(failureTestingMessage)
 			}
 		}, func(bc upgrade.BackgroundContext) {
-			waitForStopSignal(bc, prev.Name(), func(sig upgrade.StopSignal) int {
+			waitForStopSignal(bc, prev.Name(), func(sig upgrade.StopEvent) interface{} {
 				if !setupFail {
 					sig.T.Error(failureTestingMessage)
 					bc.Log.Error(failureTestingMessage)

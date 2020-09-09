@@ -102,7 +102,7 @@ var (
 				},
 				func(bc upgrade.BackgroundContext) {
 					bc.Log.Info("Running Serving continual test")
-					waitForStopSignal(bc, "Serving", func(sig upgrade.StopSignal) int {
+					waitForStopSignal(bc, "Serving", func(sig upgrade.StopEvent) interface{} {
 						return 0
 					})
 				}),
@@ -139,7 +139,7 @@ var (
 				},
 				func(bc upgrade.BackgroundContext) {
 					bc.Log.Info("Running Eventing continual test")
-					waitForStopSignal(bc, "Eventing", func(sig upgrade.StopSignal) int {
+					waitForStopSignal(bc, "Eventing", func(sig upgrade.StopEvent) interface{} {
 						return 0
 					})
 				}),

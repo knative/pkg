@@ -27,7 +27,12 @@ type suiteExecution struct {
 	configuration Configuration
 	failed        bool
 	logger        *zap.SugaredLogger
-	stopSignals   []StopSignal
+	stoppables    []stoppable
+}
+
+type stoppable struct {
+	name    string
+	channel chan StopEvent
 }
 
 func (se *suiteExecution) processOperationGroup(op operationGroup) {

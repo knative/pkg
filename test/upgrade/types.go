@@ -78,17 +78,17 @@ type Context struct {
 // which handler should listen to to know when to stop its operations.
 type BackgroundContext struct {
 	Log  *zap.SugaredLogger
-	Stop chan StopSignal
+	Stop <-chan StopEvent
 }
 
-// StopSignal represents a signal that is to be received by background operation
+// StopEvent represents an event that is to be received by background operation
 // to indicate that is should stop it's operations and validate results using
-// passed T
-type StopSignal struct {
+// passed T. User should use Finished channel to signalize upgrade suite that
+// all stop & verify operations are finished and it is safe to end tests.
+type StopEvent struct {
 	T        *testing.T
-	Finished chan int
+	Finished chan<- interface{}
 	name     string
-	channel  chan StopSignal
 }
 
 // Configuration holds required and optional configuration to run upgrade tests

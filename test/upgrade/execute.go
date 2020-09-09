@@ -27,7 +27,7 @@ func (s *Suite) Execute(c Configuration) {
 		configuration: c,
 		failed:        false,
 		logger:        l,
-		stopSignals:   make([]StopSignal, 0),
+		stoppables:    make([]stoppable, 0),
 	}
 	l.Info("🏃 Running upgrade test suite...")
 
@@ -63,6 +63,6 @@ func (c Configuration) logger() *zap.SugaredLogger {
 	return c.Log.Sugar()
 }
 
-func (s *StopSignal) String() string {
+func (s *StopEvent) Name() string {
 	return s.name
 }

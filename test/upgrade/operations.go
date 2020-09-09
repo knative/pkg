@@ -65,9 +65,8 @@ func (se *suiteExecution) startContinualTests(num int) {
 				t.Run("Setup"+operation.Name(), func(t *testing.T) {
 					setup(Context{T: t, Log: l})
 				})
-				stop := make(chan StopSignal)
-				se.stopSignals = append(se.stopSignals, StopSignal{
-					T:       nil,
+				stop := make(chan StopEvent)
+				se.stoppables = append(se.stoppables, stoppable{
 					name:    operation.Name(),
 					channel: stop,
 				})
@@ -95,15 +94,18 @@ func (se *suiteExecution) verifyContinualTests(num int) {
 	if testsCount > 0 {
 		se.configuration.T.Run("VerifyContinualTests", func(t *testing.T) {
 			l.Infof("%d) ✋ Verifying %d running continual tests.", num, testsCount)
-			for i, signal := range se.stopSignals {
-				t.Run(signal.name, func(t *testing.T) {
-					l.Infof(`%d.%d) Verifying "%s".`, num, i+1, signal.name)
-					signal.T = t
-					signal.Finished = make(chan int)
-					signal.channel <- signal
-					retcode := <-signal.Finished
+			for i, stoppable := range se.stoppables {
+				t.Run(stoppable.name, func(t *testing.T) {
+					l.Infof(`%d.%d) Verifying "%s".`, num, i+1, stoppable.name)
+					finished := make(chan interface{})
+					stoppable.channel <- StopEvent{
+						T:        t,
+						Finished: finished,
+						name:     "Stop of " + stoppable.name,
+					}
+					retval := <-finished
 					se.failed = se.failed || t.Failed()
-					l.Debugf(`Finished "%s" with: %d`, signal.name, retcode)
+					l.Debugf(`Finished "%s" with: %v`, stoppable.name, retval)
 				})
 			}
 		})
