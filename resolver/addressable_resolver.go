@@ -163,7 +163,7 @@ func (r *URIResolver) URIFromObjectReference(ref *corev1.ObjectReference, parent
 		return url, nil
 	}
 
-	_, lister, err := r.informerFactory.Get(gvr)
+	_, lister, err := r.informerFactory.Get(context.Background(), gvr)
 	if err != nil {
 		return nil, apierrs.NewNotFound(gvr.GroupResource(), "Lister")
 	}

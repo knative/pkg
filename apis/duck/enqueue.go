@@ -17,6 +17,8 @@ limitations under the License.
 package duck
 
 import (
+	"context"
+
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/tools/cache"
 )
@@ -33,12 +35,12 @@ type EnqueueInformerFactory struct {
 var _ InformerFactory = (*EnqueueInformerFactory)(nil)
 
 // Get implements InformerFactory.
-func (cif *EnqueueInformerFactory) Get(gvr schema.GroupVersionResource) (cache.SharedIndexInformer, cache.GenericLister, error) {
-	inf, lister, err := cif.Delegate.Get(gvr)
+func (cif *EnqueueInformerFactory) Get(ctx context.Context, gvr schema.GroupVersionResource) (cache.SharedIndexInformer, cache.GenericLister, error) {
+	inf, lister, err := cif.Delegate.Get(ctx, gvr)
 	if err != nil {
 		return nil, nil, err
 	}
-	// If there is an informer, attach our event handler.
+	// If there is an informer, attach our event ƒhandler.
 	inf.AddEventHandler(cif.EventHandler)
 	return inf, lister, nil
 }

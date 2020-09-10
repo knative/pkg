@@ -46,17 +46,17 @@ type TypedInformerFactory struct {
 var _ InformerFactory = (*TypedInformerFactory)(nil)
 
 // Get implements InformerFactory.
-func (dif *TypedInformerFactory) Get(gvr schema.GroupVersionResource) (cache.SharedIndexInformer, cache.GenericLister, error) {
+func (dif *TypedInformerFactory) Get(ctx context.Context, gvr schema.GroupVersionResource) (cache.SharedIndexInformer, cache.GenericLister, error) {
 	// Avoid error cases, like the GVR does not exist.
 	// It is not a full check. Some RBACs might sneak by, but the window is very small.
-	if _, err := dif.Client.Resource(gvr).List(context.Background(), metav1.ListOptions{}); err != nil {
+	if _, err := dif.Client.Resource(gvr).List(ctx, metav1.ListOptions{}); err != nil {
 		return nil, nil, err
 	}
 
 	listObj := dif.Type.GetListType()
 	lw := &cache.ListWatch{
-		ListFunc:  asStructuredLister(context.Background(), dif.Client.Resource(gvr).List, listObj),
-		WatchFunc: AsStructuredWatcher(context.Background(), dif.Client.Resource(gvr).Watch, dif.Type),
+		ListFunc:  asStructuredLister(ctx, dif.Client.Resource(gvr).List, listObj),
+		WatchFunc: AsStructuredWatcher(ctx, dif.Client.Resource(gvr).Watch, dif.Type),
 	}
 	inf := cache.NewSharedIndexInformer(lw, dif.Type, dif.ResyncPeriod, cache.Indexers{
 		cache.NamespaceIndex: cache.MetaNamespaceIndexFunc,

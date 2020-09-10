@@ -311,7 +311,7 @@ func (r *BaseReconciler) ReconcileSubject(ctx context.Context, fb Bindable, muta
 
 	// Use the GVR of the subject(s) to get ahold of a lister that we can
 	// use to fetch our PodSpecable resources.
-	_, lister, err := r.Factory.Get(gvr)
+	_, lister, err := r.Factory.Get(ctx, gvr)
 	if err != nil {
 		logging.FromContext(ctx).Errorf("Error getting a lister for resource '%+v': %v", gvr, err)
 		fb.GetBindingStatus().MarkBindingUnavailable("SubjectUnavailable", err.Error())

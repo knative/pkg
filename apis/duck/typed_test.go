@@ -74,7 +74,7 @@ func TestSimpleList(t *testing.T) {
 
 	// This hangs without:
 	// https://github.com/kubernetes/kubernetes/pull/68552
-	_, lister, err := tif.Get(SchemeGroupVersion.WithResource("resources"))
+	_, lister, err := tif.Get(context.Background(), SchemeGroupVersion.WithResource("resources"))
 	if err != nil {
 		t.Fatalf("Get() = %v", err)
 	}
@@ -108,7 +108,7 @@ func TestInvalidResource(t *testing.T) {
 		StopChannel:  stopCh,
 	}
 
-	_, _, got := tif.Get(SchemeGroupVersion.WithResource("resources"))
+	_, _, got := tif.Get(context.Background(), SchemeGroupVersion.WithResource("resources"))
 
 	if got != errTest {
 		t.Errorf("Error = %v, want: %v", got, errTest)

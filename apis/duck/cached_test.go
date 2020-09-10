@@ -35,7 +35,7 @@ type BlockingInformerFactory struct {
 
 var _ InformerFactory = (*BlockingInformerFactory)(nil)
 
-func (bif *BlockingInformerFactory) Get(gvr schema.GroupVersionResource) (cache.SharedIndexInformer, cache.GenericLister, error) {
+func (bif *BlockingInformerFactory) Get(ctx context.Context, gvr schema.GroupVersionResource) (cache.SharedIndexInformer, cache.GenericLister, error) {
 	atomic.AddInt32(&bif.nCalls, 1)
 	// Wait here until we can acquire the lock
 	<-bif.block
@@ -71,7 +71,7 @@ func TestSameGVR(t *testing.T) {
 	const iter = 10
 	for i := 0; i < iter; i++ {
 		errGrp.Go(func() error {
-			_, _, err := cif.Get(gvr)
+			_, _, err := cif.Get(context.Background(), gvr)
 			atomic.AddInt32(&retGetCount, 1)
 			return err
 		})
@@ -130,7 +130,7 @@ func TestDifferentGVRs(t *testing.T) {
 		}
 
 		errGrp.Go(func() error {
-			_, _, err := cif.Get(gvr)
+			_, _, err := cif.Get(context.Background(), gvr)
 			atomic.AddInt32(&retGetCount, 1)
 			return err
 		})
