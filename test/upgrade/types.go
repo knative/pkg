@@ -49,7 +49,9 @@ type Installations struct {
 // Operation represents a upgrade test operation like test or installation that
 // can be provided by specific component or reused in aggregating components
 type Operation interface {
+	// Name is a human readable operation title, and it will be used in t.Run
 	Name() string
+	// Handler is a function that will be called to perform an operation
 	Handler() func(c Context)
 }
 
@@ -58,20 +60,31 @@ type Operation interface {
 // a passed BackgroundContext should be used to synchronize it's operations with
 // Ready and Stop channels.
 type BackgroundOperation interface {
+	// Name is a human readable operation title, and it will be used in t.Run
 	Name() string
+	// Setup method may be used to set up environment before upgrade/downgrade is
+	// performed.
 	Setup() func(c Context)
+	// Handler will be executed in background while upgrade/downgrade is being
+	// executed. It can be used to constantly validate environment during that
+	// time and/or wait for StopEvent being sent. After StopEvent is received
+	// user should validate environment, clean up resources, and report found
+	// issues to testing.T forwarded in StepEvent.
 	Handler() func(bc BackgroundContext)
 }
 
-// Context is an object that is passed to every operation
+// Context is an object that is passed to every operation. It contains testing.T
+// for error reporting and zap.SugaredLogger for unbuffered logging.
 type Context struct {
 	T   *testing.T
 	Log *zap.SugaredLogger
 }
 
-// BackgroundContext is a upgrade test execution context that will be passed down to each
-// handler of StoppableOperation. It contains a T reference and a stop channel
-// which handler should listen to to know when to stop its operations.
+// BackgroundContext is a upgrade test execution context that will be passed
+// down to each handler of BackgroundOperation. It contains a StopEvent channel
+// which end user should use to obtain a testing.T for error reporting. Until
+// StopEvent is sent user may use zap.SugaredLogger to log state of execution if
+// necessary.
 type BackgroundContext struct {
 	Log  *zap.SugaredLogger
 	Stop <-chan StopEvent
@@ -88,12 +101,12 @@ type StopEvent struct {
 }
 
 // WaitOnStopEventConfiguration holds a values to be used be WaitForStopEvent
-// function. Handler will be called when StopEvent is sent. OnWait will be
+// function. OnStop will be called when StopEvent is sent. OnWait will be
 // invoked in a loop while waiting, and each wait act is driven by WaitTime
 // amount.
 type WaitOnStopEventConfiguration struct {
 	Name     string
-	Handler  func(event StopEvent)
+	OnStop   func(event StopEvent)
 	OnWait   func(bc BackgroundContext, self WaitOnStopEventConfiguration)
 	WaitTime time.Duration
 }

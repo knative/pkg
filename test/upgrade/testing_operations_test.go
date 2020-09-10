@@ -231,9 +231,8 @@ func recreateSuite(steps []*step) upgrade.Suite {
 func (o operation) Name() string {
 	if o.op != nil {
 		return o.op.Name()
-	} else {
-		return o.bg.Name()
 	}
+	return o.bg.Name()
 }
 
 func (o *operation) fail(setupFail bool) {
@@ -259,7 +258,7 @@ func (o *operation) fail(setupFail bool) {
 		}, func(bc upgrade.BackgroundContext) {
 			upgrade.WaitForStopEvent(bc, upgrade.WaitOnStopEventConfiguration{
 				Name: testName,
-				Handler: func(event upgrade.StopEvent) {
+				OnStop: func(event upgrade.StopEvent) {
 					if !setupFail {
 						event.T.Error(failureTestingMessage)
 						bc.Log.Error(failureTestingMessage)

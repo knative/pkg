@@ -41,7 +41,7 @@ func (s *Suite) Execute(c Configuration) {
 	}
 }
 
-// NewOperation creates a new upgrade operation or test
+// NewOperation creates a new upgrade operation or test.
 func NewOperation(name string, handler func(c Context)) Operation {
 	return &simpleOperation{name: name, handler: handler}
 }
@@ -53,7 +53,7 @@ func NewBackgroundVerification(name string, setup func(c Context), verify func(c
 	return NewBackgroundOperation(name, setup, func(bc BackgroundContext) {
 		WaitForStopEvent(bc, WaitOnStopEventConfiguration{
 			Name: name,
-			Handler: func(event StopEvent) {
+			OnStop: func(event StopEvent) {
 				verify(Context{
 					T:   event.T,
 					Log: bc.Log,
@@ -66,8 +66,9 @@ func NewBackgroundVerification(name string, setup func(c Context), verify func(c
 }
 
 // NewBackgroundOperation creates a new background operation or test that can be
-// notified to stop its operation
-func NewBackgroundOperation(name string, setup func(c Context), handler func(bc BackgroundContext)) BackgroundOperation {
+// notified to stop its operation.
+func NewBackgroundOperation(name string, setup func(c Context),
+	handler func(bc BackgroundContext)) BackgroundOperation {
 	return &simpleBackgroundOperation{
 		name:    name,
 		setup:   setup,
@@ -84,7 +85,7 @@ func WaitForStopEvent(bc BackgroundContext, w WaitOnStopEventConfiguration) {
 		select {
 		case stopEvent := <-bc.Stop:
 			log.Infof("%s have received a stop event: %s", w.Name, stopEvent.Name())
-			w.Handler(stopEvent)
+			w.OnStop(stopEvent)
 			close(stopEvent.Finished)
 			return
 		default:

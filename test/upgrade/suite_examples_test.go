@@ -111,7 +111,7 @@ var (
 					bc.Log.Info("Running Serving continual test")
 					upgrade.WaitForStopEvent(bc, upgrade.WaitOnStopEventConfiguration{
 						Name: "Serving",
-						Handler: func(event upgrade.StopEvent) {
+						OnStop: func(event upgrade.StopEvent) {
 							bc.Log.Info("Stopping and verify of Serving continual test")
 							time.Sleep(shortWait)
 						},
