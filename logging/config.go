@@ -21,7 +21,6 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"strconv"
 	"strings"
 
 	"go.uber.org/zap"
@@ -34,11 +33,18 @@ import (
 	"github.com/blendle/zapdriver"
 )
 
+type loggerType int
+
 const (
-	configMapNameEnv     = "CONFIG_LOGGING_NAME"
-	loggerConfigKey      = "zap-logger-config"
-	stackdriverFormatKey = "use-stackdriver-format"
-	fallbackLoggerName   = "fallback-logger"
+	defaultLogger loggerType = iota
+	stackdriverLogger
+
+	loggerTypeKey         = "logger-type"
+	stackdriverLoggerName = "stackdriver"
+
+	configMapNameEnv   = "CONFIG_LOGGING_NAME"
+	loggerConfigKey    = "zap-logger-config"
+	fallbackLoggerName = "fallback-logger"
 )
 
 var (
@@ -53,35 +59,21 @@ var (
 // If configuration cannot be used to instantiate a logger,
 // the same fallback configuration is used.
 func NewLogger(configJSON string, levelOverride string, opts ...zap.Option) (*zap.SugaredLogger, zap.AtomicLevel) {
-	logger, atomicLevel, err := newLoggerFromConfig(configJSON, levelOverride, opts)
-	if err == nil {
-		return enrichLoggerWithCommitID(logger), atomicLevel
-	}
-
-	config := zap.NewProductionConfig()
-	return newLoggerFromZapConfig(&config, levelOverride)
-}
-
-// NewStackdriverLogger creates a logger using a configuration suitable for collection by
-// Stackdriver. In addition to the logger, it returns AtomicLevel that can be used to change the
-// logging level at runtime.
-func NewStackdriverLogger(levelOverride string, opts ...zap.Option) (*zap.SugaredLogger, zap.AtomicLevel) {
-	config := zapdriver.NewProductionConfig()
-	return newLoggerFromZapConfig(&config, levelOverride, append(opts, zapdriver.WrapCore())...)
-}
-
-func newLoggerFromZapConfig(loggingCfg *zap.Config, levelOverride string, opts ...zap.Option) (*zap.SugaredLogger, zap.AtomicLevel) {
+	var level *zapcore.Level
 	if levelOverride != "" {
-		if level, err := levelFromString(levelOverride); err == nil {
-			loggingCfg.Level = zap.NewAtomicLevelAt(*level)
+		if l, err := levelFromString(levelOverride); err == nil {
+			level = l
 		}
 	}
+	return newLogger(&Config{LoggingConfig: configJSON}, level, opts...)
+}
 
-	logger, err2 := loggingCfg.Build(opts...)
-	if err2 != nil {
-		panic(err2)
+func newLoggerFromZapConfig(loggingCfg *zap.Config, opts ...zap.Option) (*zap.SugaredLogger, error) {
+	logger, err := loggingCfg.Build(opts...)
+	if err != nil {
+		return nil, err
 	}
-	return enrichLoggerWithCommitID(logger.Named(fallbackLoggerName)), loggingCfg.Level
+	return enrichLoggerWithCommitID(logger), nil
 }
 
 func enrichLoggerWithCommitID(logger *zap.Logger) *zap.SugaredLogger {
@@ -96,60 +88,79 @@ func enrichLoggerWithCommitID(logger *zap.Logger) *zap.SugaredLogger {
 }
 
 // NewLoggerFromConfig creates a logger using the provided Config
-func NewLoggerFromConfig(config *Config, name string, opts ...zap.Option) (logger *zap.SugaredLogger, level zap.AtomicLevel) {
-	var componentLvl string
-	if lvl, defined := config.LoggingLevel[name]; defined {
-		componentLvl = lvl.String()
+func NewLoggerFromConfig(config *Config, name string, opts ...zap.Option) (*zap.SugaredLogger, zap.AtomicLevel) {
+	var level *zapcore.Level
+	if lvl, ok := config.LoggingLevel[name]; ok {
+		level = &lvl
 	}
-
-	if config.StackdriverFormat {
-		logger, level = NewStackdriverLogger(componentLvl, opts...)
-	} else {
-		logger, level = NewLogger(config.LoggingConfig, componentLvl, opts...)
-	}
-	return logger.Named(name), level
+	logger, atomicLevel := newLogger(config, level, opts...)
+	return logger.Named(name), atomicLevel
 }
 
-func newLoggerFromConfig(configJSON string, levelOverride string, opts []zap.Option) (*zap.Logger, zap.AtomicLevel, error) {
-	loggingCfg, err := zapConfigFromJSON(configJSON)
+func newLogger(config *Config, levelOverride *zapcore.Level, opts ...zap.Option) (*zap.SugaredLogger, zap.AtomicLevel) {
+	if logger, atomicLevel, err := newLoggerFromConfig(config, levelOverride, opts...); err == nil {
+		return logger, atomicLevel
+	}
+
+	fallbackCfg := zap.NewProductionConfig()
+	if levelOverride != nil {
+		fallbackCfg.Level = zap.NewAtomicLevelAt(*levelOverride)
+	}
+	if logger, err := newLoggerFromZapConfig(&fallbackCfg, opts...); err != nil {
+		panic(err)
+	} else {
+		return logger.Named(fallbackLoggerName), fallbackCfg.Level
+	}
+}
+
+func newLoggerFromConfig(config *Config, level *zapcore.Level, opts ...zap.Option) (*zap.SugaredLogger, zap.AtomicLevel, error) {
+	loggingCfg, extraOpts, err := config.BuildZapConfig()
 	if err != nil {
 		return nil, zap.AtomicLevel{}, err
 	}
 
-	if levelOverride != "" {
-		if level, err := levelFromString(levelOverride); err == nil {
-			loggingCfg.Level = zap.NewAtomicLevelAt(*level)
-		}
+	if level != nil {
+		loggingCfg.Level = zap.NewAtomicLevelAt(*level)
 	}
 
-	logger, err := loggingCfg.Build(opts...)
+	logger, err := newLoggerFromZapConfig(loggingCfg, append(opts, extraOpts...)...)
 	if err != nil {
 		return nil, zap.AtomicLevel{}, err
 	}
 
 	logger.Info("Successfully created the logger.")
 	logger.Info("Logging level set to: " + loggingCfg.Level.String())
-	return logger, loggingCfg.Level, nil
-}
-
-func zapConfigFromJSON(configJSON string) (*zap.Config, error) {
-	if configJSON == "" {
-		return nil, errEmptyLoggerConfig
-	}
-
-	loggingCfg := &zap.Config{}
-	if err := json.Unmarshal([]byte(configJSON), loggingCfg); err != nil {
-		return nil, err
-	}
-	return loggingCfg, nil
+	return logger, loggingCfg.Level, err
 }
 
 // Config contains the configuration defined in the logging ConfigMap.
 // +k8s:deepcopy-gen=true
 type Config struct {
-	LoggingConfig     string
-	LoggingLevel      map[string]zapcore.Level
-	StackdriverFormat bool
+	LoggingConfig string
+	LoggingLevel  map[string]zapcore.Level
+	LoggerType    loggerType
+}
+
+func (c *Config) BuildZapConfig() (*zap.Config, []zap.Option, error) {
+	config := zap.Config{}
+	var opts []zap.Option
+
+	switch c.LoggerType {
+	case stackdriverLogger:
+		config = zapdriver.NewProductionConfig()
+		opts = []zap.Option{zapdriver.WrapCore()}
+	}
+
+	err := errEmptyLoggerConfig
+	if c.LoggingConfig != "" {
+		err = json.Unmarshal([]byte(c.LoggingConfig), &config)
+	}
+	// Only require valid JSON logging string with the default logger.
+	if c.LoggerType == defaultLogger && err != nil {
+		return nil, nil, err
+	}
+
+	return &config, opts, nil
 }
 
 const defaultZLC = `{
@@ -173,22 +184,28 @@ const defaultZLC = `{
   }
 }`
 
-func defaultConfig() *Config {
+func newConfig() *Config {
 	return &Config{
-		LoggingConfig: defaultZLC,
-		LoggingLevel:  make(map[string]zapcore.Level),
+		LoggingLevel: make(map[string]zapcore.Level),
 	}
 }
 
 // NewConfigFromMap creates a LoggingConfig from the supplied map,
 // expecting the given list of components.
 func NewConfigFromMap(data map[string]string) (*Config, error) {
-	lc := defaultConfig()
+	lc := newConfig()
+
+	switch data[loggerTypeKey] {
+	case stackdriverLoggerName:
+		lc.LoggerType = stackdriverLogger
+	default:
+		lc.LoggerType = defaultLogger
+	}
+
 	if zlc, ok := data[loggerConfigKey]; ok {
 		lc.LoggingConfig = zlc
-	}
-	if b, err := strconv.ParseBool(data[stackdriverFormatKey]); err == nil {
-		lc.StackdriverFormat = b
+	} else if lc.LoggerType == defaultLogger {
+		lc.LoggingConfig = defaultZLC
 	}
 
 	for k, v := range data {
@@ -234,15 +251,15 @@ func UpdateLevelFromConfigMap(logger *zap.SugaredLogger, atomicLevel zap.AtomicL
 		level, defined := config.LoggingLevel[levelKey]
 		if !defined {
 			// reset to global level
-			loggingCfg, err := zapConfigFromJSON(config.LoggingConfig)
-			switch {
-			case err == errEmptyLoggerConfig:
+			if config.LoggingConfig == "" {
 				level = zap.NewAtomicLevel().Level()
-			case err != nil:
-				logger.With(zap.Error(err)).Errorf("Failed to parse logger configuration. "+
-					"Previous log level retained for %v", levelKey)
-				return
-			default:
+			} else {
+				var loggingCfg zap.Config
+				if err := json.Unmarshal([]byte(config.LoggingConfig), &loggingCfg); err != nil {
+					logger.With(zap.Error(err)).Errorf("Failed to parse logger configuration. "+
+						"Previous log level retained for %v", levelKey)
+					return
+				}
 				level = loggingCfg.Level.Level()
 			}
 		}

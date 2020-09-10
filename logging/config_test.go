@@ -144,16 +144,57 @@ func TestNewConfig(t *testing.T) {
 		Data: map[string]string{
 			"zap-logger-config":   wantCfg,
 			"loglevel.queueproxy": wantLevel.String(),
+			"logger-type":         "stackdriver",
 		},
 	})
 	if err != nil {
 		t.Errorf("Expected no errors. got: %v", err)
 	}
-	if got := c.LoggingConfig; got != wantCfg {
-		t.Errorf("LoggingConfig = %v, want %v", got, wantCfg)
+	want := &Config{
+		LoggingConfig: wantCfg,
+		LoggingLevel: map[string]zapcore.Level{
+			"queueproxy": wantLevel,
+		},
+		LoggerType: stackdriverLogger,
 	}
-	if got := c.LoggingLevel["queueproxy"]; got != wantLevel {
-		t.Errorf("LoggingLevel[queueproxy] = %v, want %v", got, wantLevel)
+	if diff := cmp.Diff(want, c); diff != "" {
+		t.Errorf("unexpected config (-want, +got) = %v", diff)
+	}
+}
+
+func TestBuildZapConfig(t *testing.T) {
+	tcs := []struct {
+		name           string
+		config         *Config
+		wantLevel      zapcore.Level
+		wantMessageKey string
+	}{{
+		name:      "build default logger config",
+		config:    makeTestConfig(withGlobalLevel("error")),
+		wantLevel: zapcore.ErrorLevel,
+	}, {
+		name:           "build stackdriver logger config",
+		config:         makeTestConfig(withLoggerType(stackdriverLogger)),
+		wantMessageKey: "message",
+	}, {
+		name:           "build stackdriver logger config with JSON",
+		config:         makeTestConfig(withGlobalLevel("error"), withLoggerType(stackdriverLogger)),
+		wantLevel:      zapcore.ErrorLevel,
+		wantMessageKey: "message",
+	}}
+	for _, tc := range tcs {
+		t.Run(tc.name, func(t *testing.T) {
+			c, _, err := tc.config.BuildZapConfig()
+			if err != nil {
+				t.Fatal(err)
+			}
+			if got := c.Level.Level(); got != tc.wantLevel {
+				t.Errorf("Unexpected level, want: %q got: %q", tc.wantLevel, got)
+			}
+			if c.EncoderConfig.MessageKey != tc.wantMessageKey {
+				t.Errorf("Unexpected message key, want: %q got %q", tc.wantMessageKey, c.EncoderConfig.MessageKey)
+			}
+		})
 	}
 }
 
@@ -169,7 +210,7 @@ func TestNewLoggerFromConfig(t *testing.T) {
 		name: "Has component log level when component-specific level is defined",
 		cfg: makeTestConfig(
 			withGlobalLevel("error"),
-			withComponentLevel(componentName, "debug"),
+			withComponentLevel(componentName, zapcore.DebugLevel),
 		),
 		expectLvl:  zapcore.DebugLevel,
 		expectName: componentName,
@@ -450,6 +491,13 @@ func makeTestConfig(opts ...testConfigOption) *Config {
 
 type testConfigOption func(*Config) *Config
 
+func withLoggerType(t loggerType) testConfigOption {
+	return func(cfg *Config) *Config {
+		cfg.LoggerType = t
+		return cfg
+	}
+}
+
 func withGlobalLevel(lvl string) testConfigOption {
 	return func(cfg *Config) *Config {
 		cfg.LoggingConfig = fmt.Sprintf("{"+
@@ -463,17 +511,12 @@ func withGlobalLevel(lvl string) testConfigOption {
 	}
 }
 
-func withComponentLevel(name, lvl string) testConfigOption {
+func withComponentLevel(name string, lvl zapcore.Level) testConfigOption {
 	return func(cfg *Config) *Config {
-		logLvl, err := levelFromString(lvl)
-		if err != nil {
-			return cfg
-		}
-
 		if cfg.LoggingLevel == nil {
 			cfg.LoggingLevel = make(map[string]zapcore.Level, 1)
 		}
-		cfg.LoggingLevel[name] = *logLvl
+		cfg.LoggingLevel[name] = lvl
 		return cfg
 	}
 }
