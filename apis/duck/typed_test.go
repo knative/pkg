@@ -62,7 +62,8 @@ func TestSimpleList(t *testing.T) {
 		},
 	})
 
-	ctx := context.Background()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
 	tif := &duck.TypedInformerFactory{
 		Client:       client,
