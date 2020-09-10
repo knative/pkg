@@ -40,7 +40,7 @@ func (cif *EnqueueInformerFactory) Get(ctx context.Context, gvr schema.GroupVers
 	if err != nil {
 		return nil, nil, err
 	}
-	// If there is an informer, attach our event ƒhandler.
+	// If there is an informer, attach our event handler.
 	inf.AddEventHandler(cif.EventHandler)
 	return inf, lister, nil
 }

@@ -62,19 +62,18 @@ func TestSimpleList(t *testing.T) {
 		},
 	})
 
-	stopCh := make(chan struct{})
-	defer close(stopCh)
+	ctx := context.Background()
 
 	tif := &duck.TypedInformerFactory{
 		Client:       client,
 		Type:         &duckv1alpha1.AddressableType{},
 		ResyncPeriod: 1 * time.Second,
-		StopChannel:  stopCh,
+		StopChannel:  ctx.Done(),
 	}
 
 	// This hangs without:
 	// https://github.com/kubernetes/kubernetes/pull/68552
-	_, lister, err := tif.Get(context.Background(), SchemeGroupVersion.WithResource("resources"))
+	_, lister, err := tif.Get(ctx, SchemeGroupVersion.WithResource("resources"))
 	if err != nil {
 		t.Fatalf("Get() = %v", err)
 	}

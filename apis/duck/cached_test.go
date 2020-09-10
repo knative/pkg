@@ -57,7 +57,7 @@ func TestSameGVR(t *testing.T) {
 	// counts the number of calls to cif.Get that returned
 	retGetCount := int32(0)
 
-	errGrp, _ := errgroup.WithContext(context.Background())
+	errGrp, ctx := errgroup.WithContext(context.Background())
 
 	// Use the same GVR each iteration to ensure we hit the cache and don't
 	// initialize the informerCache for that GVR multiple times through our
@@ -71,7 +71,7 @@ func TestSameGVR(t *testing.T) {
 	const iter = 10
 	for i := 0; i < iter; i++ {
 		errGrp.Go(func() error {
-			_, _, err := cif.Get(context.Background(), gvr)
+			_, _, err := cif.Get(ctx, gvr)
 			atomic.AddInt32(&retGetCount, 1)
 			return err
 		})
@@ -116,7 +116,7 @@ func TestDifferentGVRs(t *testing.T) {
 	// counts the number of calls to cif.Get that returned
 	retGetCount := int32(0)
 
-	errGrp, _ := errgroup.WithContext(context.Background())
+	errGrp, ctx := errgroup.WithContext(context.Background())
 
 	const iter = 10
 	for i := 0; i < iter; i++ {
@@ -130,7 +130,7 @@ func TestDifferentGVRs(t *testing.T) {
 		}
 
 		errGrp.Go(func() error {
-			_, _, err := cif.Get(context.Background(), gvr)
+			_, _, err := cif.Get(ctx, gvr)
 			atomic.AddInt32(&retGetCount, 1)
 			return err
 		})
