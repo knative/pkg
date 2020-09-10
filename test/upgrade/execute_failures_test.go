@@ -38,7 +38,7 @@ func TestSuiteExecuteWithFailures(t *testing.T) {
 var allTestsFilter = func(_, _ string) (bool, error) { return true, nil }
 
 func testSuiteExecuteWithFailingStep(fp failurePoint, t *testing.T) {
-	assert := assert{t: t}
+	assert := assertions{t: t}
 	testName := fmt.Sprintf("FailAt-%d-%d", fp.step, fp.element)
 	t.Run(testName, func(t *testing.T) {
 		var output string
@@ -47,7 +47,7 @@ func testSuiteExecuteWithFailingStep(fp failurePoint, t *testing.T) {
 		txt.append(upgradeTestRunning, upgradeTestFailure)
 		log, buf := newExampleZap()
 
-		tests := []testing.InternalTest{{
+		it := []testing.InternalTest{{
 			Name: testName,
 			F: func(t *testing.T) {
 				c, _ := newConfig(t)
@@ -57,7 +57,7 @@ func testSuiteExecuteWithFailingStep(fp failurePoint, t *testing.T) {
 		}}
 		var ok bool
 		testOutput := captureStdOutput(func() {
-			ok = testing.RunTests(allTestsFilter, tests)
+			ok = testing.RunTests(allTestsFilter, it)
 		})
 		output = buf.String()
 

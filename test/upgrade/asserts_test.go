@@ -22,11 +22,11 @@ import (
 	"testing"
 )
 
-type assert struct {
+type assertions struct {
 	t *testing.T
 }
 
-func (a assert) textContains(haystack string, needles texts) {
+func (a assertions) textContains(haystack string, needles texts) {
 	for _, needle := range needles.elms {
 		if !strings.Contains(haystack, needle) {
 			a.t.Errorf(
@@ -37,7 +37,7 @@ func (a assert) textContains(haystack string, needles texts) {
 	}
 }
 
-func (a assert) arraysEqual(actual []string, expected []string) {
+func (a assertions) arraysEqual(actual []string, expected []string) {
 	if !reflect.DeepEqual(actual, expected) {
 		a.t.Errorf("arrays differ:\n  actual: %#v\nexpected: %#v", actual, expected)
 	}

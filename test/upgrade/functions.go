@@ -22,6 +22,7 @@ import (
 	"go.uber.org/zap"
 )
 
+// Execute the Suite of upgrade tests with a Configuration given.
 func (s *Suite) Execute(c Configuration) {
 	l := c.logger()
 	se := suiteExecution{
@@ -99,6 +100,7 @@ func (c Configuration) logger() *zap.SugaredLogger {
 	return c.Log.Sugar()
 }
 
+// Name returns a friendly human readable text.
 func (s *StopEvent) Name() string {
 	return s.name
 }
@@ -122,22 +124,32 @@ func enrichSuite(s *Suite) *enrichedSuite {
 	return es
 }
 
+// Name is a human readable operation title, and it will be used in t.Run.
 func (h *simpleOperation) Name() string {
 	return h.name
 }
 
+// Handler is a function that will be called to perform an operation.
 func (h *simpleOperation) Handler() func(c Context) {
 	return h.handler
 }
 
+// Name is a human readable operation title, and it will be used in t.Run.
 func (s *simpleBackgroundOperation) Name() string {
 	return s.name
 }
 
+// Setup method may be used to set up environment before upgrade/downgrade is
+// performed.
 func (s *simpleBackgroundOperation) Setup() func(c Context) {
 	return s.setup
 }
 
+// Handler will be executed in background while upgrade/downgrade is being
+// executed. It can be used to constantly validate environment during that
+// time and/or wait for StopEvent being sent. After StopEvent is received
+// user should validate environment, clean up resources, and report found
+// issues to testing.T forwarded in StepEvent.
 func (s *simpleBackgroundOperation) Handler() func(bc BackgroundContext) {
 	return s.handler
 }

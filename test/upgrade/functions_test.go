@@ -25,7 +25,7 @@ const (
 )
 
 func TestExpectedTextsForEmptySuite(t *testing.T) {
-	assert := assert{t: t}
+	assert := assertions{t: t}
 	fp := notFailing
 	suite := emptySuiteExample()
 	txt := expectedTexts(suite, fp)
@@ -42,7 +42,7 @@ func TestExpectedTextsForEmptySuite(t *testing.T) {
 }
 
 func TestExpectedTextsForCompleteSuite(t *testing.T) {
-	assert := assert{t: t}
+	assert := assertions{t: t}
 	fp := notFailing
 	suite := completeSuiteExample(fp)
 	txt := expectedTexts(suite, fp)
@@ -76,7 +76,7 @@ func TestExpectedTextsForCompleteSuite(t *testing.T) {
 }
 
 func TestExpectedTextsForFailingCompleteSuite(t *testing.T) {
-	assert := assert{t: t}
+	assert := assertions{t: t}
 	fp := failurePoint{
 		step:    2,
 		element: 1,
@@ -94,7 +94,7 @@ func TestExpectedTextsForFailingCompleteSuite(t *testing.T) {
 }
 
 func TestSuiteExecuteEmpty(t *testing.T) {
-	assert := assert{t: t}
+	assert := assertions{t: t}
 	c, buf := newConfig(t)
 	fp := notFailing
 	suite := emptySuiteExample()
@@ -111,7 +111,7 @@ func TestSuiteExecuteEmpty(t *testing.T) {
 }
 
 func TestSuiteExecuteWithComplete(t *testing.T) {
-	assert := assert{t: t}
+	assert := assertions{t: t}
 	c, buf := newConfig(t)
 	fp := notFailing
 	suite := completeSuiteExample(fp)

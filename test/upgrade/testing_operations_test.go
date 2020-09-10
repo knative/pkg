@@ -157,8 +157,8 @@ func createMessages(mf formats) messages {
 	}
 }
 
-func (tt *texts) append(msgs ...string) {
-	for _, msg := range msgs {
+func (tt *texts) append(messages ...string) {
+	for _, msg := range messages {
 		if msg == "" {
 			continue
 		}

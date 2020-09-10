@@ -49,9 +49,9 @@ type Installations struct {
 // Operation represents a upgrade test operation like test or installation that
 // can be provided by specific component or reused in aggregating components.
 type Operation interface {
-	// Name is a human readable operation title, and it will be used in t.Run
+	// Name is a human readable operation title, and it will be used in t.Run.
 	Name() string
-	// Handler is a function that will be called to perform an operation
+	// Handler is a function that will be called to perform an operation.
 	Handler() func(c Context)
 }
 
@@ -60,7 +60,7 @@ type Operation interface {
 // a passed BackgroundContext should be used to synchronize it's operations with
 // Ready and Stop channels.
 type BackgroundOperation interface {
-	// Name is a human readable operation title, and it will be used in t.Run
+	// Name is a human readable operation title, and it will be used in t.Run.
 	Name() string
 	// Setup method may be used to set up environment before upgrade/downgrade is
 	// performed.

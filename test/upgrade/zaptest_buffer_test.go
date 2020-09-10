@@ -35,11 +35,13 @@ func (b *buffer) Read(p []byte) (n int, err error) {
 	defer b.Mutex.Unlock()
 	return b.Buffer.Read(p)
 }
+
 func (b *buffer) Write(p []byte) (n int, err error) {
 	b.Mutex.Lock()
 	defer b.Mutex.Unlock()
 	return b.Buffer.Write(p)
 }
+
 func (b *buffer) String() string {
 	b.Mutex.Lock()
 	defer b.Mutex.Unlock()
