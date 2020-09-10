@@ -48,23 +48,23 @@ require (
 	google.golang.org/protobuf v1.25.0
 	gopkg.in/yaml.v2 v2.3.0
 	gopkg.in/yaml.v3 v3.0.0-20190709130402-674ba3eaed22
-	k8s.io/api v0.18.7-rc.0
+	k8s.io/api v0.18.8
 	k8s.io/apiextensions-apiserver v0.18.4
-	k8s.io/apimachinery v0.18.7-rc.0
+	k8s.io/apimachinery v0.18.8
 	k8s.io/client-go v11.0.1-0.20190805182717-6502b5e7b1b5+incompatible
-	k8s.io/code-generator v0.18.6
+	k8s.io/code-generator v0.18.8
 	k8s.io/gengo v0.0.0-20200205140755-e0e292d8aa12
 	k8s.io/klog v1.0.0
-	knative.dev/test-infra v0.0.0-20200828211307-9d4372c9b1c7
+	knative.dev/test-infra v0.0.0-20200909211651-72eb6ae3c773
 	sigs.k8s.io/boskos v0.0.0-20200729174948-794df80db9c9
 )
 
 replace (
 	github.com/prometheus/client_golang => github.com/prometheus/client_golang v0.9.2
 
-	k8s.io/api => k8s.io/api v0.17.6
-	k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.17.6
-	k8s.io/apimachinery => k8s.io/apimachinery v0.17.6
-	k8s.io/client-go => k8s.io/client-go v0.17.6
-	k8s.io/code-generator => k8s.io/code-generator v0.17.6
+	k8s.io/api => k8s.io/api v0.18.8
+	k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.18.8
+	k8s.io/apimachinery => k8s.io/apimachinery v0.18.8
+	k8s.io/client-go => k8s.io/client-go v0.18.8
+	k8s.io/code-generator => k8s.io/code-generator v0.18.8
 )

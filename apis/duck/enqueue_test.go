@@ -17,6 +17,7 @@ limitations under the License.
 package duck
 
 import (
+	"context"
 	"errors"
 	"testing"
 	"time"
@@ -44,7 +45,7 @@ func TestEnqueueInformerFactory(t *testing.T) {
 		Version:  "v3",
 		Resource: "caches",
 	}
-	inf, _, err := eif.Get(gvr)
+	inf, _, err := eif.Get(context.Background(), gvr)
 	if err != nil {
 		t.Fatalf("Get() = %v", err)
 	}
@@ -95,7 +96,7 @@ func TestEnqueueInformerFactoryWithFailure(t *testing.T) {
 		Version:  "v3",
 		Resource: "caches",
 	}
-	inf, _, got := eif.Get(gvr)
+	inf, _, got := eif.Get(context.Background(), gvr)
 	if got != want {
 		t.Fatalf("Get() = %v, wanted %v", got, want)
 	}
@@ -113,7 +114,7 @@ type FixedInformerFactory struct {
 
 var _ InformerFactory = (*FixedInformerFactory)(nil)
 
-func (fif *FixedInformerFactory) Get(gvr schema.GroupVersionResource) (cache.SharedIndexInformer, cache.GenericLister, error) {
+func (fif *FixedInformerFactory) Get(ctx context.Context, gvr schema.GroupVersionResource) (cache.SharedIndexInformer, cache.GenericLister, error) {
 	return fif.inf, fif.lister, fif.err
 }
 

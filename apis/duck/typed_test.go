@@ -17,6 +17,7 @@ limitations under the License.
 package duck_test
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"testing"
@@ -61,19 +62,19 @@ func TestSimpleList(t *testing.T) {
 		},
 	})
 
-	stopCh := make(chan struct{})
-	defer close(stopCh)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
 	tif := &duck.TypedInformerFactory{
 		Client:       client,
 		Type:         &duckv1alpha1.AddressableType{},
 		ResyncPeriod: 1 * time.Second,
-		StopChannel:  stopCh,
+		StopChannel:  ctx.Done(),
 	}
 
 	// This hangs without:
 	// https://github.com/kubernetes/kubernetes/pull/68552
-	_, lister, err := tif.Get(SchemeGroupVersion.WithResource("resources"))
+	_, lister, err := tif.Get(ctx, SchemeGroupVersion.WithResource("resources"))
 	if err != nil {
 		t.Fatalf("Get() = %v", err)
 	}
@@ -107,7 +108,7 @@ func TestInvalidResource(t *testing.T) {
 		StopChannel:  stopCh,
 	}
 
-	_, _, got := tif.Get(SchemeGroupVersion.WithResource("resources"))
+	_, _, got := tif.Get(context.Background(), SchemeGroupVersion.WithResource("resources"))
 
 	if got != errTest {
 		t.Errorf("Error = %v, want: %v", got, errTest)
@@ -116,11 +117,11 @@ func TestInvalidResource(t *testing.T) {
 
 func TestAsStructuredWatcherNestedError(t *testing.T) {
 	want := errors.New("this is what we expect")
-	nwf := func(lo metav1.ListOptions) (watch.Interface, error) {
+	nwf := func(ctx context.Context, lo metav1.ListOptions) (watch.Interface, error) {
 		return nil, want
 	}
 
-	wf := duck.AsStructuredWatcher(nwf, &duckv1alpha1.AddressableType{})
+	wf := duck.AsStructuredWatcher(context.Background(), nwf, &duckv1alpha1.AddressableType{})
 
 	_, got := wf(metav1.ListOptions{})
 	if got != want {
@@ -129,11 +130,11 @@ func TestAsStructuredWatcherNestedError(t *testing.T) {
 }
 
 func TestAsStructuredWatcherClosedChannel(t *testing.T) {
-	nwf := func(lo metav1.ListOptions) (watch.Interface, error) {
+	nwf := func(ctx context.Context, lo metav1.ListOptions) (watch.Interface, error) {
 		return watch.NewEmptyWatch(), nil
 	}
 
-	wf := duck.AsStructuredWatcher(nwf, &duckv1alpha1.AddressableType{})
+	wf := duck.AsStructuredWatcher(context.Background(), nwf, &duckv1alpha1.AddressableType{})
 
 	wi, err := wf(metav1.ListOptions{})
 	if err != nil {
@@ -150,11 +151,11 @@ func TestAsStructuredWatcherClosedChannel(t *testing.T) {
 
 func TestAsStructuredWatcherPassThru(t *testing.T) {
 	unstructuredCh := make(chan watch.Event)
-	nwf := func(lo metav1.ListOptions) (watch.Interface, error) {
+	nwf := func(ctx context.Context, lo metav1.ListOptions) (watch.Interface, error) {
 		return watch.NewProxyWatcher(unstructuredCh), nil
 	}
 
-	wf := duck.AsStructuredWatcher(nwf, &duckv1alpha1.AddressableType{})
+	wf := duck.AsStructuredWatcher(context.Background(), nwf, &duckv1alpha1.AddressableType{})
 
 	wi, err := wf(metav1.ListOptions{})
 	if err != nil {
@@ -196,11 +197,11 @@ func TestAsStructuredWatcherPassThru(t *testing.T) {
 
 func TestAsStructuredWatcherPassThruErrors(t *testing.T) {
 	unstructuredCh := make(chan watch.Event)
-	nwf := func(lo metav1.ListOptions) (watch.Interface, error) {
+	nwf := func(ctx context.Context, lo metav1.ListOptions) (watch.Interface, error) {
 		return watch.NewProxyWatcher(unstructuredCh), nil
 	}
 
-	wf := duck.AsStructuredWatcher(nwf, &duckv1alpha1.AddressableType{})
+	wf := duck.AsStructuredWatcher(context.Background(), nwf, &duckv1alpha1.AddressableType{})
 
 	wi, err := wf(metav1.ListOptions{})
 	if err != nil {
@@ -233,11 +234,11 @@ func TestAsStructuredWatcherPassThruErrors(t *testing.T) {
 
 func TestAsStructuredWatcherErrorConverting(t *testing.T) {
 	unstructuredCh := make(chan watch.Event)
-	nwf := func(lo metav1.ListOptions) (watch.Interface, error) {
+	nwf := func(ctx context.Context, lo metav1.ListOptions) (watch.Interface, error) {
 		return watch.NewProxyWatcher(unstructuredCh), nil
 	}
 
-	wf := duck.AsStructuredWatcher(nwf, &badObject{})
+	wf := duck.AsStructuredWatcher(context.Background(), nwf, &badObject{})
 
 	wi, err := wf(metav1.ListOptions{})
 	if err != nil {
@@ -310,6 +311,6 @@ type invalidResource struct {
 	dynamic.NamespaceableResourceInterface
 }
 
-func (*invalidResource) List(options metav1.ListOptions) (*unstructured.UnstructuredList, error) {
+func (*invalidResource) List(ctx context.Context, options metav1.ListOptions) (*unstructured.UnstructuredList, error) {
 	return nil, errTest
 }

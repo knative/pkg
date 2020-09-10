@@ -1,0 +1,13 @@
+run:
+  timeout: 5m
+
+  skip-dirs:
+    - injection/client
+    - test/mako
+
+linters:
+  enable:
+    - unconvert
+    - prealloc
+  disable:
+    - errcheck
