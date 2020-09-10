@@ -46,15 +46,10 @@ type Installations struct {
 	DowngradeWith []Operation
 }
 
-// Named interface represents a type that is named in user friendly way
-type Named interface {
-	Name() string
-}
-
 // Operation represents a upgrade test operation like test or installation that
 // can be provided by specific component or reused in aggregating components
 type Operation interface {
-	Named
+	Name() string
 	Handler() func(c Context)
 }
 
@@ -63,7 +58,7 @@ type Operation interface {
 // a passed BackgroundContext should be used to synchronize it's operations with
 // Ready and Stop channels.
 type BackgroundOperation interface {
-	Named
+	Name() string
 	Setup() func(c Context)
 	Handler() func(bc BackgroundContext)
 }
