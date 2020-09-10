@@ -347,6 +347,9 @@ testComponent_testing_value{project="p1",revision="r2"} 1
 			for {
 				select {
 				case record := <-ocFake.published:
+					if record == nil {
+						continue loop
+					}
 					for _, m := range record.Metrics {
 						if len(m.Timeseries) > 0 {
 							labels := map[string]string{}
@@ -599,7 +602,7 @@ func TestStackDriverExports(t *testing.T) {
 						records = append(records, extracted)
 						if strings.HasPrefix(ts.Metric.Type, "knative.dev/") {
 							if diff := cmp.Diff(ts.Resource.Type, metricskey.ResourceTypeKnativeRevision); diff != "" {
-								t.Errorf("Incorrect resource type for %q: (-want +got): %s", ts.Metric.Type, diff)
+								t.Errorf("Incorrect resource type for %q: (-want +got):\n%s", ts.Metric.Type, diff)
 							}
 						}
 					}
@@ -611,7 +614,7 @@ func TestStackDriverExports(t *testing.T) {
 						sdFake.srv.GracefulStop()
 						break loop
 					}
-				case <-time.After(5 * time.Second):
+				case <-time.After(4 * time.Second):
 					t.Error("Timeout reading records from Stackdriver")
 					break loop
 				}
