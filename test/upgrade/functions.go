@@ -25,11 +25,10 @@ import (
 func (s *Suite) Execute(c Configuration) {
 	l := c.logger()
 	se := suiteExecution{
-		suite:         s,
+		suite:         enrichSuite(s),
 		configuration: c,
 		failed:        false,
 		logger:        l,
-		stoppables:    make([]stoppable, 0),
 	}
 	l.Info("🏃 Running upgrade test suite...")
 
@@ -103,24 +102,23 @@ func (s *StopEvent) Name() string {
 	return s.name
 }
 
-type operationGroup struct {
-	num                   int
-	operations            []Operation
-	groupName             string
-	groupTemplate         string
-	elementTemplate       string
-	skippingGroupTemplate string
-}
-
-type simpleOperation struct {
-	name    string
-	handler func(c Context)
-}
-
-type simpleBackgroundOperation struct {
-	name    string
-	setup   func(c Context)
-	handler func(bc BackgroundContext)
+func enrichSuite(s *Suite) *enrichedSuite {
+	es := &enrichedSuite{
+		installations: s.Installations,
+		tests: enrichedTests{
+			preUpgrade:     s.Tests.PreUpgrade,
+			postUpgrade:    s.Tests.PostUpgrade,
+			postDowngrade:  s.Tests.PostDowngrade,
+			continualTests: make([]stoppableOperation, len(s.Tests.ContinualTests)),
+		},
+	}
+	for i, test := range s.Tests.ContinualTests {
+		es.tests.continualTests[i] = stoppableOperation{
+			BackgroundOperation: test,
+			stop:                make(chan StopEvent),
+		}
+	}
+	return es
 }
 
 func (h *simpleOperation) Name() string {

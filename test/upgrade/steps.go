@@ -25,7 +25,7 @@ const skippingOperationTemplate = `Skipping "%s" as previous operation have fail
 func (se *suiteExecution) installingBase(num int) {
 	se.processOperationGroup(operationGroup{
 		num:                   num,
-		operations:            se.suite.Installations.Base,
+		operations:            se.suite.installations.Base,
 		groupName:             "InstallingBase",
 		elementTemplate:       `%d.%d) Installing base install of "%s".`,
 		skippingGroupTemplate: "%d) 💿 No base installation registered. Skipping.",
@@ -36,7 +36,7 @@ func (se *suiteExecution) installingBase(num int) {
 func (se *suiteExecution) preUpgradeTests(num int) {
 	se.processOperationGroup(operationGroup{
 		num:                   num,
-		operations:            se.suite.Tests.PreUpgrade,
+		operations:            se.suite.tests.preUpgrade,
 		groupName:             "PreUpgradeTests",
 		elementTemplate:       `%d.%d) Testing with "%s".`,
 		skippingGroupTemplate: "%d) ✅️️ No pre upgrade tests registered. Skipping.",
@@ -47,7 +47,7 @@ func (se *suiteExecution) preUpgradeTests(num int) {
 
 func (se *suiteExecution) startContinualTests(num int) {
 	l := se.logger
-	operations := se.suite.Tests.ContinualTests
+	operations := se.suite.tests.continualTests
 	groupTemplate := "%d) 🔄 Starting continual tests. " +
 		"%d tests are registered."
 	elementTemplate := `%d.%d) Starting continual tests of "%s".`
@@ -55,7 +55,8 @@ func (se *suiteExecution) startContinualTests(num int) {
 	se.configuration.T.Run("ContinualTests", func(t *testing.T) {
 		if numOps > 0 {
 			l.Infof(groupTemplate, num, numOps)
-			for i, operation := range operations {
+			for i := range operations {
+				operation := operations[i]
 				l.Infof(elementTemplate, num, i+1, operation.Name())
 				if se.failed {
 					l.Debugf(skippingOperationTemplate, operation.Name())
@@ -65,14 +66,9 @@ func (se *suiteExecution) startContinualTests(num int) {
 				t.Run("Setup"+operation.Name(), func(t *testing.T) {
 					setup(Context{T: t, Log: l})
 				})
-				stop := make(chan StopEvent)
-				se.stoppables = append(se.stoppables, stoppable{
-					name:    operation.Name(),
-					channel: stop,
-				})
 				handler := operation.Handler()
 				go func() {
-					bc := BackgroundContext{Log: l, Stop: stop}
+					bc := BackgroundContext{Log: l, Stop: operation.stop}
 					handler(bc)
 				}()
 
@@ -90,22 +86,22 @@ func (se *suiteExecution) startContinualTests(num int) {
 
 func (se *suiteExecution) verifyContinualTests(num int) {
 	l := se.logger
-	testsCount := len(se.suite.Tests.ContinualTests)
+	testsCount := len(se.suite.tests.continualTests)
 	if testsCount > 0 {
 		se.configuration.T.Run("VerifyContinualTests", func(t *testing.T) {
 			l.Infof("%d) ✋ Verifying %d running continual tests.", num, testsCount)
-			for i, stoppable := range se.stoppables {
-				t.Run(stoppable.name, func(t *testing.T) {
-					l.Infof(`%d.%d) Verifying "%s".`, num, i+1, stoppable.name)
+			for i, operation := range se.suite.tests.continualTests {
+				t.Run(operation.Name(), func(t *testing.T) {
+					l.Infof(`%d.%d) Verifying "%s".`, num, i+1, operation.Name())
 					finished := make(chan struct{})
-					stoppable.channel <- StopEvent{
+					operation.stop <- StopEvent{
 						T:        t,
 						Finished: finished,
-						name:     "Stop of " + stoppable.name,
+						name:     "Stop of " + operation.Name(),
 					}
 					<-finished
 					se.failed = se.failed || t.Failed()
-					l.Debugf(`Finished "%s"`, stoppable.name)
+					l.Debugf(`Finished "%s"`, operation.Name())
 				})
 			}
 		})
@@ -115,7 +111,7 @@ func (se *suiteExecution) verifyContinualTests(num int) {
 func (se *suiteExecution) upgradeWith(num int) {
 	se.processOperationGroup(operationGroup{
 		num:                   num,
-		operations:            se.suite.Installations.UpgradeWith,
+		operations:            se.suite.installations.UpgradeWith,
 		groupName:             "UpgradeWith",
 		elementTemplate:       `%d.%d) Upgrading with "%s".`,
 		skippingGroupTemplate: "%d) 📀 No upgrade operations registered. Skipping.",
@@ -126,7 +122,7 @@ func (se *suiteExecution) upgradeWith(num int) {
 func (se *suiteExecution) postUpgradeTests(num int) {
 	se.processOperationGroup(operationGroup{
 		num:                   num,
-		operations:            se.suite.Tests.PostUpgrade,
+		operations:            se.suite.tests.postUpgrade,
 		groupName:             "PostUpgradeTests",
 		elementTemplate:       `%d.%d) Testing with "%s".`,
 		skippingGroupTemplate: "%d) ✅️️ No post upgrade tests registered. Skipping.",
@@ -138,7 +134,7 @@ func (se *suiteExecution) postUpgradeTests(num int) {
 func (se *suiteExecution) downgradeWith(num int) {
 	se.processOperationGroup(operationGroup{
 		num:                   num,
-		operations:            se.suite.Installations.DowngradeWith,
+		operations:            se.suite.installations.DowngradeWith,
 		groupName:             "DowngradeWith",
 		elementTemplate:       `%d.%d) Downgrading with "%s".`,
 		skippingGroupTemplate: "%d) 💿 No downgrade operations registered. Skipping.",
@@ -149,7 +145,7 @@ func (se *suiteExecution) downgradeWith(num int) {
 func (se *suiteExecution) postDowngradeTests(num int) {
 	se.processOperationGroup(operationGroup{
 		num:                   num,
-		operations:            se.suite.Tests.PostDowngrade,
+		operations:            se.suite.tests.postDowngrade,
 		groupName:             "PostDowngradeTests",
 		elementTemplate:       `%d.%d) Testing with "%s".`,
 		skippingGroupTemplate: "%d) ✅️️ No post downgrade tests registered. Skipping.",

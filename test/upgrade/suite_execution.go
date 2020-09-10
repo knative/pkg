@@ -18,22 +18,7 @@ package upgrade
 
 import (
 	"testing"
-
-	"go.uber.org/zap"
 )
-
-type suiteExecution struct {
-	suite         *Suite
-	configuration Configuration
-	failed        bool
-	logger        *zap.SugaredLogger
-	stoppables    []stoppable
-}
-
-type stoppable struct {
-	name    string
-	channel chan StopEvent
-}
 
 func (se *suiteExecution) processOperationGroup(op operationGroup) {
 	l := se.logger
