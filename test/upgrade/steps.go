@@ -47,7 +47,7 @@ func (se *suiteExecution) preUpgradeTests(num int) {
 
 func (se *suiteExecution) startContinualTests(num int) {
 	l := se.logger
-	operations := se.suite.tests.continualTests
+	operations := se.suite.tests.continual
 	groupTemplate := "%d) 🔄 Starting continual tests. " +
 		"%d tests are registered."
 	elementTemplate := `%d.%d) Starting continual tests of "%s".`
@@ -86,11 +86,11 @@ func (se *suiteExecution) startContinualTests(num int) {
 
 func (se *suiteExecution) verifyContinualTests(num int) {
 	l := se.logger
-	testsCount := len(se.suite.tests.continualTests)
+	testsCount := len(se.suite.tests.continual)
 	if testsCount > 0 {
 		se.configuration.T.Run("VerifyContinualTests", func(t *testing.T) {
 			l.Infof("%d) ✋ Verifying %d running continual tests.", num, testsCount)
-			for i, operation := range se.suite.tests.continualTests {
+			for i, operation := range se.suite.tests.continual {
 				t.Run(operation.Name(), func(t *testing.T) {
 					l.Infof(`%d.%d) Verifying "%s".`, num, i+1, operation.Name())
 					finished := make(chan struct{})

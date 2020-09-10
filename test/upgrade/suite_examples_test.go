@@ -28,7 +28,7 @@ const (
 )
 
 func init() {
-	upgrade.DefaultOnWait = func(bc upgrade.BackgroundContext, self upgrade.WaitOnStopEventConfiguration) {
+	upgrade.DefaultOnWait = func(bc upgrade.BackgroundContext, self upgrade.WaitForStopEventConfiguration) {
 		bc.Log.Debugf("%s - probing functionality...", self.Name)
 	}
 	upgrade.DefaultWaitTime = shortWait
@@ -109,13 +109,13 @@ var (
 				},
 				func(bc upgrade.BackgroundContext) {
 					bc.Log.Info("Running Serving continual test")
-					upgrade.WaitForStopEvent(bc, upgrade.WaitOnStopEventConfiguration{
+					upgrade.WaitForStopEvent(bc, upgrade.WaitForStopEventConfiguration{
 						Name: "Serving",
 						OnStop: func(event upgrade.StopEvent) {
 							bc.Log.Info("Stopping and verify of Serving continual test")
 							time.Sleep(shortWait)
 						},
-						OnWait: func(bc upgrade.BackgroundContext, self upgrade.WaitOnStopEventConfiguration) {
+						OnWait: func(bc upgrade.BackgroundContext, self upgrade.WaitForStopEventConfiguration) {
 							bc.Log.Debugf("%s - probing functionality...", self.Name)
 						},
 						WaitTime: shortWait,

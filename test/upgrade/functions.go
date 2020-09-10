@@ -51,7 +51,7 @@ func NewOperation(name string, handler func(c Context)) Operation {
 // status after receiving a StopEvent.
 func NewBackgroundVerification(name string, setup func(c Context), verify func(c Context)) BackgroundOperation {
 	return NewBackgroundOperation(name, setup, func(bc BackgroundContext) {
-		WaitForStopEvent(bc, WaitOnStopEventConfiguration{
+		WaitForStopEvent(bc, WaitForStopEventConfiguration{
 			Name: name,
 			OnStop: func(event StopEvent) {
 				verify(Context{
@@ -79,7 +79,7 @@ func NewBackgroundOperation(name string, setup func(c Context),
 // WaitForStopEvent will wait until upgrade suite sends a stop event to it.
 // After that happen a handler is invoked to verify environment state and report
 // failures.
-func WaitForStopEvent(bc BackgroundContext, w WaitOnStopEventConfiguration) {
+func WaitForStopEvent(bc BackgroundContext, w WaitForStopEventConfiguration) {
 	log := bc.Log
 	for {
 		select {
@@ -107,14 +107,14 @@ func enrichSuite(s *Suite) *enrichedSuite {
 	es := &enrichedSuite{
 		installations: s.Installations,
 		tests: enrichedTests{
-			preUpgrade:     s.Tests.PreUpgrade,
-			postUpgrade:    s.Tests.PostUpgrade,
-			postDowngrade:  s.Tests.PostDowngrade,
-			continualTests: make([]stoppableOperation, len(s.Tests.ContinualTests)),
+			preUpgrade:    s.Tests.PreUpgrade,
+			postUpgrade:   s.Tests.PostUpgrade,
+			postDowngrade: s.Tests.PostDowngrade,
+			continual:     make([]stoppableOperation, len(s.Tests.Continual)),
 		},
 	}
-	for i, test := range s.Tests.ContinualTests {
-		es.tests.continualTests[i] = stoppableOperation{
+	for i, test := range s.Tests.Continual {
+		es.tests.continual[i] = stoppableOperation{
 			BackgroundOperation: test,
 			stop:                make(chan StopEvent),
 		}

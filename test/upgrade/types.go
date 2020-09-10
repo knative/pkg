@@ -24,22 +24,22 @@ import (
 )
 
 // Suite represents a upgrade tests suite that can be executed and will perform
-// execution in predictable manner
+// execution in predictable manner.
 type Suite struct {
 	Tests         Tests
 	Installations Installations
 }
 
-// Tests holds a list of operations for various part of upgrade suite
+// Tests holds a list of operations for various part of upgrade suite.
 type Tests struct {
-	PreUpgrade     []Operation
-	PostUpgrade    []Operation
-	PostDowngrade  []Operation
-	ContinualTests []BackgroundOperation
+	PreUpgrade    []Operation
+	PostUpgrade   []Operation
+	PostDowngrade []Operation
+	Continual     []BackgroundOperation
 }
 
 // Installations holds a list of operations that will install Knative components
-// in different versions
+// in different versions.
 type Installations struct {
 	Base          []Operation
 	UpgradeWith   []Operation
@@ -47,7 +47,7 @@ type Installations struct {
 }
 
 // Operation represents a upgrade test operation like test or installation that
-// can be provided by specific component or reused in aggregating components
+// can be provided by specific component or reused in aggregating components.
 type Operation interface {
 	// Name is a human readable operation title, and it will be used in t.Run
 	Name() string
@@ -100,24 +100,24 @@ type StopEvent struct {
 	name     string
 }
 
-// WaitOnStopEventConfiguration holds a values to be used be WaitForStopEvent
+// WaitForStopEventConfiguration holds a values to be used be WaitForStopEvent
 // function. OnStop will be called when StopEvent is sent. OnWait will be
 // invoked in a loop while waiting, and each wait act is driven by WaitTime
 // amount.
-type WaitOnStopEventConfiguration struct {
+type WaitForStopEventConfiguration struct {
 	Name     string
 	OnStop   func(event StopEvent)
-	OnWait   func(bc BackgroundContext, self WaitOnStopEventConfiguration)
+	OnWait   func(bc BackgroundContext, self WaitForStopEventConfiguration)
 	WaitTime time.Duration
 }
 
-// Configuration holds required and optional configuration to run upgrade tests
+// Configuration holds required and optional configuration to run upgrade tests.
 type Configuration struct {
 	T   *testing.T
 	Log *zap.Logger
 }
 
-// SuiteExecutor is to execute upgrade test suite
+// SuiteExecutor is to execute upgrade test suite.
 type SuiteExecutor interface {
 	Execute(c Configuration)
 }

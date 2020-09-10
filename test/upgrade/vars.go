@@ -19,8 +19,14 @@ package upgrade
 import "time"
 
 var (
+	// DefaultWaitTime holds a default value for WaitForStopEventConfiguration
+	// when used within a NewBackgroundVerification function.
 	DefaultWaitTime = 20 * time.Millisecond
-	DefaultOnWait   = func(bc BackgroundContext, self WaitOnStopEventConfiguration) {
+
+	// DefaultOnWait is a implementation that will be called by default for each
+	// wait performed by WaitForStopEvent when used within
+	// NewBackgroundVerification function.
+	DefaultOnWait = func(bc BackgroundContext, self WaitForStopEventConfiguration) {
 		// do nothing by default
 	}
 )

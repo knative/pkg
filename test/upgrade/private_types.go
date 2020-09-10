@@ -31,10 +31,10 @@ type enrichedSuite struct {
 }
 
 type enrichedTests struct {
-	preUpgrade     []Operation
-	postUpgrade    []Operation
-	postDowngrade  []Operation
-	continualTests []stoppableOperation
+	preUpgrade    []Operation
+	postUpgrade   []Operation
+	postDowngrade []Operation
+	continual     []stoppableOperation
 }
 
 type stoppableOperation struct {

@@ -50,7 +50,7 @@ func newExampleZap() (*zap.Logger, fmt.Stringer) {
 }
 
 func createSteps(s upgrade.Suite) []*step {
-	continualTestsGeneralized := generalizeOpsFromBg(s.Tests.ContinualTests)
+	continualTestsGeneralized := generalizeOpsFromBg(s.Tests.Continual)
 	return []*step{{
 		messages: messageFormatters.baseInstall,
 		ops:      generalizeOps(s.Installations.Base),
@@ -67,7 +67,7 @@ func createSteps(s upgrade.Suite) []*step {
 		messages: messageFormatters.startContinual,
 		ops:      continualTestsGeneralized,
 		updateSuite: func(ops operations, s *upgrade.Suite) {
-			s.Tests.ContinualTests = ops.asBackgroundOperation()
+			s.Tests.Continual = ops.asBackgroundOperation()
 		},
 	}, {
 		messages: messageFormatters.upgrade,
@@ -97,7 +97,7 @@ func createSteps(s upgrade.Suite) []*step {
 		messages: messageFormatters.verifyContinual,
 		ops:      continualTestsGeneralized,
 		updateSuite: func(ops operations, s *upgrade.Suite) {
-			s.Tests.ContinualTests = ops.asBackgroundOperation()
+			s.Tests.Continual = ops.asBackgroundOperation()
 		},
 	}}
 }
@@ -157,14 +157,13 @@ func createMessages(mf formats) messages {
 	}
 }
 
-func (tt *texts) append(msgs ...string) *texts {
+func (tt *texts) append(msgs ...string) {
 	for _, msg := range msgs {
 		if msg == "" {
 			continue
 		}
 		tt.elms = append(tt.elms, msg)
 	}
-	return tt
 }
 
 func completeSuiteExample(fp failurePoint) upgrade.Suite {
@@ -179,7 +178,7 @@ func completeSuiteExample(fp failurePoint) upgrade.Suite {
 			PostDowngrade: []upgrade.Operation{
 				serving.tests.postDowngrade, eventing.tests.postDowngrade,
 			},
-			ContinualTests: []upgrade.BackgroundOperation{
+			Continual: []upgrade.BackgroundOperation{
 				serving.tests.continual, eventing.tests.continual,
 			},
 		},
@@ -256,7 +255,7 @@ func (o *operation) fail(setupFail bool) {
 				c.Log.Error(failureTestingMessage)
 			}
 		}, func(bc upgrade.BackgroundContext) {
-			upgrade.WaitForStopEvent(bc, upgrade.WaitOnStopEventConfiguration{
+			upgrade.WaitForStopEvent(bc, upgrade.WaitForStopEventConfiguration{
 				Name: testName,
 				OnStop: func(event upgrade.StopEvent) {
 					if !setupFail {
@@ -264,7 +263,7 @@ func (o *operation) fail(setupFail bool) {
 						bc.Log.Error(failureTestingMessage)
 					}
 				},
-				OnWait: func(bc upgrade.BackgroundContext, self upgrade.WaitOnStopEventConfiguration) {
+				OnWait: func(bc upgrade.BackgroundContext, self upgrade.WaitForStopEventConfiguration) {
 					bc.Log.Debugf("%s - probing functionality...", self.Name)
 				},
 				WaitTime: shortWait,
