@@ -295,7 +295,7 @@ func TestMetricsExport(t *testing.T) {
 	}{{
 		name: "Prometheus",
 		init: func() error {
-			return UpdateExporter(configForBackend(prometheus), logtesting.TestLogger(t))
+			return UpdateExporter(context.Background(), configForBackend(prometheus), logtesting.TestLogger(t))
 		},
 		validate: func(t *testing.T) {
 			metricstest.EnsureRecorded()
@@ -330,7 +330,7 @@ testComponent_testing_value{project="p1",revision="r2"} 1
 				return err
 			}
 			t.Logf("Created exporter at %s", ocFake.address)
-			return UpdateExporter(configForBackend(openCensus), logtesting.TestLogger(t))
+			return UpdateExporter(context.Background(), configForBackend(openCensus), logtesting.TestLogger(t))
 		},
 		validate: func(t *testing.T) {
 			// We unregister the views because this is one of two ways to flush
@@ -367,7 +367,7 @@ testComponent_testing_value{project="p1",revision="r2"} 1
 			if err := initSdFake(&sdFake); err != nil {
 				return err
 			}
-			return UpdateExporter(configForBackend(stackdriver), logtesting.TestLogger(t))
+			return UpdateExporter(context.Background(), configForBackend(stackdriver), logtesting.TestLogger(t))
 		},
 		validate: func(t *testing.T) {
 			records := []metricExtract{}
@@ -536,7 +536,7 @@ func TestStackDriverExports(t *testing.T) {
 			if err := initSdFake(&sdFake); err != nil {
 				t.Errorf("Init stackdriver failed %s", err)
 			}
-			if err := UpdateExporter(eo, logtesting.TestLogger(t)); err != nil {
+			if err := UpdateExporter(context.Background(), eo, logtesting.TestLogger(t)); err != nil {
 				t.Errorf("UpdateExporter failed %s", err)
 			}
 

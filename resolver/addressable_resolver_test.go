@@ -339,8 +339,8 @@ func TestGetURIDestinationV1Beta1(t *testing.T) {
 
 			// Run it twice since this should be idempotent. URI Resolver should
 			// not modify the cache's copy.
-			_, _ = r.URIFromDestination(tc.dest, getAddressable())
-			uri, gotErr := r.URIFromDestination(tc.dest, getAddressable())
+			_, _ = r.URIFromDestination(ctx, tc.dest, getAddressable())
+			uri, gotErr := r.URIFromDestination(ctx, tc.dest, getAddressable())
 
 			if gotErr != nil {
 				if tc.wantErr != "" {
@@ -521,8 +521,8 @@ func TestGetURIDestinationV1(t *testing.T) {
 
 			// Run it twice since this should be idempotent. URI Resolver should
 			// not modify the cache's copy.
-			_, _ = r.URIFromDestinationV1(tc.dest, getAddressable())
-			uri, gotErr := r.URIFromDestinationV1(tc.dest, getAddressable())
+			_, _ = r.URIFromDestinationV1(ctx, tc.dest, getAddressable())
+			uri, gotErr := r.URIFromDestinationV1(ctx, tc.dest, getAddressable())
 
 			if gotErr != nil {
 				if tc.wantErr != "" {
@@ -563,8 +563,8 @@ func TestURIFromObjectReferenceErrors(t *testing.T) {
 
 			// Run it twice since this should be idempotent. URI Resolver should
 			// not modify the cache's copy.
-			_, _ = r.URIFromObjectReference(tc.ref, getAddressable())
-			_, gotErr := r.URIFromObjectReference(tc.ref, getAddressable())
+			_, _ = r.URIFromObjectReference(ctx, tc.ref, getAddressable())
+			_, gotErr := r.URIFromObjectReference(ctx, tc.ref, getAddressable())
 
 			if gotErr != nil {
 				if tc.wantErr != "" {

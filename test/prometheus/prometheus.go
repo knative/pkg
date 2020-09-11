@@ -51,14 +51,14 @@ type PromProxy struct {
 }
 
 // Setup performs a port forwarding for app prometheus-test in given namespace
-func (p *PromProxy) Setup(kubeClientset *kubernetes.Clientset, logf logging.FormatLogger) {
+func (p *PromProxy) Setup(ctx context.Context, kubeClientset *kubernetes.Clientset, logf logging.FormatLogger) {
 	setupOnce.Do(func() {
 		if err := monitoring.CheckPortAvailability(prometheusPort); err != nil {
 			logf("Prometheus port not available: %v", err)
 			return
 		}
 
-		promPods, err := monitoring.GetPods(kubeClientset, appLabel, p.Namespace)
+		promPods, err := monitoring.GetPods(ctx, kubeClientset, appLabel, p.Namespace)
 		if err != nil {
 			logf("Error retrieving prometheus pod details: %v", err)
 			return
