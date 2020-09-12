@@ -101,9 +101,12 @@ func admissionHandler(rootLogger *zap.SugaredLogger, stats StatsReporter, c Admi
 			patchType = string(*reviewResponse.PatchType)
 		}
 
-		logger.Infof("AdmissionReview for %#v: %s/%s response={ UID: %#v, Allowed: %t, Status: %#v, Patch: %s, PatchType: %s, AuditAnnotations: %#v}",
+		logger.Infof("AdmissionReview for %#v: %s/%s response={ UID: %#v, Allowed: %t, Status: %#v, PatchType: %s, AuditAnnotations: %#v}",
 			review.Request.Kind, review.Request.Namespace, review.Request.Name,
-			reviewResponse.UID, reviewResponse.Allowed, reviewResponse.Result, string(reviewResponse.Patch), patchType, reviewResponse.AuditAnnotations)
+			reviewResponse.UID, reviewResponse.Allowed, reviewResponse.Result, patchType, reviewResponse.AuditAnnotations)
+		logger.Debugf("AdmissionReview for %#v: %s/%s patch=%s",
+			review.Request.Kind, review.Request.Namespace, review.Request.Name,
+			string(reviewResponse.Patch))
 
 		if !reviewResponse.Allowed || reviewResponse.PatchType != nil || response.Response == nil {
 			response.Response = reviewResponse
