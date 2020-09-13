@@ -101,17 +101,19 @@ func admissionHandler(rootLogger *zap.SugaredLogger, stats StatsReporter, c Admi
 			patchType = string(*reviewResponse.PatchType)
 		}
 
-		logger.Infof("AdmissionReview for %#v: %s/%s response={ UID: %#v, Allowed: %t, Status: %#v, PatchType: %s, AuditAnnotations: %#v}",
-			review.Request.Kind, review.Request.Namespace, review.Request.Name,
-			reviewResponse.UID, reviewResponse.Allowed, reviewResponse.Result, patchType, reviewResponse.AuditAnnotations)
-		logger.Debugf("AdmissionReview for %#v: %s/%s patch=%s",
-			review.Request.Kind, review.Request.Namespace, review.Request.Name,
-			string(reviewResponse.Patch))
-
 		if !reviewResponse.Allowed || reviewResponse.PatchType != nil || response.Response == nil {
 			response.Response = reviewResponse
 		}
 		response.Response.UID = review.Request.UID
+
+		logger = logger.With(
+			zap.String(logkey.AdmissionReviewUID, string(reviewResponse.UID)),
+			zap.Bool(logkey.AdmissionReviewAllowed, reviewResponse.Allowed),
+			zap.String(logkey.AdmissionReviewResult, reviewResponse.Result.String()),
+			zap.String(logkey.AdmissionReviewPatchType, patchType))
+
+		logger.Infof("remote admission controller audit annotations=%#v", reviewResponse.AuditAnnotations)
+		logger.Debugf("AdmissionReview patch body=%s", string(reviewResponse.Patch))
 
 		if err := json.NewEncoder(w).Encode(response); err != nil {
 			http.Error(w, fmt.Sprintf("could not encode response: %v", err), http.StatusInternalServerError)

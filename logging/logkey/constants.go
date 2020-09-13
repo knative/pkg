@@ -62,4 +62,19 @@ const (
 	// GitHubCommitID is the key used to represent the GitHub Commit ID where the
 	// Knative component was built from in logs
 	GitHubCommitID = "commit"
+
+	// AdmissionReviewUID is the key used to represent the admission review
+	// request/response UID in logs
+	AdmissionReviewUID = "knative.dev/admissionreview/uid"
+
+	// AdmissionReviewAllowed is the key used to represent whether or not
+	// the admission request was permitted in logs
+	AdmissionReviewAllowed = "knative.dev/admissionreview/allowed"
+
+	// AdmissionReviewResult is the key used to represent extra details into
+	// why an admission request was denied in logs
+	AdmissionReviewResult = "knative.dev/admissionreview/result"
+
+	// AdmissionReviewPatchType is the key used to represent the type of Patch in logs
+	AdmissionReviewPatchType = "knative.dev/admissionreview/patchtype"
 )
