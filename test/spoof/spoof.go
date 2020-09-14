@@ -170,7 +170,9 @@ func (sc *SpoofingClient) Do(req *http.Request, errorRetryCheckers ...ErrorRetry
 	return sc.Poll(req, func(*Response) (bool, error) { return true, nil }, errorRetryCheckers...)
 }
 
-// Poll executes an http request until it satisfies the inState condition or encounters an error.
+// Poll executes an http request until it satisfies the inState condition or, if there's an error,
+// none of the error retry checkers permit a retry.
+// If no retry checkers are specified `DefaultErrorRetryChecker` will be used.
 func (sc *SpoofingClient) Poll(req *http.Request, inState ResponseChecker, errorRetryCheckers ...ErrorRetryChecker) (*Response, error) {
 	if len(errorRetryCheckers) == 0 {
 		errorRetryCheckers = []ErrorRetryChecker{DefaultErrorRetryChecker}
