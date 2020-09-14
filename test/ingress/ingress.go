@@ -33,7 +33,7 @@ const (
 )
 
 // GetIngressEndpoint gets the ingress public IP or hostname.
-func GetIngressEndpoint(ctx context.Context, kubeClientset *kubernetes.Clientset) (string, error) {
+func GetIngressEndpoint(ctx context.Context, kubeClientset *kubernetes.Clientset, endpointOverride string) (string, func(string) string, error) {
 	ingressName := istioIngressName
 	if gatewayOverride := os.Getenv("GATEWAY_OVERRIDE"); gatewayOverride != "" {
 		ingressName = gatewayOverride
@@ -45,13 +45,25 @@ func GetIngressEndpoint(ctx context.Context, kubeClientset *kubernetes.Clientset
 
 	ingress, err := kubeClientset.CoreV1().Services(ingressNamespace).Get(ctx, ingressName, metav1.GetOptions{})
 	if err != nil {
-		return "", err
+		return "", nil, err
+	}
+
+	// If an override is provided, use it
+	if endpointOverride != "" {
+		return endpointOverride, func(port string) string {
+			for _, sp := range ingress.Spec.Ports {
+				if fmt.Sprint(sp.Port) == port {
+					return fmt.Sprint(sp.NodePort)
+				}
+			}
+			return port
+		}, nil
 	}
 	endpoint, err := EndpointFromService(ingress)
 	if err != nil {
-		return "", err
+		return "", nil, err
 	}
-	return endpoint, nil
+	return endpoint, func(in string) string { return in }, nil
 }
 
 // EndpointFromService extracts the endpoint from the service's ingress.
