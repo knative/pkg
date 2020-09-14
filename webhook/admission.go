@@ -78,13 +78,13 @@ func admissionHandler(rootLogger *zap.SugaredLogger, stats StatsReporter, c Admi
 		}
 
 		logger = logger.With(
-			zap.String(logkey.Kind, review.Request.Kind.String()),
-			zap.String(logkey.Namespace, review.Request.Namespace),
-			zap.String(logkey.Name, review.Request.Name),
-			zap.String(logkey.Operation, string(review.Request.Operation)),
-			zap.String(logkey.Resource, review.Request.Resource.String()),
-			zap.String(logkey.SubResource, review.Request.SubResource),
-			zap.String(logkey.UserInfo, fmt.Sprint(review.Request.UserInfo)))
+			logkey.Kind, review.Request.Kind.String(),
+			logkey.Namespace, review.Request.Namespace,
+			logkey.Name, review.Request.Name,
+			logkey.Operation, string(review.Request.Operation),
+			logkey.Resource, review.Request.Resource.String(),
+			logkey.SubResource, review.Request.SubResource,
+			logkey.UserInfo, fmt.Sprint(review.Request.UserInfo))
 
 		ctx := logging.WithLogger(r.Context(), logger)
 
@@ -107,10 +107,10 @@ func admissionHandler(rootLogger *zap.SugaredLogger, stats StatsReporter, c Admi
 		response.Response.UID = review.Request.UID
 
 		logger = logger.With(
-			zap.String(logkey.AdmissionReviewUID, string(reviewResponse.UID)),
-			zap.Bool(logkey.AdmissionReviewAllowed, reviewResponse.Allowed),
-			zap.String(logkey.AdmissionReviewResult, reviewResponse.Result.String()),
-			zap.String(logkey.AdmissionReviewPatchType, patchType))
+			logkey.AdmissionReviewUID, string(reviewResponse.UID),
+			logkey.AdmissionReviewAllowed, reviewResponse.Allowed,
+			logkey.AdmissionReviewResult, reviewResponse.Result.String(),
+			logkey.AdmissionReviewPatchType, patchType)
 
 		logger.Infof("remote admission controller audit annotations=%#v", reviewResponse.AuditAnnotations)
 		logger.Debugf("AdmissionReview patch body=%s", string(reviewResponse.Patch))
