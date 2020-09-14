@@ -195,11 +195,11 @@ func (sc *SpoofingClient) Poll(req *http.Request, inState ResponseChecker, error
 		}
 		defer rawResp.Body.Close()
 
-		rawResp.Header.Add(zipkin.ZipkinTraceIDHeader, span.SpanContext().TraceID.String())
 		body, err := ioutil.ReadAll(rawResp.Body)
 		if err != nil {
 			return true, err
 		}
+		rawResp.Header.Add(zipkin.ZipkinTraceIDHeader, span.SpanContext().TraceID.String())
 
 		resp = &Response{
 			Status:     rawResp.Status,
