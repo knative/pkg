@@ -20,7 +20,7 @@ require (
 	github.com/google/go-github/v27 v27.0.6
 	github.com/google/gofuzz v1.1.0
 	github.com/google/mako v0.0.0-20190821191249-122f8dcef9e3
-	github.com/google/uuid v1.1.1
+	github.com/google/uuid v1.1.2
 	github.com/gorilla/websocket v1.4.2
 	github.com/hashicorp/golang-lru v0.5.4
 	github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51
@@ -36,24 +36,24 @@ require (
 	go.uber.org/automaxprocs v1.3.0
 	go.uber.org/multierr v1.5.0
 	go.uber.org/zap v1.15.0
-	golang.org/x/net v0.0.0-20200822124328-c89045814202
-	golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d
+	golang.org/x/net v0.0.0-20200904194848-62affa334b73
+	golang.org/x/oauth2 v0.0.0-20200902213428-5d25da1a8d43
 	golang.org/x/sync v0.0.0-20200625203802-6e8e738ad208
 	gomodules.xyz/jsonpatch/v2 v2.1.0
-	google.golang.org/api v0.30.0
-	google.golang.org/genproto v0.0.0-20200828030656-73b5761be4c5
-	google.golang.org/grpc v1.31.1
+	google.golang.org/api v0.31.0
+	google.golang.org/genproto v0.0.0-20200914193844-75d14daec038
+	google.golang.org/grpc v1.32.0
 	gopkg.in/yaml.v2 v2.3.0
 	gopkg.in/yaml.v3 v3.0.0-20190709130402-674ba3eaed22
 	k8s.io/api v0.18.7-rc.0
 	k8s.io/apiextensions-apiserver v0.18.4
-	k8s.io/apimachinery v0.19.0
+	k8s.io/apimachinery v0.19.1
 	k8s.io/client-go v11.0.1-0.20190805182717-6502b5e7b1b5+incompatible
 	k8s.io/code-generator v0.18.6
 	k8s.io/gengo v0.0.0-20200205140755-e0e292d8aa12
 	k8s.io/klog v1.0.0
-	knative.dev/test-infra v0.0.0-20200828171708-f68cb78c80a9
-	sigs.k8s.io/boskos v0.0.0-20200819010710-984516eae7e8
+	knative.dev/test-infra v0.0.0-20200915193842-f4d4232c1f04
+	sigs.k8s.io/boskos v0.0.0-20200903185141-c0841a578f59
 )
 
 replace (
