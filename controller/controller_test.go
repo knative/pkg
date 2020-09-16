@@ -756,8 +756,8 @@ const (
 
 func pollQ(q workqueue.RateLimitingInterface, sig chan int) func() (bool, error) {
 	return func() (bool, error) {
-		if q.Len() > 0 {
-			sig <- q.Len()
+		if ql := q.Len(); ql > 0 {
+			sig <- ql
 			return true, nil
 		}
 		return false, nil
