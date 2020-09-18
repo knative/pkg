@@ -30,6 +30,23 @@ import (
 	"knative.dev/pkg/logging/logkey"
 )
 
+const (
+	// AdmissionReviewUID is the key used to represent the admission review
+	// request/response UID in logs
+	AdmissionReviewUID = "admissionreview/uid"
+
+	// AdmissionReviewAllowed is the key used to represent whether or not
+	// the admission request was permitted in logs
+	AdmissionReviewAllowed = "admissionreview/allowed"
+
+	// AdmissionReviewResult is the key used to represent extra details into
+	// why an admission request was denied in logs
+	AdmissionReviewResult = "admissionreview/result"
+
+	// AdmissionReviewPatchType is the key used to represent the type of Patch in logs
+	AdmissionReviewPatchType = "admissionreview/patchtype"
+)
+
 // AdmissionController provides the interface for different admission controllers
 type AdmissionController interface {
 	// Path returns the path that this particular admission controller serves on.
@@ -107,10 +124,9 @@ func admissionHandler(rootLogger *zap.SugaredLogger, stats StatsReporter, c Admi
 		response.Response.UID = review.Request.UID
 
 		logger = logger.With(
-			logkey.AdmissionReviewUID, string(reviewResponse.UID),
-			logkey.AdmissionReviewAllowed, reviewResponse.Allowed,
-			logkey.AdmissionReviewResult, reviewResponse.Result.String(),
-			logkey.AdmissionReviewPatchType, patchType)
+			AdmissionReviewUID, string(reviewResponse.UID),
+			AdmissionReviewAllowed, reviewResponse.Allowed,
+			AdmissionReviewResult, reviewResponse.Result.String())
 
 		logger.Infof("remote admission controller audit annotations=%#v", reviewResponse.AuditAnnotations)
 		logger.Debugf("AdmissionReview patch body=%s", string(reviewResponse.Patch))
