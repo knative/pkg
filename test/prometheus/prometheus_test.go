@@ -84,18 +84,18 @@ func (tpa *TestPromAPI) QueryRange(ctx context.Context, query string, r v1.Range
 }
 
 // Series finds series by label matchers.
-func (tpa *TestPromAPI) Series(ctx context.Context, matches []string, startTime time.Time, endTime time.Time) ([]model.LabelSet, error) {
+func (tpa *TestPromAPI) Series(context.Context, []string, time.Time, time.Time) ([]model.LabelSet, error) {
 	return nil, nil
 }
 
 // Snapshot creates a snapshot of all current data into snapshots/<datetime>-<rand>
 // under the TSDB's data directory and returns the directory as response.
-func (tpa *TestPromAPI) Snapshot(ctx context.Context, skipHead bool) (v1.SnapshotResult, error) {
+func (tpa *TestPromAPI) Snapshot(context.Context, bool) (v1.SnapshotResult, error) {
 	return v1.SnapshotResult{}, nil
 }
 
 // Targets returns an overview of the current state of the Prometheus target discovery.
-func (t *TestPromAPI) Targets(ctx context.Context) (v1.TargetsResult, error) {
+func (t *TestPromAPI) Targets(context.Context) (v1.TargetsResult, error) {
 	return v1.TargetsResult{}, nil
 }
 
