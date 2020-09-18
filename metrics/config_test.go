@@ -262,7 +262,7 @@ var (
 		ops: ExporterOptions{
 			ConfigMap: map[string]string{
 				BackendDestinationKey: string(openCensus),
-				collectorAddressKey:   "external-svc:55678",
+				collectorAddressKey:   "localhost:55678",
 				collectorSecureKey:    "true",
 			},
 			Domain:    servingDomain,
@@ -282,7 +282,7 @@ var (
 			component:          testComponent,
 			backendDestination: openCensus,
 			reportingPeriod:    time.Minute,
-			collectorAddress:   "external-svc:55678",
+			collectorAddress:   "localhost:55678",
 			requireSecure:      true,
 			secret: &corev1.Secret{
 				ObjectMeta: metav1.ObjectMeta{
