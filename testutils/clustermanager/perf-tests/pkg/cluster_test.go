@@ -24,7 +24,6 @@ import (
 	"github.com/google/go-cmp/cmp"
 	container "google.golang.org/api/container/v1beta1"
 
-	"knative.dev/pkg/kmeta"
 	"knative.dev/pkg/test/gke"
 	gkeFake "knative.dev/pkg/test/gke/fake"
 )
@@ -72,7 +71,7 @@ func TestRecreateClusters(t *testing.T) {
 					NodeType:  "n1-standard-4",
 				},
 			},
-			expectedClusters: kmeta.UnionMaps(map[string]ClusterConfig{
+			expectedClusters: combineClusterMaps(map[string]ClusterConfig{
 				"unrelated-cluster": {
 					Location:  "us-central1",
 					NodeCount: 3,
