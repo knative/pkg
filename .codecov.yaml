@@ -1,0 +1,6 @@
+ignore:
+  - "**/zz_generated*.go" # Ignore generated files.
+  - "client"
+  - "hack"
+  - "third_party"
+  - "vendor"
