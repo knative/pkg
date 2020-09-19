@@ -72,11 +72,7 @@ func RegisterResourceView(views ...*view.View) error {
 	defer resourceViews.lock.Unlock()
 	for _, meter := range allMeters.meters {
 		// make a copy of views to avoid data races
-		viewCopy := make([]*view.View, 0, len(views))
-		for _, v := range views {
-			c := *v
-			viewCopy = append(viewCopy, &c)
-		}
+		viewCopy := copyViews(views)
 		if e := meter.m.Register(viewCopy...); e != nil {
 			err = e
 		}
@@ -213,11 +209,7 @@ func meterExporterForResource(r *resource.Resource) *meterExporter {
 	resourceViews.lock.Lock()
 	defer resourceViews.lock.Unlock()
 	// make a copy of views to avoid data races
-	viewsCopy := make([]*view.View, 0, len(resourceViews.views))
-	for _, v := range resourceViews.views {
-		c := *v
-		viewsCopy = append(viewsCopy, &c)
-	}
+	viewsCopy := copyViews(resourceViews.views)
 	mE.m.Register(viewsCopy...)
 	mE.o = stats.WithRecorder(mE.m)
 	allMeters.meters[key] = mE
@@ -293,6 +285,21 @@ func resourceFromKey(s string) *resource.Resource {
 		r.Labels[keyValue[0]] = keyValue[1]
 	}
 	return r
+}
+
+func copyViews(views []*view.View) []*view.View {
+	viewsCopy := make([]*view.View, 0, len(resourceViews.views))
+	for _, v := range views {
+		c := *v
+		c.TagKeys = make([]tag.Key, 0, len(v.TagKeys))
+		c.TagKeys = append(c.TagKeys, v.TagKeys...)
+		c.Aggregation = new(view.Aggregation)
+		*c.Aggregation = *v.Aggregation
+		c.Aggregation.Buckets = make([]float64, 0, len(v.Aggregation.Buckets))
+		c.Aggregation.Buckets = append(c.Aggregation.Buckets, v.Aggregation.Buckets...)
+		viewsCopy = append(viewsCopy, &c)
+	}
+	return viewsCopy
 }
 
 // defaultMeterImpl is a pass-through to the default worker in OpenCensus.
