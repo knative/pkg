@@ -95,6 +95,7 @@ func dialBackOffHelper(ctx context.Context, network, address string, bo wait.Bac
 func newHTTPTransport(disableKeepAlives bool, maxIdle, maxIdlePerHost int) http.RoundTripper {
 	transport := http.DefaultTransport.(*http.Transport).Clone()
 	transport.DialContext = DialWithBackOff
+	transport.DisableKeepAlives = disableKeepAlives
 	transport.MaxIdleConns = maxIdle
 	transport.MaxIdleConnsPerHost = maxIdlePerHost
 	transport.ForceAttemptHTTP2 = false
