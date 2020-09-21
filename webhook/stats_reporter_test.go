@@ -54,7 +54,6 @@ func TestWebhookStatsReporter(t *testing.T) {
 		resourceGroupKey.Name():     req.Resource.Group,
 		resourceVersionKey.Name():   req.Resource.Version,
 		resourceResourceKey.Name():  req.Resource.Resource,
-		resourceNameKey.Name():      req.Name,
 		resourceNamespaceKey.Name(): req.Namespace,
 		admissionAllowedKey.Name():  strconv.FormatBool(resp.Allowed),
 	}
