@@ -291,12 +291,12 @@ func copyViews(views []*view.View) []*view.View {
 	viewsCopy := make([]*view.View, 0, len(resourceViews.views))
 	for _, v := range views {
 		c := *v
-		c.TagKeys = make([]tag.Key, 0, len(v.TagKeys))
-		c.TagKeys = append(c.TagKeys, v.TagKeys...)
+		c.TagKeys = make([]tag.Key, len(v.TagKeys))
+		copy(c.TagKeys, v.TagKeys)
 		c.Aggregation = new(view.Aggregation)
 		*c.Aggregation = *v.Aggregation
-		c.Aggregation.Buckets = make([]float64, 0, len(v.Aggregation.Buckets))
-		c.Aggregation.Buckets = append(c.Aggregation.Buckets, v.Aggregation.Buckets...)
+		c.Aggregation.Buckets = make([]float64, len(v.Aggregation.Buckets))
+		copy(c.Aggregation.Buckets, v.Aggregation.Buckets)
 		viewsCopy = append(viewsCopy, &c)
 	}
 	return viewsCopy
