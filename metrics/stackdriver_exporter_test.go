@@ -518,10 +518,12 @@ func TestSetStackdriverSecretLocation(t *testing.T) {
 		}, nil
 	}
 
+	ctx := context.Background()
+
 	// Sanity checks
 	assertStringsEqual(t, "DefaultSecretName", secretName, StackdriverSecretNameDefault)
 	assertStringsEqual(t, "DefaultSecretNamespace", secretNamespace, StackdriverSecretNamespaceDefault)
-	sec, err := getStackdriverSecret(secretFetcher)
+	sec, err := getStackdriverSecret(ctx, secretFetcher)
 	if err != nil {
 		t.Errorf("Got unexpected error when getting secret: %v", err)
 	}
@@ -531,7 +533,7 @@ func TestSetStackdriverSecretLocation(t *testing.T) {
 
 	// Once SetStackdriverSecretLocation has been called, attempts to get the secret should complete.
 	SetStackdriverSecretLocation(testName, testNamespace)
-	sec, err = getStackdriverSecret(secretFetcher)
+	sec, err = getStackdriverSecret(ctx, secretFetcher)
 	if err != nil {
 		t.Errorf("Got unexpected error when getting secret: %v", err)
 	}

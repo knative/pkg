@@ -402,7 +402,7 @@ func getAddonsForCluster(cluster *container.Cluster) string {
 	return strings.Join(addons, ",")
 }
 
-func combineClusterMaps(m1 map[string]ClusterConfig, m2 map[string]ClusterConfig) map[string]ClusterConfig {
+func combineClusterMaps(m1, m2 map[string]ClusterConfig) map[string]ClusterConfig {
 	for name, config := range m2 {
 		m1[name] = config
 	}

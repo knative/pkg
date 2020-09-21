@@ -214,7 +214,14 @@ func TestInterlevedExporters(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	expectNoPromSrv(t)
+
+	// Expect no prometheus server
+	time.Sleep(200 * time.Millisecond)
+	srv := getCurPromSrv()
+	if srv != nil {
+		t.Error("expected no server for stackdriver exporter")
+	}
+
 	// Then switch to prometheus exporter
 	_, _, err = newMetricsExporter(&metricsConfig{
 		domain:             servingDomain,

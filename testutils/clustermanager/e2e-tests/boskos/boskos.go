@@ -58,7 +58,7 @@ type Client struct {
 // are passed directly to k8s boskos client. Refer to
 // [k8s boskos](https://github.com/kubernetes/test-infra/tree/master/boskos) for more details.
 // If host is "", it looks up JOB_NAME environment variable and set it to be the host name.
-func NewClient(host string, user string, pass string) (*Client, error) {
+func NewClient(host, user, pass string) (*Client, error) {
 	if host == "" {
 		host = common.GetOSEnv("JOB_NAME")
 	}

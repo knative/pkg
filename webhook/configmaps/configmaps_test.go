@@ -255,7 +255,7 @@ func TestDenyInvalidUpdateConfigMapExample(t *testing.T) {
 
 	resp := ac.Admit(ctx, createCreateConfigMapRequest(ctx, t, r))
 
-	ExpectFailsWith(t, resp, fmt.Sprintf("%q modified", configmap.ExampleKey))
+	ExpectFailsWith(t, resp, fmt.Sprintf("a key in %q", configmap.ExampleKey))
 }
 
 type config struct {

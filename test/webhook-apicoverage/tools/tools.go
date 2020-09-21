@@ -17,6 +17,7 @@ limitations under the License.
 package tools
 
 import (
+	"context"
 	"crypto/tls"
 	"encoding/json"
 	"errors"
@@ -99,7 +100,7 @@ func GetWebhookServiceIP(kubeConfigPath string, clusterName string, namespace st
 		return "", err
 	}
 
-	svc, err := kubeClient.CoreV1().Services(namespace).Get(serviceName, v1.GetOptions{})
+	svc, err := kubeClient.CoreV1().Services(namespace).Get(context.Background(), serviceName, v1.GetOptions{})
 	if err != nil {
 		return "", fmt.Errorf("error encountered while retrieving service: %s Error: %w", serviceName, err)
 	}
@@ -243,7 +244,7 @@ func WriteResourcePercentages(outputFile string,
 func CleanupJunitFiles(artifactsDir string) {
 	filepath.Walk(artifactsDir, func(path string, info os.FileInfo, err error) error {
 		if !info.IsDir() && jUnitFileRegexExpr.MatchString(info.Name()) {
-			os.Remove(path)
+			return os.Remove(path)
 		}
 		return nil
 	})

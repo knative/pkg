@@ -17,6 +17,7 @@ limitations under the License.
 package webhook
 
 import (
+	"context"
 	"crypto/tls"
 	"crypto/x509"
 	"net"
@@ -75,7 +76,7 @@ func createNamespace(t *testing.T, kubeClient kubernetes.Interface, name string)
 			Name: name,
 		},
 	}
-	_, err := kubeClient.CoreV1().Namespaces().Create(testns)
+	_, err := kubeClient.CoreV1().Namespaces().Create(context.Background(), testns, metav1.CreateOptions{})
 	if err != nil {
 		return err
 	}
@@ -90,7 +91,7 @@ func createTestConfigMap(t *testing.T, kubeClient kubernetes.Interface) error {
 		},
 		Data: map[string]string{"requestheader-client-ca-file": "test-client-file"},
 	}
-	_, err := kubeClient.CoreV1().ConfigMaps(metav1.NamespaceSystem).Create(configMaps)
+	_, err := kubeClient.CoreV1().ConfigMaps(metav1.NamespaceSystem).Create(context.Background(), configMaps, metav1.CreateOptions{})
 	if err != nil {
 		return err
 	}
@@ -104,7 +105,7 @@ func createSecureTLSClient(t *testing.T, kubeClient kubernetes.Interface, acOpts
 	if err != nil {
 		return nil, err
 	}
-	if _, err := kubeClient.CoreV1().Secrets(secret.Namespace).Create(secret); err != nil {
+	if _, err := kubeClient.CoreV1().Secrets(secret.Namespace).Create(context.Background(), secret, metav1.CreateOptions{}); err != nil {
 		return nil, err
 	}
 

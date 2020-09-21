@@ -262,7 +262,7 @@ var (
 		ops: ExporterOptions{
 			ConfigMap: map[string]string{
 				BackendDestinationKey: string(openCensus),
-				collectorAddressKey:   "external-svc:55678",
+				collectorAddressKey:   "localhost:55678",
 				collectorSecureKey:    "true",
 			},
 			Domain:    servingDomain,
@@ -282,7 +282,7 @@ var (
 			component:          testComponent,
 			backendDestination: openCensus,
 			reportingPeriod:    time.Minute,
-			collectorAddress:   "external-svc:55678",
+			collectorAddress:   "localhost:55678",
 			requireSecure:      true,
 			secret: &corev1.Secret{
 				ObjectMeta: metav1.ObjectMeta{
@@ -533,9 +533,10 @@ func successTestsInit() {
 }
 
 func TestGetMetricsConfig(t *testing.T) {
+	ctx := context.Background()
 	for _, test := range errorTests {
 		t.Run(test.name, func(t *testing.T) {
-			_, err := createMetricsConfig(test.ops, TestLogger(t))
+			_, err := createMetricsConfig(ctx, test.ops, TestLogger(t))
 			if err == nil || err.Error() != test.expectedErr {
 				t.Errorf("Wanted err: %v, got: %v", test.expectedErr, err)
 			}
@@ -545,7 +546,7 @@ func TestGetMetricsConfig(t *testing.T) {
 	successTestsInit()
 	for _, test := range successTests {
 		t.Run(test.name, func(t *testing.T) {
-			mc, err := createMetricsConfig(test.ops, TestLogger(t))
+			mc, err := createMetricsConfig(ctx, test.ops, TestLogger(t))
 			if err != nil {
 				t.Errorf("Wanted valid config %v, got error %v", test.expectedConfig, err)
 			}
@@ -633,12 +634,14 @@ func TestGetMetricsConfig_fromEnv(t *testing.T) {
 		expectedErrContains: "value out of range",
 	}}
 
+	ctx := context.Background()
+
 	for _, test := range successTests {
 		t.Run(test.name, func(t *testing.T) {
 			os.Setenv(test.varName, test.varValue)
 			defer os.Unsetenv(test.varName)
 
-			mc, err := createMetricsConfig(test.ops, TestLogger(t))
+			mc, err := createMetricsConfig(ctx, test.ops, TestLogger(t))
 			if err != nil {
 				t.Errorf("Wanted valid config %v, got error %v", test.expectedConfig, err)
 			}
@@ -653,7 +656,7 @@ func TestGetMetricsConfig_fromEnv(t *testing.T) {
 			os.Setenv(test.varName, test.varValue)
 			defer os.Unsetenv(test.varName)
 
-			mc, err := createMetricsConfig(test.ops, TestLogger(t))
+			mc, err := createMetricsConfig(ctx, test.ops, TestLogger(t))
 			if mc != nil {
 				t.Errorf("Wanted no config, got %v", mc)
 			}
@@ -667,9 +670,11 @@ func TestGetMetricsConfig_fromEnv(t *testing.T) {
 func TestIsNewExporterRequiredFromNilConfig(t *testing.T) {
 	setCurMetricsConfig(nil)
 	successTestsInit()
+	ctx := context.Background()
+
 	for _, test := range successTests {
 		t.Run(test.name, func(t *testing.T) {
-			mc, err := createMetricsConfig(test.ops, TestLogger(t))
+			mc, err := createMetricsConfig(ctx, test.ops, TestLogger(t))
 			if err != nil {
 				t.Errorf("Wanted valid config %v, got error %v", test.expectedConfig, err)
 			}
@@ -794,9 +799,11 @@ func TestUpdateExporter(t *testing.T) {
 	setCurMetricsConfig(nil)
 	oldConfig := getCurMetricsConfig()
 	successTestsInit()
+	ctx := context.Background()
+
 	for _, test := range successTests[1:] {
 		t.Run(test.name, func(t *testing.T) {
-			UpdateExporter(test.ops, TestLogger(t))
+			UpdateExporter(ctx, test.ops, TestLogger(t))
 			mConfig := getCurMetricsConfig()
 			if mConfig == oldConfig {
 				t.Error("Expected metrics config change")
@@ -810,7 +817,7 @@ func TestUpdateExporter(t *testing.T) {
 
 	for _, test := range errorTests {
 		t.Run(test.name, func(t *testing.T) {
-			UpdateExporter(test.ops, TestLogger(t))
+			UpdateExporter(ctx, test.ops, TestLogger(t))
 			mConfig := getCurMetricsConfig()
 			if mConfig != oldConfig {
 				t.Error("mConfig should not change")
@@ -823,6 +830,8 @@ func TestUpdateExporterFromConfigMapWithOpts(t *testing.T) {
 	setCurMetricsConfig(nil)
 	oldConfig := getCurMetricsConfig()
 	successTestsInit()
+	ctx := context.Background()
+
 	for _, test := range successTests[1:] {
 		t.Run(test.name, func(t *testing.T) {
 			opts := ExporterOptions{
@@ -831,7 +840,7 @@ func TestUpdateExporterFromConfigMapWithOpts(t *testing.T) {
 				PrometheusPort: test.ops.PrometheusPort,
 				Secrets:        test.ops.Secrets,
 			}
-			updateFunc, err := UpdateExporterFromConfigMapWithOpts(opts, TestLogger(t))
+			updateFunc, err := UpdateExporterFromConfigMapWithOpts(ctx, opts, TestLogger(t))
 			if err != nil {
 				t.Errorf("failed to call UpdateExporterFromConfigMapWithOpts: %v", err)
 			}
@@ -854,7 +863,7 @@ func TestUpdateExporterFromConfigMapWithOpts(t *testing.T) {
 			PrometheusPort: defaultPrometheusPort,
 			ConfigMap:      map[string]string{"some": "data"},
 		}
-		_, err := UpdateExporterFromConfigMapWithOpts(opts, TestLogger(t))
+		_, err := UpdateExporterFromConfigMapWithOpts(ctx, opts, TestLogger(t))
 		if err == nil {
 			t.Error("got err=nil want err")
 		}
@@ -866,7 +875,7 @@ func TestUpdateExporterFromConfigMapWithOpts(t *testing.T) {
 			Domain:         servingDomain,
 			PrometheusPort: defaultPrometheusPort,
 		}
-		_, err := UpdateExporterFromConfigMapWithOpts(opts, TestLogger(t))
+		_, err := UpdateExporterFromConfigMapWithOpts(ctx, opts, TestLogger(t))
 		if err == nil {
 			t.Error("got err=nil want err")
 		}
@@ -875,9 +884,11 @@ func TestUpdateExporterFromConfigMapWithOpts(t *testing.T) {
 
 func TestUpdateExporter_doesNotCreateExporter(t *testing.T) {
 	setCurMetricsConfig(nil)
+	ctx := context.Background()
+
 	for _, test := range errorTests {
 		t.Run(test.name, func(t *testing.T) {
-			UpdateExporter(test.ops, TestLogger(t))
+			UpdateExporter(ctx, test.ops, TestLogger(t))
 			mConfig := getCurMetricsConfig()
 			if mConfig != nil {
 				t.Error("mConfig should not be created")
@@ -1041,7 +1052,7 @@ func TestStackdriverRecord(t *testing.T) {
 				Domain:    "knative.dev/internal/serving",
 				Component: "activator",
 			}
-			mc, err := createMetricsConfig(opts, TestLogger(t))
+			mc, err := createMetricsConfig(context.Background(), opts, TestLogger(t))
 			if err != nil {
 				t.Errorf("Expected valid config %+v, got error: %v\n", opts, err)
 			}
