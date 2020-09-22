@@ -422,8 +422,9 @@ func TestDurableConnectionSendsPingsRegularly(t *testing.T) {
 func TestNewDurableSendingConnectionGuaranteed(t *testing.T) {
 	// Unhappy case.
 	logger := ktesting.TestLogger(t)
-	if NewDurableSendingConnectionGuaranteed("ws://somewhere.not.exist", time.Second, logger) != nil {
-		t.Error("Unexpected connection from NewDurableSendingConnectionGuaranteed")
+	_, err := NewDurableSendingConnectionGuaranteed("ws://somewhere.not.exist", time.Second, logger)
+	if got, want := err.Error(), ErrConnectionNotEstablished.Error(); got != want {
+		t.Errorf("Got error: %v, want error: %v", got, want)
 	}
 
 	// Happy case.
@@ -443,7 +444,10 @@ func TestNewDurableSendingConnectionGuaranteed(t *testing.T) {
 	defer s.Close()
 
 	target := "ws" + strings.TrimPrefix(s.URL, "http")
-	conn := NewDurableSendingConnectionGuaranteed(target, time.Second, logger)
+	conn, err := NewDurableSendingConnectionGuaranteed(target, time.Second, logger)
+	if err != nil {
+		t.Errorf("Got error from NewDurableSendingConnectionGuaranteed: %v", err)
+	}
 	defer conn.Shutdown()
 
 	// Sending the message immediately should be fine as the connection has been established.
