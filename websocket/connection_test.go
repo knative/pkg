@@ -419,16 +419,43 @@ func TestDurableConnectionSendsPingsRegularly(t *testing.T) {
 	}
 }
 
-func TestIsEstablished(t *testing.T) {
-	c := &ManagedConnection{}
-	if got, want := c.IsEstablished(), false; got != want {
-		t.Errorf("IsEstablished() = %v, want = %v", got, want)
+func TestNewDurableSendingConnectionGuaranteed(t *testing.T) {
+	// Unhappy case.
+	logger := ktesting.TestLogger(t)
+	_, err := NewDurableSendingConnectionGuaranteed("ws://somewhere.not.exist", time.Second, logger)
+	if got, want := err.Error(), ErrConnectionNotEstablished.Error(); got != want {
+		t.Errorf("Got error: %v, want error: %v", got, want)
 	}
 
-	c.connection = &inspectableConnection{
-		writeMessageCalls: make(chan struct{}, 1),
+	// Happy case.
+	const testPayload = "test"
+	reconnectChan := make(chan struct{})
+	upgrader := websocket.Upgrader{}
+	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		c, err := upgrader.Upgrade(w, r, nil)
+		if err != nil {
+			return
+		}
+
+		// Waits for a message to be sent before dropping the connection.
+		<-reconnectChan
+		c.Close()
+	}))
+	defer s.Close()
+
+	target := "ws" + strings.TrimPrefix(s.URL, "http")
+	conn, err := NewDurableSendingConnectionGuaranteed(target, time.Second, logger)
+	if err != nil {
+		t.Errorf("Got error from NewDurableSendingConnectionGuaranteed: %v", err)
 	}
-	if got, want := c.IsEstablished(), true; got != want {
-		t.Errorf("IsEstablished() = %v, want = %v", got, want)
+	defer conn.Shutdown()
+
+	// Sending the message immediately should be fine as the connection has been established.
+	if err := conn.Send(testPayload); err != nil {
+		t.Errorf("Failed to send a message: %v", err)
 	}
+
+	// Message successfully sent, instruct the server to drop the connection.
+	reconnectChan <- struct{}{}
+
 }
