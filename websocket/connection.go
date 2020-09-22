@@ -102,7 +102,7 @@ func NewDurableSendingConnection(target string, logger *zap.SugaredLogger) *Mana
 func NewDurableSendingConnectionGuaranteed(target string, duration time.Duration, logger *zap.SugaredLogger) *ManagedConnection {
 	c := NewDurableConnection(target, nil, logger)
 
-	if err := wait.PollImmediate(10*time.Millisecond, duration, func() (bool, error) {
+	if err := wait.PollImmediate(5*time.Millisecond, duration, func() (bool, error) {
 		return c.Status() == nil, nil
 	}); err != nil {
 		return nil
