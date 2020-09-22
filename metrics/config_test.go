@@ -536,7 +536,7 @@ func TestGetMetricsConfig(t *testing.T) {
 	ctx := context.Background()
 	for _, test := range errorTests {
 		t.Run(test.name, func(t *testing.T) {
-			_, err := createMetricsConfig(ctx, test.ops, TestLogger(t))
+			_, err := createMetricsConfig(ctx, test.ops)
 			if err == nil || err.Error() != test.expectedErr {
 				t.Errorf("Wanted err: %v, got: %v", test.expectedErr, err)
 			}
@@ -546,7 +546,7 @@ func TestGetMetricsConfig(t *testing.T) {
 	successTestsInit()
 	for _, test := range successTests {
 		t.Run(test.name, func(t *testing.T) {
-			mc, err := createMetricsConfig(ctx, test.ops, TestLogger(t))
+			mc, err := createMetricsConfig(ctx, test.ops)
 			if err != nil {
 				t.Errorf("Wanted valid config %v, got error %v", test.expectedConfig, err)
 			}
@@ -641,7 +641,7 @@ func TestGetMetricsConfig_fromEnv(t *testing.T) {
 			os.Setenv(test.varName, test.varValue)
 			defer os.Unsetenv(test.varName)
 
-			mc, err := createMetricsConfig(ctx, test.ops, TestLogger(t))
+			mc, err := createMetricsConfig(ctx, test.ops)
 			if err != nil {
 				t.Errorf("Wanted valid config %v, got error %v", test.expectedConfig, err)
 			}
@@ -656,7 +656,7 @@ func TestGetMetricsConfig_fromEnv(t *testing.T) {
 			os.Setenv(test.varName, test.varValue)
 			defer os.Unsetenv(test.varName)
 
-			mc, err := createMetricsConfig(ctx, test.ops, TestLogger(t))
+			mc, err := createMetricsConfig(ctx, test.ops)
 			if mc != nil {
 				t.Errorf("Wanted no config, got %v", mc)
 			}
@@ -674,7 +674,7 @@ func TestIsNewExporterRequiredFromNilConfig(t *testing.T) {
 
 	for _, test := range successTests {
 		t.Run(test.name, func(t *testing.T) {
-			mc, err := createMetricsConfig(ctx, test.ops, TestLogger(t))
+			mc, err := createMetricsConfig(ctx, test.ops)
 			if err != nil {
 				t.Errorf("Wanted valid config %v, got error %v", test.expectedConfig, err)
 			}
@@ -1052,7 +1052,7 @@ func TestStackdriverRecord(t *testing.T) {
 				Domain:    "knative.dev/internal/serving",
 				Component: "activator",
 			}
-			mc, err := createMetricsConfig(context.Background(), opts, TestLogger(t))
+			mc, err := createMetricsConfig(context.Background(), opts)
 			if err != nil {
 				t.Errorf("Expected valid config %+v, got error: %v\n", opts, err)
 			}
