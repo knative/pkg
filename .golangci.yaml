@@ -10,6 +10,7 @@ linters:
     - gosec
     - prealloc
     - unconvert
+    - unparam
   disable:
     - errcheck
 
@@ -18,3 +19,4 @@ issues:
     - path: test # Excludes /test, *_test.go etc.
       linters:
         - gosec
+        - unparam
