@@ -420,14 +420,15 @@ func TestDurableConnectionSendsPingsRegularly(t *testing.T) {
 }
 
 func TestNewDurableSendingConnectionGuaranteed(t *testing.T) {
+	// Unhappy case.
 	logger := ktesting.TestLogger(t)
 	if NewDurableSendingConnectionGuaranteed("ws://somewhere.not.exist", time.Second, logger) != nil {
 		t.Error("Unexpected connection from NewDurableSendingConnectionGuaranteed")
 	}
 
+	// Happy case.
 	const testPayload = "test"
 	reconnectChan := make(chan struct{})
-
 	upgrader := websocket.Upgrader{}
 	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		c, err := upgrader.Upgrade(w, r, nil)
