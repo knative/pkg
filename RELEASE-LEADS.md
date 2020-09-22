@@ -124,10 +124,11 @@ kept up-to-date nightly in each of the releasing repositories. To stabilize
 things shortly before the release we cut the `release-x.y` branches on those 7
 days prior to the main release.
 
-Both `pkg` and `test-infra` also need to pin each other's release branch. To do
-that, edit `hack/update-deps.sh` in the respective repo **on the newly created
-branch** to pin the respective branch. Then run
-`./hack/update-deps.sh --upgrade` and commit the changes.
+First, create a release branch for `test-infra` named `release-x.y`.
+
+Next, `pkg` needs to pin to `test-infra`'s release branch. To do that, edit
+`hack/update-deps.sh` in `pkg` **on the newly created branch** to pin the
+branch. Then run `./hack/update-deps.sh --upgrade` and commit the changes.
 
 The change to `hack/update-deps.sh` will look like this:
 
@@ -156,10 +157,10 @@ Following that, cut new `release-x.y` branches for `caching` and `networking`.
 
 ### Pin `test-infra`, `pkg`, `caching`, `networking` in downstream repositories
 
-Similar to how the pin between `pkg` and `test-infra` themselves work, all
-downstream users must be pinned to the newly cut `release-x.y` branches on those
-libraries. The changes to `hack/update-deps.sh` look similar to above, but in
-most cases both dependencies will need to be pinned.
+Similar to how we pin `pkg` to `test-infra`, all downstream users must be pinned
+to the newly cut `release-x.y` branches on those libraries. The changes to
+`hack/update-deps.sh` look similar to above, but in most cases both dependencies
+will need to be pinned.
 
 ```diff
 diff --git a/hack/update-deps.sh b/hack/update-deps.sh
