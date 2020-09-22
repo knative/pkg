@@ -49,7 +49,8 @@ func processFile(fileName string) error {
 		return err
 	}
 
-	if err := ioutil.WriteFile(fileName, out, 0600); err != nil {
+	// nolint:gosec // This is not security critical so open permissions are fine.
+	if err := ioutil.WriteFile(fileName, out, 0644); err != nil {
 		return fmt.Errorf("failed to write file: %w", err)
 	}
 	return nil
