@@ -92,6 +92,25 @@ func NewDurableSendingConnection(target string, logger *zap.SugaredLogger) *Mana
 	return NewDurableConnection(target, nil, logger)
 }
 
+// NewDurableSendingConnectionGuaranteed creates a new websocket connection
+// that can only send messages to the endpoint it connects to. It returns
+// the connection if the connection can be established within the given
+// `duration`. Otherwise it returns nil.
+//
+// The connection will continuously be kept alive and reconnected
+// in case of a loss of connectivity.
+func NewDurableSendingConnectionGuaranteed(target string, duration time.Duration, logger *zap.SugaredLogger) *ManagedConnection {
+	c := NewDurableConnection(target, nil, logger)
+
+	if err := wait.PollImmediate(10*time.Millisecond, duration, func() (bool, error) {
+		return c.Status() == nil, nil
+	}); err != nil {
+		return nil
+	}
+
+	return c
+}
+
 // NewDurableConnection creates a new websocket connection, that
 // passes incoming messages to the given message channel. It can also
 // send messages to the endpoint it connects to.
@@ -326,12 +345,4 @@ func (c *ManagedConnection) Shutdown() error {
 	err := c.closeConnection()
 	c.processingWg.Wait()
 	return err
-}
-
-// IsEstablished returns true the websocket connection has been established.
-func (c *ManagedConnection) IsEstablished() bool {
-	c.connectionLock.RLock()
-	defer c.connectionLock.RUnlock()
-
-	return c.connection != nil
 }
