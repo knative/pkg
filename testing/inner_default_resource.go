@@ -82,7 +82,7 @@ type InnerDefaultSubSpec struct {
 	*InlinedPtrStruct `json:",inline"`
 
 	// Deprecated: This field is deprecated.
-	DeprecatedNotJson string
+	DeprecatedNotJSON string
 }
 
 // Adding complication helper.

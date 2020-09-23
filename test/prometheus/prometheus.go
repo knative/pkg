@@ -124,11 +124,11 @@ func RunQueryRange(ctx context.Context, logf logging.FormatLogger, promAPI v1.AP
 // VectorValue gets the vector value from the value type
 func VectorValue(val model.Value) (float64, error) {
 	if val.Type() != model.ValVector {
-		return 0, fmt.Errorf("Value type is %s. Expected: Valvector", val.String())
+		return 0, fmt.Errorf("value type is %s. Expected: Valvector", val.String())
 	}
 	value := val.(model.Vector)
 	if len(value) == 0 {
-		return 0, errors.New("Query returned no results")
+		return 0, errors.New("query returned no results")
 	}
 
 	return float64(value[0].Value), nil

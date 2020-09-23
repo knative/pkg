@@ -376,7 +376,7 @@ func (fgc *FakeGithubClient) AddCommitToPullRequest(org, repo string, ID int, SH
 		return fmt.Errorf("repo %s not exist", repo)
 	}
 	if _, ok = PRs[ID]; !ok {
-		return fmt.Errorf("Pull Request %d not exist", ID)
+		return fmt.Errorf("pull Request %d not exist", ID)
 	}
 	if _, ok = fgc.PRCommits[ID]; !ok {
 		fgc.PRCommits[ID] = make([]*github.RepositoryCommit, 0, 1)

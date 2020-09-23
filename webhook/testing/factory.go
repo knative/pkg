@@ -64,7 +64,7 @@ func MakeFactory(ctor Ctor) rtesting.Factory {
 		ctx = logging.WithLogger(ctx, logger)
 
 		ctx, kubeClient := fakekubeclient.With(ctx, ls.GetKubeObjects()...)
-		ctx, apixClient := fakeapixclient.With(ctx, ls.GetApiExtensionsObjects()...)
+		ctx, apixClient := fakeapixclient.With(ctx, ls.GetAPIExtensionsObjects()...)
 		ctx, dynamicClient := fakedynamicclient.With(ctx,
 			ls.NewScheme(), ToUnstructured(t, ls.NewScheme(), r.Objects)...)
 

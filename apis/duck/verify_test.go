@@ -231,11 +231,11 @@ func (*Foo) GetObjectKind() schema.ObjectKind {
 	return nil // not used
 }
 
-func (p *Foo) DeepCopyObject() runtime.Object {
+func (*Foo) DeepCopyObject() runtime.Object {
 	return nil // not used
 }
 
-func (p *Foo) GetListType() runtime.Object {
+func (*Foo) GetListType() runtime.Object {
 	return nil // not used
 }
 
@@ -270,11 +270,11 @@ func (*Bar) GetObjectKind() schema.ObjectKind {
 	return nil // not used
 }
 
-func (p *Bar) DeepCopyObject() runtime.Object {
+func (*Bar) DeepCopyObject() runtime.Object {
 	return nil // not used
 }
 
-func (p *Bar) GetListType() runtime.Object {
+func (*Bar) GetListType() runtime.Object {
 	return nil // not used
 }
 
@@ -309,11 +309,11 @@ func (*Slice) GetObjectKind() schema.ObjectKind {
 	return nil // not used
 }
 
-func (p *Slice) DeepCopyObject() runtime.Object {
+func (*Slice) DeepCopyObject() runtime.Object {
 	return nil // not used
 }
 
-func (p *Slice) GetListType() runtime.Object {
+func (*Slice) GetListType() runtime.Object {
 	return nil // not used
 }
 
@@ -341,11 +341,11 @@ func (*String) GetObjectKind() schema.ObjectKind {
 	return nil // not used
 }
 
-func (p *String) DeepCopyObject() runtime.Object {
+func (*String) DeepCopyObject() runtime.Object {
 	return nil // not used
 }
 
-func (p *String) GetListType() runtime.Object {
+func (*String) GetListType() runtime.Object {
 	return nil // not used
 }
 
@@ -371,11 +371,11 @@ func (*UnableToMarshal) GetObjectKind() schema.ObjectKind {
 	return nil // not used
 }
 
-func (p *UnableToMarshal) DeepCopyObject() runtime.Object {
+func (*UnableToMarshal) DeepCopyObject() runtime.Object {
 	return nil // not used
 }
 
-func (p *UnableToMarshal) GetListType() runtime.Object {
+func (*UnableToMarshal) GetListType() runtime.Object {
 	return nil // not used
 }
 
@@ -383,10 +383,10 @@ func (u *UnableToMarshal) GetFullType() Populatable {
 	return u
 }
 
-func (u *UnableToMarshal) Populate() {
+func (*UnableToMarshal) Populate() {
 }
 
-func (u *UnableToMarshal) MarshalJSON() ([]byte, error) {
+func (*UnableToMarshal) MarshalJSON() ([]byte, error) {
 	return nil, errors.New("I will never marshal for you")
 }
 
@@ -401,11 +401,11 @@ func (*UnableToUnmarshal) GetObjectKind() schema.ObjectKind {
 	return nil // not used
 }
 
-func (p *UnableToUnmarshal) DeepCopyObject() runtime.Object {
+func (*UnableToUnmarshal) DeepCopyObject() runtime.Object {
 	return nil // not used
 }
 
-func (p *UnableToUnmarshal) GetListType() runtime.Object {
+func (*UnableToUnmarshal) GetListType() runtime.Object {
 	return nil // not used
 }
 
@@ -413,10 +413,10 @@ func (u *UnableToUnmarshal) GetFullType() Populatable {
 	return u
 }
 
-func (u *UnableToUnmarshal) Populate() {
+func (*UnableToUnmarshal) Populate() {
 }
 
-func (u *UnableToUnmarshal) UnmarshalJSON([]byte) error {
+func (*UnableToUnmarshal) UnmarshalJSON([]byte) error {
 	return errors.New("I will never unmarshal for you")
 }
 
@@ -433,15 +433,15 @@ func (*UnexportedFields) GetObjectKind() schema.ObjectKind {
 	return nil // not used
 }
 
-func (p *UnexportedFields) DeepCopyObject() runtime.Object {
+func (*UnexportedFields) DeepCopyObject() runtime.Object {
 	return nil // not used
 }
 
-func (p *UnexportedFields) GetListType() runtime.Object {
+func (*UnexportedFields) GetListType() runtime.Object {
 	return nil // not used
 }
 
-func (u *UnexportedFields) GetFullType() Populatable {
+func (*UnexportedFields) GetFullType() Populatable {
 	return &UnexportedFields{}
 }
 

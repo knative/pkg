@@ -117,7 +117,7 @@ func SetupZipkinTracingFromConfigTracingOrFail(ctx context.Context, t testing.TB
 func SetupZipkinTracing(ctx context.Context, kubeClientset *kubernetes.Clientset, logf logging.FormatLogger, zipkinRemotePort int, zipkinNamespace string) (err error) {
 	setupOnce.Do(func() {
 		if e := monitoring.CheckPortAvailability(zipkinRemotePort); e != nil {
-			err = fmt.Errorf("Zipkin port not available on the machine: %w", err)
+			err = fmt.Errorf("zipkin port not available on the machine: %w", err)
 			return
 		}
 
