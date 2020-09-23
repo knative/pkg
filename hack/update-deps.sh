@@ -23,18 +23,21 @@ set -o pipefail
 
 cd ${ROOT_DIR}
 
-# The list of dependencies that we track at HEAD and periodically
-# float forward in this repository.
-FLOATING_DEPS=(
-  "knative.dev/test-infra@release-0.18"
-)
+# This is the release this branch represents.
+VERSION="v0.18"
 
 # Parse flags to determine any we should pass to dep.
 GO_GET=0
 while [[ $# -ne 0 ]]; do
   parameter=$1
   case ${parameter} in
-    --upgrade) GO_GET=1 ;;
+    --upgrade)
+      GO_GET=1
+      ;;
+    --release)
+      shift
+      VERSION="$1"
+      ;;
     *) abort "unknown option ${parameter}" ;;
   esac
   shift
@@ -42,6 +45,7 @@ done
 readonly GO_GET
 
 if (( GO_GET )); then
+  FLOATING_DEPS=( $(run_go_tool github.com/n3wscott/buoy buoy ${ROOT_DIR}/go.mod ${VERSION}) )
   go get -d ${FLOATING_DEPS[@]}
 fi
 
