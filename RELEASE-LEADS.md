@@ -124,10 +124,11 @@ kept up-to-date nightly in each of the releasing repositories. To stabilize
 things shortly before the release we cut the `release-x.y` branches on those 7
 days prior to the main release.
 
-Both `pkg` and `test-infra` also need to pin each other's release branch. To do
-that, edit `hack/update-deps.sh` in the respective repo **on the newly created
-branch** to pin the respective branch. Then run
-`./hack/update-deps.sh --upgrade` and commit the changes.
+First, create a release branch for `test-infra` named `release-x.y`.
+
+Next, `pkg` needs to pin to `test-infra`'s release branch. To do that, edit
+`hack/update-deps.sh` in `pkg` **on the newly created branch** to pin the
+branch. Then run `./hack/update-deps.sh --upgrade` and commit the changes.
 
 The change to `hack/update-deps.sh` will look like this:
 
@@ -156,10 +157,10 @@ Following that, cut new `release-x.y` branches for `caching` and `networking`.
 
 ### Pin `test-infra`, `pkg`, `caching`, `networking` in downstream repositories
 
-Similar to how the pin between `pkg` and `test-infra` themselves work, all
-downstream users must be pinned to the newly cut `release-x.y` branches on those
-libraries. The changes to `hack/update-deps.sh` look similar to above, but in
-most cases both dependencies will need to be pinned.
+Similar to how we pin `pkg` to `test-infra`, all downstream users must be pinned
+to the newly cut `release-x.y` branches on those libraries. The changes to
+`hack/update-deps.sh` look similar to above, but in most cases both dependencies
+will need to be pinned.
 
 ```diff
 diff --git a/hack/update-deps.sh b/hack/update-deps.sh
@@ -184,16 +185,31 @@ index b277dd3ff..1989885ce 100755
 The downstream repositories this needs to happen on are:
 
 - [knative/client](https://github.com/knative/client)
-- [knative/eventing-contrib](https://github.com/knative/eventing-contrib)
-- [knative/eventing](https://github.com/knative/eventing)
-- [knative-sandbox/eventing-kafka-broker](https://github.com/knative-sandbox/eventing-kafka-broker)
+
+- [knative/operator](https://github.com/knative/operator)
+
+- [knative/serving](https://github.com/knative/serving)
 - [knative-sandbox/net-certmanager](https://github.com/knative-sandbox/net-certmanager)
 - [knative-sandbox/net-contour](https://github.com/knative-sandbox/net-contour)
 - [knative-sandbox/net-http01](https://github.com/knative-sandbox/net-http01)
 - [knative-sandbox/net-istio](https://github.com/knative-sandbox/net-istio)
 - [knative-sandbox/net-kourier](https://github.com/knative-sandbox/net-kourier)
-- [knative/operator](https://github.com/knative/operator)
-- [knative/serving](https://github.com/knative/serving)
+
+- [knative/eventing](https://github.com/knative/eventing)
+- [knative/eventing-contrib](https://github.com/knative/eventing-contrib)
+- [knative-sandbox/eventing-kafka-broker](https://github.com/knative-sandbox/eventing-kafka-broker)
+- [knative-sandbox/discovery](https://github.com/knative-sandbox/discovery)
+- [knative-sandbox/eventing-autoscaler-keda](https://github.com/knative-sandbox/eventing-autoscaler-keda)
+- [knative-sandbox/eventing-awssqs](https://github.com/knative-sandbox/eventing-awssqs)
+- [knative-sandbox/eventing-camel](https://github.com/knative-sandbox/eventing-camel)
+- [knative-sandbox/eventing-ceph](https://github.com/knative-sandbox/eventing-ceph)
+- [knative-sandbox/eventing-couchdb](https://github.com/knative-sandbox/eventing-couchdb)
+- [knative-sandbox/eventing-github](https://github.com/knative-sandbox/eventing-github)
+- [knative-sandbox/eventing-gitlab](https://github.com/knative-sandbox/eventing-gitlab)
+- [knative-sandbox/eventing-kafka](https://github.com/knative-sandbox/eventing-kafka)
+- [knative-sandbox/eventing-natss](https://github.com/knative-sandbox/eventing-natss)
+- [knative-sandbox/eventing-prometheus](https://github.com/knative-sandbox/eventing-prometheus)
+- [knative-sandbox/eventing-rabbitmq](https://github.com/knative-sandbox/eventing-rabbitmq)
 
 Apply the changes the the **master branches**, run
 `hack/update-deps.sh --upgrade` (and potentially `hack/update-codegen.sh` if
