@@ -7,8 +7,10 @@ run:
 
 linters:
   enable:
+    - asciicheck
     - gosec
     - prealloc
+    - stylecheck
     - unconvert
     - unparam
   disable:

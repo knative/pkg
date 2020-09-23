@@ -98,8 +98,8 @@ func (l *Listers) GetDuckObjects() []runtime.Object {
 	return l.sorter.ObjectsForSchemeFunc(pkgducktesting.AddToScheme)
 }
 
-// GetApiExtensionsObjects filters the Listers initial list of objects to types definite in k8s.io/apiextensions
-func (l *Listers) GetApiExtensionsObjects() []runtime.Object {
+// GetAPIExtensionsObjects filters the Listers initial list of objects to types definite in k8s.io/apiextensions
+func (l *Listers) GetAPIExtensionsObjects() []runtime.Object {
 	return l.sorter.ObjectsForSchemeFunc(fakeapix.AddToScheme)
 }
 

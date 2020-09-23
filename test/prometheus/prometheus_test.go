@@ -95,7 +95,7 @@ func (tpa *TestPromAPI) Snapshot(context.Context, bool) (v1.SnapshotResult, erro
 }
 
 // Targets returns an overview of the current state of the Prometheus target discovery.
-func (t *TestPromAPI) Targets(context.Context) (v1.TargetsResult, error) {
+func (tpa *TestPromAPI) Targets(context.Context) (v1.TargetsResult, error) {
 	return v1.TargetsResult{}, nil
 }
 

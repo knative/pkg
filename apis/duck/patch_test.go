@@ -393,11 +393,11 @@ func (*Patch) GetObjectKind() schema.ObjectKind {
 	return nil // not used
 }
 
-func (p *Patch) DeepCopyObject() runtime.Object {
+func (*Patch) DeepCopyObject() runtime.Object {
 	return nil // not used
 }
 
-func (p *Patch) GetListType() runtime.Object {
+func (*Patch) GetListType() runtime.Object {
 	return nil // not used
 }
 

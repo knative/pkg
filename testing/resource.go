@@ -62,16 +62,16 @@ func (r *Resource) GetUntypedSpec() interface{} {
 }
 
 // SetDefaults sets the defaults on the object.
-func (c *Resource) SetDefaults(ctx context.Context) {
-	c.Spec.SetDefaults(ctx)
+func (r *Resource) SetDefaults(ctx context.Context) {
+	r.Spec.SetDefaults(ctx)
 }
 
-func (c *Resource) Validate(ctx context.Context) *apis.FieldError {
-	err := c.Spec.Validate(ctx).ViaField("spec")
+func (r *Resource) Validate(ctx context.Context) *apis.FieldError {
+	err := r.Spec.Validate(ctx).ViaField("spec")
 
 	if apis.IsInUpdate(ctx) {
 		original := apis.GetBaseline(ctx).(*Resource)
-		err = err.Also(c.CheckImmutableFields(ctx, original))
+		err = err.Also(r.CheckImmutableFields(ctx, original))
 	}
 	return err
 }
@@ -111,21 +111,21 @@ func (cs *ResourceSpec) Validate(ctx context.Context) *apis.FieldError {
 	return nil
 }
 
-func (current *Resource) CheckImmutableFields(ctx context.Context, original *Resource) *apis.FieldError {
-	if original.Spec.FieldThatsImmutable != current.Spec.FieldThatsImmutable {
+func (r *Resource) CheckImmutableFields(ctx context.Context, original *Resource) *apis.FieldError {
+	if original.Spec.FieldThatsImmutable != r.Spec.FieldThatsImmutable {
 		return &apis.FieldError{
 			Message: "Immutable field changed",
 			Paths:   []string{"spec.fieldThatsImmutable"},
-			Details: fmt.Sprintf("got: %v, want: %v", current.Spec.FieldThatsImmutable,
+			Details: fmt.Sprintf("got: %v, want: %v", r.Spec.FieldThatsImmutable,
 				original.Spec.FieldThatsImmutable),
 		}
 	}
 
-	if original.Spec.FieldThatsImmutableWithDefault != current.Spec.FieldThatsImmutableWithDefault {
+	if original.Spec.FieldThatsImmutableWithDefault != r.Spec.FieldThatsImmutableWithDefault {
 		return &apis.FieldError{
 			Message: "Immutable field changed",
 			Paths:   []string{"spec.fieldThatsImmutableWithDefault"},
-			Details: fmt.Sprintf("got: %v, want: %v", current.Spec.FieldThatsImmutableWithDefault,
+			Details: fmt.Sprintf("got: %v, want: %v", r.Spec.FieldThatsImmutableWithDefault,
 				original.Spec.FieldThatsImmutableWithDefault),
 		}
 	}

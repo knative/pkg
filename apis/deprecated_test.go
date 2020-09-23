@@ -118,11 +118,11 @@ func TestCheckDeprecated(t *testing.T) {
 		"create strict, not json": {
 			strict: true,
 			obj: &InnerDefaultSubSpec{
-				DeprecatedNotJson: "fail",
+				DeprecatedNotJSON: "fail",
 			},
 			wantErrs: []string{
 				"must not set",
-				"DeprecatedNotJson",
+				"DeprecatedNotJSON",
 			},
 		},
 		"create strict, inlined": {
