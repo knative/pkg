@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Copyright 2019 The Knative Authors
 #
@@ -26,6 +26,7 @@ check_command_exists() {
 
 check_command_exists kubectl
 check_command_exists curl
+check_command_exists lsof
 
 if [[ $# -lt 7 ]]
 then
@@ -44,11 +45,11 @@ OUTPUT_FILE="$7"
 # Find port ready to use
 
 port=10000
-isfree=$(netstat -tapln | grep $port)
+isfree=$(lsof -i TCP:$port)
 
 while [[ -n "$isfree" ]]; do
   port=$((port + 1))
-  isfree=$(netstat -tapln | grep $port)
+  isfree=$(lsof -i TCP:$port)
 done
 
 for i in $(seq $RETRIES); do
