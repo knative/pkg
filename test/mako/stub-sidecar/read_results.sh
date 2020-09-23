@@ -52,13 +52,13 @@ while [[ -n "$isfree" ]]; do
   isfree=$(lsof -i TCP:$port)
 done
 
-for i in $(seq $RETRIES); do
-  kubectl port-forward -n "$MAKO_STUB_NAMESPACE" "$MAKO_STUB_POD_NAME" $port:$MAKO_STUB_PORT &
+for _ in $(seq "$RETRIES"); do
+  kubectl port-forward -n "$MAKO_STUB_NAMESPACE" "$MAKO_STUB_POD_NAME" $port:"$MAKO_STUB_PORT" &
   PORT_FORWARD_PID=$!
 
   sleep 10
 
-  curl --connect-timeout $TIMEOUT "http://localhost:$port/results" > $OUTPUT_FILE
+  curl --connect-timeout "$TIMEOUT" "http://localhost:$port/results" > "$OUTPUT_FILE"
   curl_exit_status=$?
 
   kill $PORT_FORWARD_PID
@@ -67,7 +67,7 @@ for i in $(seq $RETRIES); do
   if [ 0 -eq $curl_exit_status ]; then
     exit 0
   else
-    sleep $RETRIES_INTERVAL
+    sleep "$RETRIES_INTERVAL"
   fi
 
 done
