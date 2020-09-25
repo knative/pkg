@@ -20,6 +20,7 @@ import (
 	"go.opencensus.io/stats"
 	"go.opencensus.io/stats/view"
 	"go.opencensus.io/tag"
+	"go.uber.org/atomic"
 	"k8s.io/client-go/util/workqueue"
 )
 
@@ -57,6 +58,7 @@ func (wp *WorkqueueProvider) NewDepthMetric(name string) workqueue.GaugeMetric {
 	return &gaugeMetric{
 		mutators: []tag.Mutator{tag.Insert(tagName, name)},
 		measure:  wp.Depth,
+		total:    atomic.NewInt64(0),
 	}
 }
 
