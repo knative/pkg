@@ -31,7 +31,7 @@ import (
 
 type BlockingInformerFactory struct {
 	block  chan struct{}
-	nCalls *atomic.Int32
+	nCalls atomic.Int32
 }
 
 var _ InformerFactory = (*BlockingInformerFactory)(nil)
@@ -50,8 +50,7 @@ func (bif *BlockingInformerFactory) Get(ctx context.Context, gvr schema.GroupVer
 
 func TestSameGVR(t *testing.T) {
 	bif := &BlockingInformerFactory{
-		block:  make(chan struct{}),
-		nCalls: atomic.NewInt32(0),
+		block: make(chan struct{}),
 	}
 
 	cif := &CachedInformerFactory{
@@ -97,7 +96,7 @@ func TestSameGVR(t *testing.T) {
 	close(bif.block)
 
 	if err := errGrp.Wait(); err != nil {
-		t.Fatalf("Error while calling cif.Get: %v", err)
+		t.Fatal("Error while calling cif.Get:", err)
 	}
 
 	// Check that all calls to cif.Get have returned and calls to bif.Get
@@ -112,8 +111,7 @@ func TestSameGVR(t *testing.T) {
 
 func TestDifferentGVRs(t *testing.T) {
 	bif := &BlockingInformerFactory{
-		block:  make(chan struct{}),
-		nCalls: atomic.NewInt32(0),
+		block: make(chan struct{}),
 	}
 
 	cif := &CachedInformerFactory{
@@ -159,7 +157,7 @@ func TestDifferentGVRs(t *testing.T) {
 	close(bif.block)
 
 	if err := errGrp.Wait(); err != nil {
-		t.Fatalf("Error while calling cif.Get: %v", err)
+		t.Fatal("Error while calling cif.Get:", err)
 	}
 
 	// Check that all calls to cif.Get have returned and the number of

@@ -20,7 +20,6 @@ import (
 	"go.opencensus.io/stats"
 	"go.opencensus.io/stats/view"
 	"go.opencensus.io/tag"
-	"go.uber.org/atomic"
 	"k8s.io/client-go/util/workqueue"
 )
 
@@ -36,9 +35,7 @@ type WorkqueueProvider struct {
 	WorkDuration                   *stats.Float64Measure
 }
 
-var (
-	_ workqueue.MetricsProvider = (*WorkqueueProvider)(nil)
-)
+var _ workqueue.MetricsProvider = (*WorkqueueProvider)(nil)
 
 // NewAddsMetric implements MetricsProvider
 func (wp *WorkqueueProvider) NewAddsMetric(name string) workqueue.CounterMetric {
@@ -58,7 +55,6 @@ func (wp *WorkqueueProvider) NewDepthMetric(name string) workqueue.GaugeMetric {
 	return &gaugeMetric{
 		mutators: []tag.Mutator{tag.Insert(tagName, name)},
 		measure:  wp.Depth,
-		total:    atomic.NewInt64(0),
 	}
 }
 

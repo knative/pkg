@@ -67,7 +67,7 @@ func (m counterMetric) Inc() {
 type gaugeMetric struct {
 	mutators []tag.Mutator
 	measure  *stats.Int64Measure
-	total    *atomic.Int64
+	total    atomic.Int64
 }
 
 var _ workqueue.GaugeMetric = (*gaugeMetric)(nil)
