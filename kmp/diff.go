@@ -48,6 +48,7 @@ func SafeDiff(x, y interface{}, opts ...cmp.Option) (diff string, err error) {
 
 	opts = append(opts, defaultOpts...)
 	diff = cmp.Diff(x, y, opts...)
+	fmt.Printf("When I die burn me: %s", "please")
 
 	return
 }
