@@ -79,8 +79,7 @@ func TestInformedWatcher(t *testing.T) {
 
 	stopCh := make(chan struct{})
 	defer close(stopCh)
-	err := cmw.Start(stopCh)
-	if err != nil {
+	if err := cmw.Start(stopCh); err != nil {
 		t.Fatalf("cm.Start() = %v", err)
 	}
 
@@ -88,7 +87,7 @@ func TestInformedWatcher(t *testing.T) {
 	// version of the objects that is available.
 	for _, obj := range []*counter{foo1, foo2, bar} {
 		if got, want := obj.count(), 1; got != want {
-			t.Errorf("%v.count = %v, want %v", obj.name, got, want)
+			t.Errorf("%v.count = %d, want %d", obj.name, got, want)
 		}
 	}
 
@@ -97,13 +96,13 @@ func TestInformedWatcher(t *testing.T) {
 	cmw.updateConfigMapEvent(nil, fooCM)
 	for _, obj := range []*counter{foo1, foo2} {
 		if got, want := obj.count(), 2; got != want {
-			t.Errorf("%v.count = %v, want %v", obj.name, got, want)
+			t.Errorf("%v.count = %d, want %d", obj.name, got, want)
 		}
 	}
 
 	for _, obj := range []*counter{bar} {
 		if got, want := obj.count(), 1; got != want {
-			t.Errorf("%v.count = %v, want %v", obj.name, got, want)
+			t.Errorf("%v.count = %d, want %d", obj.name, got, want)
 		}
 	}
 
@@ -113,12 +112,12 @@ func TestInformedWatcher(t *testing.T) {
 	cmw.updateConfigMapEvent(nil, barCM)
 	for _, obj := range []*counter{foo1, foo2} {
 		if got, want := obj.count(), 3; got != want {
-			t.Errorf("%v.count = %v, want %v", obj.name, got, want)
+			t.Errorf("%v.count = %d, want %d", obj.name, got, want)
 		}
 	}
 	for _, obj := range []*counter{bar} {
 		if got, want := obj.count(), 2; got != want {
-			t.Errorf("%v.count = %v, want %v", obj.name, got, want)
+			t.Errorf("%v.count = %d, want %d", obj.name, got, want)
 		}
 	}
 
@@ -128,7 +127,7 @@ func TestInformedWatcher(t *testing.T) {
 	cmw.updateConfigMapEvent(barCM, nbarCM)
 	for _, obj := range []*counter{foo1, foo2, bar} {
 		if got, want := obj.count(), 3; got != want {
-			t.Errorf("%v.count = %v, want %v", obj.name, got, want)
+			t.Errorf("%v.count = %d, want %d", obj.name, got, want)
 		}
 	}
 
@@ -137,7 +136,7 @@ func TestInformedWatcher(t *testing.T) {
 	cmw.updateConfigMapEvent(fooCM, fooCM)
 	for _, obj := range []*counter{foo1, foo2, bar} {
 		if got, want := obj.count(), 3; got != want {
-			t.Errorf("%v.count = %v, want %v", obj.name, got, want)
+			t.Errorf("%v.count = %d, want %d", obj.name, got, want)
 		}
 	}
 
@@ -151,7 +150,7 @@ func TestInformedWatcher(t *testing.T) {
 	})
 	for _, obj := range []*counter{foo1, foo2, bar} {
 		if got, want := obj.count(), 3; got != want {
-			t.Errorf("%v.count = %v, want %v", obj.name, got, want)
+			t.Errorf("%v.count = %d, want %d", obj.name, got, want)
 		}
 	}
 
@@ -164,7 +163,7 @@ func TestInformedWatcher(t *testing.T) {
 	})
 	for _, obj := range []*counter{foo1, foo2, bar} {
 		if got, want := obj.count(), 3; got != want {
-			t.Errorf("%v.count = %v, want %v", obj.name, got, want)
+			t.Errorf("%v.count = %d, want %d", obj.name, got, want)
 		}
 	}
 }
@@ -266,13 +265,13 @@ func TestWatchMissingFailsOnStart(t *testing.T) {
 
 			stopCh := make(chan struct{})
 			defer close(stopCh)
-
 			err := cmw.Start(stopCh)
+
 			switch {
 			case err == nil:
-				t.Fatalf("Failed to start InformedWatcher: %s", err)
+				t.Fatal("Failed to start InformedWatcher =", err)
 			case err.Error() != tc.expectErr:
-				t.Fatalf("Unexpected error: %s", err)
+				t.Fatal("Unexpected error =", err)
 			}
 		})
 	}
@@ -298,11 +297,11 @@ func TestWatchMissingOKWithDefaultOnStart(t *testing.T) {
 	// This shouldn't error because we don't have a ConfigMap named "foo", but we do have a default.
 	err := cmw.Start(stopCh)
 	if err != nil {
-		t.Fatalf("cm.Start() failed, %v", err)
+		t.Fatal("cm.Start() failed =", err)
 	}
 
 	if foo1.count() != 1 {
-		t.Errorf("foo1.count = %v, want 1", foo1.count())
+		t.Errorf("foo1.count = %d, want 1", foo1.count())
 	}
 }
 
@@ -324,7 +323,7 @@ func TestErrorOnMultipleStarts(t *testing.T) {
 
 	// This should succeed because the watched resource exists.
 	if err := cmw.Start(stopCh); err != nil {
-		t.Fatalf("cm.Start() = %v", err)
+		t.Fatal("cm.Start() =", err)
 	}
 
 	// This should error because we already called Start()
@@ -363,14 +362,14 @@ func TestDefaultObserved(t *testing.T) {
 	defer close(stopCh)
 	err := cmw.Start(stopCh)
 	if err != nil {
-		t.Fatalf("cm.Start() = %v", err)
+		t.Fatal("cm.Start() =", err)
 	}
 	// We expect:
 	// 1. The default to be seen once during startup.
 	// 2. The real K8s version during the initial pass.
 	expected := []*corev1.ConfigMap{defaultFooCM, fooCM}
 	if got, want := foo1.count(), len(expected); got != want {
-		t.Fatalf("foo1.count = %v, want %d", got, want)
+		t.Fatalf("foo1.count = %d, want %d", got, want)
 	}
 	for i, cfg := range expected {
 		if got, want := foo1.cfg[i].Data, cfg.Data; !equality.Semantic.DeepEqual(want, got) {
@@ -402,26 +401,26 @@ func TestDefaultConfigMapDeleted(t *testing.T) {
 	kc := fakekubeclientset.NewSimpleClientset(fooCM)
 	cmw := NewInformedWatcher(kc, "default")
 
-	foo1 := &counter{name: "foo1"}
+	foo1 := &counter{
+		name: "foo1",
+		wg:   &sync.WaitGroup{},
+	}
+	foo1.wg.Add(3) // We expect 3 invocations.
 	cmw.WatchWithDefault(*defaultFooCM, foo1.callback)
 
 	stopCh := make(chan struct{})
 	defer close(stopCh)
-	err := cmw.Start(stopCh)
-	if err != nil {
-		t.Fatalf("cm.Start() = %v", err)
+
+	if err := cmw.Start(stopCh); err != nil {
+		t.Fatal("cm.Start() =", err)
 	}
 
 	// Delete the real ConfigMap in K8s, which should cause the default to be processed again.
 	// Because this happens asynchronously via a watcher, use a sync.WaitGroup to wait until it has
 	// occurred.
-	foo1.mu.Lock()
-	foo1.wg = &sync.WaitGroup{}
-	foo1.mu.Unlock()
-	foo1.wg.Add(1)
-	err = kc.CoreV1().ConfigMaps(fooCM.Namespace).Delete(context.Background(), fooCM.Name, metav1.DeleteOptions{})
-	if err != nil {
-		t.Fatalf("Error deleting fooCM: %v", err)
+	if err := kc.CoreV1().ConfigMaps(fooCM.Namespace).Delete(
+		context.Background(), fooCM.Name, metav1.DeleteOptions{}); err != nil {
+		t.Fatal("Error deleting fooCM:", err)
 	}
 	foo1.wg.Wait()
 
@@ -466,9 +465,8 @@ func TestWatchWithDefaultAfterStart(t *testing.T) {
 	stopCh := make(chan struct{})
 	defer close(stopCh)
 	// Start before adding the WatchWithDefault.
-	err := cmw.Start(stopCh)
-	if err != nil {
-		t.Fatalf("cm.Start() = %v", err)
+	if err := cmw.Start(stopCh); err != nil {
+		t.Fatal("cm.Start() =", err)
 	}
 
 	foo1 := &counter{name: "foo1"}
