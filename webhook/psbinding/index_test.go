@@ -59,7 +59,7 @@ func TestExact(t *testing.T) {
 	if got, ok := em.Get(key); !ok {
 		t.Errorf("Get(%+v) = %v, %v; wanted b, true", key, want, ok)
 	} else if !cmp.Equal(got, want) {
-		t.Errorf("Get (-want, +got): %s", cmp.Diff(want, got))
+		t.Error("Get (-want, +got):", cmp.Diff(want, got))
 	}
 
 	otherKey := exactKey{
@@ -117,7 +117,7 @@ func TestInexact(t *testing.T) {
 		if got, ok := im.Get(key, ls); !ok {
 			t.Errorf("Get(%+v) = %v, %v; wanted b, true", key, want, ok)
 		} else if !cmp.Equal(got, want) {
-			t.Errorf("Get (-want, +got): %s", cmp.Diff(want, got))
+			t.Error("Get (-want, +got):", cmp.Diff(want, got))
 		}
 	})
 
@@ -133,7 +133,7 @@ func TestInexact(t *testing.T) {
 		if got, ok := im.Get(key, ls); !ok {
 			t.Errorf("Get(%+v) = %v, %v; wanted b, true", key, want, ok)
 		} else if !cmp.Equal(got, want) {
-			t.Errorf("Get (-want, +got): %s", cmp.Diff(want, got))
+			t.Error("Get (-want, +got):", cmp.Diff(want, got))
 		}
 	})
 
@@ -164,7 +164,7 @@ func TestInexact(t *testing.T) {
 		if got, ok := im.Get(key, ls); !ok {
 			t.Errorf("Get(%+v) = %v, %v; wanted b, true", key, want, ok)
 		} else if !cmp.Equal(got, want) {
-			t.Errorf("Get (-want, +got): %s", cmp.Diff(want, got))
+			t.Error("Get (-want, +got):", cmp.Diff(want, got))
 		}
 	})
 

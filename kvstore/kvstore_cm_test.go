@@ -68,7 +68,7 @@ func TestInitCreates(t *testing.T) {
 	cs := NewConfigMapKVStore(context.Background(), name, namespace, tc.clientset)
 	err := cs.Init(context.Background())
 	if err != nil {
-		t.Errorf("Failed to Init ConfigStore: %v", err)
+		t.Error("Failed to Init ConfigStore:", err)
 	}
 	if tc.created == nil {
 		t.Errorf("ConfigMap not created")
@@ -93,7 +93,7 @@ func TestInitLoads(t *testing.T) {
 	cs := NewConfigMapKVStore(context.Background(), name, namespace, tc.clientset)
 	err := cs.Init(context.Background())
 	if err != nil {
-		t.Errorf("Failed to Init ConfigStore: %v", err)
+		t.Error("Failed to Init ConfigStore:", err)
 	}
 	if tc.created != nil {
 		t.Errorf("ConfigMap created")
@@ -104,7 +104,7 @@ func TestInitLoads(t *testing.T) {
 	var ret string
 	err = cs.Get(context.Background(), "foo", &ret)
 	if err != nil {
-		t.Errorf("failed to return string: %v", err)
+		t.Error("failed to return string:", err)
 	}
 	if ret != "bar" {
 		t.Errorf("got back unexpected value, wanted %q got %q", "bar", ret)
@@ -119,7 +119,7 @@ func TestLoadSaveUpdate(t *testing.T) {
 	cs := NewConfigMapKVStore(context.Background(), name, namespace, tc.clientset)
 	err := cs.Init(context.Background())
 	if err != nil {
-		t.Errorf("Failed to Init ConfigStore: %v", err)
+		t.Error("Failed to Init ConfigStore:", err)
 	}
 	cs.Set(context.Background(), "jimmy", "otherbar")
 	cs.Save(context.Background())
@@ -129,10 +129,10 @@ func TestLoadSaveUpdate(t *testing.T) {
 	var ret string
 	err = cs.Get(context.Background(), "jimmy", &ret)
 	if err != nil {
-		t.Errorf("failed to return string: %v", err)
+		t.Error("failed to return string:", err)
 	}
 	if err != nil {
-		t.Errorf("failed to return string: %v", err)
+		t.Error("failed to return string:", err)
 	}
 	if ret != "otherbar" {
 		t.Errorf("got back unexpected value, wanted %q got %q", "bar", ret)
@@ -149,7 +149,7 @@ func TestLoadSaveUpdateComplex(t *testing.T) {
 	cs := NewConfigMapKVStore(context.Background(), name, namespace, tc.clientset)
 	err := cs.Init(context.Background())
 	if err != nil {
-		t.Errorf("Failed to Init ConfigStore: %v", err)
+		t.Error("Failed to Init ConfigStore:", err)
 	}
 	ts2 := testStruct{
 		LastThingProcessed: "otherthingie",
@@ -163,10 +163,10 @@ func TestLoadSaveUpdateComplex(t *testing.T) {
 	var ret testStruct
 	err = cs.Get(context.Background(), "jimmy", &ret)
 	if err != nil {
-		t.Errorf("failed to return string: %v", err)
+		t.Error("failed to return string:", err)
 	}
 	if err != nil {
-		t.Errorf("failed to return string: %v", err)
+		t.Error("failed to return string:", err)
 	}
 	if !reflect.DeepEqual(ret, ts2) {
 		t.Errorf("got back unexpected value, wanted %+v got %+v", ts2, ret)

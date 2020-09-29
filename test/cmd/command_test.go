@@ -138,7 +138,7 @@ func TestRunCommands(t *testing.T) {
 					t.Fatalf("Expect to get error message %q but got %q", c.expectedErrorOutput, ce.ErrorOutput)
 				}
 			} else {
-				t.Fatalf("Expect to get a CommandLineError but got %s", reflect.TypeOf(err))
+				t.Fatal("Expect to get a CommandLineError but got", reflect.TypeOf(err))
 			}
 		} else {
 			if c.expectedErrorCode != 0 {
@@ -197,7 +197,7 @@ func TestRunCommandsInParallel(t *testing.T) {
 			}
 		} else {
 			if err != nil {
-				t.Fatalf("Expect to get no error but got %v", err)
+				t.Fatal("Expect to get no error but got", err)
 			}
 		}
 	}

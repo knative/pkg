@@ -31,7 +31,7 @@ import (
 func TestCreateCerts(t *testing.T) {
 	sKey, serverCertPEM, caCertBytes, err := CreateCerts(TestContextWithLogger(t), "got-the-hook", "knative-webhook", time.Now().AddDate(1, 0, 0))
 	if err != nil {
-		t.Fatalf("Failed to create certs %v", err)
+		t.Fatal("Failed to create certs", err)
 	}
 
 	// Test server private key
@@ -41,7 +41,7 @@ func TestCreateCerts(t *testing.T) {
 	}
 	key, err := x509.ParsePKCS1PrivateKey(p.Bytes)
 	if err != nil {
-		t.Fatalf("Failed to parse private key %v", err)
+		t.Fatal("Failed to parse private key", err)
 	}
 	if err := key.Validate(); err != nil {
 		t.Fatalf("Failed to validate private key")
@@ -74,11 +74,11 @@ func TestCreateCerts(t *testing.T) {
 		"got-the-hook.knative-webhook.svc.cluster.local",
 	}
 	if diff := cmp.Diff(caParsedCert.DNSNames, expectedDNSNames); diff != "" {
-		t.Fatalf("Unexpected CA Cert DNS Name (-want +got) : %v", diff)
+		t.Fatal("Unexpected CA Cert DNS Name (-want +got) :", diff)
 	}
 
 	if diff := cmp.Diff(caParsedCert.DNSNames, expectedDNSNames); diff != "" {
-		t.Fatalf("Unexpected CA Cert DNS Name (-want +got): %s", diff)
+		t.Fatal("Unexpected CA Cert DNS Name (-want +got):", diff)
 	}
 
 	// Verify Server Cert is Signed by CA Cert

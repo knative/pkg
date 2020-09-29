@@ -55,7 +55,7 @@ func newNonRunningTestWebhook(t *testing.T, options Options, acs ...interface{})
 
 	stopCb, err := controller.RunInformers(ctx.Done(), informers...)
 	if err != nil {
-		t.Fatalf("StartInformers() = %v", err)
+		t.Fatal("StartInformers() =", err)
 	}
 	cancel = func() {
 		ctxCancel()
@@ -64,7 +64,7 @@ func newNonRunningTestWebhook(t *testing.T, options Options, acs ...interface{})
 
 	ac, err = New(ctx, acs)
 	if err != nil {
-		t.Fatalf("Failed to create new admission controller: %v", err)
+		t.Fatal("Failed to create new admission controller:", err)
 	}
 	ac.gracePeriod = 100 * time.Millisecond
 	return
@@ -89,6 +89,6 @@ func TestRegistrationStopChanFire(t *testing.T) {
 	conn, err := net.Dial("tcp", fmt.Sprintf(":%d", opts.Port))
 	if err == nil {
 		conn.Close()
-		t.Errorf("Unexpected success to dial to port %d", opts.Port)
+		t.Error("Unexpected success to dial to port", opts.Port)
 	}
 }

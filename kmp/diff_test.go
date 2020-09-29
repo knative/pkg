@@ -31,15 +31,15 @@ func TestCompareKcmpDefault(t *testing.T) {
 	want := cmp.Diff(a, b, defaultOpts...)
 
 	if got, err := SafeDiff(a, b); err != nil {
-		t.Errorf("unexpected SafeDiff err: %v", err)
+		t.Error("unexpected SafeDiff err:", err)
 	} else if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("SafeDiff (-want, +got): %v", diff)
+		t.Error("SafeDiff (-want, +got):", diff)
 	}
 
 	if got, err := SafeEqual(a, b); err != nil {
-		t.Fatalf("unexpected SafeEqual err: %v", err)
+		t.Fatal("unexpected SafeEqual err:", err)
 	} else if diff := cmp.Diff(false, got); diff != "" {
-		t.Errorf("SafeEqual(-want, +got): %v", diff)
+		t.Error("SafeEqual(-want, +got):", diff)
 	}
 }
 
@@ -88,7 +88,7 @@ func TestFieldDiff(t *testing.T) {
 	got, err := CompareSetFields(a, b)
 
 	if err != nil {
-		t.Errorf("unexpected FieldDiff err: %v", err)
+		t.Error("unexpected FieldDiff err:", err)
 	} else if !cmp.Equal(got, want) {
 		t.Errorf("FieldDiff() = %v, want: %s", got, want)
 	}
@@ -152,9 +152,9 @@ func TestImmutableDiff(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			if got, err := ShortDiff(test.x, test.y); err != nil {
-				t.Errorf("unexpected ShortDiff err: %v", err)
+				t.Error("unexpected ShortDiff err:", err)
 			} else if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("SafeDiff (-want, +got): %v", diff)
+				t.Error("SafeDiff (-want, +got):", diff)
 			}
 		})
 	}

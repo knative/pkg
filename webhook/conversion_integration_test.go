@@ -66,7 +66,7 @@ func TestConversionValidResponse(t *testing.T) {
 	}
 	wh, serverURL, ctx, cancel, err := testSetup(t, cc)
 	if err != nil {
-		t.Fatalf("testSetup() = %v", err)
+		t.Fatal("testSetup() =", err)
 	}
 
 	eg, _ := errgroup.WithContext(ctx)
@@ -74,17 +74,17 @@ func TestConversionValidResponse(t *testing.T) {
 	defer func() {
 		cancel()
 		if err := eg.Wait(); err != nil {
-			t.Errorf("Unable to run controller: %s", err)
+			t.Error("Unable to run controller:", err)
 		}
 	}()
 
 	pollErr := waitForServerAvailable(t, serverURL, testTimeout)
 	if pollErr != nil {
-		t.Fatalf("waitForServerAvailable() = %v", err)
+		t.Fatal("waitForServerAvailable() =", err)
 	}
 	tlsClient, err := createSecureTLSClient(t, wh.Client, &wh.Options)
 	if err != nil {
-		t.Fatalf("createSecureTLSClient() = %v", err)
+		t.Fatal("createSecureTLSClient() =", err)
 	}
 
 	review := apixv1.ConversionReview{
@@ -102,18 +102,18 @@ func TestConversionValidResponse(t *testing.T) {
 	reqBuf := new(bytes.Buffer)
 	err = json.NewEncoder(reqBuf).Encode(&review)
 	if err != nil {
-		t.Fatalf("Failed to marshal conversion review: %v", err)
+		t.Fatal("Failed to marshal conversion review:", err)
 	}
 
 	req, err := http.NewRequest("GET", fmt.Sprintf("https://%s%s", serverURL, cc.Path()), reqBuf)
 	if err != nil {
-		t.Fatalf("http.NewRequest() = %v", err)
+		t.Fatal("http.NewRequest() =", err)
 	}
 	req.Header.Add("Content-Type", "application/json")
 
 	response, err := tlsClient.Do(req)
 	if err != nil {
-		t.Fatalf("Failed to get response %v", err)
+		t.Fatal("Failed to get response", err)
 	}
 
 	defer response.Body.Close()
@@ -124,14 +124,14 @@ func TestConversionValidResponse(t *testing.T) {
 
 	responseBody, err := ioutil.ReadAll(response.Body)
 	if err != nil {
-		t.Fatalf("Failed to read response body %v", err)
+		t.Fatal("Failed to read response body", err)
 	}
 
 	reviewResponse := apixv1.ConversionReview{}
 
 	err = json.NewDecoder(bytes.NewReader(responseBody)).Decode(&reviewResponse)
 	if err != nil {
-		t.Fatalf("Failed to decode response: %v", err)
+		t.Fatal("Failed to decode response:", err)
 	}
 
 	if reviewResponse.Response.UID != "some-uid" {
@@ -155,7 +155,7 @@ func TestConversionInvalidResponse(t *testing.T) {
 	}
 	wh, serverURL, ctx, cancel, err := testSetup(t, cc)
 	if err != nil {
-		t.Fatalf("testSetup() = %v", err)
+		t.Fatal("testSetup() =", err)
 	}
 
 	eg, _ := errgroup.WithContext(ctx)
@@ -163,17 +163,17 @@ func TestConversionInvalidResponse(t *testing.T) {
 	defer func() {
 		cancel()
 		if err := eg.Wait(); err != nil {
-			t.Errorf("Unable to run controller: %s", err)
+			t.Error("Unable to run controller:", err)
 		}
 	}()
 
 	pollErr := waitForServerAvailable(t, serverURL, testTimeout)
 	if pollErr != nil {
-		t.Fatalf("waitForServerAvailable() = %v", err)
+		t.Fatal("waitForServerAvailable() =", err)
 	}
 	tlsClient, err := createSecureTLSClient(t, wh.Client, &wh.Options)
 	if err != nil {
-		t.Fatalf("createSecureTLSClient() = %v", err)
+		t.Fatal("createSecureTLSClient() =", err)
 	}
 
 	review := apixv1.ConversionReview{
@@ -191,18 +191,18 @@ func TestConversionInvalidResponse(t *testing.T) {
 	reqBuf := new(bytes.Buffer)
 	err = json.NewEncoder(reqBuf).Encode(&review)
 	if err != nil {
-		t.Fatalf("Failed to marshal conversion review: %v", err)
+		t.Fatal("Failed to marshal conversion review:", err)
 	}
 
 	req, err := http.NewRequest("GET", fmt.Sprintf("https://%s%s", serverURL, cc.Path()), reqBuf)
 	if err != nil {
-		t.Fatalf("http.NewRequest() = %v", err)
+		t.Fatal("http.NewRequest() =", err)
 	}
 	req.Header.Add("Content-Type", "application/json")
 
 	response, err := tlsClient.Do(req)
 	if err != nil {
-		t.Fatalf("Failed to get response %v", err)
+		t.Fatal("Failed to get response", err)
 	}
 
 	defer response.Body.Close()
@@ -213,14 +213,14 @@ func TestConversionInvalidResponse(t *testing.T) {
 
 	responseBody, err := ioutil.ReadAll(response.Body)
 	if err != nil {
-		t.Fatalf("Failed to read response body %v", err)
+		t.Fatal("Failed to read response body", err)
 	}
 
 	reviewResponse := apixv1.ConversionReview{}
 
 	err = json.NewDecoder(bytes.NewReader(responseBody)).Decode(&reviewResponse)
 	if err != nil {
-		t.Fatalf("Failed to decode response: %v", err)
+		t.Fatal("Failed to decode response:", err)
 	}
 
 	if reviewResponse.Response.UID != "some-uid" {

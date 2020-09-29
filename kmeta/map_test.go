@@ -72,7 +72,7 @@ func TestUnion(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			got := UnionMaps(test.in...)
 			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("MakeLabels (-want, +got) = %v", diff)
+				t.Error("MakeLabels (-want, +got) =", diff)
 			}
 		})
 	}
@@ -116,7 +116,7 @@ func TestFilter(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			got := FilterMap(test.in, test.filter)
 			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("MakeAnnotations (-want, +got) = %v", diff)
+				t.Error("MakeAnnotations (-want, +got) =", diff)
 			}
 		})
 	}
@@ -144,7 +144,7 @@ func TestCopy(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			got := CopyMap(test.in)
 			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("MakeAnnotations (-want, +got) = %v", diff)
+				t.Error("MakeAnnotations (-want, +got) =", diff)
 			}
 		})
 	}

@@ -32,7 +32,7 @@ func TestReportQueueDepth(t *testing.T) {
 	r := &FakeStatsReporter{}
 	r.ReportQueueDepth(10)
 	if diff := cmp.Diff(r.GetQueueDepths(), []int64{10}); diff != "" {
-		t.Errorf("queue depth len: %v", diff)
+		t.Error("queue depth len:", diff)
 	}
 }
 

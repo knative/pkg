@@ -78,7 +78,7 @@ func TestHappyPathsExact(t *testing.T) {
 	// Tracked gets called
 	{
 		if err := trk.Track(ref.ObjectReference(), thing2); err != nil {
-			t.Fatalf("Track() = %v", err)
+			t.Fatal("Track() =", err)
 		}
 		// New registrations should result in an immediate callback.
 		if got, want := calls, 1; got != want {
@@ -114,7 +114,7 @@ func TestHappyPathsExact(t *testing.T) {
 	// Starts getting called again
 	{
 		if err := trk.Track(ref.ObjectReference(), thing2); err != nil {
-			t.Fatalf("Track() = %v", err)
+			t.Fatal("Track() =", err)
 		}
 		// New registrations should result in an immediate callback.
 		if got, want := calls, 4; got != want {
@@ -509,7 +509,7 @@ func TestHappyPathsInexact(t *testing.T) {
 	// Tracked gets called
 	{
 		if err := trk.TrackReference(ref, thing2); err != nil {
-			t.Fatalf("Track() = %v", err)
+			t.Fatal("Track() =", err)
 		}
 		// New registrations should result in an immediate callback.
 		if got, want := calls, 1; got != want {
@@ -545,7 +545,7 @@ func TestHappyPathsInexact(t *testing.T) {
 	// Starts getting called again
 	{
 		if err := trk.TrackReference(ref, thing2); err != nil {
-			t.Fatalf("Track() = %v", err)
+			t.Fatal("Track() =", err)
 		}
 		// New registrations should result in an immediate callback.
 		if got, want := calls, 4; got != want {
@@ -598,7 +598,7 @@ func TestHappyPathsInexact(t *testing.T) {
 	// Not called when something about the reference matching changes.
 	{
 		if err := trk.TrackReference(ref, thing2); err != nil {
-			t.Fatalf("Track() = %v", err)
+			t.Fatal("Track() =", err)
 		}
 		// New registrations should result in an immediate callback.
 		if got, want := calls, 6; got != want {
@@ -720,7 +720,7 @@ func TestHappyPathsByBoth(t *testing.T) {
 	// Tracked gets called
 	{
 		if err := trk.TrackReference(ref1, thing2); err != nil {
-			t.Fatalf("Track() = %v", err)
+			t.Fatal("Track() =", err)
 		}
 		// New registrations should result in an immediate callback.
 		if got, want := calls, 1; got != want {
@@ -728,7 +728,7 @@ func TestHappyPathsByBoth(t *testing.T) {
 		}
 
 		if err := trk.TrackReference(ref2, thing2); err != nil {
-			t.Fatalf("Track() = %v", err)
+			t.Fatal("Track() =", err)
 		}
 		// New registrations should result in an immediate callback.
 		if got, want := calls, 2; got != want {

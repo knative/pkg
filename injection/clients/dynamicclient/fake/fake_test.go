@@ -37,7 +37,7 @@ func TestGetPanic(t *testing.T) {
 
 	// Get before registration
 	if empty := Get(ctx); empty != nil {
-		t.Errorf("Unexpected informer: %v", empty)
+		t.Error("Unexpected informer:", empty)
 	}
 }
 

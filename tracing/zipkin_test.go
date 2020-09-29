@@ -66,10 +66,10 @@ func TestOpenCensusTracerApplyConfig(t *testing.T) {
 			}, endpoint))
 
 			if err := oct.ApplyConfig(&tc.cfg); (err == nil) == tc.reporterError {
-				t.Errorf("Failed to apply config: %v", err)
+				t.Error("Failed to apply config:", err)
 			}
 			if diff := cmp.Diff(gotCfg, tc.expect); diff != "" {
-				t.Errorf("Got tracer config (-want, +got) = %v", diff)
+				t.Error("Got tracer config (-want, +got) =", diff)
 			}
 
 			oct.Finish()

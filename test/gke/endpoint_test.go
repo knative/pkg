@@ -39,7 +39,7 @@ func TestServiceEndpoint(t *testing.T) {
 				data.env, got, data.want)
 		}
 		if err != nil && !data.errorExpected {
-			t.Errorf("Error is not expected by got %v", err)
+			t.Error("Error is not expected by got", err)
 		}
 		if err == nil && data.errorExpected {
 			t.Error("Expected one error but got nil")

@@ -105,7 +105,7 @@ func SetupZipkinTracingFromConfigTracing(ctx context.Context, kubeClientset *kub
 // SetupZipkinTracingFromConfigTracingOrFail is same as SetupZipkinTracingFromConfigTracing, but fails the test if an error happens
 func SetupZipkinTracingFromConfigTracingOrFail(ctx context.Context, t testing.TB, kubeClientset *kubernetes.Clientset, configMapNamespace string) {
 	if err := SetupZipkinTracingFromConfigTracing(ctx, kubeClientset, t.Logf, configMapNamespace); err != nil {
-		t.Fatalf("Error while setup Zipkin tracing: %v", err)
+		t.Fatal("Error while setup Zipkin tracing:", err)
 	}
 }
 
@@ -145,7 +145,7 @@ func SetupZipkinTracing(ctx context.Context, kubeClientset *kubernetes.Clientset
 // SetupZipkinTracingOrFail is same as SetupZipkinTracing, but fails the test if an error happens
 func SetupZipkinTracingOrFail(ctx context.Context, t testing.TB, kubeClientset *kubernetes.Clientset, zipkinRemotePort int, zipkinNamespace string) {
 	if err := SetupZipkinTracing(ctx, kubeClientset, t.Logf, zipkinRemotePort, zipkinNamespace); err != nil {
-		t.Fatalf("Error while setup zipkin tracing: %v", err)
+		t.Fatal("Error while setup zipkin tracing:", err)
 	}
 }
 

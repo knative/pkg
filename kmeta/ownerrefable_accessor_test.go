@@ -65,6 +65,6 @@ func TestNewControllerRef_OwnerRefableAccessor(t *testing.T) {
 
 	got := NewControllerRef(goodObject)
 	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("Unexpected OwnerReference (-want +got): %v", diff)
+		t.Error("Unexpected OwnerReference (-want +got):", diff)
 	}
 }

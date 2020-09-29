@@ -50,7 +50,7 @@ func TestConversion(t *testing.T) {
 			conv := test.conv
 			if err := test.addr.ConvertTo(context.Background(), conv); err != nil {
 				if !test.wantErrUp {
-					t.Errorf("ConvertTo() = %v", err)
+					t.Error("ConvertTo() =", err)
 				}
 			} else if test.wantErrUp {
 				t.Errorf("ConvertTo() = %#v, wanted error", conv)
@@ -58,7 +58,7 @@ func TestConversion(t *testing.T) {
 			got := &Addressable{}
 			if err := got.ConvertFrom(context.Background(), conv); err != nil {
 				if !test.wantErrDown {
-					t.Errorf("ConvertFrom() = %v", err)
+					t.Error("ConvertFrom() =", err)
 				}
 				return
 			} else if test.wantErrDown {
@@ -67,7 +67,7 @@ func TestConversion(t *testing.T) {
 			}
 
 			if diff := cmp.Diff(test.addr, got); diff != "" {
-				t.Errorf("roundtrip (-want, +got) = %v", diff)
+				t.Error("roundtrip (-want, +got) =", diff)
 			}
 		})
 	}

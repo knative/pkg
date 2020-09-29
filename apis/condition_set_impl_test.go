@@ -1152,7 +1152,7 @@ func TestRemoveNonTerminalConditions(t *testing.T) {
 
 	err := manager.ClearCondition("Bar")
 	if err != nil {
-		t.Errorf("Clear condition should not return err %v", err)
+		t.Error("Clear condition should not return err", err)
 	}
 	if got, want := len(status.c), 2; got != want {
 		t.Errorf("Marking true() = %v, wanted %v", got, want)
@@ -1169,7 +1169,7 @@ func TestClearConditionWithNilManager(t *testing.T) {
 
 	err := manager.ClearCondition("Bar")
 	if err != nil {
-		t.Errorf("ClearCondition() expected to return nil if status is nil, got %s", err)
+		t.Error("ClearCondition() expected to return nil if status is nil, got", err)
 	}
 
 }

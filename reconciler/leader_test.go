@@ -34,10 +34,10 @@ func TestLeaderAwareFuncs(t *testing.T) {
 	wantFunc := func(gotBkt Bucket, gotKey types.NamespacedName) {
 		called = true
 		if !cmp.Equal(gotKey, wantKey) {
-			t.Errorf("key (-want, +got) = %s", cmp.Diff(wantKey, gotKey))
+			t.Error("key (-want, +got) =", cmp.Diff(wantKey, gotKey))
 		}
 		if !cmp.Equal(gotBkt, wantBkt) {
-			t.Errorf("bucket (-want, +got) = %s", cmp.Diff(wantBkt, gotBkt))
+			t.Error("bucket (-want, +got) =", cmp.Diff(wantBkt, gotBkt))
 		}
 	}
 

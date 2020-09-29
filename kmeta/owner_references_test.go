@@ -59,6 +59,6 @@ func TestNewControllerRef(t *testing.T) {
 
 	got := NewControllerRef(f)
 	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("Unexpected OwnerReference (-want +got): %v", diff)
+		t.Error("Unexpected OwnerReference (-want +got):", diff)
 	}
 }

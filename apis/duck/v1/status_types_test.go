@@ -42,12 +42,12 @@ func TestStatusGetCondition(t *testing.T) {
 
 	got := s.GetCondition(foo.Type)
 	if diff := cmp.Diff(got, foo); diff != "" {
-		t.Errorf("GetCondition(foo) = %s", diff)
+		t.Error("GetCondition(foo) =", diff)
 	}
 
 	got = s.GetCondition(bar.Type)
 	if diff := cmp.Diff(got, bar); diff != "" {
-		t.Errorf("GetCondition(bar) = %s", diff)
+		t.Error("GetCondition(bar) =", diff)
 	}
 
 	if got := s.GetCondition("None"); got != nil {

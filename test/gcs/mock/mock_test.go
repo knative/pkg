@@ -102,7 +102,7 @@ func TestSetError(t *testing.T) {
 					}
 
 					if err := mockClient.NewStorageBucket(ctx, bkt, project); err == nil {
-						t.Errorf("expected error %v", v.Err)
+						t.Error("expected error", v.Err)
 					} else if err.Error() != v.Err.Error() {
 						t.Errorf("expected error %v, got error %v", v.Err, err)
 					}
@@ -112,7 +112,7 @@ func TestSetError(t *testing.T) {
 					}
 
 					if err := mockClient.DeleteStorageBucket(ctx, bkt, true); err == nil {
-						t.Errorf("expected error %v", v.Err)
+						t.Error("expected error", v.Err)
 					} else if err.Error() != v.Err.Error() {
 						t.Errorf("expected error %v, got error %v", v.Err, err)
 					}
@@ -122,7 +122,7 @@ func TestSetError(t *testing.T) {
 					}
 
 					if _, err := mockClient.ListChildrenFiles(ctx, bkt, dirPath); err == nil {
-						t.Errorf("expected error %v", v.Err)
+						t.Error("expected error", v.Err)
 					} else if err.Error() != v.Err.Error() {
 						t.Errorf("expected error %v, got error %v", v.Err, err)
 					}
@@ -132,7 +132,7 @@ func TestSetError(t *testing.T) {
 					}
 
 					if _, err := mockClient.ListDirectChildren(ctx, bkt, dirPath); err == nil {
-						t.Errorf("expected error %v", v.Err)
+						t.Error("expected error", v.Err)
 					} else if err.Error() != v.Err.Error() {
 						t.Errorf("expected error %v, got error %v", v.Err, err)
 					}
@@ -142,7 +142,7 @@ func TestSetError(t *testing.T) {
 					}
 
 					if _, err := mockClient.AttrObject(ctx, bkt, dirPath); err == nil {
-						t.Errorf("expected error %v", v.Err)
+						t.Error("expected error", v.Err)
 					} else if err.Error() != v.Err.Error() {
 						t.Errorf("expected error %v, got error %v", v.Err, err)
 					}
@@ -152,7 +152,7 @@ func TestSetError(t *testing.T) {
 					}
 
 					if err := mockClient.CopyObject(ctx, bkt, dirPath, bkt, dirPath); err == nil {
-						t.Errorf("expected error %v", v.Err)
+						t.Error("expected error", v.Err)
 					} else if err.Error() != v.Err.Error() {
 						t.Errorf("expected error %v, got error %v", v.Err, err)
 					}
@@ -162,7 +162,7 @@ func TestSetError(t *testing.T) {
 					}
 
 					if _, err := mockClient.ReadObject(ctx, bkt, dirPath); err == nil {
-						t.Errorf("expected error %v", v.Err)
+						t.Error("expected error", v.Err)
 					} else if err.Error() != v.Err.Error() {
 						t.Errorf("expected error %v, got error %v", v.Err, err)
 					}
@@ -172,7 +172,7 @@ func TestSetError(t *testing.T) {
 					}
 
 					if _, err := mockClient.WriteObject(ctx, bkt, dirPath, []byte{}); err == nil {
-						t.Errorf("expected error %v", v.Err)
+						t.Error("expected error", v.Err)
 					} else if err.Error() != v.Err.Error() {
 						t.Errorf("expected error %v, got error %v", v.Err, err)
 					}
@@ -182,7 +182,7 @@ func TestSetError(t *testing.T) {
 					}
 
 					if err := mockClient.DeleteObject(ctx, bkt, dirPath); err == nil {
-						t.Errorf("expected error %v", v.Err)
+						t.Error("expected error", v.Err)
 					} else if err.Error() != v.Err.Error() {
 						t.Errorf("expected error %v, got error %v", v.Err, err)
 					}
@@ -192,7 +192,7 @@ func TestSetError(t *testing.T) {
 					}
 
 					if err := mockClient.Download(ctx, bkt, dirPath, dirPath); err == nil {
-						t.Errorf("expected error %v", v.Err)
+						t.Error("expected error", v.Err)
 					} else if err.Error() != v.Err.Error() {
 						t.Errorf("expected error %v, got error %v", v.Err, err)
 					}
@@ -202,7 +202,7 @@ func TestSetError(t *testing.T) {
 					}
 
 					if err := mockClient.Upload(ctx, bkt, dirPath, dirPath); err == nil {
-						t.Errorf("expected error %v", v.Err)
+						t.Error("expected error", v.Err)
 					} else if err.Error() != v.Err.Error() {
 						t.Errorf("expected error %v, got error %v", v.Err, err)
 					}
@@ -390,15 +390,15 @@ func TestNewStorageBucket(t *testing.T) {
 			}
 
 			if p, ok := mockClient.revIndex[bucket(tt.bkt)]; !ok {
-				t.Fatalf("expected revIndex to contain key %v", bucket(tt.bkt))
+				t.Fatal("expected revIndex to contain key", bucket(tt.bkt))
 			} else if p != project(tt.projectName) {
 				t.Fatalf("expected revIndex value %v, got %v", project(tt.projectName), p)
 			}
 
 			if p, ok := mockClient.gcp[project(tt.projectName)]; !ok {
-				t.Fatalf("expected gcp to contain key %v", project(tt.projectName))
+				t.Fatal("expected gcp to contain key", project(tt.projectName))
 			} else if _, ok := p.bkt[bucket(tt.bkt)]; !ok {
-				t.Fatalf("expected gcp.bucket to contain key %v", bucket(tt.bkt))
+				t.Fatal("expected gcp.bucket to contain key", bucket(tt.bkt))
 			}
 		})
 	}
@@ -914,7 +914,7 @@ func TestWriteObject(t *testing.T) {
 			}
 
 			if content, err := mockClient.ReadObject(ctx, tt.bkt, tt.objpath); err != nil {
-				t.Fatalf("read object returned error %v", err)
+				t.Fatal("read object returned error", err)
 			} else if !bytes.Equal(content, tt.content) {
 				t.Fatalf("expected content %v, got content %v", tt.content, content)
 			}

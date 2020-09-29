@@ -348,7 +348,7 @@ func TestGetURIDestinationV1Beta1(t *testing.T) {
 						t.Errorf("Unexpected error (-want, +got) =\n%s", cmp.Diff(want, got))
 					}
 				} else {
-					t.Errorf("Unexpected error: %v", gotErr)
+					t.Error("Unexpected error:", gotErr)
 				}
 				return
 			}
@@ -530,7 +530,7 @@ func TestGetURIDestinationV1(t *testing.T) {
 						t.Errorf("Unexpected error (-want, +got) =\n%s", cmp.Diff(want, got))
 					}
 				} else {
-					t.Errorf("Unexpected error: %v", gotErr)
+					t.Error("Unexpected error:", gotErr)
 				}
 			}
 			if got, want := uri.String(), tc.wantURI; got != want {
@@ -572,7 +572,7 @@ func TestURIFromObjectReferenceErrors(t *testing.T) {
 						t.Errorf("Unexpected error (-want, +got) =\n%s", cmp.Diff(want, got))
 					}
 				} else {
-					t.Errorf("Unexpected error: %v", gotErr)
+					t.Error("Unexpected error:", gotErr)
 				}
 				return
 			}

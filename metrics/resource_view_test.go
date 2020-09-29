@@ -73,23 +73,23 @@ func TestRegisterResourceView(t *testing.T) {
 
 	viewToFind := defaultMeter.m.Find("testView")
 	if viewToFind == nil || viewToFind.Name != "testView" {
-		t.Errorf("Registered view should be found in default meter, instead got %v", viewToFind)
+		t.Error("Registered view should be found in default meter, instead got", viewToFind)
 	}
 
 	viewToFind = meter.Find("testView")
 	if viewToFind == nil || viewToFind.Name != "testView" {
-		t.Errorf("Registered view should be found in new meter, instead got %v", viewToFind)
+		t.Error("Registered view should be found in new meter, instead got", viewToFind)
 	}
 }
 
 func TestOptionForResource(t *testing.T) {
 	option, err1 := optionForResource(&r)
 	if err1 != nil {
-		t.Errorf("Should succeed getting option, instead got error %v", err1)
+		t.Error("Should succeed getting option, instead got error", err1)
 	}
 	optionAgain, err2 := optionForResource(&r)
 	if err2 != nil {
-		t.Errorf("Should succeed getting option, instead got error %v", err2)
+		t.Error("Should succeed getting option, instead got error", err2)
 	}
 
 	if fmt.Sprintf("%v", optionAgain) != fmt.Sprintf("%v", option) {
@@ -119,14 +119,14 @@ func TestSetFactory(t *testing.T) {
 	// Create the new meter and apply the factory
 	_, err := optionForResource(&resource123)
 	if err != nil {
-		t.Errorf("Should succeed getting option, instead got error %v", err)
+		t.Error("Should succeed getting option, instead got error", err)
 	}
 
 	// Now get the exporter and verify the id
 	me := meterExporterForResource(&resource123)
 	e := me.e.(*testExporter)
 	if e.id != "123" {
-		t.Errorf("Expect id to be 123, instead got %v", e.id)
+		t.Error("Expect id to be 123, instead got", e.id)
 	}
 
 	resource456 := r
@@ -134,13 +134,13 @@ func TestSetFactory(t *testing.T) {
 	// Create the new meter and apply the factory
 	_, err = optionForResource(&resource456)
 	if err != nil {
-		t.Errorf("Should succeed getting option, instead got error %v", err)
+		t.Error("Should succeed getting option, instead got error", err)
 	}
 
 	me = meterExporterForResource(&resource456)
 	e = me.e.(*testExporter)
 	if e.id != "456" {
-		t.Errorf("Expect id to be 456, instead got %v", e.id)
+		t.Error("Expect id to be 456, instead got", e.id)
 	}
 }
 
@@ -161,7 +161,7 @@ func TestResourceAsString(t *testing.T) {
 	s1 := resourceToKey(r1)
 	s3 := resourceToKey(r3)
 	if s1 == s3 {
-		t.Errorf("Expect different resources, but got the same %s", s1)
+		t.Error("Expect different resources, but got the same", s1)
 	}
 }
 
@@ -331,7 +331,7 @@ testComponent_testing_value{project="p1",revision="r2"} 1
 			if err := ocFake.start(len(resources) + 1); err != nil {
 				return err
 			}
-			t.Logf("Created exporter at %s", ocFake.address)
+			t.Log("Created exporter at", ocFake.address)
 			return UpdateExporter(context.Background(), configForBackend(openCensus), logtesting.TestLogger(t))
 		},
 		validate: func(t *testing.T) {
@@ -553,10 +553,10 @@ func TestStackDriverExports(t *testing.T) {
 
 			sdFake := stackDriverFake{t: t}
 			if err := initSdFake(&sdFake); err != nil {
-				t.Errorf("Init stackdriver failed %s", err)
+				t.Error("Init stackdriver failed", err)
 			}
 			if err := UpdateExporter(context.Background(), eo, logtesting.TestLogger(t)); err != nil {
-				t.Errorf("UpdateExporter failed %s", err)
+				t.Error("UpdateExporter failed", err)
 			}
 
 			if err := RegisterResourceView(desiredPodsCountView, actualPodsCountView, customView); err != nil {
@@ -571,7 +571,7 @@ func TestStackDriverExports(t *testing.T) {
 				tag.Upsert(ConfigTagKey, "config"),
 				tag.Upsert(RevisionTagKey, "revision"))
 			if err != nil {
-				t.Fatalf("Unable to create tags %s", err)
+				t.Fatal("Unable to create tags", err)
 			}
 			Record(ctx, actualPodCountM.M(int64(1)))
 

@@ -90,11 +90,11 @@ func TestParallelismNoErrors(t *testing.T) {
 			wg.Wait()
 
 			if err := p.Wait(); err != nil {
-				t.Errorf("Wait() = %v", err)
+				t.Error("Wait() =", err)
 			}
 
 			if err := p.Wait(); err != nil {
-				t.Errorf("Wait() = %v", err)
+				t.Error("Wait() =", err)
 			}
 
 			if got, want := max, int32(tc.size); got != want {

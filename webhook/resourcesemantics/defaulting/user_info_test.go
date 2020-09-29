@@ -84,7 +84,7 @@ func TestSetUserInfoAnnotationsWhenWithinCreate(t *testing.T) {
 				t.Logf("Got :  %#v", r.Annotations)
 				t.Logf("Want: %#v", tc.expectedAnnotations)
 				if diff := cmp.Diff(tc.expectedAnnotations, r.Annotations, cmpopts.EquateEmpty()); diff != "" {
-					t.Logf("diff: %v", diff)
+					t.Log("diff:", diff)
 				}
 				t.Fatalf("Annotations don't match")
 			}

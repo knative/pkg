@@ -34,7 +34,7 @@ func TestSet(t *testing.T) {
 		"-flag-name=val3",
 		"-flag-name=val1",
 	}); err != nil {
-		t.Fatalf("Parse() = %v", err)
+		t.Fatal("Parse() =", err)
 	}
 
 	if got, want := f.Value.Len(), 3; got != want {
@@ -58,7 +58,7 @@ func TestEmptySet(t *testing.T) {
 	fs.Var(&f, "flag-name", "usage description")
 
 	if err := fs.Parse([]string{}); err != nil {
-		t.Fatalf("Parse() = %v", err)
+		t.Fatal("Parse() =", err)
 	}
 
 	if got, want := f.Value.Len(), 0; got != want {

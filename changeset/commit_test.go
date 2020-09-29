@@ -82,7 +82,7 @@ func TestReadFile(t *testing.T) {
 			got, err := Get()
 
 			if (err != nil) != test.wantErr {
-				t.Errorf("Get() = %v", err)
+				t.Error("Get() =", err)
 			}
 			if !test.wantErr {
 				if test.want != got {

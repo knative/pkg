@@ -81,7 +81,7 @@ func ExpectPatches(t *testing.T, a []byte, e []jsonpatch.JsonPatchOperation) {
 
 	err := json.Unmarshal(a, &got)
 	if err != nil {
-		t.Errorf("Failed to unmarshal patches: %s", err)
+		t.Error("Failed to unmarshal patches:", err)
 		return
 	}
 
@@ -108,7 +108,7 @@ func ExpectPatches(t *testing.T, a []byte, e []jsonpatch.JsonPatchOperation) {
 	t.Logf("Got Patches:  %#v", got)
 	t.Logf("Want Patches: %#v", e)
 	if diff := cmp.Diff(e, got, cmpopts.EquateEmpty()); diff != "" {
-		t.Logf("diff Patches: %v", diff)
-		t.Errorf("ExpectPatches (-want, +got) = %s", diff)
+		t.Log("diff Patches:", diff)
+		t.Error("ExpectPatches (-want, +got) =", diff)
 	}
 }

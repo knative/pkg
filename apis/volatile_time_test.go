@@ -35,7 +35,7 @@ func TestVolatileSerializationEmpty(t *testing.T) {
 
 	b, err := json.Marshal(tt)
 	if err != nil {
-		t.Errorf("Marshal() = %v", err)
+		t.Error("Marshal() =", err)
 	}
 
 	if got, want := string(b), `{"lastTransitionTime":null}`; got != want {
@@ -44,7 +44,7 @@ func TestVolatileSerializationEmpty(t *testing.T) {
 
 	got := testType{}
 	if err := json.Unmarshal(b, &got); err != nil {
-		t.Errorf("Unmarshal() = %v", err)
+		t.Error("Unmarshal() =", err)
 	}
 	if got != tt {
 		t.Errorf("Unmarshal() = %v, wanted %v", got, tt)
@@ -58,7 +58,7 @@ func TestVolatileSerializationNow(t *testing.T) {
 
 	b, err := json.Marshal(tt)
 	if err != nil {
-		t.Errorf("Marshal() = %v", err)
+		t.Error("Marshal() =", err)
 	}
 
 	if got, want := string(b), `{"lastTransitionTime":"1970-01-01T00:17:04Z"}`; got != want {
@@ -67,7 +67,7 @@ func TestVolatileSerializationNow(t *testing.T) {
 
 	got := testType{}
 	if err := json.Unmarshal(b, &got); err != nil {
-		t.Errorf("Unmarshal() = %v", err)
+		t.Error("Unmarshal() =", err)
 	}
 	if got != tt {
 		t.Errorf("Unmarshal() = %v, wanted %v", got, tt)

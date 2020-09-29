@@ -55,11 +55,11 @@ func TestFakeTracker(t *testing.T) {
 	// Adding t1 to ref1 and then removing it results in ref1 stopping tracking.
 	trk.TrackReference(ref1, t1)
 	if !isTracking(trk, ref1) {
-		t.Fatalf("Tracker is not tracking %v", ref1)
+		t.Fatal("Tracker is not tracking", ref1)
 	}
 	trk.OnDeletedObserver(t1)
 	if isTracking(trk, ref1) {
-		t.Fatalf("Tracker is still tracking %v", ref1)
+		t.Fatal("Tracker is still tracking", ref1)
 	}
 
 	// Adding t1, t2 to ref1 and t2 to ref2, then removing t2 results in ref2 stopping
@@ -68,21 +68,21 @@ func TestFakeTracker(t *testing.T) {
 	trk.TrackReference(ref1, t2)
 	trk.TrackReference(ref2, t2)
 	if !isTracking(trk, ref1) {
-		t.Fatalf("Tracker is not tracking %v", ref1)
+		t.Fatal("Tracker is not tracking", ref1)
 	}
 	if !isTracking(trk, ref2) {
-		t.Fatalf("Tracker is not tracking %v", ref2)
+		t.Fatal("Tracker is not tracking", ref2)
 	}
 	trk.OnDeletedObserver(t2)
 	if !isTracking(trk, ref1) {
-		t.Fatalf("Tracker is not tracking %v", ref1)
+		t.Fatal("Tracker is not tracking", ref1)
 	}
 	if isTracking(trk, ref2) {
-		t.Fatalf("Tracker is still tracking %v", ref2)
+		t.Fatal("Tracker is still tracking", ref2)
 	}
 	trk.OnDeletedObserver(t1)
 	if isTracking(trk, ref1) {
-		t.Fatalf("Tracker is still tracking %v", ref1)
+		t.Fatal("Tracker is still tracking", ref1)
 	}
 }
 

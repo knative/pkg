@@ -80,7 +80,7 @@ func TestInformedWatcher(t *testing.T) {
 	stopCh := make(chan struct{})
 	defer close(stopCh)
 	if err := cmw.Start(stopCh); err != nil {
-		t.Fatalf("cm.Start() = %v", err)
+		t.Fatal("cm.Start() =", err)
 	}
 
 	// When Start returns the callbacks should have been called with the

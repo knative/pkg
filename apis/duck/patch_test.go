@@ -120,7 +120,7 @@ func TestCreateMergePatch(t *testing.T) {
 			got, err := CreateMergePatch(test.before, test.after)
 			if err != nil {
 				if !test.wantErr {
-					t.Errorf("CreateMergePatch() = %v", err)
+					t.Error("CreateMergePatch() =", err)
 				}
 				return
 			} else if test.wantErr {
@@ -305,7 +305,7 @@ func TestCreatePatch(t *testing.T) {
 			got, err := CreateBytePatch(test.before, test.after)
 			if err != nil {
 				if !test.wantErr {
-					t.Errorf("CreateBytePatch() = %v", err)
+					t.Error("CreateBytePatch() =", err)
 				}
 				return
 			} else if test.wantErr {
@@ -319,7 +319,7 @@ func TestCreatePatch(t *testing.T) {
 			}
 
 			if diff := cmp.Diff(want, got); diff != "" {
-				t.Errorf("CreateBytePatch (-want, +got) = %v", diff)
+				t.Error("CreateBytePatch (-want, +got) =", diff)
 			}
 
 		})
@@ -327,7 +327,7 @@ func TestCreatePatch(t *testing.T) {
 			got, err := CreatePatch(test.before, test.after)
 			if err != nil {
 				if !test.wantErr {
-					t.Errorf("CreatePatch() = %v", err)
+					t.Error("CreatePatch() =", err)
 				}
 				return
 			} else if test.wantErr {
@@ -336,7 +336,7 @@ func TestCreatePatch(t *testing.T) {
 			}
 
 			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("CreatePatch (-want, +got) = %v", diff)
+				t.Error("CreatePatch (-want, +got) =", diff)
 			}
 		})
 	}
@@ -354,7 +354,7 @@ func TestPatchToJSON(t *testing.T) {
 
 	b, err := input.MarshalJSON()
 	if err != nil {
-		t.Errorf("MarshalJSON() = %v", err)
+		t.Error("MarshalJSON() =", err)
 	}
 
 	want := `[{"op":"replace","path":"/status/patchable/field1","value":42},{"op":"remove","path":"/status/patchable/field2"}]`

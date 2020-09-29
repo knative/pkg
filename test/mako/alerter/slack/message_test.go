@@ -54,36 +54,36 @@ func TestMessaging(t *testing.T) {
 		for i, channel := range mh.channels {
 			initHistory, err := mh.readClient.MessageHistory(channel.Identity, time.Now().Add(-1*time.Hour))
 			if err != nil {
-				t.Fatalf("expected to get the message history, but failed: %v", err)
+				t.Fatal("expected to get the message history, but failed:", err)
 			}
 			historySizes[i] = len(initHistory)
 		}
 
 		firstMsg := "first message"
 		if err := mh.SendAlert(tc.name, firstMsg); err != nil {
-			t.Fatalf("expected to send the message, but failed: %v", err)
+			t.Fatal("expected to send the message, but failed:", err)
 		}
 		for i, channel := range mh.channels {
 			history, err := mh.readClient.MessageHistory(channel.Identity, time.Now().Add(-1*time.Hour))
 			if err != nil {
-				t.Fatalf("expected to get the message history, but failed: %v", err)
+				t.Fatal("expected to get the message history, but failed:", err)
 			}
 			if len(history) != historySizes[i]+1 {
-				t.Fatalf("the message is expected to be successfully sent, but failed: %v", err)
+				t.Fatal("the message is expected to be successfully sent, but failed:", err)
 			}
 		}
 
 		secondMsg := "second message"
 		if err := mh.SendAlert(tc.name, secondMsg); err != nil {
-			t.Fatalf("expected to send the message, but failed: %v", err)
+			t.Fatal("expected to send the message, but failed:", err)
 		}
 		for i, channel := range mh.channels {
 			history, err := mh.readClient.MessageHistory(channel.Identity, time.Now().Add(-1*time.Hour))
 			if err != nil {
-				t.Fatalf("expected to get the message history, but failed: %v", err)
+				t.Fatal("expected to get the message history, but failed:", err)
 			}
 			if len(history) != historySizes[i]+1 {
-				t.Fatalf("the message history is expected to be unchanged, but now it's: %d", len(history))
+				t.Fatal("the message history is expected to be unchanged, but now it's:", len(history))
 			}
 		}
 	}

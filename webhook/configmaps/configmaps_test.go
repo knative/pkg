@@ -338,7 +338,7 @@ func configMapRequest(
 	}
 	marshaled, err := json.Marshal(r)
 	if err != nil {
-		t.Fatalf("Failed to marshal resource: %v", err)
+		t.Fatal("Failed to marshal resource:", err)
 	}
 	req.Object.Raw = marshaled
 	req.Resource.Group = ""

@@ -30,7 +30,7 @@ func TestConvertToViaProxy(t *testing.T) {
 	err := ConvertToViaProxy(context.Background(), source, proxy, sink)
 
 	if err != nil {
-		t.Errorf("ConvertToViaProxy returned unexpected err: %s", err)
+		t.Error("ConvertToViaProxy returned unexpected err:", err)
 	}
 
 	if source.to != proxy {
@@ -83,7 +83,7 @@ func TestConvertFromViaProxy(t *testing.T) {
 	err := ConvertFromViaProxy(context.Background(), source, proxy, sink)
 
 	if err != nil {
-		t.Errorf("ConvertFromViaProxy returned unexpected err: %s", err)
+		t.Error("ConvertFromViaProxy returned unexpected err:", err)
 	}
 
 	if proxy.from != source {

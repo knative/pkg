@@ -28,9 +28,9 @@ func TestGetEnvConfig(t *testing.T) {
 
 	os.Setenv("CI", "true")
 	ec, err := GetEnvConfig()
-	t.Logf("EnvConfig is: %v", ec)
+	t.Log("EnvConfig is:", ec)
 	if err != nil {
-		t.Fatalf("Error getting envconfig for Prow: %v", err)
+		t.Fatal("Error getting envconfig for Prow:", err)
 	}
 	if !ec.CI {
 		t.Fatal("Expected CI to be true but is false")

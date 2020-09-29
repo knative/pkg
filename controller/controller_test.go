@@ -722,7 +722,7 @@ func TestEnqueue(t *testing.T) {
 			gotQueue := drainWorkQueue(impl.WorkQueue())
 
 			if diff := cmp.Diff(test.wantQueue, gotQueue); diff != "" {
-				t.Errorf("unexpected queue (-want +got): %s", diff)
+				t.Error("unexpected queue (-want +got):", diff)
 			}
 		})
 	}
@@ -736,7 +736,7 @@ func TestEnqueue(t *testing.T) {
 			gotQueue := drainWorkQueue(impl.WorkQueue())
 
 			if diff := cmp.Diff(test.wantQueue, gotQueue); diff != "" {
-				t.Errorf("unexpected queue (-want +got): %s", diff)
+				t.Error("unexpected queue (-want +got):", diff)
 			}
 		})
 	}
@@ -1380,7 +1380,7 @@ func TestStartInformersSuccess(t *testing.T) {
 	select {
 	case err := <-errCh:
 		if err != nil {
-			t.Errorf("Unexpected error: %v", err)
+			t.Error("Unexpected error:", err)
 		}
 	case <-time.After(time.Second):
 		t.Error("Timed out waiting for informers to sync.")
@@ -1412,7 +1412,7 @@ func TestStartInformersEventualSuccess(t *testing.T) {
 	select {
 	case err := <-errCh:
 		if err != nil {
-			t.Errorf("Unexpected error: %v", err)
+			t.Error("Unexpected error:", err)
 		}
 	case <-time.After(time.Second):
 		t.Error("Timed out waiting for informers to sync.")
@@ -1465,7 +1465,7 @@ func TestRunInformersSuccess(t *testing.T) {
 	select {
 	case err := <-errCh:
 		if err != nil {
-			t.Fatalf("Unexpected error: %v", err)
+			t.Fatal("Unexpected error:", err)
 		}
 	case <-time.After(time.Second):
 		t.Fatal("Timed out waiting for informers to sync.")
@@ -1499,7 +1499,7 @@ func TestRunInformersEventualSuccess(t *testing.T) {
 	select {
 	case err := <-errCh:
 		if err != nil {
-			t.Fatalf("Unexpected error: %v", err)
+			t.Fatal("Unexpected error:", err)
 		}
 	case <-time.After(time.Second):
 		t.Fatal("Timed out waiting for informers to sync.")
@@ -1553,7 +1553,7 @@ func TestRunInformersFinished(t *testing.T) {
 
 	waitInformers, err := RunInformers(ctx.Done(), fi)
 	if err != nil {
-		t.Fatalf("Failed to start informers: %v", err)
+		t.Fatal("Failed to start informers:", err)
 	}
 
 	cancel()

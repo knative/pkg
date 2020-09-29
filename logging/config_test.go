@@ -123,7 +123,7 @@ func TestNewConfigNoEntry(t *testing.T) {
 		},
 	})
 	if err != nil {
-		t.Errorf("Expected no errors. got: %v", err)
+		t.Error("Expected no errors. got:", err)
 	}
 	if got, want := c.LoggingConfig, defaultZLC; got != want {
 		t.Errorf("LoggingConfig = %v, want %v", got, want)
@@ -147,7 +147,7 @@ func TestNewConfig(t *testing.T) {
 		},
 	})
 	if err != nil {
-		t.Errorf("Expected no errors. got: %v", err)
+		t.Error("Expected no errors. got:", err)
 	}
 	if got := c.LoggingConfig; got != wantCfg {
 		t.Errorf("LoggingConfig = %v, want %v", got, wantCfg)
@@ -215,10 +215,10 @@ func TestEmptyLevel(t *testing.T) {
 		},
 	})
 	if err != nil {
-		t.Errorf("Expected no errors. got: %v", err)
+		t.Error("Expected no errors. got:", err)
 	}
 	if l := c.LoggingLevel["queueproxy"]; l != zapcore.InfoLevel {
-		t.Errorf("Expected default Info level for LoggingLevel[queueproxy]. got: %v", l)
+		t.Error("Expected default Info level for LoggingLevel[queueproxy]. got:", l)
 	}
 }
 
@@ -230,10 +230,10 @@ func TestDefaultLevel(t *testing.T) {
 		},
 	})
 	if err != nil {
-		t.Errorf("Expected no errors. got: %v", err)
+		t.Error("Expected no errors. got:", err)
 	}
 	if l := c.LoggingLevel["queueproxy"]; l != zapcore.InfoLevel {
-		t.Errorf("Expected default Info level for LoggingLevel[queueproxy]. got: %v", l)
+		t.Error("Expected default Info level for LoggingLevel[queueproxy]. got:", l)
 	}
 }
 
@@ -416,7 +416,7 @@ func TestLoggingConfig(t *testing.T) {
 				want := tc.want
 				got := json
 				if diff := cmp.Diff(want, got); diff != "" {
-					t.Errorf("unexpected (-want, +got) = %v", diff)
+					t.Error("unexpected (-want, +got) =", diff)
 				}
 			}
 			want := tc.cfg
@@ -424,14 +424,14 @@ func TestLoggingConfig(t *testing.T) {
 
 			if gotErr != nil {
 				if diff := cmp.Diff(tc.wantErr, gotErr.Error()); diff != "" {
-					t.Errorf("unexpected err (-want, +got) = %v", diff)
+					t.Error("unexpected err (-want, +got) =", diff)
 				}
 			} else if tc.wantErr != "" {
-				t.Errorf("expected err %v", tc.wantErr)
+				t.Error("expected err", tc.wantErr)
 			}
 
 			if diff := cmp.Diff(want, got); diff != "" {
-				t.Errorf("unexpected (-want, +got) = %v", diff)
+				t.Error("unexpected (-want, +got) =", diff)
 				t.Log(got)
 			}
 		})

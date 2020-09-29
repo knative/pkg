@@ -53,7 +53,7 @@ const testTimeout = 10 * time.Second
 func TestMissingContentType(t *testing.T) {
 	wh, serverURL, ctx, cancel, err := testSetup(t)
 	if err != nil {
-		t.Fatalf("testSetup() = %v", err)
+		t.Fatal("testSetup() =", err)
 	}
 
 	eg, _ := errgroup.WithContext(ctx)
@@ -62,23 +62,23 @@ func TestMissingContentType(t *testing.T) {
 	defer func() {
 		cancel()
 		if err := eg.Wait(); err != nil {
-			t.Errorf("Unable to run controller: %s", err)
+			t.Error("Unable to run controller:", err)
 		}
 	}()
 
 	pollErr := waitForServerAvailable(t, serverURL, testTimeout)
 	if pollErr != nil {
-		t.Fatalf("waitForServerAvailable() = %v", err)
+		t.Fatal("waitForServerAvailable() =", err)
 	}
 
 	tlsClient, err := createSecureTLSClient(t, wh.Client, &wh.Options)
 	if err != nil {
-		t.Fatalf("createSecureTLSClient() = %v", err)
+		t.Fatal("createSecureTLSClient() =", err)
 	}
 
 	req, err := http.NewRequest("GET", fmt.Sprintf("https://%s", serverURL), nil)
 	if err != nil {
-		t.Fatalf("http.NewRequest() = %v", err)
+		t.Fatal("http.NewRequest() =", err)
 	}
 
 	response, err := tlsClient.Do(req)
@@ -93,7 +93,7 @@ func TestMissingContentType(t *testing.T) {
 	defer response.Body.Close()
 	responseBody, err := ioutil.ReadAll(response.Body)
 	if err != nil {
-		t.Fatalf("Failed to read response body %v", err)
+		t.Fatal("Failed to read response body", err)
 	}
 
 	if !strings.Contains(string(responseBody), "invalid Content-Type") {
@@ -107,7 +107,7 @@ func TestMissingContentType(t *testing.T) {
 func testEmptyRequestBody(t *testing.T, controller interface{}) {
 	wh, serverURL, ctx, cancel, err := testSetup(t, controller)
 	if err != nil {
-		t.Fatalf("testSetup() = %v", err)
+		t.Fatal("testSetup() =", err)
 	}
 
 	eg, _ := errgroup.WithContext(ctx)
@@ -116,30 +116,30 @@ func testEmptyRequestBody(t *testing.T, controller interface{}) {
 	defer func() {
 		cancel()
 		if err := eg.Wait(); err != nil {
-			t.Errorf("Unable to run controller: %s", err)
+			t.Error("Unable to run controller:", err)
 		}
 	}()
 
 	pollErr := waitForServerAvailable(t, serverURL, testTimeout)
 	if pollErr != nil {
-		t.Fatalf("waitForServerAvailable() = %v", err)
+		t.Fatal("waitForServerAvailable() =", err)
 	}
 
 	tlsClient, err := createSecureTLSClient(t, wh.Client, &wh.Options)
 	if err != nil {
-		t.Fatalf("createSecureTLSClient() = %v", err)
+		t.Fatal("createSecureTLSClient() =", err)
 	}
 
 	req, err := http.NewRequest("GET", fmt.Sprintf("https://%s/bazinga", serverURL), nil)
 	if err != nil {
-		t.Fatalf("http.NewRequest() = %v", err)
+		t.Fatal("http.NewRequest() =", err)
 	}
 
 	req.Header.Add("Content-Type", "application/json")
 
 	response, err := tlsClient.Do(req)
 	if err != nil {
-		t.Fatalf("failed to get resp %v", err)
+		t.Fatal("failed to get resp", err)
 	}
 
 	if got, want := response.StatusCode, http.StatusBadRequest; got != want {
@@ -149,7 +149,7 @@ func testEmptyRequestBody(t *testing.T, controller interface{}) {
 
 	responseBody, err := ioutil.ReadAll(response.Body)
 	if err != nil {
-		t.Fatalf("Failed to read response body %v", err)
+		t.Fatal("Failed to read response body", err)
 	}
 
 	if !strings.Contains(string(responseBody), "could not decode body") {
@@ -166,11 +166,11 @@ func TestSetupWebhookHTTPServerError(t *testing.T) {
 
 	nsErr := createNamespace(t, kubeClient, metav1.NamespaceSystem)
 	if nsErr != nil {
-		t.Fatalf("createNamespace() = %v", nsErr)
+		t.Fatal("createNamespace() =", nsErr)
 	}
 	cMapsErr := createTestConfigMap(t, kubeClient)
 	if cMapsErr != nil {
-		t.Fatalf("createTestConfigMap() = %v", cMapsErr)
+		t.Fatal("createTestConfigMap() =", cMapsErr)
 	}
 
 	stopCh := make(chan struct{})

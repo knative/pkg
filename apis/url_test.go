@@ -70,7 +70,7 @@ func TestParseURL(t *testing.T) {
 			got, err := ParseURL(tc.t)
 			if err != nil {
 				if !tc.wantErr {
-					t.Fatalf("ParseURL() = %v", err)
+					t.Fatal("ParseURL() =", err)
 				}
 				return
 			} else if tc.wantErr {
@@ -82,7 +82,7 @@ func TestParseURL(t *testing.T) {
 			}
 
 			if diff := cmp.Diff(tc.want, got); diff != "" {
-				t.Errorf("unexpected object (-want, +got) = %v", diff)
+				t.Error("unexpected object (-want, +got) =", diff)
 			}
 		})
 	}
@@ -112,15 +112,15 @@ func TestJsonMarshalURL(t *testing.T) {
 			var got []byte
 			tt, err := ParseURL(tc.t)
 			if err != nil {
-				t.Fatalf("ParseURL() = %v", err)
+				t.Fatal("ParseURL() =", err)
 			}
 			if tt != nil {
 				got, _ = tt.MarshalJSON()
 			}
 
 			if diff := cmp.Diff(tc.want, got); diff != "" {
-				t.Logf("got: %s", string(got))
-				t.Errorf("unexpected object (-want, +got) = %v", diff)
+				t.Log("got:", string(got))
+				t.Error("unexpected object (-want, +got) =", diff)
 			}
 		})
 	}
@@ -166,13 +166,13 @@ func TestJsonUnmarshalURL(t *testing.T) {
 					gotErr = err.Error()
 				}
 				if diff := cmp.Diff(tc.wantErr, gotErr); diff != "" {
-					t.Errorf("unexpected error (-want, +got) = %v", diff)
+					t.Error("unexpected error (-want, +got) =", diff)
 				}
 				return
 			}
 
 			if diff := cmp.Diff(tc.want, got); diff != "" {
-				t.Errorf("unexpected object (-want, +got) = %v", diff)
+				t.Error("unexpected object (-want, +got) =", diff)
 			}
 		})
 	}
@@ -224,14 +224,14 @@ func TestJsonMarshalURLAsMember(t *testing.T) {
 					gotErr = err.Error()
 				}
 				if diff := cmp.Diff(tc.wantErr, gotErr); diff != "" {
-					t.Errorf("unexpected error (-want, +got) = %v", diff)
+					t.Error("unexpected error (-want, +got) =", diff)
 				}
 				return
 			}
 
 			if diff := cmp.Diff(tc.want, got); diff != "" {
-				t.Errorf("unexpected object (-want, +got) = %v", diff)
-				t.Logf("got: %s", string(got))
+				t.Error("unexpected object (-want, +got) =", diff)
+				t.Log("got:", string(got))
 			}
 		})
 	}
@@ -283,14 +283,14 @@ func TestJsonMarshalURLAsPointerMember(t *testing.T) {
 					gotErr = err.Error()
 				}
 				if diff := cmp.Diff(tc.wantErr, gotErr); diff != "" {
-					t.Errorf("unexpected error (-want, +got) = %v", diff)
+					t.Error("unexpected error (-want, +got) =", diff)
 				}
 				return
 			}
 
 			if diff := cmp.Diff(tc.want, got); diff != "" {
-				t.Errorf("unexpected object (-want, +got) = %v", diff)
-				t.Logf("got: %s", string(got))
+				t.Error("unexpected object (-want, +got) =", diff)
+				t.Log("got:", string(got))
 			}
 		})
 	}
@@ -353,7 +353,7 @@ func TestJsonUnmarshalURLAsMember(t *testing.T) {
 			}
 
 			if diff := cmp.Diff(tc.want, got); diff != "" {
-				t.Errorf("Unexpected object (-want, +got) = %v", diff)
+				t.Error("Unexpected object (-want, +got) =", diff)
 			}
 		})
 	}
@@ -416,7 +416,7 @@ func TestJsonUnmarshalURLAsMemberPointer(t *testing.T) {
 			}
 
 			if diff := cmp.Diff(tc.want, got); diff != "" {
-				t.Errorf("Unexpected object (-want, +got) = %v", diff)
+				t.Error("Unexpected object (-want, +got) =", diff)
 			}
 		})
 	}
@@ -454,10 +454,10 @@ func TestURLString(t *testing.T) {
 			got := tc.t
 
 			if diff := cmp.Diff(tc.want, got.String()); diff != "" {
-				t.Errorf("unexpected string (-want, +got) = %v", diff)
+				t.Error("unexpected string (-want, +got) =", diff)
 			}
 			if diff := cmp.Diff(tc.want, got.URL().String()); diff != "" {
-				t.Errorf("unexpected URL (-want, +got) = %v", diff)
+				t.Error("unexpected URL (-want, +got) =", diff)
 			}
 		})
 	}
@@ -609,17 +609,17 @@ func TestResolveReference(t *testing.T) {
 func TestSemanticEquality(t *testing.T) {
 	u1, err := ParseURL("https://user:password@example.com")
 	if err != nil {
-		t.Fatalf("ParseURL() got err %v", err)
+		t.Fatal("ParseURL() got err", err)
 	}
 
 	u2, err := ParseURL("https://user:password@example.com")
 	if err != nil {
-		t.Fatalf("ParseURL() got err %v", err)
+		t.Fatal("ParseURL() got err", err)
 	}
 
 	u3, err := ParseURL("https://another-user:password@example.com")
 	if err != nil {
-		t.Fatalf("ParseURL() got err %v", err)
+		t.Fatal("ParseURL() got err", err)
 	}
 
 	if !equality.Semantic.DeepEqual(u1, u2) {
