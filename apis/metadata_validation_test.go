@@ -17,25 +17,25 @@ limitations under the License.
 package apis
 
 import (
-	"reflect"
 	"strings"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func TestValidateObjectMetadata(t *testing.T) {
-	cases := []struct {
+	tests := []struct {
 		name       string
 		objectMeta metav1.Object
-		expectErr  error
+		want       error
 	}{{
 		name: "invalid name - dots",
 		objectMeta: &metav1.ObjectMeta{
 			Name: "do.not.use.dots",
 		},
-		expectErr: &FieldError{
+		want: &FieldError{
 			Message: "not a DNS 1035 label: [a DNS-1035 label must consist of lower case alphanumeric characters or '-', start with an alphabetic character, and end with an alphanumeric character (e.g. 'my-name',  or 'abc-123', regex used for validation is '[a-z]([-a-z0-9]*[a-z0-9])?')]",
 			Paths:   []string{"name"},
 		},
@@ -44,7 +44,7 @@ func TestValidateObjectMetadata(t *testing.T) {
 		objectMeta: &metav1.ObjectMeta{
 			Name: strings.Repeat("a", 64),
 		},
-		expectErr: &FieldError{
+		want: &FieldError{
 			Message: "not a DNS 1035 label: [must be no more than 63 characters]",
 			Paths:   []string{"name"},
 		},
@@ -53,7 +53,7 @@ func TestValidateObjectMetadata(t *testing.T) {
 		objectMeta: &metav1.ObjectMeta{
 			Name: "some-name-",
 		},
-		expectErr: &FieldError{
+		want: &FieldError{
 			Message: "not a DNS 1035 label: [a DNS-1035 label must consist of lower case alphanumeric characters or '-', start with an alphabetic character, and end with an alphanumeric character (e.g. 'my-name',  or 'abc-123', regex used for validation is '[a-z]([-a-z0-9]*[a-z0-9])?')]",
 			Paths:   []string{"name"},
 		},
@@ -62,19 +62,19 @@ func TestValidateObjectMetadata(t *testing.T) {
 		objectMeta: &metav1.ObjectMeta{
 			GenerateName: "some-name",
 		},
-		expectErr: (*FieldError)(nil),
+		want: (*FieldError)(nil),
 	}, {
 		name: "valid generateName - trailing dash",
 		objectMeta: &metav1.ObjectMeta{
 			GenerateName: "some-name-",
 		},
-		expectErr: (*FieldError)(nil),
+		want: (*FieldError)(nil),
 	}, {
 		name: "invalid generateName - dots",
 		objectMeta: &metav1.ObjectMeta{
 			GenerateName: "do.not.use.dots",
 		},
-		expectErr: &FieldError{
+		want: &FieldError{
 			Message: "not a DNS 1035 label prefix: [a DNS-1035 label must consist of lower case alphanumeric characters or '-', start with an alphabetic character, and end with an alphanumeric character (e.g. 'my-name',  or 'abc-123', regex used for validation is '[a-z]([-a-z0-9]*[a-z0-9])?')]",
 			Paths:   []string{"generateName"},
 		},
@@ -83,26 +83,24 @@ func TestValidateObjectMetadata(t *testing.T) {
 		objectMeta: &metav1.ObjectMeta{
 			GenerateName: strings.Repeat("a", 64),
 		},
-		expectErr: &FieldError{
+		want: &FieldError{
 			Message: "not a DNS 1035 label prefix: [must be no more than 63 characters]",
 			Paths:   []string{"generateName"},
 		},
 	}, {
 		name:       "missing name and generateName",
 		objectMeta: &metav1.ObjectMeta{},
-		expectErr: &FieldError{
+		want: &FieldError{
 			Message: "name or generateName is required",
 			Paths:   []string{"name"},
 		},
 	}}
 
-	for _, c := range cases {
-		t.Run(c.name, func(t *testing.T) {
-
-			err := ValidateObjectMetadata(c.objectMeta)
-
-			if !reflect.DeepEqual(c.expectErr, err) {
-				t.Errorf("Expected: '%#v', Got: '%#v'", c.expectErr, err)
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			if err := ValidateObjectMetadata(tc.objectMeta); !cmp.Equal(tc.want.Error(), err.Error()) {
+				t.Errorf("Expected: '%#v', Got: '%#v', diff(-want,+got)\n%s", tc.want, err,
+					cmp.Diff(tc.want.Error(), err.Error()))
 			}
 		})
 	}
@@ -171,8 +169,8 @@ func TestServiceAnnotationUpdate(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			err := ValidateCreatorAndModifier(test.prev, test.this, test.oldAnnotation, test.newAnnotation, groupName)
-			if !reflect.DeepEqual(test.want.Error(), err.Error()) {
-				t.Errorf("Expected: '%#v', Got: '%#v'", test.want, err)
+			if !cmp.Equal(test.want.Error(), err.Error()) {
+				t.Errorf("Expected: '%#v', Got: '%#v', diff(-want,+got)\n%s", test.want, err, cmp.Diff(test.want, err))
 			}
 		})
 	}
