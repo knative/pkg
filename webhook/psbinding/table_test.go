@@ -91,7 +91,7 @@ func checkDeploymentIsPatched(t *testing.T, r *TableRow) {
 	}
 	b, err := json.Marshal(d)
 	if err != nil {
-		t.Fatalf("Unable to serialize deployment: %v", err)
+		t.Fatal("Unable to serialize deployment:", err)
 	}
 
 	req := &admissionv1.AdmissionRequest{
@@ -146,7 +146,7 @@ func checkDeploymentIsPatchedBack(t *testing.T, r *TableRow) {
 	}
 	b, err := json.Marshal(d)
 	if err != nil {
-		t.Fatalf("Unable to serialize deployment: %v", err)
+		t.Fatal("Unable to serialize deployment:", err)
 	}
 
 	req := &admissionv1.AdmissionRequest{
@@ -193,7 +193,7 @@ func checkDeploymentIsNotPatched(t *testing.T, r *TableRow) {
 	}
 	b, err := json.Marshal(d)
 	if err != nil {
-		t.Fatalf("Unable to serialize deployment: %v", err)
+		t.Fatal("Unable to serialize deployment:", err)
 	}
 
 	req := &admissionv1.AdmissionRequest{
@@ -239,7 +239,7 @@ func checkDeleteIgnored(t *testing.T, r *TableRow) {
 	}
 	b, err := json.Marshal(d)
 	if err != nil {
-		t.Fatalf("Unable to serialize deployment: %v", err)
+		t.Fatal("Unable to serialize deployment:", err)
 	}
 
 	req := &admissionv1.AdmissionRequest{
@@ -1050,7 +1050,7 @@ func TestNew(t *testing.T) {
 	}
 
 	if err := la.Promote(pkgreconciler.UniversalBucket(), c.MaybeEnqueueBucketKey); err != nil {
-		t.Errorf("Promote() = %v", err)
+		t.Error("Promote() =", err)
 	}
 
 	// Queue has async moving parts so if we check at the wrong moment, this might still be 0.

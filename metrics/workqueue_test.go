@@ -69,7 +69,7 @@ func TestWorkqueueMetrics(t *testing.T) {
 		t.Errorf("len(DefaultViews()) = %d, want %d", got, want)
 	}
 	if err := view.Register(views...); err != nil {
-		t.Errorf("view.Register() = %v", err)
+		t.Error("view.Register() =", err)
 	}
 	defer view.Unregister(views...)
 

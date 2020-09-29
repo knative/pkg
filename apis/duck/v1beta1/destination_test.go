@@ -420,7 +420,7 @@ func TestDestination_GetRef(t *testing.T) {
 		t.Run(n, func(t *testing.T) {
 			got := tc.dest.GetRef()
 			if diff := cmp.Diff(tc.want, got); diff != "" {
-				t.Errorf("Unexpected result (-want +got): %s", diff)
+				t.Error("Unexpected result (-want +got):", diff)
 			}
 		})
 	}

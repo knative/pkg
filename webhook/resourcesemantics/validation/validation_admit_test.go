@@ -205,7 +205,7 @@ func TestUnknownFieldFails(t *testing.T) {
 		},
 	})
 	if err != nil {
-		t.Fatalf("Failed to marshal resource: %v", err)
+		t.Fatal("Failed to marshal resource:", err)
 	}
 	req.Object.Raw = marshaled
 
@@ -410,7 +410,7 @@ func createDeleteResource(ctx context.Context, t *testing.T, old *Resource) *adm
 	}
 	marshaledOld, err := json.Marshal(old)
 	if err != nil {
-		t.Fatalf("Failed to marshal resource: %v", err)
+		t.Fatal("Failed to marshal resource:", err)
 	}
 	req.OldObject.Raw = marshaledOld
 	req.Resource.Group = "pkg.knative.dev"
@@ -430,7 +430,7 @@ func createCreateResource(ctx context.Context, t *testing.T, r *Resource) *admis
 	}
 	marshaled, err := json.Marshal(r)
 	if err != nil {
-		t.Fatalf("Failed to marshal resource: %v", err)
+		t.Fatal("Failed to marshal resource:", err)
 	}
 	req.Object.Raw = marshaled
 	req.Resource.Group = "pkg.knative.dev"
@@ -516,12 +516,12 @@ func createUpdateResource(ctx context.Context, t *testing.T, old, new *Resource)
 	}
 	marshaled, err := json.Marshal(new)
 	if err != nil {
-		t.Fatalf("Failed to marshal resource: %v", err)
+		t.Fatal("Failed to marshal resource:", err)
 	}
 	req.Object.Raw = marshaled
 	marshaledOld, err := json.Marshal(old)
 	if err != nil {
-		t.Fatalf("Failed to marshal resource: %v", err)
+		t.Fatal("Failed to marshal resource:", err)
 	}
 	req.OldObject.Raw = marshaledOld
 	req.Resource.Group = "pkg.knative.dev"
@@ -544,16 +544,16 @@ func createInnerDefaultResourceWithoutSpec(t *testing.T) []byte {
 	// generic map[string]interface{}, removing 'spec', and marshaling it again.
 	origBytes, err := json.Marshal(r)
 	if err != nil {
-		t.Fatalf("Error marshaling origBytes: %v", err)
+		t.Fatal("Error marshaling origBytes:", err)
 	}
 	var q map[string]interface{}
 	if err := json.Unmarshal(origBytes, &q); err != nil {
-		t.Fatalf("Error unmarshaling origBytes: %v", err)
+		t.Fatal("Error unmarshaling origBytes:", err)
 	}
 	delete(q, "spec")
 	b, err := json.Marshal(q)
 	if err != nil {
-		t.Fatalf("Error marshaling q: %v", err)
+		t.Fatal("Error marshaling q:", err)
 	}
 	return b
 }
@@ -579,7 +579,7 @@ func createInnerDefaultResourceWithSpecAndStatus(t *testing.T, spec *InnerDefaul
 
 	b, err := json.Marshal(r)
 	if err != nil {
-		t.Fatalf("Error marshaling bytes: %v", err)
+		t.Fatal("Error marshaling bytes:", err)
 	}
 	return b
 }
@@ -657,7 +657,7 @@ func NewTestResourceAdmissionController(t *testing.T) *reconciler {
 	}
 
 	if err := la.Promote(pkgreconciler.UniversalBucket(), c.MaybeEnqueueBucketKey); err != nil {
-		t.Errorf("Promote() = %v", err)
+		t.Error("Promote() =", err)
 	}
 
 	// Queue has async moving parts so if we check at the wrong moment, this might still be 0.

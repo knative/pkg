@@ -87,7 +87,7 @@ func TestAcquireGKEProject(t *testing.T) {
 				"", /* boskos user */
 				"" /* boskos password file */)
 			if err != nil {
-				t.Fatalf("Failed to create test client %v", err)
+				t.Fatal("Failed to create test client", err)
 			}
 			_, err = client.AcquireGKEProject(GKEProjectResource)
 			if tt.expErr && (err == nil) {
@@ -145,7 +145,7 @@ func TestReleaseGKEProject(t *testing.T) {
 				"", /* boskos user */
 				"" /* boskos password file */)
 			if err != nil {
-				t.Fatalf("Failed to create test client %v", err)
+				t.Fatal("Failed to create test client", err)
 			}
 			err = client.ReleaseGKEProject(tt.resName)
 			if tt.expErr && (err == nil) {

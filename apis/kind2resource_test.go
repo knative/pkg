@@ -73,7 +73,7 @@ func TestGVK2GVR(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			got := KindToResource(test.input)
 			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("KindToResource (-want, +got) = %v", diff)
+				t.Error("KindToResource (-want, +got) =", diff)
 			}
 		})
 	}

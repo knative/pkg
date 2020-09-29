@@ -48,7 +48,7 @@ func TestStaticWatcher(t *testing.T) {
 
 	err := cm.Start(nil)
 	if err != nil {
-		t.Fatalf("cm.Start() = %v", err)
+		t.Fatal("cm.Start() =", err)
 	}
 
 	// When Start returns the callbacks should have been called with the

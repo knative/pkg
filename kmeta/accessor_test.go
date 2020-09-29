@@ -67,10 +67,10 @@ func TestAccessor(t *testing.T) {
 			} else {
 				got, err := DeletionHandlingAccessor(test.o)
 				if err != nil {
-					t.Errorf("DeletionHandlingAccessor() = %v", err)
+					t.Error("DeletionHandlingAccessor() =", err)
 				}
 				if diff := cmp.Diff(got, test.want); diff != "" {
-					t.Errorf("DeletionHandlingAccessor = %s", diff)
+					t.Error("DeletionHandlingAccessor =", diff)
 				}
 			}
 		})
@@ -97,6 +97,6 @@ func TestObjectReference(t *testing.T) {
 	}
 
 	if diff := cmp.Diff(want, ObjectReference(r)); diff != "" {
-		t.Errorf("Unexpected ObjectReference (-want, +got) %s", diff)
+		t.Error("Unexpected ObjectReference (-want, +got)", diff)
 	}
 }

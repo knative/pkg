@@ -33,11 +33,11 @@ import (
 func TestOpenCensusConfig(t *testing.T) {
 	cert, err := ioutil.ReadFile(filepath.Join("testdata", "client-cert.pem"))
 	if err != nil {
-		t.Fatalf("Couldn't find testdata/client-cert.pem: %v", err)
+		t.Fatal("Couldn't find testdata/client-cert.pem:", err)
 	}
 	key, err := ioutil.ReadFile(filepath.Join("testdata", "client-key.pem"))
 	if err != nil {
-		t.Fatalf("Couldn't find testdata/client-key.pem: %v", err)
+		t.Fatal("Couldn't find testdata/client-key.pem:", err)
 	}
 
 	cases := []struct {
@@ -97,7 +97,7 @@ func TestOpenCensusConfig(t *testing.T) {
 			if c.err == nil {
 				server, shutdown, err = GetServer(c.tls)
 				if err != nil {
-					t.Fatalf("Failed to start server: %v", err)
+					t.Fatal("Failed to start server:", err)
 				}
 				c.config.collectorAddress = server.Addr().String()
 			}
@@ -105,26 +105,26 @@ func TestOpenCensusConfig(t *testing.T) {
 			got, _, gotErr := newOpenCensusExporter(&c.config, logtesting.TestLogger(t))
 			if c.err != nil {
 				if diff := cmp.Diff(c.err, gotErr); diff != "" {
-					t.Errorf("wrong err (-want +got) = %v", diff)
+					t.Error("wrong err (-want +got) =", diff)
 				}
 				return
 			}
 			if gotErr != nil {
-				t.Errorf("unexpected err: %v", gotErr)
+				t.Error("unexpected err:", gotErr)
 				return
 			}
 			if c.wantFunc != nil {
 				c.wantFunc(t, got)
 			}
 
-			t.Logf("Awaiting channel shutdown at %s", server.Addr().String())
+			t.Log("Awaiting channel shutdown at", server.Addr().String())
 			err = <-shutdown
 			if err != nil {
-				t.Errorf("Error from server: %v", err)
+				t.Error("Error from server:", err)
 			}
 			err = server.Close()
 			if err != nil {
-				t.Errorf("Failed to shut down server: %v", err)
+				t.Error("Failed to shut down server:", err)
 			}
 		})
 	}

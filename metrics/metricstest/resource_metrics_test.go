@@ -388,7 +388,7 @@ func TestMetricShortcuts(t *testing.T) {
 
 	for _, tc := range tests {
 		if diff := cmp.Diff(tc.want, NewMetric(&tc.got)); diff != "" {
-			t.Errorf("Metric.Equal() failed (-want +got): %s", diff)
+			t.Error("Metric.Equal() failed (-want +got):", diff)
 		}
 	}
 }
@@ -412,7 +412,7 @@ func TestMetricFetch(t *testing.T) {
 
 	ctx, err := tag.New(context.Background(), tag.Upsert(tagKey, "alpha"))
 	if err != nil {
-		t.Errorf("Unable to create context: %v", err)
+		t.Error("Unable to create context:", err)
 	}
 	stats.Record(ctx, count.M(5))
 	stats.Record(ctx, count.M(3))
@@ -422,7 +422,7 @@ func TestMetricFetch(t *testing.T) {
 
 	ctx, err = tag.New(ctx, tag.Upsert(tagKey, "beta"))
 	if err != nil {
-		t.Errorf("Unable to create context: %v", err)
+		t.Error("Unable to create context:", err)
 	}
 	stats.Record(ctx, count.M(20))
 	EnsureRecorded()
@@ -444,7 +444,7 @@ func TestMetricFetch(t *testing.T) {
 		},
 	}
 	if diff := cmp.Diff(want, m[0]); diff != "" {
-		t.Errorf("Incorrect received metrics (-want +got): %s", diff)
+		t.Error("Incorrect received metrics (-want +got):", diff)
 	}
 
 }

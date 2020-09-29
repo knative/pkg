@@ -233,7 +233,7 @@ func TestSdRecordWithResources(t *testing.T) {
 				v.TagKeys = append(v.TagKeys, tag.MustNewKey(k))
 			}
 			if err := RegisterResourceView(v); err != nil {
-				t.Errorf("Unable to register view: %v", err)
+				t.Error("Unable to register view:", err)
 			}
 			defer UnregisterResourceView(v)
 
@@ -245,7 +245,7 @@ func TestSdRecordWithResources(t *testing.T) {
 			}
 			ctx, err := tag.New(ctx, tags...)
 			if err != nil {
-				t.Errorf("Unable to set tags: %v", err)
+				t.Error("Unable to set tags:", err)
 			}
 
 			if err := recordFunc(ctx, []stats.Measurement{m.M(1)}); err != nil {
@@ -525,7 +525,7 @@ func TestSetStackdriverSecretLocation(t *testing.T) {
 	assertStringsEqual(t, "DefaultSecretNamespace", secretNamespace, StackdriverSecretNamespaceDefault)
 	sec, err := getStackdriverSecret(ctx, secretFetcher)
 	if err != nil {
-		t.Errorf("Got unexpected error when getting secret: %v", err)
+		t.Error("Got unexpected error when getting secret:", err)
 	}
 	if sec != nil {
 		t.Errorf("Stackdriver secret should not be fetched unless SetStackdriverSecretLocation has been called")
@@ -535,7 +535,7 @@ func TestSetStackdriverSecretLocation(t *testing.T) {
 	SetStackdriverSecretLocation(testName, testNamespace)
 	sec, err = getStackdriverSecret(ctx, secretFetcher)
 	if err != nil {
-		t.Errorf("Got unexpected error when getting secret: %v", err)
+		t.Error("Got unexpected error when getting secret:", err)
 	}
 	if sec == nil {
 		t.Error("expected secret to be non-nil if there is no error and SetStackdriverSecretLocation has been called")

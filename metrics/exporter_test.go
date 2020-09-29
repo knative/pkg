@@ -263,7 +263,7 @@ func TestFlushExporter(t *testing.T) {
 	}
 	e, f, err := newMetricsExporter(c, TestLogger(t))
 	if err != nil {
-		t.Errorf("Expected no error. got %v", err)
+		t.Error("Expected no error. got", err)
 	} else {
 		setCurMetricsExporter(e)
 		if want, got := false, FlushExporter(); got != want {
@@ -289,7 +289,7 @@ func TestFlushExporter(t *testing.T) {
 
 	e, f, err = newMetricsExporter(c, TestLogger(t))
 	if err != nil {
-		t.Errorf("Expected no error. got %v", err)
+		t.Error("Expected no error. got", err)
 	} else {
 		setCurMetricsExporter(e)
 		if want, got := true, FlushExporter(); got != want {

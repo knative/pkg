@@ -78,7 +78,7 @@ func ExampleHooks() {
 func TestWaitWithoutHooks(t *testing.T) {
 	h := NewHooks()
 	if err := h.WaitForHooks(time.Second); err != nil {
-		t.Errorf("Expected no error without hooks, but got: %v", err)
+		t.Error("Expected no error without hooks, but got:", err)
 	}
 }
 
@@ -168,7 +168,7 @@ func TestMultiUpdate(t *testing.T) {
 	}
 
 	if updates != 2 {
-		t.Errorf("Unexpected number of Update events; want 2, got %d", updates)
+		t.Error("Unexpected number of Update events; want 2, got", updates)
 	}
 }
 

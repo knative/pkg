@@ -174,6 +174,6 @@ func assertFormatReadsSpanContext(t *testing.T, r *http.Request, format ocpropag
 		t.Error("Expected to get the SpanContext")
 	}
 	if diff := cmp.Diff(spanContext, sc); diff != "" {
-		t.Errorf("Unexpected SpanContext (-want +got): %s", diff)
+		t.Error("Unexpected SpanContext (-want +got):", diff)
 	}
 }

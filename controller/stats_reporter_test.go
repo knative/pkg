@@ -99,6 +99,6 @@ func TestReportReconcile(t *testing.T) {
 func expectSuccess(t *testing.T, f func() error) {
 	t.Helper()
 	if err := f(); err != nil {
-		t.Errorf("Reporter.Report() expected success but got error %v", err)
+		t.Error("Reporter.Report() expected success but got error", err)
 	}
 }

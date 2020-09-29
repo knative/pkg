@@ -30,17 +30,17 @@ func TestProcess(t *testing.T) {
 		t.Run(test, func(t *testing.T) {
 			in, err := ioutil.ReadFile(path.Join("testdata", test+".yaml"))
 			if err != nil {
-				t.Fatalf("Failed to load test fixture: %v", err)
+				t.Fatal("Failed to load test fixture:", err)
 			}
 
 			got, err := process(in)
 			if err != nil {
-				t.Fatalf("Expected no error but got %v", err)
+				t.Fatal("Expected no error but got", err)
 			}
 
 			want, err := ioutil.ReadFile(path.Join("testdata", test+"_want.yaml"))
 			if err != nil && !os.IsNotExist(err) {
-				t.Fatalf("Failed to load test fixture: %v", err)
+				t.Fatal("Failed to load test fixture:", err)
 			}
 
 			if diff := cmp.Diff(string(want), string(got)); diff != "" {

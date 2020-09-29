@@ -156,13 +156,13 @@ func TestStoreConfigChange(t *testing.T) {
 	result := store.UntypedLoad(config1)
 
 	if diff := cmp.Diff(result, config1); diff != "" {
-		t.Errorf("Expected loaded value diff: %s", diff)
+		t.Error("Expected loaded value diff:", diff)
 	}
 
 	result = store.UntypedLoad(config2)
 
 	if diff := cmp.Diff(result, nil); diff != "" {
-		t.Errorf("Unexpected loaded value diff: %s", diff)
+		t.Error("Unexpected loaded value diff:", diff)
 	}
 
 	store.OnConfigChanged(&corev1.ConfigMap{
@@ -174,7 +174,7 @@ func TestStoreConfigChange(t *testing.T) {
 	result = store.UntypedLoad(config2)
 
 	if diff := cmp.Diff(result, config2); diff != "" {
-		t.Errorf("Expected loaded value diff: %s", diff)
+		t.Error("Expected loaded value diff:", diff)
 	}
 }
 
@@ -202,7 +202,7 @@ func TestStoreFailedFirstConversionCrashes(t *testing.T) {
 	if e, ok := err.(*exec.ExitError); ok && !e.Success() {
 		return
 	}
-	t.Fatalf("process should have exited with status 1 - err %v", err)
+	t.Fatal("process should have exited with status 1 - err", err)
 }
 
 func TestStoreFailedUpdate(t *testing.T) {
@@ -238,7 +238,7 @@ func TestStoreFailedUpdate(t *testing.T) {
 	secondLoad := store.UntypedLoad(config1)
 
 	if diff := cmp.Diff(firstLoad, secondLoad); diff != "" {
-		t.Errorf("Expected loaded value to remain the same dff: %s", diff)
+		t.Error("Expected loaded value to remain the same dff:", diff)
 	}
 }
 

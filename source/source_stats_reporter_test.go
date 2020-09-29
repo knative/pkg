@@ -38,7 +38,7 @@ func TestStatsReporter(t *testing.T) {
 
 	r, err := NewStatsReporter()
 	if err != nil {
-		t.Fatalf("Failed to create a new reporter: %v", err)
+		t.Fatal("Failed to create a new reporter:", err)
 	}
 
 	wantTags := map[string]string{
@@ -64,7 +64,7 @@ func TestStatsReporter(t *testing.T) {
 func expectSuccess(t *testing.T, f func() error) {
 	t.Helper()
 	if err := f(); err != nil {
-		t.Errorf("Reporter expected success but got error: %v", err)
+		t.Error("Reporter expected success but got error:", err)
 	}
 }
 

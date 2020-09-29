@@ -371,7 +371,7 @@ func TestNew(t *testing.T) {
 	}
 
 	if err := la.Promote(pkgreconciler.UniversalBucket(), c.MaybeEnqueueBucketKey); err != nil {
-		t.Errorf("Promote() = %v", err)
+		t.Error("Promote() =", err)
 	}
 
 	// Queue has async moving parts so if we check at the wrong moment, thist might still be 0.

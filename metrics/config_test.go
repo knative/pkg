@@ -658,7 +658,7 @@ func TestGetMetricsConfig_fromEnv(t *testing.T) {
 
 			mc, err := createMetricsConfig(ctx, test.ops)
 			if mc != nil {
-				t.Errorf("Wanted no config, got %v", mc)
+				t.Error("Wanted no config, got", mc)
 			}
 			if err == nil || !strings.Contains(err.Error(), test.expectedErrContains) {
 				t.Errorf("Wanted err to contain: %q, got: %v", test.expectedErrContains, err)
@@ -842,7 +842,7 @@ func TestUpdateExporterFromConfigMapWithOpts(t *testing.T) {
 			}
 			updateFunc, err := UpdateExporterFromConfigMapWithOpts(ctx, opts, TestLogger(t))
 			if err != nil {
-				t.Errorf("failed to call UpdateExporterFromConfigMapWithOpts: %v", err)
+				t.Error("failed to call UpdateExporterFromConfigMapWithOpts:", err)
 			}
 			updateFunc(&corev1.ConfigMap{Data: test.ops.ConfigMap})
 			mConfig := getCurMetricsConfig()
@@ -925,14 +925,14 @@ func TestMetricsOptions(t *testing.T) {
 		t.Run(n, func(t *testing.T) {
 			jsonOpts, err := MetricsOptionsToJson(tc.opts)
 			if err != nil {
-				t.Errorf("error while converting metrics config to json: %v", err)
+				t.Error("error while converting metrics config to json:", err)
 			}
 			// Test to json.
 			{
 				want := tc.want
 				got := jsonOpts
 				if diff := cmp.Diff(want, got); diff != "" {
-					t.Errorf("unexpected (-want, +got) = %v", diff)
+					t.Error("unexpected (-want, +got) =", diff)
 					t.Log(got)
 				}
 			}
@@ -943,14 +943,14 @@ func TestMetricsOptions(t *testing.T) {
 
 				if gotErr != nil {
 					if diff := cmp.Diff(tc.wantErr, gotErr.Error()); diff != "" {
-						t.Errorf("unexpected err (-want, +got) = %v", diff)
+						t.Error("unexpected err (-want, +got) =", diff)
 					}
 				} else if tc.wantErr != "" {
-					t.Errorf("expected err %v", tc.wantErr)
+					t.Error("expected err", tc.wantErr)
 				}
 
 				if diff := cmp.Diff(want, got); diff != "" {
-					t.Errorf("unexpected (-want, +got) = %v", diff)
+					t.Error("unexpected (-want, +got) =", diff)
 					t.Log(got)
 				}
 			}

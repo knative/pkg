@@ -47,7 +47,7 @@ func TestEnqueueInformerFactory(t *testing.T) {
 	}
 	inf, _, err := eif.Get(context.Background(), gvr)
 	if err != nil {
-		t.Fatalf("Get() = %v", err)
+		t.Fatal("Get() =", err)
 	}
 	if inf != fsii {
 		t.Fatalf("Get() = %v, wanted %v", inf, fsii)

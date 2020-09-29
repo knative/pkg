@@ -111,7 +111,7 @@ func TestBadURL(t *testing.T) {
 	if err == nil {
 		t.Error("Do did not return an error")
 	}
-	t.Logf("For the curious the error was: %v", err)
+	t.Log("For the curious the error was:", err)
 }
 
 func TestDoAsync(t *testing.T) {
@@ -197,7 +197,7 @@ func TestDoAsyncRepeat(t *testing.T) {
 			t.Error("done was false")
 		}
 		if err != nil {
-			t.Errorf("Unexpected error = %v", err)
+			t.Error("Unexpected error =", err)
 		}
 		wch <- arg
 	}
@@ -223,7 +223,7 @@ func TestDoAsyncTimeout(t *testing.T) {
 			t.Errorf("done was true")
 		}
 		if err != wait.ErrWaitTimeout {
-			t.Errorf("Unexpected error = %v", err)
+			t.Error("Unexpected error =", err)
 		}
 		wch <- arg
 	}

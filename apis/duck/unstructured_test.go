@@ -77,18 +77,18 @@ func TestFromUnstructuredFooable(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			raw, err := json.Marshal(tc.in)
 			if err != nil {
-				t.Fatalf("failed to marshal: %v", err)
+				t.Fatal("failed to marshal:", err)
 			}
 
-			t.Logf("Marshalled: %s", string(raw))
+			t.Log("Marshalled:", string(raw))
 
 			got := Foo{}
 			if err := FromUnstructured(tc.in, &got); err != tc.wantError {
-				t.Fatalf("FromUnstructured() = %v", err)
+				t.Fatal("FromUnstructured() =", err)
 			}
 
 			if !cmp.Equal(tc.want, got.Status) {
-				t.Errorf("ToUnstructured (-want, +got) = %s", cmp.Diff(tc.want, got.Status))
+				t.Error("ToUnstructured (-want, +got) =", cmp.Diff(tc.want, got.Status))
 			}
 		})
 	}
@@ -146,11 +146,11 @@ func TestToUnstructured(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			got, err := ToUnstructured(tc.in)
 			if err != tc.wantError {
-				t.Fatalf("ToUnstructured() = %v", err)
+				t.Fatal("ToUnstructured() =", err)
 			}
 
 			if !cmp.Equal(tc.want, got) {
-				t.Errorf("ToUnstructured (-want, +got) = %s", cmp.Diff(tc.want, got))
+				t.Error("ToUnstructured (-want, +got) =", cmp.Diff(tc.want, got))
 			}
 		})
 	}

@@ -116,7 +116,7 @@ func TestConversionToHub(t *testing.T) {
 
 	got := conversion.Convert(ctx, req)
 	if diff := cmp.Diff(want, got, cmpOpts...); diff != "" {
-		t.Errorf("unexpected response: %s", diff)
+		t.Error("unexpected response:", diff)
 	}
 }
 
@@ -156,7 +156,7 @@ func TestConversionFromHub(t *testing.T) {
 
 			got := conversion.Convert(ctx, req)
 			if diff := cmp.Diff(want, got, cmpOpts...); diff != "" {
-				t.Errorf("unexpected response: %s", diff)
+				t.Error("unexpected response:", diff)
 			}
 		})
 	}
@@ -202,7 +202,7 @@ func TestConversionThroughHub(t *testing.T) {
 
 			got := conversion.Convert(ctx, req)
 			if diff := cmp.Diff(want, got, cmpOpts...); diff != "" {
-				t.Errorf("unexpected response: %s", diff)
+				t.Error("unexpected response:", diff)
 			}
 		})
 	}
@@ -261,7 +261,7 @@ func TestConversionErrorBadGVK(t *testing.T) {
 
 			got := conversion.Convert(ctx, req)
 			if diff := cmp.Diff(want, got, cmpOpts...); diff != "" {
-				t.Errorf("unexpected response: %s", diff)
+				t.Error("unexpected response:", diff)
 			}
 
 			if !strings.HasPrefix(got.Result.Message, "invalid GroupVersionKind") {
@@ -299,7 +299,7 @@ func TestConversionUnknownInputGVK(t *testing.T) {
 
 	got := conversion.Convert(ctx, req)
 	if diff := cmp.Diff(want, got, cmpOpts...); diff != "" {
-		t.Errorf("unexpected response: %s", diff)
+		t.Error("unexpected response:", diff)
 	}
 }
 
@@ -328,7 +328,7 @@ func TestConversionInvalidTypeMeta(t *testing.T) {
 
 	got := conversion.Convert(ctx, req)
 	if diff := cmp.Diff(want, got, cmpOpts...); diff != "" {
-		t.Errorf("unexpected response: %s", diff)
+		t.Error("unexpected response:", diff)
 	}
 
 	if !strings.HasPrefix(got.Result.Message, "error parsing type meta") {
@@ -361,7 +361,7 @@ func TestConversionFailureToUnmarshalInput(t *testing.T) {
 
 	got := conversion.Convert(ctx, req)
 	if diff := cmp.Diff(want, got, cmpOpts...); diff != "" {
-		t.Errorf("unexpected response: %s", diff)
+		t.Error("unexpected response:", diff)
 	}
 
 	if !strings.HasPrefix(got.Result.Message, "unable to unmarshal input") {
@@ -396,7 +396,7 @@ func TestConversionFailureToMarshalOutput(t *testing.T) {
 
 	got := conversion.Convert(ctx, req)
 	if diff := cmp.Diff(want, got, cmpOpts...); diff != "" {
-		t.Errorf("unexpected response: %s", diff)
+		t.Error("unexpected response:", diff)
 	}
 
 	if !strings.HasPrefix(got.Result.Message, "unable to marshal output") {
@@ -451,7 +451,7 @@ func TestConversionFailureToConvert(t *testing.T) {
 
 			got := conversion.Convert(ctx, req)
 			if diff := cmp.Diff(want, got, cmpOpts...); diff != "" {
-				t.Errorf("unexpected response: %s", diff)
+				t.Error("unexpected response:", diff)
 			}
 
 			if !strings.HasPrefix(got.Result.Message, "conversion failed") {
@@ -502,7 +502,7 @@ func TestConversionFailureInvalidDesiredAPIVersion(t *testing.T) {
 
 			got := conversion.Convert(ctx, req)
 			if diff := cmp.Diff(want, got, cmpOpts...); diff != "" {
-				t.Errorf("unexpected response: %s", diff)
+				t.Error("unexpected response:", diff)
 			}
 		})
 	}
@@ -568,7 +568,7 @@ func TestConversionMissingZygotes(t *testing.T) {
 
 			got := conversion.Convert(ctx, req)
 			if diff := cmp.Diff(want, got, cmpOpts...); diff != "" {
-				t.Errorf("unexpected response: %s", diff)
+				t.Error("unexpected response:", diff)
 			}
 
 			if !strings.HasPrefix(got.Result.Message, "conversion not supported") {
@@ -604,7 +604,7 @@ func toRaw(t *testing.T, obj runtime.Object) runtime.RawExtension {
 
 	raw, err := json.Marshal(obj)
 	if err != nil {
-		t.Fatalf("unable to marshal resource: %s", err)
+		t.Fatal("unable to marshal resource:", err)
 	}
 
 	return runtime.RawExtension{Raw: raw}

@@ -35,7 +35,7 @@ func TestLoad(t *testing.T) {
 	}
 	tmpdir, err := ioutil.TempDir("", "")
 	if err != nil {
-		t.Fatalf("TempDir() = %v", err)
+		t.Fatal("TempDir() =", err)
 	}
 	defer os.RemoveAll(tmpdir)
 
@@ -50,11 +50,11 @@ func TestLoad(t *testing.T) {
 	tsPart := fmt.Sprintf("..%d", nowUnix)
 	tsDir := path.Join(tmpdir, tsPart)
 	if err := os.Mkdir(tsDir, 0755); err != nil {
-		t.Fatalf("Mkdir() = %v", err)
+		t.Fatal("Mkdir() =", err)
 	}
 	dataLink := path.Join(tmpdir, "..data")
 	if err := os.Symlink(tsDir, dataLink); err != nil {
-		t.Fatalf("Symlink() = %v", err)
+		t.Fatal("Symlink() =", err)
 	}
 
 	// Write out the files as they should be loaded.
@@ -71,10 +71,10 @@ func TestLoad(t *testing.T) {
 
 	got, err := Load(tmpdir)
 	if err != nil {
-		t.Fatalf("Load() = %v", err)
+		t.Fatal("Load() =", err)
 	}
 	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("Load (-want, +got) = %v", diff)
+		t.Error("Load (-want, +got) =", diff)
 	}
 }
 
@@ -93,7 +93,7 @@ func TestLoadError(t *testing.T) {
 // 	}
 // 	tmpdir, err := ioutil.TempDir("", "")
 // 	if err != nil {
-// 		t.Fatalf("TempDir() = %v", err)
+// 		t.Fatal("TempDir() =", err)
 // 	}
 // 	defer os.RemoveAll(tmpdir)
 
@@ -113,12 +113,12 @@ func TestLoadError(t *testing.T) {
 func TestReadSymlinkedFileError(t *testing.T) {
 	tmpdir, err := ioutil.TempDir("", "")
 	if err != nil {
-		t.Fatalf("TempDir() = %v", err)
+		t.Fatal("TempDir() =", err)
 	}
 	defer os.RemoveAll(tmpdir)
 
 	if err := os.Symlink("not-found", path.Join(tmpdir, "foo")); err != nil {
-		t.Fatalf("Symlink() = %v", err)
+		t.Fatal("Symlink() =", err)
 	}
 
 	if got, err := Load(tmpdir); err == nil {

@@ -70,7 +70,7 @@ func TestBuildHashes(t *testing.T) {
 	if !sort.SliceIsSorted(hd1.hashPool, func(i, j int) bool {
 		return hd1.hashPool[i] < hd1.hashPool[j]
 	}) {
-		t.Errorf("From list is not sorted: %v", hd1.hashPool)
+		t.Error("From list is not sorted:", hd1.hashPool)
 	}
 }
 

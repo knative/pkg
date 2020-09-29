@@ -26,7 +26,7 @@ func TestMakeSecret(t *testing.T) {
 	ctx := TestContextWithLogger(t)
 	secret, err := MakeSecret(ctx, "foo", "ns", "bar")
 	if err != nil {
-		t.Errorf("MakeSecret() = %v", err)
+		t.Error("MakeSecret() =", err)
 	}
 
 	for _, key := range []string{ServerKey, ServerCert, CACert} {

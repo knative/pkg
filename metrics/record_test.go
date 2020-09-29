@@ -187,7 +187,7 @@ func TestBucketsNBy10(t *testing.T) {
 		t.Run(fmt.Sprintf("base=%f,n=%d", test.base, test.n), func(t *testing.T) {
 			got := BucketsNBy10(test.base, test.n)
 			if diff := cmp.Diff(got, test.want); diff != "" {
-				t.Errorf("BucketsNBy10 (-want, +got) = %s", diff)
+				t.Error("BucketsNBy10 (-want, +got) =", diff)
 			}
 		})
 	}

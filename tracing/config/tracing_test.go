@@ -131,7 +131,7 @@ func TestNewConfigSuccess(t *testing.T) {
 				t.Fatal("Failed to create tracing config:", err)
 			}
 			if diff := cmp.Diff(tc.output, cfg); diff != "" {
-				t.Errorf("Got config from map (-want, +got) = %v", diff)
+				t.Error("Got config from map (-want, +got) =", diff)
 			}
 		})
 	}

@@ -76,12 +76,12 @@ func TestSimpleList(t *testing.T) {
 	// https://github.com/kubernetes/kubernetes/pull/68552
 	_, lister, err := tif.Get(ctx, SchemeGroupVersion.WithResource("resources"))
 	if err != nil {
-		t.Fatalf("Get() = %v", err)
+		t.Fatal("Get() =", err)
 	}
 
 	elt, err := lister.ByNamespace(namespace).Get(name)
 	if err != nil {
-		t.Fatalf("Get() = %v", err)
+		t.Fatal("Get() =", err)
 	}
 
 	got, ok := elt.(*duckv1alpha1.AddressableType)
@@ -138,7 +138,7 @@ func TestAsStructuredWatcherClosedChannel(t *testing.T) {
 
 	wi, err := wf(metav1.ListOptions{})
 	if err != nil {
-		t.Errorf("WatchFunc() = %v", err)
+		t.Error("WatchFunc() =", err)
 	}
 
 	ch := wi.ResultChan()
@@ -159,7 +159,7 @@ func TestAsStructuredWatcherPassThru(t *testing.T) {
 
 	wi, err := wf(metav1.ListOptions{})
 	if err != nil {
-		t.Errorf("WatchFunc() = %v", err)
+		t.Error("WatchFunc() =", err)
 	}
 	defer wi.Stop()
 	ch := wi.ResultChan()
@@ -205,7 +205,7 @@ func TestAsStructuredWatcherPassThruErrors(t *testing.T) {
 
 	wi, err := wf(metav1.ListOptions{})
 	if err != nil {
-		t.Errorf("WatchFunc() = %v", err)
+		t.Error("WatchFunc() =", err)
 	}
 	defer wi.Stop()
 	ch := wi.ResultChan()
@@ -225,7 +225,7 @@ func TestAsStructuredWatcherPassThruErrors(t *testing.T) {
 			t.Fatal("<-ch = closed, wanted *metav1.Status{}")
 		}
 		if diff := cmp.Diff(want, got); diff != "" {
-			t.Errorf("<-ch (-want, +got) = %v", diff)
+			t.Error("<-ch (-want, +got) =", diff)
 		}
 	case <-time.After(100 * time.Millisecond):
 		t.Error("Didn't see expected message on channel.")
@@ -242,7 +242,7 @@ func TestAsStructuredWatcherErrorConverting(t *testing.T) {
 
 	wi, err := wf(metav1.ListOptions{})
 	if err != nil {
-		t.Errorf("WatchFunc() = %v", err)
+		t.Error("WatchFunc() =", err)
 	}
 	defer wi.Stop()
 	ch := wi.ResultChan()

@@ -72,7 +72,7 @@ func TestMigrate(t *testing.T) {
 	m := NewMigrator(dclient, cclient)
 
 	if err := m.Migrate(context.Background(), fakeGR); err != nil {
-		t.Fatalf("Migrate() = %v", err)
+		t.Fatal("Migrate() =", err)
 	}
 
 	assertPatches(t, dclient.Actions(),

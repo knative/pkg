@@ -80,10 +80,10 @@ func TestNew_As(t *testing.T) {
 	}
 
 	if event.EventType != "Warning" {
-		t.Errorf("Mismatched EventType, expected Warning, got %s", event.EventType)
+		t.Error("Mismatched EventType, expected Warning, got", event.EventType)
 	}
 	if event.Reason != exampleStatusFailed {
-		t.Errorf("Mismatched Reason, expected ExampleStatusFailed, got %s", event.Reason)
+		t.Error("Mismatched Reason, expected ExampleStatusFailed, got", event.Reason)
 	}
 }
 
@@ -102,6 +102,6 @@ func TestNew_Error(t *testing.T) {
 	const want = "this is an example error, yep"
 	got := err.Error()
 	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("Unexpected diff (-want, +got) = %v", diff)
+		t.Error("Unexpected diff (-want, +got) =", diff)
 	}
 }

@@ -62,7 +62,7 @@ func TestHTTPSpanMiddleware(t *testing.T) {
 	})
 
 	if err := oct.ApplyConfig(&cfg); err != nil {
-		t.Errorf("Failed to apply tracer config: %v", err)
+		t.Error("Failed to apply tracer config:", err)
 	}
 
 	next := testHandler{}

@@ -28,7 +28,7 @@ func TestManualStartNOOP(t *testing.T) {
 		Namespace: "default",
 	}
 	if err := watcher.Start(nil); err != nil {
-		t.Errorf("Unexpected error watcher.Start() = %v", err)
+		t.Error("Unexpected error watcher.Start() =", err)
 	}
 }
 
@@ -55,7 +55,7 @@ func TestCallbackInvoked(t *testing.T) {
 	})
 
 	if observer.count() == 0 {
-		t.Errorf("Expected callback to be invoked - got invocations %v", observer.count())
+		t.Error("Expected callback to be invoked - got invocations", observer.count())
 	}
 }
 
@@ -75,7 +75,7 @@ func TestDifferentNamespace(t *testing.T) {
 	})
 
 	if observer.count() != 0 {
-		t.Errorf("Expected callback to be not be invoked - got invocations %v", observer.count())
+		t.Error("Expected callback to be not be invoked - got invocations", observer.count())
 	}
 }
 
@@ -96,6 +96,6 @@ func TestDifferentConfigName(t *testing.T) {
 	watcher.Watch("bar", observer.callback)
 
 	if observer.count() != 0 {
-		t.Errorf("Expected callback to be not be invoked - got invocations %v", observer.count())
+		t.Error("Expected callback to be not be invoked - got invocations", observer.count())
 	}
 }

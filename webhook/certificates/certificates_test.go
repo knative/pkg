@@ -50,7 +50,7 @@ func TestReconcile(t *testing.T) {
 	secret, err := certresources.MakeSecret(context.Background(),
 		secretName, system.Namespace(), serviceName)
 	if err != nil {
-		t.Fatalf("MakeSecret() = %v", err)
+		t.Fatal("MakeSecret() =", err)
 	}
 
 	// Mutate the MakeSecret to return our secret deterministically.
@@ -156,7 +156,7 @@ func TestReconcileMakeSecretFailure(t *testing.T) {
 	secret, err := certresources.MakeSecret(context.Background(),
 		secretName, system.Namespace(), serviceName)
 	if err != nil {
-		t.Fatalf("MakeSecret() = %v", err)
+		t.Fatal("MakeSecret() =", err)
 	}
 
 	// Mutate the MakeSecret to return our secret deterministically.
@@ -239,7 +239,7 @@ func TestNew(t *testing.T) {
 	}
 
 	if err := la.Promote(pkgreconciler.UniversalBucket(), c.MaybeEnqueueBucketKey); err != nil {
-		t.Errorf("Promote() = %v", err)
+		t.Error("Promote() =", err)
 	}
 
 	// Queue has async moving parts so if we check at the wrong moment, this might still be 0.
@@ -254,7 +254,7 @@ func secretWithCertData(t *testing.T, expiration time.Time) *corev1.Secret {
 	const secretName = "webhook-secret"
 	serverKey, serverCert, caCert, err := certresources.CreateCerts(context.Background(), "webhook-service", system.Namespace(), expiration)
 	if err != nil {
-		t.Fatalf("Failed to create cert: %v", err)
+		t.Fatal("Failed to create cert:", err)
 	}
 	return &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{

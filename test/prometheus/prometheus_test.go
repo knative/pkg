@@ -107,7 +107,7 @@ func getTestAPI() *TestPromAPI {
 func TestRunQuery(t *testing.T) {
 	r, err := prometheus.RunQuery(context.Background(), t.Logf, getTestAPI(), query)
 	if err != nil {
-		t.Fatalf("Error running query: %v", err)
+		t.Fatal("Error running query:", err)
 	}
 	if r != expected {
 		t.Fatalf("Want: %f Got: %f", expected, r)
@@ -118,7 +118,7 @@ func TestRunQueryRange(t *testing.T) {
 	r := v1.Range{Start: time.Now(), End: time.Now().Add(duration)}
 	val, err := prometheus.RunQueryRange(context.Background(), t.Logf, getTestAPI(), query, r)
 	if err != nil {
-		t.Fatalf("Error running query: %v", err)
+		t.Fatal("Error running query:", err)
 	}
 	if val != expected {
 		t.Fatalf("Want: %f Got: %f", expected, val)

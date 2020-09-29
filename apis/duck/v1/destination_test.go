@@ -164,7 +164,7 @@ func TestDestinationGetRef(t *testing.T) {
 		t.Run(n, func(t *testing.T) {
 			got := tc.dest.GetRef()
 			if diff := cmp.Diff(tc.want, got); diff != "" {
-				t.Errorf("Unexpected result (-want +got): %s", diff)
+				t.Error("Unexpected result (-want +got):", diff)
 			}
 		})
 	}
@@ -210,7 +210,7 @@ func TestDestinationSetDefaults(t *testing.T) {
 				t.Errorf("Got: %s wanted %s", tc.d.Ref.Namespace, tc.want)
 			}
 			if tc.d.Ref == nil && tc.want != "" {
-				t.Errorf("Got: nil Ref wanted %s", tc.want)
+				t.Error("Got: nil Ref wanted", tc.want)
 			}
 		})
 	}

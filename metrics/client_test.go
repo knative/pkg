@@ -72,7 +72,7 @@ func TestClientMetrics(t *testing.T) {
 		t.Errorf("len(DefaultViews()) = %d, want %d", got, want)
 	}
 	if err := view.Register(views...); err != nil {
-		t.Errorf("view.Register() = %v", err)
+		t.Error("view.Register() =", err)
 	}
 	defer view.Unregister(views...)
 
@@ -109,7 +109,7 @@ func TestClientMetrics(t *testing.T) {
 	// When we send rest requests, we should trigger the metrics setup above.
 	result := client.Verb(http.MethodGet).Do(context.Background())
 	if err := result.Error(); err != nil {
-		t.Errorf("Do() = %v", err)
+		t.Error("Do() =", err)
 	}
 
 	// Now we have stats reported!

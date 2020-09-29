@@ -134,7 +134,7 @@ func TestEnsureTypeMeta(t *testing.T) {
 			if test.want != nil {
 				cb = func(got interface{}) {
 					if diff := cmp.Diff(got, test.want); diff != "" {
-						t.Errorf("EnsureTypeMeta = %s", diff)
+						t.Error("EnsureTypeMeta =", diff)
 					}
 				}
 			} else {

@@ -32,6 +32,6 @@ func TestInnerDefaultResource_SetDefaults(t *testing.T) {
 	r := InnerDefaultResource{}
 	r.SetDefaults(context.Background())
 	if r.Spec.FieldWithDefault != "I'm a default." {
-		t.Errorf("Unexpected defaulted value: %v", r.Spec.FieldWithDefault)
+		t.Error("Unexpected defaulted value:", r.Spec.FieldWithDefault)
 	}
 }
