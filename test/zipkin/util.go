@@ -211,7 +211,7 @@ type TimeoutError struct {
 }
 
 func (t *TimeoutError) Error() string {
-	return fmt.Sprintf("timeout getting JSONTrace, most recent error: %v", t.lastErr)
+	return fmt.Sprint("timeout getting JSONTrace, most recent error:", t.lastErr)
 }
 
 // jsonTrace gets a trace from Zipkin and returns it. Errors returned from this function should be

@@ -200,7 +200,7 @@ func newStackdriverExporter(config *metricsConfig, logger *zap.SugaredLogger) (v
 		logger.Errorw("Failed to create the Stackdriver exporter: ", zap.Error(err))
 		return nil, nil, err
 	}
-	logger.Infof("Created Opencensus Stackdriver exporter with config %v", config)
+	logger.Info("Created Opencensus Stackdriver exporter with config ", config)
 	// We have to return a ResourceExporterFactory here to enable tracking resources, even though we always poll for them.
 	return &pollOnlySDExporter{e},
 		func(r *resource.Resource) (view.Exporter, error) { return &pollOnlySDExporter{}, nil },
