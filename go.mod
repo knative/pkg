@@ -55,7 +55,7 @@ require (
 	k8s.io/code-generator v0.18.8
 	k8s.io/gengo v0.0.0-20200205140755-e0e292d8aa12
 	k8s.io/klog v1.0.0
-	knative.dev/test-infra v0.0.0-20200924204740-6ccb80283470
+	knative.dev/test-infra v0.0.0-20200928212629-45266e61aa32
 	sigs.k8s.io/boskos v0.0.0-20200729174948-794df80db9c9
 )
 
