@@ -277,7 +277,8 @@ branch of each repository respectively.
 ### Cut `release-x.y` branches of all remaining repositories
 
 After the pin PRs are merged, cut the `release-x.y` branch in each of the
-remaining repositories (except `operator` and `client`):
+remaining repositories (except `operator` and `client` as they are cut separately 
+by the respective working group):
 
 - [knative-sandbox/net-kourier](https://github.com/knative-sandbox/net-kourier)
 - [knative/eventing-contrib](https://github.com/knative/eventing-contrib)
