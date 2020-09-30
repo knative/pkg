@@ -260,11 +260,13 @@ to be pinned in all repositories that depend on them.
 
 For **serving** that is:
 
+- [knative/client](https://github.com/knative/client)
 - [knative-sandbox/net-kourier](https://github.com/knative-sandbox/net-kourier)
 - [knative/eventing-contrib](https://github.com/knative/eventing-contrib)
 
 For **eventing** that is:
 
+- [knative/client](https://github.com/knative/client)
 - [knative/eventing-contrib](https://github.com/knative/eventing-contrib)
 - [knative-sandbox/eventing-kafka-broker](https://github.com/knative-sandbox/eventing-kafka-broker)
 
