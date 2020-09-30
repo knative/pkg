@@ -41,12 +41,19 @@ func TestMakeK8sNamePrefix(t *testing.T) {
 		{"AbCdef", "ab-cdef"},
 		{"ABCD", "a-b-c-d"},
 		{"aBc*ef&d", "a-bc-ef-d"},
+		{"*aBc*ef&d", "a-bc-ef-d"},
+		{"AutoTLS", "auto-tls"},
+		{"GRPCLoadBalancing", "grpc-load-balancing"},
+		{"HTTPSTermination", "https-termination"},
+		{"HTTPIsNotHTTP2", "http-is-not-http2"},
 	}
-	for _, v := range testCases {
-		actual := MakeK8sNamePrefix(v.input)
-		if v.expected != actual {
-			t.Fatalf("Expect %q but actual is %q", v.expected, actual)
-		}
+	for _, tc := range testCases {
+		t.Run(tc.input, func(t *testing.T) {
+			actual := MakeK8sNamePrefix(tc.input)
+			if tc.expected != actual {
+				t.Errorf("MakeK8sNamePrefix = %q, want: %q", actual, tc.expected)
+			}
+		})
 	}
 }
 
