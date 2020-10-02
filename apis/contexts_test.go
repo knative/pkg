@@ -153,6 +153,16 @@ func TestContexts(t *testing.T) {
 		ctx:   WithDryRun(ctx),
 		check: IsDryRun,
 		want:  true,
+	}, {
+		name:  "within parent",
+		ctx:   WithDryRun(ctx),
+		check: IsWithinParent,
+		want:  false,
+	}, {
+		name:  "in dry run",
+		ctx:   WithinParent(ctx, metav1.ObjectMeta{Name: "jack"}),
+		check: IsWithinParent,
+		want:  true,
 	}}
 
 	for _, tc := range tests {
