@@ -125,7 +125,7 @@ func TestNewConfigNoEntry(t *testing.T) {
 	if err != nil {
 		t.Error("Expected no errors. got:", err)
 	}
-	if got, want := c.LoggingConfig, defaultZLC; got != want {
+	if got, want := c.LoggingConfig, ""; got != want {
 		t.Errorf("LoggingConfig = %v, want %v", got, want)
 	}
 	if got, want := len(c.LoggingLevel), 0; got != want {
@@ -181,10 +181,10 @@ func TestNewLoggerFromConfig(t *testing.T) {
 		expectLvl:  zapcore.ErrorLevel,
 		expectName: componentName,
 	}, {
-		name:       "Has default level and fallback name when config is empty",
+		name:       "Has default level when config is empty",
 		cfg:        makeTestConfig(),
 		expectLvl:  zapcore.InfoLevel,
-		expectName: "fallback-logger." + componentName,
+		expectName: componentName,
 	}}
 
 	for _, tc := range testCases {
