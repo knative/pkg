@@ -34,7 +34,7 @@ type Canceler = logstreamv2.Canceler
 // Start begins streaming the logs from system components with a `key:` matching
 // `test.ObjectNameForTest(t)` to `t.Log`.  It returns a Canceler, which must
 // be called before the test completes.
-func Start(t test.TLegacy) Canceler {
+func Start(ctx context.Context, t test.TLegacy) Canceler {
 	// Do this lazily to make import ordering less important.
 	once.Do(func() {
 		if ns := os.Getenv(system.NamespaceEnvKey); ns != "" {
@@ -52,11 +52,11 @@ func Start(t test.TLegacy) Canceler {
 		}
 	})
 
-	return stream.Start(t)
+	return stream.Start(ctx, t)
 }
 
 type streamer interface {
-	Start(t test.TLegacy) Canceler
+	Start(ctx context.Context, t test.TLegacy) Canceler
 }
 
 var (
