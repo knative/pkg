@@ -25,6 +25,7 @@ import (
 	"os"
 	"os/user"
 	"path/filepath"
+	"reflect"
 	"time"
 
 	"go.opencensus.io/stats/view"
@@ -147,7 +148,7 @@ func getInformerStartChanTimeout(ctx context.Context) (<-chan struct{}, time.Dur
 	}
 
 	untyped := ctx.Value(informerStartChanKey{})
-	if untyped == nil {
+	if untyped == nil || reflect.ValueOf(untyped).IsNil() {
 		return make(chan struct{}, 1), timeout
 	}
 	return untyped.(<-chan struct{}), timeout
