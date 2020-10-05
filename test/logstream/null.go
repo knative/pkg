@@ -18,6 +18,7 @@ package logstream
 
 import (
 	"context"
+
 	"knative.dev/pkg/test"
 )
 
