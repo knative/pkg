@@ -127,6 +127,32 @@ func GetLeaderElectionConfig(ctx context.Context) (*leaderelection.Config, error
 	return leaderelection.NewConfigFromConfigMap(leaderElectionConfigMap)
 }
 
+const (
+	defaultStartInformerDelayTime = 5 * time.Second
+)
+
+type informerStartChanKey struct{}
+type informerStartTimeoutKey struct{}
+
+func WithInformerStart(ctx context.Context, start <-chan struct{}, timeout time.Duration) context.Context {
+	ctx = context.WithValue(ctx, informerStartChanKey{}, start)
+	return context.WithValue(ctx, informerStartTimeoutKey{}, timeout)
+}
+
+func getInformerStartChanTimeout(ctx context.Context) (<-chan struct{}, time.Duration) {
+	timeout := defaultStartInformerDelayTime
+	tuntyped := ctx.Value(informerStartTimeoutKey{})
+	if tuntyped != nil {
+		timeout = tuntyped.(time.Duration)
+	}
+
+	untyped := ctx.Value(informerStartChanKey{})
+	if untyped == nil {
+		return make(chan struct{}, 1), timeout
+	}
+	return untyped.(<-chan struct{}), timeout
+}
+
 // EnableInjectionOrDie enables Knative Injection and starts the informers.
 // Both Context and Config are optional.
 func EnableInjectionOrDie(ctx context.Context, cfg *rest.Config) context.Context {
@@ -148,14 +174,18 @@ func EnableInjectionOrDie(ctx context.Context, cfg *rest.Config) context.Context
 
 	ctx, informers := injection.Default.SetupInformers(ctx, cfg)
 
-	// Start the injection clients and informers.
-	logging.FromContext(ctx).Info("Starting informers...")
-	go func(ctx context.Context) {
+	start, timeout := getInformerStartChanTimeout(ctx)
+	go func() {
+		// Block until the timeout or we are told it is ok to start informers.
+		select {
+		case <-start:
+		case <-time.After(timeout):
+		}
+		logging.FromContext(ctx).Info("Starting informers...")
 		if err := controller.StartInformers(ctx.Done(), informers...); err != nil {
 			logging.FromContext(ctx).Fatalw("Failed to start informers", zap.Error(err))
 		}
-		<-ctx.Done()
-	}(ctx)
+	}()
 
 	return ctx
 }
@@ -225,16 +255,8 @@ func MainWithConfig(ctx context.Context, component string, cfg *rest.Config, cto
 		cfg.Burst = len(ctors) * rest.DefaultBurst
 	}
 
-	// Respect user provided settings, but if omitted customize the default behavior.
-	if cfg.QPS == 0 {
-		cfg.QPS = rest.DefaultQPS
-	}
-	if cfg.Burst == 0 {
-		cfg.Burst = rest.DefaultBurst
-	}
-	ctx = injection.WithConfig(ctx, cfg)
-
-	ctx, informers := injection.Default.SetupInformers(ctx, cfg)
+	startCh := make(chan struct{}, 1)
+	ctx = EnableInjectionOrDie(WithInformerStart(ctx, startCh, defaultStartInformerDelayTime), cfg)
 
 	logger, atomicLevel := SetupLoggerOrDie(ctx, component)
 	defer flush(logger)
@@ -287,11 +309,10 @@ func MainWithConfig(ctx context.Context, component string, cfg *rest.Config, cto
 			return wh.Run(ctx.Done())
 		})
 	}
+
 	// Start the injection clients and informers.
-	logging.FromContext(ctx).Info("Starting informers...")
-	if err := controller.StartInformers(ctx.Done(), informers...); err != nil {
-		logging.FromContext(ctx).Fatalw("Failed to start informers", zap.Error(err))
-	}
+	startCh <- struct{}{}
+
 	// Wait for webhook informers to sync.
 	if wh != nil {
 		wh.InformersHaveSynced()
