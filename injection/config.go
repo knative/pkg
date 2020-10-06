@@ -19,13 +19,14 @@ package injection
 import (
 	"errors"
 	"flag"
-	"k8s.io/client-go/rest"
-	"k8s.io/client-go/tools/clientcmd"
-	"k8s.io/klog"
 	"log"
 	"os"
 	"os/user"
 	"path/filepath"
+
+	"k8s.io/client-go/rest"
+	"k8s.io/client-go/tools/clientcmd"
+	"k8s.io/klog"
 )
 
 // ParseAndGetRestConfigOrDie parses the rest config flags and creates a client or

@@ -23,10 +23,11 @@ import (
 	"context"
 	"errors"
 	"flag"
-	"knative.dev/pkg/injection"
 	"log"
 	"strings"
 	"time"
+
+	"knative.dev/pkg/injection"
 
 	"golang.org/x/sync/errgroup"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
