@@ -69,7 +69,6 @@ type (
 	// +k8s:deepcopy-gen=true
 	// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 	V2Resource struct {
-		apis.Convertible
 		metav1.TypeMeta   `json:",inline"`
 		metav1.ObjectMeta `json:"metadata,omitempty"`
 		Spec              Spec `json:"spec"`
@@ -81,7 +80,6 @@ type (
 	// +k8s:deepcopy-gen=true
 	// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 	V3Resource struct {
-		apis.Convertible
 		metav1.TypeMeta   `json:",inline"`
 		metav1.ObjectMeta `json:"metadata,omitempty"`
 		Spec              SpecWithDefault `json:"spec"`
@@ -221,6 +219,26 @@ func (r *V3Resource) SetDefaults(ctx context.Context) {
 	if r.Spec.NewProperty == "" {
 		r.Spec.NewProperty = "defaulted"
 	}
+}
+
+// ConvertTo implements apis.Convertible
+func (*V2Resource) ConvertTo(ctx context.Context, to apis.Convertible) error {
+	panic("unimplemented")
+}
+
+// ConvertFrom implements apis.Convertible
+func (*V2Resource) ConvertFrom(ctx context.Context, from apis.Convertible) error {
+	panic("unimplemented")
+}
+
+// ConvertTo implements apis.Convertible
+func (*V3Resource) ConvertTo(ctx context.Context, to apis.Convertible) error {
+	panic("unimplemented")
+}
+
+// ConvertFrom implements apis.Convertible
+func (*V3Resource) ConvertFrom(ctx context.Context, from apis.Convertible) error {
+	panic("unimplemented")
 }
 
 // ConvertTo implements apis.Convertible
