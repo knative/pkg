@@ -81,7 +81,7 @@ func AsInt64(key string, target *int64) ParseFunc {
 	}
 }
 
-// AsInt parses the value at key as an uint32 into the target. if it exists.
+// AsInt parses the value at key as an int into the target, if it exists.
 func AsInt(key string, target *int) ParseFunc {
 	return func(data map[string]string) error {
 		if raw, ok := data[key]; ok {
