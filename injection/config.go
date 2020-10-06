@@ -29,9 +29,9 @@ import (
 	"k8s.io/klog"
 )
 
-// ParseAndGetRestConfigOrDie parses the rest config flags and creates a client or
+// ParseAndGetKubeconfigOrDie parses the rest config flags and creates a client or
 // dies by calling log.Fatalf.
-func ParseAndGetRestConfigOrDie() *rest.Config {
+func ParseAndGetKubeconfigOrDie() *rest.Config {
 	var (
 		serverURL = flag.String("server", "",
 			"The address of the Kubernetes API server. Overrides any value in kubeconfig. Only required if out-of-cluster.")
@@ -41,7 +41,7 @@ func ParseAndGetRestConfigOrDie() *rest.Config {
 	klog.InitFlags(flag.CommandLine)
 	flag.Parse()
 
-	cfg, err := GetRestConfig(*serverURL, *kubeconfig)
+	cfg, err := GetKubeconfig(*serverURL, *kubeconfig)
 	if err != nil {
 		log.Fatal("Error building kubeconfig: ", err)
 	}
@@ -49,21 +49,15 @@ func ParseAndGetRestConfigOrDie() *rest.Config {
 	return cfg
 }
 
-// GetConfig returns a rest.Config to be used for kubernetes client creation.
+// GetKubeconfig returns a rest.Config to be used for kubernetes client creation.
 // It does so in the following order:
 //   1. Use the passed kubeconfig/serverURL.
 //   2. Fallback to the KUBECONFIG environment variable.
 //   3. Fallback to in-cluster config.
 //   4. Fallback to the ~/.kube/config.
-func GetRestConfig(serverURL, kubeconfig string) (*rest.Config, error) {
+func GetKubeconfig(serverURL, kubeconfig string) (*rest.Config, error) {
 	if kubeconfig == "" {
 		kubeconfig = os.Getenv("KUBECONFIG")
-	}
-
-	// We produce configs a bunch of ways, this gives us a single place
-	// to "decorate" them with common useful things (e.g. for debugging)
-	decorate := func(cfg *rest.Config) *rest.Config {
-		return cfg
 	}
 
 	// If we have an explicit indication of where the kubernetes config lives, read that.
@@ -72,16 +66,18 @@ func GetRestConfig(serverURL, kubeconfig string) (*rest.Config, error) {
 		if err != nil {
 			return nil, err
 		}
-		return decorate(c), nil
+		return c, nil
 	}
+
 	// If not, try the in-cluster config.
 	if c, err := rest.InClusterConfig(); err == nil {
-		return decorate(c), nil
+		return c, nil
 	}
+
 	// If no in-cluster config, try the default location in the user's home directory.
 	if usr, err := user.Current(); err == nil {
 		if c, err := clientcmd.BuildConfigFromFlags("", filepath.Join(usr.HomeDir, ".kube", "config")); err == nil {
-			return decorate(c), nil
+			return c, nil
 		}
 	}
 
