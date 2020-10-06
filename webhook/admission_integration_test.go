@@ -19,7 +19,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -116,7 +115,7 @@ func TestAdmissionValidResponseForResource(t *testing.T) {
 		t.Fatal("Failed to marshal admission review:", err)
 	}
 
-	u, err := url.Parse(fmt.Sprintf("https://%s", serverURL))
+	u, err := url.Parse("https://" + serverURL)
 	if err != nil {
 		t.Fatal("bad url", err)
 	}
@@ -246,7 +245,7 @@ func TestAdmissionInvalidResponseForResource(t *testing.T) {
 		t.Fatal("Failed to marshal admission review:", err)
 	}
 
-	u, err := url.Parse(fmt.Sprintf("https://%s", serverURL))
+	u, err := url.Parse("https://" + serverURL)
 	if err != nil {
 		t.Fatal("bad url", err)
 	}

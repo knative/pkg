@@ -53,5 +53,5 @@ func Example() {
 		log.Fatalf("failed acquire cluster: '%v'", err)
 	}
 	log.Printf("GKE project is: %q", gkeOps.Project)
-	log.Printf("GKE cluster is: %v", gkeOps.Cluster)
+	log.Print("GKE cluster is: ", gkeOps.Cluster)
 }
