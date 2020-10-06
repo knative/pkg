@@ -43,7 +43,7 @@ func EnableInjectionOrDie(ctx context.Context, cfg *rest.Config) (context.Contex
 		ctx = signals.NewContext()
 	}
 	if cfg == nil {
-		cfg = ParseAndGetKubeconfigOrDie()
+		cfg = ParseAndGetRESTConfigOrDie()
 	}
 
 	// Respect user provided settings, but if omitted customize the default behavior.

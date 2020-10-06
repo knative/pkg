@@ -63,7 +63,7 @@ import (
 //   2. Fallback to the KUBECONFIG environment variable.
 //   3. Fallback to in-cluster config.
 //   4. Fallback to the ~/.kube/config.
-// Deprecated: use injection.GetKubeconfig
+// Deprecated: use injection.GetRESTConfig
 func GetConfig(serverURL, kubeconfig string) (*rest.Config, error) {
 	if kubeconfig == "" {
 		kubeconfig = os.Getenv("KUBECONFIG")
@@ -136,7 +136,7 @@ func EnableInjectionOrDie(ctx context.Context, cfg *rest.Config) context.Context
 		ctx = signals.NewContext()
 	}
 	if cfg == nil {
-		cfg = injection.ParseAndGetKubeconfigOrDie()
+		cfg = injection.ParseAndGetRESTConfigOrDie()
 	}
 
 	// Respect user provided settings, but if omitted customize the default behavior.
@@ -185,7 +185,7 @@ func MainWithContext(ctx context.Context, component string, ctors ...injection.C
 			"issue upstream!")
 
 	// HACK: This parses flags, so the above should be set once this runs.
-	cfg := injection.ParseAndGetKubeconfigOrDie()
+	cfg := injection.ParseAndGetRESTConfigOrDie()
 
 	if *disableHighAvailability {
 		ctx = WithHADisabled(ctx)
@@ -307,7 +307,7 @@ func flush(logger *zap.SugaredLogger) {
 
 // ParseAndGetConfigOrDie parses the rest config flags and creates a client or
 // dies by calling log.Fatalf.
-// Deprecated: use injeciton.ParseAndGetKubeconfigOrDie
+// Deprecated: use injeciton.ParseAndGetRESTConfigOrDie
 func ParseAndGetConfigOrDie() *rest.Config {
 	var (
 		serverURL = flag.String("server", "",
@@ -318,7 +318,7 @@ func ParseAndGetConfigOrDie() *rest.Config {
 	klog.InitFlags(flag.CommandLine)
 	flag.Parse()
 
-	cfg, err := injection.GetKubeconfig(*serverURL, *kubeconfig)
+	cfg, err := injection.GetRESTConfig(*serverURL, *kubeconfig)
 	if err != nil {
 		log.Fatal("Error building kubeconfig: ", err)
 	}

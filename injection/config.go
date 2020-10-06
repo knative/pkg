@@ -29,9 +29,9 @@ import (
 	"k8s.io/klog"
 )
 
-// ParseAndGetKubeconfigOrDie parses the rest config flags and creates a client or
+// ParseAndGetRESTConfigOrDie parses the rest config flags and creates a client or
 // dies by calling log.Fatalf.
-func ParseAndGetKubeconfigOrDie() *rest.Config {
+func ParseAndGetRESTConfigOrDie() *rest.Config {
 	var (
 		serverURL = flag.String("server", "",
 			"The address of the Kubernetes API server. Overrides any value in kubeconfig. Only required if out-of-cluster.")
@@ -41,7 +41,7 @@ func ParseAndGetKubeconfigOrDie() *rest.Config {
 	klog.InitFlags(flag.CommandLine)
 	flag.Parse()
 
-	cfg, err := GetKubeconfig(*serverURL, *kubeconfig)
+	cfg, err := GetRESTConfig(*serverURL, *kubeconfig)
 	if err != nil {
 		log.Fatal("Error building kubeconfig: ", err)
 	}
@@ -49,13 +49,13 @@ func ParseAndGetKubeconfigOrDie() *rest.Config {
 	return cfg
 }
 
-// GetKubeconfig returns a rest.Config to be used for kubernetes client creation.
+// GetRESTConfig returns a rest.Config to be used for kubernetes client creation.
 // It does so in the following order:
 //   1. Use the passed kubeconfig/serverURL.
 //   2. Fallback to the KUBECONFIG environment variable.
 //   3. Fallback to in-cluster config.
 //   4. Fallback to the ~/.kube/config.
-func GetKubeconfig(serverURL, kubeconfig string) (*rest.Config, error) {
+func GetRESTConfig(serverURL, kubeconfig string) (*rest.Config, error) {
 	if kubeconfig == "" {
 		kubeconfig = os.Getenv("KUBECONFIG")
 	}
