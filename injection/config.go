@@ -43,7 +43,7 @@ func ParseAndGetRestConfigOrDie() *rest.Config {
 
 	cfg, err := GetRestConfig(*serverURL, *kubeconfig)
 	if err != nil {
-		log.Fatalf("Error building kubeconfig: %v", err)
+		log.Fatal("Error building kubeconfig: ", err)
 	}
 
 	return cfg
