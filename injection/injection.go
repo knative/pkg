@@ -20,16 +20,24 @@ import (
 	"context"
 
 	"go.uber.org/zap"
+	"k8s.io/client-go/rest"
+
 	"knative.dev/pkg/controller"
 	"knative.dev/pkg/logging"
 	"knative.dev/pkg/signals"
-
-	"k8s.io/client-go/rest"
 )
 
-// EnableInjectionOrDie enables Knative Injection and starts the informers.
-// Both Context and Config are optional. Returns context with rest config set
-// and a function to start the informers after watches have been set up.
+// EnableInjectionOrDie enables Knative Client Injection, and provides a
+// callback to start the informers. Both Context and Config are optional.
+// Returns context with rest config set and a callback to start the informers
+// after watches have been set.
+//
+// Typical integration:
+// ```go
+//   ctx, startInformers := injection.EnableInjectionOrDie(signals.NewContext(), nil)
+//   ... start watches with informers, if required ...
+//   startInformers()
+// ```
 func EnableInjectionOrDie(ctx context.Context, cfg *rest.Config) (context.Context, func()) {
 	if ctx == nil {
 		ctx = signals.NewContext()
