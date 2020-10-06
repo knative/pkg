@@ -127,9 +127,8 @@ func GetLeaderElectionConfig(ctx context.Context) (*leaderelection.Config, error
 	return leaderelection.NewConfigFromConfigMap(leaderElectionConfigMap)
 }
 
-// EnableInjectionOrDie enables Knative Injection and starts the informers.
-// Both Context and Config are optional.
-func EnableInjectionOrDie(ctx context.Context, cfg *rest.Config) context.Context {
+// InjectionSetup sets up the context and informers.
+func InjectionSetup(ctx context.Context, cfg *rest.Config) (context.Context, []controller.Informer) {
 	if ctx == nil {
 		ctx = signals.NewContext()
 	}
@@ -146,17 +145,23 @@ func EnableInjectionOrDie(ctx context.Context, cfg *rest.Config) context.Context
 	}
 	ctx = injection.WithConfig(ctx, cfg)
 
-	ctx, informers := injection.Default.SetupInformers(ctx, cfg)
+	return injection.Default.SetupInformers(ctx, cfg)
+}
 
+// StartInformers starts the clients and informers.
+func StartInformers(ctx context.Context, informers ...controller.Informer) {
 	// Start the injection clients and informers.
 	logging.FromContext(ctx).Info("Starting informers...")
-	go func(ctx context.Context) {
-		if err := controller.StartInformers(ctx.Done(), informers...); err != nil {
-			logging.FromContext(ctx).Fatalw("Failed to start informers", zap.Error(err))
-		}
-		<-ctx.Done()
-	}(ctx)
+	if err := controller.StartInformers(ctx.Done(), informers...); err != nil {
+		logging.FromContext(ctx).Fatalw("Failed to start informers", zap.Error(err))
+	}
+}
 
+// EnableInjectionOrDie enables Knative Injection and starts the informers.
+// Both Context and Config are optional.
+func EnableInjectionOrDie(ctx context.Context, cfg *rest.Config) context.Context {
+	ctx, informers := InjectionSetup(ctx, cfg)
+	StartInformers(ctx, informers...)
 	return ctx
 }
 
@@ -216,25 +221,7 @@ func MainWithConfig(ctx context.Context, component string, cfg *rest.Config, cto
 
 	MemStatsOrDie(ctx)
 
-	// Respect user provided settings, but if omitted customize the default behavior.
-	if cfg.QPS == 0 {
-		// Adjust our client's rate limits based on the number of controllers we are running.
-		cfg.QPS = float32(len(ctors)) * rest.DefaultQPS
-	}
-	if cfg.Burst == 0 {
-		cfg.Burst = len(ctors) * rest.DefaultBurst
-	}
-
-	// Respect user provided settings, but if omitted customize the default behavior.
-	if cfg.QPS == 0 {
-		cfg.QPS = rest.DefaultQPS
-	}
-	if cfg.Burst == 0 {
-		cfg.Burst = rest.DefaultBurst
-	}
-	ctx = injection.WithConfig(ctx, cfg)
-
-	ctx, informers := injection.Default.SetupInformers(ctx, cfg)
+	ctx, informers := InjectionSetup(ctx, cfg)
 
 	logger, atomicLevel := SetupLoggerOrDie(ctx, component)
 	defer flush(logger)
@@ -288,10 +275,8 @@ func MainWithConfig(ctx context.Context, component string, cfg *rest.Config, cto
 		})
 	}
 	// Start the injection clients and informers.
-	logging.FromContext(ctx).Info("Starting informers...")
-	if err := controller.StartInformers(ctx.Done(), informers...); err != nil {
-		logging.FromContext(ctx).Fatalw("Failed to start informers", zap.Error(err))
-	}
+	StartInformers(ctx, informers...)
+
 	// Wait for webhook informers to sync.
 	if wh != nil {
 		wh.InformersHaveSynced()
