@@ -18,7 +18,6 @@ package injection
 
 import (
 	"context"
-
 	"k8s.io/client-go/rest"
 )
 

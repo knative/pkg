@@ -25,7 +25,6 @@ import (
 	"os"
 	"os/user"
 	"path/filepath"
-	"reflect"
 	"time"
 
 	"go.opencensus.io/stats/view"
@@ -64,6 +63,7 @@ import (
 //   2. Fallback to the KUBECONFIG environment variable.
 //   3. Fallback to in-cluster config.
 //   4. Fallback to the ~/.kube/config.
+// Deprecated: use injection.GetRestConfig
 func GetConfig(serverURL, kubeconfig string) (*rest.Config, error) {
 	if kubeconfig == "" {
 		kubeconfig = os.Getenv("KUBECONFIG")
@@ -128,40 +128,15 @@ func GetLeaderElectionConfig(ctx context.Context) (*leaderelection.Config, error
 	return leaderelection.NewConfigFromConfigMap(leaderElectionConfigMap)
 }
 
-const (
-	defaultStartInformerDelayTime = 5 * time.Second
-)
-
-type informerStartChanKey struct{}
-type informerStartTimeoutKey struct{}
-
-func WithInformerStart(ctx context.Context, start <-chan struct{}, timeout time.Duration) context.Context {
-	ctx = context.WithValue(ctx, informerStartChanKey{}, start)
-	return context.WithValue(ctx, informerStartTimeoutKey{}, timeout)
-}
-
-func getInformerStartChanTimeout(ctx context.Context) (<-chan struct{}, time.Duration) {
-	timeout := defaultStartInformerDelayTime
-	tuntyped := ctx.Value(informerStartTimeoutKey{})
-	if tuntyped != nil {
-		timeout = tuntyped.(time.Duration)
-	}
-
-	untyped := ctx.Value(informerStartChanKey{})
-	if untyped == nil || reflect.ValueOf(untyped).IsNil() {
-		return make(chan struct{}, 1), timeout
-	}
-	return untyped.(<-chan struct{}), timeout
-}
-
 // EnableInjectionOrDie enables Knative Injection and starts the informers.
 // Both Context and Config are optional.
+// Deprecated: use injection.EnableInjectionOrDie
 func EnableInjectionOrDie(ctx context.Context, cfg *rest.Config) context.Context {
 	if ctx == nil {
 		ctx = signals.NewContext()
 	}
 	if cfg == nil {
-		cfg = ParseAndGetConfigOrDie()
+		cfg = injection.ParseAndGetRestConfigOrDie()
 	}
 
 	// Respect user provided settings, but if omitted customize the default behavior.
@@ -175,13 +150,7 @@ func EnableInjectionOrDie(ctx context.Context, cfg *rest.Config) context.Context
 
 	ctx, informers := injection.Default.SetupInformers(ctx, cfg)
 
-	start, timeout := getInformerStartChanTimeout(ctx)
 	go func() {
-		// Block until the timeout or we are told it is ok to start informers.
-		select {
-		case <-start:
-		case <-time.After(timeout):
-		}
 		logging.FromContext(ctx).Info("Starting informers...")
 		if err := controller.StartInformers(ctx.Done(), informers...); err != nil {
 			logging.FromContext(ctx).Fatalw("Failed to start informers", zap.Error(err))
@@ -192,8 +161,8 @@ func EnableInjectionOrDie(ctx context.Context, cfg *rest.Config) context.Context
 }
 
 // Main runs the generic main flow with a new context.
-// If any of the contructed controllers are AdmissionControllers or Conversion webhooks,
-// then a webhook is started to serve them.
+// If any of the constructed controllers are AdmissionControllers or Conversion
+// webhooks, then a webhook is started to serve them.
 func Main(component string, ctors ...injection.ControllerConstructor) {
 	// Set up signals so we handle the first shutdown signal gracefully.
 	MainWithContext(signals.NewContext(), component, ctors...)
@@ -216,7 +185,7 @@ func MainWithContext(ctx context.Context, component string, ctors ...injection.C
 			"issue upstream!")
 
 	// HACK: This parses flags, so the above should be set once this runs.
-	cfg := ParseAndGetConfigOrDie()
+	cfg := injection.ParseAndGetRestConfigOrDie()
 
 	if *disableHighAvailability {
 		ctx = WithHADisabled(ctx)
@@ -256,8 +225,7 @@ func MainWithConfig(ctx context.Context, component string, cfg *rest.Config, cto
 		cfg.Burst = len(ctors) * rest.DefaultBurst
 	}
 
-	startCh := make(chan struct{}, 1)
-	ctx = EnableInjectionOrDie(WithInformerStart(ctx, startCh, defaultStartInformerDelayTime), cfg)
+	ctx, startInformers := injection.EnableInjectionOrDie(ctx, cfg)
 
 	logger, atomicLevel := SetupLoggerOrDie(ctx, component)
 	defer flush(logger)
@@ -312,7 +280,7 @@ func MainWithConfig(ctx context.Context, component string, cfg *rest.Config, cto
 	}
 
 	// Start the injection clients and informers.
-	startCh <- struct{}{}
+	startInformers()
 
 	// Wait for webhook informers to sync.
 	if wh != nil {
@@ -339,6 +307,7 @@ func flush(logger *zap.SugaredLogger) {
 
 // ParseAndGetConfigOrDie parses the rest config flags and creates a client or
 // dies by calling log.Fatalf.
+// Deprecated: use injeciton.ParseAndGetRestConfigOrDie
 func ParseAndGetConfigOrDie() *rest.Config {
 	var (
 		serverURL = flag.String("server", "",
@@ -349,7 +318,7 @@ func ParseAndGetConfigOrDie() *rest.Config {
 	klog.InitFlags(flag.CommandLine)
 	flag.Parse()
 
-	cfg, err := GetConfig(*serverURL, *kubeconfig)
+	cfg, err := injection.GetRestConfig(*serverURL, *kubeconfig)
 	if err != nil {
 		log.Fatal("Error building kubeconfig: ", err)
 	}

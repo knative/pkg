@@ -23,6 +23,7 @@ import (
 	"context"
 	"errors"
 	"flag"
+	"knative.dev/pkg/injection"
 	"log"
 	"strings"
 	"time"
@@ -33,7 +34,6 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 	kubeclient "knative.dev/pkg/client/injection/kube/client"
-	"knative.dev/pkg/injection/sharedmain"
 	"knative.dev/pkg/kflag"
 	"knative.dev/pkg/signals"
 	"knative.dev/pkg/system"
@@ -116,8 +116,7 @@ func quack(ctx context.Context, kc kubernetes.Interface, component string, leade
 }
 
 func main() {
-	ctx := signals.NewContext()
-	ctx = sharedmain.EnableInjectionOrDie(ctx, nil)
+	ctx, _ := injection.EnableInjectionOrDie(signals.NewContext(), nil)
 
 	kc := kubeclient.Get(ctx)
 
