@@ -20,6 +20,7 @@ import (
 	"errors"
 	"flag"
 	"log"
+	"math"
 	"os"
 	"os/user"
 	"path/filepath"
@@ -37,6 +38,9 @@ func ParseAndGetRESTConfigOrDie() *rest.Config {
 			"The address of the Kubernetes API server. Overrides any value in kubeconfig. Only required if out-of-cluster.")
 		kubeconfig = flag.String("kubeconfig", "",
 			"Path to a kubeconfig. Only required if out-of-cluster.")
+
+		burst = flag.Int("kube-api-burst", 0, "Maximum burst for throttle.")
+		qps   = flag.Float64("kube-api-qps", 0, "Maximum QPS to the server from the client.")
 	)
 	klog.InitFlags(flag.CommandLine)
 	flag.Parse()
@@ -46,7 +50,25 @@ func ParseAndGetRESTConfigOrDie() *rest.Config {
 		log.Fatal("Error building kubeconfig: ", err)
 	}
 
+	validBurstOrDie(*burst)
+	validQPSOrDie(*qps)
+
+	cfg.Burst = *burst
+	cfg.QPS = float32(*qps)
+
 	return cfg
+}
+
+func validBurstOrDie(burst int) {
+	if burst < 0 {
+		log.Fatal("Invalid burst value", burst)
+	}
+}
+
+func validQPSOrDie(qps float64) {
+	if qps < 0 || qps > math.MaxFloat32 {
+		log.Fatal("Invalid QPS value", qps)
+	}
 }
 
 // GetRESTConfig returns a rest.Config to be used for kubernetes client creation.
