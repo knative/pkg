@@ -69,7 +69,7 @@ func resolveGKEVersion(raw, location string) (string, error) {
 		if err != nil && version != "" {
 			return "", fmt.Errorf("failed getting the default version: %w", err)
 		}
-		log.Printf("Using default version, %s", version)
+		log.Print("Using default version, ", version)
 		return version, nil
 	case latestGKEVersion:
 		validCmd := "gcloud container get-server-config --format='value(validMasterVersions)' --zone=" + location
@@ -78,10 +78,10 @@ func resolveGKEVersion(raw, location string) (string, error) {
 			return "", fmt.Errorf("failed getting the list of valid versions: %w", err)
 		}
 		versions := strings.Split(versionsStr, ";")
-		log.Printf("Using the latest version, %s", strings.TrimSpace(versions[0]))
+		log.Print("Using the latest version, ", strings.TrimSpace(versions[0]))
 		return strings.TrimSpace(versions[0]), nil
 	default:
-		log.Printf("Using the custom version, %s", raw)
+		log.Print("Using the custom version, ", raw)
 		return raw, nil
 	}
 }

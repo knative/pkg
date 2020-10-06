@@ -102,7 +102,7 @@ func (d *Docker) AddRWOverlay(externalDirectory, internalDirectory string) func(
 	// Print command to run so user knows why it is asking for sudo password (if it does)
 	log.Println(mount)
 	if err = mount.Run(); err != nil {
-		log.Fatalf("Unable to create overlay mount, so giving up: %v", err)
+		log.Fatal("Unable to create overlay mount, so giving up: ", err)
 	}
 	d.AddMount("bind", overlayDir, internalDirectory)
 	return func() {

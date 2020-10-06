@@ -17,7 +17,6 @@ limitations under the License.
 package apis
 
 import (
-	"fmt"
 	"strconv"
 	"strings"
 	"testing"
@@ -241,7 +240,7 @@ Second: X, Y, Z`,
 
 			for _, p := range []string{"3", "2", "1"} {
 				e := fe.ViaField(p)
-				e.Details = fmt.Sprintf("here at %s", p)
+				e.Details = "here at " + p
 				for i := 0; i < 3; i++ {
 					fe = fe.Also(e)
 				}

@@ -143,7 +143,7 @@ func NewV2(prop string) *V2Resource {
 			APIVersion: Group + "/v2",
 		},
 		Spec: Spec{
-			Property: fmt.Sprintf("prefix/%s", prop),
+			Property: "prefix/" + prop,
 		},
 	}
 }
@@ -157,7 +157,7 @@ func NewV3(prop string) *V3Resource {
 			APIVersion: Group + "/v3",
 		},
 		Spec: SpecWithDefault{
-			Property: fmt.Sprintf("%s/suffix", prop),
+			Property: prop + "/suffix",
 		},
 	}
 	v3.SetDefaults(context.Background())

@@ -57,7 +57,7 @@ func main() {
 		if valOpt == "" {
 			log.Fatal("--val must be supplied when using --save")
 		}
-		log.Printf("Writing files to %s", c.Path)
+		log.Print("Writing files to ", c.Path)
 		if err := c.Set(saveKeyOpt, valOpt); err != nil {
 			log.Fatalf("Failed saving %q:%q to %q: '%v'", saveKeyOpt, valOpt, c.Path, err)
 		}
