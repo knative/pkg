@@ -24,7 +24,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/golang/protobuf/jsonpb"
+	"github.com/golang/protobuf/jsonpb" //noling: the newer package has differnet interface.
 	mako "github.com/google/mako/spec/proto/mako_go_proto"
 
 	"log"
