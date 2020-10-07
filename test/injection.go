@@ -18,9 +18,8 @@ package test
 
 import (
 	"context"
+	"knative.dev/pkg/injection"
 	"sync"
-
-	"knative.dev/pkg/injection/sharedmain"
 )
 
 var (
@@ -31,13 +30,15 @@ var (
 // InjectionContext returns the context for tests leveraging client injection.
 func InjectionContext() context.Context {
 	icOnce.Do(func() {
-		cfg := sharedmain.ParseAndGetConfigOrDie()
+		cfg := injection.ParseAndGetRESTConfigOrDie()
 
 		// Normal e2e tests poll, so set limits high.
 		cfg.QPS = 100
 		cfg.Burst = 200
 
-		injectionContext = sharedmain.EnableInjectionOrDie(nil, cfg)
+		var startInformers func()
+		injectionContext, startInformers = injection.EnableInjectionOrDie(nil, cfg)
+		startInformers()
 	})
 	return injectionContext
 }
