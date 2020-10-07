@@ -99,13 +99,13 @@ var (
 
 func newNonRunningTestResourceAdmissionController(t *testing.T) (
 	kubeClient *fakekubeclientset.Clientset,
-	ac *reconciler) {
+	ac webhook.AdmissionController) {
 
 	t.Helper()
 	// Create fake clients
 	kubeClient = fakekubeclientset.NewSimpleClientset(initialResourceWebhook)
 
-	ac = NewTestResourceAdmissionController(t)
+	ac = newTestResourceAdmissionController(t)
 	return
 }
 
@@ -505,7 +505,7 @@ func createInnerDefaultResourceWithoutSpec(t *testing.T) []byte {
 	return b
 }
 
-func NewTestResourceAdmissionController(t *testing.T) *reconciler {
+func newTestResourceAdmissionController(t *testing.T) webhook.AdmissionController {
 	ctx, _ := SetupFakeContext(t)
 	ctx = webhook.WithOptions(ctx, webhook.Options{
 		SecretName: "webhook-secret",

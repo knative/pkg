@@ -65,13 +65,12 @@ type clientMocker struct {
 	revIndex map[bucket]project
 }
 
-func NewClientMocker() *clientMocker {
-	c := &clientMocker{
+func newClientMocker() *clientMocker {
+	return &clientMocker{
 		gcp:      make(map[project]*buckets),
 		err:      make(map[Method]*ReturnError),
 		revIndex: make(map[bucket]project),
 	}
-	return c
 }
 
 // SetError sets the number of calls of an interface function before an error is returned.

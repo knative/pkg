@@ -28,7 +28,7 @@ func (e *notEmptyBucketError) Error() string {
 	return fmt.Sprintf("bucket %q not empty, use force=true", e.bkt)
 }
 
-func NewNotEmptyBucketError(bkt string) *notEmptyBucketError {
+func NewNotEmptyBucketError(bkt string) error {
 	return &notEmptyBucketError{bkt}
 }
 
@@ -36,7 +36,7 @@ type noBucketError struct {
 	bkt string
 }
 
-func NewNoBucketError(bkt string) *noBucketError {
+func NewNoBucketError(bkt string) error {
 	return &noBucketError{bkt}
 }
 
@@ -48,7 +48,7 @@ type bucketExistError struct {
 	bkt string
 }
 
-func NewBucketExistError(bkt string) *bucketExistError {
+func NewBucketExistError(bkt string) error {
 	return &bucketExistError{bkt}
 }
 
@@ -62,7 +62,7 @@ type noObjectError struct {
 	path string
 }
 
-func NewNoObjectError(bkt, obj, path string) *noObjectError {
+func NewNoObjectError(bkt, obj, path string) error {
 	return &noObjectError{
 		bkt:  bkt,
 		obj:  obj,

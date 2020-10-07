@@ -81,7 +81,7 @@ func TestRetryUpdateConflicts(t *testing.T) {
 
 func TestRetryTestErrors(t *testing.T) {
 	errAny := errors.New("foo")
-	errGKE := errors.New(`Operation cannot be fulfilled on resourcequotas "gke-resource-quotas": StorageError: invalid object, Code: 4, Key: /registry/resourcequotas/serving-tests/gke-resource-quotas, ResourceVersion: 0, AdditionalErrorMsg: Precondition failed: UID in precondition: 7aaedbdf-caa8-41e7-94cb-f8c053038e86, UID in object meta:`)
+	errGKE := errors.New(`operation cannot be fulfilled on resourcequotas "gke-resource-quotas": StorageError: invalid object, Code: 4, Key: /registry/resourcequotas/serving-tests/gke-resource-quotas, ResourceVersion: 0, AdditionalErrorMsg: Precondition failed: UID in precondition: 7aaedbdf-caa8-41e7-94cb-f8c053038e86, UID in object meta`)
 	errEtcd := errors.New("etcdserver: request timed out")
 	errConflict := apierrs.NewConflict(v1.Resource("foo"), "bar", errAny)
 
