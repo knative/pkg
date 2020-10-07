@@ -2,12 +2,14 @@ run:
   timeout: 5m
 
   skip-dirs:
+    - client
     - injection/client
-    - test/mako
+    - third_party
 
 linters:
   enable:
     - asciicheck
+    - goling
     - gosec
     - prealloc
     - stylecheck
