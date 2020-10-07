@@ -20,7 +20,11 @@ import (
 	fuzz "github.com/google/gofuzz"
 	"k8s.io/apimachinery/pkg/api/apitesting/fuzzer"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
+	"knative.dev/pkg/apis"
+	pkgfuzzer "knative.dev/pkg/apis/testing/fuzzer"
 )
+
+var testConditions = apis.Conditions{{Type: apis.ConditionReady}, {Type: apis.ConditionSucceeded}}
 
 // FuzzerFuncs includes fuzzing funcs for knative.dev/duck v1 types
 // In particular it makes sure that Delivery has only valid BackoffPolicyType in it.
@@ -30,8 +34,10 @@ import (
 var FuzzerFuncs = fuzzer.MergeFuzzerFuncs(
 	func(codecs serializer.CodecFactory) []interface{} {
 		return []interface{}{
-			func(addressable *Addressable, c fuzz.Continue) {
-				c.FuzzNoCustom(addressable) // fuzz the Addressable
+			func(status *Status, c fuzz.Continue) {
+				c.FuzzNoCustom(status) // fuzz the Status
+				status.SetConditions(testConditions)
+				pkgfuzzer.FuzzConditions(status, c)
 			},
 		}
 	},

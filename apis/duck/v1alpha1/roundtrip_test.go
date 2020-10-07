@@ -32,7 +32,6 @@ func TestEventingRoundTripTypesToJSON(t *testing.T) {
 
 	fuzzerFuncs := fuzzer.MergeFuzzerFuncs(
 		pkgfuzzer.Funcs,
-		FuzzerFuncs,
 	)
 	roundtrip.ExternalTypesViaJSON(t, scheme, fuzzerFuncs)
 }
