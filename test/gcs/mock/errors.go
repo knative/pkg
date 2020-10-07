@@ -62,7 +62,7 @@ type noObjectError struct {
 	path string
 }
 
-func NewNoObjectError(bkt, obj, path string) *noObjectError {
+func NewNoObjectError(bkt, obj, path string) error {
 	return &noObjectError{
 		bkt:  bkt,
 		obj:  obj,

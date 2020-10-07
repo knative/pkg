@@ -34,8 +34,8 @@ const (
 	testBenchmarkRoot = "testdir"
 )
 
-func setupFakeGKEClient() gkeClient {
-	return gkeClient{
+func setupFakeGKEClient() GKEClient {
+	return GKEClient{
 		ops: gkeFake.NewGKESDKClient(),
 	}
 }
