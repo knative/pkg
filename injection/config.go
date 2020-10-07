@@ -50,25 +50,17 @@ func ParseAndGetRESTConfigOrDie() *rest.Config {
 		log.Fatal("Error building kubeconfig: ", err)
 	}
 
-	validBurstOrDie(*burst)
-	validQPSOrDie(*qps)
+	if *burst < 0 {
+		log.Fatal("Invalid burst value", *burst)
+	}
+	if *qps < 0 || *qps > math.MaxFloat32 {
+		log.Fatal("Invalid QPS value", *qps)
+	}
 
 	cfg.Burst = *burst
 	cfg.QPS = float32(*qps)
 
 	return cfg
-}
-
-func validBurstOrDie(burst int) {
-	if burst < 0 {
-		log.Fatal("Invalid burst value", burst)
-	}
-}
-
-func validQPSOrDie(qps float64) {
-	if qps < 0 || qps > math.MaxFloat32 {
-		log.Fatal("Invalid QPS value", qps)
-	}
 }
 
 // GetRESTConfig returns a rest.Config to be used for kubernetes client creation.
