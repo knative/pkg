@@ -28,7 +28,7 @@ import (
 )
 
 var (
-	r               = resource.Resource{Labels: map[string]string{"foo": "bar"}}
+	r = resource.Resource{Labels: map[string]string{"foo": "bar"}}
 )
 
 func TestRegisterResourceView(t *testing.T) {

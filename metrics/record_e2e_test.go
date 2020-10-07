@@ -44,7 +44,6 @@ import (
 	"go.opencensus.io/stats"
 	"go.opencensus.io/stats/view"
 	"go.opencensus.io/tag"
-	"k8s.io/apimachinery/pkg/util/clock"
 
 	emptypb "github.com/golang/protobuf/ptypes/empty"
 	"github.com/google/go-cmp/cmp"
