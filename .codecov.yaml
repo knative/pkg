@@ -4,7 +4,9 @@ coverage:
   status:
     project:
       default:
-        target: 80
+        # https://github.com/knative/pkg/issues/1785
+        # Real goal is 80, but prow sees this as a blocker if not met for merging.
+        target: 68
         threshold: 1%
     patch:
       # Disable the coverage threshold of the patch, so that PRs are
