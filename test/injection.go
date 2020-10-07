@@ -18,8 +18,9 @@ package test
 
 import (
 	"context"
-	"knative.dev/pkg/injection"
 	"sync"
+
+	"knative.dev/pkg/injection"
 )
 
 var (
