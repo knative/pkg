@@ -23,28 +23,26 @@ import (
 	boskoscommon "sigs.k8s.io/boskos/common"
 )
 
-const (
-	fakeOwner = "fake-owner"
-)
+const fakeOwner = "fake-owner"
 
-// FakeBoskosClient implements boskos.Operation
-type FakeBoskosClient struct {
+// BoskosClient implements boskos.Operation
+type BoskosClient struct {
 	resources []*boskoscommon.Resource
 }
 
-func (c *FakeBoskosClient) getOwner(host *string) string {
+func (c *BoskosClient) getOwner(host *string) string {
 	if host == nil {
 		return fakeOwner
 	}
 	return *host
 }
 
-func (c *FakeBoskosClient) GetResources() []*boskoscommon.Resource {
+func (c *BoskosClient) GetResources() []*boskoscommon.Resource {
 	return c.resources
 }
 
 // AcquireGKEProject fakes to be no op
-func (c *FakeBoskosClient) AcquireGKEProject(resType string) (*boskoscommon.Resource, error) {
+func (c *BoskosClient) AcquireGKEProject(resType string) (*boskoscommon.Resource, error) {
 	for _, res := range c.resources {
 		if res.State == boskoscommon.Free {
 			res.State = boskoscommon.Busy
@@ -57,7 +55,7 @@ func (c *FakeBoskosClient) AcquireGKEProject(resType string) (*boskoscommon.Reso
 }
 
 // ReleaseGKEProject fakes to be no op
-func (c *FakeBoskosClient) ReleaseGKEProject(name string) error {
+func (c *BoskosClient) ReleaseGKEProject(name string) error {
 	owner := c.getOwner(nil)
 	for _, res := range c.resources {
 		if res.Name == name {
@@ -73,7 +71,7 @@ func (c *FakeBoskosClient) ReleaseGKEProject(name string) error {
 }
 
 // NewGKEProject adds Boskos resources for testing purpose
-func (c *FakeBoskosClient) NewGKEProject(name string) {
+func (c *BoskosClient) NewGKEProject(name string) {
 	c.resources = append(c.resources, &boskoscommon.Resource{
 		Type:  boskos.GKEProjectResource,
 		Name:  name,
