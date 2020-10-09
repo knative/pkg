@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"sync"
 	"testing"
 	"time"
 
@@ -92,7 +93,7 @@ func newK8sFake(c *fake.Clientset) *fakeclient {
 	return &fakeclient{
 		Clientset:  c,
 		FakeCoreV1: &fakecorev1.FakeCoreV1{Fake: &c.Fake},
-		logBuffer:  new(bytes.Buffer),
+		logBuffer:  new(buffer),
 	}
 }
 
@@ -100,7 +101,7 @@ type fakeclient struct {
 	*fake.Clientset
 	*fakecorev1.FakeCoreV1
 
-	logBuffer *bytes.Buffer
+	logBuffer *buffer
 }
 
 type fakePods struct {
@@ -133,4 +134,22 @@ func (f *fakePods) GetLogs(name string, opts *corev1.PodLogOptions) *restclient.
 		VersionedAPIPath:     fmt.Sprintf("/api/v1/namespaces/%s/pods/%s/log", f.ns, name),
 	}
 	return fakeClient.Request()
+}
+
+// use a synchronous buffer
+type buffer struct {
+	bytes.Buffer
+	sync.Mutex
+}
+
+func (b *buffer) WriteString(s string) (n int, err error) {
+	b.Lock()
+	defer b.Unlock()
+	return b.Buffer.WriteString(s)
+}
+
+func (b *buffer) Read(p []byte) (n int, err error) {
+	b.Lock()
+	defer b.Unlock()
+	return b.Buffer.Read(p)
 }
