@@ -25,7 +25,7 @@ type (
 	// Callback is invoked after pod logs are transformed
 	Callback func(string, ...interface{})
 
-	// StreamSource allows you to create streams in various ways
+	// Source allows you to create streams in various ways
 	Source interface {
 		StartPodStream(name string, l Callback) (Canceler, error)
 	}
