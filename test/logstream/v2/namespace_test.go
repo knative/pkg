@@ -30,7 +30,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/kubernetes/fake"
 	"k8s.io/client-go/kubernetes/scheme"
-	clientcorev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	v1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	fakecorev1 "k8s.io/client-go/kubernetes/typed/core/v1/fake"
 	restclient "k8s.io/client-go/rest"
@@ -106,17 +105,16 @@ type fakeclient struct {
 
 type fakePods struct {
 	*fakeclient
-	// *fakecorev1.FakePods
 	v1.PodInterface
 	ns string
 }
 
-func (f *fakeclient) CoreV1() clientcorev1.CoreV1Interface { return f }
+func (f *fakeclient) CoreV1() v1.CoreV1Interface { return f }
 
 func (f *fakeclient) Pods(ns string) v1.PodInterface {
 	return &fakePods{
 		f,
-		f.FakeCoreV1.Pods(ns), //.(*fakecorev1.FakePods),
+		f.FakeCoreV1.Pods(ns),
 		ns,
 	}
 }

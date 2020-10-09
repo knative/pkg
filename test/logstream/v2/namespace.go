@@ -56,7 +56,7 @@ type namespaceSource struct {
 func (s *namespaceSource) StartStream(name string, l Callback) (Canceler, error) {
 	s.once.Do(func() { s.watchErr = s.watchPods() })
 	if s.watchErr != nil {
-		return nil, fmt.Errorf("Failed to watch pods in namespace %q: %w", s.namespace, s.watchErr)
+		return nil, fmt.Errorf("failed to watch pods in namespace %q: %w", s.namespace, s.watchErr)
 	}
 
 	// Register a key
