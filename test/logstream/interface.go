@@ -73,7 +73,7 @@ func (s *shim) Start(t test.TLegacy) Canceler {
 	canceler, err := s.StartStream(name, t.Logf)
 
 	if err != nil {
-		t.Error("failed to start logstream", "error", err)
+		t.Error("Failed to start logstream", "error", err)
 	}
 
 	return canceler
