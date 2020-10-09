@@ -53,7 +53,7 @@ type namespaceSource struct {
 	watchErr error
 }
 
-func (s *namespaceSource) StartPodStream(name string, l Callback) (Canceler, error) {
+func (s *namespaceSource) StartStream(name string, l Callback) (Canceler, error) {
 	s.once.Do(func() { s.watchErr = s.watchPods() })
 	if s.watchErr != nil {
 		return nil, fmt.Errorf("Failed to watch pods in namespace %q: %w", s.namespace, s.watchErr)

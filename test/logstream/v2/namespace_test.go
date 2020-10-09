@@ -66,7 +66,7 @@ func TestNamespaceStream(t *testing.T) {
 	}
 
 	stream := logstream.FromNamespace(context.TODO(), f, pod.Namespace)
-	stream.StartPodStream(pod.Name, logFunc)
+	stream.StartStream(pod.Name, logFunc)
 
 	podClient := f.CoreV1().Pods(pod.Namespace)
 	if _, err := podClient.Create(context.TODO(), pod, metav1.CreateOptions{}); err != nil {

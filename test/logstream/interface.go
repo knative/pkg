@@ -70,7 +70,7 @@ type shim struct {
 
 func (s *shim) Start(t test.TLegacy) Canceler {
 	name := helpers.ObjectPrefixForTest(t)
-	canceler, err := s.StartPodStream(name, t.Logf)
+	canceler, err := s.StartStream(name, t.Logf)
 
 	if err != nil {
 		t.Error("failed to start logstream", "error", err)
