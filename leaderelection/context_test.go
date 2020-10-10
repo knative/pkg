@@ -22,11 +22,9 @@ package leaderelection
 import (
 	"context"
 	"fmt"
-	"os"
 	"testing"
 	"time"
 
-	"github.com/google/go-cmp/cmp"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/sets"
@@ -92,7 +90,7 @@ func TestWithBuilder(t *testing.T) {
 		t.Errorf("BuildElector() = %T, wanted an unopposedElector", le)
 	}
 
-	ctx = WithDynamicLeaderElectorBuilder(ctx, kc, cc)
+	ctx = WithStandardLeaderElectorBuilder(ctx, kc, cc)
 	if !HasLeaderElection(ctx) {
 		t.Error("HasLeaderElection() = false, wanted true")
 	}
@@ -190,7 +188,7 @@ func TestBuilderWithCustomizedLeaseName(t *testing.T) {
 		},
 	}
 	enq := func(reconciler.Bucket, types.NamespacedName) {}
-	ctx = WithDynamicLeaderElectorBuilder(ctx, kc, cc)
+	ctx = WithStandardLeaderElectorBuilder(ctx, kc, cc)
 	le, err := BuildElector(ctx, laf, "name", enq)
 	if err != nil {
 		t.Fatal("BuildElector() =", err)
@@ -217,112 +215,5 @@ func TestBuilderWithCustomizedLeaseName(t *testing.T) {
 	)
 	if !gotNames.Equal(want) {
 		t.Errorf("BucketSet.BucketList() = %q, want: %q", gotNames, want)
-	}
-}
-
-func TestNewStatefulSetBucketAndSet(t *testing.T) {
-	wantNames := []string{
-		"http://as-0.autoscaler.knative-testing.svc.cluster.local:80",
-		"http://as-1.autoscaler.knative-testing.svc.cluster.local:80",
-		"http://as-2.autoscaler.knative-testing.svc.cluster.local:80",
-	}
-
-	os.Setenv(controllerOrdinalEnv, "as-2")
-	os.Setenv(serviceNameEnv, "autoscaler")
-	t.Cleanup(func() {
-		os.Unsetenv(controllerOrdinalEnv)
-		os.Unsetenv(serviceNameEnv)
-	})
-
-	_, _, err := NewStatefulSetBucketAndSet(2)
-	if err == nil {
-		// Ordinal 2 should be range [0, 2)
-		t.Fatal("Expected error from NewStatefulSetBucketAndSet but got nil")
-	}
-
-	bkt, bs, err := NewStatefulSetBucketAndSet(3)
-	if err != nil {
-		// Ordinal 2 should be range [0, 2)
-		t.Fatal("NewStatefulSetBucketAndSet() = ", err)
-	}
-
-	if got, want := bkt.Name(), wantNames[2]; got != want {
-		t.Errorf("Bucket.Name() = %s, want = %s", got, want)
-	}
-
-	gotNames := bs.BucketList()
-	if !cmp.Equal(gotNames, wantNames) {
-		t.Errorf("BucketSet.BucketList() = %q, want: %q", gotNames, wantNames)
-	}
-}
-
-func TestWithStatefulSetBuilder(t *testing.T) {
-	cc := ComponentConfig{
-		Component: "the-component",
-		Buckets:   3,
-	}
-	const podDNS = "http://as-2.autoscaler.knative-testing.svc.cluster.local:80"
-	ctx := context.Background()
-
-	promoted := make(chan struct{})
-	laf := &reconciler.LeaderAwareFuncs{
-		PromoteFunc: func(bkt reconciler.Bucket, enq func(reconciler.Bucket, types.NamespacedName)) error {
-			close(promoted)
-			return nil
-		},
-	}
-	enq := func(reconciler.Bucket, types.NamespacedName) {}
-
-	if os.Setenv(controllerOrdinalEnv, "as-2") != nil {
-		t.Fatalf("Failed to set env var %s=%s", controllerOrdinalEnv, "as-2")
-	}
-	if os.Setenv(serviceNameEnv, "autoscaler") != nil {
-		t.Fatalf("Failed to set env var %s=%s", serviceNameEnv, "autoscaler")
-	}
-	t.Cleanup(func() {
-		os.Unsetenv(controllerOrdinalEnv)
-		os.Unsetenv(serviceNameEnv)
-	})
-
-	ctx = WithDynamicLeaderElectorBuilder(ctx, nil, cc)
-	if !HasLeaderElection(ctx) {
-		t.Error("HasLeaderElection() = false, wanted true")
-	}
-
-	b := ctx.Value(builderKey{})
-	ssb, ok := b.(*statefulSetBuilder)
-	if !ok || ssb == nil {
-		t.Fatal("StatefulSetBuilder not found on context")
-	}
-
-	le, err := BuildElector(ctx, laf, "name", enq)
-	if err != nil {
-		t.Fatal("BuildElector() =", err)
-	}
-
-	ule, ok := le.(*unopposedElector)
-	if !ok {
-		t.Fatalf("BuildElector() = %T, wanted an unopposedElector", le)
-	}
-	if got, want := ule.bkt.Name(), podDNS; got != want {
-		t.Errorf("bkt.Name() = %s, wanted %s", got, want)
-	}
-
-	// Shouldn't be promoted until we Run the elector.
-	select {
-	case <-promoted:
-		t.Error("Got promoted, want no actions.")
-	default:
-	}
-
-	ctx, cancel := context.WithCancel(context.Background())
-	t.Cleanup(cancel)
-	go le.Run(ctx)
-
-	select {
-	case <-promoted:
-		// We expect to have been promoted.
-	case <-time.After(time.Second):
-		t.Fatal("Timed out waiting for promotion.")
 	}
 }

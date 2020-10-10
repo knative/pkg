@@ -186,7 +186,7 @@ func MainWithConfig(ctx context.Context, component string, cfg *rest.Config, cto
 
 	if !IsHADisabled(ctx) {
 		// Signal that we are executing in a context with leader election.
-		ctx = leaderelection.WithDynamicLeaderElectorBuilder(ctx, kubeclient.Get(ctx),
+		ctx = leaderelection.WithStandardLeaderElectorBuilder(ctx, kubeclient.Get(ctx),
 			leaderElectionConfig.GetComponentConfig(component))
 	}
 
