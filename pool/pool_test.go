@@ -20,9 +20,10 @@ import (
 	"context"
 	"errors"
 	"sync"
-	"sync/atomic"
 	"testing"
 	"time"
+
+	"go.uber.org/atomic"
 )
 
 func TestParallelismNoErrors(t *testing.T) {
@@ -50,7 +51,7 @@ func TestParallelismNoErrors(t *testing.T) {
 				// m guards max.
 				m      sync.Mutex
 				max    int32
-				active int32
+				active atomic.Int32
 			)
 
 			// Use our own waitgroup to ensure that the work
@@ -60,14 +61,14 @@ func TestParallelismNoErrors(t *testing.T) {
 
 			worker := func() error {
 				defer wg.Done()
-				na := atomic.AddInt32(&active, 1)
-				defer atomic.AddInt32(&active, -1)
+				active.Inc()
+				defer active.Dec()
 
 				func() {
 					m.Lock()
 					defer m.Unlock()
-					if max < na {
-						max = na
+					if v := active.Load(); max < v {
+						max = v
 					}
 				}()
 
@@ -129,7 +130,7 @@ func TestParallelismWithErrors(t *testing.T) {
 				// m guards max.
 				m      sync.Mutex
 				max    int32
-				active int32
+				active atomic.Int32
 			)
 
 			// Use our own waitgroup to ensure that the work
@@ -145,14 +146,14 @@ func TestParallelismWithErrors(t *testing.T) {
 			workerFactory := func(err error) func() error {
 				return func() error {
 					defer wg.Done()
-					na := atomic.AddInt32(&active, 1)
-					defer atomic.AddInt32(&active, -1)
+					active.Inc()
+					defer active.Dec()
 
 					func() {
 						m.Lock()
 						defer m.Unlock()
-						if max < na {
-							max = na
+						if v := active.Load(); max < v {
+							max = v
 						}
 					}()
 
