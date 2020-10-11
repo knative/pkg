@@ -1518,7 +1518,7 @@ func TestBaseReconcile(t *testing.T) {
 							Type:   "Ready",
 							Status: "False",
 							Reason: "SubjectUnavailable",
-							// prefix comes from apiserrs.NewForbidden
+							// prefix comes from apierrs.NewForbidden
 							Message: "forbidden: some-error",
 						}},
 					},
