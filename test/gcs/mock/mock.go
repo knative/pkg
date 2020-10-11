@@ -27,8 +27,8 @@ import (
 )
 
 // I don't know if it is easier or not to use go mock, but we really only need two things:
-// 1) Ability to mimick creation of buckets and objects
-// 2) Ability to mimick returning errors
+// 1) Ability to mimic creation of buckets and objects
+// 2) Ability to mimic returning errors
 //
 // We don't need arbitrary return values, so generators like go mock or testify might be
 // overkill and doesn't give us the flexibility we need (e.g., will have to specify and
