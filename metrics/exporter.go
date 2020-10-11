@@ -196,7 +196,7 @@ func newMetricsExporter(config *metricsConfig, logger *zap.SugaredLogger) (view.
 	// If there is a Prometheus Exporter server running, stop it.
 	resetCurPromSrv()
 
-	// TODO(https://github.com/knative/pkg/issues/866): Move Stackdriver and Promethus
+	// TODO(https://github.com/knative/pkg/issues/866): Move Stackdriver and Prometheus
 	// operations before stopping to an interface.
 	if se, ok := curMetricsExporter.(stoppable); ok {
 		se.StopMetricsExporter()
