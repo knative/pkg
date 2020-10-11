@@ -361,7 +361,7 @@ func (f *String) Populate() {
 var emptyStringable Stringable
 
 // For testing this doubles as the 'Implementable'
-// and 'Populataable'
+// and 'Populatable'
 type UnableToMarshal struct{}
 
 var _ Implementable = (*UnableToMarshal)(nil)
