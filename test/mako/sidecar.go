@@ -44,7 +44,7 @@ const (
 	// assorted preprocessing.
 	sidecarAddress = "localhost:9813"
 
-	// org is the orgnization name that is used by Github client
+	// org is the organization name that is used by Github client
 	org = "knative"
 
 	// slackUserName is the slack user name that is used by Slack client
