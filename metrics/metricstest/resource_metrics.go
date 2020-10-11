@@ -161,7 +161,7 @@ func FloatMetric(name string, value float64, tags map[string]string) Metric {
 	}
 }
 
-// DistributionCountOnlyMetric creates a distrubtion metric for test, and verifying only the count.
+// DistributionCountOnlyMetric creates a distribution metric for test, and verifying only the count.
 func DistributionCountOnlyMetric(name string, count int64, tags map[string]string) Metric {
 	return Metric{
 		Name: name,
