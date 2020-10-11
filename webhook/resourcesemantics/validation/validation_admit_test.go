@@ -605,7 +605,7 @@ func TestNewResourceAdmissionController(t *testing.T) {
 		invalidSecondCallback)
 }
 
-func TestNewResourceAdmissionControllerDuplciateVerb(t *testing.T) {
+func TestNewResourceAdmissionControllerDuplicateVerb(t *testing.T) {
 	ctx, _ := SetupFakeContext(t)
 
 	defer func() {
