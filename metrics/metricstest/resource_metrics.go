@@ -42,8 +42,8 @@ type Value struct {
 	Float64      *float64
 	Distribution *metricdata.Distribution
 	// VerifyDistributionCountOnly makes Equal compare the Distribution with the
-	// field Count only, and ingore all other fields of Distribution.
-	// This is ingored when the value is not a Distribution.
+	// field Count only, and ignore all other fields of Distribution.
+	// This is ignored when the value is not a Distribution.
 	VerifyDistributionCountOnly bool
 }
 
