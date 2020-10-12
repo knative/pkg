@@ -25,9 +25,10 @@ import (
 	"time"
 
 	"go.opencensus.io/stats/view"
-	_ "go.uber.org/automaxprocs" // automatically set GOMAXPROCS based on cgroups
+	"go.uber.org/automaxprocs/maxprocs" // automatically set GOMAXPROCS based on cgroups
 	"go.uber.org/zap"
 	"golang.org/x/sync/errgroup"
+
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -50,6 +51,10 @@ import (
 	"knative.dev/pkg/version"
 	"knative.dev/pkg/webhook"
 )
+
+func init() {
+	maxprocs.Set(maxprocs.Logger(func(string, ...interface{}) {}))
+}
 
 // GetConfig returns a rest.Config to be used for kubernetes client creation.
 // It does so in the following order:
