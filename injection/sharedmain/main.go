@@ -52,7 +52,7 @@ import (
 )
 
 func init() {
-	maxprocs.Set(maxprocs.Logger(func(string, ...interface{}) {}))
+	maxprocs.Set()
 }
 
 // GetConfig returns a rest.Config to be used for kubernetes client creation.
