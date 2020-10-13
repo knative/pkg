@@ -18,6 +18,7 @@ package test
 
 import (
 	"context"
+	"log"
 	"sync"
 
 	"knative.dev/pkg/signals"
@@ -33,14 +34,18 @@ var (
 // InjectionContext returns the context for tests leveraging client injection.
 func InjectionContext() context.Context {
 	icOnce.Do(func() {
-		cfg := injection.ParseAndGetRESTConfigOrDie()
+		ctx := signals.NewContext()
+		ctx, cfg, err := injection.ParseAndGetRESTConfig(ctx)
+		if err != nil {
+			log.Fatal(err)
+		}
 
 		// Normal e2e tests poll, so set limits high.
 		cfg.QPS = 100
 		cfg.Burst = 200
 
 		var startInformers func()
-		injectionContext, startInformers = injection.EnableInjectionOrDie(signals.NewContext(), cfg)
+		injectionContext, startInformers = injection.EnableInjectionOrDie(ctx, cfg)
 		startInformers()
 	})
 	return injectionContext

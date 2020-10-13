@@ -43,7 +43,11 @@ func EnableInjectionOrDie(ctx context.Context, cfg *rest.Config) (context.Contex
 		ctx = signals.NewContext()
 	}
 	if cfg == nil {
-		cfg = ParseAndGetRESTConfigOrDie()
+		var err error
+		ctx, cfg, err = ParseAndGetRESTConfig(ctx)
+		if err != nil {
+			logging.FromContext(ctx).Fatalw("Failed to get REST config", zap.Error(err))
+		}
 	}
 
 	// Respect user provided settings, but if omitted customize the default behavior.
