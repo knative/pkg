@@ -19,15 +19,15 @@ package metricstest
 import (
 	"fmt"
 	"reflect"
+	"testing"
 
 	"go.opencensus.io/metric/metricproducer"
 	"go.opencensus.io/stats/view"
-	"knative.dev/pkg/test"
 )
 
 // CheckStatsReported checks that there is a view registered with the given name for each string in names,
 // and that each view has at least one record.
-func CheckStatsReported(t test.T, names ...string) {
+func CheckStatsReported(t *testing.T, names ...string) {
 	t.Helper()
 	for _, name := range names {
 		d, err := readRowsFromAllMeters(name)
@@ -42,7 +42,7 @@ func CheckStatsReported(t test.T, names ...string) {
 
 // CheckStatsNotReported checks that there are no records for any views that a name matching a string in names.
 // Names that do not match registered views are considered not reported.
-func CheckStatsNotReported(t test.T, names ...string) {
+func CheckStatsNotReported(t *testing.T, names ...string) {
 	t.Helper()
 	for _, name := range names {
 		d, err := readRowsFromAllMeters(name)
@@ -56,7 +56,7 @@ func CheckStatsNotReported(t test.T, names ...string) {
 
 // CheckCountData checks the view with a name matching string name to verify that the CountData stats
 // reported are tagged with the tags in wantTags and that wantValue matches reported count.
-func CheckCountData(t test.T, name string, wantTags map[string]string, wantValue int64) {
+func CheckCountData(t *testing.T, name string, wantTags map[string]string, wantValue int64) {
 	t.Helper()
 	row, err := checkExactlyOneRow(t, name)
 	if err != nil {
@@ -75,7 +75,7 @@ func CheckCountData(t test.T, name string, wantTags map[string]string, wantValue
 // CheckDistributionData checks the view with a name matching string name to verify that the DistributionData stats reported
 // are tagged with the tags in wantTags and that expectedCount number of records were reported.
 // It also checks that expectedMin and expectedMax match the minimum and maximum reported values, respectively.
-func CheckDistributionData(t test.T, name string, wantTags map[string]string, expectedCount int64, expectedMin float64, expectedMax float64) {
+func CheckDistributionData(t *testing.T, name string, wantTags map[string]string, expectedCount int64, expectedMin float64, expectedMax float64) {
 	t.Helper()
 	row, err := checkExactlyOneRow(t, name)
 	if err != nil {
@@ -101,7 +101,7 @@ func CheckDistributionData(t test.T, name string, wantTags map[string]string, ex
 
 // CheckDistributionRange checks the view with a name matching string name to verify that the DistributionData stats reported
 // are tagged with the tags in wantTags and that expectedCount number of records were reported.
-func CheckDistributionCount(t test.T, name string, wantTags map[string]string, expectedCount int64) {
+func CheckDistributionCount(t *testing.T, name string, wantTags map[string]string, expectedCount int64) {
 	t.Helper()
 	row, err := checkExactlyOneRow(t, name)
 	if err != nil {
@@ -119,13 +119,13 @@ func CheckDistributionCount(t test.T, name string, wantTags map[string]string, e
 }
 
 // GetLastValueData returns the last value for the given metric, verifying tags.
-func GetLastValueData(t test.T, name string, tags map[string]string) float64 {
+func GetLastValueData(t *testing.T, name string, tags map[string]string) float64 {
 	t.Helper()
 	return GetLastValueDataWithMeter(t, name, tags, nil)
 }
 
 // GetLastValueDataWithMeter returns the last value of the given metric using meter, verifying tags.
-func GetLastValueDataWithMeter(t test.T, name string, tags map[string]string, meter view.Meter) float64 {
+func GetLastValueDataWithMeter(t *testing.T, name string, tags map[string]string, meter view.Meter) float64 {
 	t.Helper()
 	if row := lastRow(t, name, meter); row != nil {
 		checkRowTags(t, row, name, tags)
@@ -141,7 +141,7 @@ func GetLastValueDataWithMeter(t test.T, name string, tags map[string]string, me
 
 // CheckLastValueData checks the view with a name matching string name to verify that the LastValueData stats
 // reported are tagged with the tags in wantTags and that wantValue matches reported last value.
-func CheckLastValueData(t test.T, name string, wantTags map[string]string, wantValue float64) {
+func CheckLastValueData(t *testing.T, name string, wantTags map[string]string, wantValue float64) {
 	t.Helper()
 	CheckLastValueDataWithMeter(t, name, wantTags, wantValue, nil)
 }
@@ -149,7 +149,7 @@ func CheckLastValueData(t test.T, name string, wantTags map[string]string, wantV
 // CheckLastValueDataWithMeter checks the  view with a name matching the string name in the
 // specified Meter (resource-specific view) to verify that the LastValueData stats are tagged with
 // the tags in wantTags and that wantValue matches the last reported value.
-func CheckLastValueDataWithMeter(t test.T, name string, wantTags map[string]string, wantValue float64, meter view.Meter) {
+func CheckLastValueDataWithMeter(t *testing.T, name string, wantTags map[string]string, wantValue float64, meter view.Meter) {
 	t.Helper()
 	if v := GetLastValueDataWithMeter(t, name, wantTags, meter); v != wantValue {
 		t.Error("Reporter.Report() wrong value", "metric", name, "got", v, "want", wantValue)
@@ -158,7 +158,7 @@ func CheckLastValueDataWithMeter(t test.T, name string, wantTags map[string]stri
 
 // CheckSumData checks the view with a name matching string name to verify that the SumData stats
 // reported are tagged with the tags in wantTags and that wantValue matches the reported sum.
-func CheckSumData(t test.T, name string, wantTags map[string]string, wantValue float64) {
+func CheckSumData(t *testing.T, name string, wantTags map[string]string, wantValue float64) {
 	t.Helper()
 	row, err := checkExactlyOneRow(t, name)
 	if err != nil {
@@ -192,7 +192,7 @@ func Unregister(names ...string) {
 	}
 }
 
-func lastRow(t test.T, name string, meter view.Meter) *view.Row {
+func lastRow(t *testing.T, name string, meter view.Meter) *view.Row {
 	t.Helper()
 	var d []*view.Row
 	var err error
@@ -213,7 +213,7 @@ func lastRow(t test.T, name string, meter view.Meter) *view.Row {
 	return d[len(d)-1]
 }
 
-func checkExactlyOneRow(t test.T, name string) (*view.Row, error) {
+func checkExactlyOneRow(t *testing.T, name string) (*view.Row, error) {
 	rows, err := readRowsFromAllMeters(name)
 	if err != nil || len(rows) == 0 {
 		return nil, fmt.Errorf("could not find row for %q", name)
@@ -242,7 +242,7 @@ func readRowsFromAllMeters(name string) ([]*view.Row, error) {
 	return rows, nil
 }
 
-func checkRowTags(t test.T, row *view.Row, name string, wantTags map[string]string) {
+func checkRowTags(t *testing.T, row *view.Row, name string, wantTags map[string]string) {
 	t.Helper()
 	if wantlen, gotlen := len(wantTags), len(row.Tags); gotlen != wantlen {
 		t.Error("Reporter got wrong number of tags", "metric", name, "got", gotlen, "want", wantlen)

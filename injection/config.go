@@ -17,8 +17,10 @@ limitations under the License.
 package injection
 
 import (
+	"context"
 	"errors"
 	"flag"
+	"fmt"
 	"log"
 	"math"
 	"os"
@@ -33,6 +35,16 @@ import (
 // ParseAndGetRESTConfigOrDie parses the rest config flags and creates a client or
 // dies by calling log.Fatalf.
 func ParseAndGetRESTConfigOrDie() *rest.Config {
+	_, cfg, err := ParseAndGetRESTConfig(context.Background())
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	return cfg
+}
+
+// ParseAndGetRESTConfig parses the rest config flags and creates a client.
+func ParseAndGetRESTConfig(ctx context.Context) (context.Context, *rest.Config, error) {
 	var (
 		serverURL = flag.String("server", "",
 			"The address of the Kubernetes API server. Overrides any value in kubeconfig. Only required if out-of-cluster.")
@@ -45,22 +57,24 @@ func ParseAndGetRESTConfigOrDie() *rest.Config {
 	klog.InitFlags(flag.CommandLine)
 	flag.Parse()
 
+	ctx = WithKubeConfigPath(ctx, *kubeconfig)
+
 	cfg, err := GetRESTConfig(*serverURL, *kubeconfig)
 	if err != nil {
-		log.Fatal("Error building kubeconfig: ", err)
+		return ctx, nil, fmt.Errorf("error building kubeconfig: %s", err)
 	}
 
 	if *burst < 0 {
-		log.Fatal("Invalid burst value", *burst)
+		return ctx, nil, fmt.Errorf("invalid burst value %d", *burst)
 	}
 	if *qps < 0 || *qps > math.MaxFloat32 {
-		log.Fatal("Invalid QPS value", *qps)
+		return ctx, nil, fmt.Errorf("invalid QPS value %f", *qps)
 	}
 
 	cfg.Burst = *burst
 	cfg.QPS = float32(*qps)
 
-	return cfg
+	return ctx, cfg, nil
 }
 
 // GetRESTConfig returns a rest.Config to be used for kubernetes client creation.

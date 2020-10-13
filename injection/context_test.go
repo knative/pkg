@@ -56,3 +56,18 @@ func TestContextConfig(t *testing.T) {
 		t.Errorf("GetConfig() = %v, wanted %v", cfg, want)
 	}
 }
+
+func TestWithKubeConfigPath(t *testing.T) {
+	ctx := context.Background()
+
+	if cfg := GetKubeConfigPath(ctx); cfg != "" {
+		t.Errorf("GetKubeConfigPath() = %v, wanted \"\"", cfg)
+	}
+
+	want := "foo/bar"
+	ctx = WithKubeConfigPath(ctx, want)
+
+	if cfg := GetKubeConfigPath(ctx); cfg != want {
+		t.Errorf("GetKubeConfigPath() = %v, wanted %v", cfg, want)
+	}
+}

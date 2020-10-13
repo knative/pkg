@@ -66,3 +66,20 @@ func GetConfig(ctx context.Context) *rest.Config {
 	}
 	return value.(*rest.Config)
 }
+
+// kubeconfigKey is the key that the `--kubeconfig` flag was set to..
+type kubeconfigKey struct{}
+
+// WithKubeConfigPath associates a given kubeconfig path with the context.
+func WithKubeConfigPath(ctx context.Context, cfg string) context.Context {
+	return context.WithValue(ctx, kubeconfigKey{}, cfg)
+}
+
+// GetKubeConfigPath gets the `--kubeconfig` flag path from the context.
+func GetKubeConfigPath(ctx context.Context) string {
+	value := ctx.Value(kubeconfigKey{})
+	if value == nil {
+		return ""
+	}
+	return value.(string)
+}

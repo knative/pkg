@@ -21,7 +21,10 @@ package test
 
 import (
 	"bytes"
+	"context"
 	"flag"
+	"k8s.io/client-go/rest"
+	"knative.dev/pkg/injection"
 	"os"
 	"sync"
 	"text/template"
@@ -30,9 +33,28 @@ import (
 	"knative.dev/pkg/test/logging"
 )
 
+var (
+	// Flags holds the command line flags or defaults for settings in the user's environment.
+	// See EnvironmentFlags for a list of supported fields.
+	// Deprecated: use GetFlags()
+	Flags = GetFlags()
+)
+
+// TODO: remove this when Flags is deleted.
+func init() {
+	// HACK HACK HACK
+	injection.Default.RegisterClient(func(ctx context.Context, _ *rest.Config) context.Context {
+		// This will happen after all init methods are called.
+		Flags.Kubeconfig = injection.GetKubeConfigPath(ctx)
+		return ctx
+	})
+}
+
 // EnvironmentFlags define the flags that are needed to run the e2e tests.
 type EnvironmentFlags struct {
-	Cluster              string        // K8s cluster (defaults to cluster in kubeconfig)
+	Cluster string // K8s cluster (defaults to cluster in kubeconfig)
+	// Deprecated: Use injection.GetConfig(ctx)
+	Kubeconfig           string        // Path to kubeconfig (defaults to ./kube/config)
 	Namespace            string        // K8s namespace (blank by default, to be overwritten by test suite)
 	IngressEndpoint      string        // Host to use for ingress endpoint
 	ImageTemplate        string        // Template to build the image reference (defaults to {{.Repository}}/{{.Name}}:{{.Tag}})
@@ -49,7 +71,7 @@ var (
 
 // Flags holds the command line flags or defaults for settings in the user's environment.
 // See EnvironmentFlags for a list of supported fields.
-func Flags() *EnvironmentFlags {
+func GetFlags() *EnvironmentFlags {
 	fonce.Do(func() {
 		flags = new(EnvironmentFlags)
 		flag.StringVar(&flags.Cluster, "cluster", "",
@@ -85,7 +107,7 @@ func SetupLoggingFlags() {
 
 // ImagePath is a helper function to transform an image name into an image reference that can be pulled.
 func ImagePath(name string) string {
-	tpl, err := template.New("image").Parse(Flags().ImageTemplate)
+	tpl, err := template.New("image").Parse(GetFlags().ImageTemplate)
 	if err != nil {
 		panic("could not parse image template: " + err.Error())
 	}
@@ -96,9 +118,9 @@ func ImagePath(name string) string {
 		Name       string
 		Tag        string
 	}{
-		Repository: Flags().DockerRepo,
+		Repository: GetFlags().DockerRepo,
 		Name:       name,
-		Tag:        Flags().Tag,
+		Tag:        GetFlags().Tag,
 	}); err != nil {
 		panic("could not apply the image template: " + err.Error())
 	}
