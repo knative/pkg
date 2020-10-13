@@ -24,7 +24,6 @@ import (
 	"os"
 	"time"
 
-	"go.opencensus.io/stats/view"
 	"go.uber.org/automaxprocs/maxprocs" // automatically set GOMAXPROCS based on cgroups
 	"go.uber.org/zap"
 	"golang.org/x/sync/errgroup"
@@ -161,7 +160,7 @@ func MainWithConfig(ctx context.Context, component string, cfg *rest.Config, cto
 	log.Printf("Registering %d informers", len(injection.Default.GetInformers()))
 	log.Printf("Registering %d controllers", len(ctors))
 
-	MemStatsOrDie(ctx)
+	metrics.MemStatsOrDie(ctx)
 
 	// Respect user provided settings, but if omitted customize the default behavior.
 	if cfg.QPS == 0 {
@@ -257,17 +256,6 @@ func flush(logger *zap.SugaredLogger) {
 // Deprecated: use injeciton.ParseAndGetRESTConfigOrDie
 func ParseAndGetConfigOrDie() *rest.Config {
 	return injection.ParseAndGetRESTConfigOrDie()
-}
-
-// MemStatsOrDie sets up reporting on Go memory usage every 30 seconds or dies
-// by calling log.Fatalf.
-func MemStatsOrDie(ctx context.Context) {
-	msp := metrics.NewMemStatsAll()
-	msp.Start(ctx, 30*time.Second)
-
-	if err := view.Register(msp.DefaultViews()...); err != nil {
-		log.Fatal("Error exporting go memstats view: ", err)
-	}
 }
 
 // SetupLoggerOrDie sets up the logger using the config from the given context
