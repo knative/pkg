@@ -30,7 +30,7 @@
 # installed in the Kubernetes cluster, and all the tests will run against
 # Knative Serving / Eventing of this specific version.
 
-source $(dirname $0)/common.sh
+source $(dirname $0)/e2e-common.sh
 
 # Add local dir to have access to built kn
 export PATH=$PATH:${REPO_ROOT_DIR}
