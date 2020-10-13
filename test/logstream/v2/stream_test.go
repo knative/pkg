@@ -59,7 +59,7 @@ var readyStatus = corev1.PodStatus{
 func TestNamespaceStream(t *testing.T) {
 	f := newK8sFake(fake.NewSimpleClientset())
 
-	// We populate this buffer first to avoid races and the need to synchronization
+	// We populate this buffer first to avoid races and the need to synchronize
 	if _, err := f.logBuffer.WriteString("test\n"); err != nil {
 		t.Fatal("WriteString()=", err)
 	}
