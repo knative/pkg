@@ -55,11 +55,12 @@ require (
 	k8s.io/code-generator v0.18.8
 	k8s.io/gengo v0.0.0-20200205140755-e0e292d8aa12
 	k8s.io/klog v1.0.0
-	knative.dev/test-infra v0.0.0-20201009204121-322fb08edae7
+	knative.dev/test-infra v0.0.0-20201013100530-45e0761df397
 	sigs.k8s.io/boskos v0.0.0-20200729174948-794df80db9c9
 )
 
 replace (
+	github.com/google/go-containerregistry => github.com/google/go-containerregistry v0.1.3
 	github.com/prometheus/client_golang => github.com/prometheus/client_golang v0.9.2
 
 	k8s.io/api => k8s.io/api v0.18.8
