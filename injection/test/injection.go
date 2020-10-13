@@ -18,8 +18,9 @@ package test
 
 import (
 	"context"
-	"knative.dev/pkg/signals"
 	"sync"
+
+	"knative.dev/pkg/signals"
 
 	"knative.dev/pkg/injection"
 )

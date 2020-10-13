@@ -22,9 +22,10 @@ package test
 import (
 	"context"
 	"fmt"
-	"k8s.io/client-go/kubernetes"
 	"strings"
 	"time"
+
+	"k8s.io/client-go/kubernetes"
 
 	"github.com/google/go-cmp/cmp"
 	appsv1 "k8s.io/api/apps/v1"
