@@ -21,6 +21,10 @@ import (
 	"os"
 	"sync"
 
+	"k8s.io/client-go/kubernetes"
+
+	"knative.dev/pkg/injection"
+	injectiontest "knative.dev/pkg/injection/test"
 	"knative.dev/pkg/system"
 	"knative.dev/pkg/test"
 	"knative.dev/pkg/test/helpers"
@@ -34,17 +38,19 @@ type Canceler = logstreamv2.Canceler
 // Start begins streaming the logs from system components with a `key:` matching
 // `test.ObjectNameForTest(t)` to `t.Log`.  It returns a Canceler, which must
 // be called before the test completes.
-func Start(ctx context.Context, t test.TLegacy) Canceler {
+func Start(t test.TLegacy) Canceler {
 	// Do this lazily to make import ordering less important.
 	once.Do(func() {
 		if ns := os.Getenv(system.NamespaceEnvKey); ns != "" {
-			kc, err := test.NewKubeClient(test.Flags.Kubeconfig, test.Flags.Cluster)
+			ctx := injectiontest.InjectionContext()
+
+			k, err := kubernetes.NewForConfig(injection.GetConfig(ctx))
 			if err != nil {
-				t.Error("Error loading client config", "error", err)
+				t.Error("Error creating kubernetes client", "error", err)
 				return
 			}
 
-			stream = &shim{logstreamv2.FromNamespace(context.TODO(), kc.Kube, ns)}
+			stream = &shim{logstreamv2.FromNamespace(context.TODO(), k, ns)}
 
 		} else {
 			// Otherwise set up a null stream.
@@ -52,11 +58,11 @@ func Start(ctx context.Context, t test.TLegacy) Canceler {
 		}
 	})
 
-	return stream.Start(ctx, t)
+	return stream.Start(t)
 }
 
 type streamer interface {
-	Start(ctx context.Context, t test.TLegacy) Canceler
+	Start(t test.TLegacy) Canceler
 }
 
 var (

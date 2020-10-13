@@ -47,7 +47,7 @@ func CheckStatsNotReported(t test.T, names ...string) {
 	for _, name := range names {
 		d, err := readRowsFromAllMeters(name)
 		// err == nil means a valid stat exists matching "name"
-		// len(d) > 0 means a component recorded metrics for that stat
+		// len(d) > 0 mean a component recorded metrics for that stat
 		if err == nil && len(d) > 0 {
 			t.Error("For metric, unexpected data reported when no data was expected.", "metric", name, "Reporter len(d)", len(d))
 		}
