@@ -18,6 +18,7 @@ package test
 
 import (
 	"context"
+	"knative.dev/pkg/signals"
 	"sync"
 
 	"knative.dev/pkg/injection"
@@ -38,7 +39,7 @@ func InjectionContext() context.Context {
 		cfg.Burst = 200
 
 		var startInformers func()
-		injectionContext, startInformers = injection.EnableInjectionOrDie(nil, cfg)
+		injectionContext, startInformers = injection.EnableInjectionOrDie(signals.NewContext(), cfg)
 		startInformers()
 	})
 	return injectionContext
