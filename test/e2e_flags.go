@@ -23,12 +23,13 @@ import (
 	"bytes"
 	"context"
 	"flag"
-	"k8s.io/client-go/rest"
-	"knative.dev/pkg/injection"
 	"os"
 	"sync"
 	"text/template"
 	"time"
+
+	"k8s.io/client-go/rest"
+	"knative.dev/pkg/injection"
 
 	"knative.dev/pkg/test/logging"
 )
