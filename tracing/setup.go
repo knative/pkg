@@ -27,28 +27,6 @@ import (
 	"knative.dev/pkg/tracing/config"
 )
 
-var (
-	// OnePercentSampling is a configuration that samples 1% of the requests.
-	// TODO(#1712): Remove this and pull "static" configuration from the
-	// environment instead.
-	OnePercentSampling = &config.Config{
-		Backend:        config.Zipkin,
-		Debug:          false,
-		SampleRate:     0.01,
-		ZipkinEndpoint: "http://zipkin.istio-system.svc.cluster.local:9411/api/v2/spans",
-	}
-
-	// AlwaysSample is a configuration that samples 100% of the requests and sends them to Zipkin.
-	// It is expected to be used only for testing purposes (e.g. in e2e tests).
-	// TODO(#1712): Remove this and pull "static" configuration from the environment instead.
-	AlwaysSample = &config.Config{
-		Backend:        config.Zipkin,
-		Debug:          true,
-		SampleRate:     1.0,
-		ZipkinEndpoint: "http://zipkin.istio-system.svc.cluster.local:9411/api/v2/spans",
-	}
-)
-
 // setupPublishing sets up trace publishing for the process. Note that other pieces
 // still need to generate the traces, this just ensures that if generated, they are collected
 // appropriately. This is normally done by using tracing.HTTPSpanMiddleware as a middleware HTTP
