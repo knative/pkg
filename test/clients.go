@@ -34,6 +34,7 @@ import (
 )
 
 // KubeClient holds instances of interfaces for making requests to kubernetes client.
+// Deprecated: use a kubeclient and the helper methods in test.
 type KubeClient struct {
 	kubernetes.Interface
 }
@@ -47,6 +48,7 @@ func NewSpoofingClient(ctx context.Context, client *KubeClient, logf logging.For
 
 // NewKubeClient instantiates and returns several clientsets required for making request to the
 // kube client specified by the combination of clusterName and configPath. Clients can make requests within namespace.
+// Deprecated: use a kubeclient and the helper methods in test.
 func NewKubeClient(configPath string, clusterName string) (*KubeClient, error) {
 	cfg, err := BuildClientConfig(configPath, clusterName)
 	if err != nil {
