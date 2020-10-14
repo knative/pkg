@@ -67,7 +67,7 @@ jobs:
           - repo: net-contour
             org: knative-sandbox
           - repo: net-http01
-            org: knative  -sandbox
+            org: knative-sandbox
           - repo: net-istio
             org: knative-sandbox
           - repo: net-kourier
