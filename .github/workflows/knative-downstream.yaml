@@ -21,7 +21,7 @@ on:
 jobs:
 
   downstream-knative:
-    name: Downstream Test
+    name: Unit Test
     strategy:
       matrix:
         downstream: # only for github.com/knative
@@ -58,7 +58,7 @@ jobs:
 
 
   downstream-knative-sandbox:
-    name: Downstream Test
+    name: Unit Test
     strategy:
       matrix:
         downstream: # only for github.com/knative-sandbox
