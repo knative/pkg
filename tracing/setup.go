@@ -20,8 +20,6 @@ import (
 	"fmt"
 
 	"go.uber.org/zap"
-	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"knative.dev/pkg/configmap"
 	"knative.dev/pkg/tracing/config"
@@ -69,29 +67,13 @@ func SetupDynamicPublishing(logger *zap.SugaredLogger, configMapWatcher *configm
 	}
 
 	// Set up our config store.
-	configStore := configmap.NewDefaultUntypedStore(
-		"tracing-config",
+	configStore := configmap.NewUntypedStore(
+		"config-tracing-store",
 		logger,
-		[]configmap.DefaultConstructor{{
-			Default:     enableZeroSamplingCM(configMapWatcher.Namespace, tracingConfigName),
-			Constructor: config.NewTracingConfigFromConfigMap,
-		}},
+		configmap.Constructors{
+			"config-tracing": config.NewTracingConfigFromConfigMap,
+		},
 		tracerUpdater)
 	configStore.WatchConfigs(configMapWatcher)
 	return nil
-}
-
-func enableZeroSamplingCM(ns string, tracingConfigName string) corev1.ConfigMap {
-	return corev1.ConfigMap{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      tracingConfigName,
-			Namespace: ns,
-		},
-		Data: map[string]string{
-			"backend":         "zipkin",
-			"debug":           "False",
-			"sample-rate":     "0",
-			"zipkin-endpoint": "http://zipkin.istio-system.svc.cluster.local:9411/api/v2/spans",
-		},
-	}
 }

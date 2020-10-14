@@ -149,6 +149,9 @@ func NewTracingConfigFromMap(cfgMap map[string]string) (*Config, error) {
 
 // NewTracingConfigFromConfigMap returns a Config for the given configmap
 func NewTracingConfigFromConfigMap(config *corev1.ConfigMap) (*Config, error) {
+	if config == nil {
+		return NewTracingConfigFromMap(map[string]string{})
+	}
 	return NewTracingConfigFromMap(config.Data)
 }
 
