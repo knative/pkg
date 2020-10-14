@@ -58,7 +58,7 @@ func TestNewConfigSuccess(t *testing.T) {
 	}{{
 		name:   "Empty map",
 		input:  map[string]string{},
-		output: defaultConfig(),
+		output: NoopConfig(),
 	}, {
 		name: "Everything enabled (legacy)",
 		input: map[string]string{
@@ -145,7 +145,7 @@ func TestNewConfigJson(t *testing.T) {
 	}{{
 		name:   "Empty map",
 		input:  map[string]string{},
-		output: defaultConfig(),
+		output: NoopConfig(),
 	}, {
 		name: "Everything enabled (legacy)",
 		input: map[string]string{
