@@ -23,6 +23,7 @@ jobs:
   downstream-knative:
     name: Unit Test
     strategy:
+      fail-fast: false # Keep running if one leg fails.
       matrix:
         downstream: # only for github.com/knative
           - serving
@@ -60,6 +61,7 @@ jobs:
   downstream-knative-sandbox:
     name: Unit Test
     strategy:
+      fail-fast: false # Keep running if one leg fails.
       matrix:
         downstream: # only for github.com/knative-sandbox
           - discovery
@@ -67,7 +69,6 @@ jobs:
           - eventing-awssqs
           - eventing-camel
           - eventing-ceph
-          - eventing-contrib
           - eventing-couchdb
           - eventing-github
           - eventing-gitlab
