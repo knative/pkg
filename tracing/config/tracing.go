@@ -67,7 +67,7 @@ func (cfg *Config) Equals(other *Config) bool {
 	return reflect.DeepEqual(other, cfg)
 }
 
-// NoopConfig returns a new noop default config
+// NoopConfig returns a new noop config
 func NoopConfig() *Config {
 	return &Config{
 		Backend:    None,
