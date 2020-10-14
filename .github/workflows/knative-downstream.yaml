@@ -91,7 +91,7 @@ jobs:
       uses: actions/checkout@v2
       with:
         repository: ${{ matrix.org }}/${{ matrix.repo }}
-        path: ./src/knative.dev/${{ matrix.org }}
+        path: ./src/knative.dev/${{ matrix.repo }}
     - name: Test Downstream
       uses: knative-sandbox/downstream-test-go@v1.0.1
       with:
