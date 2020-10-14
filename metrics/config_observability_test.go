@@ -44,7 +44,7 @@ func TestObservabilityConfiguration(t *testing.T) {
 			RequestMetricsBackend:  "stackdriver",
 		},
 		data: map[string]string{
-			"logging.enable-probe-request-log":            "true",
+			EnableProbeReqLogKey:                          "true",
 			"logging.enable-var-log-collection":           "true",
 			ReqLogTemplateKey:                             `{"requestMethod": "{{.Request.Method}}"}`,
 			"logging.revision-url-template":               "https://logging.io",
@@ -64,7 +64,7 @@ func TestObservabilityConfiguration(t *testing.T) {
 	}, {
 		name: "observability configuration with request log set and template default",
 		data: map[string]string{
-			"logging.enable-probe-request-log":            "true",
+			EnableProbeReqLogKey:                          "true",
 			EnableReqLogKey:                               "true",
 			"logging.enable-var-log-collection":           "true",
 			"logging.revision-url-template":               "https://logging.io",
@@ -90,7 +90,7 @@ func TestObservabilityConfiguration(t *testing.T) {
 			RequestMetricsBackend:  "stackdriver",
 		},
 		data: map[string]string{
-			"logging.enable-probe-request-log":            "true",
+			EnableProbeReqLogKey:                          "true",
 			EnableReqLogKey:                               "false",
 			"logging.enable-var-log-collection":           "true",
 			ReqLogTemplateKey:                             "",
@@ -102,7 +102,7 @@ func TestObservabilityConfiguration(t *testing.T) {
 		name:    "observability configuration with request log set and template not set",
 		wantErr: true,
 		data: map[string]string{
-			"logging.enable-probe-request-log":            "true",
+			EnableProbeReqLogKey:                          "true",
 			EnableReqLogKey:                               "true",
 			"logging.enable-var-log-collection":           "true",
 			ReqLogTemplateKey:                             "",
@@ -121,7 +121,7 @@ func TestObservabilityConfiguration(t *testing.T) {
 			RequestMetricsBackend:  "stackdriver",
 		},
 		data: map[string]string{
-			"logging.enable-probe-request-log":            "true",
+			EnableProbeReqLogKey:                          "true",
 			"logging.enable-var-log-collection":           "true",
 			ReqLogTemplateKey:                             `{"requestMethod": "{{.Request.Method}}"}`,
 			"logging.revision-url-template":               "https://logging.io",
