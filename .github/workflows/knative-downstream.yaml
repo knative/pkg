@@ -20,211 +20,89 @@ on:
 
 jobs:
 
-  downstream-serving:
-    name: Serving
+  downstream-knative:
+    name: Downstream Test
     strategy:
       matrix:
-        go-version: [1.14.x]
-        platform: [ubuntu-latest]
-
-    runs-on: ${{ matrix.platform }}
-
+        downstream: # only for github.com/knative
+          - serving
+          - networking
+          - eventing
+          - operator
+          - client
+    runs-on: ubuntu-latest
     env:
       GOPATH: ${{ github.workspace }}
-
     steps:
-
-    - name: Set up Go ${{ matrix.go-version }}
+    - name: Set up Go 1.15.x
       uses: actions/setup-go@v2
       with:
-        go-version: ${{ matrix.go-version }}
-      id: go
-
+        go-version: 1.15.x
     - name: Install Dependencies
       run: |
         go get github.com/google/go-licenses
-
     - name: Checkout Upstream
       uses: actions/checkout@v2
       with:
         path: ./src/knative.dev/${{ github.event.repository.name }}
-
     - name: Checkout Downstream
       uses: actions/checkout@v2
       with:
-        repository: knative/serving
-        path: ./src/knative.dev/serving
-
+        repository: knative/${{ matrix.downstream }}
+        path: ./src/knative.dev/${{ matrix.downstream }}
     - name: Test Downstream
       uses: knative-sandbox/downstream-test-go@v1.0.1
       with:
         upstream-module: knative.dev/${{ github.event.repository.name }}
-        downstream-module: knative.dev/serving
+        downstream-module: knative.dev/${{ matrix.downstream }}
 
-  downstream-eventing:
-    name: Eventing
+
+  downstream-knative-sandbox:
+    name: Downstream Test
     strategy:
       matrix:
-        go-version: [1.14.x]
-        platform: [ubuntu-latest]
-
-    runs-on: ${{ matrix.platform }}
-
+        downstream: # only for github.com/knative-sandbox
+          - discovery
+          - eventing-autoscaler-keda
+          - eventing-awssqs
+          - eventing-camel
+          - eventing-ceph
+          - eventing-contrib
+          - eventing-couchdb
+          - eventing-github
+          - eventing-gitlab
+          - eventing-kafka
+          - eventing-kafka-broker
+          - eventing-natss
+          - eventing-prometheus
+          - eventing-rabbitmq
+          - net-certmanager
+          - net-contour
+          - net-http01
+          - net-istio
+          - net-kourier
+    runs-on: ubuntu-latest
     env:
       GOPATH: ${{ github.workspace }}
-
     steps:
-
-    - name: Set up Go ${{ matrix.go-version }}
-      uses: actions/setup-go@v2
-      with:
-        go-version: ${{ matrix.go-version }}
-      id: go
-
-    - name: Install Dependencies
-      run: |
-        go get github.com/google/go-licenses
-
-    - name: Checkout Upstream
-      uses: actions/checkout@v2
-      with:
-        path: ./src/knative.dev/${{ github.event.repository.name }}
-
-    - name: Checkout Downstream
-      uses: actions/checkout@v2
-      with:
-        repository: knative/eventing
-        path: ./src/knative.dev/eventing
-
-    - name: Test Downstream
-      uses: knative-sandbox/downstream-test-go@v1.0.1
-      with:
-        upstream-module: knative.dev/${{ github.event.repository.name }}
-        downstream-module: knative.dev/eventing
-
-  downstream-eventing-contrib:
-    name: Eventing Contrib
-    strategy:
-      matrix:
-        go-version: [1.14.x]
-        platform: [ubuntu-latest]
-
-    runs-on: ${{ matrix.platform }}
-
-    env:
-      GOPATH: ${{ github.workspace }}
-
-    steps:
-
-    - name: Set up Go ${{ matrix.go-version }}
-      uses: actions/setup-go@v2
-      with:
-        go-version: ${{ matrix.go-version }}
-      id: go
-
-    - name: Install Dependencies
-      run: |
-        go get github.com/google/go-licenses
-
-    - name: Checkout Upstream
-      uses: actions/checkout@v2
-      with:
-        path: ./src/knative.dev/${{ github.event.repository.name }}
-
-    - name: Checkout Downstream
-      uses: actions/checkout@v2
-      with:
-        repository: knative/eventing-contrib
-        path: ./src/knative.dev/eventing-contrib
-
-    - name: Test Downstream
-      uses: knative-sandbox/downstream-test-go@v1.0.1
-      with:
-        upstream-module: knative.dev/${{ github.event.repository.name }}
-        downstream-module: knative.dev/eventing-contrib
-
-
-  downstream-sample-controller:
-    name: Sample Controller
-    strategy:
-      matrix:
-        go-version: [1.14.x]
-        platform: [ubuntu-latest]
-
-    runs-on: ${{ matrix.platform }}
-
-    env:
-      GOPATH: ${{ github.workspace }}
-
-    steps:
-
-    - name: Set up Go ${{ matrix.go-version }}
-      uses: actions/setup-go@v2
-      with:
-        go-version: ${{ matrix.go-version }}
-      id: go
-
-    - name: Install Dependencies
-      run: |
-        go get github.com/google/go-licenses
-
-    - name: Checkout Upstream
-      uses: actions/checkout@v2
-      with:
-        path: ./src/knative.dev/${{ github.event.repository.name }}
-
-    - name: Checkout Downstream
-      uses: actions/checkout@v2
-      with:
-        repository: knative-sandbox/sample-controller
-        path: ./src/knative.dev/sample-controller
-
-    - name: Test Downstream
-      uses: knative-sandbox/downstream-test-go@v1.0.1
-      with:
-        upstream-module: knative.dev/${{ github.event.repository.name }}
-        downstream-module: knative.dev/sample-controller
-
-
-  downstream-sample-source:
-    name: Sample Source
-    strategy:
-      matrix:
-        go-version: [1.14.x]
-        platform: [ubuntu-latest]
-
-    runs-on: ${{ matrix.platform }}
-
-    env:
-      GOPATH: ${{ github.workspace }}
-
-    steps:
-
-    - name: Set up Go ${{ matrix.go-version }}
-      uses: actions/setup-go@v2
-      with:
-        go-version: ${{ matrix.go-version }}
-      id: go
-
-    - name: Install Dependencies
-      run: |
-        go get github.com/google/go-licenses
-
-    - name: Checkout Upstream
-      uses: actions/checkout@v2
-      with:
-        path: ./src/knative.dev/${{ github.event.repository.name }}
-
-    - name: Checkout Downstream
-      uses: actions/checkout@v2
-      with:
-        repository: knative-sandbox/sample-source
-        path: ./src/knative.dev/sample-source
-
-    - name: Test Downstream
-      uses: knative-sandbox/downstream-test-go@v1.0.1
-      with:
-        upstream-module: knative.dev/${{ github.event.repository.name }}
-        downstream-module: knative.dev/sample-source
-
-
+      - name: Set up Go 1.15.x
+        uses: actions/setup-go@v2
+        with:
+          go-version: 1.15.x
+      - name: Install Dependencies
+        run: |
+          go get github.com/google/go-licenses
+      - name: Checkout Upstream
+        uses: actions/checkout@v2
+        with:
+          path: ./src/knative.dev/${{ github.event.repository.name }}
+      - name: Checkout Downstream
+        uses: actions/checkout@v2
+        with:
+          repository: knative-sandbox/${{ matrix.downstream }}
+          path: ./src/knative.dev/${{ matrix.downstream }}
+      - name: Test Downstream
+        uses: knative-sandbox/downstream-test-go@v1.0.1
+        with:
+          upstream-module: knative.dev/${{ github.event.repository.name }}
+          downstream-module: knative.dev/${{ matrix.downstream }}
