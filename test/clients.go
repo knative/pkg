@@ -35,7 +35,7 @@ import (
 
 // KubeClient holds instances of interfaces for making requests to kubernetes client.
 type KubeClient struct {
-	Kube *kubernetes.Clientset
+	Kube kubernetes.Interface
 }
 
 // NewSpoofingClient returns a spoofing client to make requests
