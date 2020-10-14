@@ -162,8 +162,8 @@ func WaitForChangedEndpoints(ctx context.Context, client kubernetes.Interface, s
 }
 
 // GetConfigMap gets the configmaps for a given namespace
-func GetConfigMap(client *KubeClient, namespace string) k8styped.ConfigMapInterface {
-	return client.Kube.CoreV1().ConfigMaps(namespace)
+func GetConfigMap(client kubernetes.Interface, namespace string) k8styped.ConfigMapInterface {
+	return client.CoreV1().ConfigMaps(namespace)
 }
 
 // DeploymentScaledToZeroFunc returns a func that evaluates if a deployment has scaled to 0 pods
