@@ -20,7 +20,7 @@ import (
 	"testing"
 	"time"
 
-	vegeta "github.com/tsenart/vegeta/lib"
+	vegeta "github.com/tsenart/vegeta/v12/lib"
 )
 
 func TestCombinedPacer(t *testing.T) {
