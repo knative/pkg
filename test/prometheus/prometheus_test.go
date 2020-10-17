@@ -37,21 +37,21 @@ type testPromAPI struct {
 }
 
 // Query performs a query on the prom api
-func (*testPromAPI) Query(c context.Context, query string, ts time.Time) (model.Value, error) {
+func (*testPromAPI) Query(c context.Context, query string, ts time.Time) (model.Value, v1.Warnings, error) {
 	s := model.Sample{Value: expected}
 	var v []*model.Sample
 	v = append(v, &s)
 
-	return model.Vector(v), nil
+	return model.Vector(v), nil, nil
 }
 
 // QueryRange performs a query for the given range.
-func (*testPromAPI) QueryRange(ctx context.Context, query string, r v1.Range) (model.Value, error) {
+func (*testPromAPI) QueryRange(ctx context.Context, query string, r v1.Range) (model.Value, v1.Warnings, error) {
 	s := model.Sample{Value: expected}
 	var v []*model.Sample
 	v = append(v, &s)
 
-	return model.Vector(v), nil
+	return model.Vector(v), nil, nil
 }
 
 func TestRunQuery(t *testing.T) {

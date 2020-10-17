@@ -60,9 +60,6 @@ require (
 )
 
 replace (
-	github.com/google/go-containerregistry => github.com/google/go-containerregistry v0.1.3
-	github.com/prometheus/client_golang => github.com/prometheus/client_golang v0.9.2
-
 	k8s.io/api => k8s.io/api v0.18.8
 	k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.18.8
 	k8s.io/apimachinery => k8s.io/apimachinery v0.18.8
