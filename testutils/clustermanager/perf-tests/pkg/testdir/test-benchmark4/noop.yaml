@@ -13,4 +13,4 @@
 # limitations under the License.
 
 # This file is added for testing the scenario when cluster.yaml does not exist in the benchmark folder.
-# It's necesssary since empty directory will be ignored when we push it to Github.
+# It's necessary since empty directory will be ignored when we push it to Github.
