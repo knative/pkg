@@ -47,28 +47,28 @@ func InitFlags(flagset *flag.FlagSet) {
 
 	f = new(TestEnvironment)
 
-	flag.StringVar(&f.Cluster, "cluster", "",
+	flagset.StringVar(&f.Cluster, "cluster", "",
 		"Provide the cluster to test against. Defaults to the current cluster in kubeconfig.")
 
-	flag.StringVar(&f.Namespace, "namespace", "",
+	flagset.StringVar(&f.Namespace, "namespace", "",
 		"Provide the namespace you would like to use for these tests.")
 
-	flag.StringVar(&f.IngressEndpoint, "ingressendpoint", "", "Provide a static endpoint url to the ingress server used during tests.")
+	flagset.StringVar(&f.IngressEndpoint, "ingressendpoint", "", "Provide a static endpoint url to the ingress server used during tests.")
 
-	flag.StringVar(&f.ImageTemplate, "imagetemplate", "{{.Repository}}/{{.Name}}:{{.Tag}}",
+	flagset.StringVar(&f.ImageTemplate, "imagetemplate", "{{.Repository}}/{{.Name}}:{{.Tag}}",
 		"Provide a template to generate the reference to an image from the test. Defaults to `{{.Repository}}/{{.Name}}:{{.Tag}}`.")
 
-	flag.DurationVar(&f.SpoofRequestInterval, "spoofinterval", 1*time.Second,
+	flagset.DurationVar(&f.SpoofRequestInterval, "spoofinterval", 1*time.Second,
 		"Provide an interval between requests for the SpoofingClient")
 
-	flag.DurationVar(&f.SpoofRequestTimeout, "spooftimeout", 5*time.Minute,
+	flagset.DurationVar(&f.SpoofRequestTimeout, "spooftimeout", 5*time.Minute,
 		"Provide a request timeout for the SpoofingClient")
 
 	defaultRepo := os.Getenv("KO_DOCKER_REPO")
-	flag.StringVar(&f.DockerRepo, "dockerrepo", defaultRepo,
+	flagset.StringVar(&f.DockerRepo, "dockerrepo", defaultRepo,
 		"Provide the uri of the docker repo you have uploaded the test image to using `uploadtestimage.sh`. Defaults to $KO_DOCKER_REPO")
 
-	flag.StringVar(&f.Tag, "tag", "latest", "Provide the version tag for the test images.")
+	flagset.StringVar(&f.Tag, "tag", "latest", "Provide the version tag for the test images.")
 }
 
 // Flags returns the command line flags or defaults for settings in the user's
