@@ -19,15 +19,16 @@ package injection
 import (
 	"errors"
 	"flag"
-	"k8s.io/client-go/rest"
-	"k8s.io/client-go/tools/clientcmd"
-	"k8s.io/klog"
 	"log"
 	"math"
 	"os"
 	"os/user"
 	"path/filepath"
 	"sync"
+
+	"k8s.io/client-go/rest"
+	"k8s.io/client-go/tools/clientcmd"
+	"k8s.io/klog"
 )
 
 // Environment holds the config for flag based config.

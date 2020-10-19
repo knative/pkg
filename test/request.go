@@ -21,12 +21,13 @@ package test
 import (
 	"context"
 	"fmt"
-	"knative.dev/pkg/test/flags"
 	"net/http"
 	"net/url"
 	"strings"
 	"sync"
 	"time"
+
+	"knative.dev/pkg/test/flags"
 
 	"k8s.io/apimachinery/pkg/util/sets"
 	"knative.dev/pkg/test/logging"
