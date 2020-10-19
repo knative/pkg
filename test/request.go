@@ -21,6 +21,7 @@ package test
 import (
 	"context"
 	"fmt"
+	"knative.dev/pkg/test/flags"
 	"net/http"
 	"net/url"
 	"strings"
@@ -171,7 +172,7 @@ func WaitForEndpointState(
 	resolvable bool,
 	opts ...interface{}) (*spoof.Response, error) {
 	return WaitForEndpointStateWithTimeout(ctx, kubeClient, logf, url, inState,
-		desc, resolvable, Flags.SpoofRequestTimeout, opts...)
+		desc, resolvable, flags.Flags().SpoofRequestTimeout, opts...)
 }
 
 // WaitForEndpointStateWithTimeout will poll an endpoint until inState indicates the state is achieved
