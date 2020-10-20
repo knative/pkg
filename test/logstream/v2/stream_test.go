@@ -60,7 +60,7 @@ var readyStatus = corev1.PodStatus{
 }
 
 func TestStreamErr(t *testing.T) {
-	f := newK8sFake(fake.NewSimpleClientset(), errors.New("lookin' good!"))
+	f := newK8sFake(fake.NewSimpleClientset(), errors.New("lookin' good"))
 	stream := logstream.FromNamespace(context.Background(), f, "a-namespace")
 	_, err := stream.StartStream(pod.Name, nil)
 	if err == nil {
