@@ -40,6 +40,12 @@ import (
 	"knative.dev/pkg/test/logstream/v2"
 )
 
+const (
+	noLogTimeout = 100 * time.Millisecond
+	testKey      = "horror-movie-2020"
+	testLine     = `{"level":"debug","ts":"2020-10-20T18:42:28.553Z","logger":"controller.revision-controller.knative.dev-serving-pkg-reconciler-revision.Reconciler","caller":"controller/controller.go:397","msg":"Adding to queue default/s2-nhjv6 (depth: 1)","commit":"4411bf3","knative.dev/pod":"controller-f95b977c-4wlh4","knative.dev/controller":"revision-controller","knative.dev/key":"default/horror-movie-2020", "error":"el-otoño-eternal" }`
+)
+
 var pod = &corev1.Pod{
 	ObjectMeta: metav1.ObjectMeta{
 		Name:      logstream.ChaosDuck,
@@ -60,8 +66,8 @@ var readyStatus = corev1.PodStatus{
 	}},
 }
 
-func TestStreamErr(t *testing.T) {
-	f := newK8sFake(fake.NewSimpleClientset(), errors.New("lookin' good"))
+func TestWatchErr(t *testing.T) {
+	f := newK8sFake(fake.NewSimpleClientset(), errors.New("lookin' good"), nil)
 	stream := logstream.FromNamespace(context.Background(), f, "a-namespace")
 	_, err := stream.StartStream(pod.Name, nil)
 	if err == nil {
@@ -69,11 +75,49 @@ func TestStreamErr(t *testing.T) {
 	}
 }
 
+func TestFailToStartStream(t *testing.T) {
+	pod := pod.DeepCopy()
+	pod.Status = readyStatus
+
+	const want = "hungry for apples"
+	f := newK8sFake(fake.NewSimpleClientset(), nil, /*watcherr*/
+		errors.New(want) /*getlogs err*/)
+
+	logFuncInvoked := make(chan struct{})
+	t.Cleanup(func() { close(logFuncInvoked) })
+	logFunc := func(format string, args ...interface{}) {
+		res := fmt.Sprintf(format, args...)
+		if !strings.Contains(res, want) {
+			t.Errorf("Expected message to contain %q, but message was: %s", want, res)
+		}
+		logFuncInvoked <- struct{}{}
+	}
+	ctx, cancel := context.WithCancel(context.Background())
+	stream := logstream.FromNamespace(ctx, f, pod.Namespace)
+	streamC, err := stream.StartStream(pod.Name, logFunc)
+	if err != nil {
+		t.Fatal("Failed to start the stream: ", err)
+	}
+	t.Cleanup(func() {
+		streamC()
+		cancel()
+	})
+	podClient := f.CoreV1().Pods(pod.Namespace)
+	if _, err := podClient.Create(context.Background(), pod, metav1.CreateOptions{}); err != nil {
+		t.Fatal("CreatePod()=", err)
+	}
+
+	select {
+	case <-time.After(noLogTimeout):
+		t.Error("Timed-out waiting for the logs")
+	case <-logFuncInvoked:
+	}
+}
+
 func TestNamespaceStream(t *testing.T) {
-	noLogTimeout := 100 * time.Millisecond
 	pod := pod.DeepCopy() // Needed to run the test multiple times in a row
 
-	f := newK8sFake(fake.NewSimpleClientset(), nil)
+	f := newK8sFake(fake.NewSimpleClientset(), nil, nil)
 
 	logFuncInvoked := make(chan struct{})
 	t.Cleanup(func() { close(logFuncInvoked) })
@@ -83,7 +127,7 @@ func TestNamespaceStream(t *testing.T) {
 
 	ctx, cancel := context.WithCancel(context.Background())
 	stream := logstream.FromNamespace(ctx, f, pod.Namespace)
-	streamC, err := stream.StartStream(pod.Name, logFunc)
+	streamC, err := stream.StartStream(testKey, logFunc)
 	if err != nil {
 		t.Fatal("Failed to start the stream: ", err)
 	}
@@ -131,6 +175,7 @@ func TestNamespaceStream(t *testing.T) {
 		t.Error("Deletion should not trigger GetLogs")
 	}
 
+	pod.Spec.Containers[0].Name = "goose-with-a-flair"
 	// Create pod with the same name? Why not. And let's make it ready from the get go.
 	if _, err := podClient.Create(context.Background(), pod, metav1.CreateOptions{}); err != nil {
 		t.Fatal("CreatePod()=", err)
@@ -171,11 +216,12 @@ func TestNamespaceStream(t *testing.T) {
 	}
 }
 
-func newK8sFake(c *fake.Clientset, watchErr error) *fakeclient {
+func newK8sFake(c *fake.Clientset, watchErr, logsErr error) *fakeclient {
 	return &fakeclient{
 		Clientset:  c,
 		FakeCoreV1: &fakecorev1.FakeCoreV1{Fake: &c.Fake},
 		watchErr:   watchErr,
+		logsErr:    logsErr,
 	}
 }
 
@@ -183,6 +229,7 @@ type fakeclient struct {
 	*fake.Clientset
 	*fakecorev1.FakeCoreV1
 	watchErr error
+	logsErr  error
 }
 
 type fakePods struct {
@@ -190,6 +237,7 @@ type fakePods struct {
 	v1.PodInterface
 	ns       string
 	watchErr error
+	logsErr  error
 }
 
 func (f *fakePods) Watch(ctx context.Context, lo metav1.ListOptions) (watch.Interface, error) {
@@ -207,6 +255,7 @@ func (f *fakeclient) Pods(ns string) v1.PodInterface {
 		f.FakeCoreV1.Pods(ns),
 		ns,
 		f.watchErr,
+		f.logsErr,
 	}
 }
 
@@ -215,7 +264,8 @@ func (f *fakePods) GetLogs(name string, opts *corev1.PodLogOptions) *restclient.
 		Client: fakerest.CreateHTTPClient(func(request *http.Request) (*http.Response, error) {
 			resp := &http.Response{
 				StatusCode: http.StatusOK,
-				Body:       ioutil.NopCloser(strings.NewReader("hello\n")),
+				Body: ioutil.NopCloser(
+					strings.NewReader(testLine)),
 			}
 			return resp, nil
 		}),
@@ -223,5 +273,9 @@ func (f *fakePods) GetLogs(name string, opts *corev1.PodLogOptions) *restclient.
 		GroupVersion:         schema.GroupVersion{Version: "v1"},
 		VersionedAPIPath:     fmt.Sprintf("/api/v1/namespaces/%s/pods/%s/log", f.ns, name),
 	}
-	return fakeClient.Request()
+	ret := fakeClient.Request()
+	if f.logsErr != nil {
+		ret.Body(f.logsErr)
+	}
+	return ret
 }
