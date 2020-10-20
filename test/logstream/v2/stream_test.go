@@ -155,7 +155,6 @@ func TestNamespaceStream(t *testing.T) {
 	case <-logFuncInvoked:
 		t.Error("No watching should have happened")
 	}
-	// Delete again.
 }
 
 func newK8sFake(c *fake.Clientset, watchErr error) *fakeclient {
