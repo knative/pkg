@@ -114,7 +114,7 @@ func TestNamespaceStream(t *testing.T) {
 	select {
 	case <-time.After(time.Second):
 	case <-logFuncInvoked:
-		t.Error("Repeat updates to the same pod shoould not trigger GetLogs")
+		t.Error("Repeat updates to the same pod should not trigger GetLogs")
 	}
 
 	if err := podClient.Delete(context.Background(), pod.Name, metav1.DeleteOptions{}); err != nil {
@@ -124,7 +124,7 @@ func TestNamespaceStream(t *testing.T) {
 	select {
 	case <-time.After(time.Second):
 	case <-logFuncInvoked:
-		t.Error("Deletion shoould not trigger GetLogs")
+		t.Error("Deletion should not trigger GetLogs")
 	}
 
 	// Create pod with the same name? Why not. And let's make it ready from the get go.
