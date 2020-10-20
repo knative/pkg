@@ -29,6 +29,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes/fake"
 	"k8s.io/client-go/kubernetes/scheme"
@@ -69,6 +70,9 @@ func TestStreamErr(t *testing.T) {
 }
 
 func TestNamespaceStream(t *testing.T) {
+	noLogTimeout := 100 * time.Millisecond
+	pod := pod.DeepCopy() // Needed to run the test multiple times in a row
+
 	f := newK8sFake(fake.NewSimpleClientset(), nil)
 
 	logFuncInvoked := make(chan struct{})
@@ -91,7 +95,7 @@ func TestNamespaceStream(t *testing.T) {
 	}
 
 	select {
-	case <-time.After(time.Second):
+	case <-time.After(noLogTimeout):
 	case <-logFuncInvoked:
 		t.Error("Unready pod should not report logs")
 	}
@@ -102,7 +106,7 @@ func TestNamespaceStream(t *testing.T) {
 	}
 
 	select {
-	case <-time.After(time.Second):
+	case <-time.After(noLogTimeout):
 		t.Error("Timed out: log message wasn't received")
 	case <-logFuncInvoked:
 	}
@@ -112,7 +116,7 @@ func TestNamespaceStream(t *testing.T) {
 	}
 
 	select {
-	case <-time.After(time.Second):
+	case <-time.After(noLogTimeout):
 	case <-logFuncInvoked:
 		t.Error("Repeat updates to the same pod should not trigger GetLogs")
 	}
@@ -122,7 +126,7 @@ func TestNamespaceStream(t *testing.T) {
 	}
 
 	select {
-	case <-time.After(time.Second):
+	case <-time.After(noLogTimeout):
 	case <-logFuncInvoked:
 		t.Error("Deletion should not trigger GetLogs")
 	}
@@ -133,7 +137,7 @@ func TestNamespaceStream(t *testing.T) {
 	}
 
 	select {
-	case <-time.After(time.Second):
+	case <-time.After(noLogTimeout):
 		t.Error("Timed out: log message wasn't received")
 	case <-logFuncInvoked:
 	}
@@ -145,15 +149,25 @@ func TestNamespaceStream(t *testing.T) {
 	// Kill the context.
 	cancel()
 
-	// Re-create pod, but the watch cycle must have finished by now.
-	if _, err := podClient.Create(context.Background(), pod, metav1.CreateOptions{}); err != nil {
-		t.Fatal("CreatePod()=", err)
-	}
+	// We can't assume that the cancel signal doesn't race the pod creation signal, so
+	// we retry a few times to give some leeway.
+	if err := wait.PollImmediate(10*time.Millisecond, time.Second, func() (bool, error) {
+		if _, err := podClient.Create(context.Background(), pod, metav1.CreateOptions{}); err != nil {
+			return false, err
+		}
 
-	select {
-	case <-time.After(time.Second):
-	case <-logFuncInvoked:
-		t.Error("No watching should have happened.")
+		select {
+		case <-time.After(noLogTimeout):
+			return true, nil
+		case <-logFuncInvoked:
+			t.Log("Log was still produced, trying again...")
+			if err := podClient.Delete(context.Background(), pod.Name, metav1.DeleteOptions{}); err != nil {
+				return false, err
+			}
+			return false, nil
+		}
+	}); err != nil {
+		t.Fatal("No watching should have happened", err)
 	}
 }
 
