@@ -71,7 +71,7 @@ func TestStreamErr(t *testing.T) {
 func TestNamespaceStream(t *testing.T) {
 	f := newK8sFake(fake.NewSimpleClientset(), nil)
 
-	logFuncInvoked := make(chan struct{}, 2)
+	logFuncInvoked := make(chan struct{})
 	t.Cleanup(func() { close(logFuncInvoked) })
 	logFunc := func(format string, args ...interface{}) {
 		logFuncInvoked <- struct{}{}
