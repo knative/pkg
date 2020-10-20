@@ -153,7 +153,7 @@ func TestNamespaceStream(t *testing.T) {
 	select {
 	case <-time.After(time.Second):
 	case <-logFuncInvoked:
-		t.Error("No watching should have happened")
+		t.Error("No watching should have happened.")
 	}
 }
 
