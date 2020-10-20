@@ -55,7 +55,7 @@ func Flags() *Environment {
 		flag.StringVar(&env.ServerURL, "server", "",
 			"The address of the Kubernetes API server. Overrides any value in kubeconfig. Only required if out-of-cluster.")
 
-		flag.StringVar(&env.Kubeconfig, "kubeconfig", "",
+		flag.StringVar(&env.Kubeconfig, "kubeconfig", os.Getenv("KUBECONFIG"),
 			"Path to a kubeconfig. Only required if out-of-cluster.")
 
 		flag.IntVar(&env.Burst, "kube-api-burst", 0, "Maximum burst for throttle.")
@@ -97,10 +97,6 @@ func ParseAndGetRESTConfigOrDie() *rest.Config {
 //   3. Fallback to in-cluster config.
 //   4. Fallback to the ~/.kube/config.
 func GetRESTConfig(serverURL, kubeconfig string) (*rest.Config, error) {
-	if kubeconfig == "" {
-		kubeconfig = os.Getenv("KUBECONFIG")
-	}
-
 	// If we have an explicit indication of where the kubernetes config lives, read that.
 	if kubeconfig != "" {
 		c, err := clientcmd.BuildConfigFromFlags(serverURL, kubeconfig)

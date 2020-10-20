@@ -22,6 +22,8 @@ package test
 import (
 	"bytes"
 	"flag"
+	"os/user"
+	"path/filepath"
 	"text/template"
 
 	"knative.dev/pkg/injection"
@@ -50,6 +52,15 @@ func initializeFlags() *EnvironmentFlags {
 
 	f.TestEnvironment = testflags.Flags()
 	f.Environment = injection.Flags()
+
+	// We want to do this defaulting for tests only. The flags are reused between tests
+	// and production code and we want to make sure that production code defaults to
+	// the in-cluster config correctly.
+	if f.Environment.Kubeconfig == "" {
+		if usr, err := user.Current(); err == nil {
+			f.Environment.Kubeconfig = filepath.Join(usr.HomeDir, ".kube", "config")
+		}
+	}
 
 	return f
 }
