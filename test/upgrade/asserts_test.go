@@ -30,7 +30,7 @@ func (a assertions) textContains(haystack string, needles texts) {
 	for _, needle := range needles.elms {
 		if !strings.Contains(haystack, needle) {
 			a.t.Errorf(
-				"expected \"%s\" is not in: `%s`",
+				"expected %q is not in: %q",
 				needle, haystack,
 			)
 		}
