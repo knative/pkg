@@ -40,6 +40,7 @@ import (
 	sd "contrib.go.opencensus.io/exporter/stackdriver"
 	ocmetrics "github.com/census-instrumentation/opencensus-proto/gen-go/agent/metrics/v1"
 	ocresource "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
+	"go.opencensus.io/metric/metricproducer"
 	"go.opencensus.io/resource"
 	"go.opencensus.io/stats"
 	"go.opencensus.io/stats/view"
@@ -59,10 +60,12 @@ import (
 )
 
 var (
-	NamespaceTagKey = tag.MustNewKey(metricskey.LabelNamespaceName)
-	ServiceTagKey   = tag.MustNewKey(metricskey.LabelServiceName)
-	ConfigTagKey    = tag.MustNewKey(metricskey.LabelConfigurationName)
-	RevisionTagKey  = tag.MustNewKey(metricskey.LabelRevisionName)
+	namespaceTagKey = tag.MustNewKey(metricskey.LabelNamespaceName)
+	serviceTagKey   = tag.MustNewKey(metricskey.LabelServiceName)
+	configTagKey    = tag.MustNewKey(metricskey.LabelConfigurationName)
+	revisionTagKey  = tag.MustNewKey(metricskey.LabelRevisionName)
+
+	sortMetricsOption = cmp.Transformer("Sort", sortMetrics)
 )
 
 type metricExtract struct {
@@ -105,23 +108,21 @@ func initSdFake(sdFake *stackDriverFake) error {
 	return nil
 }
 
-func sortMetrics() cmp.Option {
-	return cmp.Transformer("Sort", func(in []metricExtract) []string {
-		out := make([]string, 0, len(in))
-		seen := map[string]int{}
-		for _, m := range in {
-			// Keep only the newest report for a key
-			key := m.Key()
-			if seen[key] == 0 {
-				out = append(out, m.String())
-				seen[key] = len(out) // Store address+1 to avoid doubling first item.
-			} else {
-				out[seen[key]-1] = m.String()
-			}
+func sortMetrics(in []metricExtract) []string {
+	out := make([]string, 0, len(in))
+	seen := make(map[string]int, len(in))
+	for _, m := range in {
+		// Keep only the newest report for a key
+		key := m.Key()
+		if idx := seen[key]; idx == 0 {
+			out = append(out, m.String())
+			seen[key] = len(out) // Store address+1 to avoid doubling first item.
+		} else {
+			out[idx-1] = m.String()
 		}
-		sort.Strings(out)
-		return out
-	})
+	}
+	sort.Strings(out)
+	return out
 }
 
 // Begin table tests for exporters
@@ -146,21 +147,19 @@ func TestMetricsExport(t *testing.T) {
 		}
 	}
 
-	resources := []*resource.Resource{
-		{
-			Type: "revision",
-			Labels: map[string]string{
-				"project":  "p1",
-				"revision": "r1",
-			},
+	resources := []*resource.Resource{{
+		Type: "revision",
+		Labels: map[string]string{
+			"project":  "p1",
+			"revision": "r1",
 		},
-		{
-			Type: "revision",
-			Labels: map[string]string{
-				"project":  "p1",
-				"revision": "r2",
-			},
+	}, {
+		Type: "revision",
+		Labels: map[string]string{
+			"project":  "p1",
+			"revision": "r2",
 		},
+	},
 	}
 	gauge := stats.Int64("testing/value", "Stored value", stats.UnitDimensionless)
 	counter := stats.Int64("export counts", "Times through the export", stats.UnitDimensionless)
@@ -210,7 +209,7 @@ func TestMetricsExport(t *testing.T) {
 			if err != nil {
 				t.Fatalf("failed to read prometheus response: %+v", err)
 			}
-			want := `# HELP testComponent_global_export_counts Count of exports via standard OpenCensus view.
+			const want = `# HELP testComponent_global_export_counts Count of exports via standard OpenCensus view.
 # TYPE testComponent_global_export_counts counter
 testComponent_global_export_counts 2
 # HELP testComponent_resource_global_export_count Count of exports via RegisterResourceView.
@@ -235,17 +234,26 @@ testComponent_testing_value{project="p1",revision="r2"} 1
 			return UpdateExporter(context.Background(), configForBackend(openCensus), logtesting.TestLogger(t))
 		},
 		validate: func(t *testing.T) {
-			// We unregister the views because this is one of two ways to flush
-			// the internal aggregation buffers; the other is to have the
-			// internal reporting period duration tick, which is at least
-			// [new duration] in the future.
-			view.Unregister(globalCounter)
-			UnregisterResourceView(gaugeView, resourceCounter)
-
 			records := []metricExtract{}
+
+			timeout := time.After(8 * time.Second)
 		loop:
 			for {
 				select {
+				case <-timeout:
+					allMeters.lock.Lock()
+					t.Log("allMeters.meters: ", allMeters.meters)
+					for k, v := range allMeters.meters {
+						// t.Logf(" Exporter for %q: %+v", k, v.e)
+						if v.m != nil {
+							meter := v.m.(metricproducer.Producer)
+							t.Logf("  %q  -->   %+v", k, meter.Read())
+						}
+					}
+					allMeters.lock.Unlock()
+					t.Error("Timeout reading input")
+					break loop
+
 				case record := <-ocFake.published:
 					if record == nil {
 						continue loop
@@ -263,16 +271,13 @@ testComponent_testing_value{project="p1",revision="r2"} 1
 							})
 						}
 					}
-					if len(records) >= len(expected) {
+					if len(sortMetrics(records)) >= len(expected) {
 						break loop
 					}
-				case <-time.After(4 * time.Second):
-					t.Error("Timeout reading input")
-					break loop
 				}
 			}
 
-			if diff := cmp.Diff(expected, records, sortMetrics()); diff != "" {
+			if diff := cmp.Diff(expected, records, sortMetricsOption); diff != "" {
 				t.Errorf("Unexpected OpenCensus exports (-want +got):\n%s", diff)
 			}
 		},
@@ -303,7 +308,7 @@ testComponent_testing_value{project="p1",revision="r2"} 1
 					sdFake.srv.GracefulStop()
 				}
 			}
-			if diff := cmp.Diff(expected, records, sortMetrics()); diff != "" {
+			if diff := cmp.Diff(expected, records, sortMetricsOption); diff != "" {
 				t.Errorf("Unexpected Stackdriver exports (-want +got):\n%s", diff)
 			}
 		},
@@ -430,7 +435,7 @@ func TestStackDriverExports(t *testing.T) {
 				Description: "Number of pods that are allocated currently",
 				Measure:     actualPodCountM,
 				Aggregation: view.LastValue(),
-				TagKeys:     []tag.Key{NamespaceTagKey, ServiceTagKey, ConfigTagKey, RevisionTagKey},
+				TagKeys:     []tag.Key{namespaceTagKey, serviceTagKey, configTagKey, revisionTagKey},
 			}
 			desiredPodCountM := stats.Int64(
 				"desired_pods",
@@ -466,10 +471,10 @@ func TestStackDriverExports(t *testing.T) {
 				UnregisterResourceView(desiredPodsCountView, actualPodsCountView, customView)
 			})
 
-			ctx, err := tag.New(context.Background(), tag.Upsert(NamespaceTagKey, "ns"),
-				tag.Upsert(ServiceTagKey, "service"),
-				tag.Upsert(ConfigTagKey, "config"),
-				tag.Upsert(RevisionTagKey, "revision"))
+			ctx, err := tag.New(context.Background(), tag.Upsert(namespaceTagKey, "ns"),
+				tag.Upsert(serviceTagKey, "service"),
+				tag.Upsert(configTagKey, "config"),
+				tag.Upsert(revisionTagKey, "revision"))
 			if err != nil {
 				t.Fatal("Unable to create tags", err)
 			}
@@ -519,7 +524,7 @@ func TestStackDriverExports(t *testing.T) {
 					break loop
 				}
 			}
-			if diff := cmp.Diff(tc.expected, records, sortMetrics()); diff != "" {
+			if diff := cmp.Diff(tc.expected, records, sortMetricsOption); diff != "" {
 				t.Errorf("Unexpected stackdriver knative exports (-want +got):\n%s", diff)
 			}
 		})

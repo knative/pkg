@@ -379,7 +379,8 @@ var defaultMeter = meterExporter{
 }
 
 func (*defaultMeterImpl) Record(*tag.Map, interface{}, map[string]interface{}) {
-	// using an empty option prevents this from being called
+	// using an empty option prevents this from being called, which would cause a loop.
+	panic("Attempted to call Record() method of default Meter.")
 }
 
 // Find calls view.Find

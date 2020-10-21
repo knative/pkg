@@ -14,37 +14,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# This script runs the end-to-end tests for the kn client.
+# This script runs specific integration tests which may be large and
+# not play nicely with other
 
-# If you already have the `KO_DOCKER_REPO` environment variable set and a
-# cluster setup and currently selected in your kubeconfig, call the script
-# with the `--run-tests` argument and it will use the cluster and run the tests.
+source $(dirname $0)/../vendor/knative.dev/test-infra/scripts/e2e-tests.sh
 
-# Calling this script without arguments will create a new cluster in
-# project $PROJECT_ID, start Knative serving, run the tests and delete
-# the cluster.
+e2e_test_dirs=("metrics")
+for module in ${e2e_test_dirs[@]}; do
+    go_test_e2e -timeout=15m ./${module}
+done
 
-# If you call this script after configuring the environment variable
-# $KNATIVE_SERVING_VERSION / $KNATIVE_EVENTING_VERSION with a valid release,
-# e.g. 0.10.0, Knative Serving / Eventing of this specified version will be
-# installed in the Kubernetes cluster, and all the tests will run against
-# Knative Serving / Eventing of this specific version.
-
-# Add local dir to have access to built kn
-export PATH=$PATH:${REPO_ROOT_DIR}
-
-run() {
-  # Create cluster
-  initialize $@
-
-  # Integration test
-  eval integration_test || fail_test
-
-  success
-}
-
-integration_test() {
-  header "Running integration tests for Knative pkg"
-
-  go_test_e2e -timeout=45m ./... || fail_test
-}
