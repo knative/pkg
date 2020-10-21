@@ -929,7 +929,7 @@ k8s.io/utils/buffer
 k8s.io/utils/integer
 k8s.io/utils/pointer
 k8s.io/utils/trace
-# knative.dev/test-infra v0.0.0-20201015231956-d236fb0ea9ff
+# knative.dev/test-infra v0.0.0-20201020210659-8f5dc4814ac3
 ## explicit
 knative.dev/test-infra/scripts
 # sigs.k8s.io/boskos v0.0.0-20200729174948-794df80db9c9
