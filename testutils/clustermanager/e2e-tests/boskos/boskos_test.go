@@ -28,7 +28,7 @@ import (
 
 var (
 	fakeHost = "fakehost"
-	fakeRes  = "{\"name\": \"res\", \"type\": \"t\", \"state\": \"d\"}"
+	fakeRes  = `{"name": "res", "type": "t", "state": "d"}`
 )
 
 // create a fake server as Boskos server, must close() afterwards
