@@ -98,12 +98,12 @@ func TestLinkToBucketAndObject(t *testing.T) {
 		{
 			name: "Invalid gcsUrl - No slash",
 			arg:  "knative-prow-no-object",
-			err:  errors.New("the gsUrl (\"knative-prow-no-object\") cannot be converted to bucket/object"),
+			err:  errors.New(`the gsUrl ("knative-prow-no-object") cannot be converted to bucket/object`),
 		},
 		{
 			name: "Invalid gcsUrl - No object",
 			arg:  "knative-prow/",
-			err:  errors.New("the gsUrl (\"knative-prow/\") cannot be converted to bucket/object"),
+			err:  errors.New(`the gsUrl ("knative-prow/") cannot be converted to bucket/object`),
 		},
 	}
 	for _, tt := range tests {
