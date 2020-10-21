@@ -888,14 +888,15 @@ func TestStartAndShutdown(t *testing.T) {
 	impl := NewImplWithStats(r, TestLogger(t), "Testing", &FakeStatsReporter{})
 
 	ctx, cancel := context.WithCancel(context.Background())
-	t.Cleanup(cancel)
-
 	doneCh := make(chan struct{})
-
 	go func() {
 		defer close(doneCh)
 		StartAll(ctx, impl)
 	}()
+	t.Cleanup(func() {
+		cancel()
+		<-doneCh
+	})
 
 	select {
 	case <-time.After(10 * time.Millisecond):
@@ -953,13 +954,15 @@ func TestStartAndShutdownWithLeaderAwareNoElection(t *testing.T) {
 	impl := NewImplWithStats(r, TestLogger(t), "Testing", &FakeStatsReporter{})
 
 	ctx, cancel := context.WithCancel(context.Background())
-	t.Cleanup(cancel)
 	doneCh := make(chan struct{})
-
 	go func() {
 		defer close(doneCh)
 		StartAll(ctx, impl)
 	}()
+	t.Cleanup(func() {
+		cancel()
+		<-doneCh
+	})
 
 	select {
 	case <-promoted:
@@ -1019,14 +1022,16 @@ func TestStartAndShutdownWithLeaderAwareWithLostElection(t *testing.T) {
 	impl := NewImplWithStats(r, TestLogger(t), "Testing", &FakeStatsReporter{})
 
 	ctx, cancel := context.WithCancel(context.Background())
-	t.Cleanup(cancel)
 	ctx = leaderelection.WithStandardLeaderElectorBuilder(ctx, kc, cc)
 	doneCh := make(chan struct{})
-
 	go func() {
 		defer close(doneCh)
 		StartAll(ctx, impl)
 	}()
+	t.Cleanup(func() {
+		cancel()
+		<-doneCh
+	})
 
 	select {
 	case <-promoted:
@@ -1057,15 +1062,17 @@ func TestStartAndShutdownWithWork(t *testing.T) {
 	impl := NewImplWithStats(r, TestLogger(t), "Testing", reporter)
 
 	ctx, cancel := context.WithCancel(context.Background())
-	t.Cleanup(cancel)
 	doneCh := make(chan struct{})
-
-	impl.EnqueueKey(types.NamespacedName{Namespace: "foo", Name: "bar"})
-
 	go func() {
 		defer close(doneCh)
 		StartAll(ctx, impl)
 	}()
+	t.Cleanup(func() {
+		cancel()
+		<-doneCh
+	})
+
+	impl.EnqueueKey(types.NamespacedName{Namespace: "foo", Name: "bar"})
 
 	select {
 	case <-time.After(10 * time.Millisecond):
@@ -1136,8 +1143,6 @@ func TestStartAndShutdownWithErroringWork(t *testing.T) {
 	impl.EnqueueKey(item)
 
 	ctx, cancel := context.WithTimeout(context.Background(), testTimeout)
-	t.Cleanup(cancel)
-
 	doneCh := make(chan struct{})
 	go func() {
 		defer close(doneCh)
@@ -1145,6 +1150,10 @@ func TestStartAndShutdownWithErroringWork(t *testing.T) {
 		// be until we cancel the context.
 		StartAll(ctx, impl)
 	}()
+	t.Cleanup(func() {
+		cancel()
+		<-doneCh
+	})
 
 	// Keep checking the number of requeues, send to channel to indicate success.
 	itemRequeued := make(chan struct{})
@@ -1188,15 +1197,17 @@ func TestStartAndShutdownWithPermanentErroringWork(t *testing.T) {
 	impl := NewImplWithStats(r, TestLogger(t), "Testing", reporter)
 
 	ctx, cancel := context.WithCancel(context.Background())
-	t.Cleanup(cancel)
 	doneCh := make(chan struct{})
-
-	impl.EnqueueKey(types.NamespacedName{Namespace: "foo", Name: "bar"})
-
 	go func() {
 		defer close(doneCh)
 		StartAll(ctx, impl)
 	}()
+	t.Cleanup(func() {
+		cancel()
+		<-doneCh
+	})
+
+	impl.EnqueueKey(types.NamespacedName{Namespace: "foo", Name: "bar"})
 
 	select {
 	case <-time.After(20 * time.Millisecond):
@@ -1281,13 +1292,15 @@ func TestImplGlobalResync(t *testing.T) {
 	impl := NewImplWithStats(r, TestLogger(t), "Testing", &FakeStatsReporter{})
 
 	ctx, cancel := context.WithCancel(context.Background())
-	t.Cleanup(cancel)
 	doneCh := make(chan struct{})
-
 	go func() {
 		defer close(doneCh)
 		StartAll(ctx, impl)
 	}()
+	t.Cleanup(func() {
+		cancel()
+		<-doneCh
+	})
 
 	impl.GlobalResync(&dummyInformer{})
 

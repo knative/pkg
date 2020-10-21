@@ -51,7 +51,7 @@ type PromProxy struct {
 }
 
 // Setup performs a port forwarding for app prometheus-test in given namespace
-func (p *PromProxy) Setup(ctx context.Context, kubeClientset *kubernetes.Clientset, logf logging.FormatLogger) {
+func (p *PromProxy) Setup(ctx context.Context, kubeClientset kubernetes.Interface, logf logging.FormatLogger) {
 	setupOnce.Do(func() {
 		if err := monitoring.CheckPortAvailability(prometheusPort); err != nil {
 			logf("Prometheus port not available: %v", err)
@@ -101,7 +101,7 @@ func AllowPrometheusSync(logf logging.FormatLogger) {
 func RunQuery(ctx context.Context, logf logging.FormatLogger, promAPI v1.API, query string) (float64, error) {
 	logf("Running prometheus query: %s", query)
 
-	value, err := promAPI.Query(ctx, query, time.Now())
+	value, _, err := promAPI.Query(ctx, query, time.Now())
 	if err != nil {
 		return 0, err
 	}
@@ -113,7 +113,7 @@ func RunQuery(ctx context.Context, logf logging.FormatLogger, promAPI v1.API, qu
 func RunQueryRange(ctx context.Context, logf logging.FormatLogger, promAPI v1.API, query string, r v1.Range) (float64, error) {
 	logf("Running prometheus query: %s", query)
 
-	value, err := promAPI.QueryRange(ctx, query, r)
+	value, _, err := promAPI.QueryRange(ctx, query, r)
 	if err != nil {
 		return 0, err
 	}

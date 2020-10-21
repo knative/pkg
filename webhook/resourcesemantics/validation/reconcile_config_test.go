@@ -374,7 +374,7 @@ func TestNew(t *testing.T) {
 		t.Error("Promote() =", err)
 	}
 
-	// Queue has async moving parts so if we check at the wrong moment, thist might still be 0.
+	// Queue has async moving parts so if we check at the wrong moment, this might still be 0.
 	if wait.PollImmediate(10*time.Millisecond, 250*time.Millisecond, func() (bool, error) {
 		return c.WorkQueue().Len() == 1, nil
 	}) != nil {

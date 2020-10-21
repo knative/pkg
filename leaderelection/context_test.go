@@ -23,7 +23,6 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"sort"
 	"testing"
 	"time"
 
@@ -252,7 +251,6 @@ func TestNewStatefulSetBucketAndSet(t *testing.T) {
 	}
 
 	gotNames := bs.BucketList()
-	sort.Strings(gotNames)
 	if !cmp.Equal(gotNames, wantNames) {
 		t.Errorf("BucketSet.BucketList() = %q, want: %q", gotNames, wantNames)
 	}

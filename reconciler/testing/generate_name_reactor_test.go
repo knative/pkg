@@ -97,7 +97,7 @@ func TestGenerateNameReactor(t *testing.T) {
 			}
 
 			if !lastHandlerInvoked {
-				t.Error("GenreateNameReactor should not interfere with the fake's ReactionChain")
+				t.Error("GenerateNameReactor should not interfere with the fake's ReactionChain")
 			}
 		})
 	}

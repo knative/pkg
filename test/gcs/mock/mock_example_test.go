@@ -57,7 +57,7 @@ func topFunction(c gcs.Client) error {
 }
 
 func Example_topFunction() {
-	mockClient := NewClientMocker()
+	mockClient := newClientMocker()
 
 	// Call to ReadObject, first call should return error, but returns nil
 	// because it is overridden.

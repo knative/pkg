@@ -58,7 +58,7 @@ func TestHappyPathsExact(t *testing.T) {
 
 	thing2 := &Resource{
 		TypeMeta: metav1.TypeMeta{
-			APIVersion: "reffer.knative.dev/v1alpha1",
+			APIVersion: "refer.knative.dev/v1alpha1",
 			Kind:       "Thing2",
 		},
 		ObjectMeta: metav1.ObjectMeta{
@@ -489,7 +489,7 @@ func TestHappyPathsInexact(t *testing.T) {
 
 	thing2 := &Resource{
 		TypeMeta: metav1.TypeMeta{
-			APIVersion: "reffer.knative.dev/v1alpha1",
+			APIVersion: "refer.knative.dev/v1alpha1",
 			Kind:       "Thing2",
 		},
 		ObjectMeta: metav1.ObjectMeta{
@@ -700,7 +700,7 @@ func TestHappyPathsByBoth(t *testing.T) {
 
 	thing2 := &Resource{
 		TypeMeta: metav1.TypeMeta{
-			APIVersion: "reffer.knative.dev/v1alpha1",
+			APIVersion: "refer.knative.dev/v1alpha1",
 			Kind:       "Thing2",
 		},
 		ObjectMeta: metav1.ObjectMeta{

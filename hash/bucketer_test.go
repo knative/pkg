@@ -18,7 +18,6 @@ package hash
 
 import (
 	"reflect"
-	"sort"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -69,7 +68,6 @@ func TestBucketSetList(t *testing.T) {
 	bs := NewBucketSet(buckets)
 
 	got := bs.BucketList()
-	sort.Strings(got)
 	if want := buckets.List(); !reflect.DeepEqual(got, want) {
 		t.Errorf("Name = %q, want: %q, diff(-want,+got):\n%s", got, want, cmp.Diff(want, got))
 	}

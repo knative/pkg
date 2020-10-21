@@ -513,6 +513,76 @@ function add_trap {
   done
 }
 
+# Update go deps.
+# Parameters (parsed as flags):
+#   "--upgrade", bool, do upgrade.
+#   "--release <version>" used with upgrade. The release version to upgrade
+#                         Knative components. ex: --release v0.18. Defaults to
+#                         "master".
+# Additional dependencies can be included in the upgrade by providing them in a
+# global env var: FLOATING_DEPS
+# --upgrade will set GOPROXY to direct unless it is already set.
+function go_update_deps() {
+  cd "${REPO_ROOT_DIR}" || return 1
+
+  export GO111MODULE=on
+  export GOFLAGS=""
+
+  echo "=== Update Deps for Golang"
+
+  local UPGRADE=0
+  local VERSION="master"
+  while [[ $# -ne 0 ]]; do
+    parameter=$1
+    case ${parameter} in
+      --upgrade) UPGRADE=1 ;;
+      --release) shift; VERSION="$1" ;;
+      *) abort "unknown option ${parameter}" ;;
+    esac
+    shift
+  done
+
+  if [[ $UPGRADE == 1 ]]; then
+    echo "--- Upgrading to ${VERSION}"
+    # From shell parameter expansion:
+    # ${parameter:+word}
+    # If parameter is null or unset, nothing is substituted, otherwise the expansion of word is substituted.
+    # -z is if the length of the string, so skip setting GOPROXY if GOPROXY is already set.
+    if [[ -z ${GOPROXY:+skip} ]]; then
+      export GOPROXY=direct
+      echo "Using 'GOPROXY=direct'."
+    else
+      echo "Respecting 'GOPROXY=${GOPROXY}'."
+    fi
+    FLOATING_DEPS+=( $(run_go_tool knative.dev/test-infra/buoy buoy float ${REPO_ROOT_DIR}/go.mod --release ${VERSION} --domain knative.dev) )
+    if [[ ${#FLOATING_DEPS[@]} > 0 ]]; then
+      echo "Floating deps to ${FLOATING_DEPS[@]}"
+      go get -d ${FLOATING_DEPS[@]}
+    else
+      echo "Nothing to upgrade."
+    fi
+  fi
+
+  echo "--- Go mod tidy and vendor"
+
+  # Prune modules.
+  go mod tidy
+  go mod vendor
+
+  echo "--- Removing unwanted vendor files"
+
+  # Remove unwanted vendor files
+  find vendor/ \( -name "OWNERS" -o -name "OWNERS_ALIASES" -o -name "BUILD" -o -name "BUILD.bazel" -o -name "*_test.go" \) -print0 | xargs -0 rm -f
+
+  export GOFLAGS=-mod=vendor
+
+  echo "--- Updating licenses"
+  update_licenses third_party/VENDOR-LICENSE "./..."
+
+  echo "--- Removing broken symlinks"
+  remove_broken_symlinks ./vendor
+}
+
 # Run kntest tool, error out and ask users to install it if it's not currently installed.
 # Parameters: $1..$n - parameters passed to the tool.
 function run_kntest() {
@@ -668,7 +738,7 @@ function get_latest_knative_yaml_source() {
 function shellcheck_new_files() {
   declare -a array_of_files
   local failed=0
-  readarray -t -d '\n' array_of_files < <(list_changed_files)
+  readarray -t array_of_files < <(list_changed_files)
   for filename in "${array_of_files[@]}"; do
     if echo "${filename}" | grep -q "^vendor/"; then
       continue

@@ -31,7 +31,7 @@ require (
 	github.com/prometheus/client_golang v1.6.0
 	github.com/prometheus/common v0.9.1
 	github.com/spf13/pflag v1.0.5
-	github.com/tsenart/vegeta v12.7.1-0.20190725001342-b5f4fca92137+incompatible
+	github.com/tsenart/vegeta/v12 v12.8.4
 	go.opencensus.io v0.22.4
 	go.uber.org/atomic v1.6.0
 	go.uber.org/automaxprocs v1.3.0
@@ -55,13 +55,11 @@ require (
 	k8s.io/code-generator v0.18.8
 	k8s.io/gengo v0.0.0-20200205140755-e0e292d8aa12
 	k8s.io/klog v1.0.0
-	knative.dev/test-infra v0.0.0-20201002164834-8c07ff018549
+	knative.dev/test-infra v0.0.0-20201020210659-8f5dc4814ac3
 	sigs.k8s.io/boskos v0.0.0-20200729174948-794df80db9c9
 )
 
 replace (
-	github.com/prometheus/client_golang => github.com/prometheus/client_golang v0.9.2
-
 	k8s.io/api => k8s.io/api v0.18.8
 	k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.18.8
 	k8s.io/apimachinery => k8s.io/apimachinery v0.18.8

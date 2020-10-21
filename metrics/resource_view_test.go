@@ -70,11 +70,10 @@ func TestOptionForResource(t *testing.T) {
 }
 
 type testExporter struct {
+	view.Exporter
 	id string
 }
 
-func (fe *testExporter) ExportView(vd *view.Data) {}
-func (fe *testExporter) Flush()                   {}
 func TestSetFactory(t *testing.T) {
 	fakeFactory := func(rr *resource.Resource) (view.Exporter, error) {
 		if rr == nil {
@@ -161,7 +160,7 @@ func TestAllMetersExpiration(t *testing.T) {
 
 	// Expire the second entry
 	fakeClock.Step(9 * time.Minute) // t+12m
-	time.Sleep(1 * time.Second)     // Wait a second on the wallclock, so that the cleanup thread has time to finish a loop
+	time.Sleep(time.Second)         // Wait a second on the wallclock, so that the cleanup thread has time to finish a loop
 	allMeters.lock.Lock()
 	if len(allMeters.meters) != 2 {
 		t.Errorf("len(allMeters)=%d, want: 2", len(allMeters.meters))
@@ -187,16 +186,13 @@ func TestResourceAsString(t *testing.T) {
 
 	// Test 5 time since the iteration could be random.
 	for i := 0; i < 5; i++ {
-		s1 := resourceToKey(r1)
-		s2 := resourceToKey(r2)
-		if s1 != s2 {
-			t.Errorf("Expect same resources, but got %s and %s", s1, s2)
+
+		if s1, s2 := resourceToKey(r1), resourceToKey(r2); s1 != s2 {
+			t.Errorf("Expect same resources, but got %q and %q", s1, s2)
 		}
 	}
 
-	s1 := resourceToKey(r1)
-	s3 := resourceToKey(r3)
-	if s1 == s3 {
+	if s1, s3 := resourceToKey(r1), resourceToKey(r3); s1 == s3 {
 		t.Error("Expect different resources, but got the same", s1)
 	}
 }

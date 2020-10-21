@@ -32,80 +32,30 @@ const (
 	duration = 10 * time.Second
 )
 
-type TestPromAPI struct {
-}
-
-// AlertManagers returns an overview of the current state of the Prometheus alert manager discovery.
-func (tpa *TestPromAPI) AlertManagers(ctx context.Context) (v1.AlertManagersResult, error) {
-	return v1.AlertManagersResult{}, nil
-}
-
-// CleanTombstones removes the deleted data from disk and cleans up the existing tombstones.
-func (tpa *TestPromAPI) CleanTombstones(ctx context.Context) error {
-	return nil
-}
-
-// Config returns the current Prometheus configuration.
-func (tpa *TestPromAPI) Config(ctx context.Context) (v1.ConfigResult, error) {
-	return v1.ConfigResult{}, nil
-}
-
-// DeleteSeries deletes data for a selection of series in a time range.
-func (tpa *TestPromAPI) DeleteSeries(ctx context.Context, matches []string, startTime time.Time, endTime time.Time) error {
-	return nil
-}
-
-// Flags returns the flag values that Prometheus was launched with.
-func (tpa *TestPromAPI) Flags(ctx context.Context) (v1.FlagsResult, error) {
-	return v1.FlagsResult{}, nil
-}
-
-// LabelValues performs a query for the values of the given label.
-func (tpa *TestPromAPI) LabelValues(ctx context.Context, label string) (model.LabelValues, error) {
-	return nil, nil
+type testPromAPI struct {
+	v1.API
 }
 
 // Query performs a query on the prom api
-func (tpa *TestPromAPI) Query(c context.Context, query string, ts time.Time) (model.Value, error) {
+func (*testPromAPI) Query(c context.Context, query string, ts time.Time) (model.Value, v1.Warnings, error) {
 	s := model.Sample{Value: expected}
 	var v []*model.Sample
 	v = append(v, &s)
 
-	return model.Vector(v), nil
+	return model.Vector(v), nil, nil
 }
 
 // QueryRange performs a query for the given range.
-func (tpa *TestPromAPI) QueryRange(ctx context.Context, query string, r v1.Range) (model.Value, error) {
+func (*testPromAPI) QueryRange(ctx context.Context, query string, r v1.Range) (model.Value, v1.Warnings, error) {
 	s := model.Sample{Value: expected}
 	var v []*model.Sample
 	v = append(v, &s)
 
-	return model.Vector(v), nil
-}
-
-// Series finds series by label matchers.
-func (tpa *TestPromAPI) Series(context.Context, []string, time.Time, time.Time) ([]model.LabelSet, error) {
-	return nil, nil
-}
-
-// Snapshot creates a snapshot of all current data into snapshots/<datetime>-<rand>
-// under the TSDB's data directory and returns the directory as response.
-func (tpa *TestPromAPI) Snapshot(context.Context, bool) (v1.SnapshotResult, error) {
-	return v1.SnapshotResult{}, nil
-}
-
-// Targets returns an overview of the current state of the Prometheus target discovery.
-func (tpa *TestPromAPI) Targets(context.Context) (v1.TargetsResult, error) {
-	return v1.TargetsResult{}, nil
-}
-
-// getTestAPI gets the test api implementation for prometheus api
-func getTestAPI() *TestPromAPI {
-	return &TestPromAPI{}
+	return model.Vector(v), nil, nil
 }
 
 func TestRunQuery(t *testing.T) {
-	r, err := prometheus.RunQuery(context.Background(), t.Logf, getTestAPI(), query)
+	r, err := prometheus.RunQuery(context.Background(), t.Logf, &testPromAPI{}, query)
 	if err != nil {
 		t.Fatal("Error running query:", err)
 	}
@@ -116,7 +66,7 @@ func TestRunQuery(t *testing.T) {
 
 func TestRunQueryRange(t *testing.T) {
 	r := v1.Range{Start: time.Now(), End: time.Now().Add(duration)}
-	val, err := prometheus.RunQueryRange(context.Background(), t.Logf, getTestAPI(), query, r)
+	val, err := prometheus.RunQueryRange(context.Background(), t.Logf, &testPromAPI{}, query, r)
 	if err != nil {
 		t.Fatal("Error running query:", err)
 	}

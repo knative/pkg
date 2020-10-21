@@ -91,7 +91,7 @@ func TestSetError(t *testing.T) {
 
 	for _, tt := range testCases {
 		t.Run(tt.testname, func(t *testing.T) {
-			mockClient := NewClientMocker()
+			mockClient := newClientMocker()
 			mockClient.SetError(tt.m)
 
 			for k, v := range tt.m {
@@ -277,7 +277,7 @@ func TestClearError(t *testing.T) {
 
 	for _, tt := range testCases {
 		t.Run(tt.testname, func(t *testing.T) {
-			mockClient := NewClientMocker()
+			mockClient := newClientMocker()
 			mockClient.SetError(tt.m)
 			mockClient.ClearError()
 
@@ -338,7 +338,7 @@ func TestClearError(t *testing.T) {
 
 func TestNewStorageBucket(t *testing.T) {
 	ctx := context.Background()
-	mockClient := NewClientMocker()
+	mockClient := newClientMocker()
 	bktName1 := "test-bucket1"
 	project1 := "test-project1"
 	bktName2 := "test-bucket2"
@@ -406,7 +406,7 @@ func TestNewStorageBucket(t *testing.T) {
 
 func TestDeleteStorageBucket(t *testing.T) {
 	ctx := context.Background()
-	mockClient := NewClientMocker()
+	mockClient := newClientMocker()
 	bktName1 := "test-bucket1"
 	project1 := "test-project1"
 
@@ -464,7 +464,7 @@ func TestDeleteStorageBucket(t *testing.T) {
 
 func TestExists(t *testing.T) {
 	ctx := context.Background()
-	mockClient := NewClientMocker()
+	mockClient := newClientMocker()
 	bktName1 := "test-bucket1"
 	project1 := "test-project1"
 	object1 := "object1"
@@ -522,7 +522,7 @@ func TestExists(t *testing.T) {
 
 func TestListChildrenFiles(t *testing.T) {
 	ctx := context.Background()
-	mockClient := NewClientMocker()
+	mockClient := newClientMocker()
 	bktName1 := "test-bucket1"
 	project1 := "test-project1"
 	dir1 := "dir"
@@ -586,7 +586,7 @@ func TestListChildrenFiles(t *testing.T) {
 
 func TestListDirectChildren(t *testing.T) {
 	ctx := context.Background()
-	mockClient := NewClientMocker()
+	mockClient := newClientMocker()
 	bktName1 := "test-bucket1"
 	project1 := "test-project1"
 	dir1 := "dir"
@@ -652,7 +652,7 @@ func TestListDirectChildren(t *testing.T) {
 
 func TestAttrObject(t *testing.T) {
 	ctx := context.Background()
-	mockClient := NewClientMocker()
+	mockClient := newClientMocker()
 	bktName1 := "test-bucket1"
 	project1 := "test-project1"
 	object1 := "dir/object1"
@@ -713,7 +713,7 @@ func TestAttrObject(t *testing.T) {
 
 func TestCopyObject(t *testing.T) {
 	ctx := context.Background()
-	mockClient := NewClientMocker()
+	mockClient := newClientMocker()
 	bktName1 := "test-bucket1"
 	bktName2 := "test-bucket2"
 	project1 := "test-project1"
@@ -805,7 +805,7 @@ func TestCopyObject(t *testing.T) {
 
 func TestReadObject(t *testing.T) {
 	ctx := context.Background()
-	mockClient := NewClientMocker()
+	mockClient := newClientMocker()
 	bktName1 := "test-bucket1"
 	project1 := "test-project1"
 	object1 := "object1"
@@ -862,7 +862,7 @@ func TestReadObject(t *testing.T) {
 
 func TestWriteObject(t *testing.T) {
 	ctx := context.Background()
-	mockClient := NewClientMocker()
+	mockClient := newClientMocker()
 	bktName1 := "test-bucket1"
 	project1 := "test-project1"
 	badBkt := "non-existent-bucket"
@@ -924,7 +924,7 @@ func TestWriteObject(t *testing.T) {
 
 func TestDeleteObject(t *testing.T) {
 	ctx := context.Background()
-	mockClient := NewClientMocker()
+	mockClient := newClientMocker()
 	bktName1 := "test-bucket1"
 	project1 := "test-project1"
 	object1 := "dir/object1"
@@ -974,7 +974,7 @@ func TestDeleteObject(t *testing.T) {
 
 func TestDownload(t *testing.T) {
 	ctx := context.Background()
-	mockClient := NewClientMocker()
+	mockClient := newClientMocker()
 	bktName1 := "test-bucket1"
 	project1 := "test-project1"
 	object1 := "dir/object1"
@@ -1036,7 +1036,7 @@ func TestDownload(t *testing.T) {
 
 func TestUpload(t *testing.T) {
 	ctx := context.Background()
-	mockClient := NewClientMocker()
+	mockClient := newClientMocker()
 	bktName1 := "test-bucket1"
 	project1 := "test-project1"
 	object1 := "dir/object1"

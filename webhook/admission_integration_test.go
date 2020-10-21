@@ -284,7 +284,7 @@ func TestAdmissionInvalidResponseForResource(t *testing.T) {
 	var respPatch []jsonpatch.JsonPatchOperation
 	err = json.Unmarshal(reviewResponse.Response.Patch, &respPatch)
 	if err == nil {
-		t.Fatalf("Expected to fail JSON unmarshal of resposnse")
+		t.Fatalf("Expected to fail JSON unmarshal of response")
 	}
 
 	if got, want := reviewResponse.Response.Result.Status, "Failure"; got != want {

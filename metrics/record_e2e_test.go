@@ -45,6 +45,7 @@ import (
 	"go.opencensus.io/stats"
 	"go.opencensus.io/stats/view"
 	"go.opencensus.io/tag"
+	"k8s.io/apimachinery/pkg/util/wait"
 
 	emptypb "github.com/golang/protobuf/ptypes/empty"
 	"github.com/google/go-cmp/cmp"
@@ -196,7 +197,14 @@ func TestMetricsExport(t *testing.T) {
 	}{{
 		name: "Prometheus",
 		init: func() error {
-			return UpdateExporter(context.Background(), configForBackend(prometheus), logtesting.TestLogger(t))
+			if err := UpdateExporter(context.Background(), configForBackend(prometheus), logtesting.TestLogger(t)); err != nil {
+				return err
+			}
+			// Wait for the webserver to actually start serving metrics
+			return wait.PollImmediate(10*time.Millisecond, 10*time.Second, func() (bool, error) {
+				resp, err := http.Get(fmt.Sprintf("http://localhost:%d/metrics", prometheusPort))
+				return err == nil && resp.StatusCode == http.StatusOK, nil
+			})
 		},
 		validate: func(t *testing.T) {
 			metricstest.EnsureRecorded()
