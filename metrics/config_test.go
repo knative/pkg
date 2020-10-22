@@ -81,7 +81,6 @@ var (
 			ConfigMap: map[string]string{
 				BackendDestinationKey: string(prometheus),
 			},
-			Domain:    "",
 			Component: testComponent,
 		},
 		expectedErr: "metrics domain cannot be empty",
@@ -91,8 +90,7 @@ var (
 			ConfigMap: map[string]string{
 				BackendDestinationKey: string(openCensus),
 			},
-			Domain:    servingDomain,
-			Component: "",
+			Domain: servingDomain,
 		},
 		expectedErr: "metrics component name cannot be empty",
 	}, {
@@ -538,7 +536,7 @@ func TestGetMetricsConfig(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			_, err := createMetricsConfig(ctx, test.ops)
 			if err == nil || err.Error() != test.expectedErr {
-				t.Errorf("Wanted err: %v, got: %v", test.expectedErr, err)
+				t.Errorf("Err = %v, want: %v", err, test.expectedErr)
 			}
 		})
 	}
@@ -923,7 +921,7 @@ func TestMetricsOptions(t *testing.T) {
 	}
 	for n, tc := range testCases {
 		t.Run(n, func(t *testing.T) {
-			jsonOpts, err := MetricsOptionsToJson(tc.opts)
+			jsonOpts, err := MetricsOptionsToJSON(tc.opts)
 			if err != nil {
 				t.Error("error while converting metrics config to json:", err)
 			}
@@ -939,7 +937,7 @@ func TestMetricsOptions(t *testing.T) {
 			// Test to options.
 			{
 				want := tc.opts
-				got, gotErr := JsonToMetricsOptions(jsonOpts)
+				got, gotErr := JSONToMetricsOptions(jsonOpts)
 
 				if gotErr != nil {
 					if diff := cmp.Diff(tc.wantErr, gotErr.Error()); diff != "" {
