@@ -181,17 +181,17 @@ func isNewExporterRequired(newConfig *metricsConfig) bool {
 		return true
 	}
 
-	// If the OpenCensus address has changed, restart the exporter.
-	// TODO(evankanderson): Should we just always restart the opencensus agent?
-	if newConfig.backendDestination == openCensus {
+	switch newConfig.backendDestination {
+	case openCensus:
+		// If the OpenCensus address has changed, restart the exporter.
+		// TODO(evankanderson): Should we just always restart the opencensus agent?
 		return newConfig.collectorAddress != cc.collectorAddress || newConfig.requireSecure != cc.requireSecure
-	}
-
-	if newConfig.backendDestination == prometheus {
+	case prometheus:
 		return newConfig.prometheusPort != cc.prometheusPort
+	case stackdriver:
+		return newConfig.stackdriverClientConfig != cc.stackdriverClientConfig
 	}
-
-	return newConfig.backendDestination == stackdriver && newConfig.stackdriverClientConfig != cc.stackdriverClientConfig
+	return false
 }
 
 // newMetricsExporter gets a metrics exporter based on the config.
