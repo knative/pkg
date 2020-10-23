@@ -165,7 +165,7 @@ func (ac *Reconciler) Reconcile(ctx context.Context, key string) error {
 	// Look up the webhook secret, and fetch the CA cert bundle.
 	secret, err := ac.SecretLister.Secrets(system.Namespace()).Get(ac.SecretName)
 	if err != nil {
-		logging.FromContext(ctx).Errorw("Error fetching secret: ", zap.Error(err))
+		logging.FromContext(ctx).Errorw("Error fetching secret", zap.Error(err))
 		return err
 	}
 	caCert, ok := secret.Data[certresources.CACert]

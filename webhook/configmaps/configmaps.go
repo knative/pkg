@@ -78,7 +78,7 @@ func (ac *reconciler) Reconcile(ctx context.Context, key string) error {
 
 	secret, err := ac.secretlister.Secrets(system.Namespace()).Get(ac.secretName)
 	if err != nil {
-		logger.Errorw("Error fetching secret: ", zap.Error(err))
+		logger.Errorw("Error fetching secret ", zap.Error(err))
 		return err
 	}
 
