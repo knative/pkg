@@ -17,7 +17,6 @@ limitations under the License.
 package metrics
 
 import (
-	"errors"
 	"fmt"
 	"sort"
 	"strings"
@@ -183,7 +182,9 @@ func UnregisterResourceView(views ...*view.View) {
 
 func setFactory(f ResourceExporterFactory) error {
 	if f == nil {
-		return errors.New("do not setFactory(nil)")
+		f = func(*resource.Resource) (view.Exporter, error) {
+			return nil, nil
+		}
 	}
 
 	allMeters.lock.Lock()
@@ -200,7 +201,9 @@ func setFactory(f ResourceExporterFactory) error {
 			continue // Keep trying to clean up remaining Meters.
 		}
 		meter.m.UnregisterExporter(meter.e)
-		meter.m.RegisterExporter(e)
+		if e != nil {
+			meter.m.RegisterExporter(e)
+		}
 		meter.e = e
 	}
 	return retErr
@@ -240,6 +243,7 @@ func ClearMetersForTest() {
 		if k == "" {
 			continue
 		}
+		meter.m.UnregisterExporter(meter.e)
 		meter.m.Stop()
 		delete(allMeters.meters, k)
 	}
@@ -305,8 +309,9 @@ func optionForResource(r *resource.Resource) (stats.Options, error) {
 	if err != nil {
 		return nil, err
 	}
-
-	mE.m.RegisterExporter(exporter)
+	if exporter != nil {
+		mE.m.RegisterExporter(exporter)
+	}
 	mE.e = exporter
 	return mE.o, nil
 }

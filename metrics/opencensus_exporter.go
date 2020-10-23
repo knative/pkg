@@ -54,7 +54,6 @@ func newOpenCensusExporter(config *metricsConfig, logger *zap.SugaredLogger) (vi
 		return nil, nil, err
 	}
 	logger.Infow("Created OpenCensus exporter with config:", zap.Any("config", *config))
-	view.RegisterExporter(e)
 	return e, getFactory(e, opts), nil
 }
 

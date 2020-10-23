@@ -87,6 +87,8 @@ func TestSetFactory(t *testing.T) {
 	resource123.Labels["id"] = "123"
 
 	setFactory(fakeFactory)
+	defer setFactory(nil)
+	defer ClearMetersForTest()
 	// Create the new meter and apply the factory
 	_, err := optionForResource(&resource123)
 	if err != nil {
