@@ -921,7 +921,7 @@ func TestMetricsOptions(t *testing.T) {
 	}
 	for n, tc := range testCases {
 		t.Run(n, func(t *testing.T) {
-			jsonOpts, err := MetricsOptionsToJSON(tc.opts)
+			jsonOpts, err := OptionsToJSON(tc.opts)
 			if err != nil {
 				t.Error("error while converting metrics config to json:", err)
 			}
@@ -937,7 +937,7 @@ func TestMetricsOptions(t *testing.T) {
 			// Test to options.
 			{
 				want := tc.opts
-				got, gotErr := JSONToMetricsOptions(jsonOpts)
+				got, gotErr := JSONToOptions(jsonOpts)
 
 				if gotErr != nil {
 					if diff := cmp.Diff(tc.wantErr, gotErr.Error()); diff != "" {
