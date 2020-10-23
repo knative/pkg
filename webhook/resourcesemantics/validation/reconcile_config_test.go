@@ -78,28 +78,28 @@ func TestReconcile(t *testing.T) {
 		Rule: admissionregistrationv1.Rule{
 			APIGroups:   []string{"pkg.knative.dev"},
 			APIVersions: []string{"v1alpha1"},
-			Resources:   []string{"innerdefaultresources/*"},
+			Resources:   []string{"innerdefaultresources", "innerdefaultresources/status"},
 		},
 	}, {
 		Operations: []admissionregistrationv1.OperationType{"CREATE", "UPDATE", "DELETE"},
 		Rule: admissionregistrationv1.Rule{
 			APIGroups:   []string{"pkg.knative.dev"},
 			APIVersions: []string{"v1alpha1"},
-			Resources:   []string{"resources/*"},
+			Resources:   []string{"resources", "resources/status"},
 		},
 	}, {
 		Operations: []admissionregistrationv1.OperationType{"CREATE", "UPDATE", "DELETE"},
 		Rule: admissionregistrationv1.Rule{
 			APIGroups:   []string{"pkg.knative.dev"},
 			APIVersions: []string{"v1beta1"},
-			Resources:   []string{"resources/*"},
+			Resources:   []string{"resources", "resources/status"},
 		},
 	}, {
 		Operations: []admissionregistrationv1.OperationType{"CREATE", "UPDATE", "DELETE"},
 		Rule: admissionregistrationv1.Rule{
 			APIGroups:   []string{"pkg.knative.io"},
 			APIVersions: []string{"v1alpha1"},
-			Resources:   []string{"innerdefaultresources/*"},
+			Resources:   []string{"innerdefaultresources", "innerdefaultresources/status"},
 		},
 	}}
 
