@@ -246,6 +246,7 @@ func JsonToLoggingConfig(jsonCfg string) (*Config, error) { //nolint No rename d
 }
 
 // JSONToConfig converts a JSON string of a Config.
+// Always returns a non-nil Config.
 func JSONToConfig(jsonCfg string) (*Config, error) {
 	if jsonCfg == "" {
 		return nil, errEmptyJSONLogginString
