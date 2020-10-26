@@ -25,47 +25,47 @@ import (
 )
 
 func TestParseURL(t *testing.T) {
-	testCases := map[string]struct {
+	testCases := []struct {
+		name      string
 		t         string
 		want      *URL
 		wantEmpty bool
 		wantErr   bool
-	}{
-		"empty string": {
-			want:      nil,
-			wantEmpty: true,
+	}{{
+		name:      "empty string",
+		want:      nil,
+		wantEmpty: true,
+	}, {
+		name:      "invalid format",
+		t:         "💩://error",
+		want:      nil,
+		wantEmpty: true,
+		wantErr:   true,
+	}, {
+		name: "relative",
+		t:    "/path/to/something",
+		want: &URL{
+			Path: "/path/to/something",
 		},
-		"invalid format": {
-			t:         "💩://error",
-			want:      nil,
-			wantEmpty: true,
-			wantErr:   true,
+	}, {
+		name: "url",
+		t:    "http://path/to/something",
+		want: &URL{
+			Scheme: "http",
+			Host:   "path",
+			Path:   "/to/something",
 		},
-		"relative": {
-			t: "/path/to/something",
-			want: &URL{
-				Path: "/path/to/something",
-			},
-		},
-		"url": {
-			t: "http://path/to/something",
-			want: &URL{
-				Scheme: "http",
-				Host:   "path",
-				Path:   "/to/something",
-			},
-		},
-		"simplehttp": {
-			t:    "http://foo",
-			want: HTTP("foo"),
-		},
-		"simplehttps": {
-			t:    "https://foo",
-			want: HTTPS("foo"),
-		},
-	}
-	for n, tc := range testCases {
-		t.Run(n, func(t *testing.T) {
+	}, {
+		name: "simplehttp",
+		t:    "http://foo",
+		want: HTTP("foo"),
+	}, {
+		name: "simplehttps",
+		t:    "https://foo",
+		want: HTTPS("foo"),
+	}}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
 
 			got, err := ParseURL(tc.t)
 			if err != nil {
@@ -82,33 +82,33 @@ func TestParseURL(t *testing.T) {
 			}
 
 			if diff := cmp.Diff(tc.want, got); diff != "" {
-				t.Error("unexpected object (-want, +got) =", diff)
+				t.Errorf("Unexpected object (-want, +got) =\n%s", diff)
 			}
 		})
 	}
 }
 
-func TestJsonMarshalURL(t *testing.T) {
-	testCases := map[string]struct {
+func TestJSONMarshalURL(t *testing.T) {
+	testCases := []struct {
+		name string
 		t    string
 		want []byte
-	}{
-		"empty": {},
-		"empty string": {
-			t: "",
-		},
-		"invalid url": {
-			t:    "not a url",
-			want: []byte(`"not%20a%20url"`),
-		},
-		"relative format": {
-			t:    "/path/to/something",
-			want: []byte(`"/path/to/something"`),
-		},
-	}
-	for n, tc := range testCases {
-		t.Run(n, func(t *testing.T) {
-
+	}{{
+		name: "empty",
+	}, {
+		name: "empty string",
+		t:    "",
+	}, {
+		name: "invalid url",
+		t:    "not a url",
+		want: []byte(`"not%20a%20url"`),
+	}, {
+		name: "relative format",
+		t:    "/path/to/something",
+		want: []byte(`"/path/to/something"`),
+	}}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
 			var got []byte
 			tt, err := ParseURL(tc.t)
 			if err != nil {
@@ -120,13 +120,13 @@ func TestJsonMarshalURL(t *testing.T) {
 
 			if diff := cmp.Diff(tc.want, got); diff != "" {
 				t.Log("got:", string(got))
-				t.Error("unexpected object (-want, +got) =", diff)
+				t.Errorf("unexpected object (-want, +got) =\n%s", diff)
 			}
 		})
 	}
 }
 
-func TestJsonUnmarshalURL(t *testing.T) {
+func TestJSONUnmarshalURL(t *testing.T) {
 	testCases := map[string]struct {
 		b       []byte
 		want    *URL
@@ -178,8 +178,7 @@ func TestJsonUnmarshalURL(t *testing.T) {
 	}
 }
 
-func TestJsonMarshalURLAsMember(t *testing.T) {
-
+func TestJSONMarshalURLAsMember(t *testing.T) {
 	type objectType struct {
 		URL URL `json:"url,omitempty"`
 	}
@@ -237,12 +236,11 @@ func TestJsonMarshalURLAsMember(t *testing.T) {
 	}
 }
 
-func TestJsonMarshalURLAsPointerMember(t *testing.T) {
+type objectType struct {
+	URL *URL `json:"url,omitempty"`
+}
 
-	type objectType struct {
-		URL *URL `json:"url,omitempty"`
-	}
-
+func TestJSONMarshalURLAsPointerMember(t *testing.T) {
 	testCases := map[string]struct {
 		obj     *objectType
 		want    []byte
@@ -296,12 +294,10 @@ func TestJsonMarshalURLAsPointerMember(t *testing.T) {
 	}
 }
 
-func TestJsonUnmarshalURLAsMember(t *testing.T) {
-
+func TestJSONUnmarshalURLAsMember(t *testing.T) {
 	type objectType struct {
 		URL URL `json:"url,omitempty"`
 	}
-
 	testCases := map[string]struct {
 		b       []byte
 		want    *objectType
@@ -359,47 +355,46 @@ func TestJsonUnmarshalURLAsMember(t *testing.T) {
 	}
 }
 
-func TestJsonUnmarshalURLAsMemberPointer(t *testing.T) {
-
+func TestJSONUnmarshalURLAsMemberPointer(t *testing.T) {
 	type objectType struct {
 		URL *URL `json:"url,omitempty"`
 	}
-
-	testCases := map[string]struct {
+	testCases := []struct {
+		name    string
 		b       []byte
 		want    *objectType
 		wantErr string
-	}{
-		"zero": {
-			wantErr: "unexpected end of JSON input",
-		},
-		"empty": {
-			b:    []byte(`{}`),
-			want: &objectType{},
-		},
-		"invalid format": {
-			b:       []byte(`{"url":"%"}`),
-			wantErr: `invalid URL escape "%"`,
-		},
-		"relative": {
-			b:    []byte(`{"url":"/path/to/something"}`),
-			want: &objectType{URL: &URL{Path: "/path/to/something"}},
-		},
-		"url": {
-			b: []byte(`{"url":"http://path/to/something"}`),
-			want: &objectType{URL: &URL{
-				Scheme: "http",
-				Host:   "path",
-				Path:   "/to/something",
-			}},
-		},
-		"empty url": {
-			b:    []byte(`{"url":""}`),
-			want: &objectType{URL: &URL{}},
-		},
+	}{{
+		name:    "zero",
+		wantErr: "unexpected end of JSON input",
+	}, {
+		name: "empty",
+		b:    []byte(`{}`),
+		want: &objectType{},
+	}, {
+		name:    "invalid format",
+		b:       []byte(`{"url":"%"}`),
+		wantErr: `invalid URL escape "%"`,
+	}, {
+		name: "relative",
+		b:    []byte(`{"url":"/path/to/something"}`),
+		want: &objectType{URL: &URL{Path: "/path/to/something"}},
+	}, {
+		name: "url",
+		b:    []byte(`{"url":"http://path/to/something"}`),
+		want: &objectType{URL: &URL{
+			Scheme: "http",
+			Host:   "path",
+			Path:   "/to/something",
+		}},
+	}, {
+		name: "empty url",
+		b:    []byte(`{"url":""}`),
+		want: &objectType{URL: &URL{}},
+	},
 	}
-	for n, tc := range testCases {
-		t.Run(n, func(t *testing.T) {
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
 
 			got := &objectType{}
 			err := json.Unmarshal(tc.b, got)
