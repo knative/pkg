@@ -407,33 +407,32 @@ func TestLoggingConfig(t *testing.T) {
 	}}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			json, err := LoggingConfigToJson(tc.cfg)
+			json, err := ConfigToJSON(tc.cfg)
 			if err != nil {
-				t.Error("error while converting logging config to json:", err)
+				t.Error("Error while converting logging config to json:", err)
 			}
 			// Test to json.
-			{
-				want := tc.want
-				got := json
+			t.Run("to JSON", func(t *testing.T) {
+				if got, want := json, tc.want; !cmp.Equal(got, want) {
+					t.Errorf("unexpected (-want, +got) =\n%s", cmp.Diff(want, got))
+				}
+			})
+			t.Run("from JSON", func(t *testing.T) {
+				want := tc.cfg
+				got, gotErr := JSONToConfig(tc.want)
+
+				if gotErr != nil {
+					if diff := cmp.Diff(tc.wantErr, gotErr.Error()); diff != "" {
+						t.Error("unexpected err (-want, +got) =", diff)
+					}
+				} else if tc.wantErr != "" {
+					t.Error("expected err", tc.wantErr)
+				}
+
 				if diff := cmp.Diff(want, got); diff != "" {
-					t.Error("unexpected (-want, +got) =", diff)
+					t.Errorf("Unexpected Config: (-want, +got) =\n%s", diff)
 				}
-			}
-			want := tc.cfg
-			got, gotErr := JsonToLoggingConfig(json)
-
-			if gotErr != nil {
-				if diff := cmp.Diff(tc.wantErr, gotErr.Error()); diff != "" {
-					t.Error("unexpected err (-want, +got) =", diff)
-				}
-			} else if tc.wantErr != "" {
-				t.Error("expected err", tc.wantErr)
-			}
-
-			if diff := cmp.Diff(want, got); diff != "" {
-				t.Error("unexpected (-want, +got) =", diff)
-				t.Log(got)
-			}
+			})
 		})
 	}
 }
