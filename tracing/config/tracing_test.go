@@ -137,7 +137,7 @@ func TestNewConfigSuccess(t *testing.T) {
 	}
 }
 
-func TestNewConfigJson(t *testing.T) {
+func TestNewConfigJSON(t *testing.T) {
 	tt := []struct {
 		name   string
 		input  map[string]string
@@ -216,12 +216,12 @@ func TestNewConfigJson(t *testing.T) {
 				t.Fatal("Failed to create tracing config:", err)
 			}
 
-			json, err := TracingConfigToJson(config)
+			json, err := TracingConfigToJSON(config)
 			if err != nil {
 				t.Fatal("Failed to create tracing config:", err)
 			}
 
-			haveConfig, err := JsonToTracingConfig(json)
+			haveConfig, err := JSONToTracingConfig(json)
 			if err != nil {
 				t.Fatal("Failed to create tracing config:", err)
 			}
