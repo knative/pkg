@@ -48,6 +48,7 @@ require (
 	google.golang.org/protobuf v1.25.0
 	gopkg.in/yaml.v2 v2.3.0
 	gopkg.in/yaml.v3 v3.0.0-20190709130402-674ba3eaed22
+	honnef.co/go/tools v0.0.1-2020.1.5 // indirect
 	k8s.io/api v0.18.8
 	k8s.io/apiextensions-apiserver v0.18.4
 	k8s.io/apimachinery v0.18.8
@@ -55,7 +56,7 @@ require (
 	k8s.io/code-generator v0.18.8
 	k8s.io/gengo v0.0.0-20200205140755-e0e292d8aa12
 	k8s.io/klog v1.0.0
-	knative.dev/test-infra v0.0.0-20201022003632-7d3ea6019158
+	knative.dev/test-infra v0.0.0-20201026182042-46291de4ab66
 	sigs.k8s.io/boskos v0.0.0-20200729174948-794df80db9c9
 )
 
