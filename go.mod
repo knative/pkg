@@ -37,10 +37,12 @@ require (
 	go.uber.org/automaxprocs v1.3.0
 	go.uber.org/multierr v1.5.0
 	go.uber.org/zap v1.15.0
+	golang.org/x/crypto v0.0.0-20201002170205-7f63de1d35b0 // indirect
 	golang.org/x/net v0.0.0-20200904194848-62affa334b73
 	golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d
 	golang.org/x/sync v0.0.0-20200625203802-6e8e738ad208
 	golang.org/x/sys v0.0.0-20200905004654-be1d3432aa8f // indirect
+	golang.org/x/time v0.0.0-20200630173020-3af7569d3a1e // indirect
 	golang.org/x/tools v0.0.0-20200916195026-c9a70fc28ce3
 	gomodules.xyz/jsonpatch/v2 v2.1.0
 	google.golang.org/api v0.31.0
@@ -57,7 +59,8 @@ require (
 	k8s.io/code-generator v0.18.8
 	k8s.io/gengo v0.0.0-20200205140755-e0e292d8aa12
 	k8s.io/klog v1.0.0
-	knative.dev/test-infra v0.0.0-20201026182042-46291de4ab66
+	k8s.io/test-infra v0.0.0-20200803112140-d8aa4e063646 // indirect
+	knative.dev/hack v0.0.0-20201027201633-1763a666eb41
 	sigs.k8s.io/boskos v0.0.0-20200729174948-794df80db9c9
 )
 
