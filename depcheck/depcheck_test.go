@@ -41,5 +41,10 @@ func TestExample(t *testing.T) {
 		"knative.dev/pkg/depcheck": {
 			"k8s.io/apimachinery/pkg/util/sets",
 		},
+
+		// BAD Example used to illustrate path error message.
+		// "knative.dev/pkg/apis/duck": {
+		// 	"k8s.io/api/core/v1",
+		// },
 	})
 }

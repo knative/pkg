@@ -34,12 +34,17 @@ type node struct {
 
 type graph map[string]node
 
-func (g graph) Contains(name string) bool {
+func (g graph) contains(name string) bool {
 	_, ok := g[name]
 	return ok
 }
 
-func (g graph) Path(name string) []string {
+// path constructs an examplary path that looks something like:
+//    knative.dev/pkg/apis/duck
+//    knative.dev/pkg/apis  # Also: [knative.dev/pkg/kmeta knative.dev/pkg/tracker]
+//    k8s.io/api/core/v1
+// See the failing example in the test file.
+func (g graph) path(name string) []string {
 	n := g[name]
 	// Base case.
 	if len(n.consumers) == 0 {
@@ -51,7 +56,7 @@ func (g graph) Path(name string) []string {
 		consumers = append(consumers, k)
 	}
 	consumers.Sort()
-	base := g.Path(consumers[0])
+	base := g.path(consumers[0])
 	if len(base) > 1 { // Don't decorate the first entry, which is always an entrypoint.
 		if len(consumers) > 1 {
 			// Attach other consumers to the last entry in base.
@@ -96,9 +101,9 @@ func AssertNoDependency(t *testing.T, banned map[string][]string) {
 				t.Fatal("buildGraph(queue) =", err)
 			}
 			for _, dip := range banned {
-				if g.Contains(dip) {
+				if g.contains(dip) {
 					t.Errorf("%s depends on banned dependency %s\n%s", ip, dip,
-						strings.Join(g.Path(dip), "\n"))
+						strings.Join(g.path(dip), "\n"))
 				}
 			}
 		})
