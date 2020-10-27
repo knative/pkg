@@ -17,9 +17,9 @@ limitations under the License.
 package test
 
 import (
-	"knative.dev/pkg/apis/duck/v1"
 	"testing"
 
+	v1 "k8s.io/api/apps/v1"
 	"k8s.io/apimachinery/pkg/api/apitesting/fuzzer"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
