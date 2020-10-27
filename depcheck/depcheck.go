@@ -109,3 +109,32 @@ func AssertNoDependency(t *testing.T, banned map[string][]string) {
 		})
 	}
 }
+
+// AssertOnlyDependencies checks that the given import paths (the keys) only
+// depend (transitively) on certain allowed imports (the values).
+// Note: while perhaps counterintuitive we allow the value to be a superset
+// of the actual imports to that folks can use a constant that holds blessed
+// import paths.
+func AssertOnlyDependencies(t *testing.T, allowed map[string][]string) {
+	t.Helper()
+
+	for ip, allow := range allowed {
+		// Always include our own package in the set of allowed dependencies.
+		allowed := make(map[string]struct{}, len(allow)+1)
+		for _, x := range append(allow, ip) {
+			allowed[x] = struct{}{}
+		}
+		t.Run(ip, func(t *testing.T) {
+			g, err := buildGraph(ip)
+			if err != nil {
+				t.Fatal("buildGraph(queue) =", err)
+			}
+			for name := range g {
+				if _, ok := allowed[name]; !ok {
+					t.Errorf("dependency of %s not explicitly allowed %s\n%s", ip, name,
+						strings.Join(g.path(name), "\n"))
+				}
+			}
+		})
+	}
+}

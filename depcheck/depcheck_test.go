@@ -28,6 +28,9 @@ import (
 // TestExample doesn't follow the Go Example style because it isn't well
 // suited for libraries needing *testing.T
 func TestExample(t *testing.T) {
+
+	// For larger packages, it can make the most sense to simply avoid
+	// known "heavy" packages, which pull in large amount of code or data.
 	depcheck.AssertNoDependency(t, map[string][]string{
 		// Our duck types shouldn't depend on fuzzers.
 		"knative.dev/pkg/apis/duck/v1": {
@@ -46,5 +49,19 @@ func TestExample(t *testing.T) {
 		// "knative.dev/pkg/apis/duck": {
 		// 	"k8s.io/api/core/v1",
 		// },
+	})
+
+	// For small packages, it can make the most sense to curate
+	// the external dependencies very carefully.
+	depcheck.AssertOnlyDependencies(t, map[string][]string{
+		// Example libraries with very limited dependencies.
+		"knative.dev/pkg/pool": {
+			"context",
+			"sync",
+			"golang.org/x/sync/errgroup",
+		},
+		"knative.dev/pkg/ptr": {
+			"time",
+		},
 	})
 }
