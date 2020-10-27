@@ -17,11 +17,34 @@ limitations under the License.
 package configmap
 
 import (
+	"sync"
 	"testing"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
+
+type counter struct {
+	name string
+	mu   sync.RWMutex
+	cfg  []*corev1.ConfigMap
+	wg   *sync.WaitGroup
+}
+
+func (c *counter) callback(cm *corev1.ConfigMap) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.cfg = append(c.cfg, cm)
+	if c.wg != nil {
+		c.wg.Done()
+	}
+}
+
+func (c *counter) count() int {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	return len(c.cfg)
+}
 
 func TestManualStartNOOP(t *testing.T) {
 	watcher := ManualWatcher{
