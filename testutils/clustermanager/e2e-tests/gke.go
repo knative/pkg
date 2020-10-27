@@ -234,7 +234,7 @@ func (gc *GKECluster) checkEnvironment() error {
 				if (gc.Request.Project == "" || gc.Request.Project == project) && (gc.Request.ClusterName == "" || gc.Request.ClusterName == clusterName) {
 					client, err := gc.newGKEClient(project)
 					if err != nil {
-						return fmt.Errorf("failed creating the GKE client: '%v'", err)
+						return fmt.Errorf("failed creating the GKE client: %w", err)
 					}
 					cluster, err := client.GetCluster(project, region, zone, clusterName)
 					if err != nil {

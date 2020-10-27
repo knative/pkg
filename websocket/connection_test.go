@@ -138,7 +138,7 @@ func TestSendErrorOnNoConnection(t *testing.T) {
 	conn := &ManagedConnection{}
 	got := conn.Send("test")
 
-	if got != want {
+	if !errors.Is(got, want) {
 		t.Fatalf("Wanted error to be %v, but it was %v.", want, got)
 	}
 }
@@ -149,7 +149,7 @@ func TestStatusOnNoConnection(t *testing.T) {
 	conn := &ManagedConnection{}
 	got := conn.Status()
 
-	if got != want {
+	if !errors.Is(got, want) {
 		t.Fatalf("Wanted error to be %v, but it was %v.", want, got)
 	}
 }
@@ -290,7 +290,7 @@ func TestConnectLoopIsStopped(t *testing.T) {
 
 	select {
 	case err := <-errorChan:
-		if err != errShuttingDown {
+		if !errors.Is(err, errShuttingDown) {
 			t.Errorf("Wrong 'connect' error, got %v, want %v", err, errShuttingDown)
 		}
 	case <-time.After(propagationTimeout):
@@ -316,7 +316,7 @@ func TestKeepaliveLoopIsStopped(t *testing.T) {
 
 	select {
 	case err := <-errorChan:
-		if err != errShuttingDown {
+		if !errors.Is(err, errShuttingDown) {
 			t.Errorf("Wrong 'keepalive' error, got %v, want %v", err, errShuttingDown)
 		}
 	case <-time.After(propagationTimeout):

@@ -18,6 +18,7 @@ package prober
 
 import (
 	"context"
+	"errors"
 	"net"
 	"net/http"
 	"net/http/httptest"
@@ -222,7 +223,7 @@ func TestDoAsyncTimeout(t *testing.T) {
 		if done {
 			t.Errorf("done was true")
 		}
-		if err != wait.ErrWaitTimeout {
+		if !errors.Is(err, wait.ErrWaitTimeout) {
 			t.Error("Unexpected error =", err)
 		}
 		wch <- arg

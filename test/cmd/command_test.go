@@ -17,6 +17,7 @@ limitations under the License.
 package cmd
 
 import (
+	"errors"
 	"reflect"
 	"testing"
 )
@@ -65,7 +66,8 @@ func TestRunCommand(t *testing.T) {
 			t.Fatalf("Expect %q but actual is %q", c.expectedOutput, out)
 		}
 		if err != nil {
-			if ce, ok := err.(*CommandLineError); ok {
+			var ce *CommandLineError
+			if errors.As(err, &ce) {
 				if ce.ErrorCode != c.expectedErrorCode {
 					t.Fatalf("Expect to get error code %d but got %d", c.expectedErrorCode, ce.ErrorCode)
 				}
@@ -130,7 +132,8 @@ func TestRunCommands(t *testing.T) {
 			t.Fatalf("Expect %q but actual is %q", c.expectedOutput, out)
 		}
 		if err != nil {
-			if ce, ok := err.(*CommandLineError); ok {
+			var ce *CommandLineError
+			if errors.As(err, &ce) {
 				if ce.ErrorCode != c.expectedErrorCode {
 					t.Fatalf("Expect to get error code %d but got %d", c.expectedErrorCode, ce.ErrorCode)
 				}

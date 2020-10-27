@@ -47,7 +47,7 @@ func (e Env) PromoteFromEnv(envVars ...string) error {
 	for _, env := range envVars {
 		v := os.Getenv(env)
 		if v == "" {
-			err = fmt.Errorf("environment variable %q is not set; %v", env, err)
+			err = fmt.Errorf("environment variable %q is not set; %w", env, err)
 		} else {
 			e[env] = v
 		}

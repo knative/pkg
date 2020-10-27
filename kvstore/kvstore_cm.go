@@ -92,7 +92,7 @@ func (cs *configMapKVStore) Get(ctx context.Context, key string, value interface
 	}
 	err := json.Unmarshal([]byte(v), value)
 	if err != nil {
-		return fmt.Errorf("failed to Unmarshal %q: %v", v, err)
+		return fmt.Errorf("failed to Unmarshal %q: %w", v, err)
 	}
 	return nil
 }
@@ -101,7 +101,7 @@ func (cs *configMapKVStore) Get(ctx context.Context, key string, value interface
 func (cs *configMapKVStore) Set(ctx context.Context, key string, value interface{}) error {
 	bytes, err := json.Marshal(value)
 	if err != nil {
-		return fmt.Errorf("failed to Marshal: %v", err)
+		return fmt.Errorf("failed to Marshal: %w", err)
 	}
 	cs.data[key] = string(bytes)
 	return nil

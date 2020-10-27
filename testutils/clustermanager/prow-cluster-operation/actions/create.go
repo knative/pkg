@@ -92,7 +92,7 @@ func Create(o *options.RequestWrapper) (*clm.GKECluster, error) {
 	clusterOps := gkeClient.Setup(o.Request)
 	gkeOps := clusterOps.(*clm.GKECluster)
 	if err := gkeOps.Acquire(); err != nil || gkeOps.Cluster == nil {
-		return nil, fmt.Errorf("failed acquiring GKE cluster: '%v'", err)
+		return nil, fmt.Errorf("failed acquiring GKE cluster: %w", err)
 	}
 
 	// At this point we should have a cluster ready to run test. Need to save
@@ -104,10 +104,10 @@ func Create(o *options.RequestWrapper) (*clm.GKECluster, error) {
 	// TODO(chaodaiG): this probably should also be part of clustermanager lib
 	if out, err := common.StandardExec("gcloud", "beta", "container", "clusters", "get-credentials",
 		gkeOps.Cluster.Name, "--region", gkeOps.Cluster.Location, "--project", gkeOps.Project); err != nil {
-		return nil, fmt.Errorf("failed connecting to cluster: %q, '%v'", out, err)
+		return nil, fmt.Errorf("failed connecting to cluster: %q, %w", out, err)
 	}
 	if out, err := common.StandardExec("gcloud", "config", "set", "project", gkeOps.Project); err != nil {
-		return nil, fmt.Errorf("failed setting gcloud: %q, '%v'", out, err)
+		return nil, fmt.Errorf("failed setting gcloud: %q, %w", out, err)
 	}
 
 	return gkeOps, nil

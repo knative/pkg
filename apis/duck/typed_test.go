@@ -110,7 +110,7 @@ func TestInvalidResource(t *testing.T) {
 
 	_, _, got := tif.Get(context.Background(), SchemeGroupVersion.WithResource("resources"))
 
-	if got != errTest {
+	if !errors.Is(got, errTest) {
 		t.Errorf("Error = %v, want: %v", got, errTest)
 	}
 }
@@ -124,7 +124,7 @@ func TestAsStructuredWatcherNestedError(t *testing.T) {
 	wf := duck.AsStructuredWatcher(context.Background(), nwf, &duckv1alpha1.AddressableType{})
 
 	_, got := wf(metav1.ListOptions{})
-	if got != want {
+	if !errors.Is(got, want) {
 		t.Errorf("WatchFunc() = %v, wanted %v", got, want)
 	}
 }

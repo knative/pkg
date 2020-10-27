@@ -122,7 +122,7 @@ func TestTLoggerInternals(legacy *testing.T) {
 	for _, tt := range tests {
 		t.Run("errorWithRuntimeCheck "+tt.testName, func(t *TLogger) {
 			e, s, i := t.errorWithRuntimeCheck(tt.inputs...)
-			if e != tt.expectedError {
+			if !errors.Is(e, tt.expectedError) {
 				t.Error("error did not match", "got", e, "want", tt.expectedError)
 			}
 			if s != tt.expectedString {

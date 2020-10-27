@@ -163,7 +163,7 @@ func TestParallelismWithErrors(t *testing.T) {
 					time.Sleep(10 * time.Millisecond)
 
 					// Make all unexpected errors wait.
-					if err != errExpected {
+					if !errors.Is(err, errExpected) {
 						<-barrier
 					}
 					return err
@@ -193,7 +193,7 @@ func TestParallelismWithErrors(t *testing.T) {
 			// remaining work.
 			wg.Wait()
 
-			if err := p.Wait(); err != errExpected {
+			if err := p.Wait(); !errors.Is(err, errExpected) {
 				t.Errorf("Wait() = %v, wanted %v", err, errExpected)
 			}
 
@@ -241,7 +241,7 @@ func TestErrorCancelsContext(t *testing.T) {
 	case <-time.After(100 * time.Millisecond):
 		t.Error("ctx is not canceled due to the first error")
 	}
-	if err := pool.Wait(); err != want {
+	if err := pool.Wait(); !errors.Is(err, want) {
 		t.Fatalf("pool.Wait() = %v, want: %v", err, want)
 	}
 }
