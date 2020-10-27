@@ -14,11 +14,12 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v1beta1
+package test
 
 import (
 	"testing"
 
+	v1 "k8s.io/api/apps/v1"
 	"k8s.io/apimachinery/pkg/api/apitesting/fuzzer"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
@@ -28,7 +29,7 @@ import (
 
 func TestEventingRoundTripTypesToJSON(t *testing.T) {
 	scheme := runtime.NewScheme()
-	utilruntime.Must(AddToScheme(scheme))
+	utilruntime.Must(v1.AddToScheme(scheme))
 
 	fuzzerFuncs := fuzzer.MergeFuzzerFuncs(
 		pkgfuzzer.Funcs,

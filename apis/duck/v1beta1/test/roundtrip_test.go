@@ -14,10 +14,12 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v1
+package test
 
 import (
 	"testing"
+
+	"knative.dev/pkg/apis/duck/v1beta1"
 
 	"k8s.io/apimachinery/pkg/api/apitesting/fuzzer"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -28,7 +30,7 @@ import (
 
 func TestEventingRoundTripTypesToJSON(t *testing.T) {
 	scheme := runtime.NewScheme()
-	utilruntime.Must(AddToScheme(scheme))
+	utilruntime.Must(v1beta1.AddToScheme(scheme))
 
 	fuzzerFuncs := fuzzer.MergeFuzzerFuncs(
 		pkgfuzzer.Funcs,
