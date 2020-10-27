@@ -48,13 +48,15 @@ This roster is seeded with all approvers from Eventing workgroups.
 | v0.17   | 2020-08-18   | yanweiguo      | Harwayne        | -           | 2020-08-11 |
 | v0.18   | 2020-09-29   | ZhiminXiang    | n3wscott        | 2020-08-19  | 2020-09-22 |
 | v0.19   | 2020-11-10   | julz           | n3wscott        | 2020-09-30  | 2020-11-03 |
-| v0.20   | 2020-12-22   | nak3           | slinkydeveloper | 2020-11-11  | 2020-12-15 |
-| v0.21   | 2021-02-02   | mattmoor       | lionelvillard   | 2020-12-23  | 2021-01-26 |
-| v0.22   | 2021-03-16   | markusthoemmes | evankanderson   | 2020-02-03  | 2021-03-09 |
-| v0.23   | 2021-04-27   | tcnghia        | vaikas          | 2020-03-17  | 2021-04-20 |
-| v0.24   | 2021-06-08   | dprotaso       | matzew          | 2020-04-28  | 2021-06-01 |
-| v0.25   | 2021-07-20   | vagababov      | grantr          | 2020-06-09  | 2021-07-13 |
-| v0.26   | 2021-08-31   | JRBANCEL       | ...             | 2020-07-21  | 2021-08-24 |
+| v0.20   | 2021-01-12   | nak3           | slinkydeveloper | 2020-11-11  | 2020-01-05 |
+| v0.21   | 2021-02-23   | mattmoor       | lionelvillard   | 2021-01-13  | 2021-02-16 |
+| v0.22   | 2021-04-06   | markusthoemmes | evankanderson   | 2021-02-24  | 2021-03-30 |
+| v0.23   | 2021-05-18   | tcnghia        | vaikas          | 2021-04-07  | 2021-05-11 |
+| v0.24   | 2021-06-29   | dprotaso       | matzew          | 2021-05-19  | 2021-06-22 |
+| v0.25   | 2021-08-10   | vagababov      | grantr          | 2021-06-30  | 2021-08-03 |
+| v0.26   | 2021-09-21   | JRBANCEL       | ...             | 2021-08-11  | 2021-09-14 |
+
+__NOTE:__ v0.20 is moved by 3 weeks for end of year holidays
 
 # Release instruction
 
