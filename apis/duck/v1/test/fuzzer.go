@@ -21,7 +21,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/apitesting/fuzzer"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"knative.dev/pkg/apis"
-	"knative.dev/pkg/apis/duck/v1"
+	v1 "knative.dev/pkg/apis/duck/v1"
 	pkgfuzzer "knative.dev/pkg/apis/testing/fuzzer"
 )
 
