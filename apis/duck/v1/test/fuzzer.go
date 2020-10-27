@@ -14,13 +14,14 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v1
+package test
 
 import (
 	fuzz "github.com/google/gofuzz"
 	"k8s.io/apimachinery/pkg/api/apitesting/fuzzer"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"knative.dev/pkg/apis"
+	"knative.dev/pkg/apis/duck/v1"
 	pkgfuzzer "knative.dev/pkg/apis/testing/fuzzer"
 )
 
@@ -34,7 +35,7 @@ var testConditions = apis.Conditions{{Type: apis.ConditionReady}, {Type: apis.Co
 var FuzzerFuncs = fuzzer.MergeFuzzerFuncs(
 	func(codecs serializer.CodecFactory) []interface{} {
 		return []interface{}{
-			func(status *Status, c fuzz.Continue) {
+			func(status *v1.Status, c fuzz.Continue) {
 				c.FuzzNoCustom(status) // fuzz the Status
 				status.SetConditions(testConditions)
 				pkgfuzzer.FuzzConditions(status, c)
