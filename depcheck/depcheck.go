@@ -131,7 +131,7 @@ func AssertOnlyDependencies(t *testing.T, allowed map[string][]string) {
 			}
 			for name := range g {
 				if _, ok := allowed[name]; !ok {
-					t.Errorf("dependency of %s not explicitly allowed %s\n%s", ip, name,
+					t.Errorf("Dependency %s of %s is not explicitly allowed\n%s", name, ip,
 						strings.Join(g.path(name), "\n"))
 				}
 			}
