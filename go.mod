@@ -9,7 +9,7 @@ require (
 	contrib.go.opencensus.io/exporter/prometheus v0.2.1-0.20200609204449-6bcf6f8577f0
 	contrib.go.opencensus.io/exporter/stackdriver v0.13.2
 	contrib.go.opencensus.io/exporter/zipkin v0.1.1
-	github.com/blang/semver v3.5.1+incompatible
+	github.com/blang/semver/v4 v4.0.0
 	github.com/census-instrumentation/opencensus-proto v0.3.0
 	github.com/davecgh/go-spew v1.1.1
 	github.com/evanphx/json-patch v4.5.0+incompatible
