@@ -32,6 +32,7 @@ type testConfig struct {
 	i32    int32
 	i64    int64
 	u32    uint32
+	i      int
 	f64    float64
 	dur    time.Duration
 	set    sets.String
@@ -57,6 +58,7 @@ func TestParse(t *testing.T) {
 			"test-int32":    "1",
 			"test-int64":    "2",
 			"test-uint32":   "3",
+			"test-int":      "4",
 			"test-float64":  "1.0",
 			"test-duration": "1m",
 			"test-set":      "a,b,c",
@@ -72,6 +74,7 @@ func TestParse(t *testing.T) {
 			i64:    2,
 			u32:    3,
 			f64:    1.0,
+			i:      4,
 			dur:    time.Minute,
 			set:    sets.NewString("a", "b", "c"),
 			qua:    &fiveHundredM,
@@ -92,6 +95,7 @@ func TestParse(t *testing.T) {
 			i32:    1,
 			i64:    2,
 			f64:    1.0,
+			i:      4,
 			dur:    time.Minute,
 			qua:    &fiveHundredM,
 		},
@@ -101,6 +105,7 @@ func TestParse(t *testing.T) {
 			i32:    1,
 			i64:    2,
 			f64:    1.0,
+			i:      4,
 			dur:    time.Minute,
 			qua:    &fiveHundredM,
 		},
@@ -126,6 +131,12 @@ func TestParse(t *testing.T) {
 		name: "uint32 error",
 		data: map[string]string{
 			"test-uint32": "foo",
+		},
+		expectErr: true,
+	}, {
+		name: "int error",
+		data: map[string]string{
+			"test-int": "foo",
 		},
 		expectErr: true,
 	}, {
@@ -168,6 +179,7 @@ func TestParse(t *testing.T) {
 				AsInt32("test-int32", &test.conf.i32),
 				AsInt64("test-int64", &test.conf.i64),
 				AsUint32("test-uint32", &test.conf.u32),
+				AsInt("test-int", &test.conf.i),
 				AsFloat64("test-float64", &test.conf.f64),
 				AsDuration("test-duration", &test.conf.dur),
 				AsStringSet("test-set", &test.conf.set),
