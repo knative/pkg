@@ -404,6 +404,8 @@ testComponent_testing_value{project="p1",revision="r2"} 1
 			return UpdateExporter(context.Background(), configForBackend(openCensus), logtesting.TestLogger(t))
 		},
 		validate: func(t *testing.T) {
+			t.Skip("Skipped because of excessive flakiness, see: https://github.com/knative/pkg/issues/1672")
+
 			// We unregister the views because this is one of two ways to flush
 			// the internal aggregation buffers; the other is to have the
 			// internal reporting period duration tick, which is at least
