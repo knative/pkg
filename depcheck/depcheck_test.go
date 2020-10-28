@@ -20,6 +20,7 @@ limitations under the License.
 package depcheck_test
 
 import (
+	"strings"
 	"testing"
 
 	"knative.dev/pkg/depcheck"
@@ -44,12 +45,16 @@ func TestExample(t *testing.T) {
 		"knative.dev/pkg/depcheck": {
 			"k8s.io/apimachinery/pkg/util/sets",
 		},
-
-		// BAD Example used to illustrate path error message.
-		// "knative.dev/pkg/apis/duck": {
-		// 	"k8s.io/api/core/v1",
-		// },
 	})
+
+	// Sample failure case, duck clearly relies on corev1 for all assortment of things.
+	if err := depcheck.CheckNoDependency(t, "knative.dev/pkg/apis/duck", []string{"k8s.io/api/core/v1"}); err == nil {
+		t.Error("CheckNoDependency() = nil, wanted error")
+	} else if !strings.Contains(err.Error(), "knative.dev/pkg/tracker") {
+		t.Errorf("CheckNoDependency() = %v, expected to contain: %v", err, "knative.dev/pkg/tracker")
+	} else {
+		t.Log("CheckNoDependency() =", err)
+	}
 
 	// For small packages, it can make the most sense to curate
 	// the external dependencies very carefully.
@@ -64,4 +69,17 @@ func TestExample(t *testing.T) {
 			"time",
 		},
 	})
+
+	// Sample failure case, doesn't include transitive dependencies!
+	if err := depcheck.CheckOnlyDependencies(t, "knative.dev/pkg/depcheck", map[string]struct{}{
+		"fmt":                            {},
+		"sort":                           {},
+		"strings":                        {},
+		"testing":                        {},
+		"golang.org/x/tools/go/packages": {},
+	}); err == nil {
+		t.Error("CheckOnlyDependencies() = nil, wanted error")
+	} else if !strings.Contains(err.Error(), "golang.org/x/tools/go/gcexportdata") {
+		t.Errorf("CheckOnlyDependencies() = %v, expected to contain: %v", err, "golang.org/x/tools/go/gcexportdata")
+	}
 }
