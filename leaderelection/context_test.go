@@ -1,6 +1,3 @@
-// +build !race
-// TODO(https://github.com/kubernetes/kubernetes/issues/90952): Remove the above.
-
 /*
 Copyright 2020 The Knative Authors
 
