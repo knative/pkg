@@ -12,7 +12,6 @@ require (
 	github.com/blang/semver/v4 v4.0.0
 	github.com/census-instrumentation/opencensus-proto v0.3.0
 	github.com/davecgh/go-spew v1.1.1
-	github.com/evanphx/json-patch v4.5.0+incompatible
 	github.com/ghodss/yaml v1.0.0
 	github.com/go-logr/logr v0.1.0
 	github.com/golang/protobuf v1.4.2
@@ -49,6 +48,7 @@ require (
 	google.golang.org/genproto v0.0.0-20200904004341-0bd0a958aa1d
 	google.golang.org/grpc v1.31.1
 	google.golang.org/protobuf v1.25.0
+	gopkg.in/evanphx/json-patch.v4 v4.9.0
 	gopkg.in/yaml.v2 v2.3.0
 	gopkg.in/yaml.v3 v3.0.0-20190709130402-674ba3eaed22
 	honnef.co/go/tools v0.0.1-2020.1.5 // indirect
