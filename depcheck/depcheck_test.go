@@ -48,7 +48,7 @@ func TestExample(t *testing.T) {
 	})
 
 	// Sample failure case, duck clearly relies on corev1 for all assortment of things.
-	if err := depcheck.CheckNoDependency(t, "knative.dev/pkg/apis/duck", []string{"k8s.io/api/core/v1"}); err == nil {
+	if err := depcheck.CheckNoDependency("knative.dev/pkg/apis/duck", []string{"k8s.io/api/core/v1"}); err == nil {
 		t.Error("CheckNoDependency() = nil, wanted error")
 	} else if !strings.Contains(err.Error(), "knative.dev/pkg/tracker") {
 		t.Errorf("CheckNoDependency() = %v, expected to contain: %v", err, "knative.dev/pkg/tracker")
@@ -71,7 +71,7 @@ func TestExample(t *testing.T) {
 	})
 
 	// Sample failure case, doesn't include transitive dependencies!
-	if err := depcheck.CheckOnlyDependencies(t, "knative.dev/pkg/depcheck", map[string]struct{}{
+	if err := depcheck.CheckOnlyDependencies("knative.dev/pkg/depcheck", map[string]struct{}{
 		"fmt":                            {},
 		"sort":                           {},
 		"strings":                        {},
