@@ -56,7 +56,7 @@ This roster is seeded with all approvers from Eventing workgroups.
 | v0.25   | 2021-08-10   | vagababov      | grantr          | 2021-06-30  | 2021-08-03 |
 | v0.26   | 2021-09-21   | JRBANCEL       | ...             | 2021-08-11  | 2021-09-14 |
 
-__NOTE:__ v0.20 is moved by 3 weeks for end of year holidays
+**NOTE:** v0.20 is moved by 3 weeks for end of year holidays
 
 # Release instruction
 
