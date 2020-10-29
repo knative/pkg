@@ -129,7 +129,10 @@ After **pkg**:
 - [knative/caching](https://github.com/knative/caching)
 
 Automation will propagate these updates to all the downstream repos in the next
-few cycles.
+few cycles. The goal is to have the first wave of repo releases (**serving**,
+**eventing**, etc) to become "releasabile" by the end of the week. This is
+signaled via the Slack report of releasability posted to the **release-`#`**
+channel every morning (5am PST, M-F).
 
 ### Verify nightly release automation is intact
 
