@@ -199,7 +199,9 @@ func TestStoreFailedFirstConversionCrashes(t *testing.T) {
 	cmd := exec.Command(os.Args[0], fmt.Sprintf("-test.run=%s", t.Name()))
 	cmd.Env = append(os.Environ(), "CRASH=1")
 	err := cmd.Run()
-	if e, ok := err.(*exec.ExitError); ok && !e.Success() {
+
+	var errExit *exec.ExitError
+	if errors.As(err, &errExit) && !errExit.Success() {
 		return
 	}
 	t.Fatal("process should have exited with status 1 - err", err)

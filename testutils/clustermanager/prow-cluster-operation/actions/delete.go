@@ -33,12 +33,12 @@ func Delete(o *options.RequestWrapper) error {
 	clusterOps := gkeClient.Setup(o.Request)
 	gkeOps := clusterOps.(*clm.GKECluster)
 	if err := gkeOps.Acquire(); err != nil || gkeOps.Cluster == nil {
-		return fmt.Errorf("failed identifying cluster for cleanup: '%v'", err)
+		return fmt.Errorf("failed identifying cluster for cleanup: %w", err)
 	}
 	log.Printf("Identified project %q and cluster %q for removal", gkeOps.Project, gkeOps.Cluster.Name)
 	var err error
 	if err = gkeOps.Delete(); err != nil {
-		return fmt.Errorf("failed deleting cluster: '%v'", err)
+		return fmt.Errorf("failed deleting cluster: %w", err)
 	}
 	// Unset context with best effort. The first command only unsets current
 	// context, but doesn't delete the entry from kubeconfig, and should return it's

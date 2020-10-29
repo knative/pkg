@@ -69,7 +69,7 @@ func TestRetryUpdateConflicts(t *testing.T) {
 				return test.returns[i]
 			})
 
-			if got != test.want {
+			if !errors.Is(got, test.want) {
 				t.Errorf("RetryUpdateConflicts() = %v, want %v", got, test.want)
 			}
 			if attempts != test.wantAttempts {
@@ -125,7 +125,7 @@ func TestRetryTestErrors(t *testing.T) {
 				return test.returns[i]
 			})
 
-			if got != test.want {
+			if !errors.Is(got, test.want) {
 				t.Errorf("RetryTestErrors() = %v, want %v", got, test.want)
 			}
 			if attempts != test.wantAttempts {

@@ -17,6 +17,7 @@ limitations under the License.
 package duck
 
 import (
+	"errors"
 	"testing"
 
 	"encoding/json"
@@ -83,7 +84,7 @@ func TestFromUnstructuredFooable(t *testing.T) {
 			t.Log("Marshalled:", string(raw))
 
 			got := Foo{}
-			if err := FromUnstructured(tc.in, &got); err != tc.wantError {
+			if err := FromUnstructured(tc.in, &got); !errors.Is(err, tc.wantError) {
 				t.Fatal("FromUnstructured() =", err)
 			}
 
@@ -145,7 +146,7 @@ func TestToUnstructured(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			got, err := ToUnstructured(tc.in)
-			if err != tc.wantError {
+			if !errors.Is(err, tc.wantError) {
 				t.Fatal("ToUnstructured() =", err)
 			}
 

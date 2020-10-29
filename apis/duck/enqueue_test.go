@@ -97,7 +97,7 @@ func TestEnqueueInformerFactoryWithFailure(t *testing.T) {
 		Resource: "caches",
 	}
 	inf, _, got := eif.Get(context.Background(), gvr)
-	if got != want {
+	if !errors.Is(got, want) {
 		t.Fatalf("Get() = %v, wanted %v", got, want)
 	}
 

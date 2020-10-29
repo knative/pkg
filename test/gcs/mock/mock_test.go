@@ -19,6 +19,7 @@ package mock
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -379,7 +380,7 @@ func TestNewStorageBucket(t *testing.T) {
 	for _, tt := range testCases {
 		t.Run(tt.testname, func(t *testing.T) {
 			err := mockClient.NewStorageBucket(ctx, tt.bkt, tt.projectName)
-			if (tt.err == nil || err == nil) && err != tt.err {
+			if (tt.err == nil || err == nil) && !errors.Is(err, tt.err) {
 				t.Fatalf("expected error %v, got error %v", tt.err, err)
 			} else if (tt.err != nil && err != nil) && tt.err.Error() != err.Error() {
 				t.Fatalf("expected error %v, got error %v", tt.err, err)
@@ -441,7 +442,7 @@ func TestDeleteStorageBucket(t *testing.T) {
 	for _, tt := range testCases {
 		t.Run(tt.testname, func(t *testing.T) {
 			err := mockClient.DeleteStorageBucket(ctx, tt.bkt, tt.force)
-			if (tt.err == nil || err == nil) && err != tt.err {
+			if (tt.err == nil || err == nil) && !errors.Is(err, tt.err) {
 				t.Fatalf("expected error %v, got error %v", tt.err, err)
 			} else if (tt.err != nil && err != nil) && tt.err.Error() != err.Error() {
 				t.Fatalf("expected error %v, got error %v", tt.err, err)
@@ -568,7 +569,7 @@ func TestListChildrenFiles(t *testing.T) {
 	for _, tt := range testCases {
 		t.Run(tt.testname, func(t *testing.T) {
 			children, err := mockClient.ListChildrenFiles(ctx, tt.bkt, tt.dir)
-			if (tt.err == nil || err == nil) && err != tt.err {
+			if (tt.err == nil || err == nil) && !errors.Is(err, tt.err) {
 				t.Fatalf("expected error %v, got error %v", tt.err, err)
 			} else if (tt.err != nil && err != nil) && tt.err.Error() != err.Error() {
 				t.Fatalf("expected error %v, got error %v", tt.err, err)
@@ -634,7 +635,7 @@ func TestListDirectChildren(t *testing.T) {
 	for _, tt := range testCases {
 		t.Run(tt.testname, func(t *testing.T) {
 			children, err := mockClient.ListDirectChildren(ctx, tt.bkt, tt.dir)
-			if (tt.err == nil || err == nil) && err != tt.err {
+			if (tt.err == nil || err == nil) && !errors.Is(err, tt.err) {
 				t.Fatalf("expected error %v, got error %v", tt.err, err)
 			} else if (tt.err != nil && err != nil) && tt.err.Error() != err.Error() {
 				t.Fatalf("expected error %v, got error %v", tt.err, err)
@@ -690,7 +691,7 @@ func TestAttrObject(t *testing.T) {
 	for _, tt := range testCases {
 		t.Run(tt.testname, func(t *testing.T) {
 			objAttr, err := mockClient.AttrObject(ctx, tt.bkt, tt.objpath)
-			if (tt.err == nil || err == nil) && err != tt.err {
+			if (tt.err == nil || err == nil) && !errors.Is(err, tt.err) {
 				t.Fatalf("expected error %v, got error %v", tt.err, err)
 			} else if (tt.err != nil && err != nil) && tt.err.Error() != err.Error() {
 				t.Fatalf("expected error %v, got error %v", tt.err, err)
@@ -781,7 +782,7 @@ func TestCopyObject(t *testing.T) {
 	for _, tt := range testCases {
 		t.Run(tt.testname, func(t *testing.T) {
 			err := mockClient.CopyObject(ctx, tt.srcBkt, tt.srcObjPath, tt.dstBkt, tt.dstObjPath)
-			if (tt.err == nil || err == nil) && err != tt.err {
+			if (tt.err == nil || err == nil) && !errors.Is(err, tt.err) {
 				t.Fatalf("expected error %v, got error %v", tt.err, err)
 			} else if (tt.err != nil && err != nil) && tt.err.Error() != err.Error() {
 				t.Fatalf("expected error %v, got error %v", tt.err, err)
@@ -843,7 +844,7 @@ func TestReadObject(t *testing.T) {
 	for _, tt := range testCases {
 		t.Run(tt.testname, func(t *testing.T) {
 			objContent, err := mockClient.ReadObject(ctx, tt.bkt, tt.objpath)
-			if (tt.err == nil || err == nil) && err != tt.err {
+			if (tt.err == nil || err == nil) && !errors.Is(err, tt.err) {
 				t.Fatalf("expected error %v, got error %v", tt.err, err)
 			} else if (tt.err != nil && err != nil) && tt.err.Error() != err.Error() {
 				t.Fatalf("expected error %v, got error %v", tt.err, err)
@@ -899,7 +900,7 @@ func TestWriteObject(t *testing.T) {
 	for _, tt := range testCases {
 		t.Run(tt.testname, func(t *testing.T) {
 			n, err := mockClient.WriteObject(ctx, tt.bkt, tt.objpath, tt.content)
-			if (tt.err == nil || err == nil) && err != tt.err {
+			if (tt.err == nil || err == nil) && !errors.Is(err, tt.err) {
 				t.Fatalf("expected error %v, got error %v", tt.err, err)
 			} else if (tt.err != nil && err != nil) && tt.err.Error() != err.Error() {
 				t.Fatalf("expected error %v, got error %v", tt.err, err)
@@ -955,7 +956,7 @@ func TestDeleteObject(t *testing.T) {
 	for _, tt := range testCases {
 		t.Run(tt.testname, func(t *testing.T) {
 			err := mockClient.DeleteObject(ctx, tt.bkt, tt.objpath)
-			if (tt.err == nil || err == nil) && err != tt.err {
+			if (tt.err == nil || err == nil) && !errors.Is(err, tt.err) {
 				t.Fatalf("expected error %v, got error %v", tt.err, err)
 			} else if (tt.err != nil && err != nil) && tt.err.Error() != err.Error() {
 				t.Fatalf("expected error %v, got error %v", tt.err, err)
@@ -1013,7 +1014,7 @@ func TestDownload(t *testing.T) {
 	for _, tt := range testCases {
 		t.Run(tt.testname, func(t *testing.T) {
 			err := mockClient.Download(ctx, tt.bkt, tt.objPath, file)
-			if (tt.err == nil || err == nil) && err != tt.err {
+			if (tt.err == nil || err == nil) && !errors.Is(err, tt.err) {
 				t.Fatalf("expected error %v, got error %v", tt.err, err)
 			} else if (tt.err != nil && err != nil) && tt.err.Error() != err.Error() {
 				t.Fatalf("expected error %v, got error %v", tt.err, err)
@@ -1076,7 +1077,7 @@ func TestUpload(t *testing.T) {
 	for _, tt := range testCases {
 		t.Run(tt.testname, func(t *testing.T) {
 			err := mockClient.Upload(ctx, tt.bkt, tt.objPath, file)
-			if (tt.err == nil || err == nil) && err != tt.err {
+			if (tt.err == nil || err == nil) && !errors.Is(err, tt.err) {
 				t.Fatalf("expected error %v, got error %v", tt.err, err)
 			} else if (tt.err != nil && err != nil) && tt.err.Error() != err.Error() {
 				t.Fatalf("expected error %v, got error %v", tt.err, err)

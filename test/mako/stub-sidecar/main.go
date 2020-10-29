@@ -19,6 +19,7 @@ package main
 import (
 	"context"
 	"encoding/csv"
+	"errors"
 	"flag"
 	"fmt"
 	"net/http"
@@ -158,7 +159,7 @@ func main() {
 		m.HandleFunc("/close", func(writer http.ResponseWriter, request *http.Request) {
 			s.Shutdown(context.Background())
 		})
-		if err := s.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		if err := s.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			log.Fatal(err)
 		}
 		fmt.Println("Successfully served the results")

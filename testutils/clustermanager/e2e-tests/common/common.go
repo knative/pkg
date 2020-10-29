@@ -45,7 +45,7 @@ func IsProw() bool {
 func GetRepoName() (string, error) {
 	out, err := StandardExec("git", "rev-parse", "--show-toplevel")
 	if err != nil {
-		return "", fmt.Errorf("failed git rev-parse --show-toplevel: '%v'", err)
+		return "", fmt.Errorf("failed git rev-parse --show-toplevel: %w", err)
 	}
 	return strings.TrimSpace(path.Base(string(out))), nil
 }

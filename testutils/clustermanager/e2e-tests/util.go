@@ -44,7 +44,7 @@ func getResourceName(rt ResourceType) (string, error) {
 	var resName string
 	repoName, err := common.GetRepoName()
 	if err != nil {
-		return "", fmt.Errorf("failed getting reponame for forming resource name: '%v'", err)
+		return "", fmt.Errorf("failed getting reponame for forming resource name: %w", err)
 	}
 	resName = fmt.Sprintf("k%s-%s", repoName, string(rt))
 	if common.IsProw() {

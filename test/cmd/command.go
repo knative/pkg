@@ -18,6 +18,7 @@ package cmd
 
 import (
 	"bytes"
+	"errors"
 	"os/exec"
 	"strings"
 	"sync"
@@ -143,8 +144,10 @@ func runCommandsInParallel(cmdLines ...string) (string, error) {
 // getErrorCode extracts the exit code of an *ExitError type
 func getErrorCode(err error) int {
 	errorCode := defaultErrCode
-	if exitError, ok := err.(*exec.ExitError); ok {
-		errorCode = exitError.ExitCode()
+
+	var errExit *exec.ExitError
+	if errors.As(err, &errExit) {
+		errorCode = errExit.ExitCode()
 	}
 	return errorCode
 }
