@@ -62,7 +62,7 @@ func NewLogger(configJSON string, levelOverride string, opts ...zap.Option) (*za
 		}
 	}
 
-	logger, err2 := loggingCfg.Build(opts...)
+	logger, err2 := loggingCfg.Build(append(opts, zapdriver.WrapCore())...)
 	if err2 != nil {
 		panic(err2)
 	}
@@ -106,7 +106,7 @@ func newLoggerFromConfig(configJSON string, levelOverride string, opts []zap.Opt
 		}
 	}
 
-	logger, err := loggingCfg.Build(opts...)
+	logger, err := loggingCfg.Build(append(opts, zapdriver.WrapCore())...)
 	if err != nil {
 		return nil, zap.AtomicLevel{}, err
 	}
