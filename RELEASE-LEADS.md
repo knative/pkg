@@ -114,16 +114,16 @@ eventing) to fill in. Coordinate with both serving and eventing leads.
 We need to start cutting release branches in each module that does not produce a
 release artifact, but we will do it from least dependent to most dependent.
 Follow the [cutting release branches](#cutting_release_branches) guide, starting
-with the `hack` repo:
+with the **hack** repo:
 
 - [knative/hack](https://github.com/knative/hack)
 
-After `hack`:
+After **hack**:
 
 - [knative/pkg](https://github.com/knative/pkg)
 - [knative/test-infra](https://github.com/knative/test-infra)
 
-After `pkg`:
+After **pkg**:
 
 - [knative/networking](https://github.com/knative/networking)
 - [knative/caching](https://github.com/knative/caching)
@@ -173,11 +173,11 @@ First:
 
 - [knative-sandbox/sample-controller](https://github.com/knative-sandbox/sample-controller)
 
-After `serving`:
+After **serving**:
 
 - [knative-sandbox/net-kourier](https://github.com/knative-sandbox/net-kourier)
 
-After `eventing`:
+After **eventing**:
 
 - [knative-sandbox/eventing-awssqs](https://github.com/knative-sandbox/eventing-awssqs)
 - [knative-sandbox/eventing-camel](https://github.com/knative-sandbox/eventing-camel)
@@ -190,7 +190,7 @@ After `eventing`:
 - [knative-sandbox/eventing-rabbitmq](https://github.com/knative-sandbox/eventing-rabbitmq)
 - [knative-sandbox/sample-source](https://github.com/knative-sandbox/sample-source)
 
-After both `eventing` and `serving`:
+After both **eventing** and **serving**:
 
 - [knative-sandbox/eventing-redis](https://github.com/knative-sandbox/eventing-redis)
 - [knative-sandbox/eventing-github](https://github.com/knative-sandbox/eventing-github)
@@ -219,7 +219,7 @@ Include the next release leads in the PR as a reminder.
 
 ## Cutting release branches.
 
-_Prerequisite_: Install the [`buoy` tool](https://github.com/test-infra).
+_Prerequisite_: Install the [**buoy** tool](https://github.com/test-infra).
 
 We have staged releasibility status checks that are sent to the release Slack
 channel to give alerts when things are ready to go. You can manually run that
