@@ -17,6 +17,8 @@ limitations under the License.
 package testing
 
 import (
+	"fmt"
+
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	clientgotesting "k8s.io/client-go/testing"
@@ -95,7 +97,7 @@ func TestInduceFailure(t *testing.T) {
 		var f clientgotesting.ReactionFunc
 
 		if tc.subresource != "" {
-			f = InduceFailure(tc.verb, tc.resource, tc.subresource)
+			f = InduceFailure(tc.verb, fmt.Sprintf("%s/%s", tc.resource, tc.subresource))
 		} else {
 			f = InduceFailure(tc.verb, tc.resource)
 		}
