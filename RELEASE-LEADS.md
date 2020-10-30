@@ -85,7 +85,7 @@ used to help manage this release.
 ### Update the Knative releasability defaults
 
 Update the defaults in
-[knative-releasability.yaml](https://github.com/knative-sandbox/.github/blob/master/workflow-templates/knative-releasability.yaml#L36-L41)
+[knative-releasability.yaml](https://github.com/knative-sandbox/.github/blob/1e4e31edfb2181220db744ad0fcb135629e1cb8e/workflow-templates/knative-releasability.yaml#L37-L41)
 to this release. These changes will be propagated to the rest of Knative in the
 next round of workflow syncs.
 
@@ -109,11 +109,43 @@ Make a copy of the
 empty it out and send it to the WG leads of the respective project (serving or
 eventing) to fill in. Coordinate with both serving and eventing leads.
 
+## Cutting release branches
+
+_Prerequisite_: Install the
+[**buoy** tool](https://github.com/knative/test-infra/tree/master/buoy).
+
+We have staged releasibility status checks that are sent to the release Slack
+channel to give alerts when things are ready to go. You can manually run that
+for each repo before cutting the release branch,
+
+```bash
+RELEASE=0.19
+REPO=git@github.com:knative/example.git
+
+tmpdir=$(dirname $(mktemp -u))
+cd ${tmpdir}
+git clone ${REPO}
+cd "$(basename "${REPO}" .git)"
+
+if buoy check go.mod --domain knative.dev --release ${RELEASE} --verbose; then
+  git checkout -b release-${RELEASE}
+  ./hack/update-deps.sh --upgrade --release ${RELEASE}
+  git add .
+  git push origin release-${RELEASE}
+fi
+```
+
+> _Note_: This assumes the upstream knative github repo is a remote called
+> origin.
+
+This should be done for each repo following the dependency chain and required
+timing.
+
 ### Cut release branches of supporting repos
 
 We need to start cutting release branches in each module that does not produce a
 release artifact, but we will do it from least dependent to most dependent.
-Follow the [cutting release branches](#cutting_release_branches) guide, starting
+Follow the [cutting release branches](#cutting-release-branches) guide, starting
 with the **hack** repo:
 
 - [knative/hack](https://github.com/knative/hack)
@@ -157,11 +189,11 @@ green light.
 Follow the [cutting release branches](#cutting_release_branches) instructions
 for each repo. Wait for release automation to kick in (runs on a 2 hour
 interval). Once the release automation passed, it will create a release tag in
-the repositorie. Enhance the respective tags with the collected release-notes
-using the Github UI.
+the repository. Enhance the respective tags with the collected release-notes
+using the GitHub UI.
 
 In general the release dependency order is something like the following (as of
-v0.19).
+v0.19). Note: `buoy check` will fail if the dependencies are not yet ready.
 
 First:
 
@@ -217,29 +249,3 @@ releases existing. **Skip these**. Special cases are:
 Send a PR like [this one](https://github.com/knative/community/pull/209) to
 grant ACLs for the next release leads, and to remove yourself from the rotation.
 Include the next release leads in the PR as a reminder.
-
----
-
-## Cutting release branches.
-
-_Prerequisite_: Install the [**buoy** tool](https://github.com/test-infra).
-
-We have staged releasibility status checks that are sent to the release Slack
-channel to give alerts when things are ready to go. You can manually run that
-for each repo before cutting the release branch,
-
-```bash
-RELEASE=0.19
-if buoy check go.mod --domain knative.dev --release ${RELEASE} --verbose; then
-  git checkout -b release-${RELEASE}
-  ./hack/update-deps.sh --upgrade --release ${RELEASE}
-  git add .
-  git push origin release-${RELEASE}
-fi
-```
-
-> _Note_: This assumes the upstream knative github repo is a remote called
-> origin.
-
-This should be done for each repo following the dependency chain and required
-timing.
