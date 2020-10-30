@@ -17,8 +17,6 @@ limitations under the License.
 package testing
 
 import (
-	"fmt"
-
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	clientgotesting "k8s.io/client-go/testing"
@@ -42,9 +40,8 @@ func TestInduceFailure(t *testing.T) {
 	tests := []struct {
 		name string
 		// These set up the InduceFailure function
-		verb        string
-		resource    string
-		subresource string
+		verb     string
+		resource string
 		// This is the resource fed to the function
 		testSource schema.GroupVersionResource
 		// This is the subresource fed to the function
@@ -72,35 +69,28 @@ func TestInduceFailure(t *testing.T) {
 		name:            "resource and subresource",
 		verb:            "patch",
 		testSource:      imc,
-		resource:        "inmemorychannels",
-		subresource:     "status",
+		resource:        "inmemorychannels/status",
 		testSubresource: "status",
 		wantHandled:     true,
 	}, {
 		name:            "resource and subresource, wrong verb",
 		verb:            "get",
 		testSource:      imc,
-		resource:        "inmemorychannels",
-		subresource:     "status",
+		resource:        "inmemorychannels/status",
 		testSubresource: "status",
 		wantHandled:     false,
 	}, {
 		name:            "resource and subresource, subresource does not match",
 		verb:            "patch",
 		testSource:      imc,
-		resource:        "inmemorychannels",
-		subresource:     "status",
+		resource:        "inmemorychannels/status",
 		testSubresource: "finalizers",
 		wantHandled:     false,
 	}}
 	for _, tc := range tests {
 		var f clientgotesting.ReactionFunc
 
-		if tc.subresource != "" {
-			f = InduceFailure(tc.verb, fmt.Sprintf("%s/%s", tc.resource, tc.subresource))
-		} else {
-			f = InduceFailure(tc.verb, tc.resource)
-		}
+		f = InduceFailure(tc.verb, tc.resource)
 		var patchAction clientgotesting.PatchActionImpl
 		if tc.testSubresource != "" {
 			patchAction = clientgotesting.NewPatchSubresourceAction(tc.testSource, "testns", "test", types.JSONPatchType, []byte{}, tc.testSubresource)
