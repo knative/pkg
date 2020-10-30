@@ -32,10 +32,24 @@ import (
 //      // Makes calls to create revisions return an error.
 //      InduceFailure("create", "revisions"),
 //   },
-func InduceFailure(verb, resource string) clientgotesting.ReactionFunc {
+// Or to target a subresource, say a patch to InMemoryChannel.Status, you would add:
+//   WithReactors: []clientgotesting.ReactionFunc{
+//      // Makes calls to patch inmemorychannels status subresource return an error.
+//      InduceFailure("patch", "inmemorychannels", "status"),
+//   },
+// Specifying more than one subresource results in panic.
+func InduceFailure(verb, resource string, subresources... string) clientgotesting.ReactionFunc {
+	if len(subresources) > 1 {
+		panic(fmt.Sprintf("Can only specify one subresource, got %+v", subresources))
+	}
 	return func(action clientgotesting.Action) (handled bool, ret runtime.Object, err error) {
 		if !action.Matches(verb, resource) {
 			return false, nil, nil
+		}
+		if len(subresources) > 0 {
+			if action.GetSubresource() != subresources[0] {
+				return false, nil, nil
+			}
 		}
 		return true, nil, fmt.Errorf("inducing failure for %s %s", action.GetVerb(), action.GetResource().Resource)
 	}
