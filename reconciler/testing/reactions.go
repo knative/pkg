@@ -38,7 +38,7 @@ import (
 //      InduceFailure("patch", "inmemorychannels", "status"),
 //   },
 // Specifying more than one subresource results in panic.
-func InduceFailure(verb, resource string, subresources... string) clientgotesting.ReactionFunc {
+func InduceFailure(verb, resource string, subresources ...string) clientgotesting.ReactionFunc {
 	if len(subresources) > 1 {
 		panic(fmt.Sprintf("Can only specify one subresource, got %+v", subresources))
 	}
