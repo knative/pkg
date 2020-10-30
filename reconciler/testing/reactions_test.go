@@ -24,17 +24,19 @@ import (
 	"testing"
 )
 
-var imc = schema.GroupVersionResource{
-	Group:    "messaging.knative.dev",
-	Version:  "v1",
-	Resource: "inmemorychannels",
-}
+var (
+	imc = schema.GroupVersionResource{
+		Group:    "messaging.knative.dev",
+		Version:  "v1",
+		Resource: "inmemorychannels",
+	}
 
-var revision = schema.GroupVersionResource{
-	Group:    "serving.knative.dev",
-	Version:  "v1",
-	Resource: "revisions",
-}
+	revision = schema.GroupVersionResource{
+		Group:    "serving.knative.dev",
+		Version:  "v1",
+		Resource: "revisions",
+	}
+)
 
 func TestInduceFailure(t *testing.T) {
 	tests := []struct {
@@ -54,17 +56,15 @@ func TestInduceFailure(t *testing.T) {
 		resource:    "inmemorychannels",
 		wantHandled: true,
 	}, {
-		name:        "resource, wrong verb",
-		verb:        "create",
-		testSource:  imc,
-		resource:    "inmemorychannels",
-		wantHandled: false,
+		name:       "resource, wrong verb",
+		verb:       "create",
+		testSource: imc,
+		resource:   "inmemorychannels",
 	}, {
-		name:        "wrong resource",
-		verb:        "patch",
-		testSource:  revision,
-		resource:    "inmemorychannels",
-		wantHandled: false,
+		name:       "wrong resource",
+		verb:       "patch",
+		testSource: revision,
+		resource:   "inmemorychannels",
 	}, {
 		name:            "resource and subresource",
 		verb:            "patch",
@@ -78,25 +78,25 @@ func TestInduceFailure(t *testing.T) {
 		testSource:      imc,
 		resource:        "inmemorychannels/status",
 		testSubresource: "status",
-		wantHandled:     false,
 	}, {
 		name:            "resource and subresource, subresource does not match",
 		verb:            "patch",
 		testSource:      imc,
 		resource:        "inmemorychannels/status",
 		testSubresource: "finalizers",
-		wantHandled:     false,
 	}}
 	for _, tc := range tests {
-		f := InduceFailure(tc.verb, tc.resource)
-		var patchAction clientgotesting.PatchActionImpl
-		if tc.testSubresource != "" {
-			patchAction = clientgotesting.NewPatchSubresourceAction(tc.testSource, "testns", "test", types.JSONPatchType, []byte{}, tc.testSubresource)
-		} else {
-			patchAction = clientgotesting.NewPatchAction(tc.testSource, "testns", "test", types.JSONPatchType, []byte{})
-		}
-		if handled, _, _ := f(patchAction); handled != tc.wantHandled {
-			t.Errorf("%q failed wanted %v got %v", tc.name, tc.wantHandled, handled)
-		}
+		t.Run(tc.name, func(t *testing.T) {
+			f := InduceFailure(tc.verb, tc.resource)
+			var patchAction clientgotesting.PatchActionImpl
+			if tc.testSubresource != "" {
+				patchAction = clientgotesting.NewPatchSubresourceAction(tc.testSource, "testns", "test", types.JSONPatchType, []byte{}, tc.testSubresource)
+			} else {
+				patchAction = clientgotesting.NewPatchAction(tc.testSource, "testns", "test", types.JSONPatchType, []byte{})
+			}
+			if handled, _, _ := f(patchAction); handled != tc.wantHandled {
+				t.Errorf("Handled got = %v, want: %v", tc.wantHandled, handled)
+			}
+		})
 	}
 }
