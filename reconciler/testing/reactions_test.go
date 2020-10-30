@@ -88,9 +88,7 @@ func TestInduceFailure(t *testing.T) {
 		wantHandled:     false,
 	}}
 	for _, tc := range tests {
-		var f clientgotesting.ReactionFunc
-
-		f = InduceFailure(tc.verb, tc.resource)
+		f := InduceFailure(tc.verb, tc.resource)
 		var patchAction clientgotesting.PatchActionImpl
 		if tc.testSubresource != "" {
 			patchAction = clientgotesting.NewPatchSubresourceAction(tc.testSource, "testns", "test", types.JSONPatchType, []byte{}, tc.testSubresource)
