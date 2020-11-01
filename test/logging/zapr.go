@@ -18,11 +18,23 @@
 
 package logging
 
+import (
+	"github.com/go-logr/logr"
+)
+
 // noopInfoLogger is a logr.InfoLogger that's always disabled, and does nothing.
 type noopInfoLogger struct{}
 
-func (l *noopInfoLogger) Enabled() bool                   { return false }
-func (l *noopInfoLogger) Info(_ string, _ ...interface{}) {}
+func (l *noopInfoLogger) Enabled() bool                                             { return false }
+func (l *noopInfoLogger) Info(_ string, _ ...interface{})                           {}
+func (i *noopInfoLogger) Error(err error, msg string, keysAndValues ...interface{}) {}
+func (i *noopInfoLogger) V(level int) logr.InfoLogger                               { return &noopInfoLogger{} }
+func (i *noopInfoLogger) WithValues(keysAndValues ...interface{}) logr.InfoLogger {
+	return &noopInfoLogger{}
+}
+func (i *noopInfoLogger) WithName(name string) logr.InfoLogger {
+	return &noopInfoLogger{}
+}
 
 var disabledInfoLogger = &noopInfoLogger{}
 
@@ -37,6 +49,10 @@ func (i *infoLogger) Enabled() bool { return true }
 func (i *infoLogger) Info(msg string, keysAndVals ...interface{}) {
 	i.indirectWrite(msg, keysAndVals...)
 }
+func (i *infoLogger) Error(err error, msg string, keysAndValues ...interface{}) {}
+func (i *infoLogger) V(level int) logr.InfoLogger                               { return &infoLogger{} }
+func (i *infoLogger) WithValues(keysAndValues ...interface{}) logr.InfoLogger   { return &infoLogger{} }
+func (i *infoLogger) WithName(name string) logr.InfoLogger                      { return &infoLogger{} }
 
 // This function just exists to have consistent 2-level call depth for Zap proxying
 func (i *infoLogger) indirectWrite(msg string, keysAndVals ...interface{}) {
