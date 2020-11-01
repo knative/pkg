@@ -27,12 +27,12 @@ type noopInfoLogger struct{}
 
 func (l *noopInfoLogger) Enabled() bool                                             { return false }
 func (l *noopInfoLogger) Info(_ string, _ ...interface{})                           {}
-func (i *noopInfoLogger) Error(err error, msg string, keysAndValues ...interface{}) {}
-func (i *noopInfoLogger) V(level int) logr.InfoLogger                               { return &noopInfoLogger{} }
-func (i *noopInfoLogger) WithValues(keysAndValues ...interface{}) logr.InfoLogger {
+func (l *noopInfoLogger) Error(err error, msg string, keysAndValues ...interface{}) {}
+func (l *noopInfoLogger) V(level int) logr.InfoLogger                               { return &noopInfoLogger{} }
+func (l *noopInfoLogger) WithValues(keysAndValues ...interface{}) logr.InfoLogger {
 	return &noopInfoLogger{}
 }
-func (i *noopInfoLogger) WithName(name string) logr.InfoLogger {
+func (l *noopInfoLogger) WithName(name string) logr.InfoLogger {
 	return &noopInfoLogger{}
 }
 
