@@ -30,7 +30,7 @@ const (
 	// the Kubernetes minimum version required by Knative.
 	KubernetesMinVersionKey = "KUBERNETES_MIN_VERSION"
 
-	defaultMinimumVersion = "v1.16.0"
+	defaultMinimumVersion = "v1.17.0"
 )
 
 func getMinimumVersion() string {
