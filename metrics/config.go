@@ -21,7 +21,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"knative.dev/pkg/ptr"
 	"net"
 	"net/url"
 	"os"
@@ -33,6 +32,7 @@ import (
 	"go.opencensus.io/stats"
 	corev1 "k8s.io/api/core/v1"
 	"knative.dev/pkg/metrics/metricskey"
+	"knative.dev/pkg/ptr"
 )
 
 // metricsBackend specifies the backend to use for metrics
