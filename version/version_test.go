@@ -43,6 +43,21 @@ func TestVersionCheck(t *testing.T) {
 		name:          "greater version (patch)",
 		actualVersion: &testVersioner{version: "v1.17.2"},
 	}, {
+		name:          "greater version (patch), no v",
+		actualVersion: &testVersioner{version: "1.17.2"},
+	}, {
+		name:          "greater version (patch), pre-release",
+		actualVersion: &testVersioner{version: "1.17.2-kpn-065dce"},
+	}, {
+		name:            "greater version (patch), pre-release, envvar override",
+		actualVersion:   &testVersioner{version: "1.15.11-kpn-065dce"},
+		versionOverride: "1.15.11",
+		wantError:       true,
+	}, {
+		name:            "greater version (patch), pre-release, envvar override, -0 hack",
+		actualVersion:   &testVersioner{version: "1.15.11-kpn-065dce"},
+		versionOverride: "1.15.11-0",
+	}, {
 		name:          "greater version (minor)",
 		actualVersion: &testVersioner{version: "v1.18.0"},
 	}, {
@@ -51,6 +66,10 @@ func TestVersionCheck(t *testing.T) {
 	}, {
 		name:          "same version with build",
 		actualVersion: &testVersioner{version: "v1.17.0+k3s.1"},
+	}, {
+		name:          "same version with pre-release",
+		actualVersion: &testVersioner{version: "v1.17.0-k3s.1"},
+		wantError:     true,
 	}, {
 		name:          "smaller version",
 		actualVersion: &testVersioner{version: "v1.14.3"},
