@@ -911,12 +911,13 @@ func TestMetricsOptions(t *testing.T) {
 				Domain:         "domain",
 				Component:      "component",
 				PrometheusPort: 9090,
+				PrometheusHost: "",
 				ConfigMap: map[string]string{
 					"foo":   "bar",
 					"boosh": "kakow",
 				},
 			},
-			want: `{"Domain":"domain","Component":"component","PrometheusPort":9090,"ConfigMap":{"boosh":"kakow","foo":"bar"}}`,
+			want: `{"Domain":"domain","Component":"component","PrometheusPort":9090,"PrometheusHost":"","ConfigMap":{"boosh":"kakow","foo":"bar"}}`,
 		},
 	}
 	for n, tc := range testCases {

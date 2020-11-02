@@ -70,6 +70,11 @@ type ExporterOptions struct {
 	// Prometheus.
 	PrometheusPort int
 
+	// PrometheusHost is the host to expose metrics on if metrics backend is Prometheus.
+	// The dfault value is "0.0.0.0" If is ignored if metrics backend is not
+	// Prometheus.
+	PrometheusHost string
+
 	// ConfigMap is the data from config map config-observability. Must be present.
 	// See https://github.com/knative/serving/blob/master/config/config-observability.yaml
 	// for details.

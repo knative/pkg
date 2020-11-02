@@ -31,6 +31,7 @@ func TestNewPrometheusExporter(t *testing.T) {
 			component:          testComponent,
 			backendDestination: prometheus,
 			prometheusPort:     9090,
+			prometheusHost:     "",
 		},
 		expectedAddr: ":9090",
 	}, {
@@ -40,8 +41,9 @@ func TestNewPrometheusExporter(t *testing.T) {
 			component:          testComponent,
 			backendDestination: prometheus,
 			prometheusPort:     9091,
+			prometheusHost:     "127.0.0.1",
 		},
-		expectedAddr: ":9091",
+		expectedAddr: "127.0.0.1:9091",
 	}}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {

@@ -21,6 +21,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"knative.dev/pkg/ptr"
+	"net"
+	"net/url"
 	"os"
 	"path"
 	"strconv"
@@ -58,9 +61,11 @@ const (
 
 	defaultBackendEnvName = "DEFAULT_METRICS_BACKEND"
 	defaultPrometheusPort = 9090
+	defaultPrometheusHost = ""
 	maxPrometheusPort     = 65535
 	minPrometheusPort     = 1024
 	prometheusPortEnvName = "METRICS_PROMETHEUS_PORT"
+	prometheusHostEnvName = "METRICS_PROMETHEUS_HOST"
 )
 
 // Metrics backend "enum".
@@ -104,6 +109,10 @@ type metricsConfig struct {
 	// prometheusPort is the port where metrics are exposed in Prometheus
 	// format. It defaults to 9090.
 	prometheusPort int
+
+	// prometheusHost is the host where the metrics are exposed in Prometheus
+	// format. It defaults to "0.0.0.0"
+	prometheusHost string
 
 	// ---- Stackdriver specific below ----
 	// True if backendDestination equals to "stackdriver". Store this in a variable
@@ -240,6 +249,12 @@ func createMetricsConfig(ctx context.Context, ops ExporterOptions) (*metricsConf
 		}
 
 		mc.prometheusPort = pp
+
+		phost, err := prometheusHost()
+		if err != nil {
+			return nil, fmt.Errorf("failed to determine Prometheus host: %w", err)
+		}
+		mc.prometheusHost = *phost
 	case stackdriver:
 		// If stackdriverClientConfig is not provided for stackdriver backend destination, OpenCensus will try to
 		// use the application default credentials. If that is not available, Opencensus would fail to create the
@@ -339,6 +354,27 @@ func prometheusPort() (int, error) {
 	}
 
 	return int(pp), nil
+}
+
+// prometheusPort returns the host configured via the environment
+// for the Prometheus metrics exporter if it's set, a default value otherwise.
+// Validation is performed via parsing the host value as part of a url.
+func prometheusHost() (*string, error) {
+	phStr := os.Getenv(prometheusHostEnvName)
+	if phStr == "" {
+		return ptr.String(defaultPrometheusHost), nil
+	}
+	u, err := url.Parse(phStr)
+	if err != nil {
+		return nil, fmt.Errorf("the environment variable %q could not be parsed as a host: %w",
+			prometheusHostEnvName, err)
+	}
+	host, _, err := net.SplitHostPort(u.Host)
+	if err != nil {
+		return nil, fmt.Errorf("could not extract host from %q: %w",
+			u.Host, err)
+	}
+	return &host, nil
 }
 
 // JSONToOptions converts a json string to ExporterOptions.
