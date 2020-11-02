@@ -356,7 +356,7 @@ func prometheusPort() (int, error) {
 	return int(pp), nil
 }
 
-// prometheusPort returns the host configured via the environment
+// prometheusHost returns the host configured via the environment
 // for the Prometheus metrics exporter if it's set, a default value otherwise.
 // Validation is performed via parsing the host value as part of a url.
 func prometheusHost() (*string, error) {
