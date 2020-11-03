@@ -111,6 +111,9 @@ func TestNewPrometheusExporter_fromEnv(t *testing.T) {
 				defer os.Unsetenv(tc.prometheusHostVarName)
 			}
 			mc, err := createMetricsConfig(context.Background(), tc.ops)
+			if err != nil {
+				t.Error(err)
+			}
 			e, _, err := newPrometheusExporter(mc, TestLogger(t))
 			if err != nil {
 				t.Error(err)

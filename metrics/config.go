@@ -246,9 +246,7 @@ func createMetricsConfig(ctx context.Context, ops ExporterOptions) (*metricsConf
 		}
 
 		mc.prometheusPort = pp
-
-		phost := prometheusHost()
-		mc.prometheusHost = phost
+		mc.prometheusHost = prometheusHost()
 	case stackdriver:
 		// If stackdriverClientConfig is not provided for stackdriver backend destination, OpenCensus will try to
 		// use the application default credentials. If that is not available, Opencensus would fail to create the
