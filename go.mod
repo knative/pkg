@@ -68,9 +68,9 @@ require (
 	gopkg.in/yaml.v3 v3.0.0-20190709130402-674ba3eaed22
 	honnef.co/go/tools v0.0.1-2020.1.5 // indirect
 	k8s.io/api v0.18.8
-	k8s.io/apiextensions-apiserver v0.18.4
+	k8s.io/apiextensions-apiserver v0.18.8
 	k8s.io/apimachinery v0.18.8
-	k8s.io/client-go v11.0.1-0.20190805182717-6502b5e7b1b5+incompatible
+	k8s.io/client-go v0.18.8
 	k8s.io/code-generator v0.18.8
 	k8s.io/gengo v0.0.0-20200205140755-e0e292d8aa12
 	k8s.io/klog v1.0.0
