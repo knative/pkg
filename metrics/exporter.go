@@ -66,12 +66,12 @@ type ExporterOptions struct {
 
 	// PrometheusPort is the port to expose metrics if metrics backend is Prometheus.
 	// It should be between maxPrometheusPort and maxPrometheusPort. 0 value means
-	// using the default 9090 value. If it is ignored if metrics backend is not
+	// using the default 9090 value. It is ignored if metrics backend is not
 	// Prometheus.
 	PrometheusPort int
 
 	// PrometheusHost is the host to expose metrics on if metrics backend is Prometheus.
-	// The default value is "0.0.0.0" If it is ignored if metrics backend is not
+	// The default value is "0.0.0.0". It is ignored if metrics backend is not
 	// Prometheus.
 	PrometheusHost string
 
