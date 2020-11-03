@@ -112,8 +112,9 @@ eventing) to fill in. Coordinate with both serving and eventing leads.
 Each repo has a `Release Notes` GitHub Action workflow. This can be used to
 generate the starting point for the release notes. See an example in
 [Eventing](https://github.com/knative/eventing/actions?query=workflow%3A%22Release+Notes%22).
-You will have to determin the correct starting and ending SHAs for the script to
-run.
+The default starting and ending SHAs will work if running out of the `master`
+branch, or you can determin the correct starting and ending SHAs for the script
+to run.
 
 ## Cutting release branches
 
