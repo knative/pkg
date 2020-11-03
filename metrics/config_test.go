@@ -187,6 +187,7 @@ var (
 			backendDestination: prometheus,
 			reportingPeriod:    5 * time.Second,
 			prometheusPort:     defaultPrometheusPort,
+			prometheusHost:     defaultPrometheusHost,
 		},
 		expectedNewExporter: true,
 	}, {
@@ -308,6 +309,7 @@ var (
 			backendDestination: prometheus,
 			reportingPeriod:    5 * time.Second,
 			prometheusPort:     defaultPrometheusPort,
+			prometheusHost:     defaultPrometheusHost,
 		},
 		expectedNewExporter: true,
 	}, {
@@ -349,6 +351,7 @@ var (
 			backendDestination: prometheus,
 			reportingPeriod:    12 * time.Second,
 			prometheusPort:     defaultPrometheusPort,
+			prometheusHost:     defaultPrometheusHost,
 		},
 		expectedNewExporter: true,
 	}, {
@@ -431,6 +434,7 @@ var (
 			backendDestination: prometheus,
 			reportingPeriod:    5 * time.Second,
 			prometheusPort:     defaultPrometheusPort,
+			prometheusHost:     defaultPrometheusHost,
 		},
 		expectedNewExporter: true,
 	}, {
@@ -521,6 +525,7 @@ var (
 			backendDestination: prometheus,
 			reportingPeriod:    5 * time.Second,
 			prometheusPort:     9091,
+			prometheusHost:     defaultPrometheusHost,
 		},
 		expectedNewExporter: true,
 	}}
@@ -595,6 +600,7 @@ func TestGetMetricsConfig_fromEnv(t *testing.T) {
 			backendDestination: prometheus,
 			reportingPeriod:    5 * time.Second,
 			prometheusPort:     defaultPrometheusPort,
+			prometheusHost:     defaultPrometheusHost,
 		},
 	}, {
 		name:     "PrometheusPort from env",
@@ -611,6 +617,7 @@ func TestGetMetricsConfig_fromEnv(t *testing.T) {
 			backendDestination: prometheus,
 			reportingPeriod:    5 * time.Second,
 			prometheusPort:     9999,
+			prometheusHost:     defaultPrometheusHost,
 		},
 	}}
 

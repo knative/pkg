@@ -17,8 +17,8 @@ limitations under the License.
 package metrics
 
 import (
-	"fmt"
 	"net/http"
+	"strconv"
 	"sync"
 
 	prom "contrib.go.opencensus.io/exporter/prometheus"
@@ -82,7 +82,7 @@ func startNewPromSrv(e *prom.Exporter, host string, port int) *http.Server {
 		curPromSrv.Close()
 	}
 	curPromSrv = &http.Server{
-		Addr:    fmt.Sprintf("%s:%d", host, port),
+		Addr:    host + ":" + strconv.Itoa(port),
 		Handler: sm,
 	}
 	return curPromSrv

@@ -21,7 +21,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"net/url"
 	"os"
 	"path"
 	"strconv"
@@ -61,6 +60,7 @@ const (
 	defaultPrometheusPort = 9090
 	maxPrometheusPort     = 65535
 	minPrometheusPort     = 1024
+	defaultPrometheusHost = "0.0.0.0"
 	prometheusPortEnvName = "METRICS_PROMETHEUS_PORT"
 	prometheusHostEnvName = "METRICS_PROMETHEUS_HOST"
 )
@@ -247,11 +247,8 @@ func createMetricsConfig(ctx context.Context, ops ExporterOptions) (*metricsConf
 
 		mc.prometheusPort = pp
 
-		phost, err := prometheusHost()
-		if err != nil {
-			return nil, fmt.Errorf("failed to determine Prometheus host: %w", err)
-		}
-		mc.prometheusHost = *phost
+		phost := prometheusHost()
+		mc.prometheusHost = phost
 	case stackdriver:
 		// If stackdriverClientConfig is not provided for stackdriver backend destination, OpenCensus will try to
 		// use the application default credentials. If that is not available, Opencensus would fail to create the
@@ -355,21 +352,13 @@ func prometheusPort() (int, error) {
 
 // prometheusHost returns the host configured via the environment
 // for the Prometheus metrics exporter if it's set, a default value otherwise.
-// Validation is performed via parsing the host value as part of a url.
-func prometheusHost() (*string, error) {
+// No validation is done here.
+func prometheusHost() string {
 	phStr := os.Getenv(prometheusHostEnvName)
-	// empty string either explicitly set via the env var or by default
-	// if the env var is not set translates to "0.0.0.0"
 	if phStr == "" {
-		return &phStr, nil
+		return defaultPrometheusHost
 	}
-	u, err := url.Parse(phStr)
-	if err != nil {
-		return nil, fmt.Errorf("the environment variable %q could not be parsed as a host: %w",
-			prometheusHostEnvName, err)
-	}
-	hostname := u.Hostname()
-	return &hostname, nil
+	return phStr
 }
 
 // JSONToOptions converts a json string to ExporterOptions.
