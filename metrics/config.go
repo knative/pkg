@@ -21,7 +21,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"net"
 	"net/url"
 	"os"
 	"path"
@@ -32,7 +31,6 @@ import (
 	"go.opencensus.io/stats"
 	corev1 "k8s.io/api/core/v1"
 	"knative.dev/pkg/metrics/metricskey"
-	"knative.dev/pkg/ptr"
 )
 
 // metricsBackend specifies the backend to use for metrics
@@ -61,7 +59,6 @@ const (
 
 	defaultBackendEnvName = "DEFAULT_METRICS_BACKEND"
 	defaultPrometheusPort = 9090
-	defaultPrometheusHost = ""
 	maxPrometheusPort     = 65535
 	minPrometheusPort     = 1024
 	prometheusPortEnvName = "METRICS_PROMETHEUS_PORT"
@@ -361,20 +358,18 @@ func prometheusPort() (int, error) {
 // Validation is performed via parsing the host value as part of a url.
 func prometheusHost() (*string, error) {
 	phStr := os.Getenv(prometheusHostEnvName)
+	// empty string either explicitly set via the env var or by default
+	// if the env var is not set translates to "0.0.0.0"
 	if phStr == "" {
-		return ptr.String(defaultPrometheusHost), nil
+		return &phStr, nil
 	}
 	u, err := url.Parse(phStr)
 	if err != nil {
 		return nil, fmt.Errorf("the environment variable %q could not be parsed as a host: %w",
 			prometheusHostEnvName, err)
 	}
-	host, _, err := net.SplitHostPort(u.Host)
-	if err != nil {
-		return nil, fmt.Errorf("could not extract host from %q: %w",
-			u.Host, err)
-	}
-	return &host, nil
+	hostname := u.Hostname()
+	return &hostname, nil
 }
 
 // JSONToOptions converts a json string to ExporterOptions.
