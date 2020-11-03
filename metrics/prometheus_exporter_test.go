@@ -33,9 +33,9 @@ func TestNewPrometheusExporter(t *testing.T) {
 			component:          testComponent,
 			backendDestination: prometheus,
 			prometheusPort:     9090,
-			prometheusHost:     "",
+			prometheusHost:     "0.0.0.0",
 		},
-		expectedAddr: ":9090",
+		expectedAddr: "0.0.0.0:9090",
 	}, {
 		name: "port 9091",
 		config: metricsConfig{
