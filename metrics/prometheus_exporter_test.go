@@ -112,11 +112,11 @@ func TestNewPrometheusExporter_fromEnv(t *testing.T) {
 			}
 			mc, err := createMetricsConfig(context.Background(), tc.ops)
 			if err != nil {
-				t.Error(err)
+				t.Fatal("Failed to create the metrics config:", err)
 			}
 			e, _, err := newPrometheusExporter(mc, TestLogger(t))
 			if err != nil {
-				t.Error(err)
+				t.Fatal("Failed to create a new Prometheus exporter:", err)
 			}
 			if e == nil {
 				t.Fatal("expected a non-nil metrics exporter")
