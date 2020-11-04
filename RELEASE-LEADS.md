@@ -48,7 +48,7 @@ This roster is seeded with all approvers from Eventing workgroups.
 | v0.17   | 2020-08-18   | yanweiguo      | Harwayne        | -           | 2020-08-11 |
 | v0.18   | 2020-09-29   | ZhiminXiang    | n3wscott        | 2020-08-19  | 2020-09-22 |
 | v0.19   | 2020-11-10   | julz           | n3wscott        | 2020-09-30  | 2020-11-03 |
-| v0.20   | 2021-01-12   | nak3           | slinkydeveloper | 2020-11-11  | 2020-01-05 |
+| v0.20   | 2021-01-12   | nak3           | slinkydeveloper | 2020-11-11  | 2020-01-07 |
 | v0.21   | 2021-02-23   | mattmoor       | lionelvillard   | 2021-01-13  | 2021-02-16 |
 | v0.22   | 2021-04-06   | markusthoemmes | evankanderson   | 2021-02-24  | 2021-03-30 |
 | v0.23   | 2021-05-18   | tcnghia        | vaikas          | 2021-04-07  | 2021-05-11 |
