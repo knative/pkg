@@ -67,7 +67,7 @@ func NewLogger(configJSON string, levelOverride string, opts ...zap.Option) (*za
 	}
 
 	slogger := enrichLoggerWithCommitID(logger.Named(fallbackLoggerName))
-	slogger.Warnw("Failed to parse logging config", zap.Error(err))
+	slogger.Warnw("Failed to parse logging config - using default zap production config", zap.Error(err))
 	return slogger, loggingCfg.Level
 }
 
