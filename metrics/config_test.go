@@ -189,6 +189,7 @@ var (
 			backendDestination: prometheus,
 			reportingPeriod:    5 * time.Second,
 			prometheusPort:     defaultPrometheusPort,
+			prometheusHost:     defaultPrometheusHost,
 		},
 		expectedNewExporter: true,
 	}, {
@@ -310,6 +311,7 @@ var (
 			backendDestination: prometheus,
 			reportingPeriod:    5 * time.Second,
 			prometheusPort:     defaultPrometheusPort,
+			prometheusHost:     defaultPrometheusHost,
 		},
 		expectedNewExporter: true,
 	}, {
@@ -351,6 +353,7 @@ var (
 			backendDestination: prometheus,
 			reportingPeriod:    12 * time.Second,
 			prometheusPort:     defaultPrometheusPort,
+			prometheusHost:     defaultPrometheusHost,
 		},
 		expectedNewExporter: true,
 	}, {
@@ -433,6 +436,7 @@ var (
 			backendDestination: prometheus,
 			reportingPeriod:    5 * time.Second,
 			prometheusPort:     defaultPrometheusPort,
+			prometheusHost:     defaultPrometheusHost,
 		},
 		expectedNewExporter: true,
 	}, {
@@ -523,6 +527,7 @@ var (
 			backendDestination: prometheus,
 			reportingPeriod:    5 * time.Second,
 			prometheusPort:     9091,
+			prometheusHost:     defaultPrometheusHost,
 		},
 		expectedNewExporter: true,
 	}}
@@ -597,6 +602,7 @@ func TestGetMetricsConfig_fromEnv(t *testing.T) {
 			backendDestination: prometheus,
 			reportingPeriod:    5 * time.Second,
 			prometheusPort:     defaultPrometheusPort,
+			prometheusHost:     defaultPrometheusHost,
 		},
 	}, {
 		name:     "PrometheusPort from env",
@@ -613,6 +619,7 @@ func TestGetMetricsConfig_fromEnv(t *testing.T) {
 			backendDestination: prometheus,
 			reportingPeriod:    5 * time.Second,
 			prometheusPort:     9999,
+			prometheusHost:     defaultPrometheusHost,
 		},
 	}}
 
@@ -913,12 +920,13 @@ func TestMetricsOptions(t *testing.T) {
 				Domain:         "domain",
 				Component:      "component",
 				PrometheusPort: 9090,
+				PrometheusHost: "0.0.0.0",
 				ConfigMap: map[string]string{
 					"foo":   "bar",
 					"boosh": "kakow",
 				},
 			},
-			want: `{"Domain":"domain","Component":"component","PrometheusPort":9090,"ConfigMap":{"boosh":"kakow","foo":"bar"}}`,
+			want: `{"Domain":"domain","Component":"component","PrometheusPort":9090,"PrometheusHost":"0.0.0.0","ConfigMap":{"boosh":"kakow","foo":"bar"}}`,
 		},
 	}
 	for n, tc := range testCases {

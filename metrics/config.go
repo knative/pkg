@@ -60,7 +60,9 @@ const (
 	defaultPrometheusPort = 9090
 	maxPrometheusPort     = 65535
 	minPrometheusPort     = 1024
+	defaultPrometheusHost = "0.0.0.0"
 	prometheusPortEnvName = "METRICS_PROMETHEUS_PORT"
+	prometheusHostEnvName = "METRICS_PROMETHEUS_HOST"
 )
 
 // Metrics backend "enum".
@@ -104,6 +106,10 @@ type metricsConfig struct {
 	// prometheusPort is the port where metrics are exposed in Prometheus
 	// format. It defaults to 9090.
 	prometheusPort int
+
+	// prometheusHost is the host where the metrics are exposed in Prometheus
+	// format. It defaults to "0.0.0.0"
+	prometheusHost string
 
 	// ---- Stackdriver specific below ----
 	// True if backendDestination equals to "stackdriver". Store this in a variable
@@ -241,6 +247,7 @@ func createMetricsConfig(ctx context.Context, ops ExporterOptions) (*metricsConf
 		}
 
 		mc.prometheusPort = pp
+		mc.prometheusHost = prometheusHost()
 	}
 
 	// If stackdriverClientConfig is not provided for stackdriver backend destination, OpenCensus will try to
@@ -357,6 +364,17 @@ func JsonToMetricsOptions(jsonOpts string) (*ExporterOptions, error) {
 	}
 
 	return &opts, nil
+}
+
+// prometheusHost returns the host configured via the environment
+// for the Prometheus metrics exporter if it's set, a default value otherwise.
+// No validation is done here.
+func prometheusHost() string {
+	phStr := os.Getenv(prometheusHostEnvName)
+	if phStr == "" {
+		return defaultPrometheusHost
+	}
+	return phStr
 }
 
 // MetricsOptionsToJson converts a ExporterOptions to a json string.
