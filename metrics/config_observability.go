@@ -73,6 +73,12 @@ type ObservabilityConfig struct {
 	// the pods via an HTTP server in the format expected by the pprof visualization tool.
 	EnableProfiling bool
 
+	// DisableQPProfiling indicates whether EnableProfiling flag applies to the QueueProxy processes.
+	// If false (default) — enabling or disabling profiling causes a global rolling restart of the
+	// Knative service pods, which might not be desirable (especially if there is no need to profile
+	// QP processes).
+	DisableQPProfiling bool
+
 	// EnableRequestLog enables activator/queue-proxy to write request logs.
 	EnableRequestLog bool
 
@@ -101,6 +107,7 @@ func NewObservabilityConfigFromConfigMap(configMap *corev1.ConfigMap) (*Observab
 		cm.AsBool(EnableProbeReqLogKey, &oc.EnableProbeRequestLog),
 		cm.AsString("metrics.request-metrics-backend-destination", &oc.RequestMetricsBackend),
 		cm.AsBool("profiling.enable", &oc.EnableProfiling),
+		cm.AsBool("profiling.disable-qp", &oc.DisableQPProfiling),
 		cm.AsString("metrics.opencensus-address", &oc.MetricsCollectorAddress),
 	); err != nil {
 		return nil, err
