@@ -75,7 +75,7 @@ type ObservabilityConfig struct {
 
 	// DisableQPProfiling indicates whether EnableProfiling flag applies to the QueueProxy processes.
 	// If false (default) — enabling or disabling profiling causes a global rolling restart of the
-	// Knative service pods, which might not be desireable (especially if there is no need to profile
+	// Knative service pods, which might not be desirable (especially if there is no need to profile
 	// QP processes).
 	DisableQPProfiling bool
 
@@ -92,7 +92,6 @@ func defaultConfig() *ObservabilityConfig {
 		LoggingURLTemplate:    DefaultLogURLTemplate,
 		RequestLogTemplate:    DefaultRequestLogTemplate,
 		RequestMetricsBackend: defaultRequestMetricsBackend,
-		DisableQPProfiling:    true, // True for backwards compatibility.
 	}
 }
 
@@ -108,7 +107,7 @@ func NewObservabilityConfigFromConfigMap(configMap *corev1.ConfigMap) (*Observab
 		cm.AsBool(EnableProbeReqLogKey, &oc.EnableProbeRequestLog),
 		cm.AsString("metrics.request-metrics-backend-destination", &oc.RequestMetricsBackend),
 		cm.AsBool("profiling.enable", &oc.EnableProfiling),
-		cm.AsBool("profiling.enable-qp", &oc.DisableQPProfiling),
+		cm.AsBool("profiling.disable-qp", &oc.DisableQPProfiling),
 		cm.AsString("metrics.opencensus-address", &oc.MetricsCollectorAddress),
 	); err != nil {
 		return nil, err
