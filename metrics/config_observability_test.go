@@ -37,7 +37,6 @@ func TestObservabilityConfiguration(t *testing.T) {
 		wantConfig: &ObservabilityConfig{
 			EnableProbeRequestLog:  true,
 			EnableProfiling:        true,
-			DisableQPProfiling:     true,
 			EnableVarLogCollection: true,
 			EnableRequestLog:       true,
 			LoggingURLTemplate:     "https://logging.io",
@@ -52,7 +51,6 @@ func TestObservabilityConfiguration(t *testing.T) {
 			EnableReqLogKey:                               "true",
 			"metrics.request-metrics-backend-destination": "stackdriver",
 			"profiling.enable":                            "true",
-			"profiling.disable-qp":                        "true",
 		},
 	}, {
 		name:       "observability config with no map",
@@ -66,61 +64,78 @@ func TestObservabilityConfiguration(t *testing.T) {
 	}, {
 		name: "observability configuration with request log set and template default",
 		data: map[string]string{
-			EnableProbeReqLogKey:            "true",
-			EnableReqLogKey:                 "true",
-			"logging.revision-url-template": "https://logging.io",
+			EnableProbeReqLogKey:                          "true",
+			EnableReqLogKey:                               "true",
+			"logging.enable-var-log-collection":           "true",
+			"logging.revision-url-template":               "https://logging.io",
+			"metrics.request-metrics-backend-destination": "stackdriver",
+			"profiling.enable":                            "true",
 		},
-		wantConfig: func() *ObservabilityConfig {
-			oc := defaultConfig()
-			oc.EnableProbeRequestLog = true
-			oc.EnableRequestLog = true
-			oc.LoggingURLTemplate = "https://logging.io"
-			return oc
-		}(),
+		wantConfig: &ObservabilityConfig{
+			EnableProbeRequestLog:  true,
+			EnableProfiling:        true,
+			EnableRequestLog:       true,
+			EnableVarLogCollection: true,
+			LoggingURLTemplate:     "https://logging.io",
+			RequestLogTemplate:     DefaultRequestLogTemplate,
+			RequestMetricsBackend:  "stackdriver",
+		},
 	}, {
 		name: "observability configuration with request log and template not set",
-		wantConfig: func() *ObservabilityConfig {
-			oc := defaultConfig()
-			oc.RequestLogTemplate = ""
-			oc.EnableProbeRequestLog = true
-			return oc
-		}(),
+		wantConfig: &ObservabilityConfig{
+			EnableProbeRequestLog:  true,
+			EnableProfiling:        true,
+			EnableVarLogCollection: true,
+			LoggingURLTemplate:     "https://logging.io",
+			RequestMetricsBackend:  "stackdriver",
+		},
 		data: map[string]string{
-			EnableProbeReqLogKey: "true",
-			EnableReqLogKey:      "false", // Explicit default.
-			ReqLogTemplateKey:    "",
+			EnableProbeReqLogKey:                          "true",
+			EnableReqLogKey:                               "false",
+			"logging.enable-var-log-collection":           "true",
+			ReqLogTemplateKey:                             "",
+			"logging.revision-url-template":               "https://logging.io",
+			"metrics.request-metrics-backend-destination": "stackdriver",
+			"profiling.enable":                            "true",
 		},
 	}, {
 		name:    "observability configuration with request log set and template not set",
 		wantErr: true,
 		data: map[string]string{
-			EnableProbeReqLogKey:                "true",
-			EnableReqLogKey:                     "true",
-			"logging.enable-var-log-collection": "true",
-			ReqLogTemplateKey:                   "",
+			EnableProbeReqLogKey:                          "true",
+			EnableReqLogKey:                               "true",
+			"logging.enable-var-log-collection":           "true",
+			ReqLogTemplateKey:                             "",
+			"logging.revision-url-template":               "https://logging.io",
+			"metrics.request-metrics-backend-destination": "stackdriver",
+			"profiling.enable":                            "true",
 		},
 	}, {
 		name: "observability configuration with request log not set and with template set",
-		wantConfig: func() *ObservabilityConfig {
-			oc := defaultConfig()
-			oc.EnableProbeRequestLog = true
-			oc.EnableVarLogCollection = true
-			oc.RequestLogTemplate = `{"requestMethod": "{{.Request.Method}}"}`
-			return oc
-		}(),
+		wantConfig: &ObservabilityConfig{
+			EnableProbeRequestLog:  true,
+			EnableProfiling:        true,
+			EnableVarLogCollection: true,
+			LoggingURLTemplate:     "https://logging.io",
+			RequestLogTemplate:     `{"requestMethod": "{{.Request.Method}}"}`,
+			RequestMetricsBackend:  "stackdriver",
+		},
 		data: map[string]string{
-			EnableProbeReqLogKey:                "true",
-			"logging.enable-var-log-collection": "true",
-			ReqLogTemplateKey:                   `{"requestMethod": "{{.Request.Method}}"}`,
+			EnableProbeReqLogKey:                          "true",
+			"logging.enable-var-log-collection":           "true",
+			ReqLogTemplateKey:                             `{"requestMethod": "{{.Request.Method}}"}`,
+			"logging.revision-url-template":               "https://logging.io",
+			"metrics.request-metrics-backend-destination": "stackdriver",
+			"profiling.enable":                            "true",
 		},
 	}, {
 		name: "observability configuration with collector address",
-		wantConfig: func() *ObservabilityConfig {
-			oc := defaultConfig()
-			oc.RequestMetricsBackend = "opencensus"
-			oc.MetricsCollectorAddress = "otel:55678"
-			return oc
-		}(),
+		wantConfig: &ObservabilityConfig{
+			LoggingURLTemplate:      DefaultLogURLTemplate,
+			RequestLogTemplate:      DefaultRequestLogTemplate,
+			RequestMetricsBackend:   "opencensus",
+			MetricsCollectorAddress: "otel:55678",
+		},
 		data: map[string]string{
 			"metrics.request-metrics-backend-destination": "opencensus",
 			"metrics.opencensus-address":                  "otel:55678",
