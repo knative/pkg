@@ -124,12 +124,12 @@ script reports a "GO", then the repo is ready to cut the `release-v.y` branch.
 This can be done by using the GitHub UI:
 
 1. Click on the branch selection box at the top level page of the repository.
-   ![Click the branch selection box](images/github-branch-create.png)
+   ![Click the branch selection box](images/github-branch-create.png | height="300")
 
 1. Search for the correct `release-x.y` branch name for the release.
-   ![Search for the expected release branch name](images/github-branch.png)
+   ![Search for the expected release branch name](images/github-branch.png | height="300")
 1. Click "Create branch: release-x.y".
-   ![Alternate image text](images/github-branch-create.png)
+   ![Alternate image text](images/github-branch-create.png | height="300")
 
 If the Releasability script reported a "NO-GO", the repo needs to be updated.
 This can be performed by running a manual update, or running the the
