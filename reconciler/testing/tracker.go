@@ -56,11 +56,10 @@ func (n *FakeTracker) GetObservers(obj interface{}) []types.NamespacedName {
 		Name:       or.Name,
 	}
 
-	keys := make([]types.NamespacedName, 0, len(n.references[ref]))
-
 	n.Lock()
 	defer n.Unlock()
 
+	keys := make([]types.NamespacedName, 0, len(n.references[ref]))
 	for key := range n.references[ref] {
 		keys = append(keys, key)
 	}
