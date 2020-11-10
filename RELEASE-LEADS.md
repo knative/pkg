@@ -136,8 +136,14 @@ This can be done by using the GitHub UI:
    ![Click create branch: release-x.y](images/github-branch-create.png)
 
 If the Releasability script reported a "NO-GO", the repo needs to be updated.
-This can be performed by running a manual update, or running the the
-[Knobots Auto Updates workflow](https://github.com/knative-sandbox/knobots/actions?query=workflow%3A%22Auto+Updates%22)
+This can be performed by running the the
+[Knobots Auto Updates workflow](https://github.com/knative-sandbox/knobots/actions?query=workflow%3A%22Auto+Updates%22),
+or making a PR to update _master_ from the results of running a manul update deps:
+
+```bash
+RELEASE=0.19
+./hack/update-deps.sh --upgrade --release ${RELEASE}
+```
 
 After a `release-x.y` branch exists, a 2 hourly prow job will produce the label
 and GitHub Release. Update the description of the release with the release notes
