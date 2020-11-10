@@ -104,9 +104,9 @@ additional caution should be used when merging big changes.
 
 ### Collect release-notes
 
-Make a copy of the
-[last release notes document](https://docs.google.com/document/d/1FTL_fMXU2hv2POh9uN_8IJe9FbqEIzFdRZZRXI0WaT4/edit),
-empty it out and send it to the WG leads of the respective project (serving or
+Make a new HackMD release notes document.
+[last release notes document](https://hackmd.io/cJwvzJ4eRVeqqiXzOPtxsA), empty
+it out and send it to the WG leads of the respective project (serving or
 eventing) to fill in. Coordinate with both serving and eventing leads.
 
 Each repo has a `Release Notes` GitHub Action workflow. This can be used to
@@ -117,6 +117,32 @@ branch, or you can determin the correct starting and ending SHAs for the script
 to run.
 
 ## Cutting release branches
+
+If the
+[Releasability](https://github.com/knative/serving/actions?query=workflow%3AReleasability)
+script reports a "GO", then the repo is ready to cut the `release-v.y` branch.
+This can be done by using the GitHub UI:
+
+1. Click on the branch selection box at the top level page of the repository.
+   ![Click the branch selection box](images/github-branch-create.png)
+
+1. Search for the correct `release-x.y` branch name for the release.
+   ![Search for the expected release branch name](images/github-branch.png)
+1. Click "Create branch: release-x.y".
+   ![Alternate image text](images/github-branch-create.png)
+
+If the Releasability script reported a "NO-GO", the repo needs to be updated.
+This can be performed by running a manual update, or running the the
+[Knobots Auto Updates workflow](https://github.com/knative-sandbox/knobots/actions?query=workflow%3A%22Auto+Updates%22)
+
+After a `release-x.y` branch exists, a 2 hourly prow job will produce the label
+and GitHub Release. Update the description of the release with the release notes
+collected.
+
+### Manual+Local Release Branch Creation
+
+If you need or want to perform the release branch cutting process locally, here
+is how:
 
 _Prerequisite_: Install the
 [**buoy** tool](https://github.com/knative/test-infra/tree/master/buoy).
@@ -137,10 +163,20 @@ cd "$(basename "${REPO}" .git)"
 if buoy check go.mod --domain knative.dev --release ${RELEASE} --verbose; then
   git checkout -b release-${RELEASE}
   ./hack/update-deps.sh --upgrade --release ${RELEASE}
-  git add .
-  git push origin release-${RELEASE}
+  # consistency check, shouldnt do anything
+  echo "There should be no changes to git:"
+  git status
 fi
 ```
+
+Then to push the release branch if no changes.
+
+```bash
+git push origin release-${RELEASE}
+```
+
+Otherwise, make a PR to _master_ to update the repo. After that merges then try
+the above script again.
 
 > _Note_: This assumes the upstream knative github repo is a remote called
 > origin.
