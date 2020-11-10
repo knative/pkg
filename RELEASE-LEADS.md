@@ -138,16 +138,18 @@ This can be done by using the GitHub UI:
 If the Releasability script reported a "NO-GO", the repo needs to be updated.
 This can be performed by running the the
 [Knobots Auto Updates workflow](https://github.com/knative-sandbox/knobots/actions?query=workflow%3A%22Auto+Updates%22),
-or making a PR to update _master_ from the results of running a manul update deps:
+or making a PR to update _master_ from the results of running a manul update
+deps:
 
 ```bash
 RELEASE=0.19
 ./hack/update-deps.sh --upgrade --release ${RELEASE}
 ```
 
-After a `release-x.y` branch exists, a 2 hourly prow job will produce the label
+After a `release-x.y` branch exists, a 4 hourly prow job will produce the label
 and GitHub Release. Update the description of the release with the release notes
-collected.
+collected. Can't wait 4 hours?
+[Manually trigger the auto-release job.](#manually-trigger-prow-auto-release-job)
 
 ### Manual+Local Release Branch Creation
 
@@ -193,6 +195,20 @@ the above script again.
 
 This should be done for each repo following the dependency chain and required
 timing.
+
+### Manually trigger Prow auto-release job.
+
+1. Navigate to https://prow.knative.dev/
+
+   ![Prow homepage](images/prow-home.png)
+
+1. Search for the `*-auto-release` job for the repository.
+
+   ![Search Prow for the repo and select the auto-release](images/prow-search.png)
+
+1. Rerun the auto-release job.
+
+   ![Rerun Prow Auto Release](images/prow-rerun.png)
 
 ### Cut release branches of supporting repos
 
