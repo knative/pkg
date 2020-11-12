@@ -520,7 +520,7 @@ func TestSetStackdriverSecretLocation(t *testing.T) {
 
 	ctx := context.Background()
 
-	// Sanity checks
+	// Default checks
 	assertStringsEqual(t, "DefaultSecretName", secretName, StackdriverSecretNameDefault)
 	assertStringsEqual(t, "DefaultSecretNamespace", secretNamespace, StackdriverSecretNamespaceDefault)
 	sec, err := getStackdriverSecret(ctx, secretFetcher)

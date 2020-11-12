@@ -1243,21 +1243,21 @@ func drainWorkQueue(wq workqueue.RateLimitingInterface) (hasQueue []types.Namesp
 	return
 }
 
-type dummyInformer struct {
+type fakeInformer struct {
 	cache.SharedInformer
 }
 
-type dummyStore struct {
+type fakeStore struct {
 	cache.Store
 }
 
-func (*dummyInformer) GetStore() cache.Store {
-	return &dummyStore{}
+func (*fakeInformer) GetStore() cache.Store {
+	return &fakeStore{}
 }
 
 var (
-	dummyKeys = []string{"foo/bar", "bar/foo", "fizz/buzz"}
-	dummyObjs = []interface{}{
+	fakeKeys = []string{"foo/bar", "bar/foo", "fizz/buzz"}
+	fakeObjs = []interface{}{
 		&Resource{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "bar",
@@ -1279,12 +1279,12 @@ var (
 	}
 )
 
-func (*dummyStore) ListKeys() []string {
-	return dummyKeys
+func (*fakeStore) ListKeys() []string {
+	return fakeKeys
 }
 
-func (*dummyStore) List() []interface{} {
-	return dummyObjs
+func (*fakeStore) List() []interface{} {
+	return fakeObjs
 }
 
 func TestImplGlobalResync(t *testing.T) {
@@ -1302,10 +1302,10 @@ func TestImplGlobalResync(t *testing.T) {
 		<-doneCh
 	})
 
-	impl.GlobalResync(&dummyInformer{})
+	impl.GlobalResync(&fakeInformer{})
 
 	// The global resync delays enqueuing things by a second with a jitter that
-	// goes up to len(dummyObjs) times a second: time.Duration(1+len(dummyObjs)) * time.Second.
+	// goes up to len(fakeObjs) times a second: time.Duration(1+len(fakeObjs)) * time.Second.
 	// In this test, the fast lane is empty, so we can assume immediate enqueuing.
 	select {
 	case <-time.After(50 * time.Millisecond):

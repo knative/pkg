@@ -170,12 +170,12 @@ func TestDifferentGVRs(t *testing.T) {
 	}
 }
 
-// fakeGenericLister returns a dummy cache.GenericLister.
+// fakeGenericLister returns a fake cache.GenericLister.
 func fakeGenericLister(gr schema.GroupResource) cache.GenericLister {
-	var dummyKeyFunc cache.KeyFunc = func(interface{}) (string, error) {
+	var fakeKeyFunc cache.KeyFunc = func(interface{}) (string, error) {
 		return "", nil
 	}
 
-	dummyIndexer := cache.NewIndexer(dummyKeyFunc, cache.Indexers{})
-	return cache.NewGenericLister(dummyIndexer, gr)
+	fakeIndexer := cache.NewIndexer(fakeKeyFunc, cache.Indexers{})
+	return cache.NewGenericLister(fakeIndexer, gr)
 }
