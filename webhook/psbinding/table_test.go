@@ -2158,7 +2158,7 @@ func TestBaseReconcileWithSubResourcesReconciler(t *testing.T) {
 		dc := dynamicclient.Get(ctx)
 
 		kc := kubeclient.Get(ctx)
-		srr := &dummySubResourcesReconciler{
+		srr := &fakeSubResourcesReconciler{
 			client: kc,
 		}
 		return &BaseReconciler{
@@ -2282,11 +2282,11 @@ func deletedConfigmap(namespace string, name string) clientgotesting.DeleteActio
 	return action
 }
 
-type dummySubResourcesReconciler struct {
+type fakeSubResourcesReconciler struct {
 	client *fakek8s.Clientset
 }
 
-func (d *dummySubResourcesReconciler) Reconcile(ctx context.Context, fb Bindable) error {
+func (d *fakeSubResourcesReconciler) Reconcile(ctx context.Context, fb Bindable) error {
 	cfg := corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: fb.GetName(),
@@ -2297,6 +2297,6 @@ func (d *dummySubResourcesReconciler) Reconcile(ctx context.Context, fb Bindable
 	return err
 }
 
-func (d *dummySubResourcesReconciler) ReconcileDeletion(ctx context.Context, fb Bindable) error {
+func (d *fakeSubResourcesReconciler) ReconcileDeletion(ctx context.Context, fb Bindable) error {
 	return d.client.CoreV1().ConfigMaps(fb.GetNamespace()).Delete(ctx, fb.GetName(), metav1.DeleteOptions{})
 }
