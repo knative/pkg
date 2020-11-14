@@ -17,6 +17,7 @@ limitations under the License.
 package handlers
 
 import (
+	"fmt"
 	"net/http"
 	"sync"
 	"time"
@@ -47,7 +48,7 @@ var newTimer = func(d time.Duration) timer {
 }
 
 // Drainer wraps an inner http.Handler to support responding to kubelet
-// probes with a "200 OK" until the handler is told to Drain.
+// probes and KProbes with a "200 OK" until the handler is told to Drain.
 // When the Drainer is told to Drain, it will immediately start to fail
 // probes with a "500 shutting down", and the call will block until no
 // requests have been received for QuietPeriod (defaults to
@@ -82,6 +83,19 @@ func (d *Drainer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusOK)
 		}
 		return
+	}
+	if network.IsKProbe(r) {
+		if d.draining() {
+			http.Error(w, "shutting down", http.StatusServiceUnavailable)
+		} else {
+			hh := r.Header.Get(network.HashHeaderName)
+			if hh == "" {
+				http.Error(w, fmt.Sprintf("a probe request must contain a non-empty %q header", network.HashHeaderName), http.StatusBadRequest)
+				return
+			}
+			w.Header().Set(network.HashHeaderName, hh)
+			w.WriteHeader(http.StatusOK)
+		}
 	}
 
 	d.reset()

@@ -54,6 +54,16 @@ const (
 	// included in request metrics.
 	ProbeHeaderName = "K-Network-Probe"
 
+	// ProbeHeaderValue is the value of a header that can be added to
+	// requests to probe the knative networking layer.  Requests
+	// with `K-Network-Probe` this value will not be passed to the user
+	// container or included in request metrics.
+	ProbeHeaderValue = "probe"
+
+	// HashHeaderName is the name of an internal header that Ingress controller
+	// uses to find out which version of the networking config is deployed.
+	HashHeaderName = "K-Network-Hash"
+
 	// Since K8s 1.8, prober requests have
 	//   User-Agent = "kube-probe/{major-version}.{minor-version}".
 	KubeProbeUAPrefix = "kube-probe/"
@@ -67,4 +77,8 @@ const (
 func IsKubeletProbe(r *http.Request) bool {
 	return strings.HasPrefix(r.Header.Get("User-Agent"), KubeProbeUAPrefix) ||
 		r.Header.Get(KubeletProbeHeaderName) != ""
+}
+
+func IsKProbe(r *http.Request) bool {
+	return r.Header.Get(ProbeHeaderName) == ProbeHeaderValue
 }
