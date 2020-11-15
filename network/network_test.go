@@ -52,17 +52,17 @@ func TestIsKnativeProbe(t *testing.T) {
 	if IsKProbe(req) {
 		t.Error("Not a knative probe but counted as such")
 	}
-	req.Header.Set("K-Network-Probe", "probe")
+	req.Header.Set(ProbeHeaderName, ProbeHeaderValue)
 	if !IsKProbe(req) {
 		t.Error("knative probe but not counted as such")
 	}
-	req.Header.Del("K-Network-Probe")
+	req.Header.Del(ProbeHeaderName)
 	if IsKProbe(req) {
 		t.Error("Not a knative probe but counted as such")
 	}
-	req.Header.Set("K-Network-Probe", "no matter")
+	req.Header.Set(ProbeHeaderName, "no matter")
 	if IsKProbe(req) {
-		t.Error("Not a knative probe but not counted as such")
+		t.Error("Not a knative probe but counted as such")
 	}
 }
 
@@ -71,13 +71,13 @@ func TestServeKProbe(t *testing.T) {
 		kprobehash = "hash"
 		kprobe     = &http.Request{
 			Header: http.Header{
-				"K-Network-Probe": []string{"probe"},
-				"K-Network-Hash":  []string{kprobehash},
+				ProbeHeaderName: []string{ProbeHeaderValue},
+				HashHeaderName:  []string{kprobehash},
 			},
 		}
 		kprobeerr = &http.Request{
 			Header: http.Header{
-				"K-Network-Probe": []string{"probe"},
+				ProbeHeaderName: []string{ProbeHeaderValue},
 			},
 		}
 	)
@@ -88,7 +88,7 @@ func TestServeKProbe(t *testing.T) {
 		t.Errorf("Probe status = %d, wanted %d", got, want)
 	}
 
-	if got, want := resp.Header().Get("K-Network-Hash"), kprobehash; got != want {
+	if got, want := resp.Header().Get(HashHeaderName), kprobehash; got != want {
 		t.Errorf("KProbe hash = %s, wanted %s", got, want)
 	}
 

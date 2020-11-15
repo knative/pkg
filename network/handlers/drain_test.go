@@ -243,13 +243,13 @@ func TestDrainerKProbe(t *testing.T) {
 		kprobehash = "hash"
 		kprobe     = &http.Request{
 			Header: http.Header{
-				"K-Network-Probe": []string{"probe"},
-				"K-Network-Hash":  []string{kprobehash},
+				network.ProbeHeaderName: []string{network.ProbeHeaderValue},
+				network.HashHeaderName:  []string{kprobehash},
 			},
 		}
 		kprobeerr = &http.Request{
 			Header: http.Header{
-				"K-Network-Probe": []string{"probe"},
+				network.ProbeHeaderName: []string{network.ProbeHeaderValue},
 			},
 		}
 		cnt   = 0
@@ -273,7 +273,7 @@ func TestDrainerKProbe(t *testing.T) {
 		t.Errorf("Probe status = %d, wanted %d", got, want)
 	}
 
-	if got, want := resp.Header().Get("K-Network-Hash"), kprobehash; got != want {
+	if got, want := resp.Header().Get(network.HashHeaderName), kprobehash; got != want {
 		t.Errorf("KProbe hash = %s, wanted %s", got, want)
 	}
 
