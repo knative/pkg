@@ -283,7 +283,7 @@ func TestDrainerKProbe(t *testing.T) {
 		t.Errorf("Probe status = %d, wanted %d", got, want)
 	}
 
-	if cnt != 4 {
+	if cnt != 3 {
 		t.Error("Inner handler was not properly invoked")
 	}
 }

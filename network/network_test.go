@@ -18,6 +18,7 @@ package network
 
 import (
 	"net/http"
+	"net/http/httptest"
 	"testing"
 )
 
@@ -62,5 +63,38 @@ func TestIsKnativeProbe(t *testing.T) {
 	req.Header.Set("K-Network-Probe", "no matter")
 	if IsKProbe(req) {
 		t.Error("Not a knative probe but not counted as such")
+	}
+}
+
+func TestServeKProbe(t *testing.T) {
+	var (
+		kprobehash = "hash"
+		kprobe     = &http.Request{
+			Header: http.Header{
+				"K-Network-Probe": []string{"probe"},
+				"K-Network-Hash":  []string{kprobehash},
+			},
+		}
+		kprobeerr = &http.Request{
+			Header: http.Header{
+				"K-Network-Probe": []string{"probe"},
+			},
+		}
+	)
+
+	resp := httptest.NewRecorder()
+	ServeKProbe(resp, kprobe)
+	if got, want := resp.Code, http.StatusOK; got != want {
+		t.Errorf("Probe status = %d, wanted %d", got, want)
+	}
+
+	if got, want := resp.Header().Get("K-Network-Hash"), kprobehash; got != want {
+		t.Errorf("KProbe hash = %s, wanted %s", got, want)
+	}
+
+	resp = httptest.NewRecorder()
+	ServeKProbe(resp, kprobeerr)
+	if got, want := resp.Code, http.StatusBadRequest; got != want {
+		t.Errorf("Probe status = %d, wanted %d", got, want)
 	}
 }

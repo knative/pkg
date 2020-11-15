@@ -17,7 +17,6 @@ limitations under the License.
 package handlers
 
 import (
-	"fmt"
 	"net/http"
 	"sync"
 	"time"
@@ -88,14 +87,9 @@ func (d *Drainer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		if d.draining() {
 			http.Error(w, "shutting down", http.StatusServiceUnavailable)
 		} else {
-			hh := r.Header.Get(network.HashHeaderName)
-			if hh == "" {
-				http.Error(w, fmt.Sprintf("a probe request must contain a non-empty %q header", network.HashHeaderName), http.StatusBadRequest)
-				return
-			}
-			w.Header().Set(network.HashHeaderName, hh)
-			w.WriteHeader(http.StatusOK)
+			network.ServeKProbe(w, r)
 		}
+		return
 	}
 
 	d.reset()
