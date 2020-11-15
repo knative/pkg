@@ -69,19 +69,21 @@ func TestInformedWatcher(t *testing.T) {
 	}
 	kc := fakekubeclientset.NewSimpleClientset(fooCM, barCM)
 	cmw := NewInformedWatcher(kc, "default")
-
-	foo1 := &counter{name: "foo1"}
-	foo2 := &counter{name: "foo2"}
-	bar := &counter{name: "bar"}
+	// Because events happens asynchronously via a watcher, use a sync.WaitGroup to wait until it has
+	wg := &sync.WaitGroup{}
+	foo1 := &counter{name: "foo1", wg: wg}
+	foo2 := &counter{name: "foo2", wg: wg}
+	bar := &counter{name: "bar", wg: wg}
 	cmw.Watch("foo", foo1.callback)
 	cmw.Watch("foo", foo2.callback)
 	cmw.Watch("bar", bar.callback)
-
+	wg.Add(3)
 	stopCh := make(chan struct{})
 	defer close(stopCh)
 	if err := cmw.Start(stopCh); err != nil {
 		t.Fatal("cm.Start() =", err)
 	}
+	wg.Wait()
 
 	// When Start returns the callbacks should have been called with the
 	// version of the objects that is available.
@@ -93,7 +95,9 @@ func TestInformedWatcher(t *testing.T) {
 
 	// After a "foo" event, the "foo" watchers should have 2,
 	// and the "bar" watchers should still have 1
+	wg.Add(2)
 	cmw.updateConfigMapEvent(nil, fooCM)
+	wg.Wait()
 	for _, obj := range []*counter{foo1, foo2} {
 		if got, want := obj.count(), 2; got != want {
 			t.Errorf("%v.count = %d, want %d", obj.name, got, want)
@@ -108,8 +112,10 @@ func TestInformedWatcher(t *testing.T) {
 
 	// After a "foo" and "bar" event, the "foo" watchers should have 3,
 	// and the "bar" watchers should still have 2
+	wg.Add(3)
 	cmw.updateConfigMapEvent(nil, fooCM)
 	cmw.updateConfigMapEvent(nil, barCM)
+	wg.Wait()
 	for _, obj := range []*counter{foo1, foo2} {
 		if got, want := obj.count(), 3; got != want {
 			t.Errorf("%v.count = %d, want %d", obj.name, got, want)
@@ -122,9 +128,11 @@ func TestInformedWatcher(t *testing.T) {
 	}
 
 	// After a "bar" event, all watchers should have 3
+	wg.Add(1)
 	nbarCM := barCM.DeepCopy()
 	nbarCM.Data["wow"] = "now!"
 	cmw.updateConfigMapEvent(barCM, nbarCM)
+	wg.Wait()
 	for _, obj := range []*counter{foo1, foo2, bar} {
 		if got, want := obj.count(), 3; got != want {
 			t.Errorf("%v.count = %d, want %d", obj.name, got, want)
@@ -134,6 +142,7 @@ func TestInformedWatcher(t *testing.T) {
 	// After an idempotent event no changes should be recorded.
 	cmw.updateConfigMapEvent(barCM, barCM)
 	cmw.updateConfigMapEvent(fooCM, fooCM)
+	wg.Wait()
 	for _, obj := range []*counter{foo1, foo2, bar} {
 		if got, want := obj.count(), 3; got != want {
 			t.Errorf("%v.count = %d, want %d", obj.name, got, want)
@@ -148,6 +157,7 @@ func TestInformedWatcher(t *testing.T) {
 			Name:      "not-watched",
 		},
 	})
+	wg.Wait()
 	for _, obj := range []*counter{foo1, foo2, bar} {
 		if got, want := obj.count(), 3; got != want {
 			t.Errorf("%v.count = %d, want %d", obj.name, got, want)
@@ -161,6 +171,7 @@ func TestInformedWatcher(t *testing.T) {
 			Name:      "foo",
 		},
 	})
+	wg.Wait()
 	for _, obj := range []*counter{foo1, foo2, bar} {
 		if got, want := obj.count(), 3; got != want {
 			t.Errorf("%v.count = %d, want %d", obj.name, got, want)
