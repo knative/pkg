@@ -25,10 +25,12 @@ import (
 	"go.opencensus.io/stats/view"
 	"go.opencensus.io/tag"
 	"go.uber.org/zap"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/cache"
 	kubemetrics "k8s.io/client-go/tools/metrics"
 	"k8s.io/client-go/util/workqueue"
 	"knative.dev/pkg/metrics"
+	"knative.dev/pkg/metrics/metricskey"
 )
 
 var (
@@ -46,7 +48,12 @@ var (
 	// - length between 1 and 255 inclusive
 	// - characters are printable US-ASCII
 	reconcilerTagKey = tag.MustNewKey("reconciler")
+	resourceTagKey   = tag.MustNewKey("resource_name")
 	successTagKey    = tag.MustNewKey("success")
+	NamespaceTagKey  = tag.MustNewKey(metricskey.LabelNamespaceName)
+	ServiceTagKey    = tag.MustNewKey(metricskey.LabelServiceName)
+	ConfigTagKey     = tag.MustNewKey(metricskey.LabelConfigurationName)
+	RevisionTagKey   = tag.MustNewKey(metricskey.LabelRevisionName)
 )
 
 func init() {
@@ -165,17 +172,17 @@ func init() {
 		Description: "Depth of the work queue",
 		Measure:     workQueueDepthStat,
 		Aggregation: view.LastValue(),
-		TagKeys:     []tag.Key{reconcilerTagKey},
+		TagKeys:     []tag.Key{reconcilerTagKey, NamespaceTagKey, ServiceTagKey, ConfigTagKey, RevisionTagKey},
 	}, {
 		Description: "Number of reconcile operations",
 		Measure:     reconcileCountStat,
 		Aggregation: view.Count(),
-		TagKeys:     []tag.Key{reconcilerTagKey, successTagKey},
+		TagKeys:     []tag.Key{reconcilerTagKey, successTagKey, NamespaceTagKey, ServiceTagKey, ConfigTagKey, RevisionTagKey, resourceTagKey},
 	}, {
 		Description: "Latency of reconcile operations",
 		Measure:     reconcileLatencyStat,
 		Aggregation: reconcileDistribution,
-		TagKeys:     []tag.Key{reconcilerTagKey, successTagKey},
+		TagKeys:     []tag.Key{reconcilerTagKey, successTagKey, NamespaceTagKey, ServiceTagKey, ConfigTagKey, RevisionTagKey, resourceTagKey},
 	}}
 	views = append(views, wp.DefaultViews()...)
 	views = append(views, rp.DefaultViews()...)
@@ -195,7 +202,7 @@ type StatsReporter interface {
 	ReportQueueDepth(v int64) error
 
 	// ReportReconcile reports the count and latency metrics for a reconcile operation
-	ReportReconcile(duration time.Duration, success string) error
+	ReportReconcile(duration time.Duration, success string, key types.NamespacedName) error
 }
 
 // Reporter holds cached metric objects to report metrics
@@ -209,7 +216,11 @@ func NewStatsReporter(reconciler string) (StatsReporter, error) {
 	// Reconciler tag is static. Create a context containing that and cache it.
 	ctx, err := tag.New(
 		context.Background(),
-		tag.Insert(reconcilerTagKey, reconciler))
+		tag.Insert(reconcilerTagKey, reconciler),
+		tag.Insert(NamespaceTagKey, metricskey.ValueUnknown),
+		tag.Insert(ServiceTagKey, metricskey.ValueUnknown),
+		tag.Insert(ConfigTagKey, metricskey.ValueUnknown),
+		tag.Insert(RevisionTagKey, metricskey.ValueUnknown))
 	if err != nil {
 		return nil, err
 	}
@@ -237,11 +248,18 @@ func (r *reporter) ReportQueueDepth(v int64) error {
 }
 
 // ReportReconcile reports the count and latency metrics for a reconcile operation
-func (r *reporter) ReportReconcile(duration time.Duration, success string) error {
+func (r *reporter) ReportReconcile(duration time.Duration, success string, key types.NamespacedName) error {
 	ctx, err := tag.New(
 		context.Background(),
 		tag.Insert(reconcilerTagKey, r.reconciler),
-		tag.Insert(successTagKey, success))
+		tag.Insert(resourceTagKey, key.Name),
+		tag.Insert(successTagKey, success),
+		tag.Insert(NamespaceTagKey, key.Namespace),
+		tag.Insert(ServiceTagKey, metricskey.ValueUnknown),
+		tag.Insert(ConfigTagKey, metricskey.ValueUnknown),
+		tag.Insert(RevisionTagKey, metricskey.ValueUnknown),
+	)
+
 	if err != nil {
 		return err
 	}
