@@ -48,7 +48,6 @@ var (
 	// - length between 1 and 255 inclusive
 	// - characters are printable US-ASCII
 	reconcilerTagKey = tag.MustNewKey("reconciler")
-	resourceTagKey   = tag.MustNewKey("resource_name")
 	successTagKey    = tag.MustNewKey("success")
 	NamespaceTagKey  = tag.MustNewKey(metricskey.LabelNamespaceName)
 	ServiceTagKey    = tag.MustNewKey(metricskey.LabelServiceName)
@@ -177,12 +176,12 @@ func init() {
 		Description: "Number of reconcile operations",
 		Measure:     reconcileCountStat,
 		Aggregation: view.Count(),
-		TagKeys:     []tag.Key{reconcilerTagKey, successTagKey, NamespaceTagKey, ServiceTagKey, ConfigTagKey, RevisionTagKey, resourceTagKey},
+		TagKeys:     []tag.Key{reconcilerTagKey, successTagKey, NamespaceTagKey, ServiceTagKey, ConfigTagKey, RevisionTagKey},
 	}, {
 		Description: "Latency of reconcile operations",
 		Measure:     reconcileLatencyStat,
 		Aggregation: reconcileDistribution,
-		TagKeys:     []tag.Key{reconcilerTagKey, successTagKey, NamespaceTagKey, ServiceTagKey, ConfigTagKey, RevisionTagKey, resourceTagKey},
+		TagKeys:     []tag.Key{reconcilerTagKey, successTagKey, NamespaceTagKey, ServiceTagKey, ConfigTagKey, RevisionTagKey},
 	}}
 	views = append(views, wp.DefaultViews()...)
 	views = append(views, rp.DefaultViews()...)
@@ -252,7 +251,6 @@ func (r *reporter) ReportReconcile(duration time.Duration, success string, key t
 	ctx, err := tag.New(
 		context.Background(),
 		tag.Insert(reconcilerTagKey, r.reconciler),
-		tag.Insert(resourceTagKey, key.Name),
 		tag.Insert(successTagKey, success),
 		tag.Insert(NamespaceTagKey, key.Namespace),
 		tag.Insert(ServiceTagKey, metricskey.ValueUnknown),

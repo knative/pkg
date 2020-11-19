@@ -78,7 +78,6 @@ func TestReportReconcile(t *testing.T) {
 		"reconciler":         "testreconciler",
 		"success":            "true",
 		"namespace_name":     rNamespace,
-		"resource_name":      rName,
 		"service_name":       metricskey.ValueUnknown,
 		"configuration_name": metricskey.ValueUnknown,
 		"revision_name":      metricskey.ValueUnknown,
