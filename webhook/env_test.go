@@ -33,6 +33,13 @@ type portTest struct {
 	wantPanic bool
 }
 
+type webhookNameTest struct {
+	name      string
+	in        string
+	want      string
+	wantPanic bool
+}
+
 func TestPort(t *testing.T) {
 	tests := []portTest{{
 		name: testMissingInputName,
@@ -77,6 +84,40 @@ func TestPort(t *testing.T) {
 
 			if got := PortFromEnv(testDefaultPort); got != tc.want {
 				t.Errorf("PortFromEnv = %d, want: %d", got, tc.want)
+			}
+		})
+	}
+}
+
+func TestWebhookName(t *testing.T) {
+	tests := []webhookNameTest{{
+		name:      "EmptyInput",
+		in:        "",
+		wantPanic: true,
+	}, {
+		name: "ValidInput",
+		in:   "mywebhook",
+		want: "mywebhook",
+	}}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			// webhookNameEnv is unset when testing missing input.
+			if tc.name != testMissingInputName {
+				os.Setenv(webhookNameEnv, tc.in)
+			}
+
+			defer func() {
+				if r := recover(); r == nil && tc.wantPanic {
+					t.Error("Did not panic")
+				} else if r != nil && !tc.wantPanic {
+					t.Error("Got unexpected panic")
+				}
+				os.Unsetenv(webhookNameEnv)
+			}()
+
+			if got := NameFromEnv(); got != tc.want {
+				t.Errorf("NameFromEnv = %s, want: %s", got, tc.want)
 			}
 		})
 	}
