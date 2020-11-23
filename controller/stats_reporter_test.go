@@ -24,7 +24,6 @@ import (
 
 	"go.opencensus.io/stats/view"
 	"k8s.io/apimachinery/pkg/types"
-	"knative.dev/pkg/metrics/metricskey"
 	"knative.dev/pkg/metrics/metricstest"
 	_ "knative.dev/pkg/metrics/testing"
 )
@@ -52,11 +51,7 @@ func TestReportQueueDepth(t *testing.T) {
 
 	r, _ := NewStatsReporter("testreconciler")
 	wantTags := map[string]string{
-		"reconciler":         "testreconciler",
-		"namespace_name":     metricskey.ValueUnknown,
-		"service_name":       metricskey.ValueUnknown,
-		"configuration_name": metricskey.ValueUnknown,
-		"revision_name":      metricskey.ValueUnknown,
+		"reconciler": "testreconciler",
 	}
 
 	// Send statistics only once and observe the results
@@ -75,12 +70,9 @@ func TestReportReconcile(t *testing.T) {
 	rName := "test_resource"
 	rNamespace := "default"
 	wantTags := map[string]string{
-		"reconciler":         "testreconciler",
-		"success":            "true",
-		"namespace_name":     rNamespace,
-		"service_name":       metricskey.ValueUnknown,
-		"configuration_name": metricskey.ValueUnknown,
-		"revision_name":      metricskey.ValueUnknown,
+		"reconciler":     "testreconciler",
+		"success":        "true",
+		"namespace_name": rNamespace,
 	}
 
 	initialReconcileCount := int64(0)

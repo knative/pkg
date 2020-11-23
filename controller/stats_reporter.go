@@ -50,9 +50,6 @@ var (
 	reconcilerTagKey = tag.MustNewKey("reconciler")
 	successTagKey    = tag.MustNewKey("success")
 	NamespaceTagKey  = tag.MustNewKey(metricskey.LabelNamespaceName)
-	ServiceTagKey    = tag.MustNewKey(metricskey.LabelServiceName)
-	ConfigTagKey     = tag.MustNewKey(metricskey.LabelConfigurationName)
-	RevisionTagKey   = tag.MustNewKey(metricskey.LabelRevisionName)
 )
 
 func init() {
@@ -171,17 +168,17 @@ func init() {
 		Description: "Depth of the work queue",
 		Measure:     workQueueDepthStat,
 		Aggregation: view.LastValue(),
-		TagKeys:     []tag.Key{reconcilerTagKey, NamespaceTagKey, ServiceTagKey, ConfigTagKey, RevisionTagKey},
+		TagKeys:     []tag.Key{reconcilerTagKey},
 	}, {
 		Description: "Number of reconcile operations",
 		Measure:     reconcileCountStat,
 		Aggregation: view.Count(),
-		TagKeys:     []tag.Key{reconcilerTagKey, successTagKey, NamespaceTagKey, ServiceTagKey, ConfigTagKey, RevisionTagKey},
+		TagKeys:     []tag.Key{reconcilerTagKey, successTagKey, NamespaceTagKey},
 	}, {
 		Description: "Latency of reconcile operations",
 		Measure:     reconcileLatencyStat,
 		Aggregation: reconcileDistribution,
-		TagKeys:     []tag.Key{reconcilerTagKey, successTagKey, NamespaceTagKey, ServiceTagKey, ConfigTagKey, RevisionTagKey},
+		TagKeys:     []tag.Key{reconcilerTagKey, successTagKey, NamespaceTagKey},
 	}}
 	views = append(views, wp.DefaultViews()...)
 	views = append(views, rp.DefaultViews()...)
@@ -215,11 +212,7 @@ func NewStatsReporter(reconciler string) (StatsReporter, error) {
 	// Reconciler tag is static. Create a context containing that and cache it.
 	ctx, err := tag.New(
 		context.Background(),
-		tag.Insert(reconcilerTagKey, reconciler),
-		tag.Insert(NamespaceTagKey, metricskey.ValueUnknown),
-		tag.Insert(ServiceTagKey, metricskey.ValueUnknown),
-		tag.Insert(ConfigTagKey, metricskey.ValueUnknown),
-		tag.Insert(RevisionTagKey, metricskey.ValueUnknown))
+		tag.Insert(reconcilerTagKey, reconciler))
 	if err != nil {
 		return nil, err
 	}
@@ -253,9 +246,6 @@ func (r *reporter) ReportReconcile(duration time.Duration, success string, key t
 		tag.Insert(reconcilerTagKey, r.reconciler),
 		tag.Insert(successTagKey, success),
 		tag.Insert(NamespaceTagKey, key.Namespace),
-		tag.Insert(ServiceTagKey, metricskey.ValueUnknown),
-		tag.Insert(ConfigTagKey, metricskey.ValueUnknown),
-		tag.Insert(RevisionTagKey, metricskey.ValueUnknown),
 	)
 
 	if err != nil {
