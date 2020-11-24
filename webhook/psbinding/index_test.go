@@ -48,15 +48,15 @@ func TestExact(t *testing.T) {
 	}
 
 	// Before we Add something, we shouldn't be able to Get anything.
-	if got, ok := em.Get(key); ok {
+	if got, ok := em.get(key); ok {
 		t.Errorf("Get(%+v) = %v, %v; wanted nil, false", key, got, ok)
 	}
 
 	// Now Add it.
-	em.Add(key, want)
+	em.add(key, want)
 
 	// After we Add something, we should be able to Get it.
-	if got, ok := em.Get(key); !ok {
+	if got, ok := em.get(key); !ok {
 		t.Errorf("Get(%+v) = %v, %v; wanted b, true", key, want, ok)
 	} else if !cmp.Equal(got, want) {
 		t.Error("Get (-want, +got):", cmp.Diff(want, got))
@@ -70,7 +70,7 @@ func TestExact(t *testing.T) {
 	}
 
 	// After we Add something, we still shouldn't return things for other keys.
-	if got, ok := em.Get(otherKey); ok {
+	if got, ok := em.get(otherKey); ok {
 		t.Errorf("Get(%+v) = %v, %v; wanted nil, false", key, got, ok)
 	}
 }
@@ -100,7 +100,7 @@ func TestInexact(t *testing.T) {
 
 	t.Run("empty matcher doesn't match", func(t *testing.T) {
 		im := make(inexactMatcher, 1)
-		if got, ok := im.Get(key, ls); ok {
+		if got, ok := im.get(key, ls); ok {
 			t.Errorf("Get(%+v) = %v, %v; wanted nil, false", key, got, ok)
 		}
 	})
@@ -111,10 +111,10 @@ func TestInexact(t *testing.T) {
 		// Use exactly the labels from the resource.
 		selector := ls.AsSelector()
 
-		im.Add(key, selector, want)
+		im.add(key, selector, want)
 
 		// With an appropriate selector, we match and get the binding.
-		if got, ok := im.Get(key, ls); !ok {
+		if got, ok := im.get(key, ls); !ok {
 			t.Errorf("Get(%+v) = %v, %v; wanted b, true", key, want, ok)
 		} else if !cmp.Equal(got, want) {
 			t.Error("Get (-want, +got):", cmp.Diff(want, got))
@@ -127,10 +127,10 @@ func TestInexact(t *testing.T) {
 		// Match everything.
 		selector := labels.Everything()
 
-		im.Add(key, selector, want)
+		im.add(key, selector, want)
 
 		// With an appropriate selector, we match and get the binding.
-		if got, ok := im.Get(key, ls); !ok {
+		if got, ok := im.get(key, ls); !ok {
 			t.Errorf("Get(%+v) = %v, %v; wanted b, true", key, want, ok)
 		} else if !cmp.Equal(got, want) {
 			t.Error("Get (-want, +got):", cmp.Diff(want, got))
@@ -143,9 +143,9 @@ func TestInexact(t *testing.T) {
 		// Match nothing.
 		selector := labels.Nothing()
 
-		im.Add(key, selector, want)
+		im.add(key, selector, want)
 
-		if got, ok := im.Get(key, ls); ok {
+		if got, ok := im.get(key, ls); ok {
 			t.Errorf("Get(%+v) = %v, %v; wanted nil, false", key, got, ok)
 		}
 	})
@@ -158,10 +158,10 @@ func TestInexact(t *testing.T) {
 			"foo": "bar",
 		}).AsSelector()
 
-		im.Add(key, selector, want)
+		im.add(key, selector, want)
 
 		// With an appropriate selector, we match and get the binding.
-		if got, ok := im.Get(key, ls); !ok {
+		if got, ok := im.get(key, ls); !ok {
 			t.Errorf("Get(%+v) = %v, %v; wanted b, true", key, want, ok)
 		} else if !cmp.Equal(got, want) {
 			t.Error("Get (-want, +got):", cmp.Diff(want, got))
@@ -177,10 +177,10 @@ func TestInexact(t *testing.T) {
 			"not": "found",
 		}).AsSelector()
 
-		im.Add(key, selector, want)
+		im.add(key, selector, want)
 
 		// We shouldn't match because the second labels shouldn't match.
-		if got, ok := im.Get(key, ls); ok {
+		if got, ok := im.get(key, ls); ok {
 			t.Errorf("Get(%+v) = %v, %v; wanted nil, false", key, got, ok)
 		}
 	})
@@ -191,13 +191,13 @@ func TestInexact(t *testing.T) {
 		// Use exactly the labels from the resource.
 		selector := ls.AsSelector()
 
-		im.Add(key, selector, want)
+		im.add(key, selector, want)
 
 		otherKey := key
 		otherKey.Namespace = "another"
 
 		// We shouldn't match because the second labels shouldn't match.
-		if got, ok := im.Get(otherKey, ls); ok {
+		if got, ok := im.get(otherKey, ls); ok {
 			t.Errorf("Get(%+v) = %v, %v; wanted nil, false", key, got, ok)
 		}
 	})
