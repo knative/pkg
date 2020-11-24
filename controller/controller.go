@@ -215,7 +215,7 @@ type Impl struct {
 	// the shared cache on a global resync, be default and if not
 	// set by the controller implemenation, it will default to
 	// allowing every object in the cache
-	GlobalResyncFilterFunc filterFunc
+	globalResyncFilterFunc filterFunc
 }
 
 // ControllerOptions encapsulates options for creating a new controller,
@@ -259,7 +259,7 @@ func NewImplFull(r Reconciler, options ControllerOptions) *Impl {
 		workQueue:              newTwoLaneWorkQueue(options.WorkQueueName, options.RateLimiter),
 		logger:                 logger,
 		statsReporter:          options.Reporter,
-		GlobalResyncFilterFunc: options.GlobalResyncFilterFunc,
+		globalResyncFilterFunc: options.GlobalResyncFilterFunc,
 	}
 }
 
@@ -558,20 +558,21 @@ func (c *Impl) handleErr(err error, key types.NamespacedName) {
 	c.workQueue.Forget(key)
 }
 
-// GlobalResync enqueues into the slow lane all objects from the passed SharedInformer
+// GlobalResync enqueues (as allowed by the globalResyncFilterFunc) into
+// the slow lane objects from the passed SharedInformer
 func (c *Impl) GlobalResync(si cache.SharedInformer) {
-	c.FilteredGlobalResync(c.GlobalResyncFilterFunc, si)
+	c.FilteredGlobalResync(c.globalResyncFilterFunc, si)
 }
 
-// FilteredGlobalResync enqueues all objects from the
+// FilteredGlobalResync enqueues objects from the
 // SharedInformer that pass the filter function in to the slow queue.
-func (c *Impl) FilteredGlobalResync(_ func(interface{}) bool, si cache.SharedInformer) {
+func (c *Impl) FilteredGlobalResync(f filterFunc, si cache.SharedInformer) {
 	if c.workQueue.ShuttingDown() {
 		return
 	}
 	list := si.GetStore().List()
 	for _, obj := range list {
-		if c.GlobalResyncFilterFunc(obj) {
+		if f(obj) {
 			c.EnqueueSlow(obj)
 		}
 	}
