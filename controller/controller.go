@@ -57,7 +57,7 @@ var (
 	// Run on the controller directly.
 	DefaultThreadsPerController = 2
 
-	// alwaysTrue is the default filterFunc, which allows all objects
+	// alwaysTrue is the default FilterFunc, which allows all objects
 	// passed through this is used in the default case for passing all
 	// objects to the slowlane from the passed sharedInformer
 	alwaysTrue = func(interface{}) bool { return true }
@@ -179,7 +179,7 @@ func FilterWithNameAndNamespace(namespace, name string) func(obj interface{}) bo
 	}
 }
 
-type filterFunc func(obj interface{}) bool
+type FilterFunc func(obj interface{}) bool
 
 // Impl is our core controller implementation.  It handles queuing and feeding work
 // from the queue to an implementation of Reconciler.
@@ -215,7 +215,7 @@ type Impl struct {
 	// the shared cache on a global resync, be default and if not
 	// set by the controller implemenation, it will default to
 	// allowing every object in the cache
-	globalResyncFilterFunc filterFunc
+	globalResyncFilterFunc FilterFunc
 }
 
 // ControllerOptions encapsulates options for creating a new controller,
@@ -225,7 +225,7 @@ type ControllerOptions struct { //nolint // for backcompat.
 	Logger                 *zap.SugaredLogger
 	Reporter               StatsReporter
 	RateLimiter            workqueue.RateLimiter
-	GlobalResyncFilterFunc filterFunc
+	GlobalResyncFilterFunc FilterFunc
 }
 
 // NewImpl instantiates an instance of our controller that will feed work to the
@@ -566,7 +566,7 @@ func (c *Impl) GlobalResync(si cache.SharedInformer) {
 
 // FilteredGlobalResync enqueues objects from the
 // SharedInformer that pass the filter function in to the slow queue.
-func (c *Impl) FilteredGlobalResync(f filterFunc, si cache.SharedInformer) {
+func (c *Impl) FilteredGlobalResync(f FilterFunc, si cache.SharedInformer) {
 	if c.workQueue.ShuttingDown() {
 		return
 	}
@@ -734,14 +734,14 @@ func safeKey(key types.NamespacedName) string {
 // This is a filterFunc for leaderelection informer and listers
 type filterFuncKey struct{}
 
-func WithFilterFunc(ctx context.Context, filter filterFunc) context.Context {
+func WithFilterFunc(ctx context.Context, filter FilterFunc) context.Context {
 	return context.WithValue(ctx, filterFuncKey{}, filter)
 }
 
-func GetFilterFunc(ctx context.Context) filterFunc {
+func GetFilterFunc(ctx context.Context) FilterFunc {
 	value := ctx.Value(filterFuncKey{})
 	if value == nil {
 		return alwaysTrue
 	}
-	return value.(filterFunc)
+	return value.(FilterFunc)
 }

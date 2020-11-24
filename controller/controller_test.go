@@ -1621,7 +1621,7 @@ func TestGetEventRecorder(t *testing.T) {
 func TestFilteredGlobalResync(t *testing.T) {
 	tests := []struct {
 		name       string
-		filterFunc filterFunc
+		filterFunc FilterFunc
 		wantQueue  []types.NamespacedName
 	}{{
 		name:       "do nothing",
@@ -1636,8 +1636,6 @@ func TestFilteredGlobalResync(t *testing.T) {
 			if mo, ok := obj.(metav1.Object); ok {
 				if mo.GetNamespace() == "foo" {
 					return true
-				} else {
-					return false
 				}
 			}
 			return false
@@ -1649,8 +1647,6 @@ func TestFilteredGlobalResync(t *testing.T) {
 			if mo, ok := obj.(metav1.Object); ok {
 				if mo.GetName() == "foo" {
 					return true
-				} else {
-					return false
 				}
 			}
 			return false
