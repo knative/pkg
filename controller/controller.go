@@ -56,6 +56,11 @@ var (
 	// may adjust this process-wide default.  For finer control, invoke
 	// Run on the controller directly.
 	DefaultThreadsPerController = 2
+
+	// alwaysTrue is the default filterFunc, which allows all objects
+	// passed through this is used in the default case for passing all
+	// objects to the slowlane from the passed sharedInformer
+	alwaysTrue = func(interface{}) bool { return true }
 )
 
 // Reconciler is the interface that controller implementations are expected
@@ -246,7 +251,7 @@ func NewImplFull(r Reconciler, options ControllerOptions) *Impl {
 		options.Reporter = MustNewStatsReporter(options.WorkQueueName, options.Logger)
 	}
 	if options.GlobalResyncFilterFunc == nil {
-		options.GlobalResyncFilterFunc = func(obj interface{}) bool { return true }
+		options.GlobalResyncFilterFunc = alwaysTrue
 	}
 	return &Impl{
 		Name:                   options.WorkQueueName,
@@ -735,7 +740,7 @@ func WithFilterFunc(ctx context.Context, filter filterFunc) context.Context {
 func GetFilterFunc(ctx context.Context) filterFunc {
 	value := ctx.Value(filterFuncKey{})
 	if value == nil {
-		return func(interface{}) bool { return true }
+		return alwaysTrue
 	}
 	return value.(filterFunc)
 }
