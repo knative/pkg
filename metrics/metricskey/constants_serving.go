@@ -68,5 +68,11 @@ var (
 		"knative.dev/internal/serving/controller/cert_total_num",
 		"knative.dev/internal/serving/controller/cert_issuance_latencies",
 		"knative.dev/internal/serving/controller/cert_creation_count",
+		"knative.dev/internal/serving/controller/work_queue_depth",
+		"knative.dev/internal/serving/controller/reconcile_count",
+		"knative.dev/internal/serving/controller/reconcile_latency",
+		"knative.dev/internal/serving/webhook/work_queue_depth",
+		"knative.dev/internal/serving/webhook/reconcile_count",
+		"knative.dev/internal/serving/webhook/reconcile_latency",
 	)
 )
