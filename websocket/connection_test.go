@@ -94,7 +94,7 @@ func errConnFactory(err error) func() (rawConnection, error) {
 }
 
 func TestRetriesWhileConnect(t *testing.T) {
-	wantConnects := 2
+	const wantConnects = 2
 	gotConnects := 0
 
 	spy := &inspectableConnection{
