@@ -23,6 +23,7 @@ import (
 	"time"
 
 	"go.opencensus.io/stats/view"
+	"k8s.io/apimachinery/pkg/types"
 	"knative.dev/pkg/metrics/metricstest"
 	_ "knative.dev/pkg/metrics/testing"
 )
@@ -66,9 +67,12 @@ func TestReportQueueDepth(t *testing.T) {
 
 func TestReportReconcile(t *testing.T) {
 	r, _ := NewStatsReporter("testreconciler")
+	rName := "test_resource"
+	rNamespace := "default"
 	wantTags := map[string]string{
-		"reconciler": "testreconciler",
-		"success":    "true",
+		"reconciler":     "testreconciler",
+		"success":        "true",
+		"namespace_name": rNamespace,
 	}
 
 	initialReconcileCount := int64(0)
@@ -82,15 +86,19 @@ func TestReportReconcile(t *testing.T) {
 		initialMin, initialMax = dd.Min, dd.Max
 		initialDistributionCount = dd.Count
 	}
+	key := types.NamespacedName{
+		Name:      rName,
+		Namespace: rNamespace,
+	}
 
 	slow, fast := initialMax+5, initialMin-5
 
-	expectSuccess(t, func() error { return r.ReportReconcile(time.Duration(fast)*time.Millisecond, "true") })
+	expectSuccess(t, func() error { return r.ReportReconcile(time.Duration(fast)*time.Millisecond, "true", key) })
 	metricstest.CheckCountData(t, "reconcile_count", wantTags, initialReconcileCount+1)
 	metricstest.CheckDistributionData(t, "reconcile_latency", wantTags, initialDistributionCount+1,
 		fast, initialMax)
 
-	expectSuccess(t, func() error { return r.ReportReconcile(time.Duration(slow)*time.Millisecond, "true") })
+	expectSuccess(t, func() error { return r.ReportReconcile(time.Duration(slow)*time.Millisecond, "true", key) })
 	metricstest.CheckCountData(t, "reconcile_count", wantTags, initialReconcileCount+2)
 	metricstest.CheckDistributionData(t, "reconcile_latency", wantTags, initialDistributionCount+2,
 		fast, slow)

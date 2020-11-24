@@ -19,6 +19,8 @@ package testing
 import (
 	"sync"
 	"time"
+
+	"k8s.io/apimachinery/pkg/types"
 )
 
 // FakeStatsReporter is a fake implementation of StatsReporter
@@ -43,7 +45,7 @@ func (r *FakeStatsReporter) ReportQueueDepth(v int64) error {
 }
 
 // ReportReconcile records the call and returns success.
-func (r *FakeStatsReporter) ReportReconcile(duration time.Duration, success string) error {
+func (r *FakeStatsReporter) ReportReconcile(duration time.Duration, success string, _ types.NamespacedName) error {
 	r.Lock.Lock()
 	defer r.Lock.Unlock()
 	r.reconcileData = append(r.reconcileData, FakeReconcileStatData{duration, success})
