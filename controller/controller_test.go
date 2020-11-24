@@ -1617,3 +1617,57 @@ func TestGetEventRecorder(t *testing.T) {
 		t.Error("GetEventRecorder() = nil, wanted non-nil")
 	}
 }
+
+func TestFilteredGlobalResync(t *testing.T) {
+	tests := []struct {
+		name       string
+		filterFunc filterFunc
+		wantQueue  []types.NamespacedName
+	}{{
+		name:       "do nothing",
+		filterFunc: func(interface{}) bool { return false },
+	}, {
+		name:       "always true",
+		filterFunc: alwaysTrue,
+		wantQueue:  []types.NamespacedName{{Namespace: "foo", Name: "bar"}, {Namespace: "bar", Name: "foo"}, {Namespace: "fizz", Name: "buzz"}},
+	}, {
+		name: "filter namespace foo",
+		filterFunc: func(obj interface{}) bool {
+			if mo, ok := obj.(metav1.Object); ok {
+				if mo.GetNamespace() == "foo" {
+					return true
+				} else {
+					return false
+				}
+			}
+			return false
+		},
+		wantQueue: []types.NamespacedName{{Namespace: "foo", Name: "bar"}},
+	}, {
+		name: "filter object named foo",
+		filterFunc: func(obj interface{}) bool {
+			if mo, ok := obj.(metav1.Object); ok {
+				if mo.GetName() == "foo" {
+					return true
+				} else {
+					return false
+				}
+			}
+			return false
+		},
+		wantQueue: []types.NamespacedName{{Namespace: "bar", Name: "foo"}},
+	}}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			impl := NewImplFull(&nopReconciler{}, ControllerOptions{WorkQueueName: "FilteredTesting", Logger: TestLogger(t), GlobalResyncFilterFunc: test.filterFunc})
+			impl.GlobalResync(&fakeInformer{})
+
+			impl.WorkQueue().ShutDown()
+			gotQueue := drainWorkQueue(impl.WorkQueue())
+
+			if diff := cmp.Diff(test.wantQueue, gotQueue); diff != "" {
+				t.Error("unexpected queue (-want +got):", diff)
+			}
+		})
+	}
+}
