@@ -7,7 +7,7 @@ You may obtain a copy of the License at
 
     http://www.apache.org/licenses/LICENSE-2.0
 
-Unless requ ired by applicable law or agreed to in writing, software
+Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
@@ -32,17 +32,16 @@ type exactKey struct {
 
 // exactMatcher is our reverse index from subjects to the Bindings that apply to
 // them.
-type exactMatcher map[exactKey]Bindable
+type exactMatcher map[exactKey][]Bindable
 
-// add writes a key into the reverse index.
+// add associates a Binding with a key in the reverse index.
 func (em exactMatcher) add(key exactKey, b Bindable) {
-	em[key] = b
+	em[key] = append(em[key], b)
 }
 
 // get fetches the key from the reverse index, if present.
-func (em exactMatcher) get(key exactKey) (bindable Bindable, present bool) {
-	b, ok := em[key]
-	return b, ok
+func (em exactMatcher) get(key exactKey) []Bindable {
+	return em[key]
 }
 
 // inexactKey is the type for keys that match inexactly (via selector)
@@ -73,15 +72,16 @@ func (im inexactMatcher) add(key inexactKey, selector labels.Selector, b Bindabl
 }
 
 // get fetches the key from the reverse index, if present.
-func (im inexactMatcher) get(key inexactKey, ls labels.Set) (bindable Bindable, present bool) {
-	// Iterate over the list of pairs matched for this GK + namespace and return the first
-	// Bindable that matches our selector.
+func (im inexactMatcher) get(key inexactKey, ls labels.Set) []Bindable {
+	found := []Bindable{}
+	// Iterate over the list of pairs matched for this GK + namespace and collect the
+	// Bindables that matches our selector.
 	for _, p := range im[key] {
 		if p.selector.Matches(ls) {
-			return p.sb, true
+			found = append(found, p.sb)
 		}
 	}
-	return nil, false
+	return found
 }
 
 // index is a collection of Bindables indexed by their subject resources.
@@ -107,14 +107,15 @@ func newIndexBuilder() *indexBuilder {
 }
 
 // associate associates a resource with a given exact key with a given Bindable.
-// TODO: allow multiple Bindables to be associated with the same exact key.
-func (ib *indexBuilder) associate(key exactKey, fb Bindable) {
+func (ib *indexBuilder) associate(key exactKey, fb Bindable) *indexBuilder {
 	ib.exact.add(key, fb)
+	return ib
 }
 
 // associateSelection associates resources with the given inexact key and labels matching the given selector with a given Bindable.
-func (ib *indexBuilder) associateSelection(inexactKey inexactKey, selector labels.Selector, fb Bindable) {
+func (ib *indexBuilder) associateSelection(inexactKey inexactKey, selector labels.Selector, fb Bindable) *indexBuilder {
 	ib.inexact.add(inexactKey, selector, fb)
+	return ib
 }
 
 // build sets the given index to the built value.
@@ -122,6 +123,7 @@ func (ib *indexBuilder) build(index *index) {
 	index.setIndex(ib.exact, ib.inexact)
 }
 
+// setIndex replaces the index atomically with the given matchers.
 func (idx *index) setIndex(exact exactMatcher, inexact inexactMatcher) {
 	idx.lock.Lock()
 	defer idx.lock.Unlock()
@@ -130,24 +132,17 @@ func (idx *index) setIndex(exact exactMatcher, inexact inexactMatcher) {
 }
 
 // lookUp returns the Bindables associated with a resource with the given group, kind, namespace, name, and labels.
-// TODO: find all the matching Bindables instead of just one.
 func (idx *index) lookUp(key exactKey, labels labels.Set) []Bindable {
 	idx.lock.RLock()
 	defer idx.lock.RUnlock()
 
-	// Always try to find an exact match first.
-	if sb, ok := idx.exact.get(key); ok {
-		return []Bindable{sb}
-	}
+	exactMatches := idx.exact.get(key)
 
-	// Next look for inexact matches.
-	if sb, ok := idx.inexact.get(inexactKey{
+	inexactMatches := idx.inexact.get(inexactKey{
 		Group:     key.Group,
 		Kind:      key.Kind,
 		Namespace: key.Namespace,
-	}, labels); ok {
-		return []Bindable{sb}
-	}
+	}, labels)
 
-	return nil
+	return append(exactMatches, inexactMatches...)
 }
