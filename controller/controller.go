@@ -58,7 +58,7 @@ var (
 	DefaultThreadsPerController = 2
 
 	// alwaysTrue is the default FilterFunc, which allows all objects
-	// passed through this is used in the default case for passing all
+	// passed through. This is used in the default case for passing all
 	// objects to the slowlane from the passed sharedInformer
 	alwaysTrue = func(interface{}) bool { return true }
 )
@@ -211,10 +211,10 @@ type Impl struct {
 	// StatsReporter is used to send common controller metrics.
 	statsReporter StatsReporter
 
-	// GlobalResyncFilterFunc is used to filter our objects from
-	// the shared cache on a global resync, be default and if not
+	// GlobalResyncFilterFunc is used to filter out objects from
+	// the shared cache on a global resync. By default and if not
 	// set by the controller implemenation, it will default to
-	// allowing every object in the cache
+	// allowing every object in the cache.
 	globalResyncFilterFunc FilterFunc
 }
 
