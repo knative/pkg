@@ -28,6 +28,7 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/selection"
+	"k8s.io/apimachinery/pkg/util/wait"
 	fakekubeclientset "k8s.io/client-go/kubernetes/fake"
 )
 
@@ -54,22 +55,23 @@ func (c *counter) count() int {
 }
 
 func (c *counter) eventuallyEquals(t *testing.T, want int) {
-	start := time.Now()
 	got := 0
 
-	for {
-		if got = c.count(); got == want {
-			return
-		}
+	err := wait.Poll(
+		// interval
+		100*time.Millisecond,
 
-		if time.Now().Sub(start) > 5*time.Second {
-			break
-		}
+		// timeout
+		5*time.Second,
+		func() (done bool, err error) {
+			got = c.count()
+			return got == want, nil
+		},
+	)
 
-		time.Sleep(100 * time.Millisecond)
+	if err != nil {
+		t.Errorf("%v.count = %d, want %d", c.name, got, want)
 	}
-
-	t.Errorf("%v.count = %d, want %d", c.name, got, want)
 }
 
 func TestInformedWatcher(t *testing.T) {
