@@ -20,6 +20,7 @@ import (
 	"context"
 	"sync"
 	"testing"
+	"time"
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
@@ -27,6 +28,7 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/selection"
+	"k8s.io/apimachinery/pkg/util/wait"
 	fakekubeclientset "k8s.io/client-go/kubernetes/fake"
 )
 
@@ -50,6 +52,26 @@ func (c *counter) count() int {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
 	return len(c.cfg)
+}
+
+func (c *counter) eventuallyEquals(t *testing.T, want int) {
+	got := 0
+
+	err := wait.Poll(
+		// interval
+		100*time.Millisecond,
+
+		// timeout
+		5*time.Second,
+		func() (done bool, err error) {
+			got = c.count()
+			return got == want, nil
+		},
+	)
+
+	if err != nil {
+		t.Errorf("%v.count = %d, want %d", c.name, got, want)
+	}
 }
 
 func TestInformedWatcher(t *testing.T) {
@@ -83,12 +105,10 @@ func TestInformedWatcher(t *testing.T) {
 		t.Fatal("cm.Start() =", err)
 	}
 
-	// When Start returns the callbacks should have been called with the
+	// When Start returns the callbacks will eventually be called with the
 	// version of the objects that is available.
-	for _, obj := range []*counter{foo1, foo2, bar} {
-		if got, want := obj.count(), 1; got != want {
-			t.Errorf("%v.count = %d, want %d", obj.name, got, want)
-		}
+	for _, count := range []*counter{foo1, foo2, bar} {
+		count.eventuallyEquals(t, 1)
 	}
 
 	// After a "foo" event, the "foo" watchers should have 2,
