@@ -20,6 +20,7 @@ import (
 	"context"
 	"sync"
 	"testing"
+	"time"
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
@@ -50,6 +51,25 @@ func (c *counter) count() int {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
 	return len(c.cfg)
+}
+
+func (c *counter) eventuallyEquals(t *testing.T, want int) {
+	start := time.Now()
+	got := 0
+
+	for {
+		if got = c.count(); got == want {
+			return
+		}
+
+		if time.Now().Sub(start) > 5*time.Second {
+			break
+		}
+
+		time.Sleep(100 * time.Millisecond)
+	}
+
+	t.Errorf("%v.count = %d, want %d", c.name, got, want)
 }
 
 func TestInformedWatcher(t *testing.T) {
@@ -83,12 +103,10 @@ func TestInformedWatcher(t *testing.T) {
 		t.Fatal("cm.Start() =", err)
 	}
 
-	// When Start returns the callbacks should have been called with the
+	// When Start returns the callbacks will eventually be called with the
 	// version of the objects that is available.
-	for _, obj := range []*counter{foo1, foo2, bar} {
-		if got, want := obj.count(), 1; got != want {
-			t.Errorf("%v.count = %d, want %d", obj.name, got, want)
-		}
+	for _, count := range []*counter{foo1, foo2, bar} {
+		count.eventuallyEquals(t, 1)
 	}
 
 	// After a "foo" event, the "foo" watchers should have 2,
