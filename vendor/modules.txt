@@ -79,6 +79,9 @@ github.com/beorn7/perks/quantile
 # github.com/blang/semver/v4 v4.0.0
 ## explicit
 github.com/blang/semver/v4
+# github.com/blendle/zapdriver v1.3.1
+## explicit
+github.com/blendle/zapdriver
 # github.com/census-instrumentation/opencensus-proto v0.3.0
 ## explicit
 github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1
