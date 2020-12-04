@@ -43,7 +43,7 @@ import (
 const (
 	noLogTimeout = 100 * time.Millisecond
 	testKey      = "horror-movie-2020"
-	testLine     = `{"level":"debug","ts":"2020-10-20T18:42:28.553Z","logger":"controller.revision-controller.knative.dev-serving-pkg-reconciler-revision.Reconciler","caller":"controller/controller.go:397","msg":"Adding to queue default/s2-nhjv6 (depth: 1)","commit":"4411bf3","knative.dev/pod":"controller-f95b977c-4wlh4","knative.dev/controller":"revision-controller","knative.dev/key":"default/horror-movie-2020", "error":"el-otoño-eternal" }`
+	testLine     = `{"severity":"debug","timestamp":"2020-10-20T18:42:28.553Z","logger":"controller.revision-controller.knative.dev-serving-pkg-reconciler-revision.Reconciler","caller":"controller/controller.go:397","message":"Adding to queue default/s2-nhjv6 (depth: 1)","commit":"4411bf3","knative.dev/pod":"controller-f95b977c-4wlh4","knative.dev/controller":"revision-controller","knative.dev/key":"default/horror-movie-2020", "error":"el-otoño-eternal" }`
 )
 
 var pod = &corev1.Pod{
