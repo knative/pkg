@@ -26,6 +26,5 @@ func TestNoDeps(t *testing.T) {
 	depcheck.AssertNoDependency(t, map[string][]string{
 		"knative.dev/pkg/network":          depcheck.KnownHeavyDependencies,
 		"knative.dev/pkg/network/handlers": depcheck.KnownHeavyDependencies,
-		"knative.dev/pkg/network/prober":   depcheck.KnownHeavyDependencies,
 	})
 }
