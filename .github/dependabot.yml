@@ -5,7 +5,6 @@ updates:
     target-branch: "master"
     schedule:
       interval: "daily"
-      
     ignore:
       # Ignore updates to packages that start 'k8s'
       # Wildcards match zero or more arbitrary characters
