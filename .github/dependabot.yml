@@ -9,4 +9,4 @@ updates:
     ignore:
       # Ignore updates to packages that start 'k8s'
       # Wildcards match zero or more arbitrary characters
-      - dependency-name: "k8s*"
+      - dependency-name: "k8s.io*"
