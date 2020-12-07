@@ -1,10 +1,9 @@
-
 version: 2
 updates:
-
   - package-ecosystem: "gomod"
+    # Raise pull requests to update vendored dependencies that are checked in to the repository
     vendor: true
     directory: "/"
-    schedule:
-      interval: "daily"
     target-branch: "master"
+    schedule:
+      interval: "weekly"
