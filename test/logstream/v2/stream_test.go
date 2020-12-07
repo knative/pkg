@@ -80,17 +80,16 @@ func TestFailToStartStream(t *testing.T) {
 	pod.Status = readyStatus
 
 	const want = "hungry for apples"
-	f := newK8sFake(fake.NewSimpleClientset(), nil, /*watcherr*/
+	f := newK8sFake(fake.NewSimpleClientset(), nil, /*watcher*/
 		errors.New(want) /*getlogs err*/)
 
 	logFuncInvoked := make(chan struct{})
-	t.Cleanup(func() { close(logFuncInvoked) })
 	logFunc := func(format string, args ...interface{}) {
 		res := fmt.Sprintf(format, args...)
 		if !strings.Contains(res, want) {
 			t.Errorf("Expected message to contain %q, but message was: %s", want, res)
 		}
-		logFuncInvoked <- struct{}{}
+		close(logFuncInvoked)
 	}
 	ctx, cancel := context.WithCancel(context.Background())
 	stream := logstream.FromNamespace(ctx, f, pod.Namespace)
