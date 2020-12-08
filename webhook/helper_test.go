@@ -105,7 +105,7 @@ func TestEnsureLabelSelectorExpressions(t *testing.T) {
 	}, {
 		name: "remove obsolete",
 		current: &metav1.LabelSelector{
-			MatchExpressions: []metav1.LabelSelectorRequirement{fooExpression, metav1.LabelSelectorRequirement{
+			MatchExpressions: []metav1.LabelSelectorRequirement{fooExpression, {
 				Key:      "knative.dev/bar",
 				Operator: metav1.LabelSelectorOpDoesNotExist,
 			}},
