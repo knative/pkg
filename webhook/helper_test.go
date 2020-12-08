@@ -26,6 +26,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/go-cmp/cmp"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -35,6 +36,98 @@ import (
 
 	. "knative.dev/pkg/logging/testing"
 )
+
+func TestEnsureLabelSelectorExpressions(t *testing.T) {
+	fooExpression := metav1.LabelSelectorRequirement{
+		Key:      "foo.bar/baz",
+		Operator: metav1.LabelSelectorOpDoesNotExist,
+	}
+	knativeExpression := metav1.LabelSelectorRequirement{
+		Key:      "knative.dev/foo",
+		Operator: metav1.LabelSelectorOpDoesNotExist,
+	}
+
+	tests := []struct {
+		name    string
+		current *metav1.LabelSelector
+		want    *metav1.LabelSelector
+		expect  *metav1.LabelSelector
+	}{{
+		name: "all nil",
+	}, {
+		name:    "current nil",
+		current: nil,
+		want: &metav1.LabelSelector{
+			MatchExpressions: []metav1.LabelSelectorRequirement{fooExpression},
+		},
+		expect: &metav1.LabelSelector{
+			MatchExpressions: []metav1.LabelSelectorRequirement{fooExpression},
+		},
+	}, {
+		name:    "current empty",
+		current: &metav1.LabelSelector{},
+		want: &metav1.LabelSelector{
+			MatchExpressions: []metav1.LabelSelectorRequirement{fooExpression},
+		},
+		expect: &metav1.LabelSelector{
+			MatchExpressions: []metav1.LabelSelectorRequirement{fooExpression},
+		},
+	}, {
+		name: "want nil",
+		current: &metav1.LabelSelector{
+			MatchExpressions: []metav1.LabelSelectorRequirement{fooExpression},
+		},
+		want: nil,
+		expect: &metav1.LabelSelector{
+			MatchExpressions: []metav1.LabelSelectorRequirement{fooExpression},
+		},
+	}, {
+		name: "want empty",
+		current: &metav1.LabelSelector{
+			MatchExpressions: []metav1.LabelSelectorRequirement{fooExpression},
+		},
+		want: &metav1.LabelSelector{},
+		expect: &metav1.LabelSelector{
+			MatchExpressions: []metav1.LabelSelectorRequirement{fooExpression},
+		},
+	}, {
+		name: "add new",
+		current: &metav1.LabelSelector{
+			MatchExpressions: []metav1.LabelSelectorRequirement{fooExpression},
+		},
+		want: &metav1.LabelSelector{
+			MatchExpressions: []metav1.LabelSelectorRequirement{knativeExpression},
+		},
+		expect: &metav1.LabelSelector{
+			MatchExpressions: []metav1.LabelSelectorRequirement{
+				knativeExpression, fooExpression},
+		},
+	}, {
+		name: "remove obsolete",
+		current: &metav1.LabelSelector{
+			MatchExpressions: []metav1.LabelSelectorRequirement{fooExpression, metav1.LabelSelectorRequirement{
+				Key:      "knative.dev/bar",
+				Operator: metav1.LabelSelectorOpDoesNotExist,
+			}},
+		},
+		want: &metav1.LabelSelector{
+			MatchExpressions: []metav1.LabelSelectorRequirement{knativeExpression},
+		},
+		expect: &metav1.LabelSelector{
+			MatchExpressions: []metav1.LabelSelectorRequirement{
+				knativeExpression, fooExpression},
+		},
+	}}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			got := EnsureLabelSelectorExpressions(tc.current, tc.want)
+			if !cmp.Equal(got, tc.expect) {
+				t.Errorf("LabelSelector mismatch: diff(-want,+got):\n%s", cmp.Diff(tc.expect, got))
+			}
+		})
+	}
+}
 
 func waitForServerAvailable(t *testing.T, serverURL string, timeout time.Duration) error {
 	t.Helper()
