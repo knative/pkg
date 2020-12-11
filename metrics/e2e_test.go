@@ -237,12 +237,12 @@ testComponent_testing_value{project="p1",revision="r2"} 1
 			return UpdateExporter(context.Background(), configForBackend(openCensus), logtesting.TestLogger(t))
 		},
 		validate: func(t *testing.T) {
-			// We unregister the views because this is one of two ways to flush
-			// the internal aggregation buffers; the other is to have the
-			// internal reporting period duration tick, which is at least
-			// [new duration] in the future.
 			metricstest.EnsureRecorded()
 			records := []metricExtract{}
+			// Each Resource has an independent thread invoking reportView; this
+			// set avoids the race condition where we get two reports for the
+			// same metric on the channel before we get any reports for another
+			// metric.
 			keys := map[string]struct{}{}
 		loop:
 			for {
