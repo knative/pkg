@@ -70,40 +70,42 @@ const (
 )
 
 // This map determines test log lines to be produced by each fake container
-var logProductionMap = map[string][]string{
-	knativeContainer:     {testLine, testLineWithMissmatchedKey, testLineWithMissingKey, testNonJSONLine, testNonControllerLine},
-	logstream.ChaosDuck:  {testChaosDuckLine},
-	logstream.QueueProxy: {testQueueProxyLine},
-	userContainer:        {testUserContainerLine},
-}
+var (
+	logProductionMap = map[string][]string{
+		knativeContainer:     {testLine, testLineWithMissmatchedKey, testLineWithMissingKey, testNonJSONLine, testNonControllerLine},
+		logstream.ChaosDuck:  {testChaosDuckLine},
+		logstream.QueueProxy: {testQueueProxyLine},
+		userContainer:        {testUserContainerLine},
+	}
 
-var singlePod = &corev1.Pod{
-	ObjectMeta: metav1.ObjectMeta{
-		Name:      "RandomPodName",
-		Namespace: "defaultNameSpace",
-	},
-	Spec: corev1.PodSpec{
-		Containers: []corev1.Container{{
-			Name: knativeContainer,
+	singlePod = &corev1.Pod{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "RandomPodName",
+			Namespace: "defaultNameSpace",
 		},
+		Spec: corev1.PodSpec{
+			Containers: []corev1.Container{{
+				Name: knativeContainer,
+			},
+			},
 		},
-	},
-}
+	}
 
-var knativePod = &corev1.Pod{
-	ObjectMeta: metav1.ObjectMeta{
-		Name:      "RandomPodName",
-		Namespace: "defaultNameSpace",
-	},
-	Spec: corev1.PodSpec{
-		Containers: []corev1.Container{{
-			Name: knativeContainer,
-		}, {
-			Name: logstream.ChaosDuck,
+	knativePod = &corev1.Pod{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "RandomPodName",
+			Namespace: "defaultNameSpace",
 		},
+		Spec: corev1.PodSpec{
+			Containers: []corev1.Container{{
+				Name: knativeContainer,
+			}, {
+				Name: logstream.ChaosDuck,
+			},
+			},
 		},
-	},
-}
+	}
+)
 
 var userPod = &corev1.Pod{
 	ObjectMeta: metav1.ObjectMeta{
@@ -130,7 +132,7 @@ var readyStatus = corev1.PodStatus{
 
 func TestWatchErr(t *testing.T) {
 	f := newK8sFake(fake.NewSimpleClientset(), errors.New("lookin' good"), nil)
-	stream := logstream.FromNamespace(context.Background(), f, []string{"a-namespace", "b-namespace"})
+	stream := logstream.FromNamespace(context.Background(), f, "a-namespace")
 	_, err := stream.StartStream(knativePod.Name, nil)
 	if err == nil {
 		t.Fatal("LogStream creation should have failed")
@@ -138,8 +140,8 @@ func TestWatchErr(t *testing.T) {
 }
 
 func TestFailToStartStream(t *testing.T) {
-	pod := singlePod.DeepCopy()
-	pod.Status = readyStatus
+	singlePod := singlePod.DeepCopy()
+	singlePod.Status = readyStatus
 
 	const want = "hungry for apples"
 	f := newK8sFake(fake.NewSimpleClientset(), nil, /*watcher*/
@@ -154,8 +156,8 @@ func TestFailToStartStream(t *testing.T) {
 		close(logFuncInvoked)
 	}
 	ctx, cancel := context.WithCancel(context.Background())
-	stream := logstream.FromNamespace(ctx, f, []string{pod.Namespace})
-	streamC, err := stream.StartStream(pod.Name, logFunc)
+	stream := logstream.FromNamespace(ctx, f, singlePod.Namespace)
+	streamC, err := stream.StartStream(singlePod.Name, logFunc)
 	if err != nil {
 		t.Fatal("Failed to start the stream: ", err)
 	}
@@ -163,8 +165,8 @@ func TestFailToStartStream(t *testing.T) {
 		streamC()
 		cancel()
 	})
-	podClient := f.CoreV1().Pods(pod.Namespace)
-	if _, err := podClient.Create(context.Background(), pod, metav1.CreateOptions{}); err != nil {
+	podClient := f.CoreV1().Pods(singlePod.Namespace)
+	if _, err := podClient.Create(context.Background(), singlePod, metav1.CreateOptions{}); err != nil {
 		t.Fatal("CreatePod()=", err)
 	}
 
@@ -220,7 +222,7 @@ func TestNamespaceStream(t *testing.T) {
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
-	stream := logstream.FromNamespace(ctx, f, []string{knativePod.Namespace, userPod.Namespace})
+	stream := logstream.FromNamespaces(ctx, f, []string{knativePod.Namespace, userPod.Namespace})
 	streamC, err := stream.StartStream(testKey, logFunc)
 	if err != nil {
 		t.Fatal("Failed to start the stream: ", err)

@@ -34,11 +34,20 @@ import (
 	"knative.dev/pkg/ptr"
 )
 
-func FromNamespace(ctx context.Context, c kubernetes.Interface, namespaces []string) Source {
+func FromNamespaces(ctx context.Context, c kubernetes.Interface, namespaces []string) Source {
 	return &namespaceSource{
 		ctx:        ctx,
 		kc:         c,
 		namespaces: namespaces,
+		keys:       make(map[string]Callback, 1),
+	}
+}
+
+func FromNamespace(ctx context.Context, c kubernetes.Interface, namespace string) Source {
+	return &namespaceSource{
+		ctx:        ctx,
+		kc:         c,
+		namespaces: []string{namespace},
 		keys:       make(map[string]Callback, 1),
 	}
 }
