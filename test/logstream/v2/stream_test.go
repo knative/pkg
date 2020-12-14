@@ -370,7 +370,7 @@ func (f *fakeclient) Pods(ns string) v1.PodInterface {
 	}
 }
 
-func getLogsForContainer(container string) string {
+func logsForContainer(container string) string {
 	result := ""
 
 	for _, s := range logProductionMap[container] {
