@@ -117,8 +117,7 @@ var userPod = &corev1.Pod{
 			Name: logstream.QueueProxy,
 		}, {
 			Name: userContainer,
-		},
-		},
+		}},
 	},
 }
 
