@@ -54,7 +54,7 @@ func Start(t ti) Canceler {
 
 			// handle case when ns contains a csv list
 			namespaces := strings.Split(ns, ",")
-			stream = &shim{logstreamv2.FromNamespace(context.Background(), kc, namespaces)}
+			stream = &shim{logstreamv2.FromNamespaces(context.Background(), kc, namespaces)}
 
 		} else {
 			// Otherwise set up a null stream.
