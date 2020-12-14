@@ -19,7 +19,7 @@ This is a guide to start using `logstream` in your e2e testing.
 
 4. To enable logcapture from containers across multiple namespaces configure SYSTEM_NAMESPACE
    to contains a csv list of namespaces ("knative-serving, knative-test ??????{}). Specific well
-   known containers that do not produce key decrated logs (see detailed description below) need
+   known containers that do not produce key decorated logs (see detailed description below) need
    to be enumerated in WellKnownContainers in stream.go.
 
 With that, you will start getting logs from the processes in the system
