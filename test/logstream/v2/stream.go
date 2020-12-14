@@ -186,7 +186,8 @@ const (
 // Names of well known containers that do not produce nicely formatted logs that
 // could be easily filtered and parsed by handleLine. Logs from these containers
 // are captured without filtering.
-func getWellKnownContainers() []string {
+func 
+wellKnownContainers() []string {
 	return []string{ChaosDuck, QueueProxy}
 }
 
