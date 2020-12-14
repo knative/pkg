@@ -74,7 +74,7 @@ func (m metricExtract) String() string {
 	return fmt.Sprintf("%s:%d", m.Key(), m.Value)
 }
 
-func initSdFake(sdFake *stackDriverFake) error {
+func initStackdriverFake(sdFake *stackDriverFake) error {
 	if err := sdFake.start(); err != nil {
 		return err
 	}
@@ -141,22 +141,19 @@ func TestMetricsExport(t *testing.T) {
 		}
 	}
 
-	resources := []*resource.Resource{
-		{
-			Type: "revision",
-			Labels: map[string]string{
-				"project":  "p1",
-				"revision": "r1",
-			},
+	resources := []*resource.Resource{{
+		Type: "revision",
+		Labels: map[string]string{
+			"project":  "p1",
+			"revision": "r1",
 		},
-		{
-			Type: "revision",
-			Labels: map[string]string{
-				"project":  "p1",
-				"revision": "r2",
-			},
+	}, {
+		Type: "revision",
+		Labels: map[string]string{
+			"project":  "p1",
+			"revision": "r2",
 		},
-	}
+	}}
 	gauge := stats.Int64("testing/value", "Stored value", stats.UnitDimensionless)
 	counter := stats.Int64("export counts", "Times through the export", stats.UnitDimensionless)
 	gaugeView := &view.View{
@@ -212,7 +209,7 @@ func TestMetricsExport(t *testing.T) {
 			if err != nil {
 				t.Fatalf("failed to read prometheus response: %+v", err)
 			}
-			want := `# HELP testComponent_global_export_counts Count of exports via standard OpenCensus view.
+			const want = `# HELP testComponent_global_export_counts Count of exports via standard OpenCensus view.
 # TYPE testComponent_global_export_counts counter
 testComponent_global_export_counts 2
 # HELP testComponent_resource_global_export_count Count of exports via RegisterResourceView.
@@ -244,6 +241,7 @@ testComponent_testing_value{project="p1",revision="r2"} 1
 			// same metric on the channel before we get any reports for another
 			// metric.
 			keys := map[string]struct{}{}
+			timeout := time.After(5 * time.Second)
 		loop:
 			for {
 				select {
@@ -269,7 +267,7 @@ testComponent_testing_value{project="p1",revision="r2"} 1
 					if len(keys) >= len(expected) {
 						break loop
 					}
-				case <-time.After(4 * time.Second):
+				case <-timeout:
 					t.Error("Timeout reading input")
 					break loop
 				}
@@ -282,7 +280,7 @@ testComponent_testing_value{project="p1",revision="r2"} 1
 	}, {
 		name: "Stackdriver",
 		init: func(t *testing.T) error {
-			if err := initSdFake(&sdFake); err != nil {
+			if err := initStackdriverFake(&sdFake); err != nil {
 				return err
 			}
 			return UpdateExporter(context.Background(), configForBackend(stackdriver), logtesting.TestLogger(t))
@@ -386,38 +384,31 @@ func TestStackDriverExports(t *testing.T) {
 	}{{
 		name:               "Allow custom metrics",
 		allowCustomMetrics: "true",
-		expected: []metricExtract{
-			{
-				"knative.dev/serving/autoscaler/actual_pods",
-				label1,
-				1,
-			},
-			{
-				"knative.dev/serving/autoscaler/desired_pods",
-				label2,
-				2,
-			},
-			{
-				"custom.googleapis.com/knative.dev/autoscaler/not_ready_pods",
-				batchLabels,
-				3,
-			},
-		},
+		expected: []metricExtract{{
+			"knative.dev/serving/autoscaler/actual_pods",
+			label1,
+			1,
+		}, {
+			"knative.dev/serving/autoscaler/desired_pods",
+			label2,
+			2,
+		}, {
+			"custom.googleapis.com/knative.dev/autoscaler/not_ready_pods",
+			batchLabels,
+			3,
+		}},
 	}, {
 		name:               "Don't allow custom metrics",
 		allowCustomMetrics: "false",
-		expected: []metricExtract{
-			{
-				"knative.dev/serving/autoscaler/actual_pods",
-				label1,
-				1,
-			},
-			{
-				"knative.dev/serving/autoscaler/desired_pods",
-				label2,
-				2,
-			},
-		},
+		expected: []metricExtract{{
+			"knative.dev/serving/autoscaler/actual_pods",
+			label1,
+			1,
+		}, {
+			"knative.dev/serving/autoscaler/desired_pods",
+			label2,
+			2,
+		}},
 	}}
 
 	for _, tc := range harness {
@@ -455,7 +446,7 @@ func TestStackDriverExports(t *testing.T) {
 			}
 
 			sdFake := stackDriverFake{t: t}
-			if err := initSdFake(&sdFake); err != nil {
+			if err := initStackdriverFake(&sdFake); err != nil {
 				t.Error("Init stackdriver failed", err)
 			}
 			if err := UpdateExporter(context.Background(), eo, logtesting.TestLogger(t)); err != nil {
