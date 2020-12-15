@@ -229,10 +229,18 @@ func TestResourceAsString(t *testing.T) {
 }
 
 func BenchmarkResourceToKey(b *testing.B) {
-	r1 := &resource.Resource{Type: "foobar", Labels: map[string]string{"k1": "v1", "k3": "v3", "k2": "v2"}}
+	for _, count := range []int{0, 1, 5, 10} {
+		labels := make(map[string]string, count)
+		for i := 0; i < count; i++ {
+			labels[fmt.Sprintf("key%d", i)] = fmt.Sprintf("value%d", i)
+		}
+		r := &resource.Resource{Type: "foobar", Labels: labels}
 
-	for i := 0; i < b.N; i++ {
-		resourceToKey(r1)
+		b.Run(fmt.Sprintf("%d-labels", count), func(b *testing.B) {
+			for i := 0; i < b.N; i++ {
+				resourceToKey(r)
+			}
+		})
 	}
 }
 

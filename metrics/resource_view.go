@@ -316,25 +316,48 @@ func resourceToKey(r *resource.Resource) string {
 		return ""
 	}
 
+	// If there are no labels, we have just the Type.
+	if len(r.Labels) == 0 {
+		return r.Type
+	}
+
+	var s strings.Builder
+	writeKV := func(key, value string) {
+		// We use byte values 1 and 2 to avoid colliding with valid resource labels
+		// and to make unpacking easy
+		s.WriteByte('\x01')
+		s.WriteString(key)
+		s.WriteByte('\x02')
+		s.WriteString(value)
+	}
+
+	// If there's only one label, we can skip building and sorting a slice of keys.
+	if len(r.Labels) == 1 {
+		l := len(r.Type)
+		var key string
+		for k, v := range r.Labels {
+			key = k
+			l += len(k) + len(v) + 2
+		}
+		s.Grow(l)
+
+		s.WriteString(r.Type)
+		writeKV(key, r.Labels[key])
+		return s.String()
+	}
+
 	l := len(r.Type)
 	keys := make([]string, 0, len(r.Labels))
 	for k, v := range r.Labels {
 		l += len(k) + len(v) + 2
 		keys = append(keys, k)
 	}
-
-	var s strings.Builder
 	s.Grow(l)
-	s.WriteString(r.Type)
 
+	s.WriteString(r.Type)
 	sort.Strings(keys) // Go maps are unsorted, so sort by key to produce stable output.
 	for _, key := range keys {
-		// We use byte values 1 and 2 to avoid colliding with valid resource labels
-		// and to make unpacking easy
-		s.WriteByte('\x01')
-		s.WriteString(key)
-		s.WriteByte('\x02')
-		s.WriteString(r.Labels[key])
+		writeKV(key, r.Labels[key])
 	}
 
 	return s.String()
