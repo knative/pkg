@@ -322,7 +322,7 @@ func resourceToKey(r *resource.Resource) string {
 	}
 
 	var s strings.Builder
-	writeKV := func(key, value string) {
+	writeKV := func(key, value string) { // This lambda doesn't force an allocation.
 		// We use byte values 1 and 2 to avoid colliding with valid resource labels
 		// and to make unpacking easy
 		s.WriteByte('\x01')
