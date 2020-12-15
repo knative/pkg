@@ -176,7 +176,7 @@ func TestFailToStartStream(t *testing.T) {
 	}
 }
 
-func ProcessLogEntries(t *testing.T, logFuncInvoked <-chan string, patterns []string) {
+func processLogEntries(t *testing.T, logFuncInvoked <-chan string, patterns []string) {
 	expectedLogMatchesSet := sets.NewString(patterns...)
 
 OUTER:
@@ -257,7 +257,7 @@ func TestNamespaceStream(t *testing.T) {
 	//    2. non filtered non json entries from chaosduck
 	//    3. nicely formatted, filtered(with matching key) entry from knativeContainer
 	//    4. nicely formatted, filtered(with matching key) entry from knativeContainer (fallback to caller attribubute)
-	ProcessLogEntries(t, logFuncInvoked, []string{testLinePattern, testNonControllerLinePattern, testChaosDuckLine, testQueueProxyLine})
+	processLogEntries(t, logFuncInvoked, []string{testLinePattern, testNonControllerLinePattern, testChaosDuckLine, testQueueProxyLine})
 
 	if _, err := podClient.Update(context.Background(), knativePod, metav1.UpdateOptions{}); err != nil {
 		t.Fatal("UpdatePod()=", err)
@@ -388,7 +388,7 @@ func (f *fakePods) GetLogs(podName string, opts *corev1.PodLogOptions) *restclie
 			resp := &http.Response{
 				StatusCode: http.StatusOK,
 				Body: ioutil.NopCloser(
-					strings.NewReader(getLogsForContainer(opts.Container))),
+					strings.NewReader(logsForContainer(opts.Container))),
 			}
 			return resp, nil
 		}),

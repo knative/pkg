@@ -130,7 +130,7 @@ func (s *namespaceSource) startForPod(pod *corev1.Pod) {
 		psn, pn, cn := pod.Namespace, pod.Name, container.Name
 
 		handleLine := s.handleLine
-		if isWellKnownContainer(cn) {
+		if wellKnownContainers.Has(cn) {
 			// Specialcase logs from chaosduck , queueproxy etc. chaosduck logs enable easy
 			// monitoring of killed pods throughout all tests. queueproxy logs enable
 			// debugging troubleshooting data plane request handling issues.
@@ -186,19 +186,7 @@ const (
 // Names of well known containers that do not produce nicely formatted logs that
 // could be easily filtered and parsed by handleLine. Logs from these containers
 // are captured without filtering.
-func 
-wellKnownContainers() []string {
-	return []string{ChaosDuck, QueueProxy}
-}
-
-func isWellKnownContainer(container string) bool {
-	for _, item := range getWellKnownContainers() {
-		if item == container {
-			return true
-		}
-	}
-	return false
-}
+var wellKnownContainers = sets.NewString(ChaosDuck, QueueProxy)
 
 func (s *namespaceSource) handleLine(l []byte, pod string, _ string) {
 	// This holds the standard structure of our logs.
