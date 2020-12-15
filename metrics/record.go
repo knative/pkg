@@ -18,6 +18,7 @@ package metrics
 
 import (
 	"context"
+	"fmt"
 
 	"go.opencensus.io/stats"
 )
@@ -27,7 +28,9 @@ import (
 
 // Record stores the given Measurement from `ms` in the current metrics backend.
 func Record(ctx context.Context, ms stats.Measurement, ros ...stats.Options) {
-	getCurMetricsConfig().record(ctx, []stats.Measurement{ms}, ros...)
+	if err := getCurMetricsConfig().record(ctx, []stats.Measurement{ms}, ros...); err != nil {
+		panic(fmt.Errorf("error recording metric: %w", err))
+	}
 }
 
 // RecordBatch stores the given Measurements from `mss` in the current metrics backend.

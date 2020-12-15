@@ -833,6 +833,7 @@ func checkMetricConsistency(
 	dtoMetric *dto.Metric,
 	metricHashes map[uint64]struct{},
 ) error {
+	fmt.Println("+ Checking metric consistency", *dtoMetric)
 	name := metricFamily.GetName()
 
 	// Type consistency with metric family.
@@ -897,10 +898,10 @@ func checkMetricConsistency(
 	}
 	hSum := h.Sum64()
 	if _, exists := metricHashes[hSum]; exists {
-		return fmt.Errorf(
+		panic(fmt.Errorf(
 			"collected metric %q { %s} was collected before with the same name and label values",
 			name, dtoMetric,
-		)
+		))
 	}
 	metricHashes[hSum] = struct{}{}
 	return nil
