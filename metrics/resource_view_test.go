@@ -206,3 +206,19 @@ func TestResourceAsString(t *testing.T) {
 		t.Error("Expect different resources, but got the same", s1)
 	}
 }
+
+func BenchmarkResourceToKey(b *testing.B) {
+	for _, count := range []int{0, 1, 5, 10} {
+		labels := make(map[string]string, count)
+		for i := 0; i < count; i++ {
+			labels[fmt.Sprint("key", i)] = fmt.Sprint("value", i)
+		}
+		r := &resource.Resource{Type: "foobar", Labels: labels}
+
+		b.Run(fmt.Sprintf("%d-labels", count), func(b *testing.B) {
+			for i := 0; i < b.N; i++ {
+				resourceToKey(r)
+			}
+		})
+	}
+}
