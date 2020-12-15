@@ -86,8 +86,7 @@ var (
 		Spec: corev1.PodSpec{
 			Containers: []corev1.Container{{
 				Name: knativeContainer,
-			},
-			},
+			}},
 		},
 	}
 
@@ -101,8 +100,7 @@ var (
 				Name: knativeContainer,
 			}, {
 				Name: logstream.ChaosDuck,
-			},
-			},
+			}},
 		},
 	}
 )
