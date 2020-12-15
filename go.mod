@@ -75,6 +75,6 @@ require (
 	k8s.io/klog v1.0.0
 	k8s.io/kube-openapi v0.0.0-20200410145947-bcb3869e6f29 // indirect
 	k8s.io/utils v0.0.0-20200603063816-c1c6865ac451 // indirect
-	knative.dev/hack v0.0.0-20201201234937-fddbf732e450
+	knative.dev/hack v0.0.0-20201214230143-4ed1ecb8db24
 	sigs.k8s.io/structured-merge-diff/v3 v3.0.1-0.20200706213357-43c19bbb7fba // indirect
 )
