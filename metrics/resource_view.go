@@ -333,16 +333,12 @@ func resourceToKey(r *resource.Resource) string {
 
 	// If there's only one label, we can skip building and sorting a slice of keys.
 	if len(r.Labels) == 1 {
-		l := len(r.Type)
-		var key string
 		for k, v := range r.Labels {
-			key = k
-			l += len(k) + len(v) + 2
+			// We know this only executes once.
+			s.Grow(len(r.Type) + len(k) + len(v) + 2)
+			s.WriteString(r.Type)
+			writeKV(k, v)
 		}
-		s.Grow(l)
-
-		s.WriteString(r.Type)
-		writeKV(key, r.Labels[key])
 		return s.String()
 	}
 
