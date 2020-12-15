@@ -315,21 +315,26 @@ func resourceToKey(r *resource.Resource) string {
 	if r == nil {
 		return ""
 	}
-	var s strings.Builder
+
 	l := len(r.Type)
-	kvs := make([]string, 0, len(r.Labels))
+	keys := make([]string, 0, len(r.Labels))
 	for k, v := range r.Labels {
 		l += len(k) + len(v) + 2
-		// We use byte values 1 and 2 to avoid colliding with valid resource labels
-		// and to make unpacking easy
-		kvs = append(kvs, fmt.Sprintf("\x01%s\x02%s", k, v))
+		keys = append(keys, k)
 	}
+
+	var s strings.Builder
 	s.Grow(l)
 	s.WriteString(r.Type)
 
-	sort.Strings(kvs) // Go maps are unsorted, so sort by key to produce stable output.
-	for _, kv := range kvs {
-		s.WriteString(kv)
+	sort.Strings(keys) // Go maps are unsorted, so sort by key to produce stable output.
+	for _, key := range keys {
+		// We use byte values 1 and 2 to avoid colliding with valid resource labels
+		// and to make unpacking easy
+		s.WriteByte('\x01')
+		s.WriteString(key)
+		s.WriteByte('\x02')
+		s.WriteString(r.Labels[key])
 	}
 
 	return s.String()

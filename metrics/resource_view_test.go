@@ -228,6 +228,14 @@ func TestResourceAsString(t *testing.T) {
 	}
 }
 
+func BenchmarkResourceToKey(b *testing.B) {
+	r1 := &resource.Resource{Type: "foobar", Labels: map[string]string{"k1": "v1", "k3": "v3", "k2": "v2"}}
+
+	for i := 0; i < b.N; i++ {
+		resourceToKey(r1)
+	}
+}
+
 type metricExtract struct {
 	Name   string
 	Labels map[string]string
