@@ -232,7 +232,7 @@ func BenchmarkResourceToKey(b *testing.B) {
 	for _, count := range []int{0, 1, 5, 10} {
 		labels := make(map[string]string, count)
 		for i := 0; i < count; i++ {
-			labels[fmt.Sprintf("key%d", i)] = fmt.Sprintf("value%d", i)
+			labels[fmt.Sprint("key", i)] = fmt.Sprint("value", i)
 		}
 		r := &resource.Resource{Type: "foobar", Labels: labels}
 
