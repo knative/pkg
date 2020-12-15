@@ -131,9 +131,11 @@ func (s *namespaceSource) startForPod(pod *corev1.Pod) {
 
 		handleLine := s.handleLine
 		if wellKnownContainers.Has(cn) {
-			// Specialcase logs from chaosduck , queueproxy etc. chaosduck logs enable easy
-			// monitoring of killed pods throughout all tests. queueproxy logs enable
-			// debugging troubleshooting data plane request handling issues.
+			// Specialcase logs from chaosduck, queueproxy etc.
+			// - ChaosDuck logs enable easy
+			//   monitoring of killed pods throughout all tests.
+			// - QueueProxy logs enable
+			//   debugging troubleshooting data plane request handling issues.
 			handleLine = s.handleGenericLine
 		}
 
