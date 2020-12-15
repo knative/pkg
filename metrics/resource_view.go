@@ -338,8 +338,8 @@ func resourceToKey(r *resource.Resource) string {
 			s.Grow(len(r.Type) + len(k) + len(v) + 2)
 			s.WriteString(r.Type)
 			writeKV(k, v)
+			return s.String()
 		}
-		return s.String()
 	}
 
 	l := len(r.Type)
