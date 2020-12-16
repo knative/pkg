@@ -45,6 +45,10 @@ func injectBarInformer(ctx context.Context) (context.Context, controller.Informe
 	return ctx, nil
 }
 
+func injectFooFilteredInformer(ctx context.Context) (context.Context, []controller.Informer) {
+	return ctx, []controller.Informer{nil, nil}
+}
+
 func TestRegisterInformersAndSetup(t *testing.T) {
 	i := &impl{}
 
@@ -61,9 +65,11 @@ func TestRegisterInformersAndSetup(t *testing.T) {
 	i.RegisterInformer(injectFooInformer)
 	i.RegisterInformer(injectBarInformer)
 
+	i.RegisterFilteredInformer(injectFooFilteredInformer)
+
 	_, infs := i.SetupInformers(context.Background(), &rest.Config{})
 
-	if want, got := 2, len(infs); got != want {
+	if want, got := 4, len(infs); got != want {
 		t.Errorf("SetupInformers() = %d, wanted %d", want, got)
 	}
 }

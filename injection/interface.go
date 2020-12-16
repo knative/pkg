@@ -53,8 +53,15 @@ type Interface interface {
 	// a new informer with a context.
 	RegisterInformer(InformerInjector)
 
+	// RegisterInformers registers a new filtered informer injector callback for associating
+	// a new set of informers with a context.
+	RegisterFilteredInformer(FilteredInformersInjector)
+
 	// GetInformers fetches all of the registered informer injectors.
 	GetInformers() []InformerInjector
+
+	// GetInformers fetches all of the registered filtered informer injectors.
+	GetFilteredInformers() []FilteredInformersInjector
 
 	// SetupInformers runs all of the injectors against a context, starting with
 	// the clients and the given rest.Config.  The resulting context is returned
@@ -84,8 +91,9 @@ var (
 type impl struct {
 	m sync.RWMutex
 
-	clients   []ClientInjector
-	factories []InformerFactoryInjector
-	informers []InformerInjector
-	ducks     []DuckFactoryInjector
+	clients           []ClientInjector
+	factories         []InformerFactoryInjector
+	informers         []InformerInjector
+	filteredinformers []FilteredInformersInjector
+	ducks             []DuckFactoryInjector
 }
