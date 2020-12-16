@@ -267,9 +267,8 @@ func (c *Impl) EnqueueAfter(obj interface{}, after time.Duration) {
 func (c *Impl) EnqueueSlowKey(key types.NamespacedName) {
 	c.workQueue.SlowLane().Add(key)
 
-	desugared := c.logger.Desugar()
-	if desugared.Core().Enabled(zapcore.DebugLevel) {
-		desugared.Debug(fmt.Sprintf("Adding to the slow queue %s (depth(total/slow): %d/%d)",
+	if logger := c.logger.Desugar(); logger.Core().Enabled(zapcore.DebugLevel) {
+		logger.Debug(fmt.Sprintf("Adding to the slow queue %s (depth(total/slow): %d/%d)",
 			safeKey(key), c.workQueue.Len(), c.workQueue.SlowLane().Len()),
 			zap.String(logkey.Key, key.String()))
 	}
@@ -399,9 +398,8 @@ func (c *Impl) EnqueueNamespaceOf(obj interface{}) {
 func (c *Impl) EnqueueKey(key types.NamespacedName) {
 	c.workQueue.Add(key)
 
-	desugared := c.logger.Desugar()
-	if desugared.Core().Enabled(zapcore.DebugLevel) {
-		desugared.Debug(fmt.Sprintf("Adding to queue %s (depth: %d)", safeKey(key), c.workQueue.Len()),
+	if logger := c.logger.Desugar(); logger.Core().Enabled(zapcore.DebugLevel) {
+		logger.Debug(fmt.Sprintf("Adding to queue %s (depth: %d)", safeKey(key), c.workQueue.Len()),
 			zap.String(logkey.Key, key.String()))
 	}
 }
@@ -419,9 +417,8 @@ func (c *Impl) MaybeEnqueueBucketKey(bkt reconciler.Bucket, key types.Namespaced
 func (c *Impl) EnqueueKeyAfter(key types.NamespacedName, delay time.Duration) {
 	c.workQueue.AddAfter(key, delay)
 
-	desugared := c.logger.Desugar()
-	if desugared.Core().Enabled(zapcore.DebugLevel) {
-		desugared.Debug(fmt.Sprintf("Adding to queue %s (delay: %v, depth: %d)", safeKey(key), delay, c.workQueue.Len()),
+	if logger := c.logger.Desugar(); logger.Core().Enabled(zapcore.DebugLevel) {
+		logger.Debug(fmt.Sprintf("Adding to queue %s (delay: %v, depth: %d)", safeKey(key), delay, c.workQueue.Len()),
 			zap.String(logkey.Key, key.String()))
 	}
 }
