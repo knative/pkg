@@ -195,8 +195,7 @@ func UpdateLevelFromConfigMap(logger *zap.SugaredLogger, atomicLevel zap.AtomicL
 			case errors.Is(err, errEmptyLoggerConfig):
 				level = zap.NewAtomicLevel().Level()
 			case err != nil:
-				logger.Errorw(
-					fmt.Sprintf("Failed to parse logger configuration. Previous log level retained for %v", levelKey),
+				logger.Errorw("Failed to parse logger configuration. Previous log level retained for "+levelKey,
 					zap.Error(err))
 				return
 			default:
