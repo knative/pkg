@@ -16,7 +16,6 @@ require (
 	github.com/davecgh/go-spew v1.1.1
 	github.com/dgryski/go-gk v0.0.0-20200319235926-a69029f61654 // indirect
 	github.com/fsnotify/fsnotify v1.4.9 // indirect
-	github.com/ghodss/yaml v1.0.0
 	github.com/go-openapi/spec v0.19.6 // indirect
 	github.com/go-openapi/swag v0.19.7 // indirect
 	github.com/gobuffalo/envy v1.7.1 // indirect
@@ -77,4 +76,5 @@ require (
 	k8s.io/utils v0.0.0-20200603063816-c1c6865ac451 // indirect
 	knative.dev/hack v0.0.0-20201214230143-4ed1ecb8db24
 	sigs.k8s.io/structured-merge-diff/v3 v3.0.1-0.20200706213357-43c19bbb7fba // indirect
+	sigs.k8s.io/yaml v1.2.0
 )
