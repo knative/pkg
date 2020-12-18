@@ -147,7 +147,7 @@ func UpdateExporter(ctx context.Context, ops ExporterOptions, logger *zap.Sugare
 			// Fail the process if there doesn't exist an exporter.
 			logger.Errorw("Failed to get a valid metrics config", zap.Error(err))
 		} else {
-			logger.Errorw("Failed to get a valid metrics config; Skip updating the metrics exporter", "error", err)
+			logger.Errorw("Failed to get a valid metrics config; Skip updating the metrics exporter", zap.Error(err))
 		}
 		return err
 	}
@@ -162,13 +162,13 @@ func UpdateExporter(ctx context.Context, ops ExporterOptions, logger *zap.Sugare
 		flushGivenExporter(curMetricsExporter)
 		e, f, err := newMetricsExporter(newConfig, logger)
 		if err != nil {
-			logger.Errorw("Failed to update a new metrics exporter based on metric config", "config", newConfig, "error", err)
+			logger.Errorw("Failed to update a new metrics exporter based on metric config", zap.Error(err), "config", newConfig)
 			return err
 		}
 		existingConfig := curMetricsConfig
 		curMetricsExporter = e
 		if err := setFactory(f); err != nil {
-			logger.Errorw("Failed to update metrics factory when loading metric config", "config", newConfig, "error", err)
+			logger.Errorw("Failed to update metrics factory when loading metric config", zap.Error(err), "config", newConfig)
 			return err
 		}
 		logger.Infof("Successfully updated the metrics exporter; old config: %v; new config %v", existingConfig, newConfig)
