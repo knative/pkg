@@ -18,6 +18,7 @@ import (
 	"testing"
 	"time"
 
+	"golang.org/x/net/context"
 	. "knative.dev/pkg/logging/testing"
 )
 
@@ -248,7 +249,14 @@ func TestInterleavedExporters(t *testing.T) {
 
 func TestFlushExporter(t *testing.T) {
 	// No exporter - no action should be taken
-	setCurMetricsConfig(nil)
+	UpdateExporter(context.Background(), ExporterOptions{
+		Domain:    "test",
+		Component: "test",
+		ConfigMap: map[string]string{
+			BackendDestinationKey: string(none),
+		},
+	}, TestLogger(t))
+
 	if want, got := false, FlushExporter(); got != want {
 		t.Errorf("Expected %v, got %v.", want, got)
 	}
