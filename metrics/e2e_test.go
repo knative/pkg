@@ -1,3 +1,5 @@
+// +build !nostackdriver
+
 /*
 Copyright 2020 The Knative Authors
 

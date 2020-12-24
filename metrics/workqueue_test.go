@@ -22,8 +22,10 @@ import (
 
 	"go.opencensus.io/stats"
 	"go.opencensus.io/stats/view"
+	"golang.org/x/net/context"
 	"k8s.io/client-go/util/workqueue"
 
+	"knative.dev/pkg/logging"
 	"knative.dev/pkg/metrics/metricstest"
 )
 
@@ -63,6 +65,12 @@ func TestWorkqueueMetrics(t *testing.T) {
 
 	// Reset the metrics configuration to avoid leaked state from other tests.
 	InitForTesting()
+
+	_, ref, err := newPrometheusExporter(getCurMetricsConfig(), logging.FromContext(context.Background()))
+	if err != nil {
+		t.Fatalf("newPrometheusExporter() = %v", err)
+	}
+	setFactory(ref)
 
 	views := wp.DefaultViews()
 	if got, want := len(views), 7; got != want {

@@ -1,3 +1,5 @@
+// +build !nostackdriver
+
 /*
 Copyright 2018 The Knative Authors
 
@@ -47,7 +49,6 @@ const (
 	eventingDomain         = "knative.dev/eventing"
 	internalEventingDomain = "knative.dev/internal/eventing"
 	customSubDomain        = "test.domain"
-	testComponent          = "testComponent"
 	testProj               = "test-project"
 	anotherProj            = "another-project"
 )

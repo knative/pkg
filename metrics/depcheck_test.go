@@ -14,17 +14,16 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package metrics
+package metrics_test
 
-const (
-	testComponent = "testComponent"
+import (
+	"testing"
+
+	"knative.dev/pkg/depcheck"
 )
 
-// InitForTesting initialize the necessary global variables for unit tests.
-func InitForTesting() {
-	setCurMetricsConfig(&metricsConfig{
-		backendDestination: prometheus,
-		component:          "test",
-		domain:             "test",
-	})
+func TestNoDeps(t *testing.T) {
+	depcheck.AssertNoDependency(t, map[string][]string{
+		"knative.dev/pkg/metrics": depcheck.KnownHeavyDependencies,
+	}, "-tags=nostackdriver")
 }
