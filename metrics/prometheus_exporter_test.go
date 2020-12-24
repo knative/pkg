@@ -29,7 +29,7 @@ func TestNewPrometheusExporter(t *testing.T) {
 	}{{
 		name: "port 9090",
 		config: metricsConfig{
-			domain:             servingDomain,
+			domain:             "does not matter",
 			component:          testComponent,
 			backendDestination: prometheus,
 			prometheusPort:     9090,
@@ -39,7 +39,7 @@ func TestNewPrometheusExporter(t *testing.T) {
 	}, {
 		name: "port 9091",
 		config: metricsConfig{
-			domain:             servingDomain,
+			domain:             "does not matter",
 			component:          testComponent,
 			backendDestination: prometheus,
 			prometheusPort:     9091,
@@ -64,7 +64,7 @@ func TestNewPrometheusExporter(t *testing.T) {
 func TestNewPrometheusExporter_fromEnv(t *testing.T) {
 	exporterOptions := ExporterOptions{
 		ConfigMap: map[string]string{},
-		Domain:    servingDomain,
+		Domain:    "does not matter",
 		Component: testComponent,
 	}
 	testCases := []struct {
