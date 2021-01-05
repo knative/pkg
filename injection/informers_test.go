@@ -65,7 +65,7 @@ func TestRegisterInformersAndSetup(t *testing.T) {
 	i.RegisterInformer(injectFooInformer)
 	i.RegisterInformer(injectBarInformer)
 
-	i.RegisterFilteredInformer(injectFooFilteredInformer)
+	i.RegisterFilteredInformers(injectFooFilteredInformer)
 
 	_, infs := i.SetupInformers(context.Background(), &rest.Config{})
 

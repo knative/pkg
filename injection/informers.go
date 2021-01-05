@@ -39,11 +39,11 @@ func (i *impl) RegisterInformer(ii InformerInjector) {
 	i.informers = append(i.informers, ii)
 }
 
-func (i *impl) RegisterFilteredInformer(fii FilteredInformersInjector) {
+func (i *impl) RegisterFilteredInformers(fii FilteredInformersInjector) {
 	i.m.Lock()
 	defer i.m.Unlock()
 
-	i.filteredinformers = append(i.filteredinformers, fii)
+	i.filteredInformers = append(i.filteredInformers, fii)
 }
 
 func (i *impl) GetInformers() []InformerInjector {
@@ -59,7 +59,7 @@ func (i *impl) GetFilteredInformers() []FilteredInformersInjector {
 	defer i.m.RUnlock()
 
 	// Copy the slice before returning.
-	return append(i.filteredinformers[:0:0], i.filteredinformers...)
+	return append(i.filteredInformers[:0:0], i.filteredinformers...)
 }
 
 func (i *impl) SetupInformers(ctx context.Context, cfg *rest.Config) (context.Context, []controller.Informer) {

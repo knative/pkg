@@ -88,9 +88,9 @@ func (g *fakeFilteredInformerGenerator) GenerateType(c *generator.Context, t *ty
 		"type":               t,
 		"version":            namer.IC(g.groupVersion.Version.String()),
 		"controllerInformer": c.Universe.Type(types.Name{Package: "knative.dev/pkg/controller", Name: "Informer"}),
-		"injectionRegisterFilteredInformer": c.Universe.Function(types.Name{
+		"injectionRegisterFilteredInformers": c.Universe.Function(types.Name{
 			Package: "knative.dev/pkg/injection",
-			Name:    "Fake.RegisterFilteredInformer",
+			Name:    "Fake.RegisterFilteredInformers",
 		}),
 		"loggingFromContext": c.Universe.Function(types.Name{
 			Package: "knative.dev/pkg/logging",
@@ -111,7 +111,7 @@ var injectionFakeFilteredInformer = `
 var Get = {{.informerGet|raw}}
 
 func init() {
-	{{.injectionRegisterFilteredInformer|raw}}(withInformer)
+	{{.injectionRegisterFilteredInformers|raw}}(withInformer)
 }
 
 func withInformer(ctx {{.contextContext|raw}}) ({{.contextContext|raw}}, []{{.controllerInformer|raw}}) {

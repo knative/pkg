@@ -79,14 +79,14 @@ func (g *filteredInjectionGenerator) GenerateType(c *generator.Context, t *types
 	klog.V(5).Info("processing type ", t)
 
 	m := map[string]interface{}{
-		"group":                             namer.IC(g.groupGoName),
-		"type":                              t,
-		"version":                           namer.IC(g.groupVersion.Version.String()),
-		"injectionRegisterFilteredInformer": c.Universe.Type(types.Name{Package: "knative.dev/pkg/injection", Name: "Default.RegisterFilteredInformer"}),
-		"controllerInformer":                c.Universe.Type(types.Name{Package: "knative.dev/pkg/controller", Name: "Informer"}),
-		"informersTypedInformer":            c.Universe.Type(types.Name{Package: g.typedInformerPackage, Name: t.Name.Name + "Informer"}),
-		"factoryLabelKey":                   c.Universe.Type(types.Name{Package: g.groupInformerFactoryPackage, Name: "LabelKey"}),
-		"factoryGet":                        c.Universe.Function(types.Name{Package: g.groupInformerFactoryPackage, Name: "Get"}),
+		"group":                              namer.IC(g.groupGoName),
+		"type":                               t,
+		"version":                            namer.IC(g.groupVersion.Version.String()),
+		"injectionRegisterFilteredInformers": c.Universe.Type(types.Name{Package: "knative.dev/pkg/injection", Name: "Default.RegisterFilteredInformers"}),
+		"controllerInformer":                 c.Universe.Type(types.Name{Package: "knative.dev/pkg/controller", Name: "Informer"}),
+		"informersTypedInformer":             c.Universe.Type(types.Name{Package: g.typedInformerPackage, Name: t.Name.Name + "Informer"}),
+		"factoryLabelKey":                    c.Universe.Type(types.Name{Package: g.groupInformerFactoryPackage, Name: "LabelKey"}),
+		"factoryGet":                         c.Universe.Function(types.Name{Package: g.groupInformerFactoryPackage, Name: "Get"}),
 		"loggingFromContext": c.Universe.Function(types.Name{
 			Package: "knative.dev/pkg/logging",
 			Name:    "FromContext",
@@ -104,7 +104,7 @@ func (g *filteredInjectionGenerator) GenerateType(c *generator.Context, t *types
 
 var filteredInjectionInformer = `
 func init() {
-	{{.injectionRegisterFilteredInformer|raw}}(withInformer)
+	{{.injectionRegisterFilteredInformers|raw}}(withInformer)
 }
 
 // Key is used for associating the Informer inside the context.Context.

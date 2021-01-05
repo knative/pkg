@@ -53,14 +53,14 @@ type Interface interface {
 	// a new informer with a context.
 	RegisterInformer(InformerInjector)
 
-	// RegisterInformers registers a new filtered informer injector callback for associating
+	// RegisterFilteredInformers registers a new filtered informer injector callback for associating
 	// a new set of informers with a context.
-	RegisterFilteredInformer(FilteredInformersInjector)
+	RegisterFilteredInformers(FilteredInformersInjector)
 
 	// GetInformers fetches all of the registered informer injectors.
 	GetInformers() []InformerInjector
 
-	// GetInformers fetches all of the registered filtered informer injectors.
+	// GetFilteredInformers fetches all of the registered filtered informer injectors.
 	GetFilteredInformers() []FilteredInformersInjector
 
 	// SetupInformers runs all of the injectors against a context, starting with
@@ -94,6 +94,6 @@ type impl struct {
 	clients           []ClientInjector
 	factories         []InformerFactoryInjector
 	informers         []InformerInjector
-	filteredinformers []FilteredInformersInjector
+	filteredInformers []FilteredInformersInjector
 	ducks             []DuckFactoryInjector
 }
