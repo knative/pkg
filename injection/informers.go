@@ -59,7 +59,7 @@ func (i *impl) GetFilteredInformers() []FilteredInformersInjector {
 	defer i.m.RUnlock()
 
 	// Copy the slice before returning.
-	return append(i.filteredInformers[:0:0], i.filteredinformers...)
+	return append(i.filteredInformers[:0:0], i.filteredInformers...)
 }
 
 func (i *impl) SetupInformers(ctx context.Context, cfg *rest.Config) (context.Context, []controller.Informer) {
