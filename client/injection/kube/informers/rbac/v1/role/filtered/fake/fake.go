@@ -31,7 +31,7 @@ import (
 var Get = filtered.Get
 
 func init() {
-	injection.Fake.RegisterFilteredInformer(withInformer)
+	injection.Fake.RegisterFilteredInformers(withInformer)
 }
 
 func withInformer(ctx context.Context) (context.Context, []controller.Informer) {

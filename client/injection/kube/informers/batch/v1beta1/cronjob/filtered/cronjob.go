@@ -29,7 +29,7 @@ import (
 )
 
 func init() {
-	injection.Default.RegisterFilteredInformer(withInformer)
+	injection.Default.RegisterFilteredInformers(withInformer)
 }
 
 // Key is used for associating the Informer inside the context.Context.
