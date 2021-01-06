@@ -319,7 +319,7 @@ func TestDefaultQuietPeriod(t *testing.T) {
 	mt.advance(network.DefaultDrainTimeout)
 }
 
-func TestCustomizeCheck(t *testing.T) {
+func TestCheckOption(t *testing.T) {
 	var (
 		w     http.ResponseWriter
 		req   = &http.Request{}
@@ -331,9 +331,9 @@ func TestCustomizeCheck(t *testing.T) {
 				"User-Agent": []string{network.KubeProbeUAPrefix},
 			},
 		}
-		cnt            = 0
-		inner          = http.HandlerFunc(func(http.ResponseWriter, *http.Request) { cnt++ })
-		customizeCheck = CustomizeChecker(func(w http.ResponseWriter, req *http.Request) {
+		cnt         = 0
+		inner       = http.HandlerFunc(func(http.ResponseWriter, *http.Request) { cnt++ })
+		checkOption = CheckOption(func(w http.ResponseWriter, req *http.Request) {
 			if req.URL != nil && req.URL.Path == "/healthz" {
 				w.WriteHeader(http.StatusBadRequest)
 				return
@@ -343,8 +343,8 @@ func TestCustomizeCheck(t *testing.T) {
 	)
 
 	drainer := &Drainer{
-		CustomizeCheck: customizeCheck,
-		Inner:          inner,
+		CheckOption: checkOption,
+		Inner:       inner,
 	}
 
 	// Works before Drain is called.
@@ -355,7 +355,7 @@ func TestCustomizeCheck(t *testing.T) {
 		t.Error("Inner handler was not properly invoked")
 	}
 
-	// Works for CustomizeCheck.
+	// Works for CheckOption.
 	resp := httptest.NewRecorder()
 	drainer.ServeHTTP(resp, probe)
 	if got, want := resp.Code, http.StatusBadRequest; got != want {

@@ -38,7 +38,8 @@ func (s *sysTimer) tickChan() <-chan time.Time {
 	return s.Timer.C
 }
 
-type CustomizeChecker func(w http.ResponseWriter, req *http.Request)
+// CheckOption enables configuration of an optional checker.
+type CheckOption func(w http.ResponseWriter, req *http.Request)
 
 // This constructor is overridden in tests to control the progress
 // of time in the test.
@@ -49,9 +50,8 @@ var newTimer = func(d time.Duration) timer {
 }
 
 // Drainer wraps an inner http.Handler to support responding to kubelet
-// probes and KProbes until the handler is told to Drain.
-// If the handler is not in Drain status, kubelet probe will get "200 OK" or
-// status from CustomizeCheck. KProbes will get "200 OK".
+// probes and KProbes with a "200 OK" until the handler is told to Drain,
+// or Drainer will optionally run the callback checker if CheckOption is defined.
 // When the Drainer is told to Drain, it will immediately start to fail
 // probes with a "500 shutting down", and the call will block until no
 // requests have been received for QuietPeriod (defaults to
@@ -60,9 +60,9 @@ type Drainer struct {
 	// Mutex guards the initialization and resets of the timer
 	sync.RWMutex
 
-	// CustomizeCheck is the optional checker
+	// CheckOption is the optional checker
 	// for kubelet probe to perform when the handler is not in Drain status.
-	CustomizeCheck CustomizeChecker
+	CheckOption CheckOption
 
 	// Inner is the http.Handler to which we delegate actual requests.
 	Inner http.Handler
@@ -86,11 +86,9 @@ func (d *Drainer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if network.IsKubeletProbe(r) { // Respond to probes regardless of path.
 		if d.draining() {
 			http.Error(w, "shutting down", http.StatusServiceUnavailable)
+		} else if d.CheckOption != nil {
+			d.CheckOption(w, r)
 		} else {
-			if d.CustomizeCheck != nil {
-				d.CustomizeCheck(w, r)
-				return
-			}
 			w.WriteHeader(http.StatusOK)
 		}
 		return
