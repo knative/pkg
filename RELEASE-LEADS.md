@@ -228,6 +228,7 @@ After **pkg**:
 
 - [knative/networking](https://github.com/knative/networking)
 - [knative/caching](https://github.com/knative/caching)
+- [knative-sandbox/reconciler-test](https://github.com/knative-sandbox/reconciler-test)
 
 Automation will propagate these updates to all the downstream repos in the next
 few cycles. The goal is to have the first wave of repo releases (**serving**,
