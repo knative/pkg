@@ -38,15 +38,13 @@ func NewControllerRef(obj OwnerRefable) *metav1.OwnerReference {
 	return metav1.NewControllerRef(obj.GetObjectMeta(), obj.GetGroupVersionKind())
 }
 
-type ownerRefableDeployment struct {
-	*appsv1.Deployment
-}
+type ownerRefableDeployment appsv1.Deployment
 
-func (o *ownerRefableDeployment) GetGroupVersionKind() schema.GroupVersionKind {
+func (o ownerRefableDeployment) GetGroupVersionKind() schema.GroupVersionKind {
 	return appsv1.SchemeGroupVersion.WithKind("Deployment")
 }
 
 // DeploymentAsOwnerRefable returns a owner refable deployment
 func DeploymentAsOwnerRefable(d *appsv1.Deployment) OwnerRefable {
-	return &ownerRefableDeployment{d}
+	return (*ownerRefableDeployment)(d)
 }

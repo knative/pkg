@@ -19,6 +19,8 @@ package kmeta
 import (
 	"testing"
 
+	"k8s.io/utils/pointer"
+
 	"github.com/google/go-cmp/cmp"
 	appsv1 "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -47,15 +49,13 @@ func TestNewControllerRef(t *testing.T) {
 		},
 	}
 
-	blockOwnerDeletion := true
-	isController := true
 	want := &metav1.OwnerReference{
 		APIVersion:         "example.knative.dev/v1alpha1",
 		Kind:               "Frobber",
 		Name:               "foo",
 		UID:                "42",
-		BlockOwnerDeletion: &blockOwnerDeletion,
-		Controller:         &isController,
+		BlockOwnerDeletion: pointer.BoolPtr(true),
+		Controller:         pointer.BoolPtr(true),
 	}
 
 	got := NewControllerRef(f)
@@ -72,15 +72,13 @@ func TestOwnerRefableDeployment(t *testing.T) {
 			UID:  "42",
 		},
 	}
-	blockOwnerDeletion := true
-	isController := true
 	want := &metav1.OwnerReference{
 		APIVersion:         "apps/v1",
 		Kind:               "Deployment",
 		Name:               "foo",
 		UID:                "42",
-		BlockOwnerDeletion: &blockOwnerDeletion,
-		Controller:         &isController,
+		BlockOwnerDeletion: pointer.BoolPtr(true),
+		Controller:         pointer.BoolPtr(true),
 	}
 
 	got := NewControllerRef(DeploymentAsOwnerRefable(d))
