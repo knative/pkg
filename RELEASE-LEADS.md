@@ -272,15 +272,13 @@ First:
 - [knative-sandbox/net-contour](https://github.com/knative-sandbox/net-contour)
 - [knative-sandbox/net-http01](https://github.com/knative-sandbox/net-http01)
 - [knative-sandbox/net-istio](https://github.com/knative-sandbox/net-istio)
+- [knative-sandbox/net-kourier](https://github.com/knative-sandbox/net-kourier)
 
 - [knative/eventing](https://github.com/knative/eventing)
 - [knative-sandbox/discovery](https://github.com/knative-sandbox/discovery)
 
 - [knative-sandbox/sample-controller](https://github.com/knative-sandbox/sample-controller)
 
-After **serving**:
-
-- [knative-sandbox/net-kourier](https://github.com/knative-sandbox/net-kourier)
 
 After **eventing**:
 
