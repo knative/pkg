@@ -17,6 +17,7 @@ limitations under the License.
 package kmeta
 
 import (
+	appsv1 "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
@@ -35,4 +36,17 @@ type OwnerRefable interface {
 // NewControllerRef creates an OwnerReference pointing to the given controller.
 func NewControllerRef(obj OwnerRefable) *metav1.OwnerReference {
 	return metav1.NewControllerRef(obj.GetObjectMeta(), obj.GetGroupVersionKind())
+}
+
+type ownerRefableDeployment struct {
+	*appsv1.Deployment
+}
+
+func (o *ownerRefableDeployment) GetGroupVersionKind() schema.GroupVersionKind {
+	return appsv1.SchemeGroupVersion.WithKind("Deployment")
+}
+
+// DeploymentAsOwnerRefable returns a owner refable deployment
+func DeploymentAsOwnerRefable(d *appsv1.Deployment) OwnerRefable {
+	return &ownerRefableDeployment{d}
 }
