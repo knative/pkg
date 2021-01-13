@@ -19,12 +19,12 @@ package kmeta
 import (
 	"testing"
 
-	"k8s.io/utils/pointer"
-
 	"github.com/google/go-cmp/cmp"
 	appsv1 "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+
+	"knative.dev/pkg/ptr"
 )
 
 type Frobber struct {
@@ -54,8 +54,8 @@ func TestNewControllerRef(t *testing.T) {
 		Kind:               "Frobber",
 		Name:               "foo",
 		UID:                "42",
-		BlockOwnerDeletion: pointer.BoolPtr(true),
-		Controller:         pointer.BoolPtr(true),
+		BlockOwnerDeletion: ptr.Bool(true),
+		Controller:         ptr.Bool(true),
 	}
 
 	got := NewControllerRef(f)
@@ -77,8 +77,8 @@ func TestOwnerRefableDeployment(t *testing.T) {
 		Kind:               "Deployment",
 		Name:               "foo",
 		UID:                "42",
-		BlockOwnerDeletion: pointer.BoolPtr(true),
-		Controller:         pointer.BoolPtr(true),
+		BlockOwnerDeletion: ptr.Bool(true),
+		Controller:         ptr.Bool(true),
 	}
 
 	got := NewControllerRef(DeploymentAsOwnerRefable(d))
