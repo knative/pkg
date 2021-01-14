@@ -265,8 +265,6 @@ few cycles. The goal is to have the first wave of repo releases (**serving**,
 signaled via the Slack report of releasability posted to the **release-`#`**
 channel every morning (5am PST, M-F).
 
----
-
 ## 7 days prior to the release
 
 ### Announce the imminent release cut
@@ -294,8 +292,6 @@ to run.
 
 Confirm with the respective WG leads that the release is imminent and obtain
 green light.
-
----
 
 ## Day of the release
 
