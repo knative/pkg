@@ -63,8 +63,9 @@ type ManagedConnection struct {
 	connection        rawConnection
 	connectionFactory func() (rawConnection, error)
 
-	closeChan chan struct{}
-	closeOnce sync.Once
+	closeChan   chan struct{}
+	closeOnce   sync.Once
+	shutdownErr error
 
 	establishChan chan struct{}
 	establishOnce sync.Once
@@ -268,20 +269,15 @@ func (c *ManagedConnection) keepalive() error {
 
 // closeConnection closes the underlying websocket connection.
 func (c *ManagedConnection) closeConnection() error {
-	// Close the connection under a read-lock to abort in-flight i/o operations and not
-	// having to wait for a read timeout to happen.
-	c.connectionLock.RLock()
-	if c.connection == nil {
-		c.connectionLock.RUnlock()
-		return nil
-	}
-	err := c.connection.Close()
-	c.connectionLock.RUnlock()
-
 	c.connectionLock.Lock()
-	c.connection = nil
-	c.connectionLock.Unlock()
-	return err
+	defer c.connectionLock.Unlock()
+
+	if c.connection != nil {
+		err := c.connection.Close()
+		c.connection = nil
+		return err
+	}
+	return nil
 }
 
 // read reads the next message from the connection.
@@ -360,9 +356,20 @@ func (c *ManagedConnection) SendRaw(messageType int, msg []byte) error {
 func (c *ManagedConnection) Shutdown() error {
 	c.closeOnce.Do(func() {
 		close(c.closeChan)
+
+		// Close the connection under a read-lock to abort in-flight i/o operations and
+		// not having to wait for a read timeout to happen.
+		c.connectionLock.RLock()
+		if c.connection != nil {
+			c.shutdownErr = c.connection.Close()
+		}
+		c.connectionLock.RUnlock()
 	})
 
-	err := c.closeConnection()
+	// Wait for all concurrent loops to finish.
+	// We always end up with a closed connection here, since the reconnect loop above
+	// can only exit if the connection has eventually been closed.
 	c.processingWg.Wait()
-	return err
+
+	return c.shutdownErr
 }
