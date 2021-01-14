@@ -272,6 +272,7 @@ func (c *ManagedConnection) closeConnection() error {
 	// having to wait for a read timeout to happen.
 	c.connectionLock.RLock()
 	if c.connection == nil {
+		c.connectionLock.RUnlock()
 		return nil
 	}
 	err := c.connection.Close()
