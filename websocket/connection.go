@@ -268,15 +268,19 @@ func (c *ManagedConnection) keepalive() error {
 
 // closeConnection closes the underlying websocket connection.
 func (c *ManagedConnection) closeConnection() error {
-	c.connectionLock.Lock()
-	defer c.connectionLock.Unlock()
-
-	if c.connection != nil {
-		err := c.connection.Close()
-		c.connection = nil
-		return err
+	// Close the connection under a read-lock to abort in-flight i/o operations and not
+	// having to wait for a read timeout to happen.
+	c.connectionLock.RLock()
+	if c.connection == nil {
+		return nil
 	}
-	return nil
+	err := c.connection.Close()
+	c.connectionLock.RUnlock()
+
+	c.connectionLock.Lock()
+	c.connection = nil
+	c.connectionLock.Unlock()
+	return err
 }
 
 // read reads the next message from the connection.
