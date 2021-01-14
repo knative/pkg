@@ -1,9 +1,13 @@
 # Release Leads
 
+This document includes the roster, instructions and timetable to perform a Knative release.
+
 For each release cycle, we dedicate a team of two individuals, one from Eventing
 and one from Serving, to shepherd the release process. Participation is
 voluntary and based on good faith. We are only expected to participate during
 our local office hour.
+
+---
 
 # Roster
 
@@ -58,7 +62,149 @@ This roster is seeded with all approvers from Eventing workgroups.
 
 **NOTE:** v0.20 is moved by 3 weeks for end of year holidays
 
-# Release instruction
+---
+
+# Instructions
+
+Below you'll find the instructions to release a `knative.dev` repository.
+
+For more information on the timetable, jump to the [Timetable](#timetable) paragraph.
+
+## Release a repository
+
+Releasing a repository includes:
+
+* Aligning the `knative.dev` dependencies to the other release versions on master
+* Creating a new branch starting from master for the release (e.g. `release-0.20`)
+* Execute the job on Prow that builds the code from the release branch, tags the revision, publishes the images, publishes the yaml artifacts and generates the Github release.
+
+Most of the above steps are automated, although in some situations it might be necessary to perform some of them manually.
+
+### Check the build on master pass
+
+Before beginning, check if the repository is in a good shape and the builds pass consistently. 
+**This is required** because the Prow job that builds the release artifacts will execute all the various tests (build, unit, e2e) and, if something goes wrong, you will probably need to restart this process from the beginning.
+
+For any problems in a specific repo, get in touch with the relevant WG leads to fix them.
+
+### Aligning the dependencies
+
+In order to align the `knative.dev` dependencies, knobots will perform PRs like [this](https://github.com/knative/eventing/pull/4713) for each repo, executing the command `./hack/update-deps.sh --upgrade --release 0.20` and committing all the content.
+
+If no dependency bump PR is available, you can:
+
+* Manually trigger the generation of these PRs starting the [Knobots Auto Updates workflow](https://github.com/knative-sandbox/knobots/actions?query=workflow%3A%22Auto+Updates%22) and wait for the PR to pop in the repo you need.
+* Execute the script below on your machine and PR the result to master:
+
+```shell
+RELEASE=0.20
+REPO=git@github.com:knative/example.git
+
+tmpdir=$(dirname $(mktemp -u))
+cd ${tmpdir}
+git clone ${REPO}
+cd "$(basename "${REPO}" .git)"
+
+./hack/update-deps.sh --upgrade --release ${RELEASE}
+./hack/update-codegen.sh
+
+# If there are no changes, you can go to the next step without committing any change.
+# Otherwise, commit all the changes
+git status
+```
+
+### Releasability
+
+At this point, you can proceed with the releasability check. 
+A releasability check is executed periodically and posts the result on the Slack release channel and it fails if the dependencies are not properly aligned.
+If you don't want to wait, you can manually execute the [Releasability workflow](https://github.com/knative/serving/actions?query=workflow%3AReleasability).
+
+If the releasability reports NO-GO, probably there is some deps misalignment, hence you need to go back to the previous step and check the dependencies, otherwise, you're ready to proceed.
+
+You can execute the releasability check locally using [**buoy**](https://github.com/knative/test-infra/tree/master/buoy):
+
+```bash
+RELEASE=0.20
+REPO=git@github.com:knative/example.git
+
+tmpdir=$(dirname $(mktemp -u))
+cd ${tmpdir}
+git clone ${REPO}
+cd "$(basename "${REPO}" .git)"
+
+if buoy check go.mod --domain knative.dev --release ${RELEASE} --verbose; then
+  git checkout -b release-${RELEASE}
+  ./hack/update-deps.sh --upgrade --release ${RELEASE}
+  git status
+fi
+```
+
+If there are changes, then it's NO-GO, otherwise it's GO
+
+### Just one last check before cutting
+
+After the dependencies are aligned and releasability is ready to GO, perform one last check manually that every `knative.dev` in the `go.mod` file is properly configured:
+
+* For the _support_ repos (`hack`, `test-infra`, `pkg`, etc) you should see the dependency version pointing at a revision which should match the `HEAD` of the release branch. E.g. `knative.dev/pkg v0.0.0-20210112143930-acbf2af596cf` points at the revision `acbf2af596cf`, which is the `HEAD` of the `release-0.20` branch in `pkg` repo.
+* For the _release_ repos, you should see the dependency version pointing at the version tag. E.g. `knative.dev/eventing v0.20.0` points at the tag `v0.20.0` in the `eventing` repo.
+
+### Cut the branch
+
+Now you're ready to create the `release-v.y` branch. This can be done by using the GitHub UI:
+
+1. Click on the branch selection box at the top level page of the repository.
+
+   ![Click the branch selection box](images/github-branch.png)
+
+1. Search for the correct `release-x.y` branch name for the release.
+
+   ![Search for the expected release branch name](images/github-branch-search.png)
+
+1. Click "Create branch: release-x.y".
+
+   ![Click create branch: release-x.y](images/github-branch-create.png)
+
+Otherwise, you can do it by hand on your local machine.
+
+### The Prow job
+
+After a `release-x.y` branch exists, a 4 hourly prow job will build the code from the release branch, 
+tag the revision, publish the images, publish the yaml artifacts and generate the Github release.
+Update the description of the release with the release notes collected.
+
+You can manually trigger the release:
+
+1. Navigate to https://prow.knative.dev/
+
+   ![Prow homepage](images/prow-home.png)
+
+1. Search for the `*-auto-release` job for the repository.
+
+   ![Search Prow for the repo and select the auto-release](images/prow-search.png)
+
+1. Rerun the auto-release job.
+
+   ![Rerun Prow Auto Release](images/prow-rerun.png)
+
+### Verify nightly release automation is intact
+
+The automation used to cut the actual releases is the very same as the
+automation used to cut nightly releases. Verify via testgrid that all relevant
+nightly releases are passing. If they are not coordinate with the relevant WG
+leads to fix them.
+
+### What could go wrong?
+
+In case you cut a branch before it was ready (e.g. some deps misalignment, a failing test, etc), you can try to restart this process. 
+But first, clean up the repo in this order:
+
+1. Remove the Github release (if any)
+1. Remove the git tag (if any) using `git push --delete origin v0.20.0` (assuming `origin` is the `knative.dev` repo)
+1. Remove the git branch (if any) from the Github UI
+
+---
+
+# Timetable
 
 We release the components of Knative every 6 weeks. All of these components must
 be moved to the latest "release" of all shared dependencies prior to each
@@ -93,129 +239,12 @@ next round of workflow syncs.
 
 Announce on **#general** that `pkg` will be cut in a week.
 
----
-
-## 7 days prior to the release
-
-### Announce the imminent release cut
-
-Announce on **#general** that the release will be cut in a week and that
-additional caution should be used when merging big changes.
-
-### Collect release-notes
-
-Make a new HackMD release notes document.
-[last release notes document](https://hackmd.io/cJwvzJ4eRVeqqiXzOPtxsA), empty
-it out and send it to the WG leads of the respective project (serving or
-eventing) to fill in. Coordinate with both serving and eventing leads.
-
-Each repo has a `Release Notes` GitHub Action workflow. This can be used to
-generate the starting point for the release notes. See an example in
-[Eventing](https://github.com/knative/eventing/actions?query=workflow%3A%22Release+Notes%22).
-The default starting and ending SHAs will work if running out of the `master`
-branch, or you can determin the correct starting and ending SHAs for the script
-to run.
-
-## Cutting release branches
-
-If the
-[Releasability](https://github.com/knative/serving/actions?query=workflow%3AReleasability)
-script reports a "GO", then the repo is ready to cut the `release-v.y` branch.
-This can be done by using the GitHub UI:
-
-1. Click on the branch selection box at the top level page of the repository.
-
-   ![Click the branch selection box](images/github-branch.png)
-
-1. Search for the correct `release-x.y` branch name for the release.
-
-   ![Search for the expected release branch name](images/github-branch-search.png)
-
-1. Click "Create branch: release-x.y".
-
-   ![Click create branch: release-x.y](images/github-branch-create.png)
-
-If the Releasability script reported a "NO-GO", the repo needs to be updated.
-This can be performed by running the the
-[Knobots Auto Updates workflow](https://github.com/knative-sandbox/knobots/actions?query=workflow%3A%22Auto+Updates%22),
-or making a PR to update _master_ from the results of running a manul update
-deps:
-
-```bash
-RELEASE=0.19
-./hack/update-deps.sh --upgrade --release ${RELEASE}
-```
-
-After a `release-x.y` branch exists, a 4 hourly prow job will produce the label
-and GitHub Release. Update the description of the release with the release notes
-collected. Can't wait 4 hours?
-[Manually trigger the auto-release job.](#manually-trigger-prow-auto-release-job)
-
-### Manual+Local Release Branch Creation
-
-If you need or want to perform the release branch cutting process locally, here
-is how:
-
-_Prerequisite_: Install the
-[**buoy** tool](https://github.com/knative/test-infra/tree/master/buoy).
-
-We have staged releasibility status checks that are sent to the release Slack
-channel to give alerts when things are ready to go. You can manually run that
-for each repo before cutting the release branch,
-
-```bash
-RELEASE=0.19
-REPO=git@github.com:knative/example.git
-
-tmpdir=$(dirname $(mktemp -u))
-cd ${tmpdir}
-git clone ${REPO}
-cd "$(basename "${REPO}" .git)"
-
-if buoy check go.mod --domain knative.dev --release ${RELEASE} --verbose; then
-  git checkout -b release-${RELEASE}
-  ./hack/update-deps.sh --upgrade --release ${RELEASE}
-  # consistency check, shouldnt do anything
-  echo "There should be no changes to git:"
-  git status
-fi
-```
-
-Then to push the release branch if no changes.
-
-```bash
-git push origin release-${RELEASE}
-```
-
-Otherwise, make a PR to _master_ to update the repo. After that merges then try
-the above script again.
-
-> _Note_: This assumes the upstream knative github repo is a remote called
-> origin.
-
-This should be done for each repo following the dependency chain and required
-timing.
-
-### Manually trigger Prow auto-release job.
-
-1. Navigate to https://prow.knative.dev/
-
-   ![Prow homepage](images/prow-home.png)
-
-1. Search for the `*-auto-release` job for the repository.
-
-   ![Search Prow for the repo and select the auto-release](images/prow-search.png)
-
-1. Rerun the auto-release job.
-
-   ![Rerun Prow Auto Release](images/prow-rerun.png)
-
 ### Cut release branches of supporting repos
 
-We need to start cutting release branches in each module that does not produce a
-release artifact, but we will do it from least dependent to most dependent.
-Follow the [cutting release branches](#cutting-release-branches) guide, starting
-with the **hack** repo:
+The supporting repos are the base repos where we have common code and common scripts. 
+For these repos, we follow the same release process as explained in [release a repository](#release-a-repository), but no prow job is executed, hence no git tag and Github release are produced.
+
+Follow the [release a repository](#release-a-repository) guide, skipping the prow job part, starting with the **hack** repo:
 
 - [knative/hack](https://github.com/knative/hack)
 
@@ -236,14 +265,28 @@ few cycles. The goal is to have the first wave of repo releases (**serving**,
 signaled via the Slack report of releasability posted to the **release-`#`**
 channel every morning (5am PST, M-F).
 
-### Verify nightly release automation is intact
-
-The automation used to cut the actual releases is the very same as the
-automation used to cut nightly releases. Verify via testgrid that all relevant
-nightly releases are passing. If they are not coordinate with the relevant WG
-leads to fix them.
-
 ---
+
+## 7 days prior to the release
+
+### Announce the imminent release cut
+
+Announce on **#general** that the release will be cut in a week and that
+additional caution should be used when merging big changes.
+
+### Collect release-notes
+
+Make a new HackMD release notes document.
+[last release notes document](https://hackmd.io/cJwvzJ4eRVeqqiXzOPtxsA), empty
+it out and send it to the WG leads of the respective project (serving or
+eventing) to fill in. Coordinate with both serving and eventing leads.
+
+Each repo has a `Release Notes` GitHub Action workflow. This can be used to
+generate the starting point for the release notes. See an example in
+[Eventing](https://github.com/knative/eventing/actions?query=workflow%3A%22Release+Notes%22).
+The default starting and ending SHAs will work if running out of the `master`
+branch, or you can determine the correct starting and ending SHAs for the script
+to run.
 
 ## 1 day prior to the release
 
@@ -256,14 +299,14 @@ green light.
 
 ## Day of the release
 
-Follow the [cutting release branches](#cutting_release_branches) instructions
+Follow the [release a repository](#release-a-repository) instructions
 for each repo. Wait for release automation to kick in (runs on a 2 hour
 interval). Once the release automation passed, it will create a release tag in
 the repository. Enhance the respective tags with the collected release-notes
 using the GitHub UI.
 
 In general the release dependency order is something like the following (as of
-v0.19). Note: `buoy check` will fail if the dependencies are not yet ready.
+v0.20). Note: `buoy check` will fail if the dependencies are not yet ready.
 
 First:
 
