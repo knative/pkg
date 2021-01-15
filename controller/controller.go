@@ -230,8 +230,6 @@ func NewImplWithStats(r Reconciler, logger *zap.SugaredLogger, workQueueName str
 
 // NewImplFull accepts the full set of options available to all controllers.
 func NewImplFull(r Reconciler, options ControllerOptions) *Impl {
-	logger := options.Logger
-
 	if options.RateLimiter == nil {
 		options.RateLimiter = workqueue.DefaultControllerRateLimiter()
 	}
@@ -242,7 +240,7 @@ func NewImplFull(r Reconciler, options ControllerOptions) *Impl {
 		Name:          options.WorkQueueName,
 		Reconciler:    r,
 		workQueue:     newTwoLaneWorkQueue(options.WorkQueueName, options.RateLimiter),
-		logger:        logger,
+		logger:        options.Logger,
 		statsReporter: options.Reporter,
 	}
 }
