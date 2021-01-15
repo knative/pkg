@@ -528,7 +528,7 @@ func (c *Impl) processNextWorkItem() bool {
 	// Finally, if no error occurs we Forget this item so it does not
 	// have any delay when another change happens.
 	c.workQueue.Forget(key)
-	logger.Info("Reconcile succeeded. Time taken: ", zap.Duration("duration", time.Since(startTime)))
+	logger.Infow("Reconcile succeeded", zap.Duration("duration", time.Since(startTime)))
 
 	return true
 }
