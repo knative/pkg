@@ -35,10 +35,22 @@ import (
 	"knative.dev/pkg/webhook/resourcesemantics"
 )
 
-// NewAdmissionController constructs a reconciler
+// NewAdmissionController constructs a reconciler with "DefaultingWebhook"
+// as the work queue name.
 func NewAdmissionController(
 	ctx context.Context,
 	name, path string,
+	handlers map[schema.GroupVersionKind]resourcesemantics.GenericCRD,
+	wc func(context.Context) context.Context,
+	disallowUnknownFields bool,
+) *controller.Impl {
+	return NewAdmissionControllerWithWorkQueueName(ctx, name, "DefaultingWebhook", path, handlers, wc, disallowUnknownFields)
+}
+
+// NewAdmissionController constructs a reconciler.
+func NewAdmissionControllerWithWorkQueueName(
+	ctx context.Context,
+	name, wqName, path string,
 	handlers map[schema.GroupVersionKind]resourcesemantics.GenericCRD,
 	wc func(context.Context) context.Context,
 	disallowUnknownFields bool,
@@ -74,7 +86,7 @@ func NewAdmissionController(
 	}
 
 	logger := logging.FromContext(ctx)
-	c := controller.NewImpl(wh, logger, "DefaultingWebhook")
+	c := controller.NewImpl(wh, logger, wqName)
 
 	// Reconcile when the named MutatingWebhookConfiguration changes.
 	mwhInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{

@@ -35,10 +35,23 @@ import (
 	"knative.dev/pkg/webhook/resourcesemantics"
 )
 
-// NewAdmissionController constructs a reconciler
+// NewAdmissionController constructs a reconciler with "ValidationWebhook"
+// as the work queue name.
 func NewAdmissionController(
 	ctx context.Context,
 	name, path string,
+	handlers map[schema.GroupVersionKind]resourcesemantics.GenericCRD,
+	wc func(context.Context) context.Context,
+	disallowUnknownFields bool,
+	callbacks ...map[schema.GroupVersionKind]Callback,
+) *controller.Impl {
+	return NewAdmissionControllerWithWorkQueueName(ctx, name, "ValidationWebhook", path, handlers, wc, disallowUnknownFields, callbacks...)
+}
+
+// NewAdmissionController constructs a reconciler.
+func NewAdmissionControllerWithWorkQueueName(
+	ctx context.Context,
+	name, wqName, path string,
 	handlers map[schema.GroupVersionKind]resourcesemantics.GenericCRD,
 	wc func(context.Context) context.Context,
 	disallowUnknownFields bool,
@@ -89,7 +102,7 @@ func NewAdmissionController(
 	}
 
 	logger := logging.FromContext(ctx)
-	c := controller.NewImpl(wh, logger, "ValidationWebhook")
+	c := controller.NewImpl(wh, logger, wqName)
 
 	// Reconcile when the named ValidatingWebhookConfiguration changes.
 	vwhInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
