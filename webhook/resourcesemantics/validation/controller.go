@@ -48,7 +48,7 @@ func NewAdmissionController(
 	return NewAdmissionControllerWithWorkQueueName(ctx, name, "ValidationWebhook", path, handlers, wc, disallowUnknownFields, callbacks...)
 }
 
-// NewAdmissionController constructs a reconciler.
+// NewAdmissionControllerWithWorkQueueName constructs a reconciler.
 func NewAdmissionControllerWithWorkQueueName(
 	ctx context.Context,
 	name, wqName, path string,
