@@ -41,7 +41,7 @@ var MakeSecret = MakeSecretInternal
 
 // MakeSecretInternal is only public so MakeSecret can be restored in testing.  Use MakeSecret.
 func MakeSecretInternal(ctx context.Context, name, namespace, serviceName string) (*corev1.Secret, error) {
-	serverKey, serverCert, caCert, err := CreateCerts(ctx, serviceName, namespace, time.Now().AddDate(1, 0, 0))
+	serverKey, serverCert, caCert, err := CreateCerts(ctx, serviceName, namespace, time.Now().AddDate(0, 0, 7))
 	if err != nil {
 		return nil, err
 	}

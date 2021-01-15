@@ -127,7 +127,7 @@ func TestReconcile(t *testing.T) {
 		Name: "certificate expiring soon",
 		Key:  key,
 		// 6 days falls inside of the grace period of 7 days so the secret will be updated
-		Objects: []runtime.Object{secretWithCertData(t, time.Now().Add(6*24*time.Hour))},
+		Objects: []runtime.Object{secretWithCertData(t, time.Now().Add(23*time.Hour))},
 		WantUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: secret,
 		}},
