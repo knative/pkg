@@ -73,7 +73,7 @@ func NewAdmissionController(
 		wh.registerConfig(configName, constructor)
 	}
 
-	queueName := "ConfigMapWebhook"
+	const queueName = "ConfigMapWebhook"
 	c := controller.NewImpl(wh, logging.FromContext(ctx).Named(queueName), queueName)
 
 	// Reconcile when the named ValidatingWebhookConfiguration changes.
