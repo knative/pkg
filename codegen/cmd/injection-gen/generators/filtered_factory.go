@@ -1,5 +1,5 @@
 /*
-Copyright 2019 The Knative Authors
+Copyright 2021 The Knative Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -123,9 +123,6 @@ func withInformerFactory(ctx {{.contextContext|raw}}) {{.contextContext|raw}} {
 	labelSelectors := untyped.([]string)
 	for _, selector := range labelSelectors {
 		thisOpts := append(opts, {{.informersWithTweakListOptions|raw}}(func(l *{{.metav1ListOptions|raw}}) {
-			if l == nil {
-				l = &{{.metav1ListOptions|raw}}{}
-			}
 			l.LabelSelector = selector
 		}))
 		ctx = context.WithValue(ctx, Key{Selector: selector},

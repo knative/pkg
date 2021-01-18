@@ -1,5 +1,5 @@
 /*
-Copyright 2019 The Knative Authors
+Copyright 2021 The Knative Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -26,28 +26,27 @@ import (
 	"k8s.io/klog"
 )
 
-// fakeFilteredInformerGenerator produces a file of listers for a given GroupVersion and
+// injectionTestGenerator produces a file of listers for a given GroupVersion and
 // type.
-type fakeFilteredInformerGenerator struct {
+type filteredInjectionGenerator struct {
 	generator.DefaultGen
-	outputPackage string
-	imports       namer.ImportTracker
-
-	typeToGenerate          *types.Type
-	groupVersion            clientgentypes.GroupVersion
-	groupGoName             string
-	informerInjectionPkg    string
-	fakeFactoryInjectionPkg string
+	outputPackage               string
+	groupVersion                clientgentypes.GroupVersion
+	groupGoName                 string
+	typeToGenerate              *types.Type
+	imports                     namer.ImportTracker
+	typedInformerPackage        string
+	groupInformerFactoryPackage string
 }
 
-var _ generator.Generator = (*fakeFilteredInformerGenerator)(nil)
+var _ generator.Generator = (*filteredInjectionGenerator)(nil)
 
-func (g *fakeFilteredInformerGenerator) Filter(c *generator.Context, t *types.Type) bool {
+func (g *filteredInjectionGenerator) Filter(c *generator.Context, t *types.Type) bool {
 	// Only process the type for this informer generator.
 	return t == g.typeToGenerate
 }
 
-func (g *fakeFilteredInformerGenerator) Namers(c *generator.Context) namer.NameSystems {
+func (g *filteredInjectionGenerator) Namers(c *generator.Context) namer.NameSystems {
 	publicPluralNamer := &ExceptionNamer{
 		Exceptions: map[string]string{
 			// these exceptions are used to deconflict the generated code
@@ -69,29 +68,25 @@ func (g *fakeFilteredInformerGenerator) Namers(c *generator.Context) namer.NameS
 	}
 }
 
-func (g *fakeFilteredInformerGenerator) Imports(c *generator.Context) (imports []string) {
+func (g *filteredInjectionGenerator) Imports(c *generator.Context) (imports []string) {
 	imports = append(imports, g.imports.ImportLines()...)
 	return
 }
 
-func (g *fakeFilteredInformerGenerator) GenerateType(c *generator.Context, t *types.Type, w io.Writer) error {
+func (g *filteredInjectionGenerator) GenerateType(c *generator.Context, t *types.Type, w io.Writer) error {
 	sw := generator.NewSnippetWriter(w, c, "{{", "}}")
 
 	klog.V(5).Info("processing type ", t)
 
 	m := map[string]interface{}{
-		"informerKey":        c.Universe.Type(types.Name{Package: g.informerInjectionPkg, Name: "Key"}),
-		"informerGet":        c.Universe.Function(types.Name{Package: g.informerInjectionPkg, Name: "Get"}),
-		"factoryGet":         c.Universe.Function(types.Name{Package: g.fakeFactoryInjectionPkg, Name: "Get"}),
-		"factoryLabelKey":    c.Universe.Type(types.Name{Package: g.fakeFactoryInjectionPkg, Name: "LabelKey"}),
-		"group":              namer.IC(g.groupGoName),
-		"type":               t,
-		"version":            namer.IC(g.groupVersion.Version.String()),
-		"controllerInformer": c.Universe.Type(types.Name{Package: "knative.dev/pkg/controller", Name: "Informer"}),
-		"injectionRegisterFilteredInformers": c.Universe.Function(types.Name{
-			Package: "knative.dev/pkg/injection",
-			Name:    "Fake.RegisterFilteredInformers",
-		}),
+		"group":                              namer.IC(g.groupGoName),
+		"type":                               t,
+		"version":                            namer.IC(g.groupVersion.Version.String()),
+		"injectionRegisterFilteredInformers": c.Universe.Type(types.Name{Package: "knative.dev/pkg/injection", Name: "Default.RegisterFilteredInformers"}),
+		"controllerInformer":                 c.Universe.Type(types.Name{Package: "knative.dev/pkg/controller", Name: "Informer"}),
+		"informersTypedInformer":             c.Universe.Type(types.Name{Package: g.typedInformerPackage, Name: t.Name.Name + "Informer"}),
+		"factoryLabelKey":                    c.Universe.Type(types.Name{Package: g.groupInformerFactoryPackage, Name: "LabelKey"}),
+		"factoryGet":                         c.Universe.Function(types.Name{Package: g.groupInformerFactoryPackage, Name: "Get"}),
 		"loggingFromContext": c.Universe.Function(types.Name{
 			Package: "knative.dev/pkg/logging",
 			Name:    "FromContext",
@@ -102,16 +97,19 @@ func (g *fakeFilteredInformerGenerator) GenerateType(c *generator.Context, t *ty
 		}),
 	}
 
-	sw.Do(injectionFakeFilteredInformer, m)
+	sw.Do(filteredInjectionInformer, m)
 
 	return sw.Error()
 }
 
-var injectionFakeFilteredInformer = `
-var Get = {{.informerGet|raw}}
-
+var filteredInjectionInformer = `
 func init() {
 	{{.injectionRegisterFilteredInformers|raw}}(withInformer)
+}
+
+// Key is used for associating the Informer inside the context.Context.
+type Key struct{
+	Selector string
 }
 
 func withInformer(ctx {{.contextContext|raw}}) ({{.contextContext|raw}}, []{{.controllerInformer|raw}}) {
@@ -125,9 +123,19 @@ func withInformer(ctx {{.contextContext|raw}}) ({{.contextContext|raw}}, []{{.co
 	for _, selector := range labelSelectors {
 		f := {{.factoryGet|raw}}(ctx, selector)
 		inf := f.{{.group}}().{{.version}}().{{.type|publicPlural}}()
-		ctx = context.WithValue(ctx, {{.informerKey|raw}}{Selector: selector}, inf)
+		ctx = context.WithValue(ctx, Key{Selector: selector}, inf)
 		infs = append(infs, inf.Informer())
 	}
 	return ctx, infs
+}
+
+// Get extracts the typed informer from the context.
+func Get(ctx {{.contextContext|raw}}, selector string) {{.informersTypedInformer|raw}} {
+	untyped := ctx.Value(Key{Selector: selector})
+	if untyped == nil {
+		{{.loggingFromContext|raw}}(ctx).Panicf(
+			"Unable to fetch {{.informersTypedInformer}} with selector %s from context.", selector)
+	}
+	return untyped.({{.informersTypedInformer|raw}})
 }
 `

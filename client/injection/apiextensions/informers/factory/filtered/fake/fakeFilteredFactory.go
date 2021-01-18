@@ -50,9 +50,6 @@ func withInformerFactory(ctx context.Context) context.Context {
 	labelSelectors := untyped.([]string)
 	for _, selector := range labelSelectors {
 		thisOpts := append(opts, externalversions.WithTweakListOptions(func(l *v1.ListOptions) {
-			if l == nil {
-				l = &v1.ListOptions{}
-			}
 			l.LabelSelector = selector
 		}))
 		ctx = context.WithValue(ctx, filtered.Key{Selector: selector},
