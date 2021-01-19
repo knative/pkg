@@ -346,7 +346,7 @@ func versionFactoryPackages(basePackage string, boilerplate []byte, customArgs *
 				// Impl
 				generators = append(generators, &filteredFactoryGenerator{
 					DefaultGen: generator.DefaultGen{
-						OptionalName: "filteredFactory",
+						OptionalName: "filtered_factory",
 					},
 					outputPackage:                filepath.Join(packagePath, "filtered"),
 					cachingClientSetPackage:      filepath.Join(basePackage, "client"),
@@ -369,7 +369,7 @@ func versionFactoryPackages(basePackage string, boilerplate []byte, customArgs *
 				// Impl
 				generators = append(generators, &fakeFilteredFactoryGenerator{
 					DefaultGen: generator.DefaultGen{
-						OptionalName: "fakeFilteredFactory",
+						OptionalName: "fake_filtered_factory",
 					},
 					outputPackage:                filepath.Join(packagePath, "filtered", "fake"),
 					factoryInjectionPkg:          filepath.Join(packagePath, "filtered"),
