@@ -15,7 +15,6 @@ require (
 	github.com/census-instrumentation/opencensus-proto v0.3.0
 	github.com/davecgh/go-spew v1.1.1
 	github.com/dgryski/go-gk v0.0.0-20200319235926-a69029f61654 // indirect
-	github.com/fsnotify/fsnotify v1.4.9 // indirect
 	github.com/go-openapi/spec v0.19.6 // indirect
 	github.com/go-openapi/swag v0.19.7 // indirect
 	github.com/gobuffalo/envy v1.7.1 // indirect
@@ -25,7 +24,6 @@ require (
 	github.com/google/gofuzz v1.1.0
 	github.com/google/mako v0.0.0-20190821191249-122f8dcef9e3
 	github.com/google/uuid v1.1.2
-	github.com/googleapis/gnostic v0.4.0 // indirect
 	github.com/gorilla/mux v1.7.4 // indirect
 	github.com/gorilla/websocket v1.4.2
 	github.com/grpc-ecosystem/grpc-gateway v1.14.8 // indirect
@@ -64,16 +62,13 @@ require (
 	gopkg.in/evanphx/json-patch.v4 v4.9.0
 	gopkg.in/yaml.v3 v3.0.0-20190709130402-674ba3eaed22
 	honnef.co/go/tools v0.0.1-2020.1.5 // indirect
-	k8s.io/api v0.18.12
-	k8s.io/apiextensions-apiserver v0.18.12
-	k8s.io/apimachinery v0.18.12
-	k8s.io/client-go v0.18.12
-	k8s.io/code-generator v0.18.12
-	k8s.io/gengo v0.0.0-20200205140755-e0e292d8aa12
+	k8s.io/api v0.19.7
+	k8s.io/apiextensions-apiserver v0.19.7
+	k8s.io/apimachinery v0.19.7
+	k8s.io/client-go v0.19.7
+	k8s.io/code-generator v0.19.7
+	k8s.io/gengo v0.0.0-20200428234225-8167cfdcfc14
 	k8s.io/klog v1.0.0
-	k8s.io/kube-openapi v0.0.0-20200410145947-bcb3869e6f29 // indirect
-	k8s.io/utils v0.0.0-20200603063816-c1c6865ac451 // indirect
 	knative.dev/hack v0.0.0-20210120165453-8d623a0af457
-	sigs.k8s.io/structured-merge-diff/v3 v3.0.1-0.20200706213357-43c19bbb7fba // indirect
 	sigs.k8s.io/yaml v1.2.0
 )
