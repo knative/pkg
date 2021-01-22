@@ -19,6 +19,8 @@ package v1
 import (
 	"context"
 	"fmt"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"knative.dev/pkg/kmeta"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -67,6 +69,7 @@ type AddressStatus struct {
 var (
 	_ apis.Listable         = (*AddressableType)(nil)
 	_ ducktypes.Populatable = (*AddressableType)(nil)
+	_ kmeta.OwnerRefable = (*AddressableType)(nil)
 )
 
 // GetFullType implements duck.Implementable
@@ -95,6 +98,11 @@ func (t *AddressableType) Populate() {
 			},
 		},
 	}
+}
+
+// GetGroupVersionKind implements kmeta.OwnerRefable
+func (t *AddressableType) GetGroupVersionKind() schema.GroupVersionKind {
+	return t.GroupVersionKind()
 }
 
 // GetListType implements apis.Listable
