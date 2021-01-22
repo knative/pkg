@@ -126,7 +126,7 @@ func TestReconcile(t *testing.T) {
 	}, {
 		Name: "certificate expiring soon",
 		Key:  key,
-		// 6 days falls inside of the grace period of 7 days so the secret will be updated
+		// 23 hours  falls inside of the grace period of 1 day so the secret will be updated.
 		Objects: []runtime.Object{secretWithCertData(t, time.Now().Add(23*time.Hour))},
 		WantUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: secret,
@@ -134,8 +134,8 @@ func TestReconcile(t *testing.T) {
 	}, {
 		Name: "certificate not expiring soon",
 		Key:  key,
-		// 8 days falls outside of the grace period of 7 days so the secret will not be updated
-		Objects: []runtime.Object{secretWithCertData(t, time.Now().Add(8*24*time.Hour))},
+		// 25 hours falls outside of the grace period of 1 day so the secret will not be updated.
+		Objects: []runtime.Object{secretWithCertData(t, time.Now().Add(25*time.Hour))},
 	}}
 
 	table.Test(t, MakeFactory(func(ctx context.Context, listers *Listers, cmw configmap.Watcher) controller.Reconciler {
