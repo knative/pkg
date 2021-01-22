@@ -17,6 +17,7 @@ limitations under the License.
 package resources
 
 import (
+	"crypto/ed25519"
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
@@ -29,22 +30,22 @@ import (
 )
 
 func TestCreateCerts(t *testing.T) {
-	sKey, serverCertPEM, caCertBytes, err := CreateCerts(TestContextWithLogger(t), "got-the-hook", "knative-webhook", time.Now().AddDate(1, 0, 0))
+	sKey, serverCertPEM, caCertBytes, err := CreateCerts(TestContextWithLogger(t), "got-the-hook", "knative-webhook", time.Now().AddDate(0, 0, 7))
 	if err != nil {
 		t.Fatal("Failed to create certs", err)
 	}
 
 	// Test server private key
 	p, _ := pem.Decode(sKey)
-	if p.Type != "RSA PRIVATE KEY" {
-		t.Fatal("Expected the key to be RSA Private key type")
+	if p.Type != "PRIVATE KEY" {
+		t.Fatal("Expected the key to be Private key type")
 	}
-	key, err := x509.ParsePKCS1PrivateKey(p.Bytes)
+	key, err := x509.ParsePKCS8PrivateKey(p.Bytes)
 	if err != nil {
 		t.Fatal("Failed to parse private key", err)
 	}
-	if err := key.Validate(); err != nil {
-		t.Fatalf("Failed to validate private key")
+	if _, ok := key.(ed25519.PrivateKey); !ok {
+		t.Fatalf("Key is not ed25519 format, actually %t", key)
 	}
 
 	// Test Server Cert
@@ -98,7 +99,7 @@ func validCertificate(cert []byte, t *testing.T) (*x509.Certificate, error) {
 	if err != nil {
 		return nil, fmt.Errorf("Failed to parse cert %w", err)
 	}
-	if parsedCert.SignatureAlgorithm != x509.SHA256WithRSA {
+	if parsedCert.SignatureAlgorithm != x509.PureEd25519 {
 		return nil, fmt.Errorf("Failed to match signature. Got: %s, want: %s", parsedCert.SignatureAlgorithm, x509.SHA256WithRSA)
 	}
 	return parsedCert, nil
