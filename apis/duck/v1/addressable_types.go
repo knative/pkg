@@ -19,14 +19,14 @@ package v1
 import (
 	"context"
 	"fmt"
-	"k8s.io/apimachinery/pkg/runtime/schema"
-	"knative.dev/pkg/kmeta"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	"knative.dev/pkg/apis"
 	"knative.dev/pkg/apis/duck/ducktypes"
+	"knative.dev/pkg/kmeta"
 )
 
 // +genduck
@@ -69,7 +69,7 @@ type AddressStatus struct {
 var (
 	_ apis.Listable         = (*AddressableType)(nil)
 	_ ducktypes.Populatable = (*AddressableType)(nil)
-	_ kmeta.OwnerRefable = (*AddressableType)(nil)
+	_ kmeta.OwnerRefable    = (*AddressableType)(nil)
 )
 
 // GetFullType implements duck.Implementable
