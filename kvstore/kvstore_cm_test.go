@@ -131,6 +131,43 @@ func TestLoadSaveUpdate(t *testing.T) {
 	if err != nil {
 		t.Error("failed to return string:", err)
 	}
+	if ret != "otherbar" {
+		t.Errorf("got back unexpected value, wanted %q got %q", "bar", ret)
+	}
+}
+
+func TestLoadSaveUpdateEmptyMap(t *testing.T) {
+	// empty map, i.e. no data field
+	cm := corev1.ConfigMap{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: "v1",
+			Kind:       "ConfigMap",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      name,
+			Namespace: namespace,
+		},
+	}
+
+	tc := newTestClient([]runtime.Object{&cm}...)
+	cs := NewConfigMapKVStore(context.Background(), name, namespace, tc.clientset)
+	if err := cs.Init(context.Background()); err != nil {
+		t.Error("Failed to Init ConfigStore:", err)
+	}
+
+	if err := cs.Set(context.Background(), "jimmy", "otherbar"); err != nil {
+		t.Error("Failed to set key:", err)
+	}
+
+	if err := cs.Save(context.Background()); err != nil {
+		t.Error("Failed to save configmap:", err)
+	}
+
+	if tc.updated == nil {
+		t.Errorf("ConfigMap Not updated")
+	}
+	var ret string
+	err := cs.Get(context.Background(), "jimmy", &ret)
 	if err != nil {
 		t.Error("failed to return string:", err)
 	}
@@ -162,9 +199,6 @@ func TestLoadSaveUpdateComplex(t *testing.T) {
 	}
 	var ret testStruct
 	err = cs.Get(context.Background(), "jimmy", &ret)
-	if err != nil {
-		t.Error("failed to return string:", err)
-	}
 	if err != nil {
 		t.Error("failed to return string:", err)
 	}

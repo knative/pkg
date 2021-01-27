@@ -103,6 +103,9 @@ func (cs *configMapKVStore) Set(ctx context.Context, key string, value interface
 	if err != nil {
 		return fmt.Errorf("failed to Marshal: %w", err)
 	}
+	if cs.data == nil {
+		cs.data = map[string]string{}
+	}
 	cs.data[key] = string(bytes)
 	return nil
 }
