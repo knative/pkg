@@ -41,6 +41,7 @@ type reconcilerReconcilerGenerator struct {
 	hasReconcilerClass bool
 	nonNamespaced      bool
 	isKRShaped         bool
+	hasStatus          bool
 
 	groupGoName  string
 	groupVersion clientgentypes.GroupVersion
@@ -76,6 +77,7 @@ func (g *reconcilerReconcilerGenerator) GenerateType(c *generator.Context, t *ty
 		"class":         g.reconcilerClass,
 		"hasClass":      g.hasReconcilerClass,
 		"isKRShaped":    g.isKRShaped,
+		"hasStatus":     g.hasStatus,
 		"nonNamespaced": g.nonNamespaced,
 		"controllerImpl": c.Universe.Type(types.Name{
 			Package: "knative.dev/pkg/controller",
@@ -213,7 +215,9 @@ func (g *reconcilerReconcilerGenerator) GenerateType(c *generator.Context, t *ty
 	sw.Do(reconcilerInterfaceFactory, m)
 	sw.Do(reconcilerNewReconciler, m)
 	sw.Do(reconcilerImplFactory, m)
-	sw.Do(reconcilerStatusFactory, m)
+	if g.hasStatus {
+		sw.Do(reconcilerStatusFactory, m)
+	}
 	sw.Do(reconcilerFinalizerFactory, m)
 
 	return sw.Error()
@@ -289,9 +293,11 @@ type reconcilerImpl struct {
 	// finalizerName is the name of the finalizer to reconcile.
 	finalizerName string
 
+	{{if .hasStatus}}
 	// skipStatusUpdates configures whether or not this reconciler automatically updates
 	// the status of the reconciled resource.
 	skipStatusUpdates bool
+	{{end}}
 
 	{{if .hasClass}}
 	// classValue is the resource annotation[{{ .class }}] instance value this reconciler instance filters on.
@@ -351,10 +357,10 @@ func NewReconciler(ctx {{.contextContext|raw}}, logger *{{.zapSugaredLogger|raw}
 		}
 		if opts.FinalizerName != "" {
 			rec.finalizerName = opts.FinalizerName
-		}
+		}{{if .hasStatus}}
 		if opts.SkipStatusUpdates {
 			rec.skipStatusUpdates = true
-		}
+		}{{end}}
 	}
 
 	return rec
@@ -429,21 +435,21 @@ func (r *reconcilerImpl) Reconcile(ctx {{.contextContext|raw}}, key string) erro
 		if resource, err = r.setFinalizerIfFinalizer(ctx, resource); err != nil {
 			return {{.fmtErrorf|raw}}("failed to set finalizers: %w", err)
 		}
-		{{if .isKRShaped}}
+		{{if .hasStatus}}{{if .isKRShaped}}
 		if !r.skipStatusUpdates {
 			reconciler.PreProcessReconcile(ctx, resource)
 		}
-		{{end}}
+		{{end}}{{end}}
 
 		// Reconcile this copy of the resource and then write back any status
 		// updates regardless of whether the reconciliation errored out.
 		reconcileEvent = do(ctx, resource)
 
-		{{if .isKRShaped}}
+		{{if .hasStatus}}{{if .isKRShaped}}
 		if !r.skipStatusUpdates {
 			reconciler.PostProcessReconcile(ctx, resource, original)
 		}
-		{{end}}
+		{{end}}{{end}}
 
 	case {{.doFinalizeKind|raw}}:
 		// For finalizing reconcilers, if this resource being marked for deletion
@@ -460,6 +466,7 @@ func (r *reconcilerImpl) Reconcile(ctx {{.contextContext|raw}}, key string) erro
 
 	}
 
+	{{if .hasStatus}}
 	// Synchronize the status.
 	switch {
 	case r.skipStatusUpdates:
@@ -482,6 +489,7 @@ func (r *reconcilerImpl) Reconcile(ctx {{.contextContext|raw}}, key string) erro
 			return err
 		}
 	}
+	{{end}}
 
 	// Report the reconciler event, if any.
 	if reconcileEvent != nil {
