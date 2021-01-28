@@ -82,7 +82,7 @@ Most of the above steps are automated, although in some situations it might be n
 
 ### Check the build on master pass
 
-Before beginning, check if the repository is in a good shape and the builds pass consistently. 
+Before beginning, check if the repository is in a good shape and the builds pass consistently.
 **This is required** because the Prow job that builds the release artifacts will execute all the various tests (build, unit, e2e) and, if something goes wrong, you will probably need to restart this process from the beginning.
 
 For any problems in a specific repo, get in touch with the relevant WG leads to fix them.
@@ -115,7 +115,7 @@ git status
 
 ### Releasability
 
-At this point, you can proceed with the releasability check. 
+At this point, you can proceed with the releasability check.
 A releasability check is executed periodically and posts the result on the Slack release channel and it fails if the dependencies are not properly aligned.
 If you don't want to wait, you can manually execute the [Releasability workflow](https://github.com/knative/serving/actions?query=workflow%3AReleasability).
 
@@ -168,7 +168,7 @@ Otherwise, you can do it by hand on your local machine.
 
 ### The Prow job
 
-After a `release-x.y` branch exists, a 4 hourly prow job will build the code from the release branch, 
+After a `release-x.y` branch exists, a 4 hourly prow job will build the code from the release branch,
 tag the revision, publish the images, publish the yaml artifacts and generate the Github release.
 Update the description of the release with the release notes collected.
 
@@ -195,7 +195,7 @@ leads to fix them.
 
 ### What could go wrong?
 
-In case you cut a branch before it was ready (e.g. some deps misalignment, a failing test, etc), you can try to restart this process. 
+In case you cut a branch before it was ready (e.g. some deps misalignment, a failing test, etc), you can try to restart this process.
 But first, clean up the repo in this order:
 
 1. Remove the Github release (if any)
@@ -241,7 +241,7 @@ Announce on **#general** that `pkg` will be cut in a week.
 
 ### Cut release branches of supporting repos
 
-The supporting repos are the base repos where we have common code and common scripts. 
+The supporting repos are the base repos where we have common code and common scripts.
 For these repos, we follow the same release process as explained in [release a repository](#release-a-repository), but no prow job is executed, hence no git tag and Github release are produced.
 
 Follow the [release a repository](#release-a-repository) guide, skipping the prow job part, starting with the **hack** repo:
