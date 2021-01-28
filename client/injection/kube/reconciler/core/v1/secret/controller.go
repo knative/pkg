@@ -108,7 +108,6 @@ func NewImpl(ctx context.Context, r Interface, optionsFns ...controller.OptionsF
 		if opts.AgentName != "" {
 			agentName = opts.AgentName
 		}
-
 	}
 
 	rec.Recorder = createRecorder(ctx, agentName)
