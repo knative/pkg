@@ -265,10 +265,12 @@ func NewImpl(ctx {{.contextContext|raw}}, r Interface{{if .hasClass}}, classValu
 		}
 		if opts.AgentName != "" {
 			agentName = opts.AgentName
-		}{{if .hasStatus}}
+		}
+		{{- if .hasStatus}}
 		if opts.SkipStatusUpdates {
 			rec.skipStatusUpdates = true
-		}{{end}}
+		}
+		{{- end}}
 	}
 
 	rec.Recorder = createRecorder(ctx, agentName)
