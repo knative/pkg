@@ -173,6 +173,8 @@ func TestAllMetersExpiration(t *testing.T) {
 	fakeClock.Step(9 * time.Minute) // t+12m
 	_ = wait.PollImmediate(time.Second, time.Minute, func() (bool, error) {
 		// Non-expiring defaultMeter should be available
+		allMeters.lock.Lock()
+		defer allMeters.lock.Unlock()
 		return len(allMeters.meters) == 2, nil
 	})
 
@@ -236,6 +238,8 @@ func TestIfAllMeterResourcesAreRemoved(t *testing.T) {
 
 	_ = wait.PollImmediate(time.Second, time.Minute, func() (bool, error) {
 		// Non-expiring defaultMeter should be available
+		allMeters.lock.Lock()
+		defer allMeters.lock.Unlock()
 		return len(allMeters.meters) == 1, nil
 	})
 
