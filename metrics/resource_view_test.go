@@ -189,6 +189,59 @@ func TestAllMetersExpiration(t *testing.T) {
 	// (123=9m, 456=evicted, 789=0m)
 }
 
+func TestIfAllMeterResourcesAreRemoved(t *testing.T) {
+	allMeters.clock = clock.Clock(clock.NewFakeClock(time.Now()))
+	var fakeClock *clock.FakeClock = allMeters.clock.(*clock.FakeClock)
+	ClearMetersForTest() // t+0m
+	// Register many resources at once
+	for i := 1; i <= 1000; i++ {
+		res := resource.Resource{Labels: map[string]string{"foo": "bar"}}
+		res.Labels["id"] = string(i)
+		_, err := optionForResource(&res)
+		if err != nil {
+			t.Error("Should succeed getting option, instead got error ", err)
+		}
+
+	}
+	allMeters.lock.Lock()
+	// make a copy to test against as allMeters should be cleaned up
+	copyAllMeters := make(map[string]*meterExporter)
+	for k, v := range allMeters.meters {
+		copyAllMeters[k] = v
+	}
+	for _, meter := range copyAllMeters {
+		for _, mView := range resourceViews.views {
+			v := meter.m.Find(mView.Name)
+			if v == nil {
+				t.Errorf("Got a view that should be registered")
+			}
+		}
+	}
+	allMeters.lock.Unlock()
+	// expire all views
+	fakeClock.Step(12 * time.Minute) // t+12m
+	time.Sleep(time.Second)          // Wait a second on the wallclock, so that the cleanup thread has time to finish a loop
+	allMeters.lock.Lock()
+	// non-expiring defaultMeter should be available
+	if len(allMeters.meters) != 1 {
+		t.Errorf("len(allMeters)=%d, want: 1", len(allMeters.meters))
+	}
+	allMeters.lock.Unlock()
+	resourceViews.lock.Lock()
+	for _, meter := range copyAllMeters {
+		for _, mView := range resourceViews.views {
+			v := meter.m.Find(mView.Name)
+			if v != nil {
+				t.Errorf("Got a view that should be unregistered")
+			}
+			if meter.e != nil {
+				t.Errorf("Got a meter exporter set")
+			}
+		}
+	}
+	resourceViews.lock.Unlock()
+}
+
 func TestResourceAsString(t *testing.T) {
 	r1 := &resource.Resource{Type: "foobar", Labels: map[string]string{"k1": "v1", "k3": "v3", "k2": "v2"}}
 	r2 := &resource.Resource{Type: "foobar", Labels: map[string]string{"k2": "v2", "k3": "v3", "k1": "v1"}}
