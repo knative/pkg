@@ -82,9 +82,14 @@ func cleanup() {
 	expiryCutoff := allMeters.clock.Now().Add(-1 * maxMeterExporterAge)
 	allMeters.lock.Lock()
 	defer allMeters.lock.Unlock()
+	resourceViews.lock.Lock()
+	defer resourceViews.lock.Unlock()
 	for key, meter := range allMeters.meters {
 		if key != "" && meter.t.Before(expiryCutoff) {
 			flushGivenExporter(meter.e)
+			// make a copy of views to avoid data races
+			viewsCopy := copyViews(resourceViews.views)
+			meter.m.Unregister(viewsCopy...)
 			delete(allMeters.meters, key)
 		}
 	}
