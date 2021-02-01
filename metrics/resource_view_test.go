@@ -25,6 +25,7 @@ import (
 	"go.opencensus.io/stats"
 	"go.opencensus.io/stats/view"
 	"k8s.io/apimachinery/pkg/util/clock"
+	"k8s.io/apimachinery/pkg/util/wait"
 )
 
 var (
@@ -170,12 +171,14 @@ func TestAllMetersExpiration(t *testing.T) {
 
 	// Expire the second entry
 	fakeClock.Step(9 * time.Minute) // t+12m
-	time.Sleep(time.Second)         // Wait a second on the wallclock, so that the cleanup thread has time to finish a loop
-	allMeters.lock.Lock()
+	_ = wait.PollImmediate(time.Second, time.Minute, func() (bool, error) {
+		// Non-expiring defaultMeter should be available
+		return len(allMeters.meters) == 2, nil
+	})
+
 	if len(allMeters.meters) != 2 {
 		t.Errorf("len(allMeters)=%d, want: 2", len(allMeters.meters))
 	}
-	allMeters.lock.Unlock()
 	// (123=9m, 456=10.5m)
 	// non-expiring defaultMeter was just tested
 
@@ -194,48 +197,57 @@ func TestIfAllMeterResourcesAreRemoved(t *testing.T) {
 	var fakeClock *clock.FakeClock = allMeters.clock.(*clock.FakeClock)
 	ClearMetersForTest() // t+0m
 	// Register many resources at once
-	for i := 1; i <= 1000; i++ {
+	for i := 1; i <= 100; i++ {
 		res := resource.Resource{Labels: map[string]string{"foo": "bar"}}
-		res.Labels["id"] = fmt.Sprintf("%d", i)
-		_, err := optionForResource(&res)
-		if err != nil {
+		res.Labels["id"] = fmt.Sprint(i)
+		if _, err := optionForResource(&res); err != nil {
 			t.Error("Should succeed getting option, instead got error ", err)
 		}
+		m := stats.Int64("testView_sum", "", stats.UnitDimensionless)
+		v := view.View{Name: fmt.Sprintf("testview-%d", i), Measure: m, Aggregation: view.Sum()}
 
+		err := RegisterResourceView(&v)
+		if err != nil {
+			t.Fatal("RegisterResourceView =", err)
+		}
 	}
 	allMeters.lock.Lock()
-	// make a copy to test against as allMeters should be cleaned up
+	// Make a copy to test against as allMeters should be cleaned up
 	copyAllMeters := make(map[string]*meterExporter)
 	for k, v := range allMeters.meters {
 		copyAllMeters[k] = v
-	}
-	for _, meter := range copyAllMeters {
-		for _, mView := range resourceViews.views {
-			v := meter.m.Find(mView.Name)
-			if v == nil {
-				t.Errorf("Got a view that should be registered")
-			}
-		}
-	}
-	allMeters.lock.Unlock()
-	// expire all views
-	fakeClock.Step(12 * time.Minute) // t+12m
-	time.Sleep(time.Second)          // Wait a second on the wallclock, so that the cleanup thread has time to finish a loop
-	allMeters.lock.Lock()
-	// non-expiring defaultMeter should be available
-	if len(allMeters.meters) != 1 {
-		t.Errorf("len(allMeters)=%d, want: 1", len(allMeters.meters))
 	}
 	allMeters.lock.Unlock()
 	resourceViews.lock.Lock()
 	for _, meter := range copyAllMeters {
 		for _, mView := range resourceViews.views {
-			v := meter.m.Find(mView.Name)
-			if v != nil {
-				t.Errorf("Got a view that should be unregistered")
+			want, got := mView, meter.m.Find(mView.Name)
+			if got == nil {
+				t.Errorf("View %s is not available", want.Name)
+			} else if want.Name != got.Name {
+				t.Errorf("Want %v, got %v", want.Name, got.Name)
 			}
-			if meter.e != nil {
-				t.Errorf("Got a meter exporter set")
+		}
+	}
+	resourceViews.lock.Unlock()
+
+	// Expire all meters and views
+	fakeClock.Step(12 * time.Minute) // t+12m
+
+	_ = wait.PollImmediate(time.Second, time.Minute, func() (bool, error) {
+		// Non-expiring defaultMeter should be available
+		return len(allMeters.meters) == 1, nil
+	})
+
+	if len(allMeters.meters) != 1 {
+		t.Errorf("len(allMeters)=%d, want: 1", len(allMeters.meters))
+	}
+	resourceViews.lock.Lock()
+	for k, meter := range copyAllMeters {
+		for _, mView := range resourceViews.views {
+			// Default meter should be skipped as views are not removed from it during cleanup
+			if k != "" && meter.m.Find(mView.Name) != nil {
+				t.Errorf("Got a view that should be unregistered: %s", mView.Name)
 			}
 		}
 	}
