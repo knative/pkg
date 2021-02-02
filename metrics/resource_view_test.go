@@ -75,6 +75,8 @@ type testExporter struct {
 	id string
 }
 
+func (testExporter) ExportView(viewData *view.Data) {}
+
 func TestSetFactory(t *testing.T) {
 	var oldFactory ResourceExporterFactory
 	func() {
@@ -171,7 +173,7 @@ func TestAllMetersExpiration(t *testing.T) {
 
 	// Expire the second entry
 	fakeClock.Step(9 * time.Minute) // t+12m
-	_ = wait.PollImmediate(time.Second, time.Minute, func() (bool, error) {
+	_ = wait.PollImmediate(100*time.Millisecond, 5*time.Second, func() (bool, error) {
 		// Non-expiring defaultMeter should be available
 		allMeters.lock.Lock()
 		defer allMeters.lock.Unlock()
@@ -235,8 +237,7 @@ func TestIfAllMeterResourcesAreRemoved(t *testing.T) {
 
 	// Expire all meters and views
 	fakeClock.Step(12 * time.Minute) // t+12m
-
-	_ = wait.PollImmediate(time.Second, time.Minute, func() (bool, error) {
+	_ = wait.PollImmediate(100*time.Millisecond, 5*time.Second, func() (bool, error) {
 		// Non-expiring defaultMeter should be available
 		allMeters.lock.Lock()
 		defer allMeters.lock.Unlock()
