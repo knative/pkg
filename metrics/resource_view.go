@@ -91,6 +91,7 @@ func cleanup() {
 			viewsCopy := copyViews(resourceViews.views)
 			meter.m.Unregister(viewsCopy...)
 			delete(allMeters.meters, key)
+			meter.m.Stop()
 		}
 	}
 }

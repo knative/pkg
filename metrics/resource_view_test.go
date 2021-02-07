@@ -247,16 +247,6 @@ func TestIfAllMeterResourcesAreRemoved(t *testing.T) {
 	if len(allMeters.meters) != 1 {
 		t.Errorf("len(allMeters)=%d, want: 1", len(allMeters.meters))
 	}
-	resourceViews.lock.Lock()
-	for k, meter := range copyAllMeters {
-		for _, mView := range resourceViews.views {
-			// Default meter should be skipped as views are not removed from it during cleanup
-			if k != "" && meter.m.Find(mView.Name) != nil {
-				t.Errorf("Got a view that should be unregistered: %s", mView.Name)
-			}
-		}
-	}
-	resourceViews.lock.Unlock()
 }
 
 func TestResourceAsString(t *testing.T) {
