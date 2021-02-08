@@ -150,12 +150,12 @@ func TestOverlay(t *testing.T) {
 	)
 	from := sets.NewString()
 	for i := 0; i < sources; i++ {
-		from.Insert(uuid.New().String())
+		from.Insert(uuid.NewString())
 	}
 	freqs := make(map[string]int, sources)
 
 	for i := 0; i < samples; i++ {
-		target := uuid.New().String()
+		target := uuid.NewString()
 		got := ChooseSubset(from, selection, target)
 		for k := range got {
 			freqs[k]++
@@ -178,12 +178,12 @@ func BenchmarkSelection(b *testing.B) {
 	const maxSet = 200
 	from := make([]string, maxSet)
 	for i := 0; i < maxSet; i++ {
-		from[i] = uuid.New().String()
+		from[i] = uuid.NewString()
 	}
 	for _, v := range []int{5, 10, 25, 50, 100, 150, maxSet} {
 		for _, ss := range []int{1, 5, 10, 15, 20, 25} {
 			b.Run(fmt.Sprintf("pool-%d-subset-%d", v, ss), func(b *testing.B) {
-				target := uuid.New().String()
+				target := uuid.NewString()
 				in := sets.NewString(from[:v]...)
 				for i := 0; i < b.N; i++ {
 					ChooseSubset(in, 10, target)
