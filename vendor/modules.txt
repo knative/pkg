@@ -1,4 +1,4 @@
-# cloud.google.com/go v0.74.0
+# cloud.google.com/go v0.72.0
 ## explicit
 cloud.google.com/go
 cloud.google.com/go/compute/metadata
@@ -19,7 +19,7 @@ contrib.go.opencensus.io/exporter/ocagent
 # contrib.go.opencensus.io/exporter/prometheus v0.2.1-0.20200609204449-6bcf6f8577f0
 ## explicit
 contrib.go.opencensus.io/exporter/prometheus
-# contrib.go.opencensus.io/exporter/stackdriver v0.13.4
+# contrib.go.opencensus.io/exporter/stackdriver v0.13.5
 ## explicit
 contrib.go.opencensus.io/exporter/stackdriver
 contrib.go.opencensus.io/exporter/stackdriver/monitoredresource
@@ -320,10 +320,10 @@ golang.org/x/crypto/openpgp/errors
 golang.org/x/crypto/openpgp/packet
 golang.org/x/crypto/openpgp/s2k
 golang.org/x/crypto/ssh/terminal
-# golang.org/x/lint v0.0.0-20201208152925-83fdc39ff7b5
+# golang.org/x/lint v0.0.0-20200302205851-738671d3881b
 golang.org/x/lint
 golang.org/x/lint/golint
-# golang.org/x/mod v0.4.0
+# golang.org/x/mod v0.3.0
 golang.org/x/mod/module
 golang.org/x/mod/semver
 # golang.org/x/net v0.0.0-20201209123823-ac852fbbde11
@@ -348,7 +348,7 @@ golang.org/x/oauth2/jwt
 ## explicit
 golang.org/x/sync/errgroup
 golang.org/x/sync/semaphore
-# golang.org/x/sys v0.0.0-20210104204734-6f8348627aad
+# golang.org/x/sys v0.0.0-20201214210602-f9fddec55a1e
 golang.org/x/sys/internal/unsafeheader
 golang.org/x/sys/unix
 golang.org/x/sys/windows
@@ -388,7 +388,7 @@ golang.org/x/xerrors/internal
 # gomodules.xyz/jsonpatch/v2 v2.1.0
 ## explicit
 gomodules.xyz/jsonpatch/v2
-# google.golang.org/api v0.39.0
+# google.golang.org/api v0.36.0
 ## explicit
 google.golang.org/api/container/v1beta1
 google.golang.org/api/googleapi

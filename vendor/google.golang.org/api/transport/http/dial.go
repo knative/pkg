@@ -88,7 +88,7 @@ func newTransport(ctx context.Context, base http.RoundTripper, settings *interna
 		}
 
 		ts := creds.TokenSource
-		if settings.ImpersonationConfig == nil && settings.TokenSource != nil {
+		if settings.TokenSource != nil {
 			ts = settings.TokenSource
 		}
 		trans = &oauth2.Transport{
