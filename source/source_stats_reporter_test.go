@@ -47,7 +47,7 @@ func TestStatsReporter(t *testing.T) {
 		metricskey.LabelEventSource:       "unit-test",
 		metricskey.LabelName:              "testsource",
 		metricskey.LabelResourceGroup:     "testresourcegroup",
-		metricskey.LabelResponseCode:	   	 "202",
+		metricskey.LabelResponseCode:      "202",
 		metricskey.LabelResponseCodeClass: "2xx",
 	}
 
@@ -57,7 +57,7 @@ func TestStatsReporter(t *testing.T) {
 		metricskey.LabelEventSource:       "unit-test",
 		metricskey.LabelName:              "testsource",
 		metricskey.LabelResourceGroup:     "testresourcegroup",
-		metricskey.LabelResponseCode:	   	 "503",
+		metricskey.LabelResponseCode:      "503",
 		metricskey.LabelResponseCodeClass: "5xx",
 	}
 
