@@ -180,9 +180,11 @@ func TestAllMetersExpiration(t *testing.T) {
 		return len(allMeters.meters) == 2, nil
 	})
 
+	allMeters.lock.Lock()
 	if len(allMeters.meters) != 2 {
 		t.Errorf("len(allMeters)=%d, want: 2", len(allMeters.meters))
 	}
+	allMeters.lock.Unlock()
 	// (123=9m, 456=10.5m)
 	// non-expiring defaultMeter was just tested
 
@@ -221,7 +223,7 @@ func TestIfAllMeterResourcesAreRemoved(t *testing.T) {
 	for k, v := range allMeters.meters {
 		copyAllMeters[k] = v
 	}
-	allMeters.lock.Unlock()
+
 	resourceViews.lock.Lock()
 	for _, meter := range copyAllMeters {
 		for _, mView := range resourceViews.views {
@@ -234,8 +236,9 @@ func TestIfAllMeterResourcesAreRemoved(t *testing.T) {
 		}
 	}
 	resourceViews.lock.Unlock()
-
+	allMeters.lock.Unlock()
 	// Expire all meters and views
+	// We need to unlock before we move the clock ahead in time
 	fakeClock.Step(12 * time.Minute) // t+12m
 	_ = wait.PollImmediate(100*time.Millisecond, 5*time.Second, func() (bool, error) {
 		// Non-expiring defaultMeter should be available
@@ -244,6 +247,10 @@ func TestIfAllMeterResourcesAreRemoved(t *testing.T) {
 		return len(allMeters.meters) == 1, nil
 	})
 
+	allMeters.lock.Lock()
+	defer allMeters.lock.Unlock()
+	resourceViews.lock.Lock()
+	defer resourceViews.lock.Unlock()
 	if len(allMeters.meters) != 1 {
 		t.Errorf("len(allMeters)=%d, want: 1", len(allMeters.meters))
 	}
