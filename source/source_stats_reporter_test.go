@@ -47,11 +47,21 @@ func TestStatsReporter(t *testing.T) {
 		metricskey.LabelEventSource:       "unit-test",
 		metricskey.LabelName:              "testsource",
 		metricskey.LabelResourceGroup:     "testresourcegroup",
-		metricskey.LabelResponseCode:      "202",
+		metricskey.LabelResponseCode:	   	 "202",
 		metricskey.LabelResponseCodeClass: "2xx",
 	}
 
-	// test ReportEventCount
+	retryWantTags := map[string]string{
+		metricskey.LabelNamespaceName:     "testns",
+		metricskey.LabelEventType:         "dev.knative.event",
+		metricskey.LabelEventSource:       "unit-test",
+		metricskey.LabelName:              "testsource",
+		metricskey.LabelResourceGroup:     "testresourcegroup",
+		metricskey.LabelResponseCode:	   	 "503",
+		metricskey.LabelResponseCodeClass: "5xx",
+	}
+
+	// test ReportEventCount and ReportRetryEventCount
 	expectSuccess(t, func() error {
 		return r.ReportEventCount(args, http.StatusAccepted)
 	})
@@ -59,6 +69,7 @@ func TestStatsReporter(t *testing.T) {
 		return r.ReportEventCount(args, http.StatusAccepted)
 	})
 	metricstest.CheckCountData(t, "event_count", wantTags, 2)
+	metricstest.CheckCountData(t, "retry_event_count", retryWantTags, 2)
 }
 
 func expectSuccess(t *testing.T, f func() error) {
