@@ -87,7 +87,7 @@ func cleanup() {
 	for key, meter := range allMeters.meters {
 		if key != "" && meter.t.Before(expiryCutoff) {
 			flushGivenExporter(meter.e)
-			// make a copy of views to avoid data races
+			// Make a copy of views to avoid data races
 			viewsCopy := copyViews(resourceViews.views)
 			meter.m.Unregister(viewsCopy...)
 			delete(allMeters.meters, key)
