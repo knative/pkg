@@ -217,26 +217,30 @@ func TestIfAllMeterResourcesAreRemoved(t *testing.T) {
 			t.Fatal("RegisterResourceView =", err)
 		}
 	}
-	allMeters.lock.Lock()
-	// Make a copy to test against as allMeters should be cleaned up
-	copyAllMeters := make(map[string]*meterExporter)
-	for k, v := range allMeters.meters {
-		copyAllMeters[k] = v
-	}
 
-	resourceViews.lock.Lock()
-	for _, meter := range copyAllMeters {
-		for _, mView := range resourceViews.views {
-			want, got := mView, meter.m.Find(mView.Name)
-			if got == nil {
-				t.Errorf("View %s is not available", want.Name)
-			} else if want.Name != got.Name {
-				t.Errorf("Want %v, got %v", want.Name, got.Name)
+	func() {
+		allMeters.lock.Lock()
+		resourceViews.lock.Lock()
+		defer allMeters.lock.Unlock()
+		defer resourceViews.lock.Unlock()
+		// Make a copy to test against as allMeters should be cleaned up
+		copyAllMeters := make(map[string]*meterExporter, len(allMeters.meters))
+		for k, v := range allMeters.meters {
+			copyAllMeters[k] = v
+		}
+
+		for _, meter := range copyAllMeters {
+			for _, mView := range resourceViews.views {
+				want, got := mView, meter.m.Find(mView.Name)
+				if got == nil {
+					t.Errorf("View %s is not available", want.Name)
+				} else if want.Name != got.Name {
+					t.Errorf("Want %v, got %v", want.Name, got.Name)
+				}
 			}
 		}
-	}
-	resourceViews.lock.Unlock()
-	allMeters.lock.Unlock()
+	}()
+
 	// Expire all meters and views
 	// We need to unlock before we move the clock ahead in time
 	fakeClock.Step(12 * time.Minute) // t+12m
