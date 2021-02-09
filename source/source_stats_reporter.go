@@ -57,6 +57,7 @@ var (
 	responseTimeout        = tag.MustNewKey(metricskey.LabelResponseTimeout)
 )
 
+//ReportArgs interface
 type ReportArgs struct {
 	Namespace     string
 	EventType     string
@@ -75,6 +76,7 @@ func init() {
 type StatsReporter interface {
 	// ReportEventCount captures the event count. It records one per call.
 	ReportEventCount(args *ReportArgs, responseCode int) error
+	ReportRetryEventCount(args *ReportArgs, responseCode int) error
 }
 
 var _ StatsReporter = (*reporter)(nil)
@@ -101,6 +103,15 @@ func (r *reporter) ReportEventCount(args *ReportArgs, responseCode int) error {
 		return err
 	}
 	metrics.Record(ctx, eventCountM.M(1))
+	return nil
+}
+
+func (r *reporter) ReportRetryEventCount(args *ReportArgs, responseCode int) error {
+	ctx, err := r.generateTag(args, responseCode)
+	if err != nil {
+		return err
+	}
+	metrics.Record(ctx, RetryEventCountM.M(1))
 	return nil
 }
 
@@ -135,6 +146,12 @@ func register() {
 		&view.View{
 			Description: eventCountM.Description(),
 			Measure:     eventCountM,
+			Aggregation: view.Count(),
+			TagKeys:     tagKeys,
+		},
+		&view.View{
+			Description: RetryEventCountM.Description(),
+			Measure:     RetryEventCountM,
 			Aggregation: view.Count(),
 			TagKeys:     tagKeys,
 		},

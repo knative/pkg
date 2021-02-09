@@ -68,6 +68,12 @@ func TestStatsReporter(t *testing.T) {
 	expectSuccess(t, func() error {
 		return r.ReportEventCount(args, http.StatusAccepted)
 	})
+	expectSuccess(t, func() error {
+		return r.ReportRetryEventCount(args, http.StatusServiceUnavailable)
+	})
+	expectSuccess(t, func() error {
+		return r.ReportRetryEventCount(args, http.StatusServiceUnavailable)
+	})
 	metricstest.CheckCountData(t, "event_count", wantTags, 2)
 	metricstest.CheckCountData(t, "retry_event_count", retryWantTags, 2)
 }
@@ -86,5 +92,6 @@ func setup() {
 func resetMetrics() {
 	// OpenCensus metrics carry global state that need to be reset between unit tests.
 	metricstest.Unregister("event_count")
+	metricstest.Unregister("retry_event_count")
 	register()
 }
