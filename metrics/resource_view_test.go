@@ -174,7 +174,7 @@ func TestAllMetersExpiration(t *testing.T) {
 	// Expire the second entry
 	fakeClock.Step(9 * time.Minute) // t+12m
 	_ = wait.PollImmediate(100*time.Millisecond, 5*time.Second, func() (bool, error) {
-		// Non-expiring defaultMeter should be available
+		// Non-expiring defaultMeter should be available along with the non-expired entry
 		allMeters.lock.Lock()
 		defer allMeters.lock.Unlock()
 		return len(allMeters.meters) == 2, nil
