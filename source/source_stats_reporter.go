@@ -57,7 +57,7 @@ var (
 	responseTimeout        = tag.MustNewKey(metricskey.LabelResponseTimeout)
 )
 
-//ReportArgs interface
+//ReportArgs defines the arguments for reporting metrics
 type ReportArgs struct {
 	Namespace     string
 	EventType     string
