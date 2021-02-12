@@ -68,7 +68,7 @@ func init() {
 		Latency: stats.Float64(
 			"workqueue_queue_latency_seconds",
 			"How long in seconds an item stays in workqueue before being requested.",
-			"s",
+			stats.UnitSeconds,
 		),
 		Retries: stats.Int64(
 			"workqueue_retries_total",
@@ -78,17 +78,17 @@ func init() {
 		WorkDuration: stats.Float64(
 			"workqueue_work_duration_seconds",
 			"How long in seconds processing an item from workqueue takes.",
-			"s",
+			stats.UnitSeconds,
 		),
 		UnfinishedWorkSeconds: stats.Float64(
 			"workqueue_unfinished_work_seconds",
 			"How long in seconds the outstanding workqueue items have been in flight (total).",
-			"s",
+			stats.UnitSeconds,
 		),
 		LongestRunningProcessorSeconds: stats.Float64(
 			"workqueue_longest_running_processor_seconds",
 			"How long in seconds the longest outstanding workqueue item has been in flight.",
-			"s",
+			stats.UnitSeconds,
 		),
 	}
 	workqueue.SetProvider(wp)
@@ -121,7 +121,7 @@ func init() {
 		ListDuration: stats.Float64(
 			"reflector_list_duration_seconds",
 			"How long an API list takes to return and decode for the reflectors",
-			stats.UnitDimensionless,
+			stats.UnitSeconds,
 		),
 		Lists: stats.Int64(
 			"reflector_lists_total",
@@ -136,7 +136,7 @@ func init() {
 		WatchDuration: stats.Float64(
 			"reflector_watch_duration_seconds",
 			"How long an API watch takes to return and decode for the reflectors",
-			stats.UnitDimensionless,
+			stats.UnitSeconds,
 		),
 		Watches: stats.Int64(
 			"reflector_watches_total",
@@ -150,7 +150,7 @@ func init() {
 		Latency: stats.Float64(
 			"client_latency",
 			"How long Kubernetes API requests take",
-			"s",
+			stats.UnitSeconds,
 		),
 		Result: stats.Int64(
 			"client_results",
