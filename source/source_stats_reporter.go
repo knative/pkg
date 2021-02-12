@@ -35,8 +35,8 @@ var (
 		stats.UnitDimensionless,
 	)
 
-	// RetryEventCountM is a counter which records the number of events sent by the source in retries.
-	RetryEventCountM = stats.Int64(
+	// retryEventCountM is a counter which records the number of events sent by the source in retries.
+	retryEventCountM = stats.Int64(
 		"retry_event_count",
 		"Number of retry events sent",
 		stats.UnitDimensionless,
@@ -111,7 +111,7 @@ func (r *reporter) ReportRetryEventCount(args *ReportArgs, responseCode int) err
 	if err != nil {
 		return err
 	}
-	metrics.Record(ctx, RetryEventCountM.M(1))
+	metrics.Record(ctx, retryEventCountM.M(1))
 	return nil
 }
 
@@ -150,8 +150,8 @@ func register() {
 			TagKeys:     tagKeys,
 		},
 		&view.View{
-			Description: RetryEventCountM.Description(),
-			Measure:     RetryEventCountM,
+			Description: retryEventCountM.Description(),
+			Measure:     retryEventCountM,
 			Aggregation: view.Count(),
 			TagKeys:     tagKeys,
 		},
