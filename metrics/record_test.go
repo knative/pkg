@@ -39,7 +39,7 @@ type cases struct {
 }
 
 func TestRecordServing(t *testing.T) {
-	measure := stats.Int64("request_count", "Number of reconcile operations", stats.UnitNone)
+	measure := stats.Int64("request_count", "Number of reconcile operations", stats.UnitDimensionless)
 	// Increase the measurement value for each test case so that checking
 	// the last value ensures the measurement has been recorded.
 	shouldReportCases := []cases{{
@@ -65,7 +65,7 @@ func TestRecordServing(t *testing.T) {
 }
 
 func TestRecordEventing(t *testing.T) {
-	measure := stats.Int64("event_count", "Number of event received", stats.UnitNone)
+	measure := stats.Int64("event_count", "Number of event received", stats.UnitDimensionless)
 	// Increase the measurement value for each test case so that checking
 	// the last value ensures the measurement has been recorded.
 	shouldReportCases := []cases{{
@@ -92,8 +92,8 @@ func TestRecordEventing(t *testing.T) {
 
 func TestRecordBatch(t *testing.T) {
 	ctx := context.Background()
-	measure1 := stats.Int64("count1", "First counter", stats.UnitNone)
-	measure2 := stats.Int64("count2", "Second counter", stats.UnitNone)
+	measure1 := stats.Int64("count1", "First counter", stats.UnitDimensionless)
+	measure2 := stats.Int64("count2", "Second counter", stats.UnitDimensionless)
 	v := []*view.View{{
 		Measure:     measure1,
 		Aggregation: view.LastValue(),
@@ -194,7 +194,7 @@ func TestBucketsNBy10(t *testing.T) {
 }
 
 func TestMeter(t *testing.T) {
-	measure := stats.Int64("request_count", "Number of reconcile operations", stats.UnitNone)
+	measure := stats.Int64("request_count", "Number of reconcile operations", stats.UnitDimensionless)
 	// Increase the measurement value for each test case so that checking
 	// the last value ensures the measurement has been recorded.
 	meterTestCases := []cases{{

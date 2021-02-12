@@ -34,8 +34,8 @@ import (
 )
 
 var (
-	workQueueDepthStat   = stats.Int64("work_queue_depth", "Depth of the work queue", stats.UnitNone)
-	reconcileCountStat   = stats.Int64("reconcile_count", "Number of reconcile operations", stats.UnitNone)
+	workQueueDepthStat   = stats.Int64("work_queue_depth", "Depth of the work queue", stats.UnitDimensionless)
+	reconcileCountStat   = stats.Int64("reconcile_count", "Number of reconcile operations", stats.UnitDimensionless)
 	reconcileLatencyStat = stats.Int64("reconcile_latency", "Latency of reconcile operations", stats.UnitMilliseconds)
 
 	// reconcileDistribution defines the bucket boundaries for the histogram of reconcile latency metric.
@@ -58,12 +58,12 @@ func init() {
 		Adds: stats.Int64(
 			"workqueue_adds_total",
 			"Total number of adds handled by workqueue",
-			stats.UnitNone,
+			stats.UnitDimensionless,
 		),
 		Depth: stats.Int64(
 			"workqueue_depth",
 			"Current depth of workqueue",
-			stats.UnitNone,
+			stats.UnitDimensionless,
 		),
 		Latency: stats.Float64(
 			"workqueue_queue_latency_seconds",
@@ -73,7 +73,7 @@ func init() {
 		Retries: stats.Int64(
 			"workqueue_retries_total",
 			"Total number of retries handled by workqueue",
-			"s",
+			stats.UnitDimensionless,
 		),
 		WorkDuration: stats.Float64(
 			"workqueue_work_duration_seconds",
@@ -99,49 +99,49 @@ func init() {
 		ItemsInList: stats.Float64(
 			"reflector_items_in_list",
 			"How many items an API list returns to the reflectors",
-			stats.UnitNone,
+			stats.UnitDimensionless,
 		),
 		// TODO(mattmoor): This is not in the latest version, so it will
 		// be removed in a future version.
 		ItemsInMatch: stats.Float64(
 			"reflector_items_in_match",
 			"",
-			stats.UnitNone,
+			stats.UnitDimensionless,
 		),
 		ItemsInWatch: stats.Float64(
 			"reflector_items_in_watch",
 			"How many items an API watch returns to the reflectors",
-			stats.UnitNone,
+			stats.UnitDimensionless,
 		),
 		LastResourceVersion: stats.Float64(
 			"reflector_last_resource_version",
 			"Last resource version seen for the reflectors",
-			stats.UnitNone,
+			stats.UnitDimensionless,
 		),
 		ListDuration: stats.Float64(
 			"reflector_list_duration_seconds",
 			"How long an API list takes to return and decode for the reflectors",
-			stats.UnitNone,
+			stats.UnitDimensionless,
 		),
 		Lists: stats.Int64(
 			"reflector_lists_total",
 			"Total number of API lists done by the reflectors",
-			stats.UnitNone,
+			stats.UnitDimensionless,
 		),
 		ShortWatches: stats.Int64(
 			"reflector_short_watches_total",
 			"Total number of short API watches done by the reflectors",
-			stats.UnitNone,
+			stats.UnitDimensionless,
 		),
 		WatchDuration: stats.Float64(
 			"reflector_watch_duration_seconds",
 			"How long an API watch takes to return and decode for the reflectors",
-			stats.UnitNone,
+			stats.UnitDimensionless,
 		),
 		Watches: stats.Int64(
 			"reflector_watches_total",
 			"Total number of API watches done by the reflectors",
-			stats.UnitNone,
+			stats.UnitDimensionless,
 		),
 	}
 	cache.SetReflectorMetricsProvider(rp)
@@ -155,7 +155,7 @@ func init() {
 		Result: stats.Int64(
 			"client_results",
 			"Total number of API requests (broken down by status code)",
-			stats.UnitNone,
+			stats.UnitDimensionless,
 		),
 	}
 	opts := kubemetrics.RegisterOpts{
