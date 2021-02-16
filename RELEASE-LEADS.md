@@ -286,14 +286,18 @@ prow job part, starting with the **hack** repo:
 
 After **hack**:
 
-- [knative/pkg](https://github.com/knative/pkg)
-- [knative/test-infra](https://github.com/knative/test-infra)
+| Repo    | Status |
+| ------- | ------------ |
+| [knative.dev/pkg](https://github.com/knative/pkg) | ![Releasability](https://github.com/knative/pkg/workflows/Releasability/badge.svg) |
+| [knative.dev/test-infra](https://github.com/knative/test-infra) | ![Releasability](https://github.com/knative/test-infra/workflows/Releasability/badge.svg) |
 
 After **pkg**:
 
-- [knative/networking](https://github.com/knative/networking)
-- [knative/caching](https://github.com/knative/caching)
-- [knative-sandbox/reconciler-test](https://github.com/knative-sandbox/reconciler-test)
+| Repo    | Status |
+| ------- | ------------ |
+| [knative.dev/networking](https://github.com/knative/networking) | ![Releasability](https://github.com/knative/networking/workflows/Releasability/badge.svg) |
+| [knative.dev/caching](https://github.com/knative/caching) | ![Releasability](https://github.com/knative/caching/workflows/Releasability/badge.svg) |
+| [knative.dev/reconciler-test](https://github.com/knative-sandbox/reconciler-test) | ![Releasability](https://github.com/knative-sandbox/reconciler-test/workflows/Releasability/badge.svg) |
 
 Automation will propagate these updates to all the downstream repos in the next
 few cycles. The goal is to have the first wave of repo releases (**serving**,
@@ -342,49 +346,58 @@ v0.20). Note: `buoy check` will fail if the dependencies are not yet ready.
 
 First:
 
-- [knative/serving](https://github.com/knative/serving)
-- [knative-sandbox/net-certmanager](https://github.com/knative-sandbox/net-certmanager)
-- [knative-sandbox/net-contour](https://github.com/knative-sandbox/net-contour)
-- [knative-sandbox/net-http01](https://github.com/knative-sandbox/net-http01)
-- [knative-sandbox/net-istio](https://github.com/knative-sandbox/net-istio)
-- [knative-sandbox/net-kourier](https://github.com/knative-sandbox/net-kourier)
-
-- [knative/eventing](https://github.com/knative/eventing)
-- [knative-sandbox/discovery](https://github.com/knative-sandbox/discovery)
-
-- [knative-sandbox/sample-controller](https://github.com/knative-sandbox/sample-controller)
+| Repo    | Status |
+| ------- | ------------ |
+| [knative.dev/serving](https://github.com/knative/serving) | ![Releasability](https://github.com/knative/serving/workflows/Releasability/badge.svg) |
+| [knative.dev/net-certmanager](https://github.com/knative-sandbox/net-certmanager) | ![Releasability](https://github.com/knative-sandbox/net-certmanager/workflows/Releasability/badge.svg) |
+| [knative.dev/net-contour](https://github.com/knative-sandbox/net-contour) | ![Releasability](https://github.com/knative-sandbox/net-contour/workflows/Releasability/badge.svg) |
+| [knative.dev/net-http01](https://github.com/knative-sandbox/net-http01) | ![Releasability](https://github.com/knative-sandbox/net-http01/workflows/Releasability/badge.svg) |
+| [knative.dev/net-istio](https://github.com/knative-sandbox/net-istio) | ![Releasability](https://github.com/knative-sandbox/net-istio/workflows/Releasability/badge.svg) |
+| [knative.dev/net-kourier](https://github.com/knative-sandbox/net-kourier) | ![Releasability](https://github.com/knative-sandbox/net-kourier/workflows/Releasability/badge.svg) |
+| [knative.dev/eventing](https://github.com/knative/eventing) | ![Releasability](https://github.com/knative/eventing/workflows/Releasability/badge.svg) |
+| [knative.dev/discovery](https://github.com/knative-sandbox/discovery) | ![Releasability](https://github.com/knative-sandbox/discovery/workflows/Releasability/badge.svg) |
+| [knative.dev/sample-controller](https://github.com/knative-sandbox/sample-controller) | ![Releasability](https://github.com/knative-sandbox/sample-controller/workflows/Releasability/badge.svg) |
 
 After **eventing**:
 
-- [knative-sandbox/eventing-awssqs](https://github.com/knative-sandbox/eventing-awssqs)
-- [knative-sandbox/eventing-camel](https://github.com/knative-sandbox/eventing-camel)
-- [knative-sandbox/eventing-ceph](https://github.com/knative-sandbox/eventing-ceph)
-- [knative-sandbox/eventing-couchdb](https://github.com/knative-sandbox/eventing-couchdb)
-- [knative-sandbox/eventing-kafka](https://github.com/knative-sandbox/eventing-kafka)
-- [knative-sandbox/eventing-kafka-broker](https://github.com/knative-sandbox/eventing-kafka-broker)
-- [knative-sandbox/eventing-natss](https://github.com/knative-sandbox/eventing-natss)
-- [knative-sandbox/eventing-prometheus](https://github.com/knative-sandbox/eventing-prometheus)
-- [knative-sandbox/eventing-rabbitmq](https://github.com/knative-sandbox/eventing-rabbitmq)
-- [knative-sandbox/sample-source](https://github.com/knative-sandbox/sample-source)
+| Repo    | Status |
+| ------- | ------------ |
+| [knative.dev/eventing-awssqs](https://github.com/knative-sandbox/eventing-awssqs) | ![Releasability](https://github.com/knative-sandbox/eventing-awssqs/workflows/Releasability/badge.svg) |
+| [knative.dev/eventing-camel](https://github.com/knative-sandbox/eventing-camel) | ![Releasability](https://github.com/knative-sandbox/eventing-camel/workflows/Releasability/badge.svg) |
+| [knative.dev/eventing-ceph](https://github.com/knative-sandbox/eventing-ceph) | ![Releasability](https://github.com/knative-sandbox/eventing-ceph/workflows/Releasability/badge.svg) |
+| [knative.dev/eventing-couchdb](https://github.com/knative-sandbox/eventing-couchdb) | ![Releasability](https://github.com/knative-sandbox/eventing-couchdb/workflows/Releasability/badge.svg) |
+| [knative.dev/eventing-kafka](https://github.com/knative-sandbox/eventing-kafka) | ![Releasability](https://github.com/knative-sandbox/eventing-kafka/workflows/Releasability/badge.svg) |
+| [knative.dev/eventing-kafka-broker](https://github.com/knative-sandbox/eventing-kafka-broker) | ![Releasability](https://github.com/knative-sandbox/eventing-kafka-broker/workflows/Releasability/badge.svg) |
+| [knative.dev/eventing-natss](https://github.com/knative-sandbox/eventing-natss) | ![Releasability](https://github.com/knative-sandbox/eventing-natss/workflows/Releasability/badge.svg) |
+| [knative.dev/eventing-prometheus](https://github.com/knative-sandbox/eventing-prometheus) | ![Releasability](https://github.com/knative-sandbox/eventing-prometheus/workflows/Releasability/badge.svg) |
+| [knative.dev/eventing-rabbitmq](https://github.com/knative-sandbox/eventing-rabbitmq) | ![Releasability](https://github.com/knative-sandbox/eventing-rabbitmq/workflows/Releasability/badge.svg) |
+| [knative.dev/sample-source](https://github.com/knative-sandbox/sample-source) | ![Releasability](https://github.com/knative-sandbox/sample-source/workflows/Releasability/badge.svg) |
 
 After both **eventing** and **serving**:
 
-- [knative-sandbox/eventing-redis](https://github.com/knative-sandbox/eventing-redis)
-- [knative-sandbox/eventing-github](https://github.com/knative-sandbox/eventing-github)
-- [knative-sandbox/eventing-gitlab](https://github.com/knative-sandbox/eventing-gitlab)
+| Repo    | Status |
+| ------- | ------------ |
+| [knative.dev/eventing-redis](https://github.com/knative-sandbox/eventing-redis) | ![Releasability](https://github.com/knative-sandbox/eventing-redis/workflows/Releasability/badge.svg) |
+| [knative.dev/eventing-github](https://github.com/knative-sandbox/eventing-github) | ![Releasability](https://github.com/knative-sandbox/eventing-github/workflows/Releasability/badge.svg) |
+| [knative.dev/eventing-gitlab](https://github.com/knative-sandbox/eventing-gitlab) | ![Releasability](https://github.com/knative-sandbox/eventing-gitlab/workflows/Releasability/badge.svg) |
 
 Lastly:
 
-- [knative-sandbox/eventing-autoscaler-keda](https://github.com/knative-sandbox/eventing-autoscaler-keda)
+| Repo    | Status |
+| ------- | ------------ |
+| [knative.dev/eventing-autoscaler-keda](https://github.com/knative-sandbox/eventing-autoscaler-keda) | ![Releasability](https://github.com/knative-sandbox/eventing-autoscaler-keda/workflows/Releasability/badge.svg) |
 
 We have a few repos inside of Knative that are not handled in the standard
 process at the moment. They might have additional dependencies or depend on the
 releases existing. **Skip these**. Special cases are:
 
-- [knative/client](https://github.com/knative/client)
-- [knative/docs](https://github.com/knative/docs)
-- [knative/website](https://github.com/knative/website)
-- [knative/operator](https://github.com/knative/operator)
+| Repo    | Status |
+| ------- | ------------ |
+| [knative.dev/client](https://github.com/knative/client) | ![Releasability](https://github.com/knative/client/workflows/Releasability/badge.svg) |
+| [knative.dev/docs](https://github.com/knative/docs) | ![Releasability](https://github.com/knative/docs/workflows/Releasability/badge.svg) |
+| [knative.dev/website](https://github.com/knative/website) | ![Releasability](https://github.com/knative/website/workflows/Releasability/badge.svg) |
+| [knative.dev/operator](https://github.com/knative/operator) | ![Releasability](https://github.com/knative/operator/workflows/Releasability/badge.svg) |
+
 
 ## After the release
 
