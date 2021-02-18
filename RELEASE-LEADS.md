@@ -286,14 +286,14 @@ prow job part, starting with the **hack** repo:
 
 After **hack**:
 
-| Repo                                                            | Status                                                                                    |
+| Repo                                                            | Releasability                                                                             |
 | --------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
 | [knative.dev/pkg](https://github.com/knative/pkg)               | ![Releasability](https://github.com/knative/pkg/workflows/Releasability/badge.svg)        |
 | [knative.dev/test-infra](https://github.com/knative/test-infra) | ![Releasability](https://github.com/knative/test-infra/workflows/Releasability/badge.svg) |
 
 After **pkg**:
 
-| Repo                                                                              | Status                                                                                                 |
+| Repo                                                                              | Releasability                                                                                          |
 | --------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
 | [knative.dev/networking](https://github.com/knative/networking)                   | ![Releasability](https://github.com/knative/networking/workflows/Releasability/badge.svg)              |
 | [knative.dev/caching](https://github.com/knative/caching)                         | ![Releasability](https://github.com/knative/caching/workflows/Releasability/badge.svg)                 |
@@ -346,57 +346,57 @@ v0.20). Note: `buoy check` will fail if the dependencies are not yet ready.
 
 First:
 
-| Repo                                                                                  | Status                                                                                                   |
-| ------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
-| [knative.dev/serving](https://github.com/knative/serving)                             | ![Releasability](https://github.com/knative/serving/workflows/Releasability/badge.svg)                   |
-| [knative.dev/net-certmanager](https://github.com/knative-sandbox/net-certmanager)     | ![Releasability](https://github.com/knative-sandbox/net-certmanager/workflows/Releasability/badge.svg)   |
-| [knative.dev/net-contour](https://github.com/knative-sandbox/net-contour)             | ![Releasability](https://github.com/knative-sandbox/net-contour/workflows/Releasability/badge.svg)       |
-| [knative.dev/net-http01](https://github.com/knative-sandbox/net-http01)               | ![Releasability](https://github.com/knative-sandbox/net-http01/workflows/Releasability/badge.svg)        |
-| [knative.dev/net-istio](https://github.com/knative-sandbox/net-istio)                 | ![Releasability](https://github.com/knative-sandbox/net-istio/workflows/Releasability/badge.svg)         |
-| [knative.dev/net-kourier](https://github.com/knative-sandbox/net-kourier)             | ![Releasability](https://github.com/knative-sandbox/net-kourier/workflows/Releasability/badge.svg)       |
-| [knative.dev/eventing](https://github.com/knative/eventing)                           | ![Releasability](https://github.com/knative/eventing/workflows/Releasability/badge.svg)                  |
-| [knative.dev/discovery](https://github.com/knative-sandbox/discovery)                 | ![Releasability](https://github.com/knative-sandbox/discovery/workflows/Releasability/badge.svg)         |
-| [knative.dev/sample-controller](https://github.com/knative-sandbox/sample-controller) | ![Releasability](https://github.com/knative-sandbox/sample-controller/workflows/Releasability/badge.svg) |
+| Repo                                                                                  | Releasability                                                                                            | Nightly |
+| ------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- | ------- |
+| [knative.dev/serving](https://github.com/knative/serving)                             | ![Releasability](https://github.com/knative/serving/workflows/Releasability/badge.svg)                   | ![Nightly](https://prow.knative.dev/badge.svg?jobs=ci-knative-serving-nightly-release) |
+| [knative.dev/net-certmanager](https://github.com/knative-sandbox/net-certmanager)     | ![Releasability](https://github.com/knative-sandbox/net-certmanager/workflows/Releasability/badge.svg)   | ![Nightly](https://prow.knative.dev/badge.svg?jobs=ci-knative-sandbox-net-certmanager-nightly-release) |
+| [knative.dev/net-contour](https://github.com/knative-sandbox/net-contour)             | ![Releasability](https://github.com/knative-sandbox/net-contour/workflows/Releasability/badge.svg)       | ![Nightly](https://prow.knative.dev/badge.svg?jobs=ci-knative-sandbox-net-contour-nightly-release) |
+| [knative.dev/net-http01](https://github.com/knative-sandbox/net-http01)               | ![Releasability](https://github.com/knative-sandbox/net-http01/workflows/Releasability/badge.svg)        | ![Nightly](https://prow.knative.dev/badge.svg?jobs=ci-knative-sandbox-net-http01-nightly-release) |
+| [knative.dev/net-istio](https://github.com/knative-sandbox/net-istio)                 | ![Releasability](https://github.com/knative-sandbox/net-istio/workflows/Releasability/badge.svg)         | ![Nightly](https://prow.knative.dev/badge.svg?jobs=ci-knative-sandbox-net-istio-nightly-release) |
+| [knative.dev/net-kourier](https://github.com/knative-sandbox/net-kourier)             | ![Releasability](https://github.com/knative-sandbox/net-kourier/workflows/Releasability/badge.svg)       | ![Nightly](https://prow.knative.dev/badge.svg?jobs=ci-knative-sandbox-net-kourier-nightly-release) |
+| [knative.dev/eventing](https://github.com/knative/eventing)                           | ![Releasability](https://github.com/knative/eventing/workflows/Releasability/badge.svg)                  | ![Nightly](https://prow.knative.dev/badge.svg?jobs=ci-knative-eventing-nightly-release) |
+| [knative.dev/discovery](https://github.com/knative-sandbox/discovery)                 | ![Releasability](https://github.com/knative-sandbox/discovery/workflows/Releasability/badge.svg)         | ![Nightly](https://prow.knative.dev/badge.svg?jobs=ci-knative-sandbox-discovery-nightly-release) |
+| [knative.dev/sample-controller](https://github.com/knative-sandbox/sample-controller) | ![Releasability](https://github.com/knative-sandbox/sample-controller/workflows/Releasability/badge.svg) | ![Nightly](https://prow.knative.dev/badge.svg?jobs=ci-knative-sandbox-sample-controller-nightly-release) |
 
 After **eventing**:
 
-| Repo                                                                                          | Status                                                                                                       |
-| --------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| [knative.dev/eventing-awssqs](https://github.com/knative-sandbox/eventing-awssqs)             | ![Releasability](https://github.com/knative-sandbox/eventing-awssqs/workflows/Releasability/badge.svg)       |
-| [knative.dev/eventing-camel](https://github.com/knative-sandbox/eventing-camel)               | ![Releasability](https://github.com/knative-sandbox/eventing-camel/workflows/Releasability/badge.svg)        |
-| [knative.dev/eventing-ceph](https://github.com/knative-sandbox/eventing-ceph)                 | ![Releasability](https://github.com/knative-sandbox/eventing-ceph/workflows/Releasability/badge.svg)         |
-| [knative.dev/eventing-couchdb](https://github.com/knative-sandbox/eventing-couchdb)           | ![Releasability](https://github.com/knative-sandbox/eventing-couchdb/workflows/Releasability/badge.svg)      |
-| [knative.dev/eventing-kafka](https://github.com/knative-sandbox/eventing-kafka)               | ![Releasability](https://github.com/knative-sandbox/eventing-kafka/workflows/Releasability/badge.svg)        |
-| [knative.dev/eventing-kafka-broker](https://github.com/knative-sandbox/eventing-kafka-broker) | ![Releasability](https://github.com/knative-sandbox/eventing-kafka-broker/workflows/Releasability/badge.svg) |
-| [knative.dev/eventing-natss](https://github.com/knative-sandbox/eventing-natss)               | ![Releasability](https://github.com/knative-sandbox/eventing-natss/workflows/Releasability/badge.svg)        |
-| [knative.dev/eventing-prometheus](https://github.com/knative-sandbox/eventing-prometheus)     | ![Releasability](https://github.com/knative-sandbox/eventing-prometheus/workflows/Releasability/badge.svg)   |
-| [knative.dev/eventing-rabbitmq](https://github.com/knative-sandbox/eventing-rabbitmq)         | ![Releasability](https://github.com/knative-sandbox/eventing-rabbitmq/workflows/Releasability/badge.svg)     |
-| [knative.dev/sample-source](https://github.com/knative-sandbox/sample-source)                 | ![Releasability](https://github.com/knative-sandbox/sample-source/workflows/Releasability/badge.svg)         |
+| Repo                                                                                          | Releasability                                                                                                | Nightly |
+| --------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ | ------- |
+| [knative.dev/eventing-awssqs](https://github.com/knative-sandbox/eventing-awssqs)             | ![Releasability](https://github.com/knative-sandbox/eventing-awssqs/workflows/Releasability/badge.svg)       | ![Nightly](https://prow.knative.dev/badge.svg?jobs=ci-knative-sandbox-eventing-awssqs-nightly-release) |
+| [knative.dev/eventing-camel](https://github.com/knative-sandbox/eventing-camel)               | ![Releasability](https://github.com/knative-sandbox/eventing-camel/workflows/Releasability/badge.svg)        | ![Nightly](https://prow.knative.dev/badge.svg?jobs=ci-knative-sandbox-eventing-camel-nightly-release) |
+| [knative.dev/eventing-ceph](https://github.com/knative-sandbox/eventing-ceph)                 | ![Releasability](https://github.com/knative-sandbox/eventing-ceph/workflows/Releasability/badge.svg)         | ![Nightly](https://prow.knative.dev/badge.svg?jobs=ci-knative-sandbox-eventing-ceph-nightly-release) |
+| [knative.dev/eventing-couchdb](https://github.com/knative-sandbox/eventing-couchdb)           | ![Releasability](https://github.com/knative-sandbox/eventing-couchdb/workflows/Releasability/badge.svg)      | ![Nightly](https://prow.knative.dev/badge.svg?jobs=ci-knative-sandbox-eventing-couchdb-nightly-release) |
+| [knative.dev/eventing-kafka](https://github.com/knative-sandbox/eventing-kafka)               | ![Releasability](https://github.com/knative-sandbox/eventing-kafka/workflows/Releasability/badge.svg)        | ![Nightly](https://prow.knative.dev/badge.svg?jobs=ci-knative-sandbox-eventing-kafka-nightly-release) |
+| [knative.dev/eventing-kafka-broker](https://github.com/knative-sandbox/eventing-kafka-broker) | ![Releasability](https://github.com/knative-sandbox/eventing-kafka-broker/workflows/Releasability/badge.svg) | ![Nightly](https://prow.knative.dev/badge.svg?jobs=ci-knative-sandbox-eventing-kafka-broker-nightly-release) |
+| [knative.dev/eventing-natss](https://github.com/knative-sandbox/eventing-natss)               | ![Releasability](https://github.com/knative-sandbox/eventing-natss/workflows/Releasability/badge.svg)        | ![Nightly](https://prow.knative.dev/badge.svg?jobs=ci-knative-sandbox-eventing-natss-nightly-release) |
+| [knative.dev/eventing-prometheus](https://github.com/knative-sandbox/eventing-prometheus)     | ![Releasability](https://github.com/knative-sandbox/eventing-prometheus/workflows/Releasability/badge.svg)   | ![Nightly](https://prow.knative.dev/badge.svg?jobs=ci-knative-sandbox-eventing-prometheus-nightly-release) |
+| [knative.dev/eventing-rabbitmq](https://github.com/knative-sandbox/eventing-rabbitmq)         | ![Releasability](https://github.com/knative-sandbox/eventing-rabbitmq/workflows/Releasability/badge.svg)     | ![Nightly](https://prow.knative.dev/badge.svg?jobs=ci-knative-sandbox-eventing-rabbitmq-nightly-release) |
+| [knative.dev/sample-source](https://github.com/knative-sandbox/sample-source)                 | ![Releasability](https://github.com/knative-sandbox/sample-source/workflows/Releasability/badge.svg)         | ![Nightly](https://prow.knative.dev/badge.svg?jobs=ci-knative-sandbox-sample-source-nightly-release) |
 
 After both **eventing** and **serving**:
 
-| Repo                                                                              | Status                                                                                                 |
-| --------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
-| [knative.dev/eventing-redis](https://github.com/knative-sandbox/eventing-redis)   | ![Releasability](https://github.com/knative-sandbox/eventing-redis/workflows/Releasability/badge.svg)  |
-| [knative.dev/eventing-github](https://github.com/knative-sandbox/eventing-github) | ![Releasability](https://github.com/knative-sandbox/eventing-github/workflows/Releasability/badge.svg) |
-| [knative.dev/eventing-gitlab](https://github.com/knative-sandbox/eventing-gitlab) | ![Releasability](https://github.com/knative-sandbox/eventing-gitlab/workflows/Releasability/badge.svg) |
+| Repo                                                                              | Releasability                                                                                          | Nightly |
+| --------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ | ------- |
+| [knative.dev/eventing-redis](https://github.com/knative-sandbox/eventing-redis)   | ![Releasability](https://github.com/knative-sandbox/eventing-redis/workflows/Releasability/badge.svg)  | ![Nightly](https://prow.knative.dev/badge.svg?jobs=ci-knative-sandbox-eventing-redis-nightly-release) |
+| [knative.dev/eventing-github](https://github.com/knative-sandbox/eventing-github) | ![Releasability](https://github.com/knative-sandbox/eventing-github/workflows/Releasability/badge.svg) | ![Nightly](https://prow.knative.dev/badge.svg?jobs=ci-knative-sandbox-eventing-github-nightly-release) |
+| [knative.dev/eventing-gitlab](https://github.com/knative-sandbox/eventing-gitlab) | ![Releasability](https://github.com/knative-sandbox/eventing-gitlab/workflows/Releasability/badge.svg) | ![Nightly](https://prow.knative.dev/badge.svg?jobs=ci-knative-sandbox-eventing-gitlab-nightly-release) |
 
 Lastly:
 
-| Repo                                                                                                | Status                                                                                                          |
-| --------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
-| [knative.dev/eventing-autoscaler-keda](https://github.com/knative-sandbox/eventing-autoscaler-keda) | ![Releasability](https://github.com/knative-sandbox/eventing-autoscaler-keda/workflows/Releasability/badge.svg) |
+| Repo                                                                                                | Releasability                                                                                                   | Nightly |
+| --------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- | ------- |
+| [knative.dev/eventing-autoscaler-keda](https://github.com/knative-sandbox/eventing-autoscaler-keda) | ![Releasability](https://github.com/knative-sandbox/eventing-autoscaler-keda/workflows/Releasability/badge.svg) | ![Nightly](https://prow.knative.dev/badge.svg?jobs=ci-knative-sandbox-eventing-autoscaler-keda-nightly-release) |
 
 We have a few repos inside of Knative that are not handled in the standard
 process at the moment. They might have additional dependencies or depend on the
 releases existing. **Skip these**. Special cases are:
 
-| Repo                                                        | Status                                                                                  |
-| ----------------------------------------------------------- | --------------------------------------------------------------------------------------- |
-| [knative.dev/client](https://github.com/knative/client)     | ![Releasability](https://github.com/knative/client/workflows/Releasability/badge.svg)   |
-| [knative.dev/docs](https://github.com/knative/docs)         | ![Releasability](https://github.com/knative/docs/workflows/Releasability/badge.svg)     |
-| [knative.dev/website](https://github.com/knative/website)   | ![Releasability](https://github.com/knative/website/workflows/Releasability/badge.svg)  |
-| [knative.dev/operator](https://github.com/knative/operator) | ![Releasability](https://github.com/knative/operator/workflows/Releasability/badge.svg) |
+| Repo                                                        | Releasability                                                                           | Nightly |
+| ----------------------------------------------------------- | --------------------------------------------------------------------------------------- | ------- |
+| [knative.dev/client](https://github.com/knative/client)     | ![Releasability](https://github.com/knative/client/workflows/Releasability/badge.svg)   | ![Nightly](https://prow.knative.dev/badge.svg?jobs=ci-knative-client-nightly-release) |
+| [knative.dev/docs](https://github.com/knative/docs)         | ![Releasability](https://github.com/knative/docs/workflows/Releasability/badge.svg)     | ![Nightly](https://prow.knative.dev/badge.svg?jobs=ci-knative-sandbox-docs-nightly-release) |
+| [knative.dev/website](https://github.com/knative/website)   | ![Releasability](https://github.com/knative/website/workflows/Releasability/badge.svg)  | ![Nightly](https://prow.knative.dev/badge.svg?jobs=ci-knative-sandbox-website-nightly-release) |
+| [knative.dev/operator](https://github.com/knative/operator) | ![Releasability](https://github.com/knative/operator/workflows/Releasability/badge.svg) | ![Nightly](https://prow.knative.dev/badge.svg?jobs=ci-knative-sandbox-operator-nightly-release) |
 
 ## After the release
 
