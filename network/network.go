@@ -52,18 +52,20 @@ const (
 	// uses to find out which version of the networking config is deployed.
 	HashHeaderName = "K-Network-Hash"
 
+	// KubeProbeUAPrefix is the prefix for the User-Agent header.
 	// Since K8s 1.8, prober requests have
 	//   User-Agent = "kube-probe/{major-version}.{minor-version}".
 	KubeProbeUAPrefix = "kube-probe/"
 
+	// KubeletProbeHeaderName is the header name to augment the probes, because
 	// Istio with mTLS rewrites probes, but their probes pass a different
-	// user-agent.  So we augment the probes with this header.
+	// user-agent.
 	KubeletProbeHeaderName = "K-Kubelet-Probe"
 )
 
 // IsKubeletProbe returns true if the request is a Kubernetes probe.
 func IsKubeletProbe(r *http.Request) bool {
-	return strings.HasPrefix(r.Header.Get("User-Agent"), KubeProbeUAPrefix) ||
+	return strings.HasPrefix(r.Header.Get(UserAgentKey), KubeProbeUAPrefix) ||
 		r.Header.Get(KubeletProbeHeaderName) != ""
 }
 

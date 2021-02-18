@@ -70,7 +70,7 @@ func TestDrainMechanics(t *testing.T) {
 		req   = &http.Request{}
 		probe = &http.Request{
 			Header: http.Header{
-				"User-Agent": []string{network.KubeProbeUAPrefix},
+				network.UserAgentKey: []string{network.KubeProbeUAPrefix},
 			},
 		}
 		cnt   = 0
@@ -328,7 +328,7 @@ func TestHealthCheck(t *testing.T) {
 				Path: "/healthz",
 			},
 			Header: http.Header{
-				"User-Agent": []string{network.KubeProbeUAPrefix},
+				network.UserAgentKey: []string{network.KubeProbeUAPrefix},
 			},
 		}
 		cnt     = 0
