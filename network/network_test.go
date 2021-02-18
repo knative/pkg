@@ -30,11 +30,11 @@ func TestIsKubeletProbe(t *testing.T) {
 	if IsKubeletProbe(req) {
 		t.Error("Not a kubelet probe but counted as such")
 	}
-	req.Header.Set("User-Agent", KubeProbeUAPrefix+"1.14")
+	req.Header.Set(UserAgentKey, KubeProbeUAPrefix+"1.14")
 	if !IsKubeletProbe(req) {
 		t.Error("kubelet probe but not counted as such")
 	}
-	req.Header.Del("User-Agent")
+	req.Header.Del(UserAgentKey)
 	if IsKubeletProbe(req) {
 		t.Error("Not a kubelet probe but counted as such")
 	}
