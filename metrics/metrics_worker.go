@@ -96,10 +96,8 @@ func (cmd *updateMetricsConfigWithExporter) handleCommand(w *metricsWorker) {
 
 func (w *metricsWorker) start() {
 	for {
-		select {
-		case cmd := <-w.c:
-			cmd.handleCommand(w)
-		}
+		cmd := <-w.c
+		cmd.handleCommand(w)
 	}
 }
 
