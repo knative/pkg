@@ -35,15 +35,8 @@ var (
 )
 
 func init() {
-	setupMetricsWorker()
-}
-
-func setupMetricsWorker() {
-	// No lock is needed because we only need this for the testing initialization
-	if mWorker == nil {
-		mWorker = newMetricsWorker()
-		go mWorker.start()
-	}
+	mWorker = newMetricsWorker()
+	go mWorker.start()
 }
 
 // SecretFetcher is a function (extracted from SecretNamespaceLister) for fetching

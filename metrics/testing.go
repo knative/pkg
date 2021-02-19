@@ -22,7 +22,6 @@ const (
 
 // InitForTesting initialize the necessary global variables for unit tests.
 func InitForTesting() {
-	setupMetricsWorker()
 	setCurMetricsConfig(&metricsConfig{
 		backendDestination: prometheus,
 		component:          "test",
