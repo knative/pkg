@@ -363,7 +363,7 @@ func NewReconciler(ctx {{.contextContext|raw}}, logger *{{.zapSugaredLogger|raw}
 			rec.skipStatusUpdates = true
 		}
 		{{- end}}
-        if opts.DemoteFunc != nil {
+		if opts.DemoteFunc != nil {
 			rec.DemoteFunc = opts.DemoteFunc
 		}
 	}
