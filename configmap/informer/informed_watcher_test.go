@@ -28,7 +28,6 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/selection"
-	"k8s.io/apimachinery/pkg/util/wait"
 	fakekubeclientset "k8s.io/client-go/kubernetes/fake"
 )
 
@@ -42,6 +41,7 @@ type counter struct {
 func (c *counter) callback(cm *corev1.ConfigMap) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
+
 	c.cfg = append(c.cfg, cm)
 	if c.wg != nil {
 		c.wg.Done()
@@ -52,26 +52,6 @@ func (c *counter) count() int {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
 	return len(c.cfg)
-}
-
-func (c *counter) eventuallyEquals(t *testing.T, want int) {
-	got := 0
-
-	err := wait.Poll(
-		// interval
-		100*time.Millisecond,
-
-		// timeout
-		5*time.Second,
-		func() (done bool, err error) {
-			got = c.count()
-			return got == want, nil
-		},
-	)
-
-	if err != nil {
-		t.Errorf("%v.count = %d, want %d", c.name, got, want)
-	}
 }
 
 func TestInformedWatcher(t *testing.T) {
@@ -105,10 +85,12 @@ func TestInformedWatcher(t *testing.T) {
 		t.Fatal("cm.Start() =", err)
 	}
 
-	// When Start returns the callbacks will eventually be called with the
+	// When Start returns the callbacks should have been called with the
 	// version of the objects that is available.
-	for _, count := range []*counter{foo1, foo2, bar} {
-		count.eventuallyEquals(t, 1)
+	for _, obj := range []*counter{foo1, foo2, bar} {
+		if got, want := obj.count(), 1; got != want {
+			t.Errorf("%v.count = %d, want %d", obj.name, got, want)
+		}
 	}
 
 	// After a "foo" event, the "foo" watchers should have 2,
@@ -504,5 +486,134 @@ func TestWatchWithDefaultAfterStart(t *testing.T) {
 	var expected []*corev1.ConfigMap
 	if got, want := foo1.count(), len(expected); got != want {
 		t.Fatalf("foo1.count = %v, want %d", got, want)
+	}
+}
+
+func TestNamedWaitGroup(t *testing.T) {
+	nwg := NewNamedWaitGroup()
+
+	// nothing has been added so wait returns immediately
+	initiallyDone := make(chan struct{})
+	go func() {
+		defer close(initiallyDone)
+		nwg.Wait()
+	}()
+	select {
+	case <-time.After(1 * time.Second):
+		t.Fatalf("Wait should have returned immediately but still hadn't after timeout elapsed")
+	case <-initiallyDone:
+		// the Wait returned as expected since nothing was tracked
+	}
+
+	// Add some keys to track
+	nwg.Add("foo")
+	nwg.Add("bar")
+	// Adding keys multiple times shouldn't increment the counter again
+	nwg.Add("bar")
+
+	// Now that we've added keys, when we Wait, it should block
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		nwg.Wait()
+	}()
+
+	// Indicate that this key is done
+	nwg.Done("foo")
+	// Indicating done on a key that doesn't exist should do nothing
+	nwg.Done("doesnt exist")
+
+	// Only one of the tracked keys has completed, so the channel should not yet have closed
+	select {
+	case <-done:
+		t.Fatalf("Wait returned before all keys were done")
+	default:
+		// as expected, the channel is still open (waiting for the final key to be done)
+	}
+
+	// Indicate the final key is done
+	nwg.Done("bar")
+
+	// Now that all keys are done, the Wait should return
+	select {
+	case <-time.After(1 * time.Second):
+		t.Fatalf("Wait should have returned immediately but still hadn't after timeout elapsed")
+	case <-done:
+		// completed successfully
+	}
+}
+
+func TestSyncedCallback(t *testing.T) {
+	keys := []string{"foo", "bar"}
+	objs := []interface{}{"fooobj", "barobj"}
+	var seen []interface{}
+	callback := func(obj interface{}) {
+		seen = append(seen, obj)
+	}
+	sc := NewSyncedCallback(keys, callback)
+
+	// Wait for the callback to be called for all of the keys
+	stopCh := make(chan struct{})
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		sc.WaitForAllKeys(stopCh)
+	}()
+
+	// Call the callback for one of the keys
+	sc.Call(objs[0], "foo")
+
+	// Only one of the tracked keys has been synced so we should still be waiting
+	select {
+	case <-done:
+		t.Fatalf("Wait returned before all keys were done")
+	default:
+		// as expected, the channel is still open (waiting for the final key to be done)
+	}
+
+	// Call the callback for the other key
+	sc.Call(objs[1], "bar")
+
+	// Now that all keys are done, the Wait should return
+	select {
+	case <-time.After(1 * time.Second):
+		t.Fatalf("WaitForAllKeys should have returned but still hadn't after timeout elapsed")
+	case <-done:
+		// completed successfully
+	}
+
+	if len(seen) != 2 || seen[0] != objs[0] || seen[1] != objs[1] {
+		t.Errorf("callback wasn't called as expected, expected to see %v but saw %v", objs, seen)
+	}
+}
+
+func TestSyncedCallbackStops(t *testing.T) {
+	sc := NewSyncedCallback([]string{"somekey"}, func(obj interface{}) {})
+
+	// Wait for the callback to be called - which it won't be!
+	stopCh := make(chan struct{})
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		sc.WaitForAllKeys(stopCh)
+	}()
+
+	// Nothing has been synced so we should still be waiting
+	select {
+	case <-done:
+		t.Fatalf("Wait returned before all keys were done")
+	default:
+		// as expected, the channel is still open
+	}
+
+	// signal to stop via the stop channel
+	close(stopCh)
+
+	// Even though the callback wasn't called, the Wait should return b/c of the stop channel
+	select {
+	case <-time.After(1 * time.Second):
+		t.Fatalf("WaitForAllKeys should have returned because of the stop channel but still hadn't after timeout elapsed")
+	case <-done:
+		// stopped successfully
 	}
 }
