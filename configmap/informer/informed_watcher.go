@@ -19,9 +19,6 @@ package informer
 import (
 	"errors"
 	"fmt"
-	"sync"
-
-	"k8s.io/apimachinery/pkg/util/wait"
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
@@ -29,7 +26,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/selection"
-	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/client-go/informers"
 	corev1informers "k8s.io/client-go/informers/core/v1"
 	"k8s.io/client-go/informers/internalinterfaces"
@@ -156,7 +152,7 @@ func (i *InformedWatcher) getConfigMapNames() []string {
 func (i *InformedWatcher) Start(stopCh <-chan struct{}) error {
 	// using the synced callback wrapper around the add event handler will allow the caller
 	// to wait for the add event to be processed for all configmaps
-	s := NewSyncedCallback(i.getConfigMapNames(), i.addConfigMapEvent)
+	s := newSyncedCallback(i.getConfigMapNames(), i.addConfigMapEvent)
 	addConfigMapEvent := func(obj interface{}) {
 		configMap := obj.(*corev1.ConfigMap)
 		s.Call(obj, configMap.Name)
@@ -240,92 +236,4 @@ func (i *InformedWatcher) deleteConfigMapEvent(obj interface{}) {
 		i.OnChange(def)
 	}
 	// If there is no default value, then don't do anything.
-}
-
-// NamedWaitGroup is used to increment and decrement a WaitGroup by name
-type NamedWaitGroup struct {
-	waitGroup sync.WaitGroup
-	keys      sets.String
-	mu        sync.Mutex
-}
-
-// NewNamedWaitGroup returns an instantiated NamedWaitGroup.
-func NewNamedWaitGroup() *NamedWaitGroup {
-	return &NamedWaitGroup{
-		keys: sets.NewString(),
-	}
-}
-
-// Add will add the key to the list of keys being tracked and increment the wait group.
-// If the key has already been added, the wait group will not be incremented again.
-func (n *NamedWaitGroup) Add(key string) {
-	n.mu.Lock()
-	defer n.mu.Unlock()
-
-	if !n.keys.Has(key) {
-		n.keys.Insert(key)
-		n.waitGroup.Add(1)
-	}
-}
-
-// Done will decrement the counter if the key is present in the tracked keys. If it is not present
-// it will be ignored.
-func (n *NamedWaitGroup) Done(key string) {
-	n.mu.Lock()
-	defer n.mu.Unlock()
-
-	if n.keys.Has(key) {
-		n.keys.Delete(key)
-		n.waitGroup.Done()
-	}
-}
-
-// Wait will wait for the underlying waitGroup to complete.
-func (n *NamedWaitGroup) Wait() {
-	n.waitGroup.Wait()
-}
-
-// SyncedCallback can be used to wait for a callback to be called at least once for a list of keys.
-type SyncedCallback struct {
-	// namedWaitGroup will block until the callback has been called for all tracked entities
-	namedWaitGroup *NamedWaitGroup
-
-	// callback is the callback that is intended to be called at least once for each key
-	// being tracked via WaitGroup
-	callback func(obj interface{})
-}
-
-// NewSyncedCallback will return a SyncedCallback that will track the provided keys.
-func NewSyncedCallback(keys []string, callback func(obj interface{})) *SyncedCallback {
-	s := &SyncedCallback{
-		callback:       callback,
-		namedWaitGroup: NewNamedWaitGroup(),
-	}
-	for _, key := range keys {
-		s.namedWaitGroup.Add(key)
-	}
-	return s
-}
-
-// Event is intended to be a wrapper for the actual event handler; this wrapper will signal via
-// the wait group that the event handler has been called at least once for the key.
-func (s *SyncedCallback) Call(obj interface{}, key string) {
-	s.callback(obj)
-	s.namedWaitGroup.Done(key)
-}
-
-// WaitForAllKeys will block until s.Call has been called for all the keys we are tracking or the stop signal is
-// received.
-func (s *SyncedCallback) WaitForAllKeys(stopCh <-chan struct{}) error {
-	c := make(chan struct{})
-	go func() {
-		defer close(c)
-		s.namedWaitGroup.Wait()
-	}()
-	select {
-	case <-c:
-		return nil
-	case <-stopCh:
-		return wait.ErrWaitTimeout
-	}
 }
