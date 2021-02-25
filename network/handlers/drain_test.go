@@ -384,3 +384,36 @@ func TestIsKProbe(t *testing.T) {
 		t.Error("Not a knative probe but counted as such")
 	}
 }
+
+func TestServeKProbe(t *testing.T) {
+	var (
+		kprobehash = "hash"
+		kprobe     = &http.Request{
+			Header: http.Header{
+				network.ProbeHeaderName: []string{network.ProbeHeaderValue},
+				network.HashHeaderName:  []string{kprobehash},
+			},
+		}
+		kprobeerr = &http.Request{
+			Header: http.Header{
+				network.ProbeHeaderName: []string{network.ProbeHeaderValue},
+			},
+		}
+	)
+
+	resp := httptest.NewRecorder()
+	serveKProbe(resp, kprobe)
+	if got, want := resp.Code, http.StatusOK; got != want {
+		t.Errorf("Probe status = %d, wanted %d", got, want)
+	}
+
+	if got, want := resp.Header().Get(network.HashHeaderName), kprobehash; got != want {
+		t.Errorf("KProbe hash = %s, wanted %s", got, want)
+	}
+
+	resp = httptest.NewRecorder()
+	serveKProbe(resp, kprobeerr)
+	if got, want := resp.Code, http.StatusBadRequest; got != want {
+		t.Errorf("Probe status = %d, wanted %d", got, want)
+	}
+}
