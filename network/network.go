@@ -17,7 +17,6 @@ limitations under the License.
 package network
 
 import (
-	"fmt"
 	"net/http"
 	"strings"
 	"time"
@@ -67,20 +66,4 @@ const (
 func IsKubeletProbe(r *http.Request) bool {
 	return strings.HasPrefix(r.Header.Get(UserAgentKey), KubeProbeUAPrefix) ||
 		r.Header.Get(KubeletProbeHeaderName) != ""
-}
-
-// IsKProbe returns true if the request is a knatvie probe.
-func IsKProbe(r *http.Request) bool {
-	return r.Header.Get(ProbeHeaderName) == ProbeHeaderValue
-}
-
-// ServeKProbe serve KProbe requests.
-func ServeKProbe(w http.ResponseWriter, r *http.Request) {
-	hh := r.Header.Get(HashHeaderName)
-	if hh == "" {
-		http.Error(w, fmt.Sprintf("a probe request must contain a non-empty %q header", HashHeaderName), http.StatusBadRequest)
-		return
-	}
-	w.Header().Set(HashHeaderName, hh)
-	w.WriteHeader(http.StatusOK)
 }
