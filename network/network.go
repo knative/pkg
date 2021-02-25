@@ -69,11 +69,6 @@ func IsKubeletProbe(r *http.Request) bool {
 		r.Header.Get(KubeletProbeHeaderName) != ""
 }
 
-// IsKProbe returns true if the request is a knatvie probe.
-func IsKProbe(r *http.Request) bool {
-	return r.Header.Get(ProbeHeaderName) == ProbeHeaderValue
-}
-
 // ServeKProbe serve KProbe requests.
 func ServeKProbe(w http.ResponseWriter, r *http.Request) {
 	hh := r.Header.Get(HashHeaderName)

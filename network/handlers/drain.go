@@ -90,7 +90,7 @@ func (d *Drainer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 		return
 	}
-	if network.IsKProbe(r) {
+	if isKProbe(r) {
 		if d.draining() {
 			http.Error(w, "shutting down", http.StatusServiceUnavailable)
 		} else {
@@ -145,4 +145,9 @@ func (d *Drainer) draining() bool {
 	d.RLock()
 	defer d.RUnlock()
 	return d.timer != nil
+}
+
+// isKProbe returns true if the request is a knatvie probe.
+func isKProbe(r *http.Request) bool {
+	return r.Header.Get(network.ProbeHeaderName) == network.ProbeHeaderValue
 }

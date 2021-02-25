@@ -44,28 +44,6 @@ func TestIsKubeletProbe(t *testing.T) {
 	}
 }
 
-func TestIsKnativeProbe(t *testing.T) {
-	req, err := http.NewRequest(http.MethodGet, "http://example.com/", nil)
-	if err != nil {
-		t.Fatal("Error building request:", err)
-	}
-	if IsKProbe(req) {
-		t.Error("Not a knative probe but counted as such")
-	}
-	req.Header.Set(ProbeHeaderName, ProbeHeaderValue)
-	if !IsKProbe(req) {
-		t.Error("knative probe but not counted as such")
-	}
-	req.Header.Del(ProbeHeaderName)
-	if IsKProbe(req) {
-		t.Error("Not a knative probe but counted as such")
-	}
-	req.Header.Set(ProbeHeaderName, "no matter")
-	if IsKProbe(req) {
-		t.Error("Not a knative probe but counted as such")
-	}
-}
-
 func TestServeKProbe(t *testing.T) {
 	var (
 		kprobehash = "hash"

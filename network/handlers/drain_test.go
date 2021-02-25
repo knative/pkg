@@ -362,3 +362,25 @@ func TestHealthCheck(t *testing.T) {
 		t.Errorf("Probe status = %d, wanted %d", got, want)
 	}
 }
+
+func TestIsKProbe(t *testing.T) {
+	req, err := http.NewRequest(http.MethodGet, "http://example.com/", nil)
+	if err != nil {
+		t.Fatal("Error building request:", err)
+	}
+	if isKProbe(req) {
+		t.Error("Not a knative probe but counted as such")
+	}
+	req.Header.Set(network.ProbeHeaderName, network.ProbeHeaderValue)
+	if !isKProbe(req) {
+		t.Error("knative probe but not counted as such")
+	}
+	req.Header.Del(network.ProbeHeaderName)
+	if isKProbe(req) {
+		t.Error("Not a knative probe but counted as such")
+	}
+	req.Header.Set(network.ProbeHeaderName, "no matter")
+	if isKProbe(req) {
+		t.Error("Not a knative probe but counted as such")
+	}
+}
