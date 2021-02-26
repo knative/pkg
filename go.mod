@@ -39,6 +39,7 @@ require (
 	github.com/openzipkin/zipkin-go v0.2.5
 	github.com/prometheus/client_golang v1.9.0
 	github.com/prometheus/common v0.15.0
+	github.com/spf13/cobra v1.1.3
 	github.com/spf13/pflag v1.0.5
 	github.com/tsenart/vegeta/v12 v12.8.4
 	go.opencensus.io v0.22.6
@@ -58,6 +59,7 @@ require (
 	google.golang.org/protobuf v1.25.0
 	gopkg.in/check.v1 v1.0.0-20200227125254-8fa46927fb4f // indirect
 	gopkg.in/evanphx/json-patch.v4 v4.9.0
+	gopkg.in/yaml.v2 v2.4.0
 	gopkg.in/yaml.v3 v3.0.0-20200313102051-9f266ea9e77c
 	honnef.co/go/tools v0.0.1-2020.1.5 // indirect
 	k8s.io/api v0.19.7
