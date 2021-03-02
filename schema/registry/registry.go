@@ -36,7 +36,7 @@ func Register(kind string, obj interface{}) {
 
 func Kinds() []string {
 	kinds := make([]string, 0)
-	for k, _ := range r.kinds {
+	for k := range r.kinds {
 		kinds = append(kinds, k)
 	}
 	return kinds
