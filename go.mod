@@ -59,7 +59,6 @@ require (
 	google.golang.org/protobuf v1.25.0
 	gopkg.in/check.v1 v1.0.0-20200227125254-8fa46927fb4f // indirect
 	gopkg.in/evanphx/json-patch.v4 v4.9.0
-	gopkg.in/yaml.v2 v2.4.0
 	gopkg.in/yaml.v3 v3.0.0-20200313102051-9f266ea9e77c
 	honnef.co/go/tools v0.0.1-2020.1.5 // indirect
 	k8s.io/api v0.19.7
