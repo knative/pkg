@@ -140,7 +140,7 @@ type JSONSchemaPropsOrBool struct {
 	Schema *JSONSchemaProps `yaml:",omitempty"`
 }
 
-// JSONSchemaDependencies represent a dependencies property.
+// JSONSchemaDependencies represents a dependencies property.
 type JSONSchemaDependencies map[string]JSONSchemaPropsOrStringArray
 
 // JSONSchemaPropsOrStringArray represents a JSONSchemaProps or a string array.

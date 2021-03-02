@@ -18,20 +18,20 @@ package example
 
 import metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-type LaremIpsum struct {
+type LoremIpsum struct {
 	metav1.TypeMeta `json:",inline"`
 	// +optional
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
 	// Spec defines the desired state.
-	Spec LaremIpsumSpec `json:"spec,omitempty"`
+	Spec LoremIpsumSpec `json:"spec,omitempty"`
 
 	// Status represents the current state. This data may be out of date.
 	// +optional
-	Status LaremIpsumStatus `json:"status,omitempty"`
+	Status LoremIpsumStatus `json:"status,omitempty"`
 }
 
-type LaremIpsumSpec struct {
+type LoremIpsumSpec struct {
 	IpsumSpec `json:",inline"`
 
 	// Maecenas tristique lobortis turpis, nec varius mauris vestibulum nec.
@@ -40,10 +40,13 @@ type LaremIpsumSpec struct {
 	Maecenas string `json:"maecenas,omitempty"`
 
 	// Aaa is the first way.
-	Aaa LaremSpec `json:"aaa,omitempty"`
+	Aaa LoremSpec `json:"aaa,omitempty"`
 
 	// Bbb is the second way.
-	Bbb LaremSpec `json:"bbb,omitempty"`
+	Bbb LoremSpec `json:"bbb,omitempty"`
+
+	// VerboseTypes shows an example of a ton of types.
+	VerboseTypes VerboseTypes `json:"verboseTypes"`
 }
 
 type IpsumSpec struct {
@@ -52,7 +55,7 @@ type IpsumSpec struct {
 	Sed string `json:"sed,omitempty"`
 }
 
-type LaremSpec struct {
+type LoremSpec struct {
 	// Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nullam
 	// pellentesque eget arcu eget porta. Morbi ex urna, tincidunt in odio
 	// eget, hendrerit mattis odio. Sed vel augue rhoncus, rhoncus mi eget,
@@ -68,7 +71,7 @@ type LaremSpec struct {
 	// Morbi commodo nibh neque, in ornare diam sodales ac.
 	// Defaults to true.
 	// +optional
-	Larem *bool `json:"lelarem,omitempty"`
+	Lorem *bool `json:"lorem,omitempty"`
 
 	// Praesent pulvinar consectetur enim. Aenean lobortis, eros quis molestie
 	// euismod, nisl nunc mattis quam, et gravida risus diam at nulla. Donec
@@ -78,10 +81,10 @@ type LaremSpec struct {
 	Praesent string `json:"praesent,omitempty"`
 
 	// Ccc shows loop protection.
-	Ccc *LaremSpec `json:"ccc,omitempty"`
+	Ccc *LoremSpec `json:"ccc,omitempty"`
 }
 
-type LaremIpsumStatus struct {
+type LoremIpsumStatus struct {
 	// Luctus leo vitae ipsum fermentum, vitae pellentesque sapien finibus.
 	Luctus int `json:"luctus"`
 
@@ -93,5 +96,32 @@ type LaremIpsumStatus struct {
 
 	// Donec mollis purus id ipsum varius, sit amet ultricies elit laoreet.
 	// +optional
-	Larem *bool `json:"lelarem,omitempty"`
+	Donec *bool `json:"donec,omitempty"`
+}
+
+type VerboseTypes struct {
+	// AInt8 is a field with the type int8.
+	AInt8 int8 `json:"int8"`
+	// AInt16 is a field with the type int16.
+	AInt16 int16 `json:"int16"`
+	// AInt32 is a field with the type int32.
+	AInt32 int32 `json:"int32"`
+	// AInt64 is a field with the type int64.
+	AInt64 int64 `json:"int63"`
+	// AUint is a field with the type uint.
+	AUint uint `json:"uint"`
+	// Uint8 is a field with the type uint8.
+	Uint8 uint8 `json:"uint8"`
+	// AUint16 is a field with the type uint16.
+	AUint16 uint16 `json:"uint16"`
+	// AUint32 is a field with the type uint32.
+	AUint32 uint32 `json:"uint32"`
+	// AUint64 is a field with the type uint64.
+	AUint64 uint64 `json:"uint64"`
+	// AFloat32 is a field with the type float32.
+	AFloat32 float32 `json:"float32"`
+	// AFloat64 is a field with the type float64.
+	AFloat64 float64 `json:"float64"`
+	// AMap is a field with the type map.
+	AMap map[string]string `json:"map"`
 }

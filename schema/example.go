@@ -27,7 +27,7 @@ import (
 
 // This is a demo of what the CLI looks like, copy and implement your own.
 func main() {
-	registry.Register("LaremIpsum", example.LaremIpsum{})
+	registry.Register("LoremIpsum", example.LoremIpsum{})
 	registry.Register("Addressable", duckv1.AddressableType{})
 	registry.Register("Binding", duckv1.Binding{})
 	registry.Register("Source", duckv1.Source{})

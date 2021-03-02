@@ -27,10 +27,10 @@ import (
 	"knative.dev/pkg/schema/schema"
 )
 
-func Example_kindLaremIpsum() {
+func Example_kindLoremIpsum() {
 	docs.SetRoot("knative.dev/pkg/schema")
 
-	t := reflect.TypeOf(example.LaremIpsum{})
+	t := reflect.TypeOf(example.LoremIpsum{})
 	s := schema.GenerateForType(t)
 	b, _ := yaml.Marshal(s)
 	fmt.Print(string(b))
@@ -51,7 +51,7 @@ func Example_kindLaremIpsum() {
 	//                     ccc:
 	//                         description: Ccc shows loop protection.
 	//                         type: object
-	//                     lelarem:
+	//                     lorem:
 	//                         description: Lorem ipsum dolor sit amet, consectetur adipiscing
 	//                             elit. Nullam pellentesque eget arcu eget porta. Morbi
 	//                             ex urna, tincidunt in odio eget, hendrerit mattis odio.
@@ -87,7 +87,7 @@ func Example_kindLaremIpsum() {
 	//                     ccc:
 	//                         description: Ccc shows loop protection.
 	//                         type: object
-	//                     lelarem:
+	//                     lorem:
 	//                         description: Lorem ipsum dolor sit amet, consectetur adipiscing
 	//                             elit. Nullam pellentesque eget arcu eget porta. Morbi
 	//                             ex urna, tincidunt in odio eget, hendrerit mattis odio.
@@ -123,6 +123,63 @@ func Example_kindLaremIpsum() {
 	//             sed:
 	//                 description: Sed euismod nunc ac sollicitudin ornare.
 	//                 type: string
+	//             verboseTypes:
+	//                 description: VerboseTypes shows an example of a ton of types.
+	//                 type: object
+	//                 properties:
+	//                     float32:
+	//                         description: AFloat32 is a field with the type float32.
+	//                         type: number
+	//                         format: float
+	//                     float64:
+	//                         description: AFloat64 is a field with the type float64.
+	//                         type: number
+	//                         format: double
+	//                     int8:
+	//                         description: AInt8 is a field with the type int8.
+	//                         type: integer
+	//                         maximum: 127
+	//                     int16:
+	//                         description: AInt16 is a field with the type int16.
+	//                         type: integer
+	//                         maximum: 32767
+	//                     int32:
+	//                         description: AInt32 is a field with the type int32.
+	//                         type: integer
+	//                         format: int32
+	//                     int63:
+	//                         description: AInt64 is a field with the type int64.
+	//                         type: integer
+	//                         format: int64
+	//                     map:
+	//                         description: AMap is a field with the type map.
+	//                         type: object
+	//                         xpreserveunknownfields: true
+	//                     uint:
+	//                         description: AUint is a field with the type uint.
+	//                         type: integer
+	//                         minimum: 0
+	//                     uint8:
+	//                         description: Uint8 is a field with the type uint8.
+	//                         type: integer
+	//                         maximum: 255
+	//                         minimum: 0
+	//                     uint16:
+	//                         description: AUint16 is a field with the type uint16.
+	//                         type: integer
+	//                         maximum: 65535
+	//                         minimum: 0
+	//                     uint32:
+	//                         description: AUint32 is a field with the type uint32.
+	//                         type: integer
+	//                         format: int64
+	//                         maximum: 4.294967295e+09
+	//                         minimum: 0
+	//                     uint64:
+	//                         description: AUint64 is a field with the type uint64.
+	//                         type: integer
+	//                         format: int64
+	//                         minimum: 0
 	//     status:
 	//         description: Status represents the current state. This data may be out of
 	//             date.
@@ -133,8 +190,8 @@ func Example_kindLaremIpsum() {
 	//                     consectetur quis.
 	//                 type: array
 	//                 items:
-	//                     type: string
-	//             lelarem:
+	//                     type: object
+	//             donec:
 	//                 description: Donec mollis purus id ipsum varius, sit amet ultricies
 	//                     elit laoreet.
 	//                 type: boolean
