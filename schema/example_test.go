@@ -154,7 +154,7 @@ func Example_kindLoremIpsum() {
 	//                     map:
 	//                         description: AMap is a field with the type map.
 	//                         type: object
-	//                         xpreserveunknownfields: true
+	//                         x-kubernetes-preserve-unknown-fields: true
 	//                     uint:
 	//                         description: AUint is a field with the type uint.
 	//                         type: integer
@@ -227,7 +227,7 @@ func Example_kindLoremIpsum() {
 //	//                 description: 'not found: unable to parse dir: error parse dir "vendor/knative.dev/pkg/apis/duck/v1":
 //	//                     open vendor/knative.dev/pkg/apis/duck/v1: no such file or directory'
 //	//                 type: object
-//	//                 xpreserveunknownfields: true
+//	//                 x-preserve-unknown-fields: true
 //	//             conditions:
 //	//                 description: 'not found: unable to parse dir: error parse dir "vendor/knative.dev/pkg/apis/duck/v1":
 //	//                     open vendor/knative.dev/pkg/apis/duck/v1: no such file or directory'

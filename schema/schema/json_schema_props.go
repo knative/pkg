@@ -57,7 +57,7 @@ type JSONSchemaProps struct {
 	// but switches back to normal pruning behaviour if nested
 	// properties or additionalProperties are specified in the schema.
 	// This can either be true or undefined. False is forbidden.
-	XPreserveUnknownFields *bool `yaml:",omitempty"`
+	XPreserveUnknownFields *bool `yaml:"x-kubernetes-preserve-unknown-fields,omitempty"`
 
 	// x-kubernetes-embedded-resource defines that the value is an
 	// embedded Kubernetes runtime.Object, with TypeMeta and
@@ -65,7 +65,7 @@ type JSONSchemaProps struct {
 	// restrict the embedded object. Both ObjectMeta and TypeMeta
 	// are validated automatically. x-kubernetes-preserve-unknown-fields
 	// must be true.
-	XEmbeddedResource bool `yaml:",omitempty"`
+	XEmbeddedResource bool `yaml:"x-kubernetes-embedded-resource,omitempty"`
 
 	// x-kubernetes-int-or-string specifies that this value is
 	// either an integer or a string. If this is true, an empty
@@ -80,7 +80,7 @@ type JSONSchemaProps struct {
 	//      - type: integer
 	//      - type: string
 	//    - ... zero or more
-	XIntOrString bool `yaml:",omitempty"`
+	XIntOrString bool `yaml:"x-kubernetes-int-or-string specifies,omitempty"`
 
 	// x-kubernetes-list-map-keys annotates an array with the x-kubernetes-list-type `map` by specifying the keys used
 	// as the index of the map.
@@ -88,7 +88,7 @@ type JSONSchemaProps struct {
 	// This tag MUST only be used on lists that have the "x-kubernetes-list-type"
 	// extension set to "map". Also, the values specified for this attribute must
 	// be a scalar typed field of the child structure (no nesting is supported).
-	XListMapKeys []string `yaml:",omitempty"`
+	XListMapKeys []string `yaml:"x-kubernetes-list-map-keys,omitempty"`
 
 	// x-kubernetes-list-type annotates an array to further describe its topology.
 	// This extension must only be used on lists and may have 3 possible values:
@@ -104,7 +104,7 @@ type JSONSchemaProps struct {
 	//      These lists are like maps in that their elements have a non-index key
 	//      used to identify them. Order is preserved upon merge. The map tag
 	//      must only be used on a list with elements of type object.
-	XListType *string `yaml:",omitempty"`
+	XListType *string `yaml:"x-kubernetes-list-type,omitempty"`
 
 	// x-kubernetes-map-type annotates an object to further describe its topology.
 	// This extension must only be used when type is object and may have 2 possible values:
@@ -116,7 +116,7 @@ type JSONSchemaProps struct {
 	// 2) `atomic`: the list is treated as a single entity, like a scalar.
 	//      Atomic maps will be entirely replaced when updated.
 	// +optional
-	XMapType *string `yaml:",omitempty"`
+	XMapType *string `yaml:"x-kubernetes-map-type,omitempty"`
 }
 
 // JSON represents any valid JSON value.
