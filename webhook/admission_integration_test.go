@@ -129,8 +129,11 @@ func TestAdmissionValidResponseForResource(t *testing.T) {
 	req.Header.Add("Content-Type", "application/json")
 
 	doneCh := make(chan struct{})
+	launchedCh := make(chan struct{})
 	go func() {
 		defer close(doneCh)
+
+		close(launchedCh)
 		response, err := tlsClient.Do(req)
 		if err != nil {
 			t.Error("Failed to get response", err)
@@ -163,9 +166,12 @@ func TestAdmissionValidResponseForResource(t *testing.T) {
 		}
 	}()
 
+	// Wait for the goroutine to launch.
+	<-launchedCh
+
 	// Check that Admit calls block when they are initiated before informers sync.
 	select {
-	case <-time.After(5 * time.Second):
+	case <-time.After(100 * time.Millisecond):
 	case <-doneCh:
 		t.Fatal("Admit was called before informers had synced.")
 	}
