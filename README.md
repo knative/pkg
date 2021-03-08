@@ -7,7 +7,7 @@ Alan Cleaver is licensed under CC BY 2.0
 
 [![GoDoc](https://godoc.org/github.com/knative/pkg?status.svg)](https://godoc.org/github.com/knative/pkg)
 [![Go Report Card](https://goreportcard.com/badge/knative/pkg)](https://goreportcard.com/report/knative/pkg)
-[![codecov](https://codecov.io/gh/knative/pkg/branch/master/graph/badge.svg)](https://codecov.io/gh/knative/pkg)
+[![codecov](https://codecov.io/gh/knative/pkg/branch/main/graph/badge.svg)](https://codecov.io/gh/knative/pkg)
 
 Knative `pkg` provides a place for sharing common Knative packages across the
 Knative repos.
