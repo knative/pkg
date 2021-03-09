@@ -226,3 +226,46 @@ func TestMeter(t *testing.T) {
 		})
 	}
 }
+
+func BenchmarkMetricsRecording(b *testing.B) {
+	ctx := context.Background()
+	measure1 := stats.Int64("count1", "First counter", stats.UnitDimensionless)
+	measure2 := stats.Int64("count2", "Second counter", stats.UnitDimensionless)
+	v := []*view.View{{
+		Measure:     measure1,
+		Aggregation: view.LastValue(),
+	}, {
+		Measure:     measure2,
+		Aggregation: view.LastValue(),
+	}}
+	RegisterResourceView(v...)
+	metricsConfig := &metricsConfig{}
+	measurement1 := measure1.M(1000)
+	measurement2 := measure2.M(1)
+	setCurMetricsConfig(metricsConfig)
+	b.Run("sequential", func(b *testing.B) {
+		for j := 0; j < b.N; j++ {
+			Record(ctx, measurement1)
+		}
+	})
+	b.Run("parallel", func(b *testing.B) {
+		b.RunParallel(func(pb *testing.PB) {
+			for pb.Next() {
+				Record(ctx, measurement1)
+			}
+		})
+	})
+	b.Run("sequential-batch", func(b *testing.B) {
+		for j := 0; j < b.N; j++ {
+			RecordBatch(ctx, measurement1, measurement2)
+		}
+	})
+	b.Run("parallel-batch", func(b *testing.B) {
+		b.RunParallel(func(pb *testing.PB) {
+			for pb.Next() {
+				RecordBatch(ctx, measurement1, measurement2)
+			}
+		})
+	})
+	UnregisterResourceView(v...)
+}
