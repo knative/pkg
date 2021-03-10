@@ -19,7 +19,6 @@ package metrics
 import (
 	"context"
 	"fmt"
-	"go.opencensus.io/tag"
 	"path"
 	"testing"
 
@@ -30,6 +29,7 @@ import (
 	"go.opencensus.io/resource"
 	"go.opencensus.io/stats"
 	"go.opencensus.io/stats/view"
+	"go.opencensus.io/tag"
 )
 
 type cases struct {
