@@ -54,7 +54,7 @@ func SetupFakeContextWithCancel(t zaptest.TestingT) (context.Context, context.Ca
 	return ctx, c, is
 }
 
-// fakeClient is an interface capturing the two functions we need from
+// fakeClient is an interface capturing the two functions we need from fake clients.
 type fakeClient interface {
 	PrependWatchReactor(resource string, reaction clientgotesting.WatchReactionFunc)
 	PrependReactor(verb, resource string, reaction clientgotesting.ReactionFunc)
@@ -66,7 +66,7 @@ type withTracker interface {
 	Tracker() clientgotesting.ObjectTracker
 }
 
-// RunAndSyncInformers runs the given informers, then makes sure their caches aer all
+// RunAndSyncInformers runs the given informers, then makes sure their caches are all
 // synced and in addition makes sure that all the Watch calls have been properly setup.
 // See https://github.com/kubernetes/kubernetes/issues/95372 for background on the Watch
 // calls tragedy.
