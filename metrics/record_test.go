@@ -19,6 +19,7 @@ package metrics
 import (
 	"context"
 	"fmt"
+	"go.opencensus.io/tag"
 	"path"
 	"testing"
 
@@ -228,44 +229,81 @@ func TestMeter(t *testing.T) {
 }
 
 func BenchmarkMetricsRecording(b *testing.B) {
-	ctx := context.Background()
+	requestKey := tag.MustNewKey("request")
+	requestStatus := tag.MustNewKey("requestStatus")
+	requestURL := tag.MustNewKey("requestUrl")
+	tagKeys := []tag.Key{requestKey, requestStatus, requestURL}
 	measure1 := stats.Int64("count1", "First counter", stats.UnitDimensionless)
 	measure2 := stats.Int64("count2", "Second counter", stats.UnitDimensionless)
 	v := []*view.View{{
 		Measure:     measure1,
 		Aggregation: view.LastValue(),
+		TagKeys:     tagKeys,
 	}, {
 		Measure:     measure2,
 		Aggregation: view.LastValue(),
+		TagKeys:     tagKeys,
 	}}
-	RegisterResourceView(v...)
+	err := RegisterResourceView(v...)
+	if err != nil {
+		b.Error("Failed to register resource view")
+	}
+	defer UnregisterResourceView(v...)
 	metricsConfig := &metricsConfig{}
 	measurement1 := measure1.M(1000)
 	measurement2 := measure2.M(1)
 	setCurMetricsConfig(metricsConfig)
+	getTagCtx := func() (context.Context, error) {
+		ctx := context.Background()
+		ctx, err := tag.New(
+			ctx,
+			tag.Insert(requestKey, "login"),
+			tag.Insert(requestStatus, "status_ok"),
+			tag.Insert(requestURL, "localhost"),
+		)
+		return ctx, err
+	}
+	if err != nil {
+		b.Error("Failed to create tags")
+	}
 	b.Run("sequential", func(b *testing.B) {
 		for j := 0; j < b.N; j++ {
+			ctx, err := getTagCtx()
+			if err != nil {
+				b.Error("Failed to get context")
+			}
 			Record(ctx, measurement1)
 		}
 	})
 	b.Run("parallel", func(b *testing.B) {
 		b.RunParallel(func(pb *testing.PB) {
 			for pb.Next() {
+				ctx, err := getTagCtx()
+				if err != nil {
+					b.Error("Failed to get context")
+				}
 				Record(ctx, measurement1)
 			}
 		})
 	})
 	b.Run("sequential-batch", func(b *testing.B) {
 		for j := 0; j < b.N; j++ {
+			ctx, err := getTagCtx()
+			if err != nil {
+				b.Error("Failed to get context")
+			}
 			RecordBatch(ctx, measurement1, measurement2)
 		}
 	})
 	b.Run("parallel-batch", func(b *testing.B) {
 		b.RunParallel(func(pb *testing.PB) {
 			for pb.Next() {
+				ctx, err := getTagCtx()
+				if err != nil {
+					b.Error("Failed to get context")
+				}
 				RecordBatch(ctx, measurement1, measurement2)
 			}
 		})
 	})
-	UnregisterResourceView(v...)
 }
