@@ -18,7 +18,6 @@ package testing
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"go.uber.org/atomic"
@@ -116,7 +115,6 @@ func RunAndSyncInformers(ctx context.Context, informers ...controller.Informer) 
 	}
 
 	err = wait.PollImmediate(time.Microsecond, wait.ForeverTestTimeout, func() (bool, error) {
-		fmt.Println(watchesPending.Load())
 		if watchesPending.Load() == 0 {
 			return true, nil
 		}
