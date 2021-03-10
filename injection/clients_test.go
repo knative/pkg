@@ -20,6 +20,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
 	"k8s.io/client-go/rest"
 )
 
@@ -48,5 +49,37 @@ func TestRegisterClient(t *testing.T) {
 
 	if want, got := 2, len(i.GetClients()); got != want {
 		t.Errorf("GetClients() = %d, wanted %d", want, got)
+	}
+}
+
+type fakeClient struct {
+	Name string
+}
+
+func TestRegisterClientFetcher(t *testing.T) {
+	i := &impl{}
+
+	fakeA := fakeClient{Name: "a"}
+	fetchA := func(ctx context.Context) interface{} {
+		return fakeA
+	}
+
+	fakeB := fakeClient{Name: "b"}
+	fetchB := func(ctx context.Context) interface{} {
+		return fakeB
+	}
+
+	ctx := context.Background()
+	if want, got := 0, len(i.FetchAllClients(ctx)); got != want {
+		t.Errorf("FetchAllClients() = %d, wanted %d", got, want)
+	}
+
+	i.RegisterClientFetcher(fetchA)
+	i.RegisterClientFetcher(fetchB)
+
+	got := i.FetchAllClients(ctx)
+	want := []interface{}{fakeA, fakeB}
+	if !cmp.Equal(got, want) {
+		t.Errorf("FetchAllClients() = %v, wanted %v", got, want)
 	}
 }
