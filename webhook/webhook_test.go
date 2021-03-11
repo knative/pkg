@@ -24,7 +24,6 @@ import (
 	"time"
 
 	"golang.org/x/sync/errgroup"
-	"knative.dev/pkg/controller"
 
 	// Make system.Namespace() work in tests.
 	_ "knative.dev/pkg/system/testing"
@@ -53,7 +52,7 @@ func newNonRunningTestWebhook(t *testing.T, options Options, acs ...interface{})
 	ctx, ctxCancel, informers := SetupFakeContextWithCancel(t)
 	ctx = WithOptions(ctx, options)
 
-	stopCb, err := controller.RunInformers(ctx.Done(), informers...)
+	stopCb, err := RunAndSyncInformers(ctx, informers...)
 	if err != nil {
 		t.Fatal("StartInformers() =", err)
 	}
