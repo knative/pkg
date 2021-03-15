@@ -19,9 +19,9 @@ require (
 	github.com/go-openapi/swag v0.19.7 // indirect
 	github.com/gobuffalo/flect v0.2.2
 	github.com/golang/protobuf v1.4.3
-	github.com/google/go-cmp v0.5.4
+	github.com/google/go-cmp v0.5.5
 	github.com/google/go-github/v27 v27.0.6
-	github.com/google/gofuzz v1.1.0
+	github.com/google/gofuzz v1.2.0
 	github.com/google/mako v0.0.0-20190821191249-122f8dcef9e3
 	github.com/google/uuid v1.2.0
 	github.com/gorilla/mux v1.7.4 // indirect
@@ -38,10 +38,10 @@ require (
 	github.com/onsi/gomega v1.10.1 // indirect
 	github.com/openzipkin/zipkin-go v0.2.5
 	github.com/prometheus/client_golang v1.9.0
-	github.com/prometheus/common v0.15.0
+	github.com/prometheus/common v0.19.0
 	github.com/spf13/pflag v1.0.5
 	github.com/tsenart/vegeta/v12 v12.8.4
-	go.opencensus.io v0.22.6
+	go.opencensus.io v0.23.0
 	go.uber.org/atomic v1.7.0
 	go.uber.org/automaxprocs v1.4.0
 	go.uber.org/zap v1.16.0
@@ -54,7 +54,7 @@ require (
 	gomodules.xyz/jsonpatch/v2 v2.1.0
 	google.golang.org/api v0.36.0
 	google.golang.org/genproto v0.0.0-20201214200347-8c77b98c765d
-	google.golang.org/grpc v1.35.0
+	google.golang.org/grpc v1.36.0
 	google.golang.org/protobuf v1.25.0
 	gopkg.in/check.v1 v1.0.0-20200227125254-8fa46927fb4f // indirect
 	gopkg.in/evanphx/json-patch.v4 v4.9.0
