@@ -60,6 +60,11 @@ aliases:
   - mdemirhan
   - yanweiguo
 
+  metrics-reviewers:
+  - mdemirhan
+  - yanweiguo
+  - skonto
+
   network-approvers:
   - markusthoemmes
   - tcnghia
