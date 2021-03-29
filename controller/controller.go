@@ -458,7 +458,7 @@ func (c *Impl) RunContext(ctx context.Context, threadiness int) error {
 		sg.Add(1)
 		go func() {
 			defer sg.Done()
-			for c.processNextWorkItem() {
+			for c.processNextWorkItem(ctx) {
 			}
 		}()
 	}
@@ -483,7 +483,7 @@ func (c *Impl) Run(threadiness int, stopCh <-chan struct{}) error {
 
 // processNextWorkItem will read a single work item off the workqueue and
 // attempt to process it, by calling Reconcile on our Reconciler.
-func (c *Impl) processNextWorkItem() bool {
+func (c *Impl) processNextWorkItem(ctx context.Context) bool {
 	obj, shutdown := c.workQueue.Get()
 	if shutdown {
 		return false
@@ -516,7 +516,7 @@ func (c *Impl) processNextWorkItem() bool {
 	// Embed the key into the logger and attach that to the context we pass
 	// to the Reconciler.
 	logger := c.logger.With(zap.String(logkey.TraceID, uuid.New().String()), zap.String(logkey.Key, keyStr))
-	ctx := logging.WithLogger(context.Background(), logger)
+	ctx = logging.WithLogger(ctx, logger)
 
 	// Run Reconcile, passing it the namespace/name string of the
 	// resource to be synced.
