@@ -211,7 +211,7 @@ func TestNewStatefulSetConfig(t *testing.T) {
 	}, {
 		name:    "failure with invalid name",
 		pod:     "as-abcd",
-		wantErr: `envconfig.Process: assigning STATEFUL_CONTROLLER_ORDINAL to StatefulSetID: converting 'as-abcd' to type leaderelection.statefulSetID. details: strconv.ParseUint: parsing "abcd": invalid syntax`,
+		wantErr: `envconfig.Process: assigning STATEFUL_CONTROLLER_ORDINAL to StatefulSetID: converting 'as-abcd' to type leaderelection.statefulSetID. details: strconv.Atoi: parsing "abcd": invalid syntax`,
 	}}
 
 	for _, tc := range cases {
