@@ -41,6 +41,18 @@ func (fw *fakeWriter) Write(data []byte) (int, error) {
 
 func (fw *fakeWriter) WriteHeader(statusCode int) {}
 
+type dummyWriter struct {}
+
+func (dw *dummyWriter) Header() http.Header {
+	return http.Header{}
+}
+
+func (dw *dummyWriter) Write(data []byte) (int, error) {
+	return 0, nil
+}
+
+func (dw *dummyWriter) WriteHeader(statusCode int) {}
+
 type testHandler struct{}
 
 func (th *testHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -70,7 +82,7 @@ func TestHTTPSpanMiddleware(t *testing.T) {
 
 	fw := &fakeWriter{}
 
-	req, err := http.NewRequest("GET", "http://test.example.com", nil)
+	req, err := http.NewRequest(http.MethodGet, "http://test.example.com", nil)
 	if err != nil {
 		t.Fatal("Failed to make fake request:", err)
 	}
@@ -188,9 +200,9 @@ func BenchmarkSpanMiddleware(b *testing.B) {
 	next := testHandler{}
 	middleware := HTTPSpanMiddleware(&next)
 
-	fw := &fakeWriter{}
+	dw := &dummyWriter{}
 
-	req, err := http.NewRequest("GET", "http://test.example.com", nil)
+	req, err := http.NewRequest(http.MethodGet, "http://test.example.com", nil)
 	if err != nil {
 		b.Fatal("Failed to make fake request:", err)
 	}
@@ -200,14 +212,14 @@ func BenchmarkSpanMiddleware(b *testing.B) {
 
 	b.Run("sequential", func(b *testing.B) {
 		for j := 0; j < b.N; j++ {
-			middleware.ServeHTTP(fw, req)
+			middleware.ServeHTTP(dw, req)
 		}
 	})
 
 	b.Run("parallel", func(b *testing.B) {
 		b.RunParallel(func(pb *testing.PB) {
 			for pb.Next() {
-				middleware.ServeHTTP(fw, req)
+				middleware.ServeHTTP(dw, req)
 			}
 		})
 	})
