@@ -2,3 +2,6 @@
 
 approvers:
 - metrics-approvers
+
+reviewers:
+- metrics-reviewers
