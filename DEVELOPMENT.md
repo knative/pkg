@@ -24,7 +24,6 @@ You must install these tools:
 1. [`go`](https://golang.org/doc/install): The language Knative `pkg` is built
    in
 1. [`git`](https://help.github.com/articles/set-up-git/): For source control
-1. [`dep`](https://github.com/golang/dep): For managing external dependencies.
 
 ### Environment setup
 
