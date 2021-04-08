@@ -21,20 +21,18 @@ package test
 
 import (
 	"context"
-	"errors"
 	"fmt"
-	"github.com/davecgh/go-spew/spew"
 	"strings"
 	"time"
 
-	"k8s.io/client-go/kubernetes"
-
+	"github.com/davecgh/go-spew/spew"
 	"github.com/google/go-cmp/cmp"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/client-go/kubernetes"
 	k8styped "k8s.io/client-go/kubernetes/typed/core/v1"
 	"knative.dev/pkg/test/logging"
 )
@@ -64,7 +62,7 @@ func WaitForDeploymentState(ctx context.Context, client kubernetes.Interface, na
 	})
 
 	if waitErr != nil {
-		return errors.New(spew.Sprintf("deployment %q is not in desired state, got: %+v: %w", name, lastState, waitErr))
+		return fmt.Errorf("deployment %q is not in desired state, got: %+v: %w", name, spew.Sprint(lastState), waitErr)
 	}
 	return nil
 }
@@ -89,7 +87,7 @@ func WaitForPodListState(ctx context.Context, client kubernetes.Interface, inSta
 	})
 
 	if waitErr != nil {
-		return errors.New(spew.Sprintf("pod list is not in desired state, got: %+v: %w", lastState, waitErr))
+		return fmt.Errorf("pod list is not in desired state, got: %+v: %w", spew.Sprint(lastState), waitErr)
 	}
 	return nil
 }
@@ -114,7 +112,7 @@ func WaitForPodState(ctx context.Context, client kubernetes.Interface, inState f
 	})
 
 	if waitErr != nil {
-		return errors.New(spew.Sprintf("pod %q is not in desired state, got: %+v: %w", name, lastState, waitErr))
+		return fmt.Errorf("pod %q is not in desired state, got: %+v: %w", name, spew.Sprint(lastState), waitErr)
 	}
 	return nil
 }
