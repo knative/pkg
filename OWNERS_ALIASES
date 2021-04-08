@@ -1,91 +1,42 @@
 aliases:
-  pkg-approvers:
-  - dprotaso
+  technical-oversight-committee:
   - evankanderson
   - grantr
   - markusthoemmes
-  - mattmoor
-  - tcnghia
-  - vagababov
-  - vaikas
-  - n3wscott
+  - rhuss
 
-  apis-approvers:
-  - mattmoor
-  - vaikas
-  - n3wscott
-  apis-reviewers:
-  - whaught
-
-  apis-duck-approvers:
-  - mattmoor
-  - vaikas
-  apis-duck-reviewers:
-  - whaught
-
-  codegen-approvers:
-  - mattmoor
-  - n3wscott
-  codegen-reviewers:
-  - whaught
-
-  configmap-approvers:
+  pkg-configmap-reviewers:
+  - dprotaso
   - mattmoor
   - mdemirhan
-  - dprotaso
   - vagababov
 
-  controller-approvers:
+  pkg-configmap-writers:
+  - dprotaso
+  - mattmoor
+  - mdemirhan
+  - vagababov
+
+  pkg-controller-reviewers:
   - grantr
   - mattmoor
   - tcnghia
   - vagababov
-  controller-reviewers:
   - whaught
 
-  kflag-approvers:
+  pkg-controller-writers:
+  - grantr
   - mattmoor
-  - vagababov
-
-  kmeta-approvers:
-  - mattmoor
-  - vagababov
-
-  logging-approvers:
-  - mdemirhan
-  - n3wscott
-  - yanweiguo
-
-  metrics-approvers:
-  - mdemirhan
-  - yanweiguo
-
-  metrics-reviewers:
-  - mdemirhan
-  - yanweiguo
-  - skonto
-
-  network-approvers:
-  - markusthoemmes
   - tcnghia
   - vagababov
 
-  productivity-approvers:
-  - chaodaiG
-  - chizhg
   productivity-reviewers:
-  - chaodaiG
   - coryrc
-  - chizhg
+  - evankanderson
   - steuhs
+  - yt3liu
 
-  source-approvers:
+  productivity-writers:
+  - chizhg
   - n3wscott
-  - vaikas
 
-  webhook-approvers:
-  - dprotaso
-  - mattmoor
-  - tcnghia
-  webhook-reviewers:
-  - whaught

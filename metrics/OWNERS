@@ -1,7 +1,10 @@
 # The OWNERS file is used by prow to automatically merge approved PRs.
 
 approvers:
-- metrics-approvers
+- mdemirhan
+- yanweiguo
 
 reviewers:
-- metrics-reviewers
+- mdemirhan
+- yanweiguo
+- skonto

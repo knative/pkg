@@ -1,4 +1,12 @@
 # The OWNERS file is used by prow to automatically merge approved PRs.
 
 approvers:
-- pkg-approvers
+- technical-oversight-committee
+- dprotaso
+- grantr
+- markusthoemmes
+- mattmoor
+- tcnghia
+- vagababov
+- vaikas
+- n3wscott
