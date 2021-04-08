@@ -41,6 +41,18 @@ func (fw *fakeWriter) Write(data []byte) (int, error) {
 
 func (fw *fakeWriter) WriteHeader(statusCode int) {}
 
+type benchWriter struct{}
+
+func (dw *benchWriter) Header() http.Header {
+	return http.Header{}
+}
+
+func (dw *benchWriter) Write(data []byte) (int, error) {
+	return 0, nil
+}
+
+func (dw *benchWriter) WriteHeader(statusCode int) {}
+
 type testHandler struct{}
 
 func (th *testHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -70,7 +82,7 @@ func TestHTTPSpanMiddleware(t *testing.T) {
 
 	fw := &fakeWriter{}
 
-	req, err := http.NewRequest("GET", "http://test.example.com", nil)
+	req, err := http.NewRequest(http.MethodGet, "http://test.example.com", nil)
 	if err != nil {
 		t.Fatal("Failed to make fake request:", err)
 	}
@@ -165,4 +177,50 @@ func TestHTTPSpanIgnoringPaths(t *testing.T) {
 			}
 		})
 	}
+}
+
+func BenchmarkSpanMiddleware(b *testing.B) {
+	cfg := config.Config{
+		Backend: config.Zipkin,
+		Debug:   true,
+	}
+
+	// Create tracer with reporter recorder
+	reporter, co := FakeZipkinExporter()
+	oct := NewOpenCensusTracer(co)
+	b.Cleanup(func() {
+		reporter.Close()
+		oct.Finish()
+	})
+
+	if err := oct.ApplyConfig(&cfg); err != nil {
+		b.Error("Failed to apply tracer config:", err)
+	}
+
+	next := testHandler{}
+	middleware := HTTPSpanMiddleware(&next)
+
+	bw := &benchWriter{}
+
+	req, err := http.NewRequest(http.MethodGet, "http://test.example.com", nil)
+	if err != nil {
+		b.Fatal("Failed to make fake request:", err)
+	}
+	const traceID = "821e0d50d931235a5ba3fa42eddddd8f"
+	req.Header["X-B3-Traceid"] = []string{traceID}
+	req.Header["X-B3-Spanid"] = []string{"b3bd5e1c4318c78a"}
+
+	b.Run("sequential", func(b *testing.B) {
+		for j := 0; j < b.N; j++ {
+			middleware.ServeHTTP(bw, req)
+		}
+	})
+
+	b.Run("parallel", func(b *testing.B) {
+		b.RunParallel(func(pb *testing.PB) {
+			for pb.Next() {
+				middleware.ServeHTTP(bw, req)
+			}
+		})
+	})
 }
