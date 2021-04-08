@@ -21,7 +21,9 @@ package test
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"github.com/davecgh/go-spew/spew"
 	"strings"
 	"time"
 
@@ -62,7 +64,7 @@ func WaitForDeploymentState(ctx context.Context, client kubernetes.Interface, na
 	})
 
 	if waitErr != nil {
-		return fmt.Errorf("deployment %q is not in desired state, got: %+v: %w", name, lastState, waitErr)
+		return errors.New(spew.Sprintf("deployment %q is not in desired state, got: %+v: %w", name, lastState, waitErr))
 	}
 	return nil
 }
@@ -87,7 +89,7 @@ func WaitForPodListState(ctx context.Context, client kubernetes.Interface, inSta
 	})
 
 	if waitErr != nil {
-		return fmt.Errorf("pod list is not in desired state, got: %+v: %w", lastState, waitErr)
+		return errors.New(spew.Sprintf("pod list is not in desired state, got: %+v: %w", lastState, waitErr))
 	}
 	return nil
 }
@@ -112,7 +114,7 @@ func WaitForPodState(ctx context.Context, client kubernetes.Interface, inState f
 	})
 
 	if waitErr != nil {
-		return fmt.Errorf("pod %q is not in desired state, got: %+v: %w", name, lastState, waitErr)
+		return errors.New(spew.Sprintf("pod %q is not in desired state, got: %+v: %w", name, lastState, waitErr))
 	}
 	return nil
 }
