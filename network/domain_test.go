@@ -17,6 +17,7 @@ limitations under the License.
 package network
 
 import (
+	"os"
 	"strings"
 	"testing"
 )
@@ -24,46 +25,71 @@ import (
 func TestGetDomainName(t *testing.T) {
 	tests := []struct {
 		name       string
+		env        string
 		resolvConf string
 		want       string
-	}{
-		{
-			name: "all good",
-			resolvConf: `
+	}{{
+		name: "all good",
+		resolvConf: `
 nameserver 1.1.1.1
 search default.svc.abc.com svc.abc.com abc.com
 options ndots:5
 `,
-			want: "abc.com",
-		},
-		{
-			name: "all good with trailing dot",
-			resolvConf: `
+		want: "abc.com",
+	}, {
+		name: "all good with env set but ignored",
+		resolvConf: `
+nameserver 1.1.1.1
+search default.svc.abc.com svc.abc.com abc.com
+options ndots:5
+`,
+		env:  "ignored.com",
+		want: "abc.com",
+	}, {
+		name:       "all good from env",
+		resolvConf: ``,
+		env:        "abc.com",
+		want:       "abc.com",
+	}, {
+		name: "all good with trailing dot",
+		resolvConf: `
 nameserver 1.1.1.1
 search default.svc.abc.com. svc.abc.com. abc.com.
 options ndots:5
 `,
-			want: "abc.com",
-		},
-		{
-			name: "missing search line",
-			resolvConf: `
+		want: "abc.com",
+	}, {
+		name: "missing search line",
+		resolvConf: `
 nameserver 1.1.1.1
 options ndots:5
 `,
-			want: defaultDomainName,
-		},
-		{
-			name: "non k8s resolv.conf format",
-			resolvConf: `
+		want: defaultDomainName,
+	}, {
+		name: "non k8s resolv.conf format",
+		resolvConf: `
 nameserver 1.1.1.1
 search  abc.com xyz.com
 options ndots:5
 `,
-			want: defaultDomainName,
-		},
-	}
+		want: defaultDomainName,
+	}}
+
+	domainWas := os.Getenv(clusterDomainEnvKey)
+	t.Cleanup(func() {
+		if len(domainWas) > 0 {
+			_ = os.Setenv(clusterDomainEnvKey, domainWas)
+		} else {
+			_ = os.Unsetenv(clusterDomainEnvKey)
+		}
+	})
+
 	for _, tt := range tests {
+		if len(tt.env) > 0 {
+			_ = os.Setenv(clusterDomainEnvKey, tt.env)
+		} else {
+			_ = os.Unsetenv(clusterDomainEnvKey)
+		}
 		got := getClusterDomainName(strings.NewReader(tt.resolvConf))
 		if got != tt.want {
 			t.Errorf("Test %s failed expected: %s but got: %s", tt.name, tt.want, got)
