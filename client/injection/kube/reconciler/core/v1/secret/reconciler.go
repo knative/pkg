@@ -84,13 +84,13 @@ type doReconcile func(ctx context.Context, o *v1.Secret) reconciler.Event
 
 // reconcilerImpl implements controller.Reconciler for v1.Secret resources.
 type reconcilerImpl struct {
-	// LeaderAwareFuncs is inlined to help us implement reconciler.LeaderAware
+	// LeaderAwareFuncs is inlined to help us implement reconciler.LeaderAware.
 	reconciler.LeaderAwareFuncs
 
 	// Client is used to write back status updates.
 	Client kubernetes.Interface
 
-	// Listers index properties about resources
+	// Listers index properties about resources.
 	Lister corev1.SecretLister
 
 	// Recorder is an event recorder for recording Event resources to the
@@ -108,7 +108,7 @@ type reconcilerImpl struct {
 	finalizerName string
 }
 
-// Check that our Reconciler implements controller.Reconciler
+// Check that our Reconciler implements controller.Reconciler.
 var _ controller.Reconciler = (*reconcilerImpl)(nil)
 
 // Check that our generated Reconciler is always LeaderAware.
