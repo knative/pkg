@@ -62,7 +62,7 @@ func WaitForDeploymentState(ctx context.Context, client kubernetes.Interface, na
 	})
 
 	if waitErr != nil {
-		return fmt.Errorf("deployment %q is not in desired state, got: %+v: %w", name, spew.Sprint(lastState), waitErr)
+		return fmt.Errorf("deployment %q is not in desired state, got: %s: %w", name, spew.Sprint(lastState), waitErr)
 	}
 	return nil
 }
@@ -87,7 +87,7 @@ func WaitForPodListState(ctx context.Context, client kubernetes.Interface, inSta
 	})
 
 	if waitErr != nil {
-		return fmt.Errorf("pod list is not in desired state, got: %+v: %w", spew.Sprint(lastState), waitErr)
+		return fmt.Errorf("pod list is not in desired state, got: %s: %w", spew.Sprint(lastState), waitErr)
 	}
 	return nil
 }
@@ -112,7 +112,7 @@ func WaitForPodState(ctx context.Context, client kubernetes.Interface, inState f
 	})
 
 	if waitErr != nil {
-		return fmt.Errorf("pod %q is not in desired state, got: %+v: %w", name, spew.Sprint(lastState), waitErr)
+		return fmt.Errorf("pod %q is not in desired state, got: %s: %w", name, spew.Sprint(lastState), waitErr)
 	}
 	return nil
 }
