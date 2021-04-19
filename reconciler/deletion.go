@@ -23,7 +23,7 @@ import (
 )
 
 // OnDeletionInterface defines the strongly typed interface to be implemented by a
-// controller observing a deletion of {{.type|raw}}. Every controller that was active
+// controller observing a deletion of an object. Every controller that was active
 // during the deletion of the respective resource is guaranteed to observe this event,
 // leader or not. It's usually used to clear up in-memory state regarding the respective
 // resource. Finalizers should be used to ensure external resources are properly cleaned
