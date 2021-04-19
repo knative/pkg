@@ -61,6 +61,14 @@ func TestReconcile(t *testing.T) {
 		},
 	}
 
+	ns := &corev1.Namespace{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: system.Namespace(),
+		},
+	}
+	nsRef := *metav1.NewControllerRef(ns, corev1.SchemeGroupVersion.WithKind("Namespace"))
+	expectedOwnerReferences := []metav1.OwnerReference{nsRef}
+
 	// This is the namespace selector setup
 	namespaceSelector := &metav1.LabelSelector{
 		MatchExpressions: []metav1.LabelSelectorRequirement{{
@@ -131,7 +139,7 @@ func TestReconcile(t *testing.T) {
 	}, {
 		Name: "secret and VWH exist, missing service reference",
 		Key:  key,
-		Objects: []runtime.Object{secret,
+		Objects: []runtime.Object{secret, ns,
 			&admissionregistrationv1.ValidatingWebhookConfiguration{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: name,
@@ -145,7 +153,7 @@ func TestReconcile(t *testing.T) {
 	}, {
 		Name: "secret and VWH exist, missing other stuff",
 		Key:  key,
-		Objects: []runtime.Object{secret,
+		Objects: []runtime.Object{secret, ns,
 			&admissionregistrationv1.ValidatingWebhookConfiguration{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: name,
@@ -164,7 +172,8 @@ func TestReconcile(t *testing.T) {
 		WantUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: &admissionregistrationv1.ValidatingWebhookConfiguration{
 				ObjectMeta: metav1.ObjectMeta{
-					Name: name,
+					Name:            name,
+					OwnerReferences: expectedOwnerReferences,
 				},
 				Webhooks: []admissionregistrationv1.ValidatingWebhook{{
 					Name: name,
@@ -187,7 +196,7 @@ func TestReconcile(t *testing.T) {
 	}, {
 		Name: "secret and VWH exist, added fields are incorrect",
 		Key:  key,
-		Objects: []runtime.Object{secret,
+		Objects: []runtime.Object{secret, ns,
 			&admissionregistrationv1.ValidatingWebhookConfiguration{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: name,
@@ -219,7 +228,8 @@ func TestReconcile(t *testing.T) {
 		WantUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: &admissionregistrationv1.ValidatingWebhookConfiguration{
 				ObjectMeta: metav1.ObjectMeta{
-					Name: name,
+					Name:            name,
+					OwnerReferences: expectedOwnerReferences,
 				},
 				Webhooks: []admissionregistrationv1.ValidatingWebhook{{
 					Name: name,
@@ -246,7 +256,7 @@ func TestReconcile(t *testing.T) {
 		WithReactors: []clientgotesting.ReactionFunc{
 			InduceFailure("update", "validatingwebhookconfigurations"),
 		},
-		Objects: []runtime.Object{secret,
+		Objects: []runtime.Object{secret, ns,
 			&admissionregistrationv1.ValidatingWebhookConfiguration{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: name,
@@ -278,7 +288,8 @@ func TestReconcile(t *testing.T) {
 		WantUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: &admissionregistrationv1.ValidatingWebhookConfiguration{
 				ObjectMeta: metav1.ObjectMeta{
-					Name: name,
+					Name:            name,
+					OwnerReferences: expectedOwnerReferences,
 				},
 				Webhooks: []admissionregistrationv1.ValidatingWebhook{{
 					Name: name,
@@ -301,10 +312,11 @@ func TestReconcile(t *testing.T) {
 	}, {
 		Name: ":fire: everything is fine :fire:",
 		Key:  key,
-		Objects: []runtime.Object{secret,
+		Objects: []runtime.Object{secret, ns,
 			&admissionregistrationv1.ValidatingWebhookConfiguration{
 				ObjectMeta: metav1.ObjectMeta{
-					Name: name,
+					Name:            name,
+					OwnerReferences: expectedOwnerReferences,
 				},
 				Webhooks: []admissionregistrationv1.ValidatingWebhook{{
 					Name: name,
@@ -336,7 +348,7 @@ func TestReconcile(t *testing.T) {
 	}, {
 		Name: "secret and VWH exist, correcting namespaceSelector",
 		Key:  key,
-		Objects: []runtime.Object{secret,
+		Objects: []runtime.Object{secret, ns,
 			&admissionregistrationv1.ValidatingWebhookConfiguration{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: name,
@@ -371,7 +383,8 @@ func TestReconcile(t *testing.T) {
 		WantUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: &admissionregistrationv1.ValidatingWebhookConfiguration{
 				ObjectMeta: metav1.ObjectMeta{
-					Name: name,
+					Name:            name,
+					OwnerReferences: expectedOwnerReferences,
 				},
 				Webhooks: []admissionregistrationv1.ValidatingWebhook{{
 					Name: name,
