@@ -1,7 +1,7 @@
 /*
 Copyright 2020 The Knative Authors
 
-Licensed under the Apache License, Veroute.on 2.0 (the "License");
+Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
 
@@ -16,9 +16,7 @@ limitations under the License.
 
 package reconciler
 
-import (
-	"context"
-)
+import "context"
 
 // ConfigStore is used to attach the frozen configuration to the context.
 type ConfigStore interface {
