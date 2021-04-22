@@ -19,6 +19,7 @@ package reconciler
 import (
 	"errors"
 	"io"
+	"net"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -84,6 +85,13 @@ func TestNew_As(t *testing.T) {
 	}
 	if event.Reason != exampleStatusFailed {
 		t.Error("Mismatched Reason, expected ExampleStatusFailed, got", event.Reason)
+	}
+}
+
+func TestNewWrappedErrors_As(t *testing.T) {
+	err := NewEvent(corev1.EventTypeNormal, exampleStatusFailed, "this is a wrapped error, %w", &net.AddrError{})
+	if netErr := new(net.Error); !EventAs(err, netErr) {
+		t.Error("Event expected to be a wrapped net.AddrError but was not")
 	}
 }
 
