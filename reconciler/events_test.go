@@ -105,9 +105,9 @@ func TestNil_As(t *testing.T) {
 }
 
 func TestNew_Error(t *testing.T) {
-	err := NewEvent(corev1.EventTypeWarning, exampleStatusFailed, "this is an example error, %s", "yep")
+	err := NewEvent(corev1.EventTypeWarning, exampleStatusFailed, "this is an example error, %s, %w", "yep", errors.New("indeed"))
 
-	const want = "this is an example error, yep"
+	const want = "this is an example error, yep, indeed"
 	got := err.Error()
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Error("Unexpected diff (-want, +got) =", diff)
