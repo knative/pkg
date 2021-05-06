@@ -53,6 +53,13 @@ func GetIngressEndpoint(ctx context.Context, kubeClientset kubernetes.Interface,
 		return "", nil, err
 	}
 
+	// Check an environment variable first
+	if endpointOverrideFromEnv := os.Getenv("INGRESS_ENDPOINT"); endpointOverrideFromEnv != "" {
+		// an override should be used over the env
+		if endpointOverride == "" {
+			endpointOverride = endpointOverrideFromEnv
+		}
+	}
 	// If an override is provided, use it
 	if endpointOverride != "" {
 		return endpointOverride, func(port string) string {
