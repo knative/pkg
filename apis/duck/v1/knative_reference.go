@@ -105,11 +105,6 @@ func (kr *KReference) ResolveGroup(crdLister apiextensionsv1lister.CustomResourc
 		// Nothing to do here
 		return nil
 	}
-	if kr.Group == "core" {
-		// We statically resolve it to core/v1
-		kr.APIVersion = "core/v1"
-		return nil
-	}
 
 	actualGvk := schema.GroupVersionKind{Group: kr.Group, Kind: kr.Kind}
 	pluralGvk, _ := meta.UnsafeGuessKindToResource(actualGvk)

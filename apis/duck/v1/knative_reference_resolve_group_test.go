@@ -65,19 +65,6 @@ func TestResolveGroup(t *testing.T) {
 				Name: "123",
 			},
 		},
-		"core api group": {
-			input: &KReference{
-				Kind:  "Abc",
-				Name:  "123",
-				Group: "core",
-			},
-			output: &KReference{
-				Kind:       "Abc",
-				Name:       "123",
-				Group:      "core",
-				APIVersion: "core/v1",
-			},
-		},
 		"imc channel": {
 			input: &KReference{
 				Kind:  "InMemoryChannel",
