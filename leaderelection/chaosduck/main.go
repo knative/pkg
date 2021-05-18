@@ -47,8 +47,8 @@ type components map[string]sets.String
 var (
 	disabledComponents      kflag.StringSet
 	disabledComponentsRegex kflag.StringSet
-	tributePeriod           time.Duration = 20 * time.Second
-	tributeFactor                         = 2.0
+	tributePeriod           = 20 * time.Second
+	tributeFactor           = 2.0
 )
 
 func init() {
