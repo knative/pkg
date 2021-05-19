@@ -64,8 +64,25 @@ func (kr *KReference) Validate(ctx context.Context) *apis.FieldError {
 	if kr.Name == "" {
 		errs = errs.Also(apis.ErrMissingField("name"))
 	}
-	if kr.APIVersion == "" {
-		errs = errs.Also(apis.ErrMissingField("apiVersion"))
+	if isKReferenceGroupAllowed(ctx) {
+		if kr.APIVersion == "" && kr.Group == "" {
+			errs = errs.Also(apis.ErrMissingField("apiVersion")).
+				Also(apis.ErrMissingField("group"))
+		}
+		if kr.APIVersion != "" && kr.Group != "" {
+			errs = errs.Also(&apis.FieldError{
+				Message: "both apiVersion and group are specified",
+				Paths:   []string{"apiVersion", "group"},
+				Details: "Only one of them must be specified",
+			})
+		}
+	} else {
+		if kr.Group != "" {
+			errs = errs.Also(apis.ErrDisallowedFields("group"))
+		}
+		if kr.APIVersion == "" {
+			errs = errs.Also(apis.ErrMissingField("apiVersion"))
+		}
 	}
 	if kr.Kind == "" {
 		errs = errs.Also(apis.ErrMissingField("kind"))
@@ -131,4 +148,18 @@ func findCRDStorageVersion(crd *apiextensionsv1.CustomResourceDefinition) (strin
 		}
 	}
 	return "", fmt.Errorf("this CRD %s doesn't have a storage version! Kubernetes, you're drunk, go home", crd.Name)
+}
+
+type isGroupAllowed struct{}
+
+func isKReferenceGroupAllowed(ctx context.Context) bool {
+	return ctx.Value(isGroupAllowed{}) != nil
+}
+
+// KReferenceGroupAllowed notes on the context that further validation
+// should allow the KReference.Group, which is disabled by default.
+// Note: This API is EXPERIMENTAL and will disappear once the KReference.Group feature will stabilize.
+// For more details: https://github.com/knative/eventing/issues/5086
+func KReferenceGroupAllowed(ctx context.Context) context.Context {
+	return context.WithValue(ctx, isGroupAllowed{}, struct{}{})
 }

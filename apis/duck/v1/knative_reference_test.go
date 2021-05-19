@@ -25,6 +25,10 @@ import (
 	"knative.dev/pkg/apis"
 )
 
+const (
+	group = "group.my"
+)
+
 func TestValidate(t *testing.T) {
 	ctx := context.Background()
 
@@ -86,6 +90,60 @@ func TestValidate(t *testing.T) {
 				Paths:   []string{"namespace"},
 				Details: `parent namespace: "diffns" does not match ref: "b-namespace"`,
 			},
+		},
+		"invalid ref, disallowed group": {
+			ref: &KReference{
+				Namespace: namespace,
+				Name:      name,
+				Kind:      kind,
+				Group:     group,
+			},
+			ctx:  ctx,
+			want: apis.ErrMissingField("apiVersion").Also(apis.ErrDisallowedFields("group")),
+		},
+		"invalid ref, group allowed buth both api version and group are configured": {
+			ref: &KReference{
+				Namespace:  namespace,
+				Name:       name,
+				Kind:       kind,
+				Group:      group,
+				APIVersion: apiVersion,
+			},
+			ctx: KReferenceGroupAllowed(ctx),
+			want: &apis.FieldError{
+				Message: "both apiVersion and group are specified",
+				Paths:   []string{"apiVersion", "group"},
+				Details: "Only one of them must be specified",
+			},
+		},
+		"valid ref, group enabled and both apiVersion and group missing": {
+			ref: &KReference{
+				Namespace: namespace,
+				Name:      name,
+				Kind:      kind,
+			},
+			ctx:  KReferenceGroupAllowed(ctx),
+			want: apis.ErrMissingField("apiVersion").Also(apis.ErrMissingField("group")),
+		},
+		"valid ref, group enabled and configured": {
+			ref: &KReference{
+				Namespace: namespace,
+				Name:      name,
+				Kind:      kind,
+				Group:     group,
+			},
+			ctx:  KReferenceGroupAllowed(ctx),
+			want: nil,
+		},
+		"valid ref, group enabled and but apiVersion configured": {
+			ref: &KReference{
+				Namespace:  namespace,
+				Name:       name,
+				Kind:       kind,
+				APIVersion: apiVersion,
+			},
+			ctx:  KReferenceGroupAllowed(ctx),
+			want: nil,
 		},
 		"valid ref, mismatched namespaces, but overridden": {
 			ref: &KReference{
