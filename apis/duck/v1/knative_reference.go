@@ -158,7 +158,7 @@ func isKReferenceGroupAllowed(ctx context.Context) bool {
 
 // KReferenceGroupAllowed notes on the context that further validation
 // should allow the KReference.Group, which is disabled by default.
-// Note: This API is EXPERIMENTAL and will disappear once the KReference.Group feature will stabilize.
+// Note: This API is EXPERIMENTAL and may disappear once the KReference.Group feature will stabilize.
 // For more details: https://github.com/knative/eventing/issues/5086
 func KReferenceGroupAllowed(ctx context.Context) context.Context {
 	return context.WithValue(ctx, isGroupAllowed{}, struct{}{})
