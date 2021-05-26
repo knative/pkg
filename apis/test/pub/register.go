@@ -17,5 +17,6 @@ limitations under the License.
 package example
 
 const (
+	// GroupName is the name of the API group.
 	GroupName = "example.knative.dev"
 )

@@ -85,7 +85,7 @@ type InnerDefaultSubSpec struct {
 	DeprecatedNotJSON string
 }
 
-// Adding complication helper.
+// InnerDefaultStruct is a helper to test defaulting of an inner struct.
 type InnerDefaultStruct struct {
 	FieldAsString string `json:"fieldAsString,omitempty"`
 
