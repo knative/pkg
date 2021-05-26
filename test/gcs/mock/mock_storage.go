@@ -64,7 +64,7 @@ type buckets struct {
 	bkt map[bucket]*objects
 }
 
-// Error map to return custom errors for specific methods
+// ReturnError is a custom error for specific methods
 type ReturnError struct {
 	NumCall uint8
 	Err     error

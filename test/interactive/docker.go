@@ -55,7 +55,7 @@ func (e Env) PromoteFromEnv(envVars ...string) error {
 	return err
 }
 
-// Creates an Docker with default Docker command arguments for running interactively
+// NewDocker creates a Docker instance with default Docker command arguments for running interactively.
 func NewDocker() Docker {
 	return Docker{NewCommand(defaultDockerCommands...)}
 }

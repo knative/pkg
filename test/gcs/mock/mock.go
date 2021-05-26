@@ -37,17 +37,28 @@ import (
 // easy to replicate.
 
 var (
-	MethodNewStorageBucket    = Method("NewStorageBucket")
+	// MethodNewStorageBucket mocks MethodNewStorageBucket.
+	MethodNewStorageBucket = Method("NewStorageBucket")
+	// MethodDeleteStorageBucket mocks NewDeleteStorageBucket.
 	MethodDeleteStorageBucket = Method("NewDeleteStorageBucket")
-	MethodListChildrenFiles   = Method("ListChildrenFiles")
-	MethodListDirectChildren  = Method("ListDirectChildren")
-	MethodAttrObject          = Method("AttrObject")
-	MethodCopyObject          = Method("CopyObject")
-	MethodReadObject          = Method("ReadObject")
-	MethodWriteObject         = Method("WriteObject")
-	MethodDeleteObject        = Method("DeleteObject")
-	MethodDownload            = Method("Download")
-	MethodUpload              = Method("Upload")
+	// MethodListChildrenFiles mocks ListChildrenFiles.
+	MethodListChildrenFiles = Method("ListChildrenFiles")
+	// MethodListDirectChildren mocks ListDirectChildren.
+	MethodListDirectChildren = Method("ListDirectChildren")
+	// MethodAttrObject mocks AttrObject.
+	MethodAttrObject = Method("AttrObject")
+	// MethodCopyObject mocks CopyObject.
+	MethodCopyObject = Method("CopyObject")
+	// MethodReadObject mocks ReadObject.
+	MethodReadObject = Method("ReadObject")
+	// MethodWriteObject mocks WriteObject.
+	MethodWriteObject = Method("WriteObject")
+	// MethodDeleteObject mocks DeleteObject.
+	MethodDeleteObject = Method("DeleteObject")
+	// MethodDownload mocks Download.
+	MethodDownload = Method("Download")
+	// MethodUpload mocks Upload.
+	MethodUpload = Method("Upload")
 )
 
 // mock GCS Client
