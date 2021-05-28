@@ -30,17 +30,11 @@ import (
 
 // ClientConfig holds the information about the environment and can be configured with flags
 type ClientConfig struct {
-	// K8s cluster (defaults to cluster in kubeconfig)
-	Cluster string
-
-	// ServerURL - The address of the Kubernetes API server. Overrides any value in kubeconfig.
-	ServerURL string
-
-	// Kubeconfig - Path to a kubeconfig.
-	Kubeconfig string // Note: named Kubeconfig because of legacy reasons vs KubeConfig.
-
-	Burst int     // Burst - Maximum burst for throttle.
-	QPS   float64 // QPS - Maximum QPS to the server from the client.
+	Cluster    string  // K8s cluster (defaults to cluster in kubeconfig)
+	ServerURL  string  // ServerURL - The address of the Kubernetes API server. Overrides any value in kubeconfig.
+	Burst      int     // Burst - Maximum burst for throttle.
+	QPS        float64 // QPS - Maximum QPS to the server from the client.
+	Kubeconfig string  // Kubeconfig - Path to a kubeconfig. Current casing is present for backwards compatibility
 }
 
 func (c *ClientConfig) InitFlags(fs *flag.FlagSet) {
