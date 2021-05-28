@@ -125,6 +125,7 @@ Tests importing [`knative.dev/pkg/test`](#test-library) recognize these flags:
 - [`--dockerrepo`](#specifying-docker-repo)
 - [`--tag`](#specifying-tag)
 - [`--imagetemplate`](#specifying-image-template)
+- [`--nocleanup`](#nocleanup)
 
 ### Specifying kubeconfig
 
@@ -208,6 +209,14 @@ reference to an image from the test. Defaults to
 
 ```bash
 go test ./test --imagetemplate {{.Repository}}/{{.Name}}:{{.Tag}}
+```
+
+### Nocleanup
+
+The `--nocleanup` argument lets you preserve resources created by the end-to-end tests to assist with debugging.
+
+```bash
+go test ./test --nocleanup
 ```
 
 ---

@@ -35,6 +35,7 @@ type TestEnvironment struct {
 	Tag                  string        // Tag for test images
 	SpoofRequestInterval time.Duration // SpoofRequestInterval is the interval between requests in SpoofingClient
 	SpoofRequestTimeout  time.Duration // SpoofRequestTimeout is the timeout for polling requests in SpoofingClient
+	NoCleanup            bool          // Do not delete test resources, to assist with debugging
 }
 
 var f *TestEnvironment
@@ -69,6 +70,8 @@ func InitFlags(flagset *flag.FlagSet) {
 		"Provide the uri of the docker repo you have uploaded the test image to using `uploadtestimage.sh`. Defaults to $KO_DOCKER_REPO")
 
 	flagset.StringVar(&f.Tag, "tag", "latest", "Provide the version tag for the test images.")
+
+	flagset.BoolVar(&f.NoCleanup, "nocleanup", false, "Do not delete resources after running tests.")
 }
 
 // Flags returns the command line flags or defaults for settings in the user's
