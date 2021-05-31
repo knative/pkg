@@ -17,7 +17,7 @@ limitations under the License.
 package resources
 
 import (
-	"crypto/ed25519"
+	"crypto/ecdsa"
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
@@ -44,8 +44,8 @@ func TestCreateCerts(t *testing.T) {
 	if err != nil {
 		t.Fatal("Failed to parse private key", err)
 	}
-	if _, ok := key.(ed25519.PrivateKey); !ok {
-		t.Fatalf("Key is not ed25519 format, actually %t", key)
+	if _, ok := key.(*ecdsa.PrivateKey); !ok {
+		t.Fatalf("Key is not ecdsa format, actually %t", key)
 	}
 
 	// Test Server Cert
@@ -99,7 +99,7 @@ func validCertificate(cert []byte, t *testing.T) (*x509.Certificate, error) {
 	if err != nil {
 		return nil, fmt.Errorf("Failed to parse cert %w", err)
 	}
-	if parsedCert.SignatureAlgorithm != x509.PureEd25519 {
+	if parsedCert.SignatureAlgorithm != x509.ECDSAWithSHA256 {
 		return nil, fmt.Errorf("Failed to match signature. Got: %s, want: %s", parsedCert.SignatureAlgorithm, x509.SHA256WithRSA)
 	}
 	return parsedCert, nil
