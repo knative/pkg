@@ -14,27 +14,44 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// cleanup allows you to define a cleanup function that will be executed
-// if your test is interrupted.
-
 package test
 
 import (
 	"os"
 	"os/signal"
-
-	"knative.dev/pkg/test/logging"
+	"sync"
 )
 
-// CleanupOnInterrupt will execute the function cleanup if an interrupt signal is caught
-func CleanupOnInterrupt(cleanup func(), logf logging.FormatLogger) {
+var cleanup struct {
+	once  sync.Once
+	mutex sync.RWMutex
+	funcs []func()
+}
+
+func waitForInterrupt() {
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt)
+
 	go func() {
-		for range c {
-			logf("Test interrupted, cleaning up.")
-			cleanup()
-			os.Exit(1)
+		<-c
+
+		cleanup.mutex.RLock()
+		defer cleanup.mutex.RUnlock()
+
+		for i := len(cleanup.funcs) - 1; i >= 0; i-- {
+			cleanup.funcs[i]()
 		}
+
+		os.Exit(1)
 	}()
+}
+
+// CleanupOnInterrupt will execute the function if an interrupt signal is caught
+func CleanupOnInterrupt(f func()) {
+	cleanup.once.Do(waitForInterrupt)
+
+	cleanup.mutex.Lock()
+	defer cleanup.mutex.Unlock()
+
+	cleanup.funcs = append(cleanup.funcs, f)
 }
