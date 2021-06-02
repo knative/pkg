@@ -51,6 +51,7 @@ func TestCleanupOnInterrupt(t *testing.T) {
 	idx2 := strings.Index(testOutput, "cleanup 2")
 	idx3 := strings.Index(testOutput, "cleanup 3")
 
+	// Order is first in first out (3, 2, 1)
 	if idx3 > idx2 || idx2 > idx1 || idx1 == -1 {
 		t.Errorf("Cleanup functions were not invoked in the proper order")
 	}
