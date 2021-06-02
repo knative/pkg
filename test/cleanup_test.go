@@ -19,6 +19,7 @@ package test
 import (
 	"bytes"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"os/exec"
 	"strings"
@@ -33,13 +34,23 @@ func TestCleanupOnInterrupt(t *testing.T) {
 		CleanupOnInterrupt(func() { fmt.Println("cleanup 1") })
 		CleanupOnInterrupt(func() { fmt.Println("cleanup 2") })
 		CleanupOnInterrupt(func() { fmt.Println("cleanup 3") })
-		fmt.Println("ready")
+
+		// This signals to the parent test that it should proceed
+		os.Remove(os.Getenv("READY_FILE"))
+
 		time.Sleep(5 * time.Second)
 		return
 	}
 
+	// TODO: Move to os.CreateTemp when we adopt 1.16 more widely
+	readyFile, err := ioutil.TempFile("", "")
+	if err != nil {
+		t.Fatalf("failed to setup tests")
+	}
+	readyFile.Close()
+
 	cmd := exec.Command(os.Args[0], "-test.run=TestCleanupOnInterrupt", "-test.v=true")
-	cmd.Env = append(os.Environ(), "CLEANUP=1")
+	cmd.Env = append(os.Environ(), "CLEANUP=1", "READY_FILE="+readyFile.Name())
 
 	var output bytes.Buffer
 	cmd.Stdout = &output
@@ -54,12 +65,20 @@ func TestCleanupOnInterrupt(t *testing.T) {
 		t.Fatal("Failed to find process", err)
 	}
 
+	// poll until the ready file is gone - indicating the subtest has been set up
+	// with the cleanup functions
 	err = wait.PollImmediate(100*time.Millisecond, 2*time.Second, func() (bool, error) {
-		return bytes.Contains(output.Bytes(), []byte("ready")), nil
+		_, err := os.Stat(readyFile.Name())
+		if os.IsNotExist(err) {
+			return true, nil
+		}
+		return false, err
 	})
+
 	if err != nil {
 		t.Fatal("Test subprocess never became ready", err)
 	}
+
 	if err := p.Signal(os.Interrupt); err != nil {
 		t.Fatal("Failed to interrupt", err)
 	}
