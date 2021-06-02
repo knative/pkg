@@ -24,6 +24,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"k8s.io/apimachinery/pkg/util/wait"
 )
 
 func TestCleanupOnInterrupt(t *testing.T) {
@@ -31,6 +33,7 @@ func TestCleanupOnInterrupt(t *testing.T) {
 		CleanupOnInterrupt(func() { fmt.Println("cleanup 1") })
 		CleanupOnInterrupt(func() { fmt.Println("cleanup 2") })
 		CleanupOnInterrupt(func() { fmt.Println("cleanup 3") })
+		fmt.Println("ready")
 		time.Sleep(5 * time.Second)
 		return
 	}
@@ -51,7 +54,12 @@ func TestCleanupOnInterrupt(t *testing.T) {
 		t.Fatal("Failed to find process", err)
 	}
 
-	time.Sleep(100 * time.Millisecond)
+	err = wait.PollImmediate(100*time.Millisecond, 2*time.Second, func() (bool, error) {
+		return bytes.Contains(output.Bytes(), []byte("ready")), nil
+	})
+	if err != nil {
+		t.Fatal("Test subprocess never became ready", err)
+	}
 	if err := p.Signal(os.Interrupt); err != nil {
 		t.Fatal("Failed to interrupt", err)
 	}
