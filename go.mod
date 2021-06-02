@@ -14,6 +14,7 @@ require (
 	github.com/census-instrumentation/opencensus-proto v0.3.0
 	github.com/davecgh/go-spew v1.1.1
 	github.com/dgryski/go-gk v0.0.0-20200319235926-a69029f61654 // indirect
+	github.com/evanphx/json-patch/v5 v5.5.0
 	github.com/go-openapi/spec v0.19.6 // indirect
 	github.com/go-openapi/swag v0.19.7 // indirect
 	github.com/gobuffalo/flect v0.2.2
@@ -43,22 +44,20 @@ require (
 	go.opencensus.io v0.23.0
 	go.uber.org/atomic v1.7.0
 	go.uber.org/automaxprocs v1.4.0
-	go.uber.org/zap v1.16.0
+	go.uber.org/zap v1.17.0
 	golang.org/x/crypto v0.0.0-20210513164829-c07d793c2f9a // indirect
 	golang.org/x/net v0.0.0-20210525063256-abc453219eb5
 	golang.org/x/oauth2 v0.0.0-20210514164344-f6687ab2804c
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
 	golang.org/x/time v0.0.0-20210220033141-f8bda1e9f3ba // indirect
-	golang.org/x/tools v0.1.1
+	golang.org/x/tools v0.1.2
 	gomodules.xyz/jsonpatch/v2 v2.2.0
 	google.golang.org/api v0.36.0
 	google.golang.org/genproto v0.0.0-20210416161957-9910b6c460de
 	google.golang.org/grpc v1.38.0
 	google.golang.org/protobuf v1.26.0
 	gopkg.in/check.v1 v1.0.0-20200227125254-8fa46927fb4f // indirect
-	gopkg.in/evanphx/json-patch.v4 v4.9.0
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b
-	honnef.co/go/tools v0.0.1-2020.1.5 // indirect
 	k8s.io/api v0.19.7
 	k8s.io/apiextensions-apiserver v0.19.7
 	k8s.io/apimachinery v0.19.7
