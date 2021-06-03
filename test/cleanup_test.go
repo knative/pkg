@@ -31,9 +31,9 @@ import (
 
 func TestCleanupOnInterrupt(t *testing.T) {
 	if os.Getenv("CLEANUP") == "1" {
-		CleanupOnInterrupt(func() { fmt.Println("cleanup 1") })
-		CleanupOnInterrupt(func() { fmt.Println("cleanup 2") })
-		CleanupOnInterrupt(func() { fmt.Println("cleanup 3") })
+		OnInterrupt(func() { fmt.Println("cleanup 1") })
+		OnInterrupt(func() { fmt.Println("cleanup 2") })
+		OnInterrupt(func() { fmt.Println("cleanup 3") })
 
 		// This signals to the parent test that it should proceed
 		os.Remove(os.Getenv("READY_FILE"))

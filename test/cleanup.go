@@ -22,6 +22,8 @@ import (
 	"sync"
 )
 
+type logFunc func(template string, args ...interface{})
+
 var cleanup struct {
 	once  sync.Once
 	mutex sync.RWMutex
@@ -47,11 +49,17 @@ func waitForInterrupt() {
 }
 
 // CleanupOnInterrupt will execute the function if an interrupt signal is caught
-func CleanupOnInterrupt(f func()) {
+// Deprecated - use OnInterrupt
+func CleanupOnInterrupt(f func(), log logFunc) {
+	OnInterrupt(f)
+}
+
+// OnInterrupt registers a cleanup function to run if an interrupt signal is caught
+func OnInterrupt(cleanupFunc func()) {
 	cleanup.once.Do(waitForInterrupt)
 
 	cleanup.mutex.Lock()
 	defer cleanup.mutex.Unlock()
 
-	cleanup.funcs = append(cleanup.funcs, f)
+	cleanup.funcs = append(cleanup.funcs, cleanupFunc)
 }
