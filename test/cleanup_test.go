@@ -18,6 +18,7 @@ package test
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -84,11 +85,12 @@ func TestCleanupOnInterrupt(t *testing.T) {
 	}
 
 	err = cmd.Wait()
-	if _, ok := err.(*exec.ExitError); err != nil && !ok {
+	var exitErr *exec.ExitError
+	if ok := errors.As(err, &exitErr); err != nil && !ok {
 		t.Fatal("Running test had abnormal exit", err)
 	}
 
-	testOutput := string(output.Bytes())
+	testOutput := output.String()
 
 	idx1 := strings.Index(testOutput, "cleanup 1")
 	idx2 := strings.Index(testOutput, "cleanup 2")
