@@ -25,6 +25,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes/scheme"
 	"knative.dev/pkg/apis"
@@ -57,6 +58,23 @@ func init() {
 	// Add types to scheme
 	duckv1alpha1.AddToScheme(scheme.Scheme)
 	duckv1beta1.AddToScheme(scheme.Scheme)
+
+	scheme.Scheme.AddKnownTypeWithName(
+		schema.FromAPIVersionAndKind(unaddressableAPIVersion, unaddressableKind),
+		&unstructured.Unstructured{},
+	)
+	scheme.Scheme.AddKnownTypeWithName(
+		schema.FromAPIVersionAndKind(unaddressableAPIVersion, unaddressableKind+"List"),
+		&unstructured.UnstructuredList{},
+	)
+	scheme.Scheme.AddKnownTypeWithName(
+		schema.FromAPIVersionAndKind(addressableAPIVersion, addressableKind),
+		&unstructured.Unstructured{},
+	)
+	scheme.Scheme.AddKnownTypeWithName(
+		schema.FromAPIVersionAndKind(addressableAPIVersion, addressableKind+"List"),
+		&unstructured.UnstructuredList{},
+	)
 }
 
 func TestGetURIDestinationV1Beta1(t *testing.T) {
