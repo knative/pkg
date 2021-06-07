@@ -18,8 +18,10 @@ package fake
 
 import (
 	"context"
+	"encoding/json"
 	"strings"
 
+	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/dynamic/fake"
@@ -46,14 +48,17 @@ func With(ctx context.Context, scheme *runtime.Scheme, objects ...runtime.Object
 	// This was a K8s 1.20 breaking change
 	unstructuredScheme := runtime.NewScheme()
 	for gvk := range scheme.AllKnownTypes() {
+		if unstructuredScheme.Recognizes(gvk) {
+			continue
+		}
 		if strings.HasSuffix(gvk.Kind, "List") {
 			unstructuredScheme.AddKnownTypeWithName(gvk, &unstructured.UnstructuredList{})
 			continue
 		}
-
 		unstructuredScheme.AddKnownTypeWithName(gvk, &unstructured.Unstructured{})
 	}
 
+	objects = ToUnstructured(scheme, objects)
 	for _, obj := range objects {
 		gvk := obj.GetObjectKind().GroupVersionKind()
 		if !unstructuredScheme.Recognizes(gvk) {
@@ -77,4 +82,38 @@ func Get(ctx context.Context) *fake.FakeDynamicClient {
 			"Unable to fetch %T from context.", (*fake.FakeDynamicClient)(nil))
 	}
 	return untyped.(*fake.FakeDynamicClient)
+}
+
+// ToUnstructured takes a list of k8s resources and converts them to
+// Unstructured objects.
+// We must pass objects as Unstructured to the dynamic client fake, or it
+// won't handle them properly.
+func ToUnstructured(sch *runtime.Scheme, objs []runtime.Object) (us []runtime.Object) {
+	for _, obj := range objs {
+		// Don't mess with the primary copy
+		obj = obj.DeepCopyObject()
+		// Determine and set the TypeMeta for this object based on our test scheme.
+		gvks, _, err := sch.ObjectKinds(obj)
+		if err != nil {
+			panic("Unable to determine kind for type: " + err.Error())
+		}
+		apiv, k := gvks[0].ToAPIVersionAndKind()
+		ta, err := meta.TypeAccessor(obj)
+		if err != nil {
+			panic("Unable to create type accessor: " + err.Error())
+		}
+		ta.SetAPIVersion(apiv)
+		ta.SetKind(k)
+
+		b, err := json.Marshal(obj)
+		if err != nil {
+			panic("Unable to marshal: " + err.Error())
+		}
+		u := &unstructured.Unstructured{}
+		if err := json.Unmarshal(b, u); err != nil {
+			panic("Unable to unmarshal: " + err.Error())
+		}
+		us = append(us, u)
+	}
+	return
 }
