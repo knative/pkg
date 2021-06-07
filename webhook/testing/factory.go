@@ -65,7 +65,7 @@ func MakeFactory(ctor Ctor) rtesting.Factory {
 
 		ctx, kubeClient := fakekubeclient.With(ctx, ls.GetKubeObjects()...)
 		ctx, apixClient := fakeapixclient.With(ctx, ls.GetAPIExtensionsObjects()...)
-		ctx, dynamicClient := fakedynamicclient.With(ctx, ls.NewScheme(), r.Objects...)
+		ctx, dynamicClient := fakedynamicclient.With(ctx, ls.NewScheme(), ToUnstructured(t, ls.NewScheme(), r.Objects)...)
 
 		// The dynamic client's support for patching is BS.  Implement it
 		// here via PrependReactor (this can be overridden below by the
