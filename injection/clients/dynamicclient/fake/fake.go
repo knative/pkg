@@ -28,6 +28,7 @@ import (
 	k8sfake "k8s.io/client-go/kubernetes/fake"
 	"k8s.io/client-go/rest"
 
+	duckv1 "knative.dev/pkg/apis/duck/v1"
 	"knative.dev/pkg/injection"
 	"knative.dev/pkg/injection/clients/dynamicclient"
 	"knative.dev/pkg/logging"
@@ -40,6 +41,7 @@ func init() {
 func withClient(ctx context.Context, cfg *rest.Config) context.Context {
 	scheme := runtime.NewScheme()
 	k8sfake.AddToScheme(scheme)
+	duckv1.AddToScheme(scheme)
 	ctx, _ = With(ctx, scheme)
 	return ctx
 }
