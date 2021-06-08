@@ -95,18 +95,21 @@ func ToUnstructured(sch *runtime.Scheme, objs []runtime.Object) (us []runtime.Ob
 	for _, obj := range objs {
 		// Don't mess with the primary copy
 		obj = obj.DeepCopyObject()
-		// Determine and set the TypeMeta for this object based on our test scheme.
-		gvks, _, err := sch.ObjectKinds(obj)
-		if err != nil {
-			panic("Unable to determine kind for type: " + err.Error())
-		}
-		apiv, k := gvks[0].ToAPIVersionAndKind()
+
 		ta, err := meta.TypeAccessor(obj)
 		if err != nil {
 			panic("Unable to create type accessor: " + err.Error())
 		}
-		ta.SetAPIVersion(apiv)
-		ta.SetKind(k)
+		if ta.GetAPIVersion() == "" || ta.GetKind() == "" {
+			// Determine and set the TypeMeta for this object based on our test scheme.
+			gvks, _, err := sch.ObjectKinds(obj)
+			if err != nil {
+				panic("Unable to determine kind for type: " + err.Error())
+			}
+			apiv, k := gvks[0].ToAPIVersionAndKind()
+			ta.SetAPIVersion(apiv)
+			ta.SetKind(k)
+		}
 
 		b, err := json.Marshal(obj)
 		if err != nil {
