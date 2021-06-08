@@ -19,11 +19,7 @@ package v1
 import (
 	"context"
 	"fmt"
-
-	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
-	apiextensionsv1lister "k8s.io/apiextensions-apiserver/pkg/client/listers/apiextensions/v1"
-	"k8s.io/apimachinery/pkg/api/meta"
-	"k8s.io/apimachinery/pkg/runtime/schema"
+	"strings"
 
 	"knative.dev/pkg/apis"
 )
@@ -69,9 +65,9 @@ func (kr *KReference) Validate(ctx context.Context) *apis.FieldError {
 			errs = errs.Also(apis.ErrMissingField("apiVersion")).
 				Also(apis.ErrMissingField("group"))
 		}
-		if kr.APIVersion != "" && kr.Group != "" {
+		if kr.APIVersion != "" && kr.Group != "" && !strings.HasPrefix(kr.APIVersion, kr.Group) {
 			errs = errs.Also(&apis.FieldError{
-				Message: "both apiVersion and group are specified",
+				Message: "both apiVersion and group are specified and they refer to different API groups",
 				Paths:   []string{"apiVersion", "group"},
 				Details: "Only one of them must be specified",
 			})
@@ -112,42 +108,6 @@ func (kr *KReference) SetDefaults(ctx context.Context) {
 	if kr.Namespace == "" {
 		kr.Namespace = apis.ParentMeta(ctx).Namespace
 	}
-}
-
-// ResolveGroup resolves the APIVersion of a KReference starting from the Group.
-// In order to execute this method, you need RBAC to read the CRD of the Resource referred in this KReference.
-// Note: This API is EXPERIMENTAL and might break anytime. For more details: https://github.com/knative/eventing/issues/5086
-func (kr *KReference) ResolveGroup(crdLister apiextensionsv1lister.CustomResourceDefinitionLister) error {
-	if kr.Group == "" {
-		// Nothing to do here
-		return nil
-	}
-
-	actualGvk := schema.GroupVersionKind{Group: kr.Group, Kind: kr.Kind}
-	pluralGvk, _ := meta.UnsafeGuessKindToResource(actualGvk)
-	crd, err := crdLister.Get(pluralGvk.GroupResource().String())
-	if err != nil {
-		return err
-	}
-
-	actualGvk.Version, err = findCRDStorageVersion(crd)
-	if err != nil {
-		return err
-	}
-
-	kr.APIVersion, kr.Kind = actualGvk.ToAPIVersionAndKind()
-
-	return nil
-}
-
-// This function runs under the assumption that there must be exactly one "storage" version
-func findCRDStorageVersion(crd *apiextensionsv1.CustomResourceDefinition) (string, error) {
-	for _, version := range crd.Spec.Versions {
-		if version.Storage {
-			return version.Name, nil
-		}
-	}
-	return "", fmt.Errorf("this CRD %s doesn't have a storage version! Kubernetes, you're drunk, go home", crd.Name)
 }
 
 type isGroupAllowed struct{}

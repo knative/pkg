@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v1_test
+package kref
 
 import (
 	"context"
@@ -106,7 +106,7 @@ func TestResolveGroup(t *testing.T) {
 
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
-			err := tc.input.ResolveGroup(fakeCrdInformer.Lister())
+			kr, err := ResolveGroup(tc.input, fakeCrdInformer.Lister())
 			if err != nil {
 				if !tc.wantErr {
 					t.Error("ResolveGroup() =", err)
@@ -118,7 +118,7 @@ func TestResolveGroup(t *testing.T) {
 			}
 
 			if tc.output != nil {
-				if !cmp.Equal(tc.output, tc.input) {
+				if !cmp.Equal(tc.output, kr) {
 					t.Errorf("ResolveGroup diff: (-want, +got) =\n%s", cmp.Diff(tc.input, tc.output))
 				}
 			}
