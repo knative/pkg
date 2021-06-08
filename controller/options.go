@@ -16,7 +16,11 @@ limitations under the License.
 
 package controller
 
-import "knative.dev/pkg/reconciler"
+import (
+	"context"
+
+	"knative.dev/pkg/reconciler"
+)
 
 // Options is additional resources a Controller might want to use depending
 // on implementation.
@@ -38,9 +42,20 @@ type Options struct {
 
 	// DemoteFunc configures the demote function this reconciler uses
 	DemoteFunc func(b reconciler.Bucket)
+
+	// ContextWrappers configures the functions to invoke to wrap the context provided to the reconciliation functions
+	ContextWrappers []func(context.Context) context.Context
 }
 
 // OptionsFn is a callback method signature that accepts an Impl and returns
 // Options. Used for controllers that need access to the members of Options but
 // to build Options, integrators need an Impl.
 type OptionsFn func(impl *Impl) Options
+
+// WithContextWrapper adds a context wrapper.
+// You can add several context wrappers to the same reconciler impl.
+func WithContextWrapper(fn func(context.Context) context.Context) OptionsFn {
+	return func(impl *Impl) Options {
+		return Options{ContextWrappers: []func(context.Context) context.Context{fn}}
+	}
+}

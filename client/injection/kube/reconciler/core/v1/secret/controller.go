@@ -111,6 +111,9 @@ func NewImpl(ctx context.Context, r Interface, optionsFns ...controller.OptionsF
 		if opts.DemoteFunc != nil {
 			rec.DemoteFunc = opts.DemoteFunc
 		}
+		if len(opts.ContextWrappers) != 0 {
+			rec.ContextWrappers = append(rec.ContextWrappers, opts.ContextWrappers...)
+		}
 	}
 
 	rec.Recorder = createRecorder(ctx, agentName)
