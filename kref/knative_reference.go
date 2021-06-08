@@ -26,10 +26,22 @@ import (
 	duckv1 "knative.dev/pkg/apis/duck/v1"
 )
 
+// KReferenceResolver is an object that resolves the KReference.Group field
+// Note: This API is EXPERIMENTAL and might break anytime. For more details: https://github.com/knative/eventing/issues/5086
+type KReferenceResolver struct {
+	crdLister apiextensionsv1lister.CustomResourceDefinitionLister
+}
+
+// NewKReferenceResolver creates a new KReferenceResolver from a crdLister
+// Note: This API is EXPERIMENTAL and might break anytime. For more details: https://github.com/knative/eventing/issues/5086
+func NewKReferenceResolver(crdLister apiextensionsv1lister.CustomResourceDefinitionLister) *KReferenceResolver {
+	return &KReferenceResolver{crdLister: crdLister}
+}
+
 // ResolveGroup resolves the APIVersion of a KReference starting from the Group.
 // In order to execute this method, you need RBAC to read the CRD of the Resource referred in this KReference.
 // Note: This API is EXPERIMENTAL and might break anytime. For more details: https://github.com/knative/eventing/issues/5086
-func ResolveGroup(kr *duckv1.KReference, crdLister apiextensionsv1lister.CustomResourceDefinitionLister) (*duckv1.KReference, error) {
+func (resolver *KReferenceResolver) ResolveGroup(kr *duckv1.KReference) (*duckv1.KReference, error) {
 	if kr.Group == "" {
 		// Nothing to do here
 		return kr, nil
@@ -39,7 +51,7 @@ func ResolveGroup(kr *duckv1.KReference, crdLister apiextensionsv1lister.CustomR
 
 	actualGvk := schema.GroupVersionKind{Group: kr.Group, Kind: kr.Kind}
 	pluralGvk, _ := meta.UnsafeGuessKindToResource(actualGvk)
-	crd, err := crdLister.Get(pluralGvk.GroupResource().String())
+	crd, err := resolver.crdLister.Get(pluralGvk.GroupResource().String())
 	if err != nil {
 		return nil, err
 	}

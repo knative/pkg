@@ -106,7 +106,7 @@ func TestResolveGroup(t *testing.T) {
 
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
-			kr, err := ResolveGroup(tc.input, fakeCrdInformer.Lister())
+			kr, err := NewKReferenceResolver(fakeCrdInformer.Lister()).ResolveGroup(tc.input)
 			if err != nil {
 				if !tc.wantErr {
 					t.Error("ResolveGroup() =", err)
