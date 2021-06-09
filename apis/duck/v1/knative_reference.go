@@ -42,6 +42,7 @@ type KReference struct {
 	Name string `json:"name"`
 
 	// API version of the referent.
+	// +optional
 	APIVersion string `json:"apiVersion,omitempty"`
 
 	// Group of the API, without the version of the group. This can be used as an alternative to the APIVersion, and then resolved using ResolveGroup.
