@@ -20,6 +20,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"knative.dev/pkg/apis"
@@ -95,7 +96,7 @@ func TestValidateObjectReference(t *testing.T) {
 			Name:       "c.d",
 		},
 		want: &apis.FieldError{
-			Message: "invalid value: a DNS-1123 label must consist of lower case alphanumeric characters or '-', and must start and end with an alphanumeric character (e.g. 'my-name',  or '123-abc', regex used for validation is '[a-z0-9]([-a-z0-9]*[a-z0-9])?')",
+			Message: "invalid value: a lowercase RFC 1123 label must consist of lower case alphanumeric characters or '-', and must start and end with an alphanumeric character (e.g. 'my-name',  or '123-abc', regex used for validation is '[a-z0-9]([-a-z0-9]*[a-z0-9])?')",
 			Paths:   []string{"namespace", "name"},
 		},
 	}, {
@@ -117,8 +118,8 @@ func TestValidateObjectReference(t *testing.T) {
 				t.Errorf("ValidateObjectReference() = %v, wanted %v", got, test.want)
 			} else if test.want != nil {
 				want, got := test.want.Error(), got.Error()
-				if got != want {
-					t.Errorf("ValidateObjectReference() = %s, wanted %s", got, want)
+				if diff := cmp.Diff(want, got); diff != "" {
+					t.Errorf("ValidateObjectReference() diff: %s", diff)
 				}
 			}
 		})
@@ -177,7 +178,7 @@ func TestValidate(t *testing.T) {
 			Name:       "c.d",
 		},
 		want: &apis.FieldError{
-			Message: "invalid value: a DNS-1123 label must consist of lower case alphanumeric characters or '-', and must start and end with an alphanumeric character (e.g. 'my-name',  or '123-abc', regex used for validation is '[a-z0-9]([-a-z0-9]*[a-z0-9])?')",
+			Message: "invalid value: a lowercase RFC 1123 label must consist of lower case alphanumeric characters or '-', and must start and end with an alphanumeric character (e.g. 'my-name',  or '123-abc', regex used for validation is '[a-z0-9]([-a-z0-9]*[a-z0-9])?')",
 			Paths:   []string{"namespace", "name"},
 		},
 	}, {
@@ -224,8 +225,8 @@ func TestValidate(t *testing.T) {
 				t.Errorf("ValidateObjectReference() = %v, wanted %v", got, test.want)
 			} else if test.want != nil {
 				want, got := test.want.Error(), got.Error()
-				if got != want {
-					t.Errorf("ValidateObjectReference() = %s, wanted %s", got, want)
+				if diff := cmp.Diff(want, got); diff != "" {
+					t.Errorf("ValidateObjectReference() diff %s", diff)
 				}
 			}
 		})

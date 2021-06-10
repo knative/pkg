@@ -67,7 +67,7 @@ var (
 func TestMigrate(t *testing.T) {
 	// setup
 	resources := []runtime.Object{fake("first"), fake("second")}
-	dclient := dynamicFake.NewSimpleDynamicClient(runtime.NewScheme(), resources...)
+	dclient := dynamicFake.NewSimpleDynamicClientWithCustomListKinds(runtime.NewScheme(), gvrToListKind, resources...)
 	cclient := apixFake.NewSimpleClientset(fakeCRD)
 	m := NewMigrator(dclient, cclient)
 
@@ -136,7 +136,7 @@ func TestMigrate_Errors(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			resources := []runtime.Object{fake("first"), fake("second")}
-			dclient := dynamicFake.NewSimpleDynamicClient(runtime.NewScheme(), resources...)
+			dclient := dynamicFake.NewSimpleDynamicClientWithCustomListKinds(runtime.NewScheme(), gvrToListKind, resources...)
 			cclient := apixFake.NewSimpleClientset(fakeCRD)
 
 			if test.crd != nil {
@@ -193,6 +193,10 @@ func getPatchActions(actions []k8stesting.Action) []k8stesting.PatchAction {
 	}
 
 	return patches
+}
+
+var gvrToListKind = map[schema.GroupVersionResource]string{
+	{Group: "group.dev", Version: "v1", Resource: "fakes"}: "SomeList",
 }
 
 func fake(name string) runtime.Object {

@@ -37,6 +37,10 @@ import (
 	. "knative.dev/pkg/testing"
 )
 
+var gvrToListKind = map[schema.GroupVersionResource]string{
+	{Group: "pkg.knative.dev", Version: "v2", Resource: "resources"}: "SomeList",
+}
+
 func TestSimpleList(t *testing.T) {
 	scheme := runtime.NewScheme()
 	AddToScheme(scheme)
@@ -46,7 +50,7 @@ func TestSimpleList(t *testing.T) {
 
 	// Despite the signature allowing `...runtime.Object`, this method
 	// will not work properly unless the passed objects are `unstructured.Unstructured`
-	client := fake.NewSimpleDynamicClient(scheme, &unstructured.Unstructured{
+	client := fake.NewSimpleDynamicClientWithCustomListKinds(scheme, gvrToListKind, &unstructured.Unstructured{
 		Object: map[string]interface{}{
 			"apiVersion": "pkg.knative.dev/v2",
 			"kind":       "Resource",

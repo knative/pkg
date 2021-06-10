@@ -18,7 +18,6 @@ package testing
 
 import (
 	"context"
-	"encoding/json"
 	"testing"
 
 	fakeapixclient "knative.dev/pkg/client/injection/apiextensions/client/fake"
@@ -31,8 +30,6 @@ import (
 	"knative.dev/pkg/logging"
 	logtesting "knative.dev/pkg/logging/testing"
 
-	"k8s.io/apimachinery/pkg/api/meta"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	ktesting "k8s.io/client-go/testing"
@@ -65,8 +62,7 @@ func MakeFactory(ctor Ctor) rtesting.Factory {
 
 		ctx, kubeClient := fakekubeclient.With(ctx, ls.GetKubeObjects()...)
 		ctx, apixClient := fakeapixclient.With(ctx, ls.GetAPIExtensionsObjects()...)
-		ctx, dynamicClient := fakedynamicclient.With(ctx,
-			ls.NewScheme(), ToUnstructured(t, ls.NewScheme(), r.Objects)...)
+		ctx, dynamicClient := fakedynamicclient.With(ctx, ls.NewScheme(), r.Objects...)
 
 		// The dynamic client's support for patching is BS.  Implement it
 		// here via PrependReactor (this can be overridden below by the
@@ -117,37 +113,4 @@ func MakeFactory(ctor Ctor) rtesting.Factory {
 
 		return c, actionRecorderList, eventList
 	}
-}
-
-// ToUnstructured takes a list of k8s resources and converts them to
-// Unstructured objects.
-// We must pass objects as Unstructured to the dynamic client fake, or it
-// won't handle them properly.
-func ToUnstructured(t *testing.T, sch *runtime.Scheme, objs []runtime.Object) (us []runtime.Object) {
-	for _, obj := range objs {
-		obj = obj.DeepCopyObject() // Don't mess with the primary copy
-		// Determine and set the TypeMeta for this object based on our test scheme.
-		gvks, _, err := sch.ObjectKinds(obj)
-		if err != nil {
-			t.Fatal("Unable to determine kind for type:", err)
-		}
-		apiv, k := gvks[0].ToAPIVersionAndKind()
-		ta, err := meta.TypeAccessor(obj)
-		if err != nil {
-			t.Fatal("Unable to create type accessor:", err)
-		}
-		ta.SetAPIVersion(apiv)
-		ta.SetKind(k)
-
-		b, err := json.Marshal(obj)
-		if err != nil {
-			t.Fatal("Unable to marshal:", err)
-		}
-		u := &unstructured.Unstructured{}
-		if err := json.Unmarshal(b, u); err != nil {
-			t.Fatal("Unable to unmarshal:", err)
-		}
-		us = append(us, u)
-	}
-	return
 }
