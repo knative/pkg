@@ -37,12 +37,12 @@ require (
 	github.com/niemeyer/pretty v0.0.0-20200227124842-a10e7caefd8e // indirect
 	github.com/onsi/gomega v1.10.1 // indirect
 	github.com/openzipkin/zipkin-go v0.2.5
-	github.com/prometheus/client_golang v1.10.0
-	github.com/prometheus/common v0.25.0
+	github.com/prometheus/client_golang v1.11.0
+	github.com/prometheus/common v0.26.0
 	github.com/spf13/pflag v1.0.5
 	github.com/tsenart/vegeta/v12 v12.8.4
 	go.opencensus.io v0.23.0
-	go.uber.org/atomic v1.7.0
+	go.uber.org/atomic v1.8.0
 	go.uber.org/automaxprocs v1.4.0
 	go.uber.org/zap v1.17.0
 	golang.org/x/crypto v0.0.0-20210513164829-c07d793c2f9a // indirect
