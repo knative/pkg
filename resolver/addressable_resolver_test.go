@@ -417,7 +417,7 @@ func TestGetURIDestinationV1(t *testing.T) {
 			wantURI: addressableDNS,
 		}, "happy ref to k8s service": {
 			objects: []runtime.Object{
-				getAddressable(),
+				getAddressableFromKRef(k8sServiceRef()),
 			},
 			dest:    duckv1.Destination{Ref: k8sServiceRef()},
 			wantURI: "http://testsink.testnamespace.svc.cluster.local/",
@@ -529,6 +529,9 @@ func TestGetURIDestinationV1(t *testing.T) {
 		}, "notFound": {
 			dest:    duckv1.Destination{Ref: unaddressableKnativeRef()},
 			wantErr: fmt.Sprintf("%s %q not found", unaddressableResource, unaddressableName),
+		}, "notFound k8s service": {
+			dest:    duckv1.Destination{Ref: k8sServiceRef()},
+			wantErr: fmt.Sprintf("services %q not found", addressableName),
 		}}
 
 	for n, tc := range tests {
@@ -769,5 +772,23 @@ func unaddressableRef() *corev1.ObjectReference {
 		Name:       unaddressableName,
 		APIVersion: unaddressableAPIVersion,
 		Namespace:  testNS,
+	}
+}
+
+func getAddressableFromKRef(ref *duckv1.KReference) *unstructured.Unstructured {
+	return &unstructured.Unstructured{
+		Object: map[string]interface{}{
+			"apiVersion": ref.APIVersion,
+			"kind":       ref.Kind,
+			"metadata": map[string]interface{}{
+				"namespace": ref.Namespace,
+				"name":      ref.Name,
+			},
+			"status": map[string]interface{}{
+				"address": map[string]interface{}{
+					"url": addressableDNS,
+				},
+			},
+		},
 	}
 }
