@@ -34,7 +34,7 @@ const (
 	// version listed here:
 	// https://github.com/knative/docs/blob/main/docs/install/any-kubernetes-cluster.md#before-you-begin
 	// https://github.com/knative/docs/blob/main/docs/install/knative-with-operators.md#prerequisites
-	defaultMinimumVersion = "v1.18.0"
+	defaultMinimumVersion = "v1.19.0"
 )
 
 func getMinimumVersion() string {
