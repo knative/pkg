@@ -32,8 +32,7 @@ const (
 
 	// NOTE: If you are changing this line, please also update the minimum kubernetes
 	// version listed here:
-	// https://github.com/knative/docs/blob/main/docs/install/prerequisites.md#prerequisites
-	// https://github.com/knative/docs/blob/main/docs/install/knative-with-operators.md#prerequisites
+	// https://github.com/knative/docs/blob/mkdocs/docs/snippets/prerequisites.md
 	defaultMinimumVersion = "v1.19.0"
 )
 
