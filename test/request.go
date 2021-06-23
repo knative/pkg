@@ -84,8 +84,6 @@ func EventuallyMatchesBody(expected string) spoof.ResponseChecker {
 	}
 }
 
-type endpointStateCallable = func(ctx context.Context, u *url.URL, inState spoof.ResponseChecker, desc string, r ...spoof.RequestOption) (*spoof.Response, error)
-
 // WaitForEndpointState will poll an endpoint until inState indicates the state is achieved,
 // or default timeout is reached.
 // If resolvableDomain is false, it will use kubeClientset to look up the ingress and spoof
@@ -96,24 +94,13 @@ func WaitForEndpointState(
 	ctx context.Context,
 	kubeClient kubernetes.Interface,
 	logf logging.FormatLogger,
-	u *url.URL,
+	url *url.URL,
 	inState spoof.ResponseChecker,
 	desc string,
 	resolvable bool,
 	opts ...interface{}) (*spoof.Response, error) {
-	return endpointStateWithTimeout(
-		ctx,
-		kubeClient,
-		logf,
-		u,
-		inState,
-		desc,
-		resolvable,
-		Flags.SpoofRequestTimeout,
-		func(client *spoof.SpoofingClient) endpointStateCallable {
-			return client.WaitForEndpointState
-		},
-		opts...)
+	return WaitForEndpointStateWithTimeout(ctx, kubeClient, logf, url, inState,
+		desc, resolvable, Flags.SpoofRequestTimeout, opts...)
 }
 
 // WaitForEndpointStateWithTimeout will poll an endpoint until inState indicates the state is achieved
@@ -122,7 +109,7 @@ func WaitForEndpointState(
 // the domain in the request headers, otherwise it will make the request directly to domain.
 // desc will be used to name the metric that is emitted to track how long it took for the
 // domain to get into the state checked by inState.  Commas in `desc` must be escaped.
-func endpointStateWithTimeout(
+func WaitForEndpointStateWithTimeout(
 	ctx context.Context,
 	kubeClient kubernetes.Interface,
 	logf logging.FormatLogger,
@@ -131,7 +118,21 @@ func endpointStateWithTimeout(
 	desc string,
 	resolvable bool,
 	timeout time.Duration,
-	f func(*spoof.SpoofingClient) endpointStateCallable,
+	opts ...interface{}) (*spoof.Response, error) {
+
+	return waitForEndpointStateWithTimeout(ctx, kubeClient, logf, url, inState, desc, resolvable, timeout, true, opts)
+}
+
+func waitForEndpointStateWithTimeout(
+	ctx context.Context,
+	kubeClient kubernetes.Interface,
+	logf logging.FormatLogger,
+	url *url.URL,
+	inState spoof.ResponseChecker,
+	desc string,
+	resolvable bool,
+	timeout time.Duration,
+	wait bool,
 	opts ...interface{}) (*spoof.Response, error) {
 
 	var tOpts []spoof.TransportOption
@@ -152,30 +153,22 @@ func endpointStateWithTimeout(
 	}
 	client.RequestTimeout = timeout
 
-	return f(client)(ctx, url, inState, desc, rOpts...)
+	if wait {
+		return client.WaitForEndpointState(ctx, url, inState, desc, rOpts...)
+	}
+	return client.CheckEndpointState(ctx, url, inState, desc, rOpts...)
 }
 
 func CheckEndpointState(
 	ctx context.Context,
 	kubeClient kubernetes.Interface,
 	logf logging.FormatLogger,
-	u *url.URL,
+	url *url.URL,
 	inState spoof.ResponseChecker,
 	desc string,
 	resolvable bool,
 	opts ...interface{},
 ) (*spoof.Response, error) {
-	return endpointStateWithTimeout(
-		ctx,
-		kubeClient,
-		logf,
-		u,
-		inState,
-		desc,
-		resolvable,
-		Flags.SpoofRequestTimeout,
-		func(client *spoof.SpoofingClient) endpointStateCallable {
-			return client.CheckEndpointState
-		},
-		opts...)
+	return waitForEndpointStateWithTimeout(ctx, kubeClient, logf, url, inState,
+		desc, resolvable, Flags.SpoofRequestTimeout, false, opts...)
 }
