@@ -38,6 +38,9 @@ type Options struct {
 
 	// DemoteFunc configures the demote function this reconciler uses
 	DemoteFunc func(b reconciler.Bucket)
+
+	// PromoteFilterFunc filters the objects that are enqueued when the reconciler is promoted to leader.
+	PromoteFilterFunc func(obj interface{}) bool
 }
 
 // OptionsFn is a callback method signature that accepts an Impl and returns
