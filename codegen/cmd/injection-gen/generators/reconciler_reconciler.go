@@ -283,6 +283,9 @@ type reconcilerImpl struct {
 	// Kubernetes API.
 	Recorder {{.recordEventRecorder|raw}}
 
+	// ContextWrappers allows to decorate the context passed to the reconcile methods
+	ContextWrappers []func(context.Context)context.Context
+
 	// configStore allows for decorating a context with config maps.
 	// +optional
 	configStore {{.reconcilerConfigStore|raw}}
@@ -366,6 +369,9 @@ func NewReconciler(ctx {{.contextContext|raw}}, logger *{{.zapSugaredLogger|raw}
 		if opts.DemoteFunc != nil {
 			rec.DemoteFunc = opts.DemoteFunc
 		}
+		if len(opts.ContextWrappers) != 0 {
+			rec.ContextWrappers = append(rec.ContextWrappers, opts.ContextWrappers...)
+		}
 	}
 
 	return rec
@@ -400,6 +406,11 @@ func (r *reconcilerImpl) Reconcile(ctx {{.contextContext|raw}}, key string) erro
 
 	// Add the recorder to context.
 	ctx = {{.controllerWithEventRecorder|raw}}(ctx, r.Recorder)
+
+	// Decorate the context with additional wrapper functions
+	for _, fn := range r.ContextWrappers {
+		ctx = fn(ctx)
+	}
 
 	// Get the resource with this namespace/name.
 	{{if .nonNamespaced}}
