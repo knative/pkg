@@ -85,8 +85,15 @@ func TestFloat64Value_Nil(t *testing.T) {
 	}
 }
 
-
 func TestBoolValue(t *testing.T) {
+	want := true
+	gotValue := BoolValue(&want)
+	if want != gotValue {
+		t.Errorf("Bool() = &%v, wanted %v", gotValue, want)
+	}
+}
+
+func TestBoolValue_Nil(t *testing.T) {
 	want := false
 	gotValue := BoolValue(nil)
 	if want != gotValue {
@@ -95,6 +102,14 @@ func TestBoolValue(t *testing.T) {
 }
 
 func TestStringValue(t *testing.T) {
+	want := "should be a pointer"
+	gotValue := StringValue(&want)
+	if want != gotValue {
+		t.Errorf("String() = &%v, wanted %v", gotValue, want)
+	}
+}
+
+func TestStringValue_Nil(t *testing.T) {
 	want := ""
 	gotValue := StringValue(nil)
 	if want != gotValue {
@@ -103,6 +118,13 @@ func TestStringValue(t *testing.T) {
 }
 
 func TestTimeValue(t *testing.T) {
+	want := time.Now().Add(time.Minute)
+	if got, want := TimeValue(&want), want; got != want {
+		t.Errorf("got = %v, want: %v", got, want)
+	}
+}
+
+func TestTimeValue_Nil(t *testing.T) {
 	want := time.Time{}
 	if got, want := TimeValue(nil), want; got != want {
 		t.Errorf("got = %v, want: %v", got, want)
@@ -110,6 +132,14 @@ func TestTimeValue(t *testing.T) {
 }
 
 func TestDurationValue(t *testing.T) {
+	want := 42 * time.Second
+	gotValue := DurationValue(&want)
+	if want != gotValue {
+		t.Errorf("Duration() = &%v, wanted %v", gotValue, want)
+	}
+}
+
+func TestDurationValue_Nil(t *testing.T) {
 	want := time.Duration(0)
 	gotValue := DurationValue(nil)
 	if want != gotValue {
