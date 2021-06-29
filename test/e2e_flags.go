@@ -22,6 +22,8 @@ package test
 import (
 	"bytes"
 	"flag"
+	"os"
+	"strings"
 	"text/template"
 
 	"k8s.io/client-go/tools/clientcmd"
@@ -68,7 +70,13 @@ func SetupLoggingFlags() {
 
 // ImagePath is a helper function to transform an image name into an image reference that can be pulled.
 func ImagePath(name string) string {
-	tpl, err := template.New("image").Parse(Flags.ImageTemplate)
+	tpl, err := template.New("image").Funcs(template.FuncMap{
+		"toEnvKey": func(in string) string {
+			underscores := strings.ReplaceAll(in, "-", "_")
+			return strings.ToUpper(underscores)
+		},
+		"fromEnv": os.Getenv,
+	}).Parse(Flags.ImageTemplate)
 	if err != nil {
 		panic("could not parse image template: " + err.Error())
 	}
