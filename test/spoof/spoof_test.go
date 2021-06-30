@@ -16,19 +16,19 @@ limitations under the License.
 
 // spoof contains logic to make polling HTTP requests against an endpoint with optional host spoofing.
 
-package test
+package spoof
 
 import (
 	"context"
 	"fmt"
 	"net/http"
 	"net/url"
+
 	"testing"
 
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"knative.dev/pkg/client/injection/kube/client/fake"
-	"knative.dev/pkg/test/spoof"
 )
 
 type fakeTransport struct{}
@@ -46,8 +46,8 @@ type countCalls struct {
 	calls int32
 }
 
-func (c *countCalls) count(rc spoof.ResponseChecker) spoof.ResponseChecker {
-	return func(resp *spoof.Response) (done bool, err error) {
+func (c *countCalls) count(rc ResponseChecker) ResponseChecker {
+	return func(resp *Response) (done bool, err error) {
 		c.calls++
 		return rc(resp)
 	}
@@ -71,7 +71,7 @@ func TestSpoofingClient_CheckEndpointState(t *testing.T) {
 	}
 	type args struct {
 		url     *url.URL
-		inState spoof.ResponseChecker
+		inState ResponseChecker
 		desc    string
 		opts    []RequestOption
 	}
@@ -87,7 +87,7 @@ func TestSpoofingClient_CheckEndpointState(t *testing.T) {
 				Host:   "fake.knative.net",
 				Scheme: "http",
 			},
-			inState: func(resp *spoof.Response) (done bool, err error) {
+			inState: func(resp *Response) (done bool, err error) {
 				return false, nil
 			},
 		},
@@ -100,7 +100,7 @@ func TestSpoofingClient_CheckEndpointState(t *testing.T) {
 				Host:   "fake.knative.net",
 				Scheme: "http",
 			},
-			inState: func(resp *spoof.Response) (done bool, err error) {
+			inState: func(resp *Response) (done bool, err error) {
 				return false, fmt.Errorf("response error")
 			},
 		},
@@ -113,7 +113,7 @@ func TestSpoofingClient_CheckEndpointState(t *testing.T) {
 				Host:   "fake.knative.net",
 				Scheme: "http",
 			},
-			inState: func(resp *spoof.Response) (done bool, err error) {
+			inState: func(resp *Response) (done bool, err error) {
 				return true, nil
 			},
 		},
@@ -123,12 +123,18 @@ func TestSpoofingClient_CheckEndpointState(t *testing.T) {
 	for _, tt := range tests {
 		_, fKlient := fake.With(context.TODO(), ingress)
 		t.Run(tt.name, func(t *testing.T) {
-			sc, err := NewSpoofingClient(
+			sc, err := New(
+				// ctx, client, logf, domain, resolvable, Flags.IngressEndpoint,
+				// Flags.SpoofRequestInterval, Flags.SpoofRequestTimeout, opts...)(
 				context.TODO(),
 				fKlient,
 				t.Logf,
 				"some.svc.knative.dev",
+
 				false,
+				"host",
+				1,
+				1,
 			)
 			if err != nil {
 				t.Fatalf("Spoofing client not created: %v", err)
