@@ -63,7 +63,7 @@ func NewImpl(ctx context.Context, r Interface, optionsFns ...controller.OptionsF
 
 	lister := customresourcedefinitionInformer.Lister()
 
-	filterFunc := controller.GetFilterFunc(ctx)
+	filterFunc := controller.DefaultFilterFunc
 	rec := &reconcilerImpl{
 		LeaderAwareFuncs: reconciler.LeaderAwareFuncs{
 			PromoteFunc: func(bkt reconciler.Bucket, enq func(reconciler.Bucket, types.NamespacedName)) error {
@@ -97,7 +97,12 @@ func NewImpl(ctx context.Context, r Interface, optionsFns ...controller.OptionsF
 		zap.String(logkey.Kind, "apiextensions.k8s.io.CustomResourceDefinition"),
 	)
 
-	impl := controller.NewImpl(rec, logger, ctrTypeName)
+	options := controller.ControllerOptions{
+		Logger:                 logger,
+		WorkQueueName:          ctrTypeName,
+		GlobalResyncFilterFunc: func(o interface{}) bool { return filterFunc(o) },
+	}
+	impl := controller.NewImplFull(rec, options)
 	agentName := defaultControllerAgentName
 
 	// Pass impl to the options. Save any optional results.
@@ -117,6 +122,9 @@ func NewImpl(ctx context.Context, r Interface, optionsFns ...controller.OptionsF
 		}
 		if opts.DemoteFunc != nil {
 			rec.DemoteFunc = opts.DemoteFunc
+		}
+		if opts.FilterFunc != nil {
+			filterFunc = opts.FilterFunc
 		}
 	}
 

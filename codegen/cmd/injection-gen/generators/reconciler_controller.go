@@ -82,7 +82,7 @@ func (g *reconcilerControllerGenerator) GenerateType(c *generator.Context, t *ty
 		}),
 		"controllerNewImpl": c.Universe.Function(types.Name{
 			Package: "knative.dev/pkg/controller",
-			Name:    "NewImpl",
+			Name:    "NewImplFull",
 		}),
 		"loggingFromContext": c.Universe.Function(types.Name{
 			Package: "knative.dev/pkg/logging",
@@ -136,13 +136,17 @@ func (g *reconcilerControllerGenerator) GenerateType(c *generator.Context, t *ty
 			Package: "knative.dev/pkg/controller",
 			Name:    "Options",
 		}),
+		"controllerControllerOptions": c.Universe.Type(types.Name{
+			Package: "knative.dev/pkg/controller",
+			Name:    "ControllerOptions",
+		}),
 		"controllerOptionsFn": c.Universe.Type(types.Name{
 			Package: "knative.dev/pkg/controller",
 			Name:    "OptionsFn",
 		}),
-		"controllerGetFilterFunc": c.Universe.Type(types.Name{
+		"controllerDefaultFilterFunc": c.Universe.Type(types.Name{
 			Package: "knative.dev/pkg/controller",
-			Name:    "GetFilterFunc",
+			Name:    "DefaultFilterFunc",
 		}),
 		"contextContext": c.Universe.Type(types.Name{
 			Package: "context",
@@ -221,7 +225,7 @@ func NewImpl(ctx {{.contextContext|raw}}, r Interface{{if .hasClass}}, classValu
 
 	lister := {{.type|lowercaseSingular}}Informer.Lister()
 
-	filterFunc := {{.controllerGetFilterFunc|raw}}(ctx)
+	filterFunc := {{.controllerDefaultFilterFunc|raw}}
 	rec := &reconcilerImpl{
 		LeaderAwareFuncs: {{.reconcilerLeaderAwareFuncs|raw}}{
 			PromoteFunc: func(bkt {{.reconcilerBucket|raw}}, enq func({{.reconcilerBucket|raw}}, {{.typesNamespacedName|raw}})) error {
@@ -257,7 +261,12 @@ func NewImpl(ctx {{.contextContext|raw}}, r Interface{{if .hasClass}}, classValu
 	)
 
 
-	impl := {{.controllerNewImpl|raw}}(rec, logger, ctrTypeName)
+	options := {{.controllerControllerOptions|raw}}{
+		Logger: logger,
+		WorkQueueName: ctrTypeName,
+		GlobalResyncFilterFunc: func(o interface{}) bool { return filterFunc(o) },
+	}
+	impl := {{.controllerNewImpl|raw}}(rec, options)
 	agentName := defaultControllerAgentName
 
 	// Pass impl to the options. Save any optional results.
@@ -279,6 +288,9 @@ func NewImpl(ctx {{.contextContext|raw}}, r Interface{{if .hasClass}}, classValu
 		{{- end}}
 		if opts.DemoteFunc != nil {
 			rec.DemoteFunc = opts.DemoteFunc
+		}
+		if opts.FilterFunc != nil {
+			filterFunc = opts.FilterFunc
 		}
 	}
 

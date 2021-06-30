@@ -1628,7 +1628,7 @@ func TestFilteredGlobalResync(t *testing.T) {
 		filterFunc: func(interface{}) bool { return false },
 	}, {
 		name:       "always true",
-		filterFunc: alwaysTrue,
+		filterFunc: DefaultFilterFunc,
 		wantQueue:  []types.NamespacedName{{Namespace: "foo", Name: "bar"}, {Namespace: "bar", Name: "foo"}, {Namespace: "fizz", Name: "buzz"}},
 	}, {
 		name: "filter namespace foo",

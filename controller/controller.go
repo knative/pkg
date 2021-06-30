@@ -60,10 +60,10 @@ var (
 	// TODO rename the const to Concurrency and deprecated this
 	DefaultThreadsPerController = 2
 
-	// alwaysTrue is the default FilterFunc, which allows all objects
+	// DefaultFilterFunc is the default FilterFunc, which allows all objects
 	// passed through. This is used in the default case for passing all
 	// objects to the slowlane from the passed sharedInformer
-	alwaysTrue = func(interface{}) bool { return true }
+	DefaultFilterFunc = func(interface{}) bool { return true }
 )
 
 // Reconciler is the interface that controller implementations are expected
@@ -226,9 +226,9 @@ type Impl struct {
 
 	// GlobalResyncFilterFunc is used to filter out objects from
 	// the shared cache on a global resync. By default and if not
-	// set by the controller implemenation, it will default to
+	// set by the controller implementation, it will default to
 	// allowing every object in the cache.
-	globalResyncFilterFunc FilterFunc
+	GlobalResyncFilterFunc FilterFunc
 }
 
 // ControllerOptions encapsulates options for creating a new controller,
@@ -267,7 +267,7 @@ func NewImplFull(r Reconciler, options ControllerOptions) *Impl {
 		options.Concurrency = DefaultThreadsPerController
 	}
 	if options.GlobalResyncFilterFunc == nil {
-		options.GlobalResyncFilterFunc = alwaysTrue
+		options.GlobalResyncFilterFunc = DefaultFilterFunc
 	}
 	return &Impl{
 		Name:                   options.WorkQueueName,
@@ -276,7 +276,7 @@ func NewImplFull(r Reconciler, options ControllerOptions) *Impl {
 		logger:                 options.Logger,
 		statsReporter:          options.Reporter,
 		Concurrency:            options.Concurrency,
-		globalResyncFilterFunc: options.GlobalResyncFilterFunc,
+		GlobalResyncFilterFunc: options.GlobalResyncFilterFunc,
 	}
 }
 
@@ -588,10 +588,10 @@ func (c *Impl) handleErr(err error, key types.NamespacedName, startTime time.Tim
 	c.workQueue.Forget(key)
 }
 
-// GlobalResync enqueues (as allowed by the globalResyncFilterFunc) into
+// GlobalResync enqueues (as allowed by the GlobalResyncFilterFunc) into
 // the slow lane objects from the passed SharedInformer
 func (c *Impl) GlobalResync(si cache.SharedInformer) {
-	c.FilteredGlobalResync(c.globalResyncFilterFunc, si)
+	c.FilteredGlobalResync(c.GlobalResyncFilterFunc, si)
 }
 
 // FilteredGlobalResync enqueues objects from the
@@ -808,19 +808,4 @@ func safeKey(key types.NamespacedName) string {
 		return key.Name
 	}
 	return key.String()
-}
-
-// This is a filterFunc for leaderelection informer and listers
-type filterFuncKey struct{}
-
-func WithFilterFunc(ctx context.Context, filter FilterFunc) context.Context {
-	return context.WithValue(ctx, filterFuncKey{}, filter)
-}
-
-func GetFilterFunc(ctx context.Context) FilterFunc {
-	value := ctx.Value(filterFuncKey{})
-	if value == nil {
-		return alwaysTrue
-	}
-	return value.(FilterFunc)
 }

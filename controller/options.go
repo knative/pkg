@@ -41,6 +41,9 @@ type Options struct {
 
 	// Concurrency - The number of workers to use when processing the controller's workqueue.
 	Concurrency int
+
+	// FilterFunc filters the objects that are enqueued when a global resync is triggered.
+	FilterFunc FilterFunc
 }
 
 // OptionsFn is a callback method signature that accepts an Impl and returns
