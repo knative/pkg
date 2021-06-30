@@ -124,8 +124,6 @@ func TestSpoofingClient_CheckEndpointState(t *testing.T) {
 		_, fKlient := fake.With(context.TODO(), ingress)
 		t.Run(tt.name, func(t *testing.T) {
 			sc, err := New(
-				// ctx, client, logf, domain, resolvable, Flags.IngressEndpoint,
-				// Flags.SpoofRequestInterval, Flags.SpoofRequestTimeout, opts...)(
 				context.TODO(),
 				fKlient,
 				t.Logf,
@@ -144,6 +142,106 @@ func TestSpoofingClient_CheckEndpointState(t *testing.T) {
 			}
 			counter := countCalls{}
 			_, err = sc.CheckEndpointState(context.TODO(), tt.args.url, counter.count(tt.args.inState), tt.args.desc, tt.args.opts...)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("SpoofingClient.CheckEndpointState() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if counter.calls != tt.wantCalls {
+				t.Errorf("Expected ResponseChecker to be invoked %d time but got invoked %d", tt.wantCalls, counter.calls)
+			}
+		})
+	}
+}
+
+func TestSpoofingClient_WaitForEndpointState(t *testing.T) {
+	ingress := &corev1.Service{
+		ObjectMeta: v1.ObjectMeta{
+			Name:      "istio-ingressgateway",
+			Namespace: "istio-system",
+		},
+		Status: corev1.ServiceStatus{
+			LoadBalancer: corev1.LoadBalancerStatus{
+				Ingress: []corev1.LoadBalancerIngress{
+					{
+						Hostname: "host",
+					},
+				},
+			},
+		},
+	}
+	type args struct {
+		url     *url.URL
+		inState ResponseChecker
+		desc    string
+		opts    []RequestOption
+	}
+	tests := []struct {
+		name      string
+		args      args
+		wantErr   bool
+		wantCalls int32
+	}{{
+		name: "OK response doesn't trigger a second request",
+		args: args{
+			url: &url.URL{
+				Host:   "fake.knative.net",
+				Scheme: "http",
+			},
+			inState: func(resp *Response) (done bool, err error) {
+				return true, nil
+			},
+		},
+		wantErr:   false,
+		wantCalls: 1,
+	}, {
+		name: "Error response doesn't trigger more requests",
+		args: args{
+			url: &url.URL{
+				Host:   "fake.knative.net",
+				Scheme: "http",
+			},
+			inState: func(resp *Response) (done bool, err error) {
+				return false, fmt.Errorf("response error")
+			},
+		},
+		wantErr:   true,
+		wantCalls: 1,
+	}, {
+		name: "Non matching response triggers more requests",
+		args: args{
+			url: &url.URL{
+				Host:   "fake.knative.net",
+				Scheme: "http",
+			},
+			inState: func(resp *Response) (done bool, err error) {
+				return false, nil
+			},
+		},
+		wantErr:   true,
+		wantCalls: 3,
+	}}
+	for _, tt := range tests {
+		_, fKlient := fake.With(context.TODO(), ingress)
+		t.Run(tt.name, func(t *testing.T) {
+			sc, err := New(
+				context.TODO(),
+				fKlient,
+				t.Logf,
+				"some.svc.knative.dev",
+
+				false,
+				"host",
+				1,
+				1,
+			)
+			if err != nil {
+				t.Fatalf("Spoofing client not created: %v", err)
+			}
+			sc.Client = &http.Client{
+				Transport: &fakeTransport{},
+			}
+			counter := countCalls{}
+			_, err = sc.WaitForEndpointState(context.TODO(), tt.args.url, counter.count(tt.args.inState), tt.args.desc, tt.args.opts...)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("SpoofingClient.CheckEndpointState() error = %v, wantErr %v", err, tt.wantErr)
 				return
