@@ -44,7 +44,7 @@ type URIResolver struct {
 	tracker       tracker.Interface
 	listerFactory func(schema.GroupVersionResource) (cache.GenericLister, error)
 
-	kRefResolver *kref.KReferenceResolver
+	refResolver *kref.KReferenceResolver
 }
 
 type URIResolverOption func(*URIResolver)
@@ -78,7 +78,7 @@ func NewURIResolver(ctx context.Context, callback func(types.NamespacedName), op
 // WithKReferenceResolver adds the capability to the URIResolver to resolve KReference.Group
 func WithKReferenceResolver(kRefResolver *kref.KReferenceResolver) URIResolverOption {
 	return func(resolver *URIResolver) {
-		resolver.kRefResolver = kRefResolver
+		resolver.refResolver = kRefResolver
 	}
 }
 
@@ -155,9 +155,9 @@ func (r *URIResolver) URIFromDestinationV1(ctx context.Context, dest duckv1.Dest
 }
 
 func (r *URIResolver) URIFromKReference(ctx context.Context, ref *duckv1.KReference, parent interface{}) (*apis.URL, error) {
-	if r.kRefResolver != nil {
+	if r.refResolver != nil {
 		var err error
-		ref, err = r.kRefResolver.ResolveGroup(ref)
+		ref, err = r.refResolver.ResolveGroup(ref)
 		if err != nil {
 			return nil, fmt.Errorf("cannot resolve KReference: %w", err)
 		}
