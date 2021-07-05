@@ -23,17 +23,23 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	corev1 "k8s.io/api/core/v1"
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes/scheme"
+	"k8s.io/client-go/rest"
 	"knative.dev/pkg/apis"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
 	duckv1alpha1 "knative.dev/pkg/apis/duck/v1alpha1"
 	duckv1beta1 "knative.dev/pkg/apis/duck/v1beta1"
+	customresourcedefinitioninformer "knative.dev/pkg/client/injection/apiextensions/informers/apiextensions/v1/customresourcedefinition/fake"
 	"knative.dev/pkg/client/injection/ducks/duck/v1/addressable"
+	"knative.dev/pkg/injection"
 	fakedynamicclient "knative.dev/pkg/injection/clients/dynamicclient/fake"
+	"knative.dev/pkg/kref"
 	"knative.dev/pkg/resolver"
 )
 
@@ -45,10 +51,12 @@ const (
 	addressableName       = "testsink"
 	addressableKind       = "Sink"
 	addressableAPIVersion = "duck.knative.dev/v1"
+	addressableAPIGroup   = "duck.knative.dev"
 
 	unaddressableName       = "testunaddressable"
 	unaddressableKind       = "KResource"
 	unaddressableAPIVersion = "duck.knative.dev/v1alpha1"
+	unaddressableAPIGroup   = "duck.knative.dev"
 	unaddressableResource   = "kresources.duck.knative.dev"
 
 	testNS = "testnamespace"
@@ -561,6 +569,72 @@ func TestGetURIDestinationV1(t *testing.T) {
 	}
 }
 
+func TestGetURIDestinationV1WithKRefResolver(t *testing.T) {
+	tests := map[string]struct {
+		objects []runtime.Object
+		dest    duckv1.Destination
+		wantURI string
+		wantErr string
+	}{
+		"happy ref": {
+			objects: []runtime.Object{
+				getAddressable(),
+			},
+			dest:    duckv1.Destination{Ref: addressableKnativeRef()},
+			wantURI: addressableDNS,
+		}, "happy ref with group": {
+			objects: []runtime.Object{
+				getAddressable(),
+			},
+			dest:    duckv1.Destination{Ref: addressableKnativeRefWithGroup()},
+			wantURI: addressableDNS,
+		}, "unknown api kind": {
+			objects: []runtime.Object{
+				getAddressable(),
+			},
+			dest:    duckv1.Destination{Ref: unaddressableKnativeRefWithGroup()},
+			wantErr: fmt.Sprintf("cannot resolve KReference: customresourcedefinition.apiextensions.k8s.io %q not found", unaddressableResource),
+		}, "happy ref to k8s service": {
+			objects: []runtime.Object{
+				getAddressableFromKRef(k8sServiceRef()),
+			},
+			dest:    duckv1.Destination{Ref: k8sServiceRef()},
+			wantURI: "http://testsink.testnamespace.svc.cluster.local/",
+		}}
+
+	for n, tc := range tests {
+		t.Run(n, func(t *testing.T) {
+			ctx, _ := injection.Fake.SetupInformers(context.Background(), &rest.Config{})
+			ctx, _ = fakedynamicclient.With(ctx, scheme.Scheme, tc.objects...)
+
+			crdInformer := customresourcedefinitioninformer.Get(ctx)
+			crdInformer.Informer().GetIndexer().Add(addressableRefCRD())
+
+			ctx = addressable.WithDuck(ctx)
+			r := resolver.NewURIResolver(ctx, func(types.NamespacedName) {},
+				resolver.WithKReferenceResolver(kref.NewKReferenceResolver(crdInformer.Lister())))
+
+			// Run it twice since this should be idempotent. URI Resolver should
+			// not modify the cache's copy.
+			_, _ = r.URIFromDestinationV1(ctx, tc.dest, getAddressable())
+			uri, gotErr := r.URIFromDestinationV1(ctx, tc.dest, getAddressable())
+
+			if gotErr != nil {
+				if tc.wantErr != "" {
+					if got, want := gotErr.Error(), tc.wantErr; got != want {
+						t.Errorf("Unexpected error (-want, +got) =\n%s", cmp.Diff(want, got))
+					}
+				} else {
+					t.Error("Unexpected error:", gotErr)
+				}
+			}
+			if got, want := uri.String(), tc.wantURI; got != want {
+				t.Errorf("Unexpected object (-want, +got) =\n%s", cmp.Diff(want, got))
+			}
+		})
+	}
+}
+
 func TestURIFromObjectReferenceErrors(t *testing.T) {
 	tests := map[string]struct {
 		objects []runtime.Object
@@ -748,6 +822,15 @@ func addressableKnativeRef() *duckv1.KReference {
 	}
 }
 
+func addressableKnativeRefWithGroup() *duckv1.KReference {
+	return &duckv1.KReference{
+		Kind:      addressableKind,
+		Name:      addressableName,
+		Group:     addressableAPIGroup,
+		Namespace: testNS,
+	}
+}
+
 func addressableRef() *corev1.ObjectReference {
 	return &corev1.ObjectReference{
 		Kind:       addressableKind,
@@ -766,12 +849,37 @@ func unaddressableKnativeRef() *duckv1.KReference {
 	}
 }
 
+func unaddressableKnativeRefWithGroup() *duckv1.KReference {
+	return &duckv1.KReference{
+		Kind:      unaddressableKind,
+		Name:      unaddressableName,
+		Group:     unaddressableAPIGroup,
+		Namespace: testNS,
+	}
+}
+
 func unaddressableRef() *corev1.ObjectReference {
 	return &corev1.ObjectReference{
 		Kind:       unaddressableKind,
 		Name:       unaddressableName,
 		APIVersion: unaddressableAPIVersion,
 		Namespace:  testNS,
+	}
+}
+
+func addressableRefCRD() *apiextensionsv1.CustomResourceDefinition {
+	return &apiextensionsv1.CustomResourceDefinition{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "sinks." + addressableAPIGroup,
+		},
+		Spec: apiextensionsv1.CustomResourceDefinitionSpec{
+			Group: addressableAPIGroup,
+			Versions: []apiextensionsv1.CustomResourceDefinitionVersion{{
+				Name:    "v1",
+				Storage: true,
+				Served:  true,
+			}},
+		},
 	}
 }
 

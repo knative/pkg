@@ -26,6 +26,7 @@ import (
 	"k8s.io/client-go/tools/cache"
 	"knative.dev/pkg/client/injection/ducks/duck/v1/addressable"
 	"knative.dev/pkg/controller"
+	"knative.dev/pkg/kref"
 
 	corev1 "k8s.io/api/core/v1"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
@@ -42,11 +43,15 @@ import (
 type URIResolver struct {
 	tracker       tracker.Interface
 	listerFactory func(schema.GroupVersionResource) (cache.GenericLister, error)
+
+	kRefResolver *kref.KReferenceResolver
 }
+
+type URIResolverOption func(*URIResolver)
 
 // NewURIResolver constructs a new URIResolver with context and a callback
 // for a given listableType (Listable) passed to the URIResolver's tracker.
-func NewURIResolver(ctx context.Context, callback func(types.NamespacedName)) *URIResolver {
+func NewURIResolver(ctx context.Context, callback func(types.NamespacedName), options ...URIResolverOption) *URIResolver {
 	ret := &URIResolver{}
 
 	ret.tracker = tracker.New(callback, controller.GetTrackerLease(ctx))
@@ -63,7 +68,18 @@ func NewURIResolver(ctx context.Context, callback func(types.NamespacedName)) *U
 		return l, err
 	}
 
+	for _, opt := range options {
+		opt(ret)
+	}
+
 	return ret
+}
+
+// WithKReferenceResolver adds the capability to the URIResolver to resolve KReference.Group
+func WithKReferenceResolver(kRefResolver *kref.KReferenceResolver) URIResolverOption {
+	return func(resolver *URIResolver) {
+		resolver.kRefResolver = kRefResolver
+	}
 }
 
 // URIFromDestination resolves a v1beta1.Destination into a URI string.
@@ -139,6 +155,14 @@ func (r *URIResolver) URIFromDestinationV1(ctx context.Context, dest duckv1.Dest
 }
 
 func (r *URIResolver) URIFromKReference(ctx context.Context, ref *duckv1.KReference, parent interface{}) (*apis.URL, error) {
+	if r.kRefResolver != nil {
+		var err error
+		ref, err = r.kRefResolver.ResolveGroup(ref)
+		if err != nil {
+			return nil, fmt.Errorf("cannot resolve KReference: %w", err)
+		}
+	}
+
 	return r.URIFromObjectReference(ctx, &corev1.ObjectReference{Name: ref.Name, Namespace: ref.Namespace, APIVersion: ref.APIVersion, Kind: ref.Kind}, parent)
 }
 
