@@ -192,6 +192,30 @@ func AssertMetric(t *testing.T, values ...Metric) {
 	}
 }
 
+// AssertMetricRequiredOnly verifies that the metrics have the specified values, but ignores
+// additional tags. Note that this method will spuriously fail if there are
+// multiple metrics with the same name on different Meters. Calls EnsureRecorded
+// internally before fetching the batch of metrics.
+func AssertMetricRequiredOnly(t *testing.T, values ...Metric) {
+	t.Helper()
+	EnsureRecorded()
+	for _, v := range values {
+		if v.Resource == nil{
+			continue
+		}
+		for k, l := range v.Resource.Labels {
+			if _, ok := GetOneMetric(v.Name).Resource.Labels[k]; ok{
+				if GetOneMetric(v.Name).Resource.Labels[k] != l {
+					t.Errorf("Wrong metric, expected value \"%s\", got \"%s\" in label %s",
+						l, GetOneMetric(v.Name).Resource.Labels[k], k)
+				}
+			}else {
+				t.Errorf("Wrong metric, label \"%s\" is missing", k)
+			}
+		}
+	}
+}
+
 // AssertMetricExists verifies that at least one metric values has been reported for
 // each of metric names.
 // Calls EnsureRecorded internally before fetching the batch of metrics.
@@ -201,6 +225,17 @@ func AssertMetricExists(t *testing.T, names ...string) {
 		metrics = append(metrics, Metric{Name: n})
 	}
 	AssertMetric(t, metrics...)
+}
+
+// AssertMetricExistsRequiredOnly verifies that at least one metric values has been reported for
+// each of metric names.
+// Calls EnsureRecorded internally before fetching the batch of metrics.
+func AssertMetricExistsRequiredOnly(t *testing.T, names ...string) {
+	metrics := make([]Metric, 0, len(names))
+	for _, n := range names {
+		metrics = append(metrics, Metric{Name: n})
+	}
+	AssertMetricRequiredOnly(t, metrics...)
 }
 
 // AssertNoMetric verifies that no metrics have been reported for any of the
