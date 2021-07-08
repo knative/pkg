@@ -33,17 +33,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// TODO UTs should move to eventing and serving, as appropriate.
-// 	See https://github.com/knative/pkg/issues/608
-
 const (
-	servingDomain          = "knative.dev/serving"
-	internalServingDomain  = "knative.dev/internal/serving"
-	eventingDomain         = "knative.dev/eventing"
-	internalEventingDomain = "knative.dev/internal/eventing"
-	customSubDomain        = "test.domain"
-	testProj               = "test-project"
-	anotherProj            = "another-project"
+	metricsDomain = "knative.dev/project"
 )
 
 var (
@@ -54,7 +45,7 @@ var (
 	}{{
 		name: "empty config",
 		ops: ExporterOptions{
-			Domain:    servingDomain,
+			Domain:    metricsDomain,
 			Component: testComponent,
 		},
 		expectedErr: "metrics config map cannot be empty",
@@ -64,7 +55,7 @@ var (
 			ConfigMap: map[string]string{
 				BackendDestinationKey: "unsupported",
 			},
-			Domain:    servingDomain,
+			Domain:    metricsDomain,
 			Component: testComponent,
 		},
 		expectedErr: `unsupported metrics backend value "unsupported"`,
@@ -83,7 +74,7 @@ var (
 			ConfigMap: map[string]string{
 				BackendDestinationKey: string(openCensus),
 			},
-			Domain: servingDomain,
+			Domain: metricsDomain,
 		},
 		expectedErr: "metrics component name cannot be empty",
 	}, {
@@ -93,7 +84,7 @@ var (
 				BackendDestinationKey: string(openCensus),
 				reportingPeriodKey:    "test",
 			},
-			Domain:    servingDomain,
+			Domain:    metricsDomain,
 			Component: testComponent,
 		},
 		expectedErr: "invalid " + reportingPeriodKey + ` value "test"`,
@@ -104,7 +95,7 @@ var (
 				BackendDestinationKey: string(openCensus),
 				collectorSecureKey:    "yep",
 			},
-			Domain:    servingDomain,
+			Domain:    metricsDomain,
 			Component: testComponent,
 		},
 		expectedErr: "invalid " + collectorSecureKey + ` value "yep"`,
@@ -114,7 +105,7 @@ var (
 			ConfigMap: map[string]string{
 				BackendDestinationKey: string(prometheus),
 			},
-			Domain:         servingDomain,
+			Domain:         metricsDomain,
 			Component:      testComponent,
 			PrometheusPort: 1023,
 		},
@@ -125,7 +116,7 @@ var (
 			ConfigMap: map[string]string{
 				BackendDestinationKey: string(prometheus),
 			},
-			Domain:         servingDomain,
+			Domain:         metricsDomain,
 			Component:      testComponent,
 			PrometheusPort: 65536,
 		},
@@ -141,11 +132,11 @@ var (
 		name: "backendKeyMissing",
 		ops: ExporterOptions{
 			ConfigMap: map[string]string{},
-			Domain:    servingDomain,
+			Domain:    metricsDomain,
 			Component: testComponent,
 		},
 		expectedConfig: metricsConfig{
-			domain:             servingDomain,
+			domain:             metricsDomain,
 			component:          testComponent,
 			backendDestination: prometheus,
 			reportingPeriod:    5 * time.Second,
@@ -161,7 +152,7 @@ var (
 				collectorAddressKey:   "localhost:55678",
 				collectorSecureKey:    "true",
 			},
-			Domain:    servingDomain,
+			Domain:    metricsDomain,
 			Component: testComponent,
 			Secrets: fakeSecretList(corev1.Secret{
 				ObjectMeta: metav1.ObjectMeta{
@@ -174,7 +165,7 @@ var (
 			}).Get,
 		},
 		expectedConfig: metricsConfig{
-			domain:             servingDomain,
+			domain:             metricsDomain,
 			component:          testComponent,
 			backendDestination: openCensus,
 			reportingPeriod:    time.Minute,
@@ -197,11 +188,11 @@ var (
 			ConfigMap: map[string]string{
 				BackendDestinationKey: string(prometheus),
 			},
-			Domain:    servingDomain,
+			Domain:    metricsDomain,
 			Component: testComponent,
 		},
 		expectedConfig: metricsConfig{
-			domain:             servingDomain,
+			domain:             metricsDomain,
 			component:          testComponent,
 			backendDestination: prometheus,
 			reportingPeriod:    5 * time.Second,
@@ -216,11 +207,11 @@ var (
 				BackendDestinationKey: string(prometheus),
 				reportingPeriodKey:    "12",
 			},
-			Domain:    servingDomain,
+			Domain:    metricsDomain,
 			Component: testComponent,
 		},
 		expectedConfig: metricsConfig{
-			domain:             servingDomain,
+			domain:             metricsDomain,
 			component:          testComponent,
 			backendDestination: prometheus,
 			reportingPeriod:    12 * time.Second,
@@ -235,11 +226,11 @@ var (
 				BackendDestinationKey: string(openCensus),
 				reportingPeriodKey:    "8",
 			},
-			Domain:    servingDomain,
+			Domain:    metricsDomain,
 			Component: testComponent,
 		},
 		expectedConfig: metricsConfig{
-			domain:             servingDomain,
+			domain:             metricsDomain,
 			component:          testComponent,
 			backendDestination: openCensus,
 			reportingPeriod:    8 * time.Second,
@@ -252,11 +243,11 @@ var (
 				BackendDestinationKey: string(prometheus),
 				reportingPeriodKey:    "",
 			},
-			Domain:    servingDomain,
+			Domain:    metricsDomain,
 			Component: testComponent,
 		},
 		expectedConfig: metricsConfig{
-			domain:             servingDomain,
+			domain:             metricsDomain,
 			component:          testComponent,
 			backendDestination: prometheus,
 			reportingPeriod:    5 * time.Second,
@@ -270,12 +261,12 @@ var (
 			ConfigMap: map[string]string{
 				BackendDestinationKey: string(prometheus),
 			},
-			Domain:         servingDomain,
+			Domain:         metricsDomain,
 			Component:      testComponent,
 			PrometheusPort: 9091,
 		},
 		expectedConfig: metricsConfig{
-			domain:             servingDomain,
+			domain:             metricsDomain,
 			component:          testComponent,
 			backendDestination: prometheus,
 			reportingPeriod:    5 * time.Second,
@@ -323,11 +314,11 @@ func TestGetMetricsConfig_fromEnv(t *testing.T) {
 		varValue: string(openCensus),
 		ops: ExporterOptions{
 			ConfigMap: map[string]string{},
-			Domain:    servingDomain,
+			Domain:    metricsDomain,
 			Component: testComponent,
 		},
 		expectedConfig: metricsConfig{
-			domain:             servingDomain,
+			domain:             metricsDomain,
 			component:          testComponent,
 			backendDestination: openCensus,
 			reportingPeriod:    time.Minute,
@@ -338,11 +329,11 @@ func TestGetMetricsConfig_fromEnv(t *testing.T) {
 		varValue: string(openCensus),
 		ops: ExporterOptions{
 			ConfigMap: map[string]string{BackendDestinationKey: string(prometheus)},
-			Domain:    servingDomain,
+			Domain:    metricsDomain,
 			Component: testComponent,
 		},
 		expectedConfig: metricsConfig{
-			domain:             servingDomain,
+			domain:             metricsDomain,
 			component:          testComponent,
 			backendDestination: prometheus,
 			reportingPeriod:    5 * time.Second,
@@ -355,11 +346,11 @@ func TestGetMetricsConfig_fromEnv(t *testing.T) {
 		varValue: "9999",
 		ops: ExporterOptions{
 			ConfigMap: map[string]string{},
-			Domain:    servingDomain,
+			Domain:    metricsDomain,
 			Component: testComponent,
 		},
 		expectedConfig: metricsConfig{
-			domain:             servingDomain,
+			domain:             metricsDomain,
 			component:          testComponent,
 			backendDestination: prometheus,
 			reportingPeriod:    5 * time.Second,
@@ -380,7 +371,7 @@ func TestGetMetricsConfig_fromEnv(t *testing.T) {
 		varValue: strconv.Itoa(math.MaxUint16 + 1),
 		ops: ExporterOptions{
 			ConfigMap: map[string]string{},
-			Domain:    servingDomain,
+			Domain:    metricsDomain,
 			Component: testComponent,
 		},
 		expectedErrContains: "value out of range",
@@ -447,13 +438,13 @@ func TestIsNewExporterRequired(t *testing.T) {
 	}{{
 		name: "changeMetricsBackend",
 		oldConfig: metricsConfig{
-			domain:             servingDomain,
+			domain:             metricsDomain,
 			component:          testComponent,
 			backendDestination: openCensus,
 			reportingPeriod:    time.Minute,
 		},
 		newConfig: metricsConfig{
-			domain:             servingDomain,
+			domain:             metricsDomain,
 			component:          testComponent,
 			backendDestination: prometheus,
 			reportingPeriod:    time.Minute,
@@ -462,11 +453,11 @@ func TestIsNewExporterRequired(t *testing.T) {
 	}, {
 		name: "changeComponent",
 		oldConfig: metricsConfig{
-			domain:    servingDomain,
+			domain:    metricsDomain,
 			component: "component1",
 		},
 		newConfig: metricsConfig{
-			domain:    servingDomain,
+			domain:    metricsDomain,
 			component: "component2",
 		},
 		newExporterRequired: false,
@@ -545,7 +536,7 @@ func TestUpdateExporterFromConfigMapWithOpts(t *testing.T) {
 	t.Run("ConfigMapSetErr", func(t *testing.T) {
 		opts := ExporterOptions{
 			Component:      testComponent,
-			Domain:         servingDomain,
+			Domain:         metricsDomain,
 			PrometheusPort: defaultPrometheusPort,
 			ConfigMap:      map[string]string{"some": "data"},
 		}
@@ -558,7 +549,7 @@ func TestUpdateExporterFromConfigMapWithOpts(t *testing.T) {
 	t.Run("MissingComponentErr", func(t *testing.T) {
 		opts := ExporterOptions{
 			Component:      "",
-			Domain:         servingDomain,
+			Domain:         metricsDomain,
 			PrometheusPort: defaultPrometheusPort,
 		}
 		_, err := UpdateExporterFromConfigMapWithOpts(ctx, opts, TestLogger(t))

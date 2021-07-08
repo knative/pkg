@@ -129,7 +129,7 @@ func (mc *metricsConfig) record(ctx context.Context, mss []stats.Measurement, ro
 	return mc.recorder(ctx, mss, ros...)
 }
 
-func createMetricsConfig(ctx context.Context, ops ExporterOptions) (*metricsConfig, error) {
+func createMetricsConfig(_ context.Context, ops ExporterOptions) (*metricsConfig, error) {
 	var mc metricsConfig
 
 	if ops.Domain == "" {

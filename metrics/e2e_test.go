@@ -94,7 +94,7 @@ func TestMetricsExport(t *testing.T) {
 	prometheusPort := 19090
 	configForBackend := func(backend metricsBackend) ExporterOptions {
 		return ExporterOptions{
-			Domain:         servingDomain,
+			Domain:         metricsDomain,
 			Component:      testComponent,
 			PrometheusPort: prometheusPort,
 			ConfigMap: map[string]string{
@@ -140,10 +140,10 @@ func TestMetricsExport(t *testing.T) {
 	}
 
 	expected := []metricExtract{
-		{"knative.dev/serving/testComponent/global_export_counts", map[string]string{}, 2},
-		{"knative.dev/serving/testComponent/resource_global_export_count", map[string]string{}, 2},
-		{"knative.dev/serving/testComponent/testing/value", map[string]string{"project": "p1", "revision": "r1"}, 0},
-		{"knative.dev/serving/testComponent/testing/value", map[string]string{"project": "p1", "revision": "r2"}, 1},
+		{"knative.dev/project/testComponent/global_export_counts", map[string]string{}, 2},
+		{"knative.dev/project/testComponent/resource_global_export_count", map[string]string{}, 2},
+		{"knative.dev/project/testComponent/testing/value", map[string]string{"project": "p1", "revision": "r1"}, 0},
+		{"knative.dev/project/testComponent/testing/value", map[string]string{"project": "p1", "revision": "r2"}, 1},
 	}
 
 	harnesses := []struct {
