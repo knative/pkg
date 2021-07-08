@@ -41,7 +41,7 @@ func TestObservabilityConfiguration(t *testing.T) {
 			EnableRequestLog:       true,
 			LoggingURLTemplate:     "https://logging.io",
 			RequestLogTemplate:     `{"requestMethod": "{{.Request.Method}}"}`,
-			RequestMetricsBackend:  "stackdriver",
+			RequestMetricsBackend:  "opencensus",
 		},
 		data: map[string]string{
 			EnableProbeReqLogKey:                          "true",
@@ -49,7 +49,7 @@ func TestObservabilityConfiguration(t *testing.T) {
 			ReqLogTemplateKey:                             `{"requestMethod": "{{.Request.Method}}"}`,
 			"logging.revision-url-template":               "https://logging.io",
 			EnableReqLogKey:                               "true",
-			"metrics.request-metrics-backend-destination": "stackdriver",
+			"metrics.request-metrics-backend-destination": "opencensus",
 			"profiling.enable":                            "true",
 		},
 	}, {

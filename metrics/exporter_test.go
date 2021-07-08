@@ -1,5 +1,3 @@
-// +build !nostackdriver
-
 /*
 Copyright 2018 The Knative Authors
 
@@ -20,7 +18,6 @@ package metrics
 
 import (
 	"os"
-	"path"
 	"testing"
 	"time"
 
@@ -42,9 +39,6 @@ const (
 
 func TestMain(m *testing.M) {
 	resetCurPromSrv()
-	// Set gcpMetadataFunc and newStackdriverExporterFunc for testing
-	gcpMetadataFunc = fakeGcpMetadataFunc
-	newStackdriverExporterFunc = newFakeExporter
 	os.Exit(m.Run())
 }
 
@@ -74,10 +68,7 @@ func TestMetricsExporter(t *testing.T) {
 		config: &metricsConfig{
 			domain:             servingDomain,
 			component:          testComponent,
-			backendDestination: stackdriver,
-			stackdriverClientConfig: StackdriverClientConfig{
-				ProjectID: "testProj",
-			},
+			backendDestination: prometheus,
 		},
 		expectSuccess: true,
 	}, {
@@ -85,108 +76,16 @@ func TestMetricsExporter(t *testing.T) {
 		config: &metricsConfig{
 			domain:             servingDomain,
 			component:          "test-component",
-			backendDestination: stackdriver,
-			stackdriverClientConfig: StackdriverClientConfig{
-				ProjectID: "testProj",
-			},
-		},
-		expectSuccess: true,
-	}, {
-		name: "stackdriverConfigOnly",
-		config: &metricsConfig{
-			backendDestination: stackdriver,
-			stackdriverClientConfig: StackdriverClientConfig{
-				ProjectID:   "project",
-				GCPLocation: "us-west1",
-				ClusterName: "cluster",
-				UseSecret:   true,
-			},
+			backendDestination: prometheus,
 		},
 		expectSuccess: true,
 	}, {
 		name: "fullValidConfig",
 		config: &metricsConfig{
-			domain:                            servingDomain,
-			component:                         testComponent,
-			backendDestination:                stackdriver,
-			reportingPeriod:                   60 * time.Second,
-			isStackdriverBackend:              true,
-			stackdriverMetricTypePrefix:       path.Join(servingDomain, testComponent),
-			stackdriverCustomMetricTypePrefix: path.Join(customMetricTypePrefix, defaultCustomMetricSubDomain, testComponent),
-			stackdriverClientConfig: StackdriverClientConfig{
-				ProjectID:   "project",
-				GCPLocation: "us-west1",
-				ClusterName: "cluster",
-				UseSecret:   true,
-			},
-		},
-		expectSuccess: true,
-	}, {
-		name: "prometheusBackendWithStackdriverConfig",
-		config: &metricsConfig{
 			domain:             servingDomain,
 			component:          testComponent,
 			backendDestination: prometheus,
-			reportingPeriod:    5 * time.Second,
-			prometheusPort:     defaultPrometheusPort,
-			stackdriverClientConfig: StackdriverClientConfig{
-				ProjectID:   "project",
-				GCPLocation: "us-west1",
-				ClusterName: "cluster",
-				UseSecret:   true,
-			},
-		},
-		expectSuccess: true,
-	}, {
-		// GCP specifies a list of valid locations, check the exporter can be created
-		// even if an invalid location is passed in.
-		name: "invalidStackdriverGcpLocation",
-		config: &metricsConfig{
-			domain:                            servingDomain,
-			component:                         testComponent,
-			backendDestination:                stackdriver,
-			reportingPeriod:                   60 * time.Second,
-			isStackdriverBackend:              true,
-			stackdriverMetricTypePrefix:       path.Join(servingDomain, testComponent),
-			stackdriverCustomMetricTypePrefix: path.Join(customMetricTypePrefix, defaultCustomMetricSubDomain, testComponent),
-			stackdriverClientConfig: StackdriverClientConfig{
-				ProjectID:   "project",
-				GCPLocation: "narnia",
-				ClusterName: "cluster",
-				UseSecret:   true,
-			},
-		},
-		expectSuccess: true,
-	}, {
-		name: "missingProjectID",
-		config: &metricsConfig{
-			domain:                            servingDomain,
-			component:                         testComponent,
-			backendDestination:                stackdriver,
-			reportingPeriod:                   60 * time.Second,
-			isStackdriverBackend:              true,
-			stackdriverMetricTypePrefix:       path.Join(servingDomain, testComponent),
-			stackdriverCustomMetricTypePrefix: path.Join(customMetricTypePrefix, defaultCustomMetricSubDomain, testComponent),
-			stackdriverClientConfig: StackdriverClientConfig{
-				GCPLocation: "narnia",
-				ClusterName: "cluster",
-				UseSecret:   true,
-			},
-		},
-		expectSuccess: true,
-	}, {
-		name: "partialStackdriverConfig",
-		config: &metricsConfig{
-			domain:                            servingDomain,
-			component:                         testComponent,
-			backendDestination:                stackdriver,
-			reportingPeriod:                   60 * time.Second,
-			isStackdriverBackend:              true,
-			stackdriverMetricTypePrefix:       path.Join(servingDomain, testComponent),
-			stackdriverCustomMetricTypePrefix: path.Join(customMetricTypePrefix, defaultCustomMetricSubDomain, testComponent),
-			stackdriverClientConfig: StackdriverClientConfig{
-				ProjectID: "project",
-			},
+			reportingPeriod:    60 * time.Second,
 		},
 		expectSuccess: true,
 	}}
@@ -209,14 +108,11 @@ func TestInterleavedExporters(t *testing.T) {
 	// Refer to https://github.com/knative/pkg/issues/406
 	t.Skip()
 
-	// First create a stackdriver exporter
+	// First create a opencensus exporter
 	_, _, err := newMetricsExporter(&metricsConfig{
 		domain:             servingDomain,
 		component:          testComponent,
-		backendDestination: stackdriver,
-		stackdriverClientConfig: StackdriverClientConfig{
-			ProjectID: testProj,
-		},
+		backendDestination: openCensus,
 	}, TestLogger(t))
 	if err != nil {
 		t.Error(err)
@@ -226,7 +122,7 @@ func TestInterleavedExporters(t *testing.T) {
 	time.Sleep(200 * time.Millisecond)
 	srv := getCurPromSrv()
 	if srv != nil {
-		t.Error("expected no server for stackdriver exporter")
+		t.Error("expected no server for opencensus exporter")
 	}
 
 	// Then switch to prometheus exporter
@@ -239,18 +135,6 @@ func TestInterleavedExporters(t *testing.T) {
 		t.Error(err)
 	}
 	expectPromSrv(t, ":9090")
-	// Finally switch to stackdriver exporter
-	_, _, err = newMetricsExporter(&metricsConfig{
-		domain:             servingDomain,
-		component:          testComponent,
-		backendDestination: stackdriver,
-		stackdriverClientConfig: StackdriverClientConfig{
-			ProjectID: testProj,
-		},
-	}, TestLogger(t))
-	if err != nil {
-		t.Error(err)
-	}
 }
 
 func TestFlushExporter(t *testing.T) {
@@ -289,16 +173,10 @@ func TestFlushExporter(t *testing.T) {
 	}
 
 	c = &metricsConfig{
-		domain:                            servingDomain,
-		component:                         testComponent,
-		backendDestination:                stackdriver,
-		isStackdriverBackend:              true,
-		reportingPeriod:                   1 * time.Minute,
-		stackdriverMetricTypePrefix:       path.Join(servingDomain, testComponent),
-		stackdriverCustomMetricTypePrefix: path.Join(defaultCustomMetricSubDomain, testComponent),
-		stackdriverClientConfig: StackdriverClientConfig{
-			ProjectID: testProj,
-		},
+		domain:             servingDomain,
+		component:          testComponent,
+		backendDestination: openCensus,
+		reportingPeriod:    1 * time.Minute,
 	}
 
 	e, f, err = newMetricsExporter(c, TestLogger(t))
