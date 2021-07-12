@@ -20,8 +20,11 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	appsv1 "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+
+	"knative.dev/pkg/ptr"
 )
 
 type Frobber struct {
@@ -46,18 +49,39 @@ func TestNewControllerRef(t *testing.T) {
 		},
 	}
 
-	blockOwnerDeletion := true
-	isController := true
 	want := &metav1.OwnerReference{
 		APIVersion:         "example.knative.dev/v1alpha1",
 		Kind:               "Frobber",
 		Name:               "foo",
 		UID:                "42",
-		BlockOwnerDeletion: &blockOwnerDeletion,
-		Controller:         &isController,
+		BlockOwnerDeletion: ptr.Bool(true),
+		Controller:         ptr.Bool(true),
 	}
 
 	got := NewControllerRef(f)
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Error("Unexpected OwnerReference (-want +got):", diff)
+	}
+}
+
+func TestOwnerRefableDeployment(t *testing.T) {
+	d := &appsv1.Deployment{
+		TypeMeta: metav1.TypeMeta{},
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "foo",
+			UID:  "42",
+		},
+	}
+	want := &metav1.OwnerReference{
+		APIVersion:         "apps/v1",
+		Kind:               "Deployment",
+		Name:               "foo",
+		UID:                "42",
+		BlockOwnerDeletion: ptr.Bool(true),
+		Controller:         ptr.Bool(true),
+	}
+
+	got := NewControllerRef(DeploymentAsOwnerRefable(d))
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Error("Unexpected OwnerReference (-want +got):", diff)
 	}
