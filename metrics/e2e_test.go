@@ -48,9 +48,6 @@ import (
 
 var (
 	NamespaceTagKey = tag.MustNewKey(metricskey.LabelNamespaceName)
-	ServiceTagKey   = tag.MustNewKey(metricskey.LabelServiceName)
-	ConfigTagKey    = tag.MustNewKey(metricskey.LabelConfigurationName)
-	RevisionTagKey  = tag.MustNewKey(metricskey.LabelRevisionName)
 )
 
 type metricExtract struct {
