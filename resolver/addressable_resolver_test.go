@@ -420,7 +420,7 @@ func TestGetURIDestinationV1(t *testing.T) {
 				getAddressableFromKRef(k8sServiceRef()),
 			},
 			dest:    duckv1.Destination{Ref: k8sServiceRef()},
-			wantURI: "http://testsink.testnamespace.svc.cluster.local/",
+			wantURI: "http://testsink.testnamespace.svc.cluster.local",
 		}, "ref with relative uri": {
 			objects: []runtime.Object{
 				getAddressable(),
