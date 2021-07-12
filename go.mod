@@ -19,7 +19,7 @@ require (
 	github.com/go-openapi/jsonpointer v0.19.5 // indirect
 	github.com/go-openapi/jsonreference v0.19.5 // indirect
 	github.com/go-openapi/swag v0.19.15 // indirect
-	github.com/gobuffalo/flect v0.2.2
+	github.com/gobuffalo/flect v0.2.3
 	github.com/golang/protobuf v1.5.2
 	github.com/google/go-cmp v0.5.6
 	github.com/google/go-github/v27 v27.0.6
@@ -44,13 +44,13 @@ require (
 	go.opencensus.io v0.23.0
 	go.uber.org/atomic v1.8.0
 	go.uber.org/automaxprocs v1.4.0
-	go.uber.org/zap v1.17.0
+	go.uber.org/zap v1.18.1
 	golang.org/x/crypto v0.0.0-20210513164829-c07d793c2f9a // indirect
-	golang.org/x/net v0.0.0-20210525063256-abc453219eb5
-	golang.org/x/oauth2 v0.0.0-20210514164344-f6687ab2804c
+	golang.org/x/net v0.0.0-20210614182718-04defd469f4e
+	golang.org/x/oauth2 v0.0.0-20210628180205-a41e5a781914
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
 	golang.org/x/time v0.0.0-20210220033141-f8bda1e9f3ba // indirect
-	golang.org/x/tools v0.1.2
+	golang.org/x/tools v0.1.4
 	gomodules.xyz/jsonpatch/v2 v2.2.0
 	google.golang.org/api v0.36.0
 	google.golang.org/genproto v0.0.0-20210416161957-9910b6c460de
