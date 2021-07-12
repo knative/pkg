@@ -72,7 +72,6 @@ func TestMetricsExporter(t *testing.T) {
 		expectSuccess: true,
 	}}
 
-	// getStackdriverSecretFunc = fakeGetStackdriverSecret
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			_, _, err := newMetricsExporter(test.config, TestLogger(t))

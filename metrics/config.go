@@ -58,7 +58,7 @@ const (
 
 var (
 	// TestOverrideBundleCount is a variable for testing to reduce the size (number of metrics) buffered before
-	// Stackdriver will send a bundled metric report. Only applies if non-zero.
+	// OpenCensus will send a bundled metric report. Only applies if non-zero.
 	TestOverrideBundleCount = 0
 )
 
@@ -202,7 +202,7 @@ func createMetricsConfig(_ context.Context, ops ExporterOptions) (*metricsConfig
 	// If reporting period is specified, use the value from the configuration.
 	// If not, set a default value based on the selected backend.
 	// Each exporter makes different promises about what the lowest supported
-	// reporting period is. For Stackdriver, this value is 1 minute.
+	// reporting period is. For OpenCensus, this value is 1 minute.
 	// For Prometheus, we will use a lower value since the exporter doesn't
 	// push anything but just responds to pull requests, and shorter durations
 	// do not really hurt the performance and we rely on the scraping configuration.
