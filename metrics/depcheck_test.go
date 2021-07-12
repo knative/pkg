@@ -25,5 +25,5 @@ import (
 func TestNoDeps(t *testing.T) {
 	depcheck.AssertNoDependency(t, map[string][]string{
 		"knative.dev/pkg/metrics": depcheck.KnownHeavyDependencies,
-	}, "-tags=nostackdriver")
+	})
 }

@@ -46,7 +46,7 @@ func TestCreateOCTConfig(t *testing.T) {
 	}, {
 		name: "Debug",
 		cfg: config.Config{
-			Backend: config.Stackdriver,
+			Backend: config.Zipkin,
 			Debug:   true,
 		},
 		expect: trace.Config{

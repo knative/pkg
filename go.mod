@@ -7,7 +7,6 @@ require (
 	cloud.google.com/go/storage v1.10.0
 	contrib.go.opencensus.io/exporter/ocagent v0.7.1-0.20200907061046-05415f1de66d
 	contrib.go.opencensus.io/exporter/prometheus v0.3.0
-	contrib.go.opencensus.io/exporter/stackdriver v0.13.5
 	contrib.go.opencensus.io/exporter/zipkin v0.1.2
 	github.com/blang/semver/v4 v4.0.0
 	github.com/blendle/zapdriver v1.3.1
@@ -53,7 +52,7 @@ require (
 	golang.org/x/tools v0.1.4
 	gomodules.xyz/jsonpatch/v2 v2.2.0
 	google.golang.org/api v0.36.0
-	google.golang.org/genproto v0.0.0-20210416161957-9910b6c460de
+	google.golang.org/genproto v0.0.0-20210416161957-9910b6c460de // indirect
 	google.golang.org/grpc v1.38.0
 	google.golang.org/protobuf v1.26.0
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b
