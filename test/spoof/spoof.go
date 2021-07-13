@@ -313,13 +313,16 @@ func (sc *SpoofingClient) Check(req *http.Request, inState ResponseChecker) (*Re
 		Body:       body,
 	}
 	ok, err := inState(resp)
+
+	sc.logZipkinTrace(resp)
+
 	if err != nil {
 		return resp, fmt.Errorf("response: %s did not pass checks: %w", resp, err)
 	}
 	if ok {
-		sc.logZipkinTrace(resp)
 		return resp, nil
 	}
+
 	return nil, err
 }
 

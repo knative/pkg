@@ -25,10 +25,6 @@ import (
 	"net/url"
 
 	"testing"
-
-	corev1 "k8s.io/api/core/v1"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"knative.dev/pkg/client/injection/kube/client/fake"
 )
 
 type fakeTransport struct{}
@@ -54,21 +50,6 @@ func (c *countCalls) count(rc ResponseChecker) ResponseChecker {
 }
 
 func TestSpoofingClient_CheckEndpointState(t *testing.T) {
-	ingress := &corev1.Service{
-		ObjectMeta: v1.ObjectMeta{
-			Name:      "istio-ingressgateway",
-			Namespace: "istio-system",
-		},
-		Status: corev1.ServiceStatus{
-			LoadBalancer: corev1.LoadBalancerStatus{
-				Ingress: []corev1.LoadBalancerIngress{
-					{
-						Hostname: "host",
-					},
-				},
-			},
-		},
-	}
 	type args struct {
 		url     *url.URL
 		inState ResponseChecker
@@ -121,27 +102,15 @@ func TestSpoofingClient_CheckEndpointState(t *testing.T) {
 		wantCalls: 1,
 	}}
 	for _, tt := range tests {
-		_, fKlient := fake.With(context.TODO(), ingress)
 		t.Run(tt.name, func(t *testing.T) {
-			sc, err := New(
-				context.TODO(),
-				fKlient,
-				t.Logf,
-				"some.svc.knative.dev",
-
-				false,
-				"host",
-				1,
-				1,
-			)
-			if err != nil {
-				t.Fatalf("Spoofing client not created: %v", err)
-			}
-			sc.Client = &http.Client{
-				Transport: &fakeTransport{},
+			sc := &SpoofingClient{
+				Client:          &http.Client{Transport: &fakeTransport{}},
+				Logf:            t.Logf,
+				RequestInterval: 1,
+				RequestTimeout:  1,
 			}
 			counter := countCalls{}
-			_, err = sc.CheckEndpointState(context.TODO(), tt.args.url, counter.count(tt.args.inState), tt.args.desc, tt.args.opts...)
+			_, err := sc.CheckEndpointState(context.TODO(), tt.args.url, counter.count(tt.args.inState), tt.args.desc, tt.args.opts...)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("SpoofingClient.CheckEndpointState() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -154,21 +123,6 @@ func TestSpoofingClient_CheckEndpointState(t *testing.T) {
 }
 
 func TestSpoofingClient_WaitForEndpointState(t *testing.T) {
-	ingress := &corev1.Service{
-		ObjectMeta: v1.ObjectMeta{
-			Name:      "istio-ingressgateway",
-			Namespace: "istio-system",
-		},
-		Status: corev1.ServiceStatus{
-			LoadBalancer: corev1.LoadBalancerStatus{
-				Ingress: []corev1.LoadBalancerIngress{
-					{
-						Hostname: "host",
-					},
-				},
-			},
-		},
-	}
 	type args struct {
 		url     *url.URL
 		inState ResponseChecker
@@ -221,27 +175,15 @@ func TestSpoofingClient_WaitForEndpointState(t *testing.T) {
 		wantCalls: 3,
 	}}
 	for _, tt := range tests {
-		_, fKlient := fake.With(context.TODO(), ingress)
 		t.Run(tt.name, func(t *testing.T) {
-			sc, err := New(
-				context.TODO(),
-				fKlient,
-				t.Logf,
-				"some.svc.knative.dev",
-
-				false,
-				"host",
-				1,
-				1,
-			)
-			if err != nil {
-				t.Fatalf("Spoofing client not created: %v", err)
-			}
-			sc.Client = &http.Client{
-				Transport: &fakeTransport{},
+			sc := &SpoofingClient{
+				Client:          &http.Client{Transport: &fakeTransport{}},
+				Logf:            t.Logf,
+				RequestInterval: 1,
+				RequestTimeout:  1,
 			}
 			counter := countCalls{}
-			_, err = sc.WaitForEndpointState(context.TODO(), tt.args.url, counter.count(tt.args.inState), tt.args.desc, tt.args.opts...)
+			_, err := sc.WaitForEndpointState(context.TODO(), tt.args.url, counter.count(tt.args.inState), tt.args.desc, tt.args.opts...)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("SpoofingClient.CheckEndpointState() error = %v, wantErr %v", err, tt.wantErr)
 				return
