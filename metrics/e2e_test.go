@@ -1,5 +1,3 @@
-// +build !nostackdriver
-
 /*
 Copyright 2020 The Knative Authors
 
@@ -26,14 +24,11 @@ import (
 	"io/ioutil"
 	"net"
 	"net/http"
-	"os"
 	"sort"
-	"strings"
 	"sync"
 	"testing"
 	"time"
 
-	sd "contrib.go.opencensus.io/exporter/stackdriver"
 	ocmetrics "github.com/census-instrumentation/opencensus-proto/gen-go/agent/metrics/v1"
 	ocresource "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	"go.opencensus.io/resource"
@@ -42,11 +37,7 @@ import (
 	"go.opencensus.io/tag"
 	"k8s.io/apimachinery/pkg/util/wait"
 
-	emptypb "github.com/golang/protobuf/ptypes/empty"
 	"github.com/google/go-cmp/cmp"
-	"google.golang.org/api/option"
-	metricpb "google.golang.org/genproto/googleapis/api/metric"
-	stackdriverpb "google.golang.org/genproto/googleapis/monitoring/v3"
 	"google.golang.org/grpc"
 	proto "google.golang.org/protobuf/proto"
 
@@ -57,9 +48,6 @@ import (
 
 var (
 	NamespaceTagKey = tag.MustNewKey(metricskey.LabelNamespaceName)
-	ServiceTagKey   = tag.MustNewKey(metricskey.LabelServiceName)
-	ConfigTagKey    = tag.MustNewKey(metricskey.LabelConfigurationName)
-	RevisionTagKey  = tag.MustNewKey(metricskey.LabelRevisionName)
 )
 
 type metricExtract struct {
@@ -74,32 +62,6 @@ func (m metricExtract) Key() string {
 
 func (m metricExtract) String() string {
 	return fmt.Sprintf("%s:%d", m.Key(), m.Value)
-}
-
-func initStackdriverFake(sdFake *stackDriverFake) error {
-	if err := sdFake.start(); err != nil {
-		return err
-	}
-	conn, err := grpc.Dial(sdFake.address, grpc.WithInsecure())
-	if err != nil {
-		return err
-	}
-	newStackdriverExporterFunc = func(o sd.Options) (view.Exporter, error) {
-		o.MonitoringClientOptions = append(o.MonitoringClientOptions, option.WithGRPCConn(conn))
-		return newOpencensusSDExporter(o)
-	}
-	// File: must exist, be json of credentialsFile, and type must be a jwtConfig or oauth2Config
-	tmp, err := ioutil.TempFile("", "metrics-sd-test")
-	if err != nil {
-		return err
-	}
-	defer tmp.Close()
-	credentialsContent := []byte(`{"type": "service_account"}`)
-	if _, err := tmp.Write(credentialsContent); err != nil {
-		return err
-	}
-	os.Setenv("GOOGLE_APPLICATION_CREDENTIALS", tmp.Name())
-	return nil
 }
 
 func sortMetrics() cmp.Option {
@@ -126,19 +88,16 @@ func TestMetricsExport(t *testing.T) {
 	TestOverrideBundleCount = 1
 	t.Cleanup(func() { TestOverrideBundleCount = 0 })
 	ocFake := openCensusFake{address: "localhost:12345"}
-	sdFake := stackDriverFake{}
 	prometheusPort := 19090
 	configForBackend := func(backend metricsBackend) ExporterOptions {
 		return ExporterOptions{
-			Domain:         servingDomain,
+			Domain:         metricsDomain,
 			Component:      testComponent,
 			PrometheusPort: prometheusPort,
 			ConfigMap: map[string]string{
-				BackendDestinationKey:               string(backend),
-				collectorAddressKey:                 ocFake.address,
-				allowStackdriverCustomMetricsKey:    "true",
-				stackdriverCustomMetricSubDomainKey: servingDomain,
-				reportingPeriodKey:                  "1",
+				BackendDestinationKey: string(backend),
+				collectorAddressKey:   ocFake.address,
+				reportingPeriodKey:    "1",
 			},
 		}
 	}
@@ -178,10 +137,10 @@ func TestMetricsExport(t *testing.T) {
 	}
 
 	expected := []metricExtract{
-		{"knative.dev/serving/testComponent/global_export_counts", map[string]string{}, 2},
-		{"knative.dev/serving/testComponent/resource_global_export_count", map[string]string{}, 2},
-		{"knative.dev/serving/testComponent/testing/value", map[string]string{"project": "p1", "revision": "r1"}, 0},
-		{"knative.dev/serving/testComponent/testing/value", map[string]string{"project": "p1", "revision": "r2"}, 1},
+		{"knative.dev/project/testComponent/global_export_counts", map[string]string{}, 2},
+		{"knative.dev/project/testComponent/resource_global_export_count", map[string]string{}, 2},
+		{"knative.dev/project/testComponent/testing/value", map[string]string{"project": "p1", "revision": "r1"}, 0},
+		{"knative.dev/project/testComponent/testing/value", map[string]string{"project": "p1", "revision": "r2"}, 1},
 	}
 
 	harnesses := []struct {
@@ -279,43 +238,11 @@ testComponent_testing_value{project="p1",revision="r2"} 1
 				t.Errorf("Unexpected OpenCensus exports (-want +got):\n%s", diff)
 			}
 		},
-	}, {
-		name: "Stackdriver",
-		init: func(t *testing.T) error {
-			if err := initStackdriverFake(&sdFake); err != nil {
-				return err
-			}
-			return UpdateExporter(context.Background(), configForBackend(stackdriver), logtesting.TestLogger(t))
-		},
-		validate: func(t *testing.T) {
-			records := []metricExtract{}
-			for record := range sdFake.published {
-				for _, ts := range record.TimeSeries {
-					name := ts.Metric.Type[len("custom.googleapis.com/"):]
-					records = append(records, metricExtract{
-						Name:   name,
-						Labels: ts.Resource.Labels,
-						Value:  ts.Points[0].Value.GetInt64Value(),
-					})
-				}
-				if len(records) >= 4 {
-					// There's no way to synchronize on the internal timer used
-					// by metricsexport.IntervalReader, so shut down the
-					// exporter after the first report cycle.
-					FlushExporter()
-					sdFake.srv.GracefulStop()
-				}
-			}
-			if diff := cmp.Diff(expected, records, sortMetrics()); diff != "" {
-				t.Errorf("Unexpected Stackdriver exports (-want +got):\n%s", diff)
-			}
-		},
 	}}
 
 	for _, c := range harnesses {
 		t.Run(c.name, func(t *testing.T) {
 			ClearMetersForTest()
-			sdFake.t = t
 			if err := c.init(t); err != nil {
 				t.Fatalf("unable to init: %+v", err)
 			}
@@ -338,186 +265,6 @@ testComponent_testing_value{project="p1",revision="r2"} 1
 				Record(ctx, gauge.M(int64(i)))
 			}
 			c.validate(t)
-		})
-	}
-}
-
-func TestStackDriverExports(t *testing.T) {
-	TestOverrideBundleCount = 1
-	t.Cleanup(func() { TestOverrideBundleCount = 0 })
-	eo := ExporterOptions{
-		Domain:    servingDomain,
-		Component: "autoscaler",
-		ConfigMap: map[string]string{
-			BackendDestinationKey:   string(stackdriver),
-			reportingPeriodKey:      "1",
-			stackdriverProjectIDKey: "foobar",
-		},
-	}
-
-	label1 := map[string]string{
-		"cluster_name":       "test-cluster",
-		"configuration_name": "config",
-		"location":           "test-location",
-		"namespace_name":     "ns",
-		"project_id":         "foobar",
-		"revision_name":      "revision",
-		"service_name":       "service",
-	}
-	label2 := map[string]string{
-		"cluster_name":       "test-cluster",
-		"configuration_name": "config2",
-		"location":           "test-location",
-		"namespace_name":     "ns2",
-		"project_id":         "foobar",
-		"revision_name":      "revision2",
-		"service_name":       "service2",
-	}
-	batchLabels := map[string]string{
-		"namespace_name":     "ns2",
-		"configuration_name": "config2",
-		"revision_name":      "revision2",
-		"service_name":       "service2",
-	}
-	harness := []struct {
-		name               string
-		allowCustomMetrics string
-		expected           []metricExtract
-	}{{
-		name:               "Allow custom metrics",
-		allowCustomMetrics: "true",
-		expected: []metricExtract{{
-			"knative.dev/serving/autoscaler/actual_pods",
-			label1,
-			1,
-		}, {
-			"knative.dev/serving/autoscaler/desired_pods",
-			label2,
-			2,
-		}, {
-			"custom.googleapis.com/knative.dev/autoscaler/not_ready_pods",
-			batchLabels,
-			3,
-		}},
-	}, {
-		name:               "Don't allow custom metrics",
-		allowCustomMetrics: "false",
-		expected: []metricExtract{{
-			"knative.dev/serving/autoscaler/actual_pods",
-			label1,
-			1,
-		}, {
-			"knative.dev/serving/autoscaler/desired_pods",
-			label2,
-			2,
-		}},
-	}}
-
-	for _, tc := range harness {
-		t.Run(tc.name, func(t *testing.T) {
-			eo.ConfigMap[allowStackdriverCustomMetricsKey] = tc.allowCustomMetrics
-			// Change the cluster name to reinitialize the exporter and pick up a new port.
-			eo.ConfigMap[stackdriverClusterNameKey] = tc.name
-			actualPodCountM := stats.Int64(
-				"actual_pods",
-				"Number of pods that are allocated currently",
-				stats.UnitDimensionless)
-			actualPodsCountView := &view.View{
-				Description: "Number of pods that are allocated currently",
-				Measure:     actualPodCountM,
-				Aggregation: view.LastValue(),
-				TagKeys:     []tag.Key{NamespaceTagKey, ServiceTagKey, ConfigTagKey, RevisionTagKey},
-			}
-			desiredPodCountM := stats.Int64(
-				"desired_pods",
-				"Number of pods that are desired",
-				stats.UnitDimensionless)
-			desiredPodsCountView := &view.View{
-				Description: "Number of pods that are desired",
-				Measure:     desiredPodCountM,
-				Aggregation: view.LastValue(),
-			}
-			notReadyPodCountM := stats.Int64(
-				"not_ready_pods",
-				"Number of pods that are not ready",
-				stats.UnitDimensionless)
-			customView := &view.View{
-				Description: "non-knative-revision metric per KnativeRevisionMetrics",
-				Measure:     notReadyPodCountM,
-				Aggregation: view.LastValue(),
-			}
-
-			sdFake := stackDriverFake{t: t}
-			if err := initStackdriverFake(&sdFake); err != nil {
-				t.Error("Init stackdriver failed", err)
-			}
-			if err := UpdateExporter(context.Background(), eo, logtesting.TestLogger(t)); err != nil {
-				t.Error("UpdateExporter failed", err)
-			}
-
-			if err := RegisterResourceView(desiredPodsCountView, actualPodsCountView, customView); err != nil {
-				t.Fatalf("unable to register view: %+v", err)
-			}
-			t.Cleanup(func() {
-				UnregisterResourceView(desiredPodsCountView, actualPodsCountView, customView)
-			})
-
-			ctx, err := tag.New(context.Background(), tag.Upsert(NamespaceTagKey, "ns"),
-				tag.Upsert(ServiceTagKey, "service"),
-				tag.Upsert(ConfigTagKey, "config"),
-				tag.Upsert(RevisionTagKey, "revision"))
-			if err != nil {
-				t.Fatal("Unable to create tags", err)
-			}
-			Record(ctx, actualPodCountM.M(int64(1)))
-
-			r := resource.Resource{
-				Type:   "testing",
-				Labels: batchLabels,
-			}
-			RecordBatch(
-				metricskey.WithResource(context.Background(), r),
-				desiredPodCountM.M(int64(2)),
-				notReadyPodCountM.M(int64(3)))
-
-			records := []metricExtract{}
-		loop:
-			for {
-				select {
-				case record := <-sdFake.published:
-					for _, ts := range record.TimeSeries {
-						extracted := metricExtract{
-							Name:   ts.Metric.Type,
-							Labels: ts.Resource.Labels,
-							Value:  ts.Points[0].Value.GetInt64Value(),
-						}
-						// Override 'cluster-name' label to reset to a fixed value
-						if extracted.Labels["cluster_name"] != "" {
-							extracted.Labels["cluster_name"] = "test-cluster"
-						}
-						records = append(records, extracted)
-						if strings.HasPrefix(ts.Metric.Type, "knative.dev/") {
-							if diff := cmp.Diff(ts.Resource.Type, metricskey.ResourceTypeKnativeRevision); diff != "" {
-								t.Errorf("Incorrect resource type for %q: (-want +got):\n%s", ts.Metric.Type, diff)
-							}
-						}
-					}
-					if len(records) >= len(tc.expected) {
-						// There's no way to synchronize on the internal timer used
-						// by metricsexport.IntervalReader, so shut down the
-						// exporter after the first report cycle.
-						FlushExporter()
-						sdFake.srv.GracefulStop()
-						break loop
-					}
-				case <-time.After(4 * time.Second):
-					t.Error("Timeout reading records from Stackdriver")
-					break loop
-				}
-			}
-			if diff := cmp.Diff(tc.expected, records, sortMetrics()); diff != "" {
-				t.Errorf("Unexpected stackdriver knative exports (-want +got):\n%s", diff)
-			}
 		})
 	}
 }
@@ -585,38 +332,4 @@ func (oc *openCensusFake) Export(stream ocmetrics.MetricsService_ExportServer) e
 			}
 		}
 	}
-}
-
-type stackDriverFake struct {
-	stackdriverpb.UnimplementedMetricServiceServer
-	address   string
-	srv       *grpc.Server
-	t         *testing.T
-	published chan *stackdriverpb.CreateTimeSeriesRequest
-}
-
-func (sd *stackDriverFake) start() error {
-	sd.published = make(chan *stackdriverpb.CreateTimeSeriesRequest, 100)
-	ln, err := net.Listen("tcp", "localhost:0")
-	if err != nil {
-		return err
-	}
-	sd.address = ln.Addr().String()
-	sd.srv = grpc.NewServer()
-	stackdriverpb.RegisterMetricServiceServer(sd.srv, sd)
-	// Run the server in the background.
-	go func() {
-		sd.srv.Serve(ln)
-		close(sd.published)
-	}()
-	return nil
-}
-
-func (sd *stackDriverFake) CreateTimeSeries(ctx context.Context, req *stackdriverpb.CreateTimeSeriesRequest) (*emptypb.Empty, error) {
-	sd.published <- req
-	return &emptypb.Empty{}, nil
-}
-
-func (sd *stackDriverFake) CreateMetricDescriptor(ctx context.Context, req *stackdriverpb.CreateMetricDescriptorRequest) (*metricpb.MetricDescriptor, error) {
-	return req.MetricDescriptor, nil
 }

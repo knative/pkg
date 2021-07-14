@@ -130,7 +130,7 @@ func TestSetFactory(t *testing.T) {
 
 func TestAllMetersExpiration(t *testing.T) {
 	allMeters.clock = clock.Clock(clock.NewFakeClock(time.Now()))
-	var fakeClock *clock.FakeClock = allMeters.clock.(*clock.FakeClock)
+	fakeClock := allMeters.clock.(*clock.FakeClock)
 	ClearMetersForTest() // t+0m
 
 	// Add resource123
@@ -200,7 +200,7 @@ func TestAllMetersExpiration(t *testing.T) {
 
 func TestIfAllMeterResourcesAreRemoved(t *testing.T) {
 	allMeters.clock = clock.Clock(clock.NewFakeClock(time.Now()))
-	var fakeClock *clock.FakeClock = allMeters.clock.(*clock.FakeClock)
+	fakeClock := allMeters.clock.(*clock.FakeClock)
 	ClearMetersForTest() // t+0m
 	// Register many resources at once
 	for i := 1; i <= 100; i++ {

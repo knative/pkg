@@ -42,21 +42,21 @@ func TestStatsReporter(t *testing.T) {
 	}
 
 	wantTags := map[string]string{
+		LabelEventType:                    "dev.knative.event",
+		LabelEventSource:                  "unit-test",
+		LabelName:                         "testsource",
+		LabelResourceGroup:                "testresourcegroup",
 		metricskey.LabelNamespaceName:     "testns",
-		metricskey.LabelEventType:         "dev.knative.event",
-		metricskey.LabelEventSource:       "unit-test",
-		metricskey.LabelName:              "testsource",
-		metricskey.LabelResourceGroup:     "testresourcegroup",
 		metricskey.LabelResponseCode:      "202",
 		metricskey.LabelResponseCodeClass: "2xx",
 	}
 
 	retryWantTags := map[string]string{
+		LabelEventType:                    "dev.knative.event",
+		LabelEventSource:                  "unit-test",
+		LabelName:                         "testsource",
+		LabelResourceGroup:                "testresourcegroup",
 		metricskey.LabelNamespaceName:     "testns",
-		metricskey.LabelEventType:         "dev.knative.event",
-		metricskey.LabelEventSource:       "unit-test",
-		metricskey.LabelName:              "testsource",
-		metricskey.LabelResourceGroup:     "testresourcegroup",
 		metricskey.LabelResponseCode:      "503",
 		metricskey.LabelResponseCodeClass: "5xx",
 	}

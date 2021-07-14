@@ -27,6 +27,23 @@ import (
 	"knative.dev/pkg/metrics/metricskey"
 )
 
+const (
+	// LabelEventType is the label for the name of the event type.
+	LabelEventType = "event_type"
+
+	// LabelName is the label for the name of the resource.
+	LabelName = "name"
+
+	// LabelResourceGroup is the name of the resource CRD.
+	LabelResourceGroup = "resource_group"
+
+	// LabelEventSource is the label for the name of the event source.
+	LabelEventSource = "event_source"
+
+	// ResourceTypeKnativeSource is the resource type for Knative Sources
+	ResourceTypeKnativeSource = "knative_source"
+)
+
 var (
 	// eventCountM is a counter which records the number of events sent by the source.
 	eventCountM = stats.Int64(
@@ -46,11 +63,11 @@ var (
 	// go.opencensus.io/tag/validate.go. Currently those restrictions are:
 	// - length between 1 and 255 inclusive
 	// - characters are printable US-ASCII
+	eventSourceKey         = tag.MustNewKey(LabelEventSource)
+	eventTypeKey           = tag.MustNewKey(LabelEventType)
+	sourceNameKey          = tag.MustNewKey(LabelName)
+	sourceResourceGroupKey = tag.MustNewKey(LabelResourceGroup)
 	namespaceKey           = tag.MustNewKey(metricskey.LabelNamespaceName)
-	eventSourceKey         = tag.MustNewKey(metricskey.LabelEventSource)
-	eventTypeKey           = tag.MustNewKey(metricskey.LabelEventType)
-	sourceNameKey          = tag.MustNewKey(metricskey.LabelName)
-	sourceResourceGroupKey = tag.MustNewKey(metricskey.LabelResourceGroup)
 	responseCodeKey        = tag.MustNewKey(metricskey.LabelResponseCode)
 	responseCodeClassKey   = tag.MustNewKey(metricskey.LabelResponseCodeClass)
 	responseError          = tag.MustNewKey(metricskey.LabelResponseError)
