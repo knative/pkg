@@ -8,7 +8,7 @@ The code currently uses OpenCensus to support exporting metrics to multiple
 backends. Currently, two backends are supported: Prometheus and OpenCensus/OTel.
 
 Metrics export is controlled by a ConfigMap called `config-observability` which
-is a key-value map with specific values supported for each of the OpenCensus 
+is a key-value map with specific values supported for each of the OpenCensus
 and Prometheus backends. Hot-reload of the ConfigMap on a running process is
 supported by directly watching (via the Kubernetes API) the
 `config-observability` object. Configuration via environment is also supported
