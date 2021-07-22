@@ -28,6 +28,7 @@ import (
 
 	"go.opencensus.io/stats"
 	corev1 "k8s.io/api/core/v1"
+	"knative.dev/pkg/configmap"
 	"knative.dev/pkg/metrics/metricskey"
 )
 
@@ -43,9 +44,11 @@ const (
 	// The following keys are used to configure metrics reporting.
 	// See https://github.com/knative/serving/blob/main/config/config-observability.yaml
 	// for details.
-	collectorAddressKey = "metrics.opencensus-address"
-	collectorSecureKey  = "metrics.opencensus-require-tls"
-	reportingPeriodKey  = "metrics.reporting-period-seconds"
+	collectorAddressKey             = "metrics.opencensus-address"
+	collectorSecureKey              = "metrics.opencensus-require-tls"
+	reportingPeriodKey              = "metrics.reporting-period-seconds"
+	enableDeprecatedMetricPrefixKey = "metrics.enable-deprecated-name-prefix"
+	requestMetricsBackendKey        = "metrics.request-metrics-backend-destination"
 
 	defaultBackendEnvName = "DEFAULT_METRICS_BACKEND"
 	defaultPrometheusPort = 9090
@@ -83,6 +86,9 @@ type metricsConfig struct {
 	// reportingPeriod specifies the interval between reporting aggregated views.
 	// If duration is less than or equal to zero, it enables the default behavior.
 	reportingPeriod time.Duration
+
+	// whether or not we prefix the metric name with the domain and/or component
+	enableDeprecatedMetricPrefix bool
 
 	// recorder provides a hook for performing custom transformations before
 	// writing the metrics to the stats.RecordWithOptions interface.
@@ -220,6 +226,14 @@ func createMetricsConfig(_ context.Context, ops ExporterOptions) (*metricsConfig
 			mc.reportingPeriod = 5 * time.Second
 		}
 	}
+
+	err := configmap.Parse(m,
+		configmap.AsBool(enableDeprecatedMetricPrefixKey, &mc.enableDeprecatedMetricPrefix))
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse %s: %w", enableDeprecatedMetricPrefixKey, err)
+	}
+
 	return &mc, nil
 }
 

@@ -79,13 +79,22 @@ type ObservabilityConfig struct {
 	// MetricsCollectorAddress specifies the metrics collector address. This is only used
 	// when the metrics backend is opencensus.
 	MetricsCollectorAddress string
+
+	// EnableDeprecatedMetricPrefix retains the legacy behaviour of prefixing our metric names
+	// with either the component name and/or metric domain
+	//
+	// When enabled:
+	// - OpenCensus exporter prefixes the domain and component
+	// - Prometheus exporter prefixes the component name (as a prom namespace)
+	EnableDeprecatedMetricPrefix bool
 }
 
 func defaultConfig() *ObservabilityConfig {
 	return &ObservabilityConfig{
-		LoggingURLTemplate:    DefaultLogURLTemplate,
-		RequestLogTemplate:    DefaultRequestLogTemplate,
-		RequestMetricsBackend: defaultRequestMetricsBackend,
+		LoggingURLTemplate:           DefaultLogURLTemplate,
+		RequestLogTemplate:           DefaultRequestLogTemplate,
+		RequestMetricsBackend:        defaultRequestMetricsBackend,
+		EnableDeprecatedMetricPrefix: true,
 	}
 }
 
@@ -97,11 +106,12 @@ func NewObservabilityConfigFromConfigMap(configMap *corev1.ConfigMap) (*Observab
 		cm.AsBool("logging.enable-var-log-collection", &oc.EnableVarLogCollection),
 		cm.AsString("logging.revision-url-template", &oc.LoggingURLTemplate),
 		cm.AsString(ReqLogTemplateKey, &oc.RequestLogTemplate),
+		cm.AsBool("profiling.enable", &oc.EnableProfiling),
 		cm.AsBool(EnableReqLogKey, &oc.EnableRequestLog),
 		cm.AsBool(EnableProbeReqLogKey, &oc.EnableProbeRequestLog),
-		cm.AsString("metrics.request-metrics-backend-destination", &oc.RequestMetricsBackend),
-		cm.AsBool("profiling.enable", &oc.EnableProfiling),
-		cm.AsString("metrics.opencensus-address", &oc.MetricsCollectorAddress),
+		cm.AsString(requestMetricsBackendKey, &oc.RequestMetricsBackend),
+		cm.AsString(collectorAddressKey, &oc.MetricsCollectorAddress),
+		cm.AsBool(enableDeprecatedMetricPrefixKey, &oc.EnableDeprecatedMetricPrefix),
 	); err != nil {
 		return nil, err
 	}

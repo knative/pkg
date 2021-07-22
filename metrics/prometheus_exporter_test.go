@@ -29,11 +29,12 @@ func TestNewPrometheusExporter(t *testing.T) {
 	}{{
 		name: "port 9090",
 		config: metricsConfig{
-			domain:             "does not matter",
-			component:          testComponent,
-			backendDestination: prometheus,
-			prometheusPort:     9090,
-			prometheusHost:     "0.0.0.0",
+			domain:                       "does not matter",
+			component:                    testComponent,
+			backendDestination:           prometheus,
+			enableDeprecatedMetricPrefix: true,
+			prometheusPort:               9090,
+			prometheusHost:               "0.0.0.0",
 		},
 		expectedAddr: "0.0.0.0:9090",
 	}, {

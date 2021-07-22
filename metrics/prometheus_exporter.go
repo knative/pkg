@@ -43,7 +43,11 @@ func (emptyPromExporter) ExportView(viewData *view.Data) {
 
 //nolint: unparam // False positive of flagging the second result of this function unused.
 func newPrometheusExporter(config *metricsConfig, logger *zap.SugaredLogger) (view.Exporter, ResourceExporterFactory, error) {
-	e, err := prom.NewExporter(prom.Options{Namespace: config.component})
+	opts := prom.Options{}
+	if config.enableDeprecatedMetricPrefix {
+		opts.Namespace = config.component
+	}
+	e, err := prom.NewExporter(opts)
 	if err != nil {
 		logger.Errorw("Failed to create the Prometheus exporter.", zap.Error(err))
 		return nil, nil, err

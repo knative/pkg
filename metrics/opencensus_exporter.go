@@ -37,7 +37,7 @@ func newOpenCensusExporter(config *metricsConfig, logger *zap.SugaredLogger) (vi
 		opts = append(opts, ocagent.WithAddress(config.collectorAddress))
 	}
 	metrixPrefix := path.Join(config.domain, config.component)
-	if metrixPrefix != "" {
+	if metrixPrefix != "" && config.enableDeprecatedMetricPrefix {
 		opts = append(opts, ocagent.WithMetricNamePrefix(metrixPrefix))
 	}
 	if config.requireSecure {

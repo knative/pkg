@@ -95,9 +95,10 @@ func TestMetricsExport(t *testing.T) {
 			Component:      testComponent,
 			PrometheusPort: prometheusPort,
 			ConfigMap: map[string]string{
-				BackendDestinationKey: string(backend),
-				collectorAddressKey:   ocFake.address,
-				reportingPeriodKey:    "1",
+				BackendDestinationKey:           string(backend),
+				collectorAddressKey:             ocFake.address,
+				reportingPeriodKey:              "1",
+				enableDeprecatedMetricPrefixKey: "true",
 			},
 		}
 	}
