@@ -1128,6 +1128,26 @@ func TestPermanentError(t *testing.T) {
 	}
 }
 
+func TestRequeueKey(t *testing.T) {
+	err := new(fakeError)
+	reqErr := NewRequeueImmediately()
+	if ok, _ := IsRequeueKey(reqErr); !ok {
+		t.Errorf("Expected type %T to be a requeueKeyError", reqErr)
+	}
+	if ok, _ := IsRequeueKey(err); ok {
+		t.Errorf("Expected type %T to not be a requeueKeyError", err)
+	}
+
+	want := 10 * time.Minute
+	reqErr = NewRequeueAfter(want)
+	wrapReqErr := fmt.Errorf("wrapped: %w", reqErr)
+	if ok, got := IsRequeueKey(wrapReqErr); !ok {
+		t.Error("Expected wrapped requeueKeyError to be equivalent to a requeueKeyError")
+	} else if want != got {
+		t.Errorf("IsRequeueKey() = (true, %v), wanted (true, %v)", got, want)
+	}
+}
+
 type errorReconciler struct{}
 
 func (er *errorReconciler) Reconcile(context.Context, string) error {
@@ -1230,6 +1250,70 @@ func TestStartAndShutdownWithPermanentErroringWork(t *testing.T) {
 	}
 
 	checkStats(t, reporter, 1, 0, 1, falseString)
+}
+
+type requeueAfterReconciler struct {
+	duration time.Duration
+}
+
+func (er *requeueAfterReconciler) Reconcile(context.Context, string) error {
+	return NewRequeueAfter(er.duration)
+}
+
+func TestStartAndShutdownWithRequeuingWork(t *testing.T) {
+	tests := []struct {
+		name     string
+		minimum  int
+		duration time.Duration
+	}{{
+		name:    "no duration",
+		minimum: 100,
+	}, {
+		name:     "small duration",
+		minimum:  2,
+		duration: 100 * time.Millisecond,
+	}}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			r := &requeueAfterReconciler{duration: test.duration}
+			reporter := &FakeStatsReporter{}
+			impl := NewImplWithStats(r, TestLogger(t), "Testing", reporter)
+
+			ctx, cancel := context.WithCancel(context.Background())
+			doneCh := make(chan struct{})
+			go func() {
+				defer close(doneCh)
+				StartAll(ctx, impl)
+			}()
+			t.Cleanup(func() {
+				cancel()
+				<-doneCh
+			})
+
+			impl.EnqueueKey(types.NamespacedName{Namespace: "foo", Name: "bar"})
+
+			select {
+			case <-time.After(20 * time.Millisecond):
+				// We don't expect completion before the context is cancelled.
+			case <-doneCh:
+				t.Error("StartAll finished early.")
+			}
+			cancel()
+
+			select {
+			case <-time.After(time.Second):
+				t.Error("Timed out waiting for controller to finish.")
+			case <-doneCh:
+				// We expect the work to complete.
+			}
+
+			// Check that the work was not requeued in RateLimiter.
+			if got, wantAtLeast := impl.WorkQueue().NumRequeues(types.NamespacedName{Namespace: "foo", Name: "bar"}), test.minimum; got >= wantAtLeast {
+				t.Errorf("Requeue count = %v, wanted at least %v", got, wantAtLeast)
+			}
+		})
+	}
 }
 
 func drainWorkQueue(wq workqueue.RateLimitingInterface) (hasQueue []types.NamespacedName) {
