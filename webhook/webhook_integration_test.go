@@ -71,7 +71,7 @@ func TestMissingContentType(t *testing.T) {
 		t.Fatal("waitForServerAvailable() =", err)
 	}
 
-	tlsClient, err := createSecureTLSClient(t, wh.Client, &wh.Options)
+	tlsClient, err := createSecureTLSClient(t, kubeclient.Get(ctx), &wh.Options)
 	if err != nil {
 		t.Fatal("createSecureTLSClient() =", err)
 	}
@@ -125,7 +125,7 @@ func testEmptyRequestBody(t *testing.T, controller interface{}) {
 		t.Fatal("waitForServerAvailable() =", err)
 	}
 
-	tlsClient, err := createSecureTLSClient(t, wh.Client, &wh.Options)
+	tlsClient, err := createSecureTLSClient(t, kubeclient.Get(ctx), &wh.Options)
 	if err != nil {
 		t.Fatal("createSecureTLSClient() =", err)
 	}

@@ -31,6 +31,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
+	kubeclient "knative.dev/pkg/client/injection/kube/client/fake"
 )
 
 type fixedConversionController struct {
@@ -82,7 +83,7 @@ func TestConversionValidResponse(t *testing.T) {
 	if pollErr != nil {
 		t.Fatal("waitForServerAvailable() =", err)
 	}
-	tlsClient, err := createSecureTLSClient(t, wh.Client, &wh.Options)
+	tlsClient, err := createSecureTLSClient(t, kubeclient.Get(ctx), &wh.Options)
 	if err != nil {
 		t.Fatal("createSecureTLSClient() =", err)
 	}
@@ -171,7 +172,7 @@ func TestConversionInvalidResponse(t *testing.T) {
 	if pollErr != nil {
 		t.Fatal("waitForServerAvailable() =", err)
 	}
-	tlsClient, err := createSecureTLSClient(t, wh.Client, &wh.Options)
+	tlsClient, err := createSecureTLSClient(t, kubeclient.Get(ctx), &wh.Options)
 	if err != nil {
 		t.Fatal("createSecureTLSClient() =", err)
 	}
