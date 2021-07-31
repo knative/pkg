@@ -33,6 +33,7 @@ import (
 	admissionv1 "k8s.io/api/admission/v1"
 	authenticationv1 "k8s.io/api/authentication/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	kubeclient "knative.dev/pkg/client/injection/kube/client/fake"
 	"knative.dev/pkg/metrics/metricstest"
 	_ "knative.dev/pkg/metrics/testing"
 )
@@ -84,7 +85,7 @@ func TestAdmissionValidResponseForResource(t *testing.T) {
 	if pollErr != nil {
 		t.Fatal("waitForServerAvailable() =", err)
 	}
-	tlsClient, err := createSecureTLSClient(t, wh.Client, &wh.Options)
+	tlsClient, err := createSecureTLSClient(t, kubeclient.Get(ctx), &wh.Options)
 	if err != nil {
 		t.Fatal("createSecureTLSClient() =", err)
 	}
@@ -214,7 +215,7 @@ func TestAdmissionInvalidResponseForResource(t *testing.T) {
 	if pollErr != nil {
 		t.Fatal("waitForServerAvailable() =", err)
 	}
-	tlsClient, err := createSecureTLSClient(t, wh.Client, &wh.Options)
+	tlsClient, err := createSecureTLSClient(t, kubeclient.Get(ctx), &wh.Options)
 	if err != nil {
 		t.Fatal("createSecureTLSClient() =", err)
 	}
