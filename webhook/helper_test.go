@@ -228,3 +228,9 @@ func createSecureTLSClient(t *testing.T, kubeClient kubernetes.Interface, acOpts
 		},
 	}, nil
 }
+
+func createNonTLSClient() *http.Client {
+	return &http.Client{
+		Transport: &http.Transport{},
+	}
+}

@@ -205,3 +205,19 @@ func testSetup(t *testing.T, acs ...interface{}) (*Webhook, string, context.Cont
 	resetMetrics()
 	return wh, fmt.Sprintf("0.0.0.0:%d", port), ctx, cancel, nil
 }
+
+func testSetupNoTLS(t *testing.T, acs ...interface{}) (*Webhook, string, context.Context, context.CancelFunc, error) {
+	t.Helper()
+	port, err := newTestPort()
+	if err != nil {
+		return nil, "", nil, nil, err
+	}
+
+	defaultOpts := newDefaultOptions()
+	defaultOpts.SecretName = ""
+	defaultOpts.Port = port
+	ctx, wh, cancel := newNonRunningTestWebhook(t, defaultOpts, acs...)
+
+	resetMetrics()
+	return wh, fmt.Sprintf("0.0.0.0:%d", port), ctx, cancel, nil
+}

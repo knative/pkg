@@ -62,7 +62,7 @@ func TestAdmissionEmptyRequestBody(t *testing.T) {
 	testEmptyRequestBody(t, c)
 }
 
-func TestAdmissionValidResponseForResource(t *testing.T) {
+func TestAdmissionValidResponseForResourceTLS(t *testing.T) {
 	ac := &fixedAdmissionController{
 		path:     "/bazinga",
 		response: &admissionv1.AdmissionResponse{},
@@ -136,6 +136,131 @@ func TestAdmissionValidResponseForResource(t *testing.T) {
 
 		close(launchedCh)
 		response, err := tlsClient.Do(req)
+		if err != nil {
+			t.Error("Failed to get response", err)
+			return
+		}
+
+		if got, want := response.StatusCode, http.StatusOK; got != want {
+			t.Errorf("Response status code = %v, wanted %v", got, want)
+			return
+		}
+
+		defer response.Body.Close()
+		responseBody, err := ioutil.ReadAll(response.Body)
+		if err != nil {
+			t.Error("Failed to read response body", err)
+			return
+		}
+
+		reviewResponse := admissionv1.AdmissionReview{}
+
+		err = json.NewDecoder(bytes.NewReader(responseBody)).Decode(&reviewResponse)
+		if err != nil {
+			t.Error("Failed to decode response:", err)
+			return
+		}
+
+		if diff := cmp.Diff(rev.TypeMeta, reviewResponse.TypeMeta); diff != "" {
+			t.Errorf("expected the response typeMeta to be the same as the request (-want, +got)\n%s", diff)
+			return
+		}
+	}()
+
+	// Wait for the goroutine to launch.
+	<-launchedCh
+
+	// Check that Admit calls block when they are initiated before informers sync.
+	select {
+	case <-time.After(100 * time.Millisecond):
+	case <-doneCh:
+		t.Fatal("Admit was called before informers had synced.")
+	}
+
+	// Signal the webhook that informers have synced.
+	wh.InformersHaveSynced()
+
+	// Check that after informers have synced that things start completing immediately (including outstanding requests).
+	select {
+	case <-doneCh:
+	case <-time.After(5 * time.Second):
+		t.Error("Timed out waiting on Admit to complete after informers synced.")
+	}
+
+	metricstest.CheckStatsReported(t, requestCountName, requestLatenciesName)
+}
+
+func TestAdmissionValidResponseForResource(t *testing.T) {
+	ac := &fixedAdmissionController{
+		path:     "/bazinga",
+		response: &admissionv1.AdmissionResponse{},
+	}
+	wh, serverURL, ctx, cancel, err := testSetupNoTLS(t, ac)
+	if err != nil {
+		t.Fatal("testSetup() =", err)
+	}
+
+	eg, _ := errgroup.WithContext(ctx)
+	eg.Go(func() error { return wh.Run(ctx.Done()) })
+	defer func() {
+		cancel()
+		if err := eg.Wait(); err != nil {
+			t.Error("Unable to run controller:", err)
+		}
+	}()
+
+	pollErr := waitForServerAvailable(t, serverURL, testTimeout)
+	if pollErr != nil {
+		t.Fatal("waitForServerAvailable() =", err)
+	}
+	client := createNonTLSClient()
+
+	admissionreq := &admissionv1.AdmissionRequest{
+		Operation: admissionv1.Create,
+		Kind: metav1.GroupVersionKind{
+			Group:   "pkg.knative.dev",
+			Version: "v1alpha1",
+			Kind:    "Resource",
+		},
+	}
+	testRev := createResource("testrev")
+	marshaled, err := json.Marshal(testRev)
+	if err != nil {
+		t.Fatal("Failed to marshal resource:", err)
+	}
+
+	admissionreq.Resource.Group = "pkg.knative.dev"
+	admissionreq.Object.Raw = marshaled
+	rev := &admissionv1.AdmissionReview{
+		Request: admissionreq,
+	}
+
+	reqBuf := new(bytes.Buffer)
+	err = json.NewEncoder(reqBuf).Encode(&rev)
+	if err != nil {
+		t.Fatal("Failed to marshal admission review:", err)
+	}
+
+	u, err := url.Parse("http://" + serverURL)
+	if err != nil {
+		t.Fatal("bad url", err)
+	}
+
+	u.Path = path.Join(u.Path, ac.Path())
+
+	req, err := http.NewRequest("GET", u.String(), reqBuf)
+	if err != nil {
+		t.Fatal("http.NewRequest() =", err)
+	}
+	req.Header.Add("Content-Type", "application/json")
+
+	doneCh := make(chan struct{})
+	launchedCh := make(chan struct{})
+	go func() {
+		defer close(doneCh)
+
+		close(launchedCh)
+		response, err := client.Do(req)
 		if err != nil {
 			t.Error("Failed to get response", err)
 			return
