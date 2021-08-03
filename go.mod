@@ -24,10 +24,9 @@ require (
 	github.com/google/go-github/v27 v27.0.6
 	github.com/google/gofuzz v1.2.0
 	github.com/google/mako v0.0.0-20190821191249-122f8dcef9e3
-	github.com/google/uuid v1.2.0
+	github.com/google/uuid v1.3.0
 	github.com/gorilla/mux v1.7.4 // indirect
 	github.com/gorilla/websocket v1.4.2
-	github.com/grpc-ecosystem/grpc-gateway v1.14.8 // indirect
 	github.com/hashicorp/golang-lru v0.5.4
 	github.com/imdario/mergo v0.3.9 // indirect
 	github.com/influxdata/tdigest v0.0.0-20181121200506-bf2b5ad3c0a9 // indirect
@@ -41,20 +40,20 @@ require (
 	github.com/spf13/pflag v1.0.5
 	github.com/tsenart/vegeta/v12 v12.8.4
 	go.opencensus.io v0.23.0
-	go.uber.org/atomic v1.8.0
+	go.uber.org/atomic v1.9.0
 	go.uber.org/automaxprocs v1.4.0
 	go.uber.org/zap v1.18.1
 	golang.org/x/crypto v0.0.0-20210513164829-c07d793c2f9a // indirect
-	golang.org/x/net v0.0.0-20210614182718-04defd469f4e
+	golang.org/x/net v0.0.0-20210726213435-c6fcb2dbf985
 	golang.org/x/oauth2 v0.0.0-20210628180205-a41e5a781914
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
 	golang.org/x/time v0.0.0-20210220033141-f8bda1e9f3ba // indirect
-	golang.org/x/tools v0.1.4
+	golang.org/x/tools v0.1.5
 	gomodules.xyz/jsonpatch/v2 v2.2.0
 	google.golang.org/api v0.36.0
 	google.golang.org/genproto v0.0.0-20210416161957-9910b6c460de // indirect
-	google.golang.org/grpc v1.38.0
-	google.golang.org/protobuf v1.26.0
+	google.golang.org/grpc v1.39.0
+	google.golang.org/protobuf v1.27.1
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b
 	k8s.io/api v0.20.7
 	k8s.io/apiextensions-apiserver v0.20.7
