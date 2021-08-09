@@ -92,6 +92,13 @@ func TestReconcile(t *testing.T) {
 			Resources:   []string{"resources", "resources/status"},
 		},
 	}, {
+		Operations: []admissionregistrationv1.OperationType{"CREATE"},
+		Rule: admissionregistrationv1.Rule{
+			APIGroups:   []string{"pkg.knative.dev"},
+			APIVersions: []string{"v1alpha2"},
+			Resources:   []string{"resourceoperationtypes", "resourceoperationtypes/status"},
+		},
+	}, {
 		Operations: []admissionregistrationv1.OperationType{"CREATE", "UPDATE"},
 		Rule: admissionregistrationv1.Rule{
 			APIGroups:   []string{"pkg.knative.dev"},

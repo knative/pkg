@@ -80,7 +80,14 @@ var (
 			Version: "v1alpha1",
 			Kind:    "InnerDefaultResource",
 		}: &InnerDefaultResource{},
+		{
+			Group:   "pkg.knative.dev",
+			Version: "v1alpha2",
+			Kind:    "ResourceOperationTypes",
+		}: &ResourceOperationTypes{},
 	}
+
+	_ OperationTypes = &ResourceOperationTypes{}
 
 	callbacks = map[schema.GroupVersionKind]Callback{
 		{

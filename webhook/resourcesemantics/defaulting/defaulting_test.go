@@ -76,7 +76,14 @@ var (
 			Version: "v1alpha1",
 			Kind:    "InnerDefaultResource",
 		}: &InnerDefaultResource{},
+		{
+			Group:   "pkg.knative.dev",
+			Version: "v1alpha2",
+			Kind:    "ResourceOperationTypes",
+		}: &ResourceOperationTypes{},
 	}
+
+	_ OperationTypes = &ResourceOperationTypes{}
 
 	initialResourceWebhook = &admissionregistrationv1.MutatingWebhookConfiguration{
 		ObjectMeta: metav1.ObjectMeta{

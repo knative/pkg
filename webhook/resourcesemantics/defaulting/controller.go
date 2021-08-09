@@ -26,6 +26,7 @@ import (
 	"knative.dev/pkg/logging"
 	pkgreconciler "knative.dev/pkg/reconciler"
 
+	admissionregistrationv1 "k8s.io/api/admissionregistration/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/cache"
@@ -34,6 +35,14 @@ import (
 	"knative.dev/pkg/webhook"
 	"knative.dev/pkg/webhook/resourcesemantics"
 )
+
+// OperationTypes is the extension interface definition that allows us
+// to specify operations of a webhook rule for a specific
+// resourcesemantics.GenericCRD.
+type OperationTypes interface {
+	resourcesemantics.GenericCRD
+	DefaultingOperationTypes() []admissionregistrationv1.OperationType
+}
 
 // NewAdmissionController constructs a reconciler
 func NewAdmissionController(

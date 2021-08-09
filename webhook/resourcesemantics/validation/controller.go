@@ -19,6 +19,7 @@ package validation
 import (
 	"context"
 
+	admissionregistrationv1 "k8s.io/api/admissionregistration/v1"
 	// Injection stuff
 	kubeclient "knative.dev/pkg/client/injection/kube/client"
 	vwhinformer "knative.dev/pkg/client/injection/kube/informers/admissionregistration/v1/validatingwebhookconfiguration"
@@ -34,6 +35,14 @@ import (
 	"knative.dev/pkg/webhook"
 	"knative.dev/pkg/webhook/resourcesemantics"
 )
+
+// OperationTypes is the extension interface definition that allows us
+// to specify operations of a webhook rule for a specific
+// resourcesemantics.GenericCRD.
+type OperationTypes interface {
+	resourcesemantics.GenericCRD
+	ValidatingOperationTypes() []admissionregistrationv1.OperationType
+}
 
 // NewAdmissionController constructs a reconciler
 func NewAdmissionController(

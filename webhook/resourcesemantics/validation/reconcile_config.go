@@ -100,15 +100,11 @@ func (ac *reconciler) reconcileValidatingWebhook(ctx context.Context, caCert []b
 	logger := logging.FromContext(ctx)
 
 	rules := make([]admissionregistrationv1.RuleWithOperations, 0, len(ac.handlers))
-	for gvk := range ac.handlers {
+	for gvk, crd := range ac.handlers {
 		plural := strings.ToLower(flect.Pluralize(gvk.Kind))
 
 		rules = append(rules, admissionregistrationv1.RuleWithOperations{
-			Operations: []admissionregistrationv1.OperationType{
-				admissionregistrationv1.Create,
-				admissionregistrationv1.Update,
-				admissionregistrationv1.Delete,
-			},
+			Operations: operationTypesOf(crd),
 			Rule: admissionregistrationv1.Rule{
 				APIGroups:   []string{gvk.Group},
 				APIVersions: []string{gvk.Version},
@@ -179,4 +175,15 @@ func (ac *reconciler) reconcileValidatingWebhook(ctx context.Context, caCert []b
 		logger.Info("Webhook is valid")
 	}
 	return nil
+}
+
+func operationTypesOf(crd resourcesemantics.GenericCRD) []admissionregistrationv1.OperationType {
+	if v, ok := crd.(OperationTypes); ok {
+		return v.ValidatingOperationTypes()
+	}
+	return []admissionregistrationv1.OperationType{
+		admissionregistrationv1.Create,
+		admissionregistrationv1.Update,
+		admissionregistrationv1.Delete,
+	}
 }
