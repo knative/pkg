@@ -21,7 +21,14 @@ package filtered
 import (
 	context "context"
 
+	apiadmissionregistrationv1 "k8s.io/api/admissionregistration/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	labels "k8s.io/apimachinery/pkg/labels"
 	v1 "k8s.io/client-go/informers/admissionregistration/v1"
+	kubernetes "k8s.io/client-go/kubernetes"
+	admissionregistrationv1 "k8s.io/client-go/listers/admissionregistration/v1"
+	cache "k8s.io/client-go/tools/cache"
+	client "knative.dev/pkg/client/injection/kube/client"
 	filtered "knative.dev/pkg/client/injection/kube/informers/factory/filtered"
 	controller "knative.dev/pkg/controller"
 	injection "knative.dev/pkg/injection"
@@ -30,6 +37,7 @@ import (
 
 func init() {
 	injection.Default.RegisterFilteredInformers(withInformer)
+	injection.Dynamic.RegisterDynamicInformer(withDynamicInformer)
 }
 
 // Key is used for associating the Informer inside the context.Context.
@@ -54,6 +62,20 @@ func withInformer(ctx context.Context) (context.Context, []controller.Informer) 
 	return ctx, infs
 }
 
+func withDynamicInformer(ctx context.Context) context.Context {
+	untyped := ctx.Value(filtered.LabelKey{})
+	if untyped == nil {
+		logging.FromContext(ctx).Panic(
+			"Unable to fetch labelkey from context.")
+	}
+	labelSelectors := untyped.([]string)
+	for _, selector := range labelSelectors {
+		inf := &wrapper{client: client.Get(ctx), selector: selector}
+		ctx = context.WithValue(ctx, Key{Selector: selector}, inf)
+	}
+	return ctx
+}
+
 // Get extracts the typed informer from the context.
 func Get(ctx context.Context, selector string) v1.MutatingWebhookConfigurationInformer {
 	untyped := ctx.Value(Key{Selector: selector})
@@ -62,4 +84,47 @@ func Get(ctx context.Context, selector string) v1.MutatingWebhookConfigurationIn
 			"Unable to fetch k8s.io/client-go/informers/admissionregistration/v1.MutatingWebhookConfigurationInformer with selector %s from context.", selector)
 	}
 	return untyped.(v1.MutatingWebhookConfigurationInformer)
+}
+
+type wrapper struct {
+	client kubernetes.Interface
+
+	selector string
+}
+
+var _ v1.MutatingWebhookConfigurationInformer = (*wrapper)(nil)
+var _ admissionregistrationv1.MutatingWebhookConfigurationLister = (*wrapper)(nil)
+
+func (w *wrapper) Informer() cache.SharedIndexInformer {
+	return cache.NewSharedIndexInformer(nil, &apiadmissionregistrationv1.MutatingWebhookConfiguration{}, 0, nil)
+}
+
+func (w *wrapper) Lister() admissionregistrationv1.MutatingWebhookConfigurationLister {
+	return w
+}
+
+func (w *wrapper) List(selector labels.Selector) (ret []*apiadmissionregistrationv1.MutatingWebhookConfiguration, err error) {
+	reqs, err := labels.ParseToRequirements(w.selector)
+	if err != nil {
+		return nil, err
+	}
+	selector = selector.Add(reqs...)
+	lo, err := w.client.AdmissionregistrationV1().MutatingWebhookConfigurations().List(context.TODO(), metav1.ListOptions{
+		LabelSelector: selector.String(),
+		// TODO(mattmoor): Incorporate resourceVersion bounds based on staleness criteria.
+	})
+	if err != nil {
+		return nil, err
+	}
+	for idx := range lo.Items {
+		ret = append(ret, &lo.Items[idx])
+	}
+	return ret, nil
+}
+
+func (w *wrapper) Get(name string) (*apiadmissionregistrationv1.MutatingWebhookConfiguration, error) {
+	// TODO(mattmoor): Check that the fetched object matches the selector.
+	return w.client.AdmissionregistrationV1().MutatingWebhookConfigurations().Get(context.TODO(), name, metav1.GetOptions{
+		// TODO(mattmoor): Incorporate resourceVersion bounds based on staleness criteria.
+	})
 }

@@ -21,7 +21,14 @@ package job
 import (
 	context "context"
 
+	apibatchv1 "k8s.io/api/batch/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	labels "k8s.io/apimachinery/pkg/labels"
 	v1 "k8s.io/client-go/informers/batch/v1"
+	kubernetes "k8s.io/client-go/kubernetes"
+	batchv1 "k8s.io/client-go/listers/batch/v1"
+	cache "k8s.io/client-go/tools/cache"
+	client "knative.dev/pkg/client/injection/kube/client"
 	factory "knative.dev/pkg/client/injection/kube/informers/factory"
 	controller "knative.dev/pkg/controller"
 	injection "knative.dev/pkg/injection"
@@ -30,6 +37,7 @@ import (
 
 func init() {
 	injection.Default.RegisterInformer(withInformer)
+	injection.Dynamic.RegisterDynamicInformer(withDynamicInformer)
 }
 
 // Key is used for associating the Informer inside the context.Context.
@@ -41,6 +49,11 @@ func withInformer(ctx context.Context) (context.Context, controller.Informer) {
 	return context.WithValue(ctx, Key{}, inf), inf.Informer()
 }
 
+func withDynamicInformer(ctx context.Context) context.Context {
+	inf := &wrapper{client: client.Get(ctx)}
+	return context.WithValue(ctx, Key{}, inf)
+}
+
 // Get extracts the typed informer from the context.
 func Get(ctx context.Context) v1.JobInformer {
 	untyped := ctx.Value(Key{})
@@ -49,4 +62,45 @@ func Get(ctx context.Context) v1.JobInformer {
 			"Unable to fetch k8s.io/client-go/informers/batch/v1.JobInformer from context.")
 	}
 	return untyped.(v1.JobInformer)
+}
+
+type wrapper struct {
+	client kubernetes.Interface
+
+	namespace string
+}
+
+var _ v1.JobInformer = (*wrapper)(nil)
+var _ batchv1.JobLister = (*wrapper)(nil)
+
+func (w *wrapper) Informer() cache.SharedIndexInformer {
+	return cache.NewSharedIndexInformer(nil, &apibatchv1.Job{}, 0, nil)
+}
+
+func (w *wrapper) Lister() batchv1.JobLister {
+	return w
+}
+
+func (w *wrapper) Jobs(namespace string) batchv1.JobNamespaceLister {
+	return &wrapper{client: w.client, namespace: namespace}
+}
+
+func (w *wrapper) List(selector labels.Selector) (ret []*apibatchv1.Job, err error) {
+	lo, err := w.client.BatchV1().Jobs(w.namespace).List(context.TODO(), metav1.ListOptions{
+		LabelSelector: selector.String(),
+		// TODO(mattmoor): Incorporate resourceVersion bounds based on staleness criteria.
+	})
+	if err != nil {
+		return nil, err
+	}
+	for idx := range lo.Items {
+		ret = append(ret, &lo.Items[idx])
+	}
+	return ret, nil
+}
+
+func (w *wrapper) Get(name string) (*apibatchv1.Job, error) {
+	return w.client.BatchV1().Jobs(w.namespace).Get(context.TODO(), name, metav1.GetOptions{
+		// TODO(mattmoor): Incorporate resourceVersion bounds based on staleness criteria.
+	})
 }
