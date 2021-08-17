@@ -110,6 +110,10 @@ func (g *injectionGenerator) GenerateType(c *generator.Context, t *types.Type, w
 			Package: "context",
 			Name:    "Context",
 		}),
+		"contextWithValue": c.Universe.Function(types.Name{
+			Package: "context",
+			Name:    "WithValue",
+		}),
 		"schemaGVR": c.Universe.Type(types.Name{
 			Package: "k8s.io/apimachinery/pkg/runtime/schema",
 			Name:    "GroupVersionResource",
@@ -158,12 +162,12 @@ type Key struct{}
 func withInformer(ctx {{.contextContext|raw}}) ({{.contextContext|raw}}, {{.controllerInformer|raw}}) {
 	f := {{.factoryGet|raw}}(ctx)
 	inf := f.{{.groupGoName}}().{{.versionGoName}}().{{.type|publicPlural}}()
-	return context.WithValue(ctx, Key{}, inf), inf.Informer()
+	return {{ .contextWithValue|raw }}(ctx, Key{}, inf), inf.Informer()
 }
 
 func withDynamicInformer(ctx {{.contextContext|raw}}) {{.contextContext|raw}} {
 	inf := &wrapper{client: {{ .clientGet|raw }}(ctx)}
-	return context.WithValue(ctx, Key{}, inf)
+	return {{ .contextWithValue|raw }}(ctx, Key{}, inf)
 }
 
 // Get extracts the typed informer from the context.

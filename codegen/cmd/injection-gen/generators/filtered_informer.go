@@ -111,6 +111,10 @@ func (g *filteredInjectionGenerator) GenerateType(c *generator.Context, t *types
 			Package: "context",
 			Name:    "Context",
 		}),
+		"contextWithValue": c.Universe.Function(types.Name{
+			Package: "context",
+			Name:    "WithValue",
+		}),
 		"schemaGVR": c.Universe.Type(types.Name{
 			Package: "k8s.io/apimachinery/pkg/runtime/schema",
 			Name:    "GroupVersionResource",
@@ -173,7 +177,7 @@ func withInformer(ctx {{.contextContext|raw}}) ({{.contextContext|raw}}, []{{.co
 	for _, selector := range labelSelectors {
 		f := {{.factoryGet|raw}}(ctx, selector)
 		inf := f.{{.group}}().{{.version}}().{{.type|publicPlural}}()
-		ctx = context.WithValue(ctx, Key{Selector: selector}, inf)
+		ctx = {{ .contextWithValue|raw }}(ctx, Key{Selector: selector}, inf)
 		infs = append(infs, inf.Informer())
 	}
 	return ctx, infs
@@ -188,7 +192,7 @@ func withDynamicInformer(ctx {{.contextContext|raw}}) {{.contextContext|raw}} {
 	labelSelectors := untyped.([]string)
 	for _, selector := range labelSelectors {
 		inf := &wrapper{client: {{ .clientGet|raw }}(ctx), selector: selector}
-		ctx = context.WithValue(ctx, Key{Selector: selector}, inf)
+		ctx = {{ .contextWithValue|raw }}(ctx, Key{Selector: selector}, inf)
 	}
 	return ctx
 }
@@ -208,7 +212,7 @@ type wrapper struct {
 {{ if .Namespaced }}
 	namespace string
 {{ end }}
-    selector string
+	selector string
 }
 
 var _ {{.informersTypedInformer|raw}} = (*wrapper)(nil)
