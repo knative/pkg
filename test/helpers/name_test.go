@@ -85,7 +85,7 @@ func TestObjectNameForTest(t *testing.T) {
 		{testNamed{name: "Foo-bar"}, "foo-bar-"},
 		{testNamed{name: "with_underscore"}, "with-underscore-"},
 		{testNamed{name: "WithHTTP"}, "with-http-"},
-		{testNamed{name: "ANameExceedingTheLimitLenght-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"}, "a-name-exceeding-the-limit-lenght-aaaaaaa-"},
+		{testNamed{name: "ANameExceedingTheLimitLength-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"}, "a-name-exceeding-the-limit-length-aaaaaaa-"},
 	}
 	for _, v := range testCases {
 		actual := ObjectNameForTest(&v.input)
