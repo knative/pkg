@@ -21,7 +21,14 @@ package horizontalpodautoscaler
 import (
 	context "context"
 
+	apiautoscalingv1 "k8s.io/api/autoscaling/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	labels "k8s.io/apimachinery/pkg/labels"
 	v1 "k8s.io/client-go/informers/autoscaling/v1"
+	kubernetes "k8s.io/client-go/kubernetes"
+	autoscalingv1 "k8s.io/client-go/listers/autoscaling/v1"
+	cache "k8s.io/client-go/tools/cache"
+	client "knative.dev/pkg/client/injection/kube/client"
 	factory "knative.dev/pkg/client/injection/kube/informers/factory"
 	controller "knative.dev/pkg/controller"
 	injection "knative.dev/pkg/injection"
@@ -30,6 +37,7 @@ import (
 
 func init() {
 	injection.Default.RegisterInformer(withInformer)
+	injection.Dynamic.RegisterDynamicInformer(withDynamicInformer)
 }
 
 // Key is used for associating the Informer inside the context.Context.
@@ -41,6 +49,11 @@ func withInformer(ctx context.Context) (context.Context, controller.Informer) {
 	return context.WithValue(ctx, Key{}, inf), inf.Informer()
 }
 
+func withDynamicInformer(ctx context.Context) context.Context {
+	inf := &wrapper{client: client.Get(ctx)}
+	return context.WithValue(ctx, Key{}, inf)
+}
+
 // Get extracts the typed informer from the context.
 func Get(ctx context.Context) v1.HorizontalPodAutoscalerInformer {
 	untyped := ctx.Value(Key{})
@@ -49,4 +62,45 @@ func Get(ctx context.Context) v1.HorizontalPodAutoscalerInformer {
 			"Unable to fetch k8s.io/client-go/informers/autoscaling/v1.HorizontalPodAutoscalerInformer from context.")
 	}
 	return untyped.(v1.HorizontalPodAutoscalerInformer)
+}
+
+type wrapper struct {
+	client kubernetes.Interface
+
+	namespace string
+}
+
+var _ v1.HorizontalPodAutoscalerInformer = (*wrapper)(nil)
+var _ autoscalingv1.HorizontalPodAutoscalerLister = (*wrapper)(nil)
+
+func (w *wrapper) Informer() cache.SharedIndexInformer {
+	return cache.NewSharedIndexInformer(nil, &apiautoscalingv1.HorizontalPodAutoscaler{}, 0, nil)
+}
+
+func (w *wrapper) Lister() autoscalingv1.HorizontalPodAutoscalerLister {
+	return w
+}
+
+func (w *wrapper) HorizontalPodAutoscalers(namespace string) autoscalingv1.HorizontalPodAutoscalerNamespaceLister {
+	return &wrapper{client: w.client, namespace: namespace}
+}
+
+func (w *wrapper) List(selector labels.Selector) (ret []*apiautoscalingv1.HorizontalPodAutoscaler, err error) {
+	lo, err := w.client.AutoscalingV1().HorizontalPodAutoscalers(w.namespace).List(context.TODO(), metav1.ListOptions{
+		LabelSelector: selector.String(),
+		// TODO(mattmoor): Incorporate resourceVersion bounds based on staleness criteria.
+	})
+	if err != nil {
+		return nil, err
+	}
+	for idx := range lo.Items {
+		ret = append(ret, &lo.Items[idx])
+	}
+	return ret, nil
+}
+
+func (w *wrapper) Get(name string) (*apiautoscalingv1.HorizontalPodAutoscaler, error) {
+	return w.client.AutoscalingV1().HorizontalPodAutoscalers(w.namespace).Get(context.TODO(), name, metav1.GetOptions{
+		// TODO(mattmoor): Incorporate resourceVersion bounds based on staleness criteria.
+	})
 }
