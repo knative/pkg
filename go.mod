@@ -62,6 +62,6 @@ require (
 	k8s.io/code-generator v0.20.7
 	k8s.io/gengo v0.0.0-20210203185629-de9496dff47b
 	k8s.io/klog v1.0.0
-	knative.dev/hack v0.0.0-20210622141627-e28525d8d260
+	knative.dev/hack v0.0.0-20210806075220-815cd312d65c
 	sigs.k8s.io/yaml v1.2.0
 )
