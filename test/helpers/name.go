@@ -21,8 +21,6 @@ import (
 	"strings"
 	"time"
 	"unicode"
-
-	"knative.dev/pkg/kmeta"
 )
 
 const (
@@ -60,7 +58,7 @@ func ObjectNameForTest(t named) string {
 		limit = len(prefix)
 	}
 
-	return kmeta.ChildName(prefix[:limit], suffix)
+	return prefix[:limit] + suffix
 }
 
 // AppendRandomString will generate a random string that begins with prefix.
