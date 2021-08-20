@@ -77,11 +77,13 @@ type ReadOnlyInterface interface {
 // controller finalizing v1.CustomResourceDefinition if they want to process tombstoned resources
 // even when they are not the leader.  Due to the nature of how finalizers are handled
 // there are no guarantees that this will be called.
-// DEPRECATED: Use reconciler.OnDeletionInterface instead.
+//
+// Deprecated: Use reconciler.OnDeletionInterface instead.
 type ReadOnlyFinalizer interface {
 	// ObserveFinalizeKind implements custom logic to observe the final state of v1.CustomResourceDefinition.
 	// This method should not write to the API.
-	// DEPRECATED: Use reconciler.ObserveDeletion instead.
+	//
+	// Deprecated: Use reconciler.ObserveDeletion instead.
 	ObserveFinalizeKind(ctx context.Context, o *v1.CustomResourceDefinition) reconciler.Event
 }
 
