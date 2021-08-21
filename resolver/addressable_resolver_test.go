@@ -35,6 +35,7 @@ import (
 	"knative.dev/pkg/client/injection/ducks/duck/v1/addressable"
 	fakedynamicclient "knative.dev/pkg/injection/clients/dynamicclient/fake"
 	"knative.dev/pkg/resolver"
+	"knative.dev/pkg/tracker"
 )
 
 const (
@@ -353,7 +354,7 @@ func TestGetURIDestinationV1Beta1(t *testing.T) {
 		t.Run(n, func(t *testing.T) {
 			ctx, _ := fakedynamicclient.With(context.Background(), scheme.Scheme, tc.objects...)
 			ctx = addressable.WithDuck(ctx)
-			r := resolver.NewURIResolver(ctx, func(types.NamespacedName) {})
+			r := resolver.NewURIResolverFromTracker(ctx, tracker.New(func(types.NamespacedName) {}, 0))
 
 			// Run it twice since this should be idempotent. URI Resolver should
 			// not modify the cache's copy.
@@ -538,7 +539,7 @@ func TestGetURIDestinationV1(t *testing.T) {
 		t.Run(n, func(t *testing.T) {
 			ctx, _ := fakedynamicclient.With(context.Background(), scheme.Scheme, tc.objects...)
 			ctx = addressable.WithDuck(ctx)
-			r := resolver.NewURIResolver(ctx, func(types.NamespacedName) {})
+			r := resolver.NewURIResolverFromTracker(ctx, tracker.New(func(types.NamespacedName) {}, 0))
 
 			// Run it twice since this should be idempotent. URI Resolver should
 			// not modify the cache's copy.
@@ -580,7 +581,7 @@ func TestURIFromObjectReferenceErrors(t *testing.T) {
 		t.Run(n, func(t *testing.T) {
 			ctx, _ := fakedynamicclient.With(context.Background(), scheme.Scheme, tc.objects...)
 			ctx = addressable.WithDuck(ctx)
-			r := resolver.NewURIResolver(ctx, func(types.NamespacedName) {})
+			r := resolver.NewURIResolverFromTracker(ctx, tracker.New(func(types.NamespacedName) {}, 0))
 
 			// Run it twice since this should be idempotent. URI Resolver should
 			// not modify the cache's copy.
