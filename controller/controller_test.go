@@ -726,20 +726,6 @@ func TestEnqueue(t *testing.T) {
 			}
 		})
 	}
-
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			impl := NewImplWithStats(&nopReconciler{}, TestLogger(t), "Testing", &FakeStatsReporter{})
-			test.work(impl)
-
-			impl.WorkQueue().ShutDown()
-			gotQueue := drainWorkQueue(impl.WorkQueue())
-
-			if diff := cmp.Diff(test.wantQueue, gotQueue); diff != "" {
-				t.Error("unexpected queue (-want +got):", diff)
-			}
-		})
-	}
 }
 
 const (
@@ -765,7 +751,12 @@ func pollQ(q workqueue.RateLimitingInterface, sig chan int) func() (bool, error)
 }
 
 func TestEnqueueAfter(t *testing.T) {
-	impl := NewImplWithStats(&nopReconciler{}, TestLogger(t), "Testing", &FakeStatsReporter{})
+	impl := NewImplFull(&nopReconciler{}, ControllerOptions{
+		Logger:        TestLogger(t),
+		WorkQueueName: "Testing",
+		Reporter:      &FakeStatsReporter{},
+	})
+
 	t.Cleanup(func() {
 		impl.WorkQueue().ShutDown()
 	})
@@ -827,7 +818,11 @@ func TestEnqueueAfter(t *testing.T) {
 }
 
 func TestEnqueueKeyAfter(t *testing.T) {
-	impl := NewImplWithStats(&nopReconciler{}, TestLogger(t), "Testing", &FakeStatsReporter{})
+	impl := NewImplFull(&nopReconciler{}, ControllerOptions{
+		Logger:        TestLogger(t),
+		WorkQueueName: "Testing",
+		Reporter:      &FakeStatsReporter{},
+	})
 	t.Cleanup(func() {
 		impl.WorkQueue().ShutDown()
 	})
@@ -885,7 +880,11 @@ func (cr *CountingReconciler) Reconcile(context.Context, string) error {
 
 func TestStartAndShutdown(t *testing.T) {
 	r := &CountingReconciler{}
-	impl := NewImplWithStats(r, TestLogger(t), "Testing", &FakeStatsReporter{})
+	impl := NewImplFull(&nopReconciler{}, ControllerOptions{
+		Logger:        TestLogger(t),
+		WorkQueueName: "Testing",
+		Reporter:      &FakeStatsReporter{},
+	})
 
 	ctx, cancel := context.WithCancel(context.Background())
 	doneCh := make(chan struct{})
@@ -951,7 +950,11 @@ func TestStartAndShutdownWithLeaderAwareNoElection(t *testing.T) {
 			},
 		},
 	}
-	impl := NewImplWithStats(r, TestLogger(t), "Testing", &FakeStatsReporter{})
+	impl := NewImplFull(r, ControllerOptions{
+		Logger:        TestLogger(t),
+		WorkQueueName: "Testing",
+		Reporter:      &FakeStatsReporter{},
+	})
 
 	ctx, cancel := context.WithCancel(context.Background())
 	doneCh := make(chan struct{})
@@ -1019,7 +1022,11 @@ func TestStartAndShutdownWithLeaderAwareWithLostElection(t *testing.T) {
 		},
 	)
 
-	impl := NewImplWithStats(r, TestLogger(t), "Testing", &FakeStatsReporter{})
+	impl := NewImplFull(&nopReconciler{}, ControllerOptions{
+		Logger:        TestLogger(t),
+		WorkQueueName: "Testing",
+		Reporter:      &FakeStatsReporter{},
+	})
 
 	ctx, cancel := context.WithCancel(context.Background())
 	ctx = leaderelection.WithStandardLeaderElectorBuilder(ctx, kc, cc)
@@ -1059,7 +1066,11 @@ func TestStartAndShutdownWithLeaderAwareWithLostElection(t *testing.T) {
 func TestStartAndShutdownWithWork(t *testing.T) {
 	r := &CountingReconciler{}
 	reporter := &FakeStatsReporter{}
-	impl := NewImplWithStats(r, TestLogger(t), "Testing", reporter)
+	impl := NewImplFull(r, ControllerOptions{
+		Logger:        TestLogger(t),
+		WorkQueueName: "Testing",
+		Reporter:      reporter,
+	})
 
 	ctx, cancel := context.WithCancel(context.Background())
 	doneCh := make(chan struct{})
@@ -1159,7 +1170,11 @@ func TestStartAndShutdownWithErroringWork(t *testing.T) {
 
 	item := types.NamespacedName{Namespace: "", Name: "bar"}
 
-	impl := NewImplWithStats(&errorReconciler{}, TestLogger(t), "Testing", &FakeStatsReporter{})
+	impl := NewImplFull(&errorReconciler{}, ControllerOptions{
+		Logger:        TestLogger(t),
+		WorkQueueName: "Testing",
+		Reporter:      &FakeStatsReporter{},
+	})
 	impl.EnqueueKey(item)
 
 	ctx, cancel := context.WithTimeout(context.Background(), testTimeout)
@@ -1214,7 +1229,11 @@ func (er *permanentErrorReconciler) Reconcile(context.Context, string) error {
 func TestStartAndShutdownWithPermanentErroringWork(t *testing.T) {
 	r := &permanentErrorReconciler{}
 	reporter := &FakeStatsReporter{}
-	impl := NewImplWithStats(r, TestLogger(t), "Testing", reporter)
+	impl := NewImplFull(r, ControllerOptions{
+		Logger:        TestLogger(t),
+		WorkQueueName: "Testing",
+		Reporter:      reporter,
+	})
 
 	ctx, cancel := context.WithCancel(context.Background())
 	doneCh := make(chan struct{})
@@ -1278,7 +1297,11 @@ func TestStartAndShutdownWithRequeuingWork(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			r := &requeueAfterReconciler{duration: test.duration}
 			reporter := &FakeStatsReporter{}
-			impl := NewImplWithStats(r, TestLogger(t), "Testing", reporter)
+			impl := NewImplFull(r, ControllerOptions{
+				Logger:        TestLogger(t),
+				WorkQueueName: "Testing",
+				Reporter:      reporter,
+			})
 
 			ctx, cancel := context.WithCancel(context.Background())
 			doneCh := make(chan struct{})
@@ -1373,7 +1396,11 @@ func (*fakeStore) List() []interface{} {
 
 func TestImplGlobalResync(t *testing.T) {
 	r := &CountingReconciler{}
-	impl := NewImplWithStats(r, TestLogger(t), "Testing", &FakeStatsReporter{})
+	impl := NewImplFull(r, ControllerOptions{
+		Logger:        TestLogger(t),
+		WorkQueueName: "Testing",
+		Reporter:      &FakeStatsReporter{},
+	})
 
 	ctx, cancel := context.WithCancel(context.Background())
 	doneCh := make(chan struct{})

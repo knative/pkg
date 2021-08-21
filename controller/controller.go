@@ -240,12 +240,6 @@ func NewImpl(r Reconciler, logger *zap.SugaredLogger, workQueueName string) *Imp
 	return NewImplFull(r, ControllerOptions{WorkQueueName: workQueueName, Logger: logger})
 }
 
-// NewImplWithStats creates a controller.Impl with stats reporter.
-// Deprecated: use NewImplFull.
-func NewImplWithStats(r Reconciler, logger *zap.SugaredLogger, workQueueName string, reporter StatsReporter) *Impl {
-	return NewImplFull(r, ControllerOptions{WorkQueueName: workQueueName, Logger: logger, Reporter: reporter})
-}
-
 // NewImplFull accepts the full set of options available to all controllers.
 // Deprecated: use NewContext instead.
 func NewImplFull(r Reconciler, options ControllerOptions) *Impl {
