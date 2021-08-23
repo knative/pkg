@@ -6,7 +6,7 @@ require (
 	cloud.google.com/go v0.72.0
 	cloud.google.com/go/storage v1.10.0
 	contrib.go.opencensus.io/exporter/ocagent v0.7.1-0.20200907061046-05415f1de66d
-	contrib.go.opencensus.io/exporter/prometheus v0.3.0
+	contrib.go.opencensus.io/exporter/prometheus v0.3.1-0.20210621165811-f3a7283b3002
 	contrib.go.opencensus.io/exporter/zipkin v0.1.2
 	github.com/blang/semver/v4 v4.0.0
 	github.com/blendle/zapdriver v1.3.1
@@ -36,7 +36,7 @@ require (
 	github.com/onsi/gomega v1.10.1 // indirect
 	github.com/openzipkin/zipkin-go v0.2.5
 	github.com/prometheus/client_golang v1.11.0
-	github.com/prometheus/common v0.26.0
+	github.com/prometheus/common v0.30.0
 	github.com/spf13/pflag v1.0.5
 	github.com/tsenart/vegeta/v12 v12.8.4
 	go.opencensus.io v0.23.0
