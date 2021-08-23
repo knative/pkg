@@ -38,7 +38,6 @@ import (
 	"knative.dev/pkg/tracker"
 )
 
-
 // RefResolverFunc resolves ObjectReferences into a URI.
 // It returns true when it handled the reference, in which case it also returns the resolved URI or an error.
 type RefResolverFunc func(ctx context.Context, ref *corev1.ObjectReference) (bool, *apis.URL, error)
@@ -59,7 +58,7 @@ func NewURIResolver(ctx context.Context, callback func(types.NamespacedName), re
 // NewURIResolverFromTracker constructs a new URIResolver with context, a tracker and an optional list of custom resolvers.
 func NewURIResolverFromTracker(ctx context.Context, t tracker.Interface, resolvers ...RefResolverFunc) *URIResolver {
 	ret := &URIResolver{
-		tracker: t,
+		tracker:   t,
 		resolvers: resolvers,
 	}
 

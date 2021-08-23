@@ -550,6 +550,14 @@ func TestGetURIDestinationV1(t *testing.T) {
 			dest:            duckv1.Destination{Ref: unaddressableKnativeRef()},
 			customResolvers: []resolver.RefResolverFunc{sampleURIResolver},
 			wantErr:         "cannot be referenced",
+		}, "happy with two sample resolvers, first one passes": {
+			dest:            duckv1.Destination{Ref: k8sServiceRef()},
+			customResolvers: []resolver.RefResolverFunc{sampleURIResolver, noopURIResolver},
+			wantURI:         "ref://" + addressableName + ".Service.v1",
+		}, "happy with two sample resolvers, second one passes": {
+			dest:            duckv1.Destination{Ref: k8sServiceRef()},
+			customResolvers: []resolver.RefResolverFunc{noopURIResolver, sampleURIResolver},
+			wantURI:         "ref://" + addressableName + ".Service.v1",
 		}}
 
 	for n, tc := range tests {
@@ -819,5 +827,9 @@ func sampleURIResolver(ctx context.Context, ref *corev1.ObjectReference) (bool, 
 	if ref.Kind == unaddressableKind {
 		return true, nil, errors.New("cannot be referenced")
 	}
+	return false, nil, nil
+}
+
+func noopURIResolver(ctx context.Context, ref *corev1.ObjectReference) (bool, *apis.URL, error) {
 	return false, nil, nil
 }
