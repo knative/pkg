@@ -165,6 +165,8 @@ func (r *URIResolver) URIFromObjectReference(ctx context.Context, ref *corev1.Ob
 		if handled {
 			return url, err
 		}
+
+		// when handled is false, both url and err are ignored.
 	}
 
 	gvr, _ := meta.UnsafeGuessKindToResource(ref.GroupVersionKind())
