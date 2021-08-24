@@ -61,7 +61,7 @@ func TestParse(t *testing.T) {
 			"test-int":      "4",
 			"test-float64":  "1.0",
 			"test-duration": "1m",
-			"test-set":      "a,b,c",
+			"test-set":      "a,b,c, d",
 			"test-quantity": "500m",
 
 			"test-namespaced-name":          "some-namespace/some-name",
@@ -76,7 +76,7 @@ func TestParse(t *testing.T) {
 			f64:    1.0,
 			i:      4,
 			dur:    time.Minute,
-			set:    sets.NewString("a", "b", "c"),
+			set:    sets.NewString("a", "b", "c", "d"),
 			qua:    &fiveHundredM,
 			nsn: types.NamespacedName{
 				Name:      "some-name",

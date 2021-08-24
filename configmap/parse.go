@@ -141,11 +141,11 @@ func AsDuration(key string, target *time.Duration) ParseFunc {
 func AsStringSet(key string, target *sets.String) ParseFunc {
 	return func(data map[string]string) error {
 		if raw, ok := data[key]; ok {
-			urlArr := strings.Split(raw, ",")
-			for i, v := range urlArr {
-				urlArr[i] = strings.TrimSpace(v)
+			splitted := strings.Split(raw, ",")
+			for i, v := range splitted {
+				splitted[i] = strings.TrimSpace(v)
 			}
-			*target = sets.NewString(urlArr...)
+			*target = sets.NewString(splitted...)
 		}
 		return nil
 	}
