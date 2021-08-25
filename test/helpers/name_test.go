@@ -18,6 +18,7 @@ package helpers
 
 import (
 	"regexp"
+	"strings"
 	"testing"
 )
 
@@ -73,4 +74,31 @@ func TestGetBaseFuncName(t *testing.T) {
 			t.Fatalf("Expect %q but actual is %q", v.expected, actual)
 		}
 	}
+}
+
+func TestObjectNameForTest(t *testing.T) {
+	testCases := []struct {
+		input          testNamed
+		expectedPrefix string
+	}{
+		{testNamed{name: "TestFooBar"}, "foo-bar-"},
+		{testNamed{name: "Foo-bar"}, "foo-bar-"},
+		{testNamed{name: "with_underscore"}, "with-underscore-"},
+		{testNamed{name: "WithHTTP"}, "with-http-"},
+		{testNamed{name: "ANameExceedingTheLimitLength-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"}, "a-name-exceeding-the-limit-length-aaaaaaa-"},
+	}
+	for _, v := range testCases {
+		actual := ObjectNameForTest(&v.input)
+		if !strings.HasPrefix(actual, v.expectedPrefix) {
+			t.Fatalf("Expect prefix %q but actual is %q", v.expectedPrefix, actual)
+		}
+	}
+}
+
+type testNamed struct {
+	name string
+}
+
+func (n *testNamed) Name() string {
+	return n.name
 }
