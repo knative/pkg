@@ -18,6 +18,7 @@ package resolver_test
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"testing"
 
@@ -380,10 +381,11 @@ func TestGetURIDestinationV1Beta1(t *testing.T) {
 
 func TestGetURIDestinationV1(t *testing.T) {
 	tests := map[string]struct {
-		objects []runtime.Object
-		dest    duckv1.Destination
-		wantURI string
-		wantErr string
+		objects         []runtime.Object
+		dest            duckv1.Destination
+		customResolvers []resolver.RefResolverFunc
+		wantURI         string
+		wantErr         string
 	}{"nil everything": {
 		wantErr: "destination missing Ref and URI, expected at least one",
 	}, "Happy URI with path": {
@@ -533,13 +535,36 @@ func TestGetURIDestinationV1(t *testing.T) {
 		}, "notFound k8s service": {
 			dest:    duckv1.Destination{Ref: k8sServiceRef()},
 			wantErr: fmt.Sprintf("services %q not found", addressableName),
+		}, "with sample resolver": {
+			dest:            duckv1.Destination{Ref: k8sServiceRef()},
+			customResolvers: []resolver.RefResolverFunc{sampleURIResolver},
+			wantURI:         "ref://" + addressableName + ".Service.v1",
+		}, "happy ref with sample resolver": {
+			objects: []runtime.Object{
+				getAddressable(),
+			},
+			dest:            duckv1.Destination{Ref: addressableKnativeRef()},
+			wantURI:         addressableDNS,
+			customResolvers: []resolver.RefResolverFunc{sampleURIResolver},
+		}, "unaddressable with sample resolver": {
+			dest:            duckv1.Destination{Ref: unaddressableKnativeRef()},
+			customResolvers: []resolver.RefResolverFunc{sampleURIResolver},
+			wantErr:         "cannot be referenced",
+		}, "happy with two sample resolvers, first one passes": {
+			dest:            duckv1.Destination{Ref: k8sServiceRef()},
+			customResolvers: []resolver.RefResolverFunc{sampleURIResolver, noopURIResolver},
+			wantURI:         "ref://" + addressableName + ".Service.v1",
+		}, "happy with two sample resolvers, second one passes": {
+			dest:            duckv1.Destination{Ref: k8sServiceRef()},
+			customResolvers: []resolver.RefResolverFunc{noopURIResolver, sampleURIResolver},
+			wantURI:         "ref://" + addressableName + ".Service.v1",
 		}}
 
 	for n, tc := range tests {
 		t.Run(n, func(t *testing.T) {
 			ctx, _ := fakedynamicclient.With(context.Background(), scheme.Scheme, tc.objects...)
 			ctx = addressable.WithDuck(ctx)
-			r := resolver.NewURIResolverFromTracker(ctx, tracker.New(func(types.NamespacedName) {}, 0))
+			r := resolver.NewURIResolverFromTracker(ctx, tracker.New(func(types.NamespacedName) {}, 0), tc.customResolvers...)
 
 			// Run it twice since this should be idempotent. URI Resolver should
 			// not modify the cache's copy.
@@ -792,4 +817,19 @@ func getAddressableFromKRef(ref *duckv1.KReference) *unstructured.Unstructured {
 			},
 		},
 	}
+}
+
+func sampleURIResolver(ctx context.Context, ref *corev1.ObjectReference) (bool, *apis.URL, error) {
+	if ref.Kind == "Service" {
+		parsed, err := apis.ParseURL(fmt.Sprintf("ref://%s.%s.%s", ref.Name, ref.Kind, ref.APIVersion))
+		return true, parsed, err
+	}
+	if ref.Kind == unaddressableKind {
+		return true, nil, errors.New("cannot be referenced")
+	}
+	return false, nil, nil
+}
+
+func noopURIResolver(ctx context.Context, ref *corev1.ObjectReference) (bool, *apis.URL, error) {
+	return false, nil, nil
 }
