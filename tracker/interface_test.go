@@ -215,7 +215,7 @@ func TestValidate(t *testing.T) {
 				},
 			},
 		},
-		want: apis.ErrInvalidValue(`invalid label key "a b c": name part must consist of alphanumeric characters, '-', '_' or '.', and must start and end with an alphanumeric character (e.g. 'MyName',  or 'my.name',  or '123-abc', regex used for validation is '([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9]')`, "selector"),
+		want: apis.ErrInvalidValue(`key: Invalid value: "a b c": name part must consist of alphanumeric characters, '-', '_' or '.', and must start and end with an alphanumeric character (e.g. 'MyName',  or 'my.name',  or '123-abc', regex used for validation is '([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9]')`, "selector"),
 	}}
 
 	for _, test := range tests {
