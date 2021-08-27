@@ -58,7 +58,7 @@ require (
 	k8s.io/apiextensions-apiserver v0.20.7
 	k8s.io/apimachinery v0.21.4
 	k8s.io/client-go v0.20.7
-	k8s.io/code-generator v0.20.7
+	k8s.io/code-generator v0.21.4
 	k8s.io/gengo v0.0.0-20210203185629-de9496dff47b
 	k8s.io/klog v1.0.0
 	knative.dev/hack v0.0.0-20210806075220-815cd312d65c
