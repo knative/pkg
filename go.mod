@@ -14,7 +14,6 @@ require (
 	github.com/davecgh/go-spew v1.1.1
 	github.com/dgryski/go-gk v0.0.0-20200319235926-a69029f61654 // indirect
 	github.com/evanphx/json-patch/v5 v5.5.0
-	github.com/go-logr/logr v0.4.0 // indirect
 	github.com/go-openapi/jsonpointer v0.19.5 // indirect
 	github.com/go-openapi/jsonreference v0.19.5 // indirect
 	github.com/go-openapi/swag v0.19.15 // indirect
@@ -57,7 +56,7 @@ require (
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b
 	k8s.io/api v0.20.7
 	k8s.io/apiextensions-apiserver v0.20.7
-	k8s.io/apimachinery v0.20.7
+	k8s.io/apimachinery v0.21.4
 	k8s.io/client-go v0.20.7
 	k8s.io/code-generator v0.20.7
 	k8s.io/gengo v0.0.0-20210203185629-de9496dff47b
