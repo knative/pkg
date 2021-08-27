@@ -129,11 +129,7 @@ type wrapApiextensionsV1beta1CustomResourceDefinitionImpl struct {
 
 var _ typedapiextensionsv1beta1.CustomResourceDefinitionInterface = (*wrapApiextensionsV1beta1CustomResourceDefinitionImpl)(nil)
 
-<<<<<<< HEAD
-func (w *wrapApiextensionsV1beta1CustomResourceDefinitionImpl) Create(ctx context.Context, in *apiextensionsv1beta1.CustomResourceDefinition, opts v1.CreateOptions) (*apiextensionsv1beta1.CustomResourceDefinition, error) {
-=======
 func (w *wrapApiextensionsV1beta1CustomResourceDefinitionImpl) Create(ctx context.Context, in *v1beta1.CustomResourceDefinition, opts v1.CreateOptions) (*v1beta1.CustomResourceDefinition, error) {
->>>>>>> 0ccc02ea (Hack the generator to work at all)
 	in.SetGroupVersionKind(schema.GroupVersionKind{
 		Group:   "apiextensions.k8s.io",
 		Version: "v1beta1",
@@ -275,11 +271,7 @@ type wrapApiextensionsV1CustomResourceDefinitionImpl struct {
 
 var _ typedapiextensionsv1.CustomResourceDefinitionInterface = (*wrapApiextensionsV1CustomResourceDefinitionImpl)(nil)
 
-<<<<<<< HEAD
-func (w *wrapApiextensionsV1CustomResourceDefinitionImpl) Create(ctx context.Context, in *apisapiextensionsv1.CustomResourceDefinition, opts v1.CreateOptions) (*apisapiextensionsv1.CustomResourceDefinition, error) {
-=======
 func (w *wrapApiextensionsV1CustomResourceDefinitionImpl) Create(ctx context.Context, in *apiextensionsv1.CustomResourceDefinition, opts v1.CreateOptions) (*apiextensionsv1.CustomResourceDefinition, error) {
->>>>>>> 0ccc02ea (Hack the generator to work at all)
 	in.SetGroupVersionKind(schema.GroupVersionKind{
 		Group:   "apiextensions.k8s.io",
 		Version: "v1",
