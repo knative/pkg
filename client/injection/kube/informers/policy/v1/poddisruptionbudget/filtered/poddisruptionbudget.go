@@ -21,6 +21,7 @@ package filtered
 import (
 	context "context"
 
+	corev1 "k8s.io/api/core/v1"
 	apipolicyv1 "k8s.io/api/policy/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	labels "k8s.io/apimachinery/pkg/labels"
@@ -133,4 +134,9 @@ func (w *wrapper) Get(name string) (*apipolicyv1.PodDisruptionBudget, error) {
 	return w.client.PolicyV1().PodDisruptionBudgets(w.namespace).Get(context.TODO(), name, metav1.GetOptions{
 		// TODO(mattmoor): Incorporate resourceVersion bounds based on staleness criteria.
 	})
+}
+
+func (w *wrapper) GetPodPodDisruptionBudgets(pod *corev1.Pod) ([]*apipolicyv1.PodDisruptionBudget, error) {
+	// TODO: Implement me!
+	return nil, nil
 }
