@@ -273,7 +273,7 @@ func (g *clientGenerator) GenerateType(c *generator.Context, t *types.Type, w io
 						Package: "k8s.io/client-go/applyconfigurations/" + strings.ReplaceAll(t.Name.Package, "k8s.io/api/", ""),
 						Name:    t.Name.Name + "ApplyConfiguration",
 					}),
-					"generateApply": t.Name.Name != "CustomResourceDefinition",
+					"generateApply": strings.HasPrefix(t.Name.Package, "k8s.io/api/"),
 
 					"Namespaced":  !tags.NonNamespaced,
 					"Subresource": "",
