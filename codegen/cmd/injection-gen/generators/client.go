@@ -267,10 +267,14 @@ func (g *clientGenerator) GenerateType(c *generator.Context, t *types.Type, w io
 					"Type":        t,
 					"InputType":   t,
 					"ResultType":  t,
+
+					// TODO: Total hacks to get this to run at all.
 					"ApplyType": c.Universe.Type(types.Name{
 						Package: "k8s.io/client-go/applyconfigurations/" + strings.ReplaceAll(t.Name.Package, "k8s.io/api/", ""),
-						Name:    t.Name.Name,
+						Name:    t.Name.Name + "ApplyConfiguration",
 					}),
+					"generateApply": t.Name.Name != "CustomResourceDefinition",
+
 					"Namespaced":  !tags.NonNamespaced,
 					"Subresource": "",
 					"schemaGroupVersionKind": c.Universe.Type(types.Name{
@@ -559,11 +563,19 @@ func (w *wrap{{.GroupGoName}}{{.Version}}{{ .Type.Name.Name }}Impl) Patch(ctx {{
 	return out, nil
 }
 `,
-	"apply": `
+	"apply": `{{if .generateApply}}
 func (w *wrap{{.GroupGoName}}{{.Version}}{{ .Type.Name.Name }}Impl) Apply(ctx {{ .contextContext|raw }}, in *{{ .ApplyType|raw }}, opts {{ .metav1ApplyOptions|raw }}) (result *{{ .ResultType|raw }}, err error) {
 	// TODO: Implement me!
 	return nil, nil
 }
+{{end}}
+`,
+	"applyStatus": `{{if .generateApply}}
+func (w *wrap{{.GroupGoName}}{{.Version}}{{ .Type.Name.Name }}Impl) ApplyStatus(ctx {{ .contextContext|raw }}, in *{{ .ApplyType|raw }}, opts {{ .metav1ApplyOptions|raw }}) (result *{{ .ResultType|raw }}, err error) {
+	// TODO: Implement me!
+	return nil, nil
+}
+{{end}}
 `,
 }
 

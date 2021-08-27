@@ -250,7 +250,12 @@ type wrapAdmissionregistrationV1MutatingWebhookConfigurationImpl struct {
 
 var _ typedadmissionregistrationv1.MutatingWebhookConfigurationInterface = (*wrapAdmissionregistrationV1MutatingWebhookConfigurationImpl)(nil)
 
-func (w *wrapAdmissionregistrationV1MutatingWebhookConfigurationImpl) Apply(ctx context.Context, in *v1.MutatingWebhookConfiguration, opts metav1.ApplyOptions) (result *admissionregistrationv1.MutatingWebhookConfiguration, err error) {
+func (w *wrapAdmissionregistrationV1MutatingWebhookConfigurationImpl) Apply(ctx context.Context, in *v1.MutatingWebhookConfigurationApplyConfiguration, opts metav1.ApplyOptions) (result *admissionregistrationv1.MutatingWebhookConfiguration, err error) {
+	// TODO: Implement me!
+	return nil, nil
+}
+
+func (w *wrapAdmissionregistrationV1MutatingWebhookConfigurationImpl) ApplyStatus(ctx context.Context, in *v1.MutatingWebhookConfigurationApplyConfiguration, opts metav1.ApplyOptions) (result *admissionregistrationv1.MutatingWebhookConfiguration, err error) {
 	// TODO: Implement me!
 	return nil, nil
 }
@@ -382,7 +387,12 @@ type wrapAdmissionregistrationV1ValidatingWebhookConfigurationImpl struct {
 
 var _ typedadmissionregistrationv1.ValidatingWebhookConfigurationInterface = (*wrapAdmissionregistrationV1ValidatingWebhookConfigurationImpl)(nil)
 
-func (w *wrapAdmissionregistrationV1ValidatingWebhookConfigurationImpl) Apply(ctx context.Context, in *v1.ValidatingWebhookConfiguration, opts metav1.ApplyOptions) (result *admissionregistrationv1.ValidatingWebhookConfiguration, err error) {
+func (w *wrapAdmissionregistrationV1ValidatingWebhookConfigurationImpl) Apply(ctx context.Context, in *v1.ValidatingWebhookConfigurationApplyConfiguration, opts metav1.ApplyOptions) (result *admissionregistrationv1.ValidatingWebhookConfiguration, err error) {
+	// TODO: Implement me!
+	return nil, nil
+}
+
+func (w *wrapAdmissionregistrationV1ValidatingWebhookConfigurationImpl) ApplyStatus(ctx context.Context, in *v1.ValidatingWebhookConfigurationApplyConfiguration, opts metav1.ApplyOptions) (result *admissionregistrationv1.ValidatingWebhookConfiguration, err error) {
 	// TODO: Implement me!
 	return nil, nil
 }
@@ -529,7 +539,12 @@ type wrapAdmissionregistrationV1beta1MutatingWebhookConfigurationImpl struct {
 
 var _ typedadmissionregistrationv1beta1.MutatingWebhookConfigurationInterface = (*wrapAdmissionregistrationV1beta1MutatingWebhookConfigurationImpl)(nil)
 
-func (w *wrapAdmissionregistrationV1beta1MutatingWebhookConfigurationImpl) Apply(ctx context.Context, in *v1beta1.MutatingWebhookConfiguration, opts metav1.ApplyOptions) (result *admissionregistrationv1beta1.MutatingWebhookConfiguration, err error) {
+func (w *wrapAdmissionregistrationV1beta1MutatingWebhookConfigurationImpl) Apply(ctx context.Context, in *v1beta1.MutatingWebhookConfigurationApplyConfiguration, opts metav1.ApplyOptions) (result *admissionregistrationv1beta1.MutatingWebhookConfiguration, err error) {
+	// TODO: Implement me!
+	return nil, nil
+}
+
+func (w *wrapAdmissionregistrationV1beta1MutatingWebhookConfigurationImpl) ApplyStatus(ctx context.Context, in *v1beta1.MutatingWebhookConfigurationApplyConfiguration, opts metav1.ApplyOptions) (result *admissionregistrationv1beta1.MutatingWebhookConfiguration, err error) {
 	// TODO: Implement me!
 	return nil, nil
 }
@@ -661,7 +676,12 @@ type wrapAdmissionregistrationV1beta1ValidatingWebhookConfigurationImpl struct {
 
 var _ typedadmissionregistrationv1beta1.ValidatingWebhookConfigurationInterface = (*wrapAdmissionregistrationV1beta1ValidatingWebhookConfigurationImpl)(nil)
 
-func (w *wrapAdmissionregistrationV1beta1ValidatingWebhookConfigurationImpl) Apply(ctx context.Context, in *v1beta1.ValidatingWebhookConfiguration, opts metav1.ApplyOptions) (result *admissionregistrationv1beta1.ValidatingWebhookConfiguration, err error) {
+func (w *wrapAdmissionregistrationV1beta1ValidatingWebhookConfigurationImpl) Apply(ctx context.Context, in *v1beta1.ValidatingWebhookConfigurationApplyConfiguration, opts metav1.ApplyOptions) (result *admissionregistrationv1beta1.ValidatingWebhookConfiguration, err error) {
+	// TODO: Implement me!
+	return nil, nil
+}
+
+func (w *wrapAdmissionregistrationV1beta1ValidatingWebhookConfigurationImpl) ApplyStatus(ctx context.Context, in *v1beta1.ValidatingWebhookConfigurationApplyConfiguration, opts metav1.ApplyOptions) (result *admissionregistrationv1beta1.ValidatingWebhookConfiguration, err error) {
 	// TODO: Implement me!
 	return nil, nil
 }
@@ -808,7 +828,12 @@ type wrapInternalV1alpha1StorageVersionImpl struct {
 
 var _ typedinternalv1alpha1.StorageVersionInterface = (*wrapInternalV1alpha1StorageVersionImpl)(nil)
 
-func (w *wrapInternalV1alpha1StorageVersionImpl) Apply(ctx context.Context, in *v1alpha1.StorageVersion, opts metav1.ApplyOptions) (result *apiserverinternalv1alpha1.StorageVersion, err error) {
+func (w *wrapInternalV1alpha1StorageVersionImpl) Apply(ctx context.Context, in *v1alpha1.StorageVersionApplyConfiguration, opts metav1.ApplyOptions) (result *apiserverinternalv1alpha1.StorageVersion, err error) {
+	// TODO: Implement me!
+	return nil, nil
+}
+
+func (w *wrapInternalV1alpha1StorageVersionImpl) ApplyStatus(ctx context.Context, in *v1alpha1.StorageVersionApplyConfiguration, opts metav1.ApplyOptions) (result *apiserverinternalv1alpha1.StorageVersion, err error) {
 	// TODO: Implement me!
 	return nil, nil
 }
@@ -959,7 +984,12 @@ type wrapAppsV1ControllerRevisionImpl struct {
 
 var _ typedappsv1.ControllerRevisionInterface = (*wrapAppsV1ControllerRevisionImpl)(nil)
 
-func (w *wrapAppsV1ControllerRevisionImpl) Apply(ctx context.Context, in *appsv1.ControllerRevision, opts metav1.ApplyOptions) (result *apiappsv1.ControllerRevision, err error) {
+func (w *wrapAppsV1ControllerRevisionImpl) Apply(ctx context.Context, in *appsv1.ControllerRevisionApplyConfiguration, opts metav1.ApplyOptions) (result *apiappsv1.ControllerRevision, err error) {
+	// TODO: Implement me!
+	return nil, nil
+}
+
+func (w *wrapAppsV1ControllerRevisionImpl) ApplyStatus(ctx context.Context, in *appsv1.ControllerRevisionApplyConfiguration, opts metav1.ApplyOptions) (result *apiappsv1.ControllerRevision, err error) {
 	// TODO: Implement me!
 	return nil, nil
 }
@@ -1095,7 +1125,12 @@ type wrapAppsV1DaemonSetImpl struct {
 
 var _ typedappsv1.DaemonSetInterface = (*wrapAppsV1DaemonSetImpl)(nil)
 
-func (w *wrapAppsV1DaemonSetImpl) Apply(ctx context.Context, in *appsv1.DaemonSet, opts metav1.ApplyOptions) (result *apiappsv1.DaemonSet, err error) {
+func (w *wrapAppsV1DaemonSetImpl) Apply(ctx context.Context, in *appsv1.DaemonSetApplyConfiguration, opts metav1.ApplyOptions) (result *apiappsv1.DaemonSet, err error) {
+	// TODO: Implement me!
+	return nil, nil
+}
+
+func (w *wrapAppsV1DaemonSetImpl) ApplyStatus(ctx context.Context, in *appsv1.DaemonSetApplyConfiguration, opts metav1.ApplyOptions) (result *apiappsv1.DaemonSet, err error) {
 	// TODO: Implement me!
 	return nil, nil
 }
@@ -1231,7 +1266,12 @@ type wrapAppsV1DeploymentImpl struct {
 
 var _ typedappsv1.DeploymentInterface = (*wrapAppsV1DeploymentImpl)(nil)
 
-func (w *wrapAppsV1DeploymentImpl) Apply(ctx context.Context, in *appsv1.Deployment, opts metav1.ApplyOptions) (result *apiappsv1.Deployment, err error) {
+func (w *wrapAppsV1DeploymentImpl) Apply(ctx context.Context, in *appsv1.DeploymentApplyConfiguration, opts metav1.ApplyOptions) (result *apiappsv1.Deployment, err error) {
+	// TODO: Implement me!
+	return nil, nil
+}
+
+func (w *wrapAppsV1DeploymentImpl) ApplyStatus(ctx context.Context, in *appsv1.DeploymentApplyConfiguration, opts metav1.ApplyOptions) (result *apiappsv1.Deployment, err error) {
 	// TODO: Implement me!
 	return nil, nil
 }
@@ -1375,7 +1415,12 @@ type wrapAppsV1ReplicaSetImpl struct {
 
 var _ typedappsv1.ReplicaSetInterface = (*wrapAppsV1ReplicaSetImpl)(nil)
 
-func (w *wrapAppsV1ReplicaSetImpl) Apply(ctx context.Context, in *appsv1.ReplicaSet, opts metav1.ApplyOptions) (result *apiappsv1.ReplicaSet, err error) {
+func (w *wrapAppsV1ReplicaSetImpl) Apply(ctx context.Context, in *appsv1.ReplicaSetApplyConfiguration, opts metav1.ApplyOptions) (result *apiappsv1.ReplicaSet, err error) {
+	// TODO: Implement me!
+	return nil, nil
+}
+
+func (w *wrapAppsV1ReplicaSetImpl) ApplyStatus(ctx context.Context, in *appsv1.ReplicaSetApplyConfiguration, opts metav1.ApplyOptions) (result *apiappsv1.ReplicaSet, err error) {
 	// TODO: Implement me!
 	return nil, nil
 }
@@ -1519,7 +1564,12 @@ type wrapAppsV1StatefulSetImpl struct {
 
 var _ typedappsv1.StatefulSetInterface = (*wrapAppsV1StatefulSetImpl)(nil)
 
-func (w *wrapAppsV1StatefulSetImpl) Apply(ctx context.Context, in *appsv1.StatefulSet, opts metav1.ApplyOptions) (result *apiappsv1.StatefulSet, err error) {
+func (w *wrapAppsV1StatefulSetImpl) Apply(ctx context.Context, in *appsv1.StatefulSetApplyConfiguration, opts metav1.ApplyOptions) (result *apiappsv1.StatefulSet, err error) {
+	// TODO: Implement me!
+	return nil, nil
+}
+
+func (w *wrapAppsV1StatefulSetImpl) ApplyStatus(ctx context.Context, in *appsv1.StatefulSetApplyConfiguration, opts metav1.ApplyOptions) (result *apiappsv1.StatefulSet, err error) {
 	// TODO: Implement me!
 	return nil, nil
 }
@@ -1678,7 +1728,12 @@ type wrapAppsV1beta1ControllerRevisionImpl struct {
 
 var _ typedappsv1beta1.ControllerRevisionInterface = (*wrapAppsV1beta1ControllerRevisionImpl)(nil)
 
-func (w *wrapAppsV1beta1ControllerRevisionImpl) Apply(ctx context.Context, in *appsv1beta1.ControllerRevision, opts metav1.ApplyOptions) (result *apiappsv1beta1.ControllerRevision, err error) {
+func (w *wrapAppsV1beta1ControllerRevisionImpl) Apply(ctx context.Context, in *appsv1beta1.ControllerRevisionApplyConfiguration, opts metav1.ApplyOptions) (result *apiappsv1beta1.ControllerRevision, err error) {
+	// TODO: Implement me!
+	return nil, nil
+}
+
+func (w *wrapAppsV1beta1ControllerRevisionImpl) ApplyStatus(ctx context.Context, in *appsv1beta1.ControllerRevisionApplyConfiguration, opts metav1.ApplyOptions) (result *apiappsv1beta1.ControllerRevision, err error) {
 	// TODO: Implement me!
 	return nil, nil
 }
@@ -1814,7 +1869,12 @@ type wrapAppsV1beta1DeploymentImpl struct {
 
 var _ typedappsv1beta1.DeploymentInterface = (*wrapAppsV1beta1DeploymentImpl)(nil)
 
-func (w *wrapAppsV1beta1DeploymentImpl) Apply(ctx context.Context, in *appsv1beta1.Deployment, opts metav1.ApplyOptions) (result *apiappsv1beta1.Deployment, err error) {
+func (w *wrapAppsV1beta1DeploymentImpl) Apply(ctx context.Context, in *appsv1beta1.DeploymentApplyConfiguration, opts metav1.ApplyOptions) (result *apiappsv1beta1.Deployment, err error) {
+	// TODO: Implement me!
+	return nil, nil
+}
+
+func (w *wrapAppsV1beta1DeploymentImpl) ApplyStatus(ctx context.Context, in *appsv1beta1.DeploymentApplyConfiguration, opts metav1.ApplyOptions) (result *apiappsv1beta1.Deployment, err error) {
 	// TODO: Implement me!
 	return nil, nil
 }
@@ -1950,7 +2010,12 @@ type wrapAppsV1beta1StatefulSetImpl struct {
 
 var _ typedappsv1beta1.StatefulSetInterface = (*wrapAppsV1beta1StatefulSetImpl)(nil)
 
-func (w *wrapAppsV1beta1StatefulSetImpl) Apply(ctx context.Context, in *appsv1beta1.StatefulSet, opts metav1.ApplyOptions) (result *apiappsv1beta1.StatefulSet, err error) {
+func (w *wrapAppsV1beta1StatefulSetImpl) Apply(ctx context.Context, in *appsv1beta1.StatefulSetApplyConfiguration, opts metav1.ApplyOptions) (result *apiappsv1beta1.StatefulSet, err error) {
+	// TODO: Implement me!
+	return nil, nil
+}
+
+func (w *wrapAppsV1beta1StatefulSetImpl) ApplyStatus(ctx context.Context, in *appsv1beta1.StatefulSetApplyConfiguration, opts metav1.ApplyOptions) (result *apiappsv1beta1.StatefulSet, err error) {
 	// TODO: Implement me!
 	return nil, nil
 }
@@ -2101,7 +2166,12 @@ type wrapAppsV1beta2ControllerRevisionImpl struct {
 
 var _ typedappsv1beta2.ControllerRevisionInterface = (*wrapAppsV1beta2ControllerRevisionImpl)(nil)
 
-func (w *wrapAppsV1beta2ControllerRevisionImpl) Apply(ctx context.Context, in *v1beta2.ControllerRevision, opts metav1.ApplyOptions) (result *appsv1beta2.ControllerRevision, err error) {
+func (w *wrapAppsV1beta2ControllerRevisionImpl) Apply(ctx context.Context, in *v1beta2.ControllerRevisionApplyConfiguration, opts metav1.ApplyOptions) (result *appsv1beta2.ControllerRevision, err error) {
+	// TODO: Implement me!
+	return nil, nil
+}
+
+func (w *wrapAppsV1beta2ControllerRevisionImpl) ApplyStatus(ctx context.Context, in *v1beta2.ControllerRevisionApplyConfiguration, opts metav1.ApplyOptions) (result *appsv1beta2.ControllerRevision, err error) {
 	// TODO: Implement me!
 	return nil, nil
 }
@@ -2237,7 +2307,12 @@ type wrapAppsV1beta2DaemonSetImpl struct {
 
 var _ typedappsv1beta2.DaemonSetInterface = (*wrapAppsV1beta2DaemonSetImpl)(nil)
 
-func (w *wrapAppsV1beta2DaemonSetImpl) Apply(ctx context.Context, in *v1beta2.DaemonSet, opts metav1.ApplyOptions) (result *appsv1beta2.DaemonSet, err error) {
+func (w *wrapAppsV1beta2DaemonSetImpl) Apply(ctx context.Context, in *v1beta2.DaemonSetApplyConfiguration, opts metav1.ApplyOptions) (result *appsv1beta2.DaemonSet, err error) {
+	// TODO: Implement me!
+	return nil, nil
+}
+
+func (w *wrapAppsV1beta2DaemonSetImpl) ApplyStatus(ctx context.Context, in *v1beta2.DaemonSetApplyConfiguration, opts metav1.ApplyOptions) (result *appsv1beta2.DaemonSet, err error) {
 	// TODO: Implement me!
 	return nil, nil
 }
@@ -2373,7 +2448,12 @@ type wrapAppsV1beta2DeploymentImpl struct {
 
 var _ typedappsv1beta2.DeploymentInterface = (*wrapAppsV1beta2DeploymentImpl)(nil)
 
-func (w *wrapAppsV1beta2DeploymentImpl) Apply(ctx context.Context, in *v1beta2.Deployment, opts metav1.ApplyOptions) (result *appsv1beta2.Deployment, err error) {
+func (w *wrapAppsV1beta2DeploymentImpl) Apply(ctx context.Context, in *v1beta2.DeploymentApplyConfiguration, opts metav1.ApplyOptions) (result *appsv1beta2.Deployment, err error) {
+	// TODO: Implement me!
+	return nil, nil
+}
+
+func (w *wrapAppsV1beta2DeploymentImpl) ApplyStatus(ctx context.Context, in *v1beta2.DeploymentApplyConfiguration, opts metav1.ApplyOptions) (result *appsv1beta2.Deployment, err error) {
 	// TODO: Implement me!
 	return nil, nil
 }
@@ -2509,7 +2589,12 @@ type wrapAppsV1beta2ReplicaSetImpl struct {
 
 var _ typedappsv1beta2.ReplicaSetInterface = (*wrapAppsV1beta2ReplicaSetImpl)(nil)
 
-func (w *wrapAppsV1beta2ReplicaSetImpl) Apply(ctx context.Context, in *v1beta2.ReplicaSet, opts metav1.ApplyOptions) (result *appsv1beta2.ReplicaSet, err error) {
+func (w *wrapAppsV1beta2ReplicaSetImpl) Apply(ctx context.Context, in *v1beta2.ReplicaSetApplyConfiguration, opts metav1.ApplyOptions) (result *appsv1beta2.ReplicaSet, err error) {
+	// TODO: Implement me!
+	return nil, nil
+}
+
+func (w *wrapAppsV1beta2ReplicaSetImpl) ApplyStatus(ctx context.Context, in *v1beta2.ReplicaSetApplyConfiguration, opts metav1.ApplyOptions) (result *appsv1beta2.ReplicaSet, err error) {
 	// TODO: Implement me!
 	return nil, nil
 }
@@ -2645,7 +2730,12 @@ type wrapAppsV1beta2StatefulSetImpl struct {
 
 var _ typedappsv1beta2.StatefulSetInterface = (*wrapAppsV1beta2StatefulSetImpl)(nil)
 
-func (w *wrapAppsV1beta2StatefulSetImpl) Apply(ctx context.Context, in *v1beta2.StatefulSet, opts metav1.ApplyOptions) (result *appsv1beta2.StatefulSet, err error) {
+func (w *wrapAppsV1beta2StatefulSetImpl) Apply(ctx context.Context, in *v1beta2.StatefulSetApplyConfiguration, opts metav1.ApplyOptions) (result *appsv1beta2.StatefulSet, err error) {
+	// TODO: Implement me!
+	return nil, nil
+}
+
+func (w *wrapAppsV1beta2StatefulSetImpl) ApplyStatus(ctx context.Context, in *v1beta2.StatefulSetApplyConfiguration, opts metav1.ApplyOptions) (result *appsv1beta2.StatefulSet, err error) {
 	// TODO: Implement me!
 	return nil, nil
 }
@@ -3242,7 +3332,12 @@ type wrapAutoscalingV1HorizontalPodAutoscalerImpl struct {
 
 var _ typedautoscalingv1.HorizontalPodAutoscalerInterface = (*wrapAutoscalingV1HorizontalPodAutoscalerImpl)(nil)
 
-func (w *wrapAutoscalingV1HorizontalPodAutoscalerImpl) Apply(ctx context.Context, in *applyconfigurationsautoscalingv1.HorizontalPodAutoscaler, opts metav1.ApplyOptions) (result *autoscalingv1.HorizontalPodAutoscaler, err error) {
+func (w *wrapAutoscalingV1HorizontalPodAutoscalerImpl) Apply(ctx context.Context, in *applyconfigurationsautoscalingv1.HorizontalPodAutoscalerApplyConfiguration, opts metav1.ApplyOptions) (result *autoscalingv1.HorizontalPodAutoscaler, err error) {
+	// TODO: Implement me!
+	return nil, nil
+}
+
+func (w *wrapAutoscalingV1HorizontalPodAutoscalerImpl) ApplyStatus(ctx context.Context, in *applyconfigurationsautoscalingv1.HorizontalPodAutoscalerApplyConfiguration, opts metav1.ApplyOptions) (result *autoscalingv1.HorizontalPodAutoscaler, err error) {
 	// TODO: Implement me!
 	return nil, nil
 }
@@ -3393,7 +3488,12 @@ type wrapAutoscalingV2beta1HorizontalPodAutoscalerImpl struct {
 
 var _ typedautoscalingv2beta1.HorizontalPodAutoscalerInterface = (*wrapAutoscalingV2beta1HorizontalPodAutoscalerImpl)(nil)
 
-func (w *wrapAutoscalingV2beta1HorizontalPodAutoscalerImpl) Apply(ctx context.Context, in *v2beta1.HorizontalPodAutoscaler, opts metav1.ApplyOptions) (result *autoscalingv2beta1.HorizontalPodAutoscaler, err error) {
+func (w *wrapAutoscalingV2beta1HorizontalPodAutoscalerImpl) Apply(ctx context.Context, in *v2beta1.HorizontalPodAutoscalerApplyConfiguration, opts metav1.ApplyOptions) (result *autoscalingv2beta1.HorizontalPodAutoscaler, err error) {
+	// TODO: Implement me!
+	return nil, nil
+}
+
+func (w *wrapAutoscalingV2beta1HorizontalPodAutoscalerImpl) ApplyStatus(ctx context.Context, in *v2beta1.HorizontalPodAutoscalerApplyConfiguration, opts metav1.ApplyOptions) (result *autoscalingv2beta1.HorizontalPodAutoscaler, err error) {
 	// TODO: Implement me!
 	return nil, nil
 }
@@ -3544,7 +3644,12 @@ type wrapAutoscalingV2beta2HorizontalPodAutoscalerImpl struct {
 
 var _ typedautoscalingv2beta2.HorizontalPodAutoscalerInterface = (*wrapAutoscalingV2beta2HorizontalPodAutoscalerImpl)(nil)
 
-func (w *wrapAutoscalingV2beta2HorizontalPodAutoscalerImpl) Apply(ctx context.Context, in *v2beta2.HorizontalPodAutoscaler, opts metav1.ApplyOptions) (result *autoscalingv2beta2.HorizontalPodAutoscaler, err error) {
+func (w *wrapAutoscalingV2beta2HorizontalPodAutoscalerImpl) Apply(ctx context.Context, in *v2beta2.HorizontalPodAutoscalerApplyConfiguration, opts metav1.ApplyOptions) (result *autoscalingv2beta2.HorizontalPodAutoscaler, err error) {
+	// TODO: Implement me!
+	return nil, nil
+}
+
+func (w *wrapAutoscalingV2beta2HorizontalPodAutoscalerImpl) ApplyStatus(ctx context.Context, in *v2beta2.HorizontalPodAutoscalerApplyConfiguration, opts metav1.ApplyOptions) (result *autoscalingv2beta2.HorizontalPodAutoscaler, err error) {
 	// TODO: Implement me!
 	return nil, nil
 }
@@ -3695,7 +3800,12 @@ type wrapBatchV1CronJobImpl struct {
 
 var _ typedbatchv1.CronJobInterface = (*wrapBatchV1CronJobImpl)(nil)
 
-func (w *wrapBatchV1CronJobImpl) Apply(ctx context.Context, in *batchv1.CronJob, opts metav1.ApplyOptions) (result *apibatchv1.CronJob, err error) {
+func (w *wrapBatchV1CronJobImpl) Apply(ctx context.Context, in *batchv1.CronJobApplyConfiguration, opts metav1.ApplyOptions) (result *apibatchv1.CronJob, err error) {
+	// TODO: Implement me!
+	return nil, nil
+}
+
+func (w *wrapBatchV1CronJobImpl) ApplyStatus(ctx context.Context, in *batchv1.CronJobApplyConfiguration, opts metav1.ApplyOptions) (result *apibatchv1.CronJob, err error) {
 	// TODO: Implement me!
 	return nil, nil
 }
@@ -3831,7 +3941,12 @@ type wrapBatchV1JobImpl struct {
 
 var _ typedbatchv1.JobInterface = (*wrapBatchV1JobImpl)(nil)
 
-func (w *wrapBatchV1JobImpl) Apply(ctx context.Context, in *batchv1.Job, opts metav1.ApplyOptions) (result *apibatchv1.Job, err error) {
+func (w *wrapBatchV1JobImpl) Apply(ctx context.Context, in *batchv1.JobApplyConfiguration, opts metav1.ApplyOptions) (result *apibatchv1.Job, err error) {
+	// TODO: Implement me!
+	return nil, nil
+}
+
+func (w *wrapBatchV1JobImpl) ApplyStatus(ctx context.Context, in *batchv1.JobApplyConfiguration, opts metav1.ApplyOptions) (result *apibatchv1.Job, err error) {
 	// TODO: Implement me!
 	return nil, nil
 }
@@ -3982,7 +4097,12 @@ type wrapBatchV1beta1CronJobImpl struct {
 
 var _ typedbatchv1beta1.CronJobInterface = (*wrapBatchV1beta1CronJobImpl)(nil)
 
-func (w *wrapBatchV1beta1CronJobImpl) Apply(ctx context.Context, in *batchv1beta1.CronJob, opts metav1.ApplyOptions) (result *apibatchv1beta1.CronJob, err error) {
+func (w *wrapBatchV1beta1CronJobImpl) Apply(ctx context.Context, in *batchv1beta1.CronJobApplyConfiguration, opts metav1.ApplyOptions) (result *apibatchv1beta1.CronJob, err error) {
+	// TODO: Implement me!
+	return nil, nil
+}
+
+func (w *wrapBatchV1beta1CronJobImpl) ApplyStatus(ctx context.Context, in *batchv1beta1.CronJobApplyConfiguration, opts metav1.ApplyOptions) (result *apibatchv1beta1.CronJob, err error) {
 	// TODO: Implement me!
 	return nil, nil
 }
@@ -4129,7 +4249,12 @@ type wrapCertificatesV1CertificateSigningRequestImpl struct {
 
 var _ typedcertificatesv1.CertificateSigningRequestInterface = (*wrapCertificatesV1CertificateSigningRequestImpl)(nil)
 
-func (w *wrapCertificatesV1CertificateSigningRequestImpl) Apply(ctx context.Context, in *certificatesv1.CertificateSigningRequest, opts metav1.ApplyOptions) (result *apicertificatesv1.CertificateSigningRequest, err error) {
+func (w *wrapCertificatesV1CertificateSigningRequestImpl) Apply(ctx context.Context, in *certificatesv1.CertificateSigningRequestApplyConfiguration, opts metav1.ApplyOptions) (result *apicertificatesv1.CertificateSigningRequest, err error) {
+	// TODO: Implement me!
+	return nil, nil
+}
+
+func (w *wrapCertificatesV1CertificateSigningRequestImpl) ApplyStatus(ctx context.Context, in *certificatesv1.CertificateSigningRequestApplyConfiguration, opts metav1.ApplyOptions) (result *apicertificatesv1.CertificateSigningRequest, err error) {
 	// TODO: Implement me!
 	return nil, nil
 }
@@ -4280,7 +4405,12 @@ type wrapCertificatesV1beta1CertificateSigningRequestImpl struct {
 
 var _ typedcertificatesv1beta1.CertificateSigningRequestInterface = (*wrapCertificatesV1beta1CertificateSigningRequestImpl)(nil)
 
-func (w *wrapCertificatesV1beta1CertificateSigningRequestImpl) Apply(ctx context.Context, in *certificatesv1beta1.CertificateSigningRequest, opts metav1.ApplyOptions) (result *apicertificatesv1beta1.CertificateSigningRequest, err error) {
+func (w *wrapCertificatesV1beta1CertificateSigningRequestImpl) Apply(ctx context.Context, in *certificatesv1beta1.CertificateSigningRequestApplyConfiguration, opts metav1.ApplyOptions) (result *apicertificatesv1beta1.CertificateSigningRequest, err error) {
+	// TODO: Implement me!
+	return nil, nil
+}
+
+func (w *wrapCertificatesV1beta1CertificateSigningRequestImpl) ApplyStatus(ctx context.Context, in *certificatesv1beta1.CertificateSigningRequestApplyConfiguration, opts metav1.ApplyOptions) (result *apicertificatesv1beta1.CertificateSigningRequest, err error) {
 	// TODO: Implement me!
 	return nil, nil
 }
@@ -4431,7 +4561,12 @@ type wrapCoordinationV1LeaseImpl struct {
 
 var _ typedcoordinationv1.LeaseInterface = (*wrapCoordinationV1LeaseImpl)(nil)
 
-func (w *wrapCoordinationV1LeaseImpl) Apply(ctx context.Context, in *coordinationv1.Lease, opts metav1.ApplyOptions) (result *apicoordinationv1.Lease, err error) {
+func (w *wrapCoordinationV1LeaseImpl) Apply(ctx context.Context, in *coordinationv1.LeaseApplyConfiguration, opts metav1.ApplyOptions) (result *apicoordinationv1.Lease, err error) {
+	// TODO: Implement me!
+	return nil, nil
+}
+
+func (w *wrapCoordinationV1LeaseImpl) ApplyStatus(ctx context.Context, in *coordinationv1.LeaseApplyConfiguration, opts metav1.ApplyOptions) (result *apicoordinationv1.Lease, err error) {
 	// TODO: Implement me!
 	return nil, nil
 }
@@ -4582,7 +4717,12 @@ type wrapCoordinationV1beta1LeaseImpl struct {
 
 var _ typedcoordinationv1beta1.LeaseInterface = (*wrapCoordinationV1beta1LeaseImpl)(nil)
 
-func (w *wrapCoordinationV1beta1LeaseImpl) Apply(ctx context.Context, in *coordinationv1beta1.Lease, opts metav1.ApplyOptions) (result *apicoordinationv1beta1.Lease, err error) {
+func (w *wrapCoordinationV1beta1LeaseImpl) Apply(ctx context.Context, in *coordinationv1beta1.LeaseApplyConfiguration, opts metav1.ApplyOptions) (result *apicoordinationv1beta1.Lease, err error) {
+	// TODO: Implement me!
+	return nil, nil
+}
+
+func (w *wrapCoordinationV1beta1LeaseImpl) ApplyStatus(ctx context.Context, in *coordinationv1beta1.LeaseApplyConfiguration, opts metav1.ApplyOptions) (result *apicoordinationv1beta1.Lease, err error) {
 	// TODO: Implement me!
 	return nil, nil
 }
@@ -4729,7 +4869,12 @@ type wrapCoreV1ComponentStatusImpl struct {
 
 var _ typedcorev1.ComponentStatusInterface = (*wrapCoreV1ComponentStatusImpl)(nil)
 
-func (w *wrapCoreV1ComponentStatusImpl) Apply(ctx context.Context, in *corev1.ComponentStatus, opts metav1.ApplyOptions) (result *apicorev1.ComponentStatus, err error) {
+func (w *wrapCoreV1ComponentStatusImpl) Apply(ctx context.Context, in *corev1.ComponentStatusApplyConfiguration, opts metav1.ApplyOptions) (result *apicorev1.ComponentStatus, err error) {
+	// TODO: Implement me!
+	return nil, nil
+}
+
+func (w *wrapCoreV1ComponentStatusImpl) ApplyStatus(ctx context.Context, in *corev1.ComponentStatusApplyConfiguration, opts metav1.ApplyOptions) (result *apicorev1.ComponentStatus, err error) {
 	// TODO: Implement me!
 	return nil, nil
 }
@@ -4865,7 +5010,12 @@ type wrapCoreV1ConfigMapImpl struct {
 
 var _ typedcorev1.ConfigMapInterface = (*wrapCoreV1ConfigMapImpl)(nil)
 
-func (w *wrapCoreV1ConfigMapImpl) Apply(ctx context.Context, in *corev1.ConfigMap, opts metav1.ApplyOptions) (result *apicorev1.ConfigMap, err error) {
+func (w *wrapCoreV1ConfigMapImpl) Apply(ctx context.Context, in *corev1.ConfigMapApplyConfiguration, opts metav1.ApplyOptions) (result *apicorev1.ConfigMap, err error) {
+	// TODO: Implement me!
+	return nil, nil
+}
+
+func (w *wrapCoreV1ConfigMapImpl) ApplyStatus(ctx context.Context, in *corev1.ConfigMapApplyConfiguration, opts metav1.ApplyOptions) (result *apicorev1.ConfigMap, err error) {
 	// TODO: Implement me!
 	return nil, nil
 }
@@ -5001,7 +5151,12 @@ type wrapCoreV1EndpointsImpl struct {
 
 var _ typedcorev1.EndpointsInterface = (*wrapCoreV1EndpointsImpl)(nil)
 
-func (w *wrapCoreV1EndpointsImpl) Apply(ctx context.Context, in *corev1.Endpoints, opts metav1.ApplyOptions) (result *apicorev1.Endpoints, err error) {
+func (w *wrapCoreV1EndpointsImpl) Apply(ctx context.Context, in *corev1.EndpointsApplyConfiguration, opts metav1.ApplyOptions) (result *apicorev1.Endpoints, err error) {
+	// TODO: Implement me!
+	return nil, nil
+}
+
+func (w *wrapCoreV1EndpointsImpl) ApplyStatus(ctx context.Context, in *corev1.EndpointsApplyConfiguration, opts metav1.ApplyOptions) (result *apicorev1.Endpoints, err error) {
 	// TODO: Implement me!
 	return nil, nil
 }
@@ -5137,7 +5292,12 @@ type wrapCoreV1EventImpl struct {
 
 var _ typedcorev1.EventInterface = (*wrapCoreV1EventImpl)(nil)
 
-func (w *wrapCoreV1EventImpl) Apply(ctx context.Context, in *corev1.Event, opts metav1.ApplyOptions) (result *apicorev1.Event, err error) {
+func (w *wrapCoreV1EventImpl) Apply(ctx context.Context, in *corev1.EventApplyConfiguration, opts metav1.ApplyOptions) (result *apicorev1.Event, err error) {
+	// TODO: Implement me!
+	return nil, nil
+}
+
+func (w *wrapCoreV1EventImpl) ApplyStatus(ctx context.Context, in *corev1.EventApplyConfiguration, opts metav1.ApplyOptions) (result *apicorev1.Event, err error) {
 	// TODO: Implement me!
 	return nil, nil
 }
@@ -5273,7 +5433,12 @@ type wrapCoreV1LimitRangeImpl struct {
 
 var _ typedcorev1.LimitRangeInterface = (*wrapCoreV1LimitRangeImpl)(nil)
 
-func (w *wrapCoreV1LimitRangeImpl) Apply(ctx context.Context, in *corev1.LimitRange, opts metav1.ApplyOptions) (result *apicorev1.LimitRange, err error) {
+func (w *wrapCoreV1LimitRangeImpl) Apply(ctx context.Context, in *corev1.LimitRangeApplyConfiguration, opts metav1.ApplyOptions) (result *apicorev1.LimitRange, err error) {
+	// TODO: Implement me!
+	return nil, nil
+}
+
+func (w *wrapCoreV1LimitRangeImpl) ApplyStatus(ctx context.Context, in *corev1.LimitRangeApplyConfiguration, opts metav1.ApplyOptions) (result *apicorev1.LimitRange, err error) {
 	// TODO: Implement me!
 	return nil, nil
 }
@@ -5405,7 +5570,12 @@ type wrapCoreV1NamespaceImpl struct {
 
 var _ typedcorev1.NamespaceInterface = (*wrapCoreV1NamespaceImpl)(nil)
 
-func (w *wrapCoreV1NamespaceImpl) Apply(ctx context.Context, in *corev1.Namespace, opts metav1.ApplyOptions) (result *apicorev1.Namespace, err error) {
+func (w *wrapCoreV1NamespaceImpl) Apply(ctx context.Context, in *corev1.NamespaceApplyConfiguration, opts metav1.ApplyOptions) (result *apicorev1.Namespace, err error) {
+	// TODO: Implement me!
+	return nil, nil
+}
+
+func (w *wrapCoreV1NamespaceImpl) ApplyStatus(ctx context.Context, in *corev1.NamespaceApplyConfiguration, opts metav1.ApplyOptions) (result *apicorev1.Namespace, err error) {
 	// TODO: Implement me!
 	return nil, nil
 }
@@ -5533,7 +5703,12 @@ type wrapCoreV1NodeImpl struct {
 
 var _ typedcorev1.NodeInterface = (*wrapCoreV1NodeImpl)(nil)
 
-func (w *wrapCoreV1NodeImpl) Apply(ctx context.Context, in *corev1.Node, opts metav1.ApplyOptions) (result *apicorev1.Node, err error) {
+func (w *wrapCoreV1NodeImpl) Apply(ctx context.Context, in *corev1.NodeApplyConfiguration, opts metav1.ApplyOptions) (result *apicorev1.Node, err error) {
+	// TODO: Implement me!
+	return nil, nil
+}
+
+func (w *wrapCoreV1NodeImpl) ApplyStatus(ctx context.Context, in *corev1.NodeApplyConfiguration, opts metav1.ApplyOptions) (result *apicorev1.Node, err error) {
 	// TODO: Implement me!
 	return nil, nil
 }
@@ -5665,7 +5840,12 @@ type wrapCoreV1PersistentVolumeImpl struct {
 
 var _ typedcorev1.PersistentVolumeInterface = (*wrapCoreV1PersistentVolumeImpl)(nil)
 
-func (w *wrapCoreV1PersistentVolumeImpl) Apply(ctx context.Context, in *corev1.PersistentVolume, opts metav1.ApplyOptions) (result *apicorev1.PersistentVolume, err error) {
+func (w *wrapCoreV1PersistentVolumeImpl) Apply(ctx context.Context, in *corev1.PersistentVolumeApplyConfiguration, opts metav1.ApplyOptions) (result *apicorev1.PersistentVolume, err error) {
+	// TODO: Implement me!
+	return nil, nil
+}
+
+func (w *wrapCoreV1PersistentVolumeImpl) ApplyStatus(ctx context.Context, in *corev1.PersistentVolumeApplyConfiguration, opts metav1.ApplyOptions) (result *apicorev1.PersistentVolume, err error) {
 	// TODO: Implement me!
 	return nil, nil
 }
@@ -5801,7 +5981,12 @@ type wrapCoreV1PersistentVolumeClaimImpl struct {
 
 var _ typedcorev1.PersistentVolumeClaimInterface = (*wrapCoreV1PersistentVolumeClaimImpl)(nil)
 
-func (w *wrapCoreV1PersistentVolumeClaimImpl) Apply(ctx context.Context, in *corev1.PersistentVolumeClaim, opts metav1.ApplyOptions) (result *apicorev1.PersistentVolumeClaim, err error) {
+func (w *wrapCoreV1PersistentVolumeClaimImpl) Apply(ctx context.Context, in *corev1.PersistentVolumeClaimApplyConfiguration, opts metav1.ApplyOptions) (result *apicorev1.PersistentVolumeClaim, err error) {
+	// TODO: Implement me!
+	return nil, nil
+}
+
+func (w *wrapCoreV1PersistentVolumeClaimImpl) ApplyStatus(ctx context.Context, in *corev1.PersistentVolumeClaimApplyConfiguration, opts metav1.ApplyOptions) (result *apicorev1.PersistentVolumeClaim, err error) {
 	// TODO: Implement me!
 	return nil, nil
 }
@@ -5937,7 +6122,12 @@ type wrapCoreV1PodImpl struct {
 
 var _ typedcorev1.PodInterface = (*wrapCoreV1PodImpl)(nil)
 
-func (w *wrapCoreV1PodImpl) Apply(ctx context.Context, in *corev1.Pod, opts metav1.ApplyOptions) (result *apicorev1.Pod, err error) {
+func (w *wrapCoreV1PodImpl) Apply(ctx context.Context, in *corev1.PodApplyConfiguration, opts metav1.ApplyOptions) (result *apicorev1.Pod, err error) {
+	// TODO: Implement me!
+	return nil, nil
+}
+
+func (w *wrapCoreV1PodImpl) ApplyStatus(ctx context.Context, in *corev1.PodApplyConfiguration, opts metav1.ApplyOptions) (result *apicorev1.Pod, err error) {
 	// TODO: Implement me!
 	return nil, nil
 }
@@ -6081,7 +6271,12 @@ type wrapCoreV1PodTemplateImpl struct {
 
 var _ typedcorev1.PodTemplateInterface = (*wrapCoreV1PodTemplateImpl)(nil)
 
-func (w *wrapCoreV1PodTemplateImpl) Apply(ctx context.Context, in *corev1.PodTemplate, opts metav1.ApplyOptions) (result *apicorev1.PodTemplate, err error) {
+func (w *wrapCoreV1PodTemplateImpl) Apply(ctx context.Context, in *corev1.PodTemplateApplyConfiguration, opts metav1.ApplyOptions) (result *apicorev1.PodTemplate, err error) {
+	// TODO: Implement me!
+	return nil, nil
+}
+
+func (w *wrapCoreV1PodTemplateImpl) ApplyStatus(ctx context.Context, in *corev1.PodTemplateApplyConfiguration, opts metav1.ApplyOptions) (result *apicorev1.PodTemplate, err error) {
 	// TODO: Implement me!
 	return nil, nil
 }
@@ -6217,7 +6412,12 @@ type wrapCoreV1ReplicationControllerImpl struct {
 
 var _ typedcorev1.ReplicationControllerInterface = (*wrapCoreV1ReplicationControllerImpl)(nil)
 
-func (w *wrapCoreV1ReplicationControllerImpl) Apply(ctx context.Context, in *corev1.ReplicationController, opts metav1.ApplyOptions) (result *apicorev1.ReplicationController, err error) {
+func (w *wrapCoreV1ReplicationControllerImpl) Apply(ctx context.Context, in *corev1.ReplicationControllerApplyConfiguration, opts metav1.ApplyOptions) (result *apicorev1.ReplicationController, err error) {
+	// TODO: Implement me!
+	return nil, nil
+}
+
+func (w *wrapCoreV1ReplicationControllerImpl) ApplyStatus(ctx context.Context, in *corev1.ReplicationControllerApplyConfiguration, opts metav1.ApplyOptions) (result *apicorev1.ReplicationController, err error) {
 	// TODO: Implement me!
 	return nil, nil
 }
@@ -6361,7 +6561,12 @@ type wrapCoreV1ResourceQuotaImpl struct {
 
 var _ typedcorev1.ResourceQuotaInterface = (*wrapCoreV1ResourceQuotaImpl)(nil)
 
-func (w *wrapCoreV1ResourceQuotaImpl) Apply(ctx context.Context, in *corev1.ResourceQuota, opts metav1.ApplyOptions) (result *apicorev1.ResourceQuota, err error) {
+func (w *wrapCoreV1ResourceQuotaImpl) Apply(ctx context.Context, in *corev1.ResourceQuotaApplyConfiguration, opts metav1.ApplyOptions) (result *apicorev1.ResourceQuota, err error) {
+	// TODO: Implement me!
+	return nil, nil
+}
+
+func (w *wrapCoreV1ResourceQuotaImpl) ApplyStatus(ctx context.Context, in *corev1.ResourceQuotaApplyConfiguration, opts metav1.ApplyOptions) (result *apicorev1.ResourceQuota, err error) {
 	// TODO: Implement me!
 	return nil, nil
 }
@@ -6497,7 +6702,12 @@ type wrapCoreV1SecretImpl struct {
 
 var _ typedcorev1.SecretInterface = (*wrapCoreV1SecretImpl)(nil)
 
-func (w *wrapCoreV1SecretImpl) Apply(ctx context.Context, in *corev1.Secret, opts metav1.ApplyOptions) (result *apicorev1.Secret, err error) {
+func (w *wrapCoreV1SecretImpl) Apply(ctx context.Context, in *corev1.SecretApplyConfiguration, opts metav1.ApplyOptions) (result *apicorev1.Secret, err error) {
+	// TODO: Implement me!
+	return nil, nil
+}
+
+func (w *wrapCoreV1SecretImpl) ApplyStatus(ctx context.Context, in *corev1.SecretApplyConfiguration, opts metav1.ApplyOptions) (result *apicorev1.Secret, err error) {
 	// TODO: Implement me!
 	return nil, nil
 }
@@ -6633,7 +6843,12 @@ type wrapCoreV1ServiceImpl struct {
 
 var _ typedcorev1.ServiceInterface = (*wrapCoreV1ServiceImpl)(nil)
 
-func (w *wrapCoreV1ServiceImpl) Apply(ctx context.Context, in *corev1.Service, opts metav1.ApplyOptions) (result *apicorev1.Service, err error) {
+func (w *wrapCoreV1ServiceImpl) Apply(ctx context.Context, in *corev1.ServiceApplyConfiguration, opts metav1.ApplyOptions) (result *apicorev1.Service, err error) {
+	// TODO: Implement me!
+	return nil, nil
+}
+
+func (w *wrapCoreV1ServiceImpl) ApplyStatus(ctx context.Context, in *corev1.ServiceApplyConfiguration, opts metav1.ApplyOptions) (result *apicorev1.Service, err error) {
 	// TODO: Implement me!
 	return nil, nil
 }
@@ -6765,7 +6980,12 @@ type wrapCoreV1ServiceAccountImpl struct {
 
 var _ typedcorev1.ServiceAccountInterface = (*wrapCoreV1ServiceAccountImpl)(nil)
 
-func (w *wrapCoreV1ServiceAccountImpl) Apply(ctx context.Context, in *corev1.ServiceAccount, opts metav1.ApplyOptions) (result *apicorev1.ServiceAccount, err error) {
+func (w *wrapCoreV1ServiceAccountImpl) Apply(ctx context.Context, in *corev1.ServiceAccountApplyConfiguration, opts metav1.ApplyOptions) (result *apicorev1.ServiceAccount, err error) {
+	// TODO: Implement me!
+	return nil, nil
+}
+
+func (w *wrapCoreV1ServiceAccountImpl) ApplyStatus(ctx context.Context, in *corev1.ServiceAccountApplyConfiguration, opts metav1.ApplyOptions) (result *apicorev1.ServiceAccount, err error) {
 	// TODO: Implement me!
 	return nil, nil
 }
@@ -6920,7 +7140,12 @@ type wrapDiscoveryV1EndpointSliceImpl struct {
 
 var _ typeddiscoveryv1.EndpointSliceInterface = (*wrapDiscoveryV1EndpointSliceImpl)(nil)
 
-func (w *wrapDiscoveryV1EndpointSliceImpl) Apply(ctx context.Context, in *discoveryv1.EndpointSlice, opts metav1.ApplyOptions) (result *apidiscoveryv1.EndpointSlice, err error) {
+func (w *wrapDiscoveryV1EndpointSliceImpl) Apply(ctx context.Context, in *discoveryv1.EndpointSliceApplyConfiguration, opts metav1.ApplyOptions) (result *apidiscoveryv1.EndpointSlice, err error) {
+	// TODO: Implement me!
+	return nil, nil
+}
+
+func (w *wrapDiscoveryV1EndpointSliceImpl) ApplyStatus(ctx context.Context, in *discoveryv1.EndpointSliceApplyConfiguration, opts metav1.ApplyOptions) (result *apidiscoveryv1.EndpointSlice, err error) {
 	// TODO: Implement me!
 	return nil, nil
 }
@@ -7071,7 +7296,12 @@ type wrapDiscoveryV1beta1EndpointSliceImpl struct {
 
 var _ typeddiscoveryv1beta1.EndpointSliceInterface = (*wrapDiscoveryV1beta1EndpointSliceImpl)(nil)
 
-func (w *wrapDiscoveryV1beta1EndpointSliceImpl) Apply(ctx context.Context, in *discoveryv1beta1.EndpointSlice, opts metav1.ApplyOptions) (result *apidiscoveryv1beta1.EndpointSlice, err error) {
+func (w *wrapDiscoveryV1beta1EndpointSliceImpl) Apply(ctx context.Context, in *discoveryv1beta1.EndpointSliceApplyConfiguration, opts metav1.ApplyOptions) (result *apidiscoveryv1beta1.EndpointSlice, err error) {
+	// TODO: Implement me!
+	return nil, nil
+}
+
+func (w *wrapDiscoveryV1beta1EndpointSliceImpl) ApplyStatus(ctx context.Context, in *discoveryv1beta1.EndpointSliceApplyConfiguration, opts metav1.ApplyOptions) (result *apidiscoveryv1beta1.EndpointSlice, err error) {
 	// TODO: Implement me!
 	return nil, nil
 }
@@ -7222,7 +7452,12 @@ type wrapEventsV1EventImpl struct {
 
 var _ typedeventsv1.EventInterface = (*wrapEventsV1EventImpl)(nil)
 
-func (w *wrapEventsV1EventImpl) Apply(ctx context.Context, in *eventsv1.Event, opts metav1.ApplyOptions) (result *apieventsv1.Event, err error) {
+func (w *wrapEventsV1EventImpl) Apply(ctx context.Context, in *eventsv1.EventApplyConfiguration, opts metav1.ApplyOptions) (result *apieventsv1.Event, err error) {
+	// TODO: Implement me!
+	return nil, nil
+}
+
+func (w *wrapEventsV1EventImpl) ApplyStatus(ctx context.Context, in *eventsv1.EventApplyConfiguration, opts metav1.ApplyOptions) (result *apieventsv1.Event, err error) {
 	// TODO: Implement me!
 	return nil, nil
 }
@@ -7373,7 +7608,12 @@ type wrapEventsV1beta1EventImpl struct {
 
 var _ typedeventsv1beta1.EventInterface = (*wrapEventsV1beta1EventImpl)(nil)
 
-func (w *wrapEventsV1beta1EventImpl) Apply(ctx context.Context, in *eventsv1beta1.Event, opts metav1.ApplyOptions) (result *apieventsv1beta1.Event, err error) {
+func (w *wrapEventsV1beta1EventImpl) Apply(ctx context.Context, in *eventsv1beta1.EventApplyConfiguration, opts metav1.ApplyOptions) (result *apieventsv1beta1.Event, err error) {
+	// TODO: Implement me!
+	return nil, nil
+}
+
+func (w *wrapEventsV1beta1EventImpl) ApplyStatus(ctx context.Context, in *eventsv1beta1.EventApplyConfiguration, opts metav1.ApplyOptions) (result *apieventsv1beta1.Event, err error) {
 	// TODO: Implement me!
 	return nil, nil
 }
@@ -7524,7 +7764,12 @@ type wrapExtensionsV1beta1DaemonSetImpl struct {
 
 var _ typedextensionsv1beta1.DaemonSetInterface = (*wrapExtensionsV1beta1DaemonSetImpl)(nil)
 
-func (w *wrapExtensionsV1beta1DaemonSetImpl) Apply(ctx context.Context, in *extensionsv1beta1.DaemonSet, opts metav1.ApplyOptions) (result *apiextensionsv1beta1.DaemonSet, err error) {
+func (w *wrapExtensionsV1beta1DaemonSetImpl) Apply(ctx context.Context, in *extensionsv1beta1.DaemonSetApplyConfiguration, opts metav1.ApplyOptions) (result *apiextensionsv1beta1.DaemonSet, err error) {
+	// TODO: Implement me!
+	return nil, nil
+}
+
+func (w *wrapExtensionsV1beta1DaemonSetImpl) ApplyStatus(ctx context.Context, in *extensionsv1beta1.DaemonSetApplyConfiguration, opts metav1.ApplyOptions) (result *apiextensionsv1beta1.DaemonSet, err error) {
 	// TODO: Implement me!
 	return nil, nil
 }
@@ -7660,7 +7905,12 @@ type wrapExtensionsV1beta1DeploymentImpl struct {
 
 var _ typedextensionsv1beta1.DeploymentInterface = (*wrapExtensionsV1beta1DeploymentImpl)(nil)
 
-func (w *wrapExtensionsV1beta1DeploymentImpl) Apply(ctx context.Context, in *extensionsv1beta1.Deployment, opts metav1.ApplyOptions) (result *apiextensionsv1beta1.Deployment, err error) {
+func (w *wrapExtensionsV1beta1DeploymentImpl) Apply(ctx context.Context, in *extensionsv1beta1.DeploymentApplyConfiguration, opts metav1.ApplyOptions) (result *apiextensionsv1beta1.Deployment, err error) {
+	// TODO: Implement me!
+	return nil, nil
+}
+
+func (w *wrapExtensionsV1beta1DeploymentImpl) ApplyStatus(ctx context.Context, in *extensionsv1beta1.DeploymentApplyConfiguration, opts metav1.ApplyOptions) (result *apiextensionsv1beta1.Deployment, err error) {
 	// TODO: Implement me!
 	return nil, nil
 }
@@ -7804,7 +8054,12 @@ type wrapExtensionsV1beta1IngressImpl struct {
 
 var _ typedextensionsv1beta1.IngressInterface = (*wrapExtensionsV1beta1IngressImpl)(nil)
 
-func (w *wrapExtensionsV1beta1IngressImpl) Apply(ctx context.Context, in *extensionsv1beta1.Ingress, opts metav1.ApplyOptions) (result *apiextensionsv1beta1.Ingress, err error) {
+func (w *wrapExtensionsV1beta1IngressImpl) Apply(ctx context.Context, in *extensionsv1beta1.IngressApplyConfiguration, opts metav1.ApplyOptions) (result *apiextensionsv1beta1.Ingress, err error) {
+	// TODO: Implement me!
+	return nil, nil
+}
+
+func (w *wrapExtensionsV1beta1IngressImpl) ApplyStatus(ctx context.Context, in *extensionsv1beta1.IngressApplyConfiguration, opts metav1.ApplyOptions) (result *apiextensionsv1beta1.Ingress, err error) {
 	// TODO: Implement me!
 	return nil, nil
 }
@@ -7940,7 +8195,12 @@ type wrapExtensionsV1beta1NetworkPolicyImpl struct {
 
 var _ typedextensionsv1beta1.NetworkPolicyInterface = (*wrapExtensionsV1beta1NetworkPolicyImpl)(nil)
 
-func (w *wrapExtensionsV1beta1NetworkPolicyImpl) Apply(ctx context.Context, in *extensionsv1beta1.NetworkPolicy, opts metav1.ApplyOptions) (result *apiextensionsv1beta1.NetworkPolicy, err error) {
+func (w *wrapExtensionsV1beta1NetworkPolicyImpl) Apply(ctx context.Context, in *extensionsv1beta1.NetworkPolicyApplyConfiguration, opts metav1.ApplyOptions) (result *apiextensionsv1beta1.NetworkPolicy, err error) {
+	// TODO: Implement me!
+	return nil, nil
+}
+
+func (w *wrapExtensionsV1beta1NetworkPolicyImpl) ApplyStatus(ctx context.Context, in *extensionsv1beta1.NetworkPolicyApplyConfiguration, opts metav1.ApplyOptions) (result *apiextensionsv1beta1.NetworkPolicy, err error) {
 	// TODO: Implement me!
 	return nil, nil
 }
@@ -8072,7 +8332,12 @@ type wrapExtensionsV1beta1PodSecurityPolicyImpl struct {
 
 var _ typedextensionsv1beta1.PodSecurityPolicyInterface = (*wrapExtensionsV1beta1PodSecurityPolicyImpl)(nil)
 
-func (w *wrapExtensionsV1beta1PodSecurityPolicyImpl) Apply(ctx context.Context, in *extensionsv1beta1.PodSecurityPolicy, opts metav1.ApplyOptions) (result *apiextensionsv1beta1.PodSecurityPolicy, err error) {
+func (w *wrapExtensionsV1beta1PodSecurityPolicyImpl) Apply(ctx context.Context, in *extensionsv1beta1.PodSecurityPolicyApplyConfiguration, opts metav1.ApplyOptions) (result *apiextensionsv1beta1.PodSecurityPolicy, err error) {
+	// TODO: Implement me!
+	return nil, nil
+}
+
+func (w *wrapExtensionsV1beta1PodSecurityPolicyImpl) ApplyStatus(ctx context.Context, in *extensionsv1beta1.PodSecurityPolicyApplyConfiguration, opts metav1.ApplyOptions) (result *apiextensionsv1beta1.PodSecurityPolicy, err error) {
 	// TODO: Implement me!
 	return nil, nil
 }
@@ -8208,7 +8473,12 @@ type wrapExtensionsV1beta1ReplicaSetImpl struct {
 
 var _ typedextensionsv1beta1.ReplicaSetInterface = (*wrapExtensionsV1beta1ReplicaSetImpl)(nil)
 
-func (w *wrapExtensionsV1beta1ReplicaSetImpl) Apply(ctx context.Context, in *extensionsv1beta1.ReplicaSet, opts metav1.ApplyOptions) (result *apiextensionsv1beta1.ReplicaSet, err error) {
+func (w *wrapExtensionsV1beta1ReplicaSetImpl) Apply(ctx context.Context, in *extensionsv1beta1.ReplicaSetApplyConfiguration, opts metav1.ApplyOptions) (result *apiextensionsv1beta1.ReplicaSet, err error) {
+	// TODO: Implement me!
+	return nil, nil
+}
+
+func (w *wrapExtensionsV1beta1ReplicaSetImpl) ApplyStatus(ctx context.Context, in *extensionsv1beta1.ReplicaSetApplyConfiguration, opts metav1.ApplyOptions) (result *apiextensionsv1beta1.ReplicaSet, err error) {
 	// TODO: Implement me!
 	return nil, nil
 }
@@ -8363,7 +8633,12 @@ type wrapFlowcontrolV1alpha1FlowSchemaImpl struct {
 
 var _ typedflowcontrolv1alpha1.FlowSchemaInterface = (*wrapFlowcontrolV1alpha1FlowSchemaImpl)(nil)
 
-func (w *wrapFlowcontrolV1alpha1FlowSchemaImpl) Apply(ctx context.Context, in *flowcontrolv1alpha1.FlowSchema, opts metav1.ApplyOptions) (result *apiflowcontrolv1alpha1.FlowSchema, err error) {
+func (w *wrapFlowcontrolV1alpha1FlowSchemaImpl) Apply(ctx context.Context, in *flowcontrolv1alpha1.FlowSchemaApplyConfiguration, opts metav1.ApplyOptions) (result *apiflowcontrolv1alpha1.FlowSchema, err error) {
+	// TODO: Implement me!
+	return nil, nil
+}
+
+func (w *wrapFlowcontrolV1alpha1FlowSchemaImpl) ApplyStatus(ctx context.Context, in *flowcontrolv1alpha1.FlowSchemaApplyConfiguration, opts metav1.ApplyOptions) (result *apiflowcontrolv1alpha1.FlowSchema, err error) {
 	// TODO: Implement me!
 	return nil, nil
 }
@@ -8495,7 +8770,12 @@ type wrapFlowcontrolV1alpha1PriorityLevelConfigurationImpl struct {
 
 var _ typedflowcontrolv1alpha1.PriorityLevelConfigurationInterface = (*wrapFlowcontrolV1alpha1PriorityLevelConfigurationImpl)(nil)
 
-func (w *wrapFlowcontrolV1alpha1PriorityLevelConfigurationImpl) Apply(ctx context.Context, in *flowcontrolv1alpha1.PriorityLevelConfiguration, opts metav1.ApplyOptions) (result *apiflowcontrolv1alpha1.PriorityLevelConfiguration, err error) {
+func (w *wrapFlowcontrolV1alpha1PriorityLevelConfigurationImpl) Apply(ctx context.Context, in *flowcontrolv1alpha1.PriorityLevelConfigurationApplyConfiguration, opts metav1.ApplyOptions) (result *apiflowcontrolv1alpha1.PriorityLevelConfiguration, err error) {
+	// TODO: Implement me!
+	return nil, nil
+}
+
+func (w *wrapFlowcontrolV1alpha1PriorityLevelConfigurationImpl) ApplyStatus(ctx context.Context, in *flowcontrolv1alpha1.PriorityLevelConfigurationApplyConfiguration, opts metav1.ApplyOptions) (result *apiflowcontrolv1alpha1.PriorityLevelConfiguration, err error) {
 	// TODO: Implement me!
 	return nil, nil
 }
@@ -8642,7 +8922,12 @@ type wrapFlowcontrolV1beta1FlowSchemaImpl struct {
 
 var _ typedflowcontrolv1beta1.FlowSchemaInterface = (*wrapFlowcontrolV1beta1FlowSchemaImpl)(nil)
 
-func (w *wrapFlowcontrolV1beta1FlowSchemaImpl) Apply(ctx context.Context, in *flowcontrolv1beta1.FlowSchema, opts metav1.ApplyOptions) (result *apiflowcontrolv1beta1.FlowSchema, err error) {
+func (w *wrapFlowcontrolV1beta1FlowSchemaImpl) Apply(ctx context.Context, in *flowcontrolv1beta1.FlowSchemaApplyConfiguration, opts metav1.ApplyOptions) (result *apiflowcontrolv1beta1.FlowSchema, err error) {
+	// TODO: Implement me!
+	return nil, nil
+}
+
+func (w *wrapFlowcontrolV1beta1FlowSchemaImpl) ApplyStatus(ctx context.Context, in *flowcontrolv1beta1.FlowSchemaApplyConfiguration, opts metav1.ApplyOptions) (result *apiflowcontrolv1beta1.FlowSchema, err error) {
 	// TODO: Implement me!
 	return nil, nil
 }
@@ -8774,7 +9059,12 @@ type wrapFlowcontrolV1beta1PriorityLevelConfigurationImpl struct {
 
 var _ typedflowcontrolv1beta1.PriorityLevelConfigurationInterface = (*wrapFlowcontrolV1beta1PriorityLevelConfigurationImpl)(nil)
 
-func (w *wrapFlowcontrolV1beta1PriorityLevelConfigurationImpl) Apply(ctx context.Context, in *flowcontrolv1beta1.PriorityLevelConfiguration, opts metav1.ApplyOptions) (result *apiflowcontrolv1beta1.PriorityLevelConfiguration, err error) {
+func (w *wrapFlowcontrolV1beta1PriorityLevelConfigurationImpl) Apply(ctx context.Context, in *flowcontrolv1beta1.PriorityLevelConfigurationApplyConfiguration, opts metav1.ApplyOptions) (result *apiflowcontrolv1beta1.PriorityLevelConfiguration, err error) {
+	// TODO: Implement me!
+	return nil, nil
+}
+
+func (w *wrapFlowcontrolV1beta1PriorityLevelConfigurationImpl) ApplyStatus(ctx context.Context, in *flowcontrolv1beta1.PriorityLevelConfigurationApplyConfiguration, opts metav1.ApplyOptions) (result *apiflowcontrolv1beta1.PriorityLevelConfiguration, err error) {
 	// TODO: Implement me!
 	return nil, nil
 }
@@ -8925,7 +9215,12 @@ type wrapNetworkingV1IngressImpl struct {
 
 var _ typednetworkingv1.IngressInterface = (*wrapNetworkingV1IngressImpl)(nil)
 
-func (w *wrapNetworkingV1IngressImpl) Apply(ctx context.Context, in *networkingv1.Ingress, opts metav1.ApplyOptions) (result *apinetworkingv1.Ingress, err error) {
+func (w *wrapNetworkingV1IngressImpl) Apply(ctx context.Context, in *networkingv1.IngressApplyConfiguration, opts metav1.ApplyOptions) (result *apinetworkingv1.Ingress, err error) {
+	// TODO: Implement me!
+	return nil, nil
+}
+
+func (w *wrapNetworkingV1IngressImpl) ApplyStatus(ctx context.Context, in *networkingv1.IngressApplyConfiguration, opts metav1.ApplyOptions) (result *apinetworkingv1.Ingress, err error) {
 	// TODO: Implement me!
 	return nil, nil
 }
@@ -9057,7 +9352,12 @@ type wrapNetworkingV1IngressClassImpl struct {
 
 var _ typednetworkingv1.IngressClassInterface = (*wrapNetworkingV1IngressClassImpl)(nil)
 
-func (w *wrapNetworkingV1IngressClassImpl) Apply(ctx context.Context, in *networkingv1.IngressClass, opts metav1.ApplyOptions) (result *apinetworkingv1.IngressClass, err error) {
+func (w *wrapNetworkingV1IngressClassImpl) Apply(ctx context.Context, in *networkingv1.IngressClassApplyConfiguration, opts metav1.ApplyOptions) (result *apinetworkingv1.IngressClass, err error) {
+	// TODO: Implement me!
+	return nil, nil
+}
+
+func (w *wrapNetworkingV1IngressClassImpl) ApplyStatus(ctx context.Context, in *networkingv1.IngressClassApplyConfiguration, opts metav1.ApplyOptions) (result *apinetworkingv1.IngressClass, err error) {
 	// TODO: Implement me!
 	return nil, nil
 }
@@ -9193,7 +9493,12 @@ type wrapNetworkingV1NetworkPolicyImpl struct {
 
 var _ typednetworkingv1.NetworkPolicyInterface = (*wrapNetworkingV1NetworkPolicyImpl)(nil)
 
-func (w *wrapNetworkingV1NetworkPolicyImpl) Apply(ctx context.Context, in *networkingv1.NetworkPolicy, opts metav1.ApplyOptions) (result *apinetworkingv1.NetworkPolicy, err error) {
+func (w *wrapNetworkingV1NetworkPolicyImpl) Apply(ctx context.Context, in *networkingv1.NetworkPolicyApplyConfiguration, opts metav1.ApplyOptions) (result *apinetworkingv1.NetworkPolicy, err error) {
+	// TODO: Implement me!
+	return nil, nil
+}
+
+func (w *wrapNetworkingV1NetworkPolicyImpl) ApplyStatus(ctx context.Context, in *networkingv1.NetworkPolicyApplyConfiguration, opts metav1.ApplyOptions) (result *apinetworkingv1.NetworkPolicy, err error) {
 	// TODO: Implement me!
 	return nil, nil
 }
@@ -9344,7 +9649,12 @@ type wrapNetworkingV1beta1IngressImpl struct {
 
 var _ typednetworkingv1beta1.IngressInterface = (*wrapNetworkingV1beta1IngressImpl)(nil)
 
-func (w *wrapNetworkingV1beta1IngressImpl) Apply(ctx context.Context, in *networkingv1beta1.Ingress, opts metav1.ApplyOptions) (result *apinetworkingv1beta1.Ingress, err error) {
+func (w *wrapNetworkingV1beta1IngressImpl) Apply(ctx context.Context, in *networkingv1beta1.IngressApplyConfiguration, opts metav1.ApplyOptions) (result *apinetworkingv1beta1.Ingress, err error) {
+	// TODO: Implement me!
+	return nil, nil
+}
+
+func (w *wrapNetworkingV1beta1IngressImpl) ApplyStatus(ctx context.Context, in *networkingv1beta1.IngressApplyConfiguration, opts metav1.ApplyOptions) (result *apinetworkingv1beta1.Ingress, err error) {
 	// TODO: Implement me!
 	return nil, nil
 }
@@ -9476,7 +9786,12 @@ type wrapNetworkingV1beta1IngressClassImpl struct {
 
 var _ typednetworkingv1beta1.IngressClassInterface = (*wrapNetworkingV1beta1IngressClassImpl)(nil)
 
-func (w *wrapNetworkingV1beta1IngressClassImpl) Apply(ctx context.Context, in *networkingv1beta1.IngressClass, opts metav1.ApplyOptions) (result *apinetworkingv1beta1.IngressClass, err error) {
+func (w *wrapNetworkingV1beta1IngressClassImpl) Apply(ctx context.Context, in *networkingv1beta1.IngressClassApplyConfiguration, opts metav1.ApplyOptions) (result *apinetworkingv1beta1.IngressClass, err error) {
+	// TODO: Implement me!
+	return nil, nil
+}
+
+func (w *wrapNetworkingV1beta1IngressClassImpl) ApplyStatus(ctx context.Context, in *networkingv1beta1.IngressClassApplyConfiguration, opts metav1.ApplyOptions) (result *apinetworkingv1beta1.IngressClass, err error) {
 	// TODO: Implement me!
 	return nil, nil
 }
@@ -9623,7 +9938,12 @@ type wrapNodeV1RuntimeClassImpl struct {
 
 var _ typednodev1.RuntimeClassInterface = (*wrapNodeV1RuntimeClassImpl)(nil)
 
-func (w *wrapNodeV1RuntimeClassImpl) Apply(ctx context.Context, in *nodev1.RuntimeClass, opts metav1.ApplyOptions) (result *apinodev1.RuntimeClass, err error) {
+func (w *wrapNodeV1RuntimeClassImpl) Apply(ctx context.Context, in *nodev1.RuntimeClassApplyConfiguration, opts metav1.ApplyOptions) (result *apinodev1.RuntimeClass, err error) {
+	// TODO: Implement me!
+	return nil, nil
+}
+
+func (w *wrapNodeV1RuntimeClassImpl) ApplyStatus(ctx context.Context, in *nodev1.RuntimeClassApplyConfiguration, opts metav1.ApplyOptions) (result *apinodev1.RuntimeClass, err error) {
 	// TODO: Implement me!
 	return nil, nil
 }
@@ -9770,7 +10090,12 @@ type wrapNodeV1alpha1RuntimeClassImpl struct {
 
 var _ typednodev1alpha1.RuntimeClassInterface = (*wrapNodeV1alpha1RuntimeClassImpl)(nil)
 
-func (w *wrapNodeV1alpha1RuntimeClassImpl) Apply(ctx context.Context, in *nodev1alpha1.RuntimeClass, opts metav1.ApplyOptions) (result *apinodev1alpha1.RuntimeClass, err error) {
+func (w *wrapNodeV1alpha1RuntimeClassImpl) Apply(ctx context.Context, in *nodev1alpha1.RuntimeClassApplyConfiguration, opts metav1.ApplyOptions) (result *apinodev1alpha1.RuntimeClass, err error) {
+	// TODO: Implement me!
+	return nil, nil
+}
+
+func (w *wrapNodeV1alpha1RuntimeClassImpl) ApplyStatus(ctx context.Context, in *nodev1alpha1.RuntimeClassApplyConfiguration, opts metav1.ApplyOptions) (result *apinodev1alpha1.RuntimeClass, err error) {
 	// TODO: Implement me!
 	return nil, nil
 }
@@ -9917,7 +10242,12 @@ type wrapNodeV1beta1RuntimeClassImpl struct {
 
 var _ typednodev1beta1.RuntimeClassInterface = (*wrapNodeV1beta1RuntimeClassImpl)(nil)
 
-func (w *wrapNodeV1beta1RuntimeClassImpl) Apply(ctx context.Context, in *nodev1beta1.RuntimeClass, opts metav1.ApplyOptions) (result *apinodev1beta1.RuntimeClass, err error) {
+func (w *wrapNodeV1beta1RuntimeClassImpl) Apply(ctx context.Context, in *nodev1beta1.RuntimeClassApplyConfiguration, opts metav1.ApplyOptions) (result *apinodev1beta1.RuntimeClass, err error) {
+	// TODO: Implement me!
+	return nil, nil
+}
+
+func (w *wrapNodeV1beta1RuntimeClassImpl) ApplyStatus(ctx context.Context, in *nodev1beta1.RuntimeClassApplyConfiguration, opts metav1.ApplyOptions) (result *apinodev1beta1.RuntimeClass, err error) {
 	// TODO: Implement me!
 	return nil, nil
 }
@@ -10068,7 +10398,12 @@ type wrapPolicyV1PodDisruptionBudgetImpl struct {
 
 var _ typedpolicyv1.PodDisruptionBudgetInterface = (*wrapPolicyV1PodDisruptionBudgetImpl)(nil)
 
-func (w *wrapPolicyV1PodDisruptionBudgetImpl) Apply(ctx context.Context, in *policyv1.PodDisruptionBudget, opts metav1.ApplyOptions) (result *apipolicyv1.PodDisruptionBudget, err error) {
+func (w *wrapPolicyV1PodDisruptionBudgetImpl) Apply(ctx context.Context, in *policyv1.PodDisruptionBudgetApplyConfiguration, opts metav1.ApplyOptions) (result *apipolicyv1.PodDisruptionBudget, err error) {
+	// TODO: Implement me!
+	return nil, nil
+}
+
+func (w *wrapPolicyV1PodDisruptionBudgetImpl) ApplyStatus(ctx context.Context, in *policyv1.PodDisruptionBudgetApplyConfiguration, opts metav1.ApplyOptions) (result *apipolicyv1.PodDisruptionBudget, err error) {
 	// TODO: Implement me!
 	return nil, nil
 }
@@ -10239,7 +10574,12 @@ type wrapPolicyV1beta1PodDisruptionBudgetImpl struct {
 
 var _ typedpolicyv1beta1.PodDisruptionBudgetInterface = (*wrapPolicyV1beta1PodDisruptionBudgetImpl)(nil)
 
-func (w *wrapPolicyV1beta1PodDisruptionBudgetImpl) Apply(ctx context.Context, in *policyv1beta1.PodDisruptionBudget, opts metav1.ApplyOptions) (result *apipolicyv1beta1.PodDisruptionBudget, err error) {
+func (w *wrapPolicyV1beta1PodDisruptionBudgetImpl) Apply(ctx context.Context, in *policyv1beta1.PodDisruptionBudgetApplyConfiguration, opts metav1.ApplyOptions) (result *apipolicyv1beta1.PodDisruptionBudget, err error) {
+	// TODO: Implement me!
+	return nil, nil
+}
+
+func (w *wrapPolicyV1beta1PodDisruptionBudgetImpl) ApplyStatus(ctx context.Context, in *policyv1beta1.PodDisruptionBudgetApplyConfiguration, opts metav1.ApplyOptions) (result *apipolicyv1beta1.PodDisruptionBudget, err error) {
 	// TODO: Implement me!
 	return nil, nil
 }
@@ -10371,7 +10711,12 @@ type wrapPolicyV1beta1PodSecurityPolicyImpl struct {
 
 var _ typedpolicyv1beta1.PodSecurityPolicyInterface = (*wrapPolicyV1beta1PodSecurityPolicyImpl)(nil)
 
-func (w *wrapPolicyV1beta1PodSecurityPolicyImpl) Apply(ctx context.Context, in *policyv1beta1.PodSecurityPolicy, opts metav1.ApplyOptions) (result *apipolicyv1beta1.PodSecurityPolicy, err error) {
+func (w *wrapPolicyV1beta1PodSecurityPolicyImpl) Apply(ctx context.Context, in *policyv1beta1.PodSecurityPolicyApplyConfiguration, opts metav1.ApplyOptions) (result *apipolicyv1beta1.PodSecurityPolicy, err error) {
+	// TODO: Implement me!
+	return nil, nil
+}
+
+func (w *wrapPolicyV1beta1PodSecurityPolicyImpl) ApplyStatus(ctx context.Context, in *policyv1beta1.PodSecurityPolicyApplyConfiguration, opts metav1.ApplyOptions) (result *apipolicyv1beta1.PodSecurityPolicy, err error) {
 	// TODO: Implement me!
 	return nil, nil
 }
@@ -10518,7 +10863,12 @@ type wrapRbacV1ClusterRoleImpl struct {
 
 var _ typedrbacv1.ClusterRoleInterface = (*wrapRbacV1ClusterRoleImpl)(nil)
 
-func (w *wrapRbacV1ClusterRoleImpl) Apply(ctx context.Context, in *rbacv1.ClusterRole, opts metav1.ApplyOptions) (result *apirbacv1.ClusterRole, err error) {
+func (w *wrapRbacV1ClusterRoleImpl) Apply(ctx context.Context, in *rbacv1.ClusterRoleApplyConfiguration, opts metav1.ApplyOptions) (result *apirbacv1.ClusterRole, err error) {
+	// TODO: Implement me!
+	return nil, nil
+}
+
+func (w *wrapRbacV1ClusterRoleImpl) ApplyStatus(ctx context.Context, in *rbacv1.ClusterRoleApplyConfiguration, opts metav1.ApplyOptions) (result *apirbacv1.ClusterRole, err error) {
 	// TODO: Implement me!
 	return nil, nil
 }
@@ -10650,7 +11000,12 @@ type wrapRbacV1ClusterRoleBindingImpl struct {
 
 var _ typedrbacv1.ClusterRoleBindingInterface = (*wrapRbacV1ClusterRoleBindingImpl)(nil)
 
-func (w *wrapRbacV1ClusterRoleBindingImpl) Apply(ctx context.Context, in *rbacv1.ClusterRoleBinding, opts metav1.ApplyOptions) (result *apirbacv1.ClusterRoleBinding, err error) {
+func (w *wrapRbacV1ClusterRoleBindingImpl) Apply(ctx context.Context, in *rbacv1.ClusterRoleBindingApplyConfiguration, opts metav1.ApplyOptions) (result *apirbacv1.ClusterRoleBinding, err error) {
+	// TODO: Implement me!
+	return nil, nil
+}
+
+func (w *wrapRbacV1ClusterRoleBindingImpl) ApplyStatus(ctx context.Context, in *rbacv1.ClusterRoleBindingApplyConfiguration, opts metav1.ApplyOptions) (result *apirbacv1.ClusterRoleBinding, err error) {
 	// TODO: Implement me!
 	return nil, nil
 }
@@ -10786,7 +11141,12 @@ type wrapRbacV1RoleImpl struct {
 
 var _ typedrbacv1.RoleInterface = (*wrapRbacV1RoleImpl)(nil)
 
-func (w *wrapRbacV1RoleImpl) Apply(ctx context.Context, in *rbacv1.Role, opts metav1.ApplyOptions) (result *apirbacv1.Role, err error) {
+func (w *wrapRbacV1RoleImpl) Apply(ctx context.Context, in *rbacv1.RoleApplyConfiguration, opts metav1.ApplyOptions) (result *apirbacv1.Role, err error) {
+	// TODO: Implement me!
+	return nil, nil
+}
+
+func (w *wrapRbacV1RoleImpl) ApplyStatus(ctx context.Context, in *rbacv1.RoleApplyConfiguration, opts metav1.ApplyOptions) (result *apirbacv1.Role, err error) {
 	// TODO: Implement me!
 	return nil, nil
 }
@@ -10922,7 +11282,12 @@ type wrapRbacV1RoleBindingImpl struct {
 
 var _ typedrbacv1.RoleBindingInterface = (*wrapRbacV1RoleBindingImpl)(nil)
 
-func (w *wrapRbacV1RoleBindingImpl) Apply(ctx context.Context, in *rbacv1.RoleBinding, opts metav1.ApplyOptions) (result *apirbacv1.RoleBinding, err error) {
+func (w *wrapRbacV1RoleBindingImpl) Apply(ctx context.Context, in *rbacv1.RoleBindingApplyConfiguration, opts metav1.ApplyOptions) (result *apirbacv1.RoleBinding, err error) {
+	// TODO: Implement me!
+	return nil, nil
+}
+
+func (w *wrapRbacV1RoleBindingImpl) ApplyStatus(ctx context.Context, in *rbacv1.RoleBindingApplyConfiguration, opts metav1.ApplyOptions) (result *apirbacv1.RoleBinding, err error) {
 	// TODO: Implement me!
 	return nil, nil
 }
@@ -11069,7 +11434,12 @@ type wrapRbacV1alpha1ClusterRoleImpl struct {
 
 var _ typedrbacv1alpha1.ClusterRoleInterface = (*wrapRbacV1alpha1ClusterRoleImpl)(nil)
 
-func (w *wrapRbacV1alpha1ClusterRoleImpl) Apply(ctx context.Context, in *rbacv1alpha1.ClusterRole, opts metav1.ApplyOptions) (result *apirbacv1alpha1.ClusterRole, err error) {
+func (w *wrapRbacV1alpha1ClusterRoleImpl) Apply(ctx context.Context, in *rbacv1alpha1.ClusterRoleApplyConfiguration, opts metav1.ApplyOptions) (result *apirbacv1alpha1.ClusterRole, err error) {
+	// TODO: Implement me!
+	return nil, nil
+}
+
+func (w *wrapRbacV1alpha1ClusterRoleImpl) ApplyStatus(ctx context.Context, in *rbacv1alpha1.ClusterRoleApplyConfiguration, opts metav1.ApplyOptions) (result *apirbacv1alpha1.ClusterRole, err error) {
 	// TODO: Implement me!
 	return nil, nil
 }
@@ -11201,7 +11571,12 @@ type wrapRbacV1alpha1ClusterRoleBindingImpl struct {
 
 var _ typedrbacv1alpha1.ClusterRoleBindingInterface = (*wrapRbacV1alpha1ClusterRoleBindingImpl)(nil)
 
-func (w *wrapRbacV1alpha1ClusterRoleBindingImpl) Apply(ctx context.Context, in *rbacv1alpha1.ClusterRoleBinding, opts metav1.ApplyOptions) (result *apirbacv1alpha1.ClusterRoleBinding, err error) {
+func (w *wrapRbacV1alpha1ClusterRoleBindingImpl) Apply(ctx context.Context, in *rbacv1alpha1.ClusterRoleBindingApplyConfiguration, opts metav1.ApplyOptions) (result *apirbacv1alpha1.ClusterRoleBinding, err error) {
+	// TODO: Implement me!
+	return nil, nil
+}
+
+func (w *wrapRbacV1alpha1ClusterRoleBindingImpl) ApplyStatus(ctx context.Context, in *rbacv1alpha1.ClusterRoleBindingApplyConfiguration, opts metav1.ApplyOptions) (result *apirbacv1alpha1.ClusterRoleBinding, err error) {
 	// TODO: Implement me!
 	return nil, nil
 }
@@ -11337,7 +11712,12 @@ type wrapRbacV1alpha1RoleImpl struct {
 
 var _ typedrbacv1alpha1.RoleInterface = (*wrapRbacV1alpha1RoleImpl)(nil)
 
-func (w *wrapRbacV1alpha1RoleImpl) Apply(ctx context.Context, in *rbacv1alpha1.Role, opts metav1.ApplyOptions) (result *apirbacv1alpha1.Role, err error) {
+func (w *wrapRbacV1alpha1RoleImpl) Apply(ctx context.Context, in *rbacv1alpha1.RoleApplyConfiguration, opts metav1.ApplyOptions) (result *apirbacv1alpha1.Role, err error) {
+	// TODO: Implement me!
+	return nil, nil
+}
+
+func (w *wrapRbacV1alpha1RoleImpl) ApplyStatus(ctx context.Context, in *rbacv1alpha1.RoleApplyConfiguration, opts metav1.ApplyOptions) (result *apirbacv1alpha1.Role, err error) {
 	// TODO: Implement me!
 	return nil, nil
 }
@@ -11473,7 +11853,12 @@ type wrapRbacV1alpha1RoleBindingImpl struct {
 
 var _ typedrbacv1alpha1.RoleBindingInterface = (*wrapRbacV1alpha1RoleBindingImpl)(nil)
 
-func (w *wrapRbacV1alpha1RoleBindingImpl) Apply(ctx context.Context, in *rbacv1alpha1.RoleBinding, opts metav1.ApplyOptions) (result *apirbacv1alpha1.RoleBinding, err error) {
+func (w *wrapRbacV1alpha1RoleBindingImpl) Apply(ctx context.Context, in *rbacv1alpha1.RoleBindingApplyConfiguration, opts metav1.ApplyOptions) (result *apirbacv1alpha1.RoleBinding, err error) {
+	// TODO: Implement me!
+	return nil, nil
+}
+
+func (w *wrapRbacV1alpha1RoleBindingImpl) ApplyStatus(ctx context.Context, in *rbacv1alpha1.RoleBindingApplyConfiguration, opts metav1.ApplyOptions) (result *apirbacv1alpha1.RoleBinding, err error) {
 	// TODO: Implement me!
 	return nil, nil
 }
@@ -11620,7 +12005,12 @@ type wrapRbacV1beta1ClusterRoleImpl struct {
 
 var _ typedrbacv1beta1.ClusterRoleInterface = (*wrapRbacV1beta1ClusterRoleImpl)(nil)
 
-func (w *wrapRbacV1beta1ClusterRoleImpl) Apply(ctx context.Context, in *rbacv1beta1.ClusterRole, opts metav1.ApplyOptions) (result *apirbacv1beta1.ClusterRole, err error) {
+func (w *wrapRbacV1beta1ClusterRoleImpl) Apply(ctx context.Context, in *rbacv1beta1.ClusterRoleApplyConfiguration, opts metav1.ApplyOptions) (result *apirbacv1beta1.ClusterRole, err error) {
+	// TODO: Implement me!
+	return nil, nil
+}
+
+func (w *wrapRbacV1beta1ClusterRoleImpl) ApplyStatus(ctx context.Context, in *rbacv1beta1.ClusterRoleApplyConfiguration, opts metav1.ApplyOptions) (result *apirbacv1beta1.ClusterRole, err error) {
 	// TODO: Implement me!
 	return nil, nil
 }
@@ -11752,7 +12142,12 @@ type wrapRbacV1beta1ClusterRoleBindingImpl struct {
 
 var _ typedrbacv1beta1.ClusterRoleBindingInterface = (*wrapRbacV1beta1ClusterRoleBindingImpl)(nil)
 
-func (w *wrapRbacV1beta1ClusterRoleBindingImpl) Apply(ctx context.Context, in *rbacv1beta1.ClusterRoleBinding, opts metav1.ApplyOptions) (result *apirbacv1beta1.ClusterRoleBinding, err error) {
+func (w *wrapRbacV1beta1ClusterRoleBindingImpl) Apply(ctx context.Context, in *rbacv1beta1.ClusterRoleBindingApplyConfiguration, opts metav1.ApplyOptions) (result *apirbacv1beta1.ClusterRoleBinding, err error) {
+	// TODO: Implement me!
+	return nil, nil
+}
+
+func (w *wrapRbacV1beta1ClusterRoleBindingImpl) ApplyStatus(ctx context.Context, in *rbacv1beta1.ClusterRoleBindingApplyConfiguration, opts metav1.ApplyOptions) (result *apirbacv1beta1.ClusterRoleBinding, err error) {
 	// TODO: Implement me!
 	return nil, nil
 }
@@ -11888,7 +12283,12 @@ type wrapRbacV1beta1RoleImpl struct {
 
 var _ typedrbacv1beta1.RoleInterface = (*wrapRbacV1beta1RoleImpl)(nil)
 
-func (w *wrapRbacV1beta1RoleImpl) Apply(ctx context.Context, in *rbacv1beta1.Role, opts metav1.ApplyOptions) (result *apirbacv1beta1.Role, err error) {
+func (w *wrapRbacV1beta1RoleImpl) Apply(ctx context.Context, in *rbacv1beta1.RoleApplyConfiguration, opts metav1.ApplyOptions) (result *apirbacv1beta1.Role, err error) {
+	// TODO: Implement me!
+	return nil, nil
+}
+
+func (w *wrapRbacV1beta1RoleImpl) ApplyStatus(ctx context.Context, in *rbacv1beta1.RoleApplyConfiguration, opts metav1.ApplyOptions) (result *apirbacv1beta1.Role, err error) {
 	// TODO: Implement me!
 	return nil, nil
 }
@@ -12024,7 +12424,12 @@ type wrapRbacV1beta1RoleBindingImpl struct {
 
 var _ typedrbacv1beta1.RoleBindingInterface = (*wrapRbacV1beta1RoleBindingImpl)(nil)
 
-func (w *wrapRbacV1beta1RoleBindingImpl) Apply(ctx context.Context, in *rbacv1beta1.RoleBinding, opts metav1.ApplyOptions) (result *apirbacv1beta1.RoleBinding, err error) {
+func (w *wrapRbacV1beta1RoleBindingImpl) Apply(ctx context.Context, in *rbacv1beta1.RoleBindingApplyConfiguration, opts metav1.ApplyOptions) (result *apirbacv1beta1.RoleBinding, err error) {
+	// TODO: Implement me!
+	return nil, nil
+}
+
+func (w *wrapRbacV1beta1RoleBindingImpl) ApplyStatus(ctx context.Context, in *rbacv1beta1.RoleBindingApplyConfiguration, opts metav1.ApplyOptions) (result *apirbacv1beta1.RoleBinding, err error) {
 	// TODO: Implement me!
 	return nil, nil
 }
@@ -12171,7 +12576,12 @@ type wrapSchedulingV1PriorityClassImpl struct {
 
 var _ typedschedulingv1.PriorityClassInterface = (*wrapSchedulingV1PriorityClassImpl)(nil)
 
-func (w *wrapSchedulingV1PriorityClassImpl) Apply(ctx context.Context, in *schedulingv1.PriorityClass, opts metav1.ApplyOptions) (result *apischedulingv1.PriorityClass, err error) {
+func (w *wrapSchedulingV1PriorityClassImpl) Apply(ctx context.Context, in *schedulingv1.PriorityClassApplyConfiguration, opts metav1.ApplyOptions) (result *apischedulingv1.PriorityClass, err error) {
+	// TODO: Implement me!
+	return nil, nil
+}
+
+func (w *wrapSchedulingV1PriorityClassImpl) ApplyStatus(ctx context.Context, in *schedulingv1.PriorityClassApplyConfiguration, opts metav1.ApplyOptions) (result *apischedulingv1.PriorityClass, err error) {
 	// TODO: Implement me!
 	return nil, nil
 }
@@ -12318,7 +12728,12 @@ type wrapSchedulingV1alpha1PriorityClassImpl struct {
 
 var _ typedschedulingv1alpha1.PriorityClassInterface = (*wrapSchedulingV1alpha1PriorityClassImpl)(nil)
 
-func (w *wrapSchedulingV1alpha1PriorityClassImpl) Apply(ctx context.Context, in *schedulingv1alpha1.PriorityClass, opts metav1.ApplyOptions) (result *apischedulingv1alpha1.PriorityClass, err error) {
+func (w *wrapSchedulingV1alpha1PriorityClassImpl) Apply(ctx context.Context, in *schedulingv1alpha1.PriorityClassApplyConfiguration, opts metav1.ApplyOptions) (result *apischedulingv1alpha1.PriorityClass, err error) {
+	// TODO: Implement me!
+	return nil, nil
+}
+
+func (w *wrapSchedulingV1alpha1PriorityClassImpl) ApplyStatus(ctx context.Context, in *schedulingv1alpha1.PriorityClassApplyConfiguration, opts metav1.ApplyOptions) (result *apischedulingv1alpha1.PriorityClass, err error) {
 	// TODO: Implement me!
 	return nil, nil
 }
@@ -12465,7 +12880,12 @@ type wrapSchedulingV1beta1PriorityClassImpl struct {
 
 var _ typedschedulingv1beta1.PriorityClassInterface = (*wrapSchedulingV1beta1PriorityClassImpl)(nil)
 
-func (w *wrapSchedulingV1beta1PriorityClassImpl) Apply(ctx context.Context, in *schedulingv1beta1.PriorityClass, opts metav1.ApplyOptions) (result *apischedulingv1beta1.PriorityClass, err error) {
+func (w *wrapSchedulingV1beta1PriorityClassImpl) Apply(ctx context.Context, in *schedulingv1beta1.PriorityClassApplyConfiguration, opts metav1.ApplyOptions) (result *apischedulingv1beta1.PriorityClass, err error) {
+	// TODO: Implement me!
+	return nil, nil
+}
+
+func (w *wrapSchedulingV1beta1PriorityClassImpl) ApplyStatus(ctx context.Context, in *schedulingv1beta1.PriorityClassApplyConfiguration, opts metav1.ApplyOptions) (result *apischedulingv1beta1.PriorityClass, err error) {
 	// TODO: Implement me!
 	return nil, nil
 }
@@ -12612,7 +13032,12 @@ type wrapStorageV1CSIDriverImpl struct {
 
 var _ typedstoragev1.CSIDriverInterface = (*wrapStorageV1CSIDriverImpl)(nil)
 
-func (w *wrapStorageV1CSIDriverImpl) Apply(ctx context.Context, in *storagev1.CSIDriver, opts metav1.ApplyOptions) (result *apistoragev1.CSIDriver, err error) {
+func (w *wrapStorageV1CSIDriverImpl) Apply(ctx context.Context, in *storagev1.CSIDriverApplyConfiguration, opts metav1.ApplyOptions) (result *apistoragev1.CSIDriver, err error) {
+	// TODO: Implement me!
+	return nil, nil
+}
+
+func (w *wrapStorageV1CSIDriverImpl) ApplyStatus(ctx context.Context, in *storagev1.CSIDriverApplyConfiguration, opts metav1.ApplyOptions) (result *apistoragev1.CSIDriver, err error) {
 	// TODO: Implement me!
 	return nil, nil
 }
@@ -12744,7 +13169,12 @@ type wrapStorageV1CSINodeImpl struct {
 
 var _ typedstoragev1.CSINodeInterface = (*wrapStorageV1CSINodeImpl)(nil)
 
-func (w *wrapStorageV1CSINodeImpl) Apply(ctx context.Context, in *storagev1.CSINode, opts metav1.ApplyOptions) (result *apistoragev1.CSINode, err error) {
+func (w *wrapStorageV1CSINodeImpl) Apply(ctx context.Context, in *storagev1.CSINodeApplyConfiguration, opts metav1.ApplyOptions) (result *apistoragev1.CSINode, err error) {
+	// TODO: Implement me!
+	return nil, nil
+}
+
+func (w *wrapStorageV1CSINodeImpl) ApplyStatus(ctx context.Context, in *storagev1.CSINodeApplyConfiguration, opts metav1.ApplyOptions) (result *apistoragev1.CSINode, err error) {
 	// TODO: Implement me!
 	return nil, nil
 }
@@ -12876,7 +13306,12 @@ type wrapStorageV1StorageClassImpl struct {
 
 var _ typedstoragev1.StorageClassInterface = (*wrapStorageV1StorageClassImpl)(nil)
 
-func (w *wrapStorageV1StorageClassImpl) Apply(ctx context.Context, in *storagev1.StorageClass, opts metav1.ApplyOptions) (result *apistoragev1.StorageClass, err error) {
+func (w *wrapStorageV1StorageClassImpl) Apply(ctx context.Context, in *storagev1.StorageClassApplyConfiguration, opts metav1.ApplyOptions) (result *apistoragev1.StorageClass, err error) {
+	// TODO: Implement me!
+	return nil, nil
+}
+
+func (w *wrapStorageV1StorageClassImpl) ApplyStatus(ctx context.Context, in *storagev1.StorageClassApplyConfiguration, opts metav1.ApplyOptions) (result *apistoragev1.StorageClass, err error) {
 	// TODO: Implement me!
 	return nil, nil
 }
@@ -13008,7 +13443,12 @@ type wrapStorageV1VolumeAttachmentImpl struct {
 
 var _ typedstoragev1.VolumeAttachmentInterface = (*wrapStorageV1VolumeAttachmentImpl)(nil)
 
-func (w *wrapStorageV1VolumeAttachmentImpl) Apply(ctx context.Context, in *storagev1.VolumeAttachment, opts metav1.ApplyOptions) (result *apistoragev1.VolumeAttachment, err error) {
+func (w *wrapStorageV1VolumeAttachmentImpl) Apply(ctx context.Context, in *storagev1.VolumeAttachmentApplyConfiguration, opts metav1.ApplyOptions) (result *apistoragev1.VolumeAttachment, err error) {
+	// TODO: Implement me!
+	return nil, nil
+}
+
+func (w *wrapStorageV1VolumeAttachmentImpl) ApplyStatus(ctx context.Context, in *storagev1.VolumeAttachmentApplyConfiguration, opts metav1.ApplyOptions) (result *apistoragev1.VolumeAttachment, err error) {
 	// TODO: Implement me!
 	return nil, nil
 }
@@ -13159,7 +13599,12 @@ type wrapStorageV1alpha1CSIStorageCapacityImpl struct {
 
 var _ typedstoragev1alpha1.CSIStorageCapacityInterface = (*wrapStorageV1alpha1CSIStorageCapacityImpl)(nil)
 
-func (w *wrapStorageV1alpha1CSIStorageCapacityImpl) Apply(ctx context.Context, in *storagev1alpha1.CSIStorageCapacity, opts metav1.ApplyOptions) (result *apistoragev1alpha1.CSIStorageCapacity, err error) {
+func (w *wrapStorageV1alpha1CSIStorageCapacityImpl) Apply(ctx context.Context, in *storagev1alpha1.CSIStorageCapacityApplyConfiguration, opts metav1.ApplyOptions) (result *apistoragev1alpha1.CSIStorageCapacity, err error) {
+	// TODO: Implement me!
+	return nil, nil
+}
+
+func (w *wrapStorageV1alpha1CSIStorageCapacityImpl) ApplyStatus(ctx context.Context, in *storagev1alpha1.CSIStorageCapacityApplyConfiguration, opts metav1.ApplyOptions) (result *apistoragev1alpha1.CSIStorageCapacity, err error) {
 	// TODO: Implement me!
 	return nil, nil
 }
@@ -13291,7 +13736,12 @@ type wrapStorageV1alpha1VolumeAttachmentImpl struct {
 
 var _ typedstoragev1alpha1.VolumeAttachmentInterface = (*wrapStorageV1alpha1VolumeAttachmentImpl)(nil)
 
-func (w *wrapStorageV1alpha1VolumeAttachmentImpl) Apply(ctx context.Context, in *storagev1alpha1.VolumeAttachment, opts metav1.ApplyOptions) (result *apistoragev1alpha1.VolumeAttachment, err error) {
+func (w *wrapStorageV1alpha1VolumeAttachmentImpl) Apply(ctx context.Context, in *storagev1alpha1.VolumeAttachmentApplyConfiguration, opts metav1.ApplyOptions) (result *apistoragev1alpha1.VolumeAttachment, err error) {
+	// TODO: Implement me!
+	return nil, nil
+}
+
+func (w *wrapStorageV1alpha1VolumeAttachmentImpl) ApplyStatus(ctx context.Context, in *storagev1alpha1.VolumeAttachmentApplyConfiguration, opts metav1.ApplyOptions) (result *apistoragev1alpha1.VolumeAttachment, err error) {
 	// TODO: Implement me!
 	return nil, nil
 }
@@ -13438,7 +13888,12 @@ type wrapStorageV1beta1CSIDriverImpl struct {
 
 var _ typedstoragev1beta1.CSIDriverInterface = (*wrapStorageV1beta1CSIDriverImpl)(nil)
 
-func (w *wrapStorageV1beta1CSIDriverImpl) Apply(ctx context.Context, in *storagev1beta1.CSIDriver, opts metav1.ApplyOptions) (result *apistoragev1beta1.CSIDriver, err error) {
+func (w *wrapStorageV1beta1CSIDriverImpl) Apply(ctx context.Context, in *storagev1beta1.CSIDriverApplyConfiguration, opts metav1.ApplyOptions) (result *apistoragev1beta1.CSIDriver, err error) {
+	// TODO: Implement me!
+	return nil, nil
+}
+
+func (w *wrapStorageV1beta1CSIDriverImpl) ApplyStatus(ctx context.Context, in *storagev1beta1.CSIDriverApplyConfiguration, opts metav1.ApplyOptions) (result *apistoragev1beta1.CSIDriver, err error) {
 	// TODO: Implement me!
 	return nil, nil
 }
@@ -13570,7 +14025,12 @@ type wrapStorageV1beta1CSINodeImpl struct {
 
 var _ typedstoragev1beta1.CSINodeInterface = (*wrapStorageV1beta1CSINodeImpl)(nil)
 
-func (w *wrapStorageV1beta1CSINodeImpl) Apply(ctx context.Context, in *storagev1beta1.CSINode, opts metav1.ApplyOptions) (result *apistoragev1beta1.CSINode, err error) {
+func (w *wrapStorageV1beta1CSINodeImpl) Apply(ctx context.Context, in *storagev1beta1.CSINodeApplyConfiguration, opts metav1.ApplyOptions) (result *apistoragev1beta1.CSINode, err error) {
+	// TODO: Implement me!
+	return nil, nil
+}
+
+func (w *wrapStorageV1beta1CSINodeImpl) ApplyStatus(ctx context.Context, in *storagev1beta1.CSINodeApplyConfiguration, opts metav1.ApplyOptions) (result *apistoragev1beta1.CSINode, err error) {
 	// TODO: Implement me!
 	return nil, nil
 }
@@ -13706,7 +14166,12 @@ type wrapStorageV1beta1CSIStorageCapacityImpl struct {
 
 var _ typedstoragev1beta1.CSIStorageCapacityInterface = (*wrapStorageV1beta1CSIStorageCapacityImpl)(nil)
 
-func (w *wrapStorageV1beta1CSIStorageCapacityImpl) Apply(ctx context.Context, in *storagev1beta1.CSIStorageCapacity, opts metav1.ApplyOptions) (result *apistoragev1beta1.CSIStorageCapacity, err error) {
+func (w *wrapStorageV1beta1CSIStorageCapacityImpl) Apply(ctx context.Context, in *storagev1beta1.CSIStorageCapacityApplyConfiguration, opts metav1.ApplyOptions) (result *apistoragev1beta1.CSIStorageCapacity, err error) {
+	// TODO: Implement me!
+	return nil, nil
+}
+
+func (w *wrapStorageV1beta1CSIStorageCapacityImpl) ApplyStatus(ctx context.Context, in *storagev1beta1.CSIStorageCapacityApplyConfiguration, opts metav1.ApplyOptions) (result *apistoragev1beta1.CSIStorageCapacity, err error) {
 	// TODO: Implement me!
 	return nil, nil
 }
@@ -13838,7 +14303,12 @@ type wrapStorageV1beta1StorageClassImpl struct {
 
 var _ typedstoragev1beta1.StorageClassInterface = (*wrapStorageV1beta1StorageClassImpl)(nil)
 
-func (w *wrapStorageV1beta1StorageClassImpl) Apply(ctx context.Context, in *storagev1beta1.StorageClass, opts metav1.ApplyOptions) (result *apistoragev1beta1.StorageClass, err error) {
+func (w *wrapStorageV1beta1StorageClassImpl) Apply(ctx context.Context, in *storagev1beta1.StorageClassApplyConfiguration, opts metav1.ApplyOptions) (result *apistoragev1beta1.StorageClass, err error) {
+	// TODO: Implement me!
+	return nil, nil
+}
+
+func (w *wrapStorageV1beta1StorageClassImpl) ApplyStatus(ctx context.Context, in *storagev1beta1.StorageClassApplyConfiguration, opts metav1.ApplyOptions) (result *apistoragev1beta1.StorageClass, err error) {
 	// TODO: Implement me!
 	return nil, nil
 }
@@ -13970,7 +14440,12 @@ type wrapStorageV1beta1VolumeAttachmentImpl struct {
 
 var _ typedstoragev1beta1.VolumeAttachmentInterface = (*wrapStorageV1beta1VolumeAttachmentImpl)(nil)
 
-func (w *wrapStorageV1beta1VolumeAttachmentImpl) Apply(ctx context.Context, in *storagev1beta1.VolumeAttachment, opts metav1.ApplyOptions) (result *apistoragev1beta1.VolumeAttachment, err error) {
+func (w *wrapStorageV1beta1VolumeAttachmentImpl) Apply(ctx context.Context, in *storagev1beta1.VolumeAttachmentApplyConfiguration, opts metav1.ApplyOptions) (result *apistoragev1beta1.VolumeAttachment, err error) {
+	// TODO: Implement me!
+	return nil, nil
+}
+
+func (w *wrapStorageV1beta1VolumeAttachmentImpl) ApplyStatus(ctx context.Context, in *storagev1beta1.VolumeAttachmentApplyConfiguration, opts metav1.ApplyOptions) (result *apistoragev1beta1.VolumeAttachment, err error) {
 	// TODO: Implement me!
 	return nil, nil
 }

@@ -24,8 +24,8 @@ import (
 	errors "errors"
 	fmt "fmt"
 
-	apisapiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
-	apiextensionsv1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	v1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 	clientset "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	typedapiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/typed/apiextensions/v1"
 	typedapiextensionsv1beta1 "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/typed/apiextensions/v1beta1"
@@ -129,7 +129,11 @@ type wrapApiextensionsV1beta1CustomResourceDefinitionImpl struct {
 
 var _ typedapiextensionsv1beta1.CustomResourceDefinitionInterface = (*wrapApiextensionsV1beta1CustomResourceDefinitionImpl)(nil)
 
+<<<<<<< HEAD
 func (w *wrapApiextensionsV1beta1CustomResourceDefinitionImpl) Create(ctx context.Context, in *apiextensionsv1beta1.CustomResourceDefinition, opts v1.CreateOptions) (*apiextensionsv1beta1.CustomResourceDefinition, error) {
+=======
+func (w *wrapApiextensionsV1beta1CustomResourceDefinitionImpl) Create(ctx context.Context, in *v1beta1.CustomResourceDefinition, opts v1.CreateOptions) (*v1beta1.CustomResourceDefinition, error) {
+>>>>>>> 0ccc02ea (Hack the generator to work at all)
 	in.SetGroupVersionKind(schema.GroupVersionKind{
 		Group:   "apiextensions.k8s.io",
 		Version: "v1beta1",
@@ -143,7 +147,7 @@ func (w *wrapApiextensionsV1beta1CustomResourceDefinitionImpl) Create(ctx contex
 	if err != nil {
 		return nil, err
 	}
-	out := &apiextensionsv1beta1.CustomResourceDefinition{}
+	out := &v1beta1.CustomResourceDefinition{}
 	if err := convert(uo, out); err != nil {
 		return nil, err
 	}
@@ -158,43 +162,43 @@ func (w *wrapApiextensionsV1beta1CustomResourceDefinitionImpl) DeleteCollection(
 	return w.dyn.DeleteCollection(ctx, opts, listOpts)
 }
 
-func (w *wrapApiextensionsV1beta1CustomResourceDefinitionImpl) Get(ctx context.Context, name string, opts v1.GetOptions) (*apiextensionsv1beta1.CustomResourceDefinition, error) {
+func (w *wrapApiextensionsV1beta1CustomResourceDefinitionImpl) Get(ctx context.Context, name string, opts v1.GetOptions) (*v1beta1.CustomResourceDefinition, error) {
 	uo, err := w.dyn.Get(ctx, name, opts)
 	if err != nil {
 		return nil, err
 	}
-	out := &apiextensionsv1beta1.CustomResourceDefinition{}
+	out := &v1beta1.CustomResourceDefinition{}
 	if err := convert(uo, out); err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (w *wrapApiextensionsV1beta1CustomResourceDefinitionImpl) List(ctx context.Context, opts v1.ListOptions) (*apiextensionsv1beta1.CustomResourceDefinitionList, error) {
+func (w *wrapApiextensionsV1beta1CustomResourceDefinitionImpl) List(ctx context.Context, opts v1.ListOptions) (*v1beta1.CustomResourceDefinitionList, error) {
 	uo, err := w.dyn.List(ctx, opts)
 	if err != nil {
 		return nil, err
 	}
-	out := &apiextensionsv1beta1.CustomResourceDefinitionList{}
+	out := &v1beta1.CustomResourceDefinitionList{}
 	if err := convert(uo, out); err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (w *wrapApiextensionsV1beta1CustomResourceDefinitionImpl) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *apiextensionsv1beta1.CustomResourceDefinition, err error) {
+func (w *wrapApiextensionsV1beta1CustomResourceDefinitionImpl) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v1beta1.CustomResourceDefinition, err error) {
 	uo, err := w.dyn.Patch(ctx, name, pt, data, opts)
 	if err != nil {
 		return nil, err
 	}
-	out := &apiextensionsv1beta1.CustomResourceDefinition{}
+	out := &v1beta1.CustomResourceDefinition{}
 	if err := convert(uo, out); err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (w *wrapApiextensionsV1beta1CustomResourceDefinitionImpl) Update(ctx context.Context, in *apiextensionsv1beta1.CustomResourceDefinition, opts v1.UpdateOptions) (*apiextensionsv1beta1.CustomResourceDefinition, error) {
+func (w *wrapApiextensionsV1beta1CustomResourceDefinitionImpl) Update(ctx context.Context, in *v1beta1.CustomResourceDefinition, opts v1.UpdateOptions) (*v1beta1.CustomResourceDefinition, error) {
 	in.SetGroupVersionKind(schema.GroupVersionKind{
 		Group:   "apiextensions.k8s.io",
 		Version: "v1beta1",
@@ -208,14 +212,14 @@ func (w *wrapApiextensionsV1beta1CustomResourceDefinitionImpl) Update(ctx contex
 	if err != nil {
 		return nil, err
 	}
-	out := &apiextensionsv1beta1.CustomResourceDefinition{}
+	out := &v1beta1.CustomResourceDefinition{}
 	if err := convert(uo, out); err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (w *wrapApiextensionsV1beta1CustomResourceDefinitionImpl) UpdateStatus(ctx context.Context, in *apiextensionsv1beta1.CustomResourceDefinition, opts v1.UpdateOptions) (*apiextensionsv1beta1.CustomResourceDefinition, error) {
+func (w *wrapApiextensionsV1beta1CustomResourceDefinitionImpl) UpdateStatus(ctx context.Context, in *v1beta1.CustomResourceDefinition, opts v1.UpdateOptions) (*v1beta1.CustomResourceDefinition, error) {
 	in.SetGroupVersionKind(schema.GroupVersionKind{
 		Group:   "apiextensions.k8s.io",
 		Version: "v1beta1",
@@ -229,7 +233,7 @@ func (w *wrapApiextensionsV1beta1CustomResourceDefinitionImpl) UpdateStatus(ctx 
 	if err != nil {
 		return nil, err
 	}
-	out := &apiextensionsv1beta1.CustomResourceDefinition{}
+	out := &v1beta1.CustomResourceDefinition{}
 	if err := convert(uo, out); err != nil {
 		return nil, err
 	}
@@ -271,7 +275,11 @@ type wrapApiextensionsV1CustomResourceDefinitionImpl struct {
 
 var _ typedapiextensionsv1.CustomResourceDefinitionInterface = (*wrapApiextensionsV1CustomResourceDefinitionImpl)(nil)
 
+<<<<<<< HEAD
 func (w *wrapApiextensionsV1CustomResourceDefinitionImpl) Create(ctx context.Context, in *apisapiextensionsv1.CustomResourceDefinition, opts v1.CreateOptions) (*apisapiextensionsv1.CustomResourceDefinition, error) {
+=======
+func (w *wrapApiextensionsV1CustomResourceDefinitionImpl) Create(ctx context.Context, in *apiextensionsv1.CustomResourceDefinition, opts v1.CreateOptions) (*apiextensionsv1.CustomResourceDefinition, error) {
+>>>>>>> 0ccc02ea (Hack the generator to work at all)
 	in.SetGroupVersionKind(schema.GroupVersionKind{
 		Group:   "apiextensions.k8s.io",
 		Version: "v1",
@@ -285,7 +293,7 @@ func (w *wrapApiextensionsV1CustomResourceDefinitionImpl) Create(ctx context.Con
 	if err != nil {
 		return nil, err
 	}
-	out := &apisapiextensionsv1.CustomResourceDefinition{}
+	out := &apiextensionsv1.CustomResourceDefinition{}
 	if err := convert(uo, out); err != nil {
 		return nil, err
 	}
@@ -300,43 +308,43 @@ func (w *wrapApiextensionsV1CustomResourceDefinitionImpl) DeleteCollection(ctx c
 	return w.dyn.DeleteCollection(ctx, opts, listOpts)
 }
 
-func (w *wrapApiextensionsV1CustomResourceDefinitionImpl) Get(ctx context.Context, name string, opts v1.GetOptions) (*apisapiextensionsv1.CustomResourceDefinition, error) {
+func (w *wrapApiextensionsV1CustomResourceDefinitionImpl) Get(ctx context.Context, name string, opts v1.GetOptions) (*apiextensionsv1.CustomResourceDefinition, error) {
 	uo, err := w.dyn.Get(ctx, name, opts)
 	if err != nil {
 		return nil, err
 	}
-	out := &apisapiextensionsv1.CustomResourceDefinition{}
+	out := &apiextensionsv1.CustomResourceDefinition{}
 	if err := convert(uo, out); err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (w *wrapApiextensionsV1CustomResourceDefinitionImpl) List(ctx context.Context, opts v1.ListOptions) (*apisapiextensionsv1.CustomResourceDefinitionList, error) {
+func (w *wrapApiextensionsV1CustomResourceDefinitionImpl) List(ctx context.Context, opts v1.ListOptions) (*apiextensionsv1.CustomResourceDefinitionList, error) {
 	uo, err := w.dyn.List(ctx, opts)
 	if err != nil {
 		return nil, err
 	}
-	out := &apisapiextensionsv1.CustomResourceDefinitionList{}
+	out := &apiextensionsv1.CustomResourceDefinitionList{}
 	if err := convert(uo, out); err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (w *wrapApiextensionsV1CustomResourceDefinitionImpl) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *apisapiextensionsv1.CustomResourceDefinition, err error) {
+func (w *wrapApiextensionsV1CustomResourceDefinitionImpl) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *apiextensionsv1.CustomResourceDefinition, err error) {
 	uo, err := w.dyn.Patch(ctx, name, pt, data, opts)
 	if err != nil {
 		return nil, err
 	}
-	out := &apisapiextensionsv1.CustomResourceDefinition{}
+	out := &apiextensionsv1.CustomResourceDefinition{}
 	if err := convert(uo, out); err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (w *wrapApiextensionsV1CustomResourceDefinitionImpl) Update(ctx context.Context, in *apisapiextensionsv1.CustomResourceDefinition, opts v1.UpdateOptions) (*apisapiextensionsv1.CustomResourceDefinition, error) {
+func (w *wrapApiextensionsV1CustomResourceDefinitionImpl) Update(ctx context.Context, in *apiextensionsv1.CustomResourceDefinition, opts v1.UpdateOptions) (*apiextensionsv1.CustomResourceDefinition, error) {
 	in.SetGroupVersionKind(schema.GroupVersionKind{
 		Group:   "apiextensions.k8s.io",
 		Version: "v1",
@@ -350,14 +358,14 @@ func (w *wrapApiextensionsV1CustomResourceDefinitionImpl) Update(ctx context.Con
 	if err != nil {
 		return nil, err
 	}
-	out := &apisapiextensionsv1.CustomResourceDefinition{}
+	out := &apiextensionsv1.CustomResourceDefinition{}
 	if err := convert(uo, out); err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (w *wrapApiextensionsV1CustomResourceDefinitionImpl) UpdateStatus(ctx context.Context, in *apisapiextensionsv1.CustomResourceDefinition, opts v1.UpdateOptions) (*apisapiextensionsv1.CustomResourceDefinition, error) {
+func (w *wrapApiextensionsV1CustomResourceDefinitionImpl) UpdateStatus(ctx context.Context, in *apiextensionsv1.CustomResourceDefinition, opts v1.UpdateOptions) (*apiextensionsv1.CustomResourceDefinition, error) {
 	in.SetGroupVersionKind(schema.GroupVersionKind{
 		Group:   "apiextensions.k8s.io",
 		Version: "v1",
@@ -371,7 +379,7 @@ func (w *wrapApiextensionsV1CustomResourceDefinitionImpl) UpdateStatus(ctx conte
 	if err != nil {
 		return nil, err
 	}
-	out := &apisapiextensionsv1.CustomResourceDefinition{}
+	out := &apiextensionsv1.CustomResourceDefinition{}
 	if err := convert(uo, out); err != nil {
 		return nil, err
 	}
