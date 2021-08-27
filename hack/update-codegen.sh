@@ -41,7 +41,7 @@ ${REPO_ROOT_DIR}/hack/generate-knative.sh "injection" \
 # Based on: https://github.com/kubernetes/kubernetes/blob/8ddabd0da5cc54761f3216c08e99fa1a9f7ee2c5/hack/lib/init.sh#L116
 # The '-path' is a hack to workaround the lack of portable `-depth 2`.
 K8S_TYPES=$(find ./vendor/k8s.io/api -type d -path '*/*/*/*/*/*' | cut -d'/' -f 5-6 | sort | sed 's@/@:@g' |
-  grep -v "admission:" | grep -v "imagepolicy:" | grep -v "abac:" | grep -v "componentconfig:" | grep -v "batch:v2alpha" | grep -v "discovery:v1alpha1")
+  grep -v "admission:" | grep -v "imagepolicy:" | grep -v "abac:" | grep -v "componentconfig:")
 
 OUTPUT_PKG="knative.dev/pkg/client/injection/kube" \
 VERSIONED_CLIENTSET_PKG="k8s.io/client-go/kubernetes" \
