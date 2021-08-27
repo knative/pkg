@@ -251,13 +251,11 @@ type wrapAdmissionregistrationV1MutatingWebhookConfigurationImpl struct {
 var _ typedadmissionregistrationv1.MutatingWebhookConfigurationInterface = (*wrapAdmissionregistrationV1MutatingWebhookConfigurationImpl)(nil)
 
 func (w *wrapAdmissionregistrationV1MutatingWebhookConfigurationImpl) Apply(ctx context.Context, in *v1.MutatingWebhookConfigurationApplyConfiguration, opts metav1.ApplyOptions) (result *admissionregistrationv1.MutatingWebhookConfiguration, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapAdmissionregistrationV1MutatingWebhookConfigurationImpl) ApplyStatus(ctx context.Context, in *v1.MutatingWebhookConfigurationApplyConfiguration, opts metav1.ApplyOptions) (result *admissionregistrationv1.MutatingWebhookConfiguration, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapAdmissionregistrationV1MutatingWebhookConfigurationImpl) Create(ctx context.Context, in *admissionregistrationv1.MutatingWebhookConfiguration, opts metav1.CreateOptions) (*admissionregistrationv1.MutatingWebhookConfiguration, error) {
@@ -388,13 +386,11 @@ type wrapAdmissionregistrationV1ValidatingWebhookConfigurationImpl struct {
 var _ typedadmissionregistrationv1.ValidatingWebhookConfigurationInterface = (*wrapAdmissionregistrationV1ValidatingWebhookConfigurationImpl)(nil)
 
 func (w *wrapAdmissionregistrationV1ValidatingWebhookConfigurationImpl) Apply(ctx context.Context, in *v1.ValidatingWebhookConfigurationApplyConfiguration, opts metav1.ApplyOptions) (result *admissionregistrationv1.ValidatingWebhookConfiguration, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapAdmissionregistrationV1ValidatingWebhookConfigurationImpl) ApplyStatus(ctx context.Context, in *v1.ValidatingWebhookConfigurationApplyConfiguration, opts metav1.ApplyOptions) (result *admissionregistrationv1.ValidatingWebhookConfiguration, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapAdmissionregistrationV1ValidatingWebhookConfigurationImpl) Create(ctx context.Context, in *admissionregistrationv1.ValidatingWebhookConfiguration, opts metav1.CreateOptions) (*admissionregistrationv1.ValidatingWebhookConfiguration, error) {
@@ -540,13 +536,11 @@ type wrapAdmissionregistrationV1beta1MutatingWebhookConfigurationImpl struct {
 var _ typedadmissionregistrationv1beta1.MutatingWebhookConfigurationInterface = (*wrapAdmissionregistrationV1beta1MutatingWebhookConfigurationImpl)(nil)
 
 func (w *wrapAdmissionregistrationV1beta1MutatingWebhookConfigurationImpl) Apply(ctx context.Context, in *v1beta1.MutatingWebhookConfigurationApplyConfiguration, opts metav1.ApplyOptions) (result *admissionregistrationv1beta1.MutatingWebhookConfiguration, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapAdmissionregistrationV1beta1MutatingWebhookConfigurationImpl) ApplyStatus(ctx context.Context, in *v1beta1.MutatingWebhookConfigurationApplyConfiguration, opts metav1.ApplyOptions) (result *admissionregistrationv1beta1.MutatingWebhookConfiguration, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapAdmissionregistrationV1beta1MutatingWebhookConfigurationImpl) Create(ctx context.Context, in *admissionregistrationv1beta1.MutatingWebhookConfiguration, opts metav1.CreateOptions) (*admissionregistrationv1beta1.MutatingWebhookConfiguration, error) {
@@ -677,13 +671,11 @@ type wrapAdmissionregistrationV1beta1ValidatingWebhookConfigurationImpl struct {
 var _ typedadmissionregistrationv1beta1.ValidatingWebhookConfigurationInterface = (*wrapAdmissionregistrationV1beta1ValidatingWebhookConfigurationImpl)(nil)
 
 func (w *wrapAdmissionregistrationV1beta1ValidatingWebhookConfigurationImpl) Apply(ctx context.Context, in *v1beta1.ValidatingWebhookConfigurationApplyConfiguration, opts metav1.ApplyOptions) (result *admissionregistrationv1beta1.ValidatingWebhookConfiguration, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapAdmissionregistrationV1beta1ValidatingWebhookConfigurationImpl) ApplyStatus(ctx context.Context, in *v1beta1.ValidatingWebhookConfigurationApplyConfiguration, opts metav1.ApplyOptions) (result *admissionregistrationv1beta1.ValidatingWebhookConfiguration, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapAdmissionregistrationV1beta1ValidatingWebhookConfigurationImpl) Create(ctx context.Context, in *admissionregistrationv1beta1.ValidatingWebhookConfiguration, opts metav1.CreateOptions) (*admissionregistrationv1beta1.ValidatingWebhookConfiguration, error) {
@@ -829,13 +821,11 @@ type wrapInternalV1alpha1StorageVersionImpl struct {
 var _ typedinternalv1alpha1.StorageVersionInterface = (*wrapInternalV1alpha1StorageVersionImpl)(nil)
 
 func (w *wrapInternalV1alpha1StorageVersionImpl) Apply(ctx context.Context, in *v1alpha1.StorageVersionApplyConfiguration, opts metav1.ApplyOptions) (result *apiserverinternalv1alpha1.StorageVersion, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapInternalV1alpha1StorageVersionImpl) ApplyStatus(ctx context.Context, in *v1alpha1.StorageVersionApplyConfiguration, opts metav1.ApplyOptions) (result *apiserverinternalv1alpha1.StorageVersion, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapInternalV1alpha1StorageVersionImpl) Create(ctx context.Context, in *apiserverinternalv1alpha1.StorageVersion, opts metav1.CreateOptions) (*apiserverinternalv1alpha1.StorageVersion, error) {
@@ -985,13 +975,11 @@ type wrapAppsV1ControllerRevisionImpl struct {
 var _ typedappsv1.ControllerRevisionInterface = (*wrapAppsV1ControllerRevisionImpl)(nil)
 
 func (w *wrapAppsV1ControllerRevisionImpl) Apply(ctx context.Context, in *appsv1.ControllerRevisionApplyConfiguration, opts metav1.ApplyOptions) (result *apiappsv1.ControllerRevision, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapAppsV1ControllerRevisionImpl) ApplyStatus(ctx context.Context, in *appsv1.ControllerRevisionApplyConfiguration, opts metav1.ApplyOptions) (result *apiappsv1.ControllerRevision, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapAppsV1ControllerRevisionImpl) Create(ctx context.Context, in *apiappsv1.ControllerRevision, opts metav1.CreateOptions) (*apiappsv1.ControllerRevision, error) {
@@ -1126,13 +1114,11 @@ type wrapAppsV1DaemonSetImpl struct {
 var _ typedappsv1.DaemonSetInterface = (*wrapAppsV1DaemonSetImpl)(nil)
 
 func (w *wrapAppsV1DaemonSetImpl) Apply(ctx context.Context, in *appsv1.DaemonSetApplyConfiguration, opts metav1.ApplyOptions) (result *apiappsv1.DaemonSet, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapAppsV1DaemonSetImpl) ApplyStatus(ctx context.Context, in *appsv1.DaemonSetApplyConfiguration, opts metav1.ApplyOptions) (result *apiappsv1.DaemonSet, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapAppsV1DaemonSetImpl) Create(ctx context.Context, in *apiappsv1.DaemonSet, opts metav1.CreateOptions) (*apiappsv1.DaemonSet, error) {
@@ -1267,13 +1253,11 @@ type wrapAppsV1DeploymentImpl struct {
 var _ typedappsv1.DeploymentInterface = (*wrapAppsV1DeploymentImpl)(nil)
 
 func (w *wrapAppsV1DeploymentImpl) Apply(ctx context.Context, in *appsv1.DeploymentApplyConfiguration, opts metav1.ApplyOptions) (result *apiappsv1.Deployment, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapAppsV1DeploymentImpl) ApplyStatus(ctx context.Context, in *appsv1.DeploymentApplyConfiguration, opts metav1.ApplyOptions) (result *apiappsv1.Deployment, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapAppsV1DeploymentImpl) Create(ctx context.Context, in *apiappsv1.Deployment, opts metav1.CreateOptions) (*apiappsv1.Deployment, error) {
@@ -1416,13 +1400,11 @@ type wrapAppsV1ReplicaSetImpl struct {
 var _ typedappsv1.ReplicaSetInterface = (*wrapAppsV1ReplicaSetImpl)(nil)
 
 func (w *wrapAppsV1ReplicaSetImpl) Apply(ctx context.Context, in *appsv1.ReplicaSetApplyConfiguration, opts metav1.ApplyOptions) (result *apiappsv1.ReplicaSet, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapAppsV1ReplicaSetImpl) ApplyStatus(ctx context.Context, in *appsv1.ReplicaSetApplyConfiguration, opts metav1.ApplyOptions) (result *apiappsv1.ReplicaSet, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapAppsV1ReplicaSetImpl) Create(ctx context.Context, in *apiappsv1.ReplicaSet, opts metav1.CreateOptions) (*apiappsv1.ReplicaSet, error) {
@@ -1565,13 +1547,11 @@ type wrapAppsV1StatefulSetImpl struct {
 var _ typedappsv1.StatefulSetInterface = (*wrapAppsV1StatefulSetImpl)(nil)
 
 func (w *wrapAppsV1StatefulSetImpl) Apply(ctx context.Context, in *appsv1.StatefulSetApplyConfiguration, opts metav1.ApplyOptions) (result *apiappsv1.StatefulSet, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapAppsV1StatefulSetImpl) ApplyStatus(ctx context.Context, in *appsv1.StatefulSetApplyConfiguration, opts metav1.ApplyOptions) (result *apiappsv1.StatefulSet, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapAppsV1StatefulSetImpl) Create(ctx context.Context, in *apiappsv1.StatefulSet, opts metav1.CreateOptions) (*apiappsv1.StatefulSet, error) {
@@ -1729,13 +1709,11 @@ type wrapAppsV1beta1ControllerRevisionImpl struct {
 var _ typedappsv1beta1.ControllerRevisionInterface = (*wrapAppsV1beta1ControllerRevisionImpl)(nil)
 
 func (w *wrapAppsV1beta1ControllerRevisionImpl) Apply(ctx context.Context, in *appsv1beta1.ControllerRevisionApplyConfiguration, opts metav1.ApplyOptions) (result *apiappsv1beta1.ControllerRevision, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapAppsV1beta1ControllerRevisionImpl) ApplyStatus(ctx context.Context, in *appsv1beta1.ControllerRevisionApplyConfiguration, opts metav1.ApplyOptions) (result *apiappsv1beta1.ControllerRevision, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapAppsV1beta1ControllerRevisionImpl) Create(ctx context.Context, in *apiappsv1beta1.ControllerRevision, opts metav1.CreateOptions) (*apiappsv1beta1.ControllerRevision, error) {
@@ -1870,13 +1848,11 @@ type wrapAppsV1beta1DeploymentImpl struct {
 var _ typedappsv1beta1.DeploymentInterface = (*wrapAppsV1beta1DeploymentImpl)(nil)
 
 func (w *wrapAppsV1beta1DeploymentImpl) Apply(ctx context.Context, in *appsv1beta1.DeploymentApplyConfiguration, opts metav1.ApplyOptions) (result *apiappsv1beta1.Deployment, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapAppsV1beta1DeploymentImpl) ApplyStatus(ctx context.Context, in *appsv1beta1.DeploymentApplyConfiguration, opts metav1.ApplyOptions) (result *apiappsv1beta1.Deployment, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapAppsV1beta1DeploymentImpl) Create(ctx context.Context, in *apiappsv1beta1.Deployment, opts metav1.CreateOptions) (*apiappsv1beta1.Deployment, error) {
@@ -2011,13 +1987,11 @@ type wrapAppsV1beta1StatefulSetImpl struct {
 var _ typedappsv1beta1.StatefulSetInterface = (*wrapAppsV1beta1StatefulSetImpl)(nil)
 
 func (w *wrapAppsV1beta1StatefulSetImpl) Apply(ctx context.Context, in *appsv1beta1.StatefulSetApplyConfiguration, opts metav1.ApplyOptions) (result *apiappsv1beta1.StatefulSet, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapAppsV1beta1StatefulSetImpl) ApplyStatus(ctx context.Context, in *appsv1beta1.StatefulSetApplyConfiguration, opts metav1.ApplyOptions) (result *apiappsv1beta1.StatefulSet, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapAppsV1beta1StatefulSetImpl) Create(ctx context.Context, in *apiappsv1beta1.StatefulSet, opts metav1.CreateOptions) (*apiappsv1beta1.StatefulSet, error) {
@@ -2167,13 +2141,11 @@ type wrapAppsV1beta2ControllerRevisionImpl struct {
 var _ typedappsv1beta2.ControllerRevisionInterface = (*wrapAppsV1beta2ControllerRevisionImpl)(nil)
 
 func (w *wrapAppsV1beta2ControllerRevisionImpl) Apply(ctx context.Context, in *v1beta2.ControllerRevisionApplyConfiguration, opts metav1.ApplyOptions) (result *appsv1beta2.ControllerRevision, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapAppsV1beta2ControllerRevisionImpl) ApplyStatus(ctx context.Context, in *v1beta2.ControllerRevisionApplyConfiguration, opts metav1.ApplyOptions) (result *appsv1beta2.ControllerRevision, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapAppsV1beta2ControllerRevisionImpl) Create(ctx context.Context, in *appsv1beta2.ControllerRevision, opts metav1.CreateOptions) (*appsv1beta2.ControllerRevision, error) {
@@ -2308,13 +2280,11 @@ type wrapAppsV1beta2DaemonSetImpl struct {
 var _ typedappsv1beta2.DaemonSetInterface = (*wrapAppsV1beta2DaemonSetImpl)(nil)
 
 func (w *wrapAppsV1beta2DaemonSetImpl) Apply(ctx context.Context, in *v1beta2.DaemonSetApplyConfiguration, opts metav1.ApplyOptions) (result *appsv1beta2.DaemonSet, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapAppsV1beta2DaemonSetImpl) ApplyStatus(ctx context.Context, in *v1beta2.DaemonSetApplyConfiguration, opts metav1.ApplyOptions) (result *appsv1beta2.DaemonSet, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapAppsV1beta2DaemonSetImpl) Create(ctx context.Context, in *appsv1beta2.DaemonSet, opts metav1.CreateOptions) (*appsv1beta2.DaemonSet, error) {
@@ -2449,13 +2419,11 @@ type wrapAppsV1beta2DeploymentImpl struct {
 var _ typedappsv1beta2.DeploymentInterface = (*wrapAppsV1beta2DeploymentImpl)(nil)
 
 func (w *wrapAppsV1beta2DeploymentImpl) Apply(ctx context.Context, in *v1beta2.DeploymentApplyConfiguration, opts metav1.ApplyOptions) (result *appsv1beta2.Deployment, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapAppsV1beta2DeploymentImpl) ApplyStatus(ctx context.Context, in *v1beta2.DeploymentApplyConfiguration, opts metav1.ApplyOptions) (result *appsv1beta2.Deployment, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapAppsV1beta2DeploymentImpl) Create(ctx context.Context, in *appsv1beta2.Deployment, opts metav1.CreateOptions) (*appsv1beta2.Deployment, error) {
@@ -2590,13 +2558,11 @@ type wrapAppsV1beta2ReplicaSetImpl struct {
 var _ typedappsv1beta2.ReplicaSetInterface = (*wrapAppsV1beta2ReplicaSetImpl)(nil)
 
 func (w *wrapAppsV1beta2ReplicaSetImpl) Apply(ctx context.Context, in *v1beta2.ReplicaSetApplyConfiguration, opts metav1.ApplyOptions) (result *appsv1beta2.ReplicaSet, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapAppsV1beta2ReplicaSetImpl) ApplyStatus(ctx context.Context, in *v1beta2.ReplicaSetApplyConfiguration, opts metav1.ApplyOptions) (result *appsv1beta2.ReplicaSet, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapAppsV1beta2ReplicaSetImpl) Create(ctx context.Context, in *appsv1beta2.ReplicaSet, opts metav1.CreateOptions) (*appsv1beta2.ReplicaSet, error) {
@@ -2731,13 +2697,11 @@ type wrapAppsV1beta2StatefulSetImpl struct {
 var _ typedappsv1beta2.StatefulSetInterface = (*wrapAppsV1beta2StatefulSetImpl)(nil)
 
 func (w *wrapAppsV1beta2StatefulSetImpl) Apply(ctx context.Context, in *v1beta2.StatefulSetApplyConfiguration, opts metav1.ApplyOptions) (result *appsv1beta2.StatefulSet, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapAppsV1beta2StatefulSetImpl) ApplyStatus(ctx context.Context, in *v1beta2.StatefulSetApplyConfiguration, opts metav1.ApplyOptions) (result *appsv1beta2.StatefulSet, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapAppsV1beta2StatefulSetImpl) Create(ctx context.Context, in *appsv1beta2.StatefulSet, opts metav1.CreateOptions) (*appsv1beta2.StatefulSet, error) {
@@ -3333,13 +3297,11 @@ type wrapAutoscalingV1HorizontalPodAutoscalerImpl struct {
 var _ typedautoscalingv1.HorizontalPodAutoscalerInterface = (*wrapAutoscalingV1HorizontalPodAutoscalerImpl)(nil)
 
 func (w *wrapAutoscalingV1HorizontalPodAutoscalerImpl) Apply(ctx context.Context, in *applyconfigurationsautoscalingv1.HorizontalPodAutoscalerApplyConfiguration, opts metav1.ApplyOptions) (result *autoscalingv1.HorizontalPodAutoscaler, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapAutoscalingV1HorizontalPodAutoscalerImpl) ApplyStatus(ctx context.Context, in *applyconfigurationsautoscalingv1.HorizontalPodAutoscalerApplyConfiguration, opts metav1.ApplyOptions) (result *autoscalingv1.HorizontalPodAutoscaler, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapAutoscalingV1HorizontalPodAutoscalerImpl) Create(ctx context.Context, in *autoscalingv1.HorizontalPodAutoscaler, opts metav1.CreateOptions) (*autoscalingv1.HorizontalPodAutoscaler, error) {
@@ -3489,13 +3451,11 @@ type wrapAutoscalingV2beta1HorizontalPodAutoscalerImpl struct {
 var _ typedautoscalingv2beta1.HorizontalPodAutoscalerInterface = (*wrapAutoscalingV2beta1HorizontalPodAutoscalerImpl)(nil)
 
 func (w *wrapAutoscalingV2beta1HorizontalPodAutoscalerImpl) Apply(ctx context.Context, in *v2beta1.HorizontalPodAutoscalerApplyConfiguration, opts metav1.ApplyOptions) (result *autoscalingv2beta1.HorizontalPodAutoscaler, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapAutoscalingV2beta1HorizontalPodAutoscalerImpl) ApplyStatus(ctx context.Context, in *v2beta1.HorizontalPodAutoscalerApplyConfiguration, opts metav1.ApplyOptions) (result *autoscalingv2beta1.HorizontalPodAutoscaler, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapAutoscalingV2beta1HorizontalPodAutoscalerImpl) Create(ctx context.Context, in *autoscalingv2beta1.HorizontalPodAutoscaler, opts metav1.CreateOptions) (*autoscalingv2beta1.HorizontalPodAutoscaler, error) {
@@ -3645,13 +3605,11 @@ type wrapAutoscalingV2beta2HorizontalPodAutoscalerImpl struct {
 var _ typedautoscalingv2beta2.HorizontalPodAutoscalerInterface = (*wrapAutoscalingV2beta2HorizontalPodAutoscalerImpl)(nil)
 
 func (w *wrapAutoscalingV2beta2HorizontalPodAutoscalerImpl) Apply(ctx context.Context, in *v2beta2.HorizontalPodAutoscalerApplyConfiguration, opts metav1.ApplyOptions) (result *autoscalingv2beta2.HorizontalPodAutoscaler, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapAutoscalingV2beta2HorizontalPodAutoscalerImpl) ApplyStatus(ctx context.Context, in *v2beta2.HorizontalPodAutoscalerApplyConfiguration, opts metav1.ApplyOptions) (result *autoscalingv2beta2.HorizontalPodAutoscaler, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapAutoscalingV2beta2HorizontalPodAutoscalerImpl) Create(ctx context.Context, in *autoscalingv2beta2.HorizontalPodAutoscaler, opts metav1.CreateOptions) (*autoscalingv2beta2.HorizontalPodAutoscaler, error) {
@@ -3801,13 +3759,11 @@ type wrapBatchV1CronJobImpl struct {
 var _ typedbatchv1.CronJobInterface = (*wrapBatchV1CronJobImpl)(nil)
 
 func (w *wrapBatchV1CronJobImpl) Apply(ctx context.Context, in *batchv1.CronJobApplyConfiguration, opts metav1.ApplyOptions) (result *apibatchv1.CronJob, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapBatchV1CronJobImpl) ApplyStatus(ctx context.Context, in *batchv1.CronJobApplyConfiguration, opts metav1.ApplyOptions) (result *apibatchv1.CronJob, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapBatchV1CronJobImpl) Create(ctx context.Context, in *apibatchv1.CronJob, opts metav1.CreateOptions) (*apibatchv1.CronJob, error) {
@@ -3942,13 +3898,11 @@ type wrapBatchV1JobImpl struct {
 var _ typedbatchv1.JobInterface = (*wrapBatchV1JobImpl)(nil)
 
 func (w *wrapBatchV1JobImpl) Apply(ctx context.Context, in *batchv1.JobApplyConfiguration, opts metav1.ApplyOptions) (result *apibatchv1.Job, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapBatchV1JobImpl) ApplyStatus(ctx context.Context, in *batchv1.JobApplyConfiguration, opts metav1.ApplyOptions) (result *apibatchv1.Job, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapBatchV1JobImpl) Create(ctx context.Context, in *apibatchv1.Job, opts metav1.CreateOptions) (*apibatchv1.Job, error) {
@@ -4098,13 +4052,11 @@ type wrapBatchV1beta1CronJobImpl struct {
 var _ typedbatchv1beta1.CronJobInterface = (*wrapBatchV1beta1CronJobImpl)(nil)
 
 func (w *wrapBatchV1beta1CronJobImpl) Apply(ctx context.Context, in *batchv1beta1.CronJobApplyConfiguration, opts metav1.ApplyOptions) (result *apibatchv1beta1.CronJob, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapBatchV1beta1CronJobImpl) ApplyStatus(ctx context.Context, in *batchv1beta1.CronJobApplyConfiguration, opts metav1.ApplyOptions) (result *apibatchv1beta1.CronJob, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapBatchV1beta1CronJobImpl) Create(ctx context.Context, in *apibatchv1beta1.CronJob, opts metav1.CreateOptions) (*apibatchv1beta1.CronJob, error) {
@@ -4250,13 +4202,11 @@ type wrapCertificatesV1CertificateSigningRequestImpl struct {
 var _ typedcertificatesv1.CertificateSigningRequestInterface = (*wrapCertificatesV1CertificateSigningRequestImpl)(nil)
 
 func (w *wrapCertificatesV1CertificateSigningRequestImpl) Apply(ctx context.Context, in *certificatesv1.CertificateSigningRequestApplyConfiguration, opts metav1.ApplyOptions) (result *apicertificatesv1.CertificateSigningRequest, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapCertificatesV1CertificateSigningRequestImpl) ApplyStatus(ctx context.Context, in *certificatesv1.CertificateSigningRequestApplyConfiguration, opts metav1.ApplyOptions) (result *apicertificatesv1.CertificateSigningRequest, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapCertificatesV1CertificateSigningRequestImpl) Create(ctx context.Context, in *apicertificatesv1.CertificateSigningRequest, opts metav1.CreateOptions) (*apicertificatesv1.CertificateSigningRequest, error) {
@@ -4406,13 +4356,11 @@ type wrapCertificatesV1beta1CertificateSigningRequestImpl struct {
 var _ typedcertificatesv1beta1.CertificateSigningRequestInterface = (*wrapCertificatesV1beta1CertificateSigningRequestImpl)(nil)
 
 func (w *wrapCertificatesV1beta1CertificateSigningRequestImpl) Apply(ctx context.Context, in *certificatesv1beta1.CertificateSigningRequestApplyConfiguration, opts metav1.ApplyOptions) (result *apicertificatesv1beta1.CertificateSigningRequest, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapCertificatesV1beta1CertificateSigningRequestImpl) ApplyStatus(ctx context.Context, in *certificatesv1beta1.CertificateSigningRequestApplyConfiguration, opts metav1.ApplyOptions) (result *apicertificatesv1beta1.CertificateSigningRequest, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapCertificatesV1beta1CertificateSigningRequestImpl) Create(ctx context.Context, in *apicertificatesv1beta1.CertificateSigningRequest, opts metav1.CreateOptions) (*apicertificatesv1beta1.CertificateSigningRequest, error) {
@@ -4562,13 +4510,11 @@ type wrapCoordinationV1LeaseImpl struct {
 var _ typedcoordinationv1.LeaseInterface = (*wrapCoordinationV1LeaseImpl)(nil)
 
 func (w *wrapCoordinationV1LeaseImpl) Apply(ctx context.Context, in *coordinationv1.LeaseApplyConfiguration, opts metav1.ApplyOptions) (result *apicoordinationv1.Lease, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapCoordinationV1LeaseImpl) ApplyStatus(ctx context.Context, in *coordinationv1.LeaseApplyConfiguration, opts metav1.ApplyOptions) (result *apicoordinationv1.Lease, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapCoordinationV1LeaseImpl) Create(ctx context.Context, in *apicoordinationv1.Lease, opts metav1.CreateOptions) (*apicoordinationv1.Lease, error) {
@@ -4718,13 +4664,11 @@ type wrapCoordinationV1beta1LeaseImpl struct {
 var _ typedcoordinationv1beta1.LeaseInterface = (*wrapCoordinationV1beta1LeaseImpl)(nil)
 
 func (w *wrapCoordinationV1beta1LeaseImpl) Apply(ctx context.Context, in *coordinationv1beta1.LeaseApplyConfiguration, opts metav1.ApplyOptions) (result *apicoordinationv1beta1.Lease, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapCoordinationV1beta1LeaseImpl) ApplyStatus(ctx context.Context, in *coordinationv1beta1.LeaseApplyConfiguration, opts metav1.ApplyOptions) (result *apicoordinationv1beta1.Lease, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapCoordinationV1beta1LeaseImpl) Create(ctx context.Context, in *apicoordinationv1beta1.Lease, opts metav1.CreateOptions) (*apicoordinationv1beta1.Lease, error) {
@@ -4870,13 +4814,11 @@ type wrapCoreV1ComponentStatusImpl struct {
 var _ typedcorev1.ComponentStatusInterface = (*wrapCoreV1ComponentStatusImpl)(nil)
 
 func (w *wrapCoreV1ComponentStatusImpl) Apply(ctx context.Context, in *corev1.ComponentStatusApplyConfiguration, opts metav1.ApplyOptions) (result *apicorev1.ComponentStatus, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapCoreV1ComponentStatusImpl) ApplyStatus(ctx context.Context, in *corev1.ComponentStatusApplyConfiguration, opts metav1.ApplyOptions) (result *apicorev1.ComponentStatus, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapCoreV1ComponentStatusImpl) Create(ctx context.Context, in *apicorev1.ComponentStatus, opts metav1.CreateOptions) (*apicorev1.ComponentStatus, error) {
@@ -5011,13 +4953,11 @@ type wrapCoreV1ConfigMapImpl struct {
 var _ typedcorev1.ConfigMapInterface = (*wrapCoreV1ConfigMapImpl)(nil)
 
 func (w *wrapCoreV1ConfigMapImpl) Apply(ctx context.Context, in *corev1.ConfigMapApplyConfiguration, opts metav1.ApplyOptions) (result *apicorev1.ConfigMap, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapCoreV1ConfigMapImpl) ApplyStatus(ctx context.Context, in *corev1.ConfigMapApplyConfiguration, opts metav1.ApplyOptions) (result *apicorev1.ConfigMap, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapCoreV1ConfigMapImpl) Create(ctx context.Context, in *apicorev1.ConfigMap, opts metav1.CreateOptions) (*apicorev1.ConfigMap, error) {
@@ -5152,13 +5092,11 @@ type wrapCoreV1EndpointsImpl struct {
 var _ typedcorev1.EndpointsInterface = (*wrapCoreV1EndpointsImpl)(nil)
 
 func (w *wrapCoreV1EndpointsImpl) Apply(ctx context.Context, in *corev1.EndpointsApplyConfiguration, opts metav1.ApplyOptions) (result *apicorev1.Endpoints, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapCoreV1EndpointsImpl) ApplyStatus(ctx context.Context, in *corev1.EndpointsApplyConfiguration, opts metav1.ApplyOptions) (result *apicorev1.Endpoints, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapCoreV1EndpointsImpl) Create(ctx context.Context, in *apicorev1.Endpoints, opts metav1.CreateOptions) (*apicorev1.Endpoints, error) {
@@ -5293,13 +5231,11 @@ type wrapCoreV1EventImpl struct {
 var _ typedcorev1.EventInterface = (*wrapCoreV1EventImpl)(nil)
 
 func (w *wrapCoreV1EventImpl) Apply(ctx context.Context, in *corev1.EventApplyConfiguration, opts metav1.ApplyOptions) (result *apicorev1.Event, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapCoreV1EventImpl) ApplyStatus(ctx context.Context, in *corev1.EventApplyConfiguration, opts metav1.ApplyOptions) (result *apicorev1.Event, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapCoreV1EventImpl) Create(ctx context.Context, in *apicorev1.Event, opts metav1.CreateOptions) (*apicorev1.Event, error) {
@@ -5434,13 +5370,11 @@ type wrapCoreV1LimitRangeImpl struct {
 var _ typedcorev1.LimitRangeInterface = (*wrapCoreV1LimitRangeImpl)(nil)
 
 func (w *wrapCoreV1LimitRangeImpl) Apply(ctx context.Context, in *corev1.LimitRangeApplyConfiguration, opts metav1.ApplyOptions) (result *apicorev1.LimitRange, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapCoreV1LimitRangeImpl) ApplyStatus(ctx context.Context, in *corev1.LimitRangeApplyConfiguration, opts metav1.ApplyOptions) (result *apicorev1.LimitRange, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapCoreV1LimitRangeImpl) Create(ctx context.Context, in *apicorev1.LimitRange, opts metav1.CreateOptions) (*apicorev1.LimitRange, error) {
@@ -5571,13 +5505,11 @@ type wrapCoreV1NamespaceImpl struct {
 var _ typedcorev1.NamespaceInterface = (*wrapCoreV1NamespaceImpl)(nil)
 
 func (w *wrapCoreV1NamespaceImpl) Apply(ctx context.Context, in *corev1.NamespaceApplyConfiguration, opts metav1.ApplyOptions) (result *apicorev1.Namespace, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapCoreV1NamespaceImpl) ApplyStatus(ctx context.Context, in *corev1.NamespaceApplyConfiguration, opts metav1.ApplyOptions) (result *apicorev1.Namespace, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapCoreV1NamespaceImpl) Create(ctx context.Context, in *apicorev1.Namespace, opts metav1.CreateOptions) (*apicorev1.Namespace, error) {
@@ -5704,13 +5636,11 @@ type wrapCoreV1NodeImpl struct {
 var _ typedcorev1.NodeInterface = (*wrapCoreV1NodeImpl)(nil)
 
 func (w *wrapCoreV1NodeImpl) Apply(ctx context.Context, in *corev1.NodeApplyConfiguration, opts metav1.ApplyOptions) (result *apicorev1.Node, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapCoreV1NodeImpl) ApplyStatus(ctx context.Context, in *corev1.NodeApplyConfiguration, opts metav1.ApplyOptions) (result *apicorev1.Node, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapCoreV1NodeImpl) Create(ctx context.Context, in *apicorev1.Node, opts metav1.CreateOptions) (*apicorev1.Node, error) {
@@ -5841,13 +5771,11 @@ type wrapCoreV1PersistentVolumeImpl struct {
 var _ typedcorev1.PersistentVolumeInterface = (*wrapCoreV1PersistentVolumeImpl)(nil)
 
 func (w *wrapCoreV1PersistentVolumeImpl) Apply(ctx context.Context, in *corev1.PersistentVolumeApplyConfiguration, opts metav1.ApplyOptions) (result *apicorev1.PersistentVolume, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapCoreV1PersistentVolumeImpl) ApplyStatus(ctx context.Context, in *corev1.PersistentVolumeApplyConfiguration, opts metav1.ApplyOptions) (result *apicorev1.PersistentVolume, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapCoreV1PersistentVolumeImpl) Create(ctx context.Context, in *apicorev1.PersistentVolume, opts metav1.CreateOptions) (*apicorev1.PersistentVolume, error) {
@@ -5982,13 +5910,11 @@ type wrapCoreV1PersistentVolumeClaimImpl struct {
 var _ typedcorev1.PersistentVolumeClaimInterface = (*wrapCoreV1PersistentVolumeClaimImpl)(nil)
 
 func (w *wrapCoreV1PersistentVolumeClaimImpl) Apply(ctx context.Context, in *corev1.PersistentVolumeClaimApplyConfiguration, opts metav1.ApplyOptions) (result *apicorev1.PersistentVolumeClaim, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapCoreV1PersistentVolumeClaimImpl) ApplyStatus(ctx context.Context, in *corev1.PersistentVolumeClaimApplyConfiguration, opts metav1.ApplyOptions) (result *apicorev1.PersistentVolumeClaim, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapCoreV1PersistentVolumeClaimImpl) Create(ctx context.Context, in *apicorev1.PersistentVolumeClaim, opts metav1.CreateOptions) (*apicorev1.PersistentVolumeClaim, error) {
@@ -6123,13 +6049,11 @@ type wrapCoreV1PodImpl struct {
 var _ typedcorev1.PodInterface = (*wrapCoreV1PodImpl)(nil)
 
 func (w *wrapCoreV1PodImpl) Apply(ctx context.Context, in *corev1.PodApplyConfiguration, opts metav1.ApplyOptions) (result *apicorev1.Pod, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapCoreV1PodImpl) ApplyStatus(ctx context.Context, in *corev1.PodApplyConfiguration, opts metav1.ApplyOptions) (result *apicorev1.Pod, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapCoreV1PodImpl) Create(ctx context.Context, in *apicorev1.Pod, opts metav1.CreateOptions) (*apicorev1.Pod, error) {
@@ -6272,13 +6196,11 @@ type wrapCoreV1PodTemplateImpl struct {
 var _ typedcorev1.PodTemplateInterface = (*wrapCoreV1PodTemplateImpl)(nil)
 
 func (w *wrapCoreV1PodTemplateImpl) Apply(ctx context.Context, in *corev1.PodTemplateApplyConfiguration, opts metav1.ApplyOptions) (result *apicorev1.PodTemplate, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapCoreV1PodTemplateImpl) ApplyStatus(ctx context.Context, in *corev1.PodTemplateApplyConfiguration, opts metav1.ApplyOptions) (result *apicorev1.PodTemplate, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapCoreV1PodTemplateImpl) Create(ctx context.Context, in *apicorev1.PodTemplate, opts metav1.CreateOptions) (*apicorev1.PodTemplate, error) {
@@ -6413,13 +6335,11 @@ type wrapCoreV1ReplicationControllerImpl struct {
 var _ typedcorev1.ReplicationControllerInterface = (*wrapCoreV1ReplicationControllerImpl)(nil)
 
 func (w *wrapCoreV1ReplicationControllerImpl) Apply(ctx context.Context, in *corev1.ReplicationControllerApplyConfiguration, opts metav1.ApplyOptions) (result *apicorev1.ReplicationController, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapCoreV1ReplicationControllerImpl) ApplyStatus(ctx context.Context, in *corev1.ReplicationControllerApplyConfiguration, opts metav1.ApplyOptions) (result *apicorev1.ReplicationController, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapCoreV1ReplicationControllerImpl) Create(ctx context.Context, in *apicorev1.ReplicationController, opts metav1.CreateOptions) (*apicorev1.ReplicationController, error) {
@@ -6562,13 +6482,11 @@ type wrapCoreV1ResourceQuotaImpl struct {
 var _ typedcorev1.ResourceQuotaInterface = (*wrapCoreV1ResourceQuotaImpl)(nil)
 
 func (w *wrapCoreV1ResourceQuotaImpl) Apply(ctx context.Context, in *corev1.ResourceQuotaApplyConfiguration, opts metav1.ApplyOptions) (result *apicorev1.ResourceQuota, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapCoreV1ResourceQuotaImpl) ApplyStatus(ctx context.Context, in *corev1.ResourceQuotaApplyConfiguration, opts metav1.ApplyOptions) (result *apicorev1.ResourceQuota, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapCoreV1ResourceQuotaImpl) Create(ctx context.Context, in *apicorev1.ResourceQuota, opts metav1.CreateOptions) (*apicorev1.ResourceQuota, error) {
@@ -6703,13 +6621,11 @@ type wrapCoreV1SecretImpl struct {
 var _ typedcorev1.SecretInterface = (*wrapCoreV1SecretImpl)(nil)
 
 func (w *wrapCoreV1SecretImpl) Apply(ctx context.Context, in *corev1.SecretApplyConfiguration, opts metav1.ApplyOptions) (result *apicorev1.Secret, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapCoreV1SecretImpl) ApplyStatus(ctx context.Context, in *corev1.SecretApplyConfiguration, opts metav1.ApplyOptions) (result *apicorev1.Secret, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapCoreV1SecretImpl) Create(ctx context.Context, in *apicorev1.Secret, opts metav1.CreateOptions) (*apicorev1.Secret, error) {
@@ -6844,13 +6760,11 @@ type wrapCoreV1ServiceImpl struct {
 var _ typedcorev1.ServiceInterface = (*wrapCoreV1ServiceImpl)(nil)
 
 func (w *wrapCoreV1ServiceImpl) Apply(ctx context.Context, in *corev1.ServiceApplyConfiguration, opts metav1.ApplyOptions) (result *apicorev1.Service, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapCoreV1ServiceImpl) ApplyStatus(ctx context.Context, in *corev1.ServiceApplyConfiguration, opts metav1.ApplyOptions) (result *apicorev1.Service, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapCoreV1ServiceImpl) Create(ctx context.Context, in *apicorev1.Service, opts metav1.CreateOptions) (*apicorev1.Service, error) {
@@ -6981,13 +6895,11 @@ type wrapCoreV1ServiceAccountImpl struct {
 var _ typedcorev1.ServiceAccountInterface = (*wrapCoreV1ServiceAccountImpl)(nil)
 
 func (w *wrapCoreV1ServiceAccountImpl) Apply(ctx context.Context, in *corev1.ServiceAccountApplyConfiguration, opts metav1.ApplyOptions) (result *apicorev1.ServiceAccount, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapCoreV1ServiceAccountImpl) ApplyStatus(ctx context.Context, in *corev1.ServiceAccountApplyConfiguration, opts metav1.ApplyOptions) (result *apicorev1.ServiceAccount, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapCoreV1ServiceAccountImpl) Create(ctx context.Context, in *apicorev1.ServiceAccount, opts metav1.CreateOptions) (*apicorev1.ServiceAccount, error) {
@@ -7141,13 +7053,11 @@ type wrapDiscoveryV1EndpointSliceImpl struct {
 var _ typeddiscoveryv1.EndpointSliceInterface = (*wrapDiscoveryV1EndpointSliceImpl)(nil)
 
 func (w *wrapDiscoveryV1EndpointSliceImpl) Apply(ctx context.Context, in *discoveryv1.EndpointSliceApplyConfiguration, opts metav1.ApplyOptions) (result *apidiscoveryv1.EndpointSlice, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapDiscoveryV1EndpointSliceImpl) ApplyStatus(ctx context.Context, in *discoveryv1.EndpointSliceApplyConfiguration, opts metav1.ApplyOptions) (result *apidiscoveryv1.EndpointSlice, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapDiscoveryV1EndpointSliceImpl) Create(ctx context.Context, in *apidiscoveryv1.EndpointSlice, opts metav1.CreateOptions) (*apidiscoveryv1.EndpointSlice, error) {
@@ -7297,13 +7207,11 @@ type wrapDiscoveryV1beta1EndpointSliceImpl struct {
 var _ typeddiscoveryv1beta1.EndpointSliceInterface = (*wrapDiscoveryV1beta1EndpointSliceImpl)(nil)
 
 func (w *wrapDiscoveryV1beta1EndpointSliceImpl) Apply(ctx context.Context, in *discoveryv1beta1.EndpointSliceApplyConfiguration, opts metav1.ApplyOptions) (result *apidiscoveryv1beta1.EndpointSlice, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapDiscoveryV1beta1EndpointSliceImpl) ApplyStatus(ctx context.Context, in *discoveryv1beta1.EndpointSliceApplyConfiguration, opts metav1.ApplyOptions) (result *apidiscoveryv1beta1.EndpointSlice, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapDiscoveryV1beta1EndpointSliceImpl) Create(ctx context.Context, in *apidiscoveryv1beta1.EndpointSlice, opts metav1.CreateOptions) (*apidiscoveryv1beta1.EndpointSlice, error) {
@@ -7453,13 +7361,11 @@ type wrapEventsV1EventImpl struct {
 var _ typedeventsv1.EventInterface = (*wrapEventsV1EventImpl)(nil)
 
 func (w *wrapEventsV1EventImpl) Apply(ctx context.Context, in *eventsv1.EventApplyConfiguration, opts metav1.ApplyOptions) (result *apieventsv1.Event, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapEventsV1EventImpl) ApplyStatus(ctx context.Context, in *eventsv1.EventApplyConfiguration, opts metav1.ApplyOptions) (result *apieventsv1.Event, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapEventsV1EventImpl) Create(ctx context.Context, in *apieventsv1.Event, opts metav1.CreateOptions) (*apieventsv1.Event, error) {
@@ -7609,13 +7515,11 @@ type wrapEventsV1beta1EventImpl struct {
 var _ typedeventsv1beta1.EventInterface = (*wrapEventsV1beta1EventImpl)(nil)
 
 func (w *wrapEventsV1beta1EventImpl) Apply(ctx context.Context, in *eventsv1beta1.EventApplyConfiguration, opts metav1.ApplyOptions) (result *apieventsv1beta1.Event, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapEventsV1beta1EventImpl) ApplyStatus(ctx context.Context, in *eventsv1beta1.EventApplyConfiguration, opts metav1.ApplyOptions) (result *apieventsv1beta1.Event, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapEventsV1beta1EventImpl) Create(ctx context.Context, in *apieventsv1beta1.Event, opts metav1.CreateOptions) (*apieventsv1beta1.Event, error) {
@@ -7765,13 +7669,11 @@ type wrapExtensionsV1beta1DaemonSetImpl struct {
 var _ typedextensionsv1beta1.DaemonSetInterface = (*wrapExtensionsV1beta1DaemonSetImpl)(nil)
 
 func (w *wrapExtensionsV1beta1DaemonSetImpl) Apply(ctx context.Context, in *extensionsv1beta1.DaemonSetApplyConfiguration, opts metav1.ApplyOptions) (result *apiextensionsv1beta1.DaemonSet, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapExtensionsV1beta1DaemonSetImpl) ApplyStatus(ctx context.Context, in *extensionsv1beta1.DaemonSetApplyConfiguration, opts metav1.ApplyOptions) (result *apiextensionsv1beta1.DaemonSet, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapExtensionsV1beta1DaemonSetImpl) Create(ctx context.Context, in *apiextensionsv1beta1.DaemonSet, opts metav1.CreateOptions) (*apiextensionsv1beta1.DaemonSet, error) {
@@ -7906,13 +7808,11 @@ type wrapExtensionsV1beta1DeploymentImpl struct {
 var _ typedextensionsv1beta1.DeploymentInterface = (*wrapExtensionsV1beta1DeploymentImpl)(nil)
 
 func (w *wrapExtensionsV1beta1DeploymentImpl) Apply(ctx context.Context, in *extensionsv1beta1.DeploymentApplyConfiguration, opts metav1.ApplyOptions) (result *apiextensionsv1beta1.Deployment, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapExtensionsV1beta1DeploymentImpl) ApplyStatus(ctx context.Context, in *extensionsv1beta1.DeploymentApplyConfiguration, opts metav1.ApplyOptions) (result *apiextensionsv1beta1.Deployment, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapExtensionsV1beta1DeploymentImpl) Create(ctx context.Context, in *apiextensionsv1beta1.Deployment, opts metav1.CreateOptions) (*apiextensionsv1beta1.Deployment, error) {
@@ -8055,13 +7955,11 @@ type wrapExtensionsV1beta1IngressImpl struct {
 var _ typedextensionsv1beta1.IngressInterface = (*wrapExtensionsV1beta1IngressImpl)(nil)
 
 func (w *wrapExtensionsV1beta1IngressImpl) Apply(ctx context.Context, in *extensionsv1beta1.IngressApplyConfiguration, opts metav1.ApplyOptions) (result *apiextensionsv1beta1.Ingress, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapExtensionsV1beta1IngressImpl) ApplyStatus(ctx context.Context, in *extensionsv1beta1.IngressApplyConfiguration, opts metav1.ApplyOptions) (result *apiextensionsv1beta1.Ingress, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapExtensionsV1beta1IngressImpl) Create(ctx context.Context, in *apiextensionsv1beta1.Ingress, opts metav1.CreateOptions) (*apiextensionsv1beta1.Ingress, error) {
@@ -8196,13 +8094,11 @@ type wrapExtensionsV1beta1NetworkPolicyImpl struct {
 var _ typedextensionsv1beta1.NetworkPolicyInterface = (*wrapExtensionsV1beta1NetworkPolicyImpl)(nil)
 
 func (w *wrapExtensionsV1beta1NetworkPolicyImpl) Apply(ctx context.Context, in *extensionsv1beta1.NetworkPolicyApplyConfiguration, opts metav1.ApplyOptions) (result *apiextensionsv1beta1.NetworkPolicy, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapExtensionsV1beta1NetworkPolicyImpl) ApplyStatus(ctx context.Context, in *extensionsv1beta1.NetworkPolicyApplyConfiguration, opts metav1.ApplyOptions) (result *apiextensionsv1beta1.NetworkPolicy, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapExtensionsV1beta1NetworkPolicyImpl) Create(ctx context.Context, in *apiextensionsv1beta1.NetworkPolicy, opts metav1.CreateOptions) (*apiextensionsv1beta1.NetworkPolicy, error) {
@@ -8333,13 +8229,11 @@ type wrapExtensionsV1beta1PodSecurityPolicyImpl struct {
 var _ typedextensionsv1beta1.PodSecurityPolicyInterface = (*wrapExtensionsV1beta1PodSecurityPolicyImpl)(nil)
 
 func (w *wrapExtensionsV1beta1PodSecurityPolicyImpl) Apply(ctx context.Context, in *extensionsv1beta1.PodSecurityPolicyApplyConfiguration, opts metav1.ApplyOptions) (result *apiextensionsv1beta1.PodSecurityPolicy, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapExtensionsV1beta1PodSecurityPolicyImpl) ApplyStatus(ctx context.Context, in *extensionsv1beta1.PodSecurityPolicyApplyConfiguration, opts metav1.ApplyOptions) (result *apiextensionsv1beta1.PodSecurityPolicy, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapExtensionsV1beta1PodSecurityPolicyImpl) Create(ctx context.Context, in *apiextensionsv1beta1.PodSecurityPolicy, opts metav1.CreateOptions) (*apiextensionsv1beta1.PodSecurityPolicy, error) {
@@ -8474,13 +8368,11 @@ type wrapExtensionsV1beta1ReplicaSetImpl struct {
 var _ typedextensionsv1beta1.ReplicaSetInterface = (*wrapExtensionsV1beta1ReplicaSetImpl)(nil)
 
 func (w *wrapExtensionsV1beta1ReplicaSetImpl) Apply(ctx context.Context, in *extensionsv1beta1.ReplicaSetApplyConfiguration, opts metav1.ApplyOptions) (result *apiextensionsv1beta1.ReplicaSet, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapExtensionsV1beta1ReplicaSetImpl) ApplyStatus(ctx context.Context, in *extensionsv1beta1.ReplicaSetApplyConfiguration, opts metav1.ApplyOptions) (result *apiextensionsv1beta1.ReplicaSet, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapExtensionsV1beta1ReplicaSetImpl) Create(ctx context.Context, in *apiextensionsv1beta1.ReplicaSet, opts metav1.CreateOptions) (*apiextensionsv1beta1.ReplicaSet, error) {
@@ -8634,13 +8526,11 @@ type wrapFlowcontrolV1alpha1FlowSchemaImpl struct {
 var _ typedflowcontrolv1alpha1.FlowSchemaInterface = (*wrapFlowcontrolV1alpha1FlowSchemaImpl)(nil)
 
 func (w *wrapFlowcontrolV1alpha1FlowSchemaImpl) Apply(ctx context.Context, in *flowcontrolv1alpha1.FlowSchemaApplyConfiguration, opts metav1.ApplyOptions) (result *apiflowcontrolv1alpha1.FlowSchema, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapFlowcontrolV1alpha1FlowSchemaImpl) ApplyStatus(ctx context.Context, in *flowcontrolv1alpha1.FlowSchemaApplyConfiguration, opts metav1.ApplyOptions) (result *apiflowcontrolv1alpha1.FlowSchema, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapFlowcontrolV1alpha1FlowSchemaImpl) Create(ctx context.Context, in *apiflowcontrolv1alpha1.FlowSchema, opts metav1.CreateOptions) (*apiflowcontrolv1alpha1.FlowSchema, error) {
@@ -8771,13 +8661,11 @@ type wrapFlowcontrolV1alpha1PriorityLevelConfigurationImpl struct {
 var _ typedflowcontrolv1alpha1.PriorityLevelConfigurationInterface = (*wrapFlowcontrolV1alpha1PriorityLevelConfigurationImpl)(nil)
 
 func (w *wrapFlowcontrolV1alpha1PriorityLevelConfigurationImpl) Apply(ctx context.Context, in *flowcontrolv1alpha1.PriorityLevelConfigurationApplyConfiguration, opts metav1.ApplyOptions) (result *apiflowcontrolv1alpha1.PriorityLevelConfiguration, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapFlowcontrolV1alpha1PriorityLevelConfigurationImpl) ApplyStatus(ctx context.Context, in *flowcontrolv1alpha1.PriorityLevelConfigurationApplyConfiguration, opts metav1.ApplyOptions) (result *apiflowcontrolv1alpha1.PriorityLevelConfiguration, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapFlowcontrolV1alpha1PriorityLevelConfigurationImpl) Create(ctx context.Context, in *apiflowcontrolv1alpha1.PriorityLevelConfiguration, opts metav1.CreateOptions) (*apiflowcontrolv1alpha1.PriorityLevelConfiguration, error) {
@@ -8923,13 +8811,11 @@ type wrapFlowcontrolV1beta1FlowSchemaImpl struct {
 var _ typedflowcontrolv1beta1.FlowSchemaInterface = (*wrapFlowcontrolV1beta1FlowSchemaImpl)(nil)
 
 func (w *wrapFlowcontrolV1beta1FlowSchemaImpl) Apply(ctx context.Context, in *flowcontrolv1beta1.FlowSchemaApplyConfiguration, opts metav1.ApplyOptions) (result *apiflowcontrolv1beta1.FlowSchema, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapFlowcontrolV1beta1FlowSchemaImpl) ApplyStatus(ctx context.Context, in *flowcontrolv1beta1.FlowSchemaApplyConfiguration, opts metav1.ApplyOptions) (result *apiflowcontrolv1beta1.FlowSchema, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapFlowcontrolV1beta1FlowSchemaImpl) Create(ctx context.Context, in *apiflowcontrolv1beta1.FlowSchema, opts metav1.CreateOptions) (*apiflowcontrolv1beta1.FlowSchema, error) {
@@ -9060,13 +8946,11 @@ type wrapFlowcontrolV1beta1PriorityLevelConfigurationImpl struct {
 var _ typedflowcontrolv1beta1.PriorityLevelConfigurationInterface = (*wrapFlowcontrolV1beta1PriorityLevelConfigurationImpl)(nil)
 
 func (w *wrapFlowcontrolV1beta1PriorityLevelConfigurationImpl) Apply(ctx context.Context, in *flowcontrolv1beta1.PriorityLevelConfigurationApplyConfiguration, opts metav1.ApplyOptions) (result *apiflowcontrolv1beta1.PriorityLevelConfiguration, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapFlowcontrolV1beta1PriorityLevelConfigurationImpl) ApplyStatus(ctx context.Context, in *flowcontrolv1beta1.PriorityLevelConfigurationApplyConfiguration, opts metav1.ApplyOptions) (result *apiflowcontrolv1beta1.PriorityLevelConfiguration, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapFlowcontrolV1beta1PriorityLevelConfigurationImpl) Create(ctx context.Context, in *apiflowcontrolv1beta1.PriorityLevelConfiguration, opts metav1.CreateOptions) (*apiflowcontrolv1beta1.PriorityLevelConfiguration, error) {
@@ -9216,13 +9100,11 @@ type wrapNetworkingV1IngressImpl struct {
 var _ typednetworkingv1.IngressInterface = (*wrapNetworkingV1IngressImpl)(nil)
 
 func (w *wrapNetworkingV1IngressImpl) Apply(ctx context.Context, in *networkingv1.IngressApplyConfiguration, opts metav1.ApplyOptions) (result *apinetworkingv1.Ingress, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapNetworkingV1IngressImpl) ApplyStatus(ctx context.Context, in *networkingv1.IngressApplyConfiguration, opts metav1.ApplyOptions) (result *apinetworkingv1.Ingress, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapNetworkingV1IngressImpl) Create(ctx context.Context, in *apinetworkingv1.Ingress, opts metav1.CreateOptions) (*apinetworkingv1.Ingress, error) {
@@ -9353,13 +9235,11 @@ type wrapNetworkingV1IngressClassImpl struct {
 var _ typednetworkingv1.IngressClassInterface = (*wrapNetworkingV1IngressClassImpl)(nil)
 
 func (w *wrapNetworkingV1IngressClassImpl) Apply(ctx context.Context, in *networkingv1.IngressClassApplyConfiguration, opts metav1.ApplyOptions) (result *apinetworkingv1.IngressClass, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapNetworkingV1IngressClassImpl) ApplyStatus(ctx context.Context, in *networkingv1.IngressClassApplyConfiguration, opts metav1.ApplyOptions) (result *apinetworkingv1.IngressClass, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapNetworkingV1IngressClassImpl) Create(ctx context.Context, in *apinetworkingv1.IngressClass, opts metav1.CreateOptions) (*apinetworkingv1.IngressClass, error) {
@@ -9494,13 +9374,11 @@ type wrapNetworkingV1NetworkPolicyImpl struct {
 var _ typednetworkingv1.NetworkPolicyInterface = (*wrapNetworkingV1NetworkPolicyImpl)(nil)
 
 func (w *wrapNetworkingV1NetworkPolicyImpl) Apply(ctx context.Context, in *networkingv1.NetworkPolicyApplyConfiguration, opts metav1.ApplyOptions) (result *apinetworkingv1.NetworkPolicy, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapNetworkingV1NetworkPolicyImpl) ApplyStatus(ctx context.Context, in *networkingv1.NetworkPolicyApplyConfiguration, opts metav1.ApplyOptions) (result *apinetworkingv1.NetworkPolicy, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapNetworkingV1NetworkPolicyImpl) Create(ctx context.Context, in *apinetworkingv1.NetworkPolicy, opts metav1.CreateOptions) (*apinetworkingv1.NetworkPolicy, error) {
@@ -9650,13 +9528,11 @@ type wrapNetworkingV1beta1IngressImpl struct {
 var _ typednetworkingv1beta1.IngressInterface = (*wrapNetworkingV1beta1IngressImpl)(nil)
 
 func (w *wrapNetworkingV1beta1IngressImpl) Apply(ctx context.Context, in *networkingv1beta1.IngressApplyConfiguration, opts metav1.ApplyOptions) (result *apinetworkingv1beta1.Ingress, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapNetworkingV1beta1IngressImpl) ApplyStatus(ctx context.Context, in *networkingv1beta1.IngressApplyConfiguration, opts metav1.ApplyOptions) (result *apinetworkingv1beta1.Ingress, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapNetworkingV1beta1IngressImpl) Create(ctx context.Context, in *apinetworkingv1beta1.Ingress, opts metav1.CreateOptions) (*apinetworkingv1beta1.Ingress, error) {
@@ -9787,13 +9663,11 @@ type wrapNetworkingV1beta1IngressClassImpl struct {
 var _ typednetworkingv1beta1.IngressClassInterface = (*wrapNetworkingV1beta1IngressClassImpl)(nil)
 
 func (w *wrapNetworkingV1beta1IngressClassImpl) Apply(ctx context.Context, in *networkingv1beta1.IngressClassApplyConfiguration, opts metav1.ApplyOptions) (result *apinetworkingv1beta1.IngressClass, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapNetworkingV1beta1IngressClassImpl) ApplyStatus(ctx context.Context, in *networkingv1beta1.IngressClassApplyConfiguration, opts metav1.ApplyOptions) (result *apinetworkingv1beta1.IngressClass, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapNetworkingV1beta1IngressClassImpl) Create(ctx context.Context, in *apinetworkingv1beta1.IngressClass, opts metav1.CreateOptions) (*apinetworkingv1beta1.IngressClass, error) {
@@ -9939,13 +9813,11 @@ type wrapNodeV1RuntimeClassImpl struct {
 var _ typednodev1.RuntimeClassInterface = (*wrapNodeV1RuntimeClassImpl)(nil)
 
 func (w *wrapNodeV1RuntimeClassImpl) Apply(ctx context.Context, in *nodev1.RuntimeClassApplyConfiguration, opts metav1.ApplyOptions) (result *apinodev1.RuntimeClass, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapNodeV1RuntimeClassImpl) ApplyStatus(ctx context.Context, in *nodev1.RuntimeClassApplyConfiguration, opts metav1.ApplyOptions) (result *apinodev1.RuntimeClass, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapNodeV1RuntimeClassImpl) Create(ctx context.Context, in *apinodev1.RuntimeClass, opts metav1.CreateOptions) (*apinodev1.RuntimeClass, error) {
@@ -10091,13 +9963,11 @@ type wrapNodeV1alpha1RuntimeClassImpl struct {
 var _ typednodev1alpha1.RuntimeClassInterface = (*wrapNodeV1alpha1RuntimeClassImpl)(nil)
 
 func (w *wrapNodeV1alpha1RuntimeClassImpl) Apply(ctx context.Context, in *nodev1alpha1.RuntimeClassApplyConfiguration, opts metav1.ApplyOptions) (result *apinodev1alpha1.RuntimeClass, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapNodeV1alpha1RuntimeClassImpl) ApplyStatus(ctx context.Context, in *nodev1alpha1.RuntimeClassApplyConfiguration, opts metav1.ApplyOptions) (result *apinodev1alpha1.RuntimeClass, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapNodeV1alpha1RuntimeClassImpl) Create(ctx context.Context, in *apinodev1alpha1.RuntimeClass, opts metav1.CreateOptions) (*apinodev1alpha1.RuntimeClass, error) {
@@ -10243,13 +10113,11 @@ type wrapNodeV1beta1RuntimeClassImpl struct {
 var _ typednodev1beta1.RuntimeClassInterface = (*wrapNodeV1beta1RuntimeClassImpl)(nil)
 
 func (w *wrapNodeV1beta1RuntimeClassImpl) Apply(ctx context.Context, in *nodev1beta1.RuntimeClassApplyConfiguration, opts metav1.ApplyOptions) (result *apinodev1beta1.RuntimeClass, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapNodeV1beta1RuntimeClassImpl) ApplyStatus(ctx context.Context, in *nodev1beta1.RuntimeClassApplyConfiguration, opts metav1.ApplyOptions) (result *apinodev1beta1.RuntimeClass, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapNodeV1beta1RuntimeClassImpl) Create(ctx context.Context, in *apinodev1beta1.RuntimeClass, opts metav1.CreateOptions) (*apinodev1beta1.RuntimeClass, error) {
@@ -10399,13 +10267,11 @@ type wrapPolicyV1PodDisruptionBudgetImpl struct {
 var _ typedpolicyv1.PodDisruptionBudgetInterface = (*wrapPolicyV1PodDisruptionBudgetImpl)(nil)
 
 func (w *wrapPolicyV1PodDisruptionBudgetImpl) Apply(ctx context.Context, in *policyv1.PodDisruptionBudgetApplyConfiguration, opts metav1.ApplyOptions) (result *apipolicyv1.PodDisruptionBudget, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapPolicyV1PodDisruptionBudgetImpl) ApplyStatus(ctx context.Context, in *policyv1.PodDisruptionBudgetApplyConfiguration, opts metav1.ApplyOptions) (result *apipolicyv1.PodDisruptionBudget, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapPolicyV1PodDisruptionBudgetImpl) Create(ctx context.Context, in *apipolicyv1.PodDisruptionBudget, opts metav1.CreateOptions) (*apipolicyv1.PodDisruptionBudget, error) {
@@ -10575,13 +10441,11 @@ type wrapPolicyV1beta1PodDisruptionBudgetImpl struct {
 var _ typedpolicyv1beta1.PodDisruptionBudgetInterface = (*wrapPolicyV1beta1PodDisruptionBudgetImpl)(nil)
 
 func (w *wrapPolicyV1beta1PodDisruptionBudgetImpl) Apply(ctx context.Context, in *policyv1beta1.PodDisruptionBudgetApplyConfiguration, opts metav1.ApplyOptions) (result *apipolicyv1beta1.PodDisruptionBudget, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapPolicyV1beta1PodDisruptionBudgetImpl) ApplyStatus(ctx context.Context, in *policyv1beta1.PodDisruptionBudgetApplyConfiguration, opts metav1.ApplyOptions) (result *apipolicyv1beta1.PodDisruptionBudget, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapPolicyV1beta1PodDisruptionBudgetImpl) Create(ctx context.Context, in *apipolicyv1beta1.PodDisruptionBudget, opts metav1.CreateOptions) (*apipolicyv1beta1.PodDisruptionBudget, error) {
@@ -10712,13 +10576,11 @@ type wrapPolicyV1beta1PodSecurityPolicyImpl struct {
 var _ typedpolicyv1beta1.PodSecurityPolicyInterface = (*wrapPolicyV1beta1PodSecurityPolicyImpl)(nil)
 
 func (w *wrapPolicyV1beta1PodSecurityPolicyImpl) Apply(ctx context.Context, in *policyv1beta1.PodSecurityPolicyApplyConfiguration, opts metav1.ApplyOptions) (result *apipolicyv1beta1.PodSecurityPolicy, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapPolicyV1beta1PodSecurityPolicyImpl) ApplyStatus(ctx context.Context, in *policyv1beta1.PodSecurityPolicyApplyConfiguration, opts metav1.ApplyOptions) (result *apipolicyv1beta1.PodSecurityPolicy, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapPolicyV1beta1PodSecurityPolicyImpl) Create(ctx context.Context, in *apipolicyv1beta1.PodSecurityPolicy, opts metav1.CreateOptions) (*apipolicyv1beta1.PodSecurityPolicy, error) {
@@ -10864,13 +10726,11 @@ type wrapRbacV1ClusterRoleImpl struct {
 var _ typedrbacv1.ClusterRoleInterface = (*wrapRbacV1ClusterRoleImpl)(nil)
 
 func (w *wrapRbacV1ClusterRoleImpl) Apply(ctx context.Context, in *rbacv1.ClusterRoleApplyConfiguration, opts metav1.ApplyOptions) (result *apirbacv1.ClusterRole, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapRbacV1ClusterRoleImpl) ApplyStatus(ctx context.Context, in *rbacv1.ClusterRoleApplyConfiguration, opts metav1.ApplyOptions) (result *apirbacv1.ClusterRole, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapRbacV1ClusterRoleImpl) Create(ctx context.Context, in *apirbacv1.ClusterRole, opts metav1.CreateOptions) (*apirbacv1.ClusterRole, error) {
@@ -11001,13 +10861,11 @@ type wrapRbacV1ClusterRoleBindingImpl struct {
 var _ typedrbacv1.ClusterRoleBindingInterface = (*wrapRbacV1ClusterRoleBindingImpl)(nil)
 
 func (w *wrapRbacV1ClusterRoleBindingImpl) Apply(ctx context.Context, in *rbacv1.ClusterRoleBindingApplyConfiguration, opts metav1.ApplyOptions) (result *apirbacv1.ClusterRoleBinding, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapRbacV1ClusterRoleBindingImpl) ApplyStatus(ctx context.Context, in *rbacv1.ClusterRoleBindingApplyConfiguration, opts metav1.ApplyOptions) (result *apirbacv1.ClusterRoleBinding, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapRbacV1ClusterRoleBindingImpl) Create(ctx context.Context, in *apirbacv1.ClusterRoleBinding, opts metav1.CreateOptions) (*apirbacv1.ClusterRoleBinding, error) {
@@ -11142,13 +11000,11 @@ type wrapRbacV1RoleImpl struct {
 var _ typedrbacv1.RoleInterface = (*wrapRbacV1RoleImpl)(nil)
 
 func (w *wrapRbacV1RoleImpl) Apply(ctx context.Context, in *rbacv1.RoleApplyConfiguration, opts metav1.ApplyOptions) (result *apirbacv1.Role, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapRbacV1RoleImpl) ApplyStatus(ctx context.Context, in *rbacv1.RoleApplyConfiguration, opts metav1.ApplyOptions) (result *apirbacv1.Role, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapRbacV1RoleImpl) Create(ctx context.Context, in *apirbacv1.Role, opts metav1.CreateOptions) (*apirbacv1.Role, error) {
@@ -11283,13 +11139,11 @@ type wrapRbacV1RoleBindingImpl struct {
 var _ typedrbacv1.RoleBindingInterface = (*wrapRbacV1RoleBindingImpl)(nil)
 
 func (w *wrapRbacV1RoleBindingImpl) Apply(ctx context.Context, in *rbacv1.RoleBindingApplyConfiguration, opts metav1.ApplyOptions) (result *apirbacv1.RoleBinding, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapRbacV1RoleBindingImpl) ApplyStatus(ctx context.Context, in *rbacv1.RoleBindingApplyConfiguration, opts metav1.ApplyOptions) (result *apirbacv1.RoleBinding, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapRbacV1RoleBindingImpl) Create(ctx context.Context, in *apirbacv1.RoleBinding, opts metav1.CreateOptions) (*apirbacv1.RoleBinding, error) {
@@ -11435,13 +11289,11 @@ type wrapRbacV1alpha1ClusterRoleImpl struct {
 var _ typedrbacv1alpha1.ClusterRoleInterface = (*wrapRbacV1alpha1ClusterRoleImpl)(nil)
 
 func (w *wrapRbacV1alpha1ClusterRoleImpl) Apply(ctx context.Context, in *rbacv1alpha1.ClusterRoleApplyConfiguration, opts metav1.ApplyOptions) (result *apirbacv1alpha1.ClusterRole, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapRbacV1alpha1ClusterRoleImpl) ApplyStatus(ctx context.Context, in *rbacv1alpha1.ClusterRoleApplyConfiguration, opts metav1.ApplyOptions) (result *apirbacv1alpha1.ClusterRole, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapRbacV1alpha1ClusterRoleImpl) Create(ctx context.Context, in *apirbacv1alpha1.ClusterRole, opts metav1.CreateOptions) (*apirbacv1alpha1.ClusterRole, error) {
@@ -11572,13 +11424,11 @@ type wrapRbacV1alpha1ClusterRoleBindingImpl struct {
 var _ typedrbacv1alpha1.ClusterRoleBindingInterface = (*wrapRbacV1alpha1ClusterRoleBindingImpl)(nil)
 
 func (w *wrapRbacV1alpha1ClusterRoleBindingImpl) Apply(ctx context.Context, in *rbacv1alpha1.ClusterRoleBindingApplyConfiguration, opts metav1.ApplyOptions) (result *apirbacv1alpha1.ClusterRoleBinding, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapRbacV1alpha1ClusterRoleBindingImpl) ApplyStatus(ctx context.Context, in *rbacv1alpha1.ClusterRoleBindingApplyConfiguration, opts metav1.ApplyOptions) (result *apirbacv1alpha1.ClusterRoleBinding, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapRbacV1alpha1ClusterRoleBindingImpl) Create(ctx context.Context, in *apirbacv1alpha1.ClusterRoleBinding, opts metav1.CreateOptions) (*apirbacv1alpha1.ClusterRoleBinding, error) {
@@ -11713,13 +11563,11 @@ type wrapRbacV1alpha1RoleImpl struct {
 var _ typedrbacv1alpha1.RoleInterface = (*wrapRbacV1alpha1RoleImpl)(nil)
 
 func (w *wrapRbacV1alpha1RoleImpl) Apply(ctx context.Context, in *rbacv1alpha1.RoleApplyConfiguration, opts metav1.ApplyOptions) (result *apirbacv1alpha1.Role, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapRbacV1alpha1RoleImpl) ApplyStatus(ctx context.Context, in *rbacv1alpha1.RoleApplyConfiguration, opts metav1.ApplyOptions) (result *apirbacv1alpha1.Role, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapRbacV1alpha1RoleImpl) Create(ctx context.Context, in *apirbacv1alpha1.Role, opts metav1.CreateOptions) (*apirbacv1alpha1.Role, error) {
@@ -11854,13 +11702,11 @@ type wrapRbacV1alpha1RoleBindingImpl struct {
 var _ typedrbacv1alpha1.RoleBindingInterface = (*wrapRbacV1alpha1RoleBindingImpl)(nil)
 
 func (w *wrapRbacV1alpha1RoleBindingImpl) Apply(ctx context.Context, in *rbacv1alpha1.RoleBindingApplyConfiguration, opts metav1.ApplyOptions) (result *apirbacv1alpha1.RoleBinding, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapRbacV1alpha1RoleBindingImpl) ApplyStatus(ctx context.Context, in *rbacv1alpha1.RoleBindingApplyConfiguration, opts metav1.ApplyOptions) (result *apirbacv1alpha1.RoleBinding, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapRbacV1alpha1RoleBindingImpl) Create(ctx context.Context, in *apirbacv1alpha1.RoleBinding, opts metav1.CreateOptions) (*apirbacv1alpha1.RoleBinding, error) {
@@ -12006,13 +11852,11 @@ type wrapRbacV1beta1ClusterRoleImpl struct {
 var _ typedrbacv1beta1.ClusterRoleInterface = (*wrapRbacV1beta1ClusterRoleImpl)(nil)
 
 func (w *wrapRbacV1beta1ClusterRoleImpl) Apply(ctx context.Context, in *rbacv1beta1.ClusterRoleApplyConfiguration, opts metav1.ApplyOptions) (result *apirbacv1beta1.ClusterRole, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapRbacV1beta1ClusterRoleImpl) ApplyStatus(ctx context.Context, in *rbacv1beta1.ClusterRoleApplyConfiguration, opts metav1.ApplyOptions) (result *apirbacv1beta1.ClusterRole, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapRbacV1beta1ClusterRoleImpl) Create(ctx context.Context, in *apirbacv1beta1.ClusterRole, opts metav1.CreateOptions) (*apirbacv1beta1.ClusterRole, error) {
@@ -12143,13 +11987,11 @@ type wrapRbacV1beta1ClusterRoleBindingImpl struct {
 var _ typedrbacv1beta1.ClusterRoleBindingInterface = (*wrapRbacV1beta1ClusterRoleBindingImpl)(nil)
 
 func (w *wrapRbacV1beta1ClusterRoleBindingImpl) Apply(ctx context.Context, in *rbacv1beta1.ClusterRoleBindingApplyConfiguration, opts metav1.ApplyOptions) (result *apirbacv1beta1.ClusterRoleBinding, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapRbacV1beta1ClusterRoleBindingImpl) ApplyStatus(ctx context.Context, in *rbacv1beta1.ClusterRoleBindingApplyConfiguration, opts metav1.ApplyOptions) (result *apirbacv1beta1.ClusterRoleBinding, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapRbacV1beta1ClusterRoleBindingImpl) Create(ctx context.Context, in *apirbacv1beta1.ClusterRoleBinding, opts metav1.CreateOptions) (*apirbacv1beta1.ClusterRoleBinding, error) {
@@ -12284,13 +12126,11 @@ type wrapRbacV1beta1RoleImpl struct {
 var _ typedrbacv1beta1.RoleInterface = (*wrapRbacV1beta1RoleImpl)(nil)
 
 func (w *wrapRbacV1beta1RoleImpl) Apply(ctx context.Context, in *rbacv1beta1.RoleApplyConfiguration, opts metav1.ApplyOptions) (result *apirbacv1beta1.Role, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapRbacV1beta1RoleImpl) ApplyStatus(ctx context.Context, in *rbacv1beta1.RoleApplyConfiguration, opts metav1.ApplyOptions) (result *apirbacv1beta1.Role, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapRbacV1beta1RoleImpl) Create(ctx context.Context, in *apirbacv1beta1.Role, opts metav1.CreateOptions) (*apirbacv1beta1.Role, error) {
@@ -12425,13 +12265,11 @@ type wrapRbacV1beta1RoleBindingImpl struct {
 var _ typedrbacv1beta1.RoleBindingInterface = (*wrapRbacV1beta1RoleBindingImpl)(nil)
 
 func (w *wrapRbacV1beta1RoleBindingImpl) Apply(ctx context.Context, in *rbacv1beta1.RoleBindingApplyConfiguration, opts metav1.ApplyOptions) (result *apirbacv1beta1.RoleBinding, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapRbacV1beta1RoleBindingImpl) ApplyStatus(ctx context.Context, in *rbacv1beta1.RoleBindingApplyConfiguration, opts metav1.ApplyOptions) (result *apirbacv1beta1.RoleBinding, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapRbacV1beta1RoleBindingImpl) Create(ctx context.Context, in *apirbacv1beta1.RoleBinding, opts metav1.CreateOptions) (*apirbacv1beta1.RoleBinding, error) {
@@ -12577,13 +12415,11 @@ type wrapSchedulingV1PriorityClassImpl struct {
 var _ typedschedulingv1.PriorityClassInterface = (*wrapSchedulingV1PriorityClassImpl)(nil)
 
 func (w *wrapSchedulingV1PriorityClassImpl) Apply(ctx context.Context, in *schedulingv1.PriorityClassApplyConfiguration, opts metav1.ApplyOptions) (result *apischedulingv1.PriorityClass, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapSchedulingV1PriorityClassImpl) ApplyStatus(ctx context.Context, in *schedulingv1.PriorityClassApplyConfiguration, opts metav1.ApplyOptions) (result *apischedulingv1.PriorityClass, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapSchedulingV1PriorityClassImpl) Create(ctx context.Context, in *apischedulingv1.PriorityClass, opts metav1.CreateOptions) (*apischedulingv1.PriorityClass, error) {
@@ -12729,13 +12565,11 @@ type wrapSchedulingV1alpha1PriorityClassImpl struct {
 var _ typedschedulingv1alpha1.PriorityClassInterface = (*wrapSchedulingV1alpha1PriorityClassImpl)(nil)
 
 func (w *wrapSchedulingV1alpha1PriorityClassImpl) Apply(ctx context.Context, in *schedulingv1alpha1.PriorityClassApplyConfiguration, opts metav1.ApplyOptions) (result *apischedulingv1alpha1.PriorityClass, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapSchedulingV1alpha1PriorityClassImpl) ApplyStatus(ctx context.Context, in *schedulingv1alpha1.PriorityClassApplyConfiguration, opts metav1.ApplyOptions) (result *apischedulingv1alpha1.PriorityClass, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapSchedulingV1alpha1PriorityClassImpl) Create(ctx context.Context, in *apischedulingv1alpha1.PriorityClass, opts metav1.CreateOptions) (*apischedulingv1alpha1.PriorityClass, error) {
@@ -12881,13 +12715,11 @@ type wrapSchedulingV1beta1PriorityClassImpl struct {
 var _ typedschedulingv1beta1.PriorityClassInterface = (*wrapSchedulingV1beta1PriorityClassImpl)(nil)
 
 func (w *wrapSchedulingV1beta1PriorityClassImpl) Apply(ctx context.Context, in *schedulingv1beta1.PriorityClassApplyConfiguration, opts metav1.ApplyOptions) (result *apischedulingv1beta1.PriorityClass, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapSchedulingV1beta1PriorityClassImpl) ApplyStatus(ctx context.Context, in *schedulingv1beta1.PriorityClassApplyConfiguration, opts metav1.ApplyOptions) (result *apischedulingv1beta1.PriorityClass, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapSchedulingV1beta1PriorityClassImpl) Create(ctx context.Context, in *apischedulingv1beta1.PriorityClass, opts metav1.CreateOptions) (*apischedulingv1beta1.PriorityClass, error) {
@@ -13033,13 +12865,11 @@ type wrapStorageV1CSIDriverImpl struct {
 var _ typedstoragev1.CSIDriverInterface = (*wrapStorageV1CSIDriverImpl)(nil)
 
 func (w *wrapStorageV1CSIDriverImpl) Apply(ctx context.Context, in *storagev1.CSIDriverApplyConfiguration, opts metav1.ApplyOptions) (result *apistoragev1.CSIDriver, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapStorageV1CSIDriverImpl) ApplyStatus(ctx context.Context, in *storagev1.CSIDriverApplyConfiguration, opts metav1.ApplyOptions) (result *apistoragev1.CSIDriver, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapStorageV1CSIDriverImpl) Create(ctx context.Context, in *apistoragev1.CSIDriver, opts metav1.CreateOptions) (*apistoragev1.CSIDriver, error) {
@@ -13170,13 +13000,11 @@ type wrapStorageV1CSINodeImpl struct {
 var _ typedstoragev1.CSINodeInterface = (*wrapStorageV1CSINodeImpl)(nil)
 
 func (w *wrapStorageV1CSINodeImpl) Apply(ctx context.Context, in *storagev1.CSINodeApplyConfiguration, opts metav1.ApplyOptions) (result *apistoragev1.CSINode, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapStorageV1CSINodeImpl) ApplyStatus(ctx context.Context, in *storagev1.CSINodeApplyConfiguration, opts metav1.ApplyOptions) (result *apistoragev1.CSINode, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapStorageV1CSINodeImpl) Create(ctx context.Context, in *apistoragev1.CSINode, opts metav1.CreateOptions) (*apistoragev1.CSINode, error) {
@@ -13307,13 +13135,11 @@ type wrapStorageV1StorageClassImpl struct {
 var _ typedstoragev1.StorageClassInterface = (*wrapStorageV1StorageClassImpl)(nil)
 
 func (w *wrapStorageV1StorageClassImpl) Apply(ctx context.Context, in *storagev1.StorageClassApplyConfiguration, opts metav1.ApplyOptions) (result *apistoragev1.StorageClass, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapStorageV1StorageClassImpl) ApplyStatus(ctx context.Context, in *storagev1.StorageClassApplyConfiguration, opts metav1.ApplyOptions) (result *apistoragev1.StorageClass, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapStorageV1StorageClassImpl) Create(ctx context.Context, in *apistoragev1.StorageClass, opts metav1.CreateOptions) (*apistoragev1.StorageClass, error) {
@@ -13444,13 +13270,11 @@ type wrapStorageV1VolumeAttachmentImpl struct {
 var _ typedstoragev1.VolumeAttachmentInterface = (*wrapStorageV1VolumeAttachmentImpl)(nil)
 
 func (w *wrapStorageV1VolumeAttachmentImpl) Apply(ctx context.Context, in *storagev1.VolumeAttachmentApplyConfiguration, opts metav1.ApplyOptions) (result *apistoragev1.VolumeAttachment, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapStorageV1VolumeAttachmentImpl) ApplyStatus(ctx context.Context, in *storagev1.VolumeAttachmentApplyConfiguration, opts metav1.ApplyOptions) (result *apistoragev1.VolumeAttachment, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapStorageV1VolumeAttachmentImpl) Create(ctx context.Context, in *apistoragev1.VolumeAttachment, opts metav1.CreateOptions) (*apistoragev1.VolumeAttachment, error) {
@@ -13600,13 +13424,11 @@ type wrapStorageV1alpha1CSIStorageCapacityImpl struct {
 var _ typedstoragev1alpha1.CSIStorageCapacityInterface = (*wrapStorageV1alpha1CSIStorageCapacityImpl)(nil)
 
 func (w *wrapStorageV1alpha1CSIStorageCapacityImpl) Apply(ctx context.Context, in *storagev1alpha1.CSIStorageCapacityApplyConfiguration, opts metav1.ApplyOptions) (result *apistoragev1alpha1.CSIStorageCapacity, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapStorageV1alpha1CSIStorageCapacityImpl) ApplyStatus(ctx context.Context, in *storagev1alpha1.CSIStorageCapacityApplyConfiguration, opts metav1.ApplyOptions) (result *apistoragev1alpha1.CSIStorageCapacity, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapStorageV1alpha1CSIStorageCapacityImpl) Create(ctx context.Context, in *apistoragev1alpha1.CSIStorageCapacity, opts metav1.CreateOptions) (*apistoragev1alpha1.CSIStorageCapacity, error) {
@@ -13737,13 +13559,11 @@ type wrapStorageV1alpha1VolumeAttachmentImpl struct {
 var _ typedstoragev1alpha1.VolumeAttachmentInterface = (*wrapStorageV1alpha1VolumeAttachmentImpl)(nil)
 
 func (w *wrapStorageV1alpha1VolumeAttachmentImpl) Apply(ctx context.Context, in *storagev1alpha1.VolumeAttachmentApplyConfiguration, opts metav1.ApplyOptions) (result *apistoragev1alpha1.VolumeAttachment, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapStorageV1alpha1VolumeAttachmentImpl) ApplyStatus(ctx context.Context, in *storagev1alpha1.VolumeAttachmentApplyConfiguration, opts metav1.ApplyOptions) (result *apistoragev1alpha1.VolumeAttachment, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapStorageV1alpha1VolumeAttachmentImpl) Create(ctx context.Context, in *apistoragev1alpha1.VolumeAttachment, opts metav1.CreateOptions) (*apistoragev1alpha1.VolumeAttachment, error) {
@@ -13889,13 +13709,11 @@ type wrapStorageV1beta1CSIDriverImpl struct {
 var _ typedstoragev1beta1.CSIDriverInterface = (*wrapStorageV1beta1CSIDriverImpl)(nil)
 
 func (w *wrapStorageV1beta1CSIDriverImpl) Apply(ctx context.Context, in *storagev1beta1.CSIDriverApplyConfiguration, opts metav1.ApplyOptions) (result *apistoragev1beta1.CSIDriver, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapStorageV1beta1CSIDriverImpl) ApplyStatus(ctx context.Context, in *storagev1beta1.CSIDriverApplyConfiguration, opts metav1.ApplyOptions) (result *apistoragev1beta1.CSIDriver, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapStorageV1beta1CSIDriverImpl) Create(ctx context.Context, in *apistoragev1beta1.CSIDriver, opts metav1.CreateOptions) (*apistoragev1beta1.CSIDriver, error) {
@@ -14026,13 +13844,11 @@ type wrapStorageV1beta1CSINodeImpl struct {
 var _ typedstoragev1beta1.CSINodeInterface = (*wrapStorageV1beta1CSINodeImpl)(nil)
 
 func (w *wrapStorageV1beta1CSINodeImpl) Apply(ctx context.Context, in *storagev1beta1.CSINodeApplyConfiguration, opts metav1.ApplyOptions) (result *apistoragev1beta1.CSINode, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapStorageV1beta1CSINodeImpl) ApplyStatus(ctx context.Context, in *storagev1beta1.CSINodeApplyConfiguration, opts metav1.ApplyOptions) (result *apistoragev1beta1.CSINode, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapStorageV1beta1CSINodeImpl) Create(ctx context.Context, in *apistoragev1beta1.CSINode, opts metav1.CreateOptions) (*apistoragev1beta1.CSINode, error) {
@@ -14167,13 +13983,11 @@ type wrapStorageV1beta1CSIStorageCapacityImpl struct {
 var _ typedstoragev1beta1.CSIStorageCapacityInterface = (*wrapStorageV1beta1CSIStorageCapacityImpl)(nil)
 
 func (w *wrapStorageV1beta1CSIStorageCapacityImpl) Apply(ctx context.Context, in *storagev1beta1.CSIStorageCapacityApplyConfiguration, opts metav1.ApplyOptions) (result *apistoragev1beta1.CSIStorageCapacity, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapStorageV1beta1CSIStorageCapacityImpl) ApplyStatus(ctx context.Context, in *storagev1beta1.CSIStorageCapacityApplyConfiguration, opts metav1.ApplyOptions) (result *apistoragev1beta1.CSIStorageCapacity, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapStorageV1beta1CSIStorageCapacityImpl) Create(ctx context.Context, in *apistoragev1beta1.CSIStorageCapacity, opts metav1.CreateOptions) (*apistoragev1beta1.CSIStorageCapacity, error) {
@@ -14304,13 +14118,11 @@ type wrapStorageV1beta1StorageClassImpl struct {
 var _ typedstoragev1beta1.StorageClassInterface = (*wrapStorageV1beta1StorageClassImpl)(nil)
 
 func (w *wrapStorageV1beta1StorageClassImpl) Apply(ctx context.Context, in *storagev1beta1.StorageClassApplyConfiguration, opts metav1.ApplyOptions) (result *apistoragev1beta1.StorageClass, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapStorageV1beta1StorageClassImpl) ApplyStatus(ctx context.Context, in *storagev1beta1.StorageClassApplyConfiguration, opts metav1.ApplyOptions) (result *apistoragev1beta1.StorageClass, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapStorageV1beta1StorageClassImpl) Create(ctx context.Context, in *apistoragev1beta1.StorageClass, opts metav1.CreateOptions) (*apistoragev1beta1.StorageClass, error) {
@@ -14441,13 +14253,11 @@ type wrapStorageV1beta1VolumeAttachmentImpl struct {
 var _ typedstoragev1beta1.VolumeAttachmentInterface = (*wrapStorageV1beta1VolumeAttachmentImpl)(nil)
 
 func (w *wrapStorageV1beta1VolumeAttachmentImpl) Apply(ctx context.Context, in *storagev1beta1.VolumeAttachmentApplyConfiguration, opts metav1.ApplyOptions) (result *apistoragev1beta1.VolumeAttachment, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapStorageV1beta1VolumeAttachmentImpl) ApplyStatus(ctx context.Context, in *storagev1beta1.VolumeAttachmentApplyConfiguration, opts metav1.ApplyOptions) (result *apistoragev1beta1.VolumeAttachment, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 
 func (w *wrapStorageV1beta1VolumeAttachmentImpl) Create(ctx context.Context, in *apistoragev1beta1.VolumeAttachment, opts metav1.CreateOptions) (*apistoragev1beta1.VolumeAttachment, error) {

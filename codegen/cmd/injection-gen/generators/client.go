@@ -565,15 +565,13 @@ func (w *wrap{{.GroupGoName}}{{.Version}}{{ .Type.Name.Name }}Impl) Patch(ctx {{
 `,
 	"apply": `{{if .generateApply}}
 func (w *wrap{{.GroupGoName}}{{.Version}}{{ .Type.Name.Name }}Impl) Apply(ctx {{ .contextContext|raw }}, in *{{ .ApplyType|raw }}, opts {{ .metav1ApplyOptions|raw }}) (result *{{ .ResultType|raw }}, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 {{end}}
 `,
 	"applyStatus": `{{if .generateApply}}
 func (w *wrap{{.GroupGoName}}{{.Version}}{{ .Type.Name.Name }}Impl) ApplyStatus(ctx {{ .contextContext|raw }}, in *{{ .ApplyType|raw }}, opts {{ .metav1ApplyOptions|raw }}) (result *{{ .ResultType|raw }}, err error) {
-	// TODO: Implement me!
-	return nil, nil
+	panic("NYI")
 }
 {{end}}
 `,
