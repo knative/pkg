@@ -279,7 +279,6 @@ func (r conditionsImpl) MarkTrueWithReason(t ConditionType, reason, messageForma
 	r.recomputeHappiness(t,reason)
 }
 
-
 // recomputeHappiness marks the happy condition to true if all other dependents are also true.
 func (r conditionsImpl) recomputeHappiness(t ConditionType,reason string) {
 	if c := r.findUnhappyDependent(); c != nil {
