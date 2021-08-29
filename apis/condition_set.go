@@ -262,7 +262,7 @@ func (r conditionsImpl) MarkTrue(t ConditionType) {
 		Status:   corev1.ConditionTrue,
 		Severity: r.severity(t),
 	})
-	r.recomputeHappiness(t)
+	r.recomputeHappiness(t,"")
 }
 
 // MarkTrueWithReason sets the status of t to true with the reason, and then marks the happy condition to
@@ -276,11 +276,12 @@ func (r conditionsImpl) MarkTrueWithReason(t ConditionType, reason, messageForma
 		Message:  fmt.Sprintf(messageFormat, messageA...),
 		Severity: r.severity(t),
 	})
-	r.recomputeHappiness(t)
+	r.recomputeHappiness(t,reason)
 }
 
+
 // recomputeHappiness marks the happy condition to true if all other dependents are also true.
-func (r conditionsImpl) recomputeHappiness(t ConditionType) {
+func (r conditionsImpl) recomputeHappiness(t ConditionType,reason string) {
 	if c := r.findUnhappyDependent(); c != nil {
 		// Propagate unhappy dependent to happy condition.
 		r.SetCondition(Condition{
@@ -294,6 +295,7 @@ func (r conditionsImpl) recomputeHappiness(t ConditionType) {
 		// Set the happy condition to true.
 		r.SetCondition(Condition{
 			Type:     r.happy,
+			Reason: reason,
 			Status:   corev1.ConditionTrue,
 			Severity: r.severity(r.happy),
 		})
