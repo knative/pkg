@@ -31,6 +31,8 @@ jobs:
             org: tektoncd
           - repo: chains
             org: tektoncd
+          - repo: triggers
+            org: tektoncd
 
     runs-on: ubuntu-latest
 
