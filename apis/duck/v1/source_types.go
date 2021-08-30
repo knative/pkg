@@ -17,6 +17,7 @@ limitations under the License.
 package v1
 
 import (
+	"context"
 	"time"
 
 	corev1 "k8s.io/api/core/v1"
@@ -169,4 +170,16 @@ type SourceList struct {
 	metav1.ListMeta `json:"metadata"`
 
 	Items []Source `json:"items"`
+}
+
+func (s *Source) Validate(ctx context.Context) *apis.FieldError {
+	if s == nil {
+		return nil
+	}
+	return ValidateSource(ctx, *s).ViaField(apis.CurrentField)
+}
+
+// ValidateDestination validates Destination.
+func ValidateSource(ctx context.Context, src Source) *apis.FieldError {
+	return nil
 }
