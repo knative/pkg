@@ -715,7 +715,7 @@ func TestEnqueue(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			var rl workqueue.RateLimiter = testRateLimiter{t, 100 * time.Millisecond}
-			impl := NewImplFull(&nopReconciler{}, ControllerOptions{WorkQueueName: "Testing", Logger: TestLogger(t), RateLimiter: rl})
+			impl := NewContext(context.TODO(), &nopReconciler{}, ControllerOptions{WorkQueueName: "Testing", Logger: TestLogger(t), RateLimiter: rl})
 			test.work(impl)
 
 			impl.WorkQueue().ShutDown()
@@ -751,7 +751,7 @@ func pollQ(q workqueue.RateLimitingInterface, sig chan int) func() (bool, error)
 }
 
 func TestEnqueueAfter(t *testing.T) {
-	impl := NewImplFull(&nopReconciler{}, ControllerOptions{
+	impl := NewContext(context.TODO(), &nopReconciler{}, ControllerOptions{
 		Logger:        TestLogger(t),
 		WorkQueueName: "Testing",
 		Reporter:      &FakeStatsReporter{},
@@ -818,7 +818,7 @@ func TestEnqueueAfter(t *testing.T) {
 }
 
 func TestEnqueueKeyAfter(t *testing.T) {
-	impl := NewImplFull(&nopReconciler{}, ControllerOptions{
+	impl := NewContext(context.TODO(), &nopReconciler{}, ControllerOptions{
 		Logger:        TestLogger(t),
 		WorkQueueName: "Testing",
 		Reporter:      &FakeStatsReporter{},
@@ -880,7 +880,7 @@ func (cr *CountingReconciler) Reconcile(context.Context, string) error {
 
 func TestStartAndShutdown(t *testing.T) {
 	r := &CountingReconciler{}
-	impl := NewImplFull(&nopReconciler{}, ControllerOptions{
+	impl := NewContext(context.TODO(), &nopReconciler{}, ControllerOptions{
 		Logger:        TestLogger(t),
 		WorkQueueName: "Testing",
 		Reporter:      &FakeStatsReporter{},
@@ -950,7 +950,7 @@ func TestStartAndShutdownWithLeaderAwareNoElection(t *testing.T) {
 			},
 		},
 	}
-	impl := NewImplFull(r, ControllerOptions{
+	impl := NewContext(context.TODO(), r, ControllerOptions{
 		Logger:        TestLogger(t),
 		WorkQueueName: "Testing",
 		Reporter:      &FakeStatsReporter{},
@@ -1022,7 +1022,7 @@ func TestStartAndShutdownWithLeaderAwareWithLostElection(t *testing.T) {
 		},
 	)
 
-	impl := NewImplFull(&nopReconciler{}, ControllerOptions{
+	impl := NewContext(context.TODO(), &nopReconciler{}, ControllerOptions{
 		Logger:        TestLogger(t),
 		WorkQueueName: "Testing",
 		Reporter:      &FakeStatsReporter{},
@@ -1066,7 +1066,7 @@ func TestStartAndShutdownWithLeaderAwareWithLostElection(t *testing.T) {
 func TestStartAndShutdownWithWork(t *testing.T) {
 	r := &CountingReconciler{}
 	reporter := &FakeStatsReporter{}
-	impl := NewImplFull(r, ControllerOptions{
+	impl := NewContext(context.TODO(), r, ControllerOptions{
 		Logger:        TestLogger(t),
 		WorkQueueName: "Testing",
 		Reporter:      reporter,
@@ -1170,7 +1170,7 @@ func TestStartAndShutdownWithErroringWork(t *testing.T) {
 
 	item := types.NamespacedName{Namespace: "", Name: "bar"}
 
-	impl := NewImplFull(&errorReconciler{}, ControllerOptions{
+	impl := NewContext(context.TODO(), &errorReconciler{}, ControllerOptions{
 		Logger:        TestLogger(t),
 		WorkQueueName: "Testing",
 		Reporter:      &FakeStatsReporter{},
@@ -1229,7 +1229,7 @@ func (er *permanentErrorReconciler) Reconcile(context.Context, string) error {
 func TestStartAndShutdownWithPermanentErroringWork(t *testing.T) {
 	r := &permanentErrorReconciler{}
 	reporter := &FakeStatsReporter{}
-	impl := NewImplFull(r, ControllerOptions{
+	impl := NewContext(context.TODO(), r, ControllerOptions{
 		Logger:        TestLogger(t),
 		WorkQueueName: "Testing",
 		Reporter:      reporter,
@@ -1297,7 +1297,7 @@ func TestStartAndShutdownWithRequeuingWork(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			r := &requeueAfterReconciler{duration: test.duration}
 			reporter := &FakeStatsReporter{}
-			impl := NewImplFull(r, ControllerOptions{
+			impl := NewContext(context.TODO(), r, ControllerOptions{
 				Logger:        TestLogger(t),
 				WorkQueueName: "Testing",
 				Reporter:      reporter,
@@ -1396,7 +1396,7 @@ func (*fakeStore) List() []interface{} {
 
 func TestImplGlobalResync(t *testing.T) {
 	r := &CountingReconciler{}
-	impl := NewImplFull(r, ControllerOptions{
+	impl := NewContext(context.TODO(), r, ControllerOptions{
 		Logger:        TestLogger(t),
 		WorkQueueName: "Testing",
 		Reporter:      &FakeStatsReporter{},
