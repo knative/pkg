@@ -60,6 +60,8 @@ jobs:
             org: knative-sandbox
           - repo: eventing-rabbitmq
             org: knative-sandbox
+          - repo: eventing-redis
+            org: knative-sandbox
           - repo: kn-plugin-admin
             org: knative-sandbox
           - repo: net-certmanager
