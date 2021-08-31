@@ -37,8 +37,6 @@ const (
 	DoFinalizeKind = "FinalizeKind"
 	// DoObserveKind is the function name for observing the resource (as a non leader).
 	DoObserveKind = "ObserveKind"
-	// DoObserveFinalizeKind is the function name for observing finalization of the resource (as a non leader).
-	DoObserveFinalizeKind = "ObserveFinalizeKind"
 )
 
 // PreProcessReconcile contains logic to apply before reconciliation of a resource.
