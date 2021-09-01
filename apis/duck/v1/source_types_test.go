@@ -30,6 +30,16 @@ func TestSourceValidate(t *testing.T) {
 		src  *Source
 		want *apis.FieldError
 	}{{
+		name: "empty source validation",
+		src:  nil,
+		want: nil,
+	}, {
+		name: "empty source ceOverrides extensions validation",
+		src: &Source{Spec: SourceSpec{
+			CloudEventOverrides: &CloudEventOverrides{Extensions: map[string]string{}},
+		}},
+		want: nil,
+	}, {
 		name: "empty extension name error",
 		src: &Source{Spec: SourceSpec{
 			CloudEventOverrides: &CloudEventOverrides{Extensions: map[string]string{"": "test"}},
@@ -61,13 +71,25 @@ func TestSourceValidate(t *testing.T) {
 			"spec.ceOverrides.extensions",
 			"CloudEvents attribute names MUST consist of lower-case letters ('a' to 'z') or digits ('0' to '9') from the ASCII character set",
 		),
+	}, {
+		name: "valid extension name",
+		src: &Source{Spec: SourceSpec{
+			CloudEventOverrides: &CloudEventOverrides{
+				Extensions: map[string]string{"validName": "test"},
+			},
+		}},
+		want: nil,
 	}} {
 		t.Run(tt.name, func(t *testing.T) {
 			tt := tt
 			t.Parallel()
 			got := tt.src.Validate(context.TODO())
-			if got.Error() != tt.want.Error() {
+			if tt.want != nil && got.Error() != tt.want.Error() {
 				t.Errorf("Unexpected error want:\n%+s\ngot:\n%+s", tt.want, got)
+			}
+
+			if tt.want == nil && tt.want != got {
+				t.Errorf("Unexpected error want:\nnil\ngot:\n%+s", got)
 			}
 		})
 	}
