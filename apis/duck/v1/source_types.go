@@ -18,6 +18,7 @@ package v1
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	corev1 "k8s.io/api/core/v1"
@@ -181,5 +182,43 @@ func (s *Source) Validate(ctx context.Context) *apis.FieldError {
 
 // ValidateDestination validates Destination.
 func ValidateSource(ctx context.Context, src Source) *apis.FieldError {
+	for key := range src.Spec.CloudEventOverrides.Extensions {
+		if err := validateExtensionName(key); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func validateExtensionName(key string) *apis.FieldError {
+	const maxExtensionNameLength = 20
+
+	if len(key) < 1 {
+		return apis.ErrInvalidKeyName(
+			key,
+			"spec.ceOverrides.extensions",
+			"CloudEvents attribute names MUST NOT be empty",
+		)
+	}
+
+	if maxExtensionNameLength > 0 && len(key) > maxExtensionNameLength {
+		return apis.ErrInvalidKeyName(
+			key,
+			"spec.ceOverrides.extensions",
+			fmt.Sprintf("CloudEvents attribute name is longer than %d characters", maxExtensionNameLength),
+		)
+	}
+
+	for _, c := range key {
+		if !((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9')) {
+			return apis.ErrInvalidKeyName(
+				key,
+				"spec.ceOverrides.extensions",
+				"CloudEvents attribute names MUST consist of lower-case letters ('a' to 'z') or digits ('0' to '9') from the ASCII character set",
+			)
+		}
+	}
+
 	return nil
 }
