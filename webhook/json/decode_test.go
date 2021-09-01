@@ -85,7 +85,7 @@ func TestDecode_KnownFields(t *testing.T) {
 		}`,
 		wantErr: true,
 	}, {
-		name: "mutliple metadata keys in the JSON",
+		name: "multiple metadata keys in the JSON",
 		input: `{
 			"metadata":{"name":"some-name", "namespace":"some-namespace", "bomba":"boom"},
 			"spec":{"metadata":"value"}
