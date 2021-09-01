@@ -180,14 +180,21 @@ func (s *Source) Validate(ctx context.Context) *apis.FieldError {
 	return ValidateSource(ctx, *s).ViaField(apis.CurrentField)
 }
 
-// ValidateDestination validates Destination.
+// ValidateSource validates Source.
 func ValidateSource(ctx context.Context, src Source) *apis.FieldError {
-	for key := range src.Spec.CloudEventOverrides.Extensions {
+	return src.Spec.Validate(ctx).ViaField("spec")
+}
+
+func (s *SourceSpec) Validate(ctx context.Context) *apis.FieldError {
+	return s.CloudEventOverrides.Validate(ctx).ViaField("ceOverrides")
+}
+
+func (ceOverrides *CloudEventOverrides) Validate(ctx context.Context) *apis.FieldError {
+	for key := range ceOverrides.Extensions {
 		if err := validateExtensionName(key); err != nil {
 			return err
 		}
 	}
-
 	return nil
 }
 
@@ -197,7 +204,7 @@ func validateExtensionName(key string) *apis.FieldError {
 	if len(key) < 1 {
 		return apis.ErrInvalidKeyName(
 			key,
-			"spec.ceOverrides.extensions",
+			"extensions",
 			"CloudEvents attribute names MUST NOT be empty",
 		)
 	}
@@ -205,7 +212,7 @@ func validateExtensionName(key string) *apis.FieldError {
 	if maxExtensionNameLength > 0 && len(key) > maxExtensionNameLength {
 		return apis.ErrInvalidKeyName(
 			key,
-			"spec.ceOverrides.extensions",
+			"extensions",
 			fmt.Sprintf("CloudEvents attribute name is longer than %d characters", maxExtensionNameLength),
 		)
 	}
@@ -214,7 +221,7 @@ func validateExtensionName(key string) *apis.FieldError {
 		if !((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9')) {
 			return apis.ErrInvalidKeyName(
 				key,
-				"spec.ceOverrides.extensions",
+				"",
 				"CloudEvents attribute names MUST consist of lower-case letters ('a' to 'z') or digits ('0' to '9') from the ASCII character set",
 			)
 		}
