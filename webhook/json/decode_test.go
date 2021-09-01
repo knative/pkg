@@ -98,6 +98,32 @@ func TestDecode_KnownFields(t *testing.T) {
 			Spec: map[string]string{"metadata": "value"},
 		},
 	}, {
+		name: "nested object in metadata",
+		input: `{
+			"metadata":{"name":"some-name", "namespace":"some-namespace", "labels":{"key":"value"}}
+		}`,
+		want: fixture{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "some-name",
+				Namespace: "some-namespace",
+				Labels: map[string]string{
+					"key": "value",
+				},
+			},
+		},
+	}, {
+		name: "nested array in metadata",
+		input: `{
+			"metadata":{"name":"some-name", "namespace":"some-namespace", "finalizers":["first","second"]}
+		}`,
+		want: fixture{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:       "some-name",
+				Namespace:  "some-namespace",
+				Finalizers: []string{"first", "second"},
+			},
+		},
+	}, {
 		name: "bad input",
 		// note use two characters so our decoder fails on the second token lookup
 		input:   "{{",
