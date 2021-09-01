@@ -99,7 +99,7 @@ func findMetadataOffsets(bites []byte) (start, end int64, err error) {
 
 	for {
 		t, err = dec.Token()
-		if err == io.EOF {
+		if err == io.EOF { //nolint
 			break
 		}
 		if err != nil {
@@ -109,9 +109,9 @@ func findMetadataOffsets(bites []byte) (start, end int64, err error) {
 		switch v := t.(type) {
 		case json.Delim:
 			if v == '{' {
-				level += 1
+				level++
 			} else if v == '}' {
-				level -= 1
+				level--
 			}
 		case string:
 			if v == "metadata" && level == 1 {
