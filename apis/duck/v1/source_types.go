@@ -32,6 +32,8 @@ import (
 // +genduck
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
+const MaxExtensionNameLength = 20
+
 // Source is the minimum resource shape to adhere to the Source Specification.
 // This duck type is intended to allow implementors of Sources and
 // Importers to verify their own resources meet the expectations.
@@ -192,28 +194,26 @@ func (s *SourceSpec) Validate(ctx context.Context) *apis.FieldError {
 func (ceOverrides *CloudEventOverrides) Validate(ctx context.Context) *apis.FieldError {
 	for key := range ceOverrides.Extensions {
 		if err := validateExtensionName(key); err != nil {
-			return err
+			return err.ViaField("extensions")
 		}
 	}
 	return nil
 }
 
 func validateExtensionName(key string) *apis.FieldError {
-	const maxExtensionNameLength = 20
-
 	if len(key) < 1 {
 		return apis.ErrInvalidKeyName(
 			key,
-			"extensions",
+			"",
 			"CloudEvents attribute names MUST NOT be empty",
 		)
 	}
 
-	if maxExtensionNameLength > 0 && len(key) > maxExtensionNameLength {
+	if MaxExtensionNameLength > 0 && len(key) > MaxExtensionNameLength {
 		return apis.ErrInvalidKeyName(
 			key,
-			"extensions",
-			fmt.Sprintf("CloudEvents attribute name is longer than %d characters", maxExtensionNameLength),
+			"",
+			fmt.Sprintf("CloudEvents attribute name is longer than %d characters", MaxExtensionNameLength),
 		)
 	}
 
