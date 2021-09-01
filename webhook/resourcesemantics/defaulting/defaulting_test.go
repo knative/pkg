@@ -187,6 +187,35 @@ func TestUnknownFieldFails(t *testing.T) {
 		`mutation failed: cannot decode incoming new object: json: unknown field "foo"`)
 }
 
+func TestUnknownMetadataFieldSucceeds(t *testing.T) {
+	_, ac := newNonRunningTestResourceAdmissionController(t)
+	req := &admissionv1.AdmissionRequest{
+		Operation: admissionv1.Create,
+		Kind: metav1.GroupVersionKind{
+			Group:   "pkg.knative.dev",
+			Version: "v1alpha1",
+			Kind:    "Resource",
+		},
+	}
+
+	marshaled, err := json.Marshal(map[string]interface{}{
+		"apiVersion": "pkg.knative.dev/v1alpha1",
+		"kind":       "Resource",
+		"metadata": map[string]string{
+			"unknown": "property",
+		},
+		"spec": map[string]string{
+			"fieldWithValidation": "magic value",
+		},
+	})
+	if err != nil {
+		t.Fatal("Failed to marshal resource:", err)
+	}
+	req.Object.Raw = marshaled
+
+	ExpectAllowed(t, ac.Admit(TestContextWithLogger(t), req))
+}
+
 func TestAdmitCreates(t *testing.T) {
 	tests := []struct {
 		name      string
