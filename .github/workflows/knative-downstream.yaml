@@ -85,7 +85,7 @@ jobs:
       run: |
         go get github.com/google/go-licenses
 
-    - name: Check out code
+    - name: Checkout upstream at ${{ github.base_ref }}
       uses: actions/checkout@v2
       with:
         fetch-depth: 0
@@ -100,14 +100,14 @@ jobs:
          git fetch upstream ${{ github.base_ref }}
          git pull --no-rebase --no-commit upstream ${{ github.base_ref }}
 
-    - name: Checkout Downstream
+    - name: Checkout downstream at ${{ github.base_ref }}
       uses: actions/checkout@v2
       with:
         ref: ${{ github.base_ref }}
         repository: ${{ matrix.org }}/${{ matrix.repo }}
         path: ./src/knative.dev/${{ matrix.repo }}
 
-    - name: Test Downstream
+    - name: Test downstream
       uses: knative-sandbox/actions-downstream-test@v1
       with:
         upstream-module: knative.dev/${{ github.event.repository.name }}
