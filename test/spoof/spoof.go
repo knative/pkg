@@ -295,12 +295,30 @@ func (sc *SpoofingClient) endpointState(
 	return f(req, inState)
 }
 
-func (sc *SpoofingClient) Check(req *http.Request, inState ResponseChecker) (*Response, error) {
+func (sc *SpoofingClient) Check(req *http.Request, inState ResponseChecker, errorRetryCheckers ...ErrorRetryChecker) (*Response, error) {
+	if len(errorRetryCheckers) == 0 {
+		errorRetryCheckers = []ErrorRetryChecker{DefaultErrorRetryChecker}
+	}
 	traceContext, span := trace.StartSpan(req.Context(), "SpoofingClient-Trace")
 	defer span.End()
-	rawResp, err := sc.Client.Do(req.WithContext(traceContext))
+	var rawResp *http.Response
+	err := wait.PollImmediate(sc.RequestInterval, sc.RequestTimeout, func() (bool, error) {
+		var err error
+		rawResp, err = sc.Client.Do(req.WithContext(traceContext))
+		if err != nil {
+			for _, checker := range errorRetryCheckers {
+				retry, newErr := checker(err)
+				if retry {
+					sc.Logf("Retrying %s: %v", req.URL.String(), newErr)
+					return false, nil
+				}
+			}
+			sc.Logf("NOT Retrying %s: %v", req.URL.String(), err)
+		}
+		return true, err
+	})
+
 	if err != nil {
-		sc.Logf("NOT Retrying %s: %v", req.URL.String(), err)
 		return nil, err
 	}
 	defer rawResp.Body.Close()
@@ -342,7 +360,7 @@ func (sc *SpoofingClient) CheckEndpointState(
 		url,
 		inState,
 		desc,
-		sc.Check,
+		func(req *http.Request, check ResponseChecker) (*Response, error) { return sc.Check(req, check) },
 		"CheckEndpointState",
 		opts...)
 }
