@@ -18,7 +18,6 @@ package v1
 
 import (
 	"context"
-	"fmt"
 	"testing"
 
 	"knative.dev/pkg/apis"
@@ -56,11 +55,7 @@ func TestSourceValidate(t *testing.T) {
 				Extensions: map[string]string{"nameLongerThan20Characters": "test"},
 			},
 		}},
-		want: apis.ErrInvalidKeyName(
-			"nameLongerThan20Characters",
-			"spec.ceOverrides.extensions",
-			fmt.Sprintf("CloudEvents attribute name is longer than %d characters", MaxExtensionNameLength),
-		),
+		want: nil,
 	}, {
 		name: "invalid extension name ",
 		src: &Source{Spec: SourceSpec{
