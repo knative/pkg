@@ -941,15 +941,15 @@ func (cr *countingLeaderAwareReconciler) Reconcile(ctx context.Context, key stri
 }
 
 func TestStartAndShutdownWithLeaderAwareNoElection(t *testing.T) {
-	promoted := make(chan struct{})
 	r := &countingLeaderAwareReconciler{
 		LeaderAwareFuncs: reconciler.LeaderAwareFuncs{
 			PromoteFunc: func(bkt reconciler.Bucket, enq func(reconciler.Bucket, types.NamespacedName)) error {
-				close(promoted)
+				t.Error("Promote should not be called when no leader election is enabled.")
 				return nil
 			},
 		},
 	}
+
 	impl := NewContext(context.TODO(), r, ControllerOptions{
 		Logger:        TestLogger(t),
 		WorkQueueName: "Testing",
@@ -968,13 +968,10 @@ func TestStartAndShutdownWithLeaderAwareNoElection(t *testing.T) {
 	})
 
 	select {
-	case <-promoted:
-		// We expect to be promoted immediately, since there is no
-		// ElectorBuilder attached to the context.
 	case <-doneCh:
 		t.Fatal("StartAll finished early.")
 	case <-time.After(10 * time.Second):
-		t.Error("Timed out waiting for StartAll.")
+		// Give it some time to run.
 	}
 
 	cancel()
