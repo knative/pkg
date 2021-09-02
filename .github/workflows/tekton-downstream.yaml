@@ -16,7 +16,7 @@ name: Downstream Tekton
 
 on:
   pull_request:
-    branches: [ 'main', 'master', 'release-*' ]
+    branches: [ 'main' ]
 
 jobs:
 
