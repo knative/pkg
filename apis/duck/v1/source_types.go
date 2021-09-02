@@ -18,7 +18,6 @@ package v1
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	corev1 "k8s.io/api/core/v1"
@@ -28,10 +27,6 @@ import (
 	"knative.dev/pkg/apis"
 	"knative.dev/pkg/apis/duck/ducktypes"
 )
-
-// https://github.com/cloudevents/spec/blob/v1.0.1/spec.md#attribute-naming-convention
-// CloudEvents attribute names MUST consist of lower-case letters ('a' to 'z') or digits ('0' to '9') from the ASCII character set. Attribute names SHOULD be descriptive and terse and SHOULD NOT exceed 20 characters in length.
-const MaxExtensionNameLength = 20
 
 // +genduck
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -208,14 +203,6 @@ func validateExtensionName(key string) *apis.FieldError {
 			key,
 			"",
 			"CloudEvents attribute names MUST NOT be empty",
-		)
-	}
-
-	if MaxExtensionNameLength > 0 && len(key) > MaxExtensionNameLength {
-		return apis.ErrInvalidKeyName(
-			key,
-			"",
-			fmt.Sprintf("CloudEvents attribute name is longer than %d characters", MaxExtensionNameLength),
 		)
 	}
 
