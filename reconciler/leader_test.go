@@ -42,6 +42,11 @@ func TestLeaderAwareFuncs(t *testing.T) {
 	}
 
 	laf.PromoteFunc = func(bkt Bucket, gotFunc func(Bucket, types.NamespacedName)) error {
+		if gotFunc == nil {
+			t.Error("PromoteFunc should not be called with nil gotFunc")
+			return nil
+		}
+
 		gotFunc(bkt, wantKey)
 		if !called {
 			t.Error("gotFunc didn't call wantFunc!")
@@ -79,4 +84,7 @@ func TestLeaderAwareFuncs(t *testing.T) {
 	if laf.IsLeaderFor(wantKey) {
 		t.Error("IsLeaderFor() = true, wanted false")
 	}
+
+	// We should elide calls with a nil enq
+	laf.Promote(wantBkt, nil)
 }

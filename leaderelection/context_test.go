@@ -323,3 +323,35 @@ func TestWithStatefulSetBuilder(t *testing.T) {
 		t.Fatal("Timed out waiting for promotion.")
 	}
 }
+
+func TestWithUnopposedElector(t *testing.T) {
+	laf := &reconciler.LeaderAwareFuncs{
+		PromoteFunc: func(bkt reconciler.Bucket, enq func(reconciler.Bucket, types.NamespacedName)) error {
+			t.Error("Unexpected call to PromoteFunc with unopposedElector")
+			return nil
+		},
+	}
+
+	ctx := context.Background()
+	if HasLeaderElection(ctx) {
+		t.Error("HasLeaderElection() = true, wanted false")
+	}
+
+	le, err := BuildElector(ctx, laf, "name", func(reconciler.Bucket, types.NamespacedName) {
+		t.Error("Unexpected call to enqueue function.")
+	})
+	if err != nil {
+		t.Fatal("BuildElector() =", err)
+	}
+
+	if _, ok := le.(*unopposedElector); !ok {
+		t.Fatalf("BuildElector() = %T, wanted an unopposedElector", le)
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	t.Cleanup(cancel)
+	go le.Run(ctx)
+
+	// Wait to see if PromoteFunc is called with nil or our enq function.
+	<-time.After(time.Second)
+}
