@@ -313,8 +313,8 @@ func (sc *SpoofingClient) Check(req *http.Request, inState ResponseChecker, erro
 					return false, nil
 				}
 			}
+			sc.Logf("NOT Retrying %s: %v", req.URL.String(), err)
 		}
-		sc.Logf("NOT Retrying %s: %v", req.URL.String(), err)
 		return true, err
 	})
 
