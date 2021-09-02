@@ -73,7 +73,7 @@ type ErrorRetryChecker func(e error) (retry bool, err error)
 //
 // This is distinct from ResponseChecker in that it shall be used to retry responses,
 // where the HTTP request was technically successful (it returned something) but indicates
-// an error (i.e. the overload page of a loadbalancer).
+// an error (e.g. the overload page of a loadbalancer).
 type ResponseRetryChecker func(resp *Response) (retry bool, err error)
 
 // SpoofingClient is a minimal HTTP client wrapper that spoofs the domain of requests
@@ -203,7 +203,7 @@ func (sc *SpoofingClient) Poll(req *http.Request, inState ResponseChecker, check
 
 		// This is distinct from inState in that it allows us to uniformly check for
 		// error responses to retry HTTP requests that have technically been successful,
-		// but haven't reached their destination (i.e. got a loadbalancer overload page).
+		// but haven't reached their destination (e.g. got a loadbalancer overload page).
 		for _, checker := range checkers {
 			if rc, ok := checker.(ResponseRetryChecker); ok {
 				retry, newErr := rc(resp)
