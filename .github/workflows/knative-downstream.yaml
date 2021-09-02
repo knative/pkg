@@ -81,19 +81,38 @@ jobs:
     - name: Set up Go 1.15.x
       uses: actions/setup-go@v2
       with:
+<<<<<<< HEAD
         go-version: 1.15.x
+=======
+        go-version: 1.16.x
+
+>>>>>>> 0a57eeab (when testing downstream use the correct release branch)
     - name: Install Dependencies
       run: |
         go get github.com/google/go-licenses
-    - name: Checkout Upstream
+
+    - name: Check out code
       uses: actions/checkout@v2
       with:
+        fetch-depth: 0
         path: ./src/knative.dev/${{ github.event.repository.name }}
+
+    - name: Merge upstream
+      if: github.event_name == 'pull_request'
+      shell: bash
+      working-directory: ./src/knative.dev/${{ github.event.repository.name }}
+      run: |
+         git remote add upstream https://github.com/${{ github.repository }}.git
+         git fetch upstream ${{ github.base_ref }}
+         git pull --no-rebase --no-commit upstream ${{ github.base_ref }}
+
     - name: Checkout Downstream
       uses: actions/checkout@v2
       with:
+        ref: ${{ github.base_ref }}
         repository: ${{ matrix.org }}/${{ matrix.repo }}
         path: ./src/knative.dev/${{ matrix.repo }}
+
     - name: Test Downstream
       uses: knative-sandbox/actions-downstream-test@v1
       with:
