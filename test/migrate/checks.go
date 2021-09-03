@@ -18,9 +18,8 @@ limitations under the License.
 
 import (
 	"context"
-	"errors"
-	"fmt"
 	"strings"
+	"testing"
 
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/typed/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -29,35 +28,25 @@ import (
 // CheckStoredVersions verifies that all status.storedVersions from Knative CRDs are listed in the spec
 // with storage: true. It means the CRDs have been migrated and previous/unused API versions
 // can be safely removed from the spec.
-func CheckStoredVersions(ctx context.Context, apiextensions *apiextensionsv1.ApiextensionsV1Client) error {
+func CheckStoredVersions(t *testing.T, apiextensions *apiextensionsv1.ApiextensionsV1Client) {
+	t.Helper()
 	crdClient := apiextensions.CustomResourceDefinitions()
 
-	crdList, err := crdClient.List(ctx, metav1.ListOptions{})
+	crdList, err := crdClient.List(context.Background(), metav1.ListOptions{})
 	if err != nil {
-		return fmt.Errorf("unable to fetch crd list %w", err)
+		t.Fatal("Unable to fetch crd list:", err)
 	}
 
-	var (
-		failed bool
-		errMsg strings.Builder
-	)
 	for _, crd := range crdList.Items {
 		if strings.Contains(crd.Name, "knative.dev") {
 			for _, stored := range crd.Status.StoredVersions {
 				for _, v := range crd.Spec.Versions {
 					if stored == v.Name && !v.Storage {
-						failed = true
-						fmt.Fprintf(&errMsg, "\"%s\" is invalid: spec.versions.storage must be true for \"%s\" or "+
-							"version %s must be removed from status.storageVersions\n", crd.Name, v.Name, v.Name)
+						t.Errorf("%q is invalid: spec.versions.storage must be true for %q or "+
+							"version %q must be removed from status.storageVersions", crd.Name, v.Name, v.Name)
 					}
 				}
 			}
 		}
 	}
-
-	if failed {
-		return errors.New(errMsg.String())
-	}
-
-	return nil
 }
