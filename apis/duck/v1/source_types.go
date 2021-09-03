@@ -1,5 +1,5 @@
 /*
-Copyright 2021 The Knative Authors
+Copyright 2019 The Knative Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -202,7 +202,7 @@ func validateExtensionName(key string) *apis.FieldError {
 		return apis.ErrInvalidKeyName(
 			key,
 			"",
-			"CloudEvents attribute names MUST NOT be empty",
+			"keys MUST NOT be empty",
 		)
 	}
 
@@ -211,7 +211,7 @@ func validateExtensionName(key string) *apis.FieldError {
 			return apis.ErrInvalidKeyName(
 				key,
 				"",
-				"CloudEvents attribute names MUST consist of lower-case letters ('a' to 'z') or digits ('0' to '9') from the ASCII character set",
+				"keys MUST consist of lower-case letters ('a' to 'z') or digits ('0' to '9') from the ASCII character set",
 			)
 		}
 	}

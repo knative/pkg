@@ -46,7 +46,7 @@ func TestSourceValidate(t *testing.T) {
 		want: apis.ErrInvalidKeyName(
 			"",
 			"spec.ceOverrides.extensions",
-			"CloudEvents attribute names MUST NOT be empty",
+			"keys MUST NOT be empty",
 		),
 	}, {
 		name: "extension name too long",
@@ -64,7 +64,7 @@ func TestSourceValidate(t *testing.T) {
 		want: apis.ErrInvalidKeyName(
 			"invalid_name",
 			"spec.ceOverrides.extensions",
-			"CloudEvents attribute names MUST consist of lower-case letters ('a' to 'z') or digits ('0' to '9') from the ASCII character set",
+			"keys MUST consist of lower-case letters ('a' to 'z') or digits ('0' to '9') from the ASCII character set",
 		),
 	}, {
 		name: "valid extension name",
