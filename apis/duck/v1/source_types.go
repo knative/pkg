@@ -176,12 +176,7 @@ func (s *Source) Validate(ctx context.Context) *apis.FieldError {
 	if s == nil {
 		return nil
 	}
-	return ValidateSource(ctx, *s).ViaField(apis.CurrentField)
-}
-
-// ValidateSource validates Source.
-func ValidateSource(ctx context.Context, src Source) *apis.FieldError {
-	return src.Spec.Validate(ctx).ViaField("spec")
+	return s.Spec.Validate(ctx).ViaField("spec")
 }
 
 func (s *SourceSpec) Validate(ctx context.Context) *apis.FieldError {
