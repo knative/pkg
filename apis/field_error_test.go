@@ -159,7 +159,7 @@ Body.`,
 		want:     `invalid value: 5s: baz.bar`,
 	}, {
 		name:     "invalid value details propagation",
-		err:      ErrInvalidValueWithDetails("foo", "bar", "qux"),
+		err:      ErrInvalidValue("foo", "bar", "qux"),
 		prefixes: [][]string{{"baz"}},
 		want:     "invalid value: foo: baz.bar\nqux",
 	}, {

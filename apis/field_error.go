@@ -323,22 +323,13 @@ func ErrInvalidArrayValue(value interface{}, field string, index int) *FieldErro
 	return ErrInvalidValue(value, CurrentField).ViaFieldIndex(field, index)
 }
 
-// ErrInvalidValue constructs a FieldError for a field that has received an
-// invalid value.
-func ErrInvalidValue(value interface{}, fieldPath string) *FieldError {
+// ErrInvalidValue is a variadic helper method for constructing a FieldError
+// for a field that has received an invalid value.
+func ErrInvalidValue(value interface{}, fieldPath string, details ...string) *FieldError {
 	return &FieldError{
 		Message: fmt.Sprint("invalid value: ", value),
 		Paths:   []string{fieldPath},
-	}
-}
-
-// ErrInvalidValueWithDetails constructs a FieldError for a field that has received an
-// invalid value including Details.
-func ErrInvalidValueWithDetails(value interface{}, fieldPath string, details string) *FieldError {
-	return &FieldError{
-		Message: fmt.Sprint("invalid value: ", value),
-		Paths:   []string{fieldPath},
-		Details: details,
+		Details: strings.Join(details, ", "),
 	}
 }
 
