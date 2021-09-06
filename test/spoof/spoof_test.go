@@ -50,53 +50,29 @@ func (c *countCalls) count(rc ResponseChecker) ResponseChecker {
 }
 
 func TestSpoofingClient_CheckEndpointState(t *testing.T) {
-	type args struct {
-		url     *url.URL
-		inState ResponseChecker
-		desc    string
-		opts    []RequestOption
-	}
 	tests := []struct {
 		name      string
-		args      args
+		inState   ResponseChecker
 		wantErr   bool
 		wantCalls int32
 	}{{
 		name: "Non matching response doesn't trigger a second check",
-		args: args{
-			url: &url.URL{
-				Host:   "fake.knative.net",
-				Scheme: "http",
-			},
-			inState: func(resp *Response) (done bool, err error) {
-				return false, nil
-			},
+		inState: func(resp *Response) (done bool, err error) {
+			return false, nil
 		},
 		wantErr:   false,
 		wantCalls: 1,
 	}, {
 		name: "Error response doesn't trigger a second check",
-		args: args{
-			url: &url.URL{
-				Host:   "fake.knative.net",
-				Scheme: "http",
-			},
-			inState: func(resp *Response) (done bool, err error) {
-				return false, fmt.Errorf("response error")
-			},
+		inState: func(resp *Response) (done bool, err error) {
+			return false, fmt.Errorf("response error")
 		},
 		wantErr:   true,
 		wantCalls: 1,
 	}, {
 		name: "OK response doesn't trigger a second check",
-		args: args{
-			url: &url.URL{
-				Host:   "fake.knative.net",
-				Scheme: "http",
-			},
-			inState: func(resp *Response) (done bool, err error) {
-				return true, nil
-			},
+		inState: func(resp *Response) (done bool, err error) {
+			return true, nil
 		},
 		wantErr:   false,
 		wantCalls: 1,
@@ -110,7 +86,11 @@ func TestSpoofingClient_CheckEndpointState(t *testing.T) {
 				RequestTimeout:  1,
 			}
 			counter := countCalls{}
-			_, err := sc.CheckEndpointState(context.TODO(), tt.args.url, counter.count(tt.args.inState), tt.args.desc, tt.args.opts...)
+			url := &url.URL{
+				Host:   "fake.knative.net",
+				Scheme: "http",
+			}
+			_, err := sc.CheckEndpointState(context.TODO(), url, counter.count(tt.inState), "")
 			if (err != nil) != tt.wantErr {
 				t.Errorf("SpoofingClient.CheckEndpointState() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -123,53 +103,29 @@ func TestSpoofingClient_CheckEndpointState(t *testing.T) {
 }
 
 func TestSpoofingClient_WaitForEndpointState(t *testing.T) {
-	type args struct {
-		url     *url.URL
-		inState ResponseChecker
-		desc    string
-		opts    []RequestOption
-	}
 	tests := []struct {
 		name      string
-		args      args
+		inState   ResponseChecker
 		wantErr   bool
 		wantCalls int32
 	}{{
 		name: "OK response doesn't trigger a second request",
-		args: args{
-			url: &url.URL{
-				Host:   "fake.knative.net",
-				Scheme: "http",
-			},
-			inState: func(resp *Response) (done bool, err error) {
-				return true, nil
-			},
+		inState: func(resp *Response) (done bool, err error) {
+			return true, nil
 		},
 		wantErr:   false,
 		wantCalls: 1,
 	}, {
 		name: "Error response doesn't trigger more requests",
-		args: args{
-			url: &url.URL{
-				Host:   "fake.knative.net",
-				Scheme: "http",
-			},
-			inState: func(resp *Response) (done bool, err error) {
-				return false, fmt.Errorf("response error")
-			},
+		inState: func(resp *Response) (done bool, err error) {
+			return false, fmt.Errorf("response error")
 		},
 		wantErr:   true,
 		wantCalls: 1,
 	}, {
 		name: "Non matching response triggers more requests",
-		args: args{
-			url: &url.URL{
-				Host:   "fake.knative.net",
-				Scheme: "http",
-			},
-			inState: func(resp *Response) (done bool, err error) {
-				return false, nil
-			},
+		inState: func(resp *Response) (done bool, err error) {
+			return false, nil
 		},
 		wantErr:   true,
 		wantCalls: 3,
@@ -183,7 +139,11 @@ func TestSpoofingClient_WaitForEndpointState(t *testing.T) {
 				RequestTimeout:  1,
 			}
 			counter := countCalls{}
-			_, err := sc.WaitForEndpointState(context.TODO(), tt.args.url, counter.count(tt.args.inState), tt.args.desc, tt.args.opts...)
+			url := &url.URL{
+				Host:   "fake.knative.net",
+				Scheme: "http",
+			}
+			_, err := sc.WaitForEndpointState(context.TODO(), url, counter.count(tt.inState), "")
 			if (err != nil) != tt.wantErr {
 				t.Errorf("SpoofingClient.CheckEndpointState() error = %v, wantErr %v", err, tt.wantErr)
 				return
