@@ -20,176 +20,182 @@ package spoof
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
 
 	"testing"
+
+	"go.uber.org/atomic"
 )
 
-type fakeTransport struct{}
-
-func (ft *fakeTransport) RoundTrip(req *http.Request) (*http.Response, error) {
-	return &http.Response{
+var (
+	successResponse = &http.Response{
 		Status:     "200 ok",
 		StatusCode: 200,
 		Header:     http.Header{},
 		Body:       http.NoBody,
-	}, nil
-}
-
-type countCalls struct {
-	calls int32
-}
-
-func (c *countCalls) count(rc ResponseChecker) ResponseChecker {
-	return func(resp *Response) (done bool, err error) {
-		c.calls++
-		return rc(resp)
 	}
+	errRetriable    = errors.New("connection reset by peer")
+	errNonRetriable = errors.New("foo")
+)
+
+type fakeTransport struct {
+	response *http.Response
+	err      error
+	calls    atomic.Int32
+}
+
+func (ft *fakeTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	call := ft.calls.Inc()
+	if ft.response != nil && call == 2 {
+		// If both a response and an error is defined, we return just the response on
+		// the second call to simulate a retry that passes eventually.
+		return ft.response, nil
+	}
+	return ft.response, ft.err
 }
 
 func TestSpoofingClient_CheckEndpointState(t *testing.T) {
-	type args struct {
-		url     *url.URL
-		inState ResponseChecker
-		desc    string
-		opts    []RequestOption
-	}
 	tests := []struct {
 		name      string
-		args      args
+		transport *fakeTransport
+		inState   ResponseChecker
 		wantErr   bool
 		wantCalls int32
 	}{{
-		name: "Non matching response doesn't trigger a second check",
-		args: args{
-			url: &url.URL{
-				Host:   "fake.knative.net",
-				Scheme: "http",
-			},
-			inState: func(resp *Response) (done bool, err error) {
-				return false, nil
-			},
+		name:      "Non matching response doesn't trigger a second check",
+		transport: &fakeTransport{response: successResponse},
+		inState: func(resp *Response) (done bool, err error) {
+			return false, nil
 		},
 		wantErr:   false,
 		wantCalls: 1,
 	}, {
-		name: "Error response doesn't trigger a second check",
-		args: args{
-			url: &url.URL{
-				Host:   "fake.knative.net",
-				Scheme: "http",
-			},
-			inState: func(resp *Response) (done bool, err error) {
-				return false, fmt.Errorf("response error")
-			},
+		name:      "Error response doesn't trigger a second check",
+		transport: &fakeTransport{response: successResponse},
+		inState: func(resp *Response) (done bool, err error) {
+			return false, fmt.Errorf("response error")
 		},
 		wantErr:   true,
 		wantCalls: 1,
 	}, {
-		name: "OK response doesn't trigger a second check",
-		args: args{
-			url: &url.URL{
-				Host:   "fake.knative.net",
-				Scheme: "http",
-			},
-			inState: func(resp *Response) (done bool, err error) {
-				return true, nil
-			},
+		name:      "OK response doesn't trigger a second check",
+		transport: &fakeTransport{response: successResponse},
+		inState: func(resp *Response) (done bool, err error) {
+			return true, nil
 		},
 		wantErr:   false,
+		wantCalls: 1,
+	}, {
+		name:      "Retriable error is retried",
+		transport: &fakeTransport{err: errRetriable, response: successResponse},
+		inState: func(resp *Response) (done bool, err error) {
+			return true, nil
+		},
+		wantErr:   false,
+		wantCalls: 2,
+	}, {
+		name:      "Nonretriable error is not retried",
+		transport: &fakeTransport{err: errNonRetriable, response: successResponse},
+		inState: func(resp *Response) (done bool, err error) {
+			return true, nil
+		},
+		wantErr:   true,
 		wantCalls: 1,
 	}}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			sc := &SpoofingClient{
-				Client:          &http.Client{Transport: &fakeTransport{}},
+				Client:          &http.Client{Transport: tt.transport},
 				Logf:            t.Logf,
 				RequestInterval: 1,
 				RequestTimeout:  1,
 			}
-			counter := countCalls{}
-			_, err := sc.CheckEndpointState(context.TODO(), tt.args.url, counter.count(tt.args.inState), tt.args.desc, tt.args.opts...)
+			url := &url.URL{
+				Host:   "fake.knative.net",
+				Scheme: "http",
+			}
+			_, err := sc.CheckEndpointState(context.TODO(), url, tt.inState, "")
 			if (err != nil) != tt.wantErr {
 				t.Errorf("SpoofingClient.CheckEndpointState() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			if counter.calls != tt.wantCalls {
-				t.Errorf("Expected ResponseChecker to be invoked %d time but got invoked %d", tt.wantCalls, counter.calls)
+			if got, want := tt.transport.calls.Load(), tt.wantCalls; got != want {
+				t.Errorf("Expected Transport to be invoked %d time but got invoked %d", want, got)
 			}
 		})
 	}
 }
 
 func TestSpoofingClient_WaitForEndpointState(t *testing.T) {
-	type args struct {
-		url     *url.URL
-		inState ResponseChecker
-		desc    string
-		opts    []RequestOption
-	}
 	tests := []struct {
 		name      string
-		args      args
+		transport *fakeTransport
+		inState   ResponseChecker
 		wantErr   bool
 		wantCalls int32
 	}{{
-		name: "OK response doesn't trigger a second request",
-		args: args{
-			url: &url.URL{
-				Host:   "fake.knative.net",
-				Scheme: "http",
-			},
-			inState: func(resp *Response) (done bool, err error) {
-				return true, nil
-			},
+		name:      "OK response doesn't trigger a second request",
+		transport: &fakeTransport{response: successResponse},
+		inState: func(resp *Response) (done bool, err error) {
+			return true, nil
 		},
 		wantErr:   false,
 		wantCalls: 1,
 	}, {
-		name: "Error response doesn't trigger more requests",
-		args: args{
-			url: &url.URL{
-				Host:   "fake.knative.net",
-				Scheme: "http",
-			},
-			inState: func(resp *Response) (done bool, err error) {
-				return false, fmt.Errorf("response error")
-			},
+		name:      "Error response doesn't trigger more requests",
+		transport: &fakeTransport{response: successResponse},
+		inState: func(resp *Response) (done bool, err error) {
+			return false, fmt.Errorf("response error")
 		},
 		wantErr:   true,
 		wantCalls: 1,
 	}, {
-		name: "Non matching response triggers more requests",
-		args: args{
-			url: &url.URL{
-				Host:   "fake.knative.net",
-				Scheme: "http",
-			},
-			inState: func(resp *Response) (done bool, err error) {
-				return false, nil
-			},
+		name:      "Non matching response triggers more requests",
+		transport: &fakeTransport{response: successResponse},
+		inState: func(resp *Response) (done bool, err error) {
+			return false, nil
 		},
 		wantErr:   true,
 		wantCalls: 3,
+	}, {
+		name:      "Retriable error is retried",
+		transport: &fakeTransport{err: errRetriable, response: successResponse},
+		inState: func(resp *Response) (done bool, err error) {
+			return true, nil
+		},
+		wantErr:   false,
+		wantCalls: 2,
+	}, {
+		name:      "Nonretriable error is not retried",
+		transport: &fakeTransport{err: errNonRetriable, response: successResponse},
+		inState: func(resp *Response) (done bool, err error) {
+			return true, nil
+		},
+		wantErr:   true,
+		wantCalls: 1,
 	}}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			sc := &SpoofingClient{
-				Client:          &http.Client{Transport: &fakeTransport{}},
+				Client:          &http.Client{Transport: tt.transport},
 				Logf:            t.Logf,
 				RequestInterval: 1,
 				RequestTimeout:  1,
 			}
-			counter := countCalls{}
-			_, err := sc.WaitForEndpointState(context.TODO(), tt.args.url, counter.count(tt.args.inState), tt.args.desc, tt.args.opts...)
+			url := &url.URL{
+				Host:   "fake.knative.net",
+				Scheme: "http",
+			}
+			_, err := sc.WaitForEndpointState(context.TODO(), url, tt.inState, "")
 			if (err != nil) != tt.wantErr {
 				t.Errorf("SpoofingClient.CheckEndpointState() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			if counter.calls != tt.wantCalls {
-				t.Errorf("Expected ResponseChecker to be invoked %d time but got invoked %d", tt.wantCalls, counter.calls)
+			if got, want := tt.transport.calls.Load(), tt.wantCalls; got != want {
+				t.Errorf("Expected Transport to be invoked %d time but got invoked %d", want, got)
 			}
 		})
 	}
