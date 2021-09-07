@@ -49,7 +49,7 @@ func TestSourceValidate(t *testing.T) {
 			"keys MUST NOT be empty",
 		),
 	}, {
-		name: "long extension name is valid",
+		name: "long extension key name is valid",
 		src: &Source{Spec: SourceSpec{
 			CloudEventOverrides: &CloudEventOverrides{
 				Extensions: map[string]string{"nameLongerThan20Characters": "test"},
