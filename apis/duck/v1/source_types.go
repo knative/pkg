@@ -206,7 +206,7 @@ func validateExtensionName(key string) *apis.FieldError {
 			return apis.ErrInvalidKeyName(
 				key,
 				"",
-				"keys MUST consist of lower-case letters ('a' to 'z') or digits ('0' to '9') from the ASCII character set",
+				"keys MUST consist of lower and upper-case letters ('a' to 'z') or digits ('0' to '9') from the ASCII character set",
 			)
 		}
 	}
