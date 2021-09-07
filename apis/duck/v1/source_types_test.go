@@ -57,7 +57,7 @@ func TestSourceValidate(t *testing.T) {
 		}},
 		want: nil,
 	}, {
-		name: "invalid extension name ",
+		name: "invalid extension name",
 		src: &Source{Spec: SourceSpec{
 			CloudEventOverrides: &CloudEventOverrides{Extensions: map[string]string{"invalid_name": "test"}},
 		}},
@@ -83,7 +83,7 @@ func TestSourceValidate(t *testing.T) {
 				t.Errorf("Unexpected error want:\n%+s\ngot:\n%+s", tt.want, got)
 			}
 
-			if tt.want == nil && tt.want != got {
+			if tt.want == nil && got != nil {
 				t.Errorf("Unexpected error want:\nnil\ngot:\n%+s", got)
 			}
 		})

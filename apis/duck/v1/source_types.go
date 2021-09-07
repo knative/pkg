@@ -193,7 +193,7 @@ func (ceOverrides *CloudEventOverrides) Validate(ctx context.Context) *apis.Fiel
 }
 
 func validateExtensionName(key string) *apis.FieldError {
-	if len(key) < 1 {
+	if key == "" {
 		return apis.ErrInvalidKeyName(
 			key,
 			"",
