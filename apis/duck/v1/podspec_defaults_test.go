@@ -97,3 +97,68 @@ func TestPodSpecDefaulting(t *testing.T) {
 		})
 	}
 }
+
+func TestPodDefaulting(t *testing.T) {
+	p := Pod{
+		Spec: corev1.PodSpec{
+			Containers: []corev1.Container{{
+				Name:  "blah",
+				Image: "busybox",
+			}},
+		},
+	}
+
+	tests := []struct {
+		name string
+		with func(context.Context) context.Context
+		want *Pod
+	}{{
+		name: "no check",
+		with: func(ctx context.Context) context.Context {
+			return ctx
+		},
+		want: p.DeepCopy(),
+	}, {
+		name: "no change",
+		with: func(ctx context.Context) context.Context {
+			return WithPodDefaulter(ctx, func(ctx context.Context, wp *Pod) {
+			})
+		},
+		want: p.DeepCopy(),
+	}, {
+		name: "no busybox",
+		with: func(ctx context.Context) context.Context {
+			return WithPodDefaulter(ctx, func(ctx context.Context, wp *Pod) {
+				for i, c := range wp.Spec.InitContainers {
+					if !strings.Contains(c.Image, "@") {
+						wp.Spec.InitContainers[i].Image = c.Image + "@sha256:deadbeef"
+					}
+				}
+				for i, c := range wp.Spec.Containers {
+					if !strings.Contains(c.Image, "@") {
+						wp.Spec.Containers[i].Image = c.Image + "@sha256:deadbeef"
+					}
+				}
+			})
+		},
+		want: &Pod{
+			Spec: corev1.PodSpec{
+				Containers: []corev1.Container{{
+					Name:  "blah",
+					Image: "busybox@sha256:deadbeef",
+				}},
+			},
+		},
+	}}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			ctx := test.with(context.Background())
+			got := p.DeepCopy()
+			got.SetDefaults(ctx)
+			if !cmp.Equal(test.want, got) {
+				t.Errorf("SetDefaults (-want, +got) = %s", cmp.Diff(test.want, got))
+			}
+		})
+	}
+}
