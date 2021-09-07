@@ -49,7 +49,7 @@ func TestSourceValidate(t *testing.T) {
 			"keys MUST NOT be empty",
 		),
 	}, {
-		name: "extension name too long",
+		name: "long extension name is valid",
 		src: &Source{Spec: SourceSpec{
 			CloudEventOverrides: &CloudEventOverrides{
 				Extensions: map[string]string{"nameLongerThan20Characters": "test"},
@@ -64,7 +64,7 @@ func TestSourceValidate(t *testing.T) {
 		want: apis.ErrInvalidKeyName(
 			"invalid_name",
 			"spec.ceOverrides.extensions",
-			"keys MUST consist of lower-case letters ('a' to 'z') or digits ('0' to '9') from the ASCII character set",
+			"keys MUST consist of lower and upper-case letters ('a' to 'z') or digits ('0' to '9') from the ASCII character set",
 		),
 	}, {
 		name: "valid extension name",
