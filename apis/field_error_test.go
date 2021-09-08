@@ -158,6 +158,11 @@ Body.`,
 		prefixes: [][]string{{"baz"}},
 		want:     `invalid value: 5s: baz.bar`,
 	}, {
+		name:     "invalid value details propagation",
+		err:      ErrInvalidValue("foo", "bar", "qux"),
+		prefixes: [][]string{{"baz"}},
+		want:     "invalid value: foo: baz.bar\nqux",
+	}, {
 		name:     "invalid value propagation",
 		err:      ErrGeneric("this is a generic error", "foo", "bar"),
 		prefixes: [][]string{{"baz"}},
