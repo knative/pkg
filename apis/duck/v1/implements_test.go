@@ -21,6 +21,7 @@ import (
 
 	appsv1 "k8s.io/api/apps/v1"
 	batchv1 "k8s.io/api/batch/v1"
+	corev1 "k8s.io/api/core/v1"
 
 	"knative.dev/pkg/apis/duck"
 	"knative.dev/pkg/apis/duck/ducktypes"
@@ -33,6 +34,7 @@ func TestTypesImplements(t *testing.T) {
 	}{
 		{instance: &AddressableType{}, iface: &Addressable{}},
 		{instance: &KResource{}, iface: &Conditions{}},
+		{instance: &corev1.Pod{}, iface: &Pod{}},
 	}
 	for _, tc := range testCases {
 		if err := duck.VerifyType(tc.instance, tc.iface); err != nil {

@@ -85,3 +85,61 @@ func TestPodSpecValidation(t *testing.T) {
 		})
 	}
 }
+
+func TestPodValidation(t *testing.T) {
+	tests := []struct {
+		name string
+		with func(context.Context) context.Context
+		want *apis.FieldError
+	}{{
+		name: "no check",
+		with: func(ctx context.Context) context.Context {
+			return ctx
+		},
+		want: nil,
+	}, {
+		name: "no error",
+		with: func(ctx context.Context) context.Context {
+			return WithPodValidator(ctx, func(ctx context.Context, wp *Pod) *apis.FieldError {
+				return nil
+			})
+		},
+		want: nil,
+	}, {
+		name: "no busybox",
+		with: func(ctx context.Context) context.Context {
+			return WithPodValidator(ctx, func(ctx context.Context, wp *Pod) *apis.FieldError {
+				for i, c := range wp.Spec.InitContainers {
+					if c.Image == "busybox" {
+						return apis.ErrInvalidValue(c.Image, "image").ViaFieldIndex("spec.template.spec.initContainers", i)
+					}
+				}
+				for i, c := range wp.Spec.Containers {
+					if c.Image == "busybox" {
+						return apis.ErrInvalidValue(c.Image, "image").ViaFieldIndex("spec.template.spec.containers", i)
+					}
+				}
+				return nil
+			})
+		},
+		want: apis.ErrInvalidValue("busybox", "spec.template.spec.containers[0].image"),
+	}}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			p := Pod{
+				Spec: corev1.PodSpec{
+					Containers: []corev1.Container{{
+						Name:  "blah",
+						Image: "busybox",
+					}},
+				},
+			}
+			ctx := test.with(context.Background())
+			got := p.Validate(ctx)
+			if test.want.Error() != got.Error() {
+				t.Errorf("Validate() = %v, wanted %v", got, test.want)
+			}
+		})
+	}
+}
