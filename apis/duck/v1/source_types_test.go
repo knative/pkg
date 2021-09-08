@@ -64,7 +64,7 @@ func TestSourceValidate(t *testing.T) {
 		want: apis.ErrInvalidKeyName(
 			"invalid_name",
 			"spec.ceOverrides.extensions",
-			"keys MUST consist of lower and upper-case letters ('a' to 'z') or digits ('0' to '9') from the ASCII character set",
+			"keys are expected to be alphanumeric",
 		),
 	}, {
 		name: "valid extension name",
