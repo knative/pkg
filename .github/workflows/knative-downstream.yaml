@@ -82,19 +82,34 @@ jobs:
       uses: actions/setup-go@v2
       with:
         go-version: 1.16.x
+
     - name: Install Dependencies
       run: |
         go get github.com/google/go-licenses
-    - name: Checkout Upstream
+
+    - name: Checkout upstream at ${{ github.base_ref }}
       uses: actions/checkout@v2
       with:
+        fetch-depth: 0
         path: ./src/knative.dev/${{ github.event.repository.name }}
-    - name: Checkout Downstream
+
+    - name: Merge upstream
+      if: github.event_name == 'pull_request'
+      shell: bash
+      working-directory: ./src/knative.dev/${{ github.event.repository.name }}
+      run: |
+         git remote add upstream https://github.com/${{ github.repository }}.git
+         git fetch upstream ${{ github.base_ref }}
+         git pull --no-rebase --no-commit upstream ${{ github.base_ref }}
+
+    - name: Checkout downstream at ${{ github.base_ref }}
       uses: actions/checkout@v2
       with:
+        ref: ${{ github.base_ref }}
         repository: ${{ matrix.org }}/${{ matrix.repo }}
         path: ./src/knative.dev/${{ matrix.repo }}
-    - name: Test Downstream
+
+    - name: Test downstream
       uses: knative-sandbox/actions-downstream-test@v1
       with:
         upstream-module: knative.dev/${{ github.event.repository.name }}
