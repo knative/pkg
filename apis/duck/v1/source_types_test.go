@@ -33,6 +33,10 @@ func TestSourceValidate(t *testing.T) {
 		src:  nil,
 		want: nil,
 	}, {
+		name: "empty source spec validation",
+		src:  &Source{Spec: SourceSpec{}},
+		want: nil,
+	}, {
 		name: "empty source ceOverrides extensions validation",
 		src: &Source{Spec: SourceSpec{
 			CloudEventOverrides: &CloudEventOverrides{Extensions: map[string]string{}},
