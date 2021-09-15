@@ -29,8 +29,12 @@ func TestSourceValidate(t *testing.T) {
 		src  *Source
 		want *apis.FieldError
 	}{{
-		name: "empty source validation",
+		name: "nil source validation",
 		src:  nil,
+		want: nil,
+	}, {
+		name: "nil source spec validation",
+		src:  &Source{},
 		want: nil,
 	}, {
 		name: "empty source spec validation",
