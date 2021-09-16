@@ -66,6 +66,7 @@ func CheckMinimumVersion(versioner discovery.ServerVersionInterface) error {
 
 	// If no specific pre-release requirement is set, we default to "-0" to always allow
 	// pre-release versions of the same Major.Minor.Patch version.
+	// Set IsNum to true otherwise currentVersion.LT() below always returns true.
 	if len(minimumVersion.Pre) == 0 {
 		minimumVersion.Pre = []semver.PRVersion{{VersionNum: 0, IsNum: true}}
 	}
