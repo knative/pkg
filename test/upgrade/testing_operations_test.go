@@ -17,15 +17,12 @@ limitations under the License.
 package upgrade_test
 
 import (
-	"bytes"
 	"fmt"
 	"os"
-	"sync"
 	"testing"
 
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
-	"go.uber.org/zap/zaptest"
 	"knative.dev/pkg/test/upgrade"
 )
 
@@ -38,15 +35,12 @@ func newConfig(t *testing.T) (upgrade.Configuration, fmt.Stringer) {
 func newExampleZap() (*zap.Logger, fmt.Stringer) {
 	ec := zap.NewDevelopmentEncoderConfig()
 	ec.TimeKey = ""
-	encoder := zapcore.NewConsoleEncoder(ec)
-	buf := &buffer{
-		Buffer: bytes.Buffer{},
-		Mutex:  sync.Mutex{},
-		Syncer: zaptest.Syncer{},
-	}
-	ws := zapcore.NewMultiWriteSyncer(buf, os.Stdout)
-	core := zapcore.NewCore(encoder, ws, zap.DebugLevel)
-	return zap.New(core).WithOptions(), buf
+	buf := upgrade.NewThreadSafeBuffer()
+	core := zapcore.NewCore(
+		zapcore.NewConsoleEncoder(ec),
+		zapcore.NewMultiWriteSyncer(zapcore.AddSync(buf), os.Stdout),
+		zap.DebugLevel)
+	return zap.New(core), buf
 }
 
 func createSteps(s upgrade.Suite) []*step {

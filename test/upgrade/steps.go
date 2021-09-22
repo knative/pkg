@@ -63,17 +63,20 @@ func (se *suiteExecution) startContinualTests(num int) {
 					return
 				}
 				setup := operation.Setup()
+
+				logger, buffer := NewInMemoryLoggerBuffer()
 				t.Run("Setup"+operation.Name(), func(t *testing.T) {
-					setup(Context{T: t, Log: l})
+					setup(Context{T: t, Log: logger})
 				})
 				handler := operation.Handler()
 				go func() {
-					bc := BackgroundContext{Log: l, Stop: operation.stop}
+					bc := BackgroundContext{Log: logger, LogBuffer: buffer, Stop: operation.stop}
 					handler(bc)
 				}()
 
 				se.failed = se.failed || t.Failed()
 				if se.failed {
+					t.Log(buffer)
 					return
 				}
 			}

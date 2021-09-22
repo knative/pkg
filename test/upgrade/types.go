@@ -17,6 +17,8 @@ limitations under the License.
 package upgrade
 
 import (
+	"bytes"
+	"sync"
 	"testing"
 	"time"
 
@@ -84,10 +86,12 @@ type Context struct {
 // down to each handler of BackgroundOperation. It contains a StopEvent channel
 // which end user should use to obtain a testing.T for error reporting. Until
 // StopEvent is sent user may use zap.SugaredLogger to log state of execution if
-// necessary.
+// necessary. The logs are stored in a ThreadSafeBuffer and flushed to the test
+// output when the test fails.
 type BackgroundContext struct {
-	Log  *zap.SugaredLogger
-	Stop <-chan StopEvent
+	Log       *zap.SugaredLogger
+	LogBuffer *ThreadSafeBuffer
+	Stop      <-chan StopEvent
 }
 
 // StopEvent represents an event that is to be received by background operation
@@ -120,4 +124,11 @@ type Configuration struct {
 // SuiteExecutor is to execute upgrade test suite.
 type SuiteExecutor interface {
 	Execute(c Configuration)
+}
+
+// ThreadSafeBuffer avoids race conditions on bytes.Buffer.
+// See: https://stackoverflow.com/a/36226525/844449
+type ThreadSafeBuffer struct {
+	bytes.Buffer
+	sync.Mutex
 }
