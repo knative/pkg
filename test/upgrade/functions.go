@@ -112,7 +112,7 @@ func handleStopEvent(
 	bc.Log.Infof("%s have received a stop event: %s", wc.Name, se.Name())
 	defer close(se.Finished)
 	wc.OnStop(se)
-	se.T.Log(bc.LogBuffer)
+	se.T.Log(bc.logBuffer)
 }
 
 func enrichSuite(s *Suite) *enrichedSuite {

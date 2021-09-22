@@ -88,7 +88,7 @@ type Context struct {
 // output when the test fails.
 type BackgroundContext struct {
 	Log       *zap.SugaredLogger
-	LogBuffer *threadSafeBuffer
+	logBuffer *threadSafeBuffer
 	Stop      <-chan StopEvent
 }
 

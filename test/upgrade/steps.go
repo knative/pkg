@@ -70,13 +70,12 @@ func (se *suiteExecution) startContinualTests(num int) {
 				})
 				handler := operation.Handler()
 				go func() {
-					bc := BackgroundContext{Log: logger.Sugar(), LogBuffer: buffer, Stop: operation.stop}
+					bc := BackgroundContext{Log: logger.Sugar(), logBuffer: buffer, Stop: operation.stop}
 					handler(bc)
 				}()
-
+				t.Log(buffer)
 				se.failed = se.failed || t.Failed()
 				if se.failed {
-					t.Log(buffer)
 					return
 				}
 			}
