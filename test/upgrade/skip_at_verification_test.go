@@ -23,7 +23,7 @@ import (
 )
 
 func TestSkipAtBackgroundVerification(t *testing.T) {
-	log, buf := newExampleZap()
+	log, buf := upgrade.NewInMemoryLoggerBuffer()
 	skipMsg := "It is expected to be skipped"
 	s := upgrade.Suite{
 		Tests: upgrade.Tests{

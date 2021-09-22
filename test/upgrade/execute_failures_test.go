@@ -19,6 +19,7 @@ package upgrade_test
 import (
 	"fmt"
 	"io/ioutil"
+	"knative.dev/pkg/test/upgrade"
 	"os"
 	"testing"
 )
@@ -45,7 +46,7 @@ func testSuiteExecuteWithFailingStep(fp failurePoint, t *testing.T) {
 		suite := completeSuiteExample(fp)
 		txt := expectedTexts(suite, fp)
 		txt.append(upgradeTestRunning, upgradeTestFailure)
-		log, buf := newExampleZap()
+		log, buf := upgrade.NewInMemoryLoggerBuffer()
 
 		it := []testing.InternalTest{{
 			Name: testName,

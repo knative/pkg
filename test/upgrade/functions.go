@@ -17,8 +17,6 @@ limitations under the License.
 package upgrade
 
 import (
-	"bytes"
-	"sync"
 	"time"
 
 	"go.uber.org/zap/zapcore"
@@ -166,26 +164,19 @@ func (s *simpleBackgroundOperation) Handler() func(bc BackgroundContext) {
 	return s.handler
 }
 
-func NewThreadSafeBuffer() *ThreadSafeBuffer {
-	return &ThreadSafeBuffer{
-		Buffer: bytes.Buffer{},
-		Mutex:  sync.Mutex{},
-	}
-}
-
-func (b *ThreadSafeBuffer) Read(p []byte) (n int, err error) {
+func (b *threadSafeBuffer) Read(p []byte) (n int, err error) {
 	b.Mutex.Lock()
 	defer b.Mutex.Unlock()
 	return b.Buffer.Read(p)
 }
 
-func (b *ThreadSafeBuffer) Write(p []byte) (n int, err error) {
+func (b *threadSafeBuffer) Write(p []byte) (n int, err error) {
 	b.Mutex.Lock()
 	defer b.Mutex.Unlock()
 	return b.Buffer.Write(p)
 }
 
-func (b *ThreadSafeBuffer) String() string {
+func (b *threadSafeBuffer) String() string {
 	b.Mutex.Lock()
 	defer b.Mutex.Unlock()
 	return b.Buffer.String()
@@ -193,11 +184,11 @@ func (b *ThreadSafeBuffer) String() string {
 
 // NewInMemoryLoggerBuffer creates a logger that writes logs into a byte buffer.
 // This byte buffer is returned and can be used to process the logs at later stage.
-func NewInMemoryLoggerBuffer() (*zap.SugaredLogger, *ThreadSafeBuffer) {
-	buf := NewThreadSafeBuffer()
+func NewInMemoryLoggerBuffer(options ...zap.Option) (*zap.Logger, *threadSafeBuffer) {
+	buf := &threadSafeBuffer{}
 	core := zapcore.NewCore(
 		zapcore.NewConsoleEncoder(zap.NewDevelopmentEncoderConfig()),
 		zapcore.AddSync(buf),
 		zap.DebugLevel)
-	return zap.New(core, zap.AddCaller(), zap.Development()).Sugar(), buf
+	return zap.New(core, options...), buf
 }

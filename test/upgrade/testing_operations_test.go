@@ -18,29 +18,15 @@ package upgrade_test
 
 import (
 	"fmt"
-	"os"
 	"testing"
 
-	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
 	"knative.dev/pkg/test/upgrade"
 )
 
 func newConfig(t *testing.T) (upgrade.Configuration, fmt.Stringer) {
-	log, buf := newExampleZap()
+	log, buf := upgrade.NewInMemoryLoggerBuffer()
 	c := upgrade.Configuration{T: t, Log: log}
 	return c, buf
-}
-
-func newExampleZap() (*zap.Logger, fmt.Stringer) {
-	ec := zap.NewDevelopmentEncoderConfig()
-	ec.TimeKey = ""
-	buf := upgrade.NewThreadSafeBuffer()
-	core := zapcore.NewCore(
-		zapcore.NewConsoleEncoder(ec),
-		zapcore.NewMultiWriteSyncer(zapcore.AddSync(buf), os.Stdout),
-		zap.DebugLevel)
-	return zap.New(core), buf
 }
 
 func createSteps(s upgrade.Suite) []*step {
