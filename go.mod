@@ -3,8 +3,8 @@ module knative.dev/pkg
 go 1.14
 
 require (
-	cloud.google.com/go v0.72.0
-	cloud.google.com/go/storage v1.10.0
+	cloud.google.com/go v0.95.0
+	cloud.google.com/go/storage v1.16.1
 	contrib.go.opencensus.io/exporter/ocagent v0.7.1-0.20200907061046-05415f1de66d
 	contrib.go.opencensus.io/exporter/prometheus v0.4.0
 	contrib.go.opencensus.io/exporter/zipkin v0.1.2
@@ -48,8 +48,7 @@ require (
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
 	golang.org/x/tools v0.1.6
 	gomodules.xyz/jsonpatch/v2 v2.2.0
-	google.golang.org/api v0.36.0
-	google.golang.org/genproto v0.0.0-20210416161957-9910b6c460de // indirect
+	google.golang.org/api v0.57.0
 	google.golang.org/grpc v1.40.0
 	google.golang.org/protobuf v1.27.1
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b
