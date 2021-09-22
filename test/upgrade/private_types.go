@@ -18,8 +18,9 @@ package upgrade
 
 import (
 	"bytes"
-	"go.uber.org/zap"
 	"sync"
+
+	"go.uber.org/zap"
 )
 
 type suiteExecution struct {

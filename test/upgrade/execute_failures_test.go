@@ -19,9 +19,10 @@ package upgrade_test
 import (
 	"fmt"
 	"io/ioutil"
-	"knative.dev/pkg/test/upgrade"
 	"os"
 	"testing"
+
+	"knative.dev/pkg/test/upgrade"
 )
 
 func TestSuiteExecuteWithFailures(t *testing.T) {

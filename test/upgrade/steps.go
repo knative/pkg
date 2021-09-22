@@ -17,8 +17,9 @@ limitations under the License.
 package upgrade
 
 import (
-	"go.uber.org/zap"
 	"testing"
+
+	"go.uber.org/zap"
 )
 
 const skippingOperationTemplate = `Skipping "%s" as previous operation have failed`
