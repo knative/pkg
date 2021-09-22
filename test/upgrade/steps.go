@@ -74,7 +74,7 @@ func (se *suiteExecution) startContinualTests(num int) {
 					bc := BackgroundContext{Log: logger.Sugar(), logBuffer: buffer, Stop: operation.stop}
 					handler(bc)
 				}()
-				t.Log(buffer)
+				t.Log(wrapLogs(buffer))
 				se.failed = se.failed || t.Failed()
 				if se.failed {
 					return

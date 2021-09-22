@@ -17,6 +17,7 @@ limitations under the License.
 package upgrade
 
 import (
+	"fmt"
 	"time"
 
 	"go.uber.org/zap/zapcore"
@@ -112,7 +113,7 @@ func handleStopEvent(
 	bc.Log.Infof("%s have received a stop event: %s", wc.Name, se.Name())
 	defer close(se.Finished)
 	wc.OnStop(se)
-	se.T.Log(bc.logBuffer)
+	se.T.Log(wrapLogs(bc.logBuffer))
 }
 
 func enrichSuite(s *Suite) *enrichedSuite {
@@ -191,4 +192,8 @@ func NewInMemoryLoggerBuffer(options ...zap.Option) (*zap.Logger, *threadSafeBuf
 		zapcore.AddSync(buf),
 		zap.DebugLevel)
 	return zap.New(core, options...), buf
+}
+
+func wrapLogs(stringer fmt.Stringer) string {
+	return fmt.Sprintf("=== Background Log Start ===\n%s\n=== Background Log End ===", stringer)
 }
