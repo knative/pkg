@@ -25,12 +25,11 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// CheckStoredVersions verifies that all status.storedVersions from Knative CRDs are listed in the spec
-// with storage: true. It means the CRDs have been migrated and previous/unused API versions
-// can be safely removed from the spec.
-func CheckStoredVersions(t *testing.T, apiextensions *apiextensionsv1.ApiextensionsV1Client) {
+// ExpectSingleStoredVersion verifies that status.storedVersions on specific CRDs has only one version
+// and the version is listed in spec.Versions with storage: true. It means the CRDs
+// have been migrated and previous/unused API versions can be safely removed from the spec.
+func ExpectSingleStoredVersion(t *testing.T, crdClient apiextensionsv1.CustomResourceDefinitionInterface, crdGroup string) {
 	t.Helper()
-	crdClient := apiextensions.CustomResourceDefinitions()
 
 	crdList, err := crdClient.List(context.Background(), metav1.ListOptions{})
 	if err != nil {
@@ -38,13 +37,15 @@ func CheckStoredVersions(t *testing.T, apiextensions *apiextensionsv1.Apiextensi
 	}
 
 	for _, crd := range crdList.Items {
-		if strings.Contains(crd.Name, "knative.dev") {
-			for _, stored := range crd.Status.StoredVersions {
-				for _, v := range crd.Spec.Versions {
-					if stored == v.Name && !v.Storage {
-						t.Errorf("%q is invalid: spec.versions.storage must be true for %q or "+
-							"version %q must be removed from status.storageVersions", crd.Name, v.Name, v.Name)
-					}
+		if strings.Contains(crd.Name, crdGroup) {
+			if len(crd.Status.StoredVersions) != 1 {
+				t.Errorf("%q does not have a single stored version: %+v", crd.Name, crd)
+			}
+			stored := crd.Status.StoredVersions[0]
+			for _, v := range crd.Spec.Versions {
+				if stored == v.Name && !v.Storage {
+					t.Errorf("%q is invalid: spec.versions.storage must be true for %q or "+
+						"version %q must be removed from status.storageVersions: %+v", crd.Name, v.Name, v.Name, crd)
 				}
 			}
 		}
