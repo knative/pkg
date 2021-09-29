@@ -3,7 +3,7 @@ module knative.dev/pkg
 go 1.14
 
 require (
-	cloud.google.com/go v0.95.0
+	cloud.google.com/go v0.96.0
 	cloud.google.com/go/storage v1.16.1
 	contrib.go.opencensus.io/exporter/ocagent v0.7.1-0.20200907061046-05415f1de66d
 	contrib.go.opencensus.io/exporter/prometheus v0.4.0
@@ -35,7 +35,7 @@ require (
 	github.com/onsi/gomega v1.10.1 // indirect
 	github.com/openzipkin/zipkin-go v0.2.5
 	github.com/prometheus/client_golang v1.11.0
-	github.com/prometheus/common v0.30.0
+	github.com/prometheus/common v0.31.1
 	github.com/spf13/pflag v1.0.5
 	github.com/tsenart/vegeta/v12 v12.8.4
 	go.opencensus.io v0.23.0
@@ -43,13 +43,13 @@ require (
 	go.uber.org/automaxprocs v1.4.0
 	go.uber.org/zap v1.19.1
 	golang.org/x/crypto v0.0.0-20210817164053-32db794688a5 // indirect
-	golang.org/x/net v0.0.0-20210917221730-978cfadd31cf
+	golang.org/x/net v0.0.0-20210928044308-7d9f5e0b762b
 	golang.org/x/oauth2 v0.0.0-20210819190943-2bc19b11175f
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
-	golang.org/x/tools v0.1.6
+	golang.org/x/tools v0.1.7
 	gomodules.xyz/jsonpatch/v2 v2.2.0
-	google.golang.org/api v0.57.0
-	google.golang.org/grpc v1.40.0
+	google.golang.org/api v0.58.0
+	google.golang.org/grpc v1.41.0
 	google.golang.org/protobuf v1.27.1
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b
 	k8s.io/api v0.21.4
@@ -60,5 +60,5 @@ require (
 	k8s.io/gengo v0.0.0-20210203185629-de9496dff47b
 	k8s.io/klog v1.0.0
 	knative.dev/hack v0.0.0-20210806075220-815cd312d65c
-	sigs.k8s.io/yaml v1.2.0
+	sigs.k8s.io/yaml v1.3.0
 )
