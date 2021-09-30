@@ -19,6 +19,8 @@ package upgrade_test
 import (
 	"time"
 
+	"go.uber.org/zap"
+
 	"knative.dev/pkg/test/upgrade"
 )
 
@@ -28,9 +30,6 @@ const (
 )
 
 func init() {
-	upgrade.DefaultOnWait = func(bc upgrade.BackgroundContext, self upgrade.WaitForStopEventConfiguration) {
-		bc.Log.Debugf("%s - probing functionality...", self.Name)
-	}
 	upgrade.DefaultWaitTime = shortWait
 }
 
@@ -78,7 +77,10 @@ var (
 			skipped:  "",
 		}),
 	}
-	serving = component{
+)
+
+func servingComponent(bgLog *zap.SugaredLogger) component {
+	return component{
 		installs: installs{
 			stable: upgrade.NewOperation("Serving latest stable release", func(c upgrade.Context) {
 				c.Log.Info("Installing Serving stable 0.17.1")
@@ -104,26 +106,29 @@ var (
 			}),
 			continual: upgrade.NewBackgroundOperation("Serving continual test",
 				func(c upgrade.Context) {
-					c.Log.Info("Setup of Serving continual test")
+					bgLog.Info("Setup of Serving continual test")
 					time.Sleep(shortWait)
 				},
 				func(bc upgrade.BackgroundContext) {
-					bc.Log.Info("Running Serving continual test")
+					bgLog.Info("Running Serving continual test")
 					upgrade.WaitForStopEvent(bc, upgrade.WaitForStopEventConfiguration{
 						Name: "Serving",
 						OnStop: func(event upgrade.StopEvent) {
-							bc.Log.Info("Stopping and verify of Serving continual test")
+							bgLog.Info("Stopping and verify of Serving continual test")
 							time.Sleep(shortWait)
 						},
 						OnWait: func(bc upgrade.BackgroundContext, self upgrade.WaitForStopEventConfiguration) {
-							bc.Log.Debugf("%s - probing functionality...", self.Name)
+							bgLog.Debugf("%s - probing functionality...", self.Name)
 						},
 						WaitTime: shortWait,
 					})
 				}),
 		},
 	}
-	eventing = component{
+}
+
+func eventingComponent(bgLog *zap.SugaredLogger) component {
+	return component{
 		installs: installs{
 			stable: upgrade.NewOperation("Eventing latest stable release", func(c upgrade.Context) {
 				c.Log.Info("Installing Eventing stable 0.17.2")
@@ -149,14 +154,20 @@ var (
 			}),
 			continual: upgrade.NewBackgroundVerification("Eventing continual test",
 				func(c upgrade.Context) {
-					c.Log.Info("Setup of Eventing continual test")
+					bgLog.Info("Setup of Eventing continual test")
 					time.Sleep(shortWait)
 				},
 				func(c upgrade.Context) {
-					c.Log.Info("Stopping and verify of Eventing continual test")
+					bgLog.Info("Stopping and verify of Eventing continual test")
 					time.Sleep(shortWait)
 				},
 			),
 		},
 	}
-)
+}
+
+func probeOnWaitFunc(bgLog *zap.SugaredLogger) upgrade.DefaultOnWaitFunc {
+	return func(bc upgrade.BackgroundContext, self upgrade.WaitForStopEventConfiguration) {
+		bgLog.Debugf("%s - probing functionality...", self.Name)
+	}
+}

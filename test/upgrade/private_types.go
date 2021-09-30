@@ -17,9 +17,6 @@ limitations under the License.
 package upgrade
 
 import (
-	"bytes"
-	"sync"
-
 	"go.uber.org/zap"
 )
 
@@ -65,11 +62,4 @@ type simpleBackgroundOperation struct {
 	name    string
 	setup   func(c Context)
 	handler func(bc BackgroundContext)
-}
-
-// threadSafeBuffer avoids race conditions on bytes.Buffer.
-// See: https://stackoverflow.com/a/36226525/844449
-type threadSafeBuffer struct {
-	bytes.Buffer
-	sync.Mutex
 }

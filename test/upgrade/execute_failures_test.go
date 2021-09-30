@@ -43,17 +43,20 @@ func testSuiteExecuteWithFailingStep(fp failurePoint, t *testing.T) {
 	assert := assertions{t: t}
 	testName := fmt.Sprintf("FailAt-%d-%d", fp.step, fp.element)
 	t.Run(testName, func(t *testing.T) {
-		var output string
-		suite := completeSuiteExample(fp)
+		var (
+			output string
+			c      upgrade.Configuration
+			buf    fmt.Stringer
+		)
+		bgLog, _ := newBackgroundTestLogger(t)
+		suite := completeSuiteExample(fp, bgLog)
 		txt := expectedTexts(suite, fp)
 		txt.append(upgradeTestRunning, upgradeTestFailure)
-		log, buf := upgrade.NewInMemoryLoggerBuffer()
 
 		it := []testing.InternalTest{{
 			Name: testName,
 			F: func(t *testing.T) {
-				c, _ := newConfig(t)
-				c.Log = log
+				c, buf = newConfig(t)
 				suite.Execute(c)
 			},
 		}}

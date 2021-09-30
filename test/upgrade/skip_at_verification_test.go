@@ -23,44 +23,48 @@ import (
 )
 
 func TestSkipAtBackgroundVerification(t *testing.T) {
-	log, buf := upgrade.NewInMemoryLoggerBuffer()
+	config, buf := newConfig(t)
+	bgLog, bgBuf := newBackgroundTestLogger(t)
 	skipMsg := "It is expected to be skipped"
 	s := upgrade.Suite{
 		Tests: upgrade.Tests{
 			Continual: []upgrade.BackgroundOperation{
 				upgrade.NewBackgroundVerification("ShouldBeSkipped",
 					func(c upgrade.Context) {
-						log.Info("Setup 1")
+						bgLog.Info("Setup 1")
 					},
 					func(c upgrade.Context) {
-						log.Warn(skipMsg)
+						bgLog.Warn(skipMsg)
 						c.T.Skip(skipMsg)
 					},
 				),
 				upgrade.NewBackgroundVerification("ShouldNotBeSkipped",
 					func(c upgrade.Context) {
-						log.Info("Setup 2")
+						bgLog.Info("Setup 2")
 					},
 					func(c upgrade.Context) {
-						log.Info("Verify 2")
+						bgLog.Info("Verify 2")
 					},
 				),
 			},
 		},
 	}
-	s.Execute(upgrade.Configuration{
-		T:   t,
-		Log: log,
-	})
-	out := buf.String()
+	s.Execute(config)
+
 	assert := assertions{t: t}
+
+	out := buf.String()
 	assert.textContains(out, texts{elms: []string{
 		upgradeTestRunning,
+		"DEBUG\tFinished \"ShouldNotBeSkipped\"",
+		upgradeTestSuccess,
+	}})
+
+	bgOut := bgBuf.String()
+	assert.textContains(bgOut, texts{elms: []string{
 		"INFO\tSetup 1",
 		"INFO\tSetup 2",
 		"WARN\t" + skipMsg,
 		"INFO\tVerify 2",
-		"DEBUG\tFinished \"ShouldNotBeSkipped\"",
-		upgradeTestSuccess,
 	}})
 }

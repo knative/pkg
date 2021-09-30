@@ -16,7 +16,11 @@ limitations under the License.
 
 package upgrade_test
 
-import "testing"
+import (
+	"testing"
+
+	"knative.dev/pkg/test/upgrade"
+)
 
 const (
 	upgradeTestRunning = "🏃 Running upgrade test suite..."
@@ -44,7 +48,8 @@ func TestExpectedTextsForEmptySuite(t *testing.T) {
 func TestExpectedTextsForCompleteSuite(t *testing.T) {
 	assert := assertions{t: t}
 	fp := notFailing
-	suite := completeSuiteExample(fp)
+	bgLog, _ := newBackgroundTestLogger(t)
+	suite := completeSuiteExample(fp, bgLog)
 	txt := expectedTexts(suite, fp)
 	expected := []string{
 		"1) 💿 Installing base installations. 2 are registered.",
@@ -81,7 +86,8 @@ func TestExpectedTextsForFailingCompleteSuite(t *testing.T) {
 		step:    2,
 		element: 1,
 	}
-	suite := completeSuiteExample(fp)
+	bgLog, _ := newBackgroundTestLogger(t)
+	suite := completeSuiteExample(fp, bgLog)
 	txt := expectedTexts(suite, fp)
 	expected := []string{
 		"1) 💿 Installing base installations. 2 are registered.",
@@ -114,7 +120,9 @@ func TestSuiteExecuteWithComplete(t *testing.T) {
 	assert := assertions{t: t}
 	c, buf := newConfig(t)
 	fp := notFailing
-	suite := completeSuiteExample(fp)
+	bgLog, bgBuf := newBackgroundTestLogger(t)
+	suite := completeSuiteExample(fp, bgLog)
+	upgrade.DefaultOnWait = probeOnWaitFunc(bgLog)
 	suite.Execute(c)
 	output := buf.String()
 	if c.T.Failed() {
@@ -134,12 +142,18 @@ func TestSuiteExecuteWithComplete(t *testing.T) {
 
 	unexpected := texts{elms: nil}
 	unexpected.append(
-		"Running Serving continual test",
-		"Stopping and verify of Eventing continual test",
 		"Serving have received a stop event",
 		"Eventing continual test have received a stop event",
+	)
+	assert.textDoesNotContain(output, unexpected)
+
+	bgOutput := bgBuf.String()
+	bgExpected := texts{elms: nil}
+	bgExpected.append(
+		"Running Serving continual test",
+		"Stopping and verify of Eventing continual test",
 		"Serving - probing functionality...",
 		"Eventing continual test - probing functionality...",
 	)
-	assert.textDoesNotContain(output, unexpected)
+	assert.textContains(bgOutput, bgExpected)
 }

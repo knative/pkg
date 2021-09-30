@@ -66,7 +66,13 @@ func (se *suiteExecution) startContinualTests(num int) {
 				}
 				setup := operation.Setup()
 
-				logger, buffer := NewInMemoryLoggerBuffer(zap.AddCaller(), zap.Development())
+				logConfig := se.configuration.LogConfig
+				if logConfig == nil {
+					// TODO(mgencur): Remove when dependent repositories use LogConfig instead of Log.
+					// This is for backwards compatibility.
+					logConfig = &LogConfig{Config: zap.NewDevelopmentConfig()}
+				}
+				logger, buffer := newInMemoryLoggerBuffer(logConfig)
 				t.Run("Setup"+operation.Name(), func(t *testing.T) {
 					setup(Context{T: t, Log: logger.Sugar()})
 				})

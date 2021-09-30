@@ -18,15 +18,41 @@ package upgrade_test
 
 import (
 	"fmt"
+	"os"
 	"testing"
+
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 
 	"knative.dev/pkg/test/upgrade"
 )
 
 func newConfig(t *testing.T) (upgrade.Configuration, fmt.Stringer) {
-	log, buf := upgrade.NewInMemoryLoggerBuffer()
-	c := upgrade.Configuration{T: t, Log: log}
+	buf := &upgrade.ThreadSafeBuffer{}
+	c := upgrade.Configuration{
+		T: t,
+		LogConfig: &upgrade.LogConfig{
+			Config: zap.NewDevelopmentConfig(),
+			Build: func(c zap.Config) (*zap.Logger, error) {
+				c.EncoderConfig.TimeKey = ""
+				core := zapcore.NewCore(
+					zapcore.NewConsoleEncoder(c.EncoderConfig),
+					zapcore.NewMultiWriteSyncer(zapcore.AddSync(buf), os.Stdout),
+					c.Level)
+				return zap.New(core), nil
+			},
+		},
+	}
 	return c, buf
+}
+
+func newBackgroundTestLogger(t *testing.T) (*zap.SugaredLogger, fmt.Stringer) {
+	config, bgBuf := newConfig(t)
+	bgLog, err := config.LogConfig.Build(config.LogConfig.Config)
+	if err != nil {
+		t.Fatal("Failed to create logger")
+	}
+	return bgLog.Sugar(), bgBuf
 }
 
 func createSteps(s upgrade.Suite) []*step {
@@ -146,7 +172,9 @@ func (tt *texts) append(messages ...string) {
 	}
 }
 
-func completeSuiteExample(fp failurePoint) upgrade.Suite {
+func completeSuiteExample(fp failurePoint, bgLog *zap.SugaredLogger) upgrade.Suite {
+	serving := servingComponent(bgLog)
+	eventing := eventingComponent(bgLog)
 	suite := upgrade.Suite{
 		Tests: upgrade.Tests{
 			PreUpgrade: []upgrade.Operation{
