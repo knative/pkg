@@ -229,6 +229,13 @@ func TestAllowedObjectReferences(t *testing.T) {
 			Name:       "test",
 		},
 	}, {
+		name: "Namespace",
+		objRef: corev1.ObjectReference{
+			APIVersion: "v1",
+			Kind:       "Namespace",
+			Name:       "default",
+		},
+	}, {
 		name: "Non-core resource",
 		objRef: corev1.ObjectReference{
 			APIVersion: "custom.example.com/v1alpha17",
