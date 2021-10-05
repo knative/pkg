@@ -33,6 +33,7 @@ import (
 	admissionv1 "k8s.io/api/admission/v1"
 	authenticationv1 "k8s.io/api/authentication/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"knative.dev/pkg/apis"
 	kubeclient "knative.dev/pkg/client/injection/kube/client/fake"
 	"knative.dev/pkg/metrics/metricstest"
 	_ "knative.dev/pkg/metrics/testing"
@@ -50,6 +51,12 @@ func (fac *fixedAdmissionController) Path() string {
 }
 
 func (fac *fixedAdmissionController) Admit(ctx context.Context, req *admissionv1.AdmissionRequest) *admissionv1.AdmissionResponse {
+	r := apis.GetHTTPRequest(ctx)
+	if r == nil {
+		panic("nil request!")
+	} else if r.URL.Path != fac.path {
+		panic("wrong path!")
+	}
 	return fac.response
 }
 

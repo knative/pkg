@@ -18,6 +18,7 @@ package apis
 
 import (
 	"context"
+	"net/http"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -220,5 +221,23 @@ func TestParentMeta(t *testing.T) {
 
 	if got := ParentMeta(ctx); !cmp.Equal(want, got) {
 		t.Errorf("ParentMeta() = %v, wanted %v", got, want)
+	}
+}
+
+func TestGetHTTPRequest(t *testing.T) {
+	ctx := context.Background()
+
+	if got := GetHTTPRequest(ctx); got != nil {
+		t.Errorf("GetHTTPRequest() = %v, wanted %v", got, nil)
+	}
+
+	req, err := http.NewRequest("GET", "https://google.com", nil)
+	if err != nil {
+		t.Fatalf("NewRequest() = %v", err)
+	}
+	ctx = WithHTTPRequest(ctx, req)
+
+	if want, got := req, GetHTTPRequest(ctx); got != want {
+		t.Errorf("GetHTTPRequest() = %v, wanted %v", got, want)
 	}
 }
