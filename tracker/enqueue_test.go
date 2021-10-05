@@ -334,15 +334,6 @@ func TestBadObjectReferences(t *testing.T) {
 		},
 		match: "Kind",
 	}, {
-		name: "Missing Namespace",
-		objRef: corev1.ObjectReference{
-			APIVersion: "build.knative.dev/v1alpha1",
-			Kind:       "Build",
-			// Namespace: "default",
-			Name: "kaniko",
-		},
-		match: "Namespace",
-	}, {
 		name: "Capital in Namespace",
 		objRef: corev1.ObjectReference{
 			APIVersion: "build.knative.dev/v1alpha1",
@@ -395,7 +386,7 @@ func TestBadObjectReferences(t *testing.T) {
 			// Namespace:  "default",
 			// Name:      "kaniko",
 		},
-		match: "\nAPIVersion:.*\nKind:.*\nNamespace:",
+		match: "\nAPIVersion:.*\nKind:",
 	}}
 
 	for _, test := range tests {
@@ -434,7 +425,7 @@ func TestBadReferences(t *testing.T) {
 	}{{
 		name:   "Missing All",
 		objRef: Reference{},
-		match:  "\nAPIVersion:.*\nKind:.*\nNamespace:",
+		match:  "\nAPIVersion:.*\nKind:",
 	}, {
 		name: "Name and Selector",
 		objRef: Reference{
