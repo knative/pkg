@@ -51,9 +51,9 @@ func okData() map[string]string {
 		// values in this data come from the defaults suggested in the
 		// code:
 		// https://github.com/kubernetes/client-go/blob/kubernetes-1.16.0/tools/leaderelection/leaderelection.go
-		"leaseDuration": "15s",
-		"renewDeadline": "10s",
-		"retryPeriod":   "2s",
+		"lease-duration": "15s",
+		"renew-deadline": "10s",
+		"retry-period":   "2s",
 	}
 }
 
@@ -78,23 +78,23 @@ func TestNewConfigMapFromData(t *testing.T) {
 			return config
 		}(),
 	}, {
-		name: "invalid leaseDuration",
+		name: "invalid lease-duration",
 		data: kmeta.UnionMaps(okData(), map[string]string{
-			"leaseDuration": "flops",
+			"lease-duration": "flops",
 		}),
-		err: `failed to parse "leaseDuration": time: invalid duration`,
+		err: `failed to parse "lease-duration": time: invalid duration`,
 	}, {
-		name: "invalid renewDeadline",
+		name: "invalid renew-deadline",
 		data: kmeta.UnionMaps(okData(), map[string]string{
-			"renewDeadline": "flops",
+			"renew-deadline": "flops",
 		}),
-		err: `failed to parse "renewDeadline": time: invalid duration`,
+		err: `failed to parse "renew-deadline": time: invalid duration`,
 	}, {
-		name: "invalid retryPeriod",
+		name: "invalid retry-period",
 		data: kmeta.UnionMaps(okData(), map[string]string{
-			"retryPeriod": "flops",
+			"retry-period": "flops",
 		}),
-		err: `failed to parse "retryPeriod": time: invalid duration`,
+		err: `failed to parse "retry-period": time: invalid duration`,
 	}, {
 		name: "invalid buckets - not an int",
 		data: kmeta.UnionMaps(okData(), map[string]string{
@@ -113,6 +113,37 @@ func TestNewConfigMapFromData(t *testing.T) {
 			"buckets": strconv.Itoa(int(MaxBuckets + 1)),
 		}),
 		err: fmt.Sprintf("buckets: value must be between 1 <= %d <= %d", MaxBuckets+1, MaxBuckets),
+	}, {
+		name: "legacy keys",
+		data: map[string]string{
+			"leaseDuration": "2s",
+			"renewDeadline": "3s",
+			"retryPeriod":   "4s",
+			"buckets":       "5",
+		},
+		expected: &Config{
+			Buckets:       5,
+			LeaseDuration: 2 * time.Second,
+			RenewDeadline: 3 * time.Second,
+			RetryPeriod:   4 * time.Second,
+		},
+	}, {
+		name: "prioritize new keys",
+		data: map[string]string{
+			"lease-duration": "1s",
+			"renew-deadline": "2s",
+			"retry-period":   "3s",
+			"leaseDuration":  "4s",
+			"renewDeadline":  "5s",
+			"retryPeriod":    "6s",
+			"buckets":        "7",
+		},
+		expected: &Config{
+			Buckets:       7,
+			LeaseDuration: 1 * time.Second,
+			RenewDeadline: 2 * time.Second,
+			RetryPeriod:   3 * time.Second,
+		},
 	}}
 
 	for _, tc := range cases {
