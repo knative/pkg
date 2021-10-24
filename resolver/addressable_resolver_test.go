@@ -22,19 +22,28 @@ import (
 	"fmt"
 	"testing"
 
+	_ "knative.dev/pkg/client/injection/kube/informers/core/v1/service/fake"
+
 	"github.com/google/go-cmp/cmp"
+
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
+	kubeinformers "k8s.io/client-go/informers"
+	fakekubeclient "k8s.io/client-go/kubernetes/fake"
 	"k8s.io/client-go/kubernetes/scheme"
+	"k8s.io/client-go/rest"
 
 	"knative.dev/pkg/apis"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
 	duckv1alpha1 "knative.dev/pkg/apis/duck/v1alpha1"
 	duckv1beta1 "knative.dev/pkg/apis/duck/v1beta1"
 	"knative.dev/pkg/client/injection/ducks/duck/v1/addressable"
+	"knative.dev/pkg/client/injection/kube/informers/core/v1/service"
+	"knative.dev/pkg/injection"
 	fakedynamicclient "knative.dev/pkg/injection/clients/dynamicclient/fake"
 	"knative.dev/pkg/resolver"
 	"knative.dev/pkg/tracker"
@@ -55,6 +64,8 @@ const (
 	unaddressableResource   = "kresources.duck.knative.dev"
 
 	testNS = "testnamespace"
+
+	targetPortName = "target-port"
 )
 
 func init() {
@@ -354,7 +365,8 @@ func TestGetURIDestinationV1Beta1(t *testing.T) {
 
 	for n, tc := range tests {
 		t.Run(n, func(t *testing.T) {
-			ctx, _ := fakedynamicclient.With(context.Background(), scheme.Scheme, tc.objects...)
+			ctx, _ := injection.Fake.SetupInformers(context.Background(), &rest.Config{})
+			ctx, _ = fakedynamicclient.With(ctx, scheme.Scheme, tc.objects...)
 			ctx = addressable.WithDuck(ctx)
 			r := resolver.NewURIResolverFromTracker(ctx, tracker.New(func(types.NamespacedName) {}, 0))
 
@@ -419,12 +431,6 @@ func TestGetURIDestinationV1(t *testing.T) {
 			},
 			dest:    duckv1.Destination{Ref: addressableKnativeRef()},
 			wantURI: addressableDNS,
-		}, "happy ref to k8s service": {
-			objects: []runtime.Object{
-				getAddressableFromKRef(k8sServiceRef()),
-			},
-			dest:    duckv1.Destination{Ref: k8sServiceRef()},
-			wantURI: "http://testsink.testnamespace.svc.cluster.local",
 		}, "ref with relative uri": {
 			objects: []runtime.Object{
 				getAddressable(),
@@ -504,15 +510,13 @@ func TestGetURIDestinationV1(t *testing.T) {
 				},
 			},
 			wantErr: "absolute URI is not allowed when Ref or [apiVersion, kind, name] exists",
-		},
-		"nil url": {
+		}, "nil url": {
 			objects: []runtime.Object{
 				addressableNilURL(),
 			},
 			dest:    duckv1.Destination{Ref: unaddressableKnativeRef()},
 			wantErr: fmt.Sprintf("URL missing in address of %+v", unaddressableRef()),
-		},
-		"nil address": {
+		}, "nil address": {
 			objects: []runtime.Object{
 				addressableNilAddress(),
 			},
@@ -559,11 +563,49 @@ func TestGetURIDestinationV1(t *testing.T) {
 			dest:            duckv1.Destination{Ref: k8sServiceRef()},
 			customResolvers: []resolver.RefResolverFunc{noopURIResolver, sampleURIResolver},
 			wantURI:         "ref://" + addressableName + ".Service.v1",
-		}}
+		}, "happy with single service port": {
+			dest:    duckv1.Destination{Ref: k8sServiceRef()},
+			objects: k8sServiceWithSinglePort(),
+			wantURI: "http://" + addressableName + "." + testNS + ".svc.cluster.local:81",
+		}, "happy with single HTTPS service port": {
+			dest:    duckv1.Destination{Ref: k8sServiceRef()},
+			objects: k8sServiceWithSingleHTTPSPort(),
+			wantURI: "https://" + addressableName + "." + testNS + ".svc.cluster.local",
+		}, "happy with multiple service ports and annotation": {
+			dest:    duckv1.Destination{Ref: k8sServiceRef()},
+			objects: k8sServiceWithPortAnnotation(),
+			wantURI: "http://" + addressableName + "." + testNS + ".svc.cluster.local:8080",
+		}, "happy with multiple service ports and http port": {
+			dest:    duckv1.Destination{Ref: k8sServiceRef()},
+			objects: k8sServiceWithHTTPPort(),
+			wantURI: "http://" + addressableName + "." + testNS + ".svc.cluster.local",
+		}, "k8s service with no destination annotation": {
+			dest:    duckv1.Destination{Ref: k8sServiceRef()},
+			objects: k8sServiceWithoutPortAnnotation(),
+			wantErr: fmt.Sprintf("service \"%s/%s\" does not have target port annotation %q",
+				testNS, addressableName, resolver.ServicePortAnnotation),
+		}, "k8s service with missing destination port": {
+			dest:    duckv1.Destination{Ref: k8sServiceRef()},
+			objects: k8sServiceWithMissingDstPort(),
+			wantErr: fmt.Sprintf("port %q not found in Service \"%s/%s\"",
+				targetPortName, testNS, addressableName),
+		},
+	}
 
 	for n, tc := range tests {
 		t.Run(n, func(t *testing.T) {
-			ctx, _ := fakedynamicclient.With(context.Background(), scheme.Scheme, tc.objects...)
+			ctx := context.Background()
+
+			kubeInformerFactory := kubeinformers.NewSharedInformerFactory(
+				fakekubeclient.NewSimpleClientset(tc.objects...), 0,
+			)
+			svcInformerIface := kubeInformerFactory.Core().V1().Services()
+			svcInformerIface.Informer() // register informer in factory
+			go kubeInformerFactory.Start(ctx.Done())
+			kubeInformerFactory.WaitForCacheSync(ctx.Done())
+
+			ctx = context.WithValue(ctx, service.Key{}, svcInformerIface)
+			ctx, _ = fakedynamicclient.With(ctx, scheme.Scheme, tc.objects...)
 			ctx = addressable.WithDuck(ctx)
 			r := resolver.NewURIResolverFromTracker(ctx, tracker.New(func(types.NamespacedName) {}, 0), tc.customResolvers...)
 
@@ -606,7 +648,8 @@ Namespace: a lowercase RFC 1123 label must consist of lower case alphanumeric ch
 
 	for n, tc := range tests {
 		t.Run(n, func(t *testing.T) {
-			ctx, _ := fakedynamicclient.With(context.Background(), scheme.Scheme, tc.objects...)
+			ctx, _ := injection.Fake.SetupInformers(context.Background(), &rest.Config{})
+			ctx, _ = fakedynamicclient.With(ctx, scheme.Scheme, tc.objects...)
 			ctx = addressable.WithDuck(ctx)
 			r := resolver.NewURIResolverFromTracker(ctx, tracker.New(func(types.NamespacedName) {}, 0))
 
@@ -803,24 +846,6 @@ func unaddressableRef() *corev1.ObjectReference {
 	}
 }
 
-func getAddressableFromKRef(ref *duckv1.KReference) *unstructured.Unstructured {
-	return &unstructured.Unstructured{
-		Object: map[string]interface{}{
-			"apiVersion": ref.APIVersion,
-			"kind":       ref.Kind,
-			"metadata": map[string]interface{}{
-				"namespace": ref.Namespace,
-				"name":      ref.Name,
-			},
-			"status": map[string]interface{}{
-				"address": map[string]interface{}{
-					"url": addressableDNS,
-				},
-			},
-		},
-	}
-}
-
 func sampleURIResolver(ctx context.Context, ref *corev1.ObjectReference) (bool, *apis.URL, error) {
 	if ref.Kind == "Service" {
 		parsed, err := apis.ParseURL(fmt.Sprintf("ref://%s.%s.%s", ref.Name, ref.Kind, ref.APIVersion))
@@ -834,4 +859,100 @@ func sampleURIResolver(ctx context.Context, ref *corev1.ObjectReference) (bool, 
 
 func noopURIResolver(ctx context.Context, ref *corev1.ObjectReference) (bool, *apis.URL, error) {
 	return false, nil, nil
+}
+
+func k8sServiceWithAnnotationsAndPorts(annotations map[string]string, ports ...corev1.ServicePort) []runtime.Object {
+	return []runtime.Object{
+		&corev1.Service{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:        addressableName,
+				Namespace:   testNS,
+				Annotations: annotations,
+			},
+			Spec: corev1.ServiceSpec{
+				Ports: ports,
+			},
+			Status: corev1.ServiceStatus{},
+		},
+	}
+}
+
+func k8sServiceWithPortAnnotation() []runtime.Object {
+	return k8sServiceWithAnnotationsAndPorts(
+		map[string]string{
+			resolver.ServicePortAnnotation: targetPortName,
+		},
+		corev1.ServicePort{
+			Name:     "http",
+			Protocol: "TCP",
+			Port:     80,
+		},
+		corev1.ServicePort{
+			Name:     targetPortName,
+			Protocol: "TCP",
+			Port:     8080,
+		})
+}
+
+func k8sServiceWithMissingDstPort() []runtime.Object {
+	return k8sServiceWithAnnotationsAndPorts(
+		map[string]string{
+			resolver.ServicePortAnnotation: targetPortName,
+		},
+		corev1.ServicePort{
+			Name:     "http",
+			Protocol: "TCP",
+			Port:     80,
+		})
+}
+
+func k8sServiceWithHTTPPort() []runtime.Object {
+	return k8sServiceWithAnnotationsAndPorts(
+		nil,
+		corev1.ServicePort{
+			Name:     "https",
+			Protocol: "TCP",
+			Port:     443,
+		},
+		corev1.ServicePort{
+			Name:     "http",
+			Protocol: "TCP",
+			Port:     80,
+		})
+}
+
+func k8sServiceWithSinglePort() []runtime.Object {
+	return k8sServiceWithAnnotationsAndPorts(
+		nil,
+		corev1.ServicePort{
+			Name:     "http",
+			Protocol: "TCP",
+			Port:     81,
+		})
+}
+
+func k8sServiceWithSingleHTTPSPort() []runtime.Object {
+	return k8sServiceWithAnnotationsAndPorts(
+		nil,
+		corev1.ServicePort{
+			Name:     "https",
+			Protocol: "TCP",
+			Port:     443,
+		})
+}
+
+func k8sServiceWithoutPortAnnotation() []runtime.Object {
+	return k8sServiceWithAnnotationsAndPorts(
+		nil,
+		corev1.ServicePort{
+			Name:     "foo",
+			Protocol: "TCP",
+			Port:     81,
+		},
+		corev1.ServicePort{
+			Name:     "bar",
+			Protocol: "TCP",
+			Port:     8080,
+		},
+	)
 }

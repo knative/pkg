@@ -21,23 +21,26 @@ import (
 	"errors"
 	"fmt"
 
-	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/client-go/tools/cache"
-
-	"knative.dev/pkg/client/injection/ducks/duck/v1/addressable"
-	"knative.dev/pkg/controller"
-
 	corev1 "k8s.io/api/core/v1"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	corev1listers "k8s.io/client-go/listers/core/v1"
+	"k8s.io/client-go/tools/cache"
 
 	"knative.dev/pkg/apis"
 	pkgapisduck "knative.dev/pkg/apis/duck"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
 	duckv1beta1 "knative.dev/pkg/apis/duck/v1beta1"
+	"knative.dev/pkg/client/injection/ducks/duck/v1/addressable"
+	"knative.dev/pkg/client/injection/kube/informers/core/v1/service"
+	"knative.dev/pkg/controller"
 	"knative.dev/pkg/network"
 	"knative.dev/pkg/tracker"
 )
+
+// ServicePortAnnotation specifies which port should be used as a target in v1.Service destination.
+const ServicePortAnnotation = "knative.dev/destination-port"
 
 // RefResolverFunc resolves ObjectReferences into a URI.
 // It returns true when it handled the reference, in which case it also returns the resolved URI or an error.
@@ -47,14 +50,16 @@ type RefResolverFunc func(ctx context.Context, ref *corev1.ObjectReference) (boo
 type URIResolver struct {
 	tracker       tracker.Interface
 	listerFactory func(schema.GroupVersionResource) (cache.GenericLister, error)
+	serviceLister corev1listers.ServiceLister
 	resolvers     []RefResolverFunc
 }
 
 // NewURIResolverFromTracker constructs a new URIResolver with context, a tracker and an optional list of custom resolvers.
 func NewURIResolverFromTracker(ctx context.Context, t tracker.Interface, resolvers ...RefResolverFunc) *URIResolver {
 	ret := &URIResolver{
-		tracker:   t,
-		resolvers: resolvers,
+		tracker:       t,
+		resolvers:     resolvers,
+		serviceLister: service.Get(ctx).Lister(),
 	}
 
 	informerFactory := &pkgapisduck.CachedInformerFactory{
@@ -187,12 +192,39 @@ func (r *URIResolver) URIFromObjectReference(ctx context.Context, ref *corev1.Ob
 	// K8s Services are special cased. They can be called, even though they do not satisfy the
 	// Callable interface.
 	if ref.APIVersion == "v1" && ref.Kind == "Service" {
+		svc, err := r.serviceLister.Services(ref.Namespace).Get(ref.Name)
+		if err != nil {
+			return nil, fmt.Errorf("looking up Service in namespace %q: %w", ref.Namespace, err)
+		}
+
 		url := &apis.URL{
 			Scheme: "http",
 			Host:   network.GetServiceHostname(ref.Name, ref.Namespace),
-			Path:   "",
 		}
-		return url, nil
+
+		// destination port is explicitly set in Service annotation
+		if destinationPort, ok := svc.Annotations[ServicePortAnnotation]; ok {
+			for _, port := range svc.Spec.Ports {
+				if port.Name == destinationPort {
+					return sanitizeURL(url, port.Port), nil
+				}
+			}
+			return nil, fmt.Errorf("port %q not found in Service \"%s/%s\"", destinationPort, ref.Namespace, ref.Name)
+		}
+
+		// if service has only one port, use it
+		if len(svc.Spec.Ports) == 1 {
+			return sanitizeURL(url, svc.Spec.Ports[0].Port), nil
+		}
+
+		// port 80, if exposed, used for backward compatibility
+		for _, port := range svc.Spec.Ports {
+			if port.Port == 80 {
+				return url, nil
+			}
+		}
+
+		return nil, fmt.Errorf("service \"%s/%s\" does not have target port annotation %q", ref.Namespace, ref.Name, ServicePortAnnotation)
 	}
 
 	addressable, ok := obj.(*duckv1.AddressableType)
@@ -210,4 +242,15 @@ func (r *URIResolver) URIFromObjectReference(ctx context.Context, ref *corev1.Ob
 		return nil, apierrs.NewBadRequest(fmt.Sprintf("hostname missing in address of %+v", ref))
 	}
 	return url, nil
+}
+
+func sanitizeURL(url *apis.URL, port int32) *apis.URL {
+	switch port {
+	case 80:
+	case 443:
+		url.Scheme = "https"
+	default:
+		url.Host = fmt.Sprintf("%s:%d", url.Host, port)
+	}
+	return url
 }
