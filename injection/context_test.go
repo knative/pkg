@@ -56,3 +56,18 @@ func TestContextConfig(t *testing.T) {
 		t.Errorf("GetConfig() = %v, wanted %v", cfg, want)
 	}
 }
+
+func TestResourceVersion(t *testing.T) {
+	ctx := context.Background()
+
+	if got, want := GetResourceVersion(ctx), ""; got != want {
+		t.Errorf("GetResourceVersion() = %s, wanted %s", got, want)
+	}
+
+	want := "this-is-the-best-version-evar"
+	ctx = WithResourceVersion(ctx, want)
+
+	if got := GetResourceVersion(ctx); got != want {
+		t.Errorf("GetResourceVersion() = %v, wanted %v", got, want)
+	}
+}
