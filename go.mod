@@ -62,3 +62,5 @@ require (
 	knative.dev/hack v0.0.0-20211025203920-02860f59a556
 	sigs.k8s.io/yaml v1.3.0
 )
+
+replace knative.dev/hack => github.com/salaboy/hack v0.0.0-20211019034732-ced8ce706528

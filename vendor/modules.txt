@@ -925,7 +925,7 @@ k8s.io/utils/buffer
 k8s.io/utils/integer
 k8s.io/utils/pointer
 k8s.io/utils/trace
-# knative.dev/hack v0.0.0-20211025203920-02860f59a556
+# knative.dev/hack v0.0.0-20211025203920-02860f59a556 => github.com/salaboy/hack v0.0.0-20211019034732-ced8ce706528
 ## explicit
 knative.dev/hack
 # sigs.k8s.io/structured-merge-diff/v4 v4.1.2
@@ -936,3 +936,4 @@ sigs.k8s.io/structured-merge-diff/v4/value
 # sigs.k8s.io/yaml v1.3.0
 ## explicit
 sigs.k8s.io/yaml
+# knative.dev/hack => github.com/salaboy/hack v0.0.0-20211019034732-ced8ce706528
