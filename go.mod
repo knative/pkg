@@ -12,7 +12,9 @@ require (
 	github.com/blendle/zapdriver v1.3.1
 	github.com/census-instrumentation/opencensus-proto v0.3.0
 	github.com/davecgh/go-spew v1.1.1
+	github.com/dgryski/go-gk v0.0.0-20200319235926-a69029f61654 // indirect
 	github.com/evanphx/json-patch/v5 v5.6.0
+	github.com/go-openapi/swag v0.19.15 // indirect
 	github.com/gobuffalo/flect v0.2.4
 	github.com/golang/protobuf v1.5.2
 	github.com/google/go-cmp v0.5.6
@@ -23,6 +25,7 @@ require (
 	github.com/gorilla/websocket v1.4.2
 	github.com/hashicorp/golang-lru v0.5.4
 	github.com/kelseyhightower/envconfig v1.4.0
+	github.com/mailru/easyjson v0.7.7 // indirect
 	github.com/openzipkin/zipkin-go v0.3.0
 	github.com/prometheus/client_golang v1.11.0
 	github.com/prometheus/common v0.32.1
@@ -41,11 +44,11 @@ require (
 	google.golang.org/grpc v1.42.0
 	google.golang.org/protobuf v1.27.1
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b
-	k8s.io/api v0.21.4
-	k8s.io/apiextensions-apiserver v0.21.4
-	k8s.io/apimachinery v0.21.4
-	k8s.io/client-go v0.21.4
-	k8s.io/code-generator v0.21.4
+	k8s.io/api v0.22.2
+	k8s.io/apiextensions-apiserver v0.22.2
+	k8s.io/apimachinery v0.22.2
+	k8s.io/client-go v0.22.2
+	k8s.io/code-generator v0.22.2
 	k8s.io/gengo v0.0.0-20211129171323-c02415ce4185
 	k8s.io/klog v1.0.0
 	knative.dev/hack v0.0.0-20211203062838-e11ac125e707
