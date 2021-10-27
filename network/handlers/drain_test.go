@@ -319,47 +319,120 @@ func TestDefaultQuietPeriod(t *testing.T) {
 	mt.advance(network.DefaultDrainTimeout)
 }
 
-func TestHealthCheck(t *testing.T) {
-	var (
-		w     http.ResponseWriter
-		req   = &http.Request{}
-		probe = &http.Request{
+func TestHealthCheckWithProbeType(t *testing.T) {
+	tests := []struct {
+		name       string
+		Header     http.Header
+		UserAgents []string
+	}{{
+		name: "with kube-probe header",
+		Header: http.Header{
+			network.UserAgentKey: []string{network.KubeProbeUAPrefix},
+		},
+		UserAgents: []string{},
+	}, {
+		name: "with extra probe header",
+		Header: http.Header{
+			network.UserAgentKey: []string{"extra"},
+		},
+		UserAgents: []string{"extra"},
+	}}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			var (
+				w       http.ResponseWriter
+				req     = &http.Request{}
+				cnt     = 0
+				inner   = http.HandlerFunc(func(http.ResponseWriter, *http.Request) { cnt++ })
+				checker = http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+					if req.URL != nil && req.URL.Path == "/healthz" {
+						w.WriteHeader(http.StatusBadRequest)
+						return
+					}
+					w.WriteHeader(http.StatusAccepted)
+				})
+				probe = &http.Request{
+					URL: &url.URL{
+						Path: "/healthz",
+					},
+					Header: tc.Header,
+				}
+			)
+
+			drainer := &Drainer{
+				HealthCheck:           checker,
+				Inner:                 inner,
+				HealthCheckUAPrefixes: tc.UserAgents,
+			}
+
+			// Works before Drain is called.
+			drainer.ServeHTTP(w, req)
+			drainer.ServeHTTP(w, req)
+			drainer.ServeHTTP(w, req)
+			if cnt != 3 {
+				t.Error("Inner handler was not properly invoked")
+			}
+
+			// Works for HealthCheck.
+			resp := httptest.NewRecorder()
+			drainer.ServeHTTP(resp, probe)
+			if got, want := resp.Code, http.StatusBadRequest; got != want {
+				t.Errorf("Probe status = %d, wanted %d", got, want)
+			}
+		})
+	}
+}
+
+func TestIsHealthcheckRequest(t *testing.T) {
+	tests := []struct {
+		name       string
+		UserAgents []string
+		request    *http.Request
+		result     bool
+	}{{
+		name:       "with kube-probe header",
+		UserAgents: []string{},
+		request: &http.Request{
 			URL: &url.URL{
 				Path: "/healthz",
 			},
 			Header: http.Header{
 				network.UserAgentKey: []string{network.KubeProbeUAPrefix},
 			},
-		}
-		cnt     = 0
-		inner   = http.HandlerFunc(func(http.ResponseWriter, *http.Request) { cnt++ })
-		checker = http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-			if req.URL != nil && req.URL.Path == "/healthz" {
-				w.WriteHeader(http.StatusBadRequest)
-				return
+		},
+		result: true,
+	}, {
+		name:       "with extra probe header",
+		UserAgents: []string{"extra"},
+		request: &http.Request{
+			URL: &url.URL{
+				Path: "/healthz",
+			},
+			Header: http.Header{
+				network.UserAgentKey: []string{"extra"},
+			},
+		},
+		result: true,
+	}, {
+		name:       "without probe header",
+		UserAgents: []string{},
+		request: &http.Request{
+			URL: &url.URL{
+				Path: "/healthz",
+			},
+			Header: http.Header{
+				network.UserAgentKey: []string{"not-a-probe"},
+			},
+		},
+		result: false,
+	}}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			d := Drainer{
+				HealthCheckUAPrefixes: tc.UserAgents,
 			}
-			w.WriteHeader(http.StatusAccepted)
+			d.isHealthCheckRequest(tc.request)
 		})
-	)
-
-	drainer := &Drainer{
-		HealthCheck: checker,
-		Inner:       inner,
-	}
-
-	// Works before Drain is called.
-	drainer.ServeHTTP(w, req)
-	drainer.ServeHTTP(w, req)
-	drainer.ServeHTTP(w, req)
-	if cnt != 3 {
-		t.Error("Inner handler was not properly invoked")
-	}
-
-	// Works for HealthCheck.
-	resp := httptest.NewRecorder()
-	drainer.ServeHTTP(resp, probe)
-	if got, want := resp.Code, http.StatusBadRequest; got != want {
-		t.Errorf("Probe status = %d, wanted %d", got, want)
 	}
 }
 
