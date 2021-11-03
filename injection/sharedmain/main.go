@@ -24,18 +24,19 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"strings"
 	"time"
+
+	"github.com/spf13/pflag"
 
 	"go.uber.org/automaxprocs/maxprocs" // automatically set GOMAXPROCS based on cgroups
 	"go.uber.org/zap"
 	"golang.org/x/sync/errgroup"
-	"k8s.io/apimachinery/pkg/util/sets"
 
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/rest"
 
@@ -116,32 +117,26 @@ var (
 // MainNamed runs the generic main flow for controllers and webhooks.
 func MainNamed(ctx context.Context, component string, ctors ...injection.NamedControllerConstructor) {
 
-	disabledControllers := flag.String("disable-controllers", "", "Comma-separated list of disabled controllers.")
+	disabledControllers := pflag.StringSlice("disable-controllers", []string{}, "Comma-separated list of disabled controllers.")
 
 	// HACK: This parses flags, so the above should be set once this runs.
 	cfg := injection.ParseAndGetRESTConfigOrDie()
 
-	enabledCtors := enabledControllers(strings.Split(*disabledControllers, ","), ctors)
+	enabledCtors := enabledControllers(*disabledControllers, ctors)
 
 	MainWithConfig(ctx, component, cfg, enabledCtors...)
 }
 
 func enabledControllers(disabledControllers []string, ctors []injection.NamedControllerConstructor) []injection.ControllerConstructor {
-
-	disabledControllersSet := sets.NewString()
-	for _, c := range disabledControllers {
-		disabledControllersSet.Insert(strings.TrimSpace(c))
-	}
-
-	activeCtors := make([]injection.ControllerConstructor, 0, len(ctors))
+	disabledControllersSet := sets.NewString(disabledControllers...)
+	activeCtors := make([]injection.ControllerConstructor, 0, len(ctors)-len(disabledControllers))
 	for _, ctor := range ctors {
-		if !disabledControllersSet.Has(ctor.Name) {
-			activeCtors = append(activeCtors, ctor.ControllerConstructor)
-		} else {
+		if disabledControllersSet.Has(ctor.Name) {
 			log.Printf("Disabling controller %s", ctor.Name)
+			continue
 		}
+		activeCtors = append(activeCtors, ctor.ControllerConstructor)
 	}
-
 	return activeCtors
 }
 
