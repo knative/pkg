@@ -24,11 +24,13 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 
 	"go.uber.org/automaxprocs/maxprocs" // automatically set GOMAXPROCS based on cgroups
 	"go.uber.org/zap"
 	"golang.org/x/sync/errgroup"
+	"k8s.io/apimachinery/pkg/util/sets"
 
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -110,6 +112,38 @@ var (
 	WebhookMainWithContext = MainWithContext
 	WebhookMainWithConfig  = MainWithConfig
 )
+
+// MainNamed runs the generic main flow for controllers and webhooks.
+func MainNamed(ctx context.Context, component string, ctors ...injection.NamedControllerConstructor) {
+
+	disabledControllers := flag.String("disable-controllers", "", "Comma-separated list of disabled controllers.")
+
+	// HACK: This parses flags, so the above should be set once this runs.
+	cfg := injection.ParseAndGetRESTConfigOrDie()
+
+	enabledCtors := enabledControllers(strings.Split(*disabledControllers, ","), ctors)
+
+	MainWithConfig(ctx, component, cfg, enabledCtors...)
+}
+
+func enabledControllers(disabledControllers []string, ctors []injection.NamedControllerConstructor) []injection.ControllerConstructor {
+
+	disabledControllersSet := sets.NewString()
+	for _, c := range disabledControllers {
+		disabledControllersSet.Insert(strings.TrimSpace(c))
+	}
+
+	activeCtors := make([]injection.ControllerConstructor, 0, len(ctors))
+	for _, ctor := range ctors {
+		if !disabledControllersSet.Has(ctor.Name) {
+			activeCtors = append(activeCtors, ctor.ControllerConstructor)
+		} else {
+			log.Printf("Disabling controller %s", ctor.Name)
+		}
+	}
+
+	return activeCtors
+}
 
 // MainWithContext runs the generic main flow for controllers and
 // webhooks. Use MainWithContext if you do not need to serve webhooks.
