@@ -115,6 +115,9 @@ var (
 )
 
 // MainNamed runs the generic main flow for controllers and webhooks.
+//
+// In addition to the MainWithConfig flow, it defines a `disabled-controllers` flag that allows to disable controllers
+// by name.
 func MainNamed(ctx context.Context, component string, ctors ...injection.NamedControllerConstructor) {
 
 	disabledControllers := pflag.StringSlice("disable-controllers", []string{}, "Comma-separated list of disabled controllers.")
@@ -124,20 +127,28 @@ func MainNamed(ctx context.Context, component string, ctors ...injection.NamedCo
 
 	enabledCtors := enabledControllers(*disabledControllers, ctors)
 
-	MainWithConfig(ctx, component, cfg, enabledCtors...)
+	MainWithConfig(ctx, component, cfg, toControllerConstructors(enabledCtors)...)
 }
 
-func enabledControllers(disabledControllers []string, ctors []injection.NamedControllerConstructor) []injection.ControllerConstructor {
+func enabledControllers(disabledControllers []string, ctors []injection.NamedControllerConstructor) []injection.NamedControllerConstructor {
 	disabledControllersSet := sets.NewString(disabledControllers...)
-	activeCtors := make([]injection.ControllerConstructor, 0, len(ctors)-len(disabledControllers))
+	activeCtors := make([]injection.NamedControllerConstructor, 0, len(ctors)-len(disabledControllers))
 	for _, ctor := range ctors {
 		if disabledControllersSet.Has(ctor.Name) {
 			log.Printf("Disabling controller %s", ctor.Name)
 			continue
 		}
-		activeCtors = append(activeCtors, ctor.ControllerConstructor)
+		activeCtors = append(activeCtors, ctor)
 	}
 	return activeCtors
+}
+
+func toControllerConstructors(namedCtors []injection.NamedControllerConstructor) []injection.ControllerConstructor {
+	ctors := make([]injection.ControllerConstructor, 0, len(namedCtors))
+	for _, ctor := range namedCtors {
+		ctors = append(ctors, ctor.ControllerConstructor)
+	}
+	return ctors
 }
 
 // MainWithContext runs the generic main flow for controllers and

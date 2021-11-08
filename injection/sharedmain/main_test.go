@@ -19,6 +19,8 @@ package sharedmain
 import (
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
+
 	"knative.dev/pkg/injection"
 )
 
@@ -27,19 +29,19 @@ func TestEnabledControllers(t *testing.T) {
 		name                string
 		disabledControllers []string
 		ctors               []injection.NamedControllerConstructor
-		want                int
+		wantNames           []string
 	}{
 		{
 			name:                "zero",
 			disabledControllers: []string{"foo"},
 			ctors:               []injection.NamedControllerConstructor{{Name: "bar"}},
-			want:                1,
+			wantNames:           []string{"bar"},
 		},
 		{
 			name:                "one",
 			disabledControllers: []string{"foo"},
 			ctors:               []injection.NamedControllerConstructor{{Name: "foo"}},
-			want:                0,
+			wantNames:           []string{},
 		},
 		{
 			name:                "two",
@@ -48,14 +50,23 @@ func TestEnabledControllers(t *testing.T) {
 				{Name: "foo"},
 				{Name: "bar"},
 			},
-			want: 1,
+			wantNames: []string{"bar"},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := enabledControllers(tt.disabledControllers, tt.ctors); len(got) != tt.want {
-				t.Errorf("got %d, want %d", len(got), tt.want)
+			got := enabledControllers(tt.disabledControllers, tt.ctors)
+			if diff := cmp.Diff(tt.wantNames, namesOf(got)); diff != "" {
+				t.Error("(-want, +got)", diff)
 			}
 		})
 	}
+}
+
+func namesOf(ctors []injection.NamedControllerConstructor) []string {
+	names := make([]string, 0, len(ctors))
+	for _, x := range ctors {
+		names = append(names, x.Name)
+	}
+	return names
 }

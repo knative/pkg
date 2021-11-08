@@ -105,7 +105,7 @@ type ControllerConstructor func(context.Context, configmap.Watcher) *controller.
 
 // NamedControllerConstructor is a ControllerConstructor with an associated name.
 type NamedControllerConstructor struct {
-	// Name is the name of associated with the controller returned by ControllerConstructor.
+	// Name is the name associated with the controller returned by ControllerConstructor.
 	Name string
 	// ControllerConstructor is a constructor for a controller.
 	ControllerConstructor ControllerConstructor
