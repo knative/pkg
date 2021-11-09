@@ -116,7 +116,7 @@ var (
 
 // MainNamed runs the generic main flow for controllers and webhooks.
 //
-// In addition to the MainWithConfig flow, it defines a `disabled-controllers` flag that allows to disable controllers
+// In addition to the MainWithConfig flow, it defines a `disabled-controllers` flag that allows disabling controllers
 // by name.
 func MainNamed(ctx context.Context, component string, ctors ...injection.NamedControllerConstructor) {
 
