@@ -101,23 +101,26 @@ func WaitForStopEvent(bc BackgroundContext, w WaitForStopEventConfiguration) {
 }
 
 func (c Configuration) logger() (*zap.SugaredLogger, error) {
-	if c.LogConfig != nil {
-		var (
-			log *zap.Logger
-			err error
-		)
-		if c.LogConfig.Build != nil {
-			// Build the logger using the provided config and build function.
-			log, err = c.LogConfig.Build(c.LogConfig.Config)
-		} else {
-			log, err = c.LogConfig.Config.Build()
-		}
-		if err != nil {
-			return nil, err
-		}
-		return log.Sugar(), nil
+	// TODO(mgencur): Remove when dependent repositories use LogConfig instead of Log.
+	// This is for backwards compatibility.
+	if c.Log != nil {
+		return c.Log.Sugar(), nil
 	}
-	return c.Log.Sugar(), nil
+
+	var (
+		log *zap.Logger
+		err error
+	)
+	if c.LogConfig.Build != nil {
+		// Build the logger using the provided config and build function.
+		log, err = c.LogConfig.Build(c.LogConfig.Config)
+	} else {
+		log, err = c.LogConfig.Config.Build()
+	}
+	if err != nil {
+		return nil, err
+	}
+	return log.Sugar(), nil
 }
 
 // Name returns a friendly human readable text.
@@ -185,19 +188,19 @@ func (s *simpleBackgroundOperation) Handler() func(bc BackgroundContext) {
 	return s.handler
 }
 
-func (b *ThreadSafeBuffer) Read(p []byte) (n int, err error) {
+func (b *threadSafeBuffer) Read(p []byte) (n int, err error) {
 	b.Mutex.Lock()
 	defer b.Mutex.Unlock()
 	return b.Buffer.Read(p)
 }
 
-func (b *ThreadSafeBuffer) Write(p []byte) (n int, err error) {
+func (b *threadSafeBuffer) Write(p []byte) (n int, err error) {
 	b.Mutex.Lock()
 	defer b.Mutex.Unlock()
 	return b.Buffer.Write(p)
 }
 
-func (b *ThreadSafeBuffer) String() string {
+func (b *threadSafeBuffer) String() string {
 	b.Mutex.Lock()
 	defer b.Mutex.Unlock()
 	return b.Buffer.String()
@@ -205,14 +208,15 @@ func (b *ThreadSafeBuffer) String() string {
 
 // newInMemoryLoggerBuffer creates a logger that writes logs into a byte buffer.
 // This byte buffer is returned and can be used to process the logs at later stage.
-func newInMemoryLoggerBuffer(logConfig *LogConfig) (*zap.Logger, *ThreadSafeBuffer) {
-	buf := &ThreadSafeBuffer{}
+func newInMemoryLoggerBuffer(config Configuration) (*zap.Logger, *threadSafeBuffer) {
+	logConfig := config.logConfig()
+	buf := &threadSafeBuffer{}
 	core := zapcore.NewCore(
 		zapcore.NewConsoleEncoder(logConfig.Config.EncoderConfig),
 		zapcore.AddSync(buf),
 		logConfig.Config.Level)
 
-	opts := []zap.Option{}
+	var opts []zap.Option
 	if logConfig.Config.Development {
 		opts = append(opts, zap.Development())
 	}

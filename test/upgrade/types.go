@@ -86,12 +86,12 @@ type Context struct {
 // down to each handler of BackgroundOperation. It contains a StopEvent channel
 // which end user should use to obtain a testing.T for error reporting. Until
 // StopEvent is sent user may use zap.SugaredLogger to log state of execution if
-// necessary. The logs are stored in a ThreadSafeBuffer and flushed to the test
+// necessary. The logs are stored in a threadSafeBuffer and flushed to the test
 // output when the test fails.
 type BackgroundContext struct {
 	Log       *zap.SugaredLogger
-	logBuffer *ThreadSafeBuffer
 	Stop      <-chan StopEvent
+	logBuffer *threadSafeBuffer
 }
 
 // StopEvent represents an event that is to be received by background operation
@@ -121,7 +121,16 @@ type Configuration struct {
 	// TODO(mgencur): Remove when dependent repositories migrate to LogConfig.
 	// Keep this for backwards compatibility.
 	Log       *zap.Logger
-	LogConfig *LogConfig
+	LogConfig
+}
+
+// TODO(mgencur): Remove when dependent repositories use LogConfig instead of Log.
+// This is for backwards compatibility.
+func (c Configuration) logConfig() LogConfig {
+	if c.Log != nil {
+		c.LogConfig = LogConfig{Config: zap.NewDevelopmentConfig()}
+	}
+	return c.LogConfig
 }
 
 // LogBuildFunc can customize building zap.Logger from zap.Config.
@@ -141,11 +150,9 @@ type SuiteExecutor interface {
 	Execute(c Configuration)
 }
 
-// ThreadSafeBuffer avoids race conditions on bytes.Buffer.
+// threadSafeBuffer avoids race conditions on bytes.Buffer.
 // See: https://stackoverflow.com/a/36226525/844449
-type ThreadSafeBuffer struct {
+type threadSafeBuffer struct {
 	bytes.Buffer
 	sync.Mutex
 }
-
-type DefaultOnWaitFunc func(bc BackgroundContext, self WaitForStopEventConfiguration)

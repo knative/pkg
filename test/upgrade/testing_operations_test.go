@@ -17,6 +17,7 @@ limitations under the License.
 package upgrade_test
 
 import (
+	"bytes"
 	"fmt"
 	"os"
 	"testing"
@@ -28,22 +29,22 @@ import (
 )
 
 func newConfig(t *testing.T) (upgrade.Configuration, fmt.Stringer) {
-	buf := &upgrade.ThreadSafeBuffer{}
+	var buf bytes.Buffer
 	c := upgrade.Configuration{
 		T: t,
-		LogConfig: &upgrade.LogConfig{
+		LogConfig: upgrade.LogConfig{
 			Config: zap.NewDevelopmentConfig(),
 			Build: func(c zap.Config) (*zap.Logger, error) {
 				c.EncoderConfig.TimeKey = ""
 				core := zapcore.NewCore(
 					zapcore.NewConsoleEncoder(c.EncoderConfig),
-					zapcore.NewMultiWriteSyncer(zapcore.AddSync(buf), os.Stdout),
+					zapcore.NewMultiWriteSyncer(zapcore.AddSync(&buf), os.Stdout),
 					c.Level)
 				return zap.New(core), nil
 			},
 		},
 	}
-	return c, buf
+	return c, &buf
 }
 
 func newBackgroundTestLogger(t *testing.T) (*zap.SugaredLogger, fmt.Stringer) {
@@ -173,8 +174,8 @@ func (tt *texts) append(messages ...string) {
 }
 
 func completeSuiteExample(fp failurePoint, bgLog *zap.SugaredLogger) upgrade.Suite {
-	serving := servingComponent(bgLog)
-	eventing := eventingComponent(bgLog)
+	serving := servingComponent()
+	eventing := eventingComponent()
 	suite := upgrade.Suite{
 		Tests: upgrade.Tests{
 			PreUpgrade: []upgrade.Operation{

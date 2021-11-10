@@ -79,7 +79,7 @@ var (
 	}
 )
 
-func servingComponent(bgLog *zap.SugaredLogger) component {
+func servingComponent() component {
 	return component{
 		installs: installs{
 			stable: upgrade.NewOperation("Serving latest stable release", func(c upgrade.Context) {
@@ -106,19 +106,19 @@ func servingComponent(bgLog *zap.SugaredLogger) component {
 			}),
 			continual: upgrade.NewBackgroundOperation("Serving continual test",
 				func(c upgrade.Context) {
-					bgLog.Info("Setup of Serving continual test")
+					c.Log.Info("Setup of Serving continual test")
 					time.Sleep(shortWait)
 				},
 				func(bc upgrade.BackgroundContext) {
-					bgLog.Info("Running Serving continual test")
+					bc.Log.Info("Running Serving continual test")
 					upgrade.WaitForStopEvent(bc, upgrade.WaitForStopEventConfiguration{
 						Name: "Serving",
 						OnStop: func(event upgrade.StopEvent) {
-							bgLog.Info("Stopping and verify of Serving continual test")
+							bc.Log.Info("Stopping and verify of Serving continual test")
 							time.Sleep(shortWait)
 						},
 						OnWait: func(bc upgrade.BackgroundContext, self upgrade.WaitForStopEventConfiguration) {
-							bgLog.Debugf("%s - probing functionality...", self.Name)
+							bc.Log.Debugf("%s - probing functionality...", self.Name)
 						},
 						WaitTime: shortWait,
 					})
@@ -127,7 +127,7 @@ func servingComponent(bgLog *zap.SugaredLogger) component {
 	}
 }
 
-func eventingComponent(bgLog *zap.SugaredLogger) component {
+func eventingComponent() component {
 	return component{
 		installs: installs{
 			stable: upgrade.NewOperation("Eventing latest stable release", func(c upgrade.Context) {
@@ -154,11 +154,11 @@ func eventingComponent(bgLog *zap.SugaredLogger) component {
 			}),
 			continual: upgrade.NewBackgroundVerification("Eventing continual test",
 				func(c upgrade.Context) {
-					bgLog.Info("Setup of Eventing continual test")
+					c.Log.Info("Setup of Eventing continual test")
 					time.Sleep(shortWait)
 				},
 				func(c upgrade.Context) {
-					bgLog.Info("Stopping and verify of Eventing continual test")
+					c.Log.Info("Stopping and verify of Eventing continual test")
 					time.Sleep(shortWait)
 				},
 			),
@@ -166,7 +166,7 @@ func eventingComponent(bgLog *zap.SugaredLogger) component {
 	}
 }
 
-func probeOnWaitFunc(bgLog *zap.SugaredLogger) upgrade.DefaultOnWaitFunc {
+func probeOnWaitFunc(bgLog *zap.SugaredLogger) func(upgrade.BackgroundContext, upgrade.WaitForStopEventConfiguration) {
 	return func(bc upgrade.BackgroundContext, self upgrade.WaitForStopEventConfiguration) {
 		bgLog.Debugf("%s - probing functionality...", self.Name)
 	}

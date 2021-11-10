@@ -18,8 +18,6 @@ package upgrade
 
 import (
 	"testing"
-
-	"go.uber.org/zap"
 )
 
 const skippingOperationTemplate = `Skipping "%s" as previous operation have failed`
@@ -66,24 +64,22 @@ func (se *suiteExecution) startContinualTests(num int) {
 				}
 				setup := operation.Setup()
 
-				logConfig := se.configuration.LogConfig
-				if logConfig == nil {
-					// TODO(mgencur): Remove when dependent repositories use LogConfig instead of Log.
-					// This is for backwards compatibility.
-					logConfig = &LogConfig{Config: zap.NewDevelopmentConfig()}
-				}
-				logger, buffer := newInMemoryLoggerBuffer(logConfig)
 				t.Run("Setup"+operation.Name(), func(t *testing.T) {
-					setup(Context{T: t, Log: logger.Sugar()})
+					setup(Context{T: t, Log: l})
 				})
+				logger, buffer := newInMemoryLoggerBuffer(se.configuration)
 				handler := operation.Handler()
 				go func() {
-					bc := BackgroundContext{Log: logger.Sugar(), logBuffer: buffer, Stop: operation.stop}
-					handler(bc)
+					handler(BackgroundContext{
+						Log: logger.Sugar(),
+						Stop: operation.stop,
+						logBuffer: buffer,
+					})
 				}()
-				t.Log(wrapLogs(buffer))
 				se.failed = se.failed || t.Failed()
 				if se.failed {
+					// need to dump logs here, because verify will not be executed.
+					t.Log(wrapLogs(buffer))
 					return
 				}
 			}
