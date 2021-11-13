@@ -193,29 +193,38 @@ func MustParseClientGenTags(lines []string) Tags {
 	return ret
 }
 
-func extractCommentTags(t *types.Type) map[string]map[string]string {
+func extractCommentTags(t *types.Type) CommentTags {
 	comments := append(append([]string{}, t.SecondClosestCommentLines...), t.CommentLines...)
 	return ExtractCommentTags("+", comments)
 }
 
-func extractReconcilerClassTag(tags map[string]map[string]string) (string, bool) {
+func extractReconcilerClassTag(tags CommentTags) (string, bool) {
 	vals, ok := tags["genreconciler"]
 	if !ok {
 		return "", false
 	}
-	classname, has := vals["class"]
-	return classname, has
+	classnames, has := vals["class"]
+
+	if len(classnames) == 0 {
+		return "", false
+	}
+
+	return classnames[0], has
 }
 
-func isKRShaped(tags map[string]map[string]string) bool {
+func isKRShaped(tags CommentTags) bool {
 	vals, has := tags["genreconciler"]
 	if !has {
 		return false
 	}
-	return vals["krshapedlogic"] != "false"
+	stringVals, has := vals["krshapedlogic"]
+	if !has || len(vals) == 0 {
+		return false
+	}
+	return stringVals[0] != "false"
 }
 
-func isNonNamespaced(tags map[string]map[string]string) bool {
+func isNonNamespaced(tags CommentTags) bool {
 	vals, has := tags["genclient"]
 	if !has {
 		return false
@@ -224,7 +233,7 @@ func isNonNamespaced(tags map[string]map[string]string) bool {
 	return has
 }
 
-func stubs(tags map[string]map[string]string) bool {
+func stubs(tags CommentTags) bool {
 	vals, has := tags["genreconciler"]
 	if !has {
 		return false
