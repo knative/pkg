@@ -21,6 +21,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/code-generator/cmd/client-gen/generators/util"
 	clientgentypes "k8s.io/code-generator/cmd/client-gen/types"
 	"k8s.io/gengo/args"
@@ -198,18 +199,13 @@ func extractCommentTags(t *types.Type) CommentTags {
 	return ExtractCommentTags("+", comments)
 }
 
-func extractReconcilerClassTag(tags CommentTags) (string, bool) {
+func extractReconcilerClassesTag(tags CommentTags) ([]string, bool) {
 	vals, ok := tags["genreconciler"]
 	if !ok {
-		return "", false
+		return nil, false
 	}
 	classnames, has := vals["class"]
-
-	if len(classnames) == 0 {
-		return "", false
-	}
-
-	return classnames[0], has
+	return sets.NewString(classnames...).List(), has
 }
 
 func isKRShaped(tags CommentTags) bool {
@@ -554,7 +550,7 @@ func reconcilerPackages(basePackage string, groupPkgName string, gv clientgentyp
 		// Fix for golang iterator bug.
 		t := t
 		extracted := extractCommentTags(t)
-		reconcilerClass, hasReconcilerClass := extractReconcilerClassTag(extracted)
+		reconcilerClasses, hasReconcilerClass := extractReconcilerClassesTag(extracted)
 		nonNamespaced := isNonNamespaced(extracted)
 		isKRShaped := isKRShaped(extracted)
 		stubs := stubs(extracted)
@@ -582,7 +578,7 @@ func reconcilerPackages(basePackage string, groupPkgName string, gv clientgentyp
 					clientPkg:           clientPackagePath,
 					informerPackagePath: informerPackagePath,
 					schemePkg:           filepath.Join(customArgs.VersionedClientSetPackage, "scheme"),
-					reconcilerClass:     reconcilerClass,
+					reconcilerClasses:   reconcilerClasses,
 					hasReconcilerClass:  hasReconcilerClass,
 					hasStatus:           hasStatus(t),
 				})
@@ -611,7 +607,7 @@ func reconcilerPackages(basePackage string, groupPkgName string, gv clientgentyp
 						outputPackage:       filepath.Join(packagePath, "stub"),
 						imports:             generator.NewImportTracker(),
 						informerPackagePath: informerPackagePath,
-						reconcilerClass:     reconcilerClass,
+						reconcilerClasses:   reconcilerClasses,
 						hasReconcilerClass:  hasReconcilerClass,
 					})
 					return generators
@@ -642,7 +638,7 @@ func reconcilerPackages(basePackage string, groupPkgName string, gv clientgentyp
 					listerPkg:          listerPackagePath,
 					groupGoName:        groupGoName,
 					groupVersion:       gv,
-					reconcilerClass:    reconcilerClass,
+					reconcilerClasses:  reconcilerClasses,
 					hasReconcilerClass: hasReconcilerClass,
 					nonNamespaced:      nonNamespaced,
 					isKRShaped:         isKRShaped,
