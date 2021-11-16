@@ -217,7 +217,7 @@ func isKRShaped(tags CommentTags) bool {
 	}
 	stringVals, has := vals["krshapedlogic"]
 	if !has || len(vals) == 0 {
-		return false
+		return true // Default is true
 	}
 	return stringVals[0] != "false"
 }
