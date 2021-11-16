@@ -195,8 +195,10 @@ var reconcilerControllerNewImpl = `
 const (
 	defaultControllerAgentName = "{{.type|lowercaseSingular}}-controller"
 	defaultFinalizerName       = "{{.type|allLowercasePlural}}.{{.group}}"
-	{{if len .classes | eq 1 }}
+	{{if .hasClass }}
 	// ClassAnnotationKey points to the annotation for the class of this resource.
+	{{if gt (.classes | len) 1 }}// Deprecated: Use ClassAnnotationKeys given multiple keys exist
+	{{end -}}
 	ClassAnnotationKey = "{{ index .classes 0 }}"
 	{{end}}
 )

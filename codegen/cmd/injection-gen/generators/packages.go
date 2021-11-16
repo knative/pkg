@@ -21,7 +21,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/code-generator/cmd/client-gen/generators/util"
 	clientgentypes "k8s.io/code-generator/cmd/client-gen/types"
 	"k8s.io/gengo/args"
@@ -205,7 +204,10 @@ func extractReconcilerClassesTag(tags CommentTags) ([]string, bool) {
 		return nil, false
 	}
 	classnames, has := vals["class"]
-	return sets.NewString(classnames...).List(), has
+	if has && len(classnames) == 0 {
+		return nil, false
+	}
+	return classnames, has
 }
 
 func isKRShaped(tags CommentTags) bool {

@@ -219,7 +219,7 @@ func (g *reconcilerReconcilerGenerator) GenerateType(c *generator.Context, t *ty
 	sw.Do(reconcilerInterfaceFactory, m)
 	sw.Do(reconcilerNewReconciler, m)
 	sw.Do(reconcilerImplFactory, m)
-	if g.hasReconcilerClass {
+	if len(g.reconcilerClasses) > 1 {
 		sw.Do(reconcilerLookupClass, m)
 	}
 	if g.hasStatus {
@@ -232,17 +232,12 @@ func (g *reconcilerReconcilerGenerator) GenerateType(c *generator.Context, t *ty
 
 var reconcilerLookupClass = `
 func lookupClass(annotations map[string]string) (string, bool) {
-	{{- if len .classes | eq 1 }}
-	val, ok := annotations[ClassAnnotationKey]
-	return val, ok
-	{{- else if gt (len .classes) 1 }}
 	for _, key := range ClassAnnotationKeys {
 		 if val, ok := annotations[key]; ok {
 		   return val, true
 		 }
 	}
 	return "", false
-	{{- end}}
 }
 `
 
@@ -312,8 +307,15 @@ type reconcilerImpl struct {
 	skipStatusUpdates bool
 	{{end}}
 
-	{{if .hasClass}}
+	{{if len .classes | eq 1 }}
+	// classValue is the resource annotation[{{ index .classes 0 }}] instance value this reconciler instance filters on.
+	classValue string
+	{{else if gt (len .classes) 1 }}
 	// classValue is the resource annotation instance value this reconciler instance filters on.
+	// The annotations key are:
+	{{- range $class := .classes}}
+	//   {{$class}}
+	{{- end}}
 	classValue string
 	{{end}}
 }
@@ -435,18 +437,22 @@ func (r *reconcilerImpl) Reconcile(ctx {{.contextContext|raw}}, key string) erro
 	} else if err != nil {
 		return err
 	}
-	{{if .hasClass}}
-	if classValue, found := lookupClass(original.GetAnnotations()); !found || classValue != r.classValue {
+
+{{if len .classes | eq 1 }}
+	if classValue, found := original.GetAnnotations()[ClassAnnotationKey]; !found || classValue != r.classValue {
 		logger.Debugw("Skip reconciling resource, class annotation value does not match reconciler instance value.",
-{{- if len .classes | eq 1 }}
 			zap.String("classKey", ClassAnnotationKey),
-{{- else if gt (len .classes) 1 }}
-			zap.Strings("classKeys", ClassAnnotationKeys),
-{{- end}}
 			zap.String("issue", classValue+"!="+r.classValue))
 		return nil
 	}
-	{{end}}
+{{else if gt (len .classes) 1 }}
+	if classValue, found := lookupClass(original.GetAnnotations()); !found || classValue != r.classValue {
+		logger.Debugw("Skip reconciling resource, class annotation value does not match reconciler instance value.",
+			zap.Strings("classKeys", ClassAnnotationKeys),
+			zap.String("issue", classValue+"!="+r.classValue))
+		return nil
+	}
+{{end}}
 
 	// Don't modify the informers copy.
 	resource := original.DeepCopy()
