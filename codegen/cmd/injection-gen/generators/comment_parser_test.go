@@ -15,7 +15,11 @@ limitations under the License.
 */
 package generators
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/google/go-cmp/cmp"
+)
 
 func TestParseComments(t *testing.T) {
 	comment := []string{
@@ -26,28 +30,31 @@ func TestParseComments(t *testing.T) {
 		"+with:option",
 		"+pair:key=value",
 		"+manypairs:key1=value1,key2=value2",
+		"+duplicate:key1=value1,key1=value2",
 	}
 
 	extracted := ExtractCommentTags("+", comment)
 
-	if val, ok := extracted["foo"]; !ok || val != nil {
-		t.Errorf("Failed to extract single key got=%t,%v want=true,nil", ok, val)
+	expected := CommentTags{
+		"foo": {},
+		"bar": {},
+		"with": {
+			"option": {},
+		},
+		"pair": {
+			"key": []string{"value"},
+		},
+		"manypairs": {
+			"key1": []string{"value1"},
+			"key2": []string{"value2"},
+		},
+		"duplicate": {
+			"key1": []string{"value1", "value2"},
+		},
 	}
 
-	if val, ok := extracted["bar"]; !ok || val != nil {
-		t.Errorf("Failed to extract single key got=%t,%v want=true,nil", ok, val)
-	}
-
-	if val, ok := extracted["with"]; !ok || val["option"] != "" {
-		t.Errorf(`Failed to extract single key got=%t,%v want=true,{"option":""}`, ok, val)
-	}
-
-	if val, ok := extracted["pair"]; !ok || val["key"] != "value" {
-		t.Errorf(`Failed to extract single key got=%t,%v want=true,{"key":"value"}`, ok, val)
-	}
-
-	if val, ok := extracted["manypairs"]; !ok || val["key1"] != "value1" || val["key2"] != "value2" {
-		t.Errorf(`Failed to extract single key got=%t,%v want=true,{"key":"value"}`, ok, val)
+	if diff := cmp.Diff(expected, extracted); diff != "" {
+		t.Error("diff (-want, +got): ", diff)
 	}
 }
 
@@ -61,24 +68,25 @@ func TestMergeDuplicates(t *testing.T) {
 		"+bar",
 		"+manypairs:key1=value1",
 		"+manypairs:key2=value2",
+		"+manypairs:key1=value3",
 		"+oops:,,,",
 	}
 
 	extracted := ExtractCommentTags("+", comment)
 
-	if val, ok := extracted["foo"]; !ok || val != nil {
-		t.Errorf("Failed to extract single key got=%t,%v want=true,nil", ok, val)
+	expected := CommentTags{
+		"foo": {},
+		"bar": {
+			"key": []string{"value"},
+		},
+		"manypairs": {
+			"key1": []string{"value1", "value3"},
+			"key2": []string{"value2"},
+		},
+		"oops": {},
 	}
 
-	if val, ok := extracted["bar"]; !ok || val["key"] != "value" {
-		t.Errorf(`Failed to extract single key got=%t,%v want=true,{"key":"value"}`, ok, val)
-	}
-
-	if val, ok := extracted["manypairs"]; !ok || val["key1"] != "value1" || val["key2"] != "value2" {
-		t.Errorf(`Failed to extract single key got=%t,%v want=true,{"key":"value"}`, ok, val)
-	}
-
-	if val, ok := extracted["oops"]; !ok || val != nil {
-		t.Errorf(`Failed to extract single key got=%t,%v want=true,{"oops":nil}`, ok, val)
+	if diff := cmp.Diff(expected, extracted); diff != "" {
+		t.Error("diff (-want, +got): ", diff)
 	}
 }
