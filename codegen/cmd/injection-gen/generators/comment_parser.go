@@ -29,6 +29,9 @@ type CommentTag map[string][]string
 //
 //   "marker" + "prefix" + ':' + "key=value,key2=value2".
 //
+//  In the following example the marker is '+' and the prefix is 'foo':
+//   +foo:key=value1,key2=value2,key=value3
+//
 // Values are optional; empty map is the default. A tag can be specified more than
 // one time and all values are returned.  If the resulting map has an entry for
 // a key, the value (a slice) is guaranteed to have at least 1 element.
