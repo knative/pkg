@@ -16,25 +16,24 @@ limitations under the License.
 
 package kmap
 
-// OrderedLookup is a utility struct for getting values from a map
+// KeyPriority is a utility struct for getting values from a map
 // given a list of ordered keys
 //
 // This is to help the migration/renaming of annotations & labels
-type OrderedLookup struct {
-	Keys []string
-}
+type KeyPriority []string
 
 // Key returns the default key that should be used for
 // accessing the map
-func (a *OrderedLookup) Key() string {
-	return a.Keys[0]
+func (p KeyPriority) Key() string {
+	// this intentionally panics rather than returning an empty string
+	return p[0]
 }
 
 // Value iterates looks up the ordered keys in the map and returns
 // a string value. An empty string will be returned if the keys
 // are not present in the map
-func (a *OrderedLookup) Value(m map[string]string) string {
-	_, v, _ := a.Get(m)
+func (p KeyPriority) Value(m map[string]string) string {
+	_, v, _ := p.Get(m)
 	return v
 }
 
@@ -46,26 +45,33 @@ func (a *OrderedLookup) Value(m map[string]string) string {
 //
 // If no key is present the default key (lowest ordinal) is returned
 // with an empty string as the value
-func (a *OrderedLookup) Get(m map[string]string) (string, string, bool) {
+func (p KeyPriority) Get(m map[string]string) (string, string, bool) {
 	var k, v string
 	var ok bool
-	for _, k = range a.Keys {
+	for _, k = range p {
 		v, ok = m[k]
 		if ok {
 			return k, v, ok
 		}
 	}
 
-	return a.Keys[0], "", false
+	return p.Key(), "", false
 }
 
-// NewOrderedLookup builds a utilty struct for looking up N keys
-// in a map in a specific order
-//
-// If no keys are supplied this method will panic
-func NewOrderedLookup(keys ...string) *OrderedLookup {
-	if len(keys) == 0 {
-		panic("expected to have at least a single key")
+// UpdateKey will update the map with the KeyPriority's default
+// key iff any of the other synonym keys are present
+func (p KeyPriority) UpdateKey(m map[string]string) {
+	if k, v, ok := p.Get(m); ok && k != p.Key() {
+		delete(m, k)
+		m[p.Key()] = v
 	}
-	return &OrderedLookup{Keys: keys}
+}
+
+// UpdateKeys iterates over the lookups and updates entries in the map
+// to use the default key
+func UpdateKeys(m map[string]string, keys ...KeyPriority) map[string]string {
+	for _, key := range keys {
+		key.UpdateKey(m)
+	}
+	return m
 }
