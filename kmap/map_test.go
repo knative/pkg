@@ -186,6 +186,10 @@ func TestExcludeKeys(t *testing.T) {
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Error("ExcludeKeys (-want, +got) =", diff)
 			}
+			got = ExcludeKeyList(test.in, test.exclude)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Error("ExcludeKeyList (-want, +got) =", diff)
+			}
 		})
 	}
 }

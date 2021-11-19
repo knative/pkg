@@ -57,6 +57,11 @@ func Filter(in map[string]string, filter func(string) bool) map[string]string {
 
 // ExcludeKeys creates a copy of the provided map filtering out the excluded `keys`
 func ExcludeKeys(in map[string]string, keys ...string) map[string]string {
+	return ExcludeKeyList(in, keys)
+}
+
+// ExcludeKeyList creates a copy of the provided map filtering out excluded `keys`
+func ExcludeKeyList(in map[string]string, keys []string) map[string]string {
 	ret := make(map[string]string, len(in))
 
 outer:
