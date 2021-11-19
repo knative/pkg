@@ -16,28 +16,37 @@ limitations under the License.
 
 package kmap
 
-// Accessor is a utility struct for getting values from a map
-// given a list of keys
+// OrderedLookup is a utility struct for getting values from a map
+// given a list of ordered keys
 //
 // This is to help the migration/renaming of annotations & labels
-type Accessor struct {
-	// Access will be done in order
+type OrderedLookup struct {
 	Keys []string
 }
 
 // Key returns the default key that should be used for
 // accessing the map
-func (a *Accessor) Key() string {
+func (a *OrderedLookup) Key() string {
 	return a.Keys[0]
 }
 
-// Value returns maps value for the Accessor's keys
-func (a *Accessor) Value(m map[string]string) string {
+// Value iterates looks up the ordered keys in the map and returns
+// a string value. An empty string will be returned if the keys
+// are not present in the map
+func (a *OrderedLookup) Value(m map[string]string) string {
 	_, v, _ := a.Get(m)
 	return v
 }
 
-func (a *Accessor) Get(m map[string]string) (string, string, bool) {
+// Get iterates over the ordered keys and looks up the corresponding
+// values in the map
+//
+// It returns the key, value, and true|false signaling whether the
+// key was present in the map
+//
+// If no key is present the default key (lowest ordinal) is returned
+// with an empty string as the value
+func (a *OrderedLookup) Get(m map[string]string) (string, string, bool) {
 	var k, v string
 	var ok bool
 	for _, k = range a.Keys {
@@ -50,9 +59,13 @@ func (a *Accessor) Get(m map[string]string) (string, string, bool) {
 	return a.Keys[0], "", false
 }
 
-func NewAccessor(keys ...string) *Accessor {
+// NewOrderedLookup builds a utilty struct for looking up N keys
+// in a map in a specific order
+//
+// If no keys are supplied this method will panic
+func NewOrderedLookup(keys ...string) *OrderedLookup {
 	if len(keys) == 0 {
 		panic("expected to have at least a single key")
 	}
-	return &Accessor{Keys: keys}
+	return &OrderedLookup{Keys: keys}
 }

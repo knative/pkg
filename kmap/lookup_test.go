@@ -22,25 +22,25 @@ import (
 	"github.com/google/go-cmp/cmp"
 )
 
-func TestNewAccessor(t *testing.T) {
+func TestNewOrderedLookup(t *testing.T) {
 	keys := []string{"1", "2", "3"}
-	a := NewAccessor(keys...)
+	a := NewOrderedLookup(keys...)
 
 	if diff := cmp.Diff(keys, a.Keys); diff != "" {
-		t.Error("NewAccessor unexpected diff (-want, +got):", diff)
+		t.Error("NewOrderedLookup unexpected diff (-want, +got):", diff)
 	}
 }
 
-func TestNewAccessor_BadInput(t *testing.T) {
+func TestNewOrderedLookup_BadInput(t *testing.T) {
 	defer func() {
 		if r := recover(); r == nil {
 			t.Error("expected no keys to panic")
 		}
 	}()
-	NewAccessor()
+	NewOrderedLookup()
 }
 
-func TestAccessor_Get(t *testing.T) {
+func TestOrderedLookup_Get(t *testing.T) {
 	tests := []struct {
 		name     string
 		keys     []string
@@ -82,7 +82,7 @@ func TestAccessor_Get(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			a := NewAccessor(tc.keys...)
+			a := NewOrderedLookup(tc.keys...)
 
 			k, v, ok := a.Get(tc.in)
 
