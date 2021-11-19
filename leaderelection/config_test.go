@@ -26,7 +26,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	corev1 "k8s.io/api/core/v1"
-	"knative.dev/pkg/kmeta"
+	"knative.dev/pkg/kmap"
 )
 
 const (
@@ -69,7 +69,7 @@ func TestNewConfigMapFromData(t *testing.T) {
 		expected: okConfig(),
 	}, {
 		name: "OK config - controller enabled with multiple buckets",
-		data: kmeta.UnionMaps(okData(), map[string]string{
+		data: kmap.Union(okData(), map[string]string{
 			"buckets": "5",
 		}),
 		expected: func() *Config {
@@ -79,37 +79,37 @@ func TestNewConfigMapFromData(t *testing.T) {
 		}(),
 	}, {
 		name: "invalid lease-duration",
-		data: kmeta.UnionMaps(okData(), map[string]string{
+		data: kmap.Union(okData(), map[string]string{
 			"lease-duration": "flops",
 		}),
 		err: `failed to parse "lease-duration": time: invalid duration`,
 	}, {
 		name: "invalid renew-deadline",
-		data: kmeta.UnionMaps(okData(), map[string]string{
+		data: kmap.Union(okData(), map[string]string{
 			"renew-deadline": "flops",
 		}),
 		err: `failed to parse "renew-deadline": time: invalid duration`,
 	}, {
 		name: "invalid retry-period",
-		data: kmeta.UnionMaps(okData(), map[string]string{
+		data: kmap.Union(okData(), map[string]string{
 			"retry-period": "flops",
 		}),
 		err: `failed to parse "retry-period": time: invalid duration`,
 	}, {
 		name: "invalid buckets - not an int",
-		data: kmeta.UnionMaps(okData(), map[string]string{
+		data: kmap.Union(okData(), map[string]string{
 			"buckets": "not-an-int",
 		}),
 		err: `failed to parse "buckets": strconv.ParseUint: parsing "not-an-int": invalid syntax`,
 	}, {
 		name: "invalid buckets - too small",
-		data: kmeta.UnionMaps(okData(), map[string]string{
+		data: kmap.Union(okData(), map[string]string{
 			"buckets": "0",
 		}),
 		err: fmt.Sprint("buckets: value must be between 1 <= 0 <= ", MaxBuckets),
 	}, {
 		name: "invalid buckets - too large",
-		data: kmeta.UnionMaps(okData(), map[string]string{
+		data: kmap.Union(okData(), map[string]string{
 			"buckets": strconv.Itoa(int(MaxBuckets + 1)),
 		}),
 		err: fmt.Sprintf("buckets: value must be between 1 <= %d <= %d", MaxBuckets+1, MaxBuckets),
