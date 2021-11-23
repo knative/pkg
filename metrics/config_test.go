@@ -25,7 +25,6 @@ import (
 	"time"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/google/go-cmp/cmp/cmpopts"
 
 	. "knative.dev/pkg/logging/testing"
 
@@ -294,7 +293,7 @@ func TestGetMetricsConfig(t *testing.T) {
 			if err != nil {
 				t.Errorf("Wanted valid config %v, got error %v", test.expectedConfig, err)
 			}
-			if diff := cmp.Diff(test.expectedConfig, *mc, cmp.AllowUnexported(*mc), cmpopts.IgnoreTypes(mc.recorder)); diff != "" {
+			if diff := cmp.Diff(test.expectedConfig, *mc, cmp.AllowUnexported(*mc)); diff != "" {
 				t.Errorf("Invalid config (-want +got):\n%s", diff)
 			}
 		})
@@ -388,7 +387,7 @@ func TestGetMetricsConfig_fromEnv(t *testing.T) {
 			if err != nil {
 				t.Errorf("Wanted valid config %v, got error %v", test.expectedConfig, err)
 			}
-			if diff := cmp.Diff(test.expectedConfig, *mc, cmp.AllowUnexported(*mc), cmpopts.IgnoreTypes(mc.recorder)); diff != "" {
+			if diff := cmp.Diff(test.expectedConfig, *mc, cmp.AllowUnexported(*mc)); diff != "" {
 				t.Errorf("Invalid config (-want +got):\n%s", diff)
 			}
 		})
@@ -486,7 +485,7 @@ func TestUpdateExporter(t *testing.T) {
 			if mConfig == oldConfig {
 				t.Error("Expected metrics config change")
 			}
-			if diff := cmp.Diff(test.expectedConfig, *mConfig, cmp.AllowUnexported(*mConfig), cmpopts.IgnoreTypes(mConfig.recorder)); diff != "" {
+			if diff := cmp.Diff(test.expectedConfig, *mConfig, cmp.AllowUnexported(*mConfig)); diff != "" {
 				t.Errorf("Invalid config (-want +got):\n%s", diff)
 			}
 			oldConfig = mConfig
@@ -526,7 +525,7 @@ func TestUpdateExporterFromConfigMapWithOpts(t *testing.T) {
 			if mConfig == oldConfig {
 				t.Error("Expected metrics config change")
 			}
-			if diff := cmp.Diff(test.expectedConfig, *mConfig, cmp.AllowUnexported(*mConfig), cmpopts.IgnoreTypes(mConfig.recorder)); diff != "" {
+			if diff := cmp.Diff(test.expectedConfig, *mConfig, cmp.AllowUnexported(*mConfig)); diff != "" {
 				t.Errorf("Invalid config (-want +got):\n%s", diff)
 			}
 			oldConfig = mConfig
