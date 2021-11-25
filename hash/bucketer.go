@@ -98,7 +98,8 @@ func (bs *BucketSet) Owner(key string) string {
 	}
 	bs.mu.RLock()
 	defer bs.mu.RUnlock()
-	ret, _ := ChooseSubset(bs.buckets, 1 /*single query wanted*/, key).PopAny()
+	l := ChooseSubset(bs.buckets, 1 /*single query wanted*/, key)
+	ret := l.UnsortedList()[0]
 	bs.cache.Add(key, ret)
 	return ret
 }
