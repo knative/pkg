@@ -35,11 +35,11 @@ func ExampleChooseSubset_selectOne() {
 
 	tasks := sets.NewString("task1", "task2", "task3")
 
-	ret, _ := ChooseSubset(tasks, 1, "my-key1").PopAny()
-	fmt.Println(ret)
+	ret := ChooseSubset(tasks, 1, "my-key1")
+	fmt.Println(ret.UnsortedList()[0])
 
-	ret, _ = ChooseSubset(tasks, 1, "something/another-key").PopAny()
-	fmt.Println(ret)
+	ret = ChooseSubset(tasks, 1, "something/another-key")
+	fmt.Println(ret.UnsortedList()[0])
 	// Output: task3
 	// task2
 }
