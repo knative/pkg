@@ -122,6 +122,20 @@ func TestObservabilityConfiguration(t *testing.T) {
 			"metrics.request-metrics-backend-destination": "opencensus",
 			"metrics.opencensus-address":                  "otel:55678",
 		},
+	}, {
+		name: "observability configuration with collector address and reporting period",
+		wantConfig: func() *ObservabilityConfig {
+			oc := defaultConfig()
+			oc.RequestMetricsBackend = "opencensus"
+			oc.MetricsCollectorAddress = "otel:55678"
+			oc.RequestMetricsReportingPeriodSeconds = 10
+			return oc
+		}(),
+		data: map[string]string{
+			"metrics.request-metrics-backend-destination":      "opencensus",
+			"metrics.opencensus-address":                       "otel:55678",
+			"metrics.request-metrics-reporting-period-seconds": "10",
+		},
 	}}
 
 	for _, tt := range observabilityConfigTests {

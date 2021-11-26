@@ -71,6 +71,9 @@ type ObservabilityConfig struct {
 	// OpenCensus. "None" disables all backends.
 	RequestMetricsBackend string
 
+	// RequestMetricsReportingPeriodSeconds specifies the request metrics reporting period in sec at queue proxy, eg 1
+	RequestMetricsReportingPeriodSeconds int
+
 	// EnableProfiling indicates whether it is allowed to retrieve runtime profiling data from
 	// the pods via an HTTP server in the format expected by the pprof visualization tool.
 	EnableProfiling bool
@@ -121,6 +124,7 @@ func NewObservabilityConfigFromConfigMap(configMap *corev1.ConfigMap) (*Observab
 		cm.AsBool(EnableReqLogKey, &oc.EnableRequestLog),
 		cm.AsBool(EnableProbeReqLogKey, &oc.EnableProbeRequestLog),
 		cm.AsString("metrics.request-metrics-backend-destination", &oc.RequestMetricsBackend),
+		cm.AsInt("metrics.request-metrics-reporting-period-seconds", &oc.RequestMetricsReportingPeriodSeconds),
 		cm.AsBool("profiling.enable", &oc.EnableProfiling),
 		cm.AsString("metrics.opencensus-address", &oc.MetricsCollectorAddress),
 	); err != nil {
