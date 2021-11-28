@@ -19,7 +19,6 @@ package upgrade_test
 import (
 	"bytes"
 	"fmt"
-	"os"
 	"testing"
 
 	"go.uber.org/zap"
@@ -30,30 +29,25 @@ import (
 
 func newConfig(t *testing.T) (upgrade.Configuration, fmt.Stringer) {
 	var buf bytes.Buffer
+	cfg := zap.NewDevelopmentConfig()
+	cfg.EncoderConfig.TimeKey = ""
+	cfg.EncoderConfig.CallerKey = ""
+	syncedBuf := zapcore.AddSync(&buf)
 	c := upgrade.Configuration{
 		T: t,
 		LogConfig: upgrade.LogConfig{
-			Config: zap.NewDevelopmentConfig(),
-			Build: func(c zap.Config) (*zap.Logger, error) {
-				c.EncoderConfig.TimeKey = ""
-				core := zapcore.NewCore(
-					zapcore.NewConsoleEncoder(c.EncoderConfig),
-					zapcore.NewMultiWriteSyncer(zapcore.AddSync(&buf), os.Stdout),
-					c.Level)
-				return zap.New(core), nil
+			Config: cfg,
+			Options: []zap.Option{
+				zap.WrapCore(func(core zapcore.Core) zapcore.Core {
+					return zapcore.NewCore(
+						zapcore.NewConsoleEncoder(cfg.EncoderConfig),
+						zapcore.NewMultiWriteSyncer(syncedBuf), cfg.Level)
+				}),
+				zap.ErrorOutput(syncedBuf),
 			},
 		},
 	}
 	return c, &buf
-}
-
-func newBackgroundTestLogger(t *testing.T) (*zap.SugaredLogger, fmt.Stringer) {
-	config, bgBuf := newConfig(t)
-	bgLog, err := config.LogConfig.Build(config.LogConfig.Config)
-	if err != nil {
-		t.Fatal("Failed to create logger")
-	}
-	return bgLog.Sugar(), bgBuf
 }
 
 func createSteps(s upgrade.Suite) []*step {
@@ -173,7 +167,7 @@ func (tt *texts) append(messages ...string) {
 	}
 }
 
-func completeSuiteExample(fp failurePoint, bgLog *zap.SugaredLogger) upgrade.Suite {
+func completeSuiteExample(fp failurePoint) upgrade.Suite {
 	serving := servingComponent()
 	eventing := eventingComponent()
 	suite := upgrade.Suite{

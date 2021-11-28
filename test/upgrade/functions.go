@@ -27,16 +27,15 @@ import (
 
 // Execute the Suite of upgrade tests with a Configuration given.
 func (s *Suite) Execute(c Configuration) {
-	l, err := c.logger()
+	l, err := c.logger(c.T)
 	if err != nil {
-		l.Error("Failed to build logger")
+		c.T.Fatal("Failed to build logger:", err)
 		return
 	}
 	se := suiteExecution{
 		suite:         enrichSuite(s),
 		configuration: c,
 		failed:        false,
-		logger:        l,
 	}
 	l.Info("🏃 Running upgrade test suite...")
 
@@ -100,29 +99,6 @@ func WaitForStopEvent(bc BackgroundContext, w WaitForStopEventConfiguration) {
 	}
 }
 
-func (c Configuration) logger() (*zap.SugaredLogger, error) {
-	// TODO(mgencur): Remove when dependent repositories use LogConfig instead of Log.
-	// This is for backwards compatibility.
-	if c.Log != nil {
-		return c.Log.Sugar(), nil
-	}
-
-	var (
-		log *zap.Logger
-		err error
-	)
-	if c.LogConfig.Build != nil {
-		// Build the logger using the provided config and build function.
-		log, err = c.LogConfig.Build(c.LogConfig.Config)
-	} else {
-		log, err = c.LogConfig.Config.Build()
-	}
-	if err != nil {
-		return nil, err
-	}
-	return log.Sugar(), nil
-}
-
 // Name returns a friendly human readable text.
 func (s *StopEvent) Name() string {
 	return s.name
@@ -133,10 +109,18 @@ func handleStopEvent(
 	bc BackgroundContext,
 	wc WaitForStopEventConfiguration,
 ) {
-	bc.Log.Infof("%s have received a stop event: %s", wc.Name, se.Name())
-	defer close(se.Finished)
+	bc.Log.Debugf("%s have received a stop event: %s", wc.Name, se.Name())
+
+	defer func() {
+		defer close(se.Finished)
+		logFn := se.logger.Info
+		if se.T.Failed() {
+			logFn = se.logger.Error
+		}
+		logFn(wrapLogs(bc.logBuffer))
+	}()
+
 	wc.OnStop(se)
-	se.T.Log(wrapLogs(bc.logBuffer))
 }
 
 func enrichSuite(s *Suite) *enrichedSuite {
@@ -234,5 +218,8 @@ func newInMemoryLoggerBuffer(config Configuration) (*zap.Logger, *threadSafeBuff
 }
 
 func wrapLogs(stringer fmt.Stringer) string {
-	return fmt.Sprintf("\n=== Background Log Start ===\n%s=== Background Log End ===", stringer)
+	return fmt.Sprintf("Rewind of background logs:\n" +
+		"=== Background Log Start ===\n" +
+		"%s" +
+		"=== Background Log End ===", stringer)
 }

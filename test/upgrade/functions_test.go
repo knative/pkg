@@ -29,7 +29,7 @@ const (
 )
 
 func TestExpectedTextsForEmptySuite(t *testing.T) {
-	assert := assertions{t: t}
+	assert := assertions{tb: t}
 	fp := notFailing
 	suite := emptySuiteExample()
 	txt := expectedTexts(suite, fp)
@@ -46,10 +46,9 @@ func TestExpectedTextsForEmptySuite(t *testing.T) {
 }
 
 func TestExpectedTextsForCompleteSuite(t *testing.T) {
-	assert := assertions{t: t}
+	assert := assertions{tb: t}
 	fp := notFailing
-	bgLog, _ := newBackgroundTestLogger(t)
-	suite := completeSuiteExample(fp, bgLog)
+	suite := completeSuiteExample(fp)
 	txt := expectedTexts(suite, fp)
 	expected := []string{
 		"1) 💿 Installing base installations. 2 are registered.",
@@ -81,13 +80,12 @@ func TestExpectedTextsForCompleteSuite(t *testing.T) {
 }
 
 func TestExpectedTextsForFailingCompleteSuite(t *testing.T) {
-	assert := assertions{t: t}
+	assert := assertions{tb: t}
 	fp := failurePoint{
 		step:    2,
 		element: 1,
 	}
-	bgLog, _ := newBackgroundTestLogger(t)
-	suite := completeSuiteExample(fp, bgLog)
+	suite := completeSuiteExample(fp)
 	txt := expectedTexts(suite, fp)
 	expected := []string{
 		"1) 💿 Installing base installations. 2 are registered.",
@@ -100,7 +98,7 @@ func TestExpectedTextsForFailingCompleteSuite(t *testing.T) {
 }
 
 func TestSuiteExecuteEmpty(t *testing.T) {
-	assert := assertions{t: t}
+	assert := assertions{tb: t}
 	c, buf := newConfig(t)
 	fp := notFailing
 	suite := emptySuiteExample()
@@ -117,12 +115,11 @@ func TestSuiteExecuteEmpty(t *testing.T) {
 }
 
 func TestSuiteExecuteWithComplete(t *testing.T) {
-	assert := assertions{t: t}
+	assert := assertions{t}
 	c, buf := newConfig(t)
 	fp := notFailing
-	bgLog, bgBuf := newBackgroundTestLogger(t)
-	suite := completeSuiteExample(fp, bgLog)
-	upgrade.DefaultOnWait = probeOnWaitFunc(bgLog)
+	suite := completeSuiteExample(fp)
+	upgrade.DefaultOnWait = probeOnWaitFunc()
 	suite.Execute(c)
 	output := buf.String()
 	if c.T.Failed() {
@@ -137,23 +134,12 @@ func TestSuiteExecuteWithComplete(t *testing.T) {
 		"Installing Eventing HEAD at 12f67cc",
 		"Installing Serving stable 0.17.1",
 		"Installing Eventing stable 0.17.2",
-	)
-	assert.textContains(output, expected)
-
-	unexpected := texts{elms: nil}
-	unexpected.append(
 		"Serving have received a stop event",
 		"Eventing continual test have received a stop event",
-	)
-	assert.textDoesNotContain(output, unexpected)
-
-	bgOutput := bgBuf.String()
-	bgExpected := texts{elms: nil}
-	bgExpected.append(
 		"Running Serving continual test",
 		"Stopping and verify of Eventing continual test",
 		"Serving - probing functionality...",
 		"Eventing continual test - probing functionality...",
 	)
-	assert.textContains(bgOutput, bgExpected)
+	assert.textContains(output, expected)
 }

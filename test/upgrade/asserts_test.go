@@ -23,25 +23,27 @@ import (
 )
 
 type assertions struct {
-	t *testing.T
+	tb testing.TB
 }
 
 func (a assertions) textContains(haystack string, needles texts) {
+	a.tb.Helper()
 	for _, needle := range needles.elms {
 		if !strings.Contains(haystack, needle) {
-			a.t.Errorf(
-				"expected %q is not in: %q",
+			a.tb.Fatalf(
+				"expected %#v is not in: %v",
 				needle, haystack,
 			)
 		}
 	}
 }
 
-func (a assertions) textDoesNotContain(haystack string, needles texts) {
+func (a assertions) textNotContains(haystack string, needles texts) {
+	a.tb.Helper()
 	for _, needle := range needles.elms {
 		if strings.Contains(haystack, needle) {
-			a.t.Errorf(
-				"unexpected %q is in: %q",
+			a.tb.Fatalf(
+				"%#v should not be in: %v",
 				needle, haystack,
 			)
 		}
@@ -49,7 +51,8 @@ func (a assertions) textDoesNotContain(haystack string, needles texts) {
 }
 
 func (a assertions) arraysEqual(actual []string, expected []string) {
+	a.tb.Helper()
 	if !reflect.DeepEqual(actual, expected) {
-		a.t.Errorf("arrays differ:\n  actual: %#v\nexpected: %#v", actual, expected)
+		a.tb.Fatalf("arrays differ:\n  actual: %#v\nexpected: %#v", actual, expected)
 	}
 }

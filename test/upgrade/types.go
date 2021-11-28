@@ -17,8 +17,6 @@ limitations under the License.
 package upgrade
 
 import (
-	"bytes"
-	"sync"
 	"testing"
 	"time"
 
@@ -102,6 +100,7 @@ type StopEvent struct {
 	T        *testing.T
 	Finished chan<- struct{}
 	name     string
+	logger   *zap.SugaredLogger
 }
 
 // WaitForStopEventConfiguration holds a values to be used be WaitForStopEvent
@@ -120,7 +119,7 @@ type Configuration struct {
 	T *testing.T
 	// TODO(mgencur): Remove when dependent repositories migrate to LogConfig.
 	// Keep this for backwards compatibility.
-	Log       *zap.Logger
+	Log *zap.Logger
 	LogConfig
 }
 
@@ -133,26 +132,17 @@ func (c Configuration) logConfig() LogConfig {
 	return c.LogConfig
 }
 
-// LogBuildFunc can customize building zap.Logger from zap.Config.
-type LogBuildFunc func(l zap.Config) (*zap.Logger, error)
-
-// LogConfig holds the logger configuration. It allows for passing just the logger
-// configuration and also a custom function for building the resulting logger.
+// LogConfig holds the logger configuration. It allows for passing just the
+// logger configuration and also a custom function for building the resulting
+// logger.
 type LogConfig struct {
-	// Configuration for the logger.
+	// Config from which the zap.Logger be created.
 	Config zap.Config
-	// (Optional) Custom build function that will produce the logger from the given zap config.
-	Build LogBuildFunc
+	// Options holds options for the zap.Logger.
+	Options []zap.Option
 }
 
 // SuiteExecutor is to execute upgrade test suite.
 type SuiteExecutor interface {
 	Execute(c Configuration)
-}
-
-// threadSafeBuffer avoids race conditions on bytes.Buffer.
-// See: https://stackoverflow.com/a/36226525/844449
-type threadSafeBuffer struct {
-	bytes.Buffer
-	sync.Mutex
 }

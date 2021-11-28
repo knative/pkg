@@ -19,8 +19,6 @@ package upgrade_test
 import (
 	"time"
 
-	"go.uber.org/zap"
-
 	"knative.dev/pkg/test/upgrade"
 )
 
@@ -166,8 +164,8 @@ func eventingComponent() component {
 	}
 }
 
-func probeOnWaitFunc(bgLog *zap.SugaredLogger) func(upgrade.BackgroundContext, upgrade.WaitForStopEventConfiguration) {
+func probeOnWaitFunc() func(upgrade.BackgroundContext, upgrade.WaitForStopEventConfiguration) {
 	return func(bc upgrade.BackgroundContext, self upgrade.WaitForStopEventConfiguration) {
-		bgLog.Debugf("%s - probing functionality...", self.Name)
+		bc.Log.Debugf("%s - probing functionality...", self.Name)
 	}
 }

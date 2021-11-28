@@ -40,16 +40,15 @@ func TestSuiteExecuteWithFailures(t *testing.T) {
 var allTestsFilter = func(_, _ string) (bool, error) { return true, nil }
 
 func testSuiteExecuteWithFailingStep(fp failurePoint, t *testing.T) {
-	assert := assertions{t: t}
 	testName := fmt.Sprintf("FailAt-%d-%d", fp.step, fp.element)
 	t.Run(testName, func(t *testing.T) {
+		assert := assertions{tb: t}
 		var (
 			output string
 			c      upgrade.Configuration
 			buf    fmt.Stringer
 		)
-		bgLog, _ := newBackgroundTestLogger(t)
-		suite := completeSuiteExample(fp, bgLog)
+		suite := completeSuiteExample(fp)
 		txt := expectedTexts(suite, fp)
 		txt.append(upgradeTestRunning, upgradeTestFailure)
 

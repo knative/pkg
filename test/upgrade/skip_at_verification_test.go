@@ -24,26 +24,26 @@ import (
 
 func TestSkipAtBackgroundVerification(t *testing.T) {
 	config, buf := newConfig(t)
-	bgLog, bgBuf := newBackgroundTestLogger(t)
 	skipMsg := "It is expected to be skipped"
 	s := upgrade.Suite{
 		Tests: upgrade.Tests{
 			Continual: []upgrade.BackgroundOperation{
 				upgrade.NewBackgroundVerification("ShouldBeSkipped",
 					func(c upgrade.Context) {
-						bgLog.Info("Setup 1")
+						c.Log.Info("Setup 1")
 					},
 					func(c upgrade.Context) {
-						bgLog.Warn(skipMsg)
+						c.Log.Warn(skipMsg)
 						c.T.Skip(skipMsg)
+						c.Log.Info("Verify 1")
 					},
 				),
 				upgrade.NewBackgroundVerification("ShouldNotBeSkipped",
 					func(c upgrade.Context) {
-						bgLog.Info("Setup 2")
+						c.Log.Info("Setup 2")
 					},
 					func(c upgrade.Context) {
-						bgLog.Info("Verify 2")
+						c.Log.Info("Verify 2")
 					},
 				),
 			},
@@ -51,20 +51,20 @@ func TestSkipAtBackgroundVerification(t *testing.T) {
 	}
 	s.Execute(config)
 
-	assert := assertions{t: t}
+	assert := assertions{tb: t}
 
 	out := buf.String()
+	assert.textNotContains(out, texts{elms: []string{
+		"INFO\tVerify 1",
+	}})
 	assert.textContains(out, texts{elms: []string{
 		upgradeTestRunning,
+		"DEBUG\tFinished \"ShouldBeSkipped\"",
 		"DEBUG\tFinished \"ShouldNotBeSkipped\"",
 		upgradeTestSuccess,
-	}})
-
-	bgOut := bgBuf.String()
-	assert.textContains(bgOut, texts{elms: []string{
 		"INFO\tSetup 1",
 		"INFO\tSetup 2",
-		"WARN\t" + skipMsg,
 		"INFO\tVerify 2",
+		"WARN\t" + skipMsg,
 	}})
 }
