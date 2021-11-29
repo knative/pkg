@@ -71,7 +71,8 @@ type ObservabilityConfig struct {
 	// OpenCensus. "None" disables all backends.
 	RequestMetricsBackend string
 
-	// RequestMetricsReportingPeriodSeconds specifies the request metrics reporting period in sec at queue proxy, eg 1
+	// RequestMetricsReportingPeriodSeconds specifies the request metrics reporting period in sec at queue proxy, eg 1.
+	// If a zero or negative value is passed the default reporting period is used (10 secs).
 	RequestMetricsReportingPeriodSeconds int
 
 	// EnableProfiling indicates whether it is allowed to retrieve runtime profiling data from
@@ -124,6 +125,8 @@ func NewObservabilityConfigFromConfigMap(configMap *corev1.ConfigMap) (*Observab
 		cm.AsBool(EnableReqLogKey, &oc.EnableRequestLog),
 		cm.AsBool(EnableProbeReqLogKey, &oc.EnableProbeRequestLog),
 		cm.AsString("metrics.request-metrics-backend-destination", &oc.RequestMetricsBackend),
+		// It follows the naming conventions used for `metrics.reporting-period-seconds` but it targets specifically queue proxy,
+		// thus the need for a new name.
 		cm.AsInt("metrics.request-metrics-reporting-period-seconds", &oc.RequestMetricsReportingPeriodSeconds),
 		cm.AsBool("profiling.enable", &oc.EnableProfiling),
 		cm.AsString("metrics.opencensus-address", &oc.MetricsCollectorAddress),
