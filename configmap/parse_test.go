@@ -29,8 +29,10 @@ import (
 type testConfig struct {
 	str    string
 	toggle bool
+	i16    int16
 	i32    int32
 	i64    int64
+	u16    uint16
 	u32    uint32
 	i      int
 	f64    float64
@@ -55,8 +57,10 @@ func TestParse(t *testing.T) {
 		data: map[string]string{
 			"test-string":   "foo.bar",
 			"test-bool":     "true",
+			"test-int16":    "6",
 			"test-int32":    "1",
 			"test-int64":    "2",
+			"test-uint16":   "5",
 			"test-uint32":   "3",
 			"test-int":      "4",
 			"test-float64":  "1.0",
@@ -70,8 +74,10 @@ func TestParse(t *testing.T) {
 		want: testConfig{
 			str:    "foo.bar",
 			toggle: true,
+			i16:    6,
 			i32:    1,
 			i64:    2,
+			u16:    5,
 			u32:    3,
 			f64:    1.0,
 			i:      4,
@@ -176,8 +182,10 @@ func TestParse(t *testing.T) {
 			if err := Parse(test.data,
 				AsString("test-string", &test.conf.str),
 				AsBool("test-bool", &test.conf.toggle),
+				AsInt16("test-int16", &test.conf.i16),
 				AsInt32("test-int32", &test.conf.i32),
 				AsInt64("test-int64", &test.conf.i64),
+				AsUint16("test-uint16", &test.conf.u16),
 				AsUint32("test-uint32", &test.conf.u32),
 				AsInt("test-int", &test.conf.i),
 				AsFloat64("test-float64", &test.conf.f64),
