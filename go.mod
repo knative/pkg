@@ -12,11 +12,7 @@ require (
 	github.com/blendle/zapdriver v1.3.1
 	github.com/census-instrumentation/opencensus-proto v0.3.0
 	github.com/davecgh/go-spew v1.1.1
-	github.com/dgryski/go-gk v0.0.0-20200319235926-a69029f61654 // indirect
 	github.com/evanphx/json-patch/v5 v5.6.0
-	github.com/go-openapi/jsonpointer v0.19.5 // indirect
-	github.com/go-openapi/jsonreference v0.19.5 // indirect
-	github.com/go-openapi/swag v0.19.15 // indirect
 	github.com/gobuffalo/flect v0.2.4
 	github.com/golang/protobuf v1.5.2
 	github.com/google/go-cmp v0.5.6
@@ -26,11 +22,8 @@ require (
 	github.com/google/uuid v1.3.0
 	github.com/gorilla/websocket v1.4.2
 	github.com/hashicorp/golang-lru v0.5.4
-	github.com/imdario/mergo v0.3.9 // indirect
-	github.com/influxdata/tdigest v0.0.0-20181121200506-bf2b5ad3c0a9 // indirect
 	github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51
 	github.com/kelseyhightower/envconfig v1.4.0
-	github.com/mailru/easyjson v0.7.7 // indirect
 	github.com/openzipkin/zipkin-go v0.3.0
 	github.com/prometheus/client_golang v1.11.0
 	github.com/prometheus/common v0.32.1
