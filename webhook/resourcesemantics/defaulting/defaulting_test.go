@@ -88,17 +88,17 @@ var (
 			Group:   "pkg.knative.dev",
 			Version: "v1alpha1",
 			Kind:    "Resource",
-		}: NewCallback(resourceCallback, webhook.Create, webhook.Update, webhook.Delete),
+		}: NewCallback(resourceCallback, webhook.Create, webhook.Update),
 		{
 			Group:   "pkg.knative.dev",
 			Version: "v1beta1",
 			Kind:    "Resource",
-		}: NewCallback(resourceCallback, webhook.Create, webhook.Update, webhook.Delete),
+		}: NewCallback(resourceCallback, webhook.Create, webhook.Update),
 		{
 			Group:   "pkg.knative.dev",
 			Version: "v1beta1",
 			Kind:    "ResourceCallbackDefault",
-		}: NewCallback(resourceCallback, webhook.Create, webhook.Update, webhook.Delete),
+		}: NewCallback(resourceCallback, webhook.Create, webhook.Update),
 		{
 			Group:   "pkg.knative.dev",
 			Version: "v1beta1",

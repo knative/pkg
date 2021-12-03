@@ -93,6 +93,9 @@ func NewCallback(function func(context.Context, *unstructured.Unstructured) erro
 	}
 	m := make(map[webhook.Operation]struct{})
 	for _, op := range supportedVerbs {
+		if op == webhook.Delete {
+			panic("Verb " + webhook.Delete + " not allowed")
+		}
 		if _, has := m[op]; has {
 			panic("duplicate verbs not allowed")
 		}
