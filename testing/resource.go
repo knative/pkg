@@ -44,13 +44,15 @@ var _ apis.Listable = (*Resource)(nil)
 
 // ResourceSpec represents test resource spec.
 type ResourceSpec struct {
-	FieldWithDefault               string `json:"fieldWithDefault,omitempty"`
-	FieldWithContextDefault        string `json:"fieldWithContextDefault,omitempty"`
-	FieldWithValidation            string `json:"fieldWithValidation,omitempty"`
-	FieldThatsImmutable            string `json:"fieldThatsImmutable,omitempty"`
-	FieldThatsImmutableWithDefault string `json:"fieldThatsImmutableWithDefault,omitempty"`
-	FieldForCallbackValidation     string `json:"fieldThatCallbackRejects,omitempty"`
-	FieldForCallbackDefaulting     string `json:"fieldDefaultingCallback,omitempty"`
+	FieldWithDefault                         string `json:"fieldWithDefault,omitempty"`
+	FieldWithContextDefault                  string `json:"fieldWithContextDefault,omitempty"`
+	FieldWithValidation                      string `json:"fieldWithValidation,omitempty"`
+	FieldThatsImmutable                      string `json:"fieldThatsImmutable,omitempty"`
+	FieldThatsImmutableWithDefault           string `json:"fieldThatsImmutableWithDefault,omitempty"`
+	FieldForCallbackValidation               string `json:"fieldThatCallbackRejects,omitempty"`
+	FieldForCallbackDefaulting               string `json:"fieldDefaultingCallback,omitempty"`
+	FieldForCallbackDefaultingIsWithinUpdate bool   `json:"fieldForIsWithinUpdate,omitempty"`
+	FieldForCallbackDefaultingUsername       string `json:"FieldForCallbackDefaultingUsername,omitempty"`
 }
 
 // GetGroupVersionKind returns the GroupVersionKind.

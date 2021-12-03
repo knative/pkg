@@ -21,6 +21,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"reflect"
 	"testing"
 
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -380,6 +381,10 @@ func TestAdmitCreates(t *testing.T) {
 			Operation: "add",
 			Path:      "/metadata/annotations/pkg.knative.dev~1creator",
 			Value:     user1,
+		}, {
+			Operation: "add",
+			Path:      "/spec/FieldForCallbackDefaultingUsername",
+			Value:     user1,
 		}},
 	}, {
 		name: "test simple creation (only callback defaults)",
@@ -401,6 +406,10 @@ func TestAdmitCreates(t *testing.T) {
 			Operation: "replace",
 			Path:      "/spec/fieldDefaultingCallback",
 			Value:     "I'm a default",
+		}, {
+			Operation: "add",
+			Path:      "/spec/FieldForCallbackDefaultingUsername",
+			Value:     user1,
 		}},
 	}}
 
@@ -455,13 +464,11 @@ func createCreateResource(ctx context.Context, t *testing.T, r *Resource) *admis
 
 func TestAdmitUpdates(t *testing.T) {
 	tests := []struct {
-		name                     string
-		setup                    func(context.Context, *Resource)
-		mutate                   func(context.Context, *Resource)
-		createResourceFunc       func(name string) *Resource
-		createUpdateResourceFunc func(ctx context.Context, t *testing.T, old, new *Resource) *admissionv1.AdmissionRequest
-		rejection                string
-		patches                  []jsonpatch.JsonPatchOperation
+		name      string
+		setup     func(context.Context, *Resource)
+		mutate    func(context.Context, *Resource)
+		rejection string
+		patches   []jsonpatch.JsonPatchOperation
 	}{{
 		name: "test simple update (no diff)",
 		setup: func(ctx context.Context, r *Resource) {
@@ -481,62 +488,6 @@ func TestAdmitUpdates(t *testing.T) {
 			r.Spec.FieldForCallbackDefaulting = "no magic value"
 		},
 		rejection: "no magic value",
-	}, {
-		name: "test simple update (callback defaults)",
-		setup: func(ctx context.Context, r *Resource) {
-			r.SetDefaults(ctx)
-		},
-		mutate: func(ctx context.Context, r *Resource) {
-			r.Spec.FieldForCallbackDefaulting = "magic value"
-		},
-		patches: []jsonpatch.JsonPatchOperation{{
-			Operation: "replace",
-			Path:      "/spec/fieldDefaultingCallback",
-			Value:     "I'm a default",
-		}, {
-
-			Operation: "replace",
-			Path:      "/metadata/annotations/pkg.knative.dev~1lastModifier",
-			Value:     user2,
-		}},
-	}, {
-		name: "test simple update (callback defaults only)",
-		setup: func(ctx context.Context, r *Resource) {
-			r.TypeMeta.APIVersion = "pkg.knative.dev/v1beta1"
-			r.TypeMeta.Kind = "ResourceCallbackDefault"
-			r.Spec.FieldForCallbackDefaulting = "magic value"
-			r.SetDefaults(ctx)
-		},
-		mutate: func(ctx context.Context, r *Resource) {
-			r.Spec.FieldForCallbackDefaulting = "magic value"
-		},
-		createUpdateResourceFunc: func(ctx context.Context, t *testing.T, old, new *Resource) *admissionv1.AdmissionRequest {
-			req := createUpdateResource(ctx, t, old, new)
-			req.Kind = new.GetGroupVersionKindMeta()
-			return req
-		},
-		patches: []jsonpatch.JsonPatchOperation{{
-			Operation: "replace",
-			Path:      "/spec/fieldDefaultingCallback",
-			Value:     "I'm a default",
-		}},
-	}, {
-		name: "test simple update (callback defaults only, operation not supported)",
-		setup: func(ctx context.Context, r *Resource) {
-			r.TypeMeta.APIVersion = "pkg.knative.dev/v1beta1"
-			r.TypeMeta.Kind = "ResourceCallbackDefaultCreate"
-			r.Spec.FieldForCallbackDefaulting = "magic value"
-			r.SetDefaults(ctx)
-		},
-		mutate: func(ctx context.Context, r *Resource) {
-			r.Spec.FieldForCallbackDefaulting = "magic value"
-		},
-		createUpdateResourceFunc: func(ctx context.Context, t *testing.T, old, new *Resource) *admissionv1.AdmissionRequest {
-			req := createUpdateResource(ctx, t, old, new)
-			req.Operation = admissionv1.Update
-			req.Kind = new.GetGroupVersionKindMeta()
-			return req
-		},
 	}, {
 		name: "test simple update (update updater annotation)",
 		setup: func(ctx context.Context, r *Resource) {
@@ -582,12 +533,7 @@ func TestAdmitUpdates(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			name := "a name"
 
-			var old *Resource
-			if tc.createResourceFunc == nil {
-				old = CreateResource(name)
-			} else {
-				old = tc.createResourceFunc(name)
-			}
+			old := CreateResource(name)
 			ctx := TestContextWithLogger(t)
 
 			old.Annotations = map[string]string{
@@ -606,12 +552,167 @@ func TestAdmitUpdates(t *testing.T) {
 
 			_, ac := newNonRunningTestResourceAdmissionController(t)
 
-			var req *admissionv1.AdmissionRequest
-			if tc.createUpdateResourceFunc == nil {
-				req = createUpdateResource(ctx, t, old, new)
+			req := createUpdateResource(ctx, t, old, new)
+
+			resp := ac.Admit(ctx, req)
+
+			if tc.rejection == "" {
+				ExpectAllowed(t, resp)
+				ExpectPatches(t, resp.Patch, tc.patches)
 			} else {
-				req = tc.createUpdateResourceFunc(ctx, t, old, new)
+				ExpectFailsWith(t, resp, tc.rejection)
 			}
+		})
+	}
+}
+
+func TestAdmitUpdatesCallback(t *testing.T) {
+	tests := []struct {
+		name                     string
+		setup                    func(context.Context, *Resource)
+		mutate                   func(context.Context, *Resource)
+		createResourceFunc       func(name string) *Resource
+		createUpdateResourceFunc func(ctx context.Context, t *testing.T, old, new *Resource) *admissionv1.AdmissionRequest
+		rejection                string
+		patches                  []jsonpatch.JsonPatchOperation
+	}{
+		{
+			name: "test simple update (callback defaults error)",
+			setup: func(ctx context.Context, r *Resource) {
+				r.SetDefaults(ctx)
+			},
+			mutate: func(ctx context.Context, r *Resource) {
+				r.Spec.FieldForCallbackDefaulting = "no magic value"
+			},
+			rejection:                "no magic value",
+			createUpdateResourceFunc: createUpdateResource,
+		}, {
+			name: "test simple update (callback defaults)",
+			setup: func(ctx context.Context, r *Resource) {
+				r.SetDefaults(ctx)
+			},
+			mutate: func(ctx context.Context, r *Resource) {
+				r.Spec.FieldForCallbackDefaulting = "magic value"
+			},
+			patches: []jsonpatch.JsonPatchOperation{{
+				Operation: "replace",
+				Path:      "/spec/fieldDefaultingCallback",
+				Value:     "I'm a default",
+			}, {
+
+				Operation: "replace",
+				Path:      "/metadata/annotations/pkg.knative.dev~1lastModifier",
+				Value:     user2,
+			}, {
+				Operation: "add",
+				Path:      "/spec/fieldForIsWithinUpdate",
+				Value:     true,
+			}, {
+				Operation: "add",
+				Path:      "/spec/FieldForCallbackDefaultingUsername",
+				Value:     user2,
+			}},
+			createUpdateResourceFunc: createUpdateResource,
+		}, {
+			name: "test simple update (callback defaults only)",
+			setup: func(ctx context.Context, r *Resource) {
+				r.TypeMeta.APIVersion = "pkg.knative.dev/v1beta1"
+				r.TypeMeta.Kind = "ResourceCallbackDefault"
+				r.Spec.FieldForCallbackDefaulting = "magic value"
+				r.SetDefaults(ctx)
+			},
+			mutate: func(ctx context.Context, r *Resource) {
+				r.Spec.FieldForCallbackDefaulting = "magic value"
+			},
+			createUpdateResourceFunc: func(ctx context.Context, t *testing.T, old, new *Resource) *admissionv1.AdmissionRequest {
+				req := createUpdateResource(ctx, t, old, new)
+				req.Kind = new.GetGroupVersionKindMeta()
+				return req
+			},
+			patches: []jsonpatch.JsonPatchOperation{{
+				Operation: "replace",
+				Path:      "/spec/fieldDefaultingCallback",
+				Value:     "I'm a default",
+			}, {
+				Operation: "add",
+				Path:      "/spec/fieldForIsWithinUpdate",
+				Value:     true,
+			}, {
+				Operation: "add",
+				Path:      "/spec/FieldForCallbackDefaultingUsername",
+				Value:     user2,
+			}},
+		}, {
+			name: "test simple update (callback defaults only, operation not supported)",
+			setup: func(ctx context.Context, r *Resource) {
+				r.TypeMeta.APIVersion = "pkg.knative.dev/v1beta1"
+				r.TypeMeta.Kind = "ResourceCallbackDefaultCreate"
+				r.Spec.FieldForCallbackDefaulting = "magic value"
+				r.SetDefaults(ctx)
+			},
+			mutate: func(ctx context.Context, r *Resource) {
+				r.Spec.FieldForCallbackDefaulting = "magic value"
+			},
+			createUpdateResourceFunc: func(ctx context.Context, t *testing.T, old, new *Resource) *admissionv1.AdmissionRequest {
+				req := createUpdateResource(ctx, t, old, new)
+				req.Operation = admissionv1.Update
+				req.Kind = new.GetGroupVersionKindMeta()
+				return req
+			},
+		}, {
+			name: "test simple update (callback defaults)",
+			setup: func(ctx context.Context, r *Resource) {
+				r.SetDefaults(ctx)
+			},
+			mutate: func(ctx context.Context, r *Resource) {
+				r.Spec.FieldForCallbackDefaulting = "magic value"
+			},
+			patches: []jsonpatch.JsonPatchOperation{{
+				Operation: "replace",
+				Path:      "/spec/fieldDefaultingCallback",
+				Value:     "I'm a default",
+			}, {
+
+				Operation: "replace",
+				Path:      "/metadata/annotations/pkg.knative.dev~1lastModifier",
+				Value:     user2,
+			}, {
+				Operation: "add",
+				Path:      "/spec/fieldForIsWithinUpdate",
+				Value:     true,
+			}, {
+				Operation: "add",
+				Path:      "/spec/FieldForCallbackDefaultingUsername",
+				Value:     user2,
+			}},
+			createUpdateResourceFunc: createUpdateResource,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			name := "a name"
+
+			old := CreateResource(name)
+			ctx := TestContextWithLogger(t)
+
+			old.Annotations = map[string]string{
+				"pkg.knative.dev/creator":      user1,
+				"pkg.knative.dev/lastModifier": user1,
+			}
+
+			tc.setup(ctx, old)
+
+			new := old.DeepCopy()
+
+			// Mutate the resource using the update context as user2
+			ctx = apis.WithUserInfo(apis.WithinUpdate(ctx, old),
+				&authenticationv1.UserInfo{Username: user2})
+			tc.mutate(ctx, new)
+
+			_, ac := newNonRunningTestResourceAdmissionController(t)
+
+			req := tc.createUpdateResourceFunc(ctx, t, old, new)
 
 			resp := ac.Admit(ctx, req)
 
@@ -717,7 +818,7 @@ func newTestResourceAdmissionController(t *testing.T) webhook.AdmissionControlle
 		}, true, callbacks).Reconciler.(*reconciler)
 }
 
-func resourceCallback(_ context.Context, uns *unstructured.Unstructured) error {
+func resourceCallback(ctx context.Context, uns *unstructured.Unstructured) error {
 	var resource Resource
 	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(uns.UnstructuredContent(), &resource); err != nil {
 		return err
@@ -727,7 +828,19 @@ func resourceCallback(_ context.Context, uns *unstructured.Unstructured) error {
 		if resource.Spec.FieldForCallbackDefaulting != "magic value" {
 			return errors.New(resource.Spec.FieldForCallbackDefaulting)
 		}
+		resource.Spec.FieldForCallbackDefaultingIsWithinUpdate = apis.IsInUpdate(ctx)
+		resource.Spec.FieldForCallbackDefaultingUsername = apis.GetUserInfo(ctx).Username
 		resource.Spec.FieldForCallbackDefaulting = "I'm a default"
+		if apis.IsInUpdate(ctx) {
+			if apis.GetBaseline(ctx) == nil {
+				return fmt.Errorf("expected baseline object")
+			}
+			if v, ok := apis.GetBaseline(ctx).(*unstructured.Unstructured); !ok {
+				return fmt.Errorf("expected *unstructured.Unstructured, got %v", reflect.TypeOf(v))
+			}
+		} else if !apis.IsInCreate(ctx) {
+			return fmt.Errorf("expected to have context within update or create")
+		}
 	}
 
 	u, err := runtime.DefaultUnstructuredConverter.ToUnstructured(&resource)
