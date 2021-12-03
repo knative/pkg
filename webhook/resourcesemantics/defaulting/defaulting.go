@@ -381,12 +381,27 @@ func (ac *reconciler) callback(ctx context.Context, gvk schema.GroupVersionKind,
 	oldBytes := req.OldObject.Raw
 	newBytes := req.Object.Raw
 
+	before := &unstructured.Unstructured{}
+	after := &unstructured.Unstructured{}
+
+	// Get unstructured object.
+	if err := json.Unmarshal(newBytes, before); err != nil {
+		return nil, fmt.Errorf("cannot decode object: %w", err)
+	}
+	// Copy before in after unstructured objects.
+	before.DeepCopyInto(after)
+
 	// Setup context.
 	if len(oldBytes) != 0 {
-		ctx = apis.WithinUpdate(ctx, oldBytes)
+		if req.SubResource == "" {
+			ctx = apis.WithinUpdate(ctx, before)
+		} else {
+			ctx = apis.WithinSubResourceUpdate(ctx, before, req.SubResource)
+		}
 	} else {
 		ctx = apis.WithinCreate(ctx)
 	}
+	ctx = apis.WithUserInfo(ctx, &req.UserInfo)
 
 	// Get callback.
 	callback, ok := ac.callbacks[gvk]
@@ -398,16 +413,6 @@ func (ac *reconciler) callback(ctx context.Context, gvk schema.GroupVersionKind,
 	if _, isSupported := callback.supportedVerbs[req.Operation]; !isSupported {
 		return patches, nil
 	}
-
-	before := &unstructured.Unstructured{}
-	after := &unstructured.Unstructured{}
-
-	// Get unstructured object.
-	if err := json.Unmarshal(newBytes, before); err != nil {
-		return nil, fmt.Errorf("cannot decode object: %w", err)
-	}
-	// Copy before in after unstructured objects.
-	before.DeepCopyInto(after)
 
 	// Call callback passing after.
 	if err := callback.function(ctx, after); err != nil {
