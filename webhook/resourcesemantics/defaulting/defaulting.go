@@ -378,6 +378,17 @@ func (ac *reconciler) setUserInfoAnnotations(ctx context.Context, patches duck.J
 }
 
 func (ac *reconciler) callback(ctx context.Context, gvk schema.GroupVersionKind, req *admissionv1.AdmissionRequest, patches duck.JSONPatch) (duck.JSONPatch, error) {
+	// Get callback.
+	callback, ok := ac.callbacks[gvk]
+	if !ok {
+		return patches, nil
+	}
+
+	// Check if request operation is a supported webhook operation.
+	if _, isSupported := callback.supportedVerbs[req.Operation]; !isSupported {
+		return patches, nil
+	}
+
 	oldBytes := req.OldObject.Raw
 	newBytes := req.Object.Raw
 
@@ -402,17 +413,6 @@ func (ac *reconciler) callback(ctx context.Context, gvk schema.GroupVersionKind,
 		ctx = apis.WithinCreate(ctx)
 	}
 	ctx = apis.WithUserInfo(ctx, &req.UserInfo)
-
-	// Get callback.
-	callback, ok := ac.callbacks[gvk]
-	if !ok {
-		return patches, nil
-	}
-
-	// Check if request operation is a supported webhook operation.
-	if _, isSupported := callback.supportedVerbs[req.Operation]; !isSupported {
-		return patches, nil
-	}
 
 	// Call callback passing after.
 	if err := callback.function(ctx, after); err != nil {
