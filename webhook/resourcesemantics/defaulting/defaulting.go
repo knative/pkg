@@ -269,7 +269,7 @@ func (ac *reconciler) mutate(ctx context.Context, req *admissionv1.AdmissionRequ
 			logger.Error("Unhandled kind: ", gvk)
 			return nil, fmt.Errorf("unhandled kind: %v", gvk)
 		}
-		patches, err := ac.callback(ctx, gvk, req, duck.JSONPatch{})
+		patches, err := ac.callback(ctx, gvk, req, true /* shouldSetUserInfo */, duck.JSONPatch{})
 		if err != nil {
 			logger.Errorw("Failed the callback defaulter", zap.Error(err))
 			// Return the error message as-is to give the defaulter callback
@@ -346,7 +346,7 @@ func (ac *reconciler) mutate(ctx context.Context, req *admissionv1.AdmissionRequ
 		return nil, err
 	}
 
-	if patches, err = ac.callback(ctx, gvk, req, patches); err != nil {
+	if patches, err = ac.callback(ctx, gvk, req, false /* shouldSetUserInfo */, patches); err != nil {
 		logger.Errorw("Failed the callback defaulter", zap.Error(err))
 		// Return the error message as-is to give the defaulter callback
 		// discretion over (our portion of) the message that the user sees.
@@ -380,7 +380,7 @@ func (ac *reconciler) setUserInfoAnnotations(ctx context.Context, patches duck.J
 	return append(patches, patch...), nil
 }
 
-func (ac *reconciler) callback(ctx context.Context, gvk schema.GroupVersionKind, req *admissionv1.AdmissionRequest, patches duck.JSONPatch) (duck.JSONPatch, error) {
+func (ac *reconciler) callback(ctx context.Context, gvk schema.GroupVersionKind, req *admissionv1.AdmissionRequest, shouldSetUserInfo bool, patches duck.JSONPatch) (duck.JSONPatch, error) {
 	// Get callback.
 	callback, ok := ac.callbacks[gvk]
 	if !ok {
@@ -420,6 +420,10 @@ func (ac *reconciler) callback(ctx context.Context, gvk schema.GroupVersionKind,
 	// Call callback passing after.
 	if err := callback.function(ctx, after); err != nil {
 		return patches, err
+	}
+
+	if shouldSetUserInfo {
+		setUserInfoAnnotationsUnstructured(ctx, after, before, req)
 	}
 
 	// Create patches.

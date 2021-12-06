@@ -19,8 +19,11 @@ package defaulting
 import (
 	"context"
 
+	admissionv1 "k8s.io/api/admission/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+
 	"knative.dev/pkg/apis"
 )
 
@@ -47,6 +50,31 @@ func setUserInfoAnnotations(ctx context.Context, resource apis.HasSpec, groupNam
 		} else {
 			annotations[groupName+apis.CreatorAnnotationSuffix] = ui.Username
 			annotations[groupName+apis.UpdaterAnnotationSuffix] = ui.Username
+		}
+	}
+}
+
+// setUserInfoAnnotationsUnstructured sets creator and updater annotations on a resource.
+func setUserInfoAnnotationsUnstructured(ctx context.Context, after *unstructured.Unstructured, before *unstructured.Unstructured, req *admissionv1.AdmissionRequest) {
+	if v, ok := after.Object["metadata"]; ok {
+		if metadata, ok := v.(map[string]interface{}); ok {
+			if v, ok := metadata["annotations"]; ok {
+				if annotations, ok := v.(map[string]interface{}); ok {
+					if apis.IsInUpdate(ctx) {
+
+						if equality.Semantic.DeepEqual(before.UnstructuredContent(), after.UnstructuredContent()) {
+							return
+						}
+
+						annotations[req.Resource.Group+apis.UpdaterAnnotationSuffix] = req.UserInfo.Username
+						return
+					}
+
+					annotations[req.Resource.Group+apis.CreatorAnnotationSuffix] = req.UserInfo.Username
+					annotations[req.Resource.Group+apis.UpdaterAnnotationSuffix] = req.UserInfo.Username
+				}
+			}
+
 		}
 	}
 }

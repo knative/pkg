@@ -410,6 +410,14 @@ func TestAdmitCreates(t *testing.T) {
 			Operation: "add",
 			Path:      "/spec/FieldForCallbackDefaultingUsername",
 			Value:     user1,
+		}, {
+			Operation: "replace",
+			Path:      "/metadata/annotations/pkg.knative.dev~1lastModifier",
+			Value:     user1,
+		}, {
+			Operation: "add",
+			Path:      "/metadata/annotations/pkg.knative.dev~1creator",
+			Value:     user1,
 		}},
 	}}
 
@@ -630,6 +638,10 @@ func TestAdmitUpdatesCallback(t *testing.T) {
 				return req
 			},
 			patches: []jsonpatch.JsonPatchOperation{{
+				Operation: "replace",
+				Path:      "/metadata/annotations/pkg.knative.dev~1lastModifier",
+				Value:     user2,
+			}, {
 				Operation: "replace",
 				Path:      "/spec/fieldDefaultingCallback",
 				Value:     "I'm a default",
