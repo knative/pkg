@@ -1007,7 +1007,7 @@ k8s.io/utils/buffer
 k8s.io/utils/integer
 k8s.io/utils/pointer
 k8s.io/utils/trace
-# knative.dev/hack v0.0.0-20211122162614-813559cefdda
+# knative.dev/hack v0.0.0-20211203062838-e11ac125e707
 ## explicit
 knative.dev/hack
 # sigs.k8s.io/structured-merge-diff/v4 v4.1.2
