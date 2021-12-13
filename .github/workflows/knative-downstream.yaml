@@ -36,8 +36,6 @@ jobs:
             org: knative
           - repo: client
             org: knative
-          - repo: discovery
-            org: knative-sandbox
           - repo: eventing-autoscaler-keda
             org: knative-sandbox
           - repo: eventing-awssqs
