@@ -74,21 +74,11 @@ func Cleanup(pid int) error {
 // PortForward sets up local port forward to the pod specified by the "app" label in the given namespace
 func PortForward(logf logging.FormatLogger, podList *v1.PodList, localPort, remotePort int, namespace string) (int, error) {
 	podName := podList.Items[0].Name
-	portFwdProcess, err := executeCmdBackground(logf, "kubectl", "port-forward", podName, fmt.Sprintf("%d:%d", localPort, remotePort), "-n", namespace)
-	if err != nil {
+	cmd := exec.Command("kubectl", "port-forward", podName, fmt.Sprintf("%d:%d", localPort, remotePort), "-n", namespace)
+	if err := cmd.Start(); err != nil {
 		return 0, fmt.Errorf("failed to port forward: %w", err)
 	}
 
-	logf("Running %s port-forward in background, pid = %d", podName, portFwdProcess.Pid)
-	return portFwdProcess.Pid, nil
-}
-
-// executeCmdBackground starts a background process and returns the Process if succeed
-func executeCmdBackground(logf logging.FormatLogger, cmd string, args ...string) (*os.Process, error) {
-	logf("Executing command: %s", cmd)
-	c := exec.Command(cmd, args...)
-	if err := c.Start(); err != nil {
-		return nil, fmt.Errorf("%s command failed: %w", cmd, err)
-	}
-	return c.Process, nil
+	logf("Running %s port-forward in background, pid = %d", podName, cmd.Process.Pid)
+	return cmd.Process.Pid, nil
 }
