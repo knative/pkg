@@ -67,14 +67,15 @@ func (se *suiteExecution) startContinualTests(num int) {
 				}
 				setup := operation.Setup()
 
+				logger, buffer := newInMemoryLoggerBuffer(se.configuration)
 				t.Run("Setup"+operation.Name(), func(t *testing.T) {
 					l, err = se.configuration.logger(t)
 					if err != nil {
 						t.Fatal(err)
 					}
-					setup(Context{T: t, Log: l})
+					setup(Context{T: t, Log: logger.Sugar()})
 				})
-				logger, buffer := newInMemoryLoggerBuffer(se.configuration)
+
 				handler := operation.Handler()
 				go func() {
 					handler(BackgroundContext{
