@@ -66,7 +66,7 @@ func testSuiteExecuteWithFailingStep(fp failurePoint, t *testing.T) {
 		output = buf.String()
 
 		if ok {
-			t.Fatal("didn't failed, but should")
+			t.Fatal("Didn't fail, but should")
 		}
 
 		assert.textContains(output, txt)

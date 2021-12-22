@@ -18,7 +18,7 @@ package upgrade
 
 import (
 	"bytes"
-	"fmt"
+	"strings"
 	"time"
 
 	"go.uber.org/zap/zapcore"
@@ -225,8 +225,6 @@ func newInMemoryLoggerBuffer(config Configuration) (*zap.Logger, *threadSafeBuff
 }
 
 func wrapLog(log string) string {
-	return fmt.Sprintf("Rewind of background logs:\n"+
-		"Background Log Start:\n"+
-		"%s"+
-		"Background Log End", log)
+	return "Rewind of background logs (prefix ⏳):\n" +
+		"⏳ " + strings.Join(strings.Split(log, "\n"), "\n⏳ ")
 }

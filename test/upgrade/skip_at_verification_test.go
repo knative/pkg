@@ -17,22 +17,63 @@ limitations under the License.
 package upgrade_test
 
 import (
+	"fmt"
+	"strings"
 	"testing"
 
 	"knative.dev/pkg/test/upgrade"
 )
 
+const (
+	bgMessages = 5
+)
+
 func TestSkipAtBackgroundVerification(t *testing.T) {
 	config, buf := newConfig(t)
 	skipMsg := "It is expected to be skipped"
+	doneCh := make(chan struct{})
+	beforeVerifyCh := make(chan struct{})
+	inVerifyCh := make(chan struct{})
+	expectedTexts := []string{
+		upgradeTestRunning,
+		"DEBUG\tFinished \"ShouldBeSkipped\"",
+		"DEBUG\tFinished \"ShouldNotBeSkipped\"",
+		upgradeTestSuccess,
+		"INFO\tSetup 1",
+		"INFO\tSetup 2",
+		"INFO\tVerify 2",
+		"WARN\t" + skipMsg,
+	}
 	s := upgrade.Suite{
 		Tests: upgrade.Tests{
 			Continual: []upgrade.BackgroundOperation{
 				upgrade.NewBackgroundVerification("ShouldBeSkipped",
+					// Setup
 					func(c upgrade.Context) {
 						c.Log.Info("Setup 1")
+						go func() {
+							// Log messages before the Verify phase.
+							for i := 0; i < bgMessages; i++ {
+								msg := fmt.Sprintf("BeforeVerify %d", i)
+								c.Log.Info(msg)
+								expectedTexts = append(expectedTexts, msg)
+							}
+							close(beforeVerifyCh)
+							<-inVerifyCh
+							// Log messages while Verify phase is in progress.
+							for i := 0; i < bgMessages; i++ {
+								msg := fmt.Sprintf("InVerify %d", i)
+								c.Log.Info(msg)
+								expectedTexts = append(expectedTexts, msg)
+							}
+							close(doneCh)
+						}()
 					},
+					// Verify
 					func(c upgrade.Context) {
+						<-beforeVerifyCh
+						close(inVerifyCh)
+						<-doneCh
 						c.Log.Warn(skipMsg)
 						c.T.Skip(skipMsg)
 						c.Log.Info("Verify 1")
@@ -57,14 +98,23 @@ func TestSkipAtBackgroundVerification(t *testing.T) {
 	assert.textNotContains(out, texts{elms: []string{
 		"INFO\tVerify 1",
 	}})
-	assert.textContains(out, texts{elms: []string{
-		upgradeTestRunning,
-		"DEBUG\tFinished \"ShouldBeSkipped\"",
-		"DEBUG\tFinished \"ShouldNotBeSkipped\"",
-		upgradeTestSuccess,
-		"INFO\tSetup 1",
-		"INFO\tSetup 2",
-		"INFO\tVerify 2",
-		"WARN\t" + skipMsg,
-	}})
+	assert.textContains(out, texts{elms: expectedTexts})
+	verifyBackgroundLogs(t, out)
+}
+
+func verifyBackgroundLogs(t *testing.T, logs string) {
+	t.Helper()
+	lines := strings.Split(logs, "\n")
+	var bgLines []string
+	for _, line := range lines {
+		if strings.Contains(line, "BeforeVerify") ||
+			strings.Contains(line, "InVerify") {
+			bgLines = append(bgLines, line)
+		}
+	}
+	for _, line := range bgLines {
+		if !strings.Contains(line, "⏳") {
+			t.Fatalf("Message was not logged by background logger: %q", line)
+		}
+	}
 }
