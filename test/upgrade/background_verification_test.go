@@ -118,3 +118,85 @@ func verifyBackgroundLogs(t *testing.T, logs string) {
 		}
 	}
 }
+
+func TestFailAtBackgroundVerification(t *testing.T) {
+	doneCh := make(chan struct{})
+	beforeVerifyCh := make(chan struct{})
+	inVerifyCh := make(chan struct{})
+	const failingVerification = "FailAtVerification"
+	expectedTexts := []string{
+		upgradeTestRunning,
+		fmt.Sprintf("DEBUG\tFinished %q", failingVerification),
+		upgradeTestFailure,
+		"INFO\tSetup 1",
+		"INFO\tVerify 1",
+	}
+	s := upgrade.Suite{
+		Tests: upgrade.Tests{
+			Continual: []upgrade.BackgroundOperation{
+				upgrade.NewBackgroundVerification(failingVerification,
+					// Setup
+					func(c upgrade.Context) {
+						c.Log.Info("Setup 1")
+						go func() {
+							// Log messages before the Verify phase.
+							for i := 0; i < bgMessages; i++ {
+								msg := fmt.Sprintf("BeforeVerify %d", i)
+								c.Log.Info(msg)
+								expectedTexts = append(expectedTexts, msg)
+							}
+							close(beforeVerifyCh)
+							<-inVerifyCh
+							// Log messages while Verify phase is in progress.
+							for i := 0; i < bgMessages; i++ {
+								msg := fmt.Sprintf("InVerify %d", i)
+								c.Log.Info(msg)
+								expectedTexts = append(expectedTexts, msg)
+							}
+							close(doneCh)
+						}()
+					},
+					// Verify
+					func(c upgrade.Context) {
+						<-beforeVerifyCh
+						close(inVerifyCh)
+						<-doneCh
+						c.Log.Info("Verify 1")
+						c.T.Fatal(failureTestingMessage)
+						c.Log.Info("Verify 2")
+					},
+				),
+			},
+		},
+	}
+	var (
+		buf fmt.Stringer
+		c   upgrade.Configuration
+		ok  bool
+	)
+	it := []testing.InternalTest{{
+		Name: t.Name(),
+		F: func(t *testing.T) {
+			c, buf = newConfig(t)
+			s.Execute(c)
+		},
+	}}
+	testOutput := captureStdOutput(func() {
+		ok = testing.RunTests(allTestsFilter, it)
+	})
+	if ok {
+		t.Fatal("Didn't fail, but should")
+	}
+	out := buf.String()
+	assert := assertions{tb: t}
+	assert.textNotContains(out, texts{elms: []string{
+		"INFO\tVerify 2",
+	}})
+	assert.textContains(out, texts{elms: expectedTexts})
+	assert.textContains(testOutput, texts{
+		elms: []string{
+			fmt.Sprintf("--- FAIL: %s/VerifyContinualTests/%s", t.Name(), failingVerification),
+		},
+	})
+	verifyBackgroundLogs(t, out)
+}

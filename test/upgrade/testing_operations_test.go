@@ -27,6 +27,10 @@ import (
 	"knative.dev/pkg/test/upgrade"
 )
 
+const (
+	failureTestingMessage = "This error is expected to be seen. Upgrade suite should fail."
+)
+
 func newConfig(t *testing.T) (upgrade.Configuration, fmt.Stringer) {
 	var buf bytes.Buffer
 	cfg := zap.NewDevelopmentConfig()
@@ -238,7 +242,6 @@ func (o operation) Name() string {
 }
 
 func (o *operation) fail(setupFail bool) {
-	failureTestingMessage := "This error is expected to be seen. Upgrade suite should fail."
 	testName := fmt.Sprintf("FailingOf%s", o.Name())
 	if o.op != nil {
 		prev := o.op
