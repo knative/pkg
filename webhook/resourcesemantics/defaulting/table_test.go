@@ -33,6 +33,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/wait"
 	clientgotesting "k8s.io/client-go/testing"
+
 	"knative.dev/pkg/configmap"
 	"knative.dev/pkg/controller"
 	"knative.dev/pkg/ptr"
@@ -90,6 +91,20 @@ func TestReconcile(t *testing.T) {
 			APIGroups:   []string{"pkg.knative.dev"},
 			APIVersions: []string{"v1alpha1"},
 			Resources:   []string{"resources", "resources/status"},
+		},
+	}, {
+		Operations: []admissionregistrationv1.OperationType{"CREATE", "UPDATE"},
+		Rule: admissionregistrationv1.Rule{
+			APIGroups:   []string{"pkg.knative.dev"},
+			APIVersions: []string{"v1beta1"},
+			Resources:   []string{"resourcecallbackdefaultcreates", "resourcecallbackdefaultcreates/status"},
+		},
+	}, {
+		Operations: []admissionregistrationv1.OperationType{"CREATE", "UPDATE"},
+		Rule: admissionregistrationv1.Rule{
+			APIGroups:   []string{"pkg.knative.dev"},
+			APIVersions: []string{"v1beta1"},
+			Resources:   []string{"resourcecallbackdefaults", "resourcecallbackdefaults/status"},
 		},
 	}, {
 		Operations: []admissionregistrationv1.OperationType{"CREATE", "UPDATE"},
@@ -419,7 +434,8 @@ func TestReconcile(t *testing.T) {
 			},
 			path: path,
 
-			handlers: handlers,
+			handlers:  handlers,
+			callbacks: callbacks,
 
 			client:       kubeclient.Get(ctx),
 			mwhlister:    listers.GetMutatingWebhookConfigurationLister(),

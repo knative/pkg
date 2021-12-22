@@ -171,7 +171,17 @@ func (ac *reconciler) reconcileMutatingWebhook(ctx context.Context, caCert []byt
 	logger := logging.FromContext(ctx)
 
 	rules := make([]admissionregistrationv1.RuleWithOperations, 0, len(ac.handlers))
+	gvks := make(map[schema.GroupVersionKind]struct{}, len(ac.handlers)+len(ac.callbacks))
 	for gvk := range ac.handlers {
+		gvks[gvk] = struct{}{}
+	}
+	for gvk := range ac.callbacks {
+		if _, ok := gvks[gvk]; !ok {
+			gvks[gvk] = struct{}{}
+		}
+	}
+
+	for gvk := range gvks {
 		plural := strings.ToLower(flect.Pluralize(gvk.Kind))
 
 		rules = append(rules, admissionregistrationv1.RuleWithOperations{
