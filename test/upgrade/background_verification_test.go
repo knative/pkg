@@ -1,5 +1,5 @@
 /*
-Copyright 2020 The Knative Authors
+Copyright 2021 The Knative Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -52,7 +52,7 @@ func TestSkipAtBackgroundVerification(t *testing.T) {
 					func(c upgrade.Context) {
 						c.Log.Info("Setup 1")
 						go func() {
-							// Log messages before the Verify phase.
+							// Log messages before Verify phase.
 							for i := 0; i < bgMessages; i++ {
 								msg := fmt.Sprintf("BeforeVerify %d", i)
 								c.Log.Info(msg)
@@ -104,16 +104,10 @@ func TestSkipAtBackgroundVerification(t *testing.T) {
 
 func verifyBackgroundLogs(t *testing.T, logs string) {
 	t.Helper()
-	lines := strings.Split(logs, "\n")
-	var bgLines []string
-	for _, line := range lines {
-		if strings.Contains(line, "BeforeVerify") ||
-			strings.Contains(line, "InVerify") {
-			bgLines = append(bgLines, line)
-		}
-	}
-	for _, line := range bgLines {
-		if !strings.Contains(line, "⏳") {
+	for _, line := range strings.Split(logs, "\n") {
+		if (strings.Contains(line, "BeforeVerify") ||
+			strings.Contains(line, "InVerify")) &&
+			!strings.Contains(line, "⏳") {
 			t.Fatalf("Message was not logged by background logger: %q", line)
 		}
 	}
@@ -139,7 +133,7 @@ func TestFailAtBackgroundVerification(t *testing.T) {
 					func(c upgrade.Context) {
 						c.Log.Info("Setup 1")
 						go func() {
-							// Log messages before the Verify phase.
+							// Log messages before Verify phase.
 							for i := 0; i < bgMessages; i++ {
 								msg := fmt.Sprintf("BeforeVerify %d", i)
 								c.Log.Info(msg)
