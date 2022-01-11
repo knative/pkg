@@ -24,6 +24,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"time"
 
 	"testing"
 
@@ -111,7 +112,7 @@ func TestSpoofingClient_CheckEndpointState(t *testing.T) {
 				Client:          &http.Client{Transport: tt.transport},
 				Logf:            t.Logf,
 				RequestInterval: 1,
-				RequestTimeout:  1,
+				RequestTimeout:  time.Second,
 			}
 			url := &url.URL{
 				Host:   "fake.knative.net",
@@ -155,10 +156,15 @@ func TestSpoofingClient_WaitForEndpointState(t *testing.T) {
 	}, {
 		name:      "Non matching response triggers more requests",
 		transport: &fakeTransport{response: successResponse},
-		inState: func(resp *Response) (done bool, err error) {
-			return false, nil
-		},
-		wantErr:   true,
+		inState: func() ResponseChecker {
+			var calls atomic.Int32
+			return func(resp *Response) (done bool, err error) {
+				val := calls.Inc()
+				// Stop the looping on the third invocation
+				return val == 3, nil
+			}
+		}(),
+		wantErr:   false,
 		wantCalls: 3,
 	}, {
 		name:      "Retriable error is retried",
@@ -183,7 +189,7 @@ func TestSpoofingClient_WaitForEndpointState(t *testing.T) {
 				Client:          &http.Client{Transport: tt.transport},
 				Logf:            t.Logf,
 				RequestInterval: 1,
-				RequestTimeout:  1,
+				RequestTimeout:  time.Second,
 			}
 			url := &url.URL{
 				Host:   "fake.knative.net",
