@@ -14,6 +14,7 @@ require (
 	github.com/davecgh/go-spew v1.1.1
 	github.com/dgryski/go-gk v0.0.0-20200319235926-a69029f61654 // indirect
 	github.com/evanphx/json-patch/v5 v5.6.0
+	github.com/go-logr/logr v1.2.2 // indirect
 	github.com/go-openapi/swag v0.19.15 // indirect
 	github.com/gobuffalo/flect v0.2.4
 	github.com/golang/protobuf v1.5.2
@@ -50,7 +51,7 @@ require (
 	k8s.io/client-go v0.22.5
 	k8s.io/code-generator v0.22.5
 	k8s.io/gengo v0.0.0-20211129171323-c02415ce4185
-	k8s.io/klog v1.0.0
+	k8s.io/klog/v2 v2.40.1
 	knative.dev/hack v0.0.0-20220110200259-f08cb0dcdee7
 	sigs.k8s.io/yaml v1.3.0
 )
