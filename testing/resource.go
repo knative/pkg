@@ -50,9 +50,9 @@ type ResourceSpec struct {
 	FieldThatsImmutable                      string `json:"fieldThatsImmutable,omitempty"`
 	FieldThatsImmutableWithDefault           string `json:"fieldThatsImmutableWithDefault,omitempty"`
 	FieldForCallbackValidation               string `json:"fieldThatCallbackRejects,omitempty"`
-	FieldForCallbackDefaulting               string `json:"fieldDefaultingCallback,omitempty"`
-	FieldForCallbackDefaultingIsWithinUpdate bool   `json:"fieldForIsWithinUpdate,omitempty"`
-	FieldForCallbackDefaultingUsername       string `json:"FieldForCallbackDefaultingUsername,omitempty"`
+	FieldForCallbackDefaulting               string `json:"fieldForCallbackDefaulting,omitempty"`
+	FieldForCallbackDefaultingIsWithinUpdate bool   `json:"fieldForCallbackDefaultingIsWithinUpdate,omitempty"`
+	FieldForCallbackDefaultingUsername       string `json:"fieldForCallbackDefaultingUsername,omitempty"`
 }
 
 // GetGroupVersionKind returns the GroupVersionKind.

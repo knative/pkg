@@ -371,7 +371,7 @@ func TestAdmitCreates(t *testing.T) {
 		},
 		patches: []jsonpatch.JsonPatchOperation{{
 			Operation: "replace",
-			Path:      "/spec/fieldDefaultingCallback",
+			Path:      "/spec/fieldForCallbackDefaulting",
 			Value:     "I'm a default",
 		}, {
 			Operation: "replace",
@@ -383,7 +383,7 @@ func TestAdmitCreates(t *testing.T) {
 			Value:     user1,
 		}, {
 			Operation: "add",
-			Path:      "/spec/FieldForCallbackDefaultingUsername",
+			Path:      "/spec/fieldForCallbackDefaultingUsername",
 			Value:     user1,
 		}},
 	}, {
@@ -404,11 +404,11 @@ func TestAdmitCreates(t *testing.T) {
 		},
 		patches: []jsonpatch.JsonPatchOperation{{
 			Operation: "replace",
-			Path:      "/spec/fieldDefaultingCallback",
+			Path:      "/spec/fieldForCallbackDefaulting",
 			Value:     "I'm a default",
 		}, {
 			Operation: "add",
-			Path:      "/spec/FieldForCallbackDefaultingUsername",
+			Path:      "/spec/fieldForCallbackDefaultingUsername",
 			Value:     user1,
 		}, {
 			Operation: "replace",
@@ -604,7 +604,7 @@ func TestAdmitUpdatesCallback(t *testing.T) {
 			},
 			patches: []jsonpatch.JsonPatchOperation{{
 				Operation: "replace",
-				Path:      "/spec/fieldDefaultingCallback",
+				Path:      "/spec/fieldForCallbackDefaulting",
 				Value:     "I'm a default",
 			}, {
 
@@ -613,11 +613,11 @@ func TestAdmitUpdatesCallback(t *testing.T) {
 				Value:     user2,
 			}, {
 				Operation: "add",
-				Path:      "/spec/fieldForIsWithinUpdate",
+				Path:      "/spec/fieldForCallbackDefaultingIsWithinUpdate",
 				Value:     true,
 			}, {
 				Operation: "add",
-				Path:      "/spec/FieldForCallbackDefaultingUsername",
+				Path:      "/spec/fieldForCallbackDefaultingUsername",
 				Value:     user2,
 			}},
 			createUpdateResourceFunc: createUpdateResource,
@@ -643,15 +643,15 @@ func TestAdmitUpdatesCallback(t *testing.T) {
 				Value:     user2,
 			}, {
 				Operation: "replace",
-				Path:      "/spec/fieldDefaultingCallback",
+				Path:      "/spec/fieldForCallbackDefaulting",
 				Value:     "I'm a default",
 			}, {
 				Operation: "add",
-				Path:      "/spec/fieldForIsWithinUpdate",
+				Path:      "/spec/fieldForCallbackDefaultingIsWithinUpdate",
 				Value:     true,
 			}, {
 				Operation: "add",
-				Path:      "/spec/FieldForCallbackDefaultingUsername",
+				Path:      "/spec/fieldForCallbackDefaultingUsername",
 				Value:     user2,
 			}},
 		}, {
@@ -681,7 +681,7 @@ func TestAdmitUpdatesCallback(t *testing.T) {
 			},
 			patches: []jsonpatch.JsonPatchOperation{{
 				Operation: "replace",
-				Path:      "/spec/fieldDefaultingCallback",
+				Path:      "/spec/fieldForCallbackDefaulting",
 				Value:     "I'm a default",
 			}, {
 
@@ -690,11 +690,11 @@ func TestAdmitUpdatesCallback(t *testing.T) {
 				Value:     user2,
 			}, {
 				Operation: "add",
-				Path:      "/spec/fieldForIsWithinUpdate",
+				Path:      "/spec/fieldForCallbackDefaultingIsWithinUpdate",
 				Value:     true,
 			}, {
 				Operation: "add",
-				Path:      "/spec/FieldForCallbackDefaultingUsername",
+				Path:      "/spec/fieldForCallbackDefaultingUsername",
 				Value:     user2,
 			}},
 			createUpdateResourceFunc: createUpdateResource,
