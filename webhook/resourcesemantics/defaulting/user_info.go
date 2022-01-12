@@ -51,30 +51,35 @@ func setUserInfoAnnotations(ctx context.Context, resource apis.HasSpec, groupNam
 			annotations[groupName+apis.CreatorAnnotationSuffix] = ui.Username
 			annotations[groupName+apis.UpdaterAnnotationSuffix] = ui.Username
 		}
+		objectMetaAccessor.GetObjectMeta().SetAnnotations(annotations)
 	}
 }
 
-// setUserInfoAnnotationsUnstructured sets creator and updater annotations on a resource.
-func setUserInfoAnnotationsUnstructured(ctx context.Context, after *unstructured.Unstructured, before *unstructured.Unstructured, req *admissionv1.AdmissionRequest) {
-	if v, ok := after.Object["metadata"]; ok {
-		if metadata, ok := v.(map[string]interface{}); ok {
-			if v, ok := metadata["annotations"]; ok {
-				if annotations, ok := v.(map[string]interface{}); ok {
-					if apis.IsInUpdate(ctx) {
+type unstructuredHasSpec struct {
+	*unstructured.Unstructured
+}
 
-						if equality.Semantic.DeepEqual(before.UnstructuredContent(), after.UnstructuredContent()) {
-							return
-						}
+func (us unstructuredHasSpec) GetObjectMeta() metav1.Object {
+	return us.Unstructured
+}
 
-						annotations[req.Resource.Group+apis.UpdaterAnnotationSuffix] = req.UserInfo.Username
-						return
-					}
+var _ metav1.ObjectMetaAccessor = unstructuredHasSpec{}
 
-					annotations[req.Resource.Group+apis.CreatorAnnotationSuffix] = req.UserInfo.Username
-					annotations[req.Resource.Group+apis.UpdaterAnnotationSuffix] = req.UserInfo.Username
-				}
-			}
+func (us unstructuredHasSpec) GetUntypedSpec() interface{} {
+	if s, ok := us.Unstructured.Object["spec"]; ok {
+		return s
+	}
+	return nil
+}
 
+func adaptUnstructuredHasSpecCtx(ctx context.Context, req *admissionv1.AdmissionRequest) context.Context {
+	if apis.IsInUpdate(ctx) {
+		b := apis.GetBaseline(ctx)
+		if apis.IsInStatusUpdate(ctx) {
+			ctx = apis.WithinSubResourceUpdate(ctx, unstructuredHasSpec{b.(*unstructured.Unstructured)}, req.SubResource)
+		} else {
+			ctx = apis.WithinUpdate(ctx, unstructuredHasSpec{b.(*unstructured.Unstructured)})
 		}
 	}
+	return ctx
 }

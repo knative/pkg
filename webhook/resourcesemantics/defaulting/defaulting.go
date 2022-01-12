@@ -433,7 +433,7 @@ func (ac *reconciler) callback(ctx context.Context, gvk schema.GroupVersionKind,
 	}
 
 	if shouldSetUserInfo {
-		setUserInfoAnnotationsUnstructured(ctx, after, before, req)
+		setUserInfoAnnotations(adaptUnstructuredHasSpecCtx(ctx, req), unstructuredHasSpec{after}, req.Resource.Group)
 	}
 
 	// Create patches.
