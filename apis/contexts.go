@@ -141,6 +141,22 @@ func IsWithinParent(ctx context.Context) bool {
 	return ok
 }
 
+type namespaceKey struct{}
+// WithNamespace attaches the request's namespace. Intended to be used
+// where defaulting depends on the namespace (eventing channels, brokers)
+// and the client may not provide it in the resource ObjectMeta
+func WithNamespace(ctx context.Context, ns string) context.Context {
+	return context.WithValue(ctx, namespaceKey{}, ns)
+}
+
+func GetNamespace(ctx context.Context) string {
+	if ns, ok := ctx.Value(namespaceKey{}).(string); ok {
+		return ns
+	}
+
+	return ""
+}
+
 // ParentMeta accesses the ObjectMeta of the enclosing parent resource
 // from the context.  See WithinParent for how to attach the parent's
 // ObjectMeta to the context.

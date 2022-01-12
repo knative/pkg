@@ -241,3 +241,18 @@ func TestGetHTTPRequest(t *testing.T) {
 		t.Errorf("GetHTTPRequest() = %v, wanted %v", got, want)
 	}
 }
+
+func TestGetNamespace(t *testing.T) {
+	ctx := context.Background()
+
+	if got := GetNamespace(ctx); got != "" {
+		t.Errorf("GetNamespace() = \"%v\", wanted \"\"", got)
+	}
+
+	ns := "some-namespace"
+	ctx = WithNamespace(ctx, ns)
+
+	if want, got := ns, GetNamespace(ctx); got != want {
+		t.Errorf("GetNamespace() = \"%v\", wanted \"%v\"", got, want)
+	}
+}

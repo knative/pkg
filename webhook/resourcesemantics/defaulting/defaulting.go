@@ -288,7 +288,7 @@ func (ac *reconciler) mutate(ctx context.Context, req *admissionv1.AdmissionRequ
 		ctx = apis.WithinCreate(ctx)
 	}
 	ctx = apis.WithUserInfo(ctx, &req.UserInfo)
-
+	ctx = apis.WithNamespace(ctx, req.Namespace)
 	// Default the new object.
 	if patches, err = setDefaults(ctx, patches, newObj); err != nil {
 		logger.Errorw("Failed the resource specific defaulter", zap.Error(err))
