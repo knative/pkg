@@ -23,6 +23,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+
 	"knative.dev/pkg/apis"
 )
 
@@ -43,17 +44,30 @@ var _ apis.Listable = (*Resource)(nil)
 
 // ResourceSpec represents test resource spec.
 type ResourceSpec struct {
-	FieldWithDefault               string `json:"fieldWithDefault,omitempty"`
-	FieldWithContextDefault        string `json:"fieldWithContextDefault,omitempty"`
-	FieldWithValidation            string `json:"fieldWithValidation,omitempty"`
-	FieldThatsImmutable            string `json:"fieldThatsImmutable,omitempty"`
-	FieldThatsImmutableWithDefault string `json:"fieldThatsImmutableWithDefault,omitempty"`
-	FieldForCallbackValidation     string `json:"fieldThatCallbackRejects,omitempty"`
+	FieldWithDefault                         string `json:"fieldWithDefault,omitempty"`
+	FieldWithContextDefault                  string `json:"fieldWithContextDefault,omitempty"`
+	FieldWithValidation                      string `json:"fieldWithValidation,omitempty"`
+	FieldThatsImmutable                      string `json:"fieldThatsImmutable,omitempty"`
+	FieldThatsImmutableWithDefault           string `json:"fieldThatsImmutableWithDefault,omitempty"`
+	FieldForCallbackValidation               string `json:"fieldThatCallbackRejects,omitempty"`
+	FieldForCallbackDefaulting               string `json:"fieldForCallbackDefaulting,omitempty"`
+	FieldForCallbackDefaultingIsWithinUpdate bool   `json:"fieldForCallbackDefaultingIsWithinUpdate,omitempty"`
+	FieldForCallbackDefaultingUsername       string `json:"fieldForCallbackDefaultingUsername,omitempty"`
 }
 
 // GetGroupVersionKind returns the GroupVersionKind.
 func (r *Resource) GetGroupVersionKind() schema.GroupVersionKind {
 	return SchemeGroupVersion.WithKind("Resource")
+}
+
+// GetGroupVersionKindMeta returns the metav1.GroupVersionKind.
+func (r *Resource) GetGroupVersionKindMeta() metav1.GroupVersionKind {
+	gvk := r.GroupVersionKind()
+	return metav1.GroupVersionKind{
+		Group:   gvk.Group,
+		Version: gvk.Version,
+		Kind:    gvk.Kind,
+	}
 }
 
 // GetUntypedSpec returns the spec of the resource.
