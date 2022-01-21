@@ -29,6 +29,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes/scheme"
+
 	"knative.dev/pkg/apis"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
 	duckv1alpha1 "knative.dev/pkg/apis/duck/v1alpha1"
@@ -348,7 +349,7 @@ func TestGetURIDestinationV1Beta1(t *testing.T) {
 			wantErr: fmt.Sprintf("address not set for %+v", unaddressableRef()),
 		}, "notFound": {
 			dest:    duckv1beta1.Destination{Ref: unaddressableRef()},
-			wantErr: fmt.Sprintf("%s %q not found", unaddressableResource, unaddressableName),
+			wantErr: fmt.Sprintf("failed to get object %s/%s: %s %q not found", testNS, unaddressableName, unaddressableResource, unaddressableName),
 		}}
 
 	for n, tc := range tests {
@@ -531,10 +532,10 @@ func TestGetURIDestinationV1(t *testing.T) {
 			wantErr: fmt.Sprintf("address not set for %+v", unaddressableRef()),
 		}, "notFound": {
 			dest:    duckv1.Destination{Ref: unaddressableKnativeRef()},
-			wantErr: fmt.Sprintf("%s %q not found", unaddressableResource, unaddressableName),
+			wantErr: fmt.Sprintf("failed to get object %s/%s: %s %q not found", testNS, unaddressableName, unaddressableResource, unaddressableName),
 		}, "notFound k8s service": {
 			dest:    duckv1.Destination{Ref: k8sServiceRef()},
-			wantErr: fmt.Sprintf("services %q not found", addressableName),
+			wantErr: fmt.Sprintf("failed to get object %s/%s: services %q not found", testNS, addressableName, addressableName),
 		}, "with sample resolver": {
 			dest:            duckv1.Destination{Ref: k8sServiceRef()},
 			customResolvers: []resolver.RefResolverFunc{sampleURIResolver},
@@ -595,11 +596,12 @@ func TestURIFromObjectReferenceErrors(t *testing.T) {
 	}{"nil": {
 		wantErr: "ref is nil",
 	}, "fail tracker with bad object": {
-		ref:     invalidObjectRef(),
-		wantErr: `sinks.duck.knative.dev "testsink" not found`,
+		ref: invalidObjectRef(),
+		wantErr: `failed to track reference duck.knative.dev/v1, Resource=sinks -bad/testsink: invalid Reference:
+Namespace: a lowercase RFC 1123 label must consist of lower case alphanumeric characters or '-', and must start and end with an alphanumeric character (e.g. 'my-name',  or '123-abc', regex used for validation is '[a-z0-9]([-a-z0-9]*[a-z0-9])?')`,
 	}, "fail get": {
 		ref:     addressableRef(),
-		wantErr: `sinks.duck.knative.dev "testsink" not found`,
+		wantErr: `failed to get object testnamespace/testsink: sinks.duck.knative.dev "testsink" not found`,
 	}}
 
 	for n, tc := range tests {
@@ -619,8 +621,8 @@ func TestURIFromObjectReferenceErrors(t *testing.T) {
 			if got, want := err2.Error(), tc.wantErr; got != want {
 				t.Errorf("Unexpected error (-want, +got) =\n%s", cmp.Diff(want, got))
 			}
-			if !cmp.Equal(err1, err2) {
-				t.Errorf("Idempotency fail: first err = %v, second err = %v", err1, err2)
+			if err1.Error() != err2.Error() {
+				t.Errorf("Idempotency fail: first err = %+v, second err = %+v", err1, err2)
 			}
 		})
 	}
