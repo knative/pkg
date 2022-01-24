@@ -40,7 +40,7 @@ func newConfig(t *testing.T) (upgrade.Configuration, fmt.Stringer) {
 	c := upgrade.Configuration{
 		T: t,
 		LogConfig: upgrade.LogConfig{
-			Config: cfg,
+			Config: &cfg,
 			Options: []zap.Option{
 				zap.WrapCore(func(core zapcore.Core) zapcore.Core {
 					return zapcore.NewCore(

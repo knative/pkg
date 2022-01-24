@@ -46,7 +46,7 @@ func (c Configuration) logger(tb testing.TB) (*zap.SugaredLogger, error) {
 
 	testName := tb.Name()
 	testingTeeBees[testName] = tb
-	cfg := c.Config
+	cfg := c.logConfig().Config
 	outs := []string{fmt.Sprintf("%s://Log/%s", testingTScheme, testName)}
 	if len(cfg.OutputPaths) == 1 && cfg.OutputPaths[0] == "stdout" {
 		cfg.OutputPaths = outs
@@ -78,7 +78,7 @@ func (c Configuration) logger(tb testing.TB) (*zap.SugaredLogger, error) {
 		return nil, err
 	}
 	var logger *zap.Logger
-	logger, err = cfg.Build(c.Options...)
+	logger, err = cfg.Build(c.logConfig().Options...)
 	if err != nil {
 		return nil, err
 	}
