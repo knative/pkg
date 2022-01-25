@@ -124,12 +124,10 @@ type Configuration struct {
 }
 
 func (c Configuration) logConfig() LogConfig {
-	cfg := c.LogConfig
-	if cfg.Config == nil {
-		zc := zap.NewDevelopmentConfig()
-		cfg.Config = &zc
+	if len(c.LogConfig.Config.OutputPaths) == 0 {
+		c.LogConfig.Config = zap.NewDevelopmentConfig()
 	}
-	return cfg
+	return c.LogConfig
 }
 
 // LogConfig holds the logger configuration. It allows for passing just the
@@ -137,7 +135,7 @@ func (c Configuration) logConfig() LogConfig {
 // logger.
 type LogConfig struct {
 	// Config from which the zap.Logger be created.
-	Config *zap.Config
+	Config zap.Config
 	// Options holds options for the zap.Logger.
 	Options []zap.Option
 }
