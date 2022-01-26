@@ -20,18 +20,18 @@ import (
 	"context"
 	"crypto/tls"
 	"crypto/x509"
+	"errors"
+	"fmt"
+	"io"
 	"net"
 	"net/http"
 	"net/http/httptest"
 	"strings"
+	"syscall"
 	"testing"
+	"time"
 
 	"k8s.io/apimachinery/pkg/util/sets"
-)
-
-const (
-	timeoutErr           = "timed out dialing"
-	connectionRefusedErr = "connection refused"
 )
 
 func TestHTTPRoundTripper(t *testing.T) {
@@ -77,66 +77,119 @@ func TestHTTPRoundTripper(t *testing.T) {
 }
 
 func TestDialWithBackoff(t *testing.T) {
-	// Make the test short.
-	bo := backOffTemplate
-	bo.Steps = 2
-
-	// Nobody's listening on a random port. Usually.
-	c, err := dialBackOffHelper(context.Background(), "tcp4", "127.0.0.1:41482", bo, nil)
-	verifyFailedConnection(t, c, err, connectionRefusedErr)
-
-	// Timeout. Use special testing IP address.
-	c, err = dialBackOffHelper(context.Background(), "tcp4", "198.18.0.254:8888", bo, nil)
-	verifyFailedConnection(t, c, err, timeoutErr)
-
-	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
-	defer s.Close()
-
-	c, err = DialWithBackOff(context.Background(), "tcp4", strings.TrimPrefix(s.URL, "http://"))
-	if err != nil {
-		t.Fatal("Dial error =", err)
-	}
-	c.Close()
+	var tlsConf *tls.Config
+	t.Parallel()
+	t.Run("ConnectionRefused", testDialWithBackoffConnectionRefused(tlsConf))
+	t.Run("Timeout", testDialWithBackoffTimeout(tlsConf))
+	t.Run("Success", testDialWithBackoffSuccess(tlsConf))
 }
 
 func TestDialTLSWithBackoff(t *testing.T) {
-	// Make the test short.
-	bo := backOffTemplate
-	bo.Steps = 2
-
 	tlsConf := &tls.Config{
 		InsecureSkipVerify: false,
 		ServerName:         "example.com",
 		MinVersion:         tls.VersionTLS12,
 	}
-
-	// Nobody's listening on a random port. Usually.
-	c, err := dialBackOffHelper(context.Background(), "tcp4", "127.0.0.1:41482", bo, tlsConf)
-	verifyFailedConnection(t, c, err, connectionRefusedErr)
-
-	// Timeout. Use special testing IP address.
-	c, err = dialBackOffHelper(context.Background(), "tcp4", "198.18.0.254:8888", bo, tlsConf)
-	verifyFailedConnection(t, c, err, timeoutErr)
-
-	s := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
-	defer s.Close()
-
-	rootCAs := x509.NewCertPool()
-	rootCAs.AddCert(s.Certificate())
-	tlsConf.RootCAs = rootCAs
-
-	c, err = DialTLSWithBackOff(context.Background(), "tcp4", strings.TrimPrefix(s.URL, "https://"), tlsConf)
-	if err != nil {
-		t.Fatal("Dial error =", err)
-	}
-	c.Close()
+	t.Parallel()
+	t.Run("ConnectionRefused", testDialWithBackoffConnectionRefused(tlsConf))
+	t.Run("Timeout", testDialWithBackoffTimeout(tlsConf))
+	t.Run("Success", testDialWithBackoffSuccess(tlsConf))
 }
 
-func verifyFailedConnection(t *testing.T, c net.Conn, err error, prefix string) {
-	if err == nil {
-		c.Close()
-		t.Error("Unexpected success dialing")
-	} else if !strings.Contains(err.Error(), prefix) {
-		t.Errorf("Error = %v, want: %s(...)", err, prefix)
+func testDialWithBackoffConnectionRefused(tlsConf *tls.Config) func(t *testing.T) {
+	ctx := context.TODO()
+	return func(t *testing.T) {
+		port := findUnusedPortOrFail(t)
+		addr := fmt.Sprintf("127.0.0.1:%d", port)
+		c, err := dialer(ctx, tlsConf)(addr)
+		closeOrFail(t, c)
+		if !errors.Is(err, syscall.ECONNREFUSED) {
+			t.Errorf("Unexpected error: %+v", err)
+		}
 	}
+}
+
+func testDialWithBackoffTimeout(tlsConf *tls.Config) func(t *testing.T) {
+	return func(t *testing.T) {
+		// Timeout. Use non-routable IP. See: https://stackoverflow.com/a/31581323/844449
+		c, err := dialer(context.TODO(), tlsConf)("10.0.0.0:81")
+		if err == nil {
+			closeOrFail(t, c)
+			t.Error("Unexpected success dialing")
+		}
+		if !errors.Is(err, ErrTimeoutDialing) {
+			t.Errorf("Unexpected error: %+v", err)
+		}
+	}
+}
+
+func testDialWithBackoffSuccess(tlsConf *tls.Config) func(t *testing.T) {
+	//goland:noinspection HttpUrlsUsage
+	const (
+		prefixHTTP  = "http://"
+		prefixHTTPS = "https://"
+	)
+	ctx := context.TODO()
+	return func(t *testing.T) {
+		var s *httptest.Server
+		servFn := httptest.NewServer
+		if tlsConf != nil {
+			servFn = httptest.NewTLSServer
+		}
+		s = servFn(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
+		defer s.Close()
+		prefix := prefixHTTP
+		if tlsConf != nil {
+			servFn = httptest.NewTLSServer
+			prefix = prefixHTTPS
+			rootCAs := x509.NewCertPool()
+			rootCAs.AddCert(s.Certificate())
+			tlsConf.RootCAs = rootCAs
+		}
+		addr := strings.TrimPrefix(s.URL, prefix)
+
+		c, err := dialer(ctx, tlsConf)(addr)
+		if err != nil {
+			t.Fatal("Dial error =", err)
+		}
+		closeOrFail(t, c)
+	}
+}
+
+func dialer(ctx context.Context, tlsConf *tls.Config) func(addr string) (net.Conn, error) {
+	// Make the test short.
+	bo := backOffTemplate
+	bo.Steps = 1
+
+	dialFn := func(addr string) (net.Conn, error) {
+		bo.Duration = time.Millisecond
+		return NewBackoffDialer(bo)(ctx, "tcp4", addr)
+	}
+	if tlsConf != nil {
+		dialFn = func(addr string) (net.Conn, error) {
+			bo.Duration = 10 * time.Millisecond
+			return NewTLSBackoffDialer(bo)(ctx, "tcp4", addr, tlsConf)
+		}
+	}
+	return dialFn
+}
+
+func closeOrFail(tb testing.TB, con io.Closer) {
+	tb.Helper()
+	if con == nil {
+		return
+	}
+	if err := con.Close(); err != nil {
+		tb.Fatal(err)
+	}
+}
+
+func findUnusedPortOrFail(tb testing.TB) int {
+	tb.Helper()
+	l, err := net.Listen("tcp", "localhost:0")
+	if err != nil {
+		tb.Fatal(err)
+	}
+	defer closeOrFail(tb, l)
+	return l.Addr().(*net.TCPAddr).Port
 }
