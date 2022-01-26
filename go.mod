@@ -1,6 +1,6 @@
 module knative.dev/pkg
 
-go 1.14
+go 1.17
 
 require (
 	cloud.google.com/go v0.98.0
