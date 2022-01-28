@@ -24,6 +24,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	apix "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	apixFake "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/fake"
+	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	runtime "k8s.io/apimachinery/pkg/runtime"
@@ -97,6 +98,7 @@ func TestMigrate_Errors(t *testing.T) {
 		name string
 		crd  func(*k8stesting.Fake)
 		dyn  func(*k8stesting.Fake)
+		pass bool
 	}{{
 		name: "failed to fetch CRD",
 		crd: func(fake *k8stesting.Fake) {
@@ -129,6 +131,16 @@ func TestMigrate_Errors(t *testing.T) {
 					return true, nil, errors.New("failed to patch definition")
 				})
 		},
+	}, {
+		name: "patching unexisting resource",
+		dyn: func(fake *k8stesting.Fake) {
+			fake.PrependReactor("patch", "*",
+				func(k8stesting.Action) (bool, runtime.Object, error) {
+					return true, nil, apierrs.NewNotFound(fakeGR, "resource-removed")
+				})
+		},
+		// Resouce not found error should not block the storage migration.
+		pass: true,
 	},
 	// todo paging fails
 	}
@@ -148,7 +160,7 @@ func TestMigrate_Errors(t *testing.T) {
 			}
 
 			m := NewMigrator(dclient, cclient)
-			if err := m.Migrate(context.Background(), fakeGR); err == nil {
+			if err := m.Migrate(context.Background(), fakeGR); test.pass != (err == nil) {
 				t.Error("Migrate should have returned an error")
 			}
 		})
