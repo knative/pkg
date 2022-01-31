@@ -24,6 +24,7 @@ import (
 	"reflect"
 	"testing"
 
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 
@@ -31,6 +32,7 @@ import (
 	_ "knative.dev/pkg/client/injection/kube/client/fake"
 	_ "knative.dev/pkg/client/injection/kube/informers/admissionregistration/v1/mutatingwebhookconfiguration/fake"
 	_ "knative.dev/pkg/injection/clients/namespacedkube/informers/core/v1/secret/fake"
+	"knative.dev/pkg/ptr"
 
 	"gomodules.xyz/jsonpatch/v2"
 	admissionv1 "k8s.io/api/admission/v1"
@@ -105,6 +107,7 @@ var (
 			Version: "v1beta1",
 			Kind:    "ResourceCallbackDefaultCreate",
 		}: NewCallback(resourceCallback, webhook.Create),
+		corev1.SchemeGroupVersion.WithKind("Pod"): NewCallback(podCallback, webhook.Create, webhook.Update),
 	}
 
 	initialResourceWebhook = &admissionregistrationv1.MutatingWebhookConfiguration{
@@ -738,6 +741,137 @@ func TestAdmitUpdatesCallback(t *testing.T) {
 	}
 }
 
+func TestAdmitCoreUserInfo(t *testing.T) {
+	gvk := corev1.SchemeGroupVersion.WithKind("Pod")
+
+	ctx, _ := SetupFakeContext(t)
+	ctx = webhook.WithOptions(ctx, webhook.Options{SecretName: "webhook-secret"})
+	r := newTestResourceAdmissionController(t)
+
+	mGvk := metav1.GroupVersionKind{
+		Group:   gvk.Group,
+		Version: gvk.Version,
+		Kind:    gvk.Kind,
+	}
+	mGvr := metav1.GroupVersionResource{
+		Group:    gvk.Group,
+		Version:  gvk.Version,
+		Resource: "pods",
+	}
+
+	req := &admissionv1.AdmissionRequest{
+		UID:             "58e22c80-9675-4fa4-801c-cb6bf348c799",
+		Kind:            mGvk,
+		Resource:        metav1.GroupVersionResource{},
+		RequestKind:     &mGvk,
+		RequestResource: &mGvr,
+		Name:            "p-1",
+		Namespace:       "ns",
+		Operation:       webhook.Create,
+		UserInfo: authenticationv1.UserInfo{
+			Username: "username",
+			UID:      "e4a45e22-c352-4353-a7f1-bcbdcbf7af21",
+		},
+	}
+
+	tt := []struct {
+		name      string
+		allowed   bool
+		object    *corev1.Pod
+		oldObject *corev1.Pod
+		expected  *corev1.Pod
+		patches   []jsonpatch.JsonPatchOperation
+	}{{
+		name:    "create",
+		allowed: true,
+		object: &corev1.Pod{
+			TypeMeta: metav1.TypeMeta{
+				Kind:       gvk.Kind,
+				APIVersion: gvk.GroupVersion().String(),
+			},
+			ObjectMeta: metav1.ObjectMeta{
+				Namespace: req.Namespace,
+				Name:      req.Name,
+			},
+			Spec: corev1.PodSpec{},
+		},
+		patches: []jsonpatch.JsonPatchOperation{{
+			Operation: "add",
+			Path:      "/metadata/annotations",
+			Value: map[string]interface{}{
+				"creator":      req.UserInfo.Username,
+				"lastModifier": req.UserInfo.Username,
+			},
+		}, {
+			Operation: "add",
+			Path:      "/spec/automountServiceAccountToken",
+			Value:     true,
+		}},
+	}, {
+		name:    "update",
+		allowed: true,
+		object: &corev1.Pod{
+			TypeMeta: metav1.TypeMeta{
+				Kind:       gvk.Kind,
+				APIVersion: gvk.GroupVersion().String(),
+			},
+			ObjectMeta: metav1.ObjectMeta{
+				Namespace: req.Namespace,
+				Name:      req.Name,
+			},
+			Spec: corev1.PodSpec{},
+		},
+		oldObject: &corev1.Pod{
+			TypeMeta: metav1.TypeMeta{
+				Kind:       gvk.Kind,
+				APIVersion: gvk.GroupVersion().String(),
+			},
+			ObjectMeta: metav1.ObjectMeta{
+				Namespace: req.Namespace,
+				Name:      req.Name,
+			},
+			Spec: corev1.PodSpec{},
+		},
+		patches: []jsonpatch.JsonPatchOperation{{
+			Operation: "add",
+			Path:      "/metadata/annotations",
+			Value: map[string]interface{}{
+				"lastModifier": req.UserInfo.Username,
+			},
+		}, {
+			Operation: "add",
+			Path:      "/spec/automountServiceAccountToken",
+			Value:     true,
+		}},
+	}}
+
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			req := req.DeepCopy()
+
+			if tc.object != nil {
+				objRaw, _ := json.Marshal(tc.object)
+				req.Object = runtime.RawExtension{Raw: objRaw, Object: tc.object}
+			}
+
+			if tc.oldObject != nil {
+				oldObjRaw, _ := json.Marshal(tc.oldObject)
+				req.OldObject = runtime.RawExtension{Raw: oldObjRaw, Object: tc.oldObject}
+			}
+
+			res := r.Admit(ctx, req)
+
+			if tc.allowed != res.Allowed {
+				t.Fatal("Request must be allowed", res.Result)
+			}
+
+			if tc.allowed {
+				ExpectPatches(t, res.Patch, tc.patches)
+			}
+		})
+	}
+}
+
 func createUpdateResource(ctx context.Context, t *testing.T, old, new *Resource) *admissionv1.AdmissionRequest {
 	t.Helper()
 	req := &admissionv1.AdmissionRequest{
@@ -860,6 +994,24 @@ func resourceCallback(ctx context.Context, uns *unstructured.Unstructured) error
 		return err
 	}
 	uns.Object = u
+
+	return nil
+}
+
+func podCallback(ctx context.Context, u *unstructured.Unstructured) error {
+	pod := &corev1.Pod{}
+	err := runtime.DefaultUnstructuredConverter.FromUnstructured(u.UnstructuredContent(), pod)
+	if err != nil {
+		return err
+	}
+
+	pod.Spec.AutomountServiceAccountToken = ptr.Bool(true)
+
+	r, err := runtime.DefaultUnstructuredConverter.ToUnstructured(pod)
+	if err != nil {
+		return err
+	}
+	u.Object = r
 
 	return nil
 }
