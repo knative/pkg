@@ -81,6 +81,13 @@ func TestReconcile(t *testing.T) {
 	expectedRules := []admissionregistrationv1.RuleWithOperations{{
 		Operations: []admissionregistrationv1.OperationType{"CREATE", "UPDATE"},
 		Rule: admissionregistrationv1.Rule{
+			APIGroups:   []string{""},
+			APIVersions: []string{"v1"},
+			Resources:   []string{"pods", "pods/status"},
+		},
+	}, {
+		Operations: []admissionregistrationv1.OperationType{"CREATE", "UPDATE"},
+		Rule: admissionregistrationv1.Rule{
 			APIGroups:   []string{"pkg.knative.dev"},
 			APIVersions: []string{"v1alpha1"},
 			Resources:   []string{"innerdefaultresources", "innerdefaultresources/status"},
