@@ -19,34 +19,39 @@ package upgrade_test
 import (
 	"bytes"
 	"fmt"
-	"os"
-	"sync"
 	"testing"
 
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
-	"go.uber.org/zap/zaptest"
+
 	"knative.dev/pkg/test/upgrade"
 )
 
-func newConfig(t *testing.T) (upgrade.Configuration, fmt.Stringer) {
-	log, buf := newExampleZap()
-	c := upgrade.Configuration{T: t, Log: log}
-	return c, buf
-}
+const (
+	failureTestingMessage = "This error is expected to be seen. Upgrade suite should fail."
+)
 
-func newExampleZap() (*zap.Logger, fmt.Stringer) {
-	ec := zap.NewDevelopmentEncoderConfig()
-	ec.TimeKey = ""
-	encoder := zapcore.NewConsoleEncoder(ec)
-	buf := &buffer{
-		Buffer: bytes.Buffer{},
-		Mutex:  sync.Mutex{},
-		Syncer: zaptest.Syncer{},
+func newConfig(t *testing.T) (upgrade.Configuration, fmt.Stringer) {
+	var buf bytes.Buffer
+	cfg := zap.NewDevelopmentConfig()
+	cfg.EncoderConfig.TimeKey = ""
+	cfg.EncoderConfig.CallerKey = ""
+	syncedBuf := zapcore.AddSync(&buf)
+	c := upgrade.Configuration{
+		T: t,
+		LogConfig: upgrade.LogConfig{
+			Config: cfg,
+			Options: []zap.Option{
+				zap.WrapCore(func(core zapcore.Core) zapcore.Core {
+					return zapcore.NewCore(
+						zapcore.NewConsoleEncoder(cfg.EncoderConfig),
+						zapcore.NewMultiWriteSyncer(syncedBuf), cfg.Level)
+				}),
+				zap.ErrorOutput(syncedBuf),
+			},
+		},
 	}
-	ws := zapcore.NewMultiWriteSyncer(buf, os.Stdout)
-	core := zapcore.NewCore(encoder, ws, zap.DebugLevel)
-	return zap.New(core).WithOptions(), buf
+	return c, &buf
 }
 
 func createSteps(s upgrade.Suite) []*step {
@@ -167,6 +172,8 @@ func (tt *texts) append(messages ...string) {
 }
 
 func completeSuiteExample(fp failurePoint) upgrade.Suite {
+	serving := servingComponent()
+	eventing := eventingComponent()
 	suite := upgrade.Suite{
 		Tests: upgrade.Tests{
 			PreUpgrade: []upgrade.Operation{
@@ -235,7 +242,6 @@ func (o operation) Name() string {
 }
 
 func (o *operation) fail(setupFail bool) {
-	failureTestingMessage := "This error is expected to be seen. Upgrade suite should fail."
 	testName := fmt.Sprintf("FailingOf%s", o.Name())
 	if o.op != nil {
 		prev := o.op

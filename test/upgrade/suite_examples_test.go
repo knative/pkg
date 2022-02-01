@@ -28,9 +28,6 @@ const (
 )
 
 func init() {
-	upgrade.DefaultOnWait = func(bc upgrade.BackgroundContext, self upgrade.WaitForStopEventConfiguration) {
-		bc.Log.Debugf("%s - probing functionality...", self.Name)
-	}
 	upgrade.DefaultWaitTime = shortWait
 }
 
@@ -78,7 +75,10 @@ var (
 			skipped:  "",
 		}),
 	}
-	serving = component{
+)
+
+func servingComponent() component {
+	return component{
 		installs: installs{
 			stable: upgrade.NewOperation("Serving latest stable release", func(c upgrade.Context) {
 				c.Log.Info("Installing Serving stable 0.17.1")
@@ -123,7 +123,10 @@ var (
 				}),
 		},
 	}
-	eventing = component{
+}
+
+func eventingComponent() component {
+	return component{
 		installs: installs{
 			stable: upgrade.NewOperation("Eventing latest stable release", func(c upgrade.Context) {
 				c.Log.Info("Installing Eventing stable 0.17.2")
@@ -159,4 +162,10 @@ var (
 			),
 		},
 	}
-)
+}
+
+func probeOnWaitFunc() func(upgrade.BackgroundContext, upgrade.WaitForStopEventConfiguration) {
+	return func(bc upgrade.BackgroundContext, self upgrade.WaitForStopEventConfiguration) {
+		bc.Log.Debugf("%s - probing functionality...", self.Name)
+	}
+}

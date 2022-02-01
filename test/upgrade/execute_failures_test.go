@@ -21,6 +21,8 @@ import (
 	"io/ioutil"
 	"os"
 	"testing"
+
+	"knative.dev/pkg/test/upgrade"
 )
 
 func TestSuiteExecuteWithFailures(t *testing.T) {
@@ -38,20 +40,22 @@ func TestSuiteExecuteWithFailures(t *testing.T) {
 var allTestsFilter = func(_, _ string) (bool, error) { return true, nil }
 
 func testSuiteExecuteWithFailingStep(fp failurePoint, t *testing.T) {
-	assert := assertions{t: t}
 	testName := fmt.Sprintf("FailAt-%d-%d", fp.step, fp.element)
 	t.Run(testName, func(t *testing.T) {
-		var output string
+		assert := assertions{tb: t}
+		var (
+			output string
+			c      upgrade.Configuration
+			buf    fmt.Stringer
+		)
 		suite := completeSuiteExample(fp)
 		txt := expectedTexts(suite, fp)
 		txt.append(upgradeTestRunning, upgradeTestFailure)
-		log, buf := newExampleZap()
 
 		it := []testing.InternalTest{{
 			Name: testName,
 			F: func(t *testing.T) {
-				c, _ := newConfig(t)
-				c.Log = log
+				c, buf = newConfig(t)
 				suite.Execute(c)
 			},
 		}}
@@ -62,7 +66,7 @@ func testSuiteExecuteWithFailingStep(fp failurePoint, t *testing.T) {
 		output = buf.String()
 
 		if ok {
-			t.Fatal("didn't failed, but should")
+			t.Fatal("Didn't fail, but should")
 		}
 
 		assert.textContains(output, txt)

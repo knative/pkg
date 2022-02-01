@@ -16,7 +16,11 @@ limitations under the License.
 
 package upgrade_test
 
-import "testing"
+import (
+	"testing"
+
+	"knative.dev/pkg/test/upgrade"
+)
 
 const (
 	upgradeTestRunning = "🏃 Running upgrade test suite..."
@@ -25,7 +29,7 @@ const (
 )
 
 func TestExpectedTextsForEmptySuite(t *testing.T) {
-	assert := assertions{t: t}
+	assert := assertions{tb: t}
 	fp := notFailing
 	suite := emptySuiteExample()
 	txt := expectedTexts(suite, fp)
@@ -42,7 +46,7 @@ func TestExpectedTextsForEmptySuite(t *testing.T) {
 }
 
 func TestExpectedTextsForCompleteSuite(t *testing.T) {
-	assert := assertions{t: t}
+	assert := assertions{tb: t}
 	fp := notFailing
 	suite := completeSuiteExample(fp)
 	txt := expectedTexts(suite, fp)
@@ -76,7 +80,7 @@ func TestExpectedTextsForCompleteSuite(t *testing.T) {
 }
 
 func TestExpectedTextsForFailingCompleteSuite(t *testing.T) {
-	assert := assertions{t: t}
+	assert := assertions{tb: t}
 	fp := failurePoint{
 		step:    2,
 		element: 1,
@@ -94,7 +98,7 @@ func TestExpectedTextsForFailingCompleteSuite(t *testing.T) {
 }
 
 func TestSuiteExecuteEmpty(t *testing.T) {
-	assert := assertions{t: t}
+	assert := assertions{tb: t}
 	c, buf := newConfig(t)
 	fp := notFailing
 	suite := emptySuiteExample()
@@ -111,31 +115,31 @@ func TestSuiteExecuteEmpty(t *testing.T) {
 }
 
 func TestSuiteExecuteWithComplete(t *testing.T) {
-	assert := assertions{t: t}
+	assert := assertions{t}
 	c, buf := newConfig(t)
 	fp := notFailing
 	suite := completeSuiteExample(fp)
+	upgrade.DefaultOnWait = probeOnWaitFunc()
 	suite.Execute(c)
 	output := buf.String()
 	if c.T.Failed() {
 		return
 	}
-	txt := expectedTexts(suite, fp)
-	txt.append(upgradeTestRunning, upgradeTestSuccess)
-	txt.append(
+	expected := expectedTexts(suite, fp)
+	expected.append(upgradeTestRunning, upgradeTestSuccess)
+	expected.append(
 		"Installing Serving stable 0.17.1",
 		"Installing Eventing stable 0.17.2",
-		"Running Serving continual test",
-		"Stopping and verify of Eventing continual test",
 		"Installing Serving HEAD at e3c4563",
 		"Installing Eventing HEAD at 12f67cc",
 		"Installing Serving stable 0.17.1",
 		"Installing Eventing stable 0.17.2",
 		"Serving have received a stop event",
 		"Eventing continual test have received a stop event",
+		"Running Serving continual test",
+		"Stopping and verify of Eventing continual test",
 		"Serving - probing functionality...",
 		"Eventing continual test - probing functionality...",
 	)
-
-	assert.textContains(output, txt)
+	assert.textContains(output, expected)
 }
