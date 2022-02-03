@@ -23,12 +23,12 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/cache"
+
 	"knative.dev/pkg/apis"
 	apixclient "knative.dev/pkg/client/injection/apiextensions/client"
 	crdinformer "knative.dev/pkg/client/injection/apiextensions/informers/apiextensions/v1/customresourcedefinition"
 	"knative.dev/pkg/controller"
 	secretinformer "knative.dev/pkg/injection/clients/namespacedkube/informers/core/v1/secret"
-	"knative.dev/pkg/logging"
 	pkgreconciler "knative.dev/pkg/reconciler"
 	"knative.dev/pkg/system"
 	"knative.dev/pkg/webhook"
@@ -117,9 +117,14 @@ func NewConversionController(
 		crdLister:    crdInformer.Lister(),
 	}
 
-	const queueName = "ConversionWebhook"
-	logger := logging.FromContext(ctx)
-	c := controller.NewContext(ctx, r, controller.ControllerOptions{WorkQueueName: queueName, Logger: logger.Named(queueName)})
+	controllerOptions := webhook.GetControllerOptions(ctx)
+	if controllerOptions == nil {
+		const queueName = "ConversionWebhook"
+		controllerOptions = &controller.ControllerOptions{WorkQueueName: queueName}
+	}
+	controllerOptions.NameLogger(ctx)
+
+	c := controller.NewContext(ctx, r, *controllerOptions)
 
 	// Reconciler when the named CRDs change.
 	for _, gkc := range kinds {

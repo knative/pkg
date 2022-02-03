@@ -23,7 +23,6 @@ import (
 	kubeclient "knative.dev/pkg/client/injection/kube/client"
 	mwhinformer "knative.dev/pkg/client/injection/kube/informers/admissionregistration/v1/mutatingwebhookconfiguration"
 	secretinformer "knative.dev/pkg/injection/clients/namespacedkube/informers/core/v1/secret"
-	"knative.dev/pkg/logging"
 	pkgreconciler "knative.dev/pkg/reconciler"
 
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -89,9 +88,14 @@ func NewAdmissionController(
 		secretlister: secretInformer.Lister(),
 	}
 
-	logger := logging.FromContext(ctx)
-	const queueName = "DefaultingWebhook"
-	c := controller.NewContext(ctx, wh, controller.ControllerOptions{WorkQueueName: queueName, Logger: logger.Named(queueName)})
+	controllerOptions := webhook.GetControllerOptions(ctx)
+	if controllerOptions == nil {
+		const queueName = "DefaultingWebhook"
+		controllerOptions = &controller.ControllerOptions{WorkQueueName: queueName}
+	}
+	controllerOptions.NameLogger(ctx)
+
+	c := controller.NewContext(ctx, wh, *controllerOptions)
 
 	// Reconcile when the named MutatingWebhookConfiguration changes.
 	mwhInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{

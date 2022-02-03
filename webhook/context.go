@@ -16,7 +16,11 @@ limitations under the License.
 
 package webhook
 
-import "context"
+import (
+	"context"
+
+	"knative.dev/pkg/controller"
+)
 
 // optionsKey is used as the key for associating information
 // with a context.Context.
@@ -36,4 +40,24 @@ func GetOptions(ctx context.Context) *Options {
 		return nil
 	}
 	return v.(*Options)
+}
+
+// controllerOptions is used as the key for associating information
+// with a context.Context.
+type controllerOptions struct{}
+
+// WithControllerOptions associates a set of controller.ControllerOptions with
+// the returned context.
+func WithControllerOptions(ctx context.Context, options *controller.ControllerOptions) context.Context {
+	return context.WithValue(ctx, controllerOptions{}, options)
+}
+
+// GetControllerOptions retrieves controller.ControllerOptions associated with the
+// given context via WithControllerOptions (above).
+func GetControllerOptions(ctx context.Context) *controller.ControllerOptions {
+	opt := ctx.Value(controllerOptions{})
+	if opt != nil {
+		return opt.(*controller.ControllerOptions)
+	}
+	return nil
 }

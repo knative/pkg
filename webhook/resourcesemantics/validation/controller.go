@@ -23,12 +23,12 @@ import (
 	kubeclient "knative.dev/pkg/client/injection/kube/client"
 	vwhinformer "knative.dev/pkg/client/injection/kube/informers/admissionregistration/v1/validatingwebhookconfiguration"
 	secretinformer "knative.dev/pkg/injection/clients/namespacedkube/informers/core/v1/secret"
-	"knative.dev/pkg/logging"
 	pkgreconciler "knative.dev/pkg/reconciler"
 
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/cache"
+
 	"knative.dev/pkg/controller"
 	"knative.dev/pkg/system"
 	"knative.dev/pkg/webhook"
@@ -88,9 +88,14 @@ func NewAdmissionController(
 		secretlister: secretInformer.Lister(),
 	}
 
-	logger := logging.FromContext(ctx)
-	const queueName = "ValidationWebhook"
-	c := controller.NewContext(ctx, wh, controller.ControllerOptions{WorkQueueName: queueName, Logger: logger.Named(queueName)})
+	controllerOptions := webhook.GetControllerOptions(ctx)
+	if controllerOptions == nil {
+		const queueName = "ValidationWebhook"
+		controllerOptions = &controller.ControllerOptions{WorkQueueName: queueName}
+	}
+	controllerOptions.NameLogger(ctx)
+
+	c := controller.NewContext(ctx, wh, *controllerOptions)
 
 	// Reconcile when the named ValidatingWebhookConfiguration changes.
 	vwhInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{

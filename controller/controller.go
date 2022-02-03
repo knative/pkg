@@ -233,6 +233,17 @@ type ControllerOptions struct { //nolint // for backcompat.
 	Concurrency   int
 }
 
+// NameLogger re-assign ControllerOptions.Logger with a named
+// logger with name ControllerOptions.WorkQueueName.
+func (c *ControllerOptions) NameLogger(ctx context.Context) {
+	if c.Logger == nil {
+		logger := logging.FromContext(ctx)
+		c.Logger = logger.Named(c.WorkQueueName)
+		return
+	}
+	c.Logger = c.Logger.Named(c.WorkQueueName)
+}
+
 // NewContext instantiates an instance of our controller that will feed work to the
 // provided Reconciler as it is enqueued.
 func NewContext(ctx context.Context, r Reconciler, options ControllerOptions) *Impl {
