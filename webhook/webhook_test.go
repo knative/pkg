@@ -48,6 +48,9 @@ func newNonRunningTestWebhook(t *testing.T, options Options, acs ...interface{})
 	ctx context.Context, ac *Webhook, cancel context.CancelFunc) {
 	t.Helper()
 
+	// override the grace period so it drains quickly
+	options.GracePeriod = 100 * time.Millisecond
+
 	// Create fake clients
 	ctx, ctxCancel, informers := SetupFakeContextWithCancel(t)
 	ctx = WithOptions(ctx, options)
@@ -65,7 +68,6 @@ func newNonRunningTestWebhook(t *testing.T, options Options, acs ...interface{})
 	if err != nil {
 		t.Fatal("Failed to create new admission controller:", err)
 	}
-	ac.gracePeriod = 100 * time.Millisecond
 	return
 }
 
