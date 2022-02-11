@@ -70,6 +70,15 @@ func TestReadFile(t *testing.T) {
 		koDataPath: "testdata/nonexisting",
 		wantErr:    true,
 		err:        errors.New("open testdata/nonexisting/HEAD: no such file or directory"),
+	}, {
+		name:       "packed-ref",
+		koDataPath: "testdata/packed-refs",
+		want:       testCommitID,
+	}, {
+		name:       "no refs with packed-ref",
+		koDataPath: "testdata/noncommited-packed-refs",
+		wantErr:    true,
+		err:        fmt.Errorf("%q ref not found in packed-refs", nonCommittedHeadRef),
 	}}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
