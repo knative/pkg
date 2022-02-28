@@ -29,6 +29,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/sets"
 	fakekube "k8s.io/client-go/kubernetes/fake"
 	ktesting "k8s.io/client-go/testing"
+
 	"knative.dev/pkg/reconciler"
 	_ "knative.dev/pkg/system/testing"
 )
@@ -354,4 +355,43 @@ func TestWithUnopposedElector(t *testing.T) {
 
 	// Wait to see if PromoteFunc is called with nil or our enq function.
 	<-time.After(time.Second)
+}
+
+func TestStandardBucketName(t *testing.T) {
+	tests := []struct {
+		name      string
+		ordinal   uint32
+		queueName string
+		cc        ComponentConfig
+		want      string
+	}{
+		{
+			name:      "identity",
+			ordinal:   0,
+			queueName: "queue-queue",
+			cc: ComponentConfig{
+				Component: "my-comp",
+			},
+			want: "my-comp.queue-queue.00-of-00",
+		},
+		{
+			name:      "remapping",
+			ordinal:   0,
+			queueName: "queue-queue",
+			cc: ComponentConfig{
+				Component: "my-comp",
+				LeaseNamesPrefixMapping: map[string]string{
+					"my-comp.queue-queue": "my-comp-2.queue",
+				},
+			},
+			want: "my-comp-2.queue.00-of-00",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := standardBucketName(tt.ordinal, tt.queueName, tt.cc); got != tt.want {
+				t.Errorf("got %v, want %v", got, tt.want)
+			}
+		})
+	}
 }

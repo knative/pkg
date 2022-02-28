@@ -42,6 +42,8 @@ type testConfig struct {
 
 	nsn  types.NamespacedName
 	onsn *types.NamespacedName
+
+	dict map[string]string
 }
 
 func TestParse(t *testing.T) {
@@ -70,6 +72,12 @@ func TestParse(t *testing.T) {
 
 			"test-namespaced-name":          "some-namespace/some-name",
 			"test-optional-namespaced-name": "some-other-namespace/some-other-name",
+
+			"test-dict.k":  "v",
+			"test-dict.k1": "v1",
+		},
+		conf: testConfig{
+			dict: map[string]string{},
 		},
 		want: testConfig{
 			str:    "foo.bar",
@@ -91,6 +99,10 @@ func TestParse(t *testing.T) {
 			onsn: &types.NamespacedName{
 				Name:      "some-other-name",
 				Namespace: "some-other-namespace",
+			},
+			dict: map[string]string{
+				"k":  "v",
+				"k1": "v1",
 			},
 		},
 	}, {
@@ -175,6 +187,18 @@ func TestParse(t *testing.T) {
 			"test-namespaced-name": "default/resource/whut",
 		},
 		expectErr: true,
+	}, {
+		name: "dict without key and dot",
+		data: map[string]string{
+			"test-dict": "v",
+		},
+		expectErr: false,
+	}, {
+		name: "dict without key",
+		data: map[string]string{
+			"test-dict.": "v",
+		},
+		expectErr: false,
 	}}
 
 	for _, test := range tests {
@@ -194,6 +218,7 @@ func TestParse(t *testing.T) {
 				AsQuantity("test-quantity", &test.conf.qua),
 				AsNamespacedName("test-namespaced-name", &test.conf.nsn),
 				AsOptionalNamespacedName("test-optional-namespaced-name", &test.conf.onsn),
+				AsOptionalMap("test-dict", test.conf.dict),
 			); (err == nil) == test.expectErr {
 				t.Fatal("Failed to parse data:", err)
 			}
