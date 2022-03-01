@@ -96,6 +96,12 @@ jobs:
       shell: bash
       working-directory: ./src/knative.dev/${{ github.event.repository.name }}
       run: |
+         if ! git config user.name > /dev/null; then
+           git config user.name "Knative Action"
+         fi
+         if ! git config user.email > /dev/null; then
+           git config user.email "action@knative.dev"
+         fi
          git remote add upstream https://github.com/${{ github.repository }}.git
          git fetch upstream ${{ github.base_ref }}
          git pull --no-rebase --no-commit upstream ${{ github.base_ref }}
