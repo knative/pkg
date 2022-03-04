@@ -132,9 +132,9 @@ func TestObservabilityConfiguration(t *testing.T) {
 			return oc
 		}(),
 		data: map[string]string{
-			"metrics.request-metrics-backend-destination":      "opencensus",
-			"metrics.opencensus-address":                       "otel:55678",
-			"metrics.request-metrics-reporting-period-seconds": "10",
+			"metrics.request-metrics-backend-destination":                  "opencensus",
+			"metrics.opencensus-address":                                   "otel:55678",
+			"metrics.request-metrics-queue-proxy-reporting-period-seconds": "10",
 		},
 	}}
 

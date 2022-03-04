@@ -37,6 +37,9 @@ const (
 	// The following is used to set the default metrics backend
 	defaultRequestMetricsBackend = "prometheus"
 
+	// The default request metrics reporting period
+	defaultRequestReportingPeriodSeconds = 10
+
 	// The env var name for config-observability
 	configMapNameEnv = "CONFIG_OBSERVABILITY_NAME"
 
@@ -105,9 +108,10 @@ func GetObservabilityConfig(ctx context.Context) *ObservabilityConfig {
 
 func defaultConfig() *ObservabilityConfig {
 	return &ObservabilityConfig{
-		LoggingURLTemplate:    DefaultLogURLTemplate,
-		RequestLogTemplate:    DefaultRequestLogTemplate,
-		RequestMetricsBackend: defaultRequestMetricsBackend,
+		LoggingURLTemplate:                   DefaultLogURLTemplate,
+		RequestLogTemplate:                   DefaultRequestLogTemplate,
+		RequestMetricsBackend:                defaultRequestMetricsBackend,
+		RequestMetricsReportingPeriodSeconds: defaultRequestReportingPeriodSeconds,
 	}
 }
 
@@ -125,8 +129,6 @@ func NewObservabilityConfigFromConfigMap(configMap *corev1.ConfigMap) (*Observab
 		cm.AsBool(EnableReqLogKey, &oc.EnableRequestLog),
 		cm.AsBool(EnableProbeReqLogKey, &oc.EnableProbeRequestLog),
 		cm.AsString("metrics.request-metrics-backend-destination", &oc.RequestMetricsBackend),
-		// It follows the naming conventions used for `metrics.reporting-period-seconds` but it targets specifically queue proxy,
-		// thus the need for a new name.
 		cm.AsInt("metrics.request-metrics-reporting-period-seconds", &oc.RequestMetricsReportingPeriodSeconds),
 		cm.AsBool("profiling.enable", &oc.EnableProfiling),
 		cm.AsString("metrics.opencensus-address", &oc.MetricsCollectorAddress),
