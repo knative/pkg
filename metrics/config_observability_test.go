@@ -34,13 +34,14 @@ func TestObservabilityConfiguration(t *testing.T) {
 	}{{
 		name: "observability configuration with all inputs",
 		wantConfig: &ObservabilityConfig{
-			EnableProbeRequestLog:  true,
-			EnableProfiling:        true,
-			EnableVarLogCollection: true,
-			EnableRequestLog:       true,
-			LoggingURLTemplate:     "https://logging.io",
-			RequestLogTemplate:     `{"requestMethod": "{{.Request.Method}}"}`,
-			RequestMetricsBackend:  "opencensus",
+			EnableProbeRequestLog:                true,
+			EnableProfiling:                      true,
+			EnableVarLogCollection:               true,
+			EnableRequestLog:                     true,
+			LoggingURLTemplate:                   "https://logging.io",
+			RequestLogTemplate:                   `{"requestMethod": "{{.Request.Method}}"}`,
+			RequestMetricsBackend:                "opencensus",
+			RequestMetricsReportingPeriodSeconds: 10,
 		},
 		data: map[string]string{
 			EnableProbeReqLogKey:                          "true",
