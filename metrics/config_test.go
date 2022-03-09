@@ -18,7 +18,6 @@ package metrics
 import (
 	"context"
 	"math"
-	"os"
 	"strconv"
 	"strings"
 	"testing"
@@ -380,8 +379,7 @@ func TestGetMetricsConfig_fromEnv(t *testing.T) {
 
 	for _, test := range successTests {
 		t.Run(test.name, func(t *testing.T) {
-			os.Setenv(test.varName, test.varValue)
-			defer os.Unsetenv(test.varName)
+			t.Setenv(test.varName, test.varValue)
 
 			mc, err := createMetricsConfig(ctx, test.ops)
 			if err != nil {
@@ -395,8 +393,7 @@ func TestGetMetricsConfig_fromEnv(t *testing.T) {
 
 	for _, test := range failureTests {
 		t.Run(test.name, func(t *testing.T) {
-			os.Setenv(test.varName, test.varValue)
-			defer os.Unsetenv(test.varName)
+			t.Setenv(test.varName, test.varValue)
 
 			mc, err := createMetricsConfig(ctx, test.ops)
 			if mc != nil {

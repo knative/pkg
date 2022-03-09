@@ -19,7 +19,6 @@ package leaderelection
 import (
 	"context"
 	"fmt"
-	"os"
 	"testing"
 	"time"
 
@@ -225,12 +224,8 @@ func TestNewStatefulSetBucketAndSet(t *testing.T) {
 		"http://as-2.autoscaler.knative-testing.svc.cluster.local:80",
 	}
 
-	os.Setenv(controllerOrdinalEnv, "as-2")
-	os.Setenv(serviceNameEnv, "autoscaler")
-	t.Cleanup(func() {
-		os.Unsetenv(controllerOrdinalEnv)
-		os.Unsetenv(serviceNameEnv)
-	})
+	t.Setenv(controllerOrdinalEnv, "as-2")
+	t.Setenv(serviceNameEnv, "autoscaler")
 
 	_, _, err := NewStatefulSetBucketAndSet(2)
 	if err == nil {
@@ -271,16 +266,8 @@ func TestWithStatefulSetBuilder(t *testing.T) {
 	}
 	enq := func(reconciler.Bucket, types.NamespacedName) {}
 
-	if os.Setenv(controllerOrdinalEnv, "as-2") != nil {
-		t.Fatalf("Failed to set env var %s=%s", controllerOrdinalEnv, "as-2")
-	}
-	if os.Setenv(serviceNameEnv, "autoscaler") != nil {
-		t.Fatalf("Failed to set env var %s=%s", serviceNameEnv, "autoscaler")
-	}
-	t.Cleanup(func() {
-		os.Unsetenv(controllerOrdinalEnv)
-		os.Unsetenv(serviceNameEnv)
-	})
+	t.Setenv(controllerOrdinalEnv, "as-2")
+	t.Setenv(serviceNameEnv, "autoscaler")
 
 	ctx = WithDynamicLeaderElectorBuilder(ctx, nil, cc)
 	if !HasLeaderElection(ctx) {

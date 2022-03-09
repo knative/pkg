@@ -19,7 +19,6 @@ package changeset
 import (
 	"errors"
 	"fmt"
-	"os"
 	"testing"
 )
 
@@ -82,10 +81,8 @@ func TestReadFile(t *testing.T) {
 	}}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			if test.koDataPathEnvDoesNotExist {
-				os.Clearenv()
-			} else {
-				os.Setenv(koDataPathEnvName, test.koDataPath)
+			if !test.koDataPathEnvDoesNotExist {
+				t.Setenv(koDataPathEnvName, test.koDataPath)
 			}
 
 			got, err := Get()

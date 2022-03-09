@@ -17,7 +17,6 @@ limitations under the License.
 package network
 
 import (
-	"os"
 	"strings"
 	"testing"
 )
@@ -75,24 +74,15 @@ options ndots:5
 		want: defaultDomainName,
 	}}
 
-	domainWas := os.Getenv(clusterDomainEnvKey)
-	t.Cleanup(func() {
-		if len(domainWas) > 0 {
-			_ = os.Setenv(clusterDomainEnvKey, domainWas)
-		} else {
-			_ = os.Unsetenv(clusterDomainEnvKey)
-		}
-	})
-
 	for _, tt := range tests {
-		if len(tt.env) > 0 {
-			_ = os.Setenv(clusterDomainEnvKey, tt.env)
-		} else {
-			_ = os.Unsetenv(clusterDomainEnvKey)
-		}
-		got := getClusterDomainName(strings.NewReader(tt.resolvConf))
-		if got != tt.want {
-			t.Errorf("Test %s failed expected: %s but got: %s", tt.name, tt.want, got)
-		}
+		t.Run(tt.name, func(t *testing.T) {
+			if len(tt.env) > 0 {
+				t.Setenv(clusterDomainEnvKey, tt.env)
+			}
+			got := getClusterDomainName(strings.NewReader(tt.resolvConf))
+			if got != tt.want {
+				t.Errorf("Test %s failed expected: %s but got: %s", tt.name, tt.want, got)
+			}
+		})
 	}
 }
