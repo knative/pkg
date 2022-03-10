@@ -38,10 +38,11 @@ const (
 
 func okConfig() *Config {
 	return &Config{
-		Buckets:       1,
-		LeaseDuration: 15 * time.Second,
-		RenewDeadline: 10 * time.Second,
-		RetryPeriod:   2 * time.Second,
+		Buckets:                 1,
+		LeaseDuration:           15 * time.Second,
+		RenewDeadline:           10 * time.Second,
+		RetryPeriod:             2 * time.Second,
+		LeaseNamesPrefixMapping: map[string]string{},
 	}
 }
 
@@ -122,10 +123,11 @@ func TestNewConfigMapFromData(t *testing.T) {
 			"buckets":       "5",
 		},
 		expected: &Config{
-			Buckets:       5,
-			LeaseDuration: 2 * time.Second,
-			RenewDeadline: 3 * time.Second,
-			RetryPeriod:   4 * time.Second,
+			Buckets:                 5,
+			LeaseDuration:           2 * time.Second,
+			RenewDeadline:           3 * time.Second,
+			RetryPeriod:             4 * time.Second,
+			LeaseNamesPrefixMapping: map[string]string{},
 		},
 	}, {
 		name: "prioritize new keys",
@@ -139,10 +141,11 @@ func TestNewConfigMapFromData(t *testing.T) {
 			"buckets":        "7",
 		},
 		expected: &Config{
-			Buckets:       7,
-			LeaseDuration: 1 * time.Second,
-			RenewDeadline: 2 * time.Second,
-			RetryPeriod:   3 * time.Second,
+			Buckets:                 7,
+			LeaseDuration:           1 * time.Second,
+			RenewDeadline:           2 * time.Second,
+			RetryPeriod:             3 * time.Second,
+			LeaseNamesPrefixMapping: map[string]string{},
 		},
 	}}
 
@@ -163,6 +166,57 @@ func TestNewConfigMapFromData(t *testing.T) {
 
 			if got, want := actualConfig, tc.expected; !cmp.Equal(got, want) {
 				t.Errorf("Config = %#v, want: %#v, diff(-want,+got):\n%s", got, want, cmp.Diff(want, got))
+			}
+		})
+	}
+}
+
+func TestNewConfigFromMap(t *testing.T) {
+
+	tt := []struct {
+		name    string
+		data    map[string]string
+		want    Config
+		wantErr bool
+	}{{
+		name: "ok config",
+		data: map[string]string{
+			"lease-duration": "15s",
+			"buckets":        "5",
+		},
+		want: Config{
+			Buckets:                 5,
+			LeaseDuration:           15 * time.Second,
+			RenewDeadline:           40 * time.Second,
+			RetryPeriod:             10 * time.Second,
+			LeaseNamesPrefixMapping: map[string]string{},
+		},
+	}, {
+		name: "ok config, prefix map",
+		data: map[string]string{
+			"lease-duration":              "15s",
+			"buckets":                     "5",
+			"map-lease-prefix.reconciler": "reconciler1",
+		},
+		want: Config{
+			Buckets:       5,
+			LeaseDuration: 15 * time.Second,
+			RenewDeadline: 40 * time.Second,
+			RetryPeriod:   10 * time.Second,
+			LeaseNamesPrefixMapping: map[string]string{
+				"reconciler": "reconciler1",
+			},
+		},
+	}}
+
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			c, err := NewConfigFromMap(tc.data)
+			if tc.wantErr != (err != nil) {
+				t.Fatalf("want err %v got %v", tc.wantErr, err)
+			}
+			if diff := cmp.Diff(tc.want, *c); diff != "" {
+				t.Fatal("(-want, +got)", diff)
 			}
 		})
 	}
