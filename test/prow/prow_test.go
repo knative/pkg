@@ -19,7 +19,6 @@ limitations under the License.
 package prow
 
 import (
-	"os"
 	"testing"
 )
 
@@ -66,30 +65,22 @@ func TestInvalidJobPath(t *testing.T) {
 }
 
 func TestIsCI(t *testing.T) {
-	isCI := os.Getenv("CI")
-	// Set it to the original value
-	defer os.Setenv("CI", isCI)
-
-	os.Setenv("CI", "true")
+	t.Setenv("CI", "true")
 	if ic := IsCI(); !ic {
 		t.Fatal("Expected: true, actual: false")
 	}
 }
 
 func TestGetArtifacts(t *testing.T) {
-	dir := os.Getenv("ARTIFACTS")
-	// Set it to the original value
-	defer os.Setenv("ARTIFACTS", dir)
-
 	// Test we can read from the env var
-	os.Setenv("ARTIFACTS", "test")
+	t.Setenv("ARTIFACTS", "test")
 	v := GetLocalArtifactsDir()
 	if v != "test" {
 		t.Fatalf("Actual artifacts dir: '%s' and Expected: 'test'", v)
 	}
 
 	// Test we can use the default
-	os.Setenv("ARTIFACTS", "")
+	t.Setenv("ARTIFACTS", "")
 	v = GetLocalArtifactsDir()
 	if v != "artifacts" {
 		t.Fatalf("Actual artifacts dir: '%s' and Expected: 'artifacts'", v)

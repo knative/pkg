@@ -18,7 +18,6 @@ package logging
 
 import (
 	"fmt"
-	"os"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -481,14 +480,11 @@ func TestConfigMapName(t *testing.T) {
 	if got, want := ConfigMapName(), "config-logging"; got != want {
 		t.Errorf("ConfigMapName = %q, want: %q", got, want)
 	}
-	t.Cleanup(func() {
-		os.Unsetenv(configMapNameEnv)
-	})
-	os.Setenv(configMapNameEnv, "")
+	t.Setenv(configMapNameEnv, "")
 	if got, want := ConfigMapName(), "config-logging"; got != want {
 		t.Errorf("ConfigMapName = %q, want: %q", got, want)
 	}
-	os.Setenv(configMapNameEnv, "slowly-dying-inside")
+	t.Setenv(configMapNameEnv, "slowly-dying-inside")
 	if got, want := ConfigMapName(), "slowly-dying-inside"; got != want {
 		t.Errorf("ConfigMapName = %q, want: %q", got, want)
 	}

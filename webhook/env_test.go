@@ -17,7 +17,6 @@ limitations under the License.
 package webhook
 
 import (
-	"os"
 	"testing"
 )
 
@@ -70,7 +69,7 @@ func TestPort(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			// portEnvKey is unset when testing missing input.
 			if tc.name != testMissingInputName {
-				os.Setenv(portEnvKey, tc.in)
+				t.Setenv(portEnvKey, tc.in)
 			}
 
 			defer func() {
@@ -79,7 +78,6 @@ func TestPort(t *testing.T) {
 				} else if r != nil && !tc.wantPanic {
 					t.Error("Got unexpected panic")
 				}
-				os.Unsetenv(portEnvKey)
 			}()
 
 			if got := PortFromEnv(testDefaultPort); got != tc.want {
@@ -104,7 +102,7 @@ func TestWebhookName(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			// webhookNameEnv is unset when testing missing input.
 			if tc.name != testMissingInputName {
-				os.Setenv(webhookNameEnv, tc.in)
+				t.Setenv(webhookNameEnv, tc.in)
 			}
 
 			defer func() {
@@ -113,7 +111,6 @@ func TestWebhookName(t *testing.T) {
 				} else if r != nil && !tc.wantPanic {
 					t.Error("Got unexpected panic")
 				}
-				os.Unsetenv(webhookNameEnv)
 			}()
 
 			if got := NameFromEnv(); got != tc.want {

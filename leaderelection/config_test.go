@@ -18,7 +18,6 @@ package leaderelection
 
 import (
 	"fmt"
-	"os"
 	"strconv"
 	"strings"
 	"testing"
@@ -26,6 +25,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	corev1 "k8s.io/api/core/v1"
+
 	"knative.dev/pkg/kmap"
 )
 
@@ -248,20 +248,16 @@ func TestNewStatefulSetConfig(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			if tc.pod != "" {
-				os.Setenv(controllerOrdinalEnv, tc.pod)
-				defer os.Unsetenv(controllerOrdinalEnv)
+				t.Setenv(controllerOrdinalEnv, tc.pod)
 			}
 			if tc.service != "" {
-				os.Setenv(serviceNameEnv, tc.service)
-				defer os.Unsetenv(serviceNameEnv)
+				t.Setenv(serviceNameEnv, tc.service)
 			}
 			if tc.port != "" {
-				os.Setenv(servicePortEnv, tc.port)
-				defer os.Unsetenv(servicePortEnv)
+				t.Setenv(servicePortEnv, tc.port)
 			}
 			if tc.protocol != "" {
-				os.Setenv(serviceProtocolEnv, tc.protocol)
-				defer os.Unsetenv(serviceProtocolEnv)
+				t.Setenv(serviceProtocolEnv, tc.protocol)
 			}
 
 			ssc, err := newStatefulSetConfig()

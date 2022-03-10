@@ -14,7 +14,6 @@ package metrics
 
 import (
 	"context"
-	"os"
 	"testing"
 	"time"
 
@@ -103,12 +102,10 @@ func TestNewPrometheusExporter_fromEnv(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			if tc.prometheusPortVarName != "" {
-				os.Setenv(tc.prometheusPortVarName, tc.prometheusPortVarValue)
-				defer os.Unsetenv(tc.prometheusPortVarName)
+				t.Setenv(tc.prometheusPortVarName, tc.prometheusPortVarValue)
 			}
 			if tc.prometheusHostVarName != "" {
-				os.Setenv(tc.prometheusHostVarName, tc.prometheusHostVarValue)
-				defer os.Unsetenv(tc.prometheusHostVarName)
+				t.Setenv(tc.prometheusHostVarName, tc.prometheusHostVarValue)
 			}
 			mc, err := createMetricsConfig(context.Background(), tc.ops)
 			if err != nil {

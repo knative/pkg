@@ -17,16 +17,11 @@ limitations under the License.
 package prow
 
 import (
-	"os"
 	"testing"
 )
 
 func TestGetEnvConfig(t *testing.T) {
-	isCI := os.Getenv("CI")
-	// Set it to the original value
-	defer os.Setenv("CI", isCI)
-
-	os.Setenv("CI", "true")
+	t.Setenv("CI", "true")
 	ec, err := GetEnvConfig()
 	t.Log("EnvConfig is:", ec)
 	if err != nil {
@@ -36,7 +31,7 @@ func TestGetEnvConfig(t *testing.T) {
 		t.Fatal("Expected CI to be true but is false")
 	}
 
-	os.Setenv("CI", "false")
+	t.Setenv("CI", "false")
 	if _, err = GetEnvConfig(); err == nil {
 		t.Fatal("Expected an error if called from a non-CI environment but got nil")
 	}
