@@ -57,7 +57,7 @@ func NewConfigFromMap(data map[string]string) (*Config, error) {
 
 		cm.AsUint32("buckets", &config.Buckets),
 
-		cm.AsOptionalMap("map-lease-prefix", config.LeaseNamesPrefixMapping),
+		cm.AsOptionalMap("map-lease-prefix", &config.LeaseNamesPrefixMapping),
 	); err != nil {
 		return nil, err
 	}
@@ -85,27 +85,29 @@ type Config struct {
 	LeaseDuration           time.Duration
 	RenewDeadline           time.Duration
 	RetryPeriod             time.Duration
-	LeaseNamesPrefixMapping map[string]string
+	LeaseNamesPrefixMapping *map[string]string
 }
 
 func (c *Config) GetComponentConfig(name string) ComponentConfig {
-	return ComponentConfig{
-		Component:               name,
-		Buckets:                 c.Buckets,
-		LeaseDuration:           c.LeaseDuration,
-		RenewDeadline:           c.RenewDeadline,
-		RetryPeriod:             c.RetryPeriod,
-		LeaseNamesPrefixMapping: c.LeaseNamesPrefixMapping,
+	cc := ComponentConfig{
+		Component:     name,
+		Buckets:       c.Buckets,
+		LeaseDuration: c.LeaseDuration,
+		RenewDeadline: c.RenewDeadline,
+		RetryPeriod:   c.RetryPeriod,
 	}
+	if c.LeaseNamesPrefixMapping != nil {
+		cc.LeaseNamesPrefixMapping = *c.LeaseNamesPrefixMapping
+	}
+	return cc
 }
 
 func defaultConfig() *Config {
 	return &Config{
-		Buckets:                 1,
-		LeaseDuration:           60 * time.Second,
-		RenewDeadline:           40 * time.Second,
-		RetryPeriod:             10 * time.Second,
-		LeaseNamesPrefixMapping: make(map[string]string),
+		Buckets:       1,
+		LeaseDuration: 60 * time.Second,
+		RenewDeadline: 40 * time.Second,
+		RetryPeriod:   10 * time.Second,
 	}
 }
 

@@ -39,11 +39,10 @@ const (
 
 func okConfig() *Config {
 	return &Config{
-		Buckets:                 1,
-		LeaseDuration:           15 * time.Second,
-		RenewDeadline:           10 * time.Second,
-		RetryPeriod:             2 * time.Second,
-		LeaseNamesPrefixMapping: map[string]string{},
+		Buckets:       1,
+		LeaseDuration: 15 * time.Second,
+		RenewDeadline: 10 * time.Second,
+		RetryPeriod:   2 * time.Second,
 	}
 }
 
@@ -124,11 +123,10 @@ func TestNewConfigMapFromData(t *testing.T) {
 			"buckets":       "5",
 		},
 		expected: &Config{
-			Buckets:                 5,
-			LeaseDuration:           2 * time.Second,
-			RenewDeadline:           3 * time.Second,
-			RetryPeriod:             4 * time.Second,
-			LeaseNamesPrefixMapping: map[string]string{},
+			Buckets:       5,
+			LeaseDuration: 2 * time.Second,
+			RenewDeadline: 3 * time.Second,
+			RetryPeriod:   4 * time.Second,
 		},
 	}, {
 		name: "prioritize new keys",
@@ -142,11 +140,10 @@ func TestNewConfigMapFromData(t *testing.T) {
 			"buckets":        "7",
 		},
 		expected: &Config{
-			Buckets:                 7,
-			LeaseDuration:           1 * time.Second,
-			RenewDeadline:           2 * time.Second,
-			RetryPeriod:             3 * time.Second,
-			LeaseNamesPrefixMapping: map[string]string{},
+			Buckets:       7,
+			LeaseDuration: 1 * time.Second,
+			RenewDeadline: 2 * time.Second,
+			RetryPeriod:   3 * time.Second,
 		},
 	}}
 
@@ -186,11 +183,10 @@ func TestNewConfigFromMap(t *testing.T) {
 			"buckets":        "5",
 		},
 		want: Config{
-			Buckets:                 5,
-			LeaseDuration:           15 * time.Second,
-			RenewDeadline:           40 * time.Second,
-			RetryPeriod:             10 * time.Second,
-			LeaseNamesPrefixMapping: map[string]string{},
+			Buckets:       5,
+			LeaseDuration: 15 * time.Second,
+			RenewDeadline: 40 * time.Second,
+			RetryPeriod:   10 * time.Second,
 		},
 	}, {
 		name: "ok config, prefix map",
@@ -204,7 +200,7 @@ func TestNewConfigFromMap(t *testing.T) {
 			LeaseDuration: 15 * time.Second,
 			RenewDeadline: 40 * time.Second,
 			RetryPeriod:   10 * time.Second,
-			LeaseNamesPrefixMapping: map[string]string{
+			LeaseNamesPrefixMapping: &map[string]string{
 				"reconciler": "reconciler1",
 			},
 		},
