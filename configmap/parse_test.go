@@ -43,7 +43,7 @@ type testConfig struct {
 	nsn  types.NamespacedName
 	onsn *types.NamespacedName
 
-	dict map[string]string
+	dict *map[string]string
 }
 
 func TestParse(t *testing.T) {
@@ -76,9 +76,6 @@ func TestParse(t *testing.T) {
 			"test-dict.k":  "v",
 			"test-dict.k1": "v1",
 		},
-		conf: testConfig{
-			dict: map[string]string{},
-		},
 		want: testConfig{
 			str:    "foo.bar",
 			toggle: true,
@@ -100,7 +97,7 @@ func TestParse(t *testing.T) {
 				Name:      "some-other-name",
 				Namespace: "some-other-namespace",
 			},
-			dict: map[string]string{
+			dict: &map[string]string{
 				"k":  "v",
 				"k1": "v1",
 			},
@@ -218,13 +215,13 @@ func TestParse(t *testing.T) {
 				AsQuantity("test-quantity", &test.conf.qua),
 				AsNamespacedName("test-namespaced-name", &test.conf.nsn),
 				AsOptionalNamespacedName("test-optional-namespaced-name", &test.conf.onsn),
-				AsOptionalMap("test-dict", test.conf.dict),
+				AsOptionalMap("test-dict", &test.conf.dict),
 			); (err == nil) == test.expectErr {
 				t.Fatal("Failed to parse data:", err)
 			}
 
-			if !cmp.Equal(test.conf, test.want, cmp.AllowUnexported(testConfig{})) {
-				t.Fatalf("parsed = %v, want %v", test.conf, test.want)
+			if diff := cmp.Diff(test.want, test.conf, cmp.AllowUnexported(testConfig{})); diff != "" {
+				t.Fatal("(-want, +got)", diff)
 			}
 		})
 	}
