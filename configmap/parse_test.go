@@ -43,7 +43,7 @@ type testConfig struct {
 	nsn  types.NamespacedName
 	onsn *types.NamespacedName
 
-	dict *map[string]string
+	dict map[string]string
 }
 
 func TestParse(t *testing.T) {
@@ -97,7 +97,7 @@ func TestParse(t *testing.T) {
 				Name:      "some-other-name",
 				Namespace: "some-other-namespace",
 			},
-			dict: &map[string]string{
+			dict: map[string]string{
 				"k":  "v",
 				"k1": "v1",
 			},
