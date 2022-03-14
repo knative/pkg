@@ -200,7 +200,7 @@ func TestNewConfigFromMap(t *testing.T) {
 			LeaseDuration: 15 * time.Second,
 			RenewDeadline: 40 * time.Second,
 			RetryPeriod:   10 * time.Second,
-			LeaseNamesPrefixMapping: &map[string]string{
+			LeaseNamesPrefixMapping: map[string]string{
 				"reconciler": "reconciler1",
 			},
 		},

@@ -85,21 +85,18 @@ type Config struct {
 	LeaseDuration           time.Duration
 	RenewDeadline           time.Duration
 	RetryPeriod             time.Duration
-	LeaseNamesPrefixMapping *map[string]string
+	LeaseNamesPrefixMapping map[string]string
 }
 
 func (c *Config) GetComponentConfig(name string) ComponentConfig {
-	cc := ComponentConfig{
-		Component:     name,
-		Buckets:       c.Buckets,
-		LeaseDuration: c.LeaseDuration,
-		RenewDeadline: c.RenewDeadline,
-		RetryPeriod:   c.RetryPeriod,
+	return ComponentConfig{
+		Component:               name,
+		Buckets:                 c.Buckets,
+		LeaseDuration:           c.LeaseDuration,
+		RenewDeadline:           c.RenewDeadline,
+		RetryPeriod:             c.RetryPeriod,
+		LeaseNamesPrefixMapping: c.LeaseNamesPrefixMapping,
 	}
-	if c.LeaseNamesPrefixMapping != nil {
-		cc.LeaseNamesPrefixMapping = *c.LeaseNamesPrefixMapping
-	}
-	return cc
 }
 
 func defaultConfig() *Config {
