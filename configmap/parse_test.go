@@ -215,7 +215,7 @@ func TestParse(t *testing.T) {
 				AsQuantity("test-quantity", &test.conf.qua),
 				AsNamespacedName("test-namespaced-name", &test.conf.nsn),
 				AsOptionalNamespacedName("test-optional-namespaced-name", &test.conf.onsn),
-				AsOptionalMap("test-dict", &test.conf.dict),
+				CollectMapEntriesWithPrefix("test-dict", &test.conf.dict),
 			); (err == nil) == test.expectErr {
 				t.Fatal("Failed to parse data:", err)
 			}
