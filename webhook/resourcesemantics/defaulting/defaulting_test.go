@@ -125,6 +125,7 @@ var (
 					Name:      "webhook",
 				},
 			},
+			ReinvocationPolicy: ptrReinvocationPolicyType(admissionregistrationv1.IfNeededReinvocationPolicy),
 		}},
 	}
 )
