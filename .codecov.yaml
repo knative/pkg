@@ -18,6 +18,10 @@ comment:
   behavior: default
 ignore:
   - "**/zz_generated*.go" # Ignore generated files.
+  - "codegen/**/*" #TODO: fix coverage
+  - "injection/**/*" #TODO: fix coverage
+  - "test/**/*"
+  - "tracing/**/*" #TODO: fix coverage
   - "client"
   - "hack"
   - "reconciler/testing"
