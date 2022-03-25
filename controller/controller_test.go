@@ -920,10 +920,16 @@ func TestStartAndShutdown(t *testing.T) {
 type countingLeaderAwareReconciler struct {
 	reconciler.LeaderAwareFuncs
 
-	count atomic.Int32
+	reconcileCount atomic.Int32
+	promotionCount atomic.Int32
 }
 
 var _ reconciler.LeaderAware = (*countingLeaderAwareReconciler)(nil)
+
+func (cr *countingLeaderAwareReconciler) Promote(b reconciler.Bucket, enq func(reconciler.Bucket, types.NamespacedName)) error {
+	cr.promotionCount.Inc()
+	return cr.LeaderAwareFuncs.Promote(b, enq)
+}
 
 func (cr *countingLeaderAwareReconciler) Reconcile(ctx context.Context, key string) error {
 	namespace, name, err := cache.SplitMetaNamespaceKey(key)
@@ -935,7 +941,7 @@ func (cr *countingLeaderAwareReconciler) Reconcile(ctx context.Context, key stri
 		Namespace: namespace,
 		Name:      name,
 	}) {
-		cr.count.Inc()
+		cr.reconcileCount.Inc()
 	}
 	return nil
 }
@@ -983,8 +989,21 @@ func TestStartAndShutdownWithLeaderAwareNoElection(t *testing.T) {
 		// We expect the work to complete.
 	}
 
-	if got, want := r.count.Load(), int32(0); got != want {
+	if got, want := r.reconcileCount.Load(), int32(0); got != want {
 		t.Errorf("reconcile count = %v, wanted %v", got, want)
+	}
+
+	// Since the elector can't easily be mocked we assume:
+	// 1. We are using the unopposed elector
+	// 2. It has a single initial bucket (the Universe)
+	//
+	// Thus we expect two promotions to occur
+	// 1. It provides the initial set of buckets and these are promoted
+	//    before reconciliation and leader election go routines start
+	// 2. When leader election starts the unopposed elector promotes
+	//    that same bucket again
+	if got, want := r.promotionCount.Load(), int32(2); got != want {
+		t.Errorf("promotion count = %v, wanted %v", got, want)
 	}
 }
 
@@ -1055,7 +1074,7 @@ func TestStartAndShutdownWithLeaderAwareWithLostElection(t *testing.T) {
 		// We expect the work to complete.
 	}
 
-	if got, want := r.count.Load(), int32(0); got != want {
+	if got, want := r.reconcileCount.Load(), int32(0); got != want {
 		t.Errorf("reconcile count = %v, wanted %v", got, want)
 	}
 }
