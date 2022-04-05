@@ -82,7 +82,7 @@ func TestDialWithBackoff(t *testing.T) {
 	bo.Steps = 2
 
 	// Timeout. Use special testing IP address.
-	c, err = dialBackOffHelper(context.Background(), "tcp4", "198.18.0.254:8888", bo, sleepTO, nil)
+	c, err = dialBackOffHelper(context.Background(), "tcp4", "198.18.0.254:8888", bo, nil)
 	if err == nil {
 		c.Close()
 		t.Error("Unexpected success dialing")
@@ -120,7 +120,7 @@ func TestDialTLSWithBackoff(t *testing.T) {
 	bo.Steps = 2
 
 	// Timeout. Use special testing IP address.
-	c, err = dialBackOffHelper(context.Background(), "tcp4", "198.18.0.254:8888", bo, sleepTO, tlsConf)
+	c, err = dialBackOffHelper(context.Background(), "tcp4", "198.18.0.254:8888", bo, tlsConf)
 	if err == nil {
 		c.Close()
 		t.Error("Unexpected success dialing")

@@ -46,7 +46,7 @@ func newAutoTransport(v1, v2 http.RoundTripper) http.RoundTripper {
 	})
 }
 
-const sleepTO = 30 * time.Millisecond
+const sleep = 30 * time.Millisecond
 
 var backOffTemplate = wait.Backoff{
 	Duration: 50 * time.Millisecond,
@@ -64,7 +64,7 @@ var DialWithBackOff = NewBackoffDialer(backOffTemplate)
 // between tries.
 func NewBackoffDialer(backoffConfig wait.Backoff) func(context.Context, string, string) (net.Conn, error) {
 	return func(ctx context.Context, network, address string) (net.Conn, error) {
-		return dialBackOffHelper(ctx, network, address, backoffConfig, sleepTO, nil)
+		return dialBackOffHelper(ctx, network, address, backoffConfig, nil)
 	}
 }
 
@@ -74,11 +74,11 @@ var DialTLSWithBackOff = NewTLSBackoffDialer(backOffTemplate)
 // NewTLSBackoffDialer is same with NewBackoffDialer but takes tls config.
 func NewTLSBackoffDialer(backoffConfig wait.Backoff) func(context.Context, string, string, *tls.Config) (net.Conn, error) {
 	return func(ctx context.Context, network, address string, tlsConf *tls.Config) (net.Conn, error) {
-		return dialBackOffHelper(ctx, network, address, backoffConfig, sleepTO, tlsConf)
+		return dialBackOffHelper(ctx, network, address, backoffConfig, tlsConf)
 	}
 }
 
-func dialBackOffHelper(ctx context.Context, network, address string, bo wait.Backoff, sleep time.Duration, tlsConf *tls.Config) (net.Conn, error) {
+func dialBackOffHelper(ctx context.Context, network, address string, bo wait.Backoff, tlsConf *tls.Config) (net.Conn, error) {
 	dialer := &net.Dialer{
 		Timeout:   bo.Duration, // Initial duration.
 		KeepAlive: 5 * time.Second,
