@@ -18,6 +18,7 @@ package network
 
 import (
 	"context"
+	"crypto/tls"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -81,7 +82,7 @@ func TestDialWithBackoff(t *testing.T) {
 	bo.Steps = 2
 
 	// Timeout. Use special testing IP address.
-	c, err = dialBackOffHelper(context.Background(), "tcp4", "198.18.0.254:8888", bo, sleepTO)
+	c, err = dialBackOffHelper(context.Background(), "tcp4", "198.18.0.254:8888", bo, sleepTO, nil)
 	if err == nil {
 		c.Close()
 		t.Error("Unexpected success dialing")
@@ -95,6 +96,44 @@ func TestDialWithBackoff(t *testing.T) {
 	defer s.Close()
 
 	c, err = DialWithBackOff(context.Background(), "tcp4", strings.TrimPrefix(s.URL, "http://"))
+	if err != nil {
+		t.Fatal("Dial error =", err)
+	}
+	c.Close()
+}
+
+func TestDialTLSWithBackoff(t *testing.T) {
+	tlsConf := &tls.Config{
+		InsecureSkipVerify: true, // FIXME: Is it possible to set false for the test server?
+		ServerName:         "example.com",
+		MinVersion:         tls.VersionTLS12,
+	}
+	// Nobody's listening on a random port. Usually.
+	c, err := DialTLSWithBackOff(context.Background(), "tcp4", "127.0.0.1:41482", tlsConf)
+	if err == nil {
+		c.Close()
+		t.Error("Unexpected success dialing")
+	}
+
+	// Make the test short.
+	bo := backOffTemplate
+	bo.Steps = 2
+
+	// Timeout. Use special testing IP address.
+	c, err = dialBackOffHelper(context.Background(), "tcp4", "198.18.0.254:8888", bo, sleepTO, tlsConf)
+	if err == nil {
+		c.Close()
+		t.Error("Unexpected success dialing")
+	}
+	const expectedErrPrefix = "timed out dialing"
+	if err == nil || !strings.HasPrefix(err.Error(), expectedErrPrefix) {
+		t.Errorf("Error = %v, want: %s(...)", err, expectedErrPrefix)
+	}
+
+	s := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
+	defer s.Close()
+
+	c, err = DialTLSWithBackOff(context.Background(), "tcp4", strings.TrimPrefix(s.URL, "https://"), tlsConf)
 	if err != nil {
 		t.Fatal("Dial error =", err)
 	}
