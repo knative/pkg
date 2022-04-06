@@ -83,7 +83,7 @@ jobs:
 
     - name: Install Dependencies
       run: |
-        go get github.com/google/go-licenses
+        go install github.com/google/go-licenses@latest
 
     - name: Checkout upstream at ${{ github.base_ref }}
       uses: actions/checkout@v2
