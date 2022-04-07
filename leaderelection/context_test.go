@@ -384,8 +384,10 @@ func TestStandardBucketName(t *testing.T) {
 }
 
 func TestUnopposedElectorInitialBucket(t *testing.T) {
-	u := &unopposedElector{}
-	if u.InitialBuckets()[0] != reconciler.UniversalBucket() {
-		t.Errorf("expected the unopposedElector to return the universal bucket")
+	u := &unopposedElector{
+		bkt: reconciler.UniversalBucket(),
+	}
+	if diff := cmp.Diff(u.InitialBuckets(), []reconciler.Bucket{reconciler.UniversalBucket()}); diff != "" {
+		t.Errorf("unexpected u.InitialBuckets() (-want,+got): %s", diff)
 	}
 }
