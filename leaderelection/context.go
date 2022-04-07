@@ -272,8 +272,12 @@ func (ue *unopposedElector) Run(ctx context.Context) {
 }
 
 func (ue *unopposedElector) InitialBuckets() []reconciler.Bucket {
+	bkt := ue.bkt
+	if bkt == nil {
+		bkt = reconciler.UniversalBucket()
+	}
 	return []reconciler.Bucket{
-		reconciler.UniversalBucket(),
+		bkt,
 	}
 }
 
