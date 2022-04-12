@@ -127,6 +127,7 @@ func (d *Drainer) Drain() {
 		}()
 
 		<-t.tickChan()
+		d.timer = nil
 	})
 }
 
