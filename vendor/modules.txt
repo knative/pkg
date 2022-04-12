@@ -1080,7 +1080,7 @@ k8s.io/utils/internal/third_party/forked/golang/net
 k8s.io/utils/net
 k8s.io/utils/pointer
 k8s.io/utils/trace
-# knative.dev/hack v0.0.0-20220328133751-f06773764ce3
+# knative.dev/hack v0.0.0-20220411131823-6ffd8417de7c
 ## explicit; go 1.14
 knative.dev/hack
 # sigs.k8s.io/json v0.0.0-20211020170558-c049b76a60c6
