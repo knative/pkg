@@ -70,7 +70,7 @@ func TestMigrate(t *testing.T) {
 	resources := []runtime.Object{fake("first"), fake("second")}
 	dclient := dynamicFake.NewSimpleDynamicClient(runtime.NewScheme(), resources...)
 	cclient := apixFake.NewSimpleClientset(fakeCRD)
-	m := NewMigrator(dclient, cclient)
+	m := NewMigrator(dclient, cclient, false)
 
 	if err := m.Migrate(context.Background(), fakeGR); err != nil {
 		t.Fatal("Migrate() =", err)
@@ -159,12 +159,29 @@ func TestMigrate_Errors(t *testing.T) {
 				test.dyn(&dclient.Fake)
 			}
 
-			m := NewMigrator(dclient, cclient)
+			m := NewMigrator(dclient, cclient, false)
 			if err := m.Migrate(context.Background(), fakeGR); test.pass != (err == nil) {
 				t.Error("Migrate should have returned an error")
 			}
 		})
 	}
+}
+
+func TestMigrateNoCRD(t *testing.T) {
+	// setup
+	dclient := dynamicFake.NewSimpleDynamicClient(runtime.NewScheme())
+	cclient := apixFake.NewSimpleClientset()
+	m := NewMigrator(dclient, cclient, false)
+
+	if err := m.Migrate(context.Background(), fakeGR); err == nil {
+		t.Error("Migrate should have returned an error")
+	}
+
+	m = NewMigrator(dclient, cclient, true)
+	if err := m.Migrate(context.Background(), fakeGR); err != nil {
+		t.Error("Unexpected error:", err)
+	}
+
 }
 
 func assertPatches(t *testing.T, actions []k8stesting.Action, want ...k8stesting.PatchAction) {

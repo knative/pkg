@@ -20,6 +20,8 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"os"
+	"strconv"
 
 	"go.uber.org/zap"
 	apixclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
@@ -29,6 +31,10 @@ import (
 	"knative.dev/pkg/environment"
 	"knative.dev/pkg/logging"
 	"knative.dev/pkg/signals"
+)
+
+const (
+	IgnoreNotFound = "MIGRATE_CRD_IF_FOUND_NO_FAILURE"
 )
 
 func main() {
@@ -50,9 +56,15 @@ func main() {
 		logger.Fatal(err)
 	}
 
+	ignoreNotFound, err := strconv.ParseBool(os.Getenv(IgnoreNotFound))
+	if err != nil {
+		logger.Infof("Error getting environment variable %s for migrate %w", IgnoreNotFound, err)
+	}
+
 	migrator := storageversion.NewMigrator(
 		dynamic.NewForConfigOrDie(config),
 		apixclient.NewForConfigOrDie(config),
+		ignoreNotFound,
 	)
 
 	ctx := signals.NewContext()
