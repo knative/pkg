@@ -218,7 +218,7 @@ func MainWithConfig(ctx context.Context, component string, cfg *rest.Config, cto
 	// Set up leader election config
 	leaderElectionConfig, err := GetLeaderElectionConfig(ctx)
 	if err != nil {
-		logger.Fatal("Error loading leader election configuration: ", err)
+		logger.Fatalw("Error loading leader election configuration", zap.Error(err))
 	}
 
 	if !IsHADisabled(ctx) {
@@ -282,7 +282,7 @@ func MainWithConfig(ctx context.Context, component string, cfg *rest.Config, cto
 }
 
 func flush(logger *zap.SugaredLogger) {
-	logger.Sync()
+	_ = logger.Sync() // we care about stdout and stderr only
 	metrics.FlushExporter()
 }
 
@@ -293,7 +293,7 @@ func SetupLoggerOrDie(ctx context.Context, component string) (*zap.SugaredLogger
 	if err != nil {
 		log.Fatal("Error reading/parsing logging configuration: ", err)
 	}
-	l, level := logging.NewLoggerFromConfig(loggingConfig, component)
+	l, level := logging.NewLoggerFromConfig(loggingConfig, component, logging.ExitingZapcore)
 
 	// If PodName is injected into the env vars, set it on the logger.
 	// This is needed for HA components to distinguish logs from different
