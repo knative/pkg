@@ -32,6 +32,7 @@ import (
 	"time"
 
 	"k8s.io/apimachinery/pkg/util/sets"
+	"k8s.io/apimachinery/pkg/util/wait"
 )
 
 func TestHTTPRoundTripper(t *testing.T) {
@@ -76,158 +77,177 @@ func TestHTTPRoundTripper(t *testing.T) {
 	}
 }
 
-func TestDialWithBackoff(t *testing.T) {
-	var tlsConf *tls.Config
-	t.Parallel()
-	t.Run("ConnectionRefused", testDialWithBackoffConnectionRefused(tlsConf))
-	t.Run("Timeout", testDialWithBackoffTimeout(tlsConf))
-	t.Run("Success", testDialWithBackoffSuccess(tlsConf))
+func TestDialWithBackoffConnectionRefused(t *testing.T) {
+	testDialWithBackoffConnectionRefused(nil, t)
 }
 
-func TestDialTLSWithBackoff(t *testing.T) {
-	tlsConf := &tls.Config{
-		InsecureSkipVerify: false,
-		ServerName:         "example.com",
-		MinVersion:         tls.VersionTLS12,
-	}
-	t.Parallel()
-	t.Run("ConnectionRefused", testDialWithBackoffConnectionRefused(tlsConf))
-	t.Run("Timeout", testDialWithBackoffTimeout(tlsConf))
-	t.Run("Success", testDialWithBackoffSuccess(tlsConf))
+func TestDialWithBackoffTimeout(t *testing.T) {
+	testDialWithBackoffTimeout(nil, t)
 }
 
-func testDialWithBackoffConnectionRefused(tlsConf *tls.Config) func(t *testing.T) {
+func TestDialWithBackoffSuccess(t *testing.T) {
+	testDialWithBackoffSuccess(nil, t)
+}
+
+func TestDialTLSWithBackoffConnectionRefused(t *testing.T) {
+	testDialWithBackoffConnectionRefused(exampleTlsConf(), t)
+}
+
+func TestDialTLSWithBackoffTimeout(t *testing.T) {
+	testDialWithBackoffTimeout(exampleTlsConf(), t)
+}
+
+func TestDialTLSWithBackoffSuccess(t *testing.T) {
+	testDialWithBackoffSuccess(exampleTlsConf(), t)
+}
+
+func testDialWithBackoffConnectionRefused(tlsConf *tls.Config, t testingT) {
 	ctx := context.TODO()
-	return func(t *testing.T) {
-		port := findUnusedPortOrFail(t)
-		addr := fmt.Sprintf("127.0.0.1:%d", port)
-		c, err := dialer(ctx, tlsConf)(addr)
+	port := findUnusedPortOrFail(t)
+	addr := fmt.Sprintf("127.0.0.1:%d", port)
+	dialer := newDialer(ctx, tlsConf)
+	c, err := dialer(addr)
+	closeOrFail(t, c)
+	if !errors.Is(err, syscall.ECONNREFUSED) {
+		t.Fatalf("Unexpected error: %+v", err)
+	}
+}
+
+func testDialWithBackoffTimeout(tlsConf *tls.Config, t testingT) {
+	ctx := context.TODO()
+	closer, addr, err := listenOne()
+	if err != nil {
+		t.Fatal("Unable to create listener:", err)
+	}
+	defer closer()
+	c1, err := net.Dial("tcp4", addr.String())
+	if err != nil {
+		t.Fatalf("Unable to connect to server on %s: %s", addr, err)
+	}
+	defer closeOrFail(t, c1)
+
+	// Since the backlog is full, the next request must time out.
+	dialer := newDialer(ctx, tlsConf)
+	c, err := dialer(addr.String())
+	if err == nil {
 		closeOrFail(t, c)
-		if !errors.Is(err, syscall.ECONNREFUSED) {
-			t.Errorf("Unexpected error: %+v", err)
-		}
+		t.Fatal("Unexpected success dialing")
+	}
+	if !errors.Is(err, ErrTimeoutDialing) {
+		t.Fatalf("Unexpected error: %+v", err)
 	}
 }
 
-func testDialWithBackoffTimeout(tlsConf *tls.Config) func(t *testing.T) {
-	return func(t *testing.T) {
-		// Create a listening socket with backlog 1, then occupy the backlog to force a timeout.
-		closer, addr, err := listenOne()
-		if err != nil {
-			t.Fatal("Unable to create listener:", err)
-		}
-		defer closer()
-		c1, err := net.Dial("tcp4", addr.String())
-		if err != nil {
-			t.Fatalf("Unable to connect to server on %s: %s", addr, err)
-		}
-		defer c1.Close()
-
-		// Since the backlog is full, the next request must time out.
-		c, err := dialer(context.TODO(), tlsConf)(addr.String())
-		if err == nil {
-			closeOrFail(t, c)
-			t.Error("Unexpected success dialing")
-		}
-		if !errors.Is(err, ErrTimeoutDialing) {
-			t.Errorf("Unexpected error: %+v", err)
-		}
-	}
-}
-
-func testDialWithBackoffSuccess(tlsConf *tls.Config) func(t *testing.T) {
+func testDialWithBackoffSuccess(tlsConf *tls.Config, t testingT) {
 	//goland:noinspection HttpUrlsUsage
 	const (
 		prefixHTTP  = "http://"
 		prefixHTTPS = "https://"
 	)
 	ctx := context.TODO()
-	return func(t *testing.T) {
-		var s *httptest.Server
-		servFn := httptest.NewServer
-		if tlsConf != nil {
-			servFn = httptest.NewTLSServer
-		}
-		s = servFn(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
-		defer s.Close()
-		prefix := prefixHTTP
-		if tlsConf != nil {
-			servFn = httptest.NewTLSServer
-			prefix = prefixHTTPS
-			rootCAs := x509.NewCertPool()
-			rootCAs.AddCert(s.Certificate())
-			tlsConf.RootCAs = rootCAs
-		}
-		addr := strings.TrimPrefix(s.URL, prefix)
+	var s *httptest.Server
+	servFn := httptest.NewServer
+	if tlsConf != nil {
+		servFn = httptest.NewTLSServer
+	}
+	s = servFn(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
+	defer s.Close()
+	prefix := prefixHTTP
+	if tlsConf != nil {
+		prefix = prefixHTTPS
+		rootCAs := x509.NewCertPool()
+		rootCAs.AddCert(s.Certificate())
+		tlsConf.RootCAs = rootCAs
+	}
+	addr := strings.TrimPrefix(s.URL, prefix)
 
-		c, err := dialer(ctx, tlsConf)(addr)
-		if err != nil {
-			t.Fatal("Dial error =", err)
-		}
-		closeOrFail(t, c)
+	dialer := newDialer(ctx, tlsConf)
+	c, err := dialer(addr)
+	if err != nil {
+		t.Fatal("Dial error =", err)
+	}
+	closeOrFail(t, c)
+}
+
+func exampleTlsConf() *tls.Config {
+	return &tls.Config{
+		InsecureSkipVerify: false,
+		ServerName:         "example.com",
+		MinVersion:         tls.VersionTLS12,
 	}
 }
 
-func dialer(ctx context.Context, tlsConf *tls.Config) func(addr string) (net.Conn, error) {
+func newDialer(ctx context.Context, tlsConf *tls.Config) func(addr string) (net.Conn, error) {
 	// Make the test short.
-	bo := backOffTemplate
-	bo.Steps = 1
+	bo := wait.Backoff{
+		Duration: time.Millisecond,
+		Factor:   1.4,
+		Jitter:   0.1, // At most 10% jitter.
+		Steps:    1,
+	}
 
 	dialFn := func(addr string) (net.Conn, error) {
-		bo.Duration = time.Millisecond
 		return NewBackoffDialer(bo)(ctx, "tcp4", addr)
 	}
 	if tlsConf != nil {
 		dialFn = func(addr string) (net.Conn, error) {
 			bo.Duration = 10 * time.Millisecond
+			bo.Steps = 3
 			return NewTLSBackoffDialer(bo)(ctx, "tcp4", addr, tlsConf)
 		}
 	}
 	return dialFn
 }
 
-func closeOrFail(tb testing.TB, con io.Closer) {
-	tb.Helper()
+func closeOrFail(t testingT, con io.Closer) {
 	if con == nil {
 		return
 	}
 	if err := con.Close(); err != nil {
-		tb.Fatal(err)
+		t.Fatal(err)
 	}
 }
 
-func findUnusedPortOrFail(tb testing.TB) int {
-	tb.Helper()
+func findUnusedPortOrFail(t testingT) int {
 	l, err := net.Listen("tcp", "localhost:0")
 	if err != nil {
-		tb.Fatal(err)
+		t.Fatal(err)
 	}
-	defer closeOrFail(tb, l)
+	defer closeOrFail(t, l)
 	return l.Addr().(*net.TCPAddr).Port
 }
 
+var errTest = errors.New("testing")
+
+func newTestErr(msg string, err error) error {
+	return fmt.Errorf("%w: %s: %v", errTest, msg, err)
+}
+
+// listenOne creates a socket with backlog of one, and use that socket, so
+// any other connection will guarantee to timeout.
+//
 // Golang doesn't allow us to set the backlog argument on syscall.Listen from
 // net.ListenTCP, so we need to get directly into syscall land.
 func listenOne() (func(), *net.TCPAddr, error) {
 	fd, err := syscall.Socket(syscall.AF_INET, syscall.SOCK_STREAM, 0)
 	if err != nil {
-		return nil, nil, fmt.Errorf("Couldn't get socket: %w", err)
+		return nil, nil, newTestErr("Couldn't get socket", err)
 	}
 	sa := &syscall.SockaddrInet4{
 		Port: 0,
 		Addr: [4]byte{127, 0, 0, 1},
 	}
 	if err = syscall.Bind(fd, sa); err != nil {
-		return nil, nil, fmt.Errorf("Unable to bind: %w", err)
+		return nil, nil, newTestErr("Unable to bind", err)
 	}
 	if err = syscall.Listen(fd, 0); err != nil {
-		return nil, nil, fmt.Errorf("Unable to Listen: %w", err)
+		return nil, nil, newTestErr("Unable to Listen", err)
 	}
-	closer := func() { syscall.Close(fd) }
+	closer := func() { _ = syscall.Close(fd) }
 	listenaddr, err := syscall.Getsockname(fd)
 	if err != nil {
 		closer()
-		return nil, nil, fmt.Errorf("Could not get sockname: %w", err)
+		return nil, nil, newTestErr("Could not get sockname", err)
 	}
 	sa = listenaddr.(*syscall.SockaddrInet4)
 	addr := &net.TCPAddr{
@@ -235,4 +255,9 @@ func listenOne() (func(), *net.TCPAddr, error) {
 		Port: sa.Port,
 	}
 	return closer, addr, nil
+}
+
+type testingT interface {
+	Fatal(args ...interface{})
+	Fatalf(format string, args ...interface{})
 }
