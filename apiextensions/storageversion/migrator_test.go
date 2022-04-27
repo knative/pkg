@@ -19,8 +19,6 @@ package storageversion
 import (
 	"context"
 	"errors"
-	"os"
-	"strconv"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -167,30 +165,6 @@ func TestMigrate_Errors(t *testing.T) {
 			}
 		})
 	}
-}
-
-func TestMigrateNoCRD(t *testing.T) {
-	// setup
-	dclient := dynamicFake.NewSimpleDynamicClient(runtime.NewScheme())
-	cclient := apixFake.NewSimpleClientset()
-	m := NewMigrator(dclient, cclient)
-
-	if err := m.Migrate(context.Background(), fakeGR); err == nil {
-		t.Error("Migrate should have returned an error")
-	}
-
-	t.Setenv("IGNORE_NOT_FOUND", "true")
-	m = NewMigrator(dclient, cclient)
-
-	ignoreNotFound, _ := strconv.ParseBool(os.Getenv("IGNORE_NOT_FOUND"))
-	err := m.Migrate(context.Background(), fakeGR)
-	if err == nil {
-		t.Error("Migrate should have returned an error")
-	}
-	if !ignoreNotFound || !apierrs.IsNotFound(err) {
-		t.Error("Unexpected error:", err)
-	}
-
 }
 
 func assertPatches(t *testing.T, actions []k8stesting.Action, want ...k8stesting.PatchAction) {
