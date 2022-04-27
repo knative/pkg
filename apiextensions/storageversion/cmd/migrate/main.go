@@ -25,6 +25,7 @@ import (
 
 	"go.uber.org/zap"
 	apixclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
+	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
 	"knative.dev/pkg/apiextensions/storageversion"
@@ -56,12 +57,11 @@ func main() {
 		logger.Fatal(err)
 	}
 
-	ignoreNotFound, _ := strconv.ParseBool(os.Getenv(IgnoreNotFound))
+	ignoreNotFound, _ := strconv.ParseBool(os.Getenv(IgnoreNotFoundEnvKey))
 
 	migrator := storageversion.NewMigrator(
 		dynamic.NewForConfigOrDie(config),
 		apixclient.NewForConfigOrDie(config),
-		ignoreNotFound,
 	)
 
 	ctx := signals.NewContext()
@@ -71,6 +71,10 @@ func main() {
 	for _, gr := range grs {
 		logger.Info("Migrating group resource ", gr)
 		if err := migrator.Migrate(ctx, gr); err != nil {
+			if ignoreNotFound && apierrs.IsNotFound(err) {
+				logger.Infof("Ignoring resource migration - unable to fetch crd %s - %w", gr, err)
+				continue
+			}
 			logger.Fatal("Failed to migrate: ", err)
 		}
 	}

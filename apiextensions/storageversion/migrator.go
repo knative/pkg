@@ -29,23 +29,20 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/tools/pager"
-	"knative.dev/pkg/logging"
 )
 
 // Migrator will read custom resource definitions and upgrade
 // the associated resources to the latest storage version
 type Migrator struct {
-	dynamicClient  dynamic.Interface
-	apixClient     apixclient.Interface
-	ignoreNotFound bool
+	dynamicClient dynamic.Interface
+	apixClient    apixclient.Interface
 }
 
 // NewMigrator will return a new Migrator
-func NewMigrator(d dynamic.Interface, a apixclient.Interface, i bool) *Migrator {
+func NewMigrator(d dynamic.Interface, a apixclient.Interface) *Migrator {
 	return &Migrator{
-		dynamicClient:  d,
-		apixClient:     a,
-		ignoreNotFound: i,
+		dynamicClient: d,
+		apixClient:    a,
 	}
 }
 
@@ -58,14 +55,10 @@ func NewMigrator(d dynamic.Interface, a apixclient.Interface, i bool) *Migrator 
 // Finally the migrator will update the CRD's status and drop older storage
 // versions
 func (m *Migrator) Migrate(ctx context.Context, gr schema.GroupResource) error {
-	logger := logging.FromContext(ctx)
 	crdClient := m.apixClient.ApiextensionsV1().CustomResourceDefinitions()
 
 	crd, err := crdClient.Get(ctx, gr.String(), metav1.GetOptions{})
-	if m.ignoreNotFound && apierrs.IsNotFound(err) {
-		logger.Infof("Ignoring resource migration - unable to fetch crd %s - %w", gr, err)
-		return nil
-	} else if err != nil {
+	if err != nil {
 		return fmt.Errorf("unable to fetch crd %s - %w", gr, err)
 	}
 
