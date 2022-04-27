@@ -34,7 +34,7 @@ import (
 )
 
 const (
-	IgnoreNotFound = "MIGRATE_CRD_IF_FOUND_NO_FAILURE"
+	IgnoreNotFoundEnvKey = "IGNORE_NOT_FOUND"
 )
 
 func main() {
@@ -56,10 +56,7 @@ func main() {
 		logger.Fatal(err)
 	}
 
-	ignoreNotFound, err := strconv.ParseBool(os.Getenv(IgnoreNotFound))
-	if err != nil {
-		logger.Infof("Error getting environment variable %s for migrate %w", IgnoreNotFound, err)
-	}
+	ignoreNotFound, _ := strconv.ParseBool(os.Getenv(IgnoreNotFound))
 
 	migrator := storageversion.NewMigrator(
 		dynamic.NewForConfigOrDie(config),
