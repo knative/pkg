@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package network
+package network_test
 
 import (
 	"context"
@@ -33,18 +33,19 @@ import (
 
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/apimachinery/pkg/util/wait"
+	"knative.dev/pkg/network"
 )
 
 func TestHTTPRoundTripper(t *testing.T) {
 	wants := sets.NewString()
 	frt := func(key string) http.RoundTripper {
-		return RoundTripperFunc(func(r *http.Request) (*http.Response, error) {
+		return network.RoundTripperFunc(func(r *http.Request) (*http.Response, error) {
 			wants.Insert(key)
 			return nil, nil
 		})
 	}
 
-	rt := newAutoTransport(frt("v1"), frt("v2"))
+	rt := network.NewRoundTripperAutoTransport(frt("v1"), frt("v2"))
 
 	examples := []struct {
 		label      string
@@ -68,7 +69,9 @@ func TestHTTPRoundTripper(t *testing.T) {
 		t.Run(e.label, func(t *testing.T) {
 			wants.Delete(e.want)
 			r := &http.Request{ProtoMajor: e.protoMajor}
-			rt.RoundTrip(r)
+			if _, err := rt.RoundTrip(r); err != nil {
+				t.Error(err)
+			}
 
 			if !wants.Has(e.want) {
 				t.Error("Wrong transport selected for request.")
@@ -77,103 +80,133 @@ func TestHTTPRoundTripper(t *testing.T) {
 	}
 }
 
-func TestDialWithBackoffConnectionRefused(t *testing.T) {
-	testDialWithBackoffConnectionRefused(nil, t)
+func TestDialWithBackoff(t *testing.T) {
+	t.Parallel()
+	p := findUnusedPortsOrFail(t, 6)
+	t.Logf("Unused ports: %v", p.numbers)
+	t.Run("PlainText", func(t *testing.T) {
+		t.Run("Success", dialSuccess(plainConf(p)))
+		t.Run("Timeout", dialTimeout(plainConf(p)))
+		t.Run("ConnectionRefused", dialConnectionRefused(plainConf(p)))
+	})
+	t.Run("TLS", func(t *testing.T) {
+		t.Run("Success", dialSuccess(tlsConf(p)))
+		t.Run("Timeout", dialTimeout(tlsConf(p)))
+		t.Run("ConnectionRefused", dialConnectionRefused(tlsConf(p)))
+	})
 }
 
-func TestDialWithBackoffTimeout(t *testing.T) {
-	testDialWithBackoffTimeout(nil, t)
-}
-
-func TestDialWithBackoffSuccess(t *testing.T) {
-	testDialWithBackoffSuccess(nil, t)
-}
-
-func TestDialTLSWithBackoffConnectionRefused(t *testing.T) {
-	testDialWithBackoffConnectionRefused(exampleTlsConf(), t)
-}
-
-func TestDialTLSWithBackoffTimeout(t *testing.T) {
-	testDialWithBackoffTimeout(exampleTlsConf(), t)
-}
-
-func TestDialTLSWithBackoffSuccess(t *testing.T) {
-	testDialWithBackoffSuccess(exampleTlsConf(), t)
-}
-
-func testDialWithBackoffConnectionRefused(tlsConf *tls.Config, t testingT) {
-	ctx := context.TODO()
-	port := findUnusedPortOrFail(t)
-	addr := fmt.Sprintf("127.0.0.1:%d", port)
-	dialer := newDialer(ctx, tlsConf)
-	c, err := dialer(addr)
-	closeOrFail(t, c)
-	if !errors.Is(err, syscall.ECONNREFUSED) {
-		t.Fatalf("Unexpected error: %+v", err)
+func dialConnectionRefused(c dialWithBackoffTestConfig) func(t *testing.T) {
+	return func(t *testing.T) {
+		t.Logf("%s port: %v", t.Name(), c.port)
+		ctx := context.TODO()
+		addr := fmt.Sprintf("127.0.0.1:%d", c.port)
+		dial := newDialer(ctx, c.tlsConf)
+		conn, err := dial(addr)
+		closeOrFail(t, conn)
+		if !errors.Is(err, syscall.ECONNREFUSED) {
+			t.Fatalf("Unexpected error: %+v", err)
+		}
 	}
 }
 
-func testDialWithBackoffTimeout(tlsConf *tls.Config, t testingT) {
-	ctx := context.TODO()
-	closer, addr, err := listenOne()
-	if err != nil {
-		t.Fatal("Unable to create listener:", err)
-	}
-	defer closer()
-	c1, err := net.Dial("tcp4", addr.String())
-	if err != nil {
-		t.Fatalf("Unable to connect to server on %s: %s", addr, err)
-	}
-	defer closeOrFail(t, c1)
+func dialTimeout(c dialWithBackoffTestConfig) func(t *testing.T) {
+	return func(t *testing.T) {
+		t.Logf("%s port: %v", t.Name(), c.port)
+		ctx := context.TODO()
+		closer, addr, err := listenOne(c)
+		if err != nil {
+			t.Fatal("Unable to create listener:", err)
+		}
+		defer closer()
+		c1, err := net.Dial("tcp4", addr.String())
+		if err != nil {
+			t.Fatalf("Unable to connect to server on %s: %s", addr, err)
+		}
+		defer closeOrFail(t, c1)
 
-	// Since the backlog is full, the next request must time out.
-	dialer := newDialer(ctx, tlsConf)
-	c, err := dialer(addr.String())
-	if err == nil {
-		closeOrFail(t, c)
-		t.Fatal("Unexpected success dialing")
-	}
-	if !errors.Is(err, ErrTimeoutDialing) {
-		t.Fatalf("Unexpected error: %+v", err)
+		// Since the backlog is full, the next request must time out.
+		dial := newDialer(ctx, c.tlsConf)
+		conn, err := dial(addr.String())
+		if err == nil {
+			closeOrFail(t, conn)
+			t.Fatal("Unexpected success dialing")
+		}
+		if !errors.Is(err, network.ErrTimeoutDialing) {
+			t.Fatalf("Unexpected error: %+v", err)
+		}
 	}
 }
 
-func testDialWithBackoffSuccess(tlsConf *tls.Config, t testingT) {
+func dialSuccess(c dialWithBackoffTestConfig) func(t *testing.T) {
 	//goland:noinspection HttpUrlsUsage
 	const (
 		prefixHTTP  = "http://"
 		prefixHTTPS = "https://"
 	)
 	ctx := context.TODO()
-	var s *httptest.Server
-	servFn := httptest.NewServer
-	if tlsConf != nil {
-		servFn = httptest.NewTLSServer
-	}
-	s = servFn(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
-	defer s.Close()
-	prefix := prefixHTTP
-	if tlsConf != nil {
-		prefix = prefixHTTPS
-		rootCAs := x509.NewCertPool()
-		rootCAs.AddCert(s.Certificate())
-		tlsConf.RootCAs = rootCAs
-	}
-	addr := strings.TrimPrefix(s.URL, prefix)
+	return func(t *testing.T) {
+		t.Logf("%s port: %v", t.Name(), c.port)
+		var s *httptest.Server
+		servFn := newServerFn(c, t)
+		s = servFn(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
+		defer s.Close()
+		prefix := prefixHTTP
+		if c.tlsConf != nil {
+			prefix = prefixHTTPS
+			rootCAs := x509.NewCertPool()
+			rootCAs.AddCert(s.Certificate())
+			c.tlsConf.RootCAs = rootCAs
+		}
+		addr := strings.TrimPrefix(s.URL, prefix)
 
-	dialer := newDialer(ctx, tlsConf)
-	c, err := dialer(addr)
-	if err != nil {
-		t.Fatal("Dial error =", err)
+		dial := newDialer(ctx, c.tlsConf)
+		conn, err := dial(addr)
+		if err != nil {
+			t.Fatal("Dial error =", err)
+		}
+		closeOrFail(t, conn)
 	}
-	closeOrFail(t, c)
 }
 
-func exampleTlsConf() *tls.Config {
-	return &tls.Config{
-		InsecureSkipVerify: false,
-		ServerName:         "example.com",
-		MinVersion:         tls.VersionTLS12,
+func newServerFn(c dialWithBackoffTestConfig, t testingT) func(handler http.Handler) *httptest.Server {
+	return func(handler http.Handler) *httptest.Server {
+		server := httptest.NewUnstartedServer(handler)
+		listener, err := net.Listen("tcp", fmt.Sprintf("127.0.0.1:%d", c.port))
+		if err != nil {
+			t.Fatal(err)
+		}
+		closeOrFail(t, server.Listener)
+		server.Listener = listener
+		if c.tlsConf != nil {
+			server.StartTLS()
+		} else {
+			server.Start()
+		}
+		return server
+	}
+}
+
+type dialWithBackoffTestConfig struct {
+	tlsConf *tls.Config
+	port    int
+}
+
+func plainConf(p *ports) dialWithBackoffTestConfig {
+	return dialWithBackoffTestConfig{
+		tlsConf: nil,
+		port:    p.pop(),
+	}
+}
+
+func tlsConf(p *ports) dialWithBackoffTestConfig {
+	return dialWithBackoffTestConfig{
+		tlsConf: &tls.Config{
+			InsecureSkipVerify: false,
+			ServerName:         "example.com",
+			MinVersion:         tls.VersionTLS12,
+		},
+		port: p.pop(),
 	}
 }
 
@@ -183,17 +216,17 @@ func newDialer(ctx context.Context, tlsConf *tls.Config) func(addr string) (net.
 		Duration: time.Millisecond,
 		Factor:   1.4,
 		Jitter:   0.1, // At most 10% jitter.
-		Steps:    1,
+		Steps:    2,
 	}
 
 	dialFn := func(addr string) (net.Conn, error) {
-		return NewBackoffDialer(bo)(ctx, "tcp4", addr)
+		return network.NewBackoffDialer(bo)(ctx, "tcp4", addr)
 	}
 	if tlsConf != nil {
 		dialFn = func(addr string) (net.Conn, error) {
 			bo.Duration = 10 * time.Millisecond
-			bo.Steps = 3
-			return NewTLSBackoffDialer(bo)(ctx, "tcp4", addr, tlsConf)
+			bo.Steps = 6
+			return network.NewTLSBackoffDialer(bo)(ctx, "tcp4", addr, tlsConf)
 		}
 	}
 	return dialFn
@@ -208,13 +241,29 @@ func closeOrFail(t testingT, con io.Closer) {
 	}
 }
 
-func findUnusedPortOrFail(t testingT) int {
-	l, err := net.Listen("tcp", "localhost:0")
-	if err != nil {
-		t.Fatal(err)
+func findUnusedPortsOrFail(t testingT, num int) *ports {
+	p := make([]int, num)
+	for i := 0; i < num; i++ {
+		func(i int) {
+			l, err := net.Listen("tcp", "localhost:0")
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer closeOrFail(t, l)
+			p[i] = l.Addr().(*net.TCPAddr).Port
+		}(i)
 	}
-	defer closeOrFail(t, l)
-	return l.Addr().(*net.TCPAddr).Port
+	return &ports{numbers: p}
+}
+
+type ports struct {
+	numbers []int
+}
+
+func (p *ports) pop() int {
+	var port int
+	port, p.numbers = p.numbers[0], p.numbers[1:]
+	return port
 }
 
 var errTest = errors.New("testing")
@@ -228,13 +277,13 @@ func newTestErr(msg string, err error) error {
 //
 // Golang doesn't allow us to set the backlog argument on syscall.Listen from
 // net.ListenTCP, so we need to get directly into syscall land.
-func listenOne() (func(), *net.TCPAddr, error) {
+func listenOne(c dialWithBackoffTestConfig) (func(), *net.TCPAddr, error) {
 	fd, err := syscall.Socket(syscall.AF_INET, syscall.SOCK_STREAM, 0)
 	if err != nil {
 		return nil, nil, newTestErr("Couldn't get socket", err)
 	}
 	sa := &syscall.SockaddrInet4{
-		Port: 0,
+		Port: c.port,
 		Addr: [4]byte{127, 0, 0, 1},
 	}
 	if err = syscall.Bind(fd, sa); err != nil {
