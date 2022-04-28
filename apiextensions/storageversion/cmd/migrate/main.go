@@ -72,7 +72,7 @@ func main() {
 		logger.Info("Migrating group resource ", gr)
 		if err := migrator.Migrate(ctx, gr); err != nil {
 			if ignoreNotFound && apierrs.IsNotFound(err) {
-				logger.Infof("Ignoring resource migration - unable to fetch crd %s - %w", gr, err)
+				logger.Infof("Ignoring resource migration - unable to fetch crd %s - %s", gr, err)
 				continue
 			}
 			logger.Fatal("Failed to migrate: ", err)
