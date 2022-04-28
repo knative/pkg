@@ -80,7 +80,10 @@ func (ac *reconciler) Admit(ctx context.Context, request *admissionv1.AdmissionR
 	errors, warnings := validate(ctx, resource, request)
 	if warnings != nil {
 		// If there were warnings, then keep processing things, but augment
-		// whatever AdmissionResponse we send with the warnings.
+		// whatever AdmissionResponse we send with the warnings.  We cannot
+		// simply set `resp.Warnings` directly here because the return paths
+		// below all overwrite `resp`, but the `defer` affords us one final
+		// crack at things.
 		defer func() {
 			resp.Warnings = []string{warnings.Error()}
 		}()
