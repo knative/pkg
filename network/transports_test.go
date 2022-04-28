@@ -82,17 +82,17 @@ func TestHTTPRoundTripper(t *testing.T) {
 
 func TestDialWithBackoff(t *testing.T) {
 	t.Parallel()
-	p := findUnusedPortsOrFail(t, 6)
-	t.Logf("Unused ports: %v", p.numbers)
+	ports := findUnusedPortsOrFail(t, 6)
+	t.Logf("Unused ports: %v", ports.UnsortedList())
 	t.Run("PlainText", func(t *testing.T) {
-		t.Run("Success", dialSuccess(plainConf(p)))
-		t.Run("Timeout", dialTimeout(plainConf(p)))
-		t.Run("ConnectionRefused", dialConnectionRefused(plainConf(p)))
+		t.Run("Success", dialSuccess(plainConf(&ports)))
+		t.Run("Timeout", dialTimeout(plainConf(&ports)))
+		t.Run("ConnectionRefused", dialConnectionRefused(plainConf(&ports)))
 	})
 	t.Run("TLS", func(t *testing.T) {
-		t.Run("Success", dialSuccess(tlsConf(p)))
-		t.Run("Timeout", dialTimeout(tlsConf(p)))
-		t.Run("ConnectionRefused", dialConnectionRefused(tlsConf(p)))
+		t.Run("Success", dialSuccess(tlsConf(&ports)))
+		t.Run("Timeout", dialTimeout(tlsConf(&ports)))
+		t.Run("ConnectionRefused", dialConnectionRefused(tlsConf(&ports)))
 	})
 }
 
@@ -192,21 +192,23 @@ type dialWithBackoffTestConfig struct {
 	port    int
 }
 
-func plainConf(p *ports) dialWithBackoffTestConfig {
+func plainConf(ports *sets.Int) dialWithBackoffTestConfig {
+	port, _ := ports.PopAny()
 	return dialWithBackoffTestConfig{
 		tlsConf: nil,
-		port:    p.pop(),
+		port:    port,
 	}
 }
 
-func tlsConf(p *ports) dialWithBackoffTestConfig {
+func tlsConf(ports *sets.Int) dialWithBackoffTestConfig {
+	port, _ := ports.PopAny()
 	return dialWithBackoffTestConfig{
 		tlsConf: &tls.Config{
 			InsecureSkipVerify: false,
 			ServerName:         "example.com",
 			MinVersion:         tls.VersionTLS12,
 		},
-		port: p.pop(),
+		port: port,
 	}
 }
 
@@ -241,29 +243,20 @@ func closeOrFail(t testingT, con io.Closer) {
 	}
 }
 
-func findUnusedPortsOrFail(t testingT, num int) *ports {
+func findUnusedPortsOrFail(t testingT, num int) sets.Int {
 	p := make([]int, num)
+	l := make([]net.Listener, num)
 	for i := 0; i < num; i++ {
-		func(i int) {
-			l, err := net.Listen("tcp", "localhost:0")
-			if err != nil {
-				t.Fatal(err)
-			}
-			defer closeOrFail(t, l)
-			p[i] = l.Addr().(*net.TCPAddr).Port
-		}(i)
+		var err error
+		if l[i], err = net.Listen("tcp", "localhost:0"); err != nil {
+			t.Fatal(err)
+		}
+		p[i] = l[i].Addr().(*net.TCPAddr).Port
 	}
-	return &ports{numbers: p}
-}
-
-type ports struct {
-	numbers []int
-}
-
-func (p *ports) pop() int {
-	var port int
-	port, p.numbers = p.numbers[0], p.numbers[1:]
-	return port
+	for _, listener := range l {
+		closeOrFail(t, listener)
+	}
+	return sets.NewInt(p...)
 }
 
 var errTest = errors.New("testing")
