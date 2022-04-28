@@ -26,6 +26,7 @@ import (
 	"net"
 	"net/http"
 	"net/http/httptest"
+	"runtime"
 	"strings"
 	"syscall"
 	"testing"
@@ -114,7 +115,7 @@ func dialTimeout(c dialWithBackoffTestConfig) func(t *testing.T) {
 	return func(t *testing.T) {
 		t.Logf("%s port: %v", t.Name(), c.port)
 		ctx := context.TODO()
-		closer, addr, err := listenOne(c)
+		closer, addr, err := listenOne(t, c)
 		if err != nil {
 			t.Fatal("Unable to create listener:", err)
 		}
@@ -270,7 +271,13 @@ func newTestErr(msg string, err error) error {
 //
 // Golang doesn't allow us to set the backlog argument on syscall.Listen from
 // net.ListenTCP, so we need to get directly into syscall land.
-func listenOne(c dialWithBackoffTestConfig) (func(), *net.TCPAddr, error) {
+func listenOne(t testingT, c dialWithBackoffTestConfig) (func(), *net.TCPAddr, error) {
+	//goland:noinspection GoBoolExpressions
+	if runtime.GOOS == "darwin" {
+		// See: https://developer.apple.com/library/archive/documentation/System/Conceptual/ManPages_iPhoneOS/man2/listen.2.html
+		t.Skipf("BUG: listen(2) on darwin: The backlog is currently " +
+			"limited (silently) to 128.")
+	}
 	fd, err := syscall.Socket(syscall.AF_INET, syscall.SOCK_STREAM, 0)
 	if err != nil {
 		return nil, nil, newTestErr("Couldn't get socket", err)
@@ -302,4 +309,5 @@ func listenOne(c dialWithBackoffTestConfig) (func(), *net.TCPAddr, error) {
 type testingT interface {
 	Fatal(args ...interface{})
 	Fatalf(format string, args ...interface{})
+	Skipf(format string, args ...interface{})
 }
