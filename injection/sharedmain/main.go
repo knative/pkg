@@ -59,10 +59,25 @@ func init() {
 	maxprocs.Set()
 }
 
-// GetLoggingConfig gets the logging config from either the file system if present
-// or via reading a configMap from the API.
+type lcfg struct{}
+
+// WithLoggingConfig associates a logging configuration with the context.  This
+// configuration takes priority in GetLoggingConfig (below).
+func WithLoggingConfig(ctx context.Context, cfg *logging.Config) context.Context {
+	return context.WithValue(ctx, lcfg{}, cfg)
+}
+
+// GetLoggingConfig gets the logging config from the (in order):
+// 1. provided context,
+// 2. reading from the API server,
+// 3. defaults (if not found).
 // The context is expected to be initialized with injection.
 func GetLoggingConfig(ctx context.Context) (*logging.Config, error) {
+	untyped := ctx.Value(lcfg{})
+	if untyped != nil {
+		return untyped.(*logging.Config), nil
+	}
+
 	var loggingConfigMap *corev1.ConfigMap
 	// These timeout and retry interval are set by heuristics.
 	// e.g. istio sidecar needs a few seconds to configure the pod network.
@@ -79,8 +94,24 @@ func GetLoggingConfig(ctx context.Context) (*logging.Config, error) {
 	return logging.NewConfigFromConfigMap(loggingConfigMap)
 }
 
-// GetLeaderElectionConfig gets the leader election config.
+type lecfg struct{}
+
+// WithLeaderElectionConfig associates a leader election configuration with the
+// context.  This configuration takes priority in GetLeaderElectionConfig.
+func WithLeaderElectionConfig(ctx context.Context, cfg *leaderelection.Config) context.Context {
+	return context.WithValue(ctx, lecfg{}, cfg)
+}
+
+// GetLeaderElectionConfig gets the leader election config from the (in order):
+// 1. provided context,
+// 2. reading from the API server,
+// 3. defaults (if not found).
 func GetLeaderElectionConfig(ctx context.Context) (*leaderelection.Config, error) {
+	untyped := ctx.Value(lecfg{})
+	if untyped != nil {
+		return untyped.(*leaderelection.Config), nil
+	}
+
 	leaderElectionConfigMap, err := kubeclient.Get(ctx).CoreV1().ConfigMaps(system.Namespace()).Get(ctx, leaderelection.ConfigMapName(), metav1.GetOptions{})
 	if apierrors.IsNotFound(err) {
 		return leaderelection.NewConfigFromConfigMap(nil)
