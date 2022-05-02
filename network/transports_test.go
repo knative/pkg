@@ -90,15 +90,15 @@ func TestDialWithBackoffSuccess(t *testing.T) {
 }
 
 func TestDialTLSWithBackoffConnectionRefused(t *testing.T) {
-	testDialWithBackoffConnectionRefused(exampleTlsConf(), t)
+	testDialWithBackoffConnectionRefused(exampleTLSConf(), t)
 }
 
 func TestDialTLSWithBackoffTimeout(t *testing.T) {
-	testDialWithBackoffTimeout(exampleTlsConf(), t)
+	testDialWithBackoffTimeout(exampleTLSConf(), t)
 }
 
 func TestDialTLSWithBackoffSuccess(t *testing.T) {
-	testDialWithBackoffSuccess(exampleTlsConf(), t)
+	testDialWithBackoffSuccess(exampleTLSConf(), t)
 }
 
 func testDialWithBackoffConnectionRefused(tlsConf *tls.Config, t testingT) {
@@ -169,7 +169,7 @@ func testDialWithBackoffSuccess(tlsConf *tls.Config, t testingT) {
 	closeOrFail(t, c)
 }
 
-func exampleTlsConf() *tls.Config {
+func exampleTLSConf() *tls.Config {
 	return &tls.Config{
 		InsecureSkipVerify: false,
 		ServerName:         "example.com",
