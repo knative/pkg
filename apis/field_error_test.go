@@ -294,6 +294,53 @@ Second: X, Y, Z`,
 		err:      ErrOutOfBoundsValue(1*time.Second, 2*time.Second, 5*time.Second, "timeout"),
 		prefixes: [][]string{{"spec"}},
 		want:     `expected 2s <= 1s <= 5s: spec.timeout`,
+	}, {
+		name: "Explicit Error",
+		err:  ErrMissingField("foo", "bar").At(ErrorLevel),
+		want: `missing field(s): bar, foo`,
+	}, {
+		name: "Warning",
+		err:  ErrMissingField("foo", "bar").At(WarningLevel),
+		want: `missing field(s): bar, foo`,
+	}, {
+		name: "Explicit Error isn't filtered",
+		err:  ErrMissingField("foo", "bar").At(ErrorLevel).Filter(ErrorLevel),
+		want: `missing field(s): bar, foo`,
+	}, {
+		name: "Implicit Error isn't filtered",
+		err:  ErrMissingField("foo", "bar").Filter(ErrorLevel),
+		want: `missing field(s): bar, foo`,
+	}, {
+		name: "Warning isn't filtered",
+		err:  ErrMissingField("foo", "bar").At(WarningLevel).Filter(WarningLevel),
+		want: `missing field(s): bar, foo`,
+	}, {
+		name: "Explicit Error is filtered",
+		err:  ErrMissingField("foo", "bar").At(ErrorLevel).Filter(WarningLevel),
+	}, {
+		name: "Warning is filtered",
+		err:  ErrMissingField("foo", "bar").At(WarningLevel).Filter(ErrorLevel),
+	}, {
+		name: "Mix of Errors and Warnings",
+		err:  ErrMissingField("foo").Also(ErrMissingField("bar").At(WarningLevel)),
+		want: `missing field(s): foo
+missing field(s): bar`,
+	}, {
+		name: "Mix of Errors and Warnings - Filter Warning",
+		err:  ErrMissingField("foo").Also(ErrMissingField("bar").At(WarningLevel)).Filter(WarningLevel),
+		want: `missing field(s): bar`,
+	}, {
+		name: "Mix of Errors and Warnings - Filter Error",
+		err:  ErrMissingField("foo").Also(ErrMissingField("bar").At(WarningLevel)).Filter(ErrorLevel),
+		want: `missing field(s): foo`,
+	}, {
+		name: "Mix of Errors and Warnings turned to Warnings",
+		err:  ErrMissingField("foo").Also(ErrMissingField("bar").At(WarningLevel)).At(WarningLevel).Filter(WarningLevel),
+		want: `missing field(s): bar, foo`,
+	}, {
+		name: "Mix of Errors and Warnings turned to Errors",
+		err:  ErrMissingField("foo").Also(ErrMissingField("bar").At(WarningLevel)).At(ErrorLevel).Filter(ErrorLevel),
+		want: `missing field(s): bar, foo`,
 	}}
 
 	for _, test := range tests {

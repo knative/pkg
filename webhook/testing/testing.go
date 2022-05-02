@@ -72,6 +72,21 @@ func ExpectFailsWith(t *testing.T, resp *admissionv1.AdmissionResponse, contains
 	}
 }
 
+// ExpectWarnsWith checks that a given admission response warns on the initiating request
+// containing the provided string in its warning message.
+func ExpectWarnsWith(t *testing.T, resp *admissionv1.AdmissionResponse, contains string) {
+	t.Helper()
+	found := false
+	for _, warning := range resp.Warnings {
+		if strings.Contains(warning, contains) {
+			found = true
+		}
+	}
+	if !found {
+		t.Errorf("Expected warning containing %q got %v", contains, resp.Warnings)
+	}
+}
+
 // ExpectPatches checks that the provided serialized bytes consist of an expected
 // collection of patches.  This is used to verify the mutations made in a mutating
 // admission webhook's response.

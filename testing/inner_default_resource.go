@@ -46,8 +46,12 @@ type InnerDefaultSpec struct {
 
 	FieldWithDefault string `json:"fieldWithDefault,omitempty"`
 
-	// Deprecated: This field is deprecated.
+	// Deprecated: This field is deprecated, and will emit an error if set.
 	DeprecatedField string `json:"field,omitempty"`
+
+	// ToBeDeprecatedField: This field is deprecated, and will emit a warning
+	// if set.
+	ToBeDeprecatedField string `json:"fieldWillWarn,omitempty"`
 
 	SubFields *InnerDefaultSubSpec `json:"subfields,omitempty"`
 }
@@ -152,6 +156,10 @@ func (i *InnerDefaultResource) Validate(ctx context.Context) *apis.FieldError {
 			errs = errs.Also(apis.CheckDeprecated(ctx, i.Spec.SubFields).ViaField("spec", "subFields").
 				Also(apis.CheckDeprecated(ctx, i.Spec.SubFields.DeprecatedStruct).ViaField("deprecatedStruct")))
 		}
+	}
+
+	if i.Spec.ToBeDeprecatedField != "" {
+		errs = errs.Also(apis.ErrDisallowedFields("fieldWillWarn").At(apis.WarningLevel).ViaField("spec"))
 	}
 	return errs
 }

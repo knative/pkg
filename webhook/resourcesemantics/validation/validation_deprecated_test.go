@@ -29,7 +29,7 @@ import (
 	. "knative.dev/pkg/webhook/testing"
 )
 
-// In strict mode, you are not allowed to set a deprecated filed when doing a Create.
+// In strict mode, you are not allowed to set a deprecated field when doing a Create.
 func TestStrictValidation(t *testing.T) {
 
 	newCreateReq := func(new []byte) *admissionv1.AdmissionRequest {
@@ -60,9 +60,10 @@ func TestStrictValidation(t *testing.T) {
 	}
 
 	testCases := map[string]struct {
-		strict   bool
-		req      *admissionv1.AdmissionRequest
-		wantErrs []string
+		strict       bool
+		req          *admissionv1.AdmissionRequest
+		wantErrs     []string
+		wantWarnings []string
 	}{
 		"create, strict": {
 			strict: true,
@@ -464,11 +465,13 @@ func TestStrictValidation(t *testing.T) {
 							FieldAsString: "fail",
 						},
 					},
+					ToBeDeprecatedField: "asdf",
 				}, nil)),
 			wantErrs: []string{
 				"must not update",
 				"spec.subFields.structPtr",
 			},
+			wantWarnings: []string{"must not set", "fieldWillWarn"},
 		},
 
 		"create, not strict": {
@@ -484,6 +487,14 @@ func TestStrictValidation(t *testing.T) {
 				createInnerDefaultResourceWithSpecAndStatus(t, &InnerDefaultSpec{
 					DeprecatedField: "fail setting.",
 				}, nil)),
+		},
+
+		"create, not strict, with warning": {
+			strict: false,
+			req: newCreateReq(createInnerDefaultResourceWithSpecAndStatus(t, &InnerDefaultSpec{
+				ToBeDeprecatedField: "emit a warning",
+			}, nil)),
+			wantWarnings: []string{"must not set", "fieldWillWarn"},
 		},
 	}
 
@@ -503,6 +514,9 @@ func TestStrictValidation(t *testing.T) {
 				}
 			} else {
 				ExpectAllowed(t, resp)
+			}
+			for _, err := range tc.wantWarnings {
+				ExpectWarnsWith(t, resp, err)
 			}
 		})
 	}
