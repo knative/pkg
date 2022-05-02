@@ -78,7 +78,7 @@ func TestWithLoggingConfig(t *testing.T) {
 			"foo": zapcore.DebugLevel,
 		},
 	}
-	ctx := WithLoggingConfig(context.Background(), want)
+	ctx := logging.WithConfig(context.Background(), want)
 
 	got, err := GetLoggingConfig(ctx)
 	if err != nil {
@@ -93,7 +93,7 @@ func TestWithLeaderElectionConfig(t *testing.T) {
 	want := &leaderelection.Config{
 		Buckets: 12,
 	}
-	ctx := WithLeaderElectionConfig(context.Background(), want)
+	ctx := leaderelection.WithConfig(context.Background(), want)
 
 	got, err := GetLeaderElectionConfig(ctx)
 	if err != nil {
