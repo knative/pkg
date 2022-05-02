@@ -19,7 +19,6 @@ on:
     branches: [ 'main' ]
 
 jobs:
-
   downstream-tekton:
     name: Unit Test
 
@@ -36,33 +35,45 @@ jobs:
 
     runs-on: ubuntu-latest
 
-    env:
-      GOPATH: ${{ github.workspace }}
-
     steps:
-
-    - name: Set up Go 1.17.x
-      uses: actions/setup-go@v2
+    - name: Set up Go 1.18.x
+      uses: actions/setup-go@v3
       with:
-        go-version: 1.17.x
+        go-version: 1.18.x
 
     - name: Install Dependencies
       run: |
         go install github.com/google/go-licenses@latest
 
     - name: Checkout Upstream
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
       with:
-        path: ./src/knative.dev/${{ github.event.repository.name }}
+        fetch-depth: 0
+        path: knative.dev/${{ github.event.repository.name }}
+
+    - name: Merge upstream
+      if: github.event_name == 'pull_request'
+      shell: bash
+      working-directory: knative.dev/${{ github.event.repository.name }}
+      run: |
+         if ! git config user.name > /dev/null; then
+           git config user.name "Knative Action"
+         fi
+         if ! git config user.email > /dev/null; then
+           git config user.email "action@knative.dev"
+         fi
+         git remote add upstream https://github.com/${{ github.repository }}.git
+         git fetch upstream ${{ github.base_ref }}
+         git pull --no-rebase --no-commit upstream ${{ github.base_ref }}
 
     - name: Checkout Downstream
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
       with:
         repository: ${{ matrix.org }}/${{ matrix.repo }}
-        path: ./src/github.com/${{ matrix.org }}/${{ matrix.repo }}
+        path: github.com/${{ matrix.org }}/${{ matrix.repo }}
 
     - name: Test Downstream
-      uses: knative-sandbox/actions-downstream-test@v1
+      uses: knative/actions/go/downstream-test@main
       with:
         upstream-module: knative.dev/${{ github.event.repository.name }}
         downstream-module: github.com/${{ matrix.org }}/${{ matrix.repo }}
