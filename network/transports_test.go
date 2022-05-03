@@ -240,7 +240,7 @@ func listenOne() (func(), *net.TCPAddr, error) {
 	if err = syscall.Bind(fd, sa); err != nil {
 		return nil, nil, newTestErr("Unable to bind", err)
 	}
-	if err = syscall.Listen(fd, 0); err != nil {
+	if err = syscall.Listen(fd, 1); err != nil {
 		return nil, nil, newTestErr("Unable to Listen", err)
 	}
 	closer := func() { _ = syscall.Close(fd) }
