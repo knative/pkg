@@ -70,7 +70,7 @@ jobs:
         path: downstream
 
     - name: Test Downstream
-      uses: dprotaso/actions/go/downstream-test@infer-module-name
+      uses: knative/actions/go/downstream-test@main
       with:
         upstream-path: upstream
         downstream-path: downstream
