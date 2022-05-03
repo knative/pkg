@@ -120,11 +120,27 @@ func testDialWithBackoffTimeout(tlsConf *tls.Config, t testingT) {
 		t.Fatal("Unable to create listener:", err)
 	}
 	defer closer()
-	c1, err := net.Dial("tcp4", addr.String())
-	if err != nil {
-		t.Fatalf("Unable to connect to server on %s: %s", addr, err)
+
+	for {
+		// This seems really strange... we're listening with a backlog of one
+		// connection, and we keep creating connections and holding onto them
+		// until we get a connection timeout.
+		//
+		// It turns out that darwin (MacOS) and Linux implement the Listen
+		// backlog argument slightly differently, and MacOS needs one more
+		// connection than Linux to saturate the backlog. Rather than sniffing
+		// the OS, we simply ensure that the backlog is saturated.
+		c1, err := net.DialTimeout("tcp4", addr.String(), 10*time.Millisecond)
+		if err != nil {
+			var neterr net.Error
+			if errors.As(err, &neterr) && neterr.Timeout() {
+				// Waiting for a timeout
+				break
+			}
+			t.Fatalf("Unable to connect to server on %s: %s", addr, err)
+		}
+		defer closeOrFail(t, c1)
 	}
-	defer closeOrFail(t, c1)
 
 	// Since the backlog is full, the next request must time out.
 	dialer := newDialer(ctx, tlsConf)
