@@ -43,6 +43,7 @@ import (
 	cminformer "knative.dev/pkg/configmap/informer"
 	"knative.dev/pkg/controller"
 	"knative.dev/pkg/injection"
+	"knative.dev/pkg/injection/filtering"
 	"knative.dev/pkg/leaderelection"
 	"knative.dev/pkg/logging"
 	"knative.dev/pkg/logging/logkey"
@@ -200,6 +201,7 @@ func MainWithConfig(ctx context.Context, component string, cfg *rest.Config, cto
 	log.Printf("Registering %d clients", len(injection.Default.GetClients()))
 	log.Printf("Registering %d informer factories", len(injection.Default.GetInformerFactories()))
 	log.Printf("Registering %d informers", len(injection.Default.GetInformers()))
+	log.Printf("Registering %d filtered informers", len(injection.Default.GetFilteredInformers()))
 	log.Printf("Registering %d controllers", len(ctors))
 
 	metrics.MemStatsOrDie(ctx)
@@ -212,6 +214,9 @@ func MainWithConfig(ctx context.Context, component string, cfg *rest.Config, cto
 	if cfg.Burst == 0 {
 		cfg.Burst = len(ctors) * rest.DefaultBurst
 	}
+
+	// Filter by label if we have to
+	ctx = filtering.InformersFilterByLabel(ctx)
 
 	ctx, startInformers := injection.EnableInjectionOrDie(ctx, cfg)
 
