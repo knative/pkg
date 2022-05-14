@@ -23,16 +23,14 @@ import (
 	// Injection stuff
 	kubeclient "knative.dev/pkg/client/injection/kube/client"
 	vwhinformer "knative.dev/pkg/client/injection/kube/informers/admissionregistration/v1/validatingwebhookconfiguration"
-	secretinformer "knative.dev/pkg/injection/clients/namespacedkube/informers/core/v1/secret"
 	"knative.dev/pkg/logging"
 	pkgreconciler "knative.dev/pkg/reconciler"
+	"knative.dev/pkg/webhook/targeter"
 
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/cache"
 	"knative.dev/pkg/configmap"
 	"knative.dev/pkg/controller"
-	"knative.dev/pkg/system"
-	"knative.dev/pkg/webhook"
 )
 
 // NewAdmissionController constructs a reconciler
@@ -41,11 +39,17 @@ func NewAdmissionController(
 	name, path string,
 	constructors configmap.Constructors,
 ) *controller.Impl {
+	return NewAdmissionControllerFromTargeter(ctx, name, targeter.NewFixed(ctx, path), constructors)
+}
 
+// NewAdmissionController constructs a reconciler
+func NewAdmissionControllerFromTargeter(
+	ctx context.Context, name string,
+	targeter targeter.Interface,
+	constructors configmap.Constructors,
+) *controller.Impl {
 	client := kubeclient.Get(ctx)
 	vwhInformer := vwhinformer.Get(ctx)
-	secretInformer := secretinformer.Get(ctx)
-	options := webhook.GetOptions(ctx)
 
 	key := types.NamespacedName{Name: name}
 
@@ -58,15 +62,14 @@ func NewAdmissionController(
 			},
 		},
 
-		key:  key,
-		path: path,
+		key: key,
 
 		constructors: make(map[string]reflect.Value),
-		secretName:   options.SecretName,
 
-		client:       client,
-		vwhlister:    vwhInformer.Lister(),
-		secretlister: secretInformer.Lister(),
+		client:    client,
+		vwhlister: vwhInformer.Lister(),
+
+		targeter: targeter,
 	}
 
 	for configName, constructor := range constructors {
@@ -84,13 +87,7 @@ func NewAdmissionController(
 		Handler: controller.HandleAll(c.Enqueue),
 	})
 
-	// Reconcile when the cert bundle changes.
-	secretInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
-		FilterFunc: controller.FilterWithNameAndNamespace(system.Namespace(), wh.secretName),
-		// It doesn't matter what we enqueue because we will always Reconcile
-		// the named VWH resource.
-		Handler: controller.HandleAll(c.Enqueue),
-	})
+	targeter.AddEventHandlers(ctx, c.Enqueue)
 
 	return c
 }

@@ -31,15 +31,17 @@ import (
 	"knative.dev/pkg/ptr"
 	"knative.dev/pkg/system"
 	certresources "knative.dev/pkg/webhook/certificates/resources"
+	"knative.dev/pkg/webhook/targeter"
 
 	. "knative.dev/pkg/reconciler/testing"
 	. "knative.dev/pkg/webhook/testing"
 )
 
 func TestReconcile(t *testing.T) {
-	key := "some.crd.group.dev"
-	path := "/some/path"
-	secretName := "webhook-secret"
+	const key = "some.crd.group.dev"
+	const path = "/some/path"
+	const secretName = "webhook-secret"
+	const serviceName = "webhook"
 
 	secret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
@@ -108,7 +110,7 @@ func TestReconcile(t *testing.T) {
 							ClientConfig: &apixv1.WebhookClientConfig{
 								Service: &apixv1.ServiceReference{
 									Namespace: system.Namespace(),
-									Name:      "webhook",
+									Name:      serviceName,
 								},
 							},
 						},
@@ -128,7 +130,7 @@ func TestReconcile(t *testing.T) {
 							ClientConfig: &apixv1.WebhookClientConfig{
 								Service: &apixv1.ServiceReference{
 									Namespace: system.Namespace(),
-									Name:      "webhook",
+									Name:      serviceName,
 									// Path is added.
 									Path: ptr.String(path),
 								},
@@ -156,7 +158,7 @@ func TestReconcile(t *testing.T) {
 							ClientConfig: &apixv1.WebhookClientConfig{
 								Service: &apixv1.ServiceReference{
 									Namespace: system.Namespace(),
-									Name:      "webhook",
+									Name:      serviceName,
 									// Incorrect path
 									Path: ptr.String("/incorrect"),
 								},
@@ -180,7 +182,7 @@ func TestReconcile(t *testing.T) {
 							ClientConfig: &apixv1.WebhookClientConfig{
 								Service: &apixv1.ServiceReference{
 									Namespace: system.Namespace(),
-									Name:      "webhook",
+									Name:      serviceName,
 									// Path is added.
 									Path: ptr.String(path),
 								},
@@ -212,7 +214,7 @@ func TestReconcile(t *testing.T) {
 							ClientConfig: &apixv1.WebhookClientConfig{
 								Service: &apixv1.ServiceReference{
 									Namespace: system.Namespace(),
-									Name:      "webhook",
+									Name:      serviceName,
 									// Incorrect path
 									Path: ptr.String("/incorrect"),
 								},
@@ -236,7 +238,7 @@ func TestReconcile(t *testing.T) {
 							ClientConfig: &apixv1.WebhookClientConfig{
 								Service: &apixv1.ServiceReference{
 									Namespace: system.Namespace(),
-									Name:      "webhook",
+									Name:      serviceName,
 									// Path is added.
 									Path: ptr.String(path),
 								},
@@ -264,7 +266,7 @@ func TestReconcile(t *testing.T) {
 							ClientConfig: &apixv1.WebhookClientConfig{
 								Service: &apixv1.ServiceReference{
 									Namespace: system.Namespace(),
-									Name:      "webhook",
+									Name:      serviceName,
 									Path:      ptr.String(path),
 								},
 								// CABundle is added.
@@ -279,12 +281,16 @@ func TestReconcile(t *testing.T) {
 
 	table.Test(t, MakeFactory(func(ctx context.Context, listers *Listers, cmw configmap.Watcher) controller.Reconciler {
 		return &reconciler{
-			kinds:        kinds,
-			path:         path,
-			secretName:   secretName,
-			secretLister: listers.GetSecretLister(),
-			crdLister:    listers.GetCustomResourceDefinitionLister(),
-			client:       apixclient.Get(ctx),
+			kinds:     kinds,
+			crdLister: listers.GetCustomResourceDefinitionLister(),
+			client:    apixclient.Get(ctx),
+
+			targeter: &targeter.Fixed{
+				Path:         path,
+				SecretLister: listers.GetSecretLister(),
+				SecretName:   secretName,
+				ServiceName:  serviceName,
+			},
 		}
 	}))
 }

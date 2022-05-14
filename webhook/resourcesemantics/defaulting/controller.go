@@ -22,7 +22,6 @@ import (
 	// Injection stuff
 	kubeclient "knative.dev/pkg/client/injection/kube/client"
 	mwhinformer "knative.dev/pkg/client/injection/kube/informers/admissionregistration/v1/mutatingwebhookconfiguration"
-	secretinformer "knative.dev/pkg/injection/clients/namespacedkube/informers/core/v1/secret"
 	"knative.dev/pkg/logging"
 	pkgreconciler "knative.dev/pkg/reconciler"
 
@@ -31,9 +30,8 @@ import (
 	"k8s.io/client-go/tools/cache"
 
 	"knative.dev/pkg/controller"
-	"knative.dev/pkg/system"
-	"knative.dev/pkg/webhook"
 	"knative.dev/pkg/webhook/resourcesemantics"
+	"knative.dev/pkg/webhook/targeter"
 )
 
 // NewAdmissionController constructs a reconciler
@@ -45,11 +43,21 @@ func NewAdmissionController(
 	disallowUnknownFields bool,
 	callbacks ...map[schema.GroupVersionKind]Callback,
 ) *controller.Impl {
+	return NewAdmissionControllerFromTargeter(ctx, name, targeter.NewFixed(ctx, path), handlers, wc, disallowUnknownFields, callbacks...)
+}
+
+// NewAdmissionController constructs a reconciler
+func NewAdmissionControllerFromTargeter(
+	ctx context.Context, name string,
+	targeter targeter.Interface,
+	handlers map[schema.GroupVersionKind]resourcesemantics.GenericCRD,
+	wc func(context.Context) context.Context,
+	disallowUnknownFields bool,
+	callbacks ...map[schema.GroupVersionKind]Callback,
+) *controller.Impl {
 
 	client := kubeclient.Get(ctx)
 	mwhInformer := mwhinformer.Get(ctx)
-	secretInformer := secretinformer.Get(ctx)
-	options := webhook.GetOptions(ctx)
 
 	key := types.NamespacedName{Name: name}
 
@@ -76,17 +84,16 @@ func NewAdmissionController(
 		},
 
 		key:       key,
-		path:      path,
 		handlers:  handlers,
 		callbacks: unwrappedCallbacks,
 
 		withContext:           wc,
 		disallowUnknownFields: disallowUnknownFields,
-		secretName:            options.SecretName,
 
-		client:       client,
-		mwhlister:    mwhInformer.Lister(),
-		secretlister: secretInformer.Lister(),
+		client:    client,
+		mwhlister: mwhInformer.Lister(),
+
+		targeter: targeter,
 	}
 
 	logger := logging.FromContext(ctx)
@@ -101,13 +108,7 @@ func NewAdmissionController(
 		Handler: controller.HandleAll(c.Enqueue),
 	})
 
-	// Reconcile when the cert bundle changes.
-	secretInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
-		FilterFunc: controller.FilterWithNameAndNamespace(system.Namespace(), wh.secretName),
-		// It doesn't matter what we enqueue because we will always Reconcile
-		// the named MWH resource.
-		Handler: controller.HandleAll(c.Enqueue),
-	})
+	targeter.AddEventHandlers(ctx, c.Enqueue)
 
 	return c
 }

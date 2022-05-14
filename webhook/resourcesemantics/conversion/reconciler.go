@@ -20,35 +20,30 @@ import (
 	"context"
 	"fmt"
 
-	"go.uber.org/zap"
 	apixv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	apixclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	apixlisters "k8s.io/apiextensions-apiserver/pkg/client/listers/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
-	corelisters "k8s.io/client-go/listers/core/v1"
 	"knative.dev/pkg/controller"
 	"knative.dev/pkg/kmp"
 	"knative.dev/pkg/logging"
-	"knative.dev/pkg/ptr"
 	pkgreconciler "knative.dev/pkg/reconciler"
-	"knative.dev/pkg/system"
 	"knative.dev/pkg/webhook"
-	certresources "knative.dev/pkg/webhook/certificates/resources"
+	"knative.dev/pkg/webhook/targeter"
 )
 
 type reconciler struct {
 	pkgreconciler.LeaderAwareFuncs
 
 	kinds       map[schema.GroupKind]GroupKindConversion
-	path        string
-	secretName  string
 	withContext func(context.Context) context.Context
 
-	secretLister corelisters.SecretLister
-	crdLister    apixlisters.CustomResourceDefinitionLister
-	client       apixclient.Interface
+	crdLister apixlisters.CustomResourceDefinitionLister
+	client    apixclient.Interface
+
+	targeter targeter.Interface
 }
 
 var _ webhook.ConversionController = (*reconciler)(nil)
@@ -57,33 +52,19 @@ var _ pkgreconciler.LeaderAware = (*reconciler)(nil)
 
 // Path implements webhook.ConversionController
 func (r *reconciler) Path() string {
-	return r.path
+	return r.targeter.BasePath()
 }
 
 // Reconciler implements controller.Reconciler
 func (r *reconciler) Reconcile(ctx context.Context, key string) error {
-	logger := logging.FromContext(ctx)
-
 	if !r.IsLeaderFor(types.NamespacedName{Name: key}) {
 		return controller.NewSkipKey(key)
 	}
 
-	// Look up the webhook secret, and fetch the CA cert bundle.
-	secret, err := r.secretLister.Secrets(system.Namespace()).Get(r.secretName)
-	if err != nil {
-		logger.Errorw("Error fetching secret", zap.Error(err))
-		return err
-	}
-
-	cacert, ok := secret.Data[certresources.CACert]
-	if !ok {
-		return fmt.Errorf("secret %q is missing %q key", r.secretName, certresources.CACert)
-	}
-
-	return r.reconcileCRD(ctx, cacert, key)
+	return r.reconcileCRD(ctx, key)
 }
 
-func (r *reconciler) reconcileCRD(ctx context.Context, cacert []byte, key string) error {
+func (r *reconciler) reconcileCRD(ctx context.Context, key string) error {
 	logger := logging.FromContext(ctx)
 
 	configuredCRD, err := r.crdLister.Get(key)
@@ -100,8 +81,11 @@ func (r *reconciler) reconcileCRD(ctx context.Context, cacert []byte, key string
 		return fmt.Errorf("custom resource %q isn't configured for webhook conversion", key)
 	}
 
-	crd.Spec.Conversion.Webhook.ClientConfig.CABundle = cacert
-	crd.Spec.Conversion.Webhook.ClientConfig.Service.Path = ptr.String(r.path)
+	cc, err := r.targeter.WebhookClientConfig(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to produce webhook configuration: %w", err)
+	}
+	crd.Spec.Conversion.Webhook.ClientConfig = targeter.SwitchClientConfig(cc)
 
 	if ok, err := kmp.SafeEqual(configuredCRD, crd); err != nil {
 		return fmt.Errorf("error diffing custom resource definitions: %w", err)

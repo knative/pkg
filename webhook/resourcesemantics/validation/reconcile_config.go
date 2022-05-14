@@ -23,7 +23,6 @@ import (
 	"strings"
 
 	"github.com/gobuffalo/flect"
-	"go.uber.org/zap"
 	admissionregistrationv1 "k8s.io/api/admissionregistration/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -31,16 +30,14 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
 	admissionlisters "k8s.io/client-go/listers/admissionregistration/v1"
-	corelisters "k8s.io/client-go/listers/core/v1"
 	"knative.dev/pkg/controller"
 	"knative.dev/pkg/kmp"
 	"knative.dev/pkg/logging"
-	"knative.dev/pkg/ptr"
 	pkgreconciler "knative.dev/pkg/reconciler"
 	"knative.dev/pkg/system"
 	"knative.dev/pkg/webhook"
-	certresources "knative.dev/pkg/webhook/certificates/resources"
 	"knative.dev/pkg/webhook/resourcesemantics"
+	"knative.dev/pkg/webhook/targeter"
 )
 
 // reconciler implements the AdmissionController for resources
@@ -49,18 +46,17 @@ type reconciler struct {
 	pkgreconciler.LeaderAwareFuncs
 
 	key       types.NamespacedName
-	path      string
 	handlers  map[schema.GroupVersionKind]resourcesemantics.GenericCRD
 	callbacks map[schema.GroupVersionKind]Callback
 
 	withContext func(context.Context) context.Context
 
-	client       kubernetes.Interface
-	vwhlister    admissionlisters.ValidatingWebhookConfigurationLister
-	secretlister corelisters.SecretLister
+	client    kubernetes.Interface
+	vwhlister admissionlisters.ValidatingWebhookConfigurationLister
 
 	disallowUnknownFields bool
-	secretName            string
+
+	targeter targeter.Interface
 }
 
 var _ controller.Reconciler = (*reconciler)(nil)
@@ -70,33 +66,20 @@ var _ webhook.StatelessAdmissionController = (*reconciler)(nil)
 
 // Path implements AdmissionController
 func (ac *reconciler) Path() string {
-	return ac.path
+	return ac.targeter.BasePath()
 }
 
 // Reconcile implements controller.Reconciler
 func (ac *reconciler) Reconcile(ctx context.Context, key string) error {
-	logger := logging.FromContext(ctx)
-
 	if !ac.IsLeaderFor(ac.key) {
 		return controller.NewSkipKey(key)
 	}
 
-	// Look up the webhook secret, and fetch the CA cert bundle.
-	secret, err := ac.secretlister.Secrets(system.Namespace()).Get(ac.secretName)
-	if err != nil {
-		logger.Errorw("Error fetching secret", zap.Error(err))
-		return err
-	}
-	caCert, ok := secret.Data[certresources.CACert]
-	if !ok {
-		return fmt.Errorf("secret %q is missing %q key", ac.secretName, certresources.CACert)
-	}
-
 	// Reconcile the webhook configuration.
-	return ac.reconcileValidatingWebhook(ctx, caCert)
+	return ac.reconcileValidatingWebhook(ctx)
 }
 
-func (ac *reconciler) reconcileValidatingWebhook(ctx context.Context, caCert []byte) error {
+func (ac *reconciler) reconcileValidatingWebhook(ctx context.Context) error {
 	logger := logging.FromContext(ctx)
 
 	rules := make([]admissionregistrationv1.RuleWithOperations, 0, len(ac.handlers))
@@ -144,6 +127,11 @@ func (ac *reconciler) reconcileValidatingWebhook(ctx context.Context, caCert []b
 	nsRef := *metav1.NewControllerRef(ns, corev1.SchemeGroupVersion.WithKind("Namespace"))
 	current.OwnerReferences = []metav1.OwnerReference{nsRef}
 
+	cc, err := ac.targeter.WebhookClientConfig(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to produce webhook configuration: %w", err)
+	}
+
 	for i, wh := range current.Webhooks {
 		if wh.Name != current.Name {
 			continue
@@ -160,11 +148,7 @@ func (ac *reconciler) reconcileValidatingWebhook(ctx context.Context, caCert []b
 				}},
 			})
 
-		cur.ClientConfig.CABundle = caCert
-		if cur.ClientConfig.Service == nil {
-			return fmt.Errorf("missing service reference for webhook: %s", wh.Name)
-		}
-		cur.ClientConfig.Service.Path = ptr.String(ac.Path())
+		cur.ClientConfig = *cc
 	}
 
 	if ok, err := kmp.SafeEqual(configuredWebhook, current); err != nil {

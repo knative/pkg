@@ -41,14 +41,16 @@ import (
 	"knative.dev/pkg/webhook"
 	certresources "knative.dev/pkg/webhook/certificates/resources"
 	"knative.dev/pkg/webhook/resourcesemantics"
+	"knative.dev/pkg/webhook/targeter"
 
 	. "knative.dev/pkg/reconciler/testing"
 	. "knative.dev/pkg/webhook/testing"
 )
 
 func TestReconcile(t *testing.T) {
-	name, path := "foo.bar.baz", "/blah"
-	secretName := "webhook-secret"
+	const name, path = "foo.bar.baz", "/blah"
+	const secretName = "webhook-secret"
+	const serviceName = "webhook"
 
 	secret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
@@ -158,20 +160,6 @@ func TestReconcile(t *testing.T) {
 		Objects: []runtime.Object{secret},
 		WantErr: true,
 	}, {
-		Name: "secret and MWH exist, missing service reference",
-		Key:  key,
-		Objects: []runtime.Object{secret, ns,
-			&admissionregistrationv1.MutatingWebhookConfiguration{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: name,
-				},
-				Webhooks: []admissionregistrationv1.MutatingWebhook{{
-					Name: name,
-				}},
-			},
-		},
-		WantErr: true,
-	}, {
 		Name: "secret and MWH exist, missing other stuff",
 		Key:  key,
 		Objects: []runtime.Object{secret, ns,
@@ -184,7 +172,7 @@ func TestReconcile(t *testing.T) {
 					ClientConfig: admissionregistrationv1.WebhookClientConfig{
 						Service: &admissionregistrationv1.ServiceReference{
 							Namespace: system.Namespace(),
-							Name:      "webhook",
+							Name:      serviceName,
 						},
 					},
 				}},
@@ -201,7 +189,7 @@ func TestReconcile(t *testing.T) {
 					ClientConfig: admissionregistrationv1.WebhookClientConfig{
 						Service: &admissionregistrationv1.ServiceReference{
 							Namespace: system.Namespace(),
-							Name:      "webhook",
+							Name:      serviceName,
 							// Path is added.
 							Path: ptr.String(path),
 						},
@@ -227,7 +215,7 @@ func TestReconcile(t *testing.T) {
 					ClientConfig: admissionregistrationv1.WebhookClientConfig{
 						Service: &admissionregistrationv1.ServiceReference{
 							Namespace: system.Namespace(),
-							Name:      "webhook",
+							Name:      serviceName,
 							// Incorrect
 							Path: ptr.String("incorrect"),
 						},
@@ -257,7 +245,7 @@ func TestReconcile(t *testing.T) {
 					ClientConfig: admissionregistrationv1.WebhookClientConfig{
 						Service: &admissionregistrationv1.ServiceReference{
 							Namespace: system.Namespace(),
-							Name:      "webhook",
+							Name:      serviceName,
 							// Path is fixed.
 							Path: ptr.String(path),
 						},
@@ -287,7 +275,7 @@ func TestReconcile(t *testing.T) {
 					ClientConfig: admissionregistrationv1.WebhookClientConfig{
 						Service: &admissionregistrationv1.ServiceReference{
 							Namespace: system.Namespace(),
-							Name:      "webhook",
+							Name:      serviceName,
 							// Incorrect
 							Path: ptr.String("incorrect"),
 						},
@@ -317,7 +305,7 @@ func TestReconcile(t *testing.T) {
 					ClientConfig: admissionregistrationv1.WebhookClientConfig{
 						Service: &admissionregistrationv1.ServiceReference{
 							Namespace: system.Namespace(),
-							Name:      "webhook",
+							Name:      serviceName,
 							// Path is fixed.
 							Path: ptr.String(path),
 						},
@@ -344,7 +332,7 @@ func TestReconcile(t *testing.T) {
 					ClientConfig: admissionregistrationv1.WebhookClientConfig{
 						Service: &admissionregistrationv1.ServiceReference{
 							Namespace: system.Namespace(),
-							Name:      "webhook",
+							Name:      serviceName,
 							// Path is fine.
 							Path: ptr.String(path),
 						},
@@ -379,7 +367,7 @@ func TestReconcile(t *testing.T) {
 					ClientConfig: admissionregistrationv1.WebhookClientConfig{
 						Service: &admissionregistrationv1.ServiceReference{
 							Namespace: system.Namespace(),
-							Name:      "webhook",
+							Name:      serviceName,
 							// Path is fine.
 							Path: ptr.String(path),
 						},
@@ -412,7 +400,7 @@ func TestReconcile(t *testing.T) {
 					ClientConfig: admissionregistrationv1.WebhookClientConfig{
 						Service: &admissionregistrationv1.ServiceReference{
 							Namespace: system.Namespace(),
-							Name:      "webhook",
+							Name:      serviceName,
 							Path:      ptr.String(path),
 						},
 						CABundle: []byte("present"),
@@ -439,16 +427,19 @@ func TestReconcile(t *testing.T) {
 			key: types.NamespacedName{
 				Name: name,
 			},
-			path: path,
 
 			handlers:  handlers,
 			callbacks: callbacks,
 
-			client:       kubeclient.Get(ctx),
-			mwhlister:    listers.GetMutatingWebhookConfigurationLister(),
-			secretlister: listers.GetSecretLister(),
+			client:    kubeclient.Get(ctx),
+			mwhlister: listers.GetMutatingWebhookConfigurationLister(),
 
-			secretName: secretName,
+			targeter: &targeter.Fixed{
+				SecretLister: listers.GetSecretLister(),
+				Path:         path,
+				SecretName:   secretName,
+				ServiceName:  serviceName,
+			},
 		}
 	}))
 }

@@ -27,11 +27,9 @@ import (
 	apixclient "knative.dev/pkg/client/injection/apiextensions/client"
 	crdinformer "knative.dev/pkg/client/injection/apiextensions/informers/apiextensions/v1/customresourcedefinition"
 	"knative.dev/pkg/controller"
-	secretinformer "knative.dev/pkg/injection/clients/namespacedkube/informers/core/v1/secret"
 	"knative.dev/pkg/logging"
 	pkgreconciler "knative.dev/pkg/reconciler"
-	"knative.dev/pkg/system"
-	"knative.dev/pkg/webhook"
+	"knative.dev/pkg/webhook/targeter"
 )
 
 // ConvertibleObject defines the functionality our API types
@@ -89,11 +87,19 @@ func NewConversionController(
 	kinds map[schema.GroupKind]GroupKindConversion,
 	withContext func(context.Context) context.Context,
 ) *controller.Impl {
+	return NewConversionControllerFromTargeter(ctx, targeter.NewFixed(ctx, path), kinds, withContext)
+}
 
-	secretInformer := secretinformer.Get(ctx)
+// NewConversionControllerFromTargeter is analogous to NewConversionController,
+// but takes a targeter.Interface instead of a fixed path.
+func NewConversionControllerFromTargeter(
+	ctx context.Context,
+	targeter targeter.Interface,
+	kinds map[schema.GroupKind]GroupKindConversion,
+	withContext func(context.Context) context.Context,
+) *controller.Impl {
 	crdInformer := crdinformer.Get(ctx)
 	client := apixclient.Get(ctx)
-	options := webhook.GetOptions(ctx)
 
 	r := &reconciler{
 		LeaderAwareFuncs: pkgreconciler.LeaderAwareFuncs{
@@ -108,13 +114,12 @@ func NewConversionController(
 		},
 
 		kinds:       kinds,
-		path:        path,
-		secretName:  options.SecretName,
 		withContext: withContext,
 
-		client:       client,
-		secretLister: secretInformer.Lister(),
-		crdLister:    crdInformer.Lister(),
+		client:    client,
+		crdLister: crdInformer.Lister(),
+
+		targeter: targeter,
 	}
 
 	const queueName = "ConversionWebhook"
@@ -132,11 +137,7 @@ func NewConversionController(
 
 		sentinel := c.EnqueueSentinel(types.NamespacedName{Name: name})
 
-		// Reconcile when the cert bundle changes.
-		secretInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
-			FilterFunc: controller.FilterWithNameAndNamespace(system.Namespace(), options.SecretName),
-			Handler:    controller.HandleAll(sentinel),
-		})
+		targeter.AddEventHandlers(ctx, sentinel)
 	}
 
 	return c
