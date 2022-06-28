@@ -102,6 +102,7 @@ func admissionHandler(rootLogger *zap.SugaredLogger, stats StatsReporter, c Admi
 			logkey.Operation, string(review.Request.Operation),
 			logkey.Resource, review.Request.Resource.String(),
 			logkey.SubResource, review.Request.SubResource,
+			logkey.UserInfo, review.Request.UserInfo.Username,
 		)
 
 		ctx := logging.WithLogger(r.Context(), logger)
