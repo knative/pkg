@@ -174,7 +174,7 @@ func GetTraceTree(trace []model.SpanModel) (*SpanTree, error) {
 
 	children, err := getChildren(parents, roots)
 	if err != nil {
-		return nil, fmt.Errorf("could not create span tree for %v: %v", PrettyPrintTrace(trace), err)
+		return nil, fmt.Errorf("could not create span tree for %v: %w", PrettyPrintTrace(trace), err)
 	}
 
 	if len(parents) != 0 {
