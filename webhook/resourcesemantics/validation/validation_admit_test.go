@@ -468,10 +468,11 @@ func createCreateResource(ctx context.Context, t *testing.T, r *Resource) *admis
 
 func TestAdmitUpdates(t *testing.T) {
 	tests := []struct {
-		name      string
-		setup     func(context.Context, *Resource)
-		mutate    func(context.Context, *Resource)
-		rejection string
+		name        string
+		setup       func(context.Context, *Resource)
+		mutate      func(context.Context, *Resource)
+		subresource string
+		rejection   string
 	}{{
 		name: "test simple update (no diff)",
 		setup: func(ctx context.Context, r *Resource) {
@@ -499,6 +500,23 @@ func TestAdmitUpdates(t *testing.T) {
 			r.Spec.FieldWithValidation = "not what's expected"
 		},
 		rejection: "invalid value",
+	}, {
+		name: "bad mutation (invalid subresource)",
+		setup: func(ctx context.Context, r *Resource) {
+			r.SetDefaults(ctx)
+		},
+		mutate: func(ctx context.Context, r *Resource) {
+		},
+		subresource: "badbadsubresource",
+		rejection:   "validation failed: Disallowed subresource update: \nDisallowed subresource update: badbadsubresource",
+	}, {
+		name: "good mutation with valid subresource",
+		setup: func(ctx context.Context, r *Resource) {
+			r.SetDefaults(ctx)
+		},
+		mutate: func(ctx context.Context, r *Resource) {
+		},
+		subresource: "goodgoodsubresource",
 	}}
 
 	for _, tc := range tests {
@@ -521,7 +539,7 @@ func TestAdmitUpdates(t *testing.T) {
 			tc.mutate(ctx, new)
 
 			_, ac := newNonRunningTestResourceAdmissionController(t)
-			resp := ac.Admit(ctx, createUpdateResource(ctx, t, old, new))
+			resp := ac.Admit(ctx, createUpdateResource(ctx, t, old, new, tc.subresource))
 
 			if tc.rejection == "" {
 				ExpectAllowed(t, resp)
@@ -532,7 +550,7 @@ func TestAdmitUpdates(t *testing.T) {
 	}
 }
 
-func createUpdateResource(ctx context.Context, t *testing.T, old, new *Resource) *admissionv1.AdmissionRequest {
+func createUpdateResource(ctx context.Context, t *testing.T, old, new *Resource, subresource string) *admissionv1.AdmissionRequest {
 	t.Helper()
 	req := &admissionv1.AdmissionRequest{
 		Operation: admissionv1.Update,
@@ -541,7 +559,8 @@ func createUpdateResource(ctx context.Context, t *testing.T, old, new *Resource)
 			Version: "v1alpha1",
 			Kind:    "Resource",
 		},
-		UserInfo: *apis.GetUserInfo(ctx),
+		UserInfo:    *apis.GetUserInfo(ctx),
+		SubResource: subresource,
 	}
 	marshaled, err := json.Marshal(new)
 	if err != nil {
