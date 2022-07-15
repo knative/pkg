@@ -55,6 +55,9 @@ type ResourceSpec struct {
 	FieldForCallbackDefaultingUsername       string `json:"fieldForCallbackDefaultingUsername,omitempty"`
 }
 
+// Reject any udpates to this subresource.
+const disallowedSubresource = "badbadsubresource"
+
 // GetGroupVersionKind returns the GroupVersionKind.
 func (r *Resource) GetGroupVersionKind() schema.GroupVersionKind {
 	return SchemeGroupVersion.WithKind("Resource")
@@ -86,6 +89,7 @@ func (r *Resource) Validate(ctx context.Context) *apis.FieldError {
 	if apis.IsInUpdate(ctx) {
 		original := apis.GetBaseline(ctx).(*Resource)
 		err = err.Also(r.CheckImmutableFields(ctx, original))
+		err = err.Also(r.CheckAllowedSubresourceUpdate(ctx, original))
 	}
 	return err
 }
@@ -141,6 +145,16 @@ func (r *Resource) CheckImmutableFields(ctx context.Context, original *Resource)
 			Paths:   []string{"spec.fieldThatsImmutableWithDefault"},
 			Details: fmt.Sprintf("got: %v, want: %v", r.Spec.FieldThatsImmutableWithDefault,
 				original.Spec.FieldThatsImmutableWithDefault),
+		}
+	}
+	return nil
+}
+
+func (r *Resource) CheckAllowedSubresourceUpdate(ctx context.Context, original *Resource) *apis.FieldError {
+	if apis.IsInSubResourceUpdate(ctx) == disallowedSubresource {
+		return &apis.FieldError{
+			Message: "Disallowed subresource update",
+			Details: fmt.Sprintf("Disallowed subresource update: %s", disallowedSubresource),
 		}
 	}
 	return nil

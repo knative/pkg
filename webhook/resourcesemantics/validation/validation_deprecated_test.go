@@ -47,7 +47,7 @@ func TestStrictValidation(t *testing.T) {
 
 	newUpdateReq := func(old, new []byte) *admissionv1.AdmissionRequest {
 		req := &admissionv1.AdmissionRequest{
-			Operation: admissionv1.Create,
+			Operation: admissionv1.Update,
 			Kind: metav1.GroupVersionKind{
 				Group:   "pkg.knative.dev",
 				Version: "v1alpha1",
