@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Knative Authors
+Copyright 2022 The Knative Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -17,87 +17,77 @@ limitations under the License.
 package changeset
 
 import (
-	"errors"
-	"fmt"
+	"runtime/debug"
 	"testing"
+
+	"github.com/google/go-cmp/cmp"
 )
 
-const (
-	nonCommittedHeadRef = "refs/heads/non_committed_branch"
-	testCommitID        = "a2d1bdf"
-)
+func TestGet(t *testing.T) {
 
-func TestReadFile(t *testing.T) {
-	tests := []struct {
-		name                      string
-		koDataPath                string
-		koDataPathEnvDoesNotExist bool
-		want                      string
-		wantErr                   bool
-		err                       error
+	cases := []struct {
+		name    string
+		info    *debug.BuildInfo
+		ok      bool
+		result  string
+		wantErr string
 	}{{
-		name:       "committed branch",
-		koDataPath: "testdata",
-		want:       testCommitID,
+		name:    "info fails",
+		ok:      false,
+		wantErr: "unable to read build info",
 	}, {
-		name:       "no refs link",
-		koDataPath: "testdata/noncommitted",
-		wantErr:    true,
-		err:        fmt.Errorf("open testdata/noncommitted/%s: no such file or directory", nonCommittedHeadRef),
+		name:    "missing revision",
+		ok:      true,
+		info:    &debug.BuildInfo{},
+		wantErr: `"" is not a valid git sha`,
 	}, {
-		name:       "with refs link",
-		koDataPath: "testdata/with-refs",
-		want:       testCommitID,
+		name: "bad revision",
+		ok:   true,
+		info: &debug.BuildInfo{
+			Settings: []debug.BuildSetting{{
+				Key: "vcs.revision", Value: "bad",
+			}},
+		},
+		wantErr: `"bad" is not a valid git sha`,
 	}, {
-		name:       "with bad content",
-		koDataPath: "testdata/garbage",
-		wantErr:    true,
-		err:        fmt.Errorf(`"garbage contents" is not a valid GitHub commit ID`),
+		name: "happy revision",
+		ok:   true,
+		info: &debug.BuildInfo{
+			Settings: []debug.BuildSetting{{
+				Key: "vcs.revision", Value: "3666ce749d32abe7be0528380c8c05a4282cb733",
+			}},
+		},
+		result: "3666ce7",
 	}, {
-		name:       "KO_DATA_PATH is empty",
-		koDataPath: "",
-		wantErr:    true,
-		err:        fmt.Errorf("%q does not exist or is empty", koDataPathEnvName),
-	}, {
-		name:                      "KO_DATA_PATH does not exist",
-		koDataPath:                "",
-		wantErr:                   true,
-		koDataPathEnvDoesNotExist: true,
-		err:                       fmt.Errorf("%q does not exist or is empty", koDataPathEnvName),
-	}, {
-		name:       "HEAD file does not exist",
-		koDataPath: "testdata/nonexisting",
-		wantErr:    true,
-		err:        errors.New("open testdata/nonexisting/HEAD: no such file or directory"),
-	}, {
-		name:       "packed-ref",
-		koDataPath: "testdata/packed-refs",
-		want:       testCommitID,
-	}, {
-		name:       "no refs with packed-ref",
-		koDataPath: "testdata/noncommited-packed-refs",
-		wantErr:    true,
-		err:        fmt.Errorf("%q ref not found in packed-refs", nonCommittedHeadRef),
+		name: "dirty revision",
+		ok:   true,
+		info: &debug.BuildInfo{
+			Settings: []debug.BuildSetting{{
+				Key: "vcs.revision", Value: "3666ce749d32abe7be0528380c8c05a4282cb733",
+			}, {
+				Key: "vcs.modified", Value: "true",
+			}},
+		},
+		result: "3666ce7-dirty",
 	}}
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			if !test.koDataPathEnvDoesNotExist {
-				t.Setenv(koDataPathEnvName, test.koDataPath)
+
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			readBuildInfo = func() (info *debug.BuildInfo, ok bool) {
+				return c.info, c.ok
 			}
 
-			got, err := Get()
-
-			if (err != nil) != test.wantErr {
-				t.Error("Get() =", err)
+			val, err := Get()
+			if c.wantErr == "" && err != nil {
+				t.Fatal("unexpected error", err)
+			} else if c.wantErr != "" {
+				if diff := cmp.Diff(c.wantErr, err.Error()); diff != "" {
+					t.Errorf("error doesn't match expected: %s", diff)
+				}
 			}
-			if !test.wantErr {
-				if test.want != got {
-					t.Errorf("wanted %q but got %q", test.want, got)
-				}
-			} else {
-				if err == nil || err.Error() != test.err.Error() {
-					t.Errorf("wanted error %v but got: %v", test.err, err)
-				}
+
+			if diff := cmp.Diff(c.result, val); diff != "" {
+				t.Errorf("result doesn't match expected: %s", diff)
 			}
 		})
 	}
