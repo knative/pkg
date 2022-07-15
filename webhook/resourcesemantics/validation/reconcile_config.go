@@ -24,6 +24,7 @@ import (
 
 	"github.com/gobuffalo/flect"
 	"go.uber.org/zap"
+	admissionv1 "k8s.io/api/admission/v1"
 	admissionregistrationv1 "k8s.io/api/admissionregistration/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -103,12 +104,46 @@ func (ac *reconciler) reconcileValidatingWebhook(ctx context.Context, caCert []b
 	for gvk := range ac.handlers {
 		plural := strings.ToLower(flect.Pluralize(gvk.Kind))
 
-		rules = append(rules, admissionregistrationv1.RuleWithOperations{
-			Operations: []admissionregistrationv1.OperationType{
-				admissionregistrationv1.Create,
+		// If the Operations / SupportedVerbs have been configured in the
+		// callbacks, check them first so we do not get unnecessarily called
+		// for thos.
+		ops := []admissionregistrationv1.OperationType{}
+		if cb, ok := ac.callbacks[gvk]; ok && len(cb.supportedVerbs) > 0 {
+			for op := range cb.supportedVerbs {
+				switch op {
+				case admissionv1.Create:
+					ops = append(ops, admissionregistrationv1.Create)
+				case admissionv1.Update:
+					ops = append(ops, admissionregistrationv1.Update)
+				case admissionv1.Delete:
+					ops = append(ops, admissionregistrationv1.Delete)
+				case admissionv1.Connect:
+					ops = append(ops, admissionregistrationv1.Connect)
+				}
+			}
+		} else {
+			ops = []admissionregistrationv1.OperationType{admissionregistrationv1.Create,
 				admissionregistrationv1.Update,
 				admissionregistrationv1.Delete,
-			},
+			}
+		}
+
+		resources := []string{}
+		if cb, ok := ac.callbacks[gvk]; ok && len(cb.supportedSubResources) > 0 {
+			for _, subresource := range cb.supportedSubResources {
+				if subresource == "" {
+					// Special case the actual plural if given
+					resources = append(resources, plural)
+				} else {
+					resources = append(resources, plural+subresource)
+				}
+			}
+		} else {
+			resources = []string{plural, plural + "/status"}
+		}
+
+		rules = append(rules, admissionregistrationv1.RuleWithOperations{
+			Operations: ops,
 			Rule: admissionregistrationv1.Rule{
 				APIGroups:   []string{gvk.Group},
 				APIVersions: []string{gvk.Version},

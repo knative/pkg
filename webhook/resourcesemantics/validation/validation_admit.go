@@ -36,17 +36,43 @@ import (
 var errMissingNewObject = errors.New("the new object may not be nil")
 
 // Callback is a generic function to be called by a consumer of validation
+// To preserve backwards compatibility, it also doubles up as a way to configure
+// which verbs and which subresources are configured in the
+// validatingwebhookconfiguration. For configuring which verbs and subresources
+// should get validated, create the Callback and pass it to
+// NewAdmissionController. If you do not need to do any additional validation
+// you can just have it be nil.
 type Callback struct {
 	// function is the callback to be invoked
+	// You can leave this empty if you just want to configure supportedVerbs
+	// or supportedSubResources
 	function func(ctx context.Context, unstructured *unstructured.Unstructured) error
 
 	// supportedVerbs are the verbs supported for the callback.
-	// The function will only be called on these actions.
+	// The function will only be called on these actions, and other verbs
+	// will not even be registered in the rules.
 	supportedVerbs map[webhook.Operation]struct{}
+
+	// supportedSubResources are the subresources that will be registered
+	// for the callback to be called.
+	// By default 'main' resource and 'status' are filled in. This was
+	// the previous behaviour.
+	// "" string means add the main resource.
+	// To get the previous behaviour explicitly, you would do:
+	// []string{"", "/status"}
+	// If you wanted to add for example scale validation for Deployments, you'd
+	// do:
+	// []string{"", "/status", "/scale"}
+	supportedSubResources []string
 }
 
 // NewCallback creates a new callback function to be invoked on supported verbs.
 func NewCallback(function func(context.Context, *unstructured.Unstructured) error, supportedVerbs ...webhook.Operation) Callback {
+	return NewCallbackWithSubresources(function, []string{"", "/status"}, supportedVerbs...)
+}
+
+// NewCallbackWithSubresources creates a new callback function to be invoked on supported verbs and subresources.
+func NewCallbackWithSubresources(function func(context.Context, *unstructured.Unstructured) error, supportedSubResources []string, supportedVerbs ...webhook.Operation) Callback {
 	m := make(map[webhook.Operation]struct{})
 	for _, op := range supportedVerbs {
 		if _, has := m[op]; has {
@@ -54,7 +80,7 @@ func NewCallback(function func(context.Context, *unstructured.Unstructured) erro
 		}
 		m[op] = struct{}{}
 	}
-	return Callback{function: function, supportedVerbs: m}
+	return Callback{function: function, supportedVerbs: m, supportedSubResources: supportedSubResources}
 }
 
 var _ webhook.AdmissionController = (*reconciler)(nil)
@@ -208,8 +234,12 @@ func (ac *reconciler) callback(ctx context.Context, req *admissionv1.AdmissionRe
 		return nil
 	}
 
-	// Generically callback if any are provided for the resource.
-	if c, ok := ac.callbacks[gvk]; ok {
+	// Generically callback if any are provided for the resource and if function
+	// is non nil.
+	// Since the callback might be nil if it's just being used to configure
+	// specific verbs / subresources, check to make sure it's not nil
+	// and skip if it is.
+	if c, ok := ac.callbacks[gvk]; ok && c.function != nil {
 		if _, supported := c.supportedVerbs[req.Operation]; supported {
 			unstruct := &unstructured.Unstructured{}
 			if err := json.Unmarshal(toDecode, unstruct); err != nil {
