@@ -151,7 +151,7 @@ func (r *Resource) CheckImmutableFields(ctx context.Context, original *Resource)
 }
 
 func (r *Resource) CheckAllowedSubresourceUpdate(ctx context.Context, original *Resource) *apis.FieldError {
-	if apis.IsInSubResourceUpdate(ctx) == disallowedSubresource {
+	if apis.GetUpdatedSubresource(ctx) == disallowedSubresource {
 		return &apis.FieldError{
 			Message: "Disallowed subresource update",
 			Details: fmt.Sprintf("Disallowed subresource update: %s", disallowedSubresource),
