@@ -18,20 +18,35 @@ package changeset
 
 import (
 	"errors"
-	"fmt"
 	"regexp"
 	"runtime/debug"
 	"strconv"
+	"sync"
 )
 
-var commitIDRE = regexp.MustCompile(`^[a-f0-9]{40}$`)
-var readBuildInfo = debug.ReadBuildInfo
+var (
+	shaRegexp = regexp.MustCompile(`^[a-f0-9]{40,64}$`)
+	rev       string
+	err       error
+	once      sync.Once
+
+	// for testing
+	readBuildInfo = debug.ReadBuildInfo
+)
 
 // Get returns the 'vcs.revision' property from the embedded build information
 // This function will return an error if value is not a valid Git SHA
 //
 // The result will have a '-dirty' suffix if the workspace was not clean
 func Get() (string, error) {
+	once.Do(func() {
+		rev, err = get()
+	})
+
+	return rev, err
+}
+
+func get() (string, error) {
 	info, ok := readBuildInfo()
 	if !ok {
 		return "", errors.New("unable to read build info")
@@ -49,13 +64,17 @@ func Get() (string, error) {
 		}
 	}
 
-	if !commitIDRE.MatchString(revision) {
-		return "", fmt.Errorf("%q is not a valid git sha", revision)
+	if revision == "" {
+		return "unknown", nil
+	}
+
+	if shaRegexp.MatchString(revision) {
+		revision = revision[:7]
 	}
 
 	if modified {
-		return revision[:7] + "-dirty", nil
+		revision += "-dirty"
 	}
 
-	return revision[:7], nil
+	return revision, nil
 }

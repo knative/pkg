@@ -82,7 +82,7 @@ func enrichLoggerWithCommitID(logger *zap.Logger) *zap.SugaredLogger {
 	}
 
 	// Enrich logs with the components git revision.
-	return logger.With(zap.String(logkey.GitRevision, revision)).Sugar()
+	return logger.With(zap.String(logkey.Commit, revision)).Sugar()
 
 }
 
