@@ -24,6 +24,8 @@ import (
 	"sync"
 )
 
+const Unknown = "unknown"
+
 var (
 	shaRegexp = regexp.MustCompile(`^[a-f0-9]{40,64}$`)
 	rev       string
@@ -65,7 +67,7 @@ func get() (string, error) {
 	}
 
 	if revision == "" {
-		return "unknown", nil
+		return Unknown, nil
 	}
 
 	if shaRegexp.MatchString(revision) {

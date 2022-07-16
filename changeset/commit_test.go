@@ -40,7 +40,7 @@ func TestGet(t *testing.T) {
 		name:   "missing revision",
 		ok:     true,
 		info:   &debug.BuildInfo{},
-		result: "unknown",
+		result: Unknown,
 	}, {
 		name: "SHA1 revision is truncated",
 		ok:   true,

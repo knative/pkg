@@ -76,8 +76,8 @@ func NewLogger(configJSON string, levelOverride string, opts ...zap.Option) (*za
 
 func enrichLoggerWithCommitID(logger *zap.Logger) *zap.SugaredLogger {
 	revision, err := changeset.Get()
-	if err != nil {
-		logger.Info("Fetch git commit sha", zap.Error(err))
+	if err != nil || revision == changeset.Unknown {
+		logger.Info("Unable to read vcs.revision from binary", zap.Error(err))
 		return logger.Sugar()
 	}
 
