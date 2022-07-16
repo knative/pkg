@@ -27,7 +27,7 @@ import (
 var commitIDRE = regexp.MustCompile(`^[a-f0-9]{40}$`)
 var readBuildInfo = debug.ReadBuildInfo
 
-// Get returns the 'vcs.revision' property from the embeded build information
+// Get returns the 'vcs.revision' property from the embedded build information
 // This function will return an error if value is not a valid Git SHA
 //
 // The result will have a '-dirty' suffix if the workspace was not clean
