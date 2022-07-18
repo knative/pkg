@@ -26,6 +26,7 @@ import (
 	"knative.dev/pkg/logging"
 	pkgreconciler "knative.dev/pkg/reconciler"
 
+	admissionregistrationv1 "k8s.io/api/admissionregistration/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/cache"
@@ -35,33 +36,20 @@ import (
 	"knative.dev/pkg/webhook/resourcesemantics"
 )
 
-// NewAdmissionController constructs a reconciler
-func NewAdmissionController(
+// NewAdmissionControllerWithConfig constructs a reconciler and registers the
+// provided handlers with specified verbs and SubResources
+func NewAdmissionControllerWithConfig(
 	ctx context.Context,
 	name, path string,
-	handlers map[schema.GroupVersionKind]resourcesemantics.GenericCRD,
+	handlers map[schema.GroupVersionKind]resourcesemantics.GenericCRDWithConfig,
 	wc func(context.Context) context.Context,
 	disallowUnknownFields bool,
-	callbacks ...map[schema.GroupVersionKind]Callback,
+	callbacks map[schema.GroupVersionKind]Callback,
 ) *controller.Impl {
-
 	client := kubeclient.Get(ctx)
 	vwhInformer := vwhinformer.Get(ctx)
 	secretInformer := secretinformer.Get(ctx)
 	options := webhook.GetOptions(ctx)
-
-	// This not ideal, we are using a variadic argument to effectively make callbacks optional
-	// This allows this addition to be non-breaking to consumers of /pkg
-	// TODO: once all sub-repos have adopted this, we might move this back to a traditional param.
-	var unwrappedCallbacks map[schema.GroupVersionKind]Callback
-	switch len(callbacks) {
-	case 0:
-		unwrappedCallbacks = map[schema.GroupVersionKind]Callback{}
-	case 1:
-		unwrappedCallbacks = callbacks[0]
-	default:
-		panic("NewAdmissionController may not be called with multiple callback maps")
-	}
 
 	wh := &reconciler{
 		LeaderAwareFuncs: pkgreconciler.LeaderAwareFuncs{
@@ -77,7 +65,7 @@ func NewAdmissionController(
 		},
 		path:      path,
 		handlers:  handlers,
-		callbacks: unwrappedCallbacks,
+		callbacks: callbacks,
 
 		withContext:           wc,
 		disallowUnknownFields: disallowUnknownFields,
@@ -109,4 +97,34 @@ func NewAdmissionController(
 	})
 
 	return c
+
+}
+
+// NewAdmissionController constructs a reconciler
+func NewAdmissionController(
+	ctx context.Context,
+	name, path string,
+	handlers map[schema.GroupVersionKind]resourcesemantics.GenericCRD,
+	wc func(context.Context) context.Context,
+	disallowUnknownFields bool,
+	callbacks ...map[schema.GroupVersionKind]Callback,
+) *controller.Impl {
+	// This not ideal, we are using a variadic argument to effectively make callbacks optional
+	// This allows this addition to be non-breaking to consumers of /pkg
+	// TODO: once all sub-repos have adopted this, we might move this back to a traditional param.
+	var unwrappedCallbacks map[schema.GroupVersionKind]Callback
+	switch len(callbacks) {
+	case 0:
+		unwrappedCallbacks = map[schema.GroupVersionKind]Callback{}
+	case 1:
+		unwrappedCallbacks = callbacks[0]
+	default:
+		panic("NewAdmissionController may not be called with multiple callback maps")
+	}
+
+	h := make(map[schema.GroupVersionKind]resourcesemantics.GenericCRDWithConfig, len(handlers))
+	for k, v := range handlers {
+		h[k] = resourcesemantics.GenericCRDWithConfig{GenericCRD: v, SupportedVerbs: []admissionregistrationv1.OperationType{admissionregistrationv1.Create, admissionregistrationv1.Update, admissionregistrationv1.Delete}, SupportedSubResources: []string{"", "/status"}}
+	}
+	return NewAdmissionControllerWithConfig(ctx, name, path, h, wc, disallowUnknownFields, unwrappedCallbacks)
 }

@@ -24,7 +24,6 @@ import (
 
 	"github.com/gobuffalo/flect"
 	"go.uber.org/zap"
-	admissionv1 "k8s.io/api/admission/v1"
 	admissionregistrationv1 "k8s.io/api/admissionregistration/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -51,7 +50,7 @@ type reconciler struct {
 
 	key       types.NamespacedName
 	path      string
-	handlers  map[schema.GroupVersionKind]resourcesemantics.GenericCRD
+	handlers  map[schema.GroupVersionKind]resourcesemantics.GenericCRDWithConfig
 	callbacks map[schema.GroupVersionKind]Callback
 
 	withContext func(context.Context) context.Context
@@ -101,36 +100,28 @@ func (ac *reconciler) reconcileValidatingWebhook(ctx context.Context, caCert []b
 	logger := logging.FromContext(ctx)
 
 	rules := make([]admissionregistrationv1.RuleWithOperations, 0, len(ac.handlers))
-	for gvk := range ac.handlers {
+	for gvk, config := range ac.handlers {
 		plural := strings.ToLower(flect.Pluralize(gvk.Kind))
 
-		// If the Operations / SupportedVerbs have been configured in the
-		// callbacks, check them first so we do not get unnecessarily called
-		// for thos.
 		ops := []admissionregistrationv1.OperationType{}
-		if cb, ok := ac.callbacks[gvk]; ok && len(cb.supportedVerbs) > 0 {
-			for op := range cb.supportedVerbs {
-				switch op {
-				case admissionv1.Create:
-					ops = append(ops, admissionregistrationv1.Create)
-				case admissionv1.Update:
-					ops = append(ops, admissionregistrationv1.Update)
-				case admissionv1.Delete:
-					ops = append(ops, admissionregistrationv1.Delete)
-				case admissionv1.Connect:
-					ops = append(ops, admissionregistrationv1.Connect)
-				}
-			}
-		} else {
+		// If SupportedVerbs has not been given, provide the legacy defaults
+		// of Create, Update, and Delete
+		if len(config.SupportedVerbs) == 0 {
 			ops = []admissionregistrationv1.OperationType{admissionregistrationv1.Create,
 				admissionregistrationv1.Update,
 				admissionregistrationv1.Delete,
 			}
+		} else {
+			ops = append(ops, config.SupportedVerbs...)
 		}
 
 		resources := []string{}
-		if cb, ok := ac.callbacks[gvk]; ok && len(cb.supportedSubResources) > 0 {
-			for _, subresource := range cb.supportedSubResources {
+		// If SupportedSubResources has not been given, provide the legacy
+		// defaults of main resource, and status
+		if len(config.SupportedSubResources) == 0 {
+			resources = []string{plural, plural + "/status"}
+		} else {
+			for _, subresource := range config.SupportedSubResources {
 				if subresource == "" {
 					// Special case the actual plural if given
 					resources = append(resources, plural)
@@ -138,8 +129,6 @@ func (ac *reconciler) reconcileValidatingWebhook(ctx context.Context, caCert []b
 					resources = append(resources, plural+subresource)
 				}
 			}
-		} else {
-			resources = []string{plural, plural + "/status"}
 		}
 
 		rules = append(rules, admissionregistrationv1.RuleWithOperations{
@@ -147,7 +136,7 @@ func (ac *reconciler) reconcileValidatingWebhook(ctx context.Context, caCert []b
 			Rule: admissionregistrationv1.Rule{
 				APIGroups:   []string{gvk.Group},
 				APIVersions: []string{gvk.Version},
-				Resources:   []string{plural, plural + "/status"},
+				Resources:   resources,
 			},
 		})
 	}

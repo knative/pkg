@@ -59,27 +59,27 @@ const (
 )
 
 var (
-	handlers = map[schema.GroupVersionKind]resourcesemantics.GenericCRD{
+	handlers = map[schema.GroupVersionKind]resourcesemantics.GenericCRDWithConfig{
 		{
 			Group:   "pkg.knative.dev",
 			Version: "v1alpha1",
 			Kind:    "Resource",
-		}: &Resource{},
+		}: resourcesemantics.GenericCRDWithConfig{GenericCRD: &Resource{}},
 		{
 			Group:   "pkg.knative.dev",
 			Version: "v1beta1",
 			Kind:    "Resource",
-		}: &Resource{},
+		}: resourcesemantics.GenericCRDWithConfig{GenericCRD: &Resource{}},
 		{
 			Group:   "pkg.knative.dev",
 			Version: "v1alpha1",
 			Kind:    "InnerDefaultResource",
-		}: &InnerDefaultResource{},
+		}: resourcesemantics.GenericCRDWithConfig{GenericCRD: &InnerDefaultResource{}},
 		{
 			Group:   "pkg.knative.io",
 			Version: "v1alpha1",
 			Kind:    "InnerDefaultResource",
-		}: &InnerDefaultResource{},
+		}: resourcesemantics.GenericCRDWithConfig{GenericCRD: &InnerDefaultResource{}},
 	}
 
 	callbacks = map[schema.GroupVersionKind]Callback{
@@ -645,7 +645,7 @@ func TestNewResourceAdmissionController(t *testing.T) {
 
 	NewAdmissionController(
 		ctx, testResourceValidationName, testResourceValidationPath,
-		handlers,
+		nil,
 		func(ctx context.Context) context.Context {
 			return ctx
 		}, true,
@@ -672,7 +672,7 @@ func TestNewResourceAdmissionControllerDuplicateVerb(t *testing.T) {
 
 	NewAdmissionController(
 		ctx, testResourceValidationName, testResourceValidationPath,
-		handlers,
+		nil,
 		func(ctx context.Context) context.Context {
 			return ctx
 		}, true,
@@ -685,7 +685,7 @@ func newTestResourceAdmissionController(t *testing.T) webhook.AdmissionControlle
 		SecretName: "webhook-secret",
 	})
 
-	c := NewAdmissionController(
+	c := NewAdmissionControllerWithConfig(
 		ctx, testResourceValidationName, testResourceValidationPath,
 		handlers,
 		func(ctx context.Context) context.Context {
