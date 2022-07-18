@@ -27,15 +27,14 @@ import (
 func TestGet(t *testing.T) {
 
 	cases := []struct {
-		name    string
-		info    *debug.BuildInfo
-		ok      bool
-		result  string
-		wantErr string
+		name   string
+		info   *debug.BuildInfo
+		ok     bool
+		result string
 	}{{
-		name:    "info fails",
-		ok:      false,
-		wantErr: "unable to read build info",
+		name:   "info fails",
+		ok:     false,
+		result: Unknown,
 	}, {
 		name:   "missing revision",
 		ok:     true,
@@ -79,18 +78,10 @@ func TestGet(t *testing.T) {
 				return c.info, c.ok
 			}
 
-			val, err := Get()
-			if c.wantErr == "" && err != nil {
-				t.Fatal("unexpected error", err)
-			} else if c.wantErr != "" && err != nil {
-				if diff := cmp.Diff(c.wantErr, err.Error()); diff != "" {
-					t.Fatalf("error doesn't match expected: %s", diff)
-				}
-			} else if c.wantErr != "" && err == nil {
-				t.Fatalf("expected error %q but was nil", c.wantErr)
-			}
+			got := Get()
+			want := c.result
 
-			if diff := cmp.Diff(c.result, val); diff != "" {
+			if diff := cmp.Diff(want, got); diff != "" {
 				t.Errorf("result doesn't match expected: %s", diff)
 			}
 		})
