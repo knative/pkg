@@ -17,7 +17,6 @@ limitations under the License.
 package changeset
 
 import (
-	"errors"
 	"regexp"
 	"runtime/debug"
 	"strconv"
@@ -32,26 +31,25 @@ var (
 	err       error
 	once      sync.Once
 
-	// for testing
 	readBuildInfo = debug.ReadBuildInfo
 )
 
 // Get returns the 'vcs.revision' property from the embedded build information
-// This function will return an error if value is not a valid Git SHA
+// If there is no embedded information 'unknown' will be returned
 //
 // The result will have a '-dirty' suffix if the workspace was not clean
-func Get() (string, error) {
+func Get() string {
 	once.Do(func() {
-		rev, err = get()
+		rev = get()
 	})
 
-	return rev, err
+	return rev
 }
 
-func get() (string, error) {
+func get() string {
 	info, ok := readBuildInfo()
 	if !ok {
-		return "", errors.New("unable to read build info")
+		return Unknown
 	}
 
 	var revision string
@@ -67,7 +65,7 @@ func get() (string, error) {
 	}
 
 	if revision == "" {
-		return Unknown, nil
+		return Unknown
 	}
 
 	if shaRegexp.MatchString(revision) {
@@ -78,5 +76,5 @@ func get() (string, error) {
 		revision += "-dirty"
 	}
 
-	return revision, nil
+	return revision
 }
