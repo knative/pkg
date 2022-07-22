@@ -201,7 +201,7 @@ func (fgc *FakeGithubClient) RemoveLabelForIssue(org, repo string, issueNumber i
 			targetI = i
 		}
 	}
-	if -1 == targetI {
+	if targetI == -1 {
 		return fmt.Errorf("cannot find label")
 	}
 	targetIssue.Labels = append(targetIssue.Labels[:targetI], targetIssue.Labels[targetI+1:]...)
