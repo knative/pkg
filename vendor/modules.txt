@@ -11,6 +11,9 @@ cloud.google.com/go/internal/version
 ## explicit; go 1.11
 cloud.google.com/go/storage
 cloud.google.com/go/storage/internal/apiv2
+# contrib.go.opencensus.io/exporter/jaeger v0.2.1
+## explicit
+contrib.go.opencensus.io/exporter/jaeger
 # contrib.go.opencensus.io/exporter/ocagent v0.7.1-0.20200907061046-05415f1de66d
 ## explicit; go 1.13
 contrib.go.opencensus.io/exporter/ocagent
@@ -292,6 +295,12 @@ github.com/spf13/pflag
 # github.com/tsenart/vegeta/v12 v12.8.4
 ## explicit; go 1.13
 github.com/tsenart/vegeta/v12/lib
+# github.com/uber/jaeger-client-go v2.25.0+incompatible
+## explicit
+github.com/uber/jaeger-client-go/thrift
+github.com/uber/jaeger-client-go/thrift-gen/agent
+github.com/uber/jaeger-client-go/thrift-gen/jaeger
+github.com/uber/jaeger-client-go/thrift-gen/zipkincore
 # go.opencensus.io v0.23.0
 ## explicit; go 1.13
 go.opencensus.io
