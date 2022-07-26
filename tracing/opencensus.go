@@ -132,7 +132,7 @@ func mkServiceName(name string) (string, error) {
 	if name == "" {
 		n, err := os.Hostname()
 		if err != nil {
-			return "", fmt.Errorf("unable to get hostname: %v", err)
+			return "", fmt.Errorf("unable to get hostname: %w", err)
 		}
 		name = n
 	}
@@ -195,7 +195,7 @@ func WithExporterFull(name, host string, logger *zap.SugaredLogger) ConfigOption
 			}
 			exp, err := jaeger.NewExporter(opts)
 			if err != nil {
-				logger.Errorw("error building jaeger exporter", err)
+				logger.Errorw("error building jaeger exporter", zap.Error(err))
 				return err
 			}
 			exporter = exp
