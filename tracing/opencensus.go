@@ -23,6 +23,7 @@ import (
 	"os"
 	"sync"
 
+	"contrib.go.opencensus.io/exporter/jaeger"
 	oczipkin "contrib.go.opencensus.io/exporter/zipkin"
 	"github.com/openzipkin/zipkin-go"
 	httpreporter "github.com/openzipkin/zipkin-go/reporter/http"
@@ -126,6 +127,18 @@ func createOCTConfig(cfg *config.Config) *trace.Config {
 	return &octCfg
 }
 
+func mkServiceName(name string) (string, error) {
+	// When name is unspecified, create a service name from hostname.
+	if name == "" {
+		n, err := os.Hostname()
+		if err != nil {
+			return "", fmt.Errorf("unable to get hostname: %v", err)
+		}
+		name = n
+	}
+	return name, nil
+}
+
 // WithExporter returns a ConfigOption for use with NewOpenCensusTracer that configures
 // it to export traces based on the configuration read from config-tracing.
 func WithExporter(name string, logger *zap.SugaredLogger) ConfigOption {
@@ -147,14 +160,11 @@ func WithExporterFull(name, host string, logger *zap.SugaredLogger) ConfigOption
 		switch cfg.Backend {
 		case config.Zipkin:
 			// If host isn't specified, then zipkin.NewEndpoint will return an error saying that it
-			// can't find the host named ''. So, if not specified, default it to this machine's
-			// hostname.
-			if host == "" {
-				n, err := os.Hostname()
-				if err != nil {
-					return fmt.Errorf("unable to get hostname: %w", err)
-				}
-				host = n
+			// can't find the host named ''. So, if not specified, default it to this machine's hostname.
+			name, err := mkServiceName(name)
+			if err != nil {
+				logger.Errorw("error creating service name", zap.Error(err))
+				return err
 			}
 			if name == "" {
 				name = host
@@ -167,7 +177,28 @@ func WithExporterFull(name, host string, logger *zap.SugaredLogger) ConfigOption
 			reporter := httpreporter.NewReporter(cfg.ZipkinEndpoint)
 			exporter = oczipkin.NewExporter(reporter, zipEP)
 			closer = reporter
-
+		case config.Jaeger:
+			name, err := mkServiceName(name)
+			if err != nil {
+				logger.Errorw("error creating service name", zap.Error(err))
+				return err
+			}
+			opts := jaeger.Options{
+				Process: jaeger.Process{
+					ServiceName: name,
+				},
+			}
+			if cfg.JaegerCollectorEndpoint != "" {
+				opts.CollectorEndpoint = cfg.JaegerCollectorEndpoint
+			} else {
+				opts.AgentEndpoint = cfg.JaegerAgentEndpoint
+			}
+			exp, err := jaeger.NewExporter(opts)
+			if err != nil {
+				logger.Errorw("error building jaeger exporter", err)
+				return err
+			}
+			exporter = exp
 		default:
 			// Disables tracing.
 		}

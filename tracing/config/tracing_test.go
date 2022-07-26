@@ -87,6 +87,34 @@ func TestNewConfigSuccess(t *testing.T) {
 			ZipkinEndpoint: "some-endpoint",
 			SampleRate:     0.5,
 		},
+	}, {
+		name: "Everything enabled (jaeger agent)",
+		input: map[string]string{
+			backendKey:             "jaeger",
+			jaegerAgentEndpointKey: "some-endpoint",
+			debugKey:               "true",
+			sampleRateKey:          "0.5",
+		},
+		output: &Config{
+			Backend:             Jaeger,
+			Debug:               true,
+			JaegerAgentEndpoint: "some-endpoint",
+			SampleRate:          0.5,
+		},
+	}, {
+		name: "Everything enabled (jaeger collector)",
+		input: map[string]string{
+			backendKey:                 "jaeger",
+			jaegerCollectorEndpointKey: "some-endpoint",
+			debugKey:                   "true",
+			sampleRateKey:              "0.5",
+		},
+		output: &Config{
+			Backend:                 Jaeger,
+			Debug:                   true,
+			JaegerCollectorEndpoint: "some-endpoint",
+			SampleRate:              0.5,
+		},
 	}}
 
 	for _, tc := range tt {
@@ -141,6 +169,34 @@ func TestNewConfigJSON(t *testing.T) {
 			ZipkinEndpoint: "some-endpoint",
 			SampleRate:     0.5,
 		},
+	}, {
+		name: "Everything enabled (jaeger agent)",
+		input: map[string]string{
+			backendKey:             "jaeger",
+			jaegerAgentEndpointKey: "some-endpoint",
+			debugKey:               "true",
+			sampleRateKey:          "0.5",
+		},
+		output: &Config{
+			Backend:             Jaeger,
+			Debug:               true,
+			JaegerAgentEndpoint: "some-endpoint",
+			SampleRate:          0.5,
+		},
+	}, {
+		name: "Everything enabled (jaeger collector)",
+		input: map[string]string{
+			backendKey:                 "jaeger",
+			jaegerCollectorEndpointKey: "some-endpoint",
+			debugKey:                   "true",
+			sampleRateKey:              "0.5",
+		},
+		output: &Config{
+			Backend:                 Jaeger,
+			Debug:                   true,
+			JaegerCollectorEndpoint: "some-endpoint",
+			SampleRate:              0.5,
+		},
 	}}
 
 	for _, tc := range tt {
@@ -192,7 +248,7 @@ func TestNewConfigFailures(t *testing.T) {
 			sampleRateKey: "1.01",
 		},
 	}, {
-		name: "zipkin set without backend",
+		name: "zipkin set without endpoint",
 		input: map[string]string{
 			backendKey: "zipkin",
 		},
@@ -205,6 +261,18 @@ func TestNewConfigFailures(t *testing.T) {
 		name: "legacy key invalid",
 		input: map[string]string{
 			enableKey: "dot dash dot",
+		},
+	}, {
+		name: "jaeger set without endpoint",
+		input: map[string]string{
+			backendKey: "jaeger",
+		},
+	}, {
+		name: "jaeger set with agent and collector endpoint",
+		input: map[string]string{
+			backendKey:                 "jaeger",
+			jaegerAgentEndpointKey:     "some-agent-endpoint",
+			jaegerCollectorEndpointKey: "some-collector-endpoint",
 		},
 	}}
 	for _, tc := range tests {

@@ -31,11 +31,13 @@ const (
 	// ConfigName is the name of the configmap
 	ConfigName = "config-tracing"
 
-	enableKey         = "enable"
-	backendKey        = "backend"
-	zipkinEndpointKey = "zipkin-endpoint"
-	debugKey          = "debug"
-	sampleRateKey     = "sample-rate"
+	enableKey                  = "enable"
+	backendKey                 = "backend"
+	jaegerAgentEndpointKey     = "jaeger-agent-endpoint"
+	jaegerCollectorEndpointKey = "jaeger-collector-endpoint"
+	zipkinEndpointKey          = "zipkin-endpoint"
+	debugKey                   = "debug"
+	sampleRateKey              = "sample-rate"
 )
 
 // BackendType specifies the backend to use for tracing
@@ -47,12 +49,17 @@ const (
 
 	// Zipkin is used for Zipkin backend.
 	Zipkin BackendType = "zipkin"
+
+	// Jaeger is used for a Jaeger collector backend.
+	Jaeger BackendType = "jaeger"
 )
 
 // Config holds the configuration for tracers
 type Config struct {
-	Backend        BackendType
-	ZipkinEndpoint string
+	Backend                 BackendType
+	JaegerAgentEndpoint     string
+	JaegerCollectorEndpoint string
+	ZipkinEndpoint          string
 
 	Debug      bool
 	SampleRate float64
@@ -78,7 +85,7 @@ func NewTracingConfigFromMap(cfgMap map[string]string) (*Config, error) {
 
 	if backend, ok := cfgMap[backendKey]; ok {
 		switch bt := BackendType(backend); bt {
-		case Zipkin, None:
+		case Zipkin, Jaeger, None:
 			tc.Backend = bt
 		default:
 			return nil, fmt.Errorf("unsupported tracing backend value %q", backend)
@@ -96,10 +103,22 @@ func NewTracingConfigFromMap(cfgMap map[string]string) (*Config, error) {
 
 	if err := cm.Parse(cfgMap,
 		cm.AsString(zipkinEndpointKey, &tc.ZipkinEndpoint),
+		cm.AsString(jaegerAgentEndpointKey, &tc.JaegerAgentEndpoint),
+		cm.AsString(jaegerCollectorEndpointKey, &tc.JaegerCollectorEndpoint),
 		cm.AsBool(debugKey, &tc.Debug),
 		cm.AsFloat64(sampleRateKey, &tc.SampleRate),
 	); err != nil {
 		return nil, err
+	}
+
+	if tc.Backend == Jaeger {
+		if tc.JaegerAgentEndpoint == "" && tc.JaegerCollectorEndpoint == "" {
+			return nil, errors.New("jaeger tracing enabled without neither an agent endpoint nor a collector endpoint specified")
+		}
+
+		if tc.JaegerAgentEndpoint != "" && tc.JaegerCollectorEndpoint != "" {
+			return nil, errors.New("either an agent endpoint or a collector endpoint must be specified for jaeger tracing but not both")
+		}
 	}
 
 	if tc.Backend == Zipkin && tc.ZipkinEndpoint == "" {
@@ -149,6 +168,12 @@ func TracingConfigToJSON(cfg *Config) (string, error) { //nolint // for backcomp
 	out[backendKey] = string(cfg.Backend)
 	if cfg.ZipkinEndpoint != "" {
 		out[zipkinEndpointKey] = cfg.ZipkinEndpoint
+	}
+	if cfg.JaegerAgentEndpoint != "" {
+		out[jaegerAgentEndpointKey] = cfg.JaegerAgentEndpoint
+	}
+	if cfg.JaegerCollectorEndpoint != "" {
+		out[jaegerCollectorEndpointKey] = cfg.JaegerCollectorEndpoint
 	}
 	out[debugKey] = fmt.Sprint(cfg.Debug)
 	out[sampleRateKey] = fmt.Sprint(cfg.SampleRate)
