@@ -23,7 +23,7 @@ import (
 	"os"
 	"sync"
 
-	"contrib.go.opencensus.io/exporter/jaeger"
+	ocjaeger "contrib.go.opencensus.io/exporter/jaeger"
 	oczipkin "contrib.go.opencensus.io/exporter/zipkin"
 	"github.com/openzipkin/zipkin-go"
 	httpreporter "github.com/openzipkin/zipkin-go/reporter/http"
@@ -136,6 +136,7 @@ func mkServiceName(name string) (string, error) {
 		}
 		name = n
 	}
+
 	return name, nil
 }
 
@@ -183,8 +184,11 @@ func WithExporterFull(name, host string, logger *zap.SugaredLogger) ConfigOption
 				logger.Errorw("error creating service name", zap.Error(err))
 				return err
 			}
-			opts := jaeger.Options{
-				Process: jaeger.Process{
+			if name == "" {
+				name = host
+			}
+			opts := ocjaeger.Options{
+				Process: ocjaeger.Process{
 					ServiceName: name,
 				},
 			}
@@ -193,7 +197,7 @@ func WithExporterFull(name, host string, logger *zap.SugaredLogger) ConfigOption
 			} else {
 				opts.AgentEndpoint = cfg.JaegerAgentEndpoint
 			}
-			exp, err := jaeger.NewExporter(opts)
+			exp, err := ocjaeger.NewExporter(opts)
 			if err != nil {
 				logger.Errorw("error building jaeger exporter", zap.Error(err))
 				return err
