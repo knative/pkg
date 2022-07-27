@@ -47,13 +47,15 @@ const (
 	collectorSecureKey  = "metrics.opencensus-require-tls"
 	reportingPeriodKey  = "metrics.reporting-period-seconds"
 
-	defaultBackendEnvName = "DEFAULT_METRICS_BACKEND"
-	defaultPrometheusPort = 9090
-	maxPrometheusPort     = 65535
-	minPrometheusPort     = 1024
-	defaultPrometheusHost = "0.0.0.0"
-	prometheusPortEnvName = "METRICS_PROMETHEUS_PORT"
-	prometheusHostEnvName = "METRICS_PROMETHEUS_HOST"
+	defaultBackendEnvName            = "DEFAULT_METRICS_BACKEND"
+	defaultPrometheusPort            = 9090
+	defaultPrometheusReportingPeriod = 5
+	defaultOpenCensusReportingPeriod = 60
+	maxPrometheusPort                = 65535
+	minPrometheusPort                = 1024
+	defaultPrometheusHost            = "0.0.0.0"
+	prometheusPortEnvName            = "METRICS_PROMETHEUS_PORT"
+	prometheusHostEnvName            = "METRICS_PROMETHEUS_HOST"
 )
 
 var (
@@ -206,9 +208,9 @@ func createMetricsConfig(_ context.Context, ops ExporterOptions) (*metricsConfig
 	} else {
 		switch mc.backendDestination {
 		case openCensus:
-			mc.reportingPeriod = time.Minute
+			mc.reportingPeriod = defaultOpenCensusReportingPeriod * time.Second
 		case prometheus:
-			mc.reportingPeriod = 5 * time.Second
+			mc.reportingPeriod = defaultPrometheusReportingPeriod * time.Second
 		}
 	}
 	return &mc, nil

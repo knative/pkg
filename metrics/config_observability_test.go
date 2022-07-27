@@ -41,7 +41,7 @@ func TestObservabilityConfiguration(t *testing.T) {
 			LoggingURLTemplate:                   "https://logging.io",
 			RequestLogTemplate:                   `{"requestMethod": "{{.Request.Method}}"}`,
 			RequestMetricsBackend:                "opencensus",
-			RequestMetricsReportingPeriodSeconds: 10,
+			RequestMetricsReportingPeriodSeconds: defaultOpenCensusReportingPeriod,
 		},
 		data: map[string]string{
 			EnableProbeReqLogKey:                          "true",
@@ -53,8 +53,12 @@ func TestObservabilityConfiguration(t *testing.T) {
 			"profiling.enable":                            "true",
 		},
 	}, {
-		name:       "observability config with no map",
-		wantConfig: defaultConfig(),
+		name: "observability config with no map",
+		wantConfig: func() *ObservabilityConfig {
+			oc := defaultConfig()
+			oc.RequestMetricsReportingPeriodSeconds = defaultPrometheusReportingPeriod
+			return oc
+		}(),
 	}, {
 		name:    "invalid request log template",
 		wantErr: true,
@@ -73,6 +77,7 @@ func TestObservabilityConfiguration(t *testing.T) {
 			oc.EnableProbeRequestLog = true
 			oc.EnableRequestLog = true
 			oc.LoggingURLTemplate = "https://logging.io"
+			oc.RequestMetricsReportingPeriodSeconds = defaultPrometheusReportingPeriod
 			return oc
 		}(),
 	}, {
@@ -81,6 +86,7 @@ func TestObservabilityConfiguration(t *testing.T) {
 			oc := defaultConfig()
 			oc.RequestLogTemplate = ""
 			oc.EnableProbeRequestLog = true
+			oc.RequestMetricsReportingPeriodSeconds = defaultPrometheusReportingPeriod
 			return oc
 		}(),
 		data: map[string]string{
@@ -104,6 +110,7 @@ func TestObservabilityConfiguration(t *testing.T) {
 			oc.EnableProbeRequestLog = true
 			oc.EnableVarLogCollection = true
 			oc.RequestLogTemplate = `{"requestMethod": "{{.Request.Method}}"}`
+			oc.RequestMetricsReportingPeriodSeconds = defaultPrometheusReportingPeriod
 			return oc
 		}(),
 		data: map[string]string{
@@ -117,6 +124,7 @@ func TestObservabilityConfiguration(t *testing.T) {
 			oc := defaultConfig()
 			oc.RequestMetricsBackend = "opencensus"
 			oc.MetricsCollectorAddress = "otel:55678"
+			oc.RequestMetricsReportingPeriodSeconds = defaultOpenCensusReportingPeriod
 			return oc
 		}(),
 		data: map[string]string{
@@ -133,9 +141,9 @@ func TestObservabilityConfiguration(t *testing.T) {
 			return oc
 		}(),
 		data: map[string]string{
-			"metrics.request-metrics-backend-destination":                  "opencensus",
-			"metrics.opencensus-address":                                   "otel:55678",
-			"metrics.request-metrics-queue-proxy-reporting-period-seconds": "10",
+			"metrics.request-metrics-backend-destination":      "opencensus",
+			"metrics.opencensus-address":                       "otel:55678",
+			"metrics.request-metrics-reporting-period-seconds": "10",
 		},
 	}}
 

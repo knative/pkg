@@ -37,9 +37,6 @@ const (
 	// The following is used to set the default metrics backend
 	defaultRequestMetricsBackend = "prometheus"
 
-	// The default request metrics reporting period
-	defaultRequestReportingPeriodSeconds = 10
-
 	// The env var name for config-observability
 	configMapNameEnv = "CONFIG_OBSERVABILITY_NAME"
 
@@ -108,10 +105,9 @@ func GetObservabilityConfig(ctx context.Context) *ObservabilityConfig {
 
 func defaultConfig() *ObservabilityConfig {
 	return &ObservabilityConfig{
-		LoggingURLTemplate:                   DefaultLogURLTemplate,
-		RequestLogTemplate:                   DefaultRequestLogTemplate,
-		RequestMetricsBackend:                defaultRequestMetricsBackend,
-		RequestMetricsReportingPeriodSeconds: defaultRequestReportingPeriodSeconds,
+		LoggingURLTemplate:    DefaultLogURLTemplate,
+		RequestLogTemplate:    DefaultRequestLogTemplate,
+		RequestMetricsBackend: defaultRequestMetricsBackend,
 	}
 }
 
@@ -121,6 +117,12 @@ func NewObservabilityConfigFromConfigMap(configMap *corev1.ConfigMap) (*Observab
 	if configMap == nil {
 		return oc, nil
 	}
+
+	defaultRequestMetricsReportingPeriod, err := getDefaultRequestMetricsReportingPeriod(configMap.Data)
+	if err != nil {
+		return nil, err
+	}
+	oc.RequestMetricsReportingPeriodSeconds = *defaultRequestMetricsReportingPeriod
 
 	if err := cm.Parse(configMap.Data,
 		cm.AsBool("logging.enable-var-log-collection", &oc.EnableVarLogCollection),
@@ -171,4 +173,28 @@ func ConfigMapName() string {
 		return cm
 	}
 	return "config-observability"
+}
+
+// Use the same as `metrics.reporting-period-seconds` for the default
+// of `metrics.request-metrics-reporting-period-seconds`
+func getDefaultRequestMetricsReportingPeriod(data map[string]string) (*int, error) {
+	// Default backend is prometheus
+	period := defaultPrometheusReportingPeriod
+	if repStr := data[reportingPeriodKey]; repStr != "" {
+		repInt, err := strconv.Atoi(repStr)
+		if err != nil {
+			return nil, fmt.Errorf("invalid %s value %q", reportingPeriodKey, repStr)
+		}
+		period = repInt
+	} else {
+		if raw, ok := data["metrics.request-metrics-backend-destination"]; ok {
+			switch metricsBackend(raw) {
+			case prometheus:
+				period = defaultPrometheusReportingPeriod
+			case openCensus:
+				period = defaultOpenCensusReportingPeriod
+			}
+		}
+	}
+	return &period, nil
 }
