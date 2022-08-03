@@ -89,7 +89,7 @@ func (oct *OpenCensusTracer) Finish() error {
 	}
 
 	for _, configOpt := range oct.configOptions {
-		if err = configOpt(&config.Config{}); err != nil {
+		if err = configOpt(nil); err != nil {
 			return err
 		}
 	}
@@ -140,6 +140,9 @@ func WithExporter(name string, logger *zap.SugaredLogger) ConfigOption {
 //   "host" is a endpoint IP like activator-service's endpoint IP.
 func WithExporterFull(name, host string, logger *zap.SugaredLogger) ConfigOption {
 	return func(cfg *config.Config) error {
+		if cfg == nil {
+			return errors.New("nil config")
+		}
 		var (
 			exporter trace.Exporter
 			closer   io.Closer
