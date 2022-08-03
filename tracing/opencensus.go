@@ -140,40 +140,40 @@ func WithExporter(name string, logger *zap.SugaredLogger) ConfigOption {
 //   "host" is a endpoint IP like activator-service's endpoint IP.
 func WithExporterFull(name, host string, logger *zap.SugaredLogger) ConfigOption {
 	return func(cfg *config.Config) error {
-		if cfg == nil {
-			return errors.New("nil config")
-		}
 		var (
 			exporter trace.Exporter
 			closer   io.Closer
 		)
-		switch cfg.Backend {
-		case config.Zipkin:
-			// If host isn't specified, then zipkin.NewEndpoint will return an error saying that it
-			// can't find the host named ''. So, if not specified, default it to this machine's
-			// hostname.
-			if host == "" {
-				n, err := os.Hostname()
-				if err != nil {
-					return fmt.Errorf("unable to get hostname: %w", err)
+		if cfg != nil {
+			switch cfg.Backend {
+			case config.Zipkin:
+				// If host isn't specified, then zipkin.NewEndpoint will return an error saying that it
+				// can't find the host named ''. So, if not specified, default it to this machine's
+				// hostname.
+				if host == "" {
+					n, err := os.Hostname()
+					if err != nil {
+						return fmt.Errorf("unable to get hostname: %w", err)
+					}
+					host = n
 				}
-				host = n
-			}
-			if name == "" {
-				name = host
-			}
-			zipEP, err := zipkin.NewEndpoint(name, host)
-			if err != nil {
-				logger.Errorw("error building zipkin endpoint", zap.Error(err))
-				return err
-			}
-			reporter := httpreporter.NewReporter(cfg.ZipkinEndpoint)
-			exporter = oczipkin.NewExporter(reporter, zipEP)
-			closer = reporter
+				if name == "" {
+					name = host
+				}
+				zipEP, err := zipkin.NewEndpoint(name, host)
+				if err != nil {
+					logger.Errorw("error building zipkin endpoint", zap.Error(err))
+					return err
+				}
+				reporter := httpreporter.NewReporter(cfg.ZipkinEndpoint)
+				exporter = oczipkin.NewExporter(reporter, zipEP)
+				closer = reporter
 
-		default:
-			// Disables tracing.
+			default:
+				// Disables tracing.
+			}
 		}
+
 		if exporter != nil {
 			trace.RegisterExporter(exporter)
 		}
