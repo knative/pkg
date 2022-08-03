@@ -89,7 +89,7 @@ func (oct *OpenCensusTracer) Finish() error {
 	}
 
 	for _, configOpt := range oct.configOptions {
-		if err = configOpt(nil); err != nil {
+		if err = configOpt(&config.Config{}); err != nil {
 			return err
 		}
 	}
