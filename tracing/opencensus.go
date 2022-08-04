@@ -17,6 +17,7 @@ limitations under the License.
 package tracing
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -81,7 +82,7 @@ func (oct *OpenCensusTracer) ApplyConfig(cfg *config.Config) error {
 	return nil
 }
 
-func (oct *OpenCensusTracer) Finish() error {
+func (oct *OpenCensusTracer) Shutdown(ctx context.Context) error {
 	err := oct.acquireGlobal()
 	defer octMutex.Unlock()
 	if err != nil {
@@ -89,8 +90,13 @@ func (oct *OpenCensusTracer) Finish() error {
 	}
 
 	for _, configOpt := range oct.configOptions {
-		if err = configOpt(nil); err != nil {
-			return err
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		default:
+			if err = configOpt(nil); err != nil {
+				return err
+			}
 		}
 	}
 	globalOct = nil

@@ -17,6 +17,7 @@ limitations under the License.
 package tracing
 
 import (
+	"context"
 	"fmt"
 
 	"go.uber.org/zap"
@@ -26,12 +27,17 @@ import (
 	"knative.dev/pkg/tracing/config"
 )
 
-// SetupStaticPublishing sets up trace publishing for the process. The caller should call .Finish() on
+type Tracer interface {
+	// Shutdown allows for proper cleanup/flush.
+	Shutdown(ctx context.Context) error
+}
+
+// SetupStaticPublishing sets up trace publishing for the process. The caller should call .Shutdown() on
 // the returned OpenCensusTracer before shutdown to make sure all traces are properly flushed.
 // Note that other pieces still need to generate the traces, this just ensures that if generated, they are collected
 // appropriately. This is normally done by using tracing.HTTPSpanMiddleware as a middleware HTTP
 // handler. The configuration will not be dynamically updated.
-func SetupStaticPublishing(logger *zap.SugaredLogger, serviceName string, cfg *config.Config) (*OpenCensusTracer, error) {
+func SetupStaticPublishing(logger *zap.SugaredLogger, serviceName string, cfg *config.Config) (Tracer, error) {
 	oct := NewOpenCensusTracer(WithExporter(serviceName, logger))
 	if err := oct.ApplyConfig(cfg); err != nil {
 		return nil, fmt.Errorf("unable to set OpenCensusTracing config: %w", err)
@@ -40,13 +46,13 @@ func SetupStaticPublishing(logger *zap.SugaredLogger, serviceName string, cfg *c
 }
 
 // SetupDynamicPublishing sets up trace publishing for the process, by watching a
-// ConfigMap for the configuration. The caller should call .Finish() on
+// ConfigMap for the configuration. The caller should call .Shutdown() on
 // the returned OpenCensusTracer before shutdown to make sure all traces are properly flushed.
 // Note that other pieces still need to generate the traces, this
 // just ensures that if generated, they are collected appropriately. This is normally done by using
 // tracing.HTTPSpanMiddleware as a middleware HTTP handler. The configuration will be dynamically
 // updated when the ConfigMap is updated.
-func SetupDynamicPublishing(logger *zap.SugaredLogger, configMapWatcher configmap.Watcher, serviceName, tracingConfigName string) (*OpenCensusTracer, error) {
+func SetupDynamicPublishing(logger *zap.SugaredLogger, configMapWatcher configmap.Watcher, serviceName, tracingConfigName string) (Tracer, error) {
 	oct := NewOpenCensusTracer(WithExporter(serviceName, logger))
 
 	tracerUpdater := func(name string, value interface{}) {

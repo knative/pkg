@@ -17,6 +17,7 @@ limitations under the License.
 package tracing_test
 
 import (
+	"context"
 	"errors"
 	"testing"
 
@@ -72,7 +73,7 @@ func TestOpenCensusTracerApplyConfig(t *testing.T) {
 				t.Error("Got tracer config (-want, +got) =", diff)
 			}
 
-			oct.Finish()
+			oct.Shutdown(context.Background())
 		})
 	}
 }
