@@ -32,12 +32,12 @@ type Tracer interface {
 	Shutdown(ctx context.Context) error
 }
 
-// SetupStaticPublishing sets up trace publishing for the process. The caller should call .Shutdown() on
-// the returned OpenCensusTracer before shutdown to make sure all traces are properly flushed.
+// SetupPublishingWithStaticConfig sets up trace publishing for the process. The caller should call .Shutdown() on
+// the returned Tracer before shutdown to make sure all traces are properly flushed.
 // Note that other pieces still need to generate the traces, this just ensures that if generated, they are collected
 // appropriately. This is normally done by using tracing.HTTPSpanMiddleware as a middleware HTTP
 // handler. The configuration will not be dynamically updated.
-func SetupStaticPublishing(logger *zap.SugaredLogger, serviceName string, cfg *config.Config) (Tracer, error) {
+func SetupPublishingWithStaticConfig(logger *zap.SugaredLogger, serviceName string, cfg *config.Config) (Tracer, error) {
 	oct := NewOpenCensusTracer(WithExporter(serviceName, logger))
 	if err := oct.ApplyConfig(cfg); err != nil {
 		return nil, fmt.Errorf("unable to set OpenCensusTracing config: %w", err)
@@ -45,14 +45,20 @@ func SetupStaticPublishing(logger *zap.SugaredLogger, serviceName string, cfg *c
 	return oct, nil
 }
 
-// SetupDynamicPublishing sets up trace publishing for the process, by watching a
+// Deprecated: Use SetupPublishingWithStaticConfig.
+func SetupStaticPublishing(logger *zap.SugaredLogger, serviceName string, cfg *config.Config) error {
+	_, err := SetupPublishingWithStaticConfig(logger, serviceName, cfg)
+	return err
+}
+
+// SetupPublishingWithDynamicConfig sets up trace publishing for the process, by watching a
 // ConfigMap for the configuration. The caller should call .Shutdown() on
 // the returned OpenCensusTracer before shutdown to make sure all traces are properly flushed.
 // Note that other pieces still need to generate the traces, this
 // just ensures that if generated, they are collected appropriately. This is normally done by using
 // tracing.HTTPSpanMiddleware as a middleware HTTP handler. The configuration will be dynamically
 // updated when the ConfigMap is updated.
-func SetupDynamicPublishing(logger *zap.SugaredLogger, configMapWatcher configmap.Watcher, serviceName, tracingConfigName string) (Tracer, error) {
+func SetupPublishingWithDynamicConfig(logger *zap.SugaredLogger, configMapWatcher configmap.Watcher, serviceName, tracingConfigName string) (Tracer, error) {
 	oct := NewOpenCensusTracer(WithExporter(serviceName, logger))
 
 	tracerUpdater := func(name string, value interface{}) {
@@ -75,6 +81,12 @@ func SetupDynamicPublishing(logger *zap.SugaredLogger, configMapWatcher configma
 		tracerUpdater)
 	configStore.WatchConfigs(configMapWatcher)
 	return oct, nil
+}
+
+// Deprecated: Use SetupPublishingWithDynamicConfig.
+func SetupDynamicPublishing(logger *zap.SugaredLogger, configMapWatcher configmap.Watcher, serviceName, tracingConfigName string) error {
+	_, err := SetupPublishingWithDynamicConfig(logger, configMapWatcher, serviceName, tracingConfigName)
+	return err
 }
 
 // SetupDynamicPublishingWithInitialValue sets up the trace publishing for the process with an

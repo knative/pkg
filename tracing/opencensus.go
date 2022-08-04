@@ -82,6 +82,11 @@ func (oct *OpenCensusTracer) ApplyConfig(cfg *config.Config) error {
 	return nil
 }
 
+// Deprecated: Use Shutdown.
+func (oct *OpenCensusTracer) Finish() error {
+	return oct.Shutdown(context.Background())
+}
+
 func (oct *OpenCensusTracer) Shutdown(ctx context.Context) error {
 	err := oct.acquireGlobal()
 	defer octMutex.Unlock()
