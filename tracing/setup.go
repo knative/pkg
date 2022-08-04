@@ -40,7 +40,7 @@ type Tracer interface {
 func SetupPublishingWithStaticConfig(logger *zap.SugaredLogger, serviceName string, cfg *config.Config) (Tracer, error) {
 	oct := NewOpenCensusTracer(WithExporter(serviceName, logger))
 	if err := oct.ApplyConfig(cfg); err != nil {
-		return nil, fmt.Errorf("unable to set OpenCensusTracing config: %w", err)
+		return oct, fmt.Errorf("unable to set OpenCensusTracing config: %w", err)
 	}
 	return oct, nil
 }
