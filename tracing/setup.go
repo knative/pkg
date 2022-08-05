@@ -89,19 +89,19 @@ func SetupDynamicPublishing(logger *zap.SugaredLogger, configMapWatcher configma
 	return err
 }
 
-// SetupDynamicPublishingWithInitialValue sets up the trace publishing for the process with an
+// SetupPublishingWithDynamicConfigAndInitialValue sets up the trace publishing for the process with an
 // initial value, by watching a ConfigMap for the configuration. Note that other pieces still
 // need to generate the traces, this just ensures that if generated, they are collected
 // appropriately. This is normally done by using tracing.HTTPSpanMiddleware as a middleware
 // HTTP handler. The configuration will be dynamically updated when the ConfigMap is updated.
-func SetupDynamicPublishingWithInitialValue(logger *zap.SugaredLogger, configMapWatcher configmap.Watcher, serviceName string, configm *corev1.ConfigMap) error {
+func SetupPublishingWithDynamicConfigAndInitialValue(logger *zap.SugaredLogger, configMapWatcher configmap.Watcher, serviceName string, configm *corev1.ConfigMap) (Tracer, error) {
 	oct := NewOpenCensusTracer(WithExporter(serviceName, logger))
 	cfg, err := config.NewTracingConfigFromConfigMap(configm)
 	if err != nil {
-		return fmt.Errorf("error while parsing %s config map: %w", configm.Name, err)
+		return oct, fmt.Errorf("error while parsing %s config map: %w", configm.Name, err)
 	}
 	if err = oct.ApplyConfig(cfg); err != nil {
-		return fmt.Errorf("unable to set OpenCensusTracing config: %w", err)
+		return oct, fmt.Errorf("unable to set OpenCensusTracing config: %w", err)
 	}
 
 	tracerUpdater := func(name string, value interface{}) {
@@ -123,5 +123,11 @@ func SetupDynamicPublishingWithInitialValue(logger *zap.SugaredLogger, configMap
 		},
 		tracerUpdater)
 	configStore.WatchConfigs(configMapWatcher)
-	return nil
+	return oct, nil
+}
+
+// Deprecated: Use SetupPublishingWithDynamicConfigAndInitialValue.
+func SetupDynamicPublishingWithInitialValue(logger *zap.SugaredLogger, configMapWatcher configmap.Watcher, serviceName string, configm *corev1.ConfigMap) error {
+	_, err := SetupPublishingWithDynamicConfigAndInitialValue(logger, configMapWatcher, serviceName, configm)
+	return err
 }
