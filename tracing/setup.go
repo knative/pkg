@@ -125,9 +125,3 @@ func SetupPublishingWithDynamicConfigAndInitialValue(logger *zap.SugaredLogger, 
 	configStore.WatchConfigs(configMapWatcher)
 	return oct, nil
 }
-
-// Deprecated: Use SetupPublishingWithDynamicConfigAndInitialValue.
-func SetupDynamicPublishingWithInitialValue(logger *zap.SugaredLogger, configMapWatcher configmap.Watcher, serviceName string, configm *corev1.ConfigMap) error {
-	_, err := SetupPublishingWithDynamicConfigAndInitialValue(logger, configMapWatcher, serviceName, configm)
-	return err
-}
