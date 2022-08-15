@@ -73,6 +73,7 @@ type Drainer struct {
 	// timer is used to orchestrate the drain.
 	timer timer
 
+	// used to synchronize callers of Drain and Reset
 	ch chan struct{}
 
 	// HealthCheckUAPrefixes are the additional user agent prefixes that trigger the
