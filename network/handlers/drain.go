@@ -168,6 +168,8 @@ func (d *Drainer) isHealthCheckRequest(r *http.Request) bool {
 	return false
 }
 
+// Reset interrupts Drain and clears the drainers internal state
+// Thus further calls to Drain will block and wait for the entire QuietPeriod
 func (d *Drainer) Reset() {
 	d.Lock()
 	defer d.Unlock()
@@ -186,7 +188,7 @@ func (d *Drainer) Reset() {
 	}
 }
 
-// reset resets the drain timer to the full amount of time.
+// resetTimer resets the drain timer to the full amount of time.
 func (d *Drainer) resetTimer() {
 	if func() bool {
 		d.RLock()
