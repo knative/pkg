@@ -17,6 +17,7 @@ limitations under the License.
 package tracing_test
 
 import (
+	"context"
 	"errors"
 	"testing"
 
@@ -39,14 +40,14 @@ func TestOpenCensusTracerGlobalLifecycle(t *testing.T) {
 		t.Fatalf("Expected error when applying config to second OCT.")
 	}
 
-	if err := oct.Finish(); err != nil {
+	if err := oct.Shutdown(context.Background()); err != nil {
 		t.Fatal("Failed to finish OCT:", err)
 	}
 
 	if err := otherOCT.ApplyConfig(&config.Config{}); err != nil {
 		t.Fatal("Failed to ApplyConfig on OtherOCT after finishing OCT:", err)
 	}
-	otherOCT.Finish()
+	otherOCT.Shutdown(context.Background())
 }
 
 func TestOpenCensusTraceApplyConfigFailingConfigOption(t *testing.T) {
@@ -60,7 +61,7 @@ func TestOpenCensusTraceApplyConfigFailingConfigOption(t *testing.T) {
 	if err := oct.ApplyConfig(&config.Config{}); !errors.Is(err, coErr) {
 		t.Errorf("Expected error not seen. Got %q. Want %q", err, coErr)
 	}
-	if err := oct.Finish(); err != nil {
+	if err := oct.Shutdown(context.Background()); err != nil {
 		t.Errorf("Unexpected error Finishing: %q", err)
 	}
 }
@@ -81,10 +82,10 @@ func TestOpenCensusTraceFinishFailingConfigOption(t *testing.T) {
 	if err := oct.ApplyConfig(&config.Config{}); err != nil {
 		t.Errorf("Unexpected error Applying Config: %q", err)
 	}
-	if err := oct.Finish(); !errors.Is(err, coErr) {
+	if err := oct.Shutdown(context.Background()); !errors.Is(err, coErr) {
 		t.Errorf("Expected error not seen. Got %q. Want %q", err, coErr)
 	}
-	if err := oct.Finish(); err != nil {
-		t.Errorf("Unexpected error on second Finish (global state mutated, other tests may fail oddly): %q", err)
+	if err := oct.Shutdown(context.Background()); err != nil {
+		t.Errorf("Unexpected error on second Shutdown (global state mutated, other tests may fail oddly): %q", err)
 	}
 }

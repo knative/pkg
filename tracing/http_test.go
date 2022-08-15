@@ -17,6 +17,7 @@ limitations under the License.
 package tracing_test
 
 import (
+	"context"
 	"net/http"
 	"net/url"
 	"testing"
@@ -70,7 +71,7 @@ func TestHTTPSpanMiddleware(t *testing.T) {
 	oct := NewOpenCensusTracer(co)
 	t.Cleanup(func() {
 		reporter.Close()
-		oct.Finish()
+		oct.Shutdown(context.Background())
 	})
 
 	if err := oct.ApplyConfig(&cfg); err != nil {
@@ -117,7 +118,7 @@ func TestHTTPSpanIgnoringPaths(t *testing.T) {
 	oct := NewOpenCensusTracer(co)
 	t.Cleanup(func() {
 		reporter.Close()
-		oct.Finish()
+		oct.Shutdown(context.Background())
 	})
 
 	if err := oct.ApplyConfig(&cfg); err != nil {
@@ -190,7 +191,7 @@ func BenchmarkSpanMiddleware(b *testing.B) {
 	oct := NewOpenCensusTracer(co)
 	b.Cleanup(func() {
 		reporter.Close()
-		oct.Finish()
+		oct.Shutdown(context.Background())
 	})
 
 	if err := oct.ApplyConfig(&cfg); err != nil {
