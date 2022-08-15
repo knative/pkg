@@ -188,7 +188,6 @@ func (d *Drainer) Reset() {
 	}
 }
 
-// resetTimer resets the drain timer to the full amount of time.
 func (d *Drainer) resetTimer() {
 	if func() bool {
 		d.RLock()
