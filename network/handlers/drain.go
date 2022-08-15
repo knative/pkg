@@ -171,10 +171,12 @@ func (d *Drainer) Reset() {
 	d.Lock()
 	defer d.Unlock()
 
-	if d.timer.Stop() {
-		d.timer = nil
-	} else {
-		drainTimer(d.timer.tickChan())
+	if d.timer != nil {
+		if d.timer.Stop() {
+			d.timer = nil
+		} else {
+			drainTimer(d.timer.tickChan())
+		}
 	}
 
 	if d.ch != nil {

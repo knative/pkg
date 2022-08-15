@@ -526,6 +526,9 @@ func TestReset(t *testing.T) {
 		t.Fatal("Reset didn't unblock second Drain")
 	}
 
+	// Calling reset again shoudl be a noop
+	d.Reset()
+
 	d.QuietPeriod = time.Second / 2
 
 	start := time.Now()
