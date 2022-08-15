@@ -490,3 +490,53 @@ func TestServeKProbe(t *testing.T) {
 		t.Errorf("Probe status = %d, wanted %d", got, want)
 	}
 }
+
+func TestReset(t *testing.T) {
+	d := Drainer{
+		QuietPeriod: 5 * time.Second,
+	}
+
+	drain1 := make(chan struct{})
+	drain2 := make(chan struct{})
+
+	go func() {
+		defer close(drain1)
+		d.Drain()
+	}()
+
+	go func() {
+		defer close(drain2)
+		d.Drain()
+	}()
+
+	// wait for draining to be active
+	time.Sleep(50 * time.Millisecond)
+
+	d.Reset()
+
+	select {
+	case <-drain1:
+	case <-time.After(time.Second):
+		t.Fatal("Reset didn't unblock first Drain")
+	}
+
+	select {
+	case <-drain2:
+	case <-time.After(time.Second):
+		t.Fatal("Reset didn't unblock second Drain")
+	}
+
+	d.QuietPeriod = time.Second / 2
+
+	start := time.Now()
+	d.Drain()
+	duration := time.Now().Sub(start)
+	diff := d.QuietPeriod - duration
+	if diff < 0 {
+		diff = -diff
+	}
+
+	if diff > 10*time.Millisecond {
+		t.Error("expected to drain to wait QuietPeriod time after reset")
+	}
+}

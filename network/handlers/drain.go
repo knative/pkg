@@ -70,11 +70,10 @@ type Drainer struct {
 	// after Drain is called before it may return.
 	QuietPeriod time.Duration
 
-	// once is used to initialize timer
-	once sync.Once
-
 	// timer is used to orchestrate the drain.
 	timer timer
+
+	ch chan struct{}
 
 	// HealthCheckUAPrefixes are the additional user agent prefixes that trigger the
 	// drainer's health check
@@ -106,7 +105,7 @@ func (d *Drainer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	d.reset()
+	d.resetTimer()
 	d.Inner.ServeHTTP(w, r)
 }
 
@@ -115,19 +114,42 @@ func (d *Drainer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 func (d *Drainer) Drain() {
 	// Note: until the first caller exits, the others
 	// will wait blocked as well.
-	d.once.Do(func() {
-		t := func() timer {
-			d.Lock()
-			defer d.Unlock()
-			if d.QuietPeriod <= 0 {
-				d.QuietPeriod = network.DefaultDrainTimeout
+	ch := func() chan struct{} {
+		d.Lock()
+		defer d.Unlock()
+		if d.ch != nil {
+			return d.ch
+		}
+
+		if d.QuietPeriod <= 0 {
+			d.QuietPeriod = network.DefaultDrainTimeout
+		}
+
+		timer := newTimer(d.QuietPeriod)
+		ch := make(chan struct{})
+
+		go func() {
+			select {
+			case <-ch:
+				// closed by reset
+			case <-timer.tickChan():
+				close(ch)
 			}
-			d.timer = newTimer(d.QuietPeriod)
-			return d.timer
 		}()
 
-		<-t.tickChan()
-	})
+		d.ch = ch
+		d.timer = timer
+		return ch
+	}()
+
+	<-ch
+}
+
+func drainTimer(tc <-chan time.Time) {
+	select {
+	case <-tc:
+	default:
+	}
 }
 
 // isHealthcheckRequest validates if the request has a user agent that is for healthcheck
@@ -145,8 +167,24 @@ func (d *Drainer) isHealthCheckRequest(r *http.Request) bool {
 	return false
 }
 
+func (d *Drainer) Reset() {
+	d.Lock()
+	defer d.Unlock()
+
+	if d.timer.Stop() {
+		d.timer = nil
+	} else {
+		drainTimer(d.timer.tickChan())
+	}
+
+	if d.ch != nil {
+		close(d.ch)
+		d.ch = nil
+	}
+}
+
 // reset resets the drain timer to the full amount of time.
-func (d *Drainer) reset() {
+func (d *Drainer) resetTimer() {
 	if func() bool {
 		d.RLock()
 		defer d.RUnlock()
