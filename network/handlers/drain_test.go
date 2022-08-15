@@ -539,7 +539,7 @@ func TestReset(t *testing.T) {
 		diff = -diff
 	}
 
-	if diff > 10*time.Millisecond {
+	if diff > 50*time.Millisecond {
 		t.Error("expected to drain to wait QuietPeriod time after reset")
 	}
 }
