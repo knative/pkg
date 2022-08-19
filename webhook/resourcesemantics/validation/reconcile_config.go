@@ -111,14 +111,16 @@ func (ac *reconciler) reconcileValidatingWebhook(ctx context.Context, caCert []b
 		}
 
 		if vl, ok := config.(resourcesemantics.VerbLimited); ok {
+			logging.FromContext(ctx).Debugf("Using custom Verbs")
 			supportedVerbs = vl.SupportedVerbs()
 		}
 		resources := []string{}
 		// If SupportedSubResources has not been given, provide the legacy
 		// defaults of main resource, and status
 		if srl, ok := config.(resourcesemantics.SubResourceLimited); ok {
+			logging.FromContext(ctx).Debugf("Using custom SubResources")
 			for _, subResource := range srl.SupportedSubResources() {
-
+				logging.FromContext(ctx).Debugf("Adding custom SubResource: %s", subResource)
 				if subResource == "" {
 					// Special case the actual plural if given
 					resources = append(resources, plural)
@@ -137,6 +139,10 @@ func (ac *reconciler) reconcileValidatingWebhook(ctx context.Context, caCert []b
 				Resources:   resources,
 			},
 		})
+	}
+
+	for _, r := range rules {
+		logging.FromContext(ctx).Debugf("Rule: %+v", r)
 	}
 
 	// Sort the rules by Group, Version, Kind so that things are deterministically ordered.
