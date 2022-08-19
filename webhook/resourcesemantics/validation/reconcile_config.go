@@ -50,7 +50,7 @@ type reconciler struct {
 
 	key       types.NamespacedName
 	path      string
-	handlers  map[schema.GroupVersionKind]resourcesemantics.GenericCRDWithConfig
+	handlers  map[schema.GroupVersionKind]resourcesemantics.GenericCRD
 	callbacks map[schema.GroupVersionKind]Callback
 
 	withContext func(context.Context) context.Context
@@ -103,36 +103,34 @@ func (ac *reconciler) reconcileValidatingWebhook(ctx context.Context, caCert []b
 	for gvk, config := range ac.handlers {
 		plural := strings.ToLower(flect.Pluralize(gvk.Kind))
 
-		ops := []admissionregistrationv1.OperationType{}
 		// If SupportedVerbs has not been given, provide the legacy defaults
 		// of Create, Update, and Delete
-		if len(config.SupportedVerbs) == 0 {
-			ops = []admissionregistrationv1.OperationType{admissionregistrationv1.Create,
-				admissionregistrationv1.Update,
-				admissionregistrationv1.Delete,
-			}
-		} else {
-			ops = append(ops, config.SupportedVerbs...)
+		supportedVerbs := []admissionregistrationv1.OperationType{admissionregistrationv1.Create,
+			admissionregistrationv1.Update,
+			admissionregistrationv1.Delete,
 		}
 
+		if vl, ok := config.(resourcesemantics.VerbLimited); ok {
+			supportedVerbs = vl.SupportedVerbs()
+		}
 		resources := []string{}
 		// If SupportedSubResources has not been given, provide the legacy
 		// defaults of main resource, and status
-		if len(config.SupportedSubResources) == 0 {
-			resources = []string{plural, plural + "/status"}
-		} else {
-			for _, subresource := range config.SupportedSubResources {
-				if subresource == "" {
+		if srl, ok := config.(resourcesemantics.SubResourceLimited); ok {
+			for _, subResource := range srl.SupportedSubResources() {
+
+				if subResource == "" {
 					// Special case the actual plural if given
 					resources = append(resources, plural)
 				} else {
-					resources = append(resources, plural+subresource)
+					resources = append(resources, plural+subResource)
 				}
 			}
+		} else {
+			resources = append(resources, plural, plural+"/status")
 		}
-
 		rules = append(rules, admissionregistrationv1.RuleWithOperations{
-			Operations: ops,
+			Operations: supportedVerbs,
 			Rule: admissionregistrationv1.Rule{
 				APIGroups:   []string{gvk.Group},
 				APIVersions: []string{gvk.Version},

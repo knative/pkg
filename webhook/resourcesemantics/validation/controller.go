@@ -26,7 +26,6 @@ import (
 	"knative.dev/pkg/logging"
 	pkgreconciler "knative.dev/pkg/reconciler"
 
-	admissionregistrationv1 "k8s.io/api/admissionregistration/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/cache"
@@ -41,7 +40,7 @@ import (
 func NewAdmissionControllerWithConfig(
 	ctx context.Context,
 	name, path string,
-	handlers map[schema.GroupVersionKind]resourcesemantics.GenericCRDWithConfig,
+	handlers map[schema.GroupVersionKind]resourcesemantics.GenericCRD,
 	wc func(context.Context) context.Context,
 	disallowUnknownFields bool,
 	callbacks map[schema.GroupVersionKind]Callback,
@@ -121,10 +120,5 @@ func NewAdmissionController(
 	default:
 		panic("NewAdmissionController may not be called with multiple callback maps")
 	}
-
-	h := make(map[schema.GroupVersionKind]resourcesemantics.GenericCRDWithConfig, len(handlers))
-	for k, v := range handlers {
-		h[k] = resourcesemantics.GenericCRDWithConfig{GenericCRD: v, SupportedVerbs: []admissionregistrationv1.OperationType{admissionregistrationv1.Create, admissionregistrationv1.Update, admissionregistrationv1.Delete}, SupportedSubResources: []string{"", "/status"}}
-	}
-	return NewAdmissionControllerWithConfig(ctx, name, path, h, wc, disallowUnknownFields, unwrappedCallbacks)
+	return NewAdmissionControllerWithConfig(ctx, name, path, handlers, wc, disallowUnknownFields, unwrappedCallbacks)
 }

@@ -59,27 +59,27 @@ const (
 )
 
 var (
-	handlers = map[schema.GroupVersionKind]resourcesemantics.GenericCRDWithConfig{
+	handlers = map[schema.GroupVersionKind]resourcesemantics.GenericCRD{
 		{
 			Group:   "pkg.knative.dev",
 			Version: "v1alpha1",
 			Kind:    "Resource",
-		}: resourcesemantics.GenericCRDWithConfig{GenericCRD: &Resource{}},
+		}: &Resource{},
 		{
 			Group:   "pkg.knative.dev",
 			Version: "v1beta1",
 			Kind:    "Resource",
-		}: resourcesemantics.GenericCRDWithConfig{GenericCRD: &Resource{}},
+		}: &Resource{},
 		{
 			Group:   "pkg.knative.dev",
 			Version: "v1alpha1",
 			Kind:    "InnerDefaultResource",
-		}: resourcesemantics.GenericCRDWithConfig{GenericCRD: &InnerDefaultResource{}},
+		}: &InnerDefaultResource{},
 		{
 			Group:   "pkg.knative.io",
 			Version: "v1alpha1",
 			Kind:    "InnerDefaultResource",
-		}: resourcesemantics.GenericCRDWithConfig{GenericCRD: &InnerDefaultResource{}},
+		}: &InnerDefaultResource{},
 	}
 
 	callbacks = map[schema.GroupVersionKind]Callback{
