@@ -645,7 +645,7 @@ func TestNewResourceAdmissionController(t *testing.T) {
 
 	NewAdmissionController(
 		ctx, testResourceValidationName, testResourceValidationPath,
-		nil,
+		handlers,
 		func(ctx context.Context) context.Context {
 			return ctx
 		}, true,
@@ -672,7 +672,7 @@ func TestNewResourceAdmissionControllerDuplicateVerb(t *testing.T) {
 
 	NewAdmissionController(
 		ctx, testResourceValidationName, testResourceValidationPath,
-		nil,
+		handlers,
 		func(ctx context.Context) context.Context {
 			return ctx
 		}, true,

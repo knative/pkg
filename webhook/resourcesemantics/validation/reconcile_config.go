@@ -105,7 +105,8 @@ func (ac *reconciler) reconcileValidatingWebhook(ctx context.Context, caCert []b
 
 		// If SupportedVerbs has not been given, provide the legacy defaults
 		// of Create, Update, and Delete
-		supportedVerbs := []admissionregistrationv1.OperationType{admissionregistrationv1.Create,
+		supportedVerbs := []admissionregistrationv1.OperationType{
+			admissionregistrationv1.Create,
 			admissionregistrationv1.Update,
 			admissionregistrationv1.Delete,
 		}
@@ -114,13 +115,14 @@ func (ac *reconciler) reconcileValidatingWebhook(ctx context.Context, caCert []b
 			logging.FromContext(ctx).Debugf("Using custom Verbs")
 			supportedVerbs = vl.SupportedVerbs()
 		}
+		logging.FromContext(ctx).Debugf("Registering verbs: %s", supportedVerbs)
+
 		resources := []string{}
 		// If SupportedSubResources has not been given, provide the legacy
 		// defaults of main resource, and status
 		if srl, ok := config.(resourcesemantics.SubResourceLimited); ok {
 			logging.FromContext(ctx).Debugf("Using custom SubResources")
 			for _, subResource := range srl.SupportedSubResources() {
-				logging.FromContext(ctx).Debugf("Adding custom SubResource: %s", subResource)
 				if subResource == "" {
 					// Special case the actual plural if given
 					resources = append(resources, plural)
@@ -131,6 +133,7 @@ func (ac *reconciler) reconcileValidatingWebhook(ctx context.Context, caCert []b
 		} else {
 			resources = append(resources, plural, plural+"/status")
 		}
+		logging.FromContext(ctx).Debugf("Registering SubResources: %s", resources)
 		rules = append(rules, admissionregistrationv1.RuleWithOperations{
 			Operations: supportedVerbs,
 			Rule: admissionregistrationv1.Rule{
