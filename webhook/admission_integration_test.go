@@ -437,3 +437,113 @@ func TestAdmissionInvalidResponseForResource(t *testing.T) {
 	// Stats should be reported for requests that have admission disallowed
 	metricstest.CheckStatsReported(t, requestCountName, requestLatenciesName)
 }
+
+func TestAdmissionWarningResponseForResource(t *testing.T) {
+	// Test that our single warning below (with newlines) should be turned into
+	// these three warnings
+	expectedWarnings := []string{"everything is not fine.", "like really", "for sure"}
+	ac := &fixedAdmissionController{
+		path:     "/warnmeplease",
+		response: &admissionv1.AdmissionResponse{Warnings: []string{"everything is not fine.\nlike really\nfor sure"}},
+	}
+	wh, serverURL, ctx, cancel, err := testSetup(t, ac)
+	if err != nil {
+		t.Fatal("testSetup() =", err)
+	}
+
+	eg, _ := errgroup.WithContext(ctx)
+	eg.Go(func() error { return wh.Run(ctx.Done()) })
+	wh.InformersHaveSynced()
+	defer func() {
+		cancel()
+		if err := eg.Wait(); err != nil {
+			t.Error("Unable to run controller:", err)
+		}
+	}()
+
+	pollErr := waitForServerAvailable(t, serverURL, testTimeout)
+	if pollErr != nil {
+		t.Fatal("waitForServerAvailable() =", err)
+	}
+	tlsClient, err := createSecureTLSClient(t, kubeclient.Get(ctx), &wh.Options)
+	if err != nil {
+		t.Fatal("createSecureTLSClient() =", err)
+	}
+
+	resource := createResource(testResourceName)
+
+	marshaled, err := json.Marshal(resource)
+	if err != nil {
+		t.Fatal("Failed to marshal resource:", err)
+	}
+
+	admissionreq := &admissionv1.AdmissionRequest{
+		Operation: admissionv1.Create,
+		Kind: metav1.GroupVersionKind{
+			Group:   "pkg.knative.dev",
+			Version: "v1alpha1",
+			Kind:    "Resource",
+		},
+		UserInfo: authenticationv1.UserInfo{
+			Username: user1,
+		},
+	}
+
+	admissionreq.Resource.Group = "pkg.knative.dev"
+	admissionreq.Object.Raw = marshaled
+
+	rev := &admissionv1.AdmissionReview{
+		Request: admissionreq,
+	}
+	reqBuf := new(bytes.Buffer)
+	err = json.NewEncoder(reqBuf).Encode(&rev)
+	if err != nil {
+		t.Fatal("Failed to marshal admission review:", err)
+	}
+
+	u, err := url.Parse("https://" + serverURL)
+	if err != nil {
+		t.Fatal("bad url", err)
+	}
+
+	u.Path = path.Join(u.Path, ac.Path())
+
+	req, err := http.NewRequest("GET", u.String(), reqBuf)
+	if err != nil {
+		t.Fatal("http.NewRequest() =", err)
+	}
+
+	req.Header.Add("Content-Type", "application/json")
+
+	response, err := tlsClient.Do(req)
+	if err != nil {
+		t.Fatal("Failed to receive response", err)
+	}
+
+	if got, want := response.StatusCode, http.StatusOK; got != want {
+		t.Errorf("Response status code = %v, wanted %v", got, want)
+	}
+
+	defer response.Body.Close()
+	respBody, err := ioutil.ReadAll(response.Body)
+	if err != nil {
+		t.Fatal("Failed to read response body", err)
+	}
+
+	reviewResponse := admissionv1.AdmissionReview{}
+
+	err = json.NewDecoder(bytes.NewReader(respBody)).Decode(&reviewResponse)
+	if err != nil {
+		t.Fatal("Failed to decode response:", err)
+	}
+
+	warnings := reviewResponse.Response.Warnings
+	if len(warnings) != 3 {
+		t.Errorf("Received unexpected warnings, wanted 3 got: %s", reviewResponse.Response.Warnings)
+	}
+	for i, w := range warnings {
+		if expectedWarnings[i] != w {
+			t.Errorf("Unexpected warning want %s got %s", expectedWarnings[i], w)
+		}
+	}
+}

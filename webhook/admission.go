@@ -133,9 +133,7 @@ func admissionHandler(rootLogger *zap.SugaredLogger, stats StatsReporter, c Admi
 		if reviewResponse.Warnings != nil {
 			cleanedWarnings := make([]string, 0, len(reviewResponse.Warnings))
 			for _, w := range reviewResponse.Warnings {
-				for _, piece := range strings.Split(w, "\n") {
-					cleanedWarnings = append(cleanedWarnings, piece)
-				}
+				cleanedWarnings = append(cleanedWarnings, strings.Split(w, "\n")...)
 			}
 			reviewResponse.Warnings = cleanedWarnings
 		}
