@@ -21,6 +21,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	"go.uber.org/zap"
@@ -123,6 +124,18 @@ func admissionHandler(rootLogger *zap.SugaredLogger, stats StatsReporter, c Admi
 
 		if !reviewResponse.Allowed || reviewResponse.PatchType != nil || response.Response == nil {
 			response.Response = reviewResponse
+		}
+
+		// If warnings contain newlines, which they will do by default if
+		// using Knative apis.FieldError, split them based on newlines
+		// and create a new warning. This is because any control characters
+		// in the warnings will cause the warning to be dropped silently.
+		if reviewResponse.Warnings != nil {
+			cleanedWarnings := make([]string, 0, len(reviewResponse.Warnings))
+			for _, w := range reviewResponse.Warnings {
+				cleanedWarnings = append(cleanedWarnings, strings.Split(w, "\n")...)
+			}
+			reviewResponse.Warnings = cleanedWarnings
 		}
 		response.Response.UID = review.Request.UID
 
