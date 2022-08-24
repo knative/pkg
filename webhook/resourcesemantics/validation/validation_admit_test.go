@@ -685,7 +685,7 @@ func newTestResourceAdmissionController(t *testing.T) webhook.AdmissionControlle
 		SecretName: "webhook-secret",
 	})
 
-	c := NewAdmissionController(
+	c := NewAdmissionControllerWithConfig(
 		ctx, testResourceValidationName, testResourceValidationPath,
 		handlers,
 		func(ctx context.Context) context.Context {
