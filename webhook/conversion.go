@@ -69,10 +69,9 @@ func conversionHandler(rootLogger *zap.SugaredLogger, _ StatsReporter, c Convers
 			return
 		}
 
-		// TODO(dprotaso) - figure out what metrics we want reported
-		// if stats != nil {
-		// 	// Only report valid requests
-		// 	stats.ReportRequest(review.Request, response.Response, time.Since(ttStart))
-		// }
+		if stats != nil {
+			// Only report valid requests
+			stats.ReportRequest(review.Request, response.Response, time.Since(ttStart))
+		}
 	}
 }
