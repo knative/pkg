@@ -40,6 +40,7 @@ type ConversionController interface {
 
 func conversionHandler(rootLogger *zap.SugaredLogger, stats StatsReporter, c ConversionController) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		var ttStart = time.Now()
 		logger := rootLogger
 		logger.Infof("Webhook ServeHTTP request=%#v", r)
 
@@ -72,7 +73,7 @@ func conversionHandler(rootLogger *zap.SugaredLogger, stats StatsReporter, c Con
 
 		if stats != nil {
 			// Only report valid requests
-			stats.ReportRequest(review.Request, response.Response, time.Since(ttStart))
+			stats.ReportConversionRequest(review.Request, response.Response, time.Since(ttStart))
 		}
 	}
 }

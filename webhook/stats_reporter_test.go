@@ -22,12 +22,13 @@ import (
 	"time"
 
 	admissionv1 "k8s.io/api/admission/v1"
+	apixv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"knative.dev/pkg/metrics/metricstest"
 	_ "knative.dev/pkg/metrics/testing"
 )
 
-func TestWebhookStatsReporter(t *testing.T) {
+func TestWebhookStatsReporterAdmission(t *testing.T) {
 	setup()
 	req := &admissionv1.AdmissionRequest{
 		UID:       "705ab4f5-6393-11e8-b7cc-42010a800002",
@@ -58,8 +59,37 @@ func TestWebhookStatsReporter(t *testing.T) {
 		admissionAllowedKey.Name():  strconv.FormatBool(resp.Allowed),
 	}
 
-	r.ReportRequest(req, resp, time.Duration(shortTime)*time.Millisecond)
-	r.ReportRequest(req, resp, time.Duration(longTime)*time.Millisecond)
+	r.ReportAdmissionRequest(req, resp, time.Duration(shortTime)*time.Millisecond)
+	r.ReportAdmissionRequest(req, resp, time.Duration(longTime)*time.Millisecond)
+
+	metricstest.CheckCountData(t, requestCountName, expectedTags, 2)
+	metricstest.CheckDistributionData(t, requestLatenciesName, expectedTags, 2, shortTime, longTime)
+}
+
+func TestWebhookStatsReporterConversion(t *testing.T) {
+	setup()
+	req := &apixv1.ConversionRequest{
+		UID:       "705ab4f5-6393-11e8-b7cc-42010a800002",
+    DesiredAPIVersion: "knative.dev/v1",
+	}
+
+	resp := &apixv1.ConversionResponse{
+		UID:     req.UID,
+    Result: metav1.Status{Status: "Failure", Reason: metav1.StatusReasonNotFound, Code: 404},
+	}
+
+	r, _ := NewStatsReporter()
+
+	shortTime, longTime := 1100.0, 9100.0
+	expectedTags := map[string]string{
+    desiredAPIVersionKey.Name(): req.DesiredAPIVersion,
+    resultStatusKey.Name(): resp.Result.Status,
+    resultReasonKey.Name(): string(resp.Result.Reason),
+    resultCodeKey.Name(): string(resp.Result.Code),
+	}
+
+	r.ReportConversionRequest(req, resp, time.Duration(shortTime)*time.Millisecond)
+	r.ReportConversionRequest(req, resp, time.Duration(longTime)*time.Millisecond)
 
 	metricstest.CheckCountData(t, requestCountName, expectedTags, 2)
 	metricstest.CheckDistributionData(t, requestLatenciesName, expectedTags, 2, shortTime, longTime)

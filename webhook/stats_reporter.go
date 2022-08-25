@@ -25,6 +25,7 @@ import (
 	"go.opencensus.io/stats/view"
 	"go.opencensus.io/tag"
 	admissionv1 "k8s.io/api/admission/v1"
+	apixv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"knative.dev/pkg/metrics"
 )
 
@@ -57,11 +58,17 @@ var (
 	resourceResourceKey  = tag.MustNewKey("resource_resource")
 	resourceNamespaceKey = tag.MustNewKey("resource_namespace")
 	admissionAllowedKey  = tag.MustNewKey("admission_allowed")
+
+  desiredAPIVersionKey = tag.MustNewKey("desired_api_version")
+  resultStatusKey      = tag.MustNewKey("result_status")
+  resultReasonKey      = tag.MustNewKey("result_reason")
+  resultCodeKey        = tag.MustNewKey("result_code")
 )
 
 // StatsReporter reports webhook metrics
 type StatsReporter interface {
-	ReportRequest(request *admissionv1.AdmissionRequest, response *admissionv1.AdmissionResponse, d time.Duration) error
+	ReportAdmissionRequest(request *admissionv1.AdmissionRequest, response *admissionv1.AdmissionResponse, d time.Duration) error
+  ReportConversionRequest(request *apixv1.ConversionRequest, response *apixv1.ConversionResponse, d time.Duration) error
 }
 
 // reporter implements StatsReporter interface
@@ -82,7 +89,7 @@ func NewStatsReporter() (StatsReporter, error) {
 }
 
 // Captures req count metric, recording the count and the duration
-func (r *reporter) ReportRequest(req *admissionv1.AdmissionRequest, resp *admissionv1.AdmissionResponse, d time.Duration) error {
+func (r *reporter) ReportAdmissionRequest(req *admissionv1.AdmissionRequest, resp *admissionv1.AdmissionResponse, d time.Duration) error {
 	ctx, err := tag.New(
 		r.ctx,
 		tag.Insert(requestOperationKey, string(req.Operation)),
@@ -94,6 +101,26 @@ func (r *reporter) ReportRequest(req *admissionv1.AdmissionRequest, resp *admiss
 		tag.Insert(resourceResourceKey, req.Resource.Resource),
 		tag.Insert(resourceNamespaceKey, req.Namespace),
 		tag.Insert(admissionAllowedKey, strconv.FormatBool(resp.Allowed)),
+	)
+	if err != nil {
+		return err
+	}
+
+	metrics.RecordBatch(ctx, requestCountM.M(1),
+		// Convert time.Duration in nanoseconds to milliseconds
+		responseTimeInMsecM.M(float64(d.Milliseconds())))
+	return nil
+}
+
+// Captures req count metric, recording the count and the duration
+func (r *reporter) ReportConversionRequest(req *apixv1.ConversionRequest, resp *apixv1.ConversionResponse, d time.Duration) error {
+	ctx, err := tag.New(
+		r.ctx,
+    tag.Insert(desiredAPIVersionKey, req.DesiredAPIVersion),
+    tag.Insert(resultStatusKey, resp.Result.Status),
+    tag.Insert(resultReasonKey, string(resp.Result.Reason)),
+    tag.Insert(resultCodeKey, string(resp.Result.Code)),
+
 	)
 	if err != nil {
 		return err
