@@ -69,23 +69,23 @@ func TestWebhookStatsReporterAdmission(t *testing.T) {
 func TestWebhookStatsReporterConversion(t *testing.T) {
 	setup()
 	req := &apixv1.ConversionRequest{
-		UID:       "705ab4f5-6393-11e8-b7cc-42010a800002",
-    DesiredAPIVersion: "knative.dev/v1",
+		UID:               "705ab4f5-6393-11e8-b7cc-42010a800002",
+		DesiredAPIVersion: "knative.dev/v1",
 	}
 
 	resp := &apixv1.ConversionResponse{
-		UID:     req.UID,
-    Result: metav1.Status{Status: "Failure", Reason: metav1.StatusReasonNotFound, Code: 404},
+		UID:    req.UID,
+		Result: metav1.Status{Status: "Failure", Reason: metav1.StatusReasonNotFound, Code: 404},
 	}
 
 	r, _ := NewStatsReporter()
 
 	shortTime, longTime := 1100.0, 9100.0
 	expectedTags := map[string]string{
-    desiredAPIVersionKey.Name(): req.DesiredAPIVersion,
-    resultStatusKey.Name(): resp.Result.Status,
-    resultReasonKey.Name(): string(resp.Result.Reason),
-    resultCodeKey.Name(): string(resp.Result.Code),
+		desiredAPIVersionKey.Name(): req.DesiredAPIVersion,
+		resultStatusKey.Name():      resp.Result.Status,
+		resultReasonKey.Name():      string(resp.Result.Reason),
+		resultCodeKey.Name():        string(resp.Result.Code),
 	}
 
 	r.ReportConversionRequest(req, resp, time.Duration(shortTime)*time.Millisecond)

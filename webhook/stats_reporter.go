@@ -59,16 +59,16 @@ var (
 	resourceNamespaceKey = tag.MustNewKey("resource_namespace")
 	admissionAllowedKey  = tag.MustNewKey("admission_allowed")
 
-  desiredAPIVersionKey = tag.MustNewKey("desired_api_version")
-  resultStatusKey      = tag.MustNewKey("result_status")
-  resultReasonKey      = tag.MustNewKey("result_reason")
-  resultCodeKey        = tag.MustNewKey("result_code")
+	desiredAPIVersionKey = tag.MustNewKey("desired_api_version")
+	resultStatusKey      = tag.MustNewKey("result_status")
+	resultReasonKey      = tag.MustNewKey("result_reason")
+	resultCodeKey        = tag.MustNewKey("result_code")
 )
 
 // StatsReporter reports webhook metrics
 type StatsReporter interface {
 	ReportAdmissionRequest(request *admissionv1.AdmissionRequest, response *admissionv1.AdmissionResponse, d time.Duration) error
-  ReportConversionRequest(request *apixv1.ConversionRequest, response *apixv1.ConversionResponse, d time.Duration) error
+	ReportConversionRequest(request *apixv1.ConversionRequest, response *apixv1.ConversionResponse, d time.Duration) error
 }
 
 // reporter implements StatsReporter interface
@@ -116,11 +116,10 @@ func (r *reporter) ReportAdmissionRequest(req *admissionv1.AdmissionRequest, res
 func (r *reporter) ReportConversionRequest(req *apixv1.ConversionRequest, resp *apixv1.ConversionResponse, d time.Duration) error {
 	ctx, err := tag.New(
 		r.ctx,
-    tag.Insert(desiredAPIVersionKey, req.DesiredAPIVersion),
-    tag.Insert(resultStatusKey, resp.Result.Status),
-    tag.Insert(resultReasonKey, string(resp.Result.Reason)),
-    tag.Insert(resultCodeKey, string(resp.Result.Code)),
-
+		tag.Insert(desiredAPIVersionKey, req.DesiredAPIVersion),
+		tag.Insert(resultStatusKey, resp.Result.Status),
+		tag.Insert(resultReasonKey, string(resp.Result.Reason)),
+		tag.Insert(resultCodeKey, string(resp.Result.Code)),
 	)
 	if err != nil {
 		return err
