@@ -119,7 +119,7 @@ func (r *reporter) ReportConversionRequest(req *apixv1.ConversionRequest, resp *
 		tag.Insert(desiredAPIVersionKey, req.DesiredAPIVersion),
 		tag.Insert(resultStatusKey, resp.Result.Status),
 		tag.Insert(resultReasonKey, string(resp.Result.Reason)),
-		tag.Insert(resultCodeKey, string(resp.Result.Code)),
+		tag.Insert(resultCodeKey, strconv.Itoa(int(resp.Result.Code))),
 	)
 	if err != nil {
 		return err
@@ -141,7 +141,11 @@ func RegisterMetrics() {
 		resourceVersionKey,
 		resourceResourceKey,
 		resourceNamespaceKey,
-		admissionAllowedKey}
+		admissionAllowedKey,
+		desiredAPIVersionKey,
+		resultStatusKey,
+		resultReasonKey,
+		resultCodeKey}
 
 	if err := view.Register(
 		&view.View{

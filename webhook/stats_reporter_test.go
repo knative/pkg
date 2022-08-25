@@ -59,8 +59,12 @@ func TestWebhookStatsReporterAdmission(t *testing.T) {
 		admissionAllowedKey.Name():  strconv.FormatBool(resp.Allowed),
 	}
 
-	r.ReportAdmissionRequest(req, resp, time.Duration(shortTime)*time.Millisecond)
-	r.ReportAdmissionRequest(req, resp, time.Duration(longTime)*time.Millisecond)
+	if err := r.ReportAdmissionRequest(req, resp, time.Duration(shortTime)*time.Millisecond); err != nil {
+		t.Fatalf("ReportAdmissionRequest() = %v", err)
+	}
+	if err := r.ReportAdmissionRequest(req, resp, time.Duration(longTime)*time.Millisecond); err != nil {
+		t.Fatalf("ReportAdmissionRequest() = %v", err)
+	}
 
 	metricstest.CheckCountData(t, requestCountName, expectedTags, 2)
 	metricstest.CheckDistributionData(t, requestLatenciesName, expectedTags, 2, shortTime, longTime)
@@ -69,7 +73,7 @@ func TestWebhookStatsReporterAdmission(t *testing.T) {
 func TestWebhookStatsReporterConversion(t *testing.T) {
 	setup()
 	req := &apixv1.ConversionRequest{
-		UID:               "705ab4f5-6393-11e8-b7cc-42010a800002",
+		UID:               "705ab4f5-6393-11e8-b7cc-42010a800003",
 		DesiredAPIVersion: "knative.dev/v1",
 	}
 
@@ -85,11 +89,15 @@ func TestWebhookStatsReporterConversion(t *testing.T) {
 		desiredAPIVersionKey.Name(): req.DesiredAPIVersion,
 		resultStatusKey.Name():      resp.Result.Status,
 		resultReasonKey.Name():      string(resp.Result.Reason),
-		resultCodeKey.Name():        string(resp.Result.Code),
+		resultCodeKey.Name():        strconv.Itoa(int(resp.Result.Code)),
 	}
 
-	r.ReportConversionRequest(req, resp, time.Duration(shortTime)*time.Millisecond)
-	r.ReportConversionRequest(req, resp, time.Duration(longTime)*time.Millisecond)
+	if err := r.ReportConversionRequest(req, resp, time.Duration(shortTime)*time.Millisecond); err != nil {
+		t.Fatalf("ReportConversionRequest() = %v", err)
+	}
+	if err := r.ReportConversionRequest(req, resp, time.Duration(longTime)*time.Millisecond); err != nil {
+		t.Fatalf("ReportConversionRequest() = %v", err)
+	}
 
 	metricstest.CheckCountData(t, requestCountName, expectedTags, 2)
 	metricstest.CheckDistributionData(t, requestLatenciesName, expectedTags, 2, shortTime, longTime)
