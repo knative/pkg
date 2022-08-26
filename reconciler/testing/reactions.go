@@ -48,6 +48,12 @@ func InduceFailure(verb, resource string) clientgotesting.ReactionFunc {
 
 func ValidateCreates(ctx context.Context, action clientgotesting.Action) (handled bool, ret runtime.Object, err error) {
 	got := action.(clientgotesting.CreateAction).GetObject()
+	o, ok := got.(apis.Defaultable)
+	if ok {
+		o.SetDefaults(ctx)
+		got, _ = o.(runtime.Object)
+	}
+
 	obj, ok := got.(apis.Validatable)
 	if !ok {
 		return false, nil, nil
