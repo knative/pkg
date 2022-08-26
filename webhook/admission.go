@@ -17,9 +17,11 @@ limitations under the License.
 package webhook
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"strings"
 	"time"
@@ -91,10 +93,12 @@ func admissionHandler(rootLogger *zap.SugaredLogger, stats StatsReporter, c Admi
 		logger.Infof("Webhook ServeHTTP request=%#v", r)
 
 		var review admissionv1.AdmissionReview
-		if err := json.NewDecoder(r.Body).Decode(&review); err != nil {
+		bodyBuffer := bytes.Buffer{}
+		if err := json.NewDecoder(io.TeeReader(r.Body, &bodyBuffer)).Decode(&review); err != nil {
 			http.Error(w, fmt.Sprint("could not decode body:", err), http.StatusBadRequest)
 			return
 		}
+		r.Body = io.NopCloser(&bodyBuffer)
 
 		logger = logger.With(
 			logkey.Kind, review.Request.Kind.String(),
