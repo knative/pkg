@@ -171,3 +171,8 @@ func (fsii *fakeSharedIndexInformer) SetWatchErrorHandler(handler cache.WatchErr
 	fsii.t.Fatalf("NYI: SetWatchErrorHandler")
 	return nil
 }
+
+func (fsii *fakeSharedIndexInformer) SetTransform(handler cache.TransformFunc) error {
+	fsii.t.Fatalf("NYI: SetTransform")
+	return nil
+}
