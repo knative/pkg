@@ -11,7 +11,7 @@ Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
-limitations under the License.
+limitations under the License.WithTickerAndDelayedExecution
 */
 
 package metrics
@@ -29,7 +29,7 @@ import (
 	"go.opencensus.io/stats"
 	"go.opencensus.io/stats/view"
 	"go.opencensus.io/tag"
-	"k8s.io/apimachinery/pkg/util/clock"
+	"k8s.io/utils/clock"
 )
 
 type storedViews struct {
@@ -53,7 +53,7 @@ type meters struct {
 	meters         map[string]*meterExporter
 	factory        ResourceExporterFactory
 	lock           sync.Mutex
-	clock          clock.Clock
+	clock          clock.WithTicker
 	ticker         clock.Ticker
 	tickerStopChan chan struct{}
 }
@@ -65,7 +65,7 @@ var (
 	resourceViews = storedViews{}
 	allMeters     = meters{
 		meters: map[string]*meterExporter{"": &defaultMeter},
-		clock:  clock.Clock(clock.RealClock{}),
+		clock:  clock.RealClock{},
 	}
 
 	cleanupOnce                = new(sync.Once)
