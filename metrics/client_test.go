@@ -18,7 +18,7 @@ package metrics
 
 import (
 	"bytes"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/url"
 	"testing"
@@ -96,7 +96,7 @@ func TestClientMetrics(t *testing.T) {
 	stub := ClientFunc(func(req *http.Request) (*http.Response, error) {
 		return &http.Response{
 			StatusCode: http.StatusOK,
-			Body:       ioutil.NopCloser(bytes.NewBufferString("hi")),
+			Body:       io.NopCloser(bytes.NewBufferString("hi")),
 		}, nil
 	})
 

@@ -19,7 +19,6 @@ package interactive
 
 import (
 	"fmt"
-	"io/ioutil"
 	"log"
 	"os"
 	"path"
@@ -82,7 +81,7 @@ func (d *Docker) AddMount(typeStr, source, target string, optAdditionalArgs ...s
 // Returns a function to clean up the mount (but does not delete the directory).
 // Uses sudo and probably only works on Linux
 func (d *Docker) AddRWOverlay(externalDirectory, internalDirectory string) func() {
-	tmpDir, err := ioutil.TempDir("", "overlay")
+	tmpDir, err := os.MkdirTemp("", "overlay")
 	if err != nil {
 		log.Fatal(err)
 	}

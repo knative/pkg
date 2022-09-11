@@ -15,8 +15,8 @@ package metrics
 import (
 	"crypto/tls"
 	"fmt"
-	"io/ioutil"
 	"net"
+	"os"
 	"path/filepath"
 	"testing"
 
@@ -31,11 +31,11 @@ import (
 )
 
 func TestOpenCensusConfig(t *testing.T) {
-	cert, err := ioutil.ReadFile(filepath.Join("testdata", "client-cert.pem"))
+	cert, err := os.ReadFile(filepath.Join("testdata", "client-cert.pem"))
 	if err != nil {
 		t.Fatal("Couldn't find testdata/client-cert.pem:", err)
 	}
-	key, err := ioutil.ReadFile(filepath.Join("testdata", "client-key.pem"))
+	key, err := os.ReadFile(filepath.Join("testdata", "client-key.pem"))
 	if err != nil {
 		t.Fatal("Couldn't find testdata/client-key.pem:", err)
 	}

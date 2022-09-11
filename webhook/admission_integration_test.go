@@ -19,7 +19,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/url"
 	"path"
@@ -180,7 +180,7 @@ func TestAdmissionValidResponseForResourceTLS(t *testing.T) {
 		}
 
 		defer response.Body.Close()
-		responseBody, err := ioutil.ReadAll(response.Body)
+		responseBody, err := io.ReadAll(response.Body)
 		if err != nil {
 			t.Error("Failed to read response body", err)
 			return
@@ -305,7 +305,7 @@ func TestAdmissionValidResponseForResource(t *testing.T) {
 		}
 
 		defer response.Body.Close()
-		responseBody, err := ioutil.ReadAll(response.Body)
+		responseBody, err := io.ReadAll(response.Body)
 		if err != nil {
 			t.Error("Failed to read response body", err)
 			return
@@ -434,7 +434,7 @@ func TestAdmissionInvalidResponseForResource(t *testing.T) {
 	}
 
 	defer response.Body.Close()
-	respBody, err := ioutil.ReadAll(response.Body)
+	respBody, err := io.ReadAll(response.Body)
 	if err != nil {
 		t.Fatal("Failed to read response body", err)
 	}
@@ -551,7 +551,7 @@ func TestAdmissionWarningResponseForResource(t *testing.T) {
 	}
 
 	defer response.Body.Close()
-	respBody, err := ioutil.ReadAll(response.Body)
+	respBody, err := io.ReadAll(response.Body)
 	if err != nil {
 		t.Fatal("Failed to read response body", err)
 	}
@@ -656,7 +656,7 @@ func TestAdmissionValidResponseForRequestBody(t *testing.T) {
 		}
 
 		defer response.Body.Close()
-		responseBody, err := ioutil.ReadAll(response.Body)
+		responseBody, err := io.ReadAll(response.Body)
 		if err != nil {
 			t.Error("Failed to read response body", err)
 			return

@@ -18,7 +18,6 @@ package mock
 
 import (
 	"context"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -434,7 +433,7 @@ func (c *clientMocker) Upload(ctx context.Context, bkt, objPath, filePath string
 		return NewNoObjectError(bkt, objName, dir)
 	}
 
-	content, err := ioutil.ReadFile(filePath)
+	content, err := os.ReadFile(filePath)
 	if err != nil {
 		return err
 	}

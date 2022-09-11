@@ -21,7 +21,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net"
 	"net/http"
 	"sort"
@@ -166,7 +165,7 @@ func TestMetricsExport(t *testing.T) {
 				t.Fatalf("failed to fetch prometheus metrics: %+v", err)
 			}
 			defer resp.Body.Close()
-			body, err := ioutil.ReadAll(resp.Body)
+			body, err := io.ReadAll(resp.Body)
 			if err != nil {
 				t.Fatalf("failed to read prometheus response: %+v", err)
 			}
