@@ -38,6 +38,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/wait"
 	fakekubeclientset "k8s.io/client-go/kubernetes/fake"
+
 	"knative.dev/pkg/apis"
 	"knative.dev/pkg/system"
 	"knative.dev/pkg/webhook"
@@ -92,6 +93,11 @@ var (
 			Group:   "pkg.knative.dev",
 			Version: "v1beta1",
 			Kind:    "Resource",
+		}: NewCallback(resourceCallback, webhook.Create, webhook.Update, webhook.Delete),
+		{
+			Group:   "pkg.knative.dev",
+			Version: "v1alpha1",
+			Kind:    "CallbackResource",
 		}: NewCallback(resourceCallback, webhook.Create, webhook.Update, webhook.Delete),
 	}
 	initialResourceWebhook = &admissionregistrationv1.ValidatingWebhookConfiguration{

@@ -33,6 +33,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/wait"
 	clientgotesting "k8s.io/client-go/testing"
+
 	"knative.dev/pkg/configmap"
 	"knative.dev/pkg/controller"
 	"knative.dev/pkg/ptr"
@@ -79,6 +80,13 @@ func TestReconcile(t *testing.T) {
 
 	// These are the rules we expect given the context of "handlers".
 	expectedRules := []admissionregistrationv1.RuleWithOperations{{
+		Operations: []admissionregistrationv1.OperationType{"CREATE", "DELETE", "UPDATE"},
+		Rule: admissionregistrationv1.Rule{
+			APIGroups:   []string{"pkg.knative.dev"},
+			APIVersions: []string{"v1alpha1"},
+			Resources:   []string{"callbackresources", "callbackresources/status"},
+		},
+	}, {
 		Operations: []admissionregistrationv1.OperationType{"CREATE", "UPDATE", "DELETE"},
 		Rule: admissionregistrationv1.Rule{
 			APIGroups:   []string{"pkg.knative.dev"},
@@ -420,7 +428,8 @@ func TestReconcile(t *testing.T) {
 			},
 			path: path,
 
-			handlers: handlers,
+			handlers:  handlers,
+			callbacks: callbacks,
 
 			client:       kubeclient.Get(ctx),
 			vwhlister:    listers.GetValidatingWebhookConfigurationLister(),
