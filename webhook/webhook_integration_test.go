@@ -19,7 +19,7 @@ package webhook
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"strings"
 	"testing"
@@ -91,7 +91,7 @@ func TestMissingContentType(t *testing.T) {
 	}
 
 	defer response.Body.Close()
-	responseBody, err := ioutil.ReadAll(response.Body)
+	responseBody, err := io.ReadAll(response.Body)
 	if err != nil {
 		t.Fatal("Failed to read response body", err)
 	}
@@ -147,7 +147,7 @@ func testEmptyRequestBody(t *testing.T, controller interface{}) {
 	}
 	defer response.Body.Close()
 
-	responseBody, err := ioutil.ReadAll(response.Body)
+	responseBody, err := io.ReadAll(response.Body)
 	if err != nil {
 		t.Fatal("Failed to read response body", err)
 	}

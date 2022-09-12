@@ -18,7 +18,7 @@ package upgrade_test
 
 import (
 	"fmt"
-	"io/ioutil"
+	"io"
 	"os"
 	"testing"
 
@@ -89,6 +89,6 @@ func captureStdOutput(call func()) string {
 	call()
 
 	_ = w.Close()
-	out, _ := ioutil.ReadAll(r)
+	out, _ := io.ReadAll(r)
 	return string(out)
 }
