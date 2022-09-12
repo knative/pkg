@@ -54,7 +54,7 @@ func Start(t ti) Canceler {
 			var err error
 			// handle case when ns contains a csv list
 			namespaces := strings.Split(ns, ",")
-			if sysStream, err = initStream(namespaces, true /*filterLines*/, nil /*podPrefixes*/); err != nil {
+			if sysStream, err = initStream(namespaces, true /*filterLines*/); err != nil {
 				t.Error("Error initializing logstream", "error", err)
 			}
 		} else {
@@ -68,17 +68,17 @@ func Start(t ti) Canceler {
 
 // StartForUserNamespace begins streaming the logs from custom namespaces.
 // Filtering of log lines is disabled in this case so all lines will be printed
-// throught the provided callback.
+// through the provided callback.
 // It returns a Canceler which must be called before the test completes.
 func StartForUserNamespace(t ti, callback Callback, namespace string, podPrefixes ...string) Canceler {
-	userStream, err := initStream([]string{namespace}, false /*filterLines*/, podPrefixes)
+	userStream, err := initStream([]string{namespace}, false /*filterLines*/, podPrefixes...)
 	if err != nil {
 		t.Error("Error initializing logstream", "error", err)
 	}
 	return userStream.Start(t, callback)
 }
 
-func initStream(namespaces []string, filterLines bool, podPrefixes []string) (streamer, error) {
+func initStream(namespaces []string, filterLines bool, podPrefixes ...string) (streamer, error) {
 	config, err := test.Flags.GetRESTConfig()
 	if err != nil {
 		return &null{}, fmt.Errorf("error loading client config: %w", err)
@@ -89,7 +89,7 @@ func initStream(namespaces []string, filterLines bool, podPrefixes []string) (st
 		return &null{}, fmt.Errorf("error creating kubernetes client: %w", err)
 	}
 
-	return &shim{logstreamv2.FromNamespaces(context.Background(), kc, namespaces, filterLines, podPrefixes)}, nil
+	return &shim{logstreamv2.FromNamespaces(context.Background(), kc, namespaces, filterLines, podPrefixes...)}, nil
 }
 
 type streamer interface {

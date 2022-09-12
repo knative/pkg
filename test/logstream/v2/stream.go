@@ -34,7 +34,7 @@ import (
 	"knative.dev/pkg/ptr"
 )
 
-func FromNamespaces(ctx context.Context, c kubernetes.Interface, namespaces []string, filterLines bool, podPrefixes []string) Source {
+func FromNamespaces(ctx context.Context, c kubernetes.Interface, namespaces []string, filterLines bool, podPrefixes ...string) Source {
 	return &namespaceSource{
 		ctx:         ctx,
 		kc:          c,
@@ -45,7 +45,7 @@ func FromNamespaces(ctx context.Context, c kubernetes.Interface, namespaces []st
 	}
 }
 
-func FromNamespace(ctx context.Context, c kubernetes.Interface, namespace string, filterLines bool, podPrefixes []string) Source {
+func FromNamespace(ctx context.Context, c kubernetes.Interface, namespace string, filterLines bool, podPrefixes ...string) Source {
 	return &namespaceSource{
 		ctx:         ctx,
 		kc:          c,
@@ -242,7 +242,6 @@ func (s *namespaceSource) handleLine(l []byte, pod string, _ string) {
 	for name, logf := range s.keys {
 		// TODO(mattmoor): Do a slightly smarter match.
 		if !strings.Contains(line.Key, "/"+name) {
-			logf("Key %s does not contain %s", line.Key, name)
 			continue
 		}
 

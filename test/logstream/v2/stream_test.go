@@ -129,7 +129,7 @@ var readyStatus = corev1.PodStatus{
 
 func TestWatchErr(t *testing.T) {
 	f := newK8sFake(fake.NewSimpleClientset(), errors.New("lookin' good"), nil)
-	stream := logstream.FromNamespace(context.Background(), f, "a-namespace")
+	stream := logstream.FromNamespace(context.Background(), f, "a-namespace", false)
 	_, err := stream.StartStream(knativePod.Name, nil)
 	if err == nil {
 		t.Fatal("LogStream creation should have failed")
@@ -153,7 +153,7 @@ func TestFailToStartStream(t *testing.T) {
 		close(logFuncInvoked)
 	}
 	ctx, cancel := context.WithCancel(context.Background())
-	stream := logstream.FromNamespace(ctx, f, singlePod.Namespace)
+	stream := logstream.FromNamespace(ctx, f, singlePod.Namespace, true)
 	streamC, err := stream.StartStream(singlePod.Name, logFunc)
 	if err != nil {
 		t.Fatal("Failed to start the stream: ", err)
@@ -219,7 +219,7 @@ func TestNamespaceStream(t *testing.T) {
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
-	stream := logstream.FromNamespaces(ctx, f, []string{knativePod.Namespace, userPod.Namespace})
+	stream := logstream.FromNamespaces(ctx, f, []string{knativePod.Namespace, userPod.Namespace}, true)
 	streamC, err := stream.StartStream(testKey, logFunc)
 	if err != nil {
 		t.Fatal("Failed to start the stream: ", err)
