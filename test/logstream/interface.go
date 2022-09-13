@@ -30,10 +30,11 @@ import (
 	logstreamv2 "knative.dev/pkg/test/logstream/v2"
 )
 
-// Canceler is the type of a function returned when a logstream is started to be
-// deferred so that the logstream can be stopped when the test is complete.
 type (
+	// Canceler is the type of function returned when a logstream is started to be
+	// deferred so that the logstream can be stopped when the test is complete.
 	Canceler = logstreamv2.Canceler
+	// Callback is the type of generic function for printing log lines.
 	Callback = logstreamv2.Callback
 )
 
