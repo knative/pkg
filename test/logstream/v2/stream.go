@@ -75,18 +75,14 @@ func WithPodPrefixes(podPrefixes ...string) func(*logSource) {
 	}
 }
 
-func FromNamespaces(ctx context.Context, c kubernetes.Interface, namespaces []string) Source {
-	return &logSource{
-		ctx:         ctx,
-		kc:          c,
-		namespaces:  namespaces,
-		keys:        make(map[string]Callback, 1),
-		filterLines: true,
-	}
+func FromNamespaces(ctx context.Context, c kubernetes.Interface, namespaces []string, opts ...func(*logSource)) Source {
+	sOpts := []func(*logSource){WithNamespaces(namespaces...)}
+	sOpts = append(sOpts, opts...)
+	return New(ctx, c, sOpts...)
 }
 
-func FromNamespace(ctx context.Context, c kubernetes.Interface, namespace string) Source {
-	return FromNamespaces(ctx, c, []string{namespace})
+func FromNamespace(ctx context.Context, c kubernetes.Interface, namespace string, opts ...func(*logSource)) Source {
+	return FromNamespaces(ctx, c, []string{namespace}, opts...)
 }
 
 type logSource struct {
