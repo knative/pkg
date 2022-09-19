@@ -34,8 +34,6 @@ type (
 	// Canceler is the type of function returned when a logstream is started to be
 	// deferred so that the logstream can be stopped when the test is complete.
 	Canceler = logstreamv2.Canceler
-	// Callback is the type of generic function for printing log lines.
-	Callback = logstreamv2.Callback
 )
 
 type ti interface {
@@ -55,31 +53,19 @@ func Start(t ti) Canceler {
 			var err error
 			// handle case when ns contains a csv list
 			namespaces := strings.Split(ns, ",")
-			if sysStream, err = initStream(namespaces, true /*filterLines*/); err != nil {
+			if sysStream, err = initStream(namespaces); err != nil {
 				t.Error("Error initializing logstream", "error", err)
 			}
 		} else {
-			// Otherwise set up a null stream.
+			// Otherwise, set up a null stream.
 			sysStream = &null{}
 		}
 	})
 
-	return sysStream.Start(t, t.Logf)
+	return sysStream.Start(t)
 }
 
-// StartForUserNamespace begins streaming the logs from custom namespaces.
-// Filtering of log lines is disabled in this case so all lines will be printed
-// through the provided callback.
-// It returns a Canceler which must be called before the test completes.
-func StartForUserNamespace(t ti, callback Callback, namespace string, podPrefixes ...string) Canceler {
-	userStream, err := initStream([]string{namespace}, false /*filterLines*/, podPrefixes...)
-	if err != nil {
-		t.Error("Error initializing logstream", "error", err)
-	}
-	return userStream.Start(t, callback)
-}
-
-func initStream(namespaces []string, filterLines bool, podPrefixes ...string) (streamer, error) {
+func initStream(namespaces []string) (streamer, error) {
 	config, err := test.Flags.GetRESTConfig()
 	if err != nil {
 		return &null{}, fmt.Errorf("error loading client config: %w", err)
@@ -90,11 +76,11 @@ func initStream(namespaces []string, filterLines bool, podPrefixes ...string) (s
 		return &null{}, fmt.Errorf("error creating kubernetes client: %w", err)
 	}
 
-	return &shim{logstreamv2.FromNamespaces(context.Background(), kc, namespaces, filterLines, podPrefixes...)}, nil
+	return &shim{logstreamv2.FromNamespaces(context.Background(), kc, namespaces)}, nil
 }
 
 type streamer interface {
-	Start(t ti, c Callback) Canceler
+	Start(t ti) Canceler
 }
 
 var (
@@ -106,9 +92,9 @@ type shim struct {
 	logstreamv2.Source
 }
 
-func (s *shim) Start(t ti, callback Callback) Canceler {
+func (s *shim) Start(t ti) Canceler {
 	name := helpers.ObjectPrefixForTest(t)
-	canceler, err := s.StartStream(name, callback)
+	canceler, err := s.StartStream(name, t.Logf)
 
 	if err != nil {
 		t.Error("Failed to start logstream", "error", err)
