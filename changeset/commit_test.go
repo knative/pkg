@@ -73,6 +73,7 @@ func TestGet(t *testing.T) {
 
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
+			rev = ""
 			once = sync.Once{}
 			readBuildInfo = func() (info *debug.BuildInfo, ok bool) {
 				return c.info, c.ok
