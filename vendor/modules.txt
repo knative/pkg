@@ -1098,7 +1098,7 @@ k8s.io/utils/net
 k8s.io/utils/pointer
 k8s.io/utils/strings/slices
 k8s.io/utils/trace
-# knative.dev/hack v0.0.0-20221003111221-b3c97904d3b5
+# knative.dev/hack v0.0.0-20221004153928-92a65f105c37
 ## explicit; go 1.18
 knative.dev/hack
 # sigs.k8s.io/json v0.0.0-20211208200746-9f7c6b3444d2
