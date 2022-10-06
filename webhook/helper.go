@@ -34,6 +34,13 @@ func EnsureLabelSelectorExpressions(
 		return want
 	}
 
+	if len(current.MatchExpressions) == 0 {
+		return &metav1.LabelSelector{
+			MatchLabels:      current.MatchLabels,
+			MatchExpressions: want.MatchExpressions,
+		}
+	}
+
 	var wantExpressions []metav1.LabelSelectorRequirement
 	if want != nil {
 		wantExpressions = want.MatchExpressions
