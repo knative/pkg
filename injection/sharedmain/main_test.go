@@ -107,8 +107,14 @@ func TestWithLeaderElectionConfig(t *testing.T) {
 
 func TextWithObservabilityConfig(t *testing.T) {
 	want := &metrics.ObservabilityConfig{
-		RequestMetricsBackend: "prometheus",
-		EnableProfiling:       true,
+		EnableVarLogCollection:  false,
+		LoggingURLTemplate:      "url-template",
+		RequestLogTemplate:      "log-template",
+		EnableProbeRequestLog:   true,
+		RequestMetricsBackend:   "prometheus",
+		EnableProfiling:         true,
+		EnableRequestLog:        false,
+		MetricsCollectorAddress: "localhost:9090",
 	}
 	ctx := metrics.WithConfig(context.Background(), want)
 

@@ -116,11 +116,11 @@ func GetObservabilityConfig(ctx context.Context) (*metrics.ObservabilityConfig, 
 	observabilityConfigMap, err := kubeclient.Get(ctx).CoreV1().ConfigMaps(system.Namespace()).Get(ctx, metrics.ConfigMapName(), metav1.GetOptions{})
 	if apierrors.IsNotFound(err) {
 		return metrics.NewObservabilityConfigFromConfigMap(nil)
-	} else if err != nil {
+	}
+	if err != nil {
 		return nil, err
 	}
 	return metrics.NewObservabilityConfigFromConfigMap(observabilityConfigMap)
-
 }
 
 // EnableInjectionOrDie enables Knative Injection and starts the informers.

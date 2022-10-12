@@ -154,3 +154,55 @@ func TestConfigMapName(t *testing.T) {
 		t.Errorf("ConfigMapName = %q, want: %q", got, want)
 	}
 }
+
+func TestObservabilityConfigMap(t *testing.T) {
+	observabilityConfigMapTests := []struct {
+		name              string
+		config            *ObservabilityConfig
+		wantConfigMapData map[string]string
+	}{{
+		name: "observability configuration with all inputs",
+		config: &ObservabilityConfig{
+			EnableProbeRequestLog:  true,
+			EnableProfiling:        true,
+			EnableVarLogCollection: true,
+			EnableRequestLog:       true,
+			LoggingURLTemplate:     "https://logging.io",
+			RequestLogTemplate:     `{"requestMethod": "{{.Request.Method}}"}`,
+			RequestMetricsBackend:  "opencensus",
+		},
+		wantConfigMapData: map[string]string{
+			EnableProbeReqLogKey:                          "true",
+			"logging.enable-var-log-collection":           "true",
+			ReqLogTemplateKey:                             `{"requestMethod": "{{.Request.Method}}"}`,
+			"logging.revision-url-template":               "https://logging.io",
+			EnableReqLogKey:                               "true",
+			"metrics.request-metrics-backend-destination": "opencensus",
+			"profiling.enable":                            "true",
+			"metrics.opencensus-address":                  "",
+		},
+	}, {
+		name:   "observability configuration default config",
+		config: defaultConfig(),
+		wantConfigMapData: map[string]string{
+			EnableProbeReqLogKey:                          "false",
+			"logging.enable-var-log-collection":           "false",
+			ReqLogTemplateKey:                             `{"httpRequest": {"requestMethod": "{{.Request.Method}}", "requestUrl": "{{js .Request.RequestURI}}", "requestSize": "{{.Request.ContentLength}}", "status": {{.Response.Code}}, "responseSize": "{{.Response.Size}}", "userAgent": "{{js .Request.UserAgent}}", "remoteIp": "{{js .Request.RemoteAddr}}", "serverIp": "{{.Revision.PodIP}}", "referer": "{{js .Request.Referer}}", "latency": "{{.Response.Latency}}s", "protocol": "{{.Request.Proto}}"}, "traceId": "{{index .Request.Header "X-B3-Traceid"}}"}`,
+			"logging.revision-url-template":               "",
+			EnableReqLogKey:                               "false",
+			"metrics.request-metrics-backend-destination": "prometheus",
+			"profiling.enable":                            "false",
+			"metrics.opencensus-address":                  "",
+		},
+	}}
+
+	for _, tt := range observabilityConfigMapTests {
+		t.Run(tt.name, func(t *testing.T) {
+			cm := tt.config.GetConfigMap()
+
+			if got, want := cm.Data, tt.wantConfigMapData; !cmp.Equal(got, want) {
+				t.Errorf("Got = %v, want: %v, diff(-want,+got)\n%s", got, want, cmp.Diff(want, got))
+			}
+		})
+	}
+}
