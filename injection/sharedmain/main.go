@@ -104,6 +104,25 @@ func GetLeaderElectionConfig(ctx context.Context) (*leaderelection.Config, error
 	return leaderelection.NewConfigFromConfigMap(leaderElectionConfigMap)
 }
 
+// GetObservabilityConfig gets the observability config from the (in order):
+// 1. provided context,
+// 2. reading from the API server,
+// 3. defaults (if not found).
+func GetObservabilityConfig(ctx context.Context) (*metrics.ObservabilityConfig, error) {
+	if cfg := metrics.GetObservabilityConfig(ctx); cfg != nil {
+		return cfg, nil
+	}
+
+	observabilityConfigMap, err := kubeclient.Get(ctx).CoreV1().ConfigMaps(system.Namespace()).Get(ctx, metrics.ConfigMapName(), metav1.GetOptions{})
+	if apierrors.IsNotFound(err) {
+		return metrics.NewObservabilityConfigFromConfigMap(nil)
+	} else if err != nil {
+		return nil, err
+	}
+	return metrics.NewObservabilityConfigFromConfigMap(observabilityConfigMap)
+
+}
+
 // EnableInjectionOrDie enables Knative Injection and starts the informers.
 // Both Context and Config are optional.
 // Deprecated: use injection.EnableInjectionOrDie
@@ -248,6 +267,14 @@ func MainWithConfig(ctx context.Context, component string, cfg *rest.Config, cto
 		ctx = leaderelection.WithDynamicLeaderElectorBuilder(ctx, kubeclient.Get(ctx),
 			leaderElectionConfig.GetComponentConfig(component))
 	}
+
+	observabilityConfig, err := GetObservabilityConfig(ctx)
+	if err != nil {
+		logger.Fatal("Error loading observability configuration: ", err)
+	}
+	observabilityConfigMap := observabilityConfig.GetConfigMap()
+	metrics.ConfigMapWatcher(ctx, component, SecretFetcher(ctx), logger)(&observabilityConfigMap)
+	profilingHandler.UpdateFromConfigMap(&observabilityConfigMap)
 
 	controllers, webhooks := ControllersAndWebhooksFromCtors(ctx, cmw, ctors...)
 	WatchLoggingConfigOrDie(ctx, cmw, logger, atomicLevel, component)

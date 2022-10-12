@@ -26,6 +26,7 @@ import (
 	"knative.dev/pkg/injection"
 	"knative.dev/pkg/leaderelection"
 	"knative.dev/pkg/logging"
+	"knative.dev/pkg/metrics"
 )
 
 func TestEnabledControllers(t *testing.T) {
@@ -98,6 +99,22 @@ func TestWithLeaderElectionConfig(t *testing.T) {
 	got, err := GetLeaderElectionConfig(ctx)
 	if err != nil {
 		t.Fatalf("GetLeaderElectionConfig() = %v", err)
+	}
+	if diff := cmp.Diff(got, want); diff != "" {
+		t.Errorf("(-got, +want) = %s", diff)
+	}
+}
+
+func TextWithObservabilityConfig(t *testing.T) {
+	want := &metrics.ObservabilityConfig{
+		RequestMetricsBackend: "prometheus",
+		EnableProfiling:       true,
+	}
+	ctx := metrics.WithConfig(context.Background(), want)
+
+	got, err := GetObservabilityConfig(ctx)
+	if err != nil {
+		t.Fatalf("GetObservabilityConfig() = %v", err)
 	}
 	if diff := cmp.Diff(got, want); diff != "" {
 		t.Errorf("(-got, +want) = %s", diff)
