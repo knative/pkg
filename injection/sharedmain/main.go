@@ -268,7 +268,7 @@ func MainWithConfig(ctx context.Context, component string, cfg *rest.Config, cto
 			leaderElectionConfig.GetComponentConfig(component))
 	}
 
-	SetupObservabilityOrDie(ctx, component, logger)
+	SetupObservabilityOrDie(ctx, component, logger, profilingHandler)
 
 	controllers, webhooks := ControllersAndWebhooksFromCtors(ctx, cmw, ctors...)
 	WatchLoggingConfigOrDie(ctx, cmw, logger, atomicLevel, component)
@@ -350,7 +350,7 @@ func SetupLoggerOrDie(ctx context.Context, component string) (*zap.SugaredLogger
 
 // SetupObservabilityOrDie sets up the observability using the config from the given context
 // or dies by calling log.Fatalf.
-func SetupObservabilityOrDie(ctx context.Context, component string, logger *zap.SugaredLogger) {
+func SetupObservabilityOrDie(ctx context.Context, component string, logger *zap.SugaredLogger, profilingHandler *profiling.Handler) {
 	observabilityConfig, err := GetObservabilityConfig(ctx)
 	if err != nil {
 		logger.Fatal("Error loading observability configuration: ", err)
