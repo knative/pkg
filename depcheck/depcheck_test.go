@@ -66,7 +66,10 @@ func TestExample(t *testing.T) {
 			"golang.org/x/sync/errgroup",
 		},
 		"knative.dev/pkg/ptr": {
+			"fmt",
+			"reflect",
 			"time",
+			"k8s.io/utils/pointer",
 		},
 	})
 
