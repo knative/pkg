@@ -17,8 +17,9 @@ limitations under the License.
 package ptr
 
 import (
-	"k8s.io/utils/pointer"
 	"time"
+
+	"k8s.io/utils/pointer"
 )
 
 // Int32 is a helper for turning integers into pointers for use in
