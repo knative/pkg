@@ -60,13 +60,13 @@ var String = pointer.StringPtr
 // Duration is a helper for turning time.Duration into pointers for use in
 // API types that want *time.Duration.
 //
-// Deprecated: Use k8s.io/utils/pointer.DurationPtr instead.
+// Deprecated: Use k8s.io/utils/pointer.Duration instead.
 var Duration = pointer.Duration
 
 // Time is a helper for turning a const time.Time into a pointer for use in
 // API types that want *time.Time.
 //
-// Deprecated: Use k8s.io/utils/pointer instead.
+// Deprecated: Will be removed in a future release.
 func Time(t time.Time) *time.Time {
 	return &t
 }
