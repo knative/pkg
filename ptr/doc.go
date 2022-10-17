@@ -15,4 +15,6 @@ limitations under the License.
 */
 
 // Package ptr holds utilities for taking pointer references to values.
+//
+// Deprecated: Use k8s.io/utils/pointer directly.
 package ptr
