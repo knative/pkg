@@ -61,7 +61,7 @@ var (
 		name: "emptyDomain",
 		ops: ExporterOptions{
 			ConfigMap: map[string]string{
-				BackendDestinationKey: string(prometheus),
+				BackendDestinationKey: string(openCensus),
 			},
 			Component: testComponent,
 		},
