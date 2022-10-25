@@ -105,7 +105,7 @@ func TestWithLeaderElectionConfig(t *testing.T) {
 	}
 }
 
-func TextWithObservabilityConfig(t *testing.T) {
+func TestWithObservabilityConfig(t *testing.T) {
 	want := &metrics.ObservabilityConfig{
 		EnableVarLogCollection:  false,
 		LoggingURLTemplate:      "url-template",
