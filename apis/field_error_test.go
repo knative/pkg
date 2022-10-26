@@ -23,6 +23,7 @@ import (
 	"time"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 )
 
 type testStruct struct {
@@ -361,6 +362,37 @@ missing field(s): bar`,
 	}
 }
 
+func TestGetErrors(t *testing.T) {
+	for _, test := range []struct {
+		name string
+		err  *FieldError
+		want []FieldError
+	}{{
+		name: "nil",
+		err:  nil,
+		want: nil,
+	}, {
+		name: "empty",
+		err:  &FieldError{},
+		want: nil,
+	}, {
+		name: "has errors",
+		err: (&FieldError{}).Also(
+			ErrInvalidValue("42", "answer"),
+			ErrGeneric("generic", "error"),
+		),
+		want: []FieldError{
+			*ErrInvalidValue("42", "answer"),
+			*ErrGeneric("generic", "error"),
+		},
+	}} {
+		t.Run(test.name, func(t *testing.T) {
+			if diff := cmp.Diff(test.want, test.err.GetErrors(), cmp.AllowUnexported(FieldError{}), cmpopts.EquateEmpty()); diff != "" {
+				t.Errorf("unexpected GetErrors() -want,+got: %s", diff)
+			}
+		})
+	}
+}
 func TestViaIndexOrKeyFieldError(t *testing.T) {
 	tests := []struct {
 		name     string
