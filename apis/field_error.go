@@ -256,8 +256,8 @@ func (fe *FieldError) normalized() []*FieldError {
 	return errors
 }
 
-// WrapErrors returns the value of the nested errors.
-func (fe *FieldError) WrapErrors() []FieldError {
+// WrappedErrors returns the value of the nested errors.
+func (fe *FieldError) WrappedErrors() []FieldError {
 	if fe == nil {
 		return nil
 	}
