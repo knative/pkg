@@ -387,7 +387,7 @@ func TestGetErrors(t *testing.T) {
 		},
 	}} {
 		t.Run(test.name, func(t *testing.T) {
-			if diff := cmp.Diff(test.want, test.err.GetErrors(), cmp.AllowUnexported(FieldError{}), cmpopts.EquateEmpty()); diff != "" {
+			if diff := cmp.Diff(test.want, test.err.WrapErrors(), cmp.AllowUnexported(FieldError{}), cmpopts.EquateEmpty()); diff != "" {
 				t.Errorf("unexpected GetErrors() -want,+got: %s", diff)
 			}
 		})
