@@ -230,9 +230,9 @@ func (fe *FieldError) isEmpty() bool {
 	return fe.Message == "" && fe.Details == "" && len(fe.errors) == 0 && len(fe.Paths) == 0
 }
 
-// normalized returns a flattened copy of all the errors.
-func (fe *FieldError) normalized() []*FieldError {
-	// In case we call normalized on a nil object, return just an empty
+// Normalized returns a flattened copy of all the errors.
+func (fe *FieldError) Normalized() []*FieldError {
+	// In case we call Normalized on a nil object, return just an empty
 	// list. This can happen when .Error() is called on a nil object.
 	if fe == nil {
 		return []*FieldError(nil)
@@ -251,13 +251,13 @@ func (fe *FieldError) normalized() []*FieldError {
 	}
 	// And then collect all other errors recursively.
 	for _, e := range fe.errors {
-		errors = append(errors, e.normalized()...)
+		errors = append(errors, e.Normalized()...)
 	}
 	return errors
 }
 
-// WrappedErrors returns the value of the nested errors.
-func (fe *FieldError) WrappedErrors() []FieldError {
+// WrapErrors returns the value of the nested errors.
+func (fe *FieldError) WrapErrors() []FieldError {
 	if fe == nil {
 		return nil
 	}
@@ -269,7 +269,7 @@ func (fe *FieldError) WrappedErrors() []FieldError {
 // Error implements error
 func (fe *FieldError) Error() string {
 	// Get the list of errors as a flat merged list.
-	normedErrors := merge(fe.normalized())
+	normedErrors := merge(fe.Normalized())
 	errs := make([]string, 0, len(normedErrors))
 	for _, e := range normedErrors {
 		if e.Details == "" {
