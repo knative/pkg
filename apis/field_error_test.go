@@ -362,11 +362,11 @@ missing field(s): bar`,
 	}
 }
 
-func TestGetErrors(t *testing.T) {
+func TestWrappedErrors(t *testing.T) {
 	for _, test := range []struct {
 		name string
 		err  *FieldError
-		want []FieldError
+		want []*FieldError
 	}{{
 		name: "nil",
 		err:  nil,
@@ -381,9 +381,9 @@ func TestGetErrors(t *testing.T) {
 			ErrInvalidValue("42", "answer"),
 			ErrGeneric("generic", "error"),
 		),
-		want: []FieldError{
-			*ErrInvalidValue("42", "answer"),
-			*ErrGeneric("generic", "error"),
+		want: []*FieldError{
+			ErrGeneric("generic", "error"),
+			ErrInvalidValue("42", "answer"),
 		},
 	}} {
 		t.Run(test.name, func(t *testing.T) {
@@ -393,6 +393,7 @@ func TestGetErrors(t *testing.T) {
 		})
 	}
 }
+
 func TestViaIndexOrKeyFieldError(t *testing.T) {
 	tests := []struct {
 		name     string
