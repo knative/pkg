@@ -388,7 +388,8 @@ func (tt TableTest) Test(t *testing.T, factory Factory) {
 			t.Helper()
 			test.Test(t, factory)
 			// Validate cached objects do not get soiled after controller loops.
-			if !cmp.Equal(originObjects, test.Objects, defaultCmpOpts...) {
+			opts := append(test.CmpOpts, defaultCmpOpts...)
+			if !cmp.Equal(originObjects, test.Objects, opts...) {
 				t.Errorf("Unexpected objects (-want, +got):\n%s",
 					cmp.Diff(originObjects, test.Objects, defaultCmpOpts...))
 			}
