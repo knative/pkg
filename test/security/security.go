@@ -42,17 +42,29 @@ var DefaultContainerSecurityContext = corev1.SecurityContext{
 // AllowRestrictedPodSecurityStandard adds SecurityContext to Pod and its containers so that it can run
 // in a namespace with enforced "restricted" security standard.
 func AllowRestrictedPodSecurityStandard(ctx context.Context, kubeClient kubernetes.Interface, pod *corev1.Pod) error {
-	ns, err := kubeClient.CoreV1().Namespaces().Get(ctx, pod.Namespace, metav1.GetOptions{})
+	enforced, err := IsRestrictedPodSecurityEnforced(ctx, kubeClient, pod.Namespace)
 	if err != nil {
 		return err
 	}
-	for k, v := range ns.Labels {
-		if k == "pod-security.kubernetes.io/enforce" && v == "restricted" {
-			pod.Spec.SecurityContext = &DefaultPodSecurityContext
-			for _, c := range pod.Spec.Containers {
-				c.SecurityContext = &DefaultContainerSecurityContext
-			}
+	if enforced {
+		pod.Spec.SecurityContext = &DefaultPodSecurityContext
+		for _, c := range pod.Spec.Containers {
+			c.SecurityContext = &DefaultContainerSecurityContext
 		}
 	}
 	return nil
+}
+
+// IsRestrictedPodSecurityEnforced checks if the given namespace has enforced restricted security standard.
+func IsRestrictedPodSecurityEnforced(ctx context.Context, kubeClient kubernetes.Interface, namespace string) (bool, error) {
+	ns, err := kubeClient.CoreV1().Namespaces().Get(ctx, namespace, metav1.GetOptions{})
+	if err != nil {
+		return false, err
+	}
+	for k, v := range ns.Labels {
+		if k == "pod-security.kubernetes.io/enforce" && v == "restricted" {
+			return true, nil
+		}
+	}
+	return false, nil
 }
