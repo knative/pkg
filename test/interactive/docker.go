@@ -76,7 +76,9 @@ func (d *Docker) AddMount(typeStr, source, target string, optAdditionalArgs ...s
 }
 
 // AddRWOverlay mounts a directory into the image at the desired location, but with an overlay
-//  so internal changes do not modify the external directory.
+//
+//	so internal changes do not modify the external directory.
+//
 // externalDirectory probably needs to be an absolute path
 // Returns a function to clean up the mount (but does not delete the directory).
 // Uses sudo and probably only works on Linux
