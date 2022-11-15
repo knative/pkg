@@ -42,14 +42,14 @@ require (
 	google.golang.org/grpc v1.47.0
 	google.golang.org/protobuf v1.28.0
 	gopkg.in/yaml.v3 v3.0.1
-	k8s.io/api v0.25.2
-	k8s.io/apiextensions-apiserver v0.25.2
-	k8s.io/apimachinery v0.25.2
-	k8s.io/client-go v0.25.2
-	k8s.io/code-generator v0.25.2
-	k8s.io/gengo v0.0.0-20211129171323-c02415ce4185
-	k8s.io/klog/v2 v2.70.2-0.20220707122935-0990e81f1a8f
-	k8s.io/utils v0.0.0-20220728103510-ee6ede2d64ed
+	k8s.io/api v0.25.4
+	k8s.io/apiextensions-apiserver v0.25.4
+	k8s.io/apimachinery v0.25.4
+	k8s.io/client-go v0.25.4
+	k8s.io/code-generator v0.25.4
+	k8s.io/gengo v0.0.0-20221011193443-fad74ee6edd9
+	k8s.io/klog/v2 v2.80.2-0.20221028030830-9ae4992afb54
+	k8s.io/utils v0.0.0-20221108210102-8e77b1f39fe2
 	knative.dev/hack v0.0.0-20221114224536-b0354624aa29
 	sigs.k8s.io/yaml v1.3.0
 )
@@ -92,6 +92,7 @@ require (
 	github.com/prometheus/client_model v0.2.0 // indirect
 	github.com/prometheus/procfs v0.7.3 // indirect
 	github.com/prometheus/statsd_exporter v0.21.0 // indirect
+	go.uber.org/goleak v1.2.0 // indirect
 	go.uber.org/multierr v1.6.0 // indirect
 	golang.org/x/crypto v0.0.0-20220315160706-3147a52a75dd // indirect
 	golang.org/x/mod v0.6.0-dev.0.20220419223038-86c51ed26bb4 // indirect
