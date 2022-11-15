@@ -50,7 +50,7 @@ require (
 	k8s.io/gengo v0.0.0-20211129171323-c02415ce4185
 	k8s.io/klog/v2 v2.70.2-0.20220707122935-0990e81f1a8f
 	k8s.io/utils v0.0.0-20220728103510-ee6ede2d64ed
-	knative.dev/hack v0.0.0-20221104013908-8f3c7050408b
+	knative.dev/hack v0.0.0-20221114224536-b0354624aa29
 	sigs.k8s.io/yaml v1.3.0
 )
 
