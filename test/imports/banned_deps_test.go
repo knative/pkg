@@ -44,9 +44,12 @@ var bannedImports = []vbTuple{
 }
 
 // TestBannedImports run with:
-//   go test ./vendor/knative.dev/pkg/test/imports/ -run TestBannedImports
+//
+//	go test ./vendor/knative.dev/pkg/test/imports/ -run TestBannedImports
+//
 // Or with test-infra:
-//   report_go_test ${REPO_ROOT_DIR}/vendor/knative.dev/pkg/test/imports/...
+//
+//	report_go_test ${REPO_ROOT_DIR}/vendor/knative.dev/pkg/test/imports/...
 func TestBannedImports(t *testing.T) {
 	_, filename, _, _ := runtime.Caller(0)
 	dir := filepath.Dir(filename)
