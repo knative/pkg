@@ -38,7 +38,7 @@ func TestChecksum(t *testing.T) {
 		in:   "1",
 		want: "83dcefb7",
 	}, {
-		in: "   a somewhat longer test			",
+		in:   "   a somewhat longer test			",
 		want: "fefe6f72",
 	}, {
 		in:   "a somewhat longer test",

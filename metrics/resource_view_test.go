@@ -24,8 +24,8 @@ import (
 	"go.opencensus.io/resource"
 	"go.opencensus.io/stats"
 	"go.opencensus.io/stats/view"
-	"k8s.io/apimachinery/pkg/util/clock"
 	"k8s.io/apimachinery/pkg/util/wait"
+	testingclock "k8s.io/utils/clock/testing"
 )
 
 var (
@@ -129,8 +129,8 @@ func TestSetFactory(t *testing.T) {
 }
 
 func TestAllMetersExpiration(t *testing.T) {
-	allMeters.clock = clock.Clock(clock.NewFakeClock(time.Now()))
-	fakeClock := allMeters.clock.(*clock.FakeClock)
+	fakeClock := testingclock.NewFakeClock(time.Now())
+	allMeters.clock = fakeClock
 	ClearMetersForTest() // t+0m
 
 	// Add resource123
@@ -199,8 +199,8 @@ func TestAllMetersExpiration(t *testing.T) {
 }
 
 func TestIfAllMeterResourcesAreRemoved(t *testing.T) {
-	allMeters.clock = clock.Clock(clock.NewFakeClock(time.Now()))
-	fakeClock := allMeters.clock.(*clock.FakeClock)
+	fakeClock := testingclock.NewFakeClock(time.Now())
+	allMeters.clock = fakeClock
 	ClearMetersForTest() // t+0m
 	// Register many resources at once
 	for i := 1; i <= 100; i++ {

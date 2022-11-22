@@ -20,7 +20,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"strings"
 	"testing"
@@ -385,7 +385,7 @@ func (f *fakePods) GetLogs(podName string, opts *corev1.PodLogOptions) *restclie
 		Client: fakerest.CreateHTTPClient(func(request *http.Request) (*http.Response, error) {
 			resp := &http.Response{
 				StatusCode: http.StatusOK,
-				Body: ioutil.NopCloser(
+				Body: io.NopCloser(
 					strings.NewReader(logsForContainer(opts.Container))),
 			}
 			return resp, nil

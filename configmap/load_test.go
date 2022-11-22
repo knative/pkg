@@ -18,7 +18,6 @@ package configmap
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path"
 	"testing"
@@ -33,7 +32,7 @@ func TestLoad(t *testing.T) {
 		"a.b.c":  "blah",
 		".z.y.x": "hidden!",
 	}
-	tmpdir, err := ioutil.TempDir("", "")
+	tmpdir, err := os.MkdirTemp("", "")
 	if err != nil {
 		t.Fatal("TempDir() =", err)
 	}
@@ -60,7 +59,7 @@ func TestLoad(t *testing.T) {
 	// Write out the files as they should be loaded.
 	for k, v := range want {
 		// Write the actual file to $/.{timestamp}/key
-		if err := ioutil.WriteFile(path.Join(tsDir, k), []byte(v), 0644); err != nil {
+		if err := os.WriteFile(path.Join(tsDir, k), []byte(v), 0644); err != nil {
 			t.Fatalf("WriteFile(..{ts}/%s) = %v", k, err)
 		}
 		// Symlink $/key => $/..data/key
@@ -91,7 +90,7 @@ func TestLoadError(t *testing.T) {
 // 		"a.b.c":  "blah",
 // 		".z.y.x": "hidden!",
 // 	}
-// 	tmpdir, err := ioutil.TempDir("", "")
+// 	tmpdir, err := os.MkdirTemp("", "")
 // 	if err != nil {
 // 		t.Fatal("TempDir() =", err)
 // 	}
@@ -99,7 +98,7 @@ func TestLoadError(t *testing.T) {
 
 // 	// Write out the files as write-only, so we fail reading.
 // 	for k, v := range written {
-// 		err := ioutil.WriteFile(path.Join(tmpdir, k), []byte(v), 0200)
+// 		err := os.WriteFile(path.Join(tmpdir, k), []byte(v), 0200)
 // 		if err != nil {
 // 			t.Fatalf("WriteFile(%q) = %v", k, err)
 // 		}
@@ -111,7 +110,7 @@ func TestLoadError(t *testing.T) {
 // }
 
 func TestReadSymlinkedFileError(t *testing.T) {
-	tmpdir, err := ioutil.TempDir("", "")
+	tmpdir, err := os.MkdirTemp("", "")
 	if err != nil {
 		t.Fatal("TempDir() =", err)
 	}
