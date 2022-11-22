@@ -551,9 +551,7 @@ func TestReset(t *testing.T) {
 func TestResetWithActiveRequests(t *testing.T) {
 	d := Drainer{
 		QuietPeriod: 5 * time.Second,
-		Inner: http.HandlerFunc(func(http.ResponseWriter, *http.Request) {
-			return
-		}),
+		Inner:       http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}),
 	}
 
 	trafficStopped := make(chan struct{})
@@ -562,15 +560,16 @@ func TestResetWithActiveRequests(t *testing.T) {
 	defer close(trafficStopped)
 
 	go func() {
-		r, _ := http.NewRequest("GET", "knative.dev", nil)
+		req, _ := http.NewRequest("GET", "knative.dev", nil)
+		rec := httptest.NewRecorder()
+
 		close(trafficStarted)
 		for {
 			select {
 			case <-trafficStopped:
 				return
 			default:
-				w := httptest.NewRecorder()
-				d.ServeHTTP(w, r)
+				d.ServeHTTP(rec, req)
 			}
 		}
 	}()
