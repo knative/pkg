@@ -17,7 +17,6 @@ limitations under the License.
 package main
 
 import (
-	"io/ioutil"
 	"os"
 	"path"
 	"testing"
@@ -28,7 +27,7 @@ import (
 func TestProcess(t *testing.T) {
 	for _, test := range []string{"add", "update", "nothing"} {
 		t.Run(test, func(t *testing.T) {
-			in, err := ioutil.ReadFile(path.Join("testdata", test+".yaml"))
+			in, err := os.ReadFile(path.Join("testdata", test+".yaml"))
 			if err != nil {
 				t.Fatal("Failed to load test fixture:", err)
 			}
@@ -38,7 +37,7 @@ func TestProcess(t *testing.T) {
 				t.Fatal("Expected no error but got", err)
 			}
 
-			want, err := ioutil.ReadFile(path.Join("testdata", test+"_want.yaml"))
+			want, err := os.ReadFile(path.Join("testdata", test+"_want.yaml"))
 			if err != nil && !os.IsNotExist(err) {
 				t.Fatal("Failed to load test fixture:", err)
 			}

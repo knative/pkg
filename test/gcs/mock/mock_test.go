@@ -21,7 +21,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path"
 	"reflect"
@@ -971,7 +970,7 @@ func TestDownload(t *testing.T) {
 				return
 			}
 
-			fileContent, err := ioutil.ReadFile(file)
+			fileContent, err := os.ReadFile(file)
 			if err != nil {
 				t.Fatalf("cannot read content %v, error %v", file, err)
 			}
@@ -989,7 +988,7 @@ func TestUpload(t *testing.T) {
 	project1 := "test-project1"
 	object1 := "dir/object1"
 	file := "test/upload"
-	content, err := ioutil.ReadFile(file)
+	content, err := os.ReadFile(file)
 	if err != nil {
 		t.Fatalf("cannot read content %v, error %v", file, err)
 	}

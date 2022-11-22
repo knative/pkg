@@ -21,7 +21,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"testing"
 
@@ -123,7 +123,7 @@ func TestConversionValidResponse(t *testing.T) {
 		t.Errorf("Response status code = %v, wanted %v", got, want)
 	}
 
-	responseBody, err := ioutil.ReadAll(response.Body)
+	responseBody, err := io.ReadAll(response.Body)
 	if err != nil {
 		t.Fatal("Failed to read response body", err)
 	}
@@ -212,7 +212,7 @@ func TestConversionInvalidResponse(t *testing.T) {
 		t.Errorf("Response status code = %v, wanted %v", got, want)
 	}
 
-	responseBody, err := ioutil.ReadAll(response.Body)
+	responseBody, err := io.ReadAll(response.Body)
 	if err != nil {
 		t.Fatal("Failed to read response body", err)
 	}

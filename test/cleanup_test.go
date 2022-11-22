@@ -20,7 +20,6 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"strings"
@@ -43,8 +42,7 @@ func TestCleanupOnInterrupt(t *testing.T) {
 		return
 	}
 
-	// TODO: Move to os.CreateTemp when we adopt 1.16 more widely
-	readyFile, err := ioutil.TempFile("", "")
+	readyFile, err := os.CreateTemp("", "")
 	if err != nil {
 		t.Fatalf("failed to setup tests")
 	}
