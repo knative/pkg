@@ -546,3 +546,44 @@ func TestReset(t *testing.T) {
 	// Calling reset after a drain should succeed
 	d.Reset()
 }
+
+// https://github.com/knative/pkg/issues/2642
+func TestResetWithActiveRequests(t *testing.T) {
+	d := Drainer{
+		QuietPeriod: 5 * time.Second,
+		Inner: http.HandlerFunc(func(http.ResponseWriter, *http.Request) {
+			return
+		}),
+	}
+
+	trafficStopped := make(chan struct{})
+	trafficStarted := make(chan struct{})
+	drainStarted := make(chan struct{})
+	defer close(trafficStopped)
+
+	go func() {
+		r, _ := http.NewRequest("GET", "knative.dev", nil)
+		close(trafficStarted)
+		for {
+			select {
+			case <-trafficStopped:
+				return
+			default:
+				w := httptest.NewRecorder()
+				d.ServeHTTP(w, r)
+			}
+		}
+	}()
+
+	go func() {
+		<-trafficStarted
+		close(drainStarted)
+		d.Drain()
+	}()
+
+	<-drainStarted
+	d.Reset()
+
+	// We need requests to be active for a bit
+	time.Sleep(time.Second)
+}
