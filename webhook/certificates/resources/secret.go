@@ -26,9 +26,11 @@ import (
 
 const (
 	// ServerKey is the name of the key associated with the secret's private key.
-	ServerKey = "server-key.pem"
+	ServerKey    = "server-key.pem"
+	ServerKeyEnv = "KNATIVE_SECRET_WEBHOOK_SERVER_KEY"
 	// ServerCert is the name of the key associated with the secret's public key.
-	ServerCert = "server-cert.pem"
+	ServerCert    = "server-cert.pem"
+	ServerCertEnv = "KNATIVE_SECRET_WEBHOOK_SERVER_CERT"
 	// CACert is the name of the key associated with the certificate of the CA for
 	// the keypair.
 	CACert = "ca-cert.pem"
