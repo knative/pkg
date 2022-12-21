@@ -17,10 +17,12 @@ limitations under the license.
 package kmeta
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"k8s.io/apimachinery/pkg/util/validation"
 )
 
 func TestChildName(t *testing.T) {
@@ -56,11 +58,20 @@ func TestChildName(t *testing.T) {
 		parent: "aaaa",
 		suffix: strings.Repeat("b---a", 20),
 		want:   "aaaa7a3f7966594e3f0849720eced8212c18b---ab---ab---ab---ab---ab",
-	}}
+	}, {
+		parent: strings.Repeat("a", 17),
+		suffix: "a.-.-.-.-.-.-.aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+		want:   "aaaaaaaaaaaaaaaaaa1eb10dc911444f8434af83b7225442da",
+	},
+	}
 
 	for _, test := range tests {
 		t.Run(test.parent+"-"+test.suffix, func(t *testing.T) {
-			if got, want := ChildName(test.parent, test.suffix), test.want; got != want {
+			got, want := ChildName(test.parent, test.suffix), test.want
+			if errs := validation.IsDNS1123Subdomain(got); len(errs) != 0 {
+				t.Errorf(fmt.Sprintf("Invalid DNS1123 Subdomain %63s\n\n Errors: %v", got, errs))
+			}
+			if got != want {
 				t.Errorf("%s-%s: got: %63s want: %63s\ndiff:%s", test.parent, test.suffix, got, want, cmp.Diff(want, got))
 			}
 		})
