@@ -391,3 +391,14 @@ func TestUnopposedElectorInitialBucket(t *testing.T) {
 		t.Errorf("unexpected u.InitialBuckets() (-want,+got): %s", diff)
 	}
 }
+
+func TestWithNoElectorBuilder(t *testing.T) {
+	ctx := WithNoElectorBuilder(context.Background())
+	if HasLeaderElection(ctx) {
+		t.Error("Want HasLeaderElection() false for context marked WithNoElectorBuilder")
+	}
+
+	if HasLeaderElection(context.Background()) {
+		t.Error("Want HasLeaderElection() false for undecorated context")
+	}
+}

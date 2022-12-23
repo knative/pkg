@@ -1355,6 +1355,38 @@ func TestStartAndShutdownWithRequeuingWork(t *testing.T) {
 	}
 }
 
+func TestBuildElectorForControllers(t *testing.T) {
+	r1 := &countingLeaderAwareReconciler{}
+	reporter := &FakeStatsReporter{}
+	impl1 := NewContext(context.TODO(), r1, ControllerOptions{
+		Logger:        TestLogger(t),
+		WorkQueueName: "Testing",
+		Reporter:      reporter,
+	})
+
+	r2 := &countingLeaderAwareReconciler{}
+	impl2 := NewContext(context.TODO(), r2, ControllerOptions{
+		Logger:        TestLogger(t),
+		WorkQueueName: "Testing",
+		Reporter:      reporter,
+	})
+
+	elector, err := BuildElectorForControllers(context.Background(), "test", impl1, impl2)
+	if err != nil {
+		t.Fatal(err)
+	}
+	runCtx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	elector.Run(runCtx)
+
+	// Because we provided no elector constructor to BuildElectorForControllers, we should have an UnopposedElector.
+	// Because the elector services both controllers, they should both be promoted.
+	if r1.promotionCount.Load() != 1 || r2.promotionCount.Load() != 1 {
+		t.Errorf("Expected each controller to be promoted once, got promotion counts %d/%d",
+			r1.promotionCount.Load(), r2.promotionCount.Load())
+	}
+}
+
 func drainWorkQueue(wq workqueue.RateLimitingInterface) (hasQueue []types.NamespacedName) {
 	for {
 		key, shutdown := wq.Get()
