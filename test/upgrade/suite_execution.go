@@ -18,11 +18,12 @@ package upgrade
 
 import (
 	"testing"
+	"time"
 )
 
-func (se *suiteExecution) processOperationGroup(op operationGroup) {
+func (se *suiteExecution) processOperationGroup(t *testing.T, op operationGroup) {
 	l := se.logger
-	se.configuration.T.Run(op.groupName, func(t *testing.T) {
+	t.Run(op.groupName, func(t *testing.T) {
 		if len(op.operations) > 0 {
 			l.Infof(op.groupTemplate, op.num, len(op.operations))
 			for i, operation := range op.operations {
@@ -49,41 +50,46 @@ func (se *suiteExecution) processOperationGroup(op operationGroup) {
 func (se *suiteExecution) execute() {
 	idx := 1
 	done := make(chan struct{})
-	operations := []func(num int){
+	operations := []func(t *testing.T, num int){
 		se.installingBase,
 		se.preUpgradeTests,
 	}
 	for _, operation := range operations {
-		operation(idx)
+		operation(se.configuration.T, idx)
 		idx++
 		if se.failed { //TODO: replace with t.Failed() ?
 			return
 		}
 	}
 
-	// Calls t.Parallel() after doing setup phase. The second part runs in parallel
-	// with UpgradeDowngrade test below.
-	se.runContinualTests(idx, done)
-	idx++
-	if se.failed { // TODO: replace with t.Failed()
-		return
-	}
-
-	operations = []func(num int){
-		se.upgradeWith,
-		se.postUpgradeTests,
-		se.downgradeWith,
-		se.postDowngradeTests,
-	}
-	se.configuration.T.Run("UpgradeDowngrade", func(t *testing.T) {
-		t.Parallel()
-		for _, operation := range operations {
-			operation(idx)
-			idx++
-			if se.failed { // TODO: replace with t.Failed()
-				return
-			}
+	se.configuration.T.Run("Parallel", func(t *testing.T) {
+		// Calls t.Parallel() after doing setup phase. The second part runs in parallel
+		// with UpgradeDowngrade test below.
+		se.runContinualTests(t, idx, done)
+		idx++
+		if se.failed { // TODO: replace with t.Failed()
+			return
 		}
-		close(done)
+
+		operations = []func(t *testing.T, num int){
+			se.upgradeWith,
+			se.postUpgradeTests,
+			se.downgradeWith,
+			se.postDowngradeTests,
+		}
+		t.Run("UpgradeDowngrade", func(t *testing.T) {
+			t.Parallel()
+			for _, operation := range operations {
+				operation(t, idx)
+				// TODO: This increment runs in parallel in theory with continual tests
+				idx++
+				if se.failed { // TODO: replace with t.Failed()
+					return
+				}
+			}
+			close(done)
+			time.Sleep(3 * time.Second)
+			//TODO: Wait for continual tests to finish here? YES - must wait, otherwise the sleep above is required
+		})
 	})
 }

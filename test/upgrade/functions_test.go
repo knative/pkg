@@ -72,9 +72,6 @@ func TestExpectedTextsForCompleteSuite(t *testing.T) {
 		"7) ✅️️ Testing functionality after downgrade is performed. 2 tests are registered.",
 		`7.1) Testing with "Serving post downgrade test".`,
 		`7.2) Testing with "Eventing post downgrade test".`,
-		"8) ✋ Verifying 2 running continual tests.",
-		`8.1) Verifying "Serving continual test".`,
-		`8.2) Verifying "Eventing continual test".`,
 	}
 	assert.arraysEqual(txt.elms, expected)
 }
@@ -110,7 +107,6 @@ func TestSuiteExecuteEmpty(t *testing.T) {
 
 	txt := expectedTexts(suite, fp)
 	txt.append(upgradeTestRunning, upgradeTestSuccess)
-
 	assert.textContains(output, txt)
 }
 

@@ -69,11 +69,6 @@ var (
 			element:  `%d.%d) Testing with "%s".`,
 			skipped:  "%d) ✅️️ No post downgrade tests registered. Skipping.",
 		}),
-		verifyContinual: createMessages(formats{
-			starting: "%d) ✋ Verifying %d running continual tests.",
-			element:  `%d.%d) Verifying "%s".`,
-			skipped:  "",
-		}),
 	}
 )
 

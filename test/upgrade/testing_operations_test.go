@@ -104,12 +104,6 @@ func createSteps(s upgrade.Suite) []*step {
 		updateSuite: func(ops operations, s *upgrade.Suite) {
 			s.Tests.PostDowngrade = ops.asOperations()
 		},
-	}, {
-		messages: messageFormatters.verifyContinual,
-		ops:      continualTestsGeneralized,
-		updateSuite: func(ops operations, s *upgrade.Suite) {
-			s.Tests.Continual = ops.asBackgroundOperation()
-		},
 	}}
 }
 
