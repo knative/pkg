@@ -37,19 +37,25 @@ func newConfig(t *testing.T) (upgrade.Configuration, fmt.Stringer) {
 	cfg.EncoderConfig.TimeKey = ""
 	cfg.EncoderConfig.CallerKey = ""
 	syncedBuf := zapcore.AddSync(&buf)
-	c := upgrade.Configuration{
-		T: t,
-		LogConfig: upgrade.LogConfig{
-			Config: cfg,
-			Options: []zap.Option{
-				zap.WrapCore(func(core zapcore.Core) zapcore.Core {
-					return zapcore.NewCore(
-						zapcore.NewConsoleEncoder(cfg.EncoderConfig),
-						zapcore.NewMultiWriteSyncer(syncedBuf), cfg.Level)
-				}),
-				zap.ErrorOutput(syncedBuf),
-			},
+	logConfig := upgrade.LogConfig{
+		Config: cfg,
+		Options: []zap.Option{
+			zap.WrapCore(func(core zapcore.Core) zapcore.Core {
+				return zapcore.NewCore(
+					zapcore.NewConsoleEncoder(cfg.EncoderConfig),
+					zapcore.NewMultiWriteSyncer(syncedBuf), cfg.Level)
+			}),
+			zap.ErrorOutput(syncedBuf),
 		},
+	}
+	logger, err := cfg.Build(logConfig.Options...)
+	if err != nil {
+		t.Fatal("Unable to create logger:", err)
+	}
+	c := upgrade.Configuration{
+		T:         t,
+		Log:       logger,
+		LogConfig: logConfig,
 	}
 	return c, &buf
 }

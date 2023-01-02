@@ -29,6 +29,7 @@ func (s *Suite) Execute(c Configuration) {
 		suite:         enrichSuite(s),
 		configuration: c,
 		failed:        false,
+		logger:        l,
 	}
 	l.Info("🏃 Running upgrade test suite...")
 
@@ -160,7 +161,6 @@ func (s *simpleBackgroundOperation) Handler() func(bc BackgroundContext) {
 	return s.handler
 }
 
-//
 //func (b *threadSafeBuffer) Read(p []byte) (n int, err error) {
 //	b.Mutex.Lock()
 //	defer b.Mutex.Unlock()
