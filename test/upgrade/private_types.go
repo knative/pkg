@@ -17,14 +17,14 @@ limitations under the License.
 package upgrade
 
 import (
-	"bytes"
-	"sync"
+	"go.uber.org/zap"
 )
 
 type suiteExecution struct {
 	suite         *enrichedSuite
 	configuration Configuration
 	failed        bool
+	logger        *zap.SugaredLogger
 }
 
 type enrichedSuite struct {
@@ -66,7 +66,7 @@ type simpleBackgroundOperation struct {
 
 // threadSafeBuffer avoids race conditions on bytes.Buffer.
 // See: https://stackoverflow.com/a/36226525/844449
-type threadSafeBuffer struct {
-	bytes.Buffer
-	sync.Mutex
-}
+//type threadSafeBuffer struct {
+//	bytes.Buffer
+//	sync.Mutex
+//}

@@ -84,12 +84,11 @@ type Context struct {
 // down to each handler of BackgroundOperation. It contains a StopEvent channel
 // which end user should use to obtain a testing.T for error reporting. Until
 // StopEvent is sent user may use zap.SugaredLogger to log state of execution if
-// necessary. The logs are stored in a threadSafeBuffer and flushed to the test
-// output when the test fails.
+// necessary.
 type BackgroundContext struct {
-	Log       *zap.SugaredLogger
-	Stop      <-chan StopEvent
-	logBuffer *threadSafeBuffer
+	Log  *zap.SugaredLogger
+	Stop <-chan StopEvent
+	//logBuffer *threadSafeBuffer
 }
 
 // StopEvent represents an event that is to be received by background operation

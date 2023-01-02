@@ -47,34 +47,31 @@ func (se *suiteExecution) preUpgradeTests(num int) {
 }
 
 func (se *suiteExecution) runContinualTests(num int, done chan struct{}) {
+	l := se.logger
 	operations := se.suite.tests.continual
 	groupTemplate := "%d) 🔄 Running continual tests. " +
 		"%d tests are registered."
 	elementTemplate := `%d.%d) Running continual tests of "%s".`
 	numOps := len(operations)
 	if numOps > 0 {
-		se.configuration.T.Logf(groupTemplate, num, numOps)
+		l.Infof(groupTemplate, num, numOps)
 		for i := range operations {
 			operation := operations[i]
-			se.configuration.T.Logf(elementTemplate, num, i+1, operation.Name())
+			l.Debugf(elementTemplate, num, i+1, operation.Name())
 			se.configuration.T.Run(fmt.Sprintf("Continual Test %d", i), func(t *testing.T) {
-				// TODO: Keep this for testing purposes ???
-				l, err := se.configuration.logger(se.configuration.T)
-				if err != nil {
-					t.Fatal(err)
-				}
-				operation.Setup()(Context{T: t, Log: l}) // Note: Log is not passed here, we'll use t.Logf directly
+				operation.Setup()(Context{T: t, Log: l})
 				handler := operation.Handler()
 				go func() {
 					//TODO: This could possibly wait directly for done instead of operation.stop?
 					handler(BackgroundContext{
-						//Log:       logger.Sugar(),
+						Log:  l,
 						Stop: operation.stop,
-						//logBuffer: buffer,
 					})
 				}()
 
+				// Will be run in parallel with "UpgradeDowngrade" test
 				t.Parallel()
+
 				// Waiting for done signal to be sent after Upgrades/Downgrades are finished.
 				<-done
 
