@@ -17,6 +17,7 @@ limitations under the License.
 package upgrade
 
 import (
+	"fmt"
 	"testing"
 )
 
@@ -45,90 +46,125 @@ func (se *suiteExecution) preUpgradeTests(num int) {
 	})
 }
 
-func (se *suiteExecution) startContinualTests(num int) {
+func (se *suiteExecution) runContinualTests(num int, done chan struct{}) {
 	operations := se.suite.tests.continual
-	groupTemplate := "%d) 🔄 Starting continual tests. " +
+	groupTemplate := "%d) 🔄 Running continual tests. " +
 		"%d tests are registered."
-	elementTemplate := `%d.%d) Starting continual tests of "%s".`
+	elementTemplate := `%d.%d) Running continual tests of "%s".`
 	numOps := len(operations)
-	se.configuration.T.Run("ContinualTests", func(t *testing.T) {
-		l, err := se.configuration.logger(t)
-		if err != nil {
-			t.Fatal(err)
-		}
-		if numOps > 0 {
-			l.Infof(groupTemplate, num, numOps)
-			for i := range operations {
-				operation := operations[i]
-				l.Infof(elementTemplate, num, i+1, operation.Name())
-				if se.failed {
-					l.Debugf(skippingOperationTemplate, operation.Name())
-					return
-				}
-				setup := operation.Setup()
 
-				logger, buffer := newInMemoryLoggerBuffer(se.configuration)
-				t.Run("Setup"+operation.Name(), func(t *testing.T) {
-					l, err = se.configuration.logger(t)
-					if err != nil {
-						t.Fatal(err)
-					}
-					setup(Context{T: t, Log: logger.Sugar()})
-				})
-
+	if numOps > 0 {
+		se.configuration.T.Logf(groupTemplate, num, numOps)
+		for i := range operations {
+			operation := operations[i]
+			se.configuration.T.Logf(elementTemplate, num, i+1, operation.Name())
+			se.configuration.T.Run(fmt.Sprintf("Continual Test %d", i), func(t *testing.T) {
+				operation.Setup()(Context{T: t}) // Note: Log is not passed here, we'll use t.Logf directly
 				handler := operation.Handler()
 				go func() {
+					//TODO: This could possibly wait directly for done instead of operation.stop?
 					handler(BackgroundContext{
-						Log:       logger.Sugar(),
-						Stop:      operation.stop,
-						logBuffer: buffer,
+						//Log:       logger.Sugar(),
+						Stop: operation.stop,
+						//logBuffer: buffer,
 					})
 				}()
-				se.failed = se.failed || t.Failed()
-				if se.failed {
-					// need to dump logs here, because verify will not be executed.
-					l.Error(wrapLog(buffer.Dump()))
-					return
+
+				t.Parallel()
+				// Waiting for done signal to be sent after Upgrades/Downgrades are finished.
+				<-done
+
+				finished := make(chan struct{})
+				operation.stop <- StopEvent{
+					T:        t,
+					Finished: finished,
+					//logger:   l,
+					name: "Stop of " + operation.Name(),
 				}
-			}
-
-		} else {
-			l.Infof("%d) 🔄 No continual tests registered. Skipping.", num)
+				<-finished
+				t.Logf(`Finished "%s"`, operation.Name())
+			})
 		}
-	})
+	}
+	//
+	//se.configuration.T.Run("ContinualTests", func(t *testing.T) {
+	//	l, err := se.configuration.logger(t)
+	//	if err != nil {
+	//		t.Fatal(err)
+	//	}
+	//	if numOps > 0 {
+	//		l.Infof(groupTemplate, num, numOps)
+	//		for i := range operations {
+	//			operation := operations[i]
+	//			l.Infof(elementTemplate, num, i+1, operation.Name())
+	//			if se.failed {
+	//				l.Debugf(skippingOperationTemplate, operation.Name())
+	//				return
+	//			}
+	//			operation.Setup()(Context{T: t}) // Note: Log is not passed here, we'll use t.Logf directly
+	//
+	//			logger, buffer := newInMemoryLoggerBuffer(se.configuration)
+	//			t.Run("Setup"+operation.Name(), func(t *testing.T) {
+	//				l, err = se.configuration.logger(t)
+	//				if err != nil {
+	//					t.Fatal(err)
+	//				}
+	//				setup(Context{T: t, Log: logger.Sugar()})
+	//			})
+	//
+	//			handler := operation.Handler()
+	//			go func() {
+	//				handler(BackgroundContext{
+	//					Log:       logger.Sugar(),
+	//					Stop:      operation.stop,
+	//					logBuffer: buffer,
+	//				})
+	//			}()
+	//			se.failed = se.failed || t.Failed()
+	//			if se.failed {
+	//				// need to dump logs here, because verify will not be executed.
+	//				l.Error(wrapLog(buffer.Dump()))
+	//				return
+	//			}
+	//		}
+	//
+	//	} else {
+	//		l.Infof("%d) 🔄 No continual tests registered. Skipping.", num)
+	//	}
+	//})
 }
 
-func (se *suiteExecution) verifyContinualTests(num int) {
-	testsCount := len(se.suite.tests.continual)
-	if testsCount > 0 {
-		se.configuration.T.Run("VerifyContinualTests", func(t *testing.T) {
-			l, err := se.configuration.logger(t)
-			if err != nil {
-				t.Fatal(err)
-			}
-			l.Infof("%d) ✋ Verifying %d running continual tests.", num, testsCount)
-			for i, operation := range se.suite.tests.continual {
-				t.Run(operation.Name(), func(t *testing.T) {
-					l, err = se.configuration.logger(t)
-					if err != nil {
-						t.Fatal(err)
-					}
-					l.Infof(`%d.%d) Verifying "%s".`, num, i+1, operation.Name())
-					finished := make(chan struct{})
-					operation.stop <- StopEvent{
-						T:        t,
-						Finished: finished,
-						logger:   l,
-						name:     "Stop of " + operation.Name(),
-					}
-					<-finished
-					se.failed = se.failed || t.Failed()
-					l.Debugf(`Finished "%s"`, operation.Name())
-				})
-			}
-		})
-	}
-}
+//func (se *suiteExecution) verifyContinualTests(num int) {
+//	testsCount := len(se.suite.tests.continual)
+//	if testsCount > 0 {
+//		se.configuration.T.Run("VerifyContinualTests", func(t *testing.T) {
+//			l, err := se.configuration.logger(t)
+//			if err != nil {
+//				t.Fatal(err)
+//			}
+//			l.Infof("%d) ✋ Verifying %d running continual tests.", num, testsCount)
+//			for i, operation := range se.suite.tests.continual {
+//				t.Run(operation.Name(), func(t *testing.T) {
+//					l, err = se.configuration.logger(t)
+//					if err != nil {
+//						t.Fatal(err)
+//					}
+//					l.Infof(`%d.%d) Verifying "%s".`, num, i+1, operation.Name())
+//					finished := make(chan struct{})
+//					operation.stop <- StopEvent{
+//						T:        t,
+//						Finished: finished,
+//						logger:   l,
+//						name:     "Stop of " + operation.Name(),
+//					}
+//					<-finished
+//					se.failed = se.failed || t.Failed()
+//					l.Debugf(`Finished "%s"`, operation.Name())
+//				})
+//			}
+//		})
+//	}
+//}
 
 func (se *suiteExecution) upgradeWith(num int) {
 	se.processOperationGroup(operationGroup{

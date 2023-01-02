@@ -54,6 +54,7 @@ func (se *suiteExecution) processOperationGroup(op operationGroup) {
 }
 
 func (se *suiteExecution) execute() {
+	done := make(chan struct{})
 	idx := 1
 	operations := []func(num int){
 		se.installingBase,
@@ -62,19 +63,19 @@ func (se *suiteExecution) execute() {
 	for _, operation := range operations {
 		operation(idx)
 		idx++
-		if se.failed {
+		if se.failed { //TODO: replace with t.Failed() ?
 			return
 		}
 	}
 
-	se.startContinualTests(idx)
+	se.runContinualTests(idx, done)
 	idx++
-	if se.failed {
+	if se.failed { // TODO: replace with t.Failed()
 		return
 	}
-	defer func() {
-		se.verifyContinualTests(idx)
-	}()
+	//defer func() {
+	//	se.verifyContinualTests(idx) //TODO: Move this to runContinualTests
+	//}()
 
 	operations = []func(num int){
 		se.upgradeWith,
@@ -82,11 +83,15 @@ func (se *suiteExecution) execute() {
 		se.downgradeWith,
 		se.postDowngradeTests,
 	}
-	for _, operation := range operations {
-		operation(idx)
-		idx++
-		if se.failed {
-			return
+	se.configuration.T.Run("UpgradeDowngrade", func(t *testing.T) {
+		se.configuration.T.Parallel() // TODO: Use t.Parallel instead of configuration.T.Parallel()
+		for _, operation := range operations {
+			operation(idx)
+			idx++
+			if se.failed { // TODO: replace with t.Failed()
+				return
+			}
 		}
-	}
+		close(done) //TODO: use this in continual sub-tests
+	})
 }
