@@ -52,14 +52,18 @@ func (se *suiteExecution) runContinualTests(num int, done chan struct{}) {
 		"%d tests are registered."
 	elementTemplate := `%d.%d) Running continual tests of "%s".`
 	numOps := len(operations)
-
 	if numOps > 0 {
 		se.configuration.T.Logf(groupTemplate, num, numOps)
 		for i := range operations {
 			operation := operations[i]
 			se.configuration.T.Logf(elementTemplate, num, i+1, operation.Name())
 			se.configuration.T.Run(fmt.Sprintf("Continual Test %d", i), func(t *testing.T) {
-				operation.Setup()(Context{T: t}) // Note: Log is not passed here, we'll use t.Logf directly
+				// TODO: Keep this for testing purposes ???
+				l, err := se.configuration.logger(se.configuration.T)
+				if err != nil {
+					t.Fatal(err)
+				}
+				operation.Setup()(Context{T: t, Log: l}) // Note: Log is not passed here, we'll use t.Logf directly
 				handler := operation.Handler()
 				go func() {
 					//TODO: This could possibly wait directly for done instead of operation.stop?
@@ -78,11 +82,11 @@ func (se *suiteExecution) runContinualTests(num int, done chan struct{}) {
 				operation.stop <- StopEvent{
 					T:        t,
 					Finished: finished,
-					//logger:   l,
-					name: "Stop of " + operation.Name(),
+					logger:   l, // is this necessary? maybe only for test purposes
+					name:     "Stop of " + operation.Name(),
 				}
 				<-finished
-				t.Logf(`Finished "%s"`, operation.Name())
+				l.Debugf(`Finished "%s"`, operation.Name())
 			})
 		}
 	}
