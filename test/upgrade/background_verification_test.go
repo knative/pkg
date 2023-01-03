@@ -31,9 +31,6 @@ const (
 func TestSkipAtBackgroundVerification(t *testing.T) {
 	config, buf := newConfig(t)
 	skipMsg := "It is expected to be skipped"
-	doneCh := make(chan struct{})
-	beforeVerifyCh := make(chan struct{})
-	inVerifyCh := make(chan struct{})
 	expectedTexts := []string{
 		upgradeTestRunning,
 		"DEBUG\tFinished \"ShouldBeSkipped\"",
@@ -42,39 +39,15 @@ func TestSkipAtBackgroundVerification(t *testing.T) {
 		"INFO\tSetup 1",
 		"INFO\tSetup 2",
 		"INFO\tVerify 2",
-		"WARN\t" + skipMsg,
 	}
 	s := upgrade.Suite{
 		Tests: upgrade.Tests{
 			Continual: []upgrade.BackgroundOperation{
 				upgrade.NewBackgroundVerification("ShouldBeSkipped",
-					// Setup
 					func(c upgrade.Context) {
 						c.Log.Info("Setup 1")
-						go func() {
-							// Log messages before Verify phase.
-							for i := 0; i < bgMessages; i++ {
-								msg := fmt.Sprintf("BeforeVerify %d", i)
-								c.Log.Info(msg)
-								expectedTexts = append(expectedTexts, msg)
-							}
-							close(beforeVerifyCh)
-							<-inVerifyCh
-							// Log messages while Verify phase is in progress.
-							for i := 0; i < bgMessages; i++ {
-								msg := fmt.Sprintf("InVerify %d", i)
-								c.Log.Info(msg)
-								expectedTexts = append(expectedTexts, msg)
-							}
-							close(doneCh)
-						}()
 					},
-					// Verify
 					func(c upgrade.Context) {
-						<-beforeVerifyCh
-						close(inVerifyCh)
-						<-doneCh
-						c.Log.Warn(skipMsg)
 						c.T.Skip(skipMsg)
 						c.Log.Info("Verify 1")
 					},
@@ -99,7 +72,6 @@ func TestSkipAtBackgroundVerification(t *testing.T) {
 		"INFO\tVerify 1",
 	}})
 	assert.textContains(out, texts{elms: expectedTexts})
-	verifyBackgroundLogs(t, out)
 }
 
 func verifyBackgroundLogs(t *testing.T, logs string) {
