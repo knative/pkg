@@ -17,7 +17,6 @@ limitations under the License.
 package upgrade
 
 import (
-	"fmt"
 	"testing"
 )
 
@@ -58,7 +57,7 @@ func (se *suiteExecution) runContinualTests(t *testing.T, num int, done chan str
 		for i := range operations {
 			operation := operations[i]
 			l.Debugf(elementTemplate, num, i+1, operation.Name())
-			t.Run(fmt.Sprintf("Continual Test %d", i), func(t *testing.T) {
+			t.Run(operation.Name(), func(t *testing.T) {
 				operation.Setup()(Context{T: t, Log: l})
 				handler := operation.Handler()
 				go func() {
@@ -80,7 +79,6 @@ func (se *suiteExecution) runContinualTests(t *testing.T, num int, done chan str
 					T:        t,
 					Finished: finished,
 					logger:   l, // is this necessary? maybe only for test purposes
-					name:     "Stop of " + operation.Name(),
 				}
 				<-finished
 				l.Debugf(`Finished "%s"`, operation.Name())

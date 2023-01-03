@@ -92,13 +92,12 @@ type BackgroundContext struct {
 }
 
 // StopEvent represents an event that is to be received by background operation
-// to indicate that is should stop it's operations and validate results using
+// to indicate that it should stop its operations and validate results using
 // passed T. User should use Finished channel to signalize upgrade suite that
-// all stop & verify operations are finished and it is safe to end tests.
+// all stop & verify operations are finished, and it is safe to end tests.
 type StopEvent struct {
 	T        *testing.T
 	Finished chan<- struct{}
-	name     string
 	logger   *zap.SugaredLogger
 }
 

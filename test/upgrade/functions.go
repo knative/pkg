@@ -97,17 +97,12 @@ func WaitForStopEvent(bc BackgroundContext, w WaitForStopEventConfiguration) {
 	}
 }
 
-// Name returns a friendly human readable text.
-func (s *StopEvent) Name() string {
-	return s.name
-}
-
 func handleStopEvent(
 	se StopEvent,
 	bc BackgroundContext,
 	wc WaitForStopEventConfiguration,
 ) {
-	bc.Log.Debugf("%s have received a stop event: %s", wc.Name, se.Name())
+	bc.Log.Debugf("%s have received a stop event", wc.Name)
 	defer close(se.Finished)
 	wc.OnStop(se)
 }
