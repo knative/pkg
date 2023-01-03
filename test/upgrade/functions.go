@@ -26,7 +26,8 @@ import (
 func (s *Suite) Execute(c Configuration) {
 	l, err := c.logger()
 	if err != nil {
-		c.T.Fatal("Failed to create logger:", err)
+		c.T.Fatal("Failed to build logger:", err)
+		return
 	}
 	se := suiteExecution{
 		suite:         enrichSuite(s),
