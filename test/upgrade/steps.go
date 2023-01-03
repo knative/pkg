@@ -64,7 +64,6 @@ func (se *suiteExecution) runContinualTests(t *testing.T, num int, stopCh <-chan
 				if se.failed {
 					return
 				}
-				// The rest of this test will run in parallel with "UpgradeDowngrade" test.
 				t.Parallel()
 				handle := operation.Handler()
 				// Blocking operation.

@@ -56,24 +56,28 @@ func (se *suiteExecution) execute() {
 	for _, operation := range operations {
 		operation(se.configuration.T, idx)
 		idx++
-		if se.failed { //TODO: replace with t.Failed() ?
+		if se.failed {
 			return
 		}
 	}
 
-	upgradesRun := false
+	upgradesExecuted := false
 	se.configuration.T.Run("Parallel", func(t *testing.T) {
 		// Calls t.Parallel() after doing setup phase. The second part runs in parallel
 		// with UpgradeDowngrade test below.
 		se.runContinualTests(t, idx, stopCh)
-		// Make sure the stop channel is closed and continual tests unblocked in any case.
+
+		// Make sure the stop channel is closed and continual tests unblocked in the event
+		// of failing continual tests (possibly calling t.Fatal) when the rest of sub-tests
+		// are skipped.
 		defer func() {
-			if !upgradesRun {
+			if !upgradesExecuted {
 				close(stopCh)
 			}
 		}()
+
 		idx++
-		if se.failed { // TODO: replace with t.Failed()
+		if se.failed {
 			return
 		}
 
@@ -84,14 +88,15 @@ func (se *suiteExecution) execute() {
 			se.postDowngradeTests,
 		}
 		t.Run("UpgradeDowngrade", func(t *testing.T) {
-			upgradesRun = true
+			upgradesExecuted = true
 			defer close(stopCh)
+			// The rest of this test group will run in parallel with individual continual tests.
 			t.Parallel()
 			for _, operation := range operations {
 				operation(t, idx)
 				// TODO: This increment runs in parallel in theory with continual tests
 				idx++
-				if se.failed { // TODO: replace with t.Failed()
+				if se.failed {
 					return
 				}
 			}
