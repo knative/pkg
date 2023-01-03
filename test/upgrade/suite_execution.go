@@ -18,7 +18,6 @@ package upgrade
 
 import (
 	"testing"
-	"time"
 )
 
 func (se *suiteExecution) processOperationGroup(t *testing.T, op operationGroup) {
@@ -62,10 +61,17 @@ func (se *suiteExecution) execute() {
 		}
 	}
 
+	upgradesRun := false
 	se.configuration.T.Run("Parallel", func(t *testing.T) {
 		// Calls t.Parallel() after doing setup phase. The second part runs in parallel
 		// with UpgradeDowngrade test below.
 		se.runContinualTests(t, idx, stopCh)
+		// Make sure the stop channel is closed and continual tests unblocked in any case.
+		defer func() {
+			if !upgradesRun {
+				close(stopCh)
+			}
+		}()
 		idx++
 		if se.failed { // TODO: replace with t.Failed()
 			return
@@ -78,6 +84,8 @@ func (se *suiteExecution) execute() {
 			se.postDowngradeTests,
 		}
 		t.Run("UpgradeDowngrade", func(t *testing.T) {
+			upgradesRun = true
+			defer close(stopCh)
 			t.Parallel()
 			for _, operation := range operations {
 				operation(t, idx)
@@ -87,14 +95,6 @@ func (se *suiteExecution) execute() {
 					return
 				}
 			}
-			//close(done)
-			close(stopCh)
-			//stopCh <- StopEvent{
-			//	//T:      t,
-			//	//logger: se.logger, // is this necessary? maybe only for test purposes
-			//}
-			time.Sleep(3 * time.Second)
-			//TODO: Wait for continual tests to finish here? YES - must wait, otherwise the sleep above is required
 		})
 	})
 }

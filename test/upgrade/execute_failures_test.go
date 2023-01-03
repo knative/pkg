@@ -26,7 +26,7 @@ import (
 )
 
 func TestSuiteExecuteWithFailures(t *testing.T) {
-	for i := 1; i <= 8; i++ {
+	for i := 1; i <= 7; i++ {
 		for j := 1; j <= 2; j++ {
 			fp := failurePoint{
 				step:    i,

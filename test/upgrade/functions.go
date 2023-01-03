@@ -157,17 +157,6 @@ func (s *simpleBackgroundOperation) Handler() func(bc BackgroundContext) {
 	return s.handler
 }
 
-//func (b *threadSafeBuffer) Read(p []byte) (n int, err error) {
-//	b.Mutex.Lock()
-//	defer b.Mutex.Unlock()
-//	return b.Buffer.Read(p)
-//}
-//
-//func (b *threadSafeBuffer) Write(p []byte) (n int, err error) {
-//	b.Mutex.Lock()
-//	defer b.Mutex.Unlock()
-//	return b.Buffer.Write(p)
-//}
 //
 //// Dump returns the previous content of the buffer and creates a new
 //// empty buffer for future writes.

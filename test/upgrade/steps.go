@@ -60,36 +60,19 @@ func (se *suiteExecution) runContinualTests(t *testing.T, num int, stopCh <-chan
 			t.Run(operation.Name(), func(t *testing.T) {
 				setup := operation.Setup()
 				setup(Context{T: t, Log: l})
-
-				//go func() {
-				//	//TODO: This could possibly wait directly for done instead of operation.stop?
-				//	handler(BackgroundContext{
-				//		Log:  l,
-				//		Stop: operation.stop,
-				//	})
-				//}()
-
-				// Will be run in parallel with "UpgradeDowngrade" test
+				se.failed = se.failed || t.Failed()
+				if se.failed {
+					return
+				}
 				t.Parallel()
-
-				// Waiting for done signal to be sent after Upgrades/Downgrades are finished.
-				//<-done
-
-				handler := operation.Handler()
+				handle := operation.Handler()
 				// Blocking operation.
-				handler(BackgroundContext{
+				handle(BackgroundContext{
 					T:    t,
 					Log:  l,
 					Stop: stopCh,
 				})
-
-				//finished := make(chan struct{})
-				//operation.stop <- StopEvent{
-				//	T:        t,
-				//	//Finished: finished,
-				//	logger:   l, // is this necessary? maybe only for test purposes
-				//}
-				//<-finished
+				se.failed = se.failed || t.Failed()
 				l.Debugf(`Finished "%s"`, operation.Name())
 			})
 		}
