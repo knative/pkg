@@ -32,14 +32,13 @@ func (s *Suite) Execute(c Configuration) {
 	se := suiteExecution{
 		suite:         enrichSuite(s),
 		configuration: c,
-		failed:        false,
 		logger:        l,
 	}
 	l.Info("🏃 Running upgrade test suite...")
 
 	se.execute()
 
-	if !se.failed {
+	if !c.T.Failed() {
 		l.Info("🥳🎉 Success! Upgrade suite completed without errors.")
 	} else {
 		l.Error("💣🤬💔️ Upgrade suite have failed!")
