@@ -47,13 +47,8 @@ func newConfig(t *testing.T) (upgrade.Configuration, fmt.Stringer) {
 			zap.ErrorOutput(syncedBuf),
 		},
 	}
-	logger, err := cfg.Build(logConfig.Options...)
-	if err != nil {
-		t.Fatal("Unable to create logger:", err)
-	}
 	c := upgrade.Configuration{
 		T:         t,
-		Log:       logger,
 		LogConfig: logConfig,
 	}
 	return c, &buf

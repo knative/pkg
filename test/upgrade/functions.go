@@ -47,17 +47,11 @@ func (s *Suite) Execute(c Configuration) {
 }
 
 func (c Configuration) logger() (*zap.SugaredLogger, error) {
-	// TODO(mgencur): Remove when dependent repositories use LogConfig instead of Log.
-	// This is for backwards compatibility.
-	if c.Log != nil {
-		return c.Log.Sugar(), nil
-	}
-	var err error
-	c.Log, err = c.logConfig().Config.Build(c.logConfig().Options...)
+	logger, err := c.logConfig().Config.Build(c.logConfig().Options...)
 	if err != nil {
 		return nil, err
 	}
-	return c.Log.Sugar(), nil
+	return logger.Sugar(), nil
 }
 
 // NewOperation creates a new upgrade operation or test.
