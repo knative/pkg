@@ -98,16 +98,6 @@ func WaitForStopEvent(bc BackgroundContext, w WaitForStopEventConfiguration) {
 	}
 }
 
-//
-//func handleStopEvent(
-//	se StopEvent,
-//	bc BackgroundContext,
-//	wc WaitForStopEventConfiguration,
-//) {
-//	bc.Log.Debugf("%s have received a stop event", wc.Name)
-//	wc.OnStop(se)
-//}
-
 func enrichSuite(s *Suite) *enrichedSuite {
 	es := &enrichedSuite{
 		installations: s.Installations,
@@ -156,47 +146,3 @@ func (s *simpleBackgroundOperation) Setup() func(c Context) {
 func (s *simpleBackgroundOperation) Handler() func(bc BackgroundContext) {
 	return s.handler
 }
-
-//
-//// Dump returns the previous content of the buffer and creates a new
-//// empty buffer for future writes.
-//func (b *threadSafeBuffer) Dump() string {
-//	b.Mutex.Lock()
-//	defer b.Mutex.Unlock()
-//	buf := b.Buffer.String()
-//	b.Buffer = bytes.Buffer{}
-//	return buf
-//}
-
-// newInMemoryLoggerBuffer creates a logger that writes logs into a byte buffer.
-// This byte buffer is returned and can be used to process the logs at later stage.
-//func newInMemoryLoggerBuffer(config Configuration) (*zap.Logger, *threadSafeBuffer) {
-//	logConfig := config.logConfig()
-//	buf := &threadSafeBuffer{}
-//	core := zapcore.NewCore(
-//		zapcore.NewConsoleEncoder(logConfig.Config.EncoderConfig),
-//		zapcore.AddSync(buf),
-//		logConfig.Config.Level)
-//
-//	var opts []zap.Option
-//	if logConfig.Config.Development {
-//		opts = append(opts, zap.Development())
-//	}
-//	if !logConfig.Config.DisableCaller {
-//		opts = append(opts, zap.AddCaller())
-//	}
-//	stackLevel := zap.ErrorLevel
-//	if logConfig.Config.Development {
-//		stackLevel = zap.WarnLevel
-//	}
-//	if !logConfig.Config.DisableStacktrace {
-//		opts = append(opts, zap.AddStacktrace(stackLevel))
-//	}
-//	return zap.New(core, opts...), buf
-//}
-
-//func wrapLog(log string) string {
-//	s := strings.Join(strings.Split(log, "\n"), "\n⏳ ")
-//	return "Rewind of background logs (prefix ⏳):\n" +
-//		"⏳ " + strings.TrimSuffix(s, "⏳ ")
-//}

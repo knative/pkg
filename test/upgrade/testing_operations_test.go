@@ -17,9 +17,7 @@ limitations under the License.
 package upgrade_test
 
 import (
-	"bytes"
 	"fmt"
-	"sync"
 	"testing"
 
 	"go.uber.org/zap"
@@ -59,25 +57,6 @@ func newConfig(t *testing.T) (upgrade.Configuration, fmt.Stringer) {
 		LogConfig: logConfig,
 	}
 	return c, &buf
-}
-
-// threadSafeBuffer avoids race conditions on bytes.Buffer.
-// See: https://stackoverflow.com/a/36226525/844449
-type threadSafeBuffer struct {
-	bytes.Buffer
-	sync.Mutex
-}
-
-func (b *threadSafeBuffer) Read(p []byte) (n int, err error) {
-	b.Mutex.Lock()
-	defer b.Mutex.Unlock()
-	return b.Buffer.Read(p)
-}
-
-func (b *threadSafeBuffer) Write(p []byte) (n int, err error) {
-	b.Mutex.Lock()
-	defer b.Mutex.Unlock()
-	return b.Buffer.Write(p)
 }
 
 func createSteps(s upgrade.Suite) []*step {
