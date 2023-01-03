@@ -94,7 +94,6 @@ func (se *suiteExecution) execute() {
 			t.Parallel()
 			for _, operation := range operations {
 				operation(t, idx)
-				// TODO: This increment runs in parallel in theory with continual tests
 				idx++
 				if se.failed {
 					return
