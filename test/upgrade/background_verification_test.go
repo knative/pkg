@@ -27,7 +27,6 @@ func TestFailAtBackgroundVerification(t *testing.T) {
 	const failingVerification = "FailAtVerification"
 	expectedTexts := []string{
 		upgradeTestRunning,
-		upgradeTestFailure,
 		"INFO\tSetup 1",
 		"INFO\tVerify 1",
 	}
@@ -75,7 +74,7 @@ func TestFailAtBackgroundVerification(t *testing.T) {
 	assert.textContains(out, texts{elms: expectedTexts})
 	assert.textContains(testOutput, texts{
 		elms: []string{
-			fmt.Sprintf("--- FAIL: %s/VerifyContinualTests/%s", t.Name(), failingVerification),
+			fmt.Sprintf("--- FAIL: %s/Parallel/%s", t.Name(), failingVerification),
 		},
 	})
 }
