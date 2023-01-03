@@ -53,14 +53,14 @@ func NewOperation(name string, handler func(c Context)) Operation {
 
 // NewBackgroundVerification is convenience function to easily setup a
 // background operation that will setup environment and then verify environment
-// status after receiving a StopEvent.
+// status after receiving a stop event.
 func NewBackgroundVerification(name string, setup func(c Context), verify func(c Context)) BackgroundOperation {
 	return NewBackgroundOperation(name, setup, func(bc BackgroundContext) {
 		WaitForStopEvent(bc, WaitForStopEventConfiguration{
 			Name: name,
-			OnStop: func(event StopEvent) {
+			OnStop: func() {
 				verify(Context{
-					T:   event.T,
+					T:   bc.T,
 					Log: bc.Log,
 				})
 			},
@@ -87,8 +87,9 @@ func NewBackgroundOperation(name string, setup func(c Context),
 func WaitForStopEvent(bc BackgroundContext, w WaitForStopEventConfiguration) {
 	for {
 		select {
-		case stopEvent := <-bc.Stop:
-			handleStopEvent(stopEvent, bc, w)
+		case <-bc.Stop:
+			bc.Log.Debugf("%s have received a stop event", w.Name)
+			w.OnStop()
 			return
 		default:
 			w.OnWait(bc, w)
@@ -97,15 +98,15 @@ func WaitForStopEvent(bc BackgroundContext, w WaitForStopEventConfiguration) {
 	}
 }
 
-func handleStopEvent(
-	se StopEvent,
-	bc BackgroundContext,
-	wc WaitForStopEventConfiguration,
-) {
-	bc.Log.Debugf("%s have received a stop event", wc.Name)
-	defer close(se.Finished)
-	wc.OnStop(se)
-}
+//
+//func handleStopEvent(
+//	se StopEvent,
+//	bc BackgroundContext,
+//	wc WaitForStopEventConfiguration,
+//) {
+//	bc.Log.Debugf("%s have received a stop event", wc.Name)
+//	wc.OnStop(se)
+//}
 
 func enrichSuite(s *Suite) *enrichedSuite {
 	es := &enrichedSuite{
@@ -120,7 +121,7 @@ func enrichSuite(s *Suite) *enrichedSuite {
 	for i, test := range s.Tests.Continual {
 		es.tests.continual[i] = stoppableOperation{
 			BackgroundOperation: test,
-			stop:                make(chan StopEvent),
+			stop:                make(chan struct{}),
 		}
 	}
 	return es
@@ -149,9 +150,9 @@ func (s *simpleBackgroundOperation) Setup() func(c Context) {
 
 // Handler will be executed in background while upgrade/downgrade is being
 // executed. It can be used to constantly validate environment during that
-// time and/or wait for StopEvent being sent. After StopEvent is received
+// time and/or wait for a stop event being sent. After a stop event is received
 // user should validate environment, clean up resources, and report found
-// issues to testing.T forwarded in StepEvent.
+// issues to testing.T forwarded in BackgroundContext.
 func (s *simpleBackgroundOperation) Handler() func(bc BackgroundContext) {
 	return s.handler
 }

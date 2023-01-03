@@ -263,9 +263,9 @@ func (o *operation) fail(setupFail bool) {
 		}, func(bc upgrade.BackgroundContext) {
 			upgrade.WaitForStopEvent(bc, upgrade.WaitForStopEventConfiguration{
 				Name: testName,
-				OnStop: func(event upgrade.StopEvent) {
+				OnStop: func() {
 					if !setupFail {
-						event.T.Error(failureTestingMessage)
+						bc.T.Error(failureTestingMessage)
 						bc.Log.Error(failureTestingMessage)
 					}
 				},

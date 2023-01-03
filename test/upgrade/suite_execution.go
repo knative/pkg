@@ -49,7 +49,7 @@ func (se *suiteExecution) processOperationGroup(t *testing.T, op operationGroup)
 
 func (se *suiteExecution) execute() {
 	idx := 1
-	done := make(chan struct{})
+	stopCh := make(chan struct{})
 	operations := []func(t *testing.T, num int){
 		se.installingBase,
 		se.preUpgradeTests,
@@ -65,7 +65,7 @@ func (se *suiteExecution) execute() {
 	se.configuration.T.Run("Parallel", func(t *testing.T) {
 		// Calls t.Parallel() after doing setup phase. The second part runs in parallel
 		// with UpgradeDowngrade test below.
-		se.runContinualTests(t, idx, done)
+		se.runContinualTests(t, idx, stopCh)
 		idx++
 		if se.failed { // TODO: replace with t.Failed()
 			return
@@ -87,7 +87,12 @@ func (se *suiteExecution) execute() {
 					return
 				}
 			}
-			close(done)
+			//close(done)
+			close(stopCh)
+			//stopCh <- StopEvent{
+			//	//T:      t,
+			//	//logger: se.logger, // is this necessary? maybe only for test purposes
+			//}
 			time.Sleep(3 * time.Second)
 			//TODO: Wait for continual tests to finish here? YES - must wait, otherwise the sleep above is required
 		})

@@ -27,7 +27,6 @@ func TestFailAtBackgroundVerification(t *testing.T) {
 	const failingVerification = "FailAtVerification"
 	expectedTexts := []string{
 		upgradeTestRunning,
-		fmt.Sprintf("DEBUG\tFinished %q", failingVerification),
 		upgradeTestFailure,
 		"INFO\tSetup 1",
 		"INFO\tVerify 1",

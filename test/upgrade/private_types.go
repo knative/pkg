@@ -41,7 +41,7 @@ type enrichedTests struct {
 
 type stoppableOperation struct {
 	BackgroundOperation
-	stop chan StopEvent
+	stop chan struct{}
 }
 
 type operationGroup struct {

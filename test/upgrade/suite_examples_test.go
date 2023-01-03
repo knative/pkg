@@ -106,7 +106,7 @@ func servingComponent() component {
 					bc.Log.Info("Running Serving continual test")
 					upgrade.WaitForStopEvent(bc, upgrade.WaitForStopEventConfiguration{
 						Name: "Serving",
-						OnStop: func(event upgrade.StopEvent) {
+						OnStop: func() {
 							bc.Log.Info("Stopping and verify of Serving continual test")
 							time.Sleep(shortWait)
 						},

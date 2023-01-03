@@ -45,7 +45,7 @@ func (se *suiteExecution) preUpgradeTests(t *testing.T, num int) {
 	})
 }
 
-func (se *suiteExecution) runContinualTests(t *testing.T, num int, done chan struct{}) {
+func (se *suiteExecution) runContinualTests(t *testing.T, num int, stopCh <-chan struct{}) {
 	l := se.logger
 	operations := se.suite.tests.continual
 	groupTemplate := "%d) 🔄 Starting continual tests. " +
@@ -58,29 +58,38 @@ func (se *suiteExecution) runContinualTests(t *testing.T, num int, done chan str
 			operation := operations[i]
 			l.Debugf(elementTemplate, num, i+1, operation.Name())
 			t.Run(operation.Name(), func(t *testing.T) {
-				operation.Setup()(Context{T: t, Log: l})
-				handler := operation.Handler()
-				go func() {
-					//TODO: This could possibly wait directly for done instead of operation.stop?
-					handler(BackgroundContext{
-						Log:  l,
-						Stop: operation.stop,
-					})
-				}()
+				setup := operation.Setup()
+				setup(Context{T: t, Log: l})
+
+				//go func() {
+				//	//TODO: This could possibly wait directly for done instead of operation.stop?
+				//	handler(BackgroundContext{
+				//		Log:  l,
+				//		Stop: operation.stop,
+				//	})
+				//}()
 
 				// Will be run in parallel with "UpgradeDowngrade" test
 				t.Parallel()
 
 				// Waiting for done signal to be sent after Upgrades/Downgrades are finished.
-				<-done
+				//<-done
 
-				finished := make(chan struct{})
-				operation.stop <- StopEvent{
-					T:        t,
-					Finished: finished,
-					logger:   l, // is this necessary? maybe only for test purposes
-				}
-				<-finished
+				handler := operation.Handler()
+				// Blocking operation.
+				handler(BackgroundContext{
+					T:    t,
+					Log:  l,
+					Stop: stopCh,
+				})
+
+				//finished := make(chan struct{})
+				//operation.stop <- StopEvent{
+				//	T:        t,
+				//	//Finished: finished,
+				//	logger:   l, // is this necessary? maybe only for test purposes
+				//}
+				//<-finished
 				l.Debugf(`Finished "%s"`, operation.Name())
 			})
 		}
