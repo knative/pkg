@@ -62,14 +62,13 @@ type messages struct {
 }
 
 type messageFormatterRepository struct {
-	baseInstall     messages
-	preUpgrade      messages
-	startContinual  messages
-	upgrade         messages
-	postUpgrade     messages
-	downgrade       messages
-	postDowngrade   messages
-	verifyContinual messages
+	baseInstall    messages
+	preUpgrade     messages
+	startContinual messages
+	upgrade        messages
+	postUpgrade    messages
+	downgrade      messages
+	postDowngrade  messages
 }
 
 type component struct {
