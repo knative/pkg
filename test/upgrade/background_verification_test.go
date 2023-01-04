@@ -23,6 +23,55 @@ import (
 	"knative.dev/pkg/test/upgrade"
 )
 
+func TestSkipAtBackgroundVerification(t *testing.T) {
+	config, buf := newConfig(t)
+	skipMsg := "It is expected to be skipped"
+	expectedTexts := []string{
+		upgradeTestRunning,
+		"DEBUG\tFinished \"ShouldNotBeSkipped\"",
+		upgradeTestSuccess,
+		"INFO\tSetup 1",
+		"INFO\tSetup 2",
+		"INFO\tVerify 2",
+		"WARN\t" + skipMsg,
+	}
+	s := upgrade.Suite{
+		Tests: upgrade.Tests{
+			Continual: []upgrade.BackgroundOperation{
+				upgrade.NewBackgroundVerification("ShouldBeSkipped",
+					// Setup
+					func(c upgrade.Context) {
+						c.Log.Info("Setup 1")
+					},
+					// Verify
+					func(c upgrade.Context) {
+						c.Log.Warn(skipMsg)
+						c.T.Skip(skipMsg)
+						c.Log.Info("Verify 1")
+					},
+				),
+				upgrade.NewBackgroundVerification("ShouldNotBeSkipped",
+					func(c upgrade.Context) {
+						c.Log.Info("Setup 2")
+					},
+					func(c upgrade.Context) {
+						c.Log.Info("Verify 2")
+					},
+				),
+			},
+		},
+	}
+	s.Execute(config)
+
+	assert := assertions{tb: t}
+
+	out := buf.String()
+	assert.textNotContains(out, texts{elms: []string{
+		"INFO\tVerify 1",
+	}})
+	assert.textContains(out, texts{elms: expectedTexts})
+}
+
 func TestFailAtBackgroundVerification(t *testing.T) {
 	const failingVerification = "FailAtVerification"
 	expectedTexts := []string{
