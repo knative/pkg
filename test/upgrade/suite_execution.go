@@ -66,12 +66,11 @@ func (se *suiteExecution) execute() {
 		// with UpgradeDowngrade test below.
 		se.runContinualTests(t, idx, stopCh)
 
-		defer close(stopCh)
-
 		idx++
 		// At this point only the setup phase of continual tests was done. We want
 		// to quit early in the event of failures.
 		if t.Failed() {
+			close(stopCh)
 			return
 		}
 
@@ -82,6 +81,7 @@ func (se *suiteExecution) execute() {
 			se.postDowngradeTests,
 		}
 		t.Run("UpgradeDowngrade", func(t *testing.T) {
+			defer close(stopCh)
 			// The rest of this test group will run in parallel with individual continual tests.
 			t.Parallel()
 			for _, operation := range operations {
