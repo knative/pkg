@@ -61,20 +61,12 @@ func (se *suiteExecution) execute() {
 		}
 	}
 
-	upgradesExecuted := false
 	t.Run("Parallel", func(t *testing.T) {
 		// Calls t.Parallel() after doing setup phase. The second part runs in parallel
 		// with UpgradeDowngrade test below.
 		se.runContinualTests(t, idx, stopCh)
 
-		// Make sure the stop channel is closed and continual tests unblocked in the event
-		// of failing continual tests (possibly calling t.Fatal) when the rest of sub-tests
-		// are skipped.
-		defer func() {
-			if !upgradesExecuted { // Prevent closing the channel twice.
-				close(stopCh)
-			}
-		}()
+		defer close(stopCh)
 
 		idx++
 		// At this point only the setup phase of continual tests was done. We want
@@ -90,8 +82,6 @@ func (se *suiteExecution) execute() {
 			se.postDowngradeTests,
 		}
 		t.Run("UpgradeDowngrade", func(t *testing.T) {
-			upgradesExecuted = true
-			defer close(stopCh)
 			// The rest of this test group will run in parallel with individual continual tests.
 			t.Parallel()
 			for _, operation := range operations {
