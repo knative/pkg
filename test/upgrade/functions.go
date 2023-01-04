@@ -95,7 +95,7 @@ func WaitForStopEvent(bc BackgroundContext, w WaitForStopEventConfiguration) {
 	for {
 		select {
 		case <-bc.Stop:
-			bc.Log.Debugf("%s have received a stop event", w.Name)
+			bc.Log.Debugf("%s received a stop event", w.Name)
 			w.OnStop()
 			return
 		default:
