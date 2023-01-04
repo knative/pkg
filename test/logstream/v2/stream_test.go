@@ -219,7 +219,7 @@ func TestNamespaceStream(t *testing.T) {
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
-	stream := logstream.FromNamespaces(ctx, f, []string{knativePod.Namespace, userPod.Namespace})
+	stream := logstream.New(ctx, f, logstream.WithNamespaces(knativePod.Namespace, userPod.Namespace))
 	streamC, err := stream.StartStream(testKey, logFunc)
 	if err != nil {
 		t.Fatal("Failed to start the stream: ", err)
