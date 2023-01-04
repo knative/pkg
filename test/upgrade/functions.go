@@ -93,15 +93,15 @@ func NewBackgroundOperation(name string, setup func(c Context),
 // failures.
 func WaitForStopEvent(bc BackgroundContext, w WaitForStopEventConfiguration) {
 	for {
-		w.OnWait(bc, w)
 		select {
 		case <-bc.Stop:
 			bc.Log.Debugf("%s received a stop event", w.Name)
 			w.OnStop()
 			return
 		default:
-			time.Sleep(w.WaitTime)
+			w.OnWait(bc, w)
 		}
+		time.Sleep(w.WaitTime)
 	}
 }
 
