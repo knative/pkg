@@ -112,15 +112,14 @@ func TestSuiteExecuteEmpty(t *testing.T) {
 func TestSuiteExecuteWithComplete(t *testing.T) {
 	assert := assertions{t}
 	c, buf := newConfig(t)
-	fp := notFailing
-	suite := completeSuiteExampleWithFailures(fp)
+	suite := completeSuite()
 	upgrade.DefaultOnWait = probeOnWaitFunc()
 	suite.Execute(c)
 	output := buf.String()
 	if c.T.Failed() {
 		return
 	}
-	expected := expectedTexts(suite, fp)
+	expected := expectedTexts(suite, notFailing)
 	expected.append(upgradeTestRunning, upgradeTestSuccess)
 	expected.append(
 		"Installing Serving stable 0.17.1",
