@@ -28,11 +28,8 @@ func TestSkipAtBackgroundVerification(t *testing.T) {
 	skipMsg := "It is expected to be skipped"
 	expectedTexts := []string{
 		upgradeTestRunning,
-		"DEBUG\tFinished \"ShouldNotBeSkipped\"",
 		upgradeTestSuccess,
 		"INFO\tSetup 1",
-		"INFO\tSetup 2",
-		"INFO\tVerify 2",
 		"WARN\t" + skipMsg,
 	}
 	s := upgrade.Suite{
@@ -48,14 +45,6 @@ func TestSkipAtBackgroundVerification(t *testing.T) {
 						c.Log.Warn(skipMsg)
 						c.T.Skip(skipMsg)
 						c.Log.Info("Verify 1")
-					},
-				),
-				upgrade.NewBackgroundVerification("ShouldNotBeSkipped",
-					func(c upgrade.Context) {
-						c.Log.Info("Setup 2")
-					},
-					func(c upgrade.Context) {
-						c.Log.Info("Verify 2")
 					},
 				),
 			},

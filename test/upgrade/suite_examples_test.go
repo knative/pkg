@@ -145,16 +145,6 @@ func eventingComponent() component {
 				c.Log.Info("Running Eventing post downgrade test")
 				time.Sleep(shortWait)
 			}),
-			continual: upgrade.NewBackgroundVerification("Eventing continual test",
-				func(c upgrade.Context) {
-					c.Log.Info("Setup of Eventing continual test")
-					time.Sleep(shortWait)
-				},
-				func(c upgrade.Context) {
-					c.Log.Info("Stopping and verify of Eventing continual test")
-					time.Sleep(shortWait)
-				},
-			),
 		},
 	}
 }

@@ -26,20 +26,21 @@ import (
 )
 
 func TestSuiteExecuteWithFailures(t *testing.T) {
-	for i := 1; i <= 7; i++ {
-		for j := 1; j <= 2; j++ {
+	suite := completeSuite()
+	for i, st := range createSteps(suite) {
+		for j := range st.ops.ops {
 			fp := failurePoint{
-				step:    i,
-				element: j,
+				step:    i + 1,
+				element: j + 1,
 			}
-			testSuiteExecuteWithFailingStep(fp, t)
+			testSuiteExecuteWithFailingStep(suite, fp, t)
 		}
 	}
 }
 
 var allTestsFilter = func(_, _ string) (bool, error) { return true, nil }
 
-func testSuiteExecuteWithFailingStep(fp failurePoint, t *testing.T) {
+func testSuiteExecuteWithFailingStep(suite upgrade.Suite, fp failurePoint, t *testing.T) {
 	testName := fmt.Sprintf("FailAt-%d-%d", fp.step, fp.element)
 	t.Run(testName, func(t *testing.T) {
 		assert := assertions{tb: t}
@@ -48,15 +49,15 @@ func testSuiteExecuteWithFailingStep(fp failurePoint, t *testing.T) {
 			c      upgrade.Configuration
 			buf    fmt.Stringer
 		)
-		suite := completeSuiteExample(fp)
-		txt := expectedTexts(suite, fp)
+		suiteWithFailures := enrichSuiteWithFailures(suite, fp)
+		txt := expectedTexts(suiteWithFailures, fp)
 		txt.append(upgradeTestRunning, upgradeTestFailure)
 
 		it := []testing.InternalTest{{
 			Name: testName,
 			F: func(t *testing.T) {
 				c, buf = newConfig(t)
-				suite.Execute(c)
+				suiteWithFailures.Execute(c)
 			},
 		}}
 		var ok bool

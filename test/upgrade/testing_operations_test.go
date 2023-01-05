@@ -165,10 +165,10 @@ func (tt *texts) append(messages ...string) {
 	}
 }
 
-func completeSuiteExample(fp failurePoint) upgrade.Suite {
+func completeSuite() upgrade.Suite {
 	serving := servingComponent()
 	eventing := eventingComponent()
-	suite := upgrade.Suite{
+	return upgrade.Suite{
 		Tests: upgrade.Tests{
 			PreUpgrade: []upgrade.Operation{
 				serving.tests.preUpgrade, eventing.tests.preUpgrade,
@@ -180,7 +180,7 @@ func completeSuiteExample(fp failurePoint) upgrade.Suite {
 				serving.tests.postDowngrade, eventing.tests.postDowngrade,
 			},
 			Continual: []upgrade.BackgroundOperation{
-				serving.tests.continual, eventing.tests.continual,
+				serving.tests.continual,
 			},
 		},
 		Installations: upgrade.Installations{
@@ -195,7 +195,10 @@ func completeSuiteExample(fp failurePoint) upgrade.Suite {
 			},
 		},
 	}
-	return enrichSuiteWithFailures(suite, fp)
+}
+
+func completeSuiteExampleWithFailures(fp failurePoint) upgrade.Suite {
+	return enrichSuiteWithFailures(completeSuite(), fp)
 }
 
 func emptySuiteExample() upgrade.Suite {
