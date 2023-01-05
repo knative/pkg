@@ -76,6 +76,7 @@ func TestFailAtBackgroundVerification(t *testing.T) {
 	const failingVerification = "FailAtVerification"
 	expectedTexts := []string{
 		upgradeTestRunning,
+		upgradeTestFailure,
 		"INFO\tSetup 1",
 		"INFO\tVerify 1",
 	}
