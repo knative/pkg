@@ -23,6 +23,10 @@ import (
 )
 
 // Execute the Suite of upgrade tests with a Configuration given.
+// When the suite includes Continual tests the number of logical CPUs
+// usable by the test process must be at least <NUMBER OF CONTINUAL TESTS> + 1.
+// The -parallel test flag or GOMAXPROCS environment variable might be
+// used to adjust the settings.
 func (s *Suite) Execute(c Configuration) {
 	l, err := c.logger()
 	if err != nil {
