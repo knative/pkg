@@ -37,7 +37,6 @@ func newConfig(t *testing.T) (upgrade.Configuration, fmt.Stringer) {
 	cfg.EncoderConfig.CallerKey = ""
 	syncedBuf := zapcore.AddSync(&buf)
 	logConfig := upgrade.LogConfig{
-		Config: cfg,
 		Options: []zap.Option{
 			zap.WrapCore(func(core zapcore.Core) zapcore.Core {
 				return zapcore.NewCore(
