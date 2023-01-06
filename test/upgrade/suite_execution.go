@@ -21,8 +21,8 @@ import (
 )
 
 func (se *suiteExecution) processOperationGroup(t *testing.T, op operationGroup) {
-	l := se.logger
 	t.Run(op.groupName, func(t *testing.T) {
+		l := se.configuration.logger(t)
 		if len(op.operations) > 0 {
 			l.Infof(op.groupTemplate, op.num, len(op.operations))
 			for i, operation := range op.operations {
