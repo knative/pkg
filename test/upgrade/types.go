@@ -108,8 +108,7 @@ type Configuration struct {
 }
 
 // LogConfig holds the logger configuration. It allows for passing just the
-// logger configuration and also a custom function for building the resulting
-// logger.
+// logger configuration options.
 type LogConfig struct {
 	// Config from which the zap.Logger be created.
 	// Deprecated: This config doesn't have effect. Use Options instead.

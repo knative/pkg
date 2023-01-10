@@ -61,9 +61,9 @@ func (se *suiteExecution) execute() {
 		}
 	}
 
-	t.Run("Parallel", func(t *testing.T) {
+	t.Run("Run", func(t *testing.T) {
 		// Calls t.Parallel() after doing setup phase. The second part runs in parallel
-		// with UpgradeDowngrade test below.
+		// with Steps below.
 		se.runContinualTests(t, idx, stopCh)
 
 		idx++
@@ -80,7 +80,7 @@ func (se *suiteExecution) execute() {
 			se.downgradeWith,
 			se.postDowngradeTests,
 		}
-		t.Run("UpgradeDowngrade", func(t *testing.T) {
+		t.Run("Steps", func(t *testing.T) {
 			defer close(stopCh)
 			// The rest of this test group will run in parallel with individual continual tests.
 			t.Parallel()
