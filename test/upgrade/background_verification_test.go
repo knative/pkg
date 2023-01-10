@@ -113,7 +113,7 @@ func TestFailAtBackgroundVerification(t *testing.T) {
 	assert.textContains(out, texts{elms: expectedTexts})
 	assert.textContains(testOutput, texts{
 		elms: []string{
-			fmt.Sprintf("--- FAIL: %s/Parallel/%s", t.Name(), failingVerification),
+			fmt.Sprintf("--- FAIL: %s/Run/%s", t.Name(), failingVerification),
 		},
 	})
 }
