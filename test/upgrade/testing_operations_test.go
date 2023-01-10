@@ -17,7 +17,6 @@ limitations under the License.
 package upgrade_test
 
 import (
-	"bytes"
 	"fmt"
 	"testing"
 
@@ -32,24 +31,24 @@ const (
 )
 
 func newConfig(t *testing.T) (upgrade.Configuration, fmt.Stringer) {
-	var buf bytes.Buffer
+	buf := threadSafeBuffer{}
 	cfg := zap.NewDevelopmentConfig()
 	cfg.EncoderConfig.TimeKey = ""
 	cfg.EncoderConfig.CallerKey = ""
 	syncedBuf := zapcore.AddSync(&buf)
-	c := upgrade.Configuration{
-		T: t,
-		LogConfig: upgrade.LogConfig{
-			Config: cfg,
-			Options: []zap.Option{
-				zap.WrapCore(func(core zapcore.Core) zapcore.Core {
-					return zapcore.NewCore(
-						zapcore.NewConsoleEncoder(cfg.EncoderConfig),
-						zapcore.NewMultiWriteSyncer(syncedBuf), cfg.Level)
-				}),
-				zap.ErrorOutput(syncedBuf),
-			},
+	logConfig := upgrade.LogConfig{
+		Options: []zap.Option{
+			zap.WrapCore(func(core zapcore.Core) zapcore.Core {
+				return zapcore.NewCore(
+					zapcore.NewConsoleEncoder(cfg.EncoderConfig),
+					zapcore.NewMultiWriteSyncer(syncedBuf), cfg.Level)
+			}),
+			zap.ErrorOutput(syncedBuf),
 		},
+	}
+	c := upgrade.Configuration{
+		T:         t,
+		LogConfig: logConfig,
 	}
 	return c, &buf
 }
@@ -97,12 +96,6 @@ func createSteps(s upgrade.Suite) []*step {
 		ops:      generalizeOps(s.Tests.PostDowngrade),
 		updateSuite: func(ops operations, s *upgrade.Suite) {
 			s.Tests.PostDowngrade = ops.asOperations()
-		},
-	}, {
-		messages: messageFormatters.verifyContinual,
-		ops:      continualTestsGeneralized,
-		updateSuite: func(ops operations, s *upgrade.Suite) {
-			s.Tests.Continual = ops.asBackgroundOperation()
 		},
 	}}
 }
@@ -171,10 +164,10 @@ func (tt *texts) append(messages ...string) {
 	}
 }
 
-func completeSuiteExample(fp failurePoint) upgrade.Suite {
+func completeSuite() upgrade.Suite {
 	serving := servingComponent()
 	eventing := eventingComponent()
-	suite := upgrade.Suite{
+	return upgrade.Suite{
 		Tests: upgrade.Tests{
 			PreUpgrade: []upgrade.Operation{
 				serving.tests.preUpgrade, eventing.tests.preUpgrade,
@@ -186,7 +179,7 @@ func completeSuiteExample(fp failurePoint) upgrade.Suite {
 				serving.tests.postDowngrade, eventing.tests.postDowngrade,
 			},
 			Continual: []upgrade.BackgroundOperation{
-				serving.tests.continual, eventing.tests.continual,
+				serving.tests.continual,
 			},
 		},
 		Installations: upgrade.Installations{
@@ -201,7 +194,10 @@ func completeSuiteExample(fp failurePoint) upgrade.Suite {
 			},
 		},
 	}
-	return enrichSuiteWithFailures(suite, fp)
+}
+
+func completeSuiteExampleWithFailures(fp failurePoint) upgrade.Suite {
+	return enrichSuiteWithFailures(completeSuite(), fp)
 }
 
 func emptySuiteExample() upgrade.Suite {
@@ -254,8 +250,8 @@ func (o *operation) fail(setupFail bool) {
 	} else {
 		prev := o.bg
 		o.bg = upgrade.NewBackgroundOperation(testName, func(c upgrade.Context) {
-			handler := prev.Setup()
-			handler(c)
+			setup := prev.Setup()
+			setup(c)
 			if setupFail {
 				c.T.Error(failureTestingMessage)
 				c.Log.Error(failureTestingMessage)
@@ -263,9 +259,9 @@ func (o *operation) fail(setupFail bool) {
 		}, func(bc upgrade.BackgroundContext) {
 			upgrade.WaitForStopEvent(bc, upgrade.WaitForStopEventConfiguration{
 				Name: testName,
-				OnStop: func(event upgrade.StopEvent) {
+				OnStop: func() {
 					if !setupFail {
-						event.T.Error(failureTestingMessage)
+						bc.T.Error(failureTestingMessage)
 						bc.Log.Error(failureTestingMessage)
 					}
 				},

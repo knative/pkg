@@ -16,7 +16,12 @@ limitations under the License.
 
 package upgrade_test
 
-import "knative.dev/pkg/test/upgrade"
+import (
+	"bytes"
+	"sync"
+
+	"knative.dev/pkg/test/upgrade"
+)
 
 type failurePoint struct {
 	step    int
@@ -57,14 +62,13 @@ type messages struct {
 }
 
 type messageFormatterRepository struct {
-	baseInstall     messages
-	preUpgrade      messages
-	startContinual  messages
-	upgrade         messages
-	postUpgrade     messages
-	downgrade       messages
-	postDowngrade   messages
-	verifyContinual messages
+	baseInstall    messages
+	preUpgrade     messages
+	startContinual messages
+	upgrade        messages
+	postUpgrade    messages
+	downgrade      messages
+	postDowngrade  messages
 }
 
 type component struct {
@@ -82,4 +86,23 @@ type tests struct {
 	postUpgrade   upgrade.Operation
 	continual     upgrade.BackgroundOperation
 	postDowngrade upgrade.Operation
+}
+
+// threadSafeBuffer avoids race conditions on bytes.Buffer.
+// See: https://stackoverflow.com/a/36226525/844449
+type threadSafeBuffer struct {
+	bytes.Buffer
+	sync.Mutex
+}
+
+func (b *threadSafeBuffer) Read(p []byte) (n int, err error) {
+	b.Mutex.Lock()
+	defer b.Mutex.Unlock()
+	return b.Buffer.Read(p)
+}
+
+func (b *threadSafeBuffer) Write(p []byte) (n int, err error) {
+	b.Mutex.Lock()
+	defer b.Mutex.Unlock()
+	return b.Buffer.Write(p)
 }

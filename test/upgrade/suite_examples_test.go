@@ -69,11 +69,6 @@ var (
 			element:  `%d.%d) Testing with "%s".`,
 			skipped:  "%d) ✅️️ No post downgrade tests registered. Skipping.",
 		}),
-		verifyContinual: createMessages(formats{
-			starting: "%d) ✋ Verifying %d running continual tests.",
-			element:  `%d.%d) Verifying "%s".`,
-			skipped:  "",
-		}),
 	}
 )
 
@@ -111,7 +106,7 @@ func servingComponent() component {
 					bc.Log.Info("Running Serving continual test")
 					upgrade.WaitForStopEvent(bc, upgrade.WaitForStopEventConfiguration{
 						Name: "Serving",
-						OnStop: func(event upgrade.StopEvent) {
+						OnStop: func() {
 							bc.Log.Info("Stopping and verify of Serving continual test")
 							time.Sleep(shortWait)
 						},
@@ -150,16 +145,6 @@ func eventingComponent() component {
 				c.Log.Info("Running Eventing post downgrade test")
 				time.Sleep(shortWait)
 			}),
-			continual: upgrade.NewBackgroundVerification("Eventing continual test",
-				func(c upgrade.Context) {
-					c.Log.Info("Setup of Eventing continual test")
-					time.Sleep(shortWait)
-				},
-				func(c upgrade.Context) {
-					c.Log.Info("Stopping and verify of Eventing continual test")
-					time.Sleep(shortWait)
-				},
-			),
 		},
 	}
 }

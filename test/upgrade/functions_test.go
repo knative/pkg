@@ -48,7 +48,7 @@ func TestExpectedTextsForEmptySuite(t *testing.T) {
 func TestExpectedTextsForCompleteSuite(t *testing.T) {
 	assert := assertions{tb: t}
 	fp := notFailing
-	suite := completeSuiteExample(fp)
+	suite := completeSuiteExampleWithFailures(fp)
 	txt := expectedTexts(suite, fp)
 	expected := []string{
 		"1) 💿 Installing base installations. 2 are registered.",
@@ -57,9 +57,8 @@ func TestExpectedTextsForCompleteSuite(t *testing.T) {
 		"2) ✅️️ Testing functionality before upgrade is performed. 2 tests are registered.",
 		`2.1) Testing with "Serving pre upgrade test".`,
 		`2.2) Testing with "Eventing pre upgrade test".`,
-		"3) 🔄 Starting continual tests. 2 tests are registered.",
+		"3) 🔄 Starting continual tests. 1 tests are registered.",
 		`3.1) Starting continual tests of "Serving continual test".`,
-		`3.2) Starting continual tests of "Eventing continual test".`,
 		"4) 📀 Upgrading with 2 registered operations.",
 		`4.1) Upgrading with "Serving HEAD".`,
 		`4.2) Upgrading with "Eventing HEAD".`,
@@ -72,9 +71,6 @@ func TestExpectedTextsForCompleteSuite(t *testing.T) {
 		"7) ✅️️ Testing functionality after downgrade is performed. 2 tests are registered.",
 		`7.1) Testing with "Serving post downgrade test".`,
 		`7.2) Testing with "Eventing post downgrade test".`,
-		"8) ✋ Verifying 2 running continual tests.",
-		`8.1) Verifying "Serving continual test".`,
-		`8.2) Verifying "Eventing continual test".`,
 	}
 	assert.arraysEqual(txt.elms, expected)
 }
@@ -85,7 +81,7 @@ func TestExpectedTextsForFailingCompleteSuite(t *testing.T) {
 		step:    2,
 		element: 1,
 	}
-	suite := completeSuiteExample(fp)
+	suite := completeSuiteExampleWithFailures(fp)
 	txt := expectedTexts(suite, fp)
 	expected := []string{
 		"1) 💿 Installing base installations. 2 are registered.",
@@ -110,22 +106,20 @@ func TestSuiteExecuteEmpty(t *testing.T) {
 
 	txt := expectedTexts(suite, fp)
 	txt.append(upgradeTestRunning, upgradeTestSuccess)
-
 	assert.textContains(output, txt)
 }
 
 func TestSuiteExecuteWithComplete(t *testing.T) {
 	assert := assertions{t}
 	c, buf := newConfig(t)
-	fp := notFailing
-	suite := completeSuiteExample(fp)
+	suite := completeSuite()
 	upgrade.DefaultOnWait = probeOnWaitFunc()
 	suite.Execute(c)
 	output := buf.String()
 	if c.T.Failed() {
 		return
 	}
-	expected := expectedTexts(suite, fp)
+	expected := expectedTexts(suite, notFailing)
 	expected.append(upgradeTestRunning, upgradeTestSuccess)
 	expected.append(
 		"Installing Serving stable 0.17.1",
@@ -134,12 +128,9 @@ func TestSuiteExecuteWithComplete(t *testing.T) {
 		"Installing Eventing HEAD at 12f67cc",
 		"Installing Serving stable 0.17.1",
 		"Installing Eventing stable 0.17.2",
-		"Serving have received a stop event",
-		"Eventing continual test have received a stop event",
+		"Serving received a stop event",
 		"Running Serving continual test",
-		"Stopping and verify of Eventing continual test",
 		"Serving - probing functionality...",
-		"Eventing continual test - probing functionality...",
 	)
 	assert.textContains(output, expected)
 }
