@@ -17,9 +17,11 @@ limitations under the License.
 package configmap
 
 import (
+	"encoding/json"
 	"testing"
 	"time"
 
+	jsonpatch "github.com/evanphx/json-patch"
 	"github.com/google/go-cmp/cmp"
 	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/apimachinery/pkg/types"
@@ -43,10 +45,20 @@ type testConfig struct {
 	nsn  types.NamespacedName
 	onsn *types.NamespacedName
 
+	overlay jsonpatch.Patch
+
 	dict map[string]string
 }
 
 func TestParse(t *testing.T) {
+	op := []byte("\"add\"")
+	opMsg := json.RawMessage(op)
+	path := []byte("\"/metadata/labels\"")
+	pathMsg := json.RawMessage(path)
+	value := []byte("{ \"over1\": \"yes1\" }")
+	valueMsg := json.RawMessage(value)
+	patch := jsonpatch.Operation{"op": &opMsg, "path": &pathMsg, "value": &valueMsg}
+
 	fiveHundredM := resource.MustParse("500m")
 	tests := []struct {
 		name      string
@@ -73,6 +85,8 @@ func TestParse(t *testing.T) {
 			"test-namespaced-name":          "some-namespace/some-name",
 			"test-optional-namespaced-name": "some-other-namespace/some-other-name",
 
+			"test-overlay": "[{\"op\": \"add\", \"path\": \"/metadata/labels\", \"value\": { \"over1\": \"yes1\" }}]",
+
 			"test-dict.k":  "v",
 			"test-dict.k1": "v1",
 		},
@@ -97,6 +111,8 @@ func TestParse(t *testing.T) {
 				Name:      "some-other-name",
 				Namespace: "some-other-namespace",
 			},
+			//	overlay: jsonpatch.Patch{{"op": json.RawMessage([]byte("add")), "path": "/metadata/labels", "value": "{ \"over1\": \"yes1\" }"}},
+			overlay: jsonpatch.Patch{patch},
 			dict: map[string]string{
 				"k":  "v",
 				"k1": "v1",
@@ -185,6 +201,24 @@ func TestParse(t *testing.T) {
 		},
 		expectErr: true,
 	}, {
+		name: "types.Overlay",
+		data: map[string]string{
+			"test-overlay": "",
+		},
+		expectErr: false,
+	}, {
+		name: "types.Overlay",
+		data: map[string]string{
+			"test-overlay": "   ",
+		},
+		expectErr: false,
+	}, {
+		name: "types.Overlay",
+		data: map[string]string{
+			"test-overlay": "  aaa ",
+		},
+		expectErr: true,
+	}, {
 		name: "dict without key and dot",
 		data: map[string]string{
 			"test-dict": "v",
@@ -215,6 +249,7 @@ func TestParse(t *testing.T) {
 				AsQuantity("test-quantity", &test.conf.qua),
 				AsNamespacedName("test-namespaced-name", &test.conf.nsn),
 				AsOptionalNamespacedName("test-optional-namespaced-name", &test.conf.onsn),
+				AsJsonPatch("test-overlay", &test.conf.overlay),
 				CollectMapEntriesWithPrefix("test-dict", &test.conf.dict),
 			); (err == nil) == test.expectErr {
 				t.Fatal("Failed to parse data:", err)

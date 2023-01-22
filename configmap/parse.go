@@ -22,6 +22,7 @@ import (
 	"strings"
 	"time"
 
+	jsonpatch "github.com/evanphx/json-patch"
 	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/apimachinery/pkg/api/validation"
 	"k8s.io/apimachinery/pkg/types"
@@ -231,6 +232,27 @@ func AsNamespacedName(key string, target *types.NamespacedName) ParseFunc {
 		target.Namespace = v[0]
 		target.Name = v[1]
 
+		return nil
+	}
+}
+
+// AsJsonPatch parses the value at key as a jsonpatch.Patch into the target, if it exists
+func AsJsonPatch(key string, target *jsonpatch.Patch) ParseFunc {
+	return func(data map[string]string) error {
+		raw, ok := data[key]
+		if !ok {
+			return nil
+		}
+		raw = strings.TrimSpace(raw)
+		if len(raw) == 0 {
+			return nil
+		}
+		// try to parse the overlay patch
+		patch, err := jsonpatch.DecodePatch([]byte(raw))
+		if err != nil {
+			return fmt.Errorf("failed to parse %q: %w", key, err)
+		}
+		*target = patch
 		return nil
 	}
 }
