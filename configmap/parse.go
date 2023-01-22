@@ -236,8 +236,8 @@ func AsNamespacedName(key string, target *types.NamespacedName) ParseFunc {
 	}
 }
 
-// AsJsonPatch parses the value at key as a jsonpatch.Patch into the target, if it exists
-func AsJsonPatch(key string, target *jsonpatch.Patch) ParseFunc {
+// AsJSONPatch parses the value at key as a jsonpatch.Patch into the target, if it exists
+func AsJSONPatch(key string, target *jsonpatch.Patch) ParseFunc {
 	return func(data map[string]string) error {
 		raw, ok := data[key]
 		if !ok {
