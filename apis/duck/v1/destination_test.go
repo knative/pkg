@@ -179,7 +179,10 @@ func TestDestinationSetDefaults(t *testing.T) {
 		d    *Destination
 		ctx  context.Context
 		want string
-	}{"uri set, nothing in ref, not modified ": {
+	}{"destination nil ": {
+		d:   nil,
+		ctx: ctx,
+	}, "uri set, nothing in ref, not modified ": {
 		d:   &Destination{URI: apis.HTTP("example.com")},
 		ctx: ctx,
 	}, "namespace set, nothing in context, not modified ": {
@@ -206,11 +209,13 @@ func TestDestinationSetDefaults(t *testing.T) {
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
 			tc.d.SetDefaults(tc.ctx)
-			if tc.d.Ref != nil && tc.d.Ref.Namespace != tc.want {
-				t.Errorf("Got: %s wanted %s", tc.d.Ref.Namespace, tc.want)
-			}
-			if tc.d.Ref == nil && tc.want != "" {
-				t.Error("Got: nil Ref wanted", tc.want)
+			if tc.d != nil {
+				if tc.d.Ref != nil && tc.d.Ref.Namespace != tc.want {
+					t.Errorf("Got: %s wanted %s", tc.d.Ref.Namespace, tc.want)
+				}
+				if tc.d.Ref == nil && tc.want != "" {
+					t.Error("Got: nil Ref wanted", tc.want)
+				}
 			}
 		})
 	}
