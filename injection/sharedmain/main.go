@@ -48,6 +48,7 @@ import (
 	"knative.dev/pkg/logging"
 	"knative.dev/pkg/logging/logkey"
 	"knative.dev/pkg/metrics"
+	"knative.dev/pkg/network"
 	"knative.dev/pkg/profiling"
 	"knative.dev/pkg/reconciler"
 	"knative.dev/pkg/signals"
@@ -207,6 +208,10 @@ func MainWithContext(ctx context.Context, component string, ctors ...injection.C
 		ctx = WithHADisabled(ctx)
 	}
 
+	if HasHealthProbesEnabled(ctx) {
+		network.ServeHealthProbes(ctx)
+	}
+
 	MainWithConfig(ctx, component, cfg, ctors...)
 }
 
@@ -322,6 +327,18 @@ func MainWithConfig(ctx context.Context, component string, cfg *rest.Config, cto
 	if err := eg.Wait(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 		logger.Errorw("Error while running server", zap.Error(err))
 	}
+}
+
+type healthProbesEnabledKey struct{}
+
+// WithHealthProbesEnabled signals to MainWithContext that it should enable default probes (readiness and liveness).
+func WithHealthProbesEnabled(ctx context.Context) context.Context {
+	return context.WithValue(ctx, healthProbesEnabledKey{}, struct{}{})
+}
+
+// HasHealthProbesEnabled checks if default health checks are enabled in the related context.
+func HasHealthProbesEnabled(ctx context.Context) bool {
+	return ctx.Value(healthProbesEnabledKey{}) != nil
 }
 
 func flush(logger *zap.SugaredLogger) {
