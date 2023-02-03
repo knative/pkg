@@ -208,10 +208,6 @@ func MainWithContext(ctx context.Context, component string, ctors ...injection.C
 		ctx = WithHADisabled(ctx)
 	}
 
-	if HasHealthProbesEnabled(ctx) {
-		network.ServeHealthProbes(ctx)
-	}
-
 	MainWithConfig(ctx, component, cfg, ctors...)
 }
 
@@ -318,6 +314,11 @@ func MainWithConfig(ctx context.Context, component string, cfg *rest.Config, cto
 		return controller.StartAll(ctx, controllers...)
 	})
 
+	// Setup default health checks to catch issues with cache sync etc.
+	if !HealthProbesDisabled(ctx) {
+		network.ServeHealthProbes(ctx)
+	}
+
 	// This will block until either a signal arrives or one of the grouped functions
 	// returns an error.
 	<-egCtx.Done()
@@ -329,16 +330,16 @@ func MainWithConfig(ctx context.Context, component string, cfg *rest.Config, cto
 	}
 }
 
-type healthProbesEnabledKey struct{}
+type healthProbesDisabledKey struct{}
 
-// WithHealthProbesEnabled signals to MainWithContext that it should enable default probes (readiness and liveness).
-func WithHealthProbesEnabled(ctx context.Context) context.Context {
-	return context.WithValue(ctx, healthProbesEnabledKey{}, struct{}{})
+// WithHealthProbesDisabled signals to MainWithContext that it should disable default probes (readiness and liveness).
+func WithHealthProbesDisabled(ctx context.Context) context.Context {
+	return context.WithValue(ctx, healthProbesDisabledKey{}, struct{}{})
 }
 
-// HasHealthProbesEnabled checks if default health checks are enabled in the related context.
-func HasHealthProbesEnabled(ctx context.Context) bool {
-	return ctx.Value(healthProbesEnabledKey{}) != nil
+// HealthProbesDisabled checks if default health checks are disabled in the related context.
+func HealthProbesDisabled(ctx context.Context) bool {
+	return ctx.Value(healthProbesDisabledKey{}) != nil
 }
 
 func flush(logger *zap.SugaredLogger) {
