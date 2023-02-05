@@ -90,7 +90,7 @@ func (g *clientGenerator) Imports(c *generator.Context) (imports []string) {
 			imports = append(imports, fmt.Sprintf("%s \"%s\"", strings.ToLower("typed"+g.groupGoNames[gpn]+version.NonEmpty()), typedClientPath))
 		}
 	}
-	imports = sets.NewString(imports...).List()
+	imports = sets.List(sets.New(imports...))
 	return
 }
 
@@ -149,12 +149,12 @@ func (g *clientGenerator) GenerateType(c *generator.Context, t *types.Type, w io
 
 	sw.Do(injectionClient, m)
 
-	gpns := make(sets.String, len(g.groupGoNames))
+	gpns := make(sets.Set[string], len(g.groupGoNames))
 	for gpn := range g.groupGoNames {
 		gpns.Insert(gpn)
 	}
 
-	for _, gpn := range gpns.List() {
+	for _, gpn := range sets.List(gpns) {
 		ggn := g.groupGoNames[gpn]
 		gv := g.groupVersions[gpn]
 		verTypes := g.groupVersionTypes[gpn]
@@ -293,7 +293,7 @@ func (g *clientGenerator) GenerateType(c *generator.Context, t *types.Type, w io
 					}),
 				}
 
-				for _, v := range verbs.List() {
+				for _, v := range sets.List(verbs) {
 					tmpl := verbMap[v]
 					if tags.NoVerbs || !tags.HasVerb(v) {
 						continue
@@ -301,7 +301,7 @@ func (g *clientGenerator) GenerateType(c *generator.Context, t *types.Type, w io
 					sw.Do(tmpl, opts)
 				}
 				for _, e := range tags.Extensions {
-					for _, v := range extensionVerbs.List() {
+					for _, v := range sets.List(extensionVerbs) {
 						tmpl := extensionVerbMap[v]
 						if !e.HasVerb(v) {
 							continue
@@ -449,7 +449,7 @@ var _ {{ .PackageAlias }}.{{ .Type.Name.Name }}Interface = (*wrap{{.GroupGoName}
 
 `
 
-var verbs = sets.NewString( /* Populated from verbMap during init */ )
+var verbs = sets.New[string]( /* Populated from verbMap during init */ )
 var verbMap = map[string]string{
 	"create": `
 func (w *wrap{{.GroupGoName}}{{.Version}}{{ .Type.Name.Name }}Impl) Create(ctx {{ .contextContext|raw }}, {{ if .Subresource }}_ string, {{ end }}in *{{ .InputType|raw }}, opts {{ .metav1CreateOptions|raw }}) (*{{ .ResultType|raw }}, error) {
@@ -630,7 +630,7 @@ func (w *wrap{{.GroupGoName}}{{.Version}}{{ .Type.Name.Name }}Impl) ApplyStatus(
 `,
 }
 
-var extensionVerbs = sets.NewString( /* Populated from extensionVerbMap during init */ )
+var extensionVerbs = sets.New[string]( /* Populated from extensionVerbMap during init */ )
 var extensionVerbMap = map[string]string{
 	"apply": `
 func (w *wrap{{.GroupGoName}}{{.Version}}{{ .Type.Name.Name }}Impl) Apply(ctx {{ .contextContext|raw }}, name string, in *{{ .InputType|raw }}, opts {{ .metav1ApplyOptions|raw }}) (*{{ .ResultType|raw }}, error) {

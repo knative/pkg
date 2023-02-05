@@ -175,7 +175,7 @@ func TestFailToStartStream(t *testing.T) {
 }
 
 func processLogEntries(t *testing.T, logFuncInvoked <-chan string, patterns []string) {
-	expectedLogMatchesSet := sets.NewString(patterns...)
+	expectedLogMatchesSet := sets.New(patterns...)
 
 OUTER:
 	for len(expectedLogMatchesSet) > 0 {
@@ -188,21 +188,23 @@ OUTER:
 		case logLine := <-logFuncInvoked:
 
 			// classify string that we got here
-			for _, s := range sets.StringKeySet(expectedLogMatchesSet).List() {
-				if strings.Contains(logLine, s) {
-					expectedLogMatchesSet.Delete(s)
-					continue OUTER
+			for _, s := range sets.List(sets.KeySet(expectedLogMatchesSet)) {
+				{
+					if strings.Contains(logLine, s) {
+						expectedLogMatchesSet.Delete(s)
+						continue OUTER
+					}
 				}
+				t.Fatal("Unexpected log entry received:", logLine)
 			}
-			t.Fatal("Unexpected log entry received:", logLine)
 		}
-	}
 
-	// now we expected timeout without any logs
-	select {
-	case <-time.After(noLogTimeout):
-	case logLine := <-logFuncInvoked:
-		t.Fatal("No more logs expected at this point, got:", logLine)
+		// now we expected timeout without any logs
+		select {
+		case <-time.After(noLogTimeout):
+		case logLine := <-logFuncInvoked:
+			t.Fatal("No more logs expected at this point, got:", logLine)
+		}
 	}
 }
 

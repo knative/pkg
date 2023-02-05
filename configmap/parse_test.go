@@ -37,7 +37,7 @@ type testConfig struct {
 	i      int
 	f64    float64
 	dur    time.Duration
-	set    sets.String
+	set    sets.Set[string]
 	qua    *resource.Quantity
 
 	nsn  types.NamespacedName
@@ -87,7 +87,7 @@ func TestParse(t *testing.T) {
 			f64:    1.0,
 			i:      4,
 			dur:    time.Minute,
-			set:    sets.NewString("a", "b", "c", "d"),
+			set:    sets.New("a", "b", "c", "d"),
 			qua:    &fiveHundredM,
 			nsn: types.NamespacedName{
 				Name:      "some-name",

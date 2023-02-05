@@ -41,7 +41,7 @@ var (
 // HTTPSpanIgnoringPaths is an http.Handler middleware to create spans for the HTTP
 // endpoint, not sampling any request whose path is in pathsToIgnore.
 func HTTPSpanIgnoringPaths(pathsToIgnore ...string) func(http.Handler) http.Handler {
-	pathsToIgnoreSet := sets.NewString(pathsToIgnore...)
+	pathsToIgnoreSet := sets.New(pathsToIgnore...)
 	return func(next http.Handler) http.Handler {
 		return &ochttp.Handler{
 			Handler: next,

@@ -18,13 +18,9 @@ package main
 
 import (
 	"flag"
-	"path/filepath"
-
-	"k8s.io/code-generator/pkg/util"
-	"k8s.io/gengo/args"
-	"k8s.io/klog/v2"
 
 	"github.com/spf13/pflag"
+	"k8s.io/klog/v2"
 	generatorargs "knative.dev/pkg/codegen/cmd/injection-gen/args"
 	"knative.dev/pkg/codegen/cmd/injection-gen/generators"
 )
@@ -34,7 +30,6 @@ func main() {
 	genericArgs, customArgs := generatorargs.NewDefaults()
 
 	// Override defaults.
-	genericArgs.GoHeaderFilePath = filepath.Join(args.DefaultSourceTree(), util.BoilerplatePath())
 	genericArgs.OutputPackagePath = "k8s.io/kubernetes/pkg/client/injection/informers/informers_generated"
 
 	genericArgs.AddFlags(pflag.CommandLine)

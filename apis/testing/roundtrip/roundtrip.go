@@ -51,7 +51,7 @@ type convertibleObject interface {
 // This list comes from k8s.io/apimachinery. We can drop this constant when
 // the PR (https://github.com/kubernetes/kubernetes/pull/86959) merges and
 // we bump to a version that has the change
-var globalNonRoundTrippableTypes = sets.NewString(
+var globalNonRoundTrippableTypes = sets.New(
 	"ExportOptions",
 	"GetOptions",
 	// WatchEvent does not include kind and version and can only be deserialized

@@ -36,7 +36,7 @@ import (
 )
 
 func TestHTTPRoundTripper(t *testing.T) {
-	wants := sets.NewString()
+	wants := sets.New[string]()
 	frt := func(key string) http.RoundTripper {
 		return RoundTripperFunc(func(r *http.Request) (*http.Response, error) {
 			wants.Insert(key)

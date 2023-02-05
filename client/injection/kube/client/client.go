@@ -25,12 +25,14 @@ import (
 	fmt "fmt"
 
 	admissionregistrationv1 "k8s.io/api/admissionregistration/v1"
+	admissionregistrationv1alpha1 "k8s.io/api/admissionregistration/v1alpha1"
 	admissionregistrationv1beta1 "k8s.io/api/admissionregistration/v1beta1"
-	apiserverinternalv1alpha1 "k8s.io/api/apiserverinternal/v1alpha1"
+	apiapiserverinternalv1alpha1 "k8s.io/api/apiserverinternal/v1alpha1"
 	apiappsv1 "k8s.io/api/apps/v1"
 	apiappsv1beta1 "k8s.io/api/apps/v1beta1"
 	appsv1beta2 "k8s.io/api/apps/v1beta2"
 	authenticationv1 "k8s.io/api/authentication/v1"
+	authenticationv1alpha1 "k8s.io/api/authentication/v1alpha1"
 	authenticationv1beta1 "k8s.io/api/authentication/v1beta1"
 	authorizationv1 "k8s.io/api/authorization/v1"
 	authorizationv1beta1 "k8s.io/api/authorization/v1beta1"
@@ -53,6 +55,7 @@ import (
 	apiflowcontrolv1alpha1 "k8s.io/api/flowcontrol/v1alpha1"
 	apiflowcontrolv1beta1 "k8s.io/api/flowcontrol/v1beta1"
 	apiflowcontrolv1beta2 "k8s.io/api/flowcontrol/v1beta2"
+	flowcontrolv1beta3 "k8s.io/api/flowcontrol/v1beta3"
 	apinetworkingv1 "k8s.io/api/networking/v1"
 	apinetworkingv1alpha1 "k8s.io/api/networking/v1alpha1"
 	apinetworkingv1beta1 "k8s.io/api/networking/v1beta1"
@@ -64,6 +67,7 @@ import (
 	apirbacv1 "k8s.io/api/rbac/v1"
 	apirbacv1alpha1 "k8s.io/api/rbac/v1alpha1"
 	apirbacv1beta1 "k8s.io/api/rbac/v1beta1"
+	apiresourcev1alpha1 "k8s.io/api/resource/v1alpha1"
 	apischedulingv1 "k8s.io/api/scheduling/v1"
 	apischedulingv1alpha1 "k8s.io/api/scheduling/v1alpha1"
 	apischedulingv1beta1 "k8s.io/api/scheduling/v1beta1"
@@ -77,8 +81,9 @@ import (
 	types "k8s.io/apimachinery/pkg/types"
 	watch "k8s.io/apimachinery/pkg/watch"
 	v1 "k8s.io/client-go/applyconfigurations/admissionregistration/v1"
+	v1alpha1 "k8s.io/client-go/applyconfigurations/admissionregistration/v1alpha1"
 	v1beta1 "k8s.io/client-go/applyconfigurations/admissionregistration/v1beta1"
-	v1alpha1 "k8s.io/client-go/applyconfigurations/apiserverinternal/v1alpha1"
+	apiserverinternalv1alpha1 "k8s.io/client-go/applyconfigurations/apiserverinternal/v1alpha1"
 	appsv1 "k8s.io/client-go/applyconfigurations/apps/v1"
 	appsv1beta1 "k8s.io/client-go/applyconfigurations/apps/v1beta1"
 	v1beta2 "k8s.io/client-go/applyconfigurations/apps/v1beta2"
@@ -101,6 +106,7 @@ import (
 	flowcontrolv1alpha1 "k8s.io/client-go/applyconfigurations/flowcontrol/v1alpha1"
 	flowcontrolv1beta1 "k8s.io/client-go/applyconfigurations/flowcontrol/v1beta1"
 	flowcontrolv1beta2 "k8s.io/client-go/applyconfigurations/flowcontrol/v1beta2"
+	v1beta3 "k8s.io/client-go/applyconfigurations/flowcontrol/v1beta3"
 	networkingv1 "k8s.io/client-go/applyconfigurations/networking/v1"
 	networkingv1alpha1 "k8s.io/client-go/applyconfigurations/networking/v1alpha1"
 	networkingv1beta1 "k8s.io/client-go/applyconfigurations/networking/v1beta1"
@@ -112,6 +118,7 @@ import (
 	rbacv1 "k8s.io/client-go/applyconfigurations/rbac/v1"
 	rbacv1alpha1 "k8s.io/client-go/applyconfigurations/rbac/v1alpha1"
 	rbacv1beta1 "k8s.io/client-go/applyconfigurations/rbac/v1beta1"
+	resourcev1alpha1 "k8s.io/client-go/applyconfigurations/resource/v1alpha1"
 	schedulingv1 "k8s.io/client-go/applyconfigurations/scheduling/v1"
 	schedulingv1alpha1 "k8s.io/client-go/applyconfigurations/scheduling/v1alpha1"
 	schedulingv1beta1 "k8s.io/client-go/applyconfigurations/scheduling/v1beta1"
@@ -122,12 +129,14 @@ import (
 	dynamic "k8s.io/client-go/dynamic"
 	kubernetes "k8s.io/client-go/kubernetes"
 	typedadmissionregistrationv1 "k8s.io/client-go/kubernetes/typed/admissionregistration/v1"
+	typedadmissionregistrationv1alpha1 "k8s.io/client-go/kubernetes/typed/admissionregistration/v1alpha1"
 	typedadmissionregistrationv1beta1 "k8s.io/client-go/kubernetes/typed/admissionregistration/v1beta1"
 	typedinternalv1alpha1 "k8s.io/client-go/kubernetes/typed/apiserverinternal/v1alpha1"
 	typedappsv1 "k8s.io/client-go/kubernetes/typed/apps/v1"
 	typedappsv1beta1 "k8s.io/client-go/kubernetes/typed/apps/v1beta1"
 	typedappsv1beta2 "k8s.io/client-go/kubernetes/typed/apps/v1beta2"
 	typedauthenticationv1 "k8s.io/client-go/kubernetes/typed/authentication/v1"
+	typedauthenticationv1alpha1 "k8s.io/client-go/kubernetes/typed/authentication/v1alpha1"
 	typedauthenticationv1beta1 "k8s.io/client-go/kubernetes/typed/authentication/v1beta1"
 	typedauthorizationv1 "k8s.io/client-go/kubernetes/typed/authorization/v1"
 	typedauthorizationv1beta1 "k8s.io/client-go/kubernetes/typed/authorization/v1beta1"
@@ -150,6 +159,7 @@ import (
 	typedflowcontrolv1alpha1 "k8s.io/client-go/kubernetes/typed/flowcontrol/v1alpha1"
 	typedflowcontrolv1beta1 "k8s.io/client-go/kubernetes/typed/flowcontrol/v1beta1"
 	typedflowcontrolv1beta2 "k8s.io/client-go/kubernetes/typed/flowcontrol/v1beta2"
+	typedflowcontrolv1beta3 "k8s.io/client-go/kubernetes/typed/flowcontrol/v1beta3"
 	typednetworkingv1 "k8s.io/client-go/kubernetes/typed/networking/v1"
 	typednetworkingv1alpha1 "k8s.io/client-go/kubernetes/typed/networking/v1alpha1"
 	typednetworkingv1beta1 "k8s.io/client-go/kubernetes/typed/networking/v1beta1"
@@ -161,6 +171,7 @@ import (
 	typedrbacv1 "k8s.io/client-go/kubernetes/typed/rbac/v1"
 	typedrbacv1alpha1 "k8s.io/client-go/kubernetes/typed/rbac/v1alpha1"
 	typedrbacv1beta1 "k8s.io/client-go/kubernetes/typed/rbac/v1beta1"
+	typedresourcev1alpha1 "k8s.io/client-go/kubernetes/typed/resource/v1alpha1"
 	typedschedulingv1 "k8s.io/client-go/kubernetes/typed/scheduling/v1"
 	typedschedulingv1alpha1 "k8s.io/client-go/kubernetes/typed/scheduling/v1alpha1"
 	typedschedulingv1beta1 "k8s.io/client-go/kubernetes/typed/scheduling/v1beta1"
@@ -578,6 +589,355 @@ func (w *wrapAdmissionregistrationV1ValidatingWebhookConfigurationImpl) Watch(ct
 	return nil, errors.New("NYI: Watch")
 }
 
+// AdmissionregistrationV1alpha1 retrieves the AdmissionregistrationV1alpha1Client
+func (w *wrapClient) AdmissionregistrationV1alpha1() typedadmissionregistrationv1alpha1.AdmissionregistrationV1alpha1Interface {
+	return &wrapAdmissionregistrationV1alpha1{
+		dyn: w.dyn,
+	}
+}
+
+type wrapAdmissionregistrationV1alpha1 struct {
+	dyn dynamic.Interface
+}
+
+func (w *wrapAdmissionregistrationV1alpha1) RESTClient() rest.Interface {
+	panic("RESTClient called on dynamic client!")
+}
+
+func (w *wrapAdmissionregistrationV1alpha1) ValidatingAdmissionPolicies() typedadmissionregistrationv1alpha1.ValidatingAdmissionPolicyInterface {
+	return &wrapAdmissionregistrationV1alpha1ValidatingAdmissionPolicyImpl{
+		dyn: w.dyn.Resource(schema.GroupVersionResource{
+			Group:    "admissionregistration.k8s.io",
+			Version:  "v1alpha1",
+			Resource: "validatingadmissionpolicies",
+		}),
+	}
+}
+
+type wrapAdmissionregistrationV1alpha1ValidatingAdmissionPolicyImpl struct {
+	dyn dynamic.NamespaceableResourceInterface
+}
+
+var _ typedadmissionregistrationv1alpha1.ValidatingAdmissionPolicyInterface = (*wrapAdmissionregistrationV1alpha1ValidatingAdmissionPolicyImpl)(nil)
+
+func (w *wrapAdmissionregistrationV1alpha1ValidatingAdmissionPolicyImpl) Apply(ctx context.Context, in *v1alpha1.ValidatingAdmissionPolicyApplyConfiguration, opts metav1.ApplyOptions) (result *admissionregistrationv1alpha1.ValidatingAdmissionPolicy, err error) {
+	in.Kind = ptr.String("ValidatingAdmissionPolicy")
+
+	in.APIVersion = ptr.String("admissionregistration.k8s.io/v1alpha1")
+
+	uo := &unstructured.Unstructured{}
+	if err := convert(in, uo); err != nil {
+		return nil, err
+	}
+	uo, err = w.dyn.Apply(ctx, uo.GetName(), uo, opts)
+	if err != nil {
+		return nil, err
+	}
+	out := &admissionregistrationv1alpha1.ValidatingAdmissionPolicy{}
+	if err := convert(uo, out); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (w *wrapAdmissionregistrationV1alpha1ValidatingAdmissionPolicyImpl) ApplyStatus(ctx context.Context, in *v1alpha1.ValidatingAdmissionPolicyApplyConfiguration, opts metav1.ApplyOptions) (result *admissionregistrationv1alpha1.ValidatingAdmissionPolicy, err error) {
+	in.Kind = ptr.String("ValidatingAdmissionPolicy")
+
+	in.APIVersion = ptr.String("admissionregistration.k8s.io/v1alpha1")
+
+	uo := &unstructured.Unstructured{}
+	if err := convert(in, uo); err != nil {
+		return nil, err
+	}
+	uo, err = w.dyn.ApplyStatus(ctx, uo.GetName(), uo, opts)
+	if err != nil {
+		return nil, err
+	}
+	out := &admissionregistrationv1alpha1.ValidatingAdmissionPolicy{}
+	if err := convert(uo, out); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (w *wrapAdmissionregistrationV1alpha1ValidatingAdmissionPolicyImpl) Create(ctx context.Context, in *admissionregistrationv1alpha1.ValidatingAdmissionPolicy, opts metav1.CreateOptions) (*admissionregistrationv1alpha1.ValidatingAdmissionPolicy, error) {
+	in.SetGroupVersionKind(schema.GroupVersionKind{
+		Group:   "admissionregistration.k8s.io",
+		Version: "v1alpha1",
+		Kind:    "ValidatingAdmissionPolicy",
+	})
+	uo := &unstructured.Unstructured{}
+	if err := convert(in, uo); err != nil {
+		return nil, err
+	}
+	uo, err := w.dyn.Create(ctx, uo, opts)
+	if err != nil {
+		return nil, err
+	}
+	out := &admissionregistrationv1alpha1.ValidatingAdmissionPolicy{}
+	if err := convert(uo, out); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (w *wrapAdmissionregistrationV1alpha1ValidatingAdmissionPolicyImpl) Delete(ctx context.Context, name string, opts metav1.DeleteOptions) error {
+	return w.dyn.Delete(ctx, name, opts)
+}
+
+func (w *wrapAdmissionregistrationV1alpha1ValidatingAdmissionPolicyImpl) DeleteCollection(ctx context.Context, opts metav1.DeleteOptions, listOpts metav1.ListOptions) error {
+	return w.dyn.DeleteCollection(ctx, opts, listOpts)
+}
+
+func (w *wrapAdmissionregistrationV1alpha1ValidatingAdmissionPolicyImpl) Get(ctx context.Context, name string, opts metav1.GetOptions) (*admissionregistrationv1alpha1.ValidatingAdmissionPolicy, error) {
+	uo, err := w.dyn.Get(ctx, name, opts)
+	if err != nil {
+		return nil, err
+	}
+	out := &admissionregistrationv1alpha1.ValidatingAdmissionPolicy{}
+	if err := convert(uo, out); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (w *wrapAdmissionregistrationV1alpha1ValidatingAdmissionPolicyImpl) List(ctx context.Context, opts metav1.ListOptions) (*admissionregistrationv1alpha1.ValidatingAdmissionPolicyList, error) {
+	uo, err := w.dyn.List(ctx, opts)
+	if err != nil {
+		return nil, err
+	}
+	out := &admissionregistrationv1alpha1.ValidatingAdmissionPolicyList{}
+	if err := convert(uo, out); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (w *wrapAdmissionregistrationV1alpha1ValidatingAdmissionPolicyImpl) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts metav1.PatchOptions, subresources ...string) (result *admissionregistrationv1alpha1.ValidatingAdmissionPolicy, err error) {
+	uo, err := w.dyn.Patch(ctx, name, pt, data, opts)
+	if err != nil {
+		return nil, err
+	}
+	out := &admissionregistrationv1alpha1.ValidatingAdmissionPolicy{}
+	if err := convert(uo, out); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (w *wrapAdmissionregistrationV1alpha1ValidatingAdmissionPolicyImpl) Update(ctx context.Context, in *admissionregistrationv1alpha1.ValidatingAdmissionPolicy, opts metav1.UpdateOptions) (*admissionregistrationv1alpha1.ValidatingAdmissionPolicy, error) {
+	in.SetGroupVersionKind(schema.GroupVersionKind{
+		Group:   "admissionregistration.k8s.io",
+		Version: "v1alpha1",
+		Kind:    "ValidatingAdmissionPolicy",
+	})
+	uo := &unstructured.Unstructured{}
+	if err := convert(in, uo); err != nil {
+		return nil, err
+	}
+	uo, err := w.dyn.Update(ctx, uo, opts)
+	if err != nil {
+		return nil, err
+	}
+	out := &admissionregistrationv1alpha1.ValidatingAdmissionPolicy{}
+	if err := convert(uo, out); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (w *wrapAdmissionregistrationV1alpha1ValidatingAdmissionPolicyImpl) UpdateStatus(ctx context.Context, in *admissionregistrationv1alpha1.ValidatingAdmissionPolicy, opts metav1.UpdateOptions) (*admissionregistrationv1alpha1.ValidatingAdmissionPolicy, error) {
+	in.SetGroupVersionKind(schema.GroupVersionKind{
+		Group:   "admissionregistration.k8s.io",
+		Version: "v1alpha1",
+		Kind:    "ValidatingAdmissionPolicy",
+	})
+	uo := &unstructured.Unstructured{}
+	if err := convert(in, uo); err != nil {
+		return nil, err
+	}
+	uo, err := w.dyn.UpdateStatus(ctx, uo, opts)
+	if err != nil {
+		return nil, err
+	}
+	out := &admissionregistrationv1alpha1.ValidatingAdmissionPolicy{}
+	if err := convert(uo, out); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (w *wrapAdmissionregistrationV1alpha1ValidatingAdmissionPolicyImpl) Watch(ctx context.Context, opts metav1.ListOptions) (watch.Interface, error) {
+	return nil, errors.New("NYI: Watch")
+}
+
+func (w *wrapAdmissionregistrationV1alpha1) ValidatingAdmissionPolicyBindings() typedadmissionregistrationv1alpha1.ValidatingAdmissionPolicyBindingInterface {
+	return &wrapAdmissionregistrationV1alpha1ValidatingAdmissionPolicyBindingImpl{
+		dyn: w.dyn.Resource(schema.GroupVersionResource{
+			Group:    "admissionregistration.k8s.io",
+			Version:  "v1alpha1",
+			Resource: "validatingadmissionpolicybindings",
+		}),
+	}
+}
+
+type wrapAdmissionregistrationV1alpha1ValidatingAdmissionPolicyBindingImpl struct {
+	dyn dynamic.NamespaceableResourceInterface
+}
+
+var _ typedadmissionregistrationv1alpha1.ValidatingAdmissionPolicyBindingInterface = (*wrapAdmissionregistrationV1alpha1ValidatingAdmissionPolicyBindingImpl)(nil)
+
+func (w *wrapAdmissionregistrationV1alpha1ValidatingAdmissionPolicyBindingImpl) Apply(ctx context.Context, in *v1alpha1.ValidatingAdmissionPolicyBindingApplyConfiguration, opts metav1.ApplyOptions) (result *admissionregistrationv1alpha1.ValidatingAdmissionPolicyBinding, err error) {
+	in.Kind = ptr.String("ValidatingAdmissionPolicyBinding")
+
+	in.APIVersion = ptr.String("admissionregistration.k8s.io/v1alpha1")
+
+	uo := &unstructured.Unstructured{}
+	if err := convert(in, uo); err != nil {
+		return nil, err
+	}
+	uo, err = w.dyn.Apply(ctx, uo.GetName(), uo, opts)
+	if err != nil {
+		return nil, err
+	}
+	out := &admissionregistrationv1alpha1.ValidatingAdmissionPolicyBinding{}
+	if err := convert(uo, out); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (w *wrapAdmissionregistrationV1alpha1ValidatingAdmissionPolicyBindingImpl) ApplyStatus(ctx context.Context, in *v1alpha1.ValidatingAdmissionPolicyBindingApplyConfiguration, opts metav1.ApplyOptions) (result *admissionregistrationv1alpha1.ValidatingAdmissionPolicyBinding, err error) {
+	in.Kind = ptr.String("ValidatingAdmissionPolicyBinding")
+
+	in.APIVersion = ptr.String("admissionregistration.k8s.io/v1alpha1")
+
+	uo := &unstructured.Unstructured{}
+	if err := convert(in, uo); err != nil {
+		return nil, err
+	}
+	uo, err = w.dyn.ApplyStatus(ctx, uo.GetName(), uo, opts)
+	if err != nil {
+		return nil, err
+	}
+	out := &admissionregistrationv1alpha1.ValidatingAdmissionPolicyBinding{}
+	if err := convert(uo, out); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (w *wrapAdmissionregistrationV1alpha1ValidatingAdmissionPolicyBindingImpl) Create(ctx context.Context, in *admissionregistrationv1alpha1.ValidatingAdmissionPolicyBinding, opts metav1.CreateOptions) (*admissionregistrationv1alpha1.ValidatingAdmissionPolicyBinding, error) {
+	in.SetGroupVersionKind(schema.GroupVersionKind{
+		Group:   "admissionregistration.k8s.io",
+		Version: "v1alpha1",
+		Kind:    "ValidatingAdmissionPolicyBinding",
+	})
+	uo := &unstructured.Unstructured{}
+	if err := convert(in, uo); err != nil {
+		return nil, err
+	}
+	uo, err := w.dyn.Create(ctx, uo, opts)
+	if err != nil {
+		return nil, err
+	}
+	out := &admissionregistrationv1alpha1.ValidatingAdmissionPolicyBinding{}
+	if err := convert(uo, out); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (w *wrapAdmissionregistrationV1alpha1ValidatingAdmissionPolicyBindingImpl) Delete(ctx context.Context, name string, opts metav1.DeleteOptions) error {
+	return w.dyn.Delete(ctx, name, opts)
+}
+
+func (w *wrapAdmissionregistrationV1alpha1ValidatingAdmissionPolicyBindingImpl) DeleteCollection(ctx context.Context, opts metav1.DeleteOptions, listOpts metav1.ListOptions) error {
+	return w.dyn.DeleteCollection(ctx, opts, listOpts)
+}
+
+func (w *wrapAdmissionregistrationV1alpha1ValidatingAdmissionPolicyBindingImpl) Get(ctx context.Context, name string, opts metav1.GetOptions) (*admissionregistrationv1alpha1.ValidatingAdmissionPolicyBinding, error) {
+	uo, err := w.dyn.Get(ctx, name, opts)
+	if err != nil {
+		return nil, err
+	}
+	out := &admissionregistrationv1alpha1.ValidatingAdmissionPolicyBinding{}
+	if err := convert(uo, out); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (w *wrapAdmissionregistrationV1alpha1ValidatingAdmissionPolicyBindingImpl) List(ctx context.Context, opts metav1.ListOptions) (*admissionregistrationv1alpha1.ValidatingAdmissionPolicyBindingList, error) {
+	uo, err := w.dyn.List(ctx, opts)
+	if err != nil {
+		return nil, err
+	}
+	out := &admissionregistrationv1alpha1.ValidatingAdmissionPolicyBindingList{}
+	if err := convert(uo, out); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (w *wrapAdmissionregistrationV1alpha1ValidatingAdmissionPolicyBindingImpl) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts metav1.PatchOptions, subresources ...string) (result *admissionregistrationv1alpha1.ValidatingAdmissionPolicyBinding, err error) {
+	uo, err := w.dyn.Patch(ctx, name, pt, data, opts)
+	if err != nil {
+		return nil, err
+	}
+	out := &admissionregistrationv1alpha1.ValidatingAdmissionPolicyBinding{}
+	if err := convert(uo, out); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (w *wrapAdmissionregistrationV1alpha1ValidatingAdmissionPolicyBindingImpl) Update(ctx context.Context, in *admissionregistrationv1alpha1.ValidatingAdmissionPolicyBinding, opts metav1.UpdateOptions) (*admissionregistrationv1alpha1.ValidatingAdmissionPolicyBinding, error) {
+	in.SetGroupVersionKind(schema.GroupVersionKind{
+		Group:   "admissionregistration.k8s.io",
+		Version: "v1alpha1",
+		Kind:    "ValidatingAdmissionPolicyBinding",
+	})
+	uo := &unstructured.Unstructured{}
+	if err := convert(in, uo); err != nil {
+		return nil, err
+	}
+	uo, err := w.dyn.Update(ctx, uo, opts)
+	if err != nil {
+		return nil, err
+	}
+	out := &admissionregistrationv1alpha1.ValidatingAdmissionPolicyBinding{}
+	if err := convert(uo, out); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (w *wrapAdmissionregistrationV1alpha1ValidatingAdmissionPolicyBindingImpl) UpdateStatus(ctx context.Context, in *admissionregistrationv1alpha1.ValidatingAdmissionPolicyBinding, opts metav1.UpdateOptions) (*admissionregistrationv1alpha1.ValidatingAdmissionPolicyBinding, error) {
+	in.SetGroupVersionKind(schema.GroupVersionKind{
+		Group:   "admissionregistration.k8s.io",
+		Version: "v1alpha1",
+		Kind:    "ValidatingAdmissionPolicyBinding",
+	})
+	uo := &unstructured.Unstructured{}
+	if err := convert(in, uo); err != nil {
+		return nil, err
+	}
+	uo, err := w.dyn.UpdateStatus(ctx, uo, opts)
+	if err != nil {
+		return nil, err
+	}
+	out := &admissionregistrationv1alpha1.ValidatingAdmissionPolicyBinding{}
+	if err := convert(uo, out); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (w *wrapAdmissionregistrationV1alpha1ValidatingAdmissionPolicyBindingImpl) Watch(ctx context.Context, opts metav1.ListOptions) (watch.Interface, error) {
+	return nil, errors.New("NYI: Watch")
+}
+
 // AdmissionregistrationV1beta1 retrieves the AdmissionregistrationV1beta1Client
 func (w *wrapClient) AdmissionregistrationV1beta1() typedadmissionregistrationv1beta1.AdmissionregistrationV1beta1Interface {
 	return &wrapAdmissionregistrationV1beta1{
@@ -958,7 +1318,7 @@ type wrapInternalV1alpha1StorageVersionImpl struct {
 
 var _ typedinternalv1alpha1.StorageVersionInterface = (*wrapInternalV1alpha1StorageVersionImpl)(nil)
 
-func (w *wrapInternalV1alpha1StorageVersionImpl) Apply(ctx context.Context, in *v1alpha1.StorageVersionApplyConfiguration, opts metav1.ApplyOptions) (result *apiserverinternalv1alpha1.StorageVersion, err error) {
+func (w *wrapInternalV1alpha1StorageVersionImpl) Apply(ctx context.Context, in *apiserverinternalv1alpha1.StorageVersionApplyConfiguration, opts metav1.ApplyOptions) (result *apiapiserverinternalv1alpha1.StorageVersion, err error) {
 	in.Kind = ptr.String("StorageVersion")
 
 	in.APIVersion = ptr.String("internal.apiserver.k8s.io/v1alpha1")
@@ -971,14 +1331,14 @@ func (w *wrapInternalV1alpha1StorageVersionImpl) Apply(ctx context.Context, in *
 	if err != nil {
 		return nil, err
 	}
-	out := &apiserverinternalv1alpha1.StorageVersion{}
+	out := &apiapiserverinternalv1alpha1.StorageVersion{}
 	if err := convert(uo, out); err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (w *wrapInternalV1alpha1StorageVersionImpl) ApplyStatus(ctx context.Context, in *v1alpha1.StorageVersionApplyConfiguration, opts metav1.ApplyOptions) (result *apiserverinternalv1alpha1.StorageVersion, err error) {
+func (w *wrapInternalV1alpha1StorageVersionImpl) ApplyStatus(ctx context.Context, in *apiserverinternalv1alpha1.StorageVersionApplyConfiguration, opts metav1.ApplyOptions) (result *apiapiserverinternalv1alpha1.StorageVersion, err error) {
 	in.Kind = ptr.String("StorageVersion")
 
 	in.APIVersion = ptr.String("internal.apiserver.k8s.io/v1alpha1")
@@ -991,14 +1351,14 @@ func (w *wrapInternalV1alpha1StorageVersionImpl) ApplyStatus(ctx context.Context
 	if err != nil {
 		return nil, err
 	}
-	out := &apiserverinternalv1alpha1.StorageVersion{}
+	out := &apiapiserverinternalv1alpha1.StorageVersion{}
 	if err := convert(uo, out); err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (w *wrapInternalV1alpha1StorageVersionImpl) Create(ctx context.Context, in *apiserverinternalv1alpha1.StorageVersion, opts metav1.CreateOptions) (*apiserverinternalv1alpha1.StorageVersion, error) {
+func (w *wrapInternalV1alpha1StorageVersionImpl) Create(ctx context.Context, in *apiapiserverinternalv1alpha1.StorageVersion, opts metav1.CreateOptions) (*apiapiserverinternalv1alpha1.StorageVersion, error) {
 	in.SetGroupVersionKind(schema.GroupVersionKind{
 		Group:   "internal.apiserver.k8s.io",
 		Version: "v1alpha1",
@@ -1012,7 +1372,7 @@ func (w *wrapInternalV1alpha1StorageVersionImpl) Create(ctx context.Context, in 
 	if err != nil {
 		return nil, err
 	}
-	out := &apiserverinternalv1alpha1.StorageVersion{}
+	out := &apiapiserverinternalv1alpha1.StorageVersion{}
 	if err := convert(uo, out); err != nil {
 		return nil, err
 	}
@@ -1027,43 +1387,43 @@ func (w *wrapInternalV1alpha1StorageVersionImpl) DeleteCollection(ctx context.Co
 	return w.dyn.DeleteCollection(ctx, opts, listOpts)
 }
 
-func (w *wrapInternalV1alpha1StorageVersionImpl) Get(ctx context.Context, name string, opts metav1.GetOptions) (*apiserverinternalv1alpha1.StorageVersion, error) {
+func (w *wrapInternalV1alpha1StorageVersionImpl) Get(ctx context.Context, name string, opts metav1.GetOptions) (*apiapiserverinternalv1alpha1.StorageVersion, error) {
 	uo, err := w.dyn.Get(ctx, name, opts)
 	if err != nil {
 		return nil, err
 	}
-	out := &apiserverinternalv1alpha1.StorageVersion{}
+	out := &apiapiserverinternalv1alpha1.StorageVersion{}
 	if err := convert(uo, out); err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (w *wrapInternalV1alpha1StorageVersionImpl) List(ctx context.Context, opts metav1.ListOptions) (*apiserverinternalv1alpha1.StorageVersionList, error) {
+func (w *wrapInternalV1alpha1StorageVersionImpl) List(ctx context.Context, opts metav1.ListOptions) (*apiapiserverinternalv1alpha1.StorageVersionList, error) {
 	uo, err := w.dyn.List(ctx, opts)
 	if err != nil {
 		return nil, err
 	}
-	out := &apiserverinternalv1alpha1.StorageVersionList{}
+	out := &apiapiserverinternalv1alpha1.StorageVersionList{}
 	if err := convert(uo, out); err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (w *wrapInternalV1alpha1StorageVersionImpl) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts metav1.PatchOptions, subresources ...string) (result *apiserverinternalv1alpha1.StorageVersion, err error) {
+func (w *wrapInternalV1alpha1StorageVersionImpl) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts metav1.PatchOptions, subresources ...string) (result *apiapiserverinternalv1alpha1.StorageVersion, err error) {
 	uo, err := w.dyn.Patch(ctx, name, pt, data, opts)
 	if err != nil {
 		return nil, err
 	}
-	out := &apiserverinternalv1alpha1.StorageVersion{}
+	out := &apiapiserverinternalv1alpha1.StorageVersion{}
 	if err := convert(uo, out); err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (w *wrapInternalV1alpha1StorageVersionImpl) Update(ctx context.Context, in *apiserverinternalv1alpha1.StorageVersion, opts metav1.UpdateOptions) (*apiserverinternalv1alpha1.StorageVersion, error) {
+func (w *wrapInternalV1alpha1StorageVersionImpl) Update(ctx context.Context, in *apiapiserverinternalv1alpha1.StorageVersion, opts metav1.UpdateOptions) (*apiapiserverinternalv1alpha1.StorageVersion, error) {
 	in.SetGroupVersionKind(schema.GroupVersionKind{
 		Group:   "internal.apiserver.k8s.io",
 		Version: "v1alpha1",
@@ -1077,14 +1437,14 @@ func (w *wrapInternalV1alpha1StorageVersionImpl) Update(ctx context.Context, in 
 	if err != nil {
 		return nil, err
 	}
-	out := &apiserverinternalv1alpha1.StorageVersion{}
+	out := &apiapiserverinternalv1alpha1.StorageVersion{}
 	if err := convert(uo, out); err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (w *wrapInternalV1alpha1StorageVersionImpl) UpdateStatus(ctx context.Context, in *apiserverinternalv1alpha1.StorageVersion, opts metav1.UpdateOptions) (*apiserverinternalv1alpha1.StorageVersion, error) {
+func (w *wrapInternalV1alpha1StorageVersionImpl) UpdateStatus(ctx context.Context, in *apiapiserverinternalv1alpha1.StorageVersion, opts metav1.UpdateOptions) (*apiapiserverinternalv1alpha1.StorageVersion, error) {
 	in.SetGroupVersionKind(schema.GroupVersionKind{
 		Group:   "internal.apiserver.k8s.io",
 		Version: "v1alpha1",
@@ -1098,7 +1458,7 @@ func (w *wrapInternalV1alpha1StorageVersionImpl) UpdateStatus(ctx context.Contex
 	if err != nil {
 		return nil, err
 	}
-	out := &apiserverinternalv1alpha1.StorageVersion{}
+	out := &apiapiserverinternalv1alpha1.StorageVersion{}
 	if err := convert(uo, out); err != nil {
 		return nil, err
 	}
@@ -3471,6 +3831,58 @@ func (w *wrapAuthenticationV1TokenReviewImpl) Create(ctx context.Context, in *au
 		return nil, err
 	}
 	out := &authenticationv1.TokenReview{}
+	if err := convert(uo, out); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// AuthenticationV1alpha1 retrieves the AuthenticationV1alpha1Client
+func (w *wrapClient) AuthenticationV1alpha1() typedauthenticationv1alpha1.AuthenticationV1alpha1Interface {
+	return &wrapAuthenticationV1alpha1{
+		dyn: w.dyn,
+	}
+}
+
+type wrapAuthenticationV1alpha1 struct {
+	dyn dynamic.Interface
+}
+
+func (w *wrapAuthenticationV1alpha1) RESTClient() rest.Interface {
+	panic("RESTClient called on dynamic client!")
+}
+
+func (w *wrapAuthenticationV1alpha1) SelfSubjectReviews() typedauthenticationv1alpha1.SelfSubjectReviewInterface {
+	return &wrapAuthenticationV1alpha1SelfSubjectReviewImpl{
+		dyn: w.dyn.Resource(schema.GroupVersionResource{
+			Group:    "authentication.k8s.io",
+			Version:  "v1alpha1",
+			Resource: "selfsubjectreviews",
+		}),
+	}
+}
+
+type wrapAuthenticationV1alpha1SelfSubjectReviewImpl struct {
+	dyn dynamic.NamespaceableResourceInterface
+}
+
+var _ typedauthenticationv1alpha1.SelfSubjectReviewInterface = (*wrapAuthenticationV1alpha1SelfSubjectReviewImpl)(nil)
+
+func (w *wrapAuthenticationV1alpha1SelfSubjectReviewImpl) Create(ctx context.Context, in *authenticationv1alpha1.SelfSubjectReview, opts metav1.CreateOptions) (*authenticationv1alpha1.SelfSubjectReview, error) {
+	in.SetGroupVersionKind(schema.GroupVersionKind{
+		Group:   "authentication.k8s.io",
+		Version: "v1alpha1",
+		Kind:    "SelfSubjectReview",
+	})
+	uo := &unstructured.Unstructured{}
+	if err := convert(in, uo); err != nil {
+		return nil, err
+	}
+	uo, err := w.dyn.Create(ctx, uo, opts)
+	if err != nil {
+		return nil, err
+	}
+	out := &authenticationv1alpha1.SelfSubjectReview{}
 	if err := convert(uo, out); err != nil {
 		return nil, err
 	}
@@ -11485,6 +11897,355 @@ func (w *wrapFlowcontrolV1beta2PriorityLevelConfigurationImpl) Watch(ctx context
 	return nil, errors.New("NYI: Watch")
 }
 
+// FlowcontrolV1beta3 retrieves the FlowcontrolV1beta3Client
+func (w *wrapClient) FlowcontrolV1beta3() typedflowcontrolv1beta3.FlowcontrolV1beta3Interface {
+	return &wrapFlowcontrolV1beta3{
+		dyn: w.dyn,
+	}
+}
+
+type wrapFlowcontrolV1beta3 struct {
+	dyn dynamic.Interface
+}
+
+func (w *wrapFlowcontrolV1beta3) RESTClient() rest.Interface {
+	panic("RESTClient called on dynamic client!")
+}
+
+func (w *wrapFlowcontrolV1beta3) FlowSchemas() typedflowcontrolv1beta3.FlowSchemaInterface {
+	return &wrapFlowcontrolV1beta3FlowSchemaImpl{
+		dyn: w.dyn.Resource(schema.GroupVersionResource{
+			Group:    "flowcontrol.apiserver.k8s.io",
+			Version:  "v1beta3",
+			Resource: "flowschemas",
+		}),
+	}
+}
+
+type wrapFlowcontrolV1beta3FlowSchemaImpl struct {
+	dyn dynamic.NamespaceableResourceInterface
+}
+
+var _ typedflowcontrolv1beta3.FlowSchemaInterface = (*wrapFlowcontrolV1beta3FlowSchemaImpl)(nil)
+
+func (w *wrapFlowcontrolV1beta3FlowSchemaImpl) Apply(ctx context.Context, in *v1beta3.FlowSchemaApplyConfiguration, opts metav1.ApplyOptions) (result *flowcontrolv1beta3.FlowSchema, err error) {
+	in.Kind = ptr.String("FlowSchema")
+
+	in.APIVersion = ptr.String("flowcontrol.apiserver.k8s.io/v1beta3")
+
+	uo := &unstructured.Unstructured{}
+	if err := convert(in, uo); err != nil {
+		return nil, err
+	}
+	uo, err = w.dyn.Apply(ctx, uo.GetName(), uo, opts)
+	if err != nil {
+		return nil, err
+	}
+	out := &flowcontrolv1beta3.FlowSchema{}
+	if err := convert(uo, out); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (w *wrapFlowcontrolV1beta3FlowSchemaImpl) ApplyStatus(ctx context.Context, in *v1beta3.FlowSchemaApplyConfiguration, opts metav1.ApplyOptions) (result *flowcontrolv1beta3.FlowSchema, err error) {
+	in.Kind = ptr.String("FlowSchema")
+
+	in.APIVersion = ptr.String("flowcontrol.apiserver.k8s.io/v1beta3")
+
+	uo := &unstructured.Unstructured{}
+	if err := convert(in, uo); err != nil {
+		return nil, err
+	}
+	uo, err = w.dyn.ApplyStatus(ctx, uo.GetName(), uo, opts)
+	if err != nil {
+		return nil, err
+	}
+	out := &flowcontrolv1beta3.FlowSchema{}
+	if err := convert(uo, out); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (w *wrapFlowcontrolV1beta3FlowSchemaImpl) Create(ctx context.Context, in *flowcontrolv1beta3.FlowSchema, opts metav1.CreateOptions) (*flowcontrolv1beta3.FlowSchema, error) {
+	in.SetGroupVersionKind(schema.GroupVersionKind{
+		Group:   "flowcontrol.apiserver.k8s.io",
+		Version: "v1beta3",
+		Kind:    "FlowSchema",
+	})
+	uo := &unstructured.Unstructured{}
+	if err := convert(in, uo); err != nil {
+		return nil, err
+	}
+	uo, err := w.dyn.Create(ctx, uo, opts)
+	if err != nil {
+		return nil, err
+	}
+	out := &flowcontrolv1beta3.FlowSchema{}
+	if err := convert(uo, out); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (w *wrapFlowcontrolV1beta3FlowSchemaImpl) Delete(ctx context.Context, name string, opts metav1.DeleteOptions) error {
+	return w.dyn.Delete(ctx, name, opts)
+}
+
+func (w *wrapFlowcontrolV1beta3FlowSchemaImpl) DeleteCollection(ctx context.Context, opts metav1.DeleteOptions, listOpts metav1.ListOptions) error {
+	return w.dyn.DeleteCollection(ctx, opts, listOpts)
+}
+
+func (w *wrapFlowcontrolV1beta3FlowSchemaImpl) Get(ctx context.Context, name string, opts metav1.GetOptions) (*flowcontrolv1beta3.FlowSchema, error) {
+	uo, err := w.dyn.Get(ctx, name, opts)
+	if err != nil {
+		return nil, err
+	}
+	out := &flowcontrolv1beta3.FlowSchema{}
+	if err := convert(uo, out); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (w *wrapFlowcontrolV1beta3FlowSchemaImpl) List(ctx context.Context, opts metav1.ListOptions) (*flowcontrolv1beta3.FlowSchemaList, error) {
+	uo, err := w.dyn.List(ctx, opts)
+	if err != nil {
+		return nil, err
+	}
+	out := &flowcontrolv1beta3.FlowSchemaList{}
+	if err := convert(uo, out); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (w *wrapFlowcontrolV1beta3FlowSchemaImpl) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts metav1.PatchOptions, subresources ...string) (result *flowcontrolv1beta3.FlowSchema, err error) {
+	uo, err := w.dyn.Patch(ctx, name, pt, data, opts)
+	if err != nil {
+		return nil, err
+	}
+	out := &flowcontrolv1beta3.FlowSchema{}
+	if err := convert(uo, out); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (w *wrapFlowcontrolV1beta3FlowSchemaImpl) Update(ctx context.Context, in *flowcontrolv1beta3.FlowSchema, opts metav1.UpdateOptions) (*flowcontrolv1beta3.FlowSchema, error) {
+	in.SetGroupVersionKind(schema.GroupVersionKind{
+		Group:   "flowcontrol.apiserver.k8s.io",
+		Version: "v1beta3",
+		Kind:    "FlowSchema",
+	})
+	uo := &unstructured.Unstructured{}
+	if err := convert(in, uo); err != nil {
+		return nil, err
+	}
+	uo, err := w.dyn.Update(ctx, uo, opts)
+	if err != nil {
+		return nil, err
+	}
+	out := &flowcontrolv1beta3.FlowSchema{}
+	if err := convert(uo, out); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (w *wrapFlowcontrolV1beta3FlowSchemaImpl) UpdateStatus(ctx context.Context, in *flowcontrolv1beta3.FlowSchema, opts metav1.UpdateOptions) (*flowcontrolv1beta3.FlowSchema, error) {
+	in.SetGroupVersionKind(schema.GroupVersionKind{
+		Group:   "flowcontrol.apiserver.k8s.io",
+		Version: "v1beta3",
+		Kind:    "FlowSchema",
+	})
+	uo := &unstructured.Unstructured{}
+	if err := convert(in, uo); err != nil {
+		return nil, err
+	}
+	uo, err := w.dyn.UpdateStatus(ctx, uo, opts)
+	if err != nil {
+		return nil, err
+	}
+	out := &flowcontrolv1beta3.FlowSchema{}
+	if err := convert(uo, out); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (w *wrapFlowcontrolV1beta3FlowSchemaImpl) Watch(ctx context.Context, opts metav1.ListOptions) (watch.Interface, error) {
+	return nil, errors.New("NYI: Watch")
+}
+
+func (w *wrapFlowcontrolV1beta3) PriorityLevelConfigurations() typedflowcontrolv1beta3.PriorityLevelConfigurationInterface {
+	return &wrapFlowcontrolV1beta3PriorityLevelConfigurationImpl{
+		dyn: w.dyn.Resource(schema.GroupVersionResource{
+			Group:    "flowcontrol.apiserver.k8s.io",
+			Version:  "v1beta3",
+			Resource: "prioritylevelconfigurations",
+		}),
+	}
+}
+
+type wrapFlowcontrolV1beta3PriorityLevelConfigurationImpl struct {
+	dyn dynamic.NamespaceableResourceInterface
+}
+
+var _ typedflowcontrolv1beta3.PriorityLevelConfigurationInterface = (*wrapFlowcontrolV1beta3PriorityLevelConfigurationImpl)(nil)
+
+func (w *wrapFlowcontrolV1beta3PriorityLevelConfigurationImpl) Apply(ctx context.Context, in *v1beta3.PriorityLevelConfigurationApplyConfiguration, opts metav1.ApplyOptions) (result *flowcontrolv1beta3.PriorityLevelConfiguration, err error) {
+	in.Kind = ptr.String("PriorityLevelConfiguration")
+
+	in.APIVersion = ptr.String("flowcontrol.apiserver.k8s.io/v1beta3")
+
+	uo := &unstructured.Unstructured{}
+	if err := convert(in, uo); err != nil {
+		return nil, err
+	}
+	uo, err = w.dyn.Apply(ctx, uo.GetName(), uo, opts)
+	if err != nil {
+		return nil, err
+	}
+	out := &flowcontrolv1beta3.PriorityLevelConfiguration{}
+	if err := convert(uo, out); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (w *wrapFlowcontrolV1beta3PriorityLevelConfigurationImpl) ApplyStatus(ctx context.Context, in *v1beta3.PriorityLevelConfigurationApplyConfiguration, opts metav1.ApplyOptions) (result *flowcontrolv1beta3.PriorityLevelConfiguration, err error) {
+	in.Kind = ptr.String("PriorityLevelConfiguration")
+
+	in.APIVersion = ptr.String("flowcontrol.apiserver.k8s.io/v1beta3")
+
+	uo := &unstructured.Unstructured{}
+	if err := convert(in, uo); err != nil {
+		return nil, err
+	}
+	uo, err = w.dyn.ApplyStatus(ctx, uo.GetName(), uo, opts)
+	if err != nil {
+		return nil, err
+	}
+	out := &flowcontrolv1beta3.PriorityLevelConfiguration{}
+	if err := convert(uo, out); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (w *wrapFlowcontrolV1beta3PriorityLevelConfigurationImpl) Create(ctx context.Context, in *flowcontrolv1beta3.PriorityLevelConfiguration, opts metav1.CreateOptions) (*flowcontrolv1beta3.PriorityLevelConfiguration, error) {
+	in.SetGroupVersionKind(schema.GroupVersionKind{
+		Group:   "flowcontrol.apiserver.k8s.io",
+		Version: "v1beta3",
+		Kind:    "PriorityLevelConfiguration",
+	})
+	uo := &unstructured.Unstructured{}
+	if err := convert(in, uo); err != nil {
+		return nil, err
+	}
+	uo, err := w.dyn.Create(ctx, uo, opts)
+	if err != nil {
+		return nil, err
+	}
+	out := &flowcontrolv1beta3.PriorityLevelConfiguration{}
+	if err := convert(uo, out); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (w *wrapFlowcontrolV1beta3PriorityLevelConfigurationImpl) Delete(ctx context.Context, name string, opts metav1.DeleteOptions) error {
+	return w.dyn.Delete(ctx, name, opts)
+}
+
+func (w *wrapFlowcontrolV1beta3PriorityLevelConfigurationImpl) DeleteCollection(ctx context.Context, opts metav1.DeleteOptions, listOpts metav1.ListOptions) error {
+	return w.dyn.DeleteCollection(ctx, opts, listOpts)
+}
+
+func (w *wrapFlowcontrolV1beta3PriorityLevelConfigurationImpl) Get(ctx context.Context, name string, opts metav1.GetOptions) (*flowcontrolv1beta3.PriorityLevelConfiguration, error) {
+	uo, err := w.dyn.Get(ctx, name, opts)
+	if err != nil {
+		return nil, err
+	}
+	out := &flowcontrolv1beta3.PriorityLevelConfiguration{}
+	if err := convert(uo, out); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (w *wrapFlowcontrolV1beta3PriorityLevelConfigurationImpl) List(ctx context.Context, opts metav1.ListOptions) (*flowcontrolv1beta3.PriorityLevelConfigurationList, error) {
+	uo, err := w.dyn.List(ctx, opts)
+	if err != nil {
+		return nil, err
+	}
+	out := &flowcontrolv1beta3.PriorityLevelConfigurationList{}
+	if err := convert(uo, out); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (w *wrapFlowcontrolV1beta3PriorityLevelConfigurationImpl) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts metav1.PatchOptions, subresources ...string) (result *flowcontrolv1beta3.PriorityLevelConfiguration, err error) {
+	uo, err := w.dyn.Patch(ctx, name, pt, data, opts)
+	if err != nil {
+		return nil, err
+	}
+	out := &flowcontrolv1beta3.PriorityLevelConfiguration{}
+	if err := convert(uo, out); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (w *wrapFlowcontrolV1beta3PriorityLevelConfigurationImpl) Update(ctx context.Context, in *flowcontrolv1beta3.PriorityLevelConfiguration, opts metav1.UpdateOptions) (*flowcontrolv1beta3.PriorityLevelConfiguration, error) {
+	in.SetGroupVersionKind(schema.GroupVersionKind{
+		Group:   "flowcontrol.apiserver.k8s.io",
+		Version: "v1beta3",
+		Kind:    "PriorityLevelConfiguration",
+	})
+	uo := &unstructured.Unstructured{}
+	if err := convert(in, uo); err != nil {
+		return nil, err
+	}
+	uo, err := w.dyn.Update(ctx, uo, opts)
+	if err != nil {
+		return nil, err
+	}
+	out := &flowcontrolv1beta3.PriorityLevelConfiguration{}
+	if err := convert(uo, out); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (w *wrapFlowcontrolV1beta3PriorityLevelConfigurationImpl) UpdateStatus(ctx context.Context, in *flowcontrolv1beta3.PriorityLevelConfiguration, opts metav1.UpdateOptions) (*flowcontrolv1beta3.PriorityLevelConfiguration, error) {
+	in.SetGroupVersionKind(schema.GroupVersionKind{
+		Group:   "flowcontrol.apiserver.k8s.io",
+		Version: "v1beta3",
+		Kind:    "PriorityLevelConfiguration",
+	})
+	uo := &unstructured.Unstructured{}
+	if err := convert(in, uo); err != nil {
+		return nil, err
+	}
+	uo, err := w.dyn.UpdateStatus(ctx, uo, opts)
+	if err != nil {
+		return nil, err
+	}
+	out := &flowcontrolv1beta3.PriorityLevelConfiguration{}
+	if err := convert(uo, out); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (w *wrapFlowcontrolV1beta3PriorityLevelConfigurationImpl) Watch(ctx context.Context, opts metav1.ListOptions) (watch.Interface, error) {
+	return nil, errors.New("NYI: Watch")
+}
+
 // NetworkingV1 retrieves the NetworkingV1Client
 func (w *wrapClient) NetworkingV1() typednetworkingv1.NetworkingV1Interface {
 	return &wrapNetworkingV1{
@@ -15739,6 +16500,701 @@ func (w *wrapRbacV1beta1RoleBindingImpl) UpdateStatus(ctx context.Context, in *a
 }
 
 func (w *wrapRbacV1beta1RoleBindingImpl) Watch(ctx context.Context, opts metav1.ListOptions) (watch.Interface, error) {
+	return nil, errors.New("NYI: Watch")
+}
+
+// ResourceV1alpha1 retrieves the ResourceV1alpha1Client
+func (w *wrapClient) ResourceV1alpha1() typedresourcev1alpha1.ResourceV1alpha1Interface {
+	return &wrapResourceV1alpha1{
+		dyn: w.dyn,
+	}
+}
+
+type wrapResourceV1alpha1 struct {
+	dyn dynamic.Interface
+}
+
+func (w *wrapResourceV1alpha1) RESTClient() rest.Interface {
+	panic("RESTClient called on dynamic client!")
+}
+
+func (w *wrapResourceV1alpha1) PodSchedulings(namespace string) typedresourcev1alpha1.PodSchedulingInterface {
+	return &wrapResourceV1alpha1PodSchedulingImpl{
+		dyn: w.dyn.Resource(schema.GroupVersionResource{
+			Group:    "resource.k8s.io",
+			Version:  "v1alpha1",
+			Resource: "podschedulings",
+		}),
+
+		namespace: namespace,
+	}
+}
+
+type wrapResourceV1alpha1PodSchedulingImpl struct {
+	dyn dynamic.NamespaceableResourceInterface
+
+	namespace string
+}
+
+var _ typedresourcev1alpha1.PodSchedulingInterface = (*wrapResourceV1alpha1PodSchedulingImpl)(nil)
+
+func (w *wrapResourceV1alpha1PodSchedulingImpl) Apply(ctx context.Context, in *resourcev1alpha1.PodSchedulingApplyConfiguration, opts metav1.ApplyOptions) (result *apiresourcev1alpha1.PodScheduling, err error) {
+	in.Kind = ptr.String("PodScheduling")
+
+	in.APIVersion = ptr.String("resource.k8s.io/v1alpha1")
+
+	uo := &unstructured.Unstructured{}
+	if err := convert(in, uo); err != nil {
+		return nil, err
+	}
+	uo, err = w.dyn.Namespace(w.namespace).Apply(ctx, uo.GetName(), uo, opts)
+	if err != nil {
+		return nil, err
+	}
+	out := &apiresourcev1alpha1.PodScheduling{}
+	if err := convert(uo, out); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (w *wrapResourceV1alpha1PodSchedulingImpl) ApplyStatus(ctx context.Context, in *resourcev1alpha1.PodSchedulingApplyConfiguration, opts metav1.ApplyOptions) (result *apiresourcev1alpha1.PodScheduling, err error) {
+	in.Kind = ptr.String("PodScheduling")
+
+	in.APIVersion = ptr.String("resource.k8s.io/v1alpha1")
+
+	uo := &unstructured.Unstructured{}
+	if err := convert(in, uo); err != nil {
+		return nil, err
+	}
+	uo, err = w.dyn.Namespace(w.namespace).ApplyStatus(ctx, uo.GetName(), uo, opts)
+	if err != nil {
+		return nil, err
+	}
+	out := &apiresourcev1alpha1.PodScheduling{}
+	if err := convert(uo, out); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (w *wrapResourceV1alpha1PodSchedulingImpl) Create(ctx context.Context, in *apiresourcev1alpha1.PodScheduling, opts metav1.CreateOptions) (*apiresourcev1alpha1.PodScheduling, error) {
+	in.SetGroupVersionKind(schema.GroupVersionKind{
+		Group:   "resource.k8s.io",
+		Version: "v1alpha1",
+		Kind:    "PodScheduling",
+	})
+	uo := &unstructured.Unstructured{}
+	if err := convert(in, uo); err != nil {
+		return nil, err
+	}
+	uo, err := w.dyn.Namespace(w.namespace).Create(ctx, uo, opts)
+	if err != nil {
+		return nil, err
+	}
+	out := &apiresourcev1alpha1.PodScheduling{}
+	if err := convert(uo, out); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (w *wrapResourceV1alpha1PodSchedulingImpl) Delete(ctx context.Context, name string, opts metav1.DeleteOptions) error {
+	return w.dyn.Namespace(w.namespace).Delete(ctx, name, opts)
+}
+
+func (w *wrapResourceV1alpha1PodSchedulingImpl) DeleteCollection(ctx context.Context, opts metav1.DeleteOptions, listOpts metav1.ListOptions) error {
+	return w.dyn.Namespace(w.namespace).DeleteCollection(ctx, opts, listOpts)
+}
+
+func (w *wrapResourceV1alpha1PodSchedulingImpl) Get(ctx context.Context, name string, opts metav1.GetOptions) (*apiresourcev1alpha1.PodScheduling, error) {
+	uo, err := w.dyn.Namespace(w.namespace).Get(ctx, name, opts)
+	if err != nil {
+		return nil, err
+	}
+	out := &apiresourcev1alpha1.PodScheduling{}
+	if err := convert(uo, out); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (w *wrapResourceV1alpha1PodSchedulingImpl) List(ctx context.Context, opts metav1.ListOptions) (*apiresourcev1alpha1.PodSchedulingList, error) {
+	uo, err := w.dyn.Namespace(w.namespace).List(ctx, opts)
+	if err != nil {
+		return nil, err
+	}
+	out := &apiresourcev1alpha1.PodSchedulingList{}
+	if err := convert(uo, out); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (w *wrapResourceV1alpha1PodSchedulingImpl) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts metav1.PatchOptions, subresources ...string) (result *apiresourcev1alpha1.PodScheduling, err error) {
+	uo, err := w.dyn.Namespace(w.namespace).Patch(ctx, name, pt, data, opts)
+	if err != nil {
+		return nil, err
+	}
+	out := &apiresourcev1alpha1.PodScheduling{}
+	if err := convert(uo, out); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (w *wrapResourceV1alpha1PodSchedulingImpl) Update(ctx context.Context, in *apiresourcev1alpha1.PodScheduling, opts metav1.UpdateOptions) (*apiresourcev1alpha1.PodScheduling, error) {
+	in.SetGroupVersionKind(schema.GroupVersionKind{
+		Group:   "resource.k8s.io",
+		Version: "v1alpha1",
+		Kind:    "PodScheduling",
+	})
+	uo := &unstructured.Unstructured{}
+	if err := convert(in, uo); err != nil {
+		return nil, err
+	}
+	uo, err := w.dyn.Namespace(w.namespace).Update(ctx, uo, opts)
+	if err != nil {
+		return nil, err
+	}
+	out := &apiresourcev1alpha1.PodScheduling{}
+	if err := convert(uo, out); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (w *wrapResourceV1alpha1PodSchedulingImpl) UpdateStatus(ctx context.Context, in *apiresourcev1alpha1.PodScheduling, opts metav1.UpdateOptions) (*apiresourcev1alpha1.PodScheduling, error) {
+	in.SetGroupVersionKind(schema.GroupVersionKind{
+		Group:   "resource.k8s.io",
+		Version: "v1alpha1",
+		Kind:    "PodScheduling",
+	})
+	uo := &unstructured.Unstructured{}
+	if err := convert(in, uo); err != nil {
+		return nil, err
+	}
+	uo, err := w.dyn.Namespace(w.namespace).UpdateStatus(ctx, uo, opts)
+	if err != nil {
+		return nil, err
+	}
+	out := &apiresourcev1alpha1.PodScheduling{}
+	if err := convert(uo, out); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (w *wrapResourceV1alpha1PodSchedulingImpl) Watch(ctx context.Context, opts metav1.ListOptions) (watch.Interface, error) {
+	return nil, errors.New("NYI: Watch")
+}
+
+func (w *wrapResourceV1alpha1) ResourceClaims(namespace string) typedresourcev1alpha1.ResourceClaimInterface {
+	return &wrapResourceV1alpha1ResourceClaimImpl{
+		dyn: w.dyn.Resource(schema.GroupVersionResource{
+			Group:    "resource.k8s.io",
+			Version:  "v1alpha1",
+			Resource: "resourceclaims",
+		}),
+
+		namespace: namespace,
+	}
+}
+
+type wrapResourceV1alpha1ResourceClaimImpl struct {
+	dyn dynamic.NamespaceableResourceInterface
+
+	namespace string
+}
+
+var _ typedresourcev1alpha1.ResourceClaimInterface = (*wrapResourceV1alpha1ResourceClaimImpl)(nil)
+
+func (w *wrapResourceV1alpha1ResourceClaimImpl) Apply(ctx context.Context, in *resourcev1alpha1.ResourceClaimApplyConfiguration, opts metav1.ApplyOptions) (result *apiresourcev1alpha1.ResourceClaim, err error) {
+	in.Kind = ptr.String("ResourceClaim")
+
+	in.APIVersion = ptr.String("resource.k8s.io/v1alpha1")
+
+	uo := &unstructured.Unstructured{}
+	if err := convert(in, uo); err != nil {
+		return nil, err
+	}
+	uo, err = w.dyn.Namespace(w.namespace).Apply(ctx, uo.GetName(), uo, opts)
+	if err != nil {
+		return nil, err
+	}
+	out := &apiresourcev1alpha1.ResourceClaim{}
+	if err := convert(uo, out); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (w *wrapResourceV1alpha1ResourceClaimImpl) ApplyStatus(ctx context.Context, in *resourcev1alpha1.ResourceClaimApplyConfiguration, opts metav1.ApplyOptions) (result *apiresourcev1alpha1.ResourceClaim, err error) {
+	in.Kind = ptr.String("ResourceClaim")
+
+	in.APIVersion = ptr.String("resource.k8s.io/v1alpha1")
+
+	uo := &unstructured.Unstructured{}
+	if err := convert(in, uo); err != nil {
+		return nil, err
+	}
+	uo, err = w.dyn.Namespace(w.namespace).ApplyStatus(ctx, uo.GetName(), uo, opts)
+	if err != nil {
+		return nil, err
+	}
+	out := &apiresourcev1alpha1.ResourceClaim{}
+	if err := convert(uo, out); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (w *wrapResourceV1alpha1ResourceClaimImpl) Create(ctx context.Context, in *apiresourcev1alpha1.ResourceClaim, opts metav1.CreateOptions) (*apiresourcev1alpha1.ResourceClaim, error) {
+	in.SetGroupVersionKind(schema.GroupVersionKind{
+		Group:   "resource.k8s.io",
+		Version: "v1alpha1",
+		Kind:    "ResourceClaim",
+	})
+	uo := &unstructured.Unstructured{}
+	if err := convert(in, uo); err != nil {
+		return nil, err
+	}
+	uo, err := w.dyn.Namespace(w.namespace).Create(ctx, uo, opts)
+	if err != nil {
+		return nil, err
+	}
+	out := &apiresourcev1alpha1.ResourceClaim{}
+	if err := convert(uo, out); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (w *wrapResourceV1alpha1ResourceClaimImpl) Delete(ctx context.Context, name string, opts metav1.DeleteOptions) error {
+	return w.dyn.Namespace(w.namespace).Delete(ctx, name, opts)
+}
+
+func (w *wrapResourceV1alpha1ResourceClaimImpl) DeleteCollection(ctx context.Context, opts metav1.DeleteOptions, listOpts metav1.ListOptions) error {
+	return w.dyn.Namespace(w.namespace).DeleteCollection(ctx, opts, listOpts)
+}
+
+func (w *wrapResourceV1alpha1ResourceClaimImpl) Get(ctx context.Context, name string, opts metav1.GetOptions) (*apiresourcev1alpha1.ResourceClaim, error) {
+	uo, err := w.dyn.Namespace(w.namespace).Get(ctx, name, opts)
+	if err != nil {
+		return nil, err
+	}
+	out := &apiresourcev1alpha1.ResourceClaim{}
+	if err := convert(uo, out); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (w *wrapResourceV1alpha1ResourceClaimImpl) List(ctx context.Context, opts metav1.ListOptions) (*apiresourcev1alpha1.ResourceClaimList, error) {
+	uo, err := w.dyn.Namespace(w.namespace).List(ctx, opts)
+	if err != nil {
+		return nil, err
+	}
+	out := &apiresourcev1alpha1.ResourceClaimList{}
+	if err := convert(uo, out); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (w *wrapResourceV1alpha1ResourceClaimImpl) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts metav1.PatchOptions, subresources ...string) (result *apiresourcev1alpha1.ResourceClaim, err error) {
+	uo, err := w.dyn.Namespace(w.namespace).Patch(ctx, name, pt, data, opts)
+	if err != nil {
+		return nil, err
+	}
+	out := &apiresourcev1alpha1.ResourceClaim{}
+	if err := convert(uo, out); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (w *wrapResourceV1alpha1ResourceClaimImpl) Update(ctx context.Context, in *apiresourcev1alpha1.ResourceClaim, opts metav1.UpdateOptions) (*apiresourcev1alpha1.ResourceClaim, error) {
+	in.SetGroupVersionKind(schema.GroupVersionKind{
+		Group:   "resource.k8s.io",
+		Version: "v1alpha1",
+		Kind:    "ResourceClaim",
+	})
+	uo := &unstructured.Unstructured{}
+	if err := convert(in, uo); err != nil {
+		return nil, err
+	}
+	uo, err := w.dyn.Namespace(w.namespace).Update(ctx, uo, opts)
+	if err != nil {
+		return nil, err
+	}
+	out := &apiresourcev1alpha1.ResourceClaim{}
+	if err := convert(uo, out); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (w *wrapResourceV1alpha1ResourceClaimImpl) UpdateStatus(ctx context.Context, in *apiresourcev1alpha1.ResourceClaim, opts metav1.UpdateOptions) (*apiresourcev1alpha1.ResourceClaim, error) {
+	in.SetGroupVersionKind(schema.GroupVersionKind{
+		Group:   "resource.k8s.io",
+		Version: "v1alpha1",
+		Kind:    "ResourceClaim",
+	})
+	uo := &unstructured.Unstructured{}
+	if err := convert(in, uo); err != nil {
+		return nil, err
+	}
+	uo, err := w.dyn.Namespace(w.namespace).UpdateStatus(ctx, uo, opts)
+	if err != nil {
+		return nil, err
+	}
+	out := &apiresourcev1alpha1.ResourceClaim{}
+	if err := convert(uo, out); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (w *wrapResourceV1alpha1ResourceClaimImpl) Watch(ctx context.Context, opts metav1.ListOptions) (watch.Interface, error) {
+	return nil, errors.New("NYI: Watch")
+}
+
+func (w *wrapResourceV1alpha1) ResourceClaimTemplates(namespace string) typedresourcev1alpha1.ResourceClaimTemplateInterface {
+	return &wrapResourceV1alpha1ResourceClaimTemplateImpl{
+		dyn: w.dyn.Resource(schema.GroupVersionResource{
+			Group:    "resource.k8s.io",
+			Version:  "v1alpha1",
+			Resource: "resourceclaimtemplates",
+		}),
+
+		namespace: namespace,
+	}
+}
+
+type wrapResourceV1alpha1ResourceClaimTemplateImpl struct {
+	dyn dynamic.NamespaceableResourceInterface
+
+	namespace string
+}
+
+var _ typedresourcev1alpha1.ResourceClaimTemplateInterface = (*wrapResourceV1alpha1ResourceClaimTemplateImpl)(nil)
+
+func (w *wrapResourceV1alpha1ResourceClaimTemplateImpl) Apply(ctx context.Context, in *resourcev1alpha1.ResourceClaimTemplateApplyConfiguration, opts metav1.ApplyOptions) (result *apiresourcev1alpha1.ResourceClaimTemplate, err error) {
+	in.Kind = ptr.String("ResourceClaimTemplate")
+
+	in.APIVersion = ptr.String("resource.k8s.io/v1alpha1")
+
+	uo := &unstructured.Unstructured{}
+	if err := convert(in, uo); err != nil {
+		return nil, err
+	}
+	uo, err = w.dyn.Namespace(w.namespace).Apply(ctx, uo.GetName(), uo, opts)
+	if err != nil {
+		return nil, err
+	}
+	out := &apiresourcev1alpha1.ResourceClaimTemplate{}
+	if err := convert(uo, out); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (w *wrapResourceV1alpha1ResourceClaimTemplateImpl) ApplyStatus(ctx context.Context, in *resourcev1alpha1.ResourceClaimTemplateApplyConfiguration, opts metav1.ApplyOptions) (result *apiresourcev1alpha1.ResourceClaimTemplate, err error) {
+	in.Kind = ptr.String("ResourceClaimTemplate")
+
+	in.APIVersion = ptr.String("resource.k8s.io/v1alpha1")
+
+	uo := &unstructured.Unstructured{}
+	if err := convert(in, uo); err != nil {
+		return nil, err
+	}
+	uo, err = w.dyn.Namespace(w.namespace).ApplyStatus(ctx, uo.GetName(), uo, opts)
+	if err != nil {
+		return nil, err
+	}
+	out := &apiresourcev1alpha1.ResourceClaimTemplate{}
+	if err := convert(uo, out); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (w *wrapResourceV1alpha1ResourceClaimTemplateImpl) Create(ctx context.Context, in *apiresourcev1alpha1.ResourceClaimTemplate, opts metav1.CreateOptions) (*apiresourcev1alpha1.ResourceClaimTemplate, error) {
+	in.SetGroupVersionKind(schema.GroupVersionKind{
+		Group:   "resource.k8s.io",
+		Version: "v1alpha1",
+		Kind:    "ResourceClaimTemplate",
+	})
+	uo := &unstructured.Unstructured{}
+	if err := convert(in, uo); err != nil {
+		return nil, err
+	}
+	uo, err := w.dyn.Namespace(w.namespace).Create(ctx, uo, opts)
+	if err != nil {
+		return nil, err
+	}
+	out := &apiresourcev1alpha1.ResourceClaimTemplate{}
+	if err := convert(uo, out); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (w *wrapResourceV1alpha1ResourceClaimTemplateImpl) Delete(ctx context.Context, name string, opts metav1.DeleteOptions) error {
+	return w.dyn.Namespace(w.namespace).Delete(ctx, name, opts)
+}
+
+func (w *wrapResourceV1alpha1ResourceClaimTemplateImpl) DeleteCollection(ctx context.Context, opts metav1.DeleteOptions, listOpts metav1.ListOptions) error {
+	return w.dyn.Namespace(w.namespace).DeleteCollection(ctx, opts, listOpts)
+}
+
+func (w *wrapResourceV1alpha1ResourceClaimTemplateImpl) Get(ctx context.Context, name string, opts metav1.GetOptions) (*apiresourcev1alpha1.ResourceClaimTemplate, error) {
+	uo, err := w.dyn.Namespace(w.namespace).Get(ctx, name, opts)
+	if err != nil {
+		return nil, err
+	}
+	out := &apiresourcev1alpha1.ResourceClaimTemplate{}
+	if err := convert(uo, out); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (w *wrapResourceV1alpha1ResourceClaimTemplateImpl) List(ctx context.Context, opts metav1.ListOptions) (*apiresourcev1alpha1.ResourceClaimTemplateList, error) {
+	uo, err := w.dyn.Namespace(w.namespace).List(ctx, opts)
+	if err != nil {
+		return nil, err
+	}
+	out := &apiresourcev1alpha1.ResourceClaimTemplateList{}
+	if err := convert(uo, out); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (w *wrapResourceV1alpha1ResourceClaimTemplateImpl) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts metav1.PatchOptions, subresources ...string) (result *apiresourcev1alpha1.ResourceClaimTemplate, err error) {
+	uo, err := w.dyn.Namespace(w.namespace).Patch(ctx, name, pt, data, opts)
+	if err != nil {
+		return nil, err
+	}
+	out := &apiresourcev1alpha1.ResourceClaimTemplate{}
+	if err := convert(uo, out); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (w *wrapResourceV1alpha1ResourceClaimTemplateImpl) Update(ctx context.Context, in *apiresourcev1alpha1.ResourceClaimTemplate, opts metav1.UpdateOptions) (*apiresourcev1alpha1.ResourceClaimTemplate, error) {
+	in.SetGroupVersionKind(schema.GroupVersionKind{
+		Group:   "resource.k8s.io",
+		Version: "v1alpha1",
+		Kind:    "ResourceClaimTemplate",
+	})
+	uo := &unstructured.Unstructured{}
+	if err := convert(in, uo); err != nil {
+		return nil, err
+	}
+	uo, err := w.dyn.Namespace(w.namespace).Update(ctx, uo, opts)
+	if err != nil {
+		return nil, err
+	}
+	out := &apiresourcev1alpha1.ResourceClaimTemplate{}
+	if err := convert(uo, out); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (w *wrapResourceV1alpha1ResourceClaimTemplateImpl) UpdateStatus(ctx context.Context, in *apiresourcev1alpha1.ResourceClaimTemplate, opts metav1.UpdateOptions) (*apiresourcev1alpha1.ResourceClaimTemplate, error) {
+	in.SetGroupVersionKind(schema.GroupVersionKind{
+		Group:   "resource.k8s.io",
+		Version: "v1alpha1",
+		Kind:    "ResourceClaimTemplate",
+	})
+	uo := &unstructured.Unstructured{}
+	if err := convert(in, uo); err != nil {
+		return nil, err
+	}
+	uo, err := w.dyn.Namespace(w.namespace).UpdateStatus(ctx, uo, opts)
+	if err != nil {
+		return nil, err
+	}
+	out := &apiresourcev1alpha1.ResourceClaimTemplate{}
+	if err := convert(uo, out); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (w *wrapResourceV1alpha1ResourceClaimTemplateImpl) Watch(ctx context.Context, opts metav1.ListOptions) (watch.Interface, error) {
+	return nil, errors.New("NYI: Watch")
+}
+
+func (w *wrapResourceV1alpha1) ResourceClasses() typedresourcev1alpha1.ResourceClassInterface {
+	return &wrapResourceV1alpha1ResourceClassImpl{
+		dyn: w.dyn.Resource(schema.GroupVersionResource{
+			Group:    "resource.k8s.io",
+			Version:  "v1alpha1",
+			Resource: "resourceclasses",
+		}),
+	}
+}
+
+type wrapResourceV1alpha1ResourceClassImpl struct {
+	dyn dynamic.NamespaceableResourceInterface
+}
+
+var _ typedresourcev1alpha1.ResourceClassInterface = (*wrapResourceV1alpha1ResourceClassImpl)(nil)
+
+func (w *wrapResourceV1alpha1ResourceClassImpl) Apply(ctx context.Context, in *resourcev1alpha1.ResourceClassApplyConfiguration, opts metav1.ApplyOptions) (result *apiresourcev1alpha1.ResourceClass, err error) {
+	in.Kind = ptr.String("ResourceClass")
+
+	in.APIVersion = ptr.String("resource.k8s.io/v1alpha1")
+
+	uo := &unstructured.Unstructured{}
+	if err := convert(in, uo); err != nil {
+		return nil, err
+	}
+	uo, err = w.dyn.Apply(ctx, uo.GetName(), uo, opts)
+	if err != nil {
+		return nil, err
+	}
+	out := &apiresourcev1alpha1.ResourceClass{}
+	if err := convert(uo, out); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (w *wrapResourceV1alpha1ResourceClassImpl) ApplyStatus(ctx context.Context, in *resourcev1alpha1.ResourceClassApplyConfiguration, opts metav1.ApplyOptions) (result *apiresourcev1alpha1.ResourceClass, err error) {
+	in.Kind = ptr.String("ResourceClass")
+
+	in.APIVersion = ptr.String("resource.k8s.io/v1alpha1")
+
+	uo := &unstructured.Unstructured{}
+	if err := convert(in, uo); err != nil {
+		return nil, err
+	}
+	uo, err = w.dyn.ApplyStatus(ctx, uo.GetName(), uo, opts)
+	if err != nil {
+		return nil, err
+	}
+	out := &apiresourcev1alpha1.ResourceClass{}
+	if err := convert(uo, out); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (w *wrapResourceV1alpha1ResourceClassImpl) Create(ctx context.Context, in *apiresourcev1alpha1.ResourceClass, opts metav1.CreateOptions) (*apiresourcev1alpha1.ResourceClass, error) {
+	in.SetGroupVersionKind(schema.GroupVersionKind{
+		Group:   "resource.k8s.io",
+		Version: "v1alpha1",
+		Kind:    "ResourceClass",
+	})
+	uo := &unstructured.Unstructured{}
+	if err := convert(in, uo); err != nil {
+		return nil, err
+	}
+	uo, err := w.dyn.Create(ctx, uo, opts)
+	if err != nil {
+		return nil, err
+	}
+	out := &apiresourcev1alpha1.ResourceClass{}
+	if err := convert(uo, out); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (w *wrapResourceV1alpha1ResourceClassImpl) Delete(ctx context.Context, name string, opts metav1.DeleteOptions) error {
+	return w.dyn.Delete(ctx, name, opts)
+}
+
+func (w *wrapResourceV1alpha1ResourceClassImpl) DeleteCollection(ctx context.Context, opts metav1.DeleteOptions, listOpts metav1.ListOptions) error {
+	return w.dyn.DeleteCollection(ctx, opts, listOpts)
+}
+
+func (w *wrapResourceV1alpha1ResourceClassImpl) Get(ctx context.Context, name string, opts metav1.GetOptions) (*apiresourcev1alpha1.ResourceClass, error) {
+	uo, err := w.dyn.Get(ctx, name, opts)
+	if err != nil {
+		return nil, err
+	}
+	out := &apiresourcev1alpha1.ResourceClass{}
+	if err := convert(uo, out); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (w *wrapResourceV1alpha1ResourceClassImpl) List(ctx context.Context, opts metav1.ListOptions) (*apiresourcev1alpha1.ResourceClassList, error) {
+	uo, err := w.dyn.List(ctx, opts)
+	if err != nil {
+		return nil, err
+	}
+	out := &apiresourcev1alpha1.ResourceClassList{}
+	if err := convert(uo, out); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (w *wrapResourceV1alpha1ResourceClassImpl) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts metav1.PatchOptions, subresources ...string) (result *apiresourcev1alpha1.ResourceClass, err error) {
+	uo, err := w.dyn.Patch(ctx, name, pt, data, opts)
+	if err != nil {
+		return nil, err
+	}
+	out := &apiresourcev1alpha1.ResourceClass{}
+	if err := convert(uo, out); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (w *wrapResourceV1alpha1ResourceClassImpl) Update(ctx context.Context, in *apiresourcev1alpha1.ResourceClass, opts metav1.UpdateOptions) (*apiresourcev1alpha1.ResourceClass, error) {
+	in.SetGroupVersionKind(schema.GroupVersionKind{
+		Group:   "resource.k8s.io",
+		Version: "v1alpha1",
+		Kind:    "ResourceClass",
+	})
+	uo := &unstructured.Unstructured{}
+	if err := convert(in, uo); err != nil {
+		return nil, err
+	}
+	uo, err := w.dyn.Update(ctx, uo, opts)
+	if err != nil {
+		return nil, err
+	}
+	out := &apiresourcev1alpha1.ResourceClass{}
+	if err := convert(uo, out); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (w *wrapResourceV1alpha1ResourceClassImpl) UpdateStatus(ctx context.Context, in *apiresourcev1alpha1.ResourceClass, opts metav1.UpdateOptions) (*apiresourcev1alpha1.ResourceClass, error) {
+	in.SetGroupVersionKind(schema.GroupVersionKind{
+		Group:   "resource.k8s.io",
+		Version: "v1alpha1",
+		Kind:    "ResourceClass",
+	})
+	uo := &unstructured.Unstructured{}
+	if err := convert(in, uo); err != nil {
+		return nil, err
+	}
+	uo, err := w.dyn.UpdateStatus(ctx, uo, opts)
+	if err != nil {
+		return nil, err
+	}
+	out := &apiresourcev1alpha1.ResourceClass{}
+	if err := convert(uo, out); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (w *wrapResourceV1alpha1ResourceClassImpl) Watch(ctx context.Context, opts metav1.ListOptions) (watch.Interface, error) {
 	return nil, errors.New("NYI: Watch")
 }
 

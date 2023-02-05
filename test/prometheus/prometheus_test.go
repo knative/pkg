@@ -37,7 +37,7 @@ type testPromAPI struct {
 }
 
 // Query performs a query on the prom api
-func (*testPromAPI) Query(c context.Context, query string, ts time.Time) (model.Value, v1.Warnings, error) {
+func (*testPromAPI) Query(c context.Context, query string, ts time.Time, opts ...v1.Option) (model.Value, v1.Warnings, error) {
 	s := model.Sample{Value: expected}
 	var v []*model.Sample
 	v = append(v, &s)
@@ -46,7 +46,7 @@ func (*testPromAPI) Query(c context.Context, query string, ts time.Time) (model.
 }
 
 // QueryRange performs a query for the given range.
-func (*testPromAPI) QueryRange(ctx context.Context, query string, r v1.Range) (model.Value, v1.Warnings, error) {
+func (*testPromAPI) QueryRange(ctx context.Context, query string, r v1.Range, opts ...v1.Option) (model.Value, v1.Warnings, error) {
 	s := model.Sample{Value: expected}
 	var v []*model.Sample
 	v = append(v, &s)

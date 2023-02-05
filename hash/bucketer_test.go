@@ -32,7 +32,7 @@ const (
 	unknownKey  = "snow" // snow maps to "chubasco", originally.
 )
 
-var buckets = sets.NewString(thisBucket, otherBucket, "aguacero", "chaparrón")
+var buckets = sets.New(thisBucket, otherBucket, "aguacero", "chaparrón")
 
 func TestBucketSetOwner(t *testing.T) {
 	b := NewBucketSet(buckets)
@@ -68,7 +68,7 @@ func TestBucketSetList(t *testing.T) {
 	bs := NewBucketSet(buckets)
 
 	got := bs.BucketList()
-	if want := buckets.List(); !reflect.DeepEqual(got, want) {
+	if want := sets.List(buckets); !reflect.DeepEqual(got, want) {
 		t.Errorf("Name = %q, want: %q, diff(-want,+got):\n%s", got, want, cmp.Diff(want, got))
 	}
 }
@@ -78,7 +78,7 @@ func TestBucketSetUpdate(t *testing.T) {
 	b.Owner(knownKey)
 
 	// Need a clone.
-	newNames := buckets.Difference(sets.NewString(otherBucket))
+	newNames := buckets.Difference(sets.New(otherBucket))
 	b.Update(newNames)
 	if b.cache.Len() != 0 {
 		t.Error("cache was not emptied")
@@ -117,7 +117,7 @@ func TestBucketSetBuckets(t *testing.T) {
 }
 
 func TestBucketSetHasBucket(t *testing.T) {
-	bs := NewBucketSet(sets.NewString(thisBucket, "aguacero", "chaparrón"))
+	bs := NewBucketSet(sets.New(thisBucket, "aguacero", "chaparrón"))
 	if !bs.HasBucket(thisBucket) {
 		t.Errorf("HasBucket(%v) = false", thisBucket)
 	}

@@ -67,7 +67,7 @@ func ConfigMapsFromTestFile(t testing.TB, name string, allowed ...string) (*core
 		// https://github.com/knative/serving/issues/2668
 		t.Errorf("Data = %v, wanted %v", orig.Data, allowed)
 	}
-	allow := sets.NewString(allowed...)
+	allow := sets.New(allowed...)
 	for key := range orig.Data {
 		if !allow.Has(key) {
 			t.Errorf("Encountered key %q in %q that wasn't on the allowed list", key, name)
