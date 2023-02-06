@@ -3,9 +3,12 @@
 approvers:
 - technical-oversight-committee
 - serving-wg-leads
+- eventing-wg-leads
 
 reviewers:
 - serving-writers
+- eventing-writers
+- eventing-reviewers
 - serving-reviewers
 
 options:
