@@ -48,7 +48,6 @@ import (
 	"knative.dev/pkg/logging"
 	"knative.dev/pkg/logging/logkey"
 	"knative.dev/pkg/metrics"
-	"knative.dev/pkg/network"
 	"knative.dev/pkg/profiling"
 	"knative.dev/pkg/reconciler"
 	"knative.dev/pkg/signals"
@@ -316,7 +315,7 @@ func MainWithConfig(ctx context.Context, component string, cfg *rest.Config, cto
 
 	// Setup default health checks to catch issues with cache sync etc.
 	if !HealthProbesDisabled(ctx) {
-		network.ServeHealthProbes(ctx)
+		injection.ServeHealthProbes(ctx)
 	}
 
 	// This will block until either a signal arrives or one of the grouped functions

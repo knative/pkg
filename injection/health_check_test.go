@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package network
+package injection
 
 import (
 	"context"
@@ -28,49 +28,27 @@ func TestHealthCheckHandler(t *testing.T) {
 	tests := []struct {
 		name              string
 		ctx               context.Context
-		header            http.Header
 		expectedReadiness int
 		expectedLiveness  int
 	}{{
-		name: "default health check handler",
-		ctx:  context.Background(),
-		header: http.Header{
-			UserAgentKey: []string{KubeProbeUAPrefix},
-		},
-		expectedReadiness: http.StatusOK,
-		expectedLiveness:  http.StatusOK,
-	}, {
-		name:              "default health check handler, no kubelet probe",
+		name:              "user provided no handlers, default health check handlers are used",
 		ctx:               context.Background(),
-		header:            http.Header{},
-		expectedReadiness: http.StatusBadRequest,
-		expectedLiveness:  http.StatusBadRequest,
-	}, {
-		name: "serve only readiness probes",
-		ctx:  WithUserReadinessProbe(context.Background()),
-		header: http.Header{
-			UserAgentKey: []string{KubeProbeUAPrefix},
-		},
 		expectedReadiness: http.StatusOK,
-		expectedLiveness:  http.StatusNotFound,
-	}, {
-		name: "serve only liveness probes",
-		ctx:  WithUserLivenessProbe(context.Background()),
-		header: http.Header{
-			UserAgentKey: []string{KubeProbeUAPrefix},
-		},
-		expectedReadiness: http.StatusNotFound,
 		expectedLiveness:  http.StatusOK,
 	}, {
-		name: "user provided health check handler",
-		ctx: WithOverrideHealthCheckHandler(context.Background(), &HealthCheckHandler{
-			ReadinessProbeRequestHandle: testHandler(),
-			LivenessProbeRequestHandle:  testHandler(),
-		}),
-		header: http.Header{
-			UserAgentKey: []string{KubeProbeUAPrefix},
-		},
+		name:              "user provided readiness health check handler, liveness default handler is used",
+		ctx:               AddReadiness(context.Background(), testHandler()),
 		expectedReadiness: http.StatusBadGateway,
+		expectedLiveness:  http.StatusOK,
+	}, {
+		name:              "user provided liveness health check handler, readiness default handler is used",
+		ctx:               AddLiveness(context.Background(), testHandler()),
+		expectedReadiness: http.StatusOK,
+		expectedLiveness:  http.StatusBadGateway,
+	}, {
+		name:              "user provided custom probes",
+		ctx:               AddReadiness(AddLiveness(context.Background(), testHandler()), testHandler()),
+		expectedReadiness: http.StatusOK,
 		expectedLiveness:  http.StatusBadGateway,
 	}}
 	for _, tc := range tests {
@@ -80,7 +58,6 @@ func TestHealthCheckHandler(t *testing.T) {
 				URL: &url.URL{
 					Path: "/readiness",
 				},
-				Header: tc.header,
 			}
 			resp := httptest.NewRecorder()
 			mux.ServeHTTP(resp, &reqReadiness)
@@ -91,7 +68,6 @@ func TestHealthCheckHandler(t *testing.T) {
 				URL: &url.URL{
 					Path: "/health",
 				},
-				Header: tc.header,
 			}
 			resp = httptest.NewRecorder()
 			mux.ServeHTTP(resp, &reqLiveness)
