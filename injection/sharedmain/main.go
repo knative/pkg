@@ -314,7 +314,7 @@ func MainWithConfig(ctx context.Context, component string, cfg *rest.Config, cto
 	})
 
 	// Setup default health checks to catch issues with cache sync etc.
-	if !HealthProbesDisabled(ctx) {
+	if !healthProbesDisabled(ctx) {
 		injection.ServeHealthProbes(ctx)
 	}
 
@@ -336,8 +336,7 @@ func WithHealthProbesDisabled(ctx context.Context) context.Context {
 	return context.WithValue(ctx, healthProbesDisabledKey{}, struct{}{})
 }
 
-// HealthProbesDisabled checks if default health checks are disabled in the related context.
-func HealthProbesDisabled(ctx context.Context) bool {
+func healthProbesDisabled(ctx context.Context) bool {
 	return ctx.Value(healthProbesDisabledKey{}) != nil
 }
 
