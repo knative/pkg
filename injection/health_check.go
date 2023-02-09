@@ -100,15 +100,15 @@ func getReadinessHandleOrDefault(ctx context.Context) *http.HandlerFunc {
 
 type addLivenessKey struct{}
 
+// AddLiveness signals to probe setup logic to add a user provided probe handler
+func AddLiveness(ctx context.Context, handlerFunc http.HandlerFunc) context.Context {
+	return context.WithValue(ctx, addLivenessKey{}, &handlerFunc)
+}
+
 func getLivenessHandleOrDefault(ctx context.Context) *http.HandlerFunc {
 	if ctx.Value(addLivenessKey{}) != nil {
 		return ctx.Value(addLivenessKey{}).(*http.HandlerFunc)
 	}
 	defaultHandle := newDefaultProbesHandle(ctx)
 	return &defaultHandle
-}
-
-// AddLiveness signals to probe setup logic to add a user provided probe handler
-func AddLiveness(ctx context.Context, handlerFunc http.HandlerFunc) context.Context {
-	return context.WithValue(ctx, addLivenessKey{}, &handlerFunc)
 }

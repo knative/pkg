@@ -36,19 +36,19 @@ func TestHealthCheckHandler(t *testing.T) {
 		expectedReadiness: http.StatusOK,
 		expectedLiveness:  http.StatusOK,
 	}, {
-		name:              "user provided readiness health check handler, liveness default handler is used",
+		name:              "user provided custom readiness health check handler, liveness default handler is used",
 		ctx:               AddReadiness(context.Background(), testHandler()),
 		expectedReadiness: http.StatusBadGateway,
 		expectedLiveness:  http.StatusOK,
 	}, {
-		name:              "user provided liveness health check handler, readiness default handler is used",
+		name:              "user provided custom liveness health check handler, readiness default handler is used",
 		ctx:               AddLiveness(context.Background(), testHandler()),
 		expectedReadiness: http.StatusOK,
 		expectedLiveness:  http.StatusBadGateway,
 	}, {
-		name:              "user provided custom probes",
+		name:              "user provided custom health check handlers",
 		ctx:               AddReadiness(AddLiveness(context.Background(), testHandler()), testHandler()),
-		expectedReadiness: http.StatusOK,
+		expectedReadiness: http.StatusBadGateway,
 		expectedLiveness:  http.StatusBadGateway,
 	}}
 	for _, tc := range tests {
