@@ -24,6 +24,7 @@ import (
 	fmt "fmt"
 
 	zap "go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 	v1 "k8s.io/api/core/v1"
 	v1beta1 "k8s.io/api/extensions/v1beta1"
 	equality "k8s.io/apimachinery/pkg/api/equality"
@@ -264,7 +265,7 @@ func (r *reconcilerImpl) Reconcile(ctx context.Context, key string) error {
 		// the elected leader is expected to write modifications.
 		logger.Warn("Saw status changes when we aren't the leader!")
 	default:
-		if err = r.updateStatus(ctx, original, resource); err != nil {
+		if err = r.updateStatus(ctx, logger, original, resource); err != nil {
 			logger.Warnw("Failed to update resource status", zap.Error(err))
 			r.Recorder.Eventf(resource, v1.EventTypeWarning, "UpdateFailed",
 				"Failed to update status for %q: %v", resource.Name, err)
@@ -300,7 +301,7 @@ func (r *reconcilerImpl) Reconcile(ctx context.Context, key string) error {
 	return nil
 }
 
-func (r *reconcilerImpl) updateStatus(ctx context.Context, existing *v1beta1.Deployment, desired *v1beta1.Deployment) error {
+func (r *reconcilerImpl) updateStatus(ctx context.Context, logger *zap.SugaredLogger, existing *v1beta1.Deployment, desired *v1beta1.Deployment) error {
 	existing = existing.DeepCopy()
 	return reconciler.RetryUpdateConflicts(func(attempts int) (err error) {
 		// The first iteration tries to use the injectionInformer's state, subsequent attempts fetch the latest state via API.
@@ -319,8 +320,10 @@ func (r *reconcilerImpl) updateStatus(ctx context.Context, existing *v1beta1.Dep
 			return nil
 		}
 
-		if diff, err := kmp.SafeDiff(existing.Status, desired.Status); err == nil && diff != "" {
-			logging.FromContext(ctx).Debug("Updating status with: ", diff)
+		if logger.Desugar().Core().Enabled(zapcore.DebugLevel) {
+			if diff, err := kmp.SafeDiff(existing.Status, desired.Status); err == nil && diff != "" {
+				logger.Debug("Updating status with: ", diff)
+			}
 		}
 
 		existing.Status = desired.Status
