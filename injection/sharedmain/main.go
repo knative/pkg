@@ -315,7 +315,9 @@ func MainWithConfig(ctx context.Context, component string, cfg *rest.Config, cto
 
 	// Setup default health checks to catch issues with cache sync etc.
 	if !healthProbesDisabled(ctx) {
-		injection.ServeHealthProbes(ctx)
+		eg.Go(func() error {
+			return injection.ServeHealthProbes(ctx, injection.HealthCheckDefaultPort)
+		})
 	}
 
 	// This will block until either a signal arrives or one of the grouped functions

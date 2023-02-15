@@ -20,36 +20,31 @@ import (
 	"context"
 	"errors"
 	"net/http"
-	"os"
+	"strconv"
 	"time"
 
 	"knative.dev/pkg/logging"
 )
 
+// HealthCheckDefaultPort defines the default port number for health probes
+const HealthCheckDefaultPort = 8080
+
 // ServeHealthProbes sets up liveness and readiness probes.
 // If user sets no probes explicitly via the context then defaults are added.
-func ServeHealthProbes(ctx context.Context) {
+func ServeHealthProbes(ctx context.Context, port int) error {
 	logger := logging.FromContext(ctx)
-	port := os.Getenv("KNATIVE_HEALTH_PROBES_PORT")
-	if port == "" {
-		port = "8080"
-	}
-
-	server := http.Server{ReadHeaderTimeout: time.Minute, Handler: muxWithHandles(ctx), Addr: ":" + port}
-
+	server := http.Server{ReadHeaderTimeout: time.Minute, Handler: muxWithHandles(ctx), Addr: ":" + strconv.Itoa(port)}
 	go func() {
-		go func() {
-			<-ctx.Done()
-			_ = server.Shutdown(ctx)
-		}()
-
-		// start the web server on port and accept requests
-		logger.Infof("Probes server listening on port %s", port)
-
-		if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
-			logger.Fatal(err)
-		}
+		<-ctx.Done()
+		_ = server.Shutdown(ctx)
 	}()
+
+	// start the web server on port and accept requests
+	logger.Infof("Probes server listening on port %s", port)
+	if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+		return err
+	}
+	return nil
 }
 
 func muxWithHandles(ctx context.Context) *http.ServeMux {
