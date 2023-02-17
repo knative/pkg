@@ -102,7 +102,7 @@ func TestWebhookName(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			// webhookNameEnv is unset when testing missing input.
 			if tc.name != testMissingInputName {
-				t.Setenv(webhookNameEnv, tc.in)
+				t.Setenv(webhookNameEnvKey, tc.in)
 			}
 
 			defer func() {
