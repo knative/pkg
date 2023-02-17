@@ -131,6 +131,9 @@ func TestWebhookName(t *testing.T) {
 
 func TestCertsSecretName(t *testing.T) {
 	tests := []certsSecretNameTest{{
+		name: testMissingInputName,
+		want: testDefaultCertsSecretName,
+	}, {
 		name: "EmptyInput",
 		in:   "",
 		want: testDefaultCertsSecretName,
@@ -142,7 +145,7 @@ func TestCertsSecretName(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			// webhookNameEnv is unset when testing missing input.
+			// certsSecretNameEnvKey is unset when testing missing input.
 			if tc.name != testMissingInputName {
 				t.Setenv(certsSecretNameEnvKey, tc.in)
 			}
