@@ -22,10 +22,14 @@ import (
 	"strconv"
 )
 
-const portEnvKey = "WEBHOOK_PORT"
+const (
+	portEnvKey = "WEBHOOK_PORT"
 
-// Webhook is the name of the override key used inside of the logging config for Webhook Controller.
-const webhookNameEnv = "WEBHOOK_NAME"
+	// Webhook is the name of the override key used inside of the logging config for Webhook Controller.
+	webhookNameEnv = "WEBHOOK_NAME"
+
+	certsSecretNameEnvKey = "WEBHOOK_CERTS_SECRET_NAME"
+)
 
 // PortFromEnv returns the webhook port set by portEnvKey, or default port if env var is not set.
 func PortFromEnv(defaultPort int) int {
@@ -53,4 +57,12 @@ If this is a process running on Kubernetes, then initialize this variable via:
   - name: WEBHOOK_NAME
     value: webhook
 `, webhookNameEnv))
+}
+
+func CertsSecretNameFromEnv(defaultCertsSecretName string) string {
+	secret := os.Getenv(certsSecretNameEnvKey)
+	if secret == "" {
+		return defaultCertsSecretName
+	}
+	return secret
 }
