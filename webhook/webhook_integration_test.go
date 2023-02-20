@@ -29,6 +29,7 @@ import (
 	kubeclient "knative.dev/pkg/client/injection/kube/client/fake"
 	_ "knative.dev/pkg/injection/clients/namespacedkube/informers/core/v1/secret/fake"
 	"knative.dev/pkg/system"
+	certresources "knative.dev/pkg/webhook/certificates/resources"
 
 	"golang.org/x/sync/errgroup"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -71,6 +72,68 @@ func TestMissingContentType(t *testing.T) {
 	if err = waitForServerAvailable(t, serverURL, testTimeout); err != nil {
 		t.Fatal("waitForServerAvailable() =", err)
 	}
+
+	tlsClient, err := createSecureTLSClient(t, kubeclient.Get(ctx), &wh.Options)
+	if err != nil {
+		t.Fatal("createSecureTLSClient() =", err)
+	}
+
+	req, err := http.NewRequest("GET", fmt.Sprintf("https://%s", serverURL), nil)
+	if err != nil {
+		t.Fatal("http.NewRequest() =", err)
+	}
+
+	response, err := tlsClient.Do(req)
+	if err != nil {
+		t.Fatalf("Received %v error from server %s", err, serverURL)
+	}
+
+	if got, want := response.StatusCode, http.StatusUnsupportedMediaType; got != want {
+		t.Errorf("Response status code = %v, wanted %v", got, want)
+	}
+
+	defer response.Body.Close()
+	responseBody, err := io.ReadAll(response.Body)
+	if err != nil {
+		t.Fatal("Failed to read response body", err)
+	}
+
+	if !strings.Contains(string(responseBody), "invalid Content-Type") {
+		t.Errorf("Response body to contain 'invalid Content-Type' , got = '%s'", string(responseBody))
+	}
+
+	// Stats are not reported for internal server errors
+	metricstest.CheckStatsNotReported(t, requestCountName, requestLatenciesName)
+}
+
+func TestMissingContentTypeCustomSecret(t *testing.T) {
+	wh, serverURL, ctx, cancel, err := testSetup(t)
+	if err != nil {
+		t.Fatal("testSetup() =", err)
+	}
+
+	eg, _ := errgroup.WithContext(ctx)
+	eg.Go(func() error { return wh.Run(ctx.Done()) })
+	wh.InformersHaveSynced()
+	defer func() {
+		cancel()
+		if err := eg.Wait(); err != nil {
+			t.Error("Unable to run controller:", err)
+		}
+	}()
+
+	pollErr := waitForServerAvailable(t, serverURL, testTimeout)
+	if pollErr != nil {
+		t.Fatal("waitForServerAvailable() =", err)
+	}
+
+	t.Setenv(certresources.ServerKeyEnv, "tls.key")
+	t.Setenv(certresources.ServerCertEnv, "tls.crt")
+	certresources.MakeSecret = customSecretWithOverrides
+
+	defer func() {
+		certresources.MakeSecret = certresources.MakeSecretInternal
+	}()
 
 	tlsClient, err := createSecureTLSClient(t, kubeclient.Get(ctx), &wh.Options)
 	if err != nil {

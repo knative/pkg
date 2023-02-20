@@ -25,7 +25,6 @@ import (
 	"log"
 	"net"
 	"net/http"
-	"os"
 	"time"
 
 	// Injection stuff
@@ -170,14 +169,7 @@ func New(
 					logger.Errorw("failed to fetch secret", zap.Error(err))
 					return nil, nil
 				}
-				sKey := certresources.ServerKey
-				sCert := certresources.ServerCert
-				if val, ok := os.LookupEnv(certresources.ServerKeyEnv); ok {
-					sKey = val
-				}
-				if val, ok := os.LookupEnv(certresources.ServerCertEnv); ok {
-					sCert = val
-				}
+				sKey, sCert := certresources.GetSecretDataKeyNamesOrDefault()
 				serverKey, ok := secret.Data[sKey]
 				if !ok {
 					logger.Warn("server key missing")
