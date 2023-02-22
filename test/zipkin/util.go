@@ -178,7 +178,7 @@ func CleanupZipkinTracingSetup(logf logging.FormatLogger) {
 		// run, SetupZipkinTracing will no longer setup any port forwarding.
 		setupOnce.Do(func() {})
 
-		if IsTracingEnabled() {
+		if !IsTracingEnabled() {
 			return
 		}
 
