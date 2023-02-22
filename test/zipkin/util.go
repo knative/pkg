@@ -61,8 +61,7 @@ const (
 var (
 	zipkinPortForwardPID int
 
-	// Deprecated: Use IsTracingEnabled for checking the current state. Setting this flag
-	// is done automatically.
+	// Deprecated: Use IsTracingEnabled for checking the current state.
 	ZipkinTracingEnabled = false
 
 	tracingEnabled atomic.Bool
@@ -148,7 +147,6 @@ func SetupZipkinTracing(ctx context.Context, kubeClientset kubernetes.Interface,
 		// Applying AlwaysSample config to ensure we propagate zipkin header for every request made by this client.
 		trace.ApplyConfig(trace.Config{DefaultSampler: trace.AlwaysSample()})
 
-		ZipkinTracingEnabled = true
 		tracingEnabled.Store(true)
 		logf("Successfully setup SpoofingClient for Zipkin Tracing")
 	})
@@ -187,7 +185,6 @@ func CleanupZipkinTracingSetup(logf logging.FormatLogger) {
 			return
 		}
 
-		ZipkinTracingEnabled = false
 		tracingEnabled.Store(false)
 	})
 }
