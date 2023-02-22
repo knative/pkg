@@ -31,6 +31,7 @@ import (
 	"testing"
 	"time"
 
+	"go.uber.org/atomic"
 	tracingconfig "knative.dev/pkg/tracing/config"
 
 	"github.com/openzipkin/zipkin-go/model"
@@ -60,8 +61,12 @@ const (
 var (
 	zipkinPortForwardPID int
 
-	// ZipkinTracingEnabled variable indicating if zipkin tracing is enabled.
+	// Deprecated: Use TracingEnabled for checking the current state. Setting this flag
+	// is done automatically in SetupZipkinTracing.
 	ZipkinTracingEnabled = false
+
+	// TracingEnabled variable indicating if zipkin tracing is enabled.
+	TracingEnabled atomic.Bool
 
 	// sync.Once variable to ensure we execute zipkin setup only once.
 	setupOnce sync.Once
@@ -138,6 +143,9 @@ func SetupZipkinTracing(ctx context.Context, kubeClientset kubernetes.Interface,
 
 		// Applying AlwaysSample config to ensure we propagate zipkin header for every request made by this client.
 		trace.ApplyConfig(trace.Config{DefaultSampler: trace.AlwaysSample()})
+
+		ZipkinTracingEnabled = true
+		TracingEnabled.Store(true)
 		logf("Successfully setup SpoofingClient for Zipkin Tracing")
 	})
 	return
@@ -166,7 +174,7 @@ func CleanupZipkinTracingSetup(logf logging.FormatLogger) {
 		// run, SetupZipkinTracing will no longer setup any port forwarding.
 		setupOnce.Do(func() {})
 
-		if !ZipkinTracingEnabled {
+		if TracingEnabled.Load() {
 			return
 		}
 
@@ -176,6 +184,7 @@ func CleanupZipkinTracingSetup(logf logging.FormatLogger) {
 		}
 
 		ZipkinTracingEnabled = false
+		TracingEnabled.Store(false)
 	})
 }
 
