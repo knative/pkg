@@ -23,8 +23,8 @@ import (
 const (
 	testMissingInputName = "MissingInput"
 
-	testDefaultPort            = 8888
-	testDefaultCertsSecretName = "webhook-certs"
+	testDefaultPort       = 8888
+	testDefaultSecretName = "webhook-certs"
 )
 
 type portTest struct {
@@ -41,7 +41,7 @@ type webhookNameTest struct {
 	wantPanic bool
 }
 
-type certsSecretNameTest struct {
+type secretNameTest struct {
 	name      string
 	in        string
 	want      string
@@ -129,14 +129,14 @@ func TestWebhookName(t *testing.T) {
 	}
 }
 
-func TestCertsSecretName(t *testing.T) {
-	tests := []certsSecretNameTest{{
+func TestSecretName(t *testing.T) {
+	tests := []secretNameTest{{
 		name: testMissingInputName,
-		want: testDefaultCertsSecretName,
+		want: testDefaultSecretName,
 	}, {
 		name: "EmptyInput",
 		in:   "",
-		want: testDefaultCertsSecretName,
+		want: testDefaultSecretName,
 	}, {
 		name: "ValidInput",
 		in:   "my-webhook-certs",
@@ -145,9 +145,9 @@ func TestCertsSecretName(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			// certsSecretNameEnvKey is unset when testing missing input.
+			// secretNameEnvKey is unset when testing missing input.
 			if tc.name != testMissingInputName {
-				t.Setenv(certsSecretNameEnvKey, tc.in)
+				t.Setenv(secretNameEnvKey, tc.in)
 			}
 
 			defer func() {
@@ -158,8 +158,8 @@ func TestCertsSecretName(t *testing.T) {
 				}
 			}()
 
-			if got := CertsSecretNameFromEnv(testDefaultCertsSecretName); got != tc.want {
-				t.Errorf("CertsSecretNameFromEnv = %s, want: %s", got, tc.want)
+			if got := SecretNameFromEnv(testDefaultSecretName); got != tc.want {
+				t.Errorf("SecretNameFromEnv = %s, want: %s", got, tc.want)
 			}
 		})
 	}

@@ -28,7 +28,7 @@ const (
 	// Webhook is the name of the override key used inside of the logging config for Webhook Controller.
 	webhookNameEnvKey = "WEBHOOK_NAME"
 
-	certsSecretNameEnvKey = "WEBHOOK_CERTS_SECRET_NAME"
+	secretNameEnvKey = "WEBHOOK_SECRET_NAME"
 )
 
 // PortFromEnv returns the webhook port set by portEnvKey, or default port if env var is not set.
@@ -59,10 +59,10 @@ If this is a process running on Kubernetes, then initialize this variable via:
 `, webhookNameEnvKey))
 }
 
-func CertsSecretNameFromEnv(defaultCertsSecretName string) string {
-	secret := os.Getenv(certsSecretNameEnvKey)
+func SecretNameFromEnv(defaultSecretName string) string {
+	secret := os.Getenv(secretNameEnvKey)
 	if secret == "" {
-		return defaultCertsSecretName
+		return defaultSecretName
 	}
 	return secret
 }
