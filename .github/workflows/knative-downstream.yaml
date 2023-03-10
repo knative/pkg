@@ -37,7 +37,6 @@ jobs:
           - knative-sandbox/eventing-gitlab
           - knative-sandbox/eventing-kafka
           - knative-sandbox/eventing-kafka-broker
-          - knative-sandbox/eventing-natss
           - knative-sandbox/eventing-rabbitmq
           - knative-sandbox/eventing-redis
           - knative-sandbox/kn-plugin-admin
