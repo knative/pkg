@@ -50,11 +50,11 @@ func NameFromEnv() string {
 		return webhook
 	}
 
-	panic(fmt.Sprintf(`The environment variable %q is not set.
+	panic(fmt.Sprintf(`The environment variable %[1]q is not set.
 This should be unique for the webhooks in a namespace
 If this is a process running on Kubernetes, then initialize this variable via:
   env:
-  - name: WEBHOOK_NAME
+  - name: %[1]s
     value: webhook
 `, webhookNameEnvKey))
 }
