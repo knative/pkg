@@ -207,7 +207,7 @@ func newDialer(ctx context.Context, tlsConf *tls.Config) func(addr string) (net.
 	}
 	if tlsConf != nil {
 		dialFn = func(addr string) (net.Conn, error) {
-			bo.Duration = 10 * time.Millisecond
+			bo.Duration = 50 * time.Millisecond
 			bo.Steps = 3
 			return NewTLSBackoffDialer(bo)(ctx, "tcp4", addr, tlsConf)
 		}

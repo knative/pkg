@@ -28,7 +28,7 @@ const (
 	// Webhook is the name of the override key used inside of the logging config for Webhook Controller.
 	webhookNameEnvKey = "WEBHOOK_NAME"
 
-	secretNameEnvKey = "WEBHOOK_SECRET_NAME"
+	secretNameEnvKey = "WEBHOOK_SECRET_NAME" //nolint:gosec // This is not a hardcoded credential
 )
 
 // PortFromEnv returns the webhook port set by portEnvKey, or default port if env var is not set.
