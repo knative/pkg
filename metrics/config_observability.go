@@ -122,7 +122,7 @@ func NewObservabilityConfigFromConfigMap(configMap *corev1.ConfigMap) (*Observab
 	if err != nil {
 		return nil, err
 	}
-	oc.RequestMetricsReportingPeriodSeconds = *defaultRequestMetricsReportingPeriod
+	oc.RequestMetricsReportingPeriodSeconds = defaultRequestMetricsReportingPeriod
 
 	if err := cm.Parse(configMap.Data,
 		cm.AsBool("logging.enable-var-log-collection", &oc.EnableVarLogCollection),
@@ -177,13 +177,13 @@ func ConfigMapName() string {
 
 // Use the same as `metrics.reporting-period-seconds` for the default
 // of `metrics.request-metrics-reporting-period-seconds`
-func getDefaultRequestMetricsReportingPeriod(data map[string]string) (*int, error) {
+func getDefaultRequestMetricsReportingPeriod(data map[string]string) (int, error) {
 	// Default backend is prometheus
 	period := defaultPrometheusReportingPeriod
 	if repStr := data[reportingPeriodKey]; repStr != "" {
 		repInt, err := strconv.Atoi(repStr)
 		if err != nil {
-			return nil, fmt.Errorf("invalid %s value %q", reportingPeriodKey, repStr)
+			return -1, fmt.Errorf("invalid %s value %q", reportingPeriodKey, repStr)
 		}
 		period = repInt
 	} else {
@@ -196,5 +196,5 @@ func getDefaultRequestMetricsReportingPeriod(data map[string]string) (*int, erro
 			}
 		}
 	}
-	return &period, nil
+	return period, nil
 }
