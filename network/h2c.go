@@ -27,6 +27,18 @@ import (
 	"golang.org/x/net/http2/h2c"
 )
 
+// NewServerTLS is same as NewServer but allows configuring the server's TLSConfig
+func NewServerTLS(addr string, h http.Handler, tlsConfig *tls.Config) *http.Server {
+	//nolint:gosec
+	h1s := &http.Server{
+		Addr:      addr,
+		Handler:   h2c.NewHandler(h, &http2.Server{}),
+		TLSConfig: tlsConfig,
+	}
+
+	return h1s
+}
+
 // NewServer returns a new HTTP Server with HTTP2 handler.
 func NewServer(addr string, h http.Handler) *http.Server {
 	h1s := &http.Server{
