@@ -66,7 +66,13 @@ type AddressableType struct {
 // AddressStatus shows how we expect folks to embed Addressable in
 // their Status field.
 type AddressStatus struct {
+	// …
+	// If addresses is present, address will be ignored by clients.
 	Address *Addressable `json:"address,omitempty"`
+
+	// List of addresses for different protocols (HTTP and HTTPS)
+	// +optional
+	Addresses []Addressable `json:"addresses,omitempty"`
 }
 
 var (
@@ -123,10 +129,12 @@ func (a *Addressable) ConvertFrom(ctx context.Context, from apis.Convertible) er
 
 // Populate implements duck.Populatable
 func (t *AddressableType) Populate() {
+	name := "http"
 	t.Status = AddressStatus{
-		&Addressable{
+		Address: &Addressable{
 			// Populate ALL fields
 			Addressable: v1beta1.Addressable{
+				Name: &name,
 				URL: &apis.URL{
 					Scheme: "http",
 					Host:   "foo.bar.svc.cluster.local",
