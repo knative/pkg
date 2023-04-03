@@ -66,11 +66,13 @@ type AddressableType struct {
 // AddressStatus shows how we expect folks to embed Addressable in
 // their Status field.
 type AddressStatus struct {
-	// …
-	// If addresses is present, address will be ignored by clients.
+	// Address is a single Addressable address.
+	// If Addresses is present, Address will be ignored by clients.
+	// +optional
 	Address *Addressable `json:"address,omitempty"`
 
-	// List of addresses for different protocols (HTTP and HTTPS)
+	// Addresses is a list of addresses for different protocols (HTTP and HTTPS)
+	// If Addresses is present, Address must be ignored by clients.
 	// +optional
 	Addresses []Addressable `json:"addresses,omitempty"`
 }
