@@ -164,6 +164,69 @@ func (r *URIResolver) URIFromObjectReference(ctx context.Context, ref *corev1.Ob
 		// when handled is false, both url and err are ignored.
 	}
 
+	// K8s Services are special cased. They can be called, even though they do not satisfy the
+	// Callable interface.
+	if ref.APIVersion == "v1" && ref.Kind == "Service" {
+		url := &apis.URL{
+			Scheme: "http",
+			Host:   network.GetServiceHostname(ref.Name, ref.Namespace),
+			Path:   "",
+		}
+		return url, nil
+	}
+
+	address, err := r.AddressableFromObjectReference(ctx, ref, parent)
+	if err == nil {
+		return nil, apierrs.NewBadRequest(fmt.Sprintf("address not set for %+v", ref))
+	}
+	url := address.URL
+	if url == nil {
+		return nil, apierrs.NewBadRequest(fmt.Sprintf("URL missing in address of %+v", ref))
+	}
+	if url.Host == "" {
+		return nil, apierrs.NewBadRequest(fmt.Sprintf("hostname missing in address of %+v", ref))
+	}
+	return url, nil
+}
+
+// AddressableFromDestination resolves a v1beta1.Destination into a addressable.
+func (r *URIResolver) AddressableFromDestination(ctx context.Context, dest duckv1beta1.Destination, parent interface{}) (*duckv1.Addressable, error) {
+	var deprecatedObjectReference *corev1.ObjectReference
+	if !(dest.DeprecatedAPIVersion == "" && dest.DeprecatedKind == "" && dest.DeprecatedName == "" && dest.DeprecatedNamespace == "") {
+		deprecatedObjectReference = &corev1.ObjectReference{
+			Kind:       dest.DeprecatedKind,
+			APIVersion: dest.DeprecatedAPIVersion,
+			Name:       dest.DeprecatedName,
+			Namespace:  dest.DeprecatedNamespace,
+		}
+	}
+	var addr *duckv1.Addressable
+	if dest.Ref != nil && deprecatedObjectReference != nil {
+		return addr, errors.New("ref and [apiVersion, kind, name] can't be both present")
+	}
+	var ref *corev1.ObjectReference
+	if dest.Ref != nil {
+		ref = dest.Ref
+	} else {
+		ref = deprecatedObjectReference
+	}
+
+	if ref != nil {
+		addr, err := r.AddressableFromObjectReference(ctx, ref, parent)
+		if err != nil {
+			return addr, err
+		}
+		return addr, nil
+	}
+
+	return addr, errors.New("destination missing Ref, [apiVersion, kind, name] and URI, expected at least one")
+}
+
+func (r *URIResolver) AddressableFromObjectReference(ctx context.Context, ref *corev1.ObjectReference, parent interface{}) (*duckv1.Addressable, error) {
+	if ref == nil {
+		return nil, apierrs.NewBadRequest("ref is nil")
+	}
+
 	gvr, _ := meta.UnsafeGuessKindToResource(ref.GroupVersionKind())
 	if err := r.tracker.TrackReference(tracker.Reference{
 		APIVersion: ref.APIVersion,
@@ -184,30 +247,24 @@ func (r *URIResolver) URIFromObjectReference(ctx context.Context, ref *corev1.Ob
 		return nil, fmt.Errorf("failed to get object %s/%s: %w", ref.Namespace, ref.Name, err)
 	}
 
-	// K8s Services are special cased. They can be called, even though they do not satisfy the
-	// Callable interface.
-	if ref.APIVersion == "v1" && ref.Kind == "Service" {
-		url := &apis.URL{
-			Scheme: "http",
-			Host:   network.GetServiceHostname(ref.Name, ref.Namespace),
-			Path:   "",
-		}
-		return url, nil
-	}
-
 	addressable, ok := obj.(*duckv1.AddressableType)
 	if !ok {
 		return nil, apierrs.NewBadRequest(fmt.Sprintf("%+v (%T) is not an AddressableType", ref, ref))
 	}
+	if addressable.Status.Addresses != nil && len(addressable.Status.Addresses) != 0 {
+		if addressable.Status.Address == nil {
+			return &addressable.Status.Addresses[0], nil
+		} else {
+			for _, addr := range addressable.Status.Addresses {
+				if addr.Name == addressable.Status.Address.Name {
+					return &addr, nil
+				}
+			}
+			return nil, apierrs.NewBadRequest(fmt.Sprintf("address with name %s cannot be found/resolved for %+v", addressable.Status.Address.Name, ref))
+		}
+	}
 	if addressable.Status.Address == nil {
 		return nil, apierrs.NewBadRequest(fmt.Sprintf("address not set for %+v", ref))
 	}
-	url := addressable.Status.Address.URL
-	if url == nil {
-		return nil, apierrs.NewBadRequest(fmt.Sprintf("URL missing in address of %+v", ref))
-	}
-	if url.Host == "" {
-		return nil, apierrs.NewBadRequest(fmt.Sprintf("hostname missing in address of %+v", ref))
-	}
-	return url, nil
+	return addressable.Status.Address, nil
 }
