@@ -32,7 +32,7 @@ type Destination struct {
 	// +optional
 	URI *apis.URL `json:"uri,omitempty"`
 
-	// Certification Authority (CA) certificates in PEM format
+	// CACerts are Certification Authority (CA) certificates in PEM format
 	// according to https://www.rfc-editor.org/rfc/rfc7468.
 	// If set, these CAs are appended to the set of CAs provided
 	// by the Addressable target, if any.
