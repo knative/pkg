@@ -251,7 +251,12 @@ func TestGetAdmissionRequest(t *testing.T) {
 	}
 
 	admReq := admissionv1.AdmissionRequest{
-		Name: "foo",
+		Operation: admissionv1.Create,
+		Kind: metav1.GroupVersionKind{
+			Group:   "pkg.knative.dev",
+			Version: "v1alpha1",
+			Kind:    "Resource",
+		},
 	}
 	ctx = WithAdmissionRequest(ctx, &admReq)
 
