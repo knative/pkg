@@ -164,6 +164,26 @@ func (r *URIResolver) URIFromObjectReference(ctx context.Context, ref *corev1.Ob
 		// when handled is false, both url and err are ignored.
 	}
 
+	gvr, _ := meta.UnsafeGuessKindToResource(ref.GroupVersionKind())
+	if err := r.tracker.TrackReference(tracker.Reference{
+		APIVersion: ref.APIVersion,
+		Kind:       ref.Kind,
+		Namespace:  ref.Namespace,
+		Name:       ref.Name,
+	}, parent); err != nil {
+		return nil, fmt.Errorf("failed to track reference %s %s/%s: %w", gvr.String(), ref.Namespace, ref.Name, err)
+	}
+
+	lister, err := r.listerFactory(gvr)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get lister for %s: %w", gvr.String(), err)
+	}
+
+	obj, err := lister.ByNamespace(ref.Namespace).Get(ref.Name)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get object %s/%s: %w", ref.Namespace, ref.Name, err)
+	}
+
 	// K8s Services are special cased. They can be called, even though they do not satisfy the
 	// Callable interface.
 	if ref.APIVersion == "v1" && ref.Kind == "Service" {
@@ -175,11 +195,14 @@ func (r *URIResolver) URIFromObjectReference(ctx context.Context, ref *corev1.Ob
 		return url, nil
 	}
 
-	address, err := r.AddressableFromObjectReference(ctx, ref, parent)
-	if err == nil {
+	addressable, ok := obj.(*duckv1.AddressableType)
+	if !ok {
+		return nil, apierrs.NewBadRequest(fmt.Sprintf("%+v (%T) is not an AddressableType", ref, ref))
+	}
+	if addressable.Status.Address == nil {
 		return nil, apierrs.NewBadRequest(fmt.Sprintf("address not set for %+v", ref))
 	}
-	url := address.URL
+	url := addressable.Status.Address.URL
 	if url == nil {
 		return nil, apierrs.NewBadRequest(fmt.Sprintf("URL missing in address of %+v", ref))
 	}
@@ -212,7 +235,7 @@ func (r *URIResolver) AddressableFromDestination(ctx context.Context, dest duckv
 	}
 
 	if ref != nil {
-		addr, err := r.AddressableFromObjectReference(ctx, ref, parent)
+		addr, err := r.AddressableFromObjectReference(ctx, dest, parent)
 		if err != nil {
 			return addr, err
 		}
@@ -222,10 +245,23 @@ func (r *URIResolver) AddressableFromDestination(ctx context.Context, dest duckv
 	return addr, errors.New("destination missing Ref, [apiVersion, kind, name] and URI, expected at least one")
 }
 
-func (r *URIResolver) AddressableFromObjectReference(ctx context.Context, ref *corev1.ObjectReference, parent interface{}) (*duckv1.Addressable, error) {
-	if ref == nil {
-		return nil, apierrs.NewBadRequest("ref is nil")
+// AddressableFromDestination resolves a v1.Destination into a addressable.
+func (r *URIResolver) AddressableFromDestinationV1(ctx context.Context, dest duckv1.Destination, parent interface{}) (*duckv1.Addressable, error) {
+	var addr *duckv1.Addressable
+	if dest.Ref != nil {
+		addr, err := r.AddressableFromKReference(ctx, dest, parent)
+		if err != nil {
+			return nil, err
+		}
+		return addr, nil
 	}
+
+	return addr, errors.New("destination missing Ref, [apiVersion, kind, name] and URI, expected at least one")
+}
+
+func (r *URIResolver) AddressableFromKReference(ctx context.Context, dest duckv1.Destination, parent interface{}) (*duckv1.Addressable, error) {
+	kRef := dest.Ref
+	ref := &corev1.ObjectReference{Name: kRef.Name, Namespace: kRef.Namespace, APIVersion: kRef.APIVersion, Kind: kRef.Kind}
 
 	gvr, _ := meta.UnsafeGuessKindToResource(ref.GroupVersionKind())
 	if err := r.tracker.TrackReference(tracker.Reference{
@@ -252,19 +288,32 @@ func (r *URIResolver) AddressableFromObjectReference(ctx context.Context, ref *c
 		return nil, apierrs.NewBadRequest(fmt.Sprintf("%+v (%T) is not an AddressableType", ref, ref))
 	}
 	if addressable.Status.Addresses != nil && len(addressable.Status.Addresses) != 0 {
-		if addressable.Status.Address == nil {
+		if dest.Ref.Address == nil || *dest.Ref.Address == "" {
 			return &addressable.Status.Addresses[0], nil
-		} else {
-			for _, addr := range addressable.Status.Addresses {
-				if addr.Name == addressable.Status.Address.Name {
-					return &addr, nil
-				}
-			}
-			return nil, apierrs.NewBadRequest(fmt.Sprintf("address with name %s cannot be found/resolved for %+v", addressable.Status.Address.Name, ref))
 		}
+		for _, addr := range addressable.Status.Addresses {
+			if addr.Name == dest.Ref.Address {
+				return &addr, nil
+			}
+		}
+		return nil, apierrs.NewBadRequest(fmt.Sprintf("address with name %s cannot be found/resolved for %+v", *addressable.Status.Address.Name, ref))
 	}
 	if addressable.Status.Address == nil {
 		return nil, apierrs.NewBadRequest(fmt.Sprintf("address not set for %+v", ref))
 	}
+
+	url := addressable.Status.Address.URL
+	if url == nil {
+		return nil, apierrs.NewBadRequest(fmt.Sprintf("URL missing in address of %+v", ref))
+	}
+	if url.Host == "" {
+		return nil, apierrs.NewBadRequest(fmt.Sprintf("hostname missing in address of %+v", ref))
+	}
+
 	return addressable.Status.Address, nil
+}
+
+func (r *URIResolver) AddressableFromObjectReference(ctx context.Context, dest duckv1beta1.Destination, parent interface{}) (*duckv1.Addressable, error) {
+	kRef := &duckv1.KReference{Name: dest.Ref.Name, Namespace: dest.Ref.Namespace, APIVersion: dest.Ref.APIVersion, Kind: dest.Ref.Kind}
+	return r.AddressableFromKReference(ctx, duckv1.Destination{Ref: kRef, URI: dest.URI, CACerts: dest.CACerts}, parent)
 }
