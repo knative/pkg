@@ -283,6 +283,21 @@ func (r *URIResolver) AddressableFromKReference(ctx context.Context, dest duckv1
 		return nil, fmt.Errorf("failed to get object %s/%s: %w", ref.Namespace, ref.Name, err)
 	}
 
+	// K8s Services are special cased. They can be called, even though they do not satisfy the
+	// Callable interface.
+	if ref.APIVersion == "v1" && ref.Kind == "Service" {
+		scheme := "http"
+		if dest.CACerts != nil && *dest.CACerts != "" {
+			scheme = "https"
+		}
+		url := &apis.URL{
+			Scheme: scheme,
+			Host:   network.GetServiceHostname(ref.Name, ref.Namespace),
+			Path:   "",
+		}
+		return &duckv1.Addressable{URL: url, CACerts: dest.CACerts}, nil
+	}
+
 	addressable, ok := obj.(*duckv1.AddressableType)
 	if !ok {
 		return nil, apierrs.NewBadRequest(fmt.Sprintf("%+v (%T) is not an AddressableType", ref, ref))
