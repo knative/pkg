@@ -24,6 +24,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	authenticationv1 "k8s.io/api/authentication/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	admissionv1 "k8s.io/api/admission/v1"
 )
 
 func TestContexts(t *testing.T) {
@@ -241,3 +242,21 @@ func TestGetHTTPRequest(t *testing.T) {
 		t.Errorf("GetHTTPRequest() = %v, wanted %v", got, want)
 	}
 }
+
+func TestGetAdmissionRequest(t *testing.T) {
+	ctx := context.Background()
+
+	if got := GetAdmissionRequest(ctx); got != nil {
+		t.Errorf("GetAdmissionRequest() = %v, wanted %v", got, nil)
+	}
+
+	admReq := admissionv1.AdmissionRequest{
+		Name: "foo",
+	}
+	ctx = WithAdmissionRequest(ctx, &admReq)
+
+	if want, got := &admReq, GetAdmissionRequest(ctx); got != want {
+		t.Errorf("GetAdmissionRequest() = %v, wanted %v", got, want)
+	}
+}
+

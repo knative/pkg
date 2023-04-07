@@ -22,6 +22,7 @@ import (
 
 	authenticationv1 "k8s.io/api/authentication/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	admissionv1 "k8s.io/api/admission/v1"
 )
 
 // This is attached to contexts passed to webhook interfaces when
@@ -245,6 +246,7 @@ func IsDryRun(ctx context.Context) bool {
 // This is attached to contexts passed to webhook interfaces with
 // additional context from the HTTP request.
 type httpReq struct{}
+type AdmissionReq struct{}
 
 // WithHTTPRequest associated the HTTP request object the webhook
 // received with the context.
@@ -259,4 +261,19 @@ func GetHTTPRequest(ctx context.Context) *http.Request {
 		return nil
 	}
 	return v.(*http.Request)
+}
+
+// WithAdmissionRequest associated the admissionv1.AdmissionRequest object the webhook
+// received with the context.
+func WithAdmissionRequest(ctx context.Context, r *admissionv1.AdmissionRequest) context.Context {
+	return context.WithValue(ctx, AdmissionReq{}, r)
+}
+
+// GetAdmissionRequest fetches the admissionv1.AdmissionRequest received by the webhook.
+func GetAdmissionRequest(ctx context.Context) *admissionv1.AdmissionRequest {
+	v := ctx.Value(AdmissionReq{})
+	if v == nil {
+		return nil
+	}
+	return v.(*admissionv1.AdmissionRequest)
 }
