@@ -22,9 +22,9 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	admissionv1 "k8s.io/api/admission/v1"
 	authenticationv1 "k8s.io/api/authentication/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	admissionv1 "k8s.io/api/admission/v1"
 )
 
 func TestContexts(t *testing.T) {
@@ -259,4 +259,3 @@ func TestGetAdmissionRequest(t *testing.T) {
 		t.Errorf("GetAdmissionRequest() = %v, wanted %v", got, want)
 	}
 }
-
