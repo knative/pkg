@@ -138,7 +138,7 @@ func New(
 		secretInformer := kubeinformerfactory.Get(ctx).Core().V1().Secrets()
 
 		webhook.tlsConfig = &tls.Config{
-			MinVersion: TLSMinVersionFromEnv(tls.VersionTLS12),
+			MinVersion: TLSMinVersionFromEnv(tls.VersionTLS13),
 
 			// If we return (nil, error) the client sees - 'tls: internal error"
 			// If we return (nil, nil) the client sees - 'tls: no certificates configured'

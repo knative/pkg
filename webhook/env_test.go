@@ -26,7 +26,7 @@ const (
 
 	testDefaultPort          = 8888
 	testDefaultSecretName    = "webhook-certs"
-	testDefaultTLSMinVersion = tls.VersionTLS12
+	testDefaultTLSMinVersion = tls.VersionTLS13
 )
 
 type portTest struct {

@@ -71,15 +71,14 @@ func SecretNameFromEnv(defaultSecretName string) string {
 }
 
 func TLSMinVersionFromEnv(defaultTLSMinVersion uint16) uint16 {
-	tlsMinVersion := os.Getenv(tlsMinVersionEnvKey)
-	if tlsMinVersion == "" {
+	switch tlsMinVersion := os.Getenv(tlsMinVersionEnvKey); tlsMinVersion {
+	case "1.2":
+		return tls.VersionTLS12
+	case "1.3":
+		return tls.VersionTLS13
+	case "":
 		return defaultTLSMinVersion
-	}
-	if tlsMinVersion != "1.2" && tlsMinVersion != "1.3" {
+	default:
 		panic(fmt.Sprintf("the environment variable %q has to be either '1.2' or '1.3'", tlsMinVersion))
 	}
-	if tlsMinVersion == "1.3" {
-		return tls.VersionTLS13
-	}
-	return defaultTLSMinVersion
 }
