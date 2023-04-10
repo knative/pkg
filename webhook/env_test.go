@@ -17,14 +17,16 @@ limitations under the License.
 package webhook
 
 import (
+	"crypto/tls"
 	"testing"
 )
 
 const (
 	testMissingInputName = "MissingInput"
 
-	testDefaultPort       = 8888
-	testDefaultSecretName = "webhook-certs"
+	testDefaultPort          = 8888
+	testDefaultSecretName    = "webhook-certs"
+	testDefaultTLSMinVersion = tls.VersionTLS12
 )
 
 type portTest struct {
@@ -45,6 +47,13 @@ type secretNameTest struct {
 	name      string
 	in        string
 	want      string
+	wantPanic bool
+}
+
+type tlsMinVersionTest struct {
+	name      string
+	in        string
+	want      uint16
 	wantPanic bool
 }
 
@@ -160,6 +169,54 @@ func TestSecretName(t *testing.T) {
 
 			if got := SecretNameFromEnv(testDefaultSecretName); got != tc.want {
 				t.Errorf("SecretNameFromEnv = %s, want: %s", got, tc.want)
+			}
+		})
+	}
+}
+
+func TestTLSMinVersion(t *testing.T) {
+	tests := []tlsMinVersionTest{{
+		name: testMissingInputName,
+		want: testDefaultTLSMinVersion,
+	}, {
+		name: "EmptyInput",
+		in:   "",
+		want: testDefaultTLSMinVersion,
+	}, {
+		name:      "InvalidInputTrailingSpace",
+		in:        "1.2  ",
+		wantPanic: true,
+	}, {
+		name:      "InvalidInput",
+		in:        "1.0",
+		wantPanic: true,
+	}, {
+		name: "ValidInputTLS12",
+		in:   "1.2",
+		want: tls.VersionTLS12,
+	}, {
+		name: "ValidInputTLS13",
+		in:   "1.3",
+		want: tls.VersionTLS13,
+	}}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			// tlsMinVersionEnvKey is unset when testing missing input.
+			if tc.name != testMissingInputName {
+				t.Setenv(tlsMinVersionEnvKey, tc.in)
+			}
+
+			defer func() {
+				if r := recover(); r == nil && tc.wantPanic {
+					t.Error("Did not panic")
+				} else if r != nil && !tc.wantPanic {
+					t.Error("Got unexpected panic")
+				}
+			}()
+
+			if got := TLSMinVersionFromEnv(testDefaultTLSMinVersion); got != tc.want {
+				t.Errorf("TLSMinVersionFromEnv = %d, want: %d", got, tc.want)
 			}
 		})
 	}

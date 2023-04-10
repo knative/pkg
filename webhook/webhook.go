@@ -40,6 +40,8 @@ import (
 
 // Options contains the configuration for the webhook
 type Options struct {
+	TLSMinVersion uint16
+
 	// ServiceName is the service name of the webhook.
 	ServiceName string
 
@@ -136,7 +138,7 @@ func New(
 		secretInformer := kubeinformerfactory.Get(ctx).Core().V1().Secrets()
 
 		webhook.tlsConfig = &tls.Config{
-			MinVersion: tls.VersionTLS12,
+			MinVersion: TLSMinVersionFromEnv(tls.VersionTLS12),
 
 			// If we return (nil, error) the client sees - 'tls: internal error"
 			// If we return (nil, nil) the client sees - 'tls: no certificates configured'
