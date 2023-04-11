@@ -246,7 +246,7 @@ func IsDryRun(ctx context.Context) bool {
 // This is attached to contexts passed to webhook interfaces with
 // additional context from the HTTP request.
 type httpReq struct{}
-type AdmissionReq struct{}
+type admissionRequest struct{}
 
 // WithHTTPRequest associated the HTTP request object the webhook
 // received with the context.
@@ -266,12 +266,12 @@ func GetHTTPRequest(ctx context.Context) *http.Request {
 // WithAdmissionRequest associated the admissionv1.AdmissionRequest object the webhook
 // received with the context.
 func WithAdmissionRequest(ctx context.Context, r *admissionv1.AdmissionRequest) context.Context {
-	return context.WithValue(ctx, AdmissionReq{}, r)
+	return context.WithValue(ctx, admissionRequest{}, r)
 }
 
 // GetAdmissionRequest fetches the admissionv1.AdmissionRequest received by the webhook.
 func GetAdmissionRequest(ctx context.Context) *admissionv1.AdmissionRequest {
-	v := ctx.Value(AdmissionReq{})
+	v := ctx.Value(admissionRequest{})
 	if v == nil {
 		return nil
 	}

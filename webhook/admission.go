@@ -111,7 +111,7 @@ func admissionHandler(rootLogger *zap.SugaredLogger, stats StatsReporter, c Admi
 		)
 
 		ctx := logging.WithLogger(r.Context(), logger)
-		ctx = apis.WithHTTPRequest(ctx, r)
+		ctx = apis.WithAdmissionRequest(ctx, review.Request)
 
 		response := admissionv1.AdmissionReview{
 			// Use the same type meta as the request - this is required by the K8s API
