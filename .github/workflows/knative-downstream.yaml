@@ -27,7 +27,7 @@ jobs:
       matrix:
         repo:
           - knative/serving
-          # - knative/networking
+          - knative/networking
           # - knative/eventing
           # - knative/operator
           # - knative/client
