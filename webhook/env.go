@@ -31,7 +31,7 @@ const (
 
 	secretNameEnvKey = "WEBHOOK_SECRET_NAME" //nolint:gosec // This is not a hardcoded credential
 
-	tlsMinVersionEnvKey = "TLS_MIN_VERSION"
+	tlsMinVersionEnvKey = "WEBHOOK_TLS_MIN_VERSION"
 )
 
 // PortFromEnv returns the webhook port set by portEnvKey, or default port if env var is not set.
