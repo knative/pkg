@@ -40,6 +40,8 @@ import (
 
 // Options contains the configuration for the webhook
 type Options struct {
+	// TLSMinVersion contains the minimum TLS version that is acceptable to communicate with the API server.
+	// TLS 1.3 is the minimum version if not specified otherwise.
 	TLSMinVersion uint16
 
 	// ServiceName is the service name of the webhook.
@@ -121,6 +123,16 @@ func New(
 		opts.StatsReporter = reporter
 	}
 
+	webhookTLSMinVersion := uint16(tls.VersionTLS13)
+	switch opts.TLSMinVersion {
+	case 0:
+		// No-op, the default value is already set
+	case tls.VersionTLS13, tls.VersionTLS12:
+		webhookTLSMinVersion = opts.TLSMinVersion
+	default:
+		return nil, fmt.Errorf("unsupported TLS version: %d", opts.TLSMinVersion)
+	}
+
 	syncCtx, cancel := context.WithCancel(context.Background())
 
 	webhook = &Webhook{
@@ -138,7 +150,7 @@ func New(
 		secretInformer := kubeinformerfactory.Get(ctx).Core().V1().Secrets()
 
 		webhook.tlsConfig = &tls.Config{
-			MinVersion: TLSMinVersionFromEnv(tls.VersionTLS13),
+			MinVersion: webhookTLSMinVersion,
 
 			// If we return (nil, error) the client sees - 'tls: internal error"
 			// If we return (nil, nil) the client sees - 'tls: no certificates configured'

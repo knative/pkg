@@ -18,6 +18,7 @@ package webhook
 
 import (
 	"context"
+	"crypto/tls"
 	"fmt"
 	"net"
 	"testing"
@@ -33,9 +34,10 @@ import (
 
 func newDefaultOptions() Options {
 	return Options{
-		ServiceName: "webhook",
-		Port:        8443,
-		SecretName:  "webhook-certs",
+		ServiceName:   "webhook",
+		Port:          8443,
+		SecretName:    "webhook-certs",
+		TLSMinVersion: tls.VersionTLS13,
 	}
 }
 
