@@ -79,6 +79,6 @@ func TLSMinVersionFromEnv(defaultTLSMinVersion uint16) uint16 {
 	case "":
 		return defaultTLSMinVersion
 	default:
-		panic(fmt.Sprintf("the environment variable %q has to be either '1.2' or '1.3'", tlsMinVersion))
+		panic(fmt.Sprintf("the environment variable %q has to be either '1.2' or '1.3'", tlsMinVersionEnvKey))
 	}
 }
