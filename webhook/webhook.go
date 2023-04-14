@@ -123,13 +123,10 @@ func New(
 		opts.StatsReporter = reporter
 	}
 
-	webhookTLSMinVersion := uint16(tls.VersionTLS13)
-	switch opts.TLSMinVersion {
-	case 0:
-		// No-op, the default value is already set
-	case tls.VersionTLS13, tls.VersionTLS12:
-		webhookTLSMinVersion = opts.TLSMinVersion
-	default:
+	defaultTLSMinVersion := uint16(tls.VersionTLS13)
+	if opts.TLSMinVersion == 0 {
+		opts.TLSMinVersion = TLSMinVersionFromEnv(defaultTLSMinVersion)
+	} else if opts.TLSMinVersion != tls.VersionTLS12 && opts.TLSMinVersion != tls.VersionTLS13 {
 		return nil, fmt.Errorf("unsupported TLS version: %d", opts.TLSMinVersion)
 	}
 
@@ -150,7 +147,7 @@ func New(
 		secretInformer := kubeinformerfactory.Get(ctx).Core().V1().Secrets()
 
 		webhook.tlsConfig = &tls.Config{
-			MinVersion: webhookTLSMinVersion,
+			MinVersion: opts.TLSMinVersion,
 
 			// If we return (nil, error) the client sees - 'tls: internal error"
 			// If we return (nil, nil) the client sees - 'tls: no certificates configured'
