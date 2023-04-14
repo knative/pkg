@@ -189,7 +189,7 @@ func exampleTLSConf() *tls.Config {
 	return &tls.Config{
 		InsecureSkipVerify: false,
 		ServerName:         "example.com",
-		MinVersion:         tls.VersionTLS12,
+		MinVersion:         tls.VersionTLS13,
 	}
 }
 

@@ -18,6 +18,7 @@ package webhook
 
 import (
 	"context"
+	"crypto/tls"
 	"fmt"
 	"net"
 	"testing"
@@ -92,4 +93,35 @@ func TestRegistrationStopChanFire(t *testing.T) {
 		conn.Close()
 		t.Error("Unexpected success to dial to port", opts.Port)
 	}
+}
+
+func newAdmissionControllerWebhook(t *testing.T, options Options, acs ...interface{}) (*Webhook, error) {
+	ctx, cancel, _ := SetupFakeContextWithCancel(t)
+	defer cancel()
+	ctx = WithOptions(ctx, options)
+	return New(ctx, acs)
+}
+
+func TestTLSMinVersionWebhookOption(t *testing.T) {
+	opts := newDefaultOptions()
+	t.Run("when TLSMinVersion is not configured, and the default is used", func(t *testing.T) {
+		_, err := newAdmissionControllerWebhook(t, opts)
+		if err != nil {
+			t.Fatal("Unexpected error", err)
+		}
+	})
+	t.Run("when the TLS minimum version configured is supported", func(t *testing.T) {
+		opts.TLSMinVersion = tls.VersionTLS12
+		_, err := newAdmissionControllerWebhook(t, opts)
+		if err != nil {
+			t.Fatal("Unexpected error", err)
+		}
+	})
+	t.Run("when the TLS minimum version configured is not supported", func(t *testing.T) {
+		opts.TLSMinVersion = tls.VersionTLS11
+		_, err := newAdmissionControllerWebhook(t, opts)
+		if err == nil {
+			t.Fatal("Admission Controller Webhook creation expected to fail due to unsupported TLS version")
+		}
+	})
 }
