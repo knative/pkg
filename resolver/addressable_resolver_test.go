@@ -704,22 +704,20 @@ func TestAddressableFromDestinationV1(t *testing.T) {
 			addressableWithAddresses(),
 		},
 		addr:        addressableWithAddresses(),
-		wantErr:     fmt.Sprintf("address with name %q not found for %+v", *addressableKnativeRefWithAddress().Address, addressableKnativeRefWithAddress()),
-		wantAddress: addressableName1,
-	},
-		"only address is set and no destination.ref.address is set": {
-			dest: duckv1.Destination{
-				Ref: addressableKnativeRef(),
-				URI: &apis.URL{
-					Path: "/foo",
-				},
+		wantAddress: addressableName,
+	}, "only address is set and no destination.ref.address is set": {
+		dest: duckv1.Destination{
+			Ref: addressableKnativeRef(),
+			URI: &apis.URL{
+				Path: "/foo",
 			},
-			objects: []runtime.Object{
-				addressableWithAddresses(),
-			},
-			addr:        addressableWithAddresses(),
-			wantAddress: addressableName,
-		}}
+		},
+		objects: []runtime.Object{
+			addressableWithAddressOnly(),
+		},
+		addr:        addressableWithAddressOnly(),
+		wantAddress: addressableName,
+	}}
 
 	for n, tc := range tests {
 		t.Run(n, func(t *testing.T) {
@@ -834,7 +832,7 @@ func TestAddressableFromDestinationV1CACerts(t *testing.T) {
 		},
 		addr:     addressableWithAddresses(),
 		wantCert: certDestination,
-	}, "CACerts is not set on the target addressable and it is set on the destination": {
+	}, "CACerts is set on the target addressable and it is set on the destination": {
 		dest: duckv1.Destination{
 			Ref: addressableKnativeRef(),
 			URI: &apis.URL{
@@ -1113,6 +1111,9 @@ func addressableWithAddresses() *unstructured.Unstructured {
 					"name": addressableName,
 				},
 				"addresses": []map[string]interface{}{{
+					"url":  addressableDNS,
+					"name": addressableName,
+				}, {
 					"url":  addressableDNS1,
 					"name": addressableName1,
 				}, {
@@ -1122,6 +1123,26 @@ func addressableWithAddresses() *unstructured.Unstructured {
 					"url":  addressableDNS3,
 					"name": addressableName3,
 				}},
+			},
+		},
+	}
+}
+
+func addressableWithAddressOnly() *unstructured.Unstructured {
+	return &unstructured.Unstructured{
+		Object: map[string]interface{}{
+			"apiVersion": addressableAPIVersion,
+			"kind":       addressableKind,
+			"metadata": map[string]interface{}{
+				"namespace": testNS,
+				"name":      addressableName,
+			},
+			"status": map[string]interface{}{
+				"address": map[string]interface{}{
+					"url":  addressableDNS,
+					"name": addressableName,
+				},
+				"addresses": []map[string]interface{}{},
 			},
 		},
 	}
