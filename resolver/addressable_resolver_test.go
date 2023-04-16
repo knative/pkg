@@ -844,7 +844,7 @@ func TestAddressableFromDestinationV1CACerts(t *testing.T) {
 			addressableWithCACert(),
 		},
 		addr:     addressableWithCACert(),
-		wantCert: certDestination,
+		wantCert: CACert,
 	}}
 
 	for n, tc := range tests {
