@@ -207,6 +207,16 @@ func (r *URIResolver) addressableFromDestinationRef(ctx context.Context, dest du
 		return nil, fmt.Errorf("failed to track reference %s %s/%s: %w", gvr.String(), dest.Ref.Namespace, dest.Ref.Name, err)
 	}
 
+	lister, err := r.listerFactory(gvr)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get lister for %s: %w", gvr.String(), err)
+	}
+
+	obj, err := lister.ByNamespace(dest.Ref.Namespace).Get(dest.Ref.Name)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get object %s/%s: %w", dest.Ref.Namespace, dest.Ref.Name, err)
+	}
+
 	// K8s Services are special cased. They can be called, even though they do not satisfy the
 	// Callable interface.
 	if dest.Ref.APIVersion == "v1" && dest.Ref.Kind == "Service" {
@@ -223,16 +233,6 @@ func (r *URIResolver) addressableFromDestinationRef(ctx context.Context, dest du
 			URL:     url,
 			CACerts: dest.CACerts,
 		}, nil
-	}
-
-	lister, err := r.listerFactory(gvr)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get lister for %s: %w", gvr.String(), err)
-	}
-
-	obj, err := lister.ByNamespace(dest.Ref.Namespace).Get(dest.Ref.Name)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get object %s/%s: %w", dest.Ref.Namespace, dest.Ref.Name, err)
 	}
 
 	addressable, ok := obj.(*duckv1.AddressableType)
