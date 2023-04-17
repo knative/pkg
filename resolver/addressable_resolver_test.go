@@ -348,26 +348,26 @@ func TestGetURIDestinationV1Beta1(t *testing.T) {
 				addressableNilURL(),
 			},
 			dest:    duckv1beta1.Destination{Ref: unaddressableRef()},
-			wantErr: fmt.Sprintf("URL missing in address of %+v", unaddressableKnativeRef()),
+			wantErr: fmt.Sprintf("URL missing in address of %s", unaddressableKnativeRef()),
 		},
 		"nil address": {
 			objects: []runtime.Object{
 				addressableNilAddress(),
 			},
 			dest:    duckv1beta1.Destination{Ref: unaddressableRef()},
-			wantErr: fmt.Sprintf("address not set for %+v", unaddressableKnativeRef()),
+			wantErr: fmt.Sprintf("address not set for %s", unaddressableKnativeRef()),
 		}, "missing host": {
 			objects: []runtime.Object{
 				addressableNoHostURL(),
 			},
 			dest:    duckv1beta1.Destination{Ref: unaddressableRef()},
-			wantErr: fmt.Sprintf("hostname missing in address of %+v", unaddressableKnativeRef()),
+			wantErr: fmt.Sprintf("hostname missing in address of %s", unaddressableKnativeRef()),
 		}, "missing status": {
 			objects: []runtime.Object{
 				addressableNoStatus(),
 			},
 			dest:    duckv1beta1.Destination{Ref: unaddressableRef()},
-			wantErr: fmt.Sprintf("address not set for %+v", unaddressableKnativeRef()),
+			wantErr: fmt.Sprintf("address not set for %s", unaddressableKnativeRef()),
 		}, "notFound": {
 			dest:    duckv1beta1.Destination{Ref: unaddressableRef()},
 			wantErr: fmt.Sprintf("failed to get object %s/%s: %s %q not found", testNS, unaddressableName, unaddressableResource, unaddressableName),
