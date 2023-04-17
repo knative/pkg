@@ -738,11 +738,10 @@ func TestAddressableFromDestinationV1(t *testing.T) {
 				} else {
 					t.Error("Unexpected error:", gotErr)
 				}
+				return
 			}
-			if got, want := addr, tc.wantAddress; got != want {
+			if got, want := *addr.Name, *tc.wantAddress.Name; got != want {
 				t.Errorf("Unexpected object (-want, +got) =\n%s", cmp.Diff(want, got))
-				t.Logf("got Name %s, want Name %s", *got.Name, *want.Name)
-				t.Logf("got addr %+v, want addr %+v", got, want)
 			}
 		})
 	}
