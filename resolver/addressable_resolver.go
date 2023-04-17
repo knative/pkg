@@ -26,6 +26,7 @@ import (
 
 	"knative.dev/pkg/client/injection/ducks/duck/v1/addressable"
 	"knative.dev/pkg/controller"
+	"knative.dev/pkg/network"
 
 	corev1 "k8s.io/api/core/v1"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
@@ -35,7 +36,6 @@ import (
 	pkgapisduck "knative.dev/pkg/apis/duck"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
 	duckv1beta1 "knative.dev/pkg/apis/duck/v1beta1"
-	"knative.dev/pkg/network"
 	"knative.dev/pkg/tracker"
 )
 
@@ -207,16 +207,6 @@ func (r *URIResolver) addressableFromDestinationRef(ctx context.Context, dest du
 		return nil, fmt.Errorf("failed to track reference %s %s/%s: %w", gvr.String(), dest.Ref.Namespace, dest.Ref.Name, err)
 	}
 
-	lister, err := r.listerFactory(gvr)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get lister for %s: %w", gvr.String(), err)
-	}
-
-	obj, err := lister.ByNamespace(dest.Ref.Namespace).Get(dest.Ref.Name)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get object %s/%s: %w", dest.Ref.Namespace, dest.Ref.Name, err)
-	}
-
 	// K8s Services are special cased. They can be called, even though they do not satisfy the
 	// Callable interface.
 	if dest.Ref.APIVersion == "v1" && dest.Ref.Kind == "Service" {
@@ -235,9 +225,19 @@ func (r *URIResolver) addressableFromDestinationRef(ctx context.Context, dest du
 		}, nil
 	}
 
+	lister, err := r.listerFactory(gvr)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get lister for %s: %w", gvr.String(), err)
+	}
+
+	obj, err := lister.ByNamespace(dest.Ref.Namespace).Get(dest.Ref.Name)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get object %s/%s: %w", dest.Ref.Namespace, dest.Ref.Name, err)
+	}
+
 	addressable, ok := obj.(*duckv1.AddressableType)
 	if !ok {
-		return nil, apierrs.NewBadRequest(fmt.Sprintf("%+v (%T) is not an AddressableType", dest.Ref, dest.Ref))
+		return nil, apierrs.NewBadRequest(fmt.Sprintf("%s(%T) is not an AddressableType", dest.Ref, dest.Ref))
 	}
 
 	addr, err := r.selectAddress(dest, addressable)
@@ -248,10 +248,10 @@ func (r *URIResolver) addressableFromDestinationRef(ctx context.Context, dest du
 	addr = addr.DeepCopy()
 
 	if addr.URL == nil {
-		return nil, apierrs.NewBadRequest(fmt.Sprintf("URL missing in address of %+v", dest.Ref))
+		return nil, apierrs.NewBadRequest(fmt.Sprintf("URL missing in address of %s", dest.Ref))
 	}
 	if addr.URL.Host == "" {
-		return nil, apierrs.NewBadRequest(fmt.Sprintf("hostname missing in address of %+v", dest.Ref))
+		return nil, apierrs.NewBadRequest(fmt.Sprintf("hostname missing in address of %s", dest.Ref))
 	}
 
 	if addr.CACerts == nil {
@@ -264,7 +264,7 @@ func (r *URIResolver) addressableFromDestinationRef(ctx context.Context, dest du
 // selectAddress selects a single address from the given AddressableType
 func (r *URIResolver) selectAddress(dest duckv1.Destination, addressable *duckv1.AddressableType) (*duckv1.Addressable, error) {
 	if len(addressable.Status.Addresses) == 0 && addressable.Status.Address == nil {
-		return nil, apierrs.NewBadRequest(fmt.Sprintf("address not set for %+v", dest.Ref))
+		return nil, apierrs.NewBadRequest(fmt.Sprintf("address not set for %s", dest.Ref))
 	}
 
 	// if dest.ref.address is specified:
@@ -277,7 +277,7 @@ func (r *URIResolver) selectAddress(dest duckv1.Destination, addressable *duckv1
 				return &addr, nil
 			}
 		}
-		return nil, apierrs.NewBadRequest(fmt.Sprintf("address with name %q not found for %+v", *dest.Ref.Address, dest.Ref))
+		return nil, apierrs.NewBadRequest(fmt.Sprintf("address with name %q not found for %s", *dest.Ref.Address, dest.Ref))
 	}
 
 	// if dest.ref.address is not specified:

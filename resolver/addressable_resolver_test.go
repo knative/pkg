@@ -655,7 +655,7 @@ func TestAddressableFromDestinationV1(t *testing.T) {
 		dest            duckv1.Destination
 		addr            *unstructured.Unstructured
 		customResolvers []resolver.RefResolverFunc
-		wantAddress     string
+		wantAddress     *duckv1.Addressable
 		wantErr         string
 	}{"address and addresses are not set": {
 		dest: duckv1.Destination{
@@ -668,7 +668,7 @@ func TestAddressableFromDestinationV1(t *testing.T) {
 			addressableNoAddresses(),
 		},
 		addr:    addressableNoAddresses(),
-		wantErr: fmt.Sprintf("address not set for %+v", addressableKnativeRef()),
+		wantErr: fmt.Sprintf("address not set for %s", addressableKnativeRef()),
 	}, "ref.address is set on destination and is present in target addressable addresses": {
 		dest: duckv1.Destination{
 			Ref: addressableKnativeRefWithAddress(),
@@ -679,7 +679,7 @@ func TestAddressableFromDestinationV1(t *testing.T) {
 		objects: []runtime.Object{
 			addressableWithAddresses(),
 		},
-		wantAddress: *addressableKnativeRefWithAddress().Address,
+		wantAddress: addrWithNameAndCACerts(),
 		addr:        addressableWithAddresses(),
 	}, "ref.address is set on destination and is NOT present in target addressable addresses": {
 		dest: duckv1.Destination{
@@ -692,7 +692,7 @@ func TestAddressableFromDestinationV1(t *testing.T) {
 			addressableWithDifferentAddresses(),
 		},
 		addr:    addressableWithDifferentAddresses(),
-		wantErr: fmt.Sprintf("address with name %q not found for %+v", *addressableKnativeRefWithAddress().Address, addressableKnativeRefWithAddress()),
+		wantErr: fmt.Sprintf("address with name %q not found for %s", *addressableKnativeRefWithAddress().Address, addressableKnativeRefWithAddress()),
 	}, "address and addresses are set but no destination.ref.address is set": {
 		dest: duckv1.Destination{
 			Ref: addressableKnativeRef(),
@@ -704,7 +704,7 @@ func TestAddressableFromDestinationV1(t *testing.T) {
 			addressableWithAddresses(),
 		},
 		addr:        addressableWithAddresses(),
-		wantAddress: addressableName,
+		wantAddress: addrWithNameAndCACerts(),
 	}, "only address is set and no destination.ref.address is set": {
 		dest: duckv1.Destination{
 			Ref: addressableKnativeRef(),
@@ -716,7 +716,7 @@ func TestAddressableFromDestinationV1(t *testing.T) {
 			addressableWithAddressOnly(),
 		},
 		addr:        addressableWithAddressOnly(),
-		wantAddress: addressableName,
+		wantAddress: addrWithNameAndCACerts(),
 	}}
 
 	for n, tc := range tests {
@@ -739,8 +739,10 @@ func TestAddressableFromDestinationV1(t *testing.T) {
 					t.Error("Unexpected error:", gotErr)
 				}
 			}
-			if got, want := *addr.Name, tc.wantAddress; got != want {
+			if got, want := addr, tc.wantAddress; got != want {
 				t.Errorf("Unexpected object (-want, +got) =\n%s", cmp.Diff(want, got))
+				t.Logf("got Name %s, want Name %s", *got.Name, *want.Name)
+				t.Logf("got addr %+v, want addr %+v", got, want)
 			}
 		})
 	}
@@ -1090,7 +1092,7 @@ func addressableNoAddresses() *unstructured.Unstructured {
 			},
 			"status": map[string]interface{}{
 				"address":   map[string]interface{}(nil),
-				"addresses": []map[string]interface{}{},
+				"addresses": []interface{}{},
 			},
 		},
 	}
@@ -1110,19 +1112,21 @@ func addressableWithAddresses() *unstructured.Unstructured {
 					"url":  addressableDNS,
 					"name": addressableName,
 				},
-				"addresses": []map[string]interface{}{{
-					"url":  addressableDNS,
-					"name": addressableName,
-				}, {
-					"url":  addressableDNS1,
-					"name": addressableName1,
-				}, {
-					"url":  addressableDNS2,
-					"name": addressableName2,
-				}, {
-					"url":  addressableDNS3,
-					"name": addressableName3,
-				}},
+				"addresses": []interface{}{
+					map[string]interface{}{
+						"url":  addressableDNS,
+						"name": addressableName,
+					}, map[string]interface{}{
+						"url":  addressableDNS1,
+						"name": addressableName1,
+					}, map[string]interface{}{
+						"url":  addressableDNS2,
+						"name": addressableName2,
+					}, map[string]interface{}{
+						"url":  addressableDNS3,
+						"name": addressableName3,
+					},
+				},
 			},
 		},
 	}
@@ -1142,7 +1146,7 @@ func addressableWithAddressOnly() *unstructured.Unstructured {
 					"url":  addressableDNS,
 					"name": addressableName,
 				},
-				"addresses": []map[string]interface{}{},
+				"addresses": []interface{}{},
 			},
 		},
 	}
@@ -1162,13 +1166,15 @@ func addressableWithDifferentAddresses() *unstructured.Unstructured {
 					"url":  addressableDNS,
 					"name": addressableName,
 				},
-				"addresses": []map[string]interface{}{{
-					"url":  addressableDNS1,
-					"name": addressableName1,
-				}, {
-					"url":  addressableDNS2,
-					"name": addressableName2,
-				}},
+				"addresses": []interface{}{
+					map[string]interface{}{
+						"url":  addressableDNS1,
+						"name": addressableName1,
+					}, map[string]interface{}{
+						"url":  addressableDNS2,
+						"name": addressableName2,
+					},
+				},
 			},
 		},
 	}
@@ -1207,4 +1213,16 @@ func sampleURIResolver(ctx context.Context, ref *corev1.ObjectReference) (bool, 
 
 func noopURIResolver(ctx context.Context, ref *corev1.ObjectReference) (bool, *apis.URL, error) {
 	return false, nil, nil
+}
+
+func addrWithNameAndCACerts() *duckv1.Addressable {
+	addrName := addressableName
+	return &duckv1.Addressable{
+		Name: &addrName,
+		URL: &apis.URL{
+			Host:   "addressable.sink.svc.cluster.local",
+			Scheme: "http",
+			Path:   "/foo",
+		},
+	}
 }
