@@ -24,6 +24,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/equality"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -740,8 +741,8 @@ func TestAddressableFromDestinationV1(t *testing.T) {
 				}
 				return
 			}
-			if got, want := *addr.Name, *tc.wantAddress.Name; got != want {
-				t.Errorf("Unexpected object (-want, +got) =\n%s", cmp.Diff(want, got))
+			if !equality.Semantic.DeepEqual(addr, tc.wantAddress) {
+				t.Errorf("Unexpected object (-want, +got) =\n%s", cmp.Diff(addr, tc.wantAddress))
 			}
 		})
 	}
