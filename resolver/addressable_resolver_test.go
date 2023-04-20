@@ -24,6 +24,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/equality"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -42,10 +43,16 @@ import (
 
 const (
 	addressableDNS                           = "http://addressable.sink.svc.cluster.local"
+	addressableDNS1                          = "http://addressable.sink1.svc.cluster.local"
+	addressableDNS2                          = "http://addressable.sink2.svc.cluster.local"
+	addressableDNS3                          = "http://addressable.sink3.svc.cluster.local"
 	addressableDNSWithPathAndTrailingSlash   = "http://addressable.sink.svc.cluster.local/bar/"
 	addressableDNSWithPathAndNoTrailingSlash = "http://addressable.sink.svc.cluster.local/bar"
 
 	addressableName       = "testsink"
+	addressableName1      = "testsink1"
+	addressableName2      = "testsink2"
+	addressableName3      = "testsink3"
 	addressableKind       = "Sink"
 	addressableAPIVersion = "duck.knative.dev/v1"
 
@@ -55,6 +62,21 @@ const (
 	unaddressableResource   = "kresources.duck.knative.dev"
 
 	testNS = "testnamespace"
+
+	CACert = `-----BEGIN CERTIFICATE-----
+MIICNDCCAaECEAKtZn5ORf5eV288mBle3cAwDQYJKoZIhvcNAQECBQAwXzELMAkG
+A1UEBhMCVVMxIDAeBgNVBAoTF1JTQSBEYXRhIFNlY3VyaXR5LCBJbmMuMS4wLAYD
+VQQLEyVTZWN1cmUgU2VydmVyIENlcnRpZmljYXRpb24gQXV0aG9yaXR5MB4XDTk0
+MTEwOTAwMDAwMFoXDTEwMDEwNzIzNTk1OVowXzELMAkGA1UEBhMCVVMxIDAeBgNV
+BAoTF1JTQSBEYXRhIFNlY3VyaXR5LCBJbmMuMS4wLAYDVQQLEyVTZWN1cmUgU2Vy
+dmVyIENlcnRpZmljYXRpb24gQXV0aG9yaXR5MIGbMA0GCSqGSIb3DQEBAQUAA4GJ
+ADCBhQJ+AJLOesGugz5aqomDV6wlAXYMra6OLDfO6zV4ZFQD5YRAUcm/jwjiioII
+0haGN1XpsSECrXZogZoFokvJSyVmIlZsiAeP94FZbYQHZXATcXY+m3dM41CJVphI
+uR2nKRoTLkoRWZweFdVJVCxzOmmCsZc5nG1wZ0jl3S3WyB57AgMBAAEwDQYJKoZI
+hvcNAQECBQADfgBl3X7hsuyw4jrg7HFGmhkRuNPHoLQDQCYCPgmc4RKz0Vr2N6W3
+YQO2WxZpO8ZECAyIUwxrl0nHPjXcbLm7qt9cuzovk2C2qUtN8iD3zV9/ZHuO3ABc
+1/p3yjkWWW8O6tO1g39NTUJWdrTJXwT4OPjr0l91X817/OWOgHz8UA==
+-----END CERTIFICATE-----`
 )
 
 func init() {
@@ -87,7 +109,7 @@ func TestGetURIDestinationV1Beta1(t *testing.T) {
 		wantURI string
 		wantErr string
 	}{"nil everything": {
-		wantErr: "destination missing Ref, [apiVersion, kind, name] and URI, expected at least one",
+		wantErr: "destination missing Ref and URI, expected at least one",
 	}, "Happy URI with path": {
 		dest: duckv1beta1.Destination{
 			URI: &apis.URL{
@@ -327,26 +349,26 @@ func TestGetURIDestinationV1Beta1(t *testing.T) {
 				addressableNilURL(),
 			},
 			dest:    duckv1beta1.Destination{Ref: unaddressableRef()},
-			wantErr: fmt.Sprintf("URL missing in address of %+v", unaddressableRef()),
+			wantErr: fmt.Sprintf("URL missing in address of %s", unaddressableKnativeRef()),
 		},
 		"nil address": {
 			objects: []runtime.Object{
 				addressableNilAddress(),
 			},
 			dest:    duckv1beta1.Destination{Ref: unaddressableRef()},
-			wantErr: fmt.Sprintf("address not set for %+v", unaddressableRef()),
+			wantErr: fmt.Sprintf("address not set for %s", unaddressableKnativeRef()),
 		}, "missing host": {
 			objects: []runtime.Object{
 				addressableNoHostURL(),
 			},
 			dest:    duckv1beta1.Destination{Ref: unaddressableRef()},
-			wantErr: fmt.Sprintf("hostname missing in address of %+v", unaddressableRef()),
+			wantErr: fmt.Sprintf("hostname missing in address of %s", unaddressableKnativeRef()),
 		}, "missing status": {
 			objects: []runtime.Object{
 				addressableNoStatus(),
 			},
 			dest:    duckv1beta1.Destination{Ref: unaddressableRef()},
-			wantErr: fmt.Sprintf("address not set for %+v", unaddressableRef()),
+			wantErr: fmt.Sprintf("address not set for %s", unaddressableKnativeRef()),
 		}, "notFound": {
 			dest:    duckv1beta1.Destination{Ref: unaddressableRef()},
 			wantErr: fmt.Sprintf("failed to get object %s/%s: %s %q not found", testNS, unaddressableName, unaddressableResource, unaddressableName),
@@ -404,14 +426,14 @@ func TestGetURIDestinationV1(t *testing.T) {
 				Host: "example.com",
 			},
 		},
-		wantErr: fmt.Sprintf("URI is not absolute(both scheme and host should be non-empty): %q", "//example.com"),
+		wantErr: fmt.Sprintf("URI is not absolute (both scheme and host should be non-empty): %q", "//example.com"),
 	}, "URI with no host": {
 		dest: duckv1.Destination{
 			URI: &apis.URL{
 				Scheme: "http",
 			},
 		},
-		wantErr: fmt.Sprintf("URI is not absolute(both scheme and host should be non-empty): %q", "http:"),
+		wantErr: fmt.Sprintf("URI is not absolute (both scheme and host should be non-empty): %q", "http:"),
 	},
 		"happy ref": {
 			objects: []runtime.Object{
@@ -510,26 +532,26 @@ func TestGetURIDestinationV1(t *testing.T) {
 				addressableNilURL(),
 			},
 			dest:    duckv1.Destination{Ref: unaddressableKnativeRef()},
-			wantErr: fmt.Sprintf("URL missing in address of %+v", unaddressableRef()),
+			wantErr: fmt.Sprintf("URL missing in address of %s", unaddressableKnativeRef()),
 		},
 		"nil address": {
 			objects: []runtime.Object{
 				addressableNilAddress(),
 			},
 			dest:    duckv1.Destination{Ref: unaddressableKnativeRef()},
-			wantErr: fmt.Sprintf("address not set for %+v", unaddressableRef()),
+			wantErr: fmt.Sprintf("address not set for %s", unaddressableKnativeRef()),
 		}, "missing host": {
 			objects: []runtime.Object{
 				addressableNoHostURL(),
 			},
 			dest:    duckv1.Destination{Ref: unaddressableKnativeRef()},
-			wantErr: fmt.Sprintf("hostname missing in address of %+v", unaddressableRef()),
+			wantErr: fmt.Sprintf("hostname missing in address of %s", unaddressableKnativeRef()),
 		}, "missing status": {
 			objects: []runtime.Object{
 				addressableNoStatus(),
 			},
 			dest:    duckv1.Destination{Ref: unaddressableKnativeRef()},
-			wantErr: fmt.Sprintf("address not set for %+v", unaddressableRef()),
+			wantErr: fmt.Sprintf("address not set for %s", unaddressableKnativeRef()),
 		}, "notFound": {
 			dest:    duckv1.Destination{Ref: unaddressableKnativeRef()},
 			wantErr: fmt.Sprintf("failed to get object %s/%s: %s %q not found", testNS, unaddressableName, unaddressableResource, unaddressableName),
@@ -623,6 +645,232 @@ Namespace: a lowercase RFC 1123 label must consist of lower case alphanumeric ch
 			}
 			if err1.Error() != err2.Error() {
 				t.Errorf("Idempotency fail: first err = %+v, second err = %+v", err1, err2)
+			}
+		})
+	}
+}
+
+func TestAddressableFromDestinationV1(t *testing.T) {
+	tests := map[string]struct {
+		objects         []runtime.Object
+		dest            duckv1.Destination
+		addr            *unstructured.Unstructured
+		customResolvers []resolver.RefResolverFunc
+		wantAddress     *duckv1.Addressable
+		wantErr         string
+	}{"address and addresses are not set": {
+		dest: duckv1.Destination{
+			Ref: addressableKnativeRef(),
+			URI: &apis.URL{
+				Path: "/foo",
+			},
+		},
+		objects: []runtime.Object{
+			addressableNoAddresses(),
+		},
+		addr:    addressableNoAddresses(),
+		wantErr: fmt.Sprintf("address not set for %s", addressableKnativeRef()),
+	}, "ref.address is set on destination and is present in target addressable addresses": {
+		dest: duckv1.Destination{
+			Ref: addressableKnativeRefWithAddress(),
+			URI: &apis.URL{
+				Path: "/foo",
+			},
+		},
+		objects: []runtime.Object{
+			addressableWithAddresses(),
+		},
+		wantAddress: addrWithNameAndCACerts(),
+		addr:        addressableWithAddresses(),
+	}, "ref.address is set on destination and is NOT present in target addressable addresses": {
+		dest: duckv1.Destination{
+			Ref: addressableKnativeRefWithAddress(),
+			URI: &apis.URL{
+				Path: "/foo",
+			},
+		},
+		objects: []runtime.Object{
+			addressableWithDifferentAddresses(),
+		},
+		addr:    addressableWithDifferentAddresses(),
+		wantErr: fmt.Sprintf("address with name %q not found for %s", *addressableKnativeRefWithAddress().Address, addressableKnativeRefWithAddress()),
+	}, "address and addresses are set but no destination.ref.address is set": {
+		dest: duckv1.Destination{
+			Ref: addressableKnativeRef(),
+			URI: &apis.URL{
+				Path: "/foo",
+			},
+		},
+		objects: []runtime.Object{
+			addressableWithAddresses(),
+		},
+		addr:        addressableWithAddresses(),
+		wantAddress: addrWithNameAndCACerts(),
+	}, "only address is set and no destination.ref.address is set": {
+		dest: duckv1.Destination{
+			Ref: addressableKnativeRef(),
+			URI: &apis.URL{
+				Path: "/foo",
+			},
+		},
+		objects: []runtime.Object{
+			addressableWithAddressOnly(),
+		},
+		addr:        addressableWithAddressOnly(),
+		wantAddress: addrWithNameAndCACerts(),
+	}}
+
+	for n, tc := range tests {
+		t.Run(n, func(t *testing.T) {
+			ctx, _ := fakedynamicclient.With(context.Background(), scheme.Scheme, tc.objects...)
+			ctx = addressable.WithDuck(ctx)
+			r := resolver.NewURIResolverFromTracker(ctx, tracker.New(func(types.NamespacedName) {}, 0), tc.customResolvers...)
+
+			// Run it twice since this should be idempotent. URI Resolver should
+			// not modify the cache's copy.
+			_, _ = r.AddressableFromDestinationV1(ctx, tc.dest, tc.addr)
+			addr, gotErr := r.AddressableFromDestinationV1(ctx, tc.dest, tc.addr)
+
+			if gotErr != nil {
+				if tc.wantErr != "" {
+					if got, want := gotErr.Error(), tc.wantErr; got != want {
+						t.Errorf("Unexpected error (-want, +got) =\n%s", cmp.Diff(want, got))
+					}
+				} else {
+					t.Error("Unexpected error:", gotErr)
+				}
+				return
+			}
+			if !equality.Semantic.DeepEqual(addr, tc.wantAddress) {
+				t.Errorf("Unexpected object (-want, +got) =\n%s", cmp.Diff(addr, tc.wantAddress))
+			}
+		})
+	}
+}
+
+func TestAddressableFromDestinationScheme(t *testing.T) {
+	cert := CACert
+	tests := map[string]struct {
+		objects         []runtime.Object
+		dest            duckv1.Destination
+		addr            *unstructured.Unstructured
+		customResolvers []resolver.RefResolverFunc
+		wantScheme      string
+		wantErr         string
+	}{"destination is a raw k8s serving and there is CACerts set ": {
+		dest: duckv1.Destination{
+			Ref: k8sServiceRef(),
+			URI: &apis.URL{
+				Path: "/foo",
+			},
+			CACerts: &cert,
+		},
+		objects: []runtime.Object{
+			getAddressableFromKRef(k8sServiceRef()),
+		},
+		wantScheme: "https",
+		addr:       addressableWithAddresses(),
+	}}
+
+	for n, tc := range tests {
+		t.Run(n, func(t *testing.T) {
+			ctx, _ := fakedynamicclient.With(context.Background(), scheme.Scheme, tc.objects...)
+			ctx = addressable.WithDuck(ctx)
+			r := resolver.NewURIResolverFromTracker(ctx, tracker.New(func(types.NamespacedName) {}, 0), tc.customResolvers...)
+
+			// Run it twice since this should be idempotent. URI Resolver should
+			// not modify the cache's copy.
+			_, _ = r.AddressableFromDestinationV1(ctx, tc.dest, tc.addr)
+			addr, gotErr := r.AddressableFromDestinationV1(ctx, tc.dest, tc.addr)
+
+			if gotErr != nil {
+				if tc.wantErr != "" {
+					if got, want := gotErr.Error(), tc.wantErr; got != want {
+						t.Errorf("Unexpected error (-want, +got) =\n%s", cmp.Diff(want, got))
+					}
+				} else {
+					t.Error("Unexpected error:", gotErr)
+				}
+			}
+			if got, want := addr.URL.Scheme, tc.wantScheme; got != want {
+				t.Errorf("Unexpected object (-want, +got) =\n%s", cmp.Diff(want, got))
+			}
+		})
+	}
+}
+
+func TestAddressableFromDestinationV1CACerts(t *testing.T) {
+	certDestination := "CA CERT FOR DESTINATION"
+	tests := map[string]struct {
+		objects         []runtime.Object
+		dest            duckv1.Destination
+		addr            *unstructured.Unstructured
+		customResolvers []resolver.RefResolverFunc
+		wantCert        string
+		wantErr         string
+	}{"CACerts is set on the target addressable": {
+		dest: duckv1.Destination{
+			Ref: addressableKnativeRef(),
+			URI: &apis.URL{
+				Path: "/foo",
+			},
+		},
+		objects: []runtime.Object{
+			addressableWithCACert(),
+		},
+		addr:     addressableWithCACert(),
+		wantErr:  fmt.Sprintf("address with name %q not found for %+v", *addressableKnativeRefWithAddress().Address, addressableKnativeRefWithAddress()),
+		wantCert: CACert,
+	}, "CACerts is not set on the target addressable but it is set on the destination": {
+		dest: duckv1.Destination{
+			Ref: addressableKnativeRef(),
+			URI: &apis.URL{
+				Path: "/foo",
+			},
+			CACerts: &certDestination,
+		},
+		objects: []runtime.Object{
+			addressableWithAddresses(),
+		},
+		addr:     addressableWithAddresses(),
+		wantCert: certDestination,
+	}, "CACerts is set on the target addressable and it is set on the destination": {
+		dest: duckv1.Destination{
+			Ref: addressableKnativeRef(),
+			URI: &apis.URL{
+				Path: "/foo",
+			},
+			CACerts: &certDestination,
+		},
+		objects: []runtime.Object{
+			addressableWithCACert(),
+		},
+		addr:     addressableWithCACert(),
+		wantCert: CACert,
+	}}
+
+	for n, tc := range tests {
+		t.Run(n, func(t *testing.T) {
+			ctx, _ := fakedynamicclient.With(context.Background(), scheme.Scheme, tc.objects...)
+			ctx = addressable.WithDuck(ctx)
+			r := resolver.NewURIResolverFromTracker(ctx, tracker.New(func(types.NamespacedName) {}, 0), tc.customResolvers...)
+
+			// Run it twice since this should be idempotent. URI Resolver should
+			// not modify the cache's copy.
+			_, _ = r.AddressableFromDestinationV1(ctx, tc.dest, tc.addr)
+			addr, gotErr := r.AddressableFromDestinationV1(ctx, tc.dest, tc.addr)
+
+			if gotErr != nil {
+				if tc.wantErr != "" {
+					if got, want := gotErr.Error(), tc.wantErr; got != want {
+						t.Errorf("Unexpected error (-want, +got) =\n%s", cmp.Diff(want, got))
+					}
+				} else {
+					t.Error("Unexpected error:", gotErr)
+				}
+			}
+			if got, want := *addr.CACerts, tc.wantCert; got != want {
+				t.Errorf("Unexpected object (-want, +got) =\n%s", cmp.Diff(want, got))
 			}
 		})
 	}
@@ -776,6 +1024,17 @@ func addressableKnativeRef() *duckv1.KReference {
 	}
 }
 
+func addressableKnativeRefWithAddress() *duckv1.KReference {
+	address := addressableName
+	return &duckv1.KReference{
+		Kind:       addressableKind,
+		Name:       addressableName,
+		APIVersion: addressableAPIVersion,
+		Namespace:  testNS,
+		Address:    &address,
+	}
+}
+
 func addressableRef() *corev1.ObjectReference {
 	return &corev1.ObjectReference{
 		Kind:       addressableKind,
@@ -814,7 +1073,127 @@ func getAddressableFromKRef(ref *duckv1.KReference) *unstructured.Unstructured {
 			},
 			"status": map[string]interface{}{
 				"address": map[string]interface{}{
-					"url": addressableDNS,
+					"url":  addressableDNS,
+					"name": addressableDNS,
+				},
+			},
+		},
+	}
+}
+
+func addressableNoAddresses() *unstructured.Unstructured {
+	return &unstructured.Unstructured{
+		Object: map[string]interface{}{
+			"apiVersion": addressableAPIVersion,
+			"kind":       addressableKind,
+			"metadata": map[string]interface{}{
+				"namespace": testNS,
+				"name":      addressableName,
+			},
+			"status": map[string]interface{}{
+				"address":   map[string]interface{}(nil),
+				"addresses": []interface{}{},
+			},
+		},
+	}
+}
+
+func addressableWithAddresses() *unstructured.Unstructured {
+	return &unstructured.Unstructured{
+		Object: map[string]interface{}{
+			"apiVersion": addressableAPIVersion,
+			"kind":       addressableKind,
+			"metadata": map[string]interface{}{
+				"namespace": testNS,
+				"name":      addressableName,
+			},
+			"status": map[string]interface{}{
+				"address": map[string]interface{}{
+					"url":  addressableDNS,
+					"name": addressableName,
+				},
+				"addresses": []interface{}{
+					map[string]interface{}{
+						"url":  addressableDNS,
+						"name": addressableName,
+					}, map[string]interface{}{
+						"url":  addressableDNS1,
+						"name": addressableName1,
+					}, map[string]interface{}{
+						"url":  addressableDNS2,
+						"name": addressableName2,
+					}, map[string]interface{}{
+						"url":  addressableDNS3,
+						"name": addressableName3,
+					},
+				},
+			},
+		},
+	}
+}
+
+func addressableWithAddressOnly() *unstructured.Unstructured {
+	return &unstructured.Unstructured{
+		Object: map[string]interface{}{
+			"apiVersion": addressableAPIVersion,
+			"kind":       addressableKind,
+			"metadata": map[string]interface{}{
+				"namespace": testNS,
+				"name":      addressableName,
+			},
+			"status": map[string]interface{}{
+				"address": map[string]interface{}{
+					"url":  addressableDNS,
+					"name": addressableName,
+				},
+				"addresses": []interface{}{},
+			},
+		},
+	}
+}
+
+func addressableWithDifferentAddresses() *unstructured.Unstructured {
+	return &unstructured.Unstructured{
+		Object: map[string]interface{}{
+			"apiVersion": addressableAPIVersion,
+			"kind":       addressableKind,
+			"metadata": map[string]interface{}{
+				"namespace": testNS,
+				"name":      addressableName,
+			},
+			"status": map[string]interface{}{
+				"address": map[string]interface{}{
+					"url":  addressableDNS,
+					"name": addressableName,
+				},
+				"addresses": []interface{}{
+					map[string]interface{}{
+						"url":  addressableDNS1,
+						"name": addressableName1,
+					}, map[string]interface{}{
+						"url":  addressableDNS2,
+						"name": addressableName2,
+					},
+				},
+			},
+		},
+	}
+}
+
+func addressableWithCACert() *unstructured.Unstructured {
+	return &unstructured.Unstructured{
+		Object: map[string]interface{}{
+			"apiVersion": addressableAPIVersion,
+			"kind":       addressableKind,
+			"metadata": map[string]interface{}{
+				"namespace": testNS,
+				"name":      addressableName,
+			},
+			"status": map[string]interface{}{
+				"address": map[string]interface{}{
+					"url":     addressableDNS,
+					"name":    addressableName,
+					"CACerts": CACert,
 				},
 			},
 		},
@@ -834,4 +1213,16 @@ func sampleURIResolver(ctx context.Context, ref *corev1.ObjectReference) (bool, 
 
 func noopURIResolver(ctx context.Context, ref *corev1.ObjectReference) (bool, *apis.URL, error) {
 	return false, nil, nil
+}
+
+func addrWithNameAndCACerts() *duckv1.Addressable {
+	addrName := addressableName
+	return &duckv1.Addressable{
+		Name: &addrName,
+		URL: &apis.URL{
+			Host:   "addressable.sink.svc.cluster.local",
+			Scheme: "http",
+			Path:   "/foo",
+		},
+	}
 }
