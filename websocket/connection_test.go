@@ -29,33 +29,20 @@ import (
 
 	"k8s.io/apimachinery/pkg/util/wait"
 
-	"github.com/gorilla/websocket"
+	"github.com/gobwas/ws"
 )
 
 const propagationTimeout = 5 * time.Second
 
 type inspectableConnection struct {
-	nextReaderCalls      chan struct{}
-	writeMessageCalls    chan struct{}
-	closeCalls           chan struct{}
-	setReadDeadlineCalls chan struct{}
-	setPongHandlerCalls  chan struct{}
+	closeCalls              chan struct{}
+	setReadDeadlineCalls    chan struct{}
+	writeClientMessageCalls chan struct{}
+	nextReaderCalls         chan struct{}
 
-	nextReaderFunc func() (int, io.Reader, error)
-}
-
-func (c *inspectableConnection) WriteMessage(messageType int, data []byte) error {
-	if c.writeMessageCalls != nil {
-		c.writeMessageCalls <- struct{}{}
-	}
-	return nil
-}
-
-func (c *inspectableConnection) NextReader() (int, io.Reader, error) {
-	if c.nextReaderCalls != nil {
-		c.nextReaderCalls <- struct{}{}
-	}
-	return c.nextReaderFunc()
+	readFunc       func() (int, error)
+	writeFunc      func() (int, error)
+	nextReaderFunc func() (ws.Header, io.Reader, error)
 }
 
 func (c *inspectableConnection) Close() error {
@@ -72,10 +59,26 @@ func (c *inspectableConnection) SetReadDeadline(deadline time.Time) error {
 	return nil
 }
 
-func (c *inspectableConnection) SetPongHandler(func(string) error) {
-	if c.setPongHandlerCalls != nil {
-		c.setPongHandlerCalls <- struct{}{}
+func (c *inspectableConnection) Read(p []byte) (n int, err error) {
+	return c.readFunc()
+}
+
+func (c *inspectableConnection) Write(p []byte) (n int, err error) {
+	return c.writeFunc()
+}
+
+func (c *inspectableConnection) WriteClientMessage(w io.Writer, op ws.OpCode, p []byte) error {
+	if c.writeClientMessageCalls != nil {
+		c.writeClientMessageCalls <- struct{}{}
 	}
+	return nil
+}
+
+func (c *inspectableConnection) NextReader(r io.Reader, s ws.State) (ws.Header, io.Reader, error) {
+	if c.nextReaderCalls != nil {
+		c.nextReaderCalls <- struct{}{}
+	}
+	return c.nextReaderFunc()
 }
 
 // staticConnFactory returns a static connection, for example
@@ -100,7 +103,6 @@ func TestRetriesWhileConnect(t *testing.T) {
 	spy := &inspectableConnection{
 		closeCalls:           make(chan struct{}, 1),
 		setReadDeadlineCalls: make(chan struct{}, 1),
-		setPongHandlerCalls:  make(chan struct{}, 1),
 	}
 
 	connFactory := func() (rawConnection, error) {
@@ -122,9 +124,6 @@ func TestRetriesWhileConnect(t *testing.T) {
 	// We want a readDeadline and a pongHandler to be set on the final connection.
 	if got, want := len(spy.setReadDeadlineCalls), 1; got != want {
 		t.Fatalf("Got %d 'SetReadDeadline' calls, want %d", got, want)
-	}
-	if got, want := len(spy.setPongHandlerCalls), 1; got != want {
-		t.Fatalf("Got %d 'SetPongHandler' calls, want %d", got, want)
 	}
 
 	if len(spy.closeCalls) != 1 {
@@ -156,7 +155,7 @@ func TestStatusOnNoConnection(t *testing.T) {
 
 func TestSendErrorOnEncode(t *testing.T) {
 	spy := &inspectableConnection{
-		writeMessageCalls: make(chan struct{}, 1),
+		writeClientMessageCalls: make(chan struct{}, 1),
 	}
 	conn := newConnection(staticConnFactory(spy), nil)
 	conn.connect()
@@ -166,14 +165,14 @@ func TestSendErrorOnEncode(t *testing.T) {
 	if got == nil {
 		t.Fatal("Expected an error but got none")
 	}
-	if len(spy.writeMessageCalls) != 0 {
-		t.Fatalf("Expected 'WriteMessage' not to be called, but was called %v times", spy.writeMessageCalls)
+	if len(spy.writeClientMessageCalls) != 0 {
+		t.Fatalf("Expected 'WriteClientMessage' not to be called, but was called %v times", spy.writeClientMessageCalls)
 	}
 }
 
 func TestSendMessage(t *testing.T) {
 	spy := &inspectableConnection{
-		writeMessageCalls: make(chan struct{}, 1),
+		writeClientMessageCalls: make(chan struct{}, 1),
 	}
 	conn := newConnection(staticConnFactory(spy), nil)
 	conn.connect()
@@ -185,14 +184,14 @@ func TestSendMessage(t *testing.T) {
 	if got := conn.Send("test"); got != nil {
 		t.Fatalf("Expected no error but got: %+v", got)
 	}
-	if len(spy.writeMessageCalls) != 1 {
-		t.Fatalf("Expected 'WriteMessage' to be called once, but was called %v times", spy.writeMessageCalls)
+	if len(spy.writeClientMessageCalls) != 1 {
+		t.Fatalf("Expected 'WriteClientMessage' to be called once, but was called %v times", spy.writeClientMessageCalls)
 	}
 }
 
 func TestSendRawMessage(t *testing.T) {
 	spy := &inspectableConnection{
-		writeMessageCalls: make(chan struct{}, 1),
+		writeClientMessageCalls: make(chan struct{}, 1),
 	}
 	conn := newConnection(staticConnFactory(spy), nil)
 	conn.connect()
@@ -201,22 +200,24 @@ func TestSendRawMessage(t *testing.T) {
 		t.Errorf("Status() = %v, wanted nil", got)
 	}
 
-	if got := conn.SendRaw(websocket.BinaryMessage, []byte("test")); got != nil {
+	if got := conn.SendRaw(ws.OpBinary, []byte("test")); got != nil {
 		t.Fatalf("Expected no error but got: %+v", got)
 	}
-	if len(spy.writeMessageCalls) != 1 {
-		t.Fatalf("Expected 'WriteMessage' to be called once, but was called %v times", spy.writeMessageCalls)
+	if len(spy.writeClientMessageCalls) != 1 {
+		t.Fatalf("Expected 'WriteClientMessage' to be called once, but was called %v times", spy.writeClientMessageCalls)
 	}
 }
 
 func TestReceiveMessage(t *testing.T) {
 	testMessage := "testmessage"
+	header := ws.Header{
+		OpCode: ws.OpText,
+	}
 
 	spy := &inspectableConnection{
-		writeMessageCalls: make(chan struct{}, 1),
-		nextReaderCalls:   make(chan struct{}, 1),
-		nextReaderFunc: func() (int, io.Reader, error) {
-			return websocket.TextMessage, strings.NewReader(testMessage), nil
+		nextReaderCalls: make(chan struct{}, 1),
+		nextReaderFunc: func() (ws.Header, io.Reader, error) {
+			return header, strings.NewReader(testMessage), nil
 		},
 	}
 
@@ -299,9 +300,13 @@ func TestConnectLoopIsStopped(t *testing.T) {
 }
 
 func TestKeepaliveLoopIsStopped(t *testing.T) {
+	header := ws.Header{
+		OpCode: ws.OpText,
+	}
+
 	spy := &inspectableConnection{
-		nextReaderFunc: func() (int, io.Reader, error) {
-			return websocket.TextMessage, nil, nil
+		nextReaderFunc: func() (ws.Header, io.Reader, error) {
+			return header, nil, nil
 		},
 	}
 	conn := newConnection(staticConnFactory(spy), nil)
@@ -342,9 +347,9 @@ func TestDurableConnectionWhenConnectionBreaksDown(t *testing.T) {
 	const testPayload = "test"
 	reconnectChan := make(chan struct{})
 
-	upgrader := websocket.Upgrader{}
+	upgrader := ws.HTTPUpgrader{}
 	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		c, err := upgrader.Upgrade(w, r, nil)
+		c, _, _, err := upgrader.Upgrade(r, w)
 		if err != nil {
 			return
 		}
@@ -385,24 +390,23 @@ func TestDurableConnectionSendsPingsRegularly(t *testing.T) {
 		pongTimeout = pingTimeoutBackup
 	})
 
-	upgrader := websocket.Upgrader{}
+	upgrader := ws.HTTPUpgrader{}
 
 	pingReceived := make(chan struct{})
 	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		c, err := upgrader.Upgrade(w, r, nil)
+		c, _, _, err := upgrader.Upgrade(r, w)
 		if err != nil {
 			return
 		}
 
-		c.SetPingHandler(func(_ string) error {
-			pingReceived <- struct{}{}
-			return c.WriteMessage(websocket.PongMessage, []byte{})
-		})
-
 		for {
-			_, _, err := c.ReadMessage()
+			frame, err := ws.ReadFrame(c)
 			if err != nil {
 				break
+			}
+			if frame.Header.OpCode == ws.OpPing {
+				pingReceived <- struct{}{}
+				ws.WriteFrame(c, ws.NewPongFrame(frame.Payload))
 			}
 		}
 	}))
@@ -430,9 +434,9 @@ func TestNewDurableSendingConnectionGuaranteed(t *testing.T) {
 	// Happy case.
 	const testPayload = "test"
 	reconnectChan := make(chan struct{})
-	upgrader := websocket.Upgrader{}
+	upgrader := ws.HTTPUpgrader{}
 	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		c, err := upgrader.Upgrade(w, r, nil)
+		c, _, _, err := upgrader.Upgrade(r, w)
 		if err != nil {
 			return
 		}

@@ -18,11 +18,12 @@ package websocket
 
 import (
 	"bytes"
+	"context"
 	"encoding/gob"
 	"errors"
 	"fmt"
 	"io"
-	"net/http/httputil"
+	"net"
 	"sync"
 	"time"
 
@@ -30,7 +31,8 @@ import (
 
 	"k8s.io/apimachinery/pkg/util/wait"
 
-	"github.com/gorilla/websocket"
+	"github.com/gobwas/ws"
+	"github.com/gobwas/ws/wsutil"
 )
 
 var (
@@ -49,12 +51,40 @@ var (
 // RawConnection is an interface defining the methods needed
 // from a websocket connection
 type rawConnection interface {
-	WriteMessage(messageType int, data []byte) error
-	NextReader() (int, io.Reader, error)
 	Close() error
-
 	SetReadDeadline(deadline time.Time) error
-	SetPongHandler(func(string) error)
+	Read(p []byte) (n int, err error)
+	Write(p []byte) (n int, err error)
+	WriteClientMessage(w io.Writer, op ws.OpCode, p []byte) error
+	NextReader(r io.Reader, s ws.State) (ws.Header, io.Reader, error)
+}
+
+type netConnExtension struct {
+	conn net.Conn
+}
+
+func (nc *netConnExtension) Read(p []byte) (n int, err error) {
+	return nc.conn.Read(p)
+}
+
+func (nc *netConnExtension) Write(p []byte) (n int, err error) {
+	return nc.conn.Write(p)
+}
+
+func (nc *netConnExtension) Close() error {
+	return nc.conn.Close()
+}
+
+func (nc *netConnExtension) SetReadDeadline(deadline time.Time) error {
+	return nc.conn.SetReadDeadline(deadline)
+}
+
+func (nc *netConnExtension) WriteClientMessage(w io.Writer, op ws.OpCode, p []byte) error {
+	return wsutil.WriteClientMessage(w, op, p)
+}
+
+func (nc *netConnExtension) NextReader(r io.Reader, s ws.State) (ws.Header, io.Reader, error) {
+	return wsutil.NextReader(r, s)
 }
 
 // ManagedConnection represents a websocket connection.
@@ -128,23 +158,24 @@ func NewDurableSendingConnectionGuaranteed(target string, duration time.Duration
 // go func() {conn.Shutdown(); close(messageChan)}
 // go func() {for range messageChan {}}
 func NewDurableConnection(target string, messageChan chan []byte, logger *zap.SugaredLogger) *ManagedConnection {
+	ctx := context.TODO()
 	websocketConnectionFactory := func() (rawConnection, error) {
-		dialer := &websocket.Dialer{
+		dialer := &ws.Dialer{
 			// This needs to be relatively short to avoid the connection getting blackholed for a long time
 			// by restarting the serving side of the connection behind a Kubernetes Service.
-			HandshakeTimeout: 3 * time.Second,
+			Timeout: 3 * time.Second,
 		}
-		conn, resp, err := dialer.Dial(target, nil)
+
+		conn, _, _, err := dialer.Dial(ctx, target)
 		if err != nil {
-			if resp != nil {
-				dresp, _ := httputil.DumpResponse(resp, true /*body*/) // This is for logging so don't care if it fails.
-				logger.Errorw("Websocket connection could not be established", zap.Error(err),
-					zap.String("request", string(dresp)))
-			} else {
+			if err != nil {
 				logger.Errorw("Websocket connection could not be established", zap.Error(err))
 			}
 		}
-		return conn, err
+		nc := &netConnExtension{
+			conn: conn,
+		}
+		return nc, err
 	}
 
 	c := newConnection(websocketConnectionFactory, messageChan)
@@ -187,7 +218,7 @@ func NewDurableConnection(target string, messageChan chan []byte, logger *zap.Su
 		for {
 			select {
 			case <-ticker.C:
-				if err := c.write(websocket.PingMessage, []byte{}); err != nil {
+				if err := c.write(ws.OpPing, []byte{}); err != nil {
 					logger.Errorw("Failed to send ping message to "+target, zap.Error(err))
 				}
 			case <-c.closeChan:
@@ -232,10 +263,6 @@ func (c *ManagedConnection) connect() error {
 			// time we receive a pong message so we know the connection
 			// is still intact.
 			conn.SetReadDeadline(time.Now().Add(pongTimeout))
-			conn.SetPongHandler(func(string) error {
-				conn.SetReadDeadline(time.Now().Add(pongTimeout))
-				return nil
-			})
 
 			c.connectionLock.Lock()
 			defer c.connectionLock.Unlock()
@@ -292,7 +319,10 @@ func (c *ManagedConnection) read() error {
 	c.readerLock.Lock()
 	defer c.readerLock.Unlock()
 
-	messageType, reader, err := c.connection.NextReader()
+	c.connection.SetReadDeadline(time.Now().Add(pongTimeout))
+
+	header, reader, err := c.connection.NextReader(c.connection, ws.StateClientSide)
+	messageType := header.OpCode
 	if err != nil {
 		return err
 	}
@@ -300,7 +330,7 @@ func (c *ManagedConnection) read() error {
 	// Send the message to the channel if its an application level message
 	// and if that channel is set.
 	// TODO(markusthoemmes): Return the messageType along with the payload.
-	if c.messageChan != nil && (messageType == websocket.TextMessage || messageType == websocket.BinaryMessage) {
+	if c.messageChan != nil && (messageType == ws.OpText || messageType == ws.OpBinary) {
 		if message, _ := io.ReadAll(reader); message != nil {
 			c.messageChan <- message
 		}
@@ -309,7 +339,7 @@ func (c *ManagedConnection) read() error {
 	return nil
 }
 
-func (c *ManagedConnection) write(messageType int, body []byte) error {
+func (c *ManagedConnection) write(messageType ws.OpCode, body []byte) error {
 	c.connectionLock.RLock()
 	defer c.connectionLock.RUnlock()
 
@@ -319,8 +349,7 @@ func (c *ManagedConnection) write(messageType int, body []byte) error {
 
 	c.writerLock.Lock()
 	defer c.writerLock.Unlock()
-
-	return c.connection.WriteMessage(messageType, body)
+	return c.connection.WriteClientMessage(c.connection, messageType, body)
 }
 
 // Status checks the connection status of the webhook.
@@ -342,11 +371,11 @@ func (c *ManagedConnection) Send(msg interface{}) error {
 		return err
 	}
 
-	return c.write(websocket.BinaryMessage, b.Bytes())
+	return c.write(ws.OpBinary, b.Bytes())
 }
 
 // SendRaw sends a message over the websocket connection without performing any encoding.
-func (c *ManagedConnection) SendRaw(messageType int, msg []byte) error {
+func (c *ManagedConnection) SendRaw(messageType ws.OpCode, msg []byte) error {
 	return c.write(messageType, msg)
 }
 
