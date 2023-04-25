@@ -18,6 +18,8 @@ package defaulting
 
 import (
 	"context"
+	"fmt"
+	"strings"
 
 	// Injection stuff
 	kubeclient "knative.dev/pkg/client/injection/kube/client"
@@ -90,7 +92,8 @@ func NewAdmissionController(
 	}
 
 	logger := logging.FromContext(ctx)
-	const queueName = "DefaultingWebhook"
+	queueName := fmt.Sprintf("DefaultingWebhook.%s", path)
+	queueName = strings.ReplaceAll(queueName, "/", ".")
 	c := controller.NewContext(ctx, wh, controller.ControllerOptions{WorkQueueName: queueName, Logger: logger.Named(queueName)})
 
 	// Reconcile when the named MutatingWebhookConfiguration changes.

@@ -18,6 +18,8 @@ package conversion
 
 import (
 	"context"
+	"fmt"
+	"strings"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -117,7 +119,8 @@ func NewConversionController(
 		crdLister:    crdInformer.Lister(),
 	}
 
-	const queueName = "ConversionWebhook"
+	queueName := fmt.Sprintf("ConversionWebhook.%s", path)
+	queueName = strings.ReplaceAll(queueName, "/", ".")
 	logger := logging.FromContext(ctx)
 	c := controller.NewContext(ctx, r, controller.ControllerOptions{WorkQueueName: queueName, Logger: logger.Named(queueName)})
 
