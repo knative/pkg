@@ -52,29 +52,29 @@ func (c *inspectableConnection) Close() error {
 	return nil
 }
 
-func (c *inspectableConnection) SetReadDeadline(deadline time.Time) error {
+func (c *inspectableConnection) SetReadDeadline(_ time.Time) error {
 	if c.setReadDeadlineCalls != nil {
 		c.setReadDeadlineCalls <- struct{}{}
 	}
 	return nil
 }
 
-func (c *inspectableConnection) Read(p []byte) (n int, err error) {
+func (c *inspectableConnection) Read(_ []byte) (n int, err error) {
 	return c.readFunc()
 }
 
-func (c *inspectableConnection) Write(p []byte) (n int, err error) {
+func (c *inspectableConnection) Write(_ []byte) (n int, err error) {
 	return c.writeFunc()
 }
 
-func (c *inspectableConnection) WriteClientMessage(w io.Writer, op ws.OpCode, p []byte) error {
+func (c *inspectableConnection) WriteClientMessage(_ io.Writer, _ ws.OpCode, _ []byte) error {
 	if c.writeClientMessageCalls != nil {
 		c.writeClientMessageCalls <- struct{}{}
 	}
 	return nil
 }
 
-func (c *inspectableConnection) NextReader(r io.Reader, s ws.State) (ws.Header, io.Reader, error) {
+func (c *inspectableConnection) NextReader(_ io.Reader, _ ws.State) (ws.Header, io.Reader, error) {
 	if c.nextReaderCalls != nil {
 		c.nextReaderCalls <- struct{}{}
 	}
