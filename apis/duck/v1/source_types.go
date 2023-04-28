@@ -88,7 +88,7 @@ type SourceStatus struct {
 	// SinkCACerts are Certification Authority (CA) certificates in PEM format
 	// according to https://www.rfc-editor.org/rfc/rfc7468.
 	// +optional
-	SinkCACerts *string `json:”sinkCACerts,omitempty”`
+	SinkCACerts *string `json:"sinkCACerts,omitempty"`
 }
 
 // CloudEventAttributes specifies the attributes that a Source
