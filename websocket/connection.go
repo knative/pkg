@@ -55,36 +55,56 @@ type rawConnection interface {
 	SetReadDeadline(deadline time.Time) error
 	Read(p []byte) (n int, err error)
 	Write(p []byte) (n int, err error)
-	WriteClientMessage(w io.Writer, op ws.OpCode, p []byte) error
-	NextReader(r io.Reader, s ws.State) (ws.Header, io.Reader, error)
+	WriteMessage(op ws.OpCode, p []byte) error
+	NextReader() (ws.Header, io.Reader, error)
+	ReadMessage() (messageType ws.OpCode, p []byte, err error)
 }
 
-type netConnExtension struct {
+type NetConnExtension struct {
 	conn net.Conn
 }
 
-func (nc *netConnExtension) Read(p []byte) (n int, err error) {
+func NewNetConnExtension(conn net.Conn) *NetConnExtension {
+	nc := &NetConnExtension{
+		conn: conn,
+	}
+	return nc
+}
+
+func (nc *NetConnExtension) Read(p []byte) (n int, err error) {
 	return nc.conn.Read(p)
 }
 
-func (nc *netConnExtension) Write(p []byte) (n int, err error) {
+func (nc *NetConnExtension) Write(p []byte) (n int, err error) {
 	return nc.conn.Write(p)
 }
 
-func (nc *netConnExtension) Close() error {
+func (nc *NetConnExtension) Close() error {
 	return nc.conn.Close()
 }
 
-func (nc *netConnExtension) SetReadDeadline(deadline time.Time) error {
+func (nc *NetConnExtension) SetReadDeadline(deadline time.Time) error {
 	return nc.conn.SetReadDeadline(deadline)
 }
 
-func (nc *netConnExtension) WriteClientMessage(w io.Writer, op ws.OpCode, p []byte) error {
-	return wsutil.WriteClientMessage(w, op, p)
+func (nc *NetConnExtension) WriteMessage(op ws.OpCode, p []byte) error {
+	return wsutil.WriteClientMessage(nc, op, p)
 }
 
-func (nc *netConnExtension) NextReader(r io.Reader, s ws.State) (ws.Header, io.Reader, error) {
-	return wsutil.NextReader(r, s)
+func (nc *NetConnExtension) NextReader() (ws.Header, io.Reader, error) {
+	return wsutil.NextReader(nc, ws.StateServerSide)
+}
+
+func (nc *NetConnExtension) ReadMessage() (messageType ws.OpCode, p []byte, err error) {
+	var r io.Reader
+	var header ws.Header
+	header, r, err = nc.NextReader()
+	messageType = header.OpCode
+	if err != nil {
+		return messageType, nil, err
+	}
+	p, err = io.ReadAll(r)
+	return messageType, p, err
 }
 
 // ManagedConnection represents a websocket connection.
@@ -172,7 +192,7 @@ func NewDurableConnection(target string, messageChan chan []byte, logger *zap.Su
 				logger.Errorw("Websocket connection could not be established", zap.Error(err))
 			}
 		}
-		nc := &netConnExtension{
+		nc := &NetConnExtension{
 			conn: conn,
 		}
 		return nc, err
@@ -321,7 +341,7 @@ func (c *ManagedConnection) read() error {
 
 	c.connection.SetReadDeadline(time.Now().Add(pongTimeout))
 
-	header, reader, err := c.connection.NextReader(c.connection, ws.StateClientSide)
+	header, reader, err := c.connection.NextReader()
 	messageType := header.OpCode
 	if err != nil {
 		return err
@@ -349,7 +369,7 @@ func (c *ManagedConnection) write(messageType ws.OpCode, body []byte) error {
 
 	c.writerLock.Lock()
 	defer c.writerLock.Unlock()
-	return c.connection.WriteClientMessage(c.connection, messageType, body)
+	return c.connection.WriteMessage(messageType, body)
 }
 
 // Status checks the connection status of the webhook.

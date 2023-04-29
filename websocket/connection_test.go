@@ -35,14 +35,16 @@ import (
 const propagationTimeout = 5 * time.Second
 
 type inspectableConnection struct {
-	closeCalls              chan struct{}
-	setReadDeadlineCalls    chan struct{}
-	writeClientMessageCalls chan struct{}
-	nextReaderCalls         chan struct{}
+	closeCalls           chan struct{}
+	setReadDeadlineCalls chan struct{}
+	writeMessageCalls    chan struct{}
+	nextReaderCalls      chan struct{}
+	readMessageCalls     chan struct{}
 
-	readFunc       func() (int, error)
-	writeFunc      func() (int, error)
-	nextReaderFunc func() (ws.Header, io.Reader, error)
+	readFunc        func() (int, error)
+	writeFunc       func() (int, error)
+	nextReaderFunc  func() (ws.Header, io.Reader, error)
+	readMessageFunc func() (messageType ws.OpCode, p []byte, err error)
 }
 
 func (c *inspectableConnection) Close() error {
@@ -67,18 +69,25 @@ func (c *inspectableConnection) Write(_ []byte) (n int, err error) {
 	return c.writeFunc()
 }
 
-func (c *inspectableConnection) WriteClientMessage(_ io.Writer, _ ws.OpCode, _ []byte) error {
-	if c.writeClientMessageCalls != nil {
-		c.writeClientMessageCalls <- struct{}{}
+func (c *inspectableConnection) WriteMessage(_ ws.OpCode, _ []byte) error {
+	if c.writeMessageCalls != nil {
+		c.writeMessageCalls <- struct{}{}
 	}
 	return nil
 }
 
-func (c *inspectableConnection) NextReader(_ io.Reader, _ ws.State) (ws.Header, io.Reader, error) {
+func (c *inspectableConnection) NextReader() (ws.Header, io.Reader, error) {
 	if c.nextReaderCalls != nil {
 		c.nextReaderCalls <- struct{}{}
 	}
 	return c.nextReaderFunc()
+}
+
+func (c *inspectableConnection) ReadMessage() (messageType ws.OpCode, p []byte, err error) {
+	if c.readMessageCalls != nil {
+		c.readMessageCalls <- struct{}{}
+	}
+	return c.readMessageFunc()
 }
 
 // staticConnFactory returns a static connection, for example
@@ -155,7 +164,7 @@ func TestStatusOnNoConnection(t *testing.T) {
 
 func TestSendErrorOnEncode(t *testing.T) {
 	spy := &inspectableConnection{
-		writeClientMessageCalls: make(chan struct{}, 1),
+		writeMessageCalls: make(chan struct{}, 1),
 	}
 	conn := newConnection(staticConnFactory(spy), nil)
 	conn.connect()
@@ -165,14 +174,14 @@ func TestSendErrorOnEncode(t *testing.T) {
 	if got == nil {
 		t.Fatal("Expected an error but got none")
 	}
-	if len(spy.writeClientMessageCalls) != 0 {
-		t.Fatalf("Expected 'WriteClientMessage' not to be called, but was called %v times", spy.writeClientMessageCalls)
+	if len(spy.writeMessageCalls) != 0 {
+		t.Fatalf("Expected 'WriteClientMessage' not to be called, but was called %v times", spy.writeMessageCalls)
 	}
 }
 
 func TestSendMessage(t *testing.T) {
 	spy := &inspectableConnection{
-		writeClientMessageCalls: make(chan struct{}, 1),
+		writeMessageCalls: make(chan struct{}, 1),
 	}
 	conn := newConnection(staticConnFactory(spy), nil)
 	conn.connect()
@@ -184,14 +193,14 @@ func TestSendMessage(t *testing.T) {
 	if got := conn.Send("test"); got != nil {
 		t.Fatalf("Expected no error but got: %+v", got)
 	}
-	if len(spy.writeClientMessageCalls) != 1 {
-		t.Fatalf("Expected 'WriteClientMessage' to be called once, but was called %v times", spy.writeClientMessageCalls)
+	if len(spy.writeMessageCalls) != 1 {
+		t.Fatalf("Expected 'WriteClientMessage' to be called once, but was called %v times", spy.writeMessageCalls)
 	}
 }
 
 func TestSendRawMessage(t *testing.T) {
 	spy := &inspectableConnection{
-		writeClientMessageCalls: make(chan struct{}, 1),
+		writeMessageCalls: make(chan struct{}, 1),
 	}
 	conn := newConnection(staticConnFactory(spy), nil)
 	conn.connect()
@@ -203,8 +212,8 @@ func TestSendRawMessage(t *testing.T) {
 	if got := conn.SendRaw(ws.OpBinary, []byte("test")); got != nil {
 		t.Fatalf("Expected no error but got: %+v", got)
 	}
-	if len(spy.writeClientMessageCalls) != 1 {
-		t.Fatalf("Expected 'WriteClientMessage' to be called once, but was called %v times", spy.writeClientMessageCalls)
+	if len(spy.writeMessageCalls) != 1 {
+		t.Fatalf("Expected 'WriteClientMessage' to be called once, but was called %v times", spy.writeMessageCalls)
 	}
 }
 
