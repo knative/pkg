@@ -57,18 +57,10 @@ type rawConnection interface {
 	Write(p []byte) (n int, err error)
 	WriteMessage(op ws.OpCode, p []byte) error
 	NextReader() (ws.Header, io.Reader, error)
-	ReadMessage() (messageType ws.OpCode, p []byte, err error)
 }
 
 type NetConnExtension struct {
 	conn net.Conn
-}
-
-func NewNetConnExtension(conn net.Conn) *NetConnExtension {
-	nc := &NetConnExtension{
-		conn: conn,
-	}
-	return nc
 }
 
 func (nc *NetConnExtension) Read(p []byte) (n int, err error) {
@@ -92,19 +84,7 @@ func (nc *NetConnExtension) WriteMessage(op ws.OpCode, p []byte) error {
 }
 
 func (nc *NetConnExtension) NextReader() (ws.Header, io.Reader, error) {
-	return wsutil.NextReader(nc, ws.StateServerSide)
-}
-
-func (nc *NetConnExtension) ReadMessage() (messageType ws.OpCode, p []byte, err error) {
-	var r io.Reader
-	var header ws.Header
-	header, r, err = nc.NextReader()
-	messageType = header.OpCode
-	if err != nil {
-		return messageType, nil, err
-	}
-	p, err = io.ReadAll(r)
-	return messageType, p, err
+	return wsutil.NextReader(nc, ws.StateClientSide)
 }
 
 // ManagedConnection represents a websocket connection.

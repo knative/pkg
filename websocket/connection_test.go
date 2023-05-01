@@ -39,12 +39,10 @@ type inspectableConnection struct {
 	setReadDeadlineCalls chan struct{}
 	writeMessageCalls    chan struct{}
 	nextReaderCalls      chan struct{}
-	readMessageCalls     chan struct{}
 
-	readFunc        func() (int, error)
-	writeFunc       func() (int, error)
-	nextReaderFunc  func() (ws.Header, io.Reader, error)
-	readMessageFunc func() (messageType ws.OpCode, p []byte, err error)
+	readFunc       func() (int, error)
+	writeFunc      func() (int, error)
+	nextReaderFunc func() (ws.Header, io.Reader, error)
 }
 
 func (c *inspectableConnection) Close() error {
@@ -81,13 +79,6 @@ func (c *inspectableConnection) NextReader() (ws.Header, io.Reader, error) {
 		c.nextReaderCalls <- struct{}{}
 	}
 	return c.nextReaderFunc()
-}
-
-func (c *inspectableConnection) ReadMessage() (messageType ws.OpCode, p []byte, err error) {
-	if c.readMessageCalls != nil {
-		c.readMessageCalls <- struct{}{}
-	}
-	return c.readMessageFunc()
 }
 
 // staticConnFactory returns a static connection, for example
