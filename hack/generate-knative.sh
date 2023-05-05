@@ -40,6 +40,7 @@ EOF
   exit 0
 fi
 
+SCRIPT_DIR="$(dirname "${BASH_SOURCE[0]}")"
 GENS="$1"
 CLIENT_PKG="$2"
 APIS_PKG="$3"
@@ -88,5 +89,6 @@ if grep -qw "injection" <<<"${GENS}"; then
     --external-versions-informers-package ${EXTERNAL_INFORMER_PKG} \
     --listers-package ${LISTERS_PKG} \
     --output-package ${OUTPUT_PKG} \
+    --go-header-file "${SCRIPT_DIR}/boilerplate/boilerplate.go.txt" \
     "$@"
 fi
