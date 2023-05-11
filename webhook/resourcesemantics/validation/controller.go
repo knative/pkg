@@ -96,12 +96,12 @@ func NewController(ctx context.Context, name string, optsFunc ...common.OptionFu
 		key: types.NamespacedName{
 			Name: name,
 		},
-		path:      opts.GetPath(),
-		handlers:  opts.GetTypes(),
-		callbacks: opts.GetCallbacks(),
+		path:      opts.Path(),
+		handlers:  opts.Types(),
+		callbacks: opts.Callbacks(),
 
-		withContext:           opts.GetWrapContext(),
-		disallowUnknownFields: opts.GetDisallowUnknownFields(),
+		withContext:           opts.WrapContext(),
+		disallowUnknownFields: opts.DisallowUnknownFields(),
 		secretName:            options.SecretName,
 
 		client:       client,
@@ -145,15 +145,15 @@ func NewAdmissionController(
 	handlers map[schema.GroupVersionKind]resourcesemantics.GenericCRD,
 	wc func(context.Context) context.Context,
 	disallowUnknownFields bool,
-	callbacks ...map[schema.GroupVersionKind]Callback,
+	callbacks ...map[schema.GroupVersionKind]common.Callback,
 ) *controller.Impl {
 	// This not ideal, we are using a variadic argument to effectively make callbacks optional
 	// This allows this addition to be non-breaking to consumers of /pkg
 	// TODO: once all sub-repos have adopted this, we might move this back to a traditional param.
-	var unwrappedCallbacks map[schema.GroupVersionKind]Callback
+	var unwrappedCallbacks map[schema.GroupVersionKind]common.Callback
 	switch len(callbacks) {
 	case 0:
-		unwrappedCallbacks = map[schema.GroupVersionKind]Callback{}
+		unwrappedCallbacks = map[schema.GroupVersionKind]common.Callback{}
 	case 1:
 		unwrappedCallbacks = callbacks[0]
 	default:

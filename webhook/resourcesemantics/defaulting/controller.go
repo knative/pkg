@@ -98,12 +98,12 @@ func NewController(ctx context.Context, name string, optsFunc ...common.OptionFu
 		},
 
 		key:       key,
-		path:      opts.GetPath(),
-		handlers:  opts.GetTypes(),
-		callbacks: opts.GetCallbacks(),
+		path:      opts.Path(),
+		handlers:  opts.Types(),
+		callbacks: opts.Callbacks(),
 
-		withContext:           opts.GetWrapContext(),
-		disallowUnknownFields: opts.GetDisallowUnknownFields(),
+		withContext:           opts.WrapContext(),
+		disallowUnknownFields: opts.DisallowUnknownFields(),
 		secretName:            wopts.SecretName,
 
 		client:       client,

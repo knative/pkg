@@ -72,7 +72,7 @@ func NewController(ctx context.Context, optsFunc ...common.OptionFunc) *controll
 		LeaderAwareFuncs: pkgreconciler.LeaderAwareFuncs{
 			// Have this reconciler enqueue our types whenever it becomes leader.
 			PromoteFunc: func(bkt pkgreconciler.Bucket, enq func(pkgreconciler.Bucket, types.NamespacedName)) error {
-				for _, gkc := range opts.GetKinds() {
+				for _, gkc := range opts.Kinds() {
 					name := gkc.DefinitionName
 					enq(bkt, types.NamespacedName{Name: name})
 				}
@@ -80,10 +80,10 @@ func NewController(ctx context.Context, optsFunc ...common.OptionFunc) *controll
 			},
 		},
 
-		kinds:       opts.GetKinds(),
-		path:        opts.GetPath(),
+		kinds:       opts.Kinds(),
+		path:        opts.Path(),
 		secretName:  options.SecretName,
-		withContext: opts.GetWrapContext(),
+		withContext: opts.WrapContext(),
 
 		client:       client,
 		secretLister: secretInformer.Lister(),
@@ -99,7 +99,7 @@ func NewController(ctx context.Context, optsFunc ...common.OptionFunc) *controll
 	c := controller.NewContext(ctx, r, *controllerOptions)
 
 	// Reconciler when the named CRDs change.
-	for _, gkc := range opts.GetKinds() {
+	for _, gkc := range opts.Kinds() {
 		name := gkc.DefinitionName
 
 		crdInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{

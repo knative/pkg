@@ -152,8 +152,8 @@ func (ac *reconciler) reconcileValidatingWebhook(ctx context.Context, caCert []b
 		plural := strings.ToLower(flect.Pluralize(gvk.Kind))
 		resources := []string{plural, plural + "/status"}
 
-		verbs := make([]admissionregistrationv1.OperationType, 0, len(callback.supportedVerbs))
-		for verb := range callback.supportedVerbs {
+		verbs := make([]admissionregistrationv1.OperationType, 0, len(callback.SupportedVerbs))
+		for verb := range callback.SupportedVerbs {
 			verbs = append(verbs, admissionregistrationv1.OperationType(verb))
 		}
 		// supportedVerbs is a map which doesn't provide a stable order in for loops.

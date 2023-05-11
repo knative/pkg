@@ -44,7 +44,7 @@ func WithCallbacks(callbacks map[schema.GroupVersionKind]Callback) OptionFunc {
 	}
 }
 
-func (o *options) GetCallbacks() map[schema.GroupVersionKind]Callback {
+func (o *options) Callbacks() map[schema.GroupVersionKind]Callback {
 	return o.callbacks
 }
 
@@ -54,7 +54,7 @@ func WithKinds(kinds map[schema.GroupKind]GroupKindConversion) OptionFunc {
 	}
 }
 
-func (o *options) GetKinds() map[schema.GroupKind]GroupKindConversion {
+func (o *options) Kinds() map[schema.GroupKind]GroupKindConversion {
 	return o.kinds
 }
 
@@ -64,7 +64,7 @@ func WithPath(path string) OptionFunc {
 	}
 }
 
-func (o *options) GetPath() string {
+func (o *options) Path() string {
 	return o.path
 }
 
@@ -74,7 +74,7 @@ func WithTypes(types map[schema.GroupVersionKind]resourcesemantics.GenericCRD) O
 	}
 }
 
-func (o *options) GetTypes() map[schema.GroupVersionKind]resourcesemantics.GenericCRD {
+func (o *options) Types() map[schema.GroupVersionKind]resourcesemantics.GenericCRD {
 	return o.types
 }
 
@@ -84,7 +84,7 @@ func WithWrapContext(f func(context.Context) context.Context) OptionFunc {
 	}
 }
 
-func (o *options) GetWrapContext() func(context.Context) context.Context {
+func (o *options) WrapContext() func(context.Context) context.Context {
 	return o.wc
 }
 
@@ -94,6 +94,6 @@ func WithDisallowUnknownFields() OptionFunc {
 	}
 }
 
-func (o *options) GetDisallowUnknownFields() bool {
+func (o *options) DisallowUnknownFields() bool {
 	return o.disallowUnknownFields
 }
