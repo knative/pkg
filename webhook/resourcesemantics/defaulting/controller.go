@@ -25,6 +25,7 @@ import (
 	secretinformer "knative.dev/pkg/injection/clients/namespacedkube/informers/core/v1/secret"
 	"knative.dev/pkg/logging"
 	pkgreconciler "knative.dev/pkg/reconciler"
+	"knative.dev/pkg/webhook/resourcesemantics/common"
 
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
@@ -43,42 +44,42 @@ func NewAdmissionController(
 	handlers map[schema.GroupVersionKind]resourcesemantics.GenericCRD,
 	wc func(context.Context) context.Context,
 	disallowUnknownFields bool,
-	callbacks ...map[schema.GroupVersionKind]Callback,
+	callbacks ...map[schema.GroupVersionKind]common.Callback,
 ) *controller.Impl {
 
 	// This not ideal, we are using a variadic argument to effectively make callbacks optional
 	// This allows this addition to be non-breaking to consumers of /pkg
 	// TODO: once all sub-repos have adopted this, we might move this back to a traditional param.
-	var unwrappedCallbacks map[schema.GroupVersionKind]Callback
+	var unwrappedCallbacks map[schema.GroupVersionKind]common.Callback
 	switch len(callbacks) {
 	case 0:
-		unwrappedCallbacks = map[schema.GroupVersionKind]Callback{}
+		unwrappedCallbacks = map[schema.GroupVersionKind]common.Callback{}
 	case 1:
 		unwrappedCallbacks = callbacks[0]
 	default:
 		panic("NewAdmissionController may not be called with multiple callback maps")
 	}
 
-	opts := []OptionFunc{
-		WithPath(path),
-		WithTypes(handlers),
-		WithWrapContext(wc),
-		WithCallbacks(unwrappedCallbacks),
+	opts := []common.OptionFunc{
+		common.WithPath(path),
+		common.WithTypes(handlers),
+		common.WithWrapContext(wc),
+		common.WithCallbacks(unwrappedCallbacks),
 	}
 
 	if disallowUnknownFields {
-		opts = append(opts, WithDisallowUnknownFields())
+		opts = append(opts, common.WithDisallowUnknownFields())
 	}
 
 	return NewController(ctx, name, opts...)
 }
 
-func NewController(ctx context.Context, name string, optsFunc ...OptionFunc) *controller.Impl {
+func NewController(ctx context.Context, name string, optsFunc ...common.OptionFunc) *controller.Impl {
 	client := kubeclient.Get(ctx)
 	mwhInformer := mwhinformer.Get(ctx)
 	secretInformer := secretinformer.Get(ctx)
 
-	opts := &options{}
+	opts := common.NewOptions()
 	wopts := webhook.GetOptions(ctx)
 
 	for _, f := range optsFunc {
@@ -97,12 +98,12 @@ func NewController(ctx context.Context, name string, optsFunc ...OptionFunc) *co
 		},
 
 		key:       key,
-		path:      opts.path,
-		handlers:  opts.types,
-		callbacks: opts.callbacks,
+		path:      opts.GetPath(),
+		handlers:  opts.GetTypes(),
+		callbacks: opts.GetCallbacks(),
 
-		withContext:           opts.wc,
-		disallowUnknownFields: opts.disallowUnknownFields,
+		withContext:           opts.GetWrapContext(),
+		disallowUnknownFields: opts.GetDisallowUnknownFields(),
 		secretName:            wopts.SecretName,
 
 		client:       client,
@@ -111,8 +112,12 @@ func NewController(ctx context.Context, name string, optsFunc ...OptionFunc) *co
 	}
 
 	logger := logging.FromContext(ctx)
-	const queueName = "DefaultingWebhook"
-	c := controller.NewContext(ctx, wh, controller.ControllerOptions{WorkQueueName: queueName, Logger: logger.Named(queueName)})
+	controllerOptions := wopts.ControllerOptions
+	if controllerOptions == nil {
+		const queueName = "DefaultingWebhook"
+		controllerOptions = &controller.ControllerOptions{WorkQueueName: queueName, Logger: logger.Named(queueName)}
+	}
+	c := controller.NewContext(ctx, wh, *controllerOptions)
 
 	// Reconcile when the named MutatingWebhookConfiguration changes.
 	mwhInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{

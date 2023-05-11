@@ -36,12 +36,13 @@ import (
 	"knative.dev/pkg/system"
 	"knative.dev/pkg/webhook"
 	certresources "knative.dev/pkg/webhook/certificates/resources"
+	"knative.dev/pkg/webhook/resourcesemantics/common"
 )
 
 type reconciler struct {
 	pkgreconciler.LeaderAwareFuncs
 
-	kinds       map[schema.GroupKind]GroupKindConversion
+	kinds       map[schema.GroupKind]common.GroupKindConversion
 	path        string
 	secretName  string
 	withContext func(context.Context) context.Context

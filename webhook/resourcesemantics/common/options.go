@@ -1,5 +1,5 @@
 /*
-Copyright 2022 The Knative Authors
+Copyright 2023 The Knative Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package defaulting
+package common
 
 import (
 	"context"
@@ -29,6 +29,11 @@ type options struct {
 	wc                    func(context.Context) context.Context
 	disallowUnknownFields bool
 	callbacks             map[schema.GroupVersionKind]Callback
+	kinds                 map[schema.GroupKind]GroupKindConversion
+}
+
+func NewOptions() *options {
+	return &options{}
 }
 
 type OptionFunc func(*options)
@@ -39,10 +44,28 @@ func WithCallbacks(callbacks map[schema.GroupVersionKind]Callback) OptionFunc {
 	}
 }
 
+func (o *options) GetCallbacks() map[schema.GroupVersionKind]Callback {
+	return o.callbacks
+}
+
+func WithKinds(kinds map[schema.GroupKind]GroupKindConversion) OptionFunc {
+	return func(o *options) {
+		o.kinds = kinds
+	}
+}
+
+func (o *options) GetKinds() map[schema.GroupKind]GroupKindConversion {
+	return o.kinds
+}
+
 func WithPath(path string) OptionFunc {
 	return func(o *options) {
 		o.path = path
 	}
+}
+
+func (o *options) GetPath() string {
+	return o.path
 }
 
 func WithTypes(types map[schema.GroupVersionKind]resourcesemantics.GenericCRD) OptionFunc {
@@ -51,14 +74,26 @@ func WithTypes(types map[schema.GroupVersionKind]resourcesemantics.GenericCRD) O
 	}
 }
 
+func (o *options) GetTypes() map[schema.GroupVersionKind]resourcesemantics.GenericCRD {
+	return o.types
+}
+
 func WithWrapContext(f func(context.Context) context.Context) OptionFunc {
 	return func(o *options) {
 		o.wc = f
 	}
 }
 
+func (o *options) GetWrapContext() func(context.Context) context.Context {
+	return o.wc
+}
+
 func WithDisallowUnknownFields() OptionFunc {
 	return func(o *options) {
 		o.disallowUnknownFields = true
 	}
+}
+
+func (o *options) GetDisallowUnknownFields() bool {
+	return o.disallowUnknownFields
 }

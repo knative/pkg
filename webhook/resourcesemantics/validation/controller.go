@@ -25,6 +25,7 @@ import (
 	secretinformer "knative.dev/pkg/injection/clients/namespacedkube/informers/core/v1/secret"
 	"knative.dev/pkg/logging"
 	pkgreconciler "knative.dev/pkg/reconciler"
+	"knative.dev/pkg/webhook/resourcesemantics/common"
 
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
@@ -43,12 +44,45 @@ func NewAdmissionControllerWithConfig(
 	handlers map[schema.GroupVersionKind]resourcesemantics.GenericCRD,
 	wc func(context.Context) context.Context,
 	disallowUnknownFields bool,
-	callbacks map[schema.GroupVersionKind]Callback,
+	callbacks ...map[schema.GroupVersionKind]common.Callback,
 ) *controller.Impl {
+
+	// This not ideal, we are using a variadic argument to effectively make callbacks optional
+	// This allows this addition to be non-breaking to consumers of /pkg
+	// TODO: once all sub-repos have adopted this, we might move this back to a traditional param.
+	var unwrappedCallbacks map[schema.GroupVersionKind]common.Callback
+	switch len(callbacks) {
+	case 0:
+		unwrappedCallbacks = map[schema.GroupVersionKind]common.Callback{}
+	case 1:
+		unwrappedCallbacks = callbacks[0]
+	default:
+		panic("NewAdmissionController may not be called with multiple callback maps")
+	}
+
+	opts := []common.OptionFunc{
+		common.WithPath(path),
+		common.WithTypes(handlers),
+		common.WithWrapContext(wc),
+		common.WithCallbacks(unwrappedCallbacks),
+	}
+
+	if disallowUnknownFields {
+		opts = append(opts, common.WithDisallowUnknownFields())
+	}
+	return NewController(ctx, name, opts...)
+}
+
+func NewController(ctx context.Context, name string, optsFunc ...common.OptionFunc) *controller.Impl {
 	client := kubeclient.Get(ctx)
 	vwhInformer := vwhinformer.Get(ctx)
 	secretInformer := secretinformer.Get(ctx)
 	options := webhook.GetOptions(ctx)
+
+	opts := common.NewOptions()
+	for _, f := range optsFunc {
+		f(opts)
+	}
 
 	wh := &reconciler{
 		LeaderAwareFuncs: pkgreconciler.LeaderAwareFuncs{
@@ -62,12 +96,12 @@ func NewAdmissionControllerWithConfig(
 		key: types.NamespacedName{
 			Name: name,
 		},
-		path:      path,
-		handlers:  handlers,
-		callbacks: callbacks,
+		path:      opts.GetPath(),
+		handlers:  opts.GetTypes(),
+		callbacks: opts.GetCallbacks(),
 
-		withContext:           wc,
-		disallowUnknownFields: disallowUnknownFields,
+		withContext:           opts.GetWrapContext(),
+		disallowUnknownFields: opts.GetDisallowUnknownFields(),
 		secretName:            options.SecretName,
 
 		client:       client,
@@ -76,8 +110,13 @@ func NewAdmissionControllerWithConfig(
 	}
 
 	logger := logging.FromContext(ctx)
-	const queueName = "ValidationWebhook"
-	c := controller.NewContext(ctx, wh, controller.ControllerOptions{WorkQueueName: queueName, Logger: logger.Named(queueName)})
+
+	controllerOptions := options.ControllerOptions
+	if options.ControllerOptions == nil {
+		const queueName = "ValidationWebhook"
+		controllerOptions = &controller.ControllerOptions{WorkQueueName: queueName, Logger: logger.Named(queueName)}
+	}
+	c := controller.NewContext(ctx, wh, *controllerOptions)
 
 	// Reconcile when the named ValidatingWebhookConfiguration changes.
 	vwhInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{

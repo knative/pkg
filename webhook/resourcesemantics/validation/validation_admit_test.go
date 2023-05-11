@@ -49,6 +49,7 @@ import (
 	. "knative.dev/pkg/reconciler/testing"
 	. "knative.dev/pkg/testing"
 	"knative.dev/pkg/webhook/resourcesemantics"
+	"knative.dev/pkg/webhook/resourcesemantics/common"
 	. "knative.dev/pkg/webhook/testing"
 )
 
@@ -83,7 +84,7 @@ var (
 		}: &InnerDefaultResource{},
 	}
 
-	callbacks = map[schema.GroupVersionKind]Callback{
+	callbacks = map[schema.GroupVersionKind]common.Callback{
 		{
 			Group:   "pkg.knative.dev",
 			Version: "v1alpha1",
@@ -647,7 +648,7 @@ func TestNewResourceAdmissionController(t *testing.T) {
 		}
 	}()
 
-	invalidSecondCallback := map[schema.GroupVersionKind]Callback{}
+	invalidSecondCallback := map[schema.GroupVersionKind]common.Callback{}
 
 	NewAdmissionController(
 		ctx, testResourceValidationName, testResourceValidationPath,
@@ -668,7 +669,7 @@ func TestNewResourceAdmissionControllerDuplicateVerb(t *testing.T) {
 		}
 	}()
 
-	call := map[schema.GroupVersionKind]Callback{
+	call := map[schema.GroupVersionKind]common.Callback{
 		{
 			Group:   "pkg.knative.dev",
 			Version: "v1alpha1",

@@ -42,6 +42,7 @@ import (
 	"knative.dev/pkg/webhook"
 	certresources "knative.dev/pkg/webhook/certificates/resources"
 	"knative.dev/pkg/webhook/resourcesemantics"
+	"knative.dev/pkg/webhook/resourcesemantics/common"
 )
 
 // reconciler implements the AdmissionController for resources
@@ -52,7 +53,7 @@ type reconciler struct {
 	key       types.NamespacedName
 	path      string
 	handlers  map[schema.GroupVersionKind]resourcesemantics.GenericCRD
-	callbacks map[schema.GroupVersionKind]Callback
+	callbacks map[schema.GroupVersionKind]common.Callback
 
 	withContext func(context.Context) context.Context
 
