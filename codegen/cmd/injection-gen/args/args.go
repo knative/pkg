@@ -30,6 +30,7 @@ type CustomArgs struct {
 	ListersPackage                   string
 	ForceKinds                       string
 	ListerHasPointerElem             bool
+	IncludeDynamicInformers          bool
 }
 
 // NewDefaults returns default arguments for the generator.
@@ -47,6 +48,8 @@ func (ca *CustomArgs) AddFlags(fs *pflag.FlagSet) {
 	fs.StringVar(&ca.ListersPackage, "listers-package", ca.ListersPackage, "the full package name for client listers to use")
 	fs.StringVar(&ca.ForceKinds, "force-genreconciler-kinds", ca.ForceKinds, `force kinds will override the genreconciler tag setting for the given set of kinds, comma separated: "Foo,Bar,Baz"`)
 	fs.BoolVar(&ca.ListerHasPointerElem, "lister-has-pointer-elem", ca.ListerHasPointerElem, "set to true if the List types have an Item array of pointer element types")
+	fs.BoolVar(&ca.IncludeDynamicInformers, "include-dynamic-informers", ca.IncludeDynamicInformers, "set to true if you want to generate typed informers backed by dynamic clients")
+
 }
 
 // Validate checks the given arguments.

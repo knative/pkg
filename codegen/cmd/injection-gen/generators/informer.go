@@ -42,6 +42,7 @@ type injectionGenerator struct {
 	clientSetPackage            string
 	listerPkg                   string
 	listerHasPointerElem        bool
+	generateDynamicInformers    bool
 }
 
 var _ generator.Generator = (*injectionGenerator)(nil)
@@ -94,6 +95,7 @@ func (g *injectionGenerator) GenerateType(c *generator.Context, t *types.Type, w
 		"resourceLister":                   c.Universe.Type(types.Name{Name: g.typeToGenerate.Name.Name + "Lister", Package: g.listerPkg}),
 		"resourceNamespaceLister":          c.Universe.Type(types.Name{Name: g.typeToGenerate.Name.Name + "NamespaceLister", Package: g.listerPkg}),
 		"listerHasPointerElem":             g.listerHasPointerElem,
+		"generateDynamicInformers":         g.generateDynamicInformers,
 		"groupGoName":                      namer.IC(g.groupGoName),
 		"versionGoName":                    namer.IC(g.groupVersion.Version.String()),
 		"group":                            g.groupVersion.Group.String(),
@@ -159,7 +161,7 @@ func (g *injectionGenerator) GenerateType(c *generator.Context, t *types.Type, w
 var injectionInformer = `
 func init() {
 	{{.injectionRegisterInformer|raw}}(withInformer)
-	{{.injectionRegisterDynamicInformer|raw}}(withDynamicInformer)
+	{{- if .generateDynamicInformers}}{{.injectionRegisterDynamicInformer|raw}}(withDynamicInformer){{end}}
 }
 
 // Key is used for associating the Informer inside the context.Context.
@@ -171,10 +173,12 @@ func withInformer(ctx {{.contextContext|raw}}) ({{.contextContext|raw}}, {{.cont
 	return {{ .contextWithValue|raw }}(ctx, Key{}, inf), inf.Informer()
 }
 
+{{if .generateDynamicInformers}}
 func withDynamicInformer(ctx {{.contextContext|raw}}) {{.contextContext|raw}} {
 	inf := &wrapper{client: {{ .clientGet|raw }}(ctx), resourceVersion: {{ .injectionGetResourceVersion|raw }}(ctx)}
 	return {{ .contextWithValue|raw }}(ctx, Key{}, inf)
 }
+{{end}}
 
 // Get extracts the typed informer from the context.
 func Get(ctx {{.contextContext|raw}}) {{.informersTypedInformer|raw}} {
@@ -186,6 +190,7 @@ func Get(ctx {{.contextContext|raw}}) {{.informersTypedInformer|raw}} {
 	return untyped.({{.informersTypedInformer|raw}})
 }
 
+{{if .generateDynamicInformers}}
 type wrapper struct {
 	client    {{.clientSetInterface|raw}}
 {{ if .Namespaced }}
@@ -238,5 +243,5 @@ func (w *wrapper) Get(name string) (*{{ .type|raw }}, error) {
 		ResourceVersion: w.resourceVersion,
 	})
 }
-
+{{end}}
 `

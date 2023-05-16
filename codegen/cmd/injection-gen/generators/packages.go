@@ -447,6 +447,7 @@ func versionInformerPackages(basePackage string, groupPkgName string, gv clientg
 					injectionClientSetPackage:   filepath.Join(basePackage, "client"),
 					listerPkg:                   listerPackagePath,
 					listerHasPointerElem:        customArgs.ListerHasPointerElem,
+					generateDynamicInformers:    customArgs.IncludeDynamicInformers,
 				})
 				return generators
 			},
