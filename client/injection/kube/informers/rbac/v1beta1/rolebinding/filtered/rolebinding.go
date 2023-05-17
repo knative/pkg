@@ -21,14 +21,7 @@ package filtered
 import (
 	context "context"
 
-	apirbacv1beta1 "k8s.io/api/rbac/v1beta1"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	labels "k8s.io/apimachinery/pkg/labels"
 	v1beta1 "k8s.io/client-go/informers/rbac/v1beta1"
-	kubernetes "k8s.io/client-go/kubernetes"
-	rbacv1beta1 "k8s.io/client-go/listers/rbac/v1beta1"
-	cache "k8s.io/client-go/tools/cache"
-	client "knative.dev/pkg/client/injection/kube/client"
 	filtered "knative.dev/pkg/client/injection/kube/informers/factory/filtered"
 	controller "knative.dev/pkg/controller"
 	injection "knative.dev/pkg/injection"
@@ -37,7 +30,6 @@ import (
 
 func init() {
 	injection.Default.RegisterFilteredInformers(withInformer)
-	injection.Dynamic.RegisterDynamicInformer(withDynamicInformer)
 }
 
 // Key is used for associating the Informer inside the context.Context.
@@ -62,20 +54,6 @@ func withInformer(ctx context.Context) (context.Context, []controller.Informer) 
 	return ctx, infs
 }
 
-func withDynamicInformer(ctx context.Context) context.Context {
-	untyped := ctx.Value(filtered.LabelKey{})
-	if untyped == nil {
-		logging.FromContext(ctx).Panic(
-			"Unable to fetch labelkey from context.")
-	}
-	labelSelectors := untyped.([]string)
-	for _, selector := range labelSelectors {
-		inf := &wrapper{client: client.Get(ctx), selector: selector}
-		ctx = context.WithValue(ctx, Key{Selector: selector}, inf)
-	}
-	return ctx
-}
-
 // Get extracts the typed informer from the context.
 func Get(ctx context.Context, selector string) v1beta1.RoleBindingInformer {
 	untyped := ctx.Value(Key{Selector: selector})
@@ -84,53 +62,4 @@ func Get(ctx context.Context, selector string) v1beta1.RoleBindingInformer {
 			"Unable to fetch k8s.io/client-go/informers/rbac/v1beta1.RoleBindingInformer with selector %s from context.", selector)
 	}
 	return untyped.(v1beta1.RoleBindingInformer)
-}
-
-type wrapper struct {
-	client kubernetes.Interface
-
-	namespace string
-
-	selector string
-}
-
-var _ v1beta1.RoleBindingInformer = (*wrapper)(nil)
-var _ rbacv1beta1.RoleBindingLister = (*wrapper)(nil)
-
-func (w *wrapper) Informer() cache.SharedIndexInformer {
-	return cache.NewSharedIndexInformer(nil, &apirbacv1beta1.RoleBinding{}, 0, nil)
-}
-
-func (w *wrapper) Lister() rbacv1beta1.RoleBindingLister {
-	return w
-}
-
-func (w *wrapper) RoleBindings(namespace string) rbacv1beta1.RoleBindingNamespaceLister {
-	return &wrapper{client: w.client, namespace: namespace, selector: w.selector}
-}
-
-func (w *wrapper) List(selector labels.Selector) (ret []*apirbacv1beta1.RoleBinding, err error) {
-	reqs, err := labels.ParseToRequirements(w.selector)
-	if err != nil {
-		return nil, err
-	}
-	selector = selector.Add(reqs...)
-	lo, err := w.client.RbacV1beta1().RoleBindings(w.namespace).List(context.TODO(), v1.ListOptions{
-		LabelSelector: selector.String(),
-		// TODO(mattmoor): Incorporate resourceVersion bounds based on staleness criteria.
-	})
-	if err != nil {
-		return nil, err
-	}
-	for idx := range lo.Items {
-		ret = append(ret, &lo.Items[idx])
-	}
-	return ret, nil
-}
-
-func (w *wrapper) Get(name string) (*apirbacv1beta1.RoleBinding, error) {
-	// TODO(mattmoor): Check that the fetched object matches the selector.
-	return w.client.RbacV1beta1().RoleBindings(w.namespace).Get(context.TODO(), name, v1.GetOptions{
-		// TODO(mattmoor): Incorporate resourceVersion bounds based on staleness criteria.
-	})
 }

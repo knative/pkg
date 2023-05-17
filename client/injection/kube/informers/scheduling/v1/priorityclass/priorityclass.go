@@ -21,14 +21,7 @@ package priorityclass
 import (
 	context "context"
 
-	apischedulingv1 "k8s.io/api/scheduling/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	labels "k8s.io/apimachinery/pkg/labels"
 	v1 "k8s.io/client-go/informers/scheduling/v1"
-	kubernetes "k8s.io/client-go/kubernetes"
-	schedulingv1 "k8s.io/client-go/listers/scheduling/v1"
-	cache "k8s.io/client-go/tools/cache"
-	client "knative.dev/pkg/client/injection/kube/client"
 	factory "knative.dev/pkg/client/injection/kube/informers/factory"
 	controller "knative.dev/pkg/controller"
 	injection "knative.dev/pkg/injection"
@@ -37,7 +30,6 @@ import (
 
 func init() {
 	injection.Default.RegisterInformer(withInformer)
-	injection.Dynamic.RegisterDynamicInformer(withDynamicInformer)
 }
 
 // Key is used for associating the Informer inside the context.Context.
@@ -49,11 +41,6 @@ func withInformer(ctx context.Context) (context.Context, controller.Informer) {
 	return context.WithValue(ctx, Key{}, inf), inf.Informer()
 }
 
-func withDynamicInformer(ctx context.Context) context.Context {
-	inf := &wrapper{client: client.Get(ctx), resourceVersion: injection.GetResourceVersion(ctx)}
-	return context.WithValue(ctx, Key{}, inf)
-}
-
 // Get extracts the typed informer from the context.
 func Get(ctx context.Context) v1.PriorityClassInformer {
 	untyped := ctx.Value(Key{})
@@ -62,49 +49,4 @@ func Get(ctx context.Context) v1.PriorityClassInformer {
 			"Unable to fetch k8s.io/client-go/informers/scheduling/v1.PriorityClassInformer from context.")
 	}
 	return untyped.(v1.PriorityClassInformer)
-}
-
-type wrapper struct {
-	client kubernetes.Interface
-
-	resourceVersion string
-}
-
-var _ v1.PriorityClassInformer = (*wrapper)(nil)
-var _ schedulingv1.PriorityClassLister = (*wrapper)(nil)
-
-func (w *wrapper) Informer() cache.SharedIndexInformer {
-	return cache.NewSharedIndexInformer(nil, &apischedulingv1.PriorityClass{}, 0, nil)
-}
-
-func (w *wrapper) Lister() schedulingv1.PriorityClassLister {
-	return w
-}
-
-// SetResourceVersion allows consumers to adjust the minimum resourceVersion
-// used by the underlying client.  It is not accessible via the standard
-// lister interface, but can be accessed through a user-defined interface and
-// an implementation check e.g. rvs, ok := foo.(ResourceVersionSetter)
-func (w *wrapper) SetResourceVersion(resourceVersion string) {
-	w.resourceVersion = resourceVersion
-}
-
-func (w *wrapper) List(selector labels.Selector) (ret []*apischedulingv1.PriorityClass, err error) {
-	lo, err := w.client.SchedulingV1().PriorityClasses().List(context.TODO(), metav1.ListOptions{
-		LabelSelector:   selector.String(),
-		ResourceVersion: w.resourceVersion,
-	})
-	if err != nil {
-		return nil, err
-	}
-	for idx := range lo.Items {
-		ret = append(ret, &lo.Items[idx])
-	}
-	return ret, nil
-}
-
-func (w *wrapper) Get(name string) (*apischedulingv1.PriorityClass, error) {
-	return w.client.SchedulingV1().PriorityClasses().Get(context.TODO(), name, metav1.GetOptions{
-		ResourceVersion: w.resourceVersion,
-	})
 }
