@@ -21,14 +21,7 @@ package certificatesigningrequest
 import (
 	context "context"
 
-	apicertificatesv1beta1 "k8s.io/api/certificates/v1beta1"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	labels "k8s.io/apimachinery/pkg/labels"
 	v1beta1 "k8s.io/client-go/informers/certificates/v1beta1"
-	kubernetes "k8s.io/client-go/kubernetes"
-	certificatesv1beta1 "k8s.io/client-go/listers/certificates/v1beta1"
-	cache "k8s.io/client-go/tools/cache"
-	client "knative.dev/pkg/client/injection/kube/client"
 	factory "knative.dev/pkg/client/injection/kube/informers/factory"
 	controller "knative.dev/pkg/controller"
 	injection "knative.dev/pkg/injection"
@@ -37,7 +30,6 @@ import (
 
 func init() {
 	injection.Default.RegisterInformer(withInformer)
-	injection.Dynamic.RegisterDynamicInformer(withDynamicInformer)
 }
 
 // Key is used for associating the Informer inside the context.Context.
@@ -49,11 +41,6 @@ func withInformer(ctx context.Context) (context.Context, controller.Informer) {
 	return context.WithValue(ctx, Key{}, inf), inf.Informer()
 }
 
-func withDynamicInformer(ctx context.Context) context.Context {
-	inf := &wrapper{client: client.Get(ctx), resourceVersion: injection.GetResourceVersion(ctx)}
-	return context.WithValue(ctx, Key{}, inf)
-}
-
 // Get extracts the typed informer from the context.
 func Get(ctx context.Context) v1beta1.CertificateSigningRequestInformer {
 	untyped := ctx.Value(Key{})
@@ -62,49 +49,4 @@ func Get(ctx context.Context) v1beta1.CertificateSigningRequestInformer {
 			"Unable to fetch k8s.io/client-go/informers/certificates/v1beta1.CertificateSigningRequestInformer from context.")
 	}
 	return untyped.(v1beta1.CertificateSigningRequestInformer)
-}
-
-type wrapper struct {
-	client kubernetes.Interface
-
-	resourceVersion string
-}
-
-var _ v1beta1.CertificateSigningRequestInformer = (*wrapper)(nil)
-var _ certificatesv1beta1.CertificateSigningRequestLister = (*wrapper)(nil)
-
-func (w *wrapper) Informer() cache.SharedIndexInformer {
-	return cache.NewSharedIndexInformer(nil, &apicertificatesv1beta1.CertificateSigningRequest{}, 0, nil)
-}
-
-func (w *wrapper) Lister() certificatesv1beta1.CertificateSigningRequestLister {
-	return w
-}
-
-// SetResourceVersion allows consumers to adjust the minimum resourceVersion
-// used by the underlying client.  It is not accessible via the standard
-// lister interface, but can be accessed through a user-defined interface and
-// an implementation check e.g. rvs, ok := foo.(ResourceVersionSetter)
-func (w *wrapper) SetResourceVersion(resourceVersion string) {
-	w.resourceVersion = resourceVersion
-}
-
-func (w *wrapper) List(selector labels.Selector) (ret []*apicertificatesv1beta1.CertificateSigningRequest, err error) {
-	lo, err := w.client.CertificatesV1beta1().CertificateSigningRequests().List(context.TODO(), v1.ListOptions{
-		LabelSelector:   selector.String(),
-		ResourceVersion: w.resourceVersion,
-	})
-	if err != nil {
-		return nil, err
-	}
-	for idx := range lo.Items {
-		ret = append(ret, &lo.Items[idx])
-	}
-	return ret, nil
-}
-
-func (w *wrapper) Get(name string) (*apicertificatesv1beta1.CertificateSigningRequest, error) {
-	return w.client.CertificatesV1beta1().CertificateSigningRequests().Get(context.TODO(), name, v1.GetOptions{
-		ResourceVersion: w.resourceVersion,
-	})
 }
