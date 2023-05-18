@@ -102,7 +102,9 @@ func validateCACerts(CACert *string) *apis.FieldError {
 	block, err := pem.Decode([]byte(*CACert))
 	if err != nil || block == nil {
 		errs = errs.Also(apis.ErrInvalidValue("CA Cert provided is invalid", "caCert"))
-	} else if block.Type != "CERTIFICATE" {
+		return errs
+	}
+	if block.Type != "CERTIFICATE" {
 		errs = errs.Also(apis.ErrInvalidValue("CA Cert provided is not a certificate", "caCert"))
 	} else if _, err := x509.ParseCertificate(block.Bytes); err != nil {
 		errs = errs.Also(apis.ErrInvalidValue("CA Cert provided is invalid", "caCert"))
