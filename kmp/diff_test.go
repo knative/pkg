@@ -118,7 +118,7 @@ func TestImmutableDiff(t *testing.T) {
 		y: corev1.ResourceList{
 			corev1.ResourceName("cpu"): resource.MustParse("100m"),
 		},
-		want: `root:
+		want: `{any}:
 	+: "map[cpu:{i:{value:100 scale:-3} d:{Dec:<nil>} s:100m Format:DecimalSI}]"
 `,
 	}, {
@@ -126,7 +126,7 @@ func TestImmutableDiff(t *testing.T) {
 		x: corev1.ResourceList{
 			corev1.ResourceName("cpu"): resource.MustParse("100m"),
 		},
-		want: `root:
+		want: `{any}:
 	-: "map[cpu:{i:{value:100 scale:-3} d:{Dec:<nil>} s:100m Format:DecimalSI}]"
 `,
 	}, {

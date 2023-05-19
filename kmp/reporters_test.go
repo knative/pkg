@@ -69,7 +69,7 @@ func TestFieldListReporter(t *testing.T) {
 		x: testStruct{
 			StringField: "foo",
 		},
-		want: []string{"root"},
+		want: []string{"{any}"},
 	}, {
 		name: "Single character field name",
 		x: testStruct{
@@ -218,7 +218,7 @@ func TestImmutableReporter(t *testing.T) {
 		x: testStruct{
 			StringField: "foo",
 		},
-		want: `root:
+		want: `{any}:
 	-: "{A: StringField:foo IntField:0 StructField:{ChildString: ChildInt:0} Omit: Ignore: Dash: MultiComma:}"
 `,
 	}, {
