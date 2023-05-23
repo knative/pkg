@@ -125,12 +125,14 @@ type fakeSharedIndexInformer struct {
 
 var _ cache.SharedIndexInformer = (*fakeSharedIndexInformer)(nil)
 
-func (fsii *fakeSharedIndexInformer) AddEventHandler(handler cache.ResourceEventHandler) {
+func (fsii *fakeSharedIndexInformer) AddEventHandler(handler cache.ResourceEventHandler) (cache.ResourceEventHandlerRegistration, error) {
 	fsii.eventHandler = handler
+	return nil, nil
 }
 
-func (fsii *fakeSharedIndexInformer) AddEventHandlerWithResyncPeriod(handler cache.ResourceEventHandler, resyncPeriod time.Duration) {
+func (fsii *fakeSharedIndexInformer) AddEventHandlerWithResyncPeriod(handler cache.ResourceEventHandler, resyncPeriod time.Duration) (cache.ResourceEventHandlerRegistration, error) {
 	fsii.t.Fatalf("NYI: AddEventHandlerWithResyncPeriod")
+	return nil, nil
 }
 
 func (fsii *fakeSharedIndexInformer) GetStore() cache.Store {
@@ -174,5 +176,14 @@ func (fsii *fakeSharedIndexInformer) SetWatchErrorHandler(handler cache.WatchErr
 
 func (fsii *fakeSharedIndexInformer) SetTransform(handler cache.TransformFunc) error {
 	fsii.t.Fatalf("NYI: SetTransform")
+	return nil
+}
+
+func (fsii *fakeSharedIndexInformer) IsStopped() bool {
+	fsii.t.Fatalf("NYI: IsStopped")
+	return false
+}
+func (fsii *fakeSharedIndexInformer) RemoveEventHandler(handler cache.ResourceEventHandlerRegistration) error {
+	fsii.t.Fatalf("NYI: RemoveEventHandler")
 	return nil
 }
