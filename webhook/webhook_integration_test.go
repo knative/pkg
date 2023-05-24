@@ -67,8 +67,7 @@ func TestMissingContentType(t *testing.T) {
 		}
 	}()
 
-	pollErr := waitForServerAvailable(t, serverURL, testTimeout)
-	if pollErr != nil {
+	if err = waitForServerAvailable(t, serverURL, testTimeout); err != nil {
 		t.Fatal("waitForServerAvailable() =", err)
 	}
 
@@ -121,8 +120,7 @@ func testEmptyRequestBody(t *testing.T, controller interface{}) {
 		}
 	}()
 
-	pollErr := waitForServerAvailable(t, serverURL, testTimeout)
-	if pollErr != nil {
+	if err = waitForServerAvailable(t, serverURL, testTimeout); err != nil {
 		t.Fatal("waitForServerAvailable() =", err)
 	}
 
