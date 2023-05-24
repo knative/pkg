@@ -19,7 +19,6 @@ package webhook
 import (
 	"context"
 	"crypto/tls"
-	"fmt"
 	"net"
 	"testing"
 	"time"
@@ -73,25 +72,27 @@ func newNonRunningTestWebhook(t *testing.T, options Options, acs ...interface{})
 }
 
 func TestRegistrationStopChanFire(t *testing.T) {
-	opts := newDefaultOptions()
-	_, ac, cancel := newNonRunningTestWebhook(t, opts)
+	wh, serverURL, _, cancel, err := testSetupNoTLS(t)
+	if err != nil {
+		t.Fatal("testSetup() =", err)
+	}
 	defer cancel()
 
 	stopCh := make(chan struct{})
 
 	var g errgroup.Group
 	g.Go(func() error {
-		return ac.Run(stopCh)
+		return wh.Run(stopCh)
 	})
 	close(stopCh)
 
 	if err := g.Wait(); err != nil {
 		t.Fatal("Error during run: ", err)
 	}
-	conn, err := net.Dial("tcp", fmt.Sprintf(":%d", opts.Port))
+	conn, err := net.Dial("tcp", serverURL)
 	if err == nil {
 		conn.Close()
-		t.Error("Unexpected success to dial to port", opts.Port)
+		t.Error("Unexpected success to dial to ", serverURL)
 	}
 }
 
