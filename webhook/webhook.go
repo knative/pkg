@@ -22,6 +22,7 @@ import (
 	"errors"
 	"fmt"
 	"html"
+	"log"
 	"net/http"
 	"time"
 
@@ -209,6 +210,15 @@ func (wh *Webhook) InformersHaveSynced() {
 	wh.Logger.Info("Informers have been synced, unblocking admission webhooks.")
 }
 
+type zapWrapper struct {
+	logger *zap.SugaredLogger
+}
+
+func (z *zapWrapper) Write(p []byte) (n int, err error) {
+	z.logger.Errorw(string(p))
+	return len(p), nil
+}
+
 // Run implements the admission controller run loop.
 func (wh *Webhook) Run(stop <-chan struct{}) error {
 	logger := wh.Logger
@@ -220,6 +230,7 @@ func (wh *Webhook) Run(stop <-chan struct{}) error {
 	}
 
 	server := &http.Server{
+		ErrorLog:          log.New(&zapWrapper{logger}, "", 0),
 		Handler:           drainer,
 		Addr:              fmt.Sprint(":", wh.Options.Port),
 		TLSConfig:         wh.tlsConfig,
