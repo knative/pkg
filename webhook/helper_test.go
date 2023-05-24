@@ -22,7 +22,6 @@ import (
 	"crypto/x509"
 	"net"
 	"net/http"
-	"strconv"
 	"testing"
 	"time"
 
@@ -169,22 +168,6 @@ func waitForServerAvailable(t *testing.T, serverURL string, timeout time.Duratio
 	}
 
 	return wait.PollImmediate(interval, timeout, conditionFunc)
-}
-
-func newTestPort() (port int, err error) {
-	server, err := net.Listen("tcp", ":0")
-	if err != nil {
-		return 0, err
-	}
-
-	defer server.Close()
-
-	_, portString, err := net.SplitHostPort(server.Addr().String())
-	if err != nil {
-		return 0, err
-	}
-
-	return strconv.Atoi(portString)
 }
 
 func createNamespace(t *testing.T, kubeClient kubernetes.Interface, name string) error {

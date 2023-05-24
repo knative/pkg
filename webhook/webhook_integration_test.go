@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"strings"
 	"testing"
@@ -192,15 +193,17 @@ func TestSetupWebhookHTTPServerError(t *testing.T) {
 
 func testSetup(t *testing.T, acs ...interface{}) (*Webhook, string, context.Context, context.CancelFunc, error) {
 	t.Helper()
-	port, err := newTestPort()
+
+	// ephemeral port
+	l, err := net.Listen("tcp", ":0")
 	if err != nil {
-		return nil, "", nil, nil, err
+		t.Fatal("unable to get ephemeral port: ", err)
 	}
 
 	defaultOpts := newDefaultOptions()
-	defaultOpts.Port = port
 
 	ctx, wh, cancel := newNonRunningTestWebhook(t, defaultOpts, acs...)
+	wh.testListener = l
 
 	// Create certificate
 	secret, err := certresources.MakeSecret(ctx, defaultOpts.SecretName, system.Namespace(), defaultOpts.ServiceName)
@@ -214,21 +217,23 @@ func testSetup(t *testing.T, acs ...interface{}) (*Webhook, string, context.Cont
 	}
 
 	resetMetrics()
-	return wh, fmt.Sprintf("0.0.0.0:%d", port), ctx, cancel, nil
+	return wh, l.Addr().String(), ctx, cancel, nil
 }
 
 func testSetupNoTLS(t *testing.T, acs ...interface{}) (*Webhook, string, context.Context, context.CancelFunc, error) {
 	t.Helper()
-	port, err := newTestPort()
+
+	// ephemeral port
+	l, err := net.Listen("tcp", ":0")
 	if err != nil {
 		return nil, "", nil, nil, err
 	}
 
 	defaultOpts := newDefaultOptions()
 	defaultOpts.SecretName = ""
-	defaultOpts.Port = port
 	ctx, wh, cancel := newNonRunningTestWebhook(t, defaultOpts, acs...)
+	wh.testListener = l
 
 	resetMetrics()
-	return wh, fmt.Sprintf("0.0.0.0:%d", port), ctx, cancel, nil
+	return wh, l.Addr().String(), ctx, cancel, nil
 }
