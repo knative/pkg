@@ -128,14 +128,39 @@ func TestEnsureLabelSelectorExpressions(t *testing.T) {
 		})
 	}
 }
-
-func waitForServerAvailable(t *testing.T, serverURL string, timeout time.Duration) error {
+func waitForNonTLSServerAvailable(t *testing.T, serverURL string, timeout time.Duration) error {
 	t.Helper()
 	var interval = 100 * time.Millisecond
 
 	conditionFunc := func() (done bool, err error) {
 		var conn net.Conn
 		conn, _ = net.DialTimeout("tcp", serverURL, timeout)
+		if conn != nil {
+			conn.Close()
+			return true, nil
+		}
+		return false, nil
+	}
+
+	return wait.PollImmediate(interval, timeout, conditionFunc)
+}
+
+func waitForServerAvailable(t *testing.T, serverURL string, timeout time.Duration) error {
+	t.Helper()
+
+	var (
+		// if this is too low you'll see TLS handshake EOF warnings
+		interval = 500 * time.Millisecond
+		tlsConf  = &tls.Config{InsecureSkipVerify: true}
+		dialer   = &net.Dialer{
+			Timeout:   interval, // Initial duration.
+			KeepAlive: 5 * time.Second,
+			DualStack: true,
+		}
+	)
+
+	conditionFunc := func() (done bool, err error) {
+		conn, _ := tls.DialWithDialer(dialer, "tcp", serverURL, tlsConf)
 		if conn != nil {
 			conn.Close()
 			return true, nil
@@ -194,11 +219,9 @@ func createTestConfigMap(t *testing.T, kubeClient kubernetes.Interface) error {
 func createSecureTLSClient(t *testing.T, kubeClient kubernetes.Interface, acOpts *Options) (*http.Client, error) {
 	t.Helper()
 	ctx := TestContextWithLogger(t)
-	secret, err := certresources.MakeSecret(ctx, acOpts.SecretName, system.Namespace(), acOpts.ServiceName)
+
+	secret, err := kubeClient.CoreV1().Secrets(system.Namespace()).Get(ctx, acOpts.SecretName, metav1.GetOptions{})
 	if err != nil {
-		return nil, err
-	}
-	if _, err := kubeClient.CoreV1().Secrets(secret.Namespace).Create(context.Background(), secret, metav1.CreateOptions{}); err != nil {
 		return nil, err
 	}
 

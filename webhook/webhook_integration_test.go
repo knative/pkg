@@ -33,6 +33,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"knative.dev/pkg/metrics/metricstest"
 	pkgtest "knative.dev/pkg/testing"
+	certresources "knative.dev/pkg/webhook/certificates/resources"
 )
 
 // createResource creates a testing.Resource with the given name in the system namespace.
@@ -200,7 +201,19 @@ func testSetup(t *testing.T, acs ...interface{}) (*Webhook, string, context.Cont
 
 	defaultOpts := newDefaultOptions()
 	defaultOpts.Port = port
+
 	ctx, wh, cancel := newNonRunningTestWebhook(t, defaultOpts, acs...)
+
+	// Create certificate
+	secret, err := certresources.MakeSecret(ctx, defaultOpts.SecretName, system.Namespace(), defaultOpts.ServiceName)
+	if err != nil {
+		t.Fatalf("failed to create certificate")
+	}
+	kubeClient := kubeclient.Get(ctx)
+
+	if _, err := kubeClient.CoreV1().Secrets(secret.Namespace).Create(context.Background(), secret, metav1.CreateOptions{}); err != nil {
+		t.Fatalf("failed to create secret")
+	}
 
 	resetMetrics()
 	return wh, fmt.Sprintf("0.0.0.0:%d", port), ctx, cancel, nil

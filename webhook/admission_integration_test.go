@@ -243,7 +243,7 @@ func TestAdmissionValidResponseForResource(t *testing.T) {
 		}
 	}()
 
-	pollErr := waitForServerAvailable(t, serverURL, testTimeout)
+	pollErr := waitForNonTLSServerAvailable(t, serverURL, testTimeout)
 	if pollErr != nil {
 		t.Fatal("waitForServerAvailable() =", err)
 	}
@@ -594,7 +594,7 @@ func TestAdmissionValidResponseForRequestBody(t *testing.T) {
 		}
 	}()
 
-	pollErr := waitForServerAvailable(t, serverURL, testTimeout)
+	pollErr := waitForNonTLSServerAvailable(t, serverURL, testTimeout)
 	if pollErr != nil {
 		t.Fatal("waitForServerAvailable() =", err)
 	}
