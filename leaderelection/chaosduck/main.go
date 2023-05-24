@@ -24,6 +24,7 @@ import (
 	"errors"
 	"flag"
 	"log"
+	"math/rand"
 	"regexp"
 	"strings"
 	"time"
@@ -35,6 +36,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
+
 	kubeclient "knative.dev/pkg/client/injection/kube/client"
 	"knative.dev/pkg/kflag"
 	"knative.dev/pkg/signals"
@@ -45,15 +47,17 @@ import (
 type components map[string]sets.String
 
 var (
-	disabledComponents      kflag.StringSet
-	disabledComponentsRegex kflag.StringSet
-	tributePeriod           = 20 * time.Second
-	tributeFactor           = 2.0
+	disabledComponents         kflag.StringSet
+	enabledNonLeasedComponents kflag.StringSet
+	disabledComponentsRegex    kflag.StringSet
+	tributePeriod              = 20 * time.Second
+	tributeFactor              = 2.0
 )
 
 func init() {
 	// Note that we don't explicitly call flag.Parse() because ParseAndGetConfigOrDie below does this already.
 	flag.Var(&disabledComponents, "disable", "A repeatable flag to disable chaos for certain components.")
+	flag.Var(&enabledNonLeasedComponents, "enable-non-leased", "A repeatable flag (pod label) to enable chaos for certain pods that don't hold any lease.")
 	flag.Var(&disabledComponentsRegex, "disableRegex", "A repeatable flag to disable chaos for components matching one of the passed regexes.")
 	flag.DurationVar(&tributePeriod, "period", tributePeriod, "How frequently to terminate a leader pod per component (this is the base duration used with the jitter factor from -factor).")
 	flag.Float64Var(&tributeFactor, "factor", tributeFactor, "The jitter factor to apply to the period.")
@@ -105,6 +109,29 @@ func buildComponents(ctx context.Context, kc kubernetes.Interface) (components, 
 		}
 		set.Insert(pod)
 	}
+
+	for _, label := range enabledNonLeasedComponents.Value.List() {
+		pods, err := kc.CoreV1().Pods(system.Namespace()).List(ctx, metav1.ListOptions{LabelSelector: label, Limit: 100})
+		if err != nil {
+			return nil, err
+		}
+
+		set, ok := cs[label]
+		if !ok {
+			set = sets.NewString()
+			cs[label] = set
+		}
+
+		s := rand.New(rand.NewSource(rand.Int63()))
+		s.Shuffle(len(pods.Items), func(i, j int) {
+			pods.Items[i], pods.Items[j] = pods.Items[j], pods.Items[i]
+		})
+
+		for _, p := range pods.Items {
+			set.Insert(p.Name)
+		}
+	}
+
 	return cs, nil
 }
 
