@@ -79,8 +79,7 @@ func TestConversionValidResponse(t *testing.T) {
 		}
 	}()
 
-	pollErr := waitForServerAvailable(t, serverURL, testTimeout)
-	if pollErr != nil {
+	if err = waitForServerAvailable(t, serverURL, testTimeout); err != nil {
 		t.Fatal("waitForServerAvailable() =", err)
 	}
 	tlsClient, err := createSecureTLSClient(t, kubeclient.Get(ctx), &wh.Options)
@@ -168,8 +167,7 @@ func TestConversionInvalidResponse(t *testing.T) {
 		}
 	}()
 
-	pollErr := waitForServerAvailable(t, serverURL, testTimeout)
-	if pollErr != nil {
+	if err = waitForServerAvailable(t, serverURL, testTimeout); err != nil {
 		t.Fatal("waitForServerAvailable() =", err)
 	}
 	tlsClient, err := createSecureTLSClient(t, kubeclient.Get(ctx), &wh.Options)

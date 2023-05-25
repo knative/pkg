@@ -115,8 +115,7 @@ func TestAdmissionValidResponseForResourceTLS(t *testing.T) {
 		}
 	}()
 
-	pollErr := waitForServerAvailable(t, serverURL, testTimeout)
-	if pollErr != nil {
+	if err = waitForServerAvailable(t, serverURL, testTimeout); err != nil {
 		t.Fatal("waitForServerAvailable() =", err)
 	}
 	tlsClient, err := createSecureTLSClient(t, kubeclient.Get(ctx), &wh.Options)
@@ -243,8 +242,7 @@ func TestAdmissionValidResponseForResource(t *testing.T) {
 		}
 	}()
 
-	pollErr := waitForServerAvailable(t, serverURL, testTimeout)
-	if pollErr != nil {
+	if err = waitForNonTLSServerAvailable(t, serverURL, testTimeout); err != nil {
 		t.Fatal("waitForServerAvailable() =", err)
 	}
 	client := createNonTLSClient()
@@ -370,8 +368,7 @@ func TestAdmissionInvalidResponseForResource(t *testing.T) {
 		}
 	}()
 
-	pollErr := waitForServerAvailable(t, serverURL, testTimeout)
-	if pollErr != nil {
+	if err = waitForServerAvailable(t, serverURL, testTimeout); err != nil {
 		t.Fatal("waitForServerAvailable() =", err)
 	}
 	tlsClient, err := createSecureTLSClient(t, kubeclient.Get(ctx), &wh.Options)
@@ -488,8 +485,7 @@ func TestAdmissionWarningResponseForResource(t *testing.T) {
 		}
 	}()
 
-	pollErr := waitForServerAvailable(t, serverURL, testTimeout)
-	if pollErr != nil {
+	if err = waitForServerAvailable(t, serverURL, testTimeout); err != nil {
 		t.Fatal("waitForServerAvailable() =", err)
 	}
 	tlsClient, err := createSecureTLSClient(t, kubeclient.Get(ctx), &wh.Options)
@@ -594,8 +590,7 @@ func TestAdmissionValidResponseForRequestBody(t *testing.T) {
 		}
 	}()
 
-	pollErr := waitForServerAvailable(t, serverURL, testTimeout)
-	if pollErr != nil {
+	if err = waitForNonTLSServerAvailable(t, serverURL, testTimeout); err != nil {
 		t.Fatal("waitForServerAvailable() =", err)
 	}
 	client := createNonTLSClient()
