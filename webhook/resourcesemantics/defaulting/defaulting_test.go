@@ -52,7 +52,6 @@ import (
 	. "knative.dev/pkg/reconciler/testing"
 	. "knative.dev/pkg/testing"
 	"knative.dev/pkg/webhook/resourcesemantics"
-	"knative.dev/pkg/webhook/resourcesemantics/common"
 	. "knative.dev/pkg/webhook/testing"
 )
 
@@ -87,7 +86,7 @@ var (
 		}: &InnerDefaultResource{},
 	}
 
-	callbacks = map[schema.GroupVersionKind]common.Callback{
+	callbacks = map[schema.GroupVersionKind]Callback{
 		{
 			Group:   "pkg.knative.dev",
 			Version: "v1alpha1",

@@ -32,7 +32,6 @@ import (
 	"knative.dev/pkg/kmeta"
 	"knative.dev/pkg/logging"
 	"knative.dev/pkg/logging/logkey"
-	"knative.dev/pkg/webhook/resourcesemantics/common"
 )
 
 // Convert implements webhook.ConversionController
@@ -107,9 +106,9 @@ func (r *reconciler) convert(
 		return ret, fmt.Errorf("conversion not supported for type %s", formatGK(inGVK.GroupKind()))
 	}
 
-	in := inZygote.DeepCopyObject().(common.ConvertibleObject)
-	hub := hubZygote.DeepCopyObject().(common.ConvertibleObject)
-	out := outZygote.DeepCopyObject().(common.ConvertibleObject)
+	in := inZygote.DeepCopyObject().(ConvertibleObject)
+	hub := hubZygote.DeepCopyObject().(ConvertibleObject)
+	out := outZygote.DeepCopyObject().(ConvertibleObject)
 
 	hubGVK := inGVK.GroupKind().WithVersion(conv.HubVersion)
 

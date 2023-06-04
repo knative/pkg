@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package common
+package validation
 
 import (
 	"context"
@@ -29,11 +29,6 @@ type options struct {
 	wc                    func(context.Context) context.Context
 	disallowUnknownFields bool
 	callbacks             map[schema.GroupVersionKind]Callback
-	kinds                 map[schema.GroupKind]GroupKindConversion
-}
-
-func NewOptions() *options {
-	return &options{}
 }
 
 type OptionFunc func(*options)
@@ -44,28 +39,10 @@ func WithCallbacks(callbacks map[schema.GroupVersionKind]Callback) OptionFunc {
 	}
 }
 
-func (o *options) Callbacks() map[schema.GroupVersionKind]Callback {
-	return o.callbacks
-}
-
-func WithKinds(kinds map[schema.GroupKind]GroupKindConversion) OptionFunc {
-	return func(o *options) {
-		o.kinds = kinds
-	}
-}
-
-func (o *options) Kinds() map[schema.GroupKind]GroupKindConversion {
-	return o.kinds
-}
-
 func WithPath(path string) OptionFunc {
 	return func(o *options) {
 		o.path = path
 	}
-}
-
-func (o *options) Path() string {
-	return o.path
 }
 
 func WithTypes(types map[schema.GroupVersionKind]resourcesemantics.GenericCRD) OptionFunc {
@@ -74,18 +51,10 @@ func WithTypes(types map[schema.GroupVersionKind]resourcesemantics.GenericCRD) O
 	}
 }
 
-func (o *options) Types() map[schema.GroupVersionKind]resourcesemantics.GenericCRD {
-	return o.types
-}
-
 func WithWrapContext(f func(context.Context) context.Context) OptionFunc {
 	return func(o *options) {
 		o.wc = f
 	}
-}
-
-func (o *options) WrapContext() func(context.Context) context.Context {
-	return o.wc
 }
 
 func WithDisallowUnknownFields() OptionFunc {

@@ -35,7 +35,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"knative.dev/pkg/webhook"
-	"knative.dev/pkg/webhook/resourcesemantics/common"
 	"knative.dev/pkg/webhook/resourcesemantics/conversion/internal"
 
 	. "knative.dev/pkg/reconciler/testing"
@@ -48,14 +47,14 @@ var (
 		Kind:  internal.Kind,
 	}
 
-	zygotes = map[string]common.ConvertibleObject{
+	zygotes = map[string]ConvertibleObject{
 		"v1":    &internal.V1Resource{},
 		"v2":    &internal.V2Resource{},
 		"v3":    &internal.V3Resource{},
 		"error": &internal.ErrorResource{},
 	}
 
-	kinds = map[schema.GroupKind]common.GroupKindConversion{
+	kinds = map[schema.GroupKind]GroupKindConversion{
 		testGK: {
 			DefinitionName: "resource.webhook.pkg.knative.dev",
 			HubVersion:     "v1",
@@ -407,7 +406,7 @@ func TestConversionFailureToMarshalOutput(t *testing.T) {
 
 func TestConversionFailureToConvert(t *testing.T) {
 	// v1 => error resource => v3
-	kinds := map[schema.GroupKind]common.GroupKindConversion{
+	kinds := map[schema.GroupKind]GroupKindConversion{
 		testGK: {
 			DefinitionName: "resource.webhook.pkg.knative.dev",
 			HubVersion:     "error",
@@ -514,22 +513,22 @@ func TestConversionMissingZygotes(t *testing.T) {
 	// v2 (input)  => v1 (hub) => v3 (output)
 	tests := []struct {
 		name    string
-		zygotes map[string]common.ConvertibleObject
+		zygotes map[string]ConvertibleObject
 	}{{
 		name: "missing input",
-		zygotes: map[string]common.ConvertibleObject{
+		zygotes: map[string]ConvertibleObject{
 			"v1": &internal.V1Resource{},
 			"v3": &internal.V3Resource{},
 		},
 	}, {
 		name: "missing output",
-		zygotes: map[string]common.ConvertibleObject{
+		zygotes: map[string]ConvertibleObject{
 			"v1": &internal.V1Resource{},
 			"v2": &internal.V2Resource{},
 		},
 	}, {
 		name: "missing hub",
-		zygotes: map[string]common.ConvertibleObject{
+		zygotes: map[string]ConvertibleObject{
 			"v2": &internal.V2Resource{},
 			"v3": &internal.V3Resource{},
 		},
@@ -537,7 +536,7 @@ func TestConversionMissingZygotes(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			kinds = map[schema.GroupKind]common.GroupKindConversion{
+			kinds = map[schema.GroupKind]GroupKindConversion{
 				testGK: {
 					DefinitionName: "resource.webhook.pkg.knative.dev",
 					HubVersion:     "v1",
@@ -617,7 +616,7 @@ func newConversion(t *testing.T) (context.Context, webhook.ConversionController)
 
 func newConversionWithKinds(
 	t *testing.T,
-	kinds map[schema.GroupKind]common.GroupKindConversion,
+	kinds map[schema.GroupKind]GroupKindConversion,
 ) (
 	context.Context,
 	webhook.ConversionController,

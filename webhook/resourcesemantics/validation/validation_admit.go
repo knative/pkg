@@ -31,13 +31,21 @@ import (
 	"knative.dev/pkg/webhook"
 	"knative.dev/pkg/webhook/json"
 	"knative.dev/pkg/webhook/resourcesemantics"
-	"knative.dev/pkg/webhook/resourcesemantics/common"
 )
 
 var errMissingNewObject = errors.New("the new object may not be nil")
 
+// Callback is a generic function to be called by a consumer of validation
+type Callback struct {
+	// function is the callback to be invoked
+	function func(ctx context.Context, unstructured *unstructured.Unstructured) error
+
+	// supportedVerbs are the verbs supported for the callback.
+	supportedVerbs map[webhook.Operation]struct{}
+}
+
 // NewCallback creates a new callback function to be invoked on supported verbs.
-func NewCallback(function func(context.Context, *unstructured.Unstructured) error, supportedVerbs ...webhook.Operation) common.Callback {
+func NewCallback(function func(context.Context, *unstructured.Unstructured) error, supportedVerbs ...webhook.Operation) Callback {
 	m := make(map[webhook.Operation]struct{})
 	for _, op := range supportedVerbs {
 		if _, has := m[op]; has {
@@ -45,7 +53,7 @@ func NewCallback(function func(context.Context, *unstructured.Unstructured) erro
 		}
 		m[op] = struct{}{}
 	}
-	return common.Callback{Function: function, SupportedVerbs: m}
+	return Callback{function: function, supportedVerbs: m}
 }
 
 var _ webhook.AdmissionController = (*reconciler)(nil)
@@ -208,13 +216,13 @@ func (ac *reconciler) callback(ctx context.Context, req *admissionv1.AdmissionRe
 
 	// Generically callback if any are provided for the resource.
 	if c, ok := ac.callbacks[gvk]; ok {
-		if _, supported := c.SupportedVerbs[req.Operation]; supported {
+		if _, supported := c.supportedVerbs[req.Operation]; supported {
 			unstruct := &unstructured.Unstructured{}
 			if err := json.Unmarshal(toDecode, unstruct); err != nil {
 				return fmt.Errorf("cannot decode incoming new object: %w", err)
 			}
 
-			return c.Function(ctx, unstruct)
+			return c.function(ctx, unstruct)
 		}
 	}
 

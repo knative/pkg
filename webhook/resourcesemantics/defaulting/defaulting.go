@@ -49,7 +49,6 @@ import (
 	certresources "knative.dev/pkg/webhook/certificates/resources"
 	"knative.dev/pkg/webhook/json"
 	"knative.dev/pkg/webhook/resourcesemantics"
-	"knative.dev/pkg/webhook/resourcesemantics/common"
 )
 
 var errMissingNewObject = errors.New("the new object may not be nil")
@@ -62,7 +61,7 @@ type reconciler struct {
 	key       types.NamespacedName
 	path      string
 	handlers  map[schema.GroupVersionKind]resourcesemantics.GenericCRD
-	callbacks map[schema.GroupVersionKind]common.Callback
+	callbacks map[schema.GroupVersionKind]Callback
 
 	withContext func(context.Context) context.Context
 
@@ -74,8 +73,21 @@ type reconciler struct {
 	secretName            string
 }
 
+// CallbackFunc is the function to be invoked.
+type CallbackFunc func(ctx context.Context, unstructured *unstructured.Unstructured) error
+
+// Callback is a generic function to be called by a consumer of defaulting.
+type Callback struct {
+	// function is the callback to be invoked.
+	function CallbackFunc
+
+	// supportedVerbs are the verbs supported for the callback.
+	// The function will only be called on these actions.
+	supportedVerbs map[webhook.Operation]struct{}
+}
+
 // NewCallback creates a new callback function to be invoked on supported verbs.
-func NewCallback(function func(context.Context, *unstructured.Unstructured) error, supportedVerbs ...webhook.Operation) common.Callback {
+func NewCallback(function func(context.Context, *unstructured.Unstructured) error, supportedVerbs ...webhook.Operation) Callback {
 	if function == nil {
 		panic("expected function, got nil")
 	}
@@ -89,7 +101,7 @@ func NewCallback(function func(context.Context, *unstructured.Unstructured) erro
 		}
 		m[op] = struct{}{}
 	}
-	return common.Callback{Function: function, SupportedVerbs: m}
+	return Callback{function: function, supportedVerbs: m}
 }
 
 var _ controller.Reconciler = (*reconciler)(nil)
@@ -388,7 +400,7 @@ func (ac *reconciler) callback(ctx context.Context, gvk schema.GroupVersionKind,
 	}
 
 	// Check if request operation is a supported webhook operation.
-	if _, isSupported := callback.SupportedVerbs[req.Operation]; !isSupported {
+	if _, isSupported := callback.supportedVerbs[req.Operation]; !isSupported {
 		return patches, nil
 	}
 
@@ -418,7 +430,7 @@ func (ac *reconciler) callback(ctx context.Context, gvk schema.GroupVersionKind,
 	ctx = apis.WithUserInfo(ctx, &req.UserInfo)
 
 	// Call callback passing after.
-	if err := callback.Function(ctx, after); err != nil {
+	if err := callback.function(ctx, after); err != nil {
 		return patches, err
 	}
 

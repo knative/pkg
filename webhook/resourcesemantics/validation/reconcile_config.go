@@ -42,7 +42,6 @@ import (
 	"knative.dev/pkg/webhook"
 	certresources "knative.dev/pkg/webhook/certificates/resources"
 	"knative.dev/pkg/webhook/resourcesemantics"
-	"knative.dev/pkg/webhook/resourcesemantics/common"
 )
 
 // reconciler implements the AdmissionController for resources
@@ -53,7 +52,7 @@ type reconciler struct {
 	key       types.NamespacedName
 	path      string
 	handlers  map[schema.GroupVersionKind]resourcesemantics.GenericCRD
-	callbacks map[schema.GroupVersionKind]common.Callback
+	callbacks map[schema.GroupVersionKind]Callback
 
 	withContext func(context.Context) context.Context
 
@@ -152,8 +151,8 @@ func (ac *reconciler) reconcileValidatingWebhook(ctx context.Context, caCert []b
 		plural := strings.ToLower(flect.Pluralize(gvk.Kind))
 		resources := []string{plural, plural + "/status"}
 
-		verbs := make([]admissionregistrationv1.OperationType, 0, len(callback.SupportedVerbs))
-		for verb := range callback.SupportedVerbs {
+		verbs := make([]admissionregistrationv1.OperationType, 0, len(callback.supportedVerbs))
+		for verb := range callback.supportedVerbs {
 			verbs = append(verbs, admissionregistrationv1.OperationType(verb))
 		}
 		// supportedVerbs is a map which doesn't provide a stable order in for loops.
