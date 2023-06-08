@@ -96,10 +96,10 @@ func NewConversionController(
 		WithKinds(kinds),
 	}
 
-	return NewController(ctx, opts...)
+	return newController(ctx, opts...)
 }
 
-func NewController(ctx context.Context, optsFunc ...OptionFunc) *controller.Impl {
+func newController(ctx context.Context, optsFunc ...OptionFunc) *controller.Impl {
 	secretInformer := secretinformer.Get(ctx)
 	crdInformer := crdinformer.Get(ctx)
 	client := apixclient.Get(ctx)

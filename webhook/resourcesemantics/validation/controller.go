@@ -43,36 +43,23 @@ func NewAdmissionControllerWithConfig(
 	handlers map[schema.GroupVersionKind]resourcesemantics.GenericCRD,
 	wc func(context.Context) context.Context,
 	disallowUnknownFields bool,
-	callbacks ...map[schema.GroupVersionKind]Callback,
+	callbacks map[schema.GroupVersionKind]Callback,
 ) *controller.Impl {
-
-	// This not ideal, we are using a variadic argument to effectively make callbacks optional
-	// This allows this addition to be non-breaking to consumers of /pkg
-	// TODO: once all sub-repos have adopted this, we might move this back to a traditional param.
-	var unwrappedCallbacks map[schema.GroupVersionKind]Callback
-	switch len(callbacks) {
-	case 0:
-		unwrappedCallbacks = map[schema.GroupVersionKind]Callback{}
-	case 1:
-		unwrappedCallbacks = callbacks[0]
-	default:
-		panic("NewAdmissionController may not be called with multiple callback maps")
-	}
 
 	opts := []OptionFunc{
 		WithPath(path),
 		WithTypes(handlers),
 		WithWrapContext(wc),
-		WithCallbacks(unwrappedCallbacks),
+		WithCallbacks(callbacks),
 	}
 
 	if disallowUnknownFields {
 		opts = append(opts, WithDisallowUnknownFields())
 	}
-	return NewController(ctx, name, opts...)
+	return newController(ctx, name, opts...)
 }
 
-func NewController(ctx context.Context, name string, optsFunc ...OptionFunc) *controller.Impl {
+func newController(ctx context.Context, name string, optsFunc ...OptionFunc) *controller.Impl {
 	client := kubeclient.Get(ctx)
 	vwhInformer := vwhinformer.Get(ctx)
 	secretInformer := secretinformer.Get(ctx)

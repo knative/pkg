@@ -70,10 +70,10 @@ func NewAdmissionController(
 		opts = append(opts, WithDisallowUnknownFields())
 	}
 
-	return NewController(ctx, name, opts...)
+	return newController(ctx, name, opts...)
 }
 
-func NewController(ctx context.Context, name string, optsFunc ...OptionFunc) *controller.Impl {
+func newController(ctx context.Context, name string, optsFunc ...OptionFunc) *controller.Impl {
 	client := kubeclient.Get(ctx)
 	mwhInformer := mwhinformer.Get(ctx)
 	secretInformer := secretinformer.Get(ctx)
