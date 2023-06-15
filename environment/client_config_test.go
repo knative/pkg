@@ -26,7 +26,7 @@ import (
 
 func TestInitFlag(t *testing.T) {
 	t.Setenv("KUBE_API_BURST", "50")
-	t.Setenv("KUBE_API_QPS", "60")
+	t.Setenv("KUBE_API_QPS", "60.1")
 	t.Setenv("KUBECONFIG", "myconfig")
 
 	c := new(ClientConfig)
@@ -40,7 +40,7 @@ func TestInitFlag(t *testing.T) {
 
 	expect := &ClientConfig{
 		Burst:      100,
-		QPS:        60,
+		QPS:        60.1,
 		Kubeconfig: "myconfig",
 	}
 
