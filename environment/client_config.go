@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"math"
 	"os"
+	"strings"
 
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
@@ -42,12 +43,19 @@ func (c *ClientConfig) InitFlags(fs *flag.FlagSet) {
 	fs.StringVar(&c.ServerURL, "server", "",
 		"The address of the Kubernetes API server. Overrides any value in kubeconfig. Only required if out-of-cluster.")
 
-	fs.StringVar(&c.Kubeconfig, "kubeconfig", os.Getenv("KUBECONFIG"),
+	fs.StringVar(&c.Kubeconfig, "kubeconfig", "",
 		"Path to a kubeconfig. Only required if out-of-cluster.")
 
 	fs.IntVar(&c.Burst, "kube-api-burst", 0, "Maximum burst for throttle.")
 
 	fs.Float64Var(&c.QPS, "kube-api-qps", 0, "Maximum QPS to the server from the client.")
+
+	// Apply flag values from env variable if set.
+	fs.VisitAll(func(f *flag.Flag) {
+		if s := os.Getenv(strings.ToUpper(strings.Replace(f.Name, "-", "_", -1))); s != "" {
+			f.Value.Set(s)
+		}
+	})
 }
 
 func (c *ClientConfig) GetRESTConfig() (*rest.Config, error) {
