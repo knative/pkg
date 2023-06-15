@@ -21,7 +21,7 @@ import (
 	"fmt"
 	"math"
 	"os"
-	"strings"
+	"strconv"
 
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
@@ -43,19 +43,19 @@ func (c *ClientConfig) InitFlags(fs *flag.FlagSet) {
 	fs.StringVar(&c.ServerURL, "server", "",
 		"The address of the Kubernetes API server. Overrides any value in kubeconfig. Only required if out-of-cluster.")
 
-	fs.StringVar(&c.Kubeconfig, "kubeconfig", "",
+	fs.StringVar(&c.Kubeconfig, "kubeconfig", os.Getenv("KUBECONFIG"),
 		"Path to a kubeconfig. Only required if out-of-cluster.")
 
-	fs.IntVar(&c.Burst, "kube-api-burst", 0, "Maximum burst for throttle.")
+	fs.IntVar(&c.Burst, "kube-api-burst", envVarOrDefault("KUBE_API_BURST", 0), "Maximum burst for throttle.")
 
-	fs.Float64Var(&c.QPS, "kube-api-qps", 0, "Maximum QPS to the server from the client.")
+	fs.Float64Var(&c.QPS, "kube-api-qps", float64(envVarOrDefault("KUBE_API_QPS", 0)), "Maximum QPS to the server from the client.")
+}
 
-	// Apply flag values from env variable if set.
-	fs.VisitAll(func(f *flag.Flag) {
-		if s := os.Getenv(strings.ToUpper(strings.Replace(f.Name, "-", "_", -1))); s != "" {
-			f.Value.Set(s)
-		}
-	})
+func envVarOrDefault(key string, val int) int {
+	if v := os.Getenv(key); v != "" {
+		val, _ = strconv.Atoi(v)
+	}
+	return val
 }
 
 func (c *ClientConfig) GetRESTConfig() (*rest.Config, error) {

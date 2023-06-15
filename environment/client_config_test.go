@@ -26,7 +26,6 @@ func TestInitFlag(t *testing.T) {
 		Burst:      100,
 		QPS:        60,
 		Kubeconfig: "myconfig",
-		Cluster:    "",
 	}
 
 	if !cmp.Equal(c, expect) {
