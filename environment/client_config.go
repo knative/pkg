@@ -19,6 +19,7 @@ package environment
 import (
 	"flag"
 	"fmt"
+	"log"
 	"math"
 	"os"
 	"strconv"
@@ -52,8 +53,11 @@ func (c *ClientConfig) InitFlags(fs *flag.FlagSet) {
 }
 
 func envVarOrDefault(key string, val float64) float64 {
+	var err error
 	if v := os.Getenv(key); v != "" {
-		val, _ = strconv.ParseFloat(v, 64)
+		if val, err = strconv.ParseFloat(v, 64); err != nil {
+			log.Fatal(err)
+		}
 	}
 	return val
 }
