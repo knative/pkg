@@ -58,12 +58,12 @@ type Options struct {
 	// If no SecretName is provided, then the webhook serves without TLS.
 	SecretName string
 
-	// ServerKeyEnv is the env var name for the webhook secret's key eg. `tls.key`.
-	// Default value is `server-key.pem`.
+	// ServerKeyEnv is the name for the webhook secret's data key eg. `tls.key`.
+	// Default value is `server-key.pem` if no value is passed.
 	ServerKey string
 
-	// ServerCertEnv is the env var name for the webhook secret's ca data key eg. `tls.crt`.
-	// Default value is `server-cert.pem`.
+	// ServerCertEnv is the name for the webhook secret's ca data key eg. `tls.crt`.
+	// Default value is `server-cert.pem` if no value is passed.
 	ServerCert string
 
 	// Port where the webhook is served. Per k8s admission
