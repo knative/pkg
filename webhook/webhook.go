@@ -58,6 +58,14 @@ type Options struct {
 	// If no SecretName is provided, then the webhook serves without TLS.
 	SecretName string
 
+	// ServerKeyEnv is the env var name for the webhook secret's key eg. `tls.key`.
+	// Default value is `server-key.pem`.
+	ServerKey string
+
+	// ServerCertEnv is the env var name for the webhook secret's ca data key eg. `tls.crt`.
+	// Default value is `server-cert.pem`.
+	ServerCert string
+
 	// Port where the webhook is served. Per k8s admission
 	// registration requirements this should be 443 unless there is
 	// only a single port for the service.
@@ -169,7 +177,8 @@ func New(
 					logger.Errorw("failed to fetch secret", zap.Error(err))
 					return nil, nil
 				}
-				sKey, sCert := certresources.GetSecretDataKeyNamesOrDefault()
+				webOpts := GetOptions(ctx)
+				sKey, sCert := certresources.GetSecretDataKeyNamesOrDefault(webOpts.ServerKey, webOpts.ServerCert)
 				serverKey, ok := secret.Data[sKey]
 				if !ok {
 					logger.Warn("server key missing")

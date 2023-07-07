@@ -18,7 +18,6 @@ package resources
 
 import (
 	"context"
-	"os"
 	"time"
 
 	corev1 "k8s.io/api/core/v1"
@@ -66,14 +65,15 @@ func MakeSecretInternal(ctx context.Context, name, namespace, serviceName string
 }
 
 // GetSecretDataKeyNamesOrDefault gets the names of the keys in the webhook secret's data.
-func GetSecretDataKeyNamesOrDefault() (serverKey string, serverCert string) {
+func GetSecretDataKeyNamesOrDefault(sKey string, sCert string) (serverKey string, serverCert string) {
 	serverKey = ServerKey
 	serverCert = ServerCert
-	if val, ok := os.LookupEnv(ServerKeyEnv); ok {
-		serverKey = val
+
+	if sKey != "" {
+		serverKey = sKey
 	}
-	if val, ok := os.LookupEnv(ServerCertEnv); ok {
-		serverCert = val
+	if sCert != "" {
+		serverCert = sCert
 	}
 	return serverKey, serverCert
 }
