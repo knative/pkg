@@ -27,12 +27,8 @@ import (
 const (
 	// ServerKey is the name of the key associated with the secret's private key.
 	ServerKey = "server-key.pem"
-	// ServerKeyEnv is the env var name for the webhook secret's key eg. `tls.key`.
-	ServerKeyEnv = "KNATIVE_WEBHOOK_SERVER_KEY"
 	// ServerCert is the name of the key associated with the secret's public key.
 	ServerCert = "server-cert.pem"
-	// ServerCertEnv is the env var name for the webhook secret's ca data key eg. `tls.crt`.
-	ServerCertEnv = "KNATIVE_WEBHOOK_SERVER_CERT"
 	// CACert is the name of the key associated with the certificate of the CA for
 	// the keypair.
 	CACert = "ca-cert.pem"
