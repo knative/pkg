@@ -101,7 +101,7 @@ func TestAdmissionValidResponseForResourceTLS(t *testing.T) {
 		path:     "/bazinga",
 		response: &admissionv1.AdmissionResponse{},
 	}
-	wh, serverURL, ctx, cancel, err := testSetup(t, nil, ac)
+	wh, serverURL, ctx, cancel, err := testSetup(t, ac)
 	if err != nil {
 		t.Fatal("testSetup() =", err)
 	}
@@ -353,7 +353,7 @@ func TestAdmissionInvalidResponseForResource(t *testing.T) {
 		path:     "/booger",
 		response: MakeErrorStatus(expectedError),
 	}
-	wh, serverURL, ctx, cancel, err := testSetup(t, nil, ac)
+	wh, serverURL, ctx, cancel, err := testSetup(t, ac)
 	if err != nil {
 		t.Fatal("testSetup() =", err)
 	}
@@ -470,7 +470,7 @@ func TestAdmissionWarningResponseForResource(t *testing.T) {
 		path:     "/warnmeplease",
 		response: &admissionv1.AdmissionResponse{Warnings: []string{"everything is not fine.\nlike really\nfor sure"}},
 	}
-	wh, serverURL, ctx, cancel, err := testSetup(t, nil, ac)
+	wh, serverURL, ctx, cancel, err := testSetup(t, ac)
 	if err != nil {
 		t.Fatal("testSetup() =", err)
 	}

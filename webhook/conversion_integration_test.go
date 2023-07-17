@@ -65,7 +65,7 @@ func TestConversionValidResponse(t *testing.T) {
 			UID: types.UID("some-uid"),
 		},
 	}
-	wh, serverURL, ctx, cancel, err := testSetup(t, nil, cc)
+	wh, serverURL, ctx, cancel, err := testSetup(t, cc)
 	if err != nil {
 		t.Fatal("testSetup() =", err)
 	}
@@ -153,7 +153,7 @@ func TestConversionInvalidResponse(t *testing.T) {
 			},
 		},
 	}
-	wh, serverURL, ctx, cancel, err := testSetup(t, nil, cc)
+	wh, serverURL, ctx, cancel, err := testSetup(t, cc)
 	if err != nil {
 		t.Fatal("testSetup() =", err)
 	}

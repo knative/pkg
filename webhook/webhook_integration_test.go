@@ -53,7 +53,7 @@ func createResource(name string) *pkgtest.Resource {
 const testTimeout = 10 * time.Second
 
 func TestMissingContentType(t *testing.T) {
-	wh, serverURL, ctx, cancel, err := testSetup(t, nil)
+	wh, serverURL, ctx, cancel, err := testSetup(t)
 	if err != nil {
 		t.Fatal("testSetup() =", err)
 	}
@@ -128,7 +128,7 @@ func TestServerWithCustomSecret(t *testing.T) {
 }
 
 func testEmptyRequestBody(t *testing.T, controller interface{}) {
-	wh, serverURL, ctx, cancel, err := testSetup(t, nil, controller)
+	wh, serverURL, ctx, cancel, err := testSetup(t, controller)
 	if err != nil {
 		t.Fatal("testSetup() =", err)
 	}
@@ -213,7 +213,7 @@ func TestSetupWebhookHTTPServerError(t *testing.T) {
 	}
 }
 
-func testSetup(t *testing.T, options *Options, acs ...interface{}) (*Webhook, string, context.Context, context.CancelFunc, error) {
+func testSetup(t *testing.T, acs ...interface{}) (*Webhook, string, context.Context, context.CancelFunc, error) {
 	t.Helper()
 
 	// ephemeral port
@@ -222,12 +222,8 @@ func testSetup(t *testing.T, options *Options, acs ...interface{}) (*Webhook, st
 		t.Fatal("unable to get ephemeral port: ", err)
 	}
 
-	var defaultOpts Options
-	if options == nil {
-		defaultOpts = newDefaultOptions()
-	} else {
-		defaultOpts = *options
-	}
+	defaultOpts := newDefaultOptions()
+
 	ctx, wh, cancel := newNonRunningTestWebhook(t, defaultOpts, acs...)
 	wh.testListener = l
 
