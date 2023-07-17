@@ -38,7 +38,6 @@ import (
 	admissionv1 "k8s.io/api/admission/v1"
 	"knative.dev/pkg/logging"
 	"knative.dev/pkg/system"
-	certresources "knative.dev/pkg/webhook/certificates/resources"
 )
 
 // Options contains the configuration for the webhook
@@ -58,13 +57,13 @@ type Options struct {
 	// If no SecretName is provided, then the webhook serves without TLS.
 	SecretName string
 
-	// ServerKeyEnv is the name for the webhook secret's data key eg. `tls.key`.
+	// ServerPrivateKeyName is the name for the webhook secret's data key e.g. `tls.key`.
 	// Default value is `server-key.pem` if no value is passed.
-	ServerKey string
+	ServerPrivateKeyName string
 
-	// ServerCertEnv is the name for the webhook secret's ca data key eg. `tls.crt`.
+	// ServerCertificateName is the name for the webhook secret's ca data key e.g. `tls.crt`.
 	// Default value is `server-cert.pem` if no value is passed.
-	ServerCert string
+	ServerCertificateName string
 
 	// Port where the webhook is served. Per k8s admission
 	// registration requirements this should be 443 unless there is
@@ -178,7 +177,7 @@ func New(
 					return nil, nil
 				}
 				webOpts := GetOptions(ctx)
-				sKey, sCert := certresources.GetSecretDataKeyNamesOrDefault(webOpts.ServerKey, webOpts.ServerCert)
+				sKey, sCert := getSecretDataKeyNamesOrDefault(webOpts.ServerPrivateKeyName, webOpts.ServerCertificateName)
 				serverKey, ok := secret.Data[sKey]
 				if !ok {
 					logger.Warn("server key missing")

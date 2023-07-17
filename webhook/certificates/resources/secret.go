@@ -59,17 +59,3 @@ func MakeSecretInternal(ctx context.Context, name, namespace, serviceName string
 		},
 	}, nil
 }
-
-// GetSecretDataKeyNamesOrDefault gets the names of the keys in the webhook secret's data.
-func GetSecretDataKeyNamesOrDefault(sKey string, sCert string) (serverKey string, serverCert string) {
-	serverKey = ServerKey
-	serverCert = ServerCert
-
-	if sKey != "" {
-		serverKey = sKey
-	}
-	if sCert != "" {
-		serverCert = sCert
-	}
-	return serverKey, serverCert
-}

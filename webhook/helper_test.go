@@ -208,7 +208,7 @@ func createSecureTLSClient(t *testing.T, kubeClient kubernetes.Interface, acOpts
 		return nil, err
 	}
 
-	sKey, sCert := certresources.GetSecretDataKeyNamesOrDefault(acOpts.ServerKey, acOpts.ServerCert)
+	sKey, sCert := getSecretDataKeyNamesOrDefault(acOpts.ServerPrivateKeyName, acOpts.ServerCertificateName)
 
 	serverKey := secret.Data[sKey]
 	serverCert := secret.Data[sCert]
@@ -249,7 +249,7 @@ func customSecretWithOverrides(ctx context.Context, name, namespace, serviceName
 		return nil, err
 	}
 	webOpts := GetOptions(ctx)
-	sKey, sCert := certresources.GetSecretDataKeyNamesOrDefault(webOpts.ServerKey, webOpts.ServerCert)
+	sKey, sCert := getSecretDataKeyNamesOrDefault(webOpts.ServerPrivateKeyName, webOpts.ServerCertificateName)
 	return &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,

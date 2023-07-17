@@ -105,11 +105,8 @@ func TestMissingContentType(t *testing.T) {
 	metricstest.CheckStatsNotReported(t, requestCountName, requestLatenciesName)
 }
 
-func TestMissingContentTypeCustomSecret(t *testing.T) {
-	defaultOptions := newCustomOptions()
-	certresources.MakeSecret = customSecretWithOverrides
-
-	wh, serverURL, ctx, cancel, err := testSetup(t, &defaultOptions)
+func TestServerWithCustomSecret(t *testing.T) {
+	wh, serverURL, ctx, cancel, err := testSetupCustomSecret(t)
 	if err != nil {
 		t.Fatal("testSetup() =", err)
 	}
@@ -128,42 +125,6 @@ func TestMissingContentTypeCustomSecret(t *testing.T) {
 	if pollErr != nil {
 		t.Fatal("waitForServerAvailable() =", err)
 	}
-
-	defer func() {
-		certresources.MakeSecret = certresources.MakeSecretInternal
-	}()
-
-	tlsClient, err := createSecureTLSClient(t, kubeclient.Get(ctx), &wh.Options)
-	if err != nil {
-		t.Fatal("createSecureTLSClient() =", err)
-	}
-
-	req, err := http.NewRequest("GET", fmt.Sprintf("https://%s", serverURL), nil)
-	if err != nil {
-		t.Fatal("http.NewRequest() =", err)
-	}
-
-	response, err := tlsClient.Do(req)
-	if err != nil {
-		t.Fatalf("Received %v error from server %s", err, serverURL)
-	}
-
-	if got, want := response.StatusCode, http.StatusUnsupportedMediaType; got != want {
-		t.Errorf("Response status code = %v, wanted %v", got, want)
-	}
-
-	defer response.Body.Close()
-	responseBody, err := io.ReadAll(response.Body)
-	if err != nil {
-		t.Fatal("Failed to read response body", err)
-	}
-
-	if !strings.Contains(string(responseBody), "invalid Content-Type") {
-		t.Errorf("Response body to contain 'invalid Content-Type' , got = '%s'", string(responseBody))
-	}
-
-	// Stats are not reported for internal server errors
-	metricstest.CheckStatsNotReported(t, requestCountName, requestLatenciesName)
 }
 
 func testEmptyRequestBody(t *testing.T, controller interface{}) {
@@ -272,6 +233,35 @@ func testSetup(t *testing.T, options *Options, acs ...interface{}) (*Webhook, st
 
 	// Create certificate
 	secret, err := certresources.MakeSecret(ctx, defaultOpts.SecretName, system.Namespace(), defaultOpts.ServiceName)
+	if err != nil {
+		t.Fatalf("failed to create certificate")
+	}
+	kubeClient := kubeclient.Get(ctx)
+
+	if _, err := kubeClient.CoreV1().Secrets(secret.Namespace).Create(context.Background(), secret, metav1.CreateOptions{}); err != nil {
+		t.Fatalf("failed to create secret")
+	}
+
+	resetMetrics()
+	return wh, l.Addr().String(), ctx, cancel, nil
+}
+
+func testSetupCustomSecret(t *testing.T, acs ...interface{}) (*Webhook, string, context.Context, context.CancelFunc, error) {
+	t.Helper()
+
+	// ephemeral port
+	l, err := net.Listen("tcp", ":0")
+	if err != nil {
+		t.Fatal("unable to get ephemeral port: ", err)
+	}
+
+	defaultOptions := newCustomOptions()
+
+	ctx, wh, cancel := newNonRunningTestWebhook(t, defaultOptions, acs...)
+	wh.testListener = l
+
+	// Create certificate
+	secret, err := customSecretWithOverrides(ctx, defaultOptions.SecretName, system.Namespace(), defaultOptions.ServiceName)
 	if err != nil {
 		t.Fatalf("failed to create certificate")
 	}

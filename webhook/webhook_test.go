@@ -41,11 +41,11 @@ func newDefaultOptions() Options {
 
 func newCustomOptions() Options {
 	return Options{
-		ServiceName: "webhook",
-		Port:        8443,
-		SecretName:  "webhook-certs",
-		ServerKey:   "tls.key",
-		ServerCert:  "tls.crt",
+		ServiceName:           "webhook",
+		Port:                  8443,
+		SecretName:            "webhook-certs",
+		ServerPrivateKeyName:  "tls.key",
+		ServerCertificateName: "tls.crt",
 	}
 }
 
