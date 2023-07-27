@@ -1,4 +1,4 @@
-name: depndabot - update-deps.sh
+name: depndabot - update-codegen.sh
 
 on:
   pull_request:
@@ -19,9 +19,9 @@ jobs:
           path: ./src/github.com/${{ github.repository }}
           fetch-depth: 0
 
-      - name: Run ./hack/update-deps.sh
+      - name: Run ./hack/update-codegen.sh
         working-directory: ./src/github.com/${{ github.repository }}
-        run: ./hack/update-deps.sh
+        run: ./hack/update-codegen.sh
 
       - name: git push
         working-directory: ./src/github.com/${{ github.repository }}
@@ -31,6 +31,6 @@ jobs:
             git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
             git config --local user.name "github-actions[bot]"
             git add .
-            git commit -m "Run ./hack/update-deps.sh"
+            git commit -m "Run ./hack/update-codegen.sh"
             git push
           fi
