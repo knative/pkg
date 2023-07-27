@@ -1,4 +1,4 @@
-name: depndabot - update-codegen.sh
+name: dependabot - hack scripts 
 
 on:
   pull_request:
@@ -19,9 +19,11 @@ jobs:
           path: ./src/github.com/${{ github.repository }}
           fetch-depth: 0
 
-      - name: Run ./hack/update-codegen.sh
+      - name: Run hack scripts
         working-directory: ./src/github.com/${{ github.repository }}
-        run: ./hack/update-codegen.sh
+        run: 
+          ./hack/update-deps.sh
+          ./hack/update-codegen.sh
 
       - name: git push
         working-directory: ./src/github.com/${{ github.repository }}
