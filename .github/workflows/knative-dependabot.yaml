@@ -1,0 +1,38 @@
+name: dependabot - hack scripts 
+
+on:
+  pull_request:
+
+permissions:
+  contents: write
+
+jobs:
+  generate_some_code:
+    name: update deps
+    runs-on: ubuntu-latest
+    if: ${{ github.actor == 'dependabot[bot]' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ github.head_ref }}
+          path: ./src/github.com/${{ github.repository }}
+          fetch-depth: 0
+
+      - name: Run hack scripts
+        working-directory: ./src/github.com/${{ github.repository }}
+        run: 
+          ./hack/update-deps.sh
+          ./hack/update-codegen.sh
+
+      - name: git push
+        working-directory: ./src/github.com/${{ github.repository }}
+        run: |
+          if ! git diff --exit-code --quiet
+          then
+            git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git config --local user.name "github-actions[bot]"
+            git add .
+            git commit -m "Run ./hack/update-codegen.sh"
+            git push
+          fi
