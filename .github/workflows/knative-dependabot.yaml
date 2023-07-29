@@ -21,7 +21,7 @@ jobs:
 
       - name: Run hack scripts
         working-directory: ./src/github.com/${{ github.repository }}
-        run: 
+        run: |
           ./hack/update-deps.sh
           ./hack/update-codegen.sh
 
