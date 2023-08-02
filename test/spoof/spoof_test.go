@@ -24,11 +24,10 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"sync/atomic"
 	"time"
 
 	"testing"
-
-	"go.uber.org/atomic"
 )
 
 var (
@@ -49,7 +48,7 @@ type fakeTransport struct {
 }
 
 func (ft *fakeTransport) RoundTrip(req *http.Request) (*http.Response, error) {
-	call := ft.calls.Inc()
+	call := ft.calls.Add(1)
 	if ft.response != nil && call == 2 {
 		// If both a response and an error is defined, we return just the response on
 		// the second call to simulate a retry that passes eventually.
@@ -159,7 +158,7 @@ func TestSpoofingClient_WaitForEndpointState(t *testing.T) {
 		inState: func() ResponseChecker {
 			var calls atomic.Int32
 			return func(resp *Response) (done bool, err error) {
-				val := calls.Inc()
+				val := calls.Add(1)
 				// Stop the looping on the third invocation
 				return val == 3, nil
 			}
