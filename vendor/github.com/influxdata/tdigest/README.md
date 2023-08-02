@@ -2,7 +2,7 @@
 
 This is an implementation of Ted Dunning's [t-digest](https://github.com/tdunning/t-digest/) in Go.
 
-The implementaion is based off [Derrick Burns' C++ implementation](https://github.com/derrickburns/tdigest).
+The implementation is based off [Derrick Burns' C++ implementation](https://github.com/derrickburns/tdigest).
 
 ## Example
 
