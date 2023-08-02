@@ -19,12 +19,11 @@ package duck
 import (
 	"context"
 	"fmt"
+	"sync/atomic"
 	"testing"
 	"time"
 
-	"go.uber.org/atomic"
 	"golang.org/x/sync/errgroup"
-
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/tools/cache"
 )
@@ -37,7 +36,7 @@ type BlockingInformerFactory struct {
 var _ InformerFactory = (*BlockingInformerFactory)(nil)
 
 func (bif *BlockingInformerFactory) Get(ctx context.Context, gvr schema.GroupVersionResource) (cache.SharedIndexInformer, cache.GenericLister, error) {
-	bif.nCalls.Inc()
+	bif.nCalls.Add(1)
 	// Wait here until we can acquire the lock
 	<-bif.block
 
@@ -58,7 +57,7 @@ func TestSameGVR(t *testing.T) {
 	}
 
 	// counts the number of calls to cif.Get that returned
-	retGetCount := atomic.NewInt32(0)
+	var retGetCount atomic.Int32
 
 	errGrp, ctx := errgroup.WithContext(context.Background())
 
@@ -75,7 +74,7 @@ func TestSameGVR(t *testing.T) {
 	for i := 0; i < iter; i++ {
 		errGrp.Go(func() error {
 			_, _, err := cif.Get(ctx, gvr)
-			retGetCount.Inc()
+			retGetCount.Add(1)
 			return err
 		})
 	}
@@ -119,7 +118,7 @@ func TestDifferentGVRs(t *testing.T) {
 	}
 
 	// counts the number of calls to cif.Get that returned
-	retGetCount := atomic.NewInt32(0)
+	var retGetCount atomic.Int32
 
 	errGrp, ctx := errgroup.WithContext(context.Background())
 
@@ -136,7 +135,7 @@ func TestDifferentGVRs(t *testing.T) {
 
 		errGrp.Go(func() error {
 			_, _, err := cif.Get(ctx, gvr)
-			retGetCount.Inc()
+			retGetCount.Add(1)
 			return err
 		})
 	}
