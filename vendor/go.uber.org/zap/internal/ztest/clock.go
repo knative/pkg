@@ -18,31 +18,33 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package zapcore
+package ztest
 
-import "time"
+import (
+	"time"
 
-// DefaultClock is the default clock used by Zap in operations that require
-// time. This clock uses the system clock for all operations.
-var DefaultClock = systemClock{}
+	"github.com/benbjohnson/clock"
+)
 
-// Clock is a source of time for logged entries.
-type Clock interface {
-	// Now returns the current local time.
-	Now() time.Time
+// MockClock provides control over the time.
+type MockClock struct{ m *clock.Mock }
 
-	// NewTicker returns *time.Ticker that holds a channel
-	// that delivers "ticks" of a clock.
-	NewTicker(time.Duration) *time.Ticker
+// NewMockClock builds a new mock clock that provides control of time.
+func NewMockClock() *MockClock {
+	return &MockClock{clock.NewMock()}
 }
 
-// systemClock implements default Clock that uses system time.
-type systemClock struct{}
-
-func (systemClock) Now() time.Time {
-	return time.Now()
+// Now reports the current time.
+func (c *MockClock) Now() time.Time {
+	return c.m.Now()
 }
 
-func (systemClock) NewTicker(duration time.Duration) *time.Ticker {
-	return time.NewTicker(duration)
+// NewTicker returns a time.Ticker that ticks at the specified frequency.
+func (c *MockClock) NewTicker(d time.Duration) *time.Ticker {
+	return &time.Ticker{C: c.m.Ticker(d).C}
+}
+
+// Add progresses time by the given duration.
+func (c *MockClock) Add(d time.Duration) {
+	c.m.Add(d)
 }
