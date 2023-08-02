@@ -208,8 +208,10 @@ func createSecureTLSClient(t *testing.T, kubeClient kubernetes.Interface, acOpts
 		return nil, err
 	}
 
-	serverKey := secret.Data[certresources.ServerKey]
-	serverCert := secret.Data[certresources.ServerCert]
+	sKey, sCert := getSecretDataKeyNamesOrDefault(acOpts.ServerPrivateKeyName, acOpts.ServerCertificateName)
+
+	serverKey := secret.Data[sKey]
+	serverCert := secret.Data[sCert]
 	caCert := secret.Data[certresources.CACert]
 
 	// Build cert pool with CA Cert
@@ -239,4 +241,24 @@ func createNonTLSClient() *http.Client {
 	return &http.Client{
 		Transport: &http.Transport{},
 	}
+}
+
+func customSecretWithOverrides(ctx context.Context, name, namespace, serviceName string) (*corev1.Secret, error) {
+	serverKey, serverCert, caCert, err := certresources.CreateCerts(ctx, serviceName, namespace, time.Now().Add(24*time.Hour))
+	if err != nil {
+		return nil, err
+	}
+	webOpts := GetOptions(ctx)
+	sKey, sCert := getSecretDataKeyNamesOrDefault(webOpts.ServerPrivateKeyName, webOpts.ServerCertificateName)
+	return &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      name,
+			Namespace: namespace,
+		},
+		Data: map[string][]byte{
+			sKey:                 serverKey,
+			sCert:                serverCert,
+			certresources.CACert: caCert,
+		},
+	}, nil
 }

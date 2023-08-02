@@ -105,6 +105,28 @@ func TestMissingContentType(t *testing.T) {
 	metricstest.CheckStatsNotReported(t, requestCountName, requestLatenciesName)
 }
 
+func TestServerWithCustomSecret(t *testing.T) {
+	wh, serverURL, ctx, cancel, err := testSetupCustomSecret(t)
+	if err != nil {
+		t.Fatal("testSetup() =", err)
+	}
+
+	eg, _ := errgroup.WithContext(ctx)
+	eg.Go(func() error { return wh.Run(ctx.Done()) })
+	wh.InformersHaveSynced()
+	defer func() {
+		cancel()
+		if err := eg.Wait(); err != nil {
+			t.Error("Unable to run controller:", err)
+		}
+	}()
+
+	pollErr := waitForServerAvailable(t, serverURL, testTimeout)
+	if pollErr != nil {
+		t.Fatal("waitForServerAvailable() =", err)
+	}
+}
+
 func testEmptyRequestBody(t *testing.T, controller interface{}) {
 	wh, serverURL, ctx, cancel, err := testSetup(t, controller)
 	if err != nil {
@@ -207,6 +229,35 @@ func testSetup(t *testing.T, acs ...interface{}) (*Webhook, string, context.Cont
 
 	// Create certificate
 	secret, err := certresources.MakeSecret(ctx, defaultOpts.SecretName, system.Namespace(), defaultOpts.ServiceName)
+	if err != nil {
+		t.Fatalf("failed to create certificate")
+	}
+	kubeClient := kubeclient.Get(ctx)
+
+	if _, err := kubeClient.CoreV1().Secrets(secret.Namespace).Create(context.Background(), secret, metav1.CreateOptions{}); err != nil {
+		t.Fatalf("failed to create secret")
+	}
+
+	resetMetrics()
+	return wh, l.Addr().String(), ctx, cancel, nil
+}
+
+func testSetupCustomSecret(t *testing.T, acs ...interface{}) (*Webhook, string, context.Context, context.CancelFunc, error) {
+	t.Helper()
+
+	// ephemeral port
+	l, err := net.Listen("tcp", ":0")
+	if err != nil {
+		t.Fatal("unable to get ephemeral port: ", err)
+	}
+
+	defaultOptions := newCustomOptions()
+
+	ctx, wh, cancel := newNonRunningTestWebhook(t, defaultOptions, acs...)
+	wh.testListener = l
+
+	// Create certificate
+	secret, err := customSecretWithOverrides(ctx, defaultOptions.SecretName, system.Namespace(), defaultOptions.ServiceName)
 	if err != nil {
 		t.Fatalf("failed to create certificate")
 	}

@@ -39,6 +39,16 @@ func newDefaultOptions() Options {
 	}
 }
 
+func newCustomOptions() Options {
+	return Options{
+		ServiceName:           "webhook",
+		Port:                  8443,
+		SecretName:            "webhook-certs",
+		ServerPrivateKeyName:  "tls.key",
+		ServerCertificateName: "tls.crt",
+	}
+}
+
 const (
 	testResourceName = "test-resource"
 	user1            = "brutto@knative.dev"
