@@ -31,20 +31,20 @@ jobs:
           - knative/eventing
           - knative/operator
           - knative/client
-          - knative-sandbox/eventing-autoscaler-keda
-          - knative-sandbox/eventing-ceph
-          - knative-sandbox/eventing-github
-          - knative-sandbox/eventing-gitlab
-          - knative-sandbox/eventing-kafka
-          - knative-sandbox/eventing-kafka-broker
-          - knative-sandbox/eventing-rabbitmq
-          - knative-sandbox/eventing-redis
-          - knative-sandbox/kn-plugin-admin
-          - knative-sandbox/net-certmanager
-          - knative-sandbox/net-contour
-          - knative-sandbox/net-http01
-          - knative-sandbox/net-istio
-          - knative-sandbox/net-kourier
+          - knative-extensions/eventing-autoscaler-keda
+          - knative-extensions/eventing-ceph
+          - knative-extensions/eventing-github
+          - knative-extensions/eventing-gitlab
+          - knative-extensions/eventing-kafka
+          - knative-extensions/eventing-kafka-broker
+          - knative-extensions/eventing-rabbitmq
+          - knative-extensions/eventing-redis
+          - knative-extensions/kn-plugin-admin
+          - knative-extensions/net-certmanager
+          - knative-extensions/net-contour
+          - knative-extensions/net-http01
+          - knative-extensions/net-istio
+          - knative-extensions/net-kourier
 
     runs-on: ubuntu-latest
 
