@@ -24,6 +24,7 @@ import (
 	"time"
 
 	"golang.org/x/sync/errgroup"
+
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/tools/cache"
 )
