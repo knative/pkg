@@ -21,11 +21,11 @@ import (
 	"errors"
 	"fmt"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
 	"github.com/google/go-cmp/cmp"
-	"go.uber.org/atomic"
 
 	coordinationv1 "k8s.io/api/coordination/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -874,7 +874,7 @@ type CountingReconciler struct {
 }
 
 func (cr *CountingReconciler) Reconcile(context.Context, string) error {
-	cr.count.Inc()
+	cr.count.Add(1)
 	return nil
 }
 
@@ -927,7 +927,7 @@ type countingLeaderAwareReconciler struct {
 var _ reconciler.LeaderAware = (*countingLeaderAwareReconciler)(nil)
 
 func (cr *countingLeaderAwareReconciler) Promote(b reconciler.Bucket, enq func(reconciler.Bucket, types.NamespacedName)) error {
-	cr.promotionCount.Inc()
+	cr.promotionCount.Add(1)
 	return cr.LeaderAwareFuncs.Promote(b, enq)
 }
 
@@ -941,7 +941,7 @@ func (cr *countingLeaderAwareReconciler) Reconcile(ctx context.Context, key stri
 		Namespace: namespace,
 		Name:      name,
 	}) {
-		cr.reconcileCount.Inc()
+		cr.reconcileCount.Add(1)
 	}
 	return nil
 }
