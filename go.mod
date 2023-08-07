@@ -13,7 +13,7 @@ require (
 	github.com/census-instrumentation/opencensus-proto v0.4.1
 	github.com/davecgh/go-spew v1.1.1
 	github.com/evanphx/json-patch/v5 v5.6.0
-	github.com/gobuffalo/flect v0.2.4
+	github.com/gobuffalo/flect v1.0.2
 	github.com/golang/protobuf v1.5.3
 	github.com/google/go-cmp v0.5.9
 	github.com/google/go-github/v27 v27.0.6
