@@ -207,6 +207,10 @@ func TestCreatePatch(t *testing.T) {
 		},
 		want: JSONPatch{{
 			Operation: "add",
+			Path:      "/status/patchable/array/2",
+			Value:     "baz",
+		}, {
+			Operation: "replace",
 			Path:      "/status/patchable/array/1",
 			Value:     "bar",
 		}},
@@ -228,7 +232,11 @@ func TestCreatePatch(t *testing.T) {
 		},
 		want: JSONPatch{{
 			Operation: "remove",
+			Path:      "/status/patchable/array/1",
+		}, {
+			Operation: "replace",
 			Path:      "/status/patchable/array/0",
+			Value:     "bar",
 		}},
 	}, {
 		name: "patch with remove collection",
@@ -266,6 +274,10 @@ func TestCreatePatch(t *testing.T) {
 		},
 		want: JSONPatch{{
 			Operation: "add",
+			Path:      "/status/patchable/array/1",
+			Value:     "bar",
+		}, {
+			Operation: "replace",
 			Path:      "/status/patchable/array/0",
 			Value:     "foo",
 		}},
