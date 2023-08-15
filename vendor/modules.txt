@@ -407,8 +407,8 @@ golang.org/x/tools/internal/typesinternal
 ## explicit; go 1.17
 golang.org/x/xerrors
 golang.org/x/xerrors/internal
-# gomodules.xyz/jsonpatch/v2 v2.2.0
-## explicit; go 1.12
+# gomodules.xyz/jsonpatch/v2 v2.3.0
+## explicit; go 1.20
 gomodules.xyz/jsonpatch/v2
 # google.golang.org/api v0.136.0
 ## explicit; go 1.19
