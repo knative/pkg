@@ -72,6 +72,11 @@ func (in *Addressable) DeepCopyInto(out *Addressable) {
 		*out = new(string)
 		**out = **in
 	}
+	if in.Audience != nil {
+		in, out := &in.Audience, &out.Audience
+		*out = new(string)
+		**out = **in
+	}
 	return
 }
 
