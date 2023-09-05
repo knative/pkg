@@ -49,7 +49,6 @@ type Addressable struct {
 	// +optional
 	CACerts *string `json:"CACerts,omitempty"`
 
-	
 	// Audience is the OIDC audience for this address.
 	// +optional
 	Audience *string `json:"audience,omitempty"`
