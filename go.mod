@@ -30,7 +30,7 @@ require (
 	github.com/tsenart/vegeta/v12 v12.11.0
 	go.opencensus.io v0.24.0
 	go.uber.org/automaxprocs v1.5.3
-	go.uber.org/zap v1.25.0
+	go.uber.org/zap v1.26.0
 	golang.org/x/net v0.15.0
 	golang.org/x/oauth2 v0.12.0
 	golang.org/x/sync v0.3.0
@@ -56,7 +56,6 @@ require (
 	cloud.google.com/go v0.110.6 // indirect
 	cloud.google.com/go/compute v1.23.0 // indirect
 	cloud.google.com/go/iam v1.1.1 // indirect
-	github.com/benbjohnson/clock v1.3.0 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/emicklei/go-restful/v3 v3.9.0 // indirect
