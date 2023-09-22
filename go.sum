@@ -757,8 +757,8 @@ k8s.io/kube-openapi v0.0.0-20221012153701-172d655c2280 h1:+70TFaan3hfJzs+7VK2o+O
 k8s.io/kube-openapi v0.0.0-20221012153701-172d655c2280/go.mod h1:+Axhij7bCpeqhklhUTe3xmOn6bWxolyZEeyaFpjGtl4=
 k8s.io/utils v0.0.0-20221108210102-8e77b1f39fe2 h1:GfD9OzL11kvZN5iArC6oTS7RTj7oJOIfnislxYlqTj8=
 k8s.io/utils v0.0.0-20221108210102-8e77b1f39fe2/go.mod h1:OLgZIPagt7ERELqWJFomSt595RzquPNLL48iOWgYOg0=
-knative.dev/hack v0.0.0-20230921145603-c4a34c34512e h1:6Va+yK7+Sjtnck9dsCDsgk/1k+K0Hx9HPZ2ZJ7mRJFs=
-knative.dev/hack v0.0.0-20230921145603-c4a34c34512e/go.mod h1:dx0YG3YWqJu653e9tjcT0Q1ZdS9JJXLKbUhzr4EB0g8=
+knative.dev/hack v0.0.0-20230922114927-da6e74ccb8e8 h1:/+fz5u4W5CfgUKaWlLKqtxzOJttg5GF8pw8mLWrEWWg=
+knative.dev/hack v0.0.0-20230922114927-da6e74ccb8e8/go.mod h1:WA6zi0u24QTDuFZUeqBwSerEh4Io8lxe6UmvolOzA24=
 pgregory.net/rapid v1.0.0 h1:iQaM2w5PZ6xvt6x7hbd7tiDS+nk7YPp5uCaEba+T/F4=
 rsc.io/binaryregexp v0.2.0/go.mod h1:qTv7/COck+e2FymRvadv62gMdZztPaShugOCi3I+8D8=
 rsc.io/quote/v3 v3.1.0/go.mod h1:yEA65RcK8LyAZtP9Kv3t0HmxON59tX3rD+tICJqUlj0=
