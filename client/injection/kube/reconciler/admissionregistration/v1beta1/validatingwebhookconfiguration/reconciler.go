@@ -20,7 +20,6 @@ package validatingwebhookconfiguration
 
 import (
 	context "context"
-	json "encoding/json"
 	fmt "fmt"
 
 	zap "go.uber.org/zap"
@@ -296,26 +295,14 @@ func (r *reconcilerImpl) updateFinalizersFiltered(ctx context.Context, resource 
 		existingFinalizers.Delete(r.finalizerName)
 		finalizers = existingFinalizers.List()
 	}
+	existing.Finalizers = finalizers
 
-	mergePatch := map[string]interface{}{
-		"metadata": map[string]interface{}{
-			"finalizers":      finalizers,
-			"resourceVersion": existing.ResourceVersion,
-		},
-	}
+	updater := r.Client.AdmissionregistrationV1beta1().ValidatingWebhookConfigurations()
 
-	patch, err := json.Marshal(mergePatch)
-	if err != nil {
-		return resource, err
-	}
-
-	patcher := r.Client.AdmissionregistrationV1beta1().ValidatingWebhookConfigurations()
-
-	resourceName := resource.Name
-	updated, err := patcher.Patch(ctx, resourceName, types.MergePatchType, patch, metav1.PatchOptions{})
+	updated, err := updater.Update(ctx, existing, metav1.UpdateOptions{})
 	if err != nil {
 		r.Recorder.Eventf(existing, v1.EventTypeWarning, "FinalizerUpdateFailed",
-			"Failed to update finalizers for %q: %v", resourceName, err)
+			"Failed to update finalizers for %q: %v", resource.GetName(), err)
 	} else {
 		r.Recorder.Eventf(updated, v1.EventTypeNormal, "FinalizerUpdate",
 			"Updated %q finalizers", resource.GetName())
