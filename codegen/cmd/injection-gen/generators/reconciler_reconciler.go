@@ -632,29 +632,17 @@ func (r *reconcilerImpl) updateFinalizersFiltered(ctx {{.contextContext|raw}}, r
 		existingFinalizers.Delete(r.finalizerName)
 		finalizers = existingFinalizers.List()
 	}
-
-	mergePatch := map[string]interface{}{
-		"metadata": map[string]interface{}{
-			"finalizers":      finalizers,
-			"resourceVersion": existing.ResourceVersion,
-		},
-	}
-
-	patch, err := {{.jsonMarshal|raw}}(mergePatch)
-	if err != nil {
-		return resource, err
-	}
+	existing.Finalizers = finalizers
 
 	{{if .nonNamespaced}}
-	patcher := r.Client.{{.group}}{{.version}}().{{.type|apiGroup}}()
+	updater := r.Client.{{.group}}{{.version}}().{{.type|apiGroup}}()
 	{{else}}
-	patcher := r.Client.{{.group}}{{.version}}().{{.type|apiGroup}}(resource.Namespace)
+	updater := r.Client.{{.group}}{{.version}}().{{.type|apiGroup}}(resource.Namespace)
 	{{end}}
-	resourceName := resource.Name
-	updated, err := patcher.Patch(ctx, resourceName, {{.typesMergePatchType|raw}}, patch, {{.metav1PatchOptions|raw}}{})
+	updated, err := updater.Update(ctx, existing, {{.metav1UpdateOptions|raw}}{})
 	if err != nil {
 		r.Recorder.Eventf(existing, {{.corev1EventTypeWarning|raw}}, "FinalizerUpdateFailed",
-			"Failed to update finalizers for %q: %v", resourceName, err)
+			"Failed to update finalizers for %q: %v", resource.GetName(), err)
 	} else {
 		r.Recorder.Eventf(updated, {{.corev1EventTypeNormal|raw}}, "FinalizerUpdate",
 			"Updated %q finalizers", resource.GetName())
