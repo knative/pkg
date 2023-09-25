@@ -77,6 +77,8 @@ hvcNAQECBQADfgBl3X7hsuyw4jrg7HFGmhkRuNPHoLQDQCYCPgmc4RKz0Vr2N6W3
 YQO2WxZpO8ZECAyIUwxrl0nHPjXcbLm7qt9cuzovk2C2qUtN8iD3zV9/ZHuO3ABc
 1/p3yjkWWW8O6tO1g39NTUJWdrTJXwT4OPjr0l91X817/OWOgHz8UA==
 -----END CERTIFICATE-----`
+
+	addressableAudience = "my-audience"
 )
 
 func init() {
@@ -680,7 +682,7 @@ func TestAddressableFromDestinationV1(t *testing.T) {
 		objects: []runtime.Object{
 			addressableWithAddresses(),
 		},
-		wantAddress: addrWithNameAndCACerts(),
+		wantAddress: addrWithName(),
 		addr:        addressableWithAddresses(),
 	}, "ref.address is set on destination and is NOT present in target addressable addresses": {
 		dest: duckv1.Destination{
@@ -705,7 +707,7 @@ func TestAddressableFromDestinationV1(t *testing.T) {
 			addressableWithAddresses(),
 		},
 		addr:        addressableWithAddresses(),
-		wantAddress: addrWithNameAndCACerts(),
+		wantAddress: addrWithName(),
 	}, "only address is set and no destination.ref.address is set": {
 		dest: duckv1.Destination{
 			Ref: addressableKnativeRef(),
@@ -717,7 +719,7 @@ func TestAddressableFromDestinationV1(t *testing.T) {
 			addressableWithAddressOnly(),
 		},
 		addr:        addressableWithAddressOnly(),
-		wantAddress: addrWithNameAndCACerts(),
+		wantAddress: addrWithName(),
 	}}
 
 	for n, tc := range tests {
@@ -870,6 +872,83 @@ func TestAddressableFromDestinationV1CACerts(t *testing.T) {
 				}
 			}
 			if got, want := *addr.CACerts, tc.wantCert; got != want {
+				t.Errorf("Unexpected object (-want, +got) =\n%s", cmp.Diff(want, got))
+			}
+		})
+	}
+}
+
+func TestAddressableFromDestinationV1Audience(t *testing.T) {
+	destinationAudience := "destination-audience"
+
+	tests := map[string]struct {
+		objects         []runtime.Object
+		dest            duckv1.Destination
+		addr            *unstructured.Unstructured
+		customResolvers []resolver.RefResolverFunc
+		wantAudience    string
+		wantErr         string
+	}{"Audience is set on destination": {
+		dest: duckv1.Destination{
+			Ref: addressableKnativeRef(),
+			URI: &apis.URL{
+				Path: "/foo",
+			},
+			Audience: &destinationAudience,
+		},
+		objects: []runtime.Object{
+			addressableWithAddresses(),
+		},
+		addr:         addressableWithAddresses(),
+		wantAudience: destinationAudience,
+	}, "Audience is set on the target addressable but not set on the destination": {
+		dest: duckv1.Destination{
+			Ref: addressableKnativeRef(),
+			URI: &apis.URL{
+				Path: "/foo",
+			},
+		},
+		objects: []runtime.Object{
+			addressableWithAudience(),
+		},
+		addr:         addressableWithAudience(),
+		wantAudience: addressableAudience,
+	}, "Audience is set on the target addressable and set on the destination (destination should have priority)": {
+		dest: duckv1.Destination{
+			Ref: addressableKnativeRef(),
+			URI: &apis.URL{
+				Path: "/foo",
+			},
+			Audience: &destinationAudience,
+		},
+		objects: []runtime.Object{
+			addressableWithAudience(),
+		},
+		addr:         addressableWithAudience(),
+		wantAudience: destinationAudience,
+	}}
+
+	for n, tc := range tests {
+		t.Run(n, func(t *testing.T) {
+			ctx, _ := fakedynamicclient.With(context.Background(), scheme.Scheme, tc.objects...)
+			ctx = addressable.WithDuck(ctx)
+			r := resolver.NewURIResolverFromTracker(ctx, tracker.New(func(types.NamespacedName) {}, 0), tc.customResolvers...)
+
+			// Run it twice since this should be idempotent. URI Resolver should
+			// not modify the cache's copy.
+			_, _ = r.AddressableFromDestinationV1(ctx, tc.dest, tc.addr)
+			addr, gotErr := r.AddressableFromDestinationV1(ctx, tc.dest, tc.addr)
+
+			if gotErr != nil {
+				if tc.wantErr != "" {
+					if got, want := gotErr.Error(), tc.wantErr; got != want {
+						t.Errorf("Unexpected error (-want, +got) =\n%s", cmp.Diff(want, got))
+					}
+				} else {
+					t.Error("Unexpected error:", gotErr)
+				}
+			}
+			if got, want := *addr.Audience, tc.wantAudience; got != want {
 				t.Errorf("Unexpected object (-want, +got) =\n%s", cmp.Diff(want, got))
 			}
 		})
@@ -1200,6 +1279,26 @@ func addressableWithCACert() *unstructured.Unstructured {
 	}
 }
 
+func addressableWithAudience() *unstructured.Unstructured {
+	return &unstructured.Unstructured{
+		Object: map[string]interface{}{
+			"apiVersion": addressableAPIVersion,
+			"kind":       addressableKind,
+			"metadata": map[string]interface{}{
+				"namespace": testNS,
+				"name":      addressableName,
+			},
+			"status": map[string]interface{}{
+				"address": map[string]interface{}{
+					"url":      addressableDNS,
+					"name":     addressableName,
+					"audience": addressableAudience,
+				},
+			},
+		},
+	}
+}
+
 func sampleURIResolver(ctx context.Context, ref *corev1.ObjectReference) (bool, *apis.URL, error) {
 	if ref.Kind == "Service" {
 		parsed, err := apis.ParseURL(fmt.Sprintf("ref://%s.%s.%s", ref.Name, ref.Kind, ref.APIVersion))
@@ -1215,7 +1314,7 @@ func noopURIResolver(ctx context.Context, ref *corev1.ObjectReference) (bool, *a
 	return false, nil, nil
 }
 
-func addrWithNameAndCACerts() *duckv1.Addressable {
+func addrWithName() *duckv1.Addressable {
 	addrName := addressableName
 	return &duckv1.Addressable{
 		Name: &addrName,
