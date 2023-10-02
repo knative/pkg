@@ -68,7 +68,7 @@ func TestHandleAll(t *testing.T) {
 		}
 	})
 
-	ha.OnAdd(newObj)
+	ha.OnAdd(newObj, false)
 	ha.OnUpdate(oldObj, newObj)
 	ha.OnDelete(newObj)
 }
