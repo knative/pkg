@@ -96,7 +96,7 @@ func TestValidateObjectReference(t *testing.T) {
 			Name:       "c.d",
 		},
 		want: &apis.FieldError{
-			Message: "invalid value: a lowercase RFC 1123 label must consist of lower case alphanumeric characters or '-', and must start and end with an alphanumeric character (e.g. 'my-name',  or '123-abc', regex used for validation is '[a-z0-9]([-a-z0-9]*[a-z0-9])?')",
+			Message: "invalid value: must not contain dots",
 			Paths:   []string{"namespace", "name"},
 		},
 	}, {
@@ -178,7 +178,7 @@ func TestValidate(t *testing.T) {
 			Name:       "c.d",
 		},
 		want: &apis.FieldError{
-			Message: "invalid value: a lowercase RFC 1123 label must consist of lower case alphanumeric characters or '-', and must start and end with an alphanumeric character (e.g. 'my-name',  or '123-abc', regex used for validation is '[a-z0-9]([-a-z0-9]*[a-z0-9])?')",
+			Message: "invalid value: must not contain dots",
 			Paths:   []string{"namespace", "name"},
 		},
 	}, {
