@@ -26,7 +26,7 @@ import (
 
 func TestNewPrefixer(t *testing.T) {
 	assert := assertions{t: t}
-	var lineno int64 = 0
+	var lineno int64
 	tests := []struct {
 		name   string
 		prefix func() string
