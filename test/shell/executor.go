@@ -160,10 +160,10 @@ func withTempScript(contents string, fn func(bin string) error) error {
 	if err != nil {
 		return err
 	}
-	//defer func() {
-	//	// clean up
-	//	_ = os.Remove(tmpfile.Name())
-	//}()
+	defer func() {
+		// clean up
+		_ = os.Remove(tmpfile.Name())
+	}()
 
 	return fn(tmpfile.Name())
 }
