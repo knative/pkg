@@ -27,7 +27,7 @@ require (
 	github.com/prometheus/client_golang v1.17.0
 	github.com/prometheus/common v0.44.0
 	github.com/spf13/pflag v1.0.5
-	github.com/tsenart/vegeta/v12 v12.11.0
+	github.com/tsenart/vegeta/v12 v12.11.1
 	go.opencensus.io v0.24.0
 	go.uber.org/automaxprocs v1.5.3
 	go.uber.org/zap v1.26.0
