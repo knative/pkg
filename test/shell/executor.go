@@ -43,8 +43,7 @@ func NewExecutor(config ExecutorConfig) Executor {
 	}
 }
 
-// TestingTStreams returns Streams which writes to t.Log and marks
-// the test as failed if anything is written to Streams.Err.
+// TestingTStreams returns Streams which writes to test log.
 func TestingTStreams(t TestingT) Streams {
 	tWriter := testingWriter{t: t}
 	return Streams{

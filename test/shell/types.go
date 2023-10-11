@@ -51,7 +51,7 @@ type TestingT interface {
 	Logf(format string, args ...any)
 }
 
-// testingWriter writes to the given testing.TB.
+// testingWriter implements io.Writer and writes to given testing.T log.
 type testingWriter struct {
 	t TestingT
 }
