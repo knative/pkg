@@ -48,7 +48,7 @@ type ExecutorConfig struct {
 
 // TestingT is used by testingWriter and allows passing testing.T.
 type TestingT interface {
-	Logf(args ...any)
+	Logf(format string, args ...any)
 }
 
 // testingWriter writes to the given testing.TB.
