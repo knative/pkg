@@ -63,6 +63,21 @@ var (
 			},
 		},
 	}
+
+	singleVersionFakeCRD = &apix.CustomResourceDefinition{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: fakeGR.String(),
+		},
+		Spec: apix.CustomResourceDefinitionSpec{
+			Group: fakeGK.Group,
+			Versions: []apix.CustomResourceDefinitionVersion{
+				{Name: "v1", Served: true, Storage: true},
+			},
+		},
+		Status: apix.CustomResourceDefinitionStatus{
+			StoredVersions: []string{"v1"},
+		},
+	}
 )
 
 func TestMigrate(t *testing.T) {
@@ -85,6 +100,22 @@ func TestMigrate(t *testing.T) {
 	assertPatches(t, cclient.Actions(),
 		// patch resource definition dropping non-storage version
 		crdStorageVersionPatch(fakeCRD.Name, "v1"),
+	)
+}
+
+func TestMigrate_SingleStoredVersion(t *testing.T) {
+	// setup
+	dclient := dynamicFake.NewSimpleDynamicClient(runtime.NewScheme())
+	cclient := apixFake.NewSimpleClientset(singleVersionFakeCRD)
+	m := NewMigrator(dclient, cclient)
+
+	if err := m.Migrate(context.Background(), fakeGR); err != nil {
+		t.Fatal("Migrate() =", err)
+	}
+
+	assertPatches(t, cclient.Actions(),
+		// patch resource definition dropping non-storage version
+		crdStorageVersionPatch(singleVersionFakeCRD.Name, "v1"),
 	)
 }
 
