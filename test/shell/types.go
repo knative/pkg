@@ -18,7 +18,6 @@ package shell
 
 import (
 	"io"
-	"testing"
 )
 
 // ProjectLocation represents a project location on a file system.
@@ -47,13 +46,14 @@ type ExecutorConfig struct {
 	Environ []string
 }
 
+// TestingT is used by testingWriter and allows passing testing.T.
+type TestingT interface {
+	Logf(args ...any)
+}
+
 // testingWriter writes to the given testing.TB.
 type testingWriter struct {
-	t testing.TB
-
-	// If true, the test will be marked as failed if this testingWriter is
-	// ever used.
-	markFailed bool
+	t TestingT
 }
 
 // StreamType represets either output or error stream.

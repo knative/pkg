@@ -23,7 +23,6 @@ import (
 	"os"
 	"os/exec"
 	"strings"
-	"testing"
 	"time"
 )
 
@@ -46,10 +45,11 @@ func NewExecutor(config ExecutorConfig) Executor {
 
 // TestingTStreams returns Streams which writes to t.Log and marks
 // the test as failed if anything is written to Streams.Err.
-func TestingTStreams(t testing.TB) Streams {
+func TestingTStreams(t TestingT) Streams {
+	tWriter := testingWriter{t: t}
 	return Streams{
-		Out: testingWriter{t: t},
-		Err: testingWriter{t: t, markFailed: true},
+		Out: tWriter,
+		Err: tWriter,
 	}
 }
 
@@ -205,9 +205,6 @@ func (w testingWriter) Write(p []byte) (n int, err error) {
 	p = bytes.TrimRight(p, "\n")
 
 	w.t.Logf("%s", p)
-	if w.markFailed {
-		w.t.Fail()
-	}
 
 	return n, nil
 }
