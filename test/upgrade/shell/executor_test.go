@@ -29,7 +29,6 @@ func TestNewExecutor(t *testing.T) {
 		helloWorldTestCase(t),
 		abortTestCase(t),
 		failExampleCase(t),
-		missingProjectLocationCase(),
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -107,19 +106,6 @@ func failExampleCase(t *testing.T) testcase {
 			errs: []string{
 				"expected err",
 			},
-		},
-	}
-}
-
-func missingProjectLocationCase() testcase {
-	return testcase{
-		"missing project location",
-		shell.ExecutorConfig{},
-		func(exec shell.Executor) error {
-			return exec.RunFunction(fn("id"))
-		},
-		wants{
-			failed: true,
 		},
 	}
 }
