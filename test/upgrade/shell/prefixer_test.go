@@ -21,7 +21,7 @@ import (
 	"strconv"
 	"testing"
 
-	"knative.dev/pkg/test/shell"
+	"knative.dev/pkg/test/upgrade/shell"
 )
 
 func TestNewPrefixer(t *testing.T) {

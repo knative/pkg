@@ -21,12 +21,12 @@ import (
 	"path"
 	"testing"
 
-	"knative.dev/pkg/test/shell"
+	"knative.dev/pkg/test/upgrade/shell"
 )
 
 func TestNewProjectLocation(t *testing.T) {
 	assert := assertions{t: t}
-	loc, err := shell.NewProjectLocation("../..")
+	loc, err := shell.NewProjectLocation("../../..")
 	assert.NoError(err)
 	goModPath := path.Join(loc.RootPath(), "go.mod")
 	bytes, err := os.ReadFile(goModPath)

@@ -20,7 +20,7 @@ import (
 	"bytes"
 	"testing"
 
-	"knative.dev/pkg/test/shell"
+	"knative.dev/pkg/test/upgrade/shell"
 )
 
 func TestNewExecutor(t *testing.T) {
@@ -55,7 +55,7 @@ func TestNewExecutor(t *testing.T) {
 
 func TestExecutorDefaults(t *testing.T) {
 	assert := assertions{t: t}
-	loc, err := shell.NewProjectLocation("../..")
+	loc, err := shell.NewProjectLocation("../../..")
 	assert.NoError(err)
 	exec := shell.NewExecutor(t, loc)
 	err = exec.RunFunction(fn("true"))
@@ -99,7 +99,7 @@ func failExampleCase(t *testing.T) testcase {
 		func(exec shell.Executor) error {
 			return exec.RunScript(shell.Script{
 				Label:      "fail-example.sh",
-				ScriptPath: "test/shell/fail-example.sh",
+				ScriptPath: "test/upgrade/shell/fail-example.sh",
 			}, "expected err")
 		},
 		wants{
@@ -139,7 +139,7 @@ type testcase struct {
 
 func config(t *testing.T, customize func(cfg *shell.ExecutorConfig)) shell.ExecutorConfig {
 	assert := assertions{t: t}
-	loc, err := shell.NewProjectLocation("../..")
+	loc, err := shell.NewProjectLocation("../../..")
 	assert.NoError(err)
 	cfg := shell.ExecutorConfig{
 		ProjectLocation: loc,
