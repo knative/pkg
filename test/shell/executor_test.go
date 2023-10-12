@@ -34,9 +34,10 @@ func TestNewExecutor(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			var outB, errB bytes.Buffer
-			tt.config.Out = &outB
-			tt.config.Err = &errB
-			executor := shell.NewExecutor(tt.config)
+			executor := shell.NewExecutor(t, tt.config.ProjectLocation, func(cfg *shell.ExecutorConfig) {
+				cfg.Streams.Out = &outB
+				cfg.Streams.Err = &errB
+			})
 			err := tt.op(executor)
 			if err != nil && !tt.wants.failed {
 				t.Errorf("%s: \n got: %#v\nfailed: %#v", tt.name, err, tt.failed)
@@ -56,9 +57,7 @@ func TestExecutorDefaults(t *testing.T) {
 	assert := assertions{t: t}
 	loc, err := shell.NewProjectLocation("../..")
 	assert.NoError(err)
-	exec := shell.NewExecutor(shell.ExecutorConfig{
-		ProjectLocation: loc,
-	})
+	exec := shell.NewExecutor(t, loc)
 	err = exec.RunFunction(fn("true"))
 	assert.NoError(err)
 }
