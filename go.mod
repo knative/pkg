@@ -15,7 +15,7 @@ require (
 	github.com/evanphx/json-patch/v5 v5.7.0
 	github.com/gobuffalo/flect v1.0.2
 	github.com/golang/protobuf v1.5.3
-	github.com/google/go-cmp v0.5.9
+	github.com/google/go-cmp v0.6.0
 	github.com/google/go-github/v27 v27.0.6
 	github.com/google/gofuzz v1.2.0
 	github.com/google/mako v0.0.0-20190821191249-122f8dcef9e3
