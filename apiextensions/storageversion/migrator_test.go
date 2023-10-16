@@ -19,6 +19,7 @@ package storageversion
 import (
 	"context"
 	"errors"
+	"fmt"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -86,6 +87,42 @@ func TestMigrate(t *testing.T) {
 		// patch resource definition dropping non-storage version
 		crdStorageVersionPatch(fakeCRD.Name, "v1"),
 	)
+}
+
+func TestMigrate_SingleStoredVersion(t *testing.T) {
+	singleVersionFakeCRD := &apix.CustomResourceDefinition{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: fakeGR.String(),
+		},
+		Spec: apix.CustomResourceDefinitionSpec{
+			Group: fakeGK.Group,
+			Versions: []apix.CustomResourceDefinitionVersion{
+				{Name: "v1", Served: true, Storage: true},
+			},
+		},
+		Status: apix.CustomResourceDefinitionStatus{
+			StoredVersions: []string{"v1"},
+		},
+	}
+
+	// setup
+	dclient := dynamicFake.NewSimpleDynamicClient(runtime.NewScheme())
+	cclient := apixFake.NewSimpleClientset(singleVersionFakeCRD)
+
+	cclient.Fake.PrependReactor("patch", "customresourcedefinitions", func(action k8stesting.Action) (handled bool, ret runtime.Object, err error) {
+		if pa, ok := action.(k8stesting.PatchAction); ok {
+			if pa.GetName() == singleVersionFakeCRD.Name {
+				return false, nil, fmt.Errorf("resource shouldn't have been patched")
+			}
+		}
+
+		return false, nil, nil
+	})
+
+	m := NewMigrator(dclient, cclient)
+	if err := m.Migrate(context.Background(), fakeGR); err != nil {
+		t.Fatal("Migrate() =", err)
+	}
 }
 
 // func TestMigrate_Paging(t *testing.T) {
