@@ -19,6 +19,7 @@ package storageversion
 import (
 	"context"
 	"errors"
+	"fmt"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -63,21 +64,6 @@ var (
 			},
 		},
 	}
-
-	singleVersionFakeCRD = &apix.CustomResourceDefinition{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: fakeGR.String(),
-		},
-		Spec: apix.CustomResourceDefinitionSpec{
-			Group: fakeGK.Group,
-			Versions: []apix.CustomResourceDefinitionVersion{
-				{Name: "v1", Served: true, Storage: true},
-			},
-		},
-		Status: apix.CustomResourceDefinitionStatus{
-			StoredVersions: []string{"v1"},
-		},
-	}
 )
 
 func TestMigrate(t *testing.T) {
@@ -104,19 +90,41 @@ func TestMigrate(t *testing.T) {
 }
 
 func TestMigrate_SingleStoredVersion(t *testing.T) {
+	singleVersionFakeCRD := &apix.CustomResourceDefinition{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: fakeGR.String(),
+		},
+		Spec: apix.CustomResourceDefinitionSpec{
+			Group: fakeGK.Group,
+			Versions: []apix.CustomResourceDefinitionVersion{
+				{Name: "v1", Served: true, Storage: true},
+			},
+		},
+		Status: apix.CustomResourceDefinitionStatus{
+			StoredVersions: []string{"v1"},
+		},
+	}
+
 	// setup
 	dclient := dynamicFake.NewSimpleDynamicClient(runtime.NewScheme())
 	cclient := apixFake.NewSimpleClientset(singleVersionFakeCRD)
-	m := NewMigrator(dclient, cclient)
 
+	cclient.Fake.PrependReactor("patch", "customresourcedefinitions", func(action k8stesting.Action) (handled bool, ret runtime.Object, err error) {
+		pa, ok := action.(k8stesting.PatchAction)
+		if !ok {
+			return true, nil, fmt.Errorf("not a patch action: %#v", action)
+		}
+
+		if pa.GetName() == singleVersionFakeCRD.Name {
+			return true, nil, fmt.Errorf("resource shouldn't have been patched")
+		}
+		return false, nil, nil
+	})
+
+	m := NewMigrator(dclient, cclient)
 	if err := m.Migrate(context.Background(), fakeGR); err != nil {
 		t.Fatal("Migrate() =", err)
 	}
-
-	assertPatches(t, cclient.Actions(),
-		// patch resource definition dropping non-storage version
-		crdStorageVersionPatch(singleVersionFakeCRD.Name, "v1"),
-	)
 }
 
 // func TestMigrate_Paging(t *testing.T) {
