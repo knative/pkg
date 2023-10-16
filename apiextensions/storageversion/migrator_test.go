@@ -110,14 +110,12 @@ func TestMigrate_SingleStoredVersion(t *testing.T) {
 	cclient := apixFake.NewSimpleClientset(singleVersionFakeCRD)
 
 	cclient.Fake.PrependReactor("patch", "customresourcedefinitions", func(action k8stesting.Action) (handled bool, ret runtime.Object, err error) {
-		pa, ok := action.(k8stesting.PatchAction)
-		if !ok {
-			return true, nil, fmt.Errorf("not a patch action: %#v", action)
+		if pa, ok := action.(k8stesting.PatchAction); ok {
+			if pa.GetName() == singleVersionFakeCRD.Name {
+				return false, nil, fmt.Errorf("resource shouldn't have been patched")
+			}
 		}
 
-		if pa.GetName() == singleVersionFakeCRD.Name {
-			return true, nil, fmt.Errorf("resource shouldn't have been patched")
-		}
 		return false, nil, nil
 	})
 
