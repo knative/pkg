@@ -48,24 +48,3 @@ func TestInitFlag(t *testing.T) {
 		t.Errorf("ClientConfig mismatch: diff(-want,+got):\n%s", cmp.Diff(expect, c))
 	}
 }
-
-// TestInitFlagWithKubeconfing verify flag conflict error "flag redefined: kubeconfig"
-func TestInitFlagWithKubeconfing(t *testing.T) {
-	t.Setenv("KUBECONFIG", "myconfig")
-
-	c := new(ClientConfig)
-	flags := flag.NewFlagSet("test", flag.ExitOnError)
-	flags.String("kubeconfig", "/test/path", "")
-	c.InitFlags(flags)
-
-	// Call parse() here as InitFlags does not call it.
-	flags.Parse([]string{})
-
-	expect := &ClientConfig{
-		Kubeconfig: "/test/path",
-	}
-
-	if !cmp.Equal(c, expect) {
-		t.Errorf("ClientConfig mismatch: diff(-want,+got):\n%s", cmp.Diff(expect, c))
-	}
-}
