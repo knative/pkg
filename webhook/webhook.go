@@ -256,6 +256,7 @@ func (wh *Webhook) Run(stop <-chan struct{}) error {
 		QuietPeriod: wh.Options.GracePeriod,
 	}
 
+	// If TLSNextProto is not nil, HTTP/2 support is not enabled automatically.
 	nextProto := map[string]func(*http.Server, *tls.Conn, http.Handler){}
 	if wh.Options.EnableHTTP2 {
 		nextProto = nil
