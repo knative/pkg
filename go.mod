@@ -4,7 +4,7 @@ go 1.18
 
 require (
 	cloud.google.com/go/compute/metadata v0.2.3
-	cloud.google.com/go/storage v1.34.1
+	cloud.google.com/go/storage v1.35.1
 	contrib.go.opencensus.io/exporter/ocagent v0.7.1-0.20200907061046-05415f1de66d
 	contrib.go.opencensus.io/exporter/prometheus v0.4.2
 	contrib.go.opencensus.io/exporter/zipkin v0.1.2
