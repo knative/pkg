@@ -30,13 +30,15 @@ echo "=== Update Codegen for $MODULE_NAME"
 #                  k8s.io/kubernetes. The output-base is needed for the generators to output into the vendor dir
 #                  instead of the $GOPATH directly. For normal projects this can be dropped.
 
-group "Kubernetes Codegen"
+group "Knative Duck Codegen"
 
 # Knative Injection
 ${REPO_ROOT_DIR}/hack/generate-knative.sh "injection" \
   knative.dev/pkg/client knative.dev/pkg/apis \
   "duck:v1alpha1,v1beta1,v1" \
   --go-header-file ${REPO_ROOT_DIR}/hack/boilerplate/boilerplate.go.txt
+
+group "Kubernetes Codegen"
 
 # Based on: https://github.com/kubernetes/kubernetes/blob/8ddabd0da5cc54761f3216c08e99fa1a9f7ee2c5/hack/lib/init.sh#L116
 # The '-path' is a hack to workaround the lack of portable `-depth 2`.
@@ -62,18 +64,14 @@ VERSIONED_CLIENTSET_PKG="k8s.io/apiextensions-apiserver/pkg/client/clientset/cli
     --go-header-file ${REPO_ROOT_DIR}/hack/boilerplate/boilerplate.go.txt \
     --force-genreconciler-kinds "CustomResourceDefinition"
 
-group "Knative Codegen"
+group "Knative Duck DeepCopyGen"
 
-# Only deepcopy the Duck types, as they are not real resources.
-${CODEGEN_PKG}/generate-groups.sh "deepcopy" \
-  knative.dev/pkg/client knative.dev/pkg/apis \
-  "duck:v1alpha1,v1beta1,v1" \
-  --go-header-file ${REPO_ROOT_DIR}/hack/boilerplate/boilerplate.go.txt
-
-# Depends on generate-groups.sh to install bin/deepcopy-gen
 go run k8s.io/code-generator/cmd/deepcopy-gen  --input-dirs \
   $(echo \
   knative.dev/pkg/apis \
+  knative.dev/pkg/apis/duck/v1alpha1 \
+  knative.dev/pkg/apis/duck/v1beta1 \
+  knative.dev/pkg/apis/duck/v1 \
   knative.dev/pkg/tracker \
   knative.dev/pkg/logging \
   knative.dev/pkg/metrics \
@@ -84,7 +82,7 @@ go run k8s.io/code-generator/cmd/deepcopy-gen  --input-dirs \
   -O zz_generated.deepcopy \
   --go-header-file ${REPO_ROOT_DIR}/hack/boilerplate/boilerplate.go.txt
 
-group "Update deps post-codegen"
+group "Update Deps post-codegen"
 
 # Make sure our dependencies are up-to-date
 ${REPO_ROOT_DIR}/hack/update-deps.sh
