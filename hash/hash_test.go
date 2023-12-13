@@ -33,7 +33,7 @@ func ExampleChooseSubset_selectOne() {
 	// This example shows how to do consistent bucket
 	// assignment using ChooseSubset.
 
-	tasks := sets.NewString("task1", "task2", "task3")
+	tasks := sets.New[string]("task1", "task2", "task3")
 
 	ret := ChooseSubset(tasks, 1, "my-key1")
 	fmt.Println(ret.UnsortedList()[0])
@@ -48,16 +48,16 @@ func ExampleChooseSubset_selectMany() {
 	// This example shows how to do consistent bucket
 	// assignment using ChooseSubset.
 
-	tasks := sets.NewString("task1", "task2", "task3", "task4", "task5")
+	tasks := sets.New[string]("task1", "task2", "task3", "task4", "task5")
 
 	ret := ChooseSubset(tasks, 2, "my-key1")
-	fmt.Println(ret.List())
+	fmt.Println(sets.List(ret))
 	// Output: [task3 task4]
 }
 
 func TestBuildHashes(t *testing.T) {
 	const target = "a target to remember"
-	set := sets.NewString("a", "b", "c", "e", "f")
+	set := sets.New[string]("a", "b", "c", "e", "f")
 
 	hd1 := buildHashes(set, target)
 	hd2 := buildHashes(set, target)
@@ -77,34 +77,34 @@ func TestBuildHashes(t *testing.T) {
 func TestChooseSubset(t *testing.T) {
 	tests := []struct {
 		name    string
-		from    sets.String
+		from    sets.Set[string]
 		target  string
 		wantNum int
-		want    sets.String
+		want    sets.Set[string]
 	}{{
 		name:    "return all",
-		from:    sets.NewString("sun", "moon", "mars", "mercury"),
+		from:    sets.New[string]("sun", "moon", "mars", "mercury"),
 		target:  "a target!",
 		wantNum: 4,
-		want:    sets.NewString("sun", "moon", "mars", "mercury"),
+		want:    sets.New[string]("sun", "moon", "mars", "mercury"),
 	}, {
 		name:    "subset 1",
-		from:    sets.NewString("sun", "moon", "mars", "mercury"),
+		from:    sets.New[string]("sun", "moon", "mars", "mercury"),
 		target:  "a target!",
 		wantNum: 2,
-		want:    sets.NewString("mercury", "moon"),
+		want:    sets.New[string]("mercury", "moon"),
 	}, {
 		name:    "subset 2",
-		from:    sets.NewString("sun", "moon", "mars", "mercury"),
+		from:    sets.New[string]("sun", "moon", "mars", "mercury"),
 		target:  "something else entirely",
 		wantNum: 2,
-		want:    sets.NewString("mercury", "mars"),
+		want:    sets.New[string]("mercury", "mars"),
 	}, {
 		name:    "select 3",
-		from:    sets.NewString("sun", "moon", "mars", "mercury"),
+		from:    sets.New[string]("sun", "moon", "mars", "mercury"),
 		target:  "something else entirely",
 		wantNum: 3,
-		want:    sets.NewString("mars", "mercury", "sun"),
+		want:    sets.New[string]("mars", "mercury", "sun"),
 	}}
 
 	for _, tc := range tests {
@@ -131,7 +131,7 @@ func TestCollisionHandling(t *testing.T) {
 	if h1 != h2 {
 		t.Fatalf("Baseline incorrect keys don't collide %d != %d", h1, h2)
 	}
-	hd := buildHashes(sets.NewString(key1, key2), target)
+	hd := buildHashes(sets.New[string](key1, key2), target)
 	if got, want := len(hd.nameLookup), 2; got != want {
 		t.Error("Did not resolve collision, only 1 key in the map")
 	}
@@ -148,7 +148,7 @@ func TestOverlay(t *testing.T) {
 		want      = samples * selection / sources
 		threshold = want / 5 // 20%
 	)
-	from := sets.NewString()
+	from := sets.New[string]()
 	for i := 0; i < sources; i++ {
 		from.Insert(uuid.NewString())
 	}
@@ -184,7 +184,7 @@ func BenchmarkSelection(b *testing.B) {
 		for _, ss := range []int{1, 5, 10, 15, 20, 25} {
 			b.Run(fmt.Sprintf("pool-%d-subset-%d", v, ss), func(b *testing.B) {
 				target := uuid.NewString()
-				in := sets.NewString(from[:v]...)
+				in := sets.New[string](from[:v]...)
 				for i := 0; i < b.N; i++ {
 					ChooseSubset(in, 10, target)
 				}
