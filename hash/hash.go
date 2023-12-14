@@ -140,7 +140,7 @@ func ChooseSubset(from sets.Set[string], n int, target string) sets.Set[string] 
 	//    2.1. While that index is already selected pick next index
 	// 3. Advance angle by `step`
 	// 4. Goto 1.
-	selection := sets.Set[int]{}
+	selection := sets.New[int]()
 	angle := hashData.start
 	hpl := len(hashData.hashPool)
 	for len(selection) < n {
