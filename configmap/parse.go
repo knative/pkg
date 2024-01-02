@@ -165,7 +165,7 @@ func AsDuration(key string, target *time.Duration) ParseFunc {
 	}
 }
 
-// AsStringSet parses the value at key as a sets.String (split by ',') into the target, if it exists.
+// AsStringSet parses the value at key as a sets.Set[string] (split by ',') into the target, if it exists.
 func AsStringSet(key string, target *sets.Set[string]) ParseFunc {
 	return func(data map[string]string) error {
 		if raw, ok := data[key]; ok {
