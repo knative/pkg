@@ -33,7 +33,7 @@ require (
 	go.uber.org/zap v1.26.0
 	golang.org/x/net v0.19.0
 	golang.org/x/oauth2 v0.15.0
-	golang.org/x/sync v0.5.0
+	golang.org/x/sync v0.6.0
 	golang.org/x/tools v0.16.1
 	gomodules.xyz/jsonpatch/v2 v2.4.0
 	google.golang.org/api v0.154.0
