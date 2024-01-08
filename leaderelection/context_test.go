@@ -45,7 +45,7 @@ func TestWithBuilder(t *testing.T) {
 	kc := fakekube.NewSimpleClientset()
 	ctx := context.Background()
 
-	gotNames := make(sets.String, buckets)
+	gotNames := make(sets.Set[string], buckets)
 	promoted := make(chan string)
 	demoted := make(chan struct{})
 	laf := &reconciler.LeaderAwareFuncs{
@@ -153,7 +153,7 @@ func TestWithBuilder(t *testing.T) {
 		}
 	}
 
-	want := sets.NewString(
+	want := sets.New[string](
 		"the-component.name.00-of-03",
 		"the-component.name.01-of-03",
 		"the-component.name.02-of-03",
@@ -178,7 +178,7 @@ func TestBuilderWithCustomizedLeaseName(t *testing.T) {
 	kc := fakekube.NewSimpleClientset()
 	ctx := context.Background()
 
-	gotNames := make(sets.String, buckets)
+	gotNames := make(sets.Set[string], buckets)
 	promoted := make(chan string)
 	laf := &reconciler.LeaderAwareFuncs{
 		PromoteFunc: func(bkt reconciler.Bucket, enq func(reconciler.Bucket, types.NamespacedName)) error {
@@ -207,7 +207,7 @@ func TestBuilderWithCustomizedLeaseName(t *testing.T) {
 		}
 	}
 
-	want := sets.NewString(
+	want := sets.New[string](
 		"bucket-00",
 		"bucket-01",
 		"bucket-02",
