@@ -24,10 +24,8 @@ import (
 	fmt "fmt"
 
 	zap "go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/networking/v1"
-	equality "k8s.io/apimachinery/pkg/api/equality"
 	errors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	labels "k8s.io/apimachinery/pkg/labels"
@@ -37,7 +35,6 @@ import (
 	networkingv1 "k8s.io/client-go/listers/networking/v1"
 	record "k8s.io/client-go/tools/record"
 	controller "knative.dev/pkg/controller"
-	kmp "knative.dev/pkg/kmp"
 	logging "knative.dev/pkg/logging"
 	reconciler "knative.dev/pkg/reconciler"
 )
@@ -100,10 +97,6 @@ type reconcilerImpl struct {
 
 	// finalizerName is the name of the finalizer to reconcile.
 	finalizerName string
-
-	// skipStatusUpdates configures whether or not this reconciler automatically updates
-	// the status of the reconciled resource.
-	skipStatusUpdates bool
 }
 
 // Check that our Reconciler implements controller.Reconciler.
@@ -154,9 +147,6 @@ func NewReconciler(ctx context.Context, logger *zap.SugaredLogger, client kubern
 		}
 		if opts.FinalizerName != "" {
 			rec.finalizerName = opts.FinalizerName
-		}
-		if opts.SkipStatusUpdates {
-			rec.skipStatusUpdates = true
 		}
 		if opts.DemoteFunc != nil {
 			rec.DemoteFunc = opts.DemoteFunc
@@ -250,29 +240,6 @@ func (r *reconcilerImpl) Reconcile(ctx context.Context, key string) error {
 
 	}
 
-	// Synchronize the status.
-	switch {
-	case r.skipStatusUpdates:
-		// This reconciler implementation is configured to skip resource updates.
-		// This may mean this reconciler does not observe spec, but reconciles external changes.
-	case equality.Semantic.DeepEqual(original.Status, resource.Status):
-		// If we didn't change anything then don't call updateStatus.
-		// This is important because the copy we loaded from the injectionInformer's
-		// cache may be stale and we don't want to overwrite a prior update
-		// to status with this stale state.
-	case !s.isLeader:
-		// High-availability reconcilers may have many replicas watching the resource, but only
-		// the elected leader is expected to write modifications.
-		logger.Warn("Saw status changes when we aren't the leader!")
-	default:
-		if err = r.updateStatus(ctx, logger, original, resource); err != nil {
-			logger.Warnw("Failed to update resource status", zap.Error(err))
-			r.Recorder.Eventf(resource, corev1.EventTypeWarning, "UpdateFailed",
-				"Failed to update status for %q: %v", resource.Name, err)
-			return err
-		}
-	}
-
 	// Report the reconciler event, if any.
 	if reconcileEvent != nil {
 		var event *reconciler.ReconcilerEvent
@@ -299,40 +266,6 @@ func (r *reconcilerImpl) Reconcile(ctx context.Context, key string) error {
 	}
 
 	return nil
-}
-
-func (r *reconcilerImpl) updateStatus(ctx context.Context, logger *zap.SugaredLogger, existing *v1.NetworkPolicy, desired *v1.NetworkPolicy) error {
-	existing = existing.DeepCopy()
-	return reconciler.RetryUpdateConflicts(func(attempts int) (err error) {
-		// The first iteration tries to use the injectionInformer's state, subsequent attempts fetch the latest state via API.
-		if attempts > 0 {
-
-			getter := r.Client.NetworkingV1().NetworkPolicies(desired.Namespace)
-
-			existing, err = getter.Get(ctx, desired.Name, metav1.GetOptions{})
-			if err != nil {
-				return err
-			}
-		}
-
-		// If there's nothing to update, just return.
-		if equality.Semantic.DeepEqual(existing.Status, desired.Status) {
-			return nil
-		}
-
-		if logger.Desugar().Core().Enabled(zapcore.DebugLevel) {
-			if diff, err := kmp.SafeDiff(existing.Status, desired.Status); err == nil && diff != "" {
-				logger.Debug("Updating status with: ", diff)
-			}
-		}
-
-		existing.Status = desired.Status
-
-		updater := r.Client.NetworkingV1().NetworkPolicies(existing.Namespace)
-
-		_, err = updater.UpdateStatus(ctx, existing, metav1.UpdateOptions{})
-		return err
-	})
 }
 
 // updateFinalizersFiltered will update the Finalizers of the resource.
