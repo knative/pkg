@@ -70,6 +70,47 @@ func TestWebhookStatsReporterAdmission(t *testing.T) {
 	metricstest.CheckDistributionData(t, requestLatenciesName, expectedTags, 2, shortTime, longTime)
 }
 
+func TestWebhookStatsReporterAdmissionWithoutNamespaceTag(t *testing.T) {
+	setup(WithoutTags(resourceNamespaceKey.Name()))
+	req := &admissionv1.AdmissionRequest{
+		UID:       "705ab4f5-6393-11e8-b7cc-42010a800002",
+		Kind:      metav1.GroupVersionKind{Group: "autoscaling", Version: "v1", Kind: "Scale"},
+		Resource:  metav1.GroupVersionResource{Group: "apps", Version: "v1", Resource: "deployments"},
+		Name:      "my-deployment",
+		Namespace: "my-namespace",
+		Operation: admissionv1.Update,
+	}
+
+	resp := &admissionv1.AdmissionResponse{
+		UID:     req.UID,
+		Allowed: true,
+	}
+
+	r, _ := NewStatsReporter(WithoutTags(resourceNamespaceKey.Name()))
+
+	shortTime, longTime := 1100.0, 9100.0
+	expectedTags := map[string]string{
+		requestOperationKey.Name(): string(req.Operation),
+		kindGroupKey.Name():        req.Kind.Group,
+		kindVersionKey.Name():      req.Kind.Version,
+		kindKindKey.Name():         req.Kind.Kind,
+		resourceGroupKey.Name():    req.Resource.Group,
+		resourceVersionKey.Name():  req.Resource.Version,
+		resourceResourceKey.Name(): req.Resource.Resource,
+		admissionAllowedKey.Name(): strconv.FormatBool(resp.Allowed),
+	}
+
+	if err := r.ReportAdmissionRequest(req, resp, time.Duration(shortTime)*time.Millisecond); err != nil {
+		t.Fatalf("ReportAdmissionRequest() = %v", err)
+	}
+	if err := r.ReportAdmissionRequest(req, resp, time.Duration(longTime)*time.Millisecond); err != nil {
+		t.Fatalf("ReportAdmissionRequest() = %v", err)
+	}
+
+	metricstest.CheckCountData(t, requestCountName, expectedTags, 2)
+	metricstest.CheckDistributionData(t, requestLatenciesName, expectedTags, 2, shortTime, longTime)
+}
+
 func TestWebhookStatsReporterConversion(t *testing.T) {
 	setup()
 	req := &apixv1.ConversionRequest{
@@ -103,12 +144,12 @@ func TestWebhookStatsReporterConversion(t *testing.T) {
 	metricstest.CheckDistributionData(t, requestLatenciesName, expectedTags, 2, shortTime, longTime)
 }
 
-func setup() {
-	resetMetrics()
+func setup(opts ...StatsReporterOption) {
+	resetMetrics(opts...)
 }
 
 // opencensus metrics carry global state that need to be reset between unit tests
-func resetMetrics() {
+func resetMetrics(opts ...StatsReporterOption) {
 	metricstest.Unregister(requestCountName, requestLatenciesName)
-	RegisterMetrics()
+	RegisterMetrics(opts...)
 }
