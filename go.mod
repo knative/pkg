@@ -48,7 +48,7 @@ require (
 	k8s.io/gengo v0.0.0-20221011193443-fad74ee6edd9
 	k8s.io/klog/v2 v2.100.1
 	k8s.io/utils v0.0.0-20230406110748-d93618cff8a2
-	knative.dev/hack v0.0.0-20240108153050-3ea694d6dad7
+	knative.dev/hack v0.0.0-20240111013919-e89096d74d85
 	sigs.k8s.io/yaml v1.4.0
 )
 
