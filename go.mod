@@ -40,14 +40,14 @@ require (
 	google.golang.org/grpc v1.61.1
 	google.golang.org/protobuf v1.32.0
 	gopkg.in/yaml.v3 v3.0.1
-	k8s.io/api v0.28.5
-	k8s.io/apiextensions-apiserver v0.28.5
-	k8s.io/apimachinery v0.28.5
-	k8s.io/client-go v0.28.5
-	k8s.io/code-generator v0.28.5
-	k8s.io/gengo v0.0.0-20221011193443-fad74ee6edd9
-	k8s.io/klog/v2 v2.100.1
-	k8s.io/utils v0.0.0-20230406110748-d93618cff8a2
+	k8s.io/api v0.29.2
+	k8s.io/apiextensions-apiserver v0.29.2
+	k8s.io/apimachinery v0.29.2
+	k8s.io/client-go v0.29.2
+	k8s.io/code-generator v0.29.2
+	k8s.io/gengo v0.0.0-20240129211411-f967bbeff4b4
+	k8s.io/klog/v2 v2.120.1
+	k8s.io/utils v0.0.0-20240102154912-e7106e64919e
 	knative.dev/hack v0.0.0-20240123160146-ab9b69024c39
 	sigs.k8s.io/yaml v1.4.0
 )
