@@ -2,8 +2,6 @@ module knative.dev/pkg
 
 go 1.21
 
-toolchain go1.21.1
-
 require (
 	cloud.google.com/go/compute/metadata v0.2.3
 	cloud.google.com/go/storage v1.38.0
