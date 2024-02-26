@@ -25,7 +25,7 @@ require (
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/openzipkin/zipkin-go v0.4.2
 	github.com/prometheus/client_golang v1.18.0
-	github.com/prometheus/common v0.47.0
+	github.com/prometheus/common v0.48.0
 	github.com/spf13/pflag v1.0.5
 	github.com/tsenart/vegeta/v12 v12.11.1
 	go.opencensus.io v0.24.0
