@@ -59,10 +59,36 @@ func EnableInjectionOrDie(ctx context.Context, cfg *rest.Config) (context.Contex
 
 	ctx, informers := Default.SetupInformers(ctx, cfg)
 
+	var includedInformers []controller.Informer
+
+	for _, inf := range informers {
+		if p := getExcludeInformerPredicate(ctx); p != nil && (*p)(ctx, inf) {
+			continue
+		}
+		includedInformers = append(includedInformers, inf)
+	}
+
 	return ctx, func() {
-		logging.FromContext(ctx).Info("Starting informers...")
-		if err := controller.StartInformers(ctx.Done(), informers...); err != nil {
+		logging.FromContext(ctx).Infof("Starting %d informers...", len(includedInformers))
+		if err := controller.StartInformers(ctx.Done(), includedInformers...); err != nil {
 			logging.FromContext(ctx).Fatalw("Failed to start informers", zap.Error(err))
 		}
 	}
+}
+
+type ExcludeInformerPredicate func(ctx context.Context, inf controller.Informer) bool
+type excludeInformerPredicateKey struct{}
+
+// WithExcludeInformerPredicate sets the predicate to exclude informers from being started.
+func WithExcludeInformerPredicate(ctx context.Context, predicate ExcludeInformerPredicate) context.Context {
+	return context.WithValue(ctx, excludeInformerPredicateKey{}, predicate)
+}
+
+func getExcludeInformerPredicate(ctx context.Context) *ExcludeInformerPredicate {
+	untyped := ctx.Value(excludeInformerPredicateKey{})
+	if untyped == nil {
+		return nil
+	}
+	e := untyped.(ExcludeInformerPredicate)
+	return &e
 }
