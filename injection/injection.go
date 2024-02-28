@@ -59,7 +59,7 @@ func EnableInjectionOrDie(ctx context.Context, cfg *rest.Config) (context.Contex
 
 	ctx, informers := Default.SetupInformers(ctx, cfg)
 
-	var includedInformers []controller.Informer
+	includedInformers := make([]controller.Informer, 0)
 
 	for _, inf := range informers {
 		if p := getExcludeInformerPredicate(ctx); p != nil && (*p)(ctx, inf) {
