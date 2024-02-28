@@ -80,6 +80,7 @@ type ExcludeInformerPredicate func(ctx context.Context, inf controller.Informer)
 type excludeInformerPredicateKey struct{}
 
 // WithExcludeInformerPredicate sets the predicate to exclude informers from being started.
+// If predicate returns true the informer will not be started.
 func WithExcludeInformerPredicate(ctx context.Context, predicate ExcludeInformerPredicate) context.Context {
 	return context.WithValue(ctx, excludeInformerPredicateKey{}, predicate)
 }
