@@ -107,7 +107,7 @@ func (g *injectionGenerator) GenerateType(c *generator.Context, t *types.Type, w
 	if os.Getenv(SkipInitFuncForInformerEnv) == "true" {
 		sw.Do(strings.ReplaceAll(injectionInformer, "withInformer", "WithInformer"), m)
 	} else {
-		sw.Do(initFunc + injectionInformer, m)
+		sw.Do(initFunc+injectionInformer, m)
 	}
 
 	return sw.Error()
