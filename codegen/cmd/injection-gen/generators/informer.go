@@ -80,7 +80,7 @@ func (g *injectionGenerator) GenerateType(c *generator.Context, t *types.Type, w
 
 	klog.V(5).Info("processing type ", t)
 
-	skipInitFuncForInformer, _ := pflag.CommandLine.GetBool("skipInitFuncForInformer")
+	disableInformerInit, _ := pflag.CommandLine.GetBool("disable-informer-init")
 
 	m := map[string]interface{}{
 		"groupGoName":               namer.IC(g.groupGoName),
@@ -102,7 +102,7 @@ func (g *injectionGenerator) GenerateType(c *generator.Context, t *types.Type, w
 			Package: "context",
 			Name:    "WithValue",
 		}),
-		"skipInitFuncForInformer": skipInitFuncForInformer,
+		"disableInformerInit": disableInformerInit,
 	}
 
 	sw.Do(injectionInformer, m)
@@ -111,7 +111,7 @@ func (g *injectionGenerator) GenerateType(c *generator.Context, t *types.Type, w
 }
 
 var injectionInformer = `
-{{ if not .skipInitFuncForInformer }}
+{{ if not .disableInformerInit }}
 func init() {
 	{{.injectionRegisterInformer|raw}}(withInformer)
 }
@@ -120,7 +120,7 @@ func init() {
 // Key is used for associating the Informer inside the context.Context.
 type Key struct{}
 
-{{ if .skipInitFuncForInformer }} func WithInformer {{ else }} func withInformer {{ end }} (ctx {{.contextContext|raw}}) ({{.contextContext|raw}}, {{.controllerInformer|raw}}) {
+{{ if .disableInformerInit }} func WithInformer {{ else }} func withInformer {{ end }} (ctx {{.contextContext|raw}}) ({{.contextContext|raw}}, {{.controllerInformer|raw}}) {
 	f := {{.factoryGet|raw}}(ctx)
 	inf := f.{{.groupGoName}}().{{.versionGoName}}().{{.type|publicPlural}}()
 	return {{ .contextWithValue|raw }}(ctx, Key{}, inf), inf.Informer()
