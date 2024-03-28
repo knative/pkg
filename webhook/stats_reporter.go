@@ -65,19 +65,84 @@ var (
 	resultCodeKey        = tag.MustNewKey("result_code")
 )
 
+type admissionToValue func(*admissionv1.AdmissionRequest, *admissionv1.AdmissionResponse) string
+type conversionToValue func(*apixv1.ConversionRequest, *apixv1.ConversionResponse) string
+
+var (
+	admissionTags = map[tag.Key]admissionToValue{
+		requestOperationKey: func(req *admissionv1.AdmissionRequest, _ *admissionv1.AdmissionResponse) string {
+			return string(req.Operation)
+		},
+		kindGroupKey: func(req *admissionv1.AdmissionRequest, _ *admissionv1.AdmissionResponse) string {
+			return req.Kind.Group
+		},
+		kindVersionKey: func(req *admissionv1.AdmissionRequest, _ *admissionv1.AdmissionResponse) string {
+			return req.Kind.Version
+		},
+		kindKindKey: func(req *admissionv1.AdmissionRequest, _ *admissionv1.AdmissionResponse) string {
+			return req.Kind.Kind
+		},
+		resourceGroupKey: func(req *admissionv1.AdmissionRequest, _ *admissionv1.AdmissionResponse) string {
+			return req.Resource.Group
+		},
+		resourceVersionKey: func(req *admissionv1.AdmissionRequest, _ *admissionv1.AdmissionResponse) string {
+			return req.Resource.Version
+		},
+		resourceResourceKey: func(req *admissionv1.AdmissionRequest, _ *admissionv1.AdmissionResponse) string {
+			return req.Resource.Resource
+		},
+		resourceNamespaceKey: func(req *admissionv1.AdmissionRequest, _ *admissionv1.AdmissionResponse) string {
+			return req.Namespace
+		},
+		admissionAllowedKey: func(_ *admissionv1.AdmissionRequest, resp *admissionv1.AdmissionResponse) string {
+			return strconv.FormatBool(resp.Allowed)
+		},
+	}
+	conversionTags = map[tag.Key]conversionToValue{
+		desiredAPIVersionKey: func(req *apixv1.ConversionRequest, _ *apixv1.ConversionResponse) string {
+			return req.DesiredAPIVersion
+		},
+		resultStatusKey: func(_ *apixv1.ConversionRequest, resp *apixv1.ConversionResponse) string {
+			return resp.Result.Status
+		},
+		resultReasonKey: func(_ *apixv1.ConversionRequest, resp *apixv1.ConversionResponse) string {
+			return string(resp.Result.Reason)
+		},
+		resultCodeKey: func(_ *apixv1.ConversionRequest, resp *apixv1.ConversionResponse) string {
+			return strconv.Itoa(int(resp.Result.Code))
+		},
+	}
+)
+
 // StatsReporter reports webhook metrics
 type StatsReporter interface {
 	ReportAdmissionRequest(request *admissionv1.AdmissionRequest, response *admissionv1.AdmissionResponse, d time.Duration) error
 	ReportConversionRequest(request *apixv1.ConversionRequest, response *apixv1.ConversionResponse, d time.Duration) error
 }
 
+type options struct {
+	tagsToExclude map[string]struct{}
+}
+
+type Option func(_ *options)
+
+func WithoutTag(tag string) Option {
+	return func(opts *options) {
+		if opts.tagsToExclude == nil {
+			opts.tagsToExclude = make(map[string]struct{})
+		}
+		opts.tagsToExclude[tag] = struct{}{}
+	}
+}
+
 // reporter implements StatsReporter interface
 type reporter struct {
-	ctx context.Context
+	ctx  context.Context
+	opts options
 }
 
 // NewStatsReporter creates a reporter for webhook metrics
-func NewStatsReporter() (StatsReporter, error) {
+func NewStatsReporter(opts ...Option) (StatsReporter, error) {
 	ctx, err := tag.New(
 		context.Background(),
 	)
@@ -85,23 +150,26 @@ func NewStatsReporter() (StatsReporter, error) {
 		return nil, err
 	}
 
-	return &reporter{ctx: ctx}, nil
+	options := options{}
+	for _, opt := range opts {
+		opt(&options)
+	}
+
+	return &reporter{ctx: ctx, opts: options}, nil
 }
 
 // Captures req count metric, recording the count and the duration
 func (r *reporter) ReportAdmissionRequest(req *admissionv1.AdmissionRequest, resp *admissionv1.AdmissionResponse, d time.Duration) error {
-	ctx, err := tag.New(
-		r.ctx,
-		tag.Insert(requestOperationKey, string(req.Operation)),
-		tag.Insert(kindGroupKey, req.Kind.Group),
-		tag.Insert(kindVersionKey, req.Kind.Version),
-		tag.Insert(kindKindKey, req.Kind.Kind),
-		tag.Insert(resourceGroupKey, req.Resource.Group),
-		tag.Insert(resourceVersionKey, req.Resource.Version),
-		tag.Insert(resourceResourceKey, req.Resource.Resource),
-		tag.Insert(resourceNamespaceKey, req.Namespace),
-		tag.Insert(admissionAllowedKey, strconv.FormatBool(resp.Allowed)),
-	)
+	mutators := []tag.Mutator{}
+
+	for key, f := range admissionTags {
+		if _, ok := r.opts.tagsToExclude[key.Name()]; ok {
+			continue
+		}
+		mutators = append(mutators, tag.Insert(key, f(req, resp)))
+	}
+
+	ctx, err := tag.New(r.ctx, mutators...)
 	if err != nil {
 		return err
 	}
@@ -114,13 +182,16 @@ func (r *reporter) ReportAdmissionRequest(req *admissionv1.AdmissionRequest, res
 
 // Captures req count metric, recording the count and the duration
 func (r *reporter) ReportConversionRequest(req *apixv1.ConversionRequest, resp *apixv1.ConversionResponse, d time.Duration) error {
-	ctx, err := tag.New(
-		r.ctx,
-		tag.Insert(desiredAPIVersionKey, req.DesiredAPIVersion),
-		tag.Insert(resultStatusKey, resp.Result.Status),
-		tag.Insert(resultReasonKey, string(resp.Result.Reason)),
-		tag.Insert(resultCodeKey, strconv.Itoa(int(resp.Result.Code))),
-	)
+	mutators := []tag.Mutator{}
+
+	for key, f := range conversionTags {
+		if _, ok := r.opts.tagsToExclude[key.Name()]; ok {
+			continue
+		}
+		mutators = append(mutators, tag.Insert(key, f(req, resp)))
+	}
+
+	ctx, err := tag.New(r.ctx, mutators...)
 	if err != nil {
 		return err
 	}
@@ -131,21 +202,23 @@ func (r *reporter) ReportConversionRequest(req *apixv1.ConversionRequest, resp *
 	return nil
 }
 
-func RegisterMetrics() {
-	tagKeys := []tag.Key{
-		requestOperationKey,
-		kindGroupKey,
-		kindVersionKey,
-		kindKindKey,
-		resourceGroupKey,
-		resourceVersionKey,
-		resourceResourceKey,
-		resourceNamespaceKey,
-		admissionAllowedKey,
-		desiredAPIVersionKey,
-		resultStatusKey,
-		resultReasonKey,
-		resultCodeKey}
+func RegisterMetrics(opts ...Option) {
+	options := options{}
+	for _, opt := range opts {
+		opt(&options)
+	}
+
+	tagKeys := []tag.Key{}
+	for tag := range admissionTags {
+		if _, ok := options.tagsToExclude[tag.Name()]; !ok {
+			tagKeys = append(tagKeys, tag)
+		}
+	}
+	for tag := range conversionTags {
+		if _, ok := options.tagsToExclude[tag.Name()]; !ok {
+			tagKeys = append(tagKeys, tag)
+		}
+	}
 
 	if err := view.Register(
 		&view.View{
