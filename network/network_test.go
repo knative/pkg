@@ -37,8 +37,8 @@ func TestIsKubeletProbe(t *testing.T) {
 	if IsKubeletProbe(req) {
 		t.Error("Not a kubelet probe but counted as such")
 	}
-	req.Header.Set(KubeletProbeHeaderName, "no matter")
-	if !IsKubeletProbe(req) {
-		t.Error("kubelet probe but not counted as such")
+	req.Header.Set(KubeletProbeHeaderName, "custom header no longer used")
+	if IsKubeletProbe(req) {
+		t.Error("custom kubelet probe header should no longer be used")
 	}
 }
