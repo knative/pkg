@@ -17,6 +17,7 @@ limitations under the License.
 package websocket
 
 import (
+	"context"
 	"errors"
 	"io"
 	"net/http"
@@ -361,7 +362,7 @@ func TestDurableConnectionWhenConnectionBreaksDown(t *testing.T) {
 	defer conn.Shutdown()
 
 	for i := 0; i < 10; i++ {
-		err := wait.PollImmediate(50*time.Millisecond, 5*time.Second, func() (bool, error) {
+		err := wait.PollUntilContextTimeout(context.Background(), 50*time.Millisecond, 5*time.Second, true, func(ctx context.Context) (bool, error) {
 			if err := conn.Send(testPayload); err != nil {
 				return false, nil
 			}

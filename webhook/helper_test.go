@@ -131,7 +131,7 @@ func waitForNonTLSServerAvailable(t *testing.T, serverURL string, timeout time.D
 	t.Helper()
 	var interval = 100 * time.Millisecond
 
-	conditionFunc := func() (done bool, err error) {
+	conditionFunc := func(ctx context.Context) (done bool, err error) {
 		var conn net.Conn
 		conn, _ = net.DialTimeout("tcp", serverURL, timeout)
 		if conn != nil {
@@ -141,7 +141,7 @@ func waitForNonTLSServerAvailable(t *testing.T, serverURL string, timeout time.D
 		return false, nil
 	}
 
-	return wait.PollImmediate(interval, timeout, conditionFunc)
+	return wait.PollUntilContextTimeout(context.Background(), interval, timeout, true, conditionFunc)
 }
 
 func waitForServerAvailable(t *testing.T, serverURL string, timeout time.Duration) error {
@@ -158,7 +158,7 @@ func waitForServerAvailable(t *testing.T, serverURL string, timeout time.Duratio
 		}
 	)
 
-	conditionFunc := func() (done bool, err error) {
+	conditionFunc := func(ctx context.Context) (done bool, err error) {
 		conn, _ := tls.DialWithDialer(dialer, "tcp", serverURL, tlsConf)
 		if conn != nil {
 			conn.Close()
@@ -167,7 +167,7 @@ func waitForServerAvailable(t *testing.T, serverURL string, timeout time.Duratio
 		return false, nil
 	}
 
-	return wait.PollImmediate(interval, timeout, conditionFunc)
+	return wait.PollUntilContextTimeout(context.Background(), interval, timeout, true, conditionFunc)
 }
 
 func createNamespace(t *testing.T, kubeClient kubernetes.Interface, name string) error {

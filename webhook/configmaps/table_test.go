@@ -353,7 +353,7 @@ func TestNew(t *testing.T) {
 	}
 
 	// Queue has async moving parts so if we check at the wrong moment, this might still be 0.
-	if wait.PollImmediate(10*time.Millisecond, 250*time.Millisecond, func() (bool, error) {
+	if wait.PollUntilContextTimeout(ctx, 10*time.Millisecond, 250*time.Millisecond, true, func(ctx context.Context) (bool, error) {
 		return c.WorkQueue().Len() == 1, nil
 	}) != nil {
 		t.Error("Queue length was never 1")
