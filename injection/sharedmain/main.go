@@ -289,14 +289,6 @@ func MainWithConfig(ctx context.Context, component string, cfg *rest.Config, cto
 	// and pass them in.
 	var wh *webhook.Webhook
 	if len(webhooks) > 0 {
-		// Register webhook metrics
-		opts := webhook.GetOptions(ctx)
-		if opts != nil {
-			webhook.RegisterMetrics(opts.StatsReporterOptions...)
-		} else {
-			webhook.RegisterMetrics()
-		}
-
 		wh, err = webhook.New(ctx, webhooks)
 		if err != nil {
 			logger.Fatalw("Failed to create webhook", zap.Error(err))

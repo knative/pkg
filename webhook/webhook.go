@@ -25,6 +25,7 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"sync"
 	"time"
 
 	// Injection stuff
@@ -38,6 +39,10 @@ import (
 	admissionv1 "k8s.io/api/admission/v1"
 	"knative.dev/pkg/logging"
 	"knative.dev/pkg/system"
+)
+
+var (
+	metricsOnce sync.Once
 )
 
 // Options contains the configuration for the webhook
@@ -147,6 +152,8 @@ func New(
 	logger := logging.FromContext(ctx)
 
 	if opts.StatsReporter == nil {
+		// Register webhook metrics
+		metricsOnce.Do(func() { RegisterMetrics(opts.StatsReporterOptions...) })
 		reporter, err := NewStatsReporter(opts.StatsReporterOptions...)
 		if err != nil {
 			return nil, err
