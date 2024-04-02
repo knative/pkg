@@ -17,6 +17,7 @@ limitations under the License.
 package metrics
 
 import (
+	"context"
 	"fmt"
 	"testing"
 	"time"
@@ -173,7 +174,7 @@ func TestAllMetersExpiration(t *testing.T) {
 
 	// Expire the second entry
 	fakeClock.Step(9 * time.Minute) // t+12m
-	_ = wait.PollImmediate(100*time.Millisecond, 5*time.Second, func() (bool, error) {
+	_ = wait.PollUntilContextTimeout(context.Background(), 100*time.Millisecond, 5*time.Second, true, func(ctx context.Context) (bool, error) {
 		// Non-expiring defaultMeter should be available along with the non-expired entry
 		allMeters.lock.Lock()
 		defer allMeters.lock.Unlock()
@@ -244,7 +245,7 @@ func TestIfAllMeterResourcesAreRemoved(t *testing.T) {
 	// Expire all meters and views
 	// We need to unlock before we move the clock ahead in time
 	fakeClock.Step(12 * time.Minute) // t+12m
-	_ = wait.PollImmediate(100*time.Millisecond, 5*time.Second, func() (bool, error) {
+	_ = wait.PollUntilContextTimeout(context.Background(), 100*time.Millisecond, 5*time.Second, true, func(ctx context.Context) (bool, error) {
 		// Non-expiring defaultMeter should be available
 		allMeters.lock.Lock()
 		defer allMeters.lock.Unlock()

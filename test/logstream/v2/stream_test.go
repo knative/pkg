@@ -304,7 +304,7 @@ func TestNamespaceStream(t *testing.T) {
 
 	// We can't assume that the cancel signal doesn't race the pod creation signal, so
 	// we retry a few times to give some leeway.
-	if err := wait.PollImmediate(10*time.Millisecond, time.Second, func() (bool, error) {
+	if err := wait.PollUntilContextTimeout(ctx, 10*time.Millisecond, time.Second, true, func(ctx context.Context) (bool, error) {
 		if _, err := podClient.Create(context.Background(), knativePod, metav1.CreateOptions{}); err != nil {
 			return false, err
 		}

@@ -18,6 +18,7 @@ package test
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"fmt"
 	"os"
@@ -66,7 +67,7 @@ func TestCleanupOnInterrupt(t *testing.T) {
 
 	// poll until the ready file is gone - indicating the subtest has been set up
 	// with the cleanup functions
-	err = wait.PollImmediate(100*time.Millisecond, 2*time.Second, func() (bool, error) {
+	err = wait.PollUntilContextTimeout(context.Background(), 100*time.Millisecond, 2*time.Second, true, func(ctx context.Context) (bool, error) {
 		_, err := os.Stat(readyFile.Name())
 		if os.IsNotExist(err) {
 			return true, nil

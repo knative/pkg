@@ -17,6 +17,7 @@ limitations under the License.
 package controller
 
 import (
+	"context"
 	"strconv"
 	"testing"
 	"time"
@@ -73,7 +74,7 @@ func TestRateLimit(t *testing.T) {
 	}
 
 	// Verify the items were properly added for consumption.
-	if wait.PollImmediate(10*time.Millisecond, 250*time.Millisecond, func() (bool, error) {
+	if wait.PollUntilContextTimeout(context.Background(), 10*time.Millisecond, 250*time.Millisecond, true, func(ctx context.Context) (bool, error) {
 		return q.Len() == 2, nil
 	}) != nil {
 		t.Error("Queue length was never 2")
@@ -89,7 +90,7 @@ func TestSlowQueue(t *testing.T) {
 	q := newTwoLaneWorkQueue("live-in-the-fast-lane", workqueue.DefaultControllerRateLimiter())
 	q.SlowLane().Add("1")
 	// Queue has async moving parts so if we check at the wrong moment, this might still be 0.
-	if wait.PollImmediate(10*time.Millisecond, 250*time.Millisecond, func() (bool, error) {
+	if wait.PollUntilContextTimeout(context.Background(), 10*time.Millisecond, 250*time.Millisecond, true, func(ctx context.Context) (bool, error) {
 		return q.Len() == 1, nil
 	}) != nil {
 		t.Error("Queue length was never 1")
