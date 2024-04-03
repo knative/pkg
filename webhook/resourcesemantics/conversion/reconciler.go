@@ -49,6 +49,8 @@ type reconciler struct {
 	secretLister corelisters.SecretLister
 	crdLister    apixlisters.CustomResourceDefinitionLister
 	client       apixclient.Interface
+
+	skipReconcile bool
 }
 
 var _ webhook.ConversionController = (*reconciler)(nil)
@@ -73,6 +75,10 @@ func (r *reconciler) Reconcile(ctx context.Context, key string) error {
 	if err != nil {
 		logger.Errorw("Error fetching secret", zap.Error(err))
 		return err
+	}
+
+	if r.skipReconcile { // delegate crd update externally, only validate the secret, contents might be filled in later
+		return nil
 	}
 
 	cacert, ok := secret.Data[certresources.CACert]

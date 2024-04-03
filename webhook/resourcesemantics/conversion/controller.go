@@ -131,6 +131,8 @@ func newController(ctx context.Context, optsFunc ...OptionFunc) *controller.Impl
 		client:       client,
 		secretLister: secretInformer.Lister(),
 		crdLister:    crdInformer.Lister(),
+
+		skipReconcile: shouldSkipReconcile(ctx),
 	}
 
 	logger := logging.FromContext(ctx)
@@ -160,4 +162,19 @@ func newController(ctx context.Context, optsFunc ...OptionFunc) *controller.Impl
 	}
 
 	return c
+}
+
+type skipReconcileKey struct{}
+
+func shouldSkipReconcile(ctx context.Context) bool {
+	v, ok := ctx.Value(skipReconcileKey{}).(*bool)
+	if ok && v != nil {
+		return *v
+	}
+	return false
+}
+
+// WithSkipReconcile returns a context with the skipReconcile value set
+func WithSkipReconcile(ctx context.Context, skipReconcile *bool) context.Context {
+	return context.WithValue(ctx, skipReconcileKey{}, skipReconcile)
 }
