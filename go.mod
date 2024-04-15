@@ -34,7 +34,7 @@ require (
 	golang.org/x/net v0.24.0
 	golang.org/x/oauth2 v0.18.0
 	golang.org/x/sync v0.7.0
-	golang.org/x/tools v0.19.0
+	golang.org/x/tools v0.20.0
 	gomodules.xyz/jsonpatch/v2 v2.4.0
 	google.golang.org/api v0.172.0
 	google.golang.org/grpc v1.62.1
@@ -97,7 +97,7 @@ require (
 	go.opentelemetry.io/otel/trace v1.24.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/crypto v0.22.0 // indirect
-	golang.org/x/mod v0.16.0 // indirect
+	golang.org/x/mod v0.17.0 // indirect
 	golang.org/x/sys v0.19.0 // indirect
 	golang.org/x/term v0.19.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
