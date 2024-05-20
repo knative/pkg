@@ -37,7 +37,7 @@ require (
 	golang.org/x/tools v0.21.0
 	gomodules.xyz/jsonpatch/v2 v2.4.0
 	google.golang.org/api v0.180.0
-	google.golang.org/grpc v1.63.2
+	google.golang.org/grpc v1.64.0
 	google.golang.org/protobuf v1.34.1
 	gopkg.in/yaml.v3 v3.0.1
 	k8s.io/api v0.29.2
