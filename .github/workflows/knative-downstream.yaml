@@ -72,10 +72,20 @@ jobs:
          git fetch upstream ${{ github.base_ref }}
          git pull --no-rebase --no-commit upstream ${{ github.base_ref }}
 
-    - name: Checkout downstream at ${{ github.base_ref }}
+    - name: Attempt checkout of downstream at ${{ github.base_ref }}
+      id: checkout-downstream
       uses: actions/checkout@v4
       with:
         ref: ${{ github.base_ref }}
+        repository: ${{ matrix.repo }}
+        path: downstream
+      continue-on-error: true
+
+    - name: Checkout downstream with fallback branch
+      if: steps.checkout-downstream.outcome == 'failure'
+      uses: actions/checkout@v4
+      with:
+        ref: main
         repository: ${{ matrix.repo }}
         path: downstream
 
