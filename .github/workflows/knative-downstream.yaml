@@ -81,18 +81,11 @@ jobs:
         path: downstream
       continue-on-error: true
 
-    - name: Set branch to main if checkout fails
-      if: steps.checkout-downstream.outcome == 'failure'
-      run: echo "BRANCH=main" >> $GITHUB_ENV
-
-    - name: Set branch to PR base ref if checkout succeeds
-      if: steps.checkout-downstream.outcome == 'success'
-      run: echo "BRANCH=${{ github.base_ref }}" >> $GITHUB_ENV
-
     - name: Checkout downstream with fallback branch
+      if: steps.checkout-downstream.outcome == 'failure'
       uses: actions/checkout@v4
       with:
-        ref: ${{ env.BRANCH }}
+        ref: main
         repository: ${{ matrix.repo }}
         path: downstream
 
