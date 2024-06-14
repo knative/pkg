@@ -79,12 +79,12 @@ func (*AuthStatus) GetFullType() ducktypes.Populatable {
 }
 
 // ConvertTo implements apis.Convertible
-func (a *AuthStatus) ConvertTo(ctx context.Context, to apis.Convertible) error {
+func (a *AuthStatus) ConvertTo(_ context.Context, to apis.Convertible) error {
 	return fmt.Errorf("v1 is the highest known version, got: %T", to)
 }
 
 // ConvertFrom implements apis.Convertible
-func (a *AuthStatus) ConvertFrom(ctx context.Context, from apis.Convertible) error {
+func (a *AuthStatus) ConvertFrom(_ context.Context, from apis.Convertible) error {
 	return fmt.Errorf("v1 is the highest known version, got: %T", from)
 }
 
