@@ -13,11 +13,9 @@ require (
 	github.com/davecgh/go-spew v1.1.1
 	github.com/evanphx/json-patch/v5 v5.9.0
 	github.com/gobuffalo/flect v1.0.2
-	github.com/golang/protobuf v1.5.4
 	github.com/google/go-cmp v0.6.0
 	github.com/google/go-github/v27 v27.0.6
 	github.com/google/gofuzz v1.2.0
-	github.com/google/mako v0.0.0-20190821191249-122f8dcef9e3
 	github.com/google/uuid v1.6.0
 	github.com/gorilla/websocket v1.5.1
 	github.com/hashicorp/golang-lru v1.0.2
@@ -71,6 +69,7 @@ require (
 	github.com/go-openapi/swag v0.22.3 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
+	github.com/golang/protobuf v1.5.4 // indirect
 	github.com/google/gnostic-models v0.6.8 // indirect
 	github.com/google/go-querystring v1.0.0 // indirect
 	github.com/google/s2a-go v0.1.7 // indirect
