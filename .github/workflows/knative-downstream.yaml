@@ -35,7 +35,6 @@ jobs:
           - knative-extensions/eventing-ceph
           - knative-extensions/eventing-github
           - knative-extensions/eventing-gitlab
-          - knative-extensions/eventing-kafka
           - knative-extensions/eventing-kafka-broker
           - knative-extensions/eventing-rabbitmq
           - knative-extensions/eventing-redis
