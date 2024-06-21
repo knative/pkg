@@ -304,8 +304,9 @@ func TestNamespaceStream(t *testing.T) {
 
 	// We can't assume that the cancel signal doesn't race the pod creation signal, so
 	// we retry a few times to give some leeway.
-	if err := wait.PollUntilContextTimeout(ctx, 10*time.Millisecond, time.Second, true, func(ctx context.Context) (bool, error) {
-		if _, err := podClient.Create(context.Background(), knativePod, metav1.CreateOptions{}); err != nil {
+	pollCtx := context.Background()
+	if err := wait.PollUntilContextTimeout(pollCtx, 10*time.Millisecond, time.Second, true, func(ctx context.Context) (bool, error) {
+		if _, err := podClient.Create(pollCtx, knativePod, metav1.CreateOptions{}); err != nil {
 			return false, err
 		}
 
@@ -314,7 +315,7 @@ func TestNamespaceStream(t *testing.T) {
 			return true, nil
 		case <-logFuncInvoked:
 			t.Log("Log was still produced, trying again...")
-			if err := podClient.Delete(context.Background(), knativePod.Name, metav1.DeleteOptions{}); err != nil {
+			if err := podClient.Delete(pollCtx, knativePod.Name, metav1.DeleteOptions{}); err != nil {
 				return false, err
 			}
 			return false, nil
