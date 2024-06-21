@@ -1,5 +1,5 @@
 /*
-Copyright 2020 The Knative Authors
+Copyright 2019 The Knative Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,25 +14,31 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package prow
+package ci
 
 import (
 	"testing"
 )
 
-func TestGetEnvConfig(t *testing.T) {
+func TestIsCI(t *testing.T) {
 	t.Setenv("CI", "true")
-	ec, err := GetEnvConfig()
-	t.Log("EnvConfig is:", ec)
-	if err != nil {
-		t.Fatal("Error getting envconfig for Prow:", err)
+	if ic := IsCI(); !ic {
+		t.Fatal("Expected: true, actual: false")
 	}
-	if !ec.CI {
-		t.Fatal("Expected CI to be true but is false")
+}
+
+func TestGetArtifacts(t *testing.T) {
+	// Test we can read from the env var
+	t.Setenv("ARTIFACTS", "test")
+	v := GetLocalArtifactsDir()
+	if v != "test" {
+		t.Fatalf("Actual artifacts dir: '%s' and Expected: 'test'", v)
 	}
 
-	t.Setenv("CI", "false")
-	if _, err = GetEnvConfig(); err == nil {
-		t.Fatal("Expected an error if called from a non-CI environment but got nil")
+	// Test we can use the default
+	t.Setenv("ARTIFACTS", "")
+	v = GetLocalArtifactsDir()
+	if v != "artifacts" {
+		t.Fatalf("Actual artifacts dir: '%s' and Expected: 'artifacts'", v)
 	}
 }
