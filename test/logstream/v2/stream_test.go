@@ -376,7 +376,6 @@ func logsForContainer(container string) string {
 			result += "\n"
 		}
 		result += s
-
 	}
 	return result
 }

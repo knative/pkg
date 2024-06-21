@@ -501,7 +501,6 @@ func versionInformerPackages(basePackage string, groupPkgName string, gv clientg
 				return tags.NeedsInformerInjection()
 			},
 		})
-
 	}
 	return vers
 }

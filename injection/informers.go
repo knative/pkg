@@ -93,7 +93,6 @@ func (i *impl) SetupInformers(ctx context.Context, cfg *rest.Config) (context.Co
 	for _, fii := range i.GetFilteredInformers() {
 		ctx, filteredinfs = fii(ctx)
 		informers = append(informers, filteredinfs...)
-
 	}
 	return ctx, informers
 }
