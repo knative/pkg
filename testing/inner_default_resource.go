@@ -114,8 +114,10 @@ type InnerDefaultStatus struct {
 }
 
 // Check that ImmutableDefaultResource may be validated and defaulted.
-var _ apis.Validatable = (*InnerDefaultResource)(nil)
-var _ apis.Defaultable = (*InnerDefaultResource)(nil)
+var (
+	_ apis.Validatable = (*InnerDefaultResource)(nil)
+	_ apis.Defaultable = (*InnerDefaultResource)(nil)
+)
 
 // SetDefaults sets default values.
 func (i *InnerDefaultResource) SetDefaults(ctx context.Context) {

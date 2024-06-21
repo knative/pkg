@@ -446,5 +446,4 @@ func TestMetricFetch(t *testing.T) {
 	if diff := cmp.Diff(want, m[0]); diff != "" {
 		t.Error("Incorrect received metrics (-want +got):", diff)
 	}
-
 }

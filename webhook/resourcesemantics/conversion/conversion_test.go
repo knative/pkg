@@ -459,7 +459,6 @@ func TestConversionFailureToConvert(t *testing.T) {
 			}
 		})
 	}
-
 }
 
 func TestConversionFailureInvalidDesiredAPIVersion(t *testing.T) {
@@ -621,7 +620,6 @@ func newConversionWithKinds(
 	context.Context,
 	webhook.ConversionController,
 ) {
-
 	ctx, _ := SetupFakeContext(t)
 	ctx = webhook.WithOptions(ctx, webhook.Options{
 		SecretName: "webhook-secret",

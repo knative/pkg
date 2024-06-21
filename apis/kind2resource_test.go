@@ -24,7 +24,6 @@ import (
 )
 
 func TestGVK2GVR(t *testing.T) {
-
 	tests := []struct {
 		name  string
 		input schema.GroupVersionKind

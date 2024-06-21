@@ -50,7 +50,8 @@ func TestNewControllerRef_OwnerRefableAccessor(t *testing.T) {
 			ObjectMeta: metav1.ObjectMeta{
 				Name: "foo",
 				UID:  "42",
-			}},
+			},
+		},
 	}
 
 	blockOwnerDeletion := true

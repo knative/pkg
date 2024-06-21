@@ -333,7 +333,6 @@ func TestCreatePatch(t *testing.T) {
 			if diff := cmp.Diff(want, got); diff != "" {
 				t.Error("CreateBytePatch (-want, +got) =", diff)
 			}
-
 		})
 		t.Run(test.name, func(t *testing.T) {
 			got, err := CreatePatch(test.before, test.after)
@@ -398,8 +397,10 @@ type PatchSpec struct {
 	Patchable *Patchable `json:"patchable,omitempty"`
 }
 
-var _ Implementable = (*Patchable)(nil)
-var _ Populatable = (*Patch)(nil)
+var (
+	_ Implementable = (*Patchable)(nil)
+	_ Populatable   = (*Patch)(nil)
+)
 
 func (*Patch) GetObjectKind() schema.ObjectKind {
 	return nil // not used

@@ -106,7 +106,6 @@ func TestMatches(t *testing.T) {
 			}
 
 			ok, err := ConformsToType(test.instance, test.iface)
-
 			if err != nil {
 				t.Error(err)
 			}
@@ -160,7 +159,6 @@ func TestMismatches(t *testing.T) {
 			}
 
 			ok, err := ConformsToType(test.instance, test.iface)
-
 			if err != nil {
 				t.Error(err)
 			}
@@ -224,8 +222,10 @@ type FooStatus struct {
 	Fooable *Fooable `json:"fooable,omitempty"`
 }
 
-var _ Implementable = (*Fooable)(nil)
-var _ Populatable = (*Foo)(nil)
+var (
+	_ Implementable = (*Fooable)(nil)
+	_ Populatable   = (*Foo)(nil)
+)
 
 func (*Foo) GetObjectKind() schema.ObjectKind {
 	return nil // not used
@@ -263,8 +263,10 @@ type BarStatus struct {
 	Barable *Barable `json:"barable,omitempty"`
 }
 
-var _ Implementable = (*Barable)(nil)
-var _ Populatable = (*Bar)(nil)
+var (
+	_ Implementable = (*Barable)(nil)
+	_ Populatable   = (*Bar)(nil)
+)
 
 func (*Bar) GetObjectKind() schema.ObjectKind {
 	return nil // not used
@@ -294,16 +296,20 @@ func (f *Bar) Populate() {
 type AStruct struct {
 	Field string `json:"field,omitempty"`
 }
-type Sliceable []AStruct
-type Slice struct {
-	Status SliceStatus `json:"status"`
-}
+type (
+	Sliceable []AStruct
+	Slice     struct {
+		Status SliceStatus `json:"status"`
+	}
+)
 type SliceStatus struct {
 	Sliceable *Sliceable `json:"sliceable,omitempty"`
 }
 
-var _ Implementable = (*Sliceable)(nil)
-var _ Populatable = (*Slice)(nil)
+var (
+	_ Implementable = (*Sliceable)(nil)
+	_ Populatable   = (*Slice)(nil)
+)
 
 func (*Slice) GetObjectKind() schema.ObjectKind {
 	return nil // not used
@@ -326,16 +332,20 @@ func (f *Slice) Populate() {
 }
 
 // Define a "Stringable" duck type.
-type Stringable string
-type String struct {
-	Status StringStatus `json:"status"`
-}
+type (
+	Stringable string
+	String     struct {
+		Status StringStatus `json:"status"`
+	}
+)
 type StringStatus struct {
 	Stringable Stringable `json:"stringable,omitempty"`
 }
 
-var _ Implementable = (*Stringable)(nil)
-var _ Populatable = (*String)(nil)
+var (
+	_ Implementable = (*Stringable)(nil)
+	_ Populatable   = (*String)(nil)
+)
 
 func (*String) GetObjectKind() schema.ObjectKind {
 	return nil // not used
@@ -364,8 +374,10 @@ var emptyStringable Stringable
 // and 'Populatable'
 type UnableToMarshal struct{}
 
-var _ Implementable = (*UnableToMarshal)(nil)
-var _ Populatable = (*UnableToMarshal)(nil)
+var (
+	_ Implementable = (*UnableToMarshal)(nil)
+	_ Populatable   = (*UnableToMarshal)(nil)
+)
 
 func (*UnableToMarshal) GetObjectKind() schema.ObjectKind {
 	return nil // not used
@@ -394,8 +406,10 @@ func (*UnableToMarshal) MarshalJSON() ([]byte, error) {
 // and 'Populatable'
 type UnableToUnmarshal struct{}
 
-var _ Implementable = (*UnableToUnmarshal)(nil)
-var _ Populatable = (*UnableToUnmarshal)(nil)
+var (
+	_ Implementable = (*UnableToUnmarshal)(nil)
+	_ Populatable   = (*UnableToUnmarshal)(nil)
+)
 
 func (*UnableToUnmarshal) GetObjectKind() schema.ObjectKind {
 	return nil // not used
@@ -426,8 +440,10 @@ type UnexportedFields struct {
 	a string
 }
 
-var _ Implementable = (*UnexportedFields)(nil)
-var _ Populatable = (*UnexportedFields)(nil)
+var (
+	_ Implementable = (*UnexportedFields)(nil)
+	_ Populatable   = (*UnexportedFields)(nil)
+)
 
 func (*UnexportedFields) GetObjectKind() schema.ObjectKind {
 	return nil // not used

@@ -183,6 +183,7 @@ func (fsii *fakeSharedIndexInformer) IsStopped() bool {
 	fsii.t.Fatalf("NYI: IsStopped")
 	return false
 }
+
 func (fsii *fakeSharedIndexInformer) RemoveEventHandler(handler cache.ResourceEventHandlerRegistration) error {
 	fsii.t.Fatalf("NYI: RemoveEventHandler")
 	return nil

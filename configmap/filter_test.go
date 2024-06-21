@@ -18,13 +18,15 @@ package configmap
 
 import "testing"
 
-type foo struct{}
-type bar struct{}
+type (
+	foo struct{}
+	bar struct{}
+)
 
 func TestTypeFilter(t *testing.T) {
 	count := 0
 
-	var f = func(name string, value interface{}) {
+	f := func(name string, value interface{}) {
 		count++
 	}
 

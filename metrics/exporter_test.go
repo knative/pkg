@@ -111,7 +111,8 @@ func TestInterleavedExporters(t *testing.T) {
 		domain:             metricsDomain,
 		component:          testComponent,
 		backendDestination: prometheus,
-		prometheusPort:     9090}, TestLogger(t))
+		prometheusPort:     9090,
+	}, TestLogger(t))
 	if err != nil {
 		t.Error(err)
 	}

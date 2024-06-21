@@ -121,7 +121,6 @@ func TestUpdateKeys(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-
 			out := UpdateKeys(tc.in, tc.ols...)
 			if diff := cmp.Diff(tc.out, out); diff != "" {
 				t.Error("Migrate diff (-want,+got):", diff)

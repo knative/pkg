@@ -30,39 +30,40 @@ func TestChildName(t *testing.T) {
 		parent string
 		suffix string
 		want   string
-	}{{
-		parent: "asdf",
-		suffix: "-deployment",
-		want:   "asdf-deployment",
-	}, {
-		parent: strings.Repeat("f", 63),
-		suffix: "-deployment",
-		want:   "ffffffffffffffffffff105d7597f637e83cc711605ac3ea4957-deployment",
-	}, {
-		parent: strings.Repeat("f", 63),
-		suffix: "-deploy",
-		want:   "ffffffffffffffffffffffff105d7597f637e83cc711605ac3ea4957-deploy",
-	}, {
-		parent: strings.Repeat("f", 63),
-		suffix: strings.Repeat("f", 63),
-		want:   "fffffffffffffffffffffffffffffff0502661254f13c89973cb3a83e0cbec0",
-	}, {
-		parent: "a",
-		suffix: strings.Repeat("f", 63),
-		want:   "ab5cfd486935decbc0d305799f4ce4414ffffffffffffffffffffffffffffff",
-	}, {
-		parent: strings.Repeat("b", 32),
-		suffix: strings.Repeat("f", 32),
-		want:   "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb329c7c81b9ab3ba71aa139066aa5625d",
-	}, {
-		parent: "aaaa",
-		suffix: strings.Repeat("b---a", 20),
-		want:   "aaaa7a3f7966594e3f0849720eced8212c18b---ab---ab---ab---ab---ab",
-	}, {
-		parent: strings.Repeat("a", 17),
-		suffix: "a.-.-.-.-.-.-.aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-		want:   "aaaaaaaaaaaaaaaaaa1eb10dc911444f8434af83b7225442da",
-	},
+	}{
+		{
+			parent: "asdf",
+			suffix: "-deployment",
+			want:   "asdf-deployment",
+		}, {
+			parent: strings.Repeat("f", 63),
+			suffix: "-deployment",
+			want:   "ffffffffffffffffffff105d7597f637e83cc711605ac3ea4957-deployment",
+		}, {
+			parent: strings.Repeat("f", 63),
+			suffix: "-deploy",
+			want:   "ffffffffffffffffffffffff105d7597f637e83cc711605ac3ea4957-deploy",
+		}, {
+			parent: strings.Repeat("f", 63),
+			suffix: strings.Repeat("f", 63),
+			want:   "fffffffffffffffffffffffffffffff0502661254f13c89973cb3a83e0cbec0",
+		}, {
+			parent: "a",
+			suffix: strings.Repeat("f", 63),
+			want:   "ab5cfd486935decbc0d305799f4ce4414ffffffffffffffffffffffffffffff",
+		}, {
+			parent: strings.Repeat("b", 32),
+			suffix: strings.Repeat("f", 32),
+			want:   "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb329c7c81b9ab3ba71aa139066aa5625d",
+		}, {
+			parent: "aaaa",
+			suffix: strings.Repeat("b---a", 20),
+			want:   "aaaa7a3f7966594e3f0849720eced8212c18b---ab---ab---ab---ab---ab",
+		}, {
+			parent: strings.Repeat("a", 17),
+			suffix: "a.-.-.-.-.-.-.aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+			want:   "aaaaaaaaaaaaaaaaaa1eb10dc911444f8434af83b7225442da",
+		},
 	}
 
 	for _, test := range tests {

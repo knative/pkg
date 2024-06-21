@@ -88,7 +88,6 @@ func TestSetUserInfoAnnotationsWhenWithinCreate(t *testing.T) {
 				}
 				t.Fatalf("Annotations don't match")
 			}
-
 		})
 	}
 }

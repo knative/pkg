@@ -99,7 +99,8 @@ func TestEnsureLabelSelectorExpressions(t *testing.T) {
 		},
 		expect: &metav1.LabelSelector{
 			MatchExpressions: []metav1.LabelSelectorRequirement{
-				knativeExpression, fooExpression},
+				knativeExpression, fooExpression,
+			},
 		},
 	}, {
 		name: "remove obsolete",
@@ -114,7 +115,8 @@ func TestEnsureLabelSelectorExpressions(t *testing.T) {
 		},
 		expect: &metav1.LabelSelector{
 			MatchExpressions: []metav1.LabelSelectorRequirement{
-				knativeExpression, fooExpression},
+				knativeExpression, fooExpression,
+			},
 		},
 	}}
 
@@ -127,9 +129,10 @@ func TestEnsureLabelSelectorExpressions(t *testing.T) {
 		})
 	}
 }
+
 func waitForNonTLSServerAvailable(t *testing.T, serverURL string, timeout time.Duration) error {
 	t.Helper()
-	var interval = 100 * time.Millisecond
+	interval := 100 * time.Millisecond
 
 	conditionFunc := func(ctx context.Context) (done bool, err error) {
 		var conn net.Conn

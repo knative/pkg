@@ -42,8 +42,10 @@ type TestBindable struct {
 }
 
 // Check that TestBindable may be validated and defaulted.
-var _ apis.Listable = (*TestBindable)(nil)
-var _ duck.Bindable = (*TestBindable)(nil)
+var (
+	_ apis.Listable = (*TestBindable)(nil)
+	_ duck.Bindable = (*TestBindable)(nil)
+)
 
 // TestBindableSpec represents test resource spec.
 type TestBindableSpec struct {

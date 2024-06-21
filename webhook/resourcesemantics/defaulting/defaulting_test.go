@@ -132,8 +132,8 @@ var (
 
 func newNonRunningTestResourceAdmissionController(t *testing.T) (
 	kubeClient *fakekubeclientset.Clientset,
-	ac webhook.AdmissionController) {
-
+	ac webhook.AdmissionController,
+) {
 	t.Helper()
 	// Create fake clients
 	kubeClient = fakekubeclientset.NewSimpleClientset(initialResourceWebhook)
@@ -611,7 +611,6 @@ func TestAdmitUpdatesCallback(t *testing.T) {
 				Path:      "/spec/fieldForCallbackDefaulting",
 				Value:     "I'm a default",
 			}, {
-
 				Operation: "replace",
 				Path:      "/metadata/annotations/pkg.knative.dev~1lastModifier",
 				Value:     user2,
@@ -688,7 +687,6 @@ func TestAdmitUpdatesCallback(t *testing.T) {
 				Path:      "/spec/fieldForCallbackDefaulting",
 				Value:     "I'm a default",
 			}, {
-
 				Operation: "replace",
 				Path:      "/metadata/annotations/pkg.knative.dev~1lastModifier",
 				Value:     user2,

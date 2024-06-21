@@ -368,7 +368,6 @@ func TestDurableConnectionWhenConnectionBreaksDown(t *testing.T) {
 			}
 			return true, nil
 		})
-
 		if err != nil {
 			t.Error("Timed out trying to send a message:", err)
 		}
@@ -458,5 +457,4 @@ func TestNewDurableSendingConnectionGuaranteed(t *testing.T) {
 
 	// Message successfully sent, instruct the server to drop the connection.
 	reconnectChan <- struct{}{}
-
 }

@@ -346,7 +346,6 @@ func TestUpdateLevelFromConfigMap(t *testing.T) {
 			updateFn  func(*corev1.ConfigMap)
 			wantLevel zapcore.Level
 		}{{
-
 			// Component deleted, level set to global value
 			updateFn: func(cm *corev1.ConfigMap) {
 				delete(cm.Data, componentLogKey)

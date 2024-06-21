@@ -136,50 +136,51 @@ func TestMigrate_Errors(t *testing.T) {
 		crd  func(*k8stesting.Fake)
 		dyn  func(*k8stesting.Fake)
 		pass bool
-	}{{
-		name: "failed to fetch CRD",
-		crd: func(fake *k8stesting.Fake) {
-			fake.PrependReactor("get", "*",
-				func(k8stesting.Action) (bool, runtime.Object, error) {
-					return true, nil, errors.New("failed to get crd")
-				})
+	}{
+		{
+			name: "failed to fetch CRD",
+			crd: func(fake *k8stesting.Fake) {
+				fake.PrependReactor("get", "*",
+					func(k8stesting.Action) (bool, runtime.Object, error) {
+						return true, nil, errors.New("failed to get crd")
+					})
+			},
+		}, {
+			name: "listing fails",
+			dyn: func(fake *k8stesting.Fake) {
+				fake.PrependReactor("list", "*",
+					func(k8stesting.Action) (bool, runtime.Object, error) {
+						return true, nil, errors.New("failed to list resources")
+					})
+			},
+		}, {
+			name: "patching resource fails",
+			dyn: func(fake *k8stesting.Fake) {
+				fake.PrependReactor("patch", "*",
+					func(k8stesting.Action) (bool, runtime.Object, error) {
+						return true, nil, errors.New("failed to patch resources")
+					})
+			},
+		}, {
+			name: "patching definition fails",
+			crd: func(fake *k8stesting.Fake) {
+				fake.PrependReactor("patch", "*",
+					func(k8stesting.Action) (bool, runtime.Object, error) {
+						return true, nil, errors.New("failed to patch definition")
+					})
+			},
+		}, {
+			name: "patching unexisting resource",
+			dyn: func(fake *k8stesting.Fake) {
+				fake.PrependReactor("patch", "*",
+					func(k8stesting.Action) (bool, runtime.Object, error) {
+						return true, nil, apierrs.NewNotFound(fakeGR, "resource-removed")
+					})
+			},
+			// Resouce not found error should not block the storage migration.
+			pass: true,
 		},
-	}, {
-		name: "listing fails",
-		dyn: func(fake *k8stesting.Fake) {
-			fake.PrependReactor("list", "*",
-				func(k8stesting.Action) (bool, runtime.Object, error) {
-					return true, nil, errors.New("failed to list resources")
-				})
-		},
-	}, {
-		name: "patching resource fails",
-		dyn: func(fake *k8stesting.Fake) {
-			fake.PrependReactor("patch", "*",
-				func(k8stesting.Action) (bool, runtime.Object, error) {
-					return true, nil, errors.New("failed to patch resources")
-				})
-		},
-	}, {
-		name: "patching definition fails",
-		crd: func(fake *k8stesting.Fake) {
-			fake.PrependReactor("patch", "*",
-				func(k8stesting.Action) (bool, runtime.Object, error) {
-					return true, nil, errors.New("failed to patch definition")
-				})
-		},
-	}, {
-		name: "patching unexisting resource",
-		dyn: func(fake *k8stesting.Fake) {
-			fake.PrependReactor("patch", "*",
-				func(k8stesting.Action) (bool, runtime.Object, error) {
-					return true, nil, apierrs.NewNotFound(fakeGR, "resource-removed")
-				})
-		},
-		// Resouce not found error should not block the storage migration.
-		pass: true,
-	},
-	// todo paging fails
+		// todo paging fails
 	}
 
 	for _, test := range tests {

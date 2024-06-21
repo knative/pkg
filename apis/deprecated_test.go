@@ -27,7 +27,6 @@ import (
 )
 
 func TestCheckDeprecated(t *testing.T) {
-
 	testCases := map[string]struct {
 		strict   bool
 		obj      interface{}
@@ -226,7 +225,6 @@ func TestCheckDeprecated(t *testing.T) {
 // It comes in on obj.InlinedStruct.InlinedPtrStruct.DeprecatedField and
 // obj.InlinedPtrStruct.DeprecatedField.
 func TestCheckDeprecated_Dedupe(t *testing.T) {
-
 	obj := &InnerDefaultSubSpec{
 		InlinedStruct: InlinedStruct{
 			DeprecatedField: "fail",
@@ -250,7 +248,6 @@ func TestCheckDeprecated_Dedupe(t *testing.T) {
 }
 
 func TestCheckDeprecatedUpdate(t *testing.T) {
-
 	testCases := map[string]struct {
 		strict   bool
 		obj      interface{}

@@ -31,7 +31,6 @@ import (
 
 // In strict mode, you are not allowed to set a deprecated field when doing a Create.
 func TestStrictValidation(t *testing.T) {
-
 	newCreateReq := func(new []byte) *admissionv1.AdmissionRequest {
 		req := &admissionv1.AdmissionRequest{
 			Operation: admissionv1.Create,

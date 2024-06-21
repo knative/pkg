@@ -121,8 +121,8 @@ var (
 
 func newNonRunningTestResourceAdmissionController(t *testing.T) (
 	kubeClient *fakekubeclientset.Clientset,
-	ac webhook.AdmissionController) {
-
+	ac webhook.AdmissionController,
+) {
 	t.Helper()
 	// Create fake clients
 	kubeClient = fakekubeclientset.NewSimpleClientset(initialResourceWebhook)

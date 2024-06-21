@@ -110,37 +110,39 @@ func TestGetURIDestinationV1Beta1(t *testing.T) {
 		dest    duckv1beta1.Destination
 		wantURI string
 		wantErr string
-	}{"nil everything": {
-		wantErr: "destination missing Ref and URI, expected at least one",
-	}, "Happy URI with path": {
-		dest: duckv1beta1.Destination{
-			URI: &apis.URL{
-				Scheme: "http",
-				Host:   "example.com",
-				Path:   "/foo",
+	}{
+		"nil everything": {
+			wantErr: "destination missing Ref and URI, expected at least one",
+		}, "Happy URI with path": {
+			dest: duckv1beta1.Destination{
+				URI: &apis.URL{
+					Scheme: "http",
+					Host:   "example.com",
+					Path:   "/foo",
+				},
 			},
-		},
-		wantURI: "http://example.com/foo",
-	}, "URI is not absolute URL": {
-		dest: duckv1beta1.Destination{
-			URI: &apis.URL{
-				Host: "example.com",
+			wantURI: "http://example.com/foo",
+		}, "URI is not absolute URL": {
+			dest: duckv1beta1.Destination{
+				URI: &apis.URL{
+					Host: "example.com",
+				},
 			},
-		},
-		wantErr: fmt.Sprintf("URI is not absolute (both scheme and host should be non-empty): %q", "//example.com"),
-	}, "URI with no host": {
-		dest: duckv1beta1.Destination{
-			URI: &apis.URL{
-				Scheme: "http",
+			wantErr: fmt.Sprintf("URI is not absolute (both scheme and host should be non-empty): %q", "//example.com"),
+		}, "URI with no host": {
+			dest: duckv1beta1.Destination{
+				URI: &apis.URL{
+					Scheme: "http",
+				},
 			},
+			wantErr: fmt.Sprintf("URI is not absolute (both scheme and host should be non-empty): %q", "http:"),
 		},
-		wantErr: fmt.Sprintf("URI is not absolute (both scheme and host should be non-empty): %q", "http:"),
-	},
 		"Ref and [apiVersion, kind, name] both exists": {
 			objects: []runtime.Object{
 				getAddressable(),
 			},
-			dest: duckv1beta1.Destination{Ref: addressableRef(),
+			dest: duckv1beta1.Destination{
+				Ref:                  addressableRef(),
 				DeprecatedKind:       addressableKind,
 				DeprecatedName:       addressableName,
 				DeprecatedAPIVersion: addressableAPIVersion,
@@ -242,7 +244,8 @@ func TestGetURIDestinationV1Beta1(t *testing.T) {
 				DeprecatedKind:       addressableKind,
 				DeprecatedName:       addressableName,
 				DeprecatedAPIVersion: addressableAPIVersion,
-				DeprecatedNamespace:  testNS},
+				DeprecatedNamespace:  testNS,
+			},
 			wantURI: addressableDNS,
 		},
 		"[apiVersion, kind, name] with relative uri": {
@@ -374,7 +377,8 @@ func TestGetURIDestinationV1Beta1(t *testing.T) {
 		}, "notFound": {
 			dest:    duckv1beta1.Destination{Ref: unaddressableRef()},
 			wantErr: fmt.Sprintf("failed to get object %s/%s: %s %q not found", testNS, unaddressableName, unaddressableResource, unaddressableName),
-		}}
+		},
+	}
 
 	for n, tc := range tests {
 		t.Run(n, func(t *testing.T) {
@@ -411,32 +415,33 @@ func TestGetURIDestinationV1(t *testing.T) {
 		customResolvers []resolver.RefResolverFunc
 		wantURI         string
 		wantErr         string
-	}{"nil everything": {
-		wantErr: "destination missing Ref and URI, expected at least one",
-	}, "Happy URI with path": {
-		dest: duckv1.Destination{
-			URI: &apis.URL{
-				Scheme: "http",
-				Host:   "example.com",
-				Path:   "/foo",
+	}{
+		"nil everything": {
+			wantErr: "destination missing Ref and URI, expected at least one",
+		}, "Happy URI with path": {
+			dest: duckv1.Destination{
+				URI: &apis.URL{
+					Scheme: "http",
+					Host:   "example.com",
+					Path:   "/foo",
+				},
 			},
-		},
-		wantURI: "http://example.com/foo",
-	}, "URI is not absolute URL": {
-		dest: duckv1.Destination{
-			URI: &apis.URL{
-				Host: "example.com",
+			wantURI: "http://example.com/foo",
+		}, "URI is not absolute URL": {
+			dest: duckv1.Destination{
+				URI: &apis.URL{
+					Host: "example.com",
+				},
 			},
-		},
-		wantErr: fmt.Sprintf("URI is not absolute (both scheme and host should be non-empty): %q", "//example.com"),
-	}, "URI with no host": {
-		dest: duckv1.Destination{
-			URI: &apis.URL{
-				Scheme: "http",
+			wantErr: fmt.Sprintf("URI is not absolute (both scheme and host should be non-empty): %q", "//example.com"),
+		}, "URI with no host": {
+			dest: duckv1.Destination{
+				URI: &apis.URL{
+					Scheme: "http",
+				},
 			},
+			wantErr: fmt.Sprintf("URI is not absolute (both scheme and host should be non-empty): %q", "http:"),
 		},
-		wantErr: fmt.Sprintf("URI is not absolute (both scheme and host should be non-empty): %q", "http:"),
-	},
 		"happy ref": {
 			objects: []runtime.Object{
 				getAddressable(),
@@ -583,7 +588,8 @@ func TestGetURIDestinationV1(t *testing.T) {
 			dest:            duckv1.Destination{Ref: k8sServiceRef()},
 			customResolvers: []resolver.RefResolverFunc{noopURIResolver, sampleURIResolver},
 			wantURI:         "ref://" + addressableName + ".Service.v1",
-		}}
+		},
+	}
 
 	for n, tc := range tests {
 		t.Run(n, func(t *testing.T) {
@@ -1081,7 +1087,6 @@ func invalidObjectRef() *corev1.ObjectReference {
 		APIVersion: addressableAPIVersion,
 		Namespace:  "-bad",
 	}
-
 }
 
 func k8sServiceRef() *duckv1.KReference {
@@ -1091,7 +1096,6 @@ func k8sServiceRef() *duckv1.KReference {
 		APIVersion: "v1",
 		Namespace:  testNS,
 	}
-
 }
 
 func addressableKnativeRef() *duckv1.KReference {

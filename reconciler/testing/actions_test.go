@@ -50,7 +50,6 @@ func TestActionsByVerb(t *testing.T) {
 	}
 
 	actions, err := list.ActionsByVerb()
-
 	if err != nil {
 		t.Error("Unexpected error sorting actions by verb", err)
 	}

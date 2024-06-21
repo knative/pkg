@@ -46,10 +46,12 @@ type Foo struct {
 }
 
 // Check that Foo can be validated and defaulted.
-var _ apis.Validatable = (*Foo)(nil)
-var _ apis.Defaultable = (*Foo)(nil)
-var _ kmeta.OwnerRefable = (*Foo)(nil)
-var _ duckv1.KRShaped = (*Foo)(nil)
+var (
+	_ apis.Validatable   = (*Foo)(nil)
+	_ apis.Defaultable   = (*Foo)(nil)
+	_ kmeta.OwnerRefable = (*Foo)(nil)
+	_ duckv1.KRShaped    = (*Foo)(nil)
+)
 
 // FooSpec holds the desired state of the Foo (from the client).
 type FooSpec struct{}

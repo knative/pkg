@@ -699,7 +699,8 @@ func TestEnqueue(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "foo",
 					Namespace: "bar",
-				}})
+				},
+			})
 		},
 		wantQueue: []types.NamespacedName{{Name: "bar"}},
 	}, {

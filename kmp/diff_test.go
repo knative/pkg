@@ -92,7 +92,6 @@ func TestFieldDiff(t *testing.T) {
 	} else if !cmp.Equal(got, want) {
 		t.Errorf("FieldDiff() = %v, want: %s", got, want)
 	}
-
 }
 
 func TestImmutableDiff(t *testing.T) {

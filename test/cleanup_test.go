@@ -74,7 +74,6 @@ func TestCleanupOnInterrupt(t *testing.T) {
 		}
 		return false, err
 	})
-
 	if err != nil {
 		t.Fatal("Test subprocess never became ready", err)
 	}

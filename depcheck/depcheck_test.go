@@ -29,7 +29,6 @@ import (
 // TestExample doesn't follow the Go Example style because it isn't well
 // suited for libraries needing *testing.T
 func TestExample(t *testing.T) {
-
 	// For larger packages, it can make the most sense to simply avoid
 	// known "heavy" packages, which pull in large amount of code or data.
 	depcheck.AssertNoDependency(t, map[string][]string{
