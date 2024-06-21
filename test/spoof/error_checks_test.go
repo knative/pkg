@@ -49,7 +49,7 @@ func TestDNSError(t *testing.T) {
 		dnsError: false,
 	}} {
 		t.Run(tt.name, func(t *testing.T) {
-			req, _ := http.NewRequest("GET", tt.url, nil)
+			req, _ := http.NewRequest(http.MethodGet, tt.url, nil)
 			_, err := client.Do(req)
 			if dnsError := isDNSError(err); tt.dnsError != dnsError {
 				t.Errorf("Expected dnsError=%v, got %v", tt.dnsError, dnsError)
@@ -79,7 +79,7 @@ func TestConnectionRefused(t *testing.T) {
 		connRefused: false,
 	}} {
 		t.Run(tt.name, func(t *testing.T) {
-			req, _ := http.NewRequest("GET", tt.url, nil)
+			req, _ := http.NewRequest(http.MethodGet, tt.url, nil)
 			_, err := client.Do(req)
 			if connRefused := isConnectionRefused(err); tt.connRefused != connRefused {
 				t.Errorf("Expected connRefused=%v, got %v", tt.connRefused, connRefused)
@@ -136,7 +136,7 @@ func TestTCPTimeout(t *testing.T) {
 		tcpTimeout: false,
 	}} {
 		t.Run(tt.name, func(t *testing.T) {
-			req, _ := http.NewRequest("GET", tt.url, nil)
+			req, _ := http.NewRequest(http.MethodGet, tt.url, nil)
 			_, err := client.Do(req)
 			if tcpTimeout := isTCPTimeout(err); tt.tcpTimeout != tcpTimeout {
 				t.Errorf("Expected tcpTimeout=%v, got %v", tt.tcpTimeout, tcpTimeout)

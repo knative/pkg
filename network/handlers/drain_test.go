@@ -560,7 +560,7 @@ func TestResetWithActiveRequests(t *testing.T) {
 	defer close(trafficStopped)
 
 	go func() {
-		req, _ := http.NewRequest("GET", "knative.dev", nil)
+		req, _ := http.NewRequest(http.MethodGet, "knative.dev", nil)
 		rec := httptest.NewRecorder()
 
 		close(trafficStarted)

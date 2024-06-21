@@ -231,7 +231,7 @@ func TestGetHTTPRequest(t *testing.T) {
 		t.Errorf("GetHTTPRequest() = %v, wanted %v", got, nil)
 	}
 
-	req, err := http.NewRequest("GET", "https://google.com", nil)
+	req, err := http.NewRequest(http.MethodGet, "https://google.com", nil)
 	if err != nil {
 		t.Fatalf("NewRequest() = %v", err)
 	}

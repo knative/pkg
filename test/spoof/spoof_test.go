@@ -32,7 +32,7 @@ import (
 var (
 	successResponse = &http.Response{
 		Status:     "200 ok",
-		StatusCode: 200,
+		StatusCode: http.StatusOK,
 		Header:     http.Header{},
 		Body:       http.NoBody,
 	}
