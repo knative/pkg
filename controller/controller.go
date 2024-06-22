@@ -762,8 +762,8 @@ func RunInformers(stopCh <-chan struct{}, informers ...Informer) (func(), error)
 // WaitForCacheSyncQuick is the same as cache.WaitForCacheSync but with a much reduced
 // check-rate for the sync period.
 func WaitForCacheSyncQuick(stopCh <-chan struct{}, cacheSyncs ...cache.InformerSynced) bool {
-	err := wait.PollImmediateUntil(time.Millisecond,
-		func() (bool, error) {
+	err := wait.PollUntilContextCancel(wait.ContextForChannel(stopCh), time.Millisecond, true,
+		func(context.Context) (bool, error) {
 			for _, syncFunc := range cacheSyncs {
 				if !syncFunc() {
 					return false, nil
@@ -771,7 +771,7 @@ func WaitForCacheSyncQuick(stopCh <-chan struct{}, cacheSyncs ...cache.InformerS
 			}
 			return true, nil
 		},
-		stopCh)
+	)
 	return err == nil
 }
 
