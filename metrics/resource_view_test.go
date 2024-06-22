@@ -19,6 +19,7 @@ package metrics
 import (
 	"context"
 	"fmt"
+	"strconv"
 	"testing"
 	"time"
 
@@ -204,7 +205,7 @@ func TestIfAllMeterResourcesAreRemoved(t *testing.T) {
 	// Register many resources at once
 	for i := 1; i <= 100; i++ {
 		res := resource.Resource{Labels: map[string]string{"foo": "bar"}}
-		res.Labels["id"] = fmt.Sprint(i)
+		res.Labels["id"] = strconv.Itoa(i)
 		if _, err := optionForResource(&res); err != nil {
 			t.Error("Should succeed getting option, instead got error ", err)
 		}

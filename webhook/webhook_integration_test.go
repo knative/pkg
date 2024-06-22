@@ -77,7 +77,7 @@ func TestMissingContentType(t *testing.T) {
 		t.Fatal("createSecureTLSClient() =", err)
 	}
 
-	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("https://%s", serverURL), nil)
+	req, err := http.NewRequest(http.MethodGet, "https://"+serverURL, nil)
 	if err != nil {
 		t.Fatal("http.NewRequest() =", err)
 	}

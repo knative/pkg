@@ -238,7 +238,7 @@ func (o operation) Name() string {
 }
 
 func (o *operation) fail(setupFail bool) {
-	testName := fmt.Sprintf("FailingOf%s", o.Name())
+	testName := "FailingOf" + o.Name()
 	if o.op != nil {
 		prev := o.op
 		o.op = upgrade.NewOperation(testName, func(c upgrade.Context) {

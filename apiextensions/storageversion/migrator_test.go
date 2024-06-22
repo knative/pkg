@@ -19,7 +19,6 @@ package storageversion
 import (
 	"context"
 	"errors"
-	"fmt"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -109,10 +108,10 @@ func TestMigrate_SingleStoredVersion(t *testing.T) {
 	dclient := dynamicFake.NewSimpleDynamicClient(runtime.NewScheme())
 	cclient := apixFake.NewSimpleClientset(singleVersionFakeCRD)
 
-	cclient.Fake.PrependReactor("patch", "customresourcedefinitions", func(action k8stesting.Action) (handled bool, ret runtime.Object, err error) {
+	cclient.PrependReactor("patch", "customresourcedefinitions", func(action k8stesting.Action) (handled bool, ret runtime.Object, err error) {
 		if pa, ok := action.(k8stesting.PatchAction); ok {
 			if pa.GetName() == singleVersionFakeCRD.Name {
-				return false, nil, fmt.Errorf("resource shouldn't have been patched")
+				return false, nil, errors.New("resource shouldn't have been patched")
 			}
 		}
 

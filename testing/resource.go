@@ -156,7 +156,7 @@ func (r *Resource) CheckAllowedSubresourceUpdate(ctx context.Context, original *
 	if apis.GetUpdatedSubresource(ctx) == disallowedSubresource {
 		return &apis.FieldError{
 			Message: "Disallowed subresource update",
-			Details: fmt.Sprintf("Disallowed subresource update: %s", disallowedSubresource),
+			Details: "Disallowed subresource update: " + disallowedSubresource,
 		}
 	}
 	return nil

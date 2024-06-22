@@ -150,7 +150,7 @@ func TracingConfigToJSON(cfg *Config) (string, error) { //nolint // for backcomp
 	if cfg.ZipkinEndpoint != "" {
 		out[zipkinEndpointKey] = cfg.ZipkinEndpoint
 	}
-	out[debugKey] = fmt.Sprint(cfg.Debug)
+	out[debugKey] = strconv.FormatBool(cfg.Debug)
 	out[sampleRateKey] = fmt.Sprint(cfg.SampleRate)
 
 	jsonCfg, err := json.Marshal(out)

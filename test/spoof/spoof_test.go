@@ -21,7 +21,6 @@ package spoof
 import (
 	"context"
 	"errors"
-	"fmt"
 	"net/http"
 	"net/url"
 	"sync/atomic"
@@ -75,7 +74,7 @@ func TestSpoofingClient_CheckEndpointState(t *testing.T) {
 		name:      "Error response doesn't trigger a second check",
 		transport: &fakeTransport{response: successResponse},
 		inState: func(resp *Response) (done bool, err error) {
-			return false, fmt.Errorf("response error")
+			return false, errors.New("response error")
 		},
 		wantErr:   true,
 		wantCalls: 1,
@@ -147,7 +146,7 @@ func TestSpoofingClient_WaitForEndpointState(t *testing.T) {
 		name:      "Error response doesn't trigger more requests",
 		transport: &fakeTransport{response: successResponse},
 		inState: func(resp *Response) (done bool, err error) {
-			return false, fmt.Errorf("response error")
+			return false, errors.New("response error")
 		},
 		wantErr:   true,
 		wantCalls: 1,

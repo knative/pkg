@@ -978,13 +978,13 @@ func resourceCallback(ctx context.Context, uns *unstructured.Unstructured) error
 		resource.Spec.FieldForCallbackDefaulting = "I'm a default"
 		if apis.IsInUpdate(ctx) {
 			if apis.GetBaseline(ctx) == nil {
-				return fmt.Errorf("expected baseline object")
+				return errors.New("expected baseline object")
 			}
 			if v, ok := apis.GetBaseline(ctx).(*unstructured.Unstructured); !ok {
 				return fmt.Errorf("expected *unstructured.Unstructured, got %v", reflect.TypeOf(v))
 			}
 		} else if !apis.IsInCreate(ctx) {
-			return fmt.Errorf("expected to have context within update or create")
+			return errors.New("expected to have context within update or create")
 		}
 	}
 

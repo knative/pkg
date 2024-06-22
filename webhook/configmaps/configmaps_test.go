@@ -19,6 +19,7 @@ package configmaps
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strconv"
 	"testing"
@@ -274,7 +275,7 @@ func newConfigFromConfigMap(configMap *corev1.ConfigMap) (*config, error) {
 		field: &cfg.value,
 	}} {
 		if raw, ok := data[b.key]; !ok {
-			return nil, fmt.Errorf("not found")
+			return nil, errors.New("not found")
 		} else if val, err := strconv.ParseFloat(raw, 64); err != nil {
 			return nil, err
 		} else {
@@ -284,7 +285,7 @@ func newConfigFromConfigMap(configMap *corev1.ConfigMap) (*config, error) {
 
 	// some sample validation on the value
 	if cfg.value > 2.0 || cfg.value < 0.0 {
-		return nil, fmt.Errorf("out of range")
+		return nil, errors.New("out of range")
 	}
 
 	return cfg, nil
