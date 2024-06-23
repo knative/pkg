@@ -95,7 +95,7 @@ func findMetadataOffsets(bites []byte) (start, end int64, err error) {
 
 	for {
 		t, err = dec.Token()
-		if err == io.EOF { //nolint
+		if err == io.EOF {
 			break
 		}
 		if err != nil {

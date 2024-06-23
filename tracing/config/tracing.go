@@ -140,7 +140,7 @@ func JSONToTracingConfig(jsonCfg string) (*Config, error) {
 	return cfg, nil
 }
 
-func TracingConfigToJSON(cfg *Config) (string, error) { //nolint // for backcompat.
+func TracingConfigToJSON(cfg *Config) (string, error) {
 	if cfg == nil {
 		return "", nil
 	}
