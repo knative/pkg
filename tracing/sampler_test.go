@@ -78,7 +78,7 @@ func TestCreateOCTConfig(t *testing.T) {
 			octCfg := createOCTConfig(&tc.cfg)
 
 			// Create 100 traceIDs and make sure our expected sampler samples the same as what we get
-			for i := 0; i < 100; i++ {
+			for range 100 {
 				spanID := make([]byte, 8)
 				rand.Read(spanID)
 				param := trace.SamplingParameters{}

@@ -72,7 +72,7 @@ func TestSameGVR(t *testing.T) {
 	}
 
 	const iter = 10
-	for i := 0; i < iter; i++ {
+	for range iter {
 		errGrp.Go(func() error {
 			_, _, err := cif.Get(ctx, gvr)
 			retGetCount.Add(1)
@@ -124,7 +124,7 @@ func TestDifferentGVRs(t *testing.T) {
 	errGrp, ctx := errgroup.WithContext(context.Background())
 
 	const iter = 10
-	for i := 0; i < iter; i++ {
+	for i := range iter {
 		// Use a different GVR each iteration to check that calls
 		// to bif.Get can proceed even if a call is in progress
 		// for another GVR.

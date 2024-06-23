@@ -192,7 +192,7 @@ func newStandardBuckets(queueName string, cc ComponentConfig) []reconciler.Bucke
 		}
 	}
 	names := make(sets.Set[string], cc.Buckets)
-	for i := uint32(0); i < cc.Buckets; i++ {
+	for i := range cc.Buckets {
 		names.Insert(ln(i))
 	}
 
@@ -239,7 +239,7 @@ func NewStatefulSetBucketAndSet(buckets int) (reconciler.Bucket, *hash.BucketSet
 	}
 
 	names := make(sets.Set[string], buckets)
-	for i := 0; i < buckets; i++ {
+	for i := range buckets {
 		names.Insert(statefulSetPodDNS(i, ssc))
 	}
 

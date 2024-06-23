@@ -154,7 +154,7 @@ func TestDrainMechanics(t *testing.T) {
 	}
 	rc++
 
-	for i := 0; i < 3; i++ {
+	for i := range 3 {
 		mt.advance(timeout - epsilon)
 		select {
 		case <-done:

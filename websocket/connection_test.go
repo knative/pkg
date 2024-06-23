@@ -361,7 +361,7 @@ func TestDurableConnectionWhenConnectionBreaksDown(t *testing.T) {
 	conn := NewDurableSendingConnection(target, logger)
 	defer conn.Shutdown()
 
-	for i := 0; i < 10; i++ {
+	for range 10 {
 		err := wait.PollUntilContextTimeout(context.Background(), 50*time.Millisecond, 5*time.Second, true, func(ctx context.Context) (bool, error) {
 			if err := conn.Send(testPayload); err != nil {
 				return false, nil //nolint:nilerr
@@ -414,7 +414,7 @@ func TestDurableConnectionSendsPingsRegularly(t *testing.T) {
 	defer conn.Shutdown()
 
 	// Wait for 5 pings to be received by the server.
-	for i := 0; i < 5; i++ {
+	for range 5 {
 		<-pingReceived
 	}
 }
