@@ -364,7 +364,7 @@ func TestDurableConnectionWhenConnectionBreaksDown(t *testing.T) {
 	for i := 0; i < 10; i++ {
 		err := wait.PollUntilContextTimeout(context.Background(), 50*time.Millisecond, 5*time.Second, true, func(ctx context.Context) (bool, error) {
 			if err := conn.Send(testPayload); err != nil {
-				return false, nil
+				return false, nil //nolint:nilerr
 			}
 			return true, nil
 		})

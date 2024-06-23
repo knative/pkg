@@ -113,7 +113,7 @@ func (r *BaseReconciler) Reconcile(ctx context.Context, key string) error {
 	namespace, name, err := cache.SplitMetaNamespaceKey(key)
 	if err != nil {
 		logging.FromContext(ctx).Error("invalid resource key: ", key)
-		return nil
+		return nil //nolint:nilerr
 	}
 
 	// Only the leader should reconcile binding resources.

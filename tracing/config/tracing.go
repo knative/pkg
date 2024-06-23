@@ -135,7 +135,7 @@ func JSONToTracingConfig(jsonCfg string) (*Config, error) {
 
 	cfg, err := NewTracingConfigFromMap(configMap)
 	if err != nil {
-		return NoopConfig(), nil
+		return NoopConfig(), nil //nolint:nilerr
 	}
 	return cfg, nil
 }
