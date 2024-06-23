@@ -176,7 +176,7 @@ func TestMigrate_Errors(t *testing.T) {
 						return true, nil, apierrs.NewNotFound(fakeGR, "resource-removed")
 					})
 			},
-			// Resouce not found error should not block the storage migration.
+			// Resource not found error should not block the storage migration.
 			pass: true,
 		},
 		// todo paging fails
