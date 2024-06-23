@@ -401,7 +401,7 @@ func TestBadObjectReferences(t *testing.T) {
 			if err := trk.Track(test.objRef, thing1); err == nil {
 				t.Fatal("Track() = nil, wanted error")
 			} else {
-				match, e2 := regexp.Match(test.match, []byte(err.Error()))
+				match, e2 := regexp.MatchString(test.match, err.Error())
 				if e2 != nil {
 					t.Fatalf("Failed to compile %q: %v", e2, test.match)
 				} else if !match {
@@ -463,7 +463,7 @@ func TestBadReferences(t *testing.T) {
 			if err := trk.TrackReference(test.objRef, thing1); err == nil {
 				t.Fatal("Track() = nil, wanted error")
 			} else {
-				match, e2 := regexp.Match(test.match, []byte(err.Error()))
+				match, e2 := regexp.MatchString(test.match, err.Error())
 				if e2 != nil {
 					t.Fatalf("Failed to compile %q: %v", e2, test.match)
 				} else if !match {
