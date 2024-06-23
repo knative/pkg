@@ -302,6 +302,7 @@ type (
 		Status SliceStatus `json:"status"`
 	}
 )
+
 type SliceStatus struct {
 	Sliceable *Sliceable `json:"sliceable,omitempty"`
 }
@@ -338,6 +339,7 @@ type (
 		Status StringStatus `json:"status"`
 	}
 )
+
 type StringStatus struct {
 	Stringable Stringable `json:"stringable,omitempty"`
 }
