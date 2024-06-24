@@ -391,7 +391,6 @@ func (r *BaseReconciler) ReconcileSubject(ctx context.Context, fb Bindable, muta
 	// For each of the referents, apply the mutation.
 	eg := errgroup.Group{}
 	for _, ps := range referents {
-		ps := ps
 		eg.Go(func() error {
 			// Do the binding to the pod specable.
 			orig := ps.DeepCopy()

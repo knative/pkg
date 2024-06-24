@@ -723,7 +723,6 @@ type Informer interface {
 // of them to synchronize.
 func StartInformers(stopCh <-chan struct{}, informers ...Informer) error {
 	for _, informer := range informers {
-		informer := informer
 		go informer.Run(stopCh)
 	}
 
@@ -741,7 +740,6 @@ func RunInformers(stopCh <-chan struct{}, informers ...Informer) (func(), error)
 	var wg sync.WaitGroup
 	wg.Add(len(informers))
 	for _, informer := range informers {
-		informer := informer
 		go func() {
 			defer wg.Done()
 			informer.Run(stopCh)
