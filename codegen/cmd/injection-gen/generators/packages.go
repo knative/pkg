@@ -43,7 +43,7 @@ func Packages(context *generator.Context, arguments *args.GeneratorArgs) generat
 		klog.Fatalf("Wrong CustomArgs type: %T", arguments.CustomArgs)
 	}
 
-	versionPackagePath := filepath.Join(arguments.OutputPackagePath)
+	versionPackagePath := filepath.Clean(arguments.OutputPackagePath)
 
 	var packageList generator.Packages
 
@@ -501,6 +501,7 @@ func versionInformerPackages(basePackage string, groupPkgName string, gv clientg
 				return tags.NeedsInformerInjection()
 			},
 		})
+
 	}
 	return vers
 }

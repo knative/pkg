@@ -88,7 +88,7 @@ type (
 	// ErrorResource explodes in various settings depending on the property
 	// set. Use the Error* constants
 	//
-	//This type is used for testing conversion webhooks
+	// This type is used for testing conversion webhooks
 	//
 	// +k8s:deepcopy-gen=true
 	// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
