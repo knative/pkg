@@ -68,7 +68,10 @@ func TestHTTPRoundTripper(t *testing.T) {
 		t.Run(e.label, func(t *testing.T) {
 			wants.Delete(e.want)
 			r := &http.Request{ProtoMajor: e.protoMajor}
-			rt.RoundTrip(r)
+			resp, err := rt.RoundTrip(r)
+			if err != nil {
+				defer resp.Body.Close()
+			}
 
 			if !wants.Has(e.want) {
 				t.Error("Wrong transport selected for request.")

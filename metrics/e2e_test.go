@@ -153,6 +153,9 @@ func TestMetricsExport(t *testing.T) {
 			// Wait for the webserver to actually start serving metrics
 			return wait.PollUntilContextTimeout(context.Background(), 10*time.Millisecond, 10*time.Second, true, func(ctx context.Context) (bool, error) {
 				resp, err := http.Get(fmt.Sprintf("http://localhost:%d/metrics", prometheusPort))
+				if err != nil {
+					defer resp.Body.Close()
+				}
 				return err == nil && resp.StatusCode == http.StatusOK, nil
 			})
 		},
