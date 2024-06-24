@@ -51,7 +51,7 @@ func TestDNSError(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			req, _ := http.NewRequest(http.MethodGet, tt.url, nil)
 			resp, err := client.Do(req)
-			if err != nil {
+			if resp != nil {
 				defer resp.Body.Close()
 			}
 			if dnsError := isDNSError(err); tt.dnsError != dnsError {
@@ -84,7 +84,7 @@ func TestConnectionRefused(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			req, _ := http.NewRequest(http.MethodGet, tt.url, nil)
 			resp, err := client.Do(req)
-			if err != nil {
+			if resp != nil {
 				defer resp.Body.Close()
 			}
 			if connRefused := isConnectionRefused(err); tt.connRefused != connRefused {
@@ -144,7 +144,7 @@ func TestTCPTimeout(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			req, _ := http.NewRequest(http.MethodGet, tt.url, nil)
 			resp, err := client.Do(req)
-			if err != nil {
+			if resp != nil {
 				defer resp.Body.Close()
 			}
 			if tcpTimeout := isTCPTimeout(err); tt.tcpTimeout != tcpTimeout {

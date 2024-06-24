@@ -47,12 +47,16 @@ type fakeTransport struct {
 
 func (ft *fakeTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	call := ft.calls.Add(1)
-	if ft.response != nil && call == 2 {
-		// If both a response and an error is defined, we return just the response on
-		// the second call to simulate a retry that passes eventually.
+	if ft.response != nil && ft.err != nil {
+		if call == 2 {
+			return ft.response, nil
+		}
+		return nil, ft.err
+	} else if ft.response != nil {
 		return ft.response, nil
 	}
-	return ft.response, ft.err
+
+	return nil, ft.err
 }
 
 func TestSpoofingClient_CheckEndpointState(t *testing.T) {
