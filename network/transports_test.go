@@ -236,7 +236,7 @@ func findUnusedPortOrFail(t testingT) int {
 var errTest = errors.New("testing")
 
 func newTestErr(msg string, err error) error {
-	return fmt.Errorf("%w: %s: %v", errTest, msg, err)
+	return fmt.Errorf("%w: %s: %w", errTest, msg, err)
 }
 
 // listenOne creates a socket with backlog of one, and use that socket, so
