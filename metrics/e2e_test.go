@@ -45,9 +45,7 @@ import (
 	"knative.dev/pkg/metrics/metricstest"
 )
 
-var (
-	NamespaceTagKey = tag.MustNewKey(metricskey.LabelNamespaceName)
-)
+var NamespaceTagKey = tag.MustNewKey(metricskey.LabelNamespaceName)
 
 type metricExtract struct {
 	Name   string

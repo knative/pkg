@@ -310,7 +310,8 @@ func TestWebhookReconcile(t *testing.T) {
 	}, {
 		Name: "secret and MWH exist, missing service reference",
 		Key:  key,
-		Objects: []runtime.Object{secret,
+		Objects: []runtime.Object{
+			secret,
 			&admissionregistrationv1.MutatingWebhookConfiguration{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: name,
@@ -324,7 +325,8 @@ func TestWebhookReconcile(t *testing.T) {
 	}, {
 		Name: "secret and MWH exist, missing other stuff",
 		Key:  key,
-		Objects: []runtime.Object{secret,
+		Objects: []runtime.Object{
+			secret,
 			&admissionregistrationv1.MutatingWebhookConfiguration{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: name,
@@ -371,7 +373,8 @@ func TestWebhookReconcile(t *testing.T) {
 	}, {
 		Name: "secret and MWH exist, added fields are incorrect",
 		Key:  key,
-		Objects: []runtime.Object{secret,
+		Objects: []runtime.Object{
+			secret,
 			&admissionregistrationv1.MutatingWebhookConfiguration{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: name,
@@ -437,7 +440,8 @@ func TestWebhookReconcile(t *testing.T) {
 		WithReactors: []clientgotesting.ReactionFunc{
 			InduceFailure("update", "mutatingwebhookconfigurations"),
 		},
-		Objects: []runtime.Object{secret,
+		Objects: []runtime.Object{
+			secret,
 			&admissionregistrationv1.MutatingWebhookConfiguration{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: name,
@@ -497,7 +501,8 @@ func TestWebhookReconcile(t *testing.T) {
 	}, {
 		Name: ":fire: everything is fine :fire:",
 		Key:  key,
-		Objects: []runtime.Object{secret,
+		Objects: []runtime.Object{
+			secret,
 			&admissionregistrationv1.MutatingWebhookConfiguration{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: name,
@@ -528,7 +533,8 @@ func TestWebhookReconcile(t *testing.T) {
 	}, {
 		Name: "a new binding has entered the match",
 		Key:  key,
-		Objects: []runtime.Object{secret,
+		Objects: []runtime.Object{
+			secret,
 			&TestBindable{
 				ObjectMeta: metav1.ObjectMeta{
 					Namespace: "foo",
@@ -605,7 +611,8 @@ func TestWebhookReconcile(t *testing.T) {
 	}, {
 		Name: "steady state direct bindings",
 		Key:  key,
-		Objects: []runtime.Object{secret,
+		Objects: []runtime.Object{
+			secret,
 			&TestBindable{
 				ObjectMeta: metav1.ObjectMeta{
 					Namespace: "foo",
@@ -687,7 +694,8 @@ func TestWebhookReconcile(t *testing.T) {
 	}, {
 		Name: "steady state selector",
 		Key:  key,
-		Objects: []runtime.Object{secret,
+		Objects: []runtime.Object{
+			secret,
 			&TestBindable{
 				ObjectMeta: metav1.ObjectMeta{
 					Namespace: "foo",
@@ -776,7 +784,8 @@ func TestWebhookReconcile(t *testing.T) {
 	}, {
 		Name: "tombstoned binding undoes patch",
 		Key:  key,
-		Objects: []runtime.Object{secret,
+		Objects: []runtime.Object{
+			secret,
 			&TestBindable{
 				ObjectMeta: metav1.ObjectMeta{
 					Namespace:         "foo",
@@ -838,7 +847,8 @@ func TestWebhookReconcile(t *testing.T) {
 	}, {
 		Name: "multiple new bindings have entered the match",
 		Key:  key,
-		Objects: []runtime.Object{secret,
+		Objects: []runtime.Object{
+			secret,
 			&TestBindable{
 				ObjectMeta: metav1.ObjectMeta{
 					Namespace: "foo",
@@ -938,7 +948,8 @@ func TestWebhookReconcile(t *testing.T) {
 	}, {
 		Name: "a new selector-based binding has entered the match",
 		Key:  key,
-		Objects: []runtime.Object{secret,
+		Objects: []runtime.Object{
+			secret,
 			&TestBindable{
 				ObjectMeta: metav1.ObjectMeta{
 					Namespace: "foo",
@@ -2023,73 +2034,74 @@ func TestBaseReconcile(t *testing.T) {
 }
 
 func TestBaseReconcileWithSubResourcesReconciler(t *testing.T) {
-	table := TableTest{{
-		Name: "create new subresource",
-		Key:  "foo/bar",
-		Objects: []runtime.Object{
-			&TestBindable{
-				ObjectMeta: metav1.ObjectMeta{
-					Namespace:  "foo",
-					Name:       "bar",
-					Finalizers: []string{"testbindables.duck.knative.dev"},
-				},
-				Spec: TestBindableSpec{
-					BindingSpec: duckv1alpha1.BindingSpec{
-						Subject: tracker.Reference{
-							APIVersion: "apps/v1",
-							Kind:       "Deployment",
-							Namespace:  "foo",
-							Name:       "on-it",
+	table := TableTest{
+		{
+			Name: "create new subresource",
+			Key:  "foo/bar",
+			Objects: []runtime.Object{
+				&TestBindable{
+					ObjectMeta: metav1.ObjectMeta{
+						Namespace:  "foo",
+						Name:       "bar",
+						Finalizers: []string{"testbindables.duck.knative.dev"},
+					},
+					Spec: TestBindableSpec{
+						BindingSpec: duckv1alpha1.BindingSpec{
+							Subject: tracker.Reference{
+								APIVersion: "apps/v1",
+								Kind:       "Deployment",
+								Namespace:  "foo",
+								Name:       "on-it",
+							},
 						},
+						Foo: "asdfasdfasdfasdf",
 					},
-					Foo: "asdfasdfasdfasdf",
-				},
-				Status: TestBindableStatus{
-					Status: duckv1.Status{
-						Conditions: []apis.Condition{{
-							Type:   "Ready",
-							Status: "True",
-						}},
-					},
-				},
-			},
-			&appsv1.Deployment{
-				ObjectMeta: metav1.ObjectMeta{
-					Namespace: "foo",
-					Name:      "on-it",
-				},
-				Spec: appsv1.DeploymentSpec{
-					Template: corev1.PodTemplateSpec{
-						Spec: corev1.PodSpec{
-							Containers: []corev1.Container{{
-								Name:  "foo",
-								Image: "busybox",
-								Env: []corev1.EnvVar{{
-									Name:  "FOO",
-									Value: "asdfasdfasdfasdf",
-								}},
+					Status: TestBindableStatus{
+						Status: duckv1.Status{
+							Conditions: []apis.Condition{{
+								Type:   "Ready",
+								Status: "True",
 							}},
 						},
 					},
 				},
+				&appsv1.Deployment{
+					ObjectMeta: metav1.ObjectMeta{
+						Namespace: "foo",
+						Name:      "on-it",
+					},
+					Spec: appsv1.DeploymentSpec{
+						Template: corev1.PodTemplateSpec{
+							Spec: corev1.PodSpec{
+								Containers: []corev1.Container{{
+									Name:  "foo",
+									Image: "busybox",
+									Env: []corev1.EnvVar{{
+										Name:  "FOO",
+										Value: "asdfasdfasdfasdf",
+									}},
+								}},
+							},
+						},
+					},
+				},
+				&corev1.Namespace{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "foo",
+					},
+				},
 			},
-			&corev1.Namespace{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "foo",
+			WantPatches: []clientgotesting.PatchActionImpl{
+				patchAddLabel("foo"),
+			},
+			WantCreates: []runtime.Object{
+				&corev1.ConfigMap{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "bar",
+					},
 				},
 			},
 		},
-		WantPatches: []clientgotesting.PatchActionImpl{
-			patchAddLabel("foo"),
-		},
-		WantCreates: []runtime.Object{
-			&corev1.ConfigMap{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "bar",
-				},
-			},
-		},
-	},
 		{
 			Name: "delete resource and subresource",
 			Key:  "foo/bar",
@@ -2233,6 +2245,7 @@ func patchAddLabel(namespace string) clientgotesting.PatchActionImpl {
 	action.Patch = patch
 	return action
 }
+
 func patchAddFinalizer(namespace, name, resourceVersion string) clientgotesting.PatchActionImpl {
 	action := clientgotesting.PatchActionImpl{}
 	action.Name = name

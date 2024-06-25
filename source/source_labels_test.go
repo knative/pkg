@@ -23,7 +23,6 @@ import (
 )
 
 func TestLabels(t *testing.T) {
-
 	sourceLabels := Labels("foo", "foo-source-controller")
 
 	wantTags := map[string]string{

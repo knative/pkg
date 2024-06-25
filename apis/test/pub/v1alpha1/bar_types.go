@@ -46,10 +46,12 @@ type Bar struct {
 }
 
 // Check that Bar can be validated and defaulted.
-var _ apis.Validatable = (*Bar)(nil)
-var _ apis.Defaultable = (*Bar)(nil)
-var _ kmeta.OwnerRefable = (*Bar)(nil)
-var _ duckv1.KRShaped = (*Bar)(nil)
+var (
+	_ apis.Validatable   = (*Bar)(nil)
+	_ apis.Defaultable   = (*Bar)(nil)
+	_ kmeta.OwnerRefable = (*Bar)(nil)
+	_ duckv1.KRShaped    = (*Bar)(nil)
+)
 
 // BarSpec holds the desired state of the Bar (from the client).
 type BarSpec struct{}

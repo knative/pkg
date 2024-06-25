@@ -25,9 +25,8 @@ import (
 	"net/http"
 	"net/url"
 	"sync/atomic"
-	"time"
-
 	"testing"
+	"time"
 )
 
 var (

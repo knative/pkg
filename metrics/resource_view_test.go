@@ -29,9 +29,7 @@ import (
 	testingclock "k8s.io/utils/clock/testing"
 )
 
-var (
-	r = resource.Resource{Labels: map[string]string{"foo": "bar"}}
-)
+var r = resource.Resource{Labels: map[string]string{"foo": "bar"}}
 
 func TestRegisterResourceView(t *testing.T) {
 	meter := meterExporterForResource(&r).m
@@ -162,7 +160,7 @@ func TestAllMetersExpiration(t *testing.T) {
 	// (123=1.5m, 456=0m)
 
 	// Warm up the older entry
-	fakeClock.Step(90 * time.Second) //t+3m
+	fakeClock.Step(90 * time.Second) // t+3m
 	// (123=4.5m, 456=3m)
 
 	// Refresh the first entry
@@ -268,7 +266,6 @@ func TestResourceAsString(t *testing.T) {
 
 	// Test 5 time since the iteration could be random.
 	for i := 0; i < 5; i++ {
-
 		if s1, s2 := resourceToKey(r1), resourceToKey(r2); s1 != s2 {
 			t.Errorf("Expect same resources, but got %q and %q", s1, s2)
 		}

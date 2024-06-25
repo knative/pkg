@@ -510,7 +510,6 @@ can not use @, do not try`,
 	}, {
 		name: "manual multiple index",
 		err: func() *FieldError {
-
 			err := &FieldError{
 				Message: "invalid field(s)",
 				Paths:   []string{"foo"},

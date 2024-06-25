@@ -67,7 +67,6 @@ func TestParseURL(t *testing.T) {
 	}}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-
 			got, err := ParseURL(tc.t)
 			if err != nil {
 				if !tc.wantErr {
@@ -157,7 +156,6 @@ func TestJSONUnmarshalURL(t *testing.T) {
 	}
 	for n, tc := range testCases {
 		t.Run(n, func(t *testing.T) {
-
 			got := &URL{}
 			err := got.UnmarshalJSON(tc.b)
 
@@ -215,7 +213,6 @@ func TestJSONMarshalURLAsMember(t *testing.T) {
 	}
 	for n, tc := range testCases {
 		t.Run(n, func(t *testing.T) {
-
 			got, err := json.Marshal(tc.obj)
 
 			if tc.wantErr != "" || err != nil {
@@ -273,7 +270,6 @@ func TestJSONMarshalURLAsPointerMember(t *testing.T) {
 	}
 	for n, tc := range testCases {
 		t.Run(n, func(t *testing.T) {
-
 			got, err := json.Marshal(tc.obj)
 
 			if tc.wantErr != "" || err != nil {
@@ -334,7 +330,6 @@ func TestJSONUnmarshalURLAsMember(t *testing.T) {
 	}
 	for n, tc := range testCases {
 		t.Run(n, func(t *testing.T) {
-
 			got := &objectType{}
 			err := json.Unmarshal(tc.b, got)
 
@@ -365,38 +360,38 @@ func TestJSONUnmarshalURLAsMemberPointer(t *testing.T) {
 		b       []byte
 		want    *objectType
 		wantErr string
-	}{{
-		name:    "zero",
-		wantErr: "unexpected end of JSON input",
-	}, {
-		name: "empty",
-		b:    []byte(`{}`),
-		want: &objectType{},
-	}, {
-		name:    "invalid format",
-		b:       []byte(`{"url":"%"}`),
-		wantErr: `invalid URL escape "%"`,
-	}, {
-		name: "relative",
-		b:    []byte(`{"url":"/path/to/something"}`),
-		want: &objectType{URL: &URL{Path: "/path/to/something"}},
-	}, {
-		name: "url",
-		b:    []byte(`{"url":"http://path/to/something"}`),
-		want: &objectType{URL: &URL{
-			Scheme: "http",
-			Host:   "path",
-			Path:   "/to/something",
-		}},
-	}, {
-		name: "empty url",
-		b:    []byte(`{"url":""}`),
-		want: &objectType{URL: &URL{}},
-	},
+	}{
+		{
+			name:    "zero",
+			wantErr: "unexpected end of JSON input",
+		}, {
+			name: "empty",
+			b:    []byte(`{}`),
+			want: &objectType{},
+		}, {
+			name:    "invalid format",
+			b:       []byte(`{"url":"%"}`),
+			wantErr: `invalid URL escape "%"`,
+		}, {
+			name: "relative",
+			b:    []byte(`{"url":"/path/to/something"}`),
+			want: &objectType{URL: &URL{Path: "/path/to/something"}},
+		}, {
+			name: "url",
+			b:    []byte(`{"url":"http://path/to/something"}`),
+			want: &objectType{URL: &URL{
+				Scheme: "http",
+				Host:   "path",
+				Path:   "/to/something",
+			}},
+		}, {
+			name: "empty url",
+			b:    []byte(`{"url":""}`),
+			want: &objectType{URL: &URL{}},
+		},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-
 			got := &objectType{}
 			err := json.Unmarshal(tc.b, got)
 

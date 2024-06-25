@@ -40,9 +40,7 @@ func (t *TestStatus) SetConditions(conditions Conditions) {
 	t.c = conditions
 }
 
-var (
-	ignoreFields = cmpopts.IgnoreFields(Condition{}, "LastTransitionTime", "Severity")
-)
+var ignoreFields = cmpopts.IgnoreFields(Condition{}, "LastTransitionTime", "Severity")
 
 func TestGetCondition(t *testing.T) {
 	condSet := NewLivingConditionSet()
@@ -318,7 +316,6 @@ func TestUpdateLastTransitionTime(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-
 			conds := &TestStatus{c: tc.conditions}
 
 			was := condSet.Manage(conds).GetCondition(tc.condition.Type)
@@ -821,7 +818,6 @@ type ConditionMarkFalseTest struct {
 func doTestMarkFalseAccessor(t *testing.T, cases []ConditionMarkFalseTest) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-
 			condSet := NewLivingConditionSet(getTypes(tc.conditions)...)
 			status := &TestStatus{c: tc.conditions}
 			condSet.Manage(status).InitializeConditions()
@@ -933,7 +929,6 @@ type ConditionMarkUnknownTest struct {
 func doTestMarkUnknownAccessor(t *testing.T, cases []ConditionMarkUnknownTest) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-
 			condSet := NewLivingConditionSet(getTypes(tc.conditions)...)
 			status := &TestStatus{c: tc.conditions}
 
@@ -1171,5 +1166,4 @@ func TestClearConditionWithNilManager(t *testing.T) {
 	if err != nil {
 		t.Error("ClearCondition() expected to return nil if status is nil, got", err)
 	}
-
 }

@@ -17,10 +17,9 @@ limitations under the License.
 package duck
 
 import (
+	"encoding/json"
 	"errors"
 	"testing"
-
-	"encoding/json"
 
 	"github.com/google/go-cmp/cmp"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -48,7 +47,8 @@ func TestFromUnstructuredFooable(t *testing.T) {
 						"field2": "bar",
 					},
 				},
-			}},
+			},
+		},
 		want: FooStatus{&Fooable{
 			Field1: "foo",
 			Field2: "bar",
@@ -64,7 +64,8 @@ func TestFromUnstructuredFooable(t *testing.T) {
 				"status": map[string]interface{}{
 					"extra": "fields",
 				},
-			}},
+			},
+		},
 		want:      FooStatus{},
 		wantError: nil,
 	}, {

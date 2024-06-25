@@ -145,8 +145,10 @@ func TestServiceAnnotationUpdate(t *testing.T) {
 		this:          nil,
 		oldAnnotation: getAnnotation(groupName, CreatorAnnotationSuffix, u1),
 		newAnnotation: getAnnotation(groupName, CreatorAnnotationSuffix, u2),
-		want: &FieldError{Message: "annotation value is immutable",
-			Paths: []string{groupName + CreatorAnnotationSuffix}},
+		want: &FieldError{
+			Message: "annotation value is immutable",
+			Paths:   []string{groupName + CreatorAnnotationSuffix},
+		},
 	}, {
 		name:          "update lastModifier without spec changes",
 		prev:          nil,

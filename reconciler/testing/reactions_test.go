@@ -17,11 +17,11 @@ limitations under the License.
 package testing
 
 import (
+	"testing"
+
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	clientgotesting "k8s.io/client-go/testing"
-
-	"testing"
 )
 
 var (

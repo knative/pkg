@@ -160,7 +160,8 @@ func TestReconcile(t *testing.T) {
 	}, {
 		Name: "secret and MWH exist, missing service reference",
 		Key:  key,
-		Objects: []runtime.Object{secret, ns,
+		Objects: []runtime.Object{
+			secret, ns,
 			&admissionregistrationv1.MutatingWebhookConfiguration{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: name,
@@ -174,7 +175,8 @@ func TestReconcile(t *testing.T) {
 	}, {
 		Name: "secret and MWH exist, missing other stuff",
 		Key:  key,
-		Objects: []runtime.Object{secret, ns,
+		Objects: []runtime.Object{
+			secret, ns,
 			&admissionregistrationv1.MutatingWebhookConfiguration{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: name,
@@ -218,7 +220,8 @@ func TestReconcile(t *testing.T) {
 	}, {
 		Name: "secret and MWH exist, added fields are incorrect",
 		Key:  key,
-		Objects: []runtime.Object{secret, ns,
+		Objects: []runtime.Object{
+			secret, ns,
 			&admissionregistrationv1.MutatingWebhookConfiguration{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: name,
@@ -281,7 +284,8 @@ func TestReconcile(t *testing.T) {
 		WithReactors: []clientgotesting.ReactionFunc{
 			InduceFailure("update", "mutatingwebhookconfigurations"),
 		},
-		Objects: []runtime.Object{secret, ns,
+		Objects: []runtime.Object{
+			secret, ns,
 			&admissionregistrationv1.MutatingWebhookConfiguration{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: name,
@@ -338,7 +342,8 @@ func TestReconcile(t *testing.T) {
 	}, {
 		Name: ":fire: everything is fine :fire:",
 		Key:  key,
-		Objects: []runtime.Object{secret, ns,
+		Objects: []runtime.Object{
+			secret, ns,
 			&admissionregistrationv1.MutatingWebhookConfiguration{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:            name,
@@ -375,7 +380,8 @@ func TestReconcile(t *testing.T) {
 	}, {
 		Name: "secret and MWH exist, correcting namespaceSelector",
 		Key:  key,
-		Objects: []runtime.Object{secret, ns,
+		Objects: []runtime.Object{
+			secret, ns,
 			&admissionregistrationv1.MutatingWebhookConfiguration{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: name,

@@ -25,7 +25,6 @@ import (
 )
 
 func TestGet(t *testing.T) {
-
 	cases := []struct {
 		name   string
 		info   *debug.BuildInfo

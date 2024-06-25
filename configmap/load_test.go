@@ -48,7 +48,7 @@ func TestLoad(t *testing.T) {
 	nowUnix := time.Now().Unix()
 	tsPart := fmt.Sprintf("..%d", nowUnix)
 	tsDir := path.Join(tmpdir, tsPart)
-	if err := os.Mkdir(tsDir, 0755); err != nil {
+	if err := os.Mkdir(tsDir, 0o755); err != nil {
 		t.Fatal("Mkdir() =", err)
 	}
 	dataLink := path.Join(tmpdir, "..data")
@@ -59,7 +59,7 @@ func TestLoad(t *testing.T) {
 	// Write out the files as they should be loaded.
 	for k, v := range want {
 		// Write the actual file to $/.{timestamp}/key
-		if err := os.WriteFile(path.Join(tsDir, k), []byte(v), 0644); err != nil {
+		if err := os.WriteFile(path.Join(tsDir, k), []byte(v), 0o644); err != nil {
 			t.Fatalf("WriteFile(..{ts}/%s) = %v", k, err)
 		}
 		// Symlink $/key => $/..data/key

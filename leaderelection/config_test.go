@@ -169,7 +169,6 @@ func TestNewConfigMapFromData(t *testing.T) {
 }
 
 func TestNewConfigFromMap(t *testing.T) {
-
 	tt := []struct {
 		name    string
 		data    map[string]string

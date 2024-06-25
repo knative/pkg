@@ -47,10 +47,12 @@ type ClusterFiz struct {
 }
 
 // Check that ClusterFiz can be validated and defaulted.
-var _ apis.Validatable = (*ClusterFiz)(nil)
-var _ apis.Defaultable = (*ClusterFiz)(nil)
-var _ kmeta.OwnerRefable = (*ClusterFiz)(nil)
-var _ duckv1.KRShaped = (*ClusterFiz)(nil)
+var (
+	_ apis.Validatable   = (*ClusterFiz)(nil)
+	_ apis.Defaultable   = (*ClusterFiz)(nil)
+	_ kmeta.OwnerRefable = (*ClusterFiz)(nil)
+	_ duckv1.KRShaped    = (*ClusterFiz)(nil)
+)
 
 // ClusterFizSpec holds the desired state of the ClusterFiz (from the client).
 type ClusterFizSpec struct{}

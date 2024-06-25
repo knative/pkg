@@ -147,7 +147,8 @@ func TestReconcile(t *testing.T) {
 	}, {
 		Name: "secret and VWH exist, missing service reference",
 		Key:  key,
-		Objects: []runtime.Object{secret, ns,
+		Objects: []runtime.Object{
+			secret, ns,
 			&admissionregistrationv1.ValidatingWebhookConfiguration{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: name,
@@ -161,7 +162,8 @@ func TestReconcile(t *testing.T) {
 	}, {
 		Name: "secret and VWH exist, missing other stuff",
 		Key:  key,
-		Objects: []runtime.Object{secret, ns,
+		Objects: []runtime.Object{
+			secret, ns,
 			&admissionregistrationv1.ValidatingWebhookConfiguration{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: name,
@@ -204,7 +206,8 @@ func TestReconcile(t *testing.T) {
 	}, {
 		Name: "secret and VWH exist, added fields are incorrect",
 		Key:  key,
-		Objects: []runtime.Object{secret, ns,
+		Objects: []runtime.Object{
+			secret, ns,
 			&admissionregistrationv1.ValidatingWebhookConfiguration{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: name,
@@ -264,7 +267,8 @@ func TestReconcile(t *testing.T) {
 		WithReactors: []clientgotesting.ReactionFunc{
 			InduceFailure("update", "validatingwebhookconfigurations"),
 		},
-		Objects: []runtime.Object{secret, ns,
+		Objects: []runtime.Object{
+			secret, ns,
 			&admissionregistrationv1.ValidatingWebhookConfiguration{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: name,
@@ -320,7 +324,8 @@ func TestReconcile(t *testing.T) {
 	}, {
 		Name: ":fire: everything is fine :fire:",
 		Key:  key,
-		Objects: []runtime.Object{secret, ns,
+		Objects: []runtime.Object{
+			secret, ns,
 			&admissionregistrationv1.ValidatingWebhookConfiguration{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:            name,
@@ -356,7 +361,8 @@ func TestReconcile(t *testing.T) {
 	}, {
 		Name: "secret and VWH exist, correcting namespaceSelector",
 		Key:  key,
-		Objects: []runtime.Object{secret, ns,
+		Objects: []runtime.Object{
+			secret, ns,
 			&admissionregistrationv1.ValidatingWebhookConfiguration{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: name,
@@ -422,7 +428,8 @@ func TestReconcile(t *testing.T) {
 	}, {
 		Name: "secret and VWH exist, correcting namespaceSelector, preserving matchLabels",
 		Key:  key,
-		Objects: []runtime.Object{secret, ns,
+		Objects: []runtime.Object{
+			secret, ns,
 			&admissionregistrationv1.ValidatingWebhookConfiguration{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: name,
@@ -494,7 +501,8 @@ func TestReconcile(t *testing.T) {
 	}, {
 		Name: "secret and VWH exist, correcting namespaceSelector without existing matchExpressions, preserving matchLabels",
 		Key:  key,
-		Objects: []runtime.Object{secret, ns,
+		Objects: []runtime.Object{
+			secret, ns,
 			&admissionregistrationv1.ValidatingWebhookConfiguration{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: name,
@@ -606,5 +614,4 @@ func TestNew(t *testing.T) {
 	}) != nil {
 		t.Error("Queue length was never 1")
 	}
-
 }

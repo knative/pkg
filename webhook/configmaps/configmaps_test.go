@@ -79,7 +79,8 @@ var (
 
 func newNonRunningTestConfigValidationController(t *testing.T) (
 	kubeClient *fakekubeclientset.Clientset,
-	ac *reconciler) {
+	ac *reconciler,
+) {
 	t.Helper()
 	// Create fake clients
 	kubeClient = fakekubeclientset.NewSimpleClientset(initialConfigWebhook)

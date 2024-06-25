@@ -38,9 +38,11 @@ type Resource struct {
 }
 
 // Check that Resource may be validated and defaulted.
-var _ apis.Validatable = (*Resource)(nil)
-var _ apis.Defaultable = (*Resource)(nil)
-var _ apis.Listable = (*Resource)(nil)
+var (
+	_ apis.Validatable = (*Resource)(nil)
+	_ apis.Defaultable = (*Resource)(nil)
+	_ apis.Listable    = (*Resource)(nil)
+)
 
 // ResourceSpec represents test resource spec.
 type ResourceSpec struct {

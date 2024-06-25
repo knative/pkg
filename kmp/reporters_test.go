@@ -45,7 +45,6 @@ type privateStruct struct {
 }
 
 func TestFieldListReporter(t *testing.T) {
-
 	tests := []struct {
 		name string
 		x    interface{}
