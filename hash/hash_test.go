@@ -149,12 +149,12 @@ func TestOverlay(t *testing.T) {
 		threshold = want / 5 // 20%
 	)
 	from := sets.New[string]()
-	for i := 0; i < sources; i++ {
+	for range sources {
 		from.Insert(uuid.NewString())
 	}
 	freqs := make(map[string]int, sources)
 
-	for i := 0; i < samples; i++ {
+	for range samples {
 		target := uuid.NewString()
 		got := ChooseSubset(from, selection, target)
 		for k := range got {
@@ -177,7 +177,7 @@ func TestOverlay(t *testing.T) {
 func BenchmarkSelection(b *testing.B) {
 	const maxSet = 200
 	from := make([]string, maxSet)
-	for i := 0; i < maxSet; i++ {
+	for i := range maxSet {
 		from[i] = uuid.NewString()
 	}
 	for _, v := range []int{5, 10, 25, 50, 100, 150, maxSet} {

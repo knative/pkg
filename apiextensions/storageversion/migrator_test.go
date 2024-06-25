@@ -19,7 +19,6 @@ package storageversion
 import (
 	"context"
 	"errors"
-	"fmt"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -109,10 +108,10 @@ func TestMigrate_SingleStoredVersion(t *testing.T) {
 	dclient := dynamicFake.NewSimpleDynamicClient(runtime.NewScheme())
 	cclient := apixFake.NewSimpleClientset(singleVersionFakeCRD)
 
-	cclient.Fake.PrependReactor("patch", "customresourcedefinitions", func(action k8stesting.Action) (handled bool, ret runtime.Object, err error) {
+	cclient.PrependReactor("patch", "customresourcedefinitions", func(action k8stesting.Action) (handled bool, ret runtime.Object, err error) {
 		if pa, ok := action.(k8stesting.PatchAction); ok {
 			if pa.GetName() == singleVersionFakeCRD.Name {
-				return false, nil, fmt.Errorf("resource shouldn't have been patched")
+				return false, nil, errors.New("resource shouldn't have been patched")
 			}
 		}
 
@@ -177,7 +176,7 @@ func TestMigrate_Errors(t *testing.T) {
 						return true, nil, apierrs.NewNotFound(fakeGR, "resource-removed")
 					})
 			},
-			// Resouce not found error should not block the storage migration.
+			// Resource not found error should not block the storage migration.
 			pass: true,
 		},
 		// todo paging fails

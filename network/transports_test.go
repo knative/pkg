@@ -68,7 +68,10 @@ func TestHTTPRoundTripper(t *testing.T) {
 		t.Run(e.label, func(t *testing.T) {
 			wants.Delete(e.want)
 			r := &http.Request{ProtoMajor: e.protoMajor}
-			rt.RoundTrip(r)
+			resp, err := rt.RoundTrip(r)
+			if err != nil {
+				defer resp.Body.Close()
+			}
 
 			if !wants.Has(e.want) {
 				t.Error("Wrong transport selected for request.")
@@ -236,7 +239,7 @@ func findUnusedPortOrFail(t testingT) int {
 var errTest = errors.New("testing")
 
 func newTestErr(msg string, err error) error {
-	return fmt.Errorf("%w: %s: %v", errTest, msg, err)
+	return fmt.Errorf("%w: %s: %w", errTest, msg, err)
 }
 
 // listenOne creates a socket with backlog of one, and use that socket, so

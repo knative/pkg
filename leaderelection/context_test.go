@@ -118,7 +118,7 @@ func TestWithBuilder(t *testing.T) {
 	go le.Run(ctx)
 
 	// We expect 3 lease to be created.
-	for i := 0; i < buckets; i++ {
+	for range buckets {
 		select {
 		case <-created:
 		case <-time.After(1 * time.Second):
@@ -126,7 +126,7 @@ func TestWithBuilder(t *testing.T) {
 		}
 	}
 	// We expect to have been promoted 3 times.
-	for i := 0; i < buckets; i++ {
+	for range buckets {
 		select {
 		case s := <-promoted:
 			gotNames.Insert(s)
@@ -145,7 +145,7 @@ func TestWithBuilder(t *testing.T) {
 		t.Fatal("Timed out waiting for lease update.")
 	}
 	// We expect to have been demoted 3 times.
-	for i := 0; i < buckets; i++ {
+	for range buckets {
 		select {
 		case <-demoted:
 		case <-time.After(time.Second):
@@ -198,7 +198,7 @@ func TestBuilderWithCustomizedLeaseName(t *testing.T) {
 	go le.Run(ctx)
 
 	// We expect to have been promoted 3 times.
-	for i := 0; i < buckets; i++ {
+	for range buckets {
 		select {
 		case s := <-promoted:
 			gotNames.Insert(s)

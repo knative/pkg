@@ -741,8 +741,8 @@ const (
 	queueCheckTimeout = shortDelay + 500*time.Millisecond
 )
 
-func pollQ(q workqueue.RateLimitingInterface, sig chan int) func() (bool, error) {
-	return func() (bool, error) {
+func pollQ(q workqueue.RateLimitingInterface, sig chan int) func(context.Context) (bool, error) {
+	return func(context.Context) (bool, error) {
 		if ql := q.Len(); ql > 0 {
 			sig <- ql
 			return true, nil
@@ -794,8 +794,8 @@ func TestEnqueueAfter(t *testing.T) {
 		cancel()
 	})
 
-	go wait.PollImmediateUntil(5*time.Millisecond,
-		pollQ(impl.WorkQueue(), queuePopulated), ctx.Done())
+	go wait.PollUntilContextCancel(ctx, 5*time.Millisecond, true,
+		pollQ(impl.WorkQueue(), queuePopulated))
 
 	select {
 	case qlen := <-queuePopulated:
@@ -846,8 +846,8 @@ func TestEnqueueKeyAfter(t *testing.T) {
 		cancel()
 	})
 
-	go wait.PollImmediateUntil(5*time.Millisecond,
-		pollQ(impl.WorkQueue(), queuePopulated), ctx.Done())
+	go wait.PollUntilContextCancel(ctx, 5*time.Millisecond, true,
+		pollQ(impl.WorkQueue(), queuePopulated))
 
 	select {
 	case qlen := <-queuePopulated:
@@ -1211,7 +1211,7 @@ func TestStartAndShutdownWithErroringWork(t *testing.T) {
 	itemRequeued := make(chan struct{})
 	defer close(itemRequeued)
 
-	var successCheck wait.ConditionFunc = func() (bool, error) {
+	var successCheck wait.ConditionWithContextFunc = func(context.Context) (bool, error) {
 		// Check that the work was requeued in RateLimiter, as NumRequeues
 		// can't fully reflect the real state of queue length.
 		// Here we need to wait for NumRequeues to be more than 1, to ensure
@@ -1222,7 +1222,7 @@ func TestStartAndShutdownWithErroringWork(t *testing.T) {
 		}
 		return false, nil
 	}
-	go wait.PollImmediateUntil(5*time.Millisecond, successCheck, ctx.Done())
+	go wait.PollUntilContextCancel(ctx, 5*time.Millisecond, true, successCheck)
 
 	select {
 	case <-itemRequeued:

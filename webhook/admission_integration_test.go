@@ -156,7 +156,7 @@ func TestAdmissionValidResponseForResourceTLS(t *testing.T) {
 
 	u.Path = path.Join(u.Path, ac.Path())
 
-	req, err := http.NewRequest("GET", u.String(), reqBuf)
+	req, err := http.NewRequest(http.MethodGet, u.String(), reqBuf)
 	if err != nil {
 		t.Fatal("http.NewRequest() =", err)
 	}
@@ -280,7 +280,7 @@ func TestAdmissionValidResponseForResource(t *testing.T) {
 
 	u.Path = path.Join(u.Path, ac.Path())
 
-	req, err := http.NewRequest("GET", u.String(), reqBuf)
+	req, err := http.NewRequest(http.MethodGet, u.String(), reqBuf)
 	if err != nil {
 		t.Fatal("http.NewRequest() =", err)
 	}
@@ -415,7 +415,7 @@ func TestAdmissionInvalidResponseForResource(t *testing.T) {
 
 	u.Path = path.Join(u.Path, ac.Path())
 
-	req, err := http.NewRequest("GET", u.String(), reqBuf)
+	req, err := http.NewRequest(http.MethodGet, u.String(), reqBuf)
 	if err != nil {
 		t.Fatal("http.NewRequest() =", err)
 	}
@@ -531,7 +531,7 @@ func TestAdmissionWarningResponseForResource(t *testing.T) {
 
 	u.Path = path.Join(u.Path, ac.Path())
 
-	req, err := http.NewRequest("GET", u.String(), reqBuf)
+	req, err := http.NewRequest(http.MethodGet, u.String(), reqBuf)
 	if err != nil {
 		t.Fatal("http.NewRequest() =", err)
 	}
@@ -628,7 +628,7 @@ func TestAdmissionValidResponseForRequestBody(t *testing.T) {
 
 	u.Path = path.Join(u.Path, ac.Path())
 
-	req, err := http.NewRequest("GET", u.String(), reqBuf)
+	req, err := http.NewRequest(http.MethodGet, u.String(), reqBuf)
 	if err != nil {
 		t.Fatal("http.NewRequest() =", err)
 	}

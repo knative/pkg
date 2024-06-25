@@ -154,7 +154,7 @@ func TestDrainMechanics(t *testing.T) {
 	}
 	rc++
 
-	for i := 0; i < 3; i++ {
+	for i := range 3 {
 		mt.advance(timeout - epsilon)
 		select {
 		case <-done:
@@ -560,7 +560,7 @@ func TestResetWithActiveRequests(t *testing.T) {
 	defer close(trafficStopped)
 
 	go func() {
-		req, _ := http.NewRequest("GET", "knative.dev", nil)
+		req, _ := http.NewRequest(http.MethodGet, "knative.dev", nil)
 		rec := httptest.NewRecorder()
 
 		close(trafficStarted)

@@ -18,7 +18,6 @@ package configmap
 
 import (
 	"errors"
-	"fmt"
 	"os"
 	"os/exec"
 	"testing"
@@ -196,7 +195,7 @@ func TestStoreFailedFirstConversionCrashes(t *testing.T) {
 		return
 	}
 
-	cmd := exec.Command(os.Args[0], fmt.Sprintf("-test.run=%s", t.Name()))
+	cmd := exec.Command(os.Args[0], "-test.run="+t.Name())
 	cmd.Env = append(os.Environ(), "CRASH=1")
 	err := cmd.Run()
 

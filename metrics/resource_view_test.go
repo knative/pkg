@@ -19,6 +19,7 @@ package metrics
 import (
 	"context"
 	"fmt"
+	"strconv"
 	"testing"
 	"time"
 
@@ -204,7 +205,7 @@ func TestIfAllMeterResourcesAreRemoved(t *testing.T) {
 	// Register many resources at once
 	for i := 1; i <= 100; i++ {
 		res := resource.Resource{Labels: map[string]string{"foo": "bar"}}
-		res.Labels["id"] = fmt.Sprint(i)
+		res.Labels["id"] = strconv.Itoa(i)
 		if _, err := optionForResource(&res); err != nil {
 			t.Error("Should succeed getting option, instead got error ", err)
 		}
@@ -265,7 +266,7 @@ func TestResourceAsString(t *testing.T) {
 	r3 := &resource.Resource{Type: "foobar", Labels: map[string]string{"k1": "v1", "k2": "v2", "k4": "v4"}}
 
 	// Test 5 time since the iteration could be random.
-	for i := 0; i < 5; i++ {
+	for range 5 {
 		if s1, s2 := resourceToKey(r1), resourceToKey(r2); s1 != s2 {
 			t.Errorf("Expect same resources, but got %q and %q", s1, s2)
 		}
@@ -279,7 +280,7 @@ func TestResourceAsString(t *testing.T) {
 func BenchmarkResourceToKey(b *testing.B) {
 	for _, count := range []int{0, 1, 5, 10} {
 		labels := make(map[string]string, count)
-		for i := 0; i < count; i++ {
+		for i := range count {
 			labels[fmt.Sprint("key", i)] = fmt.Sprint("value", i)
 		}
 		r := &resource.Resource{Type: "foobar", Labels: labels}

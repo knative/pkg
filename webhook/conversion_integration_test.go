@@ -105,7 +105,7 @@ func TestConversionValidResponse(t *testing.T) {
 		t.Fatal("Failed to marshal conversion review:", err)
 	}
 
-	req, err := http.NewRequest("GET", fmt.Sprintf("https://%s%s", serverURL, cc.Path()), reqBuf)
+	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("https://%s%s", serverURL, cc.Path()), reqBuf)
 	if err != nil {
 		t.Fatal("http.NewRequest() =", err)
 	}
@@ -193,7 +193,7 @@ func TestConversionInvalidResponse(t *testing.T) {
 		t.Fatal("Failed to marshal conversion review:", err)
 	}
 
-	req, err := http.NewRequest("GET", fmt.Sprintf("https://%s%s", serverURL, cc.Path()), reqBuf)
+	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("https://%s%s", serverURL, cc.Path()), reqBuf)
 	if err != nil {
 		t.Fatal("http.NewRequest() =", err)
 	}
