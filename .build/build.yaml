@@ -32,3 +32,5 @@ spec:
           value: "build-harbor.alauda.cn/devops/knative.dev/pkg/apiextensions/storageversion/cmd/migrate"
         - name: container-image-tag
           value: v$(tasks.oss-version.results.oss-version)-$(tasks.oss-version.results.commit-short-id)
+        - name: tool-image
+          value: registry.alauda.cn:60080/devops/builder-go-121:latest
