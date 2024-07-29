@@ -20,7 +20,7 @@ require (
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/openzipkin/zipkin-go v0.4.3
 	github.com/spf13/pflag v1.0.5
-	github.com/tsenart/vegeta/v12 v12.11.1
+	github.com/tsenart/vegeta/v12 v12.11.3
 	go.opencensus.io v0.24.0
 	go.uber.org/automaxprocs v1.5.3
 	go.uber.org/zap v1.27.0
@@ -29,7 +29,7 @@ require (
 	golang.org/x/tools v0.23.0
 	gomodules.xyz/jsonpatch/v2 v2.4.0
 	google.golang.org/grpc v1.65.0
-	google.golang.org/protobuf v1.34.1
+	google.golang.org/protobuf v1.34.2
 	gopkg.in/yaml.v3 v3.0.1
 	k8s.io/api v0.29.2
 	k8s.io/apiextensions-apiserver v0.29.2
@@ -70,10 +70,10 @@ require (
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/prometheus/client_golang v1.19.1 // indirect
 	github.com/prometheus/client_model v0.6.1 // indirect
-	github.com/prometheus/common v0.54.0 // indirect
-	github.com/prometheus/procfs v0.12.0 // indirect
+	github.com/prometheus/common v0.55.0 // indirect
+	github.com/prometheus/procfs v0.15.1 // indirect
 	github.com/prometheus/statsd_exporter v0.22.7 // indirect
-	github.com/rs/dnscache v0.0.0-20211102005908-e0241e321417 // indirect
+	github.com/rs/dnscache v0.0.0-20230804202142-fc85eb664529 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/mod v0.19.0 // indirect
 	golang.org/x/oauth2 v0.21.0 // indirect
