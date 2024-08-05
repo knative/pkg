@@ -20,7 +20,7 @@ require (
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/openzipkin/zipkin-go v0.4.3
 	github.com/spf13/pflag v1.0.5
-	github.com/tsenart/vegeta/v12 v12.11.3
+	github.com/tsenart/vegeta/v12 v12.12.0
 	go.opencensus.io v0.24.0
 	go.uber.org/automaxprocs v1.5.3
 	go.uber.org/zap v1.27.0

@@ -182,7 +182,7 @@ github.com/rs/dnscache
 # github.com/spf13/pflag v1.0.5
 ## explicit; go 1.12
 github.com/spf13/pflag
-# github.com/tsenart/vegeta/v12 v12.11.3
+# github.com/tsenart/vegeta/v12 v12.12.0
 ## explicit; go 1.22
 github.com/tsenart/vegeta/v12/lib
 # go.opencensus.io v0.24.0
