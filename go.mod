@@ -26,7 +26,7 @@ require (
 	go.uber.org/zap v1.27.0
 	golang.org/x/net v0.29.0
 	golang.org/x/sync v0.8.0
-	golang.org/x/tools v0.24.0
+	golang.org/x/tools v0.25.0
 	gomodules.xyz/jsonpatch/v2 v2.4.0
 	google.golang.org/grpc v1.66.0
 	google.golang.org/protobuf v1.34.2
@@ -77,7 +77,7 @@ require (
 	github.com/rs/dnscache v0.0.0-20230804202142-fc85eb664529 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/exp v0.0.0-20240808152545-0cdaa3abc0fa // indirect
-	golang.org/x/mod v0.20.0 // indirect
+	golang.org/x/mod v0.21.0 // indirect
 	golang.org/x/oauth2 v0.22.0 // indirect
 	golang.org/x/sys v0.25.0 // indirect
 	golang.org/x/term v0.24.0 // indirect
