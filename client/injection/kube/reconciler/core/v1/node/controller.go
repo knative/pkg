@@ -42,7 +42,7 @@ import (
 
 const (
 	defaultControllerAgentName = "node-controller"
-	defaultFinalizerName       = "nodes.core"
+	defaultFinalizerName       = "nodes."
 )
 
 // NewImpl returns a controller.Impl that handles queuing and feeding work from
@@ -101,7 +101,7 @@ func NewImpl(ctx context.Context, r Interface, optionsFns ...controller.OptionsF
 
 	logger = logger.With(
 		zap.String(logkey.ControllerType, ctrTypeName),
-		zap.String(logkey.Kind, "core.Node"),
+		zap.String(logkey.Kind, ".Node"),
 	)
 
 	impl := controller.NewContext(ctx, rec, controller.ControllerOptions{WorkQueueName: ctrTypeName, Logger: logger})
