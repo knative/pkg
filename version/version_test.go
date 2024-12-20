@@ -40,7 +40,7 @@ func TestVersionCheck(t *testing.T) {
 		wantError       bool
 	}{{
 		name:          "greater version (patch)",
-		actualVersion: &testVersioner{version: "v1.29.1"},
+		actualVersion: &testVersioner{version: "v1.30.1"},
 	}, {
 		name:          "greater version (patch), no v",
 		actualVersion: &testVersioner{version: "1.30.1"},
@@ -60,16 +60,16 @@ func TestVersionCheck(t *testing.T) {
 		versionOverride: "1.15.11-0",
 	}, {
 		name:          "greater version (minor)",
-		actualVersion: &testVersioner{version: "v1.29.0"},
+		actualVersion: &testVersioner{version: "v1.30.0"},
 	}, {
 		name:          "same version",
-		actualVersion: &testVersioner{version: "v1.29.0"},
+		actualVersion: &testVersioner{version: "v1.30.0"},
 	}, {
 		name:          "same version with build",
-		actualVersion: &testVersioner{version: "v1.29.0+k3s.1"},
+		actualVersion: &testVersioner{version: "v1.30.0+k3s.1"},
 	}, {
 		name:          "same version with pre-release",
-		actualVersion: &testVersioner{version: "v1.29.0-k3s.1"},
+		actualVersion: &testVersioner{version: "v1.30.0-k3s.1"},
 	}, {
 		name:          "smaller version",
 		actualVersion: &testVersioner{version: "v1.14.3"},
