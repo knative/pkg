@@ -411,7 +411,7 @@ func (t testRateLimiter) When(interface{}) time.Duration { return t.delay }
 func (t testRateLimiter) Forget(interface{})             {}
 func (t testRateLimiter) NumRequeues(interface{}) int    { return 0 }
 
-var _ workqueue.RateLimiter = (*testRateLimiter)(nil)
+var _ workqueue.TypedRateLimiter[any] = (*testRateLimiter)(nil)
 
 func TestEnqueue(t *testing.T) {
 	tests := []struct {
@@ -715,7 +715,7 @@ func TestEnqueue(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			var rl workqueue.RateLimiter = testRateLimiter{t, 100 * time.Millisecond}
+			var rl workqueue.TypedRateLimiter[any] = testRateLimiter{t, 100 * time.Millisecond}
 			impl := NewContext(context.TODO(), &nopReconciler{}, ControllerOptions{WorkQueueName: "Testing", Logger: TestLogger(t), RateLimiter: rl})
 			test.work(impl)
 
@@ -741,7 +741,7 @@ const (
 	queueCheckTimeout = shortDelay + 500*time.Millisecond
 )
 
-func pollQ(q workqueue.RateLimitingInterface, sig chan int) func(context.Context) (bool, error) {
+func pollQ(q workqueue.TypedRateLimitingInterface[any], sig chan int) func(context.Context) (bool, error) {
 	return func(context.Context) (bool, error) {
 		if ql := q.Len(); ql > 0 {
 			sig <- ql
@@ -1356,7 +1356,7 @@ func TestStartAndShutdownWithRequeuingWork(t *testing.T) {
 	}
 }
 
-func drainWorkQueue(wq workqueue.RateLimitingInterface) (hasQueue []types.NamespacedName) {
+func drainWorkQueue(wq workqueue.TypedRateLimitingInterface[any]) (hasQueue []types.NamespacedName) {
 	for {
 		key, shutdown := wq.Get()
 		if key == nil && shutdown {
