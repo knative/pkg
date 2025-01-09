@@ -6,7 +6,6 @@ run:
     - injection/clients
 
 output:
-  uniq-by-line: true
   sort-results: true
   sort-order:
   - linter
@@ -15,6 +14,7 @@ output:
 
 
 issues:
+  uniq-by-line: true
   max-issues-per-linter: 0
   max-same-issues: 0
   exclude-rules:
