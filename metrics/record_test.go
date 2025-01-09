@@ -162,7 +162,7 @@ func BenchmarkMetricsRecording(b *testing.B) {
 		b.Error("Failed to create tags")
 	}
 	b.Run("sequential", func(b *testing.B) {
-		for j := 0; j < b.N; j++ {
+		for range b.N {
 			ctx, err := getTagCtx()
 			if err != nil {
 				b.Error("Failed to get context")
@@ -182,7 +182,7 @@ func BenchmarkMetricsRecording(b *testing.B) {
 		})
 	})
 	b.Run("sequential-batch", func(b *testing.B) {
-		for j := 0; j < b.N; j++ {
+		for range b.N {
 			ctx, err := getTagCtx()
 			if err != nil {
 				b.Error("Failed to get context")

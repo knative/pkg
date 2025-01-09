@@ -286,7 +286,7 @@ func BenchmarkResourceToKey(b *testing.B) {
 		r := &resource.Resource{Type: "foobar", Labels: labels}
 
 		b.Run(fmt.Sprintf("%d-labels", count), func(b *testing.B) {
-			for i := 0; i < b.N; i++ {
+			for range b.N {
 				resourceToKey(r)
 			}
 		})
