@@ -1,7 +1,12 @@
 name: update-dependabot
 
 on:
+  push:
+    branches:
+      - dependabot/**
   pull_request:
+    branches:
+      - dependabot/**
 
 permissions:
   contents: write
