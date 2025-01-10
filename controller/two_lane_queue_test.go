@@ -45,7 +45,7 @@ func (r *chanRateLimiter) NumRequeues(item interface{}) int {
 	return 0
 }
 
-var _ workqueue.RateLimiter = &chanRateLimiter{}
+var _ workqueue.TypedRateLimiter[any] = &chanRateLimiter{}
 
 func TestRateLimit(t *testing.T) {
 	// Verifies that we properly pass the rate limiter to the queue.
@@ -87,7 +87,7 @@ func TestRateLimit(t *testing.T) {
 }
 
 func TestSlowQueue(t *testing.T) {
-	q := newTwoLaneWorkQueue("live-in-the-fast-lane", workqueue.DefaultControllerRateLimiter())
+	q := newTwoLaneWorkQueue("live-in-the-fast-lane", workqueue.DefaultTypedControllerRateLimiter[any]())
 	q.SlowLane().Add("1")
 	// Queue has async moving parts so if we check at the wrong moment, this might still be 0.
 	if wait.PollUntilContextTimeout(context.Background(), 10*time.Millisecond, 250*time.Millisecond, true, func(ctx context.Context) (bool, error) {
@@ -115,7 +115,7 @@ func TestSlowQueue(t *testing.T) {
 
 func TestDoubleKey(t *testing.T) {
 	// Verifies that we don't get double concurrent processing of the same key.
-	q := newTwoLaneWorkQueue("live-in-the-fast-lane", workqueue.DefaultControllerRateLimiter())
+	q := newTwoLaneWorkQueue("live-in-the-fast-lane", workqueue.DefaultTypedControllerRateLimiter[any]())
 	q.Add("1")
 	t.Cleanup(q.ShutDown)
 
@@ -159,7 +159,7 @@ func TestDoubleKey(t *testing.T) {
 
 func TestOrder(t *testing.T) {
 	// Verifies that we read from the fast queue first.
-	q := newTwoLaneWorkQueue("live-in-the-fast-lane", workqueue.DefaultControllerRateLimiter())
+	q := newTwoLaneWorkQueue("live-in-the-fast-lane", workqueue.DefaultTypedControllerRateLimiter[any]())
 	stop := make(chan struct{})
 	t.Cleanup(func() {
 		close(stop)

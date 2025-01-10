@@ -96,6 +96,7 @@ func MakeFactory(ctor Ctor) rtesting.Factory {
 		// Set up our Controller from the fakes.
 		c := ctor(ctx, &ls, configmap.NewStaticWatcher())
 		// Update the context with the stuff we decorated it with.
+		//nolint:fatcontext // Drop when https://github.com/Crocmagnon/fatcontext/issues/34 is fixed
 		r.Ctx = ctx
 
 		// If the reconcilers is leader aware, then promote it.

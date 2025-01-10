@@ -6,7 +6,6 @@ run:
     - injection/clients
 
 output:
-  uniq-by-line: true
   sort-results: true
   sort-order:
   - linter
@@ -15,6 +14,7 @@ output:
 
 
 issues:
+  uniq-by-line: true
   max-issues-per-linter: 0
   max-same-issues: 0
   exclude-rules:
@@ -102,9 +102,6 @@ linters:
     # Errorlint is a linter for that can be used to find code that will cause
     # problems with the error wrapping scheme introduced in Go 1.13.
     - errorlint
-
-    # Checks for pointers to enclosing loop variables.
-    - exportloopref
 
     # Detects nested contexts in loops.
     - fatcontext

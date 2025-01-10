@@ -17,7 +17,6 @@ limitations under the license.
 package kmeta
 
 import (
-	"fmt"
 	"strings"
 	"testing"
 
@@ -70,7 +69,7 @@ func TestChildName(t *testing.T) {
 		t.Run(test.parent+"-"+test.suffix, func(t *testing.T) {
 			got, want := ChildName(test.parent, test.suffix), test.want
 			if errs := validation.IsDNS1123Subdomain(got); len(errs) != 0 {
-				t.Errorf(fmt.Sprintf("Invalid DNS1123 Subdomain %63s\n\n Errors: %v", got, errs))
+				t.Errorf("Invalid DNS1123 Subdomain %63s\n\n Errors: %v", got, errs)
 			}
 			if got != want {
 				t.Errorf("%s-%s: got: %63s want: %63s\ndiff:%s", test.parent, test.suffix, got, want, cmp.Diff(want, got))

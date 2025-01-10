@@ -351,7 +351,7 @@ func TestAdmissionInvalidResponseForResource(t *testing.T) {
 	expectedError := "everything is fine."
 	ac := &fixedAdmissionController{
 		path:     "/booger",
-		response: MakeErrorStatus(expectedError),
+		response: MakeErrorStatus(expectedError), //nolint
 	}
 	wh, serverURL, ctx, cancel, err := testSetup(t, ac)
 	if err != nil {

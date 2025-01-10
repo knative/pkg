@@ -185,7 +185,7 @@ func BenchmarkSelection(b *testing.B) {
 			b.Run(fmt.Sprintf("pool-%d-subset-%d", v, ss), func(b *testing.B) {
 				target := uuid.NewString()
 				in := sets.New[string](from[:v]...)
-				for i := 0; i < b.N; i++ {
+				for range b.N {
 					ChooseSubset(in, 10, target)
 				}
 			})

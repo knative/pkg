@@ -212,7 +212,7 @@ func BenchmarkSpanMiddleware(b *testing.B) {
 	req.Header["X-B3-Spanid"] = []string{"b3bd5e1c4318c78a"}
 
 	b.Run("sequential", func(b *testing.B) {
-		for j := 0; j < b.N; j++ {
+		for range b.N {
 			middleware.ServeHTTP(bw, req)
 		}
 	})
