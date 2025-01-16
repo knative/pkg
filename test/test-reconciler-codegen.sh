@@ -30,12 +30,18 @@ rm -rf $(dirname $0)/genclient
 
 header "Test Generated Reconciler Builds."
 
-chmod +x ${CODEGEN_PKG}/generate-groups.sh
+source "${CODEGEN_PKG}/kube_codegen.sh"
 
-${CODEGEN_PKG}/generate-groups.sh "deepcopy,client,informer,lister" \
-  ${GENCLIENT_PKG} knative.dev/pkg/apis/test \
-  "example:v1alpha1" \
-  --go-header-file ${REPO_ROOT_DIR}/hack/boilerplate/boilerplate.go.txt
+kube::codegen::gen_helpers \
+  --boilerplate "${REPO_ROOT_DIR}/hack/boilerplate/boilerplate.go.txt" \
+  "${REPO_ROOT_DIR}/apis/test"
+
+kube::codegen::gen_client \
+  --boilerplate "${REPO_ROOT_DIR}/hack/boilerplate/boilerplate.go.txt" \
+  --output-dir "${REPO_ROOT_DIR}/test/genclient" \
+  --output-pkg "${GENCLIENT_PKG}" \
+  --with-watch \
+  "${REPO_ROOT_DIR}/apis/test"
 
 # Knative Injection
 ${KNATIVE_CODEGEN_PKG}/hack/generate-knative.sh "injection" \
@@ -43,11 +49,6 @@ ${KNATIVE_CODEGEN_PKG}/hack/generate-knative.sh "injection" \
   "example:v1alpha1" \
   --go-header-file ${REPO_ROOT_DIR}/hack/boilerplate/boilerplate.go.txt \
   --force-genreconciler-kinds "Foo"
-
-${CODEGEN_PKG}/generate-groups.sh "deepcopy,client,informer,lister" \
-  ${GENCLIENT_PKG}/pub knative.dev/pkg/apis/test \
-  "pub:v1alpha1" \
-  --go-header-file ${REPO_ROOT_DIR}/hack/boilerplate/boilerplate.go.txt
 
 # Knative Injection
 ${KNATIVE_CODEGEN_PKG}/hack/generate-knative.sh "injection" \
