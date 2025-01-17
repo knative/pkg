@@ -46,13 +46,13 @@ kube::codegen::gen_client \
 # Knative Injection
 ${KNATIVE_CODEGEN_PKG}/hack/generate-knative.sh "injection" \
   ${GENCLIENT_PKG} knative.dev/pkg/apis/test \
-  "example:v1alpha1" \
+  "example:v1alpha1,pub:v1alpha1" \
   --go-header-file ${REPO_ROOT_DIR}/hack/boilerplate/boilerplate.go.txt \
   --force-genreconciler-kinds "Foo"
 
 # Knative Injection
 ${KNATIVE_CODEGEN_PKG}/hack/generate-knative.sh "injection" \
-  ${GENCLIENT_PKG}/pub knative.dev/pkg/apis/test \
+  ${GENCLIENT_PKG} knative.dev/pkg/apis/test \
   "pub:v1alpha1" \
   --go-header-file ${REPO_ROOT_DIR}/hack/boilerplate/boilerplate.go.txt
 
