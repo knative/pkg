@@ -15,5 +15,5 @@ limitations under the License.
 */
 
 // +k8s:deepcopy-gen=package
-// +groupName=sample.knative.dev
+// +groupName=example.knative.dev
 package v1alpha1
