@@ -85,7 +85,6 @@ if grep -qw "injection" <<<"${GENS}"; then
   MODULE_NAME=$(go list -m)
 
   go run knative.dev/pkg/codegen/cmd/injection-gen \
-    -v 5 \
     --input-dirs $(codegen::join , "${FQ_APIS[@]}") \
     --versioned-clientset-package ${VERSIONED_CLIENTSET_PKG} \
     --external-versions-informers-package ${EXTERNAL_INFORMER_PKG} \
