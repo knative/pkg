@@ -62,30 +62,34 @@ func TestNewConfigSuccess(t *testing.T) {
 	}, {
 		name: "Everything enabled (legacy)",
 		input: map[string]string{
-			enableKey:         "true",
-			zipkinEndpointKey: "some-endpoint",
-			debugKey:          "true",
-			sampleRateKey:     "0.5",
+			enableKey:            "true",
+			zipkinEndpointKey:    "some-endpoint",
+			debugKey:             "true",
+			sampleRateKey:        "0.5",
+			useServingServiceKey: "true",
 		},
 		output: &Config{
-			Backend:        Zipkin,
-			Debug:          true,
-			ZipkinEndpoint: "some-endpoint",
-			SampleRate:     0.5,
+			Backend:           Zipkin,
+			Debug:             true,
+			ZipkinEndpoint:    "some-endpoint",
+			SampleRate:        0.5,
+			UseServingService: true,
 		},
 	}, {
 		name: "Everything enabled (zipkin)",
 		input: map[string]string{
-			backendKey:        "zipkin",
-			zipkinEndpointKey: "some-endpoint",
-			debugKey:          "true",
-			sampleRateKey:     "0.5",
+			backendKey:           "zipkin",
+			zipkinEndpointKey:    "some-endpoint",
+			debugKey:             "true",
+			sampleRateKey:        "0.5",
+			useServingServiceKey: "true",
 		},
 		output: &Config{
-			Backend:        Zipkin,
-			Debug:          true,
-			ZipkinEndpoint: "some-endpoint",
-			SampleRate:     0.5,
+			Backend:           Zipkin,
+			Debug:             true,
+			ZipkinEndpoint:    "some-endpoint",
+			SampleRate:        0.5,
+			UseServingService: true,
 		},
 	}}
 
@@ -116,30 +120,34 @@ func TestNewConfigJSON(t *testing.T) {
 	}, {
 		name: "Everything enabled (legacy)",
 		input: map[string]string{
-			enableKey:         "true",
-			zipkinEndpointKey: "some-endpoint",
-			debugKey:          "true",
-			sampleRateKey:     "0.5",
+			enableKey:            "true",
+			zipkinEndpointKey:    "some-endpoint",
+			debugKey:             "true",
+			sampleRateKey:        "0.5",
+			useServingServiceKey: "true",
 		},
 		output: &Config{
-			Backend:        Zipkin,
-			Debug:          true,
-			ZipkinEndpoint: "some-endpoint",
-			SampleRate:     0.5,
+			Backend:           Zipkin,
+			Debug:             true,
+			ZipkinEndpoint:    "some-endpoint",
+			SampleRate:        0.5,
+			UseServingService: true,
 		},
 	}, {
 		name: "Everything enabled (zipkin)",
 		input: map[string]string{
-			backendKey:        "zipkin",
-			zipkinEndpointKey: "some-endpoint",
-			debugKey:          "true",
-			sampleRateKey:     "0.5",
+			backendKey:           "zipkin",
+			zipkinEndpointKey:    "some-endpoint",
+			debugKey:             "true",
+			sampleRateKey:        "0.5",
+			useServingServiceKey: "true",
 		},
 		output: &Config{
-			Backend:        Zipkin,
-			Debug:          true,
-			ZipkinEndpoint: "some-endpoint",
-			SampleRate:     0.5,
+			Backend:           Zipkin,
+			Debug:             true,
+			ZipkinEndpoint:    "some-endpoint",
+			SampleRate:        0.5,
+			UseServingService: true,
 		},
 	}}
 
@@ -205,6 +213,11 @@ func TestNewConfigFailures(t *testing.T) {
 		name: "legacy key invalid",
 		input: map[string]string{
 			enableKey: "dot dash dot",
+		},
+	}, {
+		name: "useServingService invalid value",
+		input: map[string]string{
+			enableKey: "not a boolean",
 		},
 	}}
 	for _, tc := range tests {
