@@ -2,8 +2,6 @@ module knative.dev/pkg
 
 go 1.23.0
 
-toolchain go1.24.1
-
 require (
 	contrib.go.opencensus.io/exporter/ocagent v0.7.1-0.20200907061046-05415f1de66d
 	contrib.go.opencensus.io/exporter/prometheus v0.4.2
