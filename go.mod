@@ -2,6 +2,8 @@ module knative.dev/pkg
 
 go 1.23.0
 
+toolchain go1.24.1
+
 require (
 	contrib.go.opencensus.io/exporter/ocagent v0.7.1-0.20200907061046-05415f1de66d
 	contrib.go.opencensus.io/exporter/prometheus v0.4.2
@@ -24,7 +26,7 @@ require (
 	go.opencensus.io v0.24.0
 	go.uber.org/automaxprocs v1.6.0
 	go.uber.org/zap v1.27.0
-	golang.org/x/net v0.37.0
+	golang.org/x/net v0.38.0
 	golang.org/x/sync v0.12.0
 	golang.org/x/tools v0.31.0
 	gomodules.xyz/jsonpatch/v2 v2.4.0
