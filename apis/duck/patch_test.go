@@ -161,7 +161,7 @@ func TestCreatePatch(t *testing.T) {
 		want: JSONPatch{{
 			Operation: "replace",
 			Path:      "/status/patchable/field1",
-			Value:     13.0,
+			Value:     json.Number("13"),
 		}},
 	}, {
 		name: "patch two fields",
@@ -184,7 +184,7 @@ func TestCreatePatch(t *testing.T) {
 		want: JSONPatch{{
 			Operation: "replace",
 			Path:      "/status/patchable/field1",
-			Value:     42.0,
+			Value:     json.Number("42"),
 		}, {
 			Operation: "remove",
 			Path:      "/status/patchable/field2",
