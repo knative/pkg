@@ -11,3 +11,7 @@ updates:
     ignore:
       - dependency-name: "k8s.io/*"
       - dependency-name: "knative.dev/*"
+    groups:
+      golang-x:
+        patterns:
+          - "golang.org/x/*"
