@@ -31,11 +31,12 @@ const (
 	// ConfigName is the name of the configmap
 	ConfigName = "config-tracing"
 
-	enableKey         = "enable"
-	backendKey        = "backend"
-	zipkinEndpointKey = "zipkin-endpoint"
-	debugKey          = "debug"
-	sampleRateKey     = "sample-rate"
+	enableKey            = "enable"
+	backendKey           = "backend"
+	zipkinEndpointKey    = "zipkin-endpoint"
+	debugKey             = "debug"
+	sampleRateKey        = "sample-rate"
+	useServingServiceKey = "use-serving-service"
 )
 
 // BackendType specifies the backend to use for tracing
@@ -54,8 +55,9 @@ type Config struct {
 	Backend        BackendType
 	ZipkinEndpoint string
 
-	Debug      bool
-	SampleRate float64
+	Debug             bool
+	SampleRate        float64
+	UseServingService bool
 }
 
 // Equals returns true if two Configs are identical
@@ -66,9 +68,10 @@ func (cfg *Config) Equals(other *Config) bool {
 // NoopConfig returns a new noop config
 func NoopConfig() *Config {
 	return &Config{
-		Backend:    None,
-		Debug:      false,
-		SampleRate: 0.1,
+		Backend:           None,
+		Debug:             false,
+		SampleRate:        0.1,
+		UseServingService: false,
 	}
 }
 
@@ -98,6 +101,7 @@ func NewTracingConfigFromMap(cfgMap map[string]string) (*Config, error) {
 		cm.AsString(zipkinEndpointKey, &tc.ZipkinEndpoint),
 		cm.AsBool(debugKey, &tc.Debug),
 		cm.AsFloat64(sampleRateKey, &tc.SampleRate),
+		cm.AsBool(useServingServiceKey, &tc.UseServingService),
 	); err != nil {
 		return nil, err
 	}
@@ -152,6 +156,7 @@ func TracingConfigToJSON(cfg *Config) (string, error) {
 	}
 	out[debugKey] = strconv.FormatBool(cfg.Debug)
 	out[sampleRateKey] = fmt.Sprint(cfg.SampleRate)
+	out[useServingServiceKey] = strconv.FormatBool(cfg.UseServingService)
 
 	jsonCfg, err := json.Marshal(out)
 	return string(jsonCfg), err
