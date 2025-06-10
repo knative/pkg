@@ -121,9 +121,10 @@ func TestAsStructuredWatcherNestedError(t *testing.T) {
 		return nil, want
 	}
 
-	wf := duck.AsStructuredWatcher(context.Background(), nwf, &duckv1alpha1.AddressableType{})
+	ctx := context.Background()
+	wf := duck.AsStructuredWatcher(nwf, &duckv1alpha1.AddressableType{})
 
-	_, got := wf(metav1.ListOptions{})
+	_, got := wf(ctx, metav1.ListOptions{})
 	if !errors.Is(got, want) {
 		t.Errorf("WatchFunc() = %v, wanted %v", got, want)
 	}
@@ -134,9 +135,10 @@ func TestAsStructuredWatcherClosedChannel(t *testing.T) {
 		return watch.NewEmptyWatch(), nil
 	}
 
-	wf := duck.AsStructuredWatcher(context.Background(), nwf, &duckv1alpha1.AddressableType{})
+	ctx := context.Background()
+	wf := duck.AsStructuredWatcher(nwf, &duckv1alpha1.AddressableType{})
 
-	wi, err := wf(metav1.ListOptions{})
+	wi, err := wf(ctx, metav1.ListOptions{})
 	if err != nil {
 		t.Error("WatchFunc() =", err)
 	}
@@ -155,9 +157,10 @@ func TestAsStructuredWatcherPassThru(t *testing.T) {
 		return watch.NewProxyWatcher(unstructuredCh), nil
 	}
 
-	wf := duck.AsStructuredWatcher(context.Background(), nwf, &duckv1alpha1.AddressableType{})
+	ctx := context.Background()
+	wf := duck.AsStructuredWatcher(nwf, &duckv1alpha1.AddressableType{})
 
-	wi, err := wf(metav1.ListOptions{})
+	wi, err := wf(ctx, metav1.ListOptions{})
 	if err != nil {
 		t.Error("WatchFunc() =", err)
 	}
@@ -201,9 +204,10 @@ func TestAsStructuredWatcherPassThruErrors(t *testing.T) {
 		return watch.NewProxyWatcher(unstructuredCh), nil
 	}
 
-	wf := duck.AsStructuredWatcher(context.Background(), nwf, &duckv1alpha1.AddressableType{})
+	ctx := context.Background()
+	wf := duck.AsStructuredWatcher(nwf, &duckv1alpha1.AddressableType{})
 
-	wi, err := wf(metav1.ListOptions{})
+	wi, err := wf(ctx, metav1.ListOptions{})
 	if err != nil {
 		t.Error("WatchFunc() =", err)
 	}
@@ -238,9 +242,10 @@ func TestAsStructuredWatcherErrorConverting(t *testing.T) {
 		return watch.NewProxyWatcher(unstructuredCh), nil
 	}
 
-	wf := duck.AsStructuredWatcher(context.Background(), nwf, &badObject{})
+	ctx := context.Background()
+	wf := duck.AsStructuredWatcher(nwf, &badObject{})
 
-	wi, err := wf(metav1.ListOptions{})
+	wi, err := wf(ctx, metav1.ListOptions{})
 	if err != nil {
 		t.Error("WatchFunc() =", err)
 	}
