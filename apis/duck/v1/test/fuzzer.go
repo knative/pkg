@@ -17,12 +17,12 @@ limitations under the License.
 package test
 
 import (
-	fuzz "github.com/google/gofuzz"
 	"k8s.io/apimachinery/pkg/api/apitesting/fuzzer"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"knative.dev/pkg/apis"
 	v1 "knative.dev/pkg/apis/duck/v1"
 	pkgfuzzer "knative.dev/pkg/apis/testing/fuzzer"
+	"sigs.k8s.io/randfill"
 )
 
 var testConditions = apis.Conditions{{Type: apis.ConditionReady}, {Type: apis.ConditionSucceeded}}
@@ -35,8 +35,8 @@ var testConditions = apis.Conditions{{Type: apis.ConditionReady}, {Type: apis.Co
 var FuzzerFuncs = fuzzer.MergeFuzzerFuncs(
 	func(codecs serializer.CodecFactory) []interface{} {
 		return []interface{}{
-			func(status *v1.Status, c fuzz.Continue) {
-				c.FuzzNoCustom(status) // fuzz the Status
+			func(status *v1.Status, c randfill.Continue) {
+				c.FillNoCustom(status) // fuzz the Status
 				status.SetConditions(testConditions)
 				pkgfuzzer.FuzzConditions(status, c)
 			},

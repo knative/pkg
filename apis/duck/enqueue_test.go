@@ -135,6 +135,11 @@ func (fsii *fakeSharedIndexInformer) AddEventHandlerWithResyncPeriod(handler cac
 	return nil, nil
 }
 
+func (fsii *fakeSharedIndexInformer) AddEventHandlerWithOptions(handler cache.ResourceEventHandler, options cache.HandlerOptions) (cache.ResourceEventHandlerRegistration, error) {
+	fsii.t.Fatalf("NYI: AddEventHandlerWithOptions")
+	return nil, nil
+}
+
 func (fsii *fakeSharedIndexInformer) GetStore() cache.Store {
 	fsii.t.Fatalf("NYI: GetStore")
 	return nil
@@ -147,6 +152,10 @@ func (fsii *fakeSharedIndexInformer) GetController() cache.Controller {
 
 func (fsii *fakeSharedIndexInformer) Run(stopCh <-chan struct{}) {
 	fsii.t.Fatalf("NYI: Run")
+}
+
+func (fsii *fakeSharedIndexInformer) RunWithContext(ctx context.Context) {
+	fsii.t.Fatalf("NYI: RunWithContext")
 }
 
 func (fsii *fakeSharedIndexInformer) HasSynced() bool {
@@ -170,6 +179,11 @@ func (fsii *fakeSharedIndexInformer) GetIndexer() cache.Indexer {
 }
 
 func (fsii *fakeSharedIndexInformer) SetWatchErrorHandler(handler cache.WatchErrorHandler) error {
+	fsii.t.Fatalf("NYI: SetWatchErrorHandler")
+	return nil
+}
+
+func (fsii *fakeSharedIndexInformer) SetWatchErrorHandlerWithContext(handler cache.WatchErrorHandlerWithContext) error {
 	fsii.t.Fatalf("NYI: SetWatchErrorHandler")
 	return nil
 }
