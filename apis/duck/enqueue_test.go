@@ -139,6 +139,7 @@ func (fsii *fakeSharedIndexInformer) AddEventHandlerWithOptions(handler cache.Re
 	fsii.t.Fatalf("NYI: AddEventHandlerWithOptions")
 	return nil, nil
 }
+
 func (fsii *fakeSharedIndexInformer) GetStore() cache.Store {
 	fsii.t.Fatalf("NYI: GetStore")
 	return nil
