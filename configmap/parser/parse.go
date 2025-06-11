@@ -17,6 +17,7 @@ limitations under the License.
 package parser
 
 import (
+	"fmt"
 	"strconv"
 	"time"
 )
@@ -42,7 +43,7 @@ func AsFunc[T any](
 		if raw, ok := data[key]; ok {
 			val, err := parseVal(raw)
 			if err != nil {
-				return err
+				return fmt.Errorf("failed to parse %q: %w", key, err)
 			}
 			*target = val
 		}
