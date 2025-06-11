@@ -56,7 +56,7 @@ func TestParse(t *testing.T) {
 			"test-dict.k1": "v1",
 		},
 		want: testConfig{
-			set: sets.New[string]("a", "b", "c", "d"),
+			set: sets.New("a", "b", "c", "d"),
 			qua: &fiveHundredM,
 			nsn: types.NamespacedName{
 				Name:      "some-name",

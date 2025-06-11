@@ -61,6 +61,7 @@ type parseable interface {
 		time.Duration
 }
 
+//nolint:gosec // ignore integer overflow
 func parse[T parseable](s string) (T, error) {
 	var zero T
 
