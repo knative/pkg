@@ -40,13 +40,10 @@ func newDefaultOptions() Options {
 }
 
 func newCustomOptions() Options {
-	return Options{
-		ServiceName:           "webhook",
-		Port:                  8443,
-		SecretName:            "webhook-certs",
-		ServerPrivateKeyName:  "tls.key",
-		ServerCertificateName: "tls.crt",
-	}
+	opts := newDefaultOptions()
+	opts.ServerPrivateKeyName = "tls.key"
+	opts.ServerCertificateName = "tls.cert"
+	return opts
 }
 
 const (
@@ -83,27 +80,24 @@ func newNonRunningTestWebhook(t *testing.T, options Options, acs ...interface{})
 }
 
 func TestRegistrationStopChanFire(t *testing.T) {
-	wh, serverURL, _, cancel, err := testSetupNoTLS(t)
-	if err != nil {
-		t.Fatal("testSetup() =", err)
-	}
-	defer cancel()
+	test := testSetup(t, withNoTLS())
+	defer test.cancel()
 
 	stopCh := make(chan struct{})
 
 	var g errgroup.Group
 	g.Go(func() error {
-		return wh.Run(stopCh)
+		return test.webhook.Run(stopCh)
 	})
 	close(stopCh)
 
 	if err := g.Wait(); err != nil {
 		t.Fatal("Error during run: ", err)
 	}
-	conn, err := net.Dial("tcp", serverURL)
+	conn, err := net.Dial("tcp", test.addr)
 	if err == nil {
 		conn.Close()
-		t.Error("Unexpected success to dial to ", serverURL)
+		t.Error("Unexpected success to dial to ", test.addr)
 	}
 }
 
@@ -136,4 +130,11 @@ func TestTLSMinVersionWebhookOption(t *testing.T) {
 			t.Fatal("Admission Controller Webhook creation expected to fail due to unsupported TLS version")
 		}
 	})
+}
+
+type testContext struct {
+	webhook *Webhook
+	addr    string
+	ctx     context.Context
+	cancel  context.CancelFunc
 }

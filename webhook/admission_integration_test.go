@@ -101,24 +101,21 @@ func TestAdmissionValidResponseForResourceTLS(t *testing.T) {
 		path:     "/bazinga",
 		response: &admissionv1.AdmissionResponse{},
 	}
-	wh, serverURL, ctx, cancel, err := testSetup(t, ac)
-	if err != nil {
-		t.Fatal("testSetup() =", err)
-	}
+	test := testSetup(t, withController(ac))
 
-	eg, _ := errgroup.WithContext(ctx)
-	eg.Go(func() error { return wh.Run(ctx.Done()) })
+	eg, _ := errgroup.WithContext(test.ctx)
+	eg.Go(func() error { return test.webhook.Run(test.ctx.Done()) })
 	defer func() {
-		cancel()
+		test.cancel()
 		if err := eg.Wait(); err != nil {
 			t.Error("Unable to run controller:", err)
 		}
 	}()
 
-	if err = waitForServerAvailable(t, serverURL, testTimeout); err != nil {
+	if err := waitForServerAvailable(t, test.addr, testTimeout); err != nil {
 		t.Fatal("waitForServerAvailable() =", err)
 	}
-	tlsClient, err := createSecureTLSClient(t, kubeclient.Get(ctx), &wh.Options)
+	tlsClient, err := createSecureTLSClient(t, kubeclient.Get(test.ctx), &test.webhook.Options)
 	if err != nil {
 		t.Fatal("createSecureTLSClient() =", err)
 	}
@@ -149,7 +146,7 @@ func TestAdmissionValidResponseForResourceTLS(t *testing.T) {
 		t.Fatal("Failed to marshal admission review:", err)
 	}
 
-	u, err := url.Parse("https://" + serverURL)
+	u, err := url.Parse("https://" + test.addr)
 	if err != nil {
 		t.Fatal("bad url", err)
 	}
@@ -211,7 +208,7 @@ func TestAdmissionValidResponseForResourceTLS(t *testing.T) {
 	}
 
 	// Signal the webhook that informers have synced.
-	wh.InformersHaveSynced()
+	test.webhook.InformersHaveSynced()
 
 	// Check that after informers have synced that things start completing immediately (including outstanding requests).
 	select {
@@ -228,21 +225,18 @@ func TestAdmissionValidResponseForResource(t *testing.T) {
 		path:     "/bazinga",
 		response: &admissionv1.AdmissionResponse{},
 	}
-	wh, serverURL, ctx, cancel, err := testSetupNoTLS(t, ac)
-	if err != nil {
-		t.Fatal("testSetup() =", err)
-	}
+	test := testSetup(t, withController(ac), withNoTLS())
 
-	eg, _ := errgroup.WithContext(ctx)
-	eg.Go(func() error { return wh.Run(ctx.Done()) })
+	eg, _ := errgroup.WithContext(test.ctx)
+	eg.Go(func() error { return test.webhook.Run(test.ctx.Done()) })
 	defer func() {
-		cancel()
+		test.cancel()
 		if err := eg.Wait(); err != nil {
 			t.Error("Unable to run controller:", err)
 		}
 	}()
 
-	if err = waitForNonTLSServerAvailable(t, serverURL, testTimeout); err != nil {
+	if err := waitForNonTLSServerAvailable(t, test.addr, testTimeout); err != nil {
 		t.Fatal("waitForServerAvailable() =", err)
 	}
 	client := createNonTLSClient()
@@ -273,7 +267,7 @@ func TestAdmissionValidResponseForResource(t *testing.T) {
 		t.Fatal("Failed to marshal admission review:", err)
 	}
 
-	u, err := url.Parse("http://" + serverURL)
+	u, err := url.Parse("http://" + test.addr)
 	if err != nil {
 		t.Fatal("bad url", err)
 	}
@@ -335,7 +329,7 @@ func TestAdmissionValidResponseForResource(t *testing.T) {
 	}
 
 	// Signal the webhook that informers have synced.
-	wh.InformersHaveSynced()
+	test.webhook.InformersHaveSynced()
 
 	// Check that after informers have synced that things start completing immediately (including outstanding requests).
 	select {
@@ -353,25 +347,22 @@ func TestAdmissionInvalidResponseForResource(t *testing.T) {
 		path:     "/booger",
 		response: MakeErrorStatus(expectedError, ""),
 	}
-	wh, serverURL, ctx, cancel, err := testSetup(t, ac)
-	if err != nil {
-		t.Fatal("testSetup() =", err)
-	}
+	test := testSetup(t, withController(ac))
 
-	eg, _ := errgroup.WithContext(ctx)
-	eg.Go(func() error { return wh.Run(ctx.Done()) })
-	wh.InformersHaveSynced()
+	eg, _ := errgroup.WithContext(test.ctx)
+	eg.Go(func() error { return test.webhook.Run(test.ctx.Done()) })
+	test.webhook.InformersHaveSynced()
 	defer func() {
-		cancel()
+		test.cancel()
 		if err := eg.Wait(); err != nil {
 			t.Error("Unable to run controller:", err)
 		}
 	}()
 
-	if err = waitForServerAvailable(t, serverURL, testTimeout); err != nil {
+	if err := waitForServerAvailable(t, test.addr, testTimeout); err != nil {
 		t.Fatal("waitForServerAvailable() =", err)
 	}
-	tlsClient, err := createSecureTLSClient(t, kubeclient.Get(ctx), &wh.Options)
+	tlsClient, err := createSecureTLSClient(t, kubeclient.Get(test.ctx), &test.webhook.Options)
 	if err != nil {
 		t.Fatal("createSecureTLSClient() =", err)
 	}
@@ -408,7 +399,7 @@ func TestAdmissionInvalidResponseForResource(t *testing.T) {
 		t.Fatal("Failed to marshal admission review:", err)
 	}
 
-	u, err := url.Parse("https://" + serverURL)
+	u, err := url.Parse("https://" + test.addr)
 	if err != nil {
 		t.Fatal("bad url", err)
 	}
@@ -470,25 +461,22 @@ func TestAdmissionWarningResponseForResource(t *testing.T) {
 		path:     "/warnmeplease",
 		response: &admissionv1.AdmissionResponse{Warnings: []string{"everything is not fine.\nlike really\nfor sure"}},
 	}
-	wh, serverURL, ctx, cancel, err := testSetup(t, ac)
-	if err != nil {
-		t.Fatal("testSetup() =", err)
-	}
+	test := testSetup(t, withController(ac))
 
-	eg, _ := errgroup.WithContext(ctx)
-	eg.Go(func() error { return wh.Run(ctx.Done()) })
-	wh.InformersHaveSynced()
+	eg, _ := errgroup.WithContext(test.ctx)
+	eg.Go(func() error { return test.webhook.Run(test.ctx.Done()) })
+	test.webhook.InformersHaveSynced()
 	defer func() {
-		cancel()
+		test.cancel()
 		if err := eg.Wait(); err != nil {
 			t.Error("Unable to run controller:", err)
 		}
 	}()
 
-	if err = waitForServerAvailable(t, serverURL, testTimeout); err != nil {
+	if err := waitForServerAvailable(t, test.addr, testTimeout); err != nil {
 		t.Fatal("waitForServerAvailable() =", err)
 	}
-	tlsClient, err := createSecureTLSClient(t, kubeclient.Get(ctx), &wh.Options)
+	tlsClient, err := createSecureTLSClient(t, kubeclient.Get(test.ctx), &test.webhook.Options)
 	if err != nil {
 		t.Fatal("createSecureTLSClient() =", err)
 	}
@@ -524,7 +512,7 @@ func TestAdmissionWarningResponseForResource(t *testing.T) {
 		t.Fatal("Failed to marshal admission review:", err)
 	}
 
-	u, err := url.Parse("https://" + serverURL)
+	u, err := url.Parse("https://" + test.addr)
 	if err != nil {
 		t.Fatal("bad url", err)
 	}
@@ -576,21 +564,18 @@ func TestAdmissionValidResponseForRequestBody(t *testing.T) {
 		path:     "/bazinga",
 		response: &admissionv1.AdmissionResponse{},
 	}
-	wh, serverURL, ctx, cancel, err := testSetupNoTLS(t, ac)
-	if err != nil {
-		t.Fatal("testSetup() =", err)
-	}
+	test := testSetup(t, withController(ac), withNoTLS())
 
-	eg, _ := errgroup.WithContext(ctx)
-	eg.Go(func() error { return wh.Run(ctx.Done()) })
+	eg, _ := errgroup.WithContext(test.ctx)
+	eg.Go(func() error { return test.webhook.Run(test.ctx.Done()) })
 	defer func() {
-		cancel()
+		test.cancel()
 		if err := eg.Wait(); err != nil {
 			t.Error("Unable to run controller:", err)
 		}
 	}()
 
-	if err = waitForNonTLSServerAvailable(t, serverURL, testTimeout); err != nil {
+	if err := waitForNonTLSServerAvailable(t, test.addr, testTimeout); err != nil {
 		t.Fatal("waitForServerAvailable() =", err)
 	}
 	client := createNonTLSClient()
@@ -621,7 +606,7 @@ func TestAdmissionValidResponseForRequestBody(t *testing.T) {
 		t.Fatal("Failed to marshal admission review:", err)
 	}
 
-	u, err := url.Parse("http://" + serverURL)
+	u, err := url.Parse("http://" + test.addr)
 	if err != nil {
 		t.Fatal("bad url", err)
 	}
@@ -683,7 +668,7 @@ func TestAdmissionValidResponseForRequestBody(t *testing.T) {
 	}
 
 	// Signal the webhook that informers have synced.
-	wh.InformersHaveSynced()
+	test.webhook.InformersHaveSynced()
 
 	// Check that after informers have synced that things start completing immediately (including outstanding requests).
 	select {
