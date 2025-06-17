@@ -39,7 +39,6 @@ jobs:
           - knative-extensions/eventing-rabbitmq
           - knative-extensions/eventing-redis
           - knative-extensions/kn-plugin-admin
-          - knative-extensions/net-certmanager
           - knative-extensions/net-contour
           - knative-extensions/net-istio
           - knative-extensions/net-kourier
