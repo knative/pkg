@@ -53,38 +53,35 @@ func createResource(name string) *pkgtest.Resource {
 const testTimeout = 10 * time.Second
 
 func TestMissingContentType(t *testing.T) {
-	wh, serverURL, ctx, cancel, err := testSetup(t)
-	if err != nil {
-		t.Fatal("testSetup() =", err)
-	}
+	test := testSetup(t)
 
-	eg, _ := errgroup.WithContext(ctx)
-	eg.Go(func() error { return wh.Run(ctx.Done()) })
-	wh.InformersHaveSynced()
+	eg, _ := errgroup.WithContext(test.ctx)
+	eg.Go(func() error { return test.webhook.Run(test.ctx.Done()) })
+	test.webhook.InformersHaveSynced()
 	defer func() {
-		cancel()
+		test.cancel()
 		if err := eg.Wait(); err != nil {
 			t.Error("Unable to run controller:", err)
 		}
 	}()
 
-	if err = waitForServerAvailable(t, serverURL, testTimeout); err != nil {
+	if err := waitForServerAvailable(t, test.addr, testTimeout); err != nil {
 		t.Fatal("waitForServerAvailable() =", err)
 	}
 
-	tlsClient, err := createSecureTLSClient(t, kubeclient.Get(ctx), &wh.Options)
+	tlsClient, err := createSecureTLSClient(t, kubeclient.Get(test.ctx), &test.webhook.Options)
 	if err != nil {
 		t.Fatal("createSecureTLSClient() =", err)
 	}
 
-	req, err := http.NewRequest(http.MethodGet, "https://"+serverURL, nil)
+	req, err := http.NewRequest(http.MethodGet, "https://"+test.addr, nil)
 	if err != nil {
 		t.Fatal("http.NewRequest() =", err)
 	}
 
 	response, err := tlsClient.Do(req)
 	if err != nil {
-		t.Fatalf("Received %v error from server %s", err, serverURL)
+		t.Fatalf("Received %v error from server %s", err, test.addr)
 	}
 
 	if got, want := response.StatusCode, http.StatusUnsupportedMediaType; got != want {
@@ -106,53 +103,47 @@ func TestMissingContentType(t *testing.T) {
 }
 
 func TestServerWithCustomSecret(t *testing.T) {
-	wh, serverURL, ctx, cancel, err := testSetupCustomSecret(t)
-	if err != nil {
-		t.Fatal("testSetup() =", err)
-	}
+	test := testSetup(t, withServerCertificateName("tls.crt"), withServerPrivateKeyName("tls.key"))
 
-	eg, _ := errgroup.WithContext(ctx)
-	eg.Go(func() error { return wh.Run(ctx.Done()) })
-	wh.InformersHaveSynced()
+	eg, _ := errgroup.WithContext(test.ctx)
+	eg.Go(func() error { return test.webhook.Run(test.ctx.Done()) })
+	test.webhook.InformersHaveSynced()
 	defer func() {
-		cancel()
+		test.cancel()
 		if err := eg.Wait(); err != nil {
 			t.Error("Unable to run controller:", err)
 		}
 	}()
 
-	pollErr := waitForServerAvailable(t, serverURL, testTimeout)
+	pollErr := waitForServerAvailable(t, test.addr, testTimeout)
 	if pollErr != nil {
-		t.Fatal("waitForServerAvailable() =", err)
+		t.Fatal("waitForServerAvailable() =", pollErr)
 	}
 }
 
 func testEmptyRequestBody(t *testing.T, controller interface{}) {
-	wh, serverURL, ctx, cancel, err := testSetup(t, controller)
-	if err != nil {
-		t.Fatal("testSetup() =", err)
-	}
+	test := testSetup(t, withController(controller))
 
-	eg, _ := errgroup.WithContext(ctx)
-	eg.Go(func() error { return wh.Run(ctx.Done()) })
-	wh.InformersHaveSynced()
+	eg, _ := errgroup.WithContext(test.ctx)
+	eg.Go(func() error { return test.webhook.Run(test.ctx.Done()) })
+	test.webhook.InformersHaveSynced()
 	defer func() {
-		cancel()
+		test.cancel()
 		if err := eg.Wait(); err != nil {
 			t.Error("Unable to run controller:", err)
 		}
 	}()
 
-	if err = waitForServerAvailable(t, serverURL, testTimeout); err != nil {
+	if err := waitForServerAvailable(t, test.addr, testTimeout); err != nil {
 		t.Fatal("waitForServerAvailable() =", err)
 	}
 
-	tlsClient, err := createSecureTLSClient(t, kubeclient.Get(ctx), &wh.Options)
+	tlsClient, err := createSecureTLSClient(t, kubeclient.Get(test.ctx), &test.webhook.Options)
 	if err != nil {
 		t.Fatal("createSecureTLSClient() =", err)
 	}
 
-	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("https://%s/bazinga", serverURL), nil)
+	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("https://%s/bazinga", test.addr), nil)
 	if err != nil {
 		t.Fatal("http.NewRequest() =", err)
 	}
@@ -213,7 +204,7 @@ func TestSetupWebhookHTTPServerError(t *testing.T) {
 	}
 }
 
-func testSetup(t *testing.T, acs ...interface{}) (*Webhook, string, context.Context, context.CancelFunc, error) {
+func testSetup(t *testing.T, opts ...func(*testOptions)) testContext {
 	t.Helper()
 
 	// ephemeral port
@@ -222,16 +213,33 @@ func testSetup(t *testing.T, acs ...interface{}) (*Webhook, string, context.Cont
 		t.Fatal("unable to get ephemeral port: ", err)
 	}
 
-	defaultOpts := newDefaultOptions()
+	testOpts := &testOptions{
+		Options: newDefaultOptions(),
+	}
 
-	ctx, wh, cancel := newNonRunningTestWebhook(t, defaultOpts, acs...)
+	for _, opt := range opts {
+		opt(testOpts)
+	}
+
+	ctx, wh, cancel := newNonRunningTestWebhook(t, testOpts.Options, testOpts.controllers...)
 	wh.testListener = l
 
 	// Create certificate
-	secret, err := certresources.MakeSecret(ctx, defaultOpts.SecretName, system.Namespace(), defaultOpts.ServiceName)
+	secret, err := certresources.MakeSecret(ctx, testOpts.SecretName, system.Namespace(), testOpts.ServiceName)
 	if err != nil {
 		t.Fatalf("failed to create certificate")
 	}
+
+	if testOpts.ServerCertificateName != "" {
+		secret.Data[testOpts.ServerCertificateName] = secret.Data[certresources.ServerCert]
+		delete(secret.Data, certresources.ServerCert)
+	}
+
+	if testOpts.ServerPrivateKeyName != "" {
+		secret.Data[testOpts.ServerPrivateKeyName] = secret.Data[certresources.ServerKey]
+		delete(secret.Data, certresources.ServerKey)
+	}
+
 	kubeClient := kubeclient.Get(ctx)
 
 	if _, err := kubeClient.CoreV1().Secrets(secret.Namespace).Create(context.Background(), secret, metav1.CreateOptions{}); err != nil {
@@ -239,52 +247,34 @@ func testSetup(t *testing.T, acs ...interface{}) (*Webhook, string, context.Cont
 	}
 
 	resetMetrics()
-	return wh, l.Addr().String(), ctx, cancel, nil
+	return testContext{wh, l.Addr().String(), ctx, cancel}
 }
 
-func testSetupCustomSecret(t *testing.T, acs ...interface{}) (*Webhook, string, context.Context, context.CancelFunc, error) {
-	t.Helper()
-
-	// ephemeral port
-	l, err := net.Listen("tcp", ":0")
-	if err != nil {
-		t.Fatal("unable to get ephemeral port: ", err)
-	}
-
-	defaultOptions := newCustomOptions()
-
-	ctx, wh, cancel := newNonRunningTestWebhook(t, defaultOptions, acs...)
-	wh.testListener = l
-
-	// Create certificate
-	secret, err := customSecretWithOverrides(ctx, defaultOptions.SecretName, system.Namespace(), defaultOptions.ServiceName)
-	if err != nil {
-		t.Fatalf("failed to create certificate")
-	}
-	kubeClient := kubeclient.Get(ctx)
-
-	if _, err := kubeClient.CoreV1().Secrets(secret.Namespace).Create(context.Background(), secret, metav1.CreateOptions{}); err != nil {
-		t.Fatalf("failed to create secret")
-	}
-
-	resetMetrics()
-	return wh, l.Addr().String(), ctx, cancel, nil
+type testOptions struct {
+	Options
+	controllers []any
 }
 
-func testSetupNoTLS(t *testing.T, acs ...interface{}) (*Webhook, string, context.Context, context.CancelFunc, error) {
-	t.Helper()
-
-	// ephemeral port
-	l, err := net.Listen("tcp", ":0")
-	if err != nil {
-		return nil, "", nil, nil, err
+func withController(controller any) func(o *testOptions) {
+	return func(o *testOptions) {
+		o.controllers = append(o.controllers, controller)
 	}
+}
 
-	defaultOpts := newDefaultOptions()
-	defaultOpts.SecretName = ""
-	ctx, wh, cancel := newNonRunningTestWebhook(t, defaultOpts, acs...)
-	wh.testListener = l
+func withServerCertificateName(name string) func(o *testOptions) {
+	return func(o *testOptions) {
+		o.ServerCertificateName = name
+	}
+}
 
-	resetMetrics()
-	return wh, l.Addr().String(), ctx, cancel, nil
+func withServerPrivateKeyName(name string) func(o *testOptions) {
+	return func(o *testOptions) {
+		o.ServerPrivateKeyName = name
+	}
+}
+
+func withNoTLS() func(o *testOptions) {
+	return func(o *testOptions) {
+		o.SecretName = ""
+	}
 }

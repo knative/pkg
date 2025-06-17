@@ -32,6 +32,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	kubeclient "knative.dev/pkg/client/injection/kube/client/fake"
+	_ "knative.dev/pkg/metrics/testing"
 )
 
 type fixedConversionController struct {
@@ -65,24 +66,21 @@ func TestConversionValidResponse(t *testing.T) {
 			UID: types.UID("some-uid"),
 		},
 	}
-	wh, serverURL, ctx, cancel, err := testSetup(t, cc)
-	if err != nil {
-		t.Fatal("testSetup() =", err)
-	}
+	test := testSetup(t, withController(cc))
 
-	eg, _ := errgroup.WithContext(ctx)
-	eg.Go(func() error { return wh.Run(ctx.Done()) })
+	eg, _ := errgroup.WithContext(test.ctx)
+	eg.Go(func() error { return test.webhook.Run(test.ctx.Done()) })
 	defer func() {
-		cancel()
+		test.cancel()
 		if err := eg.Wait(); err != nil {
 			t.Error("Unable to run controller:", err)
 		}
 	}()
 
-	if err = waitForServerAvailable(t, serverURL, testTimeout); err != nil {
+	if err := waitForServerAvailable(t, test.addr, testTimeout); err != nil {
 		t.Fatal("waitForServerAvailable() =", err)
 	}
-	tlsClient, err := createSecureTLSClient(t, kubeclient.Get(ctx), &wh.Options)
+	tlsClient, err := createSecureTLSClient(t, kubeclient.Get(test.ctx), &test.webhook.Options)
 	if err != nil {
 		t.Fatal("createSecureTLSClient() =", err)
 	}
@@ -105,7 +103,7 @@ func TestConversionValidResponse(t *testing.T) {
 		t.Fatal("Failed to marshal conversion review:", err)
 	}
 
-	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("https://%s%s", serverURL, cc.Path()), reqBuf)
+	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("https://%s%s", test.addr, cc.Path()), reqBuf)
 	if err != nil {
 		t.Fatal("http.NewRequest() =", err)
 	}
@@ -153,24 +151,21 @@ func TestConversionInvalidResponse(t *testing.T) {
 			},
 		},
 	}
-	wh, serverURL, ctx, cancel, err := testSetup(t, cc)
-	if err != nil {
-		t.Fatal("testSetup() =", err)
-	}
+	test := testSetup(t, withController(cc))
 
-	eg, _ := errgroup.WithContext(ctx)
-	eg.Go(func() error { return wh.Run(ctx.Done()) })
+	eg, _ := errgroup.WithContext(test.ctx)
+	eg.Go(func() error { return test.webhook.Run(test.ctx.Done()) })
 	defer func() {
-		cancel()
+		test.cancel()
 		if err := eg.Wait(); err != nil {
 			t.Error("Unable to run controller:", err)
 		}
 	}()
 
-	if err = waitForServerAvailable(t, serverURL, testTimeout); err != nil {
+	if err := waitForServerAvailable(t, test.addr, testTimeout); err != nil {
 		t.Fatal("waitForServerAvailable() =", err)
 	}
-	tlsClient, err := createSecureTLSClient(t, kubeclient.Get(ctx), &wh.Options)
+	tlsClient, err := createSecureTLSClient(t, kubeclient.Get(test.ctx), &test.webhook.Options)
 	if err != nil {
 		t.Fatal("createSecureTLSClient() =", err)
 	}
@@ -193,7 +188,7 @@ func TestConversionInvalidResponse(t *testing.T) {
 		t.Fatal("Failed to marshal conversion review:", err)
 	}
 
-	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("https://%s%s", serverURL, cc.Path()), reqBuf)
+	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("https://%s%s", test.addr, cc.Path()), reqBuf)
 	if err != nil {
 		t.Fatal("http.NewRequest() =", err)
 	}
