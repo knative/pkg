@@ -245,23 +245,3 @@ func createNonTLSClient() *http.Client {
 		Transport: &http.Transport{},
 	}
 }
-
-func customSecretWithOverrides(ctx context.Context, name, namespace, serviceName string) (*corev1.Secret, error) {
-	serverKey, serverCert, caCert, err := certresources.CreateCerts(ctx, serviceName, namespace, time.Now().Add(24*time.Hour))
-	if err != nil {
-		return nil, err
-	}
-	webOpts := GetOptions(ctx)
-	sKey, sCert := getSecretDataKeyNamesOrDefault(webOpts.ServerPrivateKeyName, webOpts.ServerCertificateName)
-	return &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      name,
-			Namespace: namespace,
-		},
-		Data: map[string][]byte{
-			sKey:                 serverKey,
-			sCert:                serverCert,
-			certresources.CACert: caCert,
-		},
-	}, nil
-}

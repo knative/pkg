@@ -39,13 +39,6 @@ func newDefaultOptions() Options {
 	}
 }
 
-func newCustomOptions() Options {
-	opts := newDefaultOptions()
-	opts.ServerPrivateKeyName = "tls.key"
-	opts.ServerCertificateName = "tls.cert"
-	return opts
-}
-
 const (
 	testResourceName = "test-resource"
 	user1            = "brutto@knative.dev"
