@@ -12,6 +12,9 @@ updates:
       - dependency-name: "k8s.io/*"
       - dependency-name: "knative.dev/*"
     groups:
+      otel:
+        patterns:
+          - "go.opentelemetry.io/*"
       golang-x:
         patterns:
           - "golang.org/x/*"
