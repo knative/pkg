@@ -26,7 +26,7 @@ import (
 	"knative.dev/pkg/injection"
 	"knative.dev/pkg/leaderelection"
 	"knative.dev/pkg/logging"
-	"knative.dev/pkg/metrics"
+	"knative.dev/pkg/observability"
 )
 
 func TestEnabledControllers(t *testing.T) {
@@ -106,17 +106,12 @@ func TestWithLeaderElectionConfig(t *testing.T) {
 }
 
 func TestWithObservabilityConfig(t *testing.T) {
-	want := &metrics.ObservabilityConfig{
-		EnableVarLogCollection:  false,
-		LoggingURLTemplate:      "url-template",
-		RequestLogTemplate:      "log-template",
-		EnableProbeRequestLog:   true,
-		RequestMetricsBackend:   "prometheus",
-		EnableProfiling:         true,
-		EnableRequestLog:        false,
-		MetricsCollectorAddress: "localhost:9090",
+	want := &observability.Config{
+		Tracing: observability.TracingConfig{
+			Protocol: "some-protocol",
+		},
 	}
-	ctx := metrics.WithConfig(context.Background(), want)
+	ctx := observability.WithConfig(context.Background(), want)
 
 	got, err := GetObservabilityConfig(ctx)
 	if err != nil {
