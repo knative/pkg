@@ -33,6 +33,8 @@ import (
 	kubeinformerfactory "knative.dev/pkg/injection/clients/namespacedkube/informers/factory"
 	"knative.dev/pkg/network/handlers"
 
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
+
 	"go.uber.org/zap"
 	"golang.org/x/sync/errgroup"
 	admissionv1 "k8s.io/api/admission/v1"
@@ -70,16 +72,13 @@ type Options struct {
 	// only a single port for the service.
 	Port int
 
-	// StatsReporterOptions are the options used to initialize the default StatsReporter
-	StatsReporterOptions []StatsReporterOption
-
-	// StatsReporter reports metrics about the webhook.
-	// This will be automatically initialized by the constructor if left uninitialized.
-	StatsReporter StatsReporter
-
 	// GracePeriod is how long to wait after failing readiness probes
 	// before shutting down.
 	GracePeriod time.Duration
+
+	// // WithMeterProvider specifies a meter provider to use for creating a meter.
+	// // If none is specified, the global provider is used.
+	// MeterProvider metric.MeterProvider
 
 	// DisableNamespaceOwnership configures if the SYSTEM_NAMESPACE is added as an owner reference to the
 	// webhook configuration resources. Overridden by the WEBHOOK_DISABLE_NAMESPACE_OWNERSHIP environment variable.
@@ -149,15 +148,8 @@ func New(
 	if opts == nil {
 		return nil, errors.New("context must have Options specified")
 	}
-	logger := logging.FromContext(ctx)
 
-	if opts.StatsReporter == nil {
-		reporter, err := NewStatsReporter(opts.StatsReporterOptions...)
-		if err != nil {
-			return nil, err
-		}
-		opts.StatsReporter = reporter
-	}
+	logger := logging.FromContext(ctx)
 
 	defaultTLSMinVersion := uint16(tls.VersionTLS13)
 	if opts.TLSMinVersion == 0 {
@@ -224,12 +216,12 @@ func New(
 	for _, controller := range controllers {
 		switch c := controller.(type) {
 		case AdmissionController:
-			handler := admissionHandler(logger, opts.StatsReporter, c, syncCtx.Done())
-			webhook.mux.Handle(c.Path(), handler)
+			handler := admissionHandler(logger, c, syncCtx.Done())
+			webhook.mux.Handle(c.Path(), otelhttp.WithRouteTag(c.Path(), handler))
 
 		case ConversionController:
-			handler := conversionHandler(logger, opts.StatsReporter, c)
-			webhook.mux.Handle(c.Path(), handler)
+			handler := conversionHandler(logger, c)
+			webhook.mux.Handle(c.Path(), otelhttp.WithRouteTag(c.Path(), handler))
 
 		default:
 			return nil, fmt.Errorf("unknown webhook controller type:  %T", controller)
@@ -265,6 +257,12 @@ func (wh *Webhook) Run(stop <-chan struct{}) error {
 		QuietPeriod: wh.Options.GracePeriod,
 	}
 
+	metricsHandler := otelhttp.NewHandler(
+		drainer,
+		wh.Options.ServiceName,
+		// otelhttp.WithMeterProvider(wh.Options.MeterProvider),
+	)
+
 	// If TLSNextProto is not nil, HTTP/2 support is not enabled automatically.
 	nextProto := map[string]func(*http.Server, *tls.Conn, http.Handler){}
 	if wh.Options.EnableHTTP2 {
@@ -273,7 +271,7 @@ func (wh *Webhook) Run(stop <-chan struct{}) error {
 
 	server := &http.Server{
 		ErrorLog:          log.New(&zapWrapper{logger}, "", 0),
-		Handler:           drainer,
+		Handler:           metricsHandler,
 		Addr:              fmt.Sprint(":", wh.Options.Port),
 		TLSConfig:         wh.tlsConfig,
 		ReadHeaderTimeout: time.Minute, // https://medium.com/a-journey-with-go/go-understand-and-mitigate-slowloris-attack-711c1b1403f6

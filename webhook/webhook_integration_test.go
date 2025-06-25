@@ -26,15 +26,19 @@ import (
 	"testing"
 	"time"
 
-	kubeclient "knative.dev/pkg/client/injection/kube/client/fake"
-	_ "knative.dev/pkg/injection/clients/namespacedkube/informers/core/v1/secret/fake"
-	"knative.dev/pkg/system"
-
 	"golang.org/x/sync/errgroup"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"knative.dev/pkg/metrics/metricstest"
+	kubeclient "knative.dev/pkg/client/injection/kube/client/fake"
+
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/sdk/metric"
+
+	"knative.dev/pkg/system"
 	pkgtest "knative.dev/pkg/testing"
 	certresources "knative.dev/pkg/webhook/certificates/resources"
+
+	_ "knative.dev/pkg/injection/clients/namespacedkube/informers/core/v1/secret/fake"
 )
 
 // createResource creates a testing.Resource with the given name in the system namespace.
@@ -97,9 +101,6 @@ func TestMissingContentType(t *testing.T) {
 	if !strings.Contains(string(responseBody), "invalid Content-Type") {
 		t.Errorf("Response body to contain 'invalid Content-Type' , got = '%s'", string(responseBody))
 	}
-
-	// Stats are not reported for internal server errors
-	metricstest.CheckStatsNotReported(t, requestCountName, requestLatenciesName)
 }
 
 func TestServerWithCustomSecret(t *testing.T) {
@@ -121,7 +122,7 @@ func TestServerWithCustomSecret(t *testing.T) {
 	}
 }
 
-func testEmptyRequestBody(t *testing.T, controller interface{}) {
+func testEmptyRequestBody(t *testing.T, controller any) {
 	test := testSetup(t, withController(controller))
 
 	eg, _ := errgroup.WithContext(test.ctx)
@@ -217,6 +218,12 @@ func testSetup(t *testing.T, opts ...func(*testOptions)) testContext {
 		Options: newDefaultOptions(),
 	}
 
+	reader := metric.NewManualReader()
+	provider := metric.NewMeterProvider(metric.WithReader(reader))
+	otel.SetMeterProvider(provider)
+
+	resetPackageMetrics()
+
 	for _, opt := range opts {
 		opt(testOpts)
 	}
@@ -246,8 +253,21 @@ func testSetup(t *testing.T, opts ...func(*testOptions)) testContext {
 		t.Fatalf("failed to create secret")
 	}
 
-	resetMetrics()
-	return testContext{wh, l.Addr().String(), ctx, cancel}
+	return testContext{
+		webhook:      wh,
+		addr:         l.Addr().String(),
+		ctx:          ctx,
+		cancel:       cancel,
+		metricReader: reader,
+	}
+}
+
+type testContext struct {
+	webhook      *Webhook
+	addr         string
+	ctx          context.Context
+	cancel       context.CancelFunc
+	metricReader *metric.ManualReader
 }
 
 type testOptions struct {

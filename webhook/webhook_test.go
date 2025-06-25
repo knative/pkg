@@ -65,6 +65,8 @@ func newNonRunningTestWebhook(t *testing.T, options Options, acs ...interface{})
 		stopCb()
 	}
 
+	// acs = slices.DeleteFunc(acs, func(a any) bool { return a == nil })
+
 	ac, err = New(ctx, acs)
 	if err != nil {
 		t.Fatal("Failed to create new admission controller:", err)
@@ -123,11 +125,4 @@ func TestTLSMinVersionWebhookOption(t *testing.T) {
 			t.Fatal("Admission Controller Webhook creation expected to fail due to unsupported TLS version")
 		}
 	})
-}
-
-type testContext struct {
-	webhook *Webhook
-	addr    string
-	ctx     context.Context
-	cancel  context.CancelFunc
 }
