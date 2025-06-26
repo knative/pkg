@@ -78,7 +78,7 @@ func TestRegistration(t *testing.T) {
 	}
 
 	if count := len(globalviews.GetPackageViews(testPackage)); count != 2 {
-		t.Fatalf("expected a single view for %q got %d", testPackage, count)
+		t.Fatalf("expected two views for %q got %d", testPackage, count)
 	}
 
 	if count := len(globalviews.GetPackageViews("com.example.second.package")); count != 0 {

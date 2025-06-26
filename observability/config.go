@@ -69,7 +69,7 @@ func WithConfig(ctx context.Context, cfg *Config) context.Context {
 	return context.WithValue(ctx, cfgKey{}, cfg)
 }
 
-// GetObservability gets the observability config from the provided context.
+// GetConfig gets the observability config from the provided context.
 func GetConfig(ctx context.Context) *Config {
 	untyped := ctx.Value(cfgKey{})
 	if untyped == nil {

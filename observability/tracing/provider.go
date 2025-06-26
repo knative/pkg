@@ -83,7 +83,6 @@ func NewTracerProvider(
 func exporterFor(ctx context.Context, cfg Config) (sdktrace.SpanExporter, error) {
 	switch cfg.Protocol {
 	case ProtocolGRPC:
-		otlptracegrpc.New(ctx)
 		return buildGRPC(ctx, cfg)
 	case ProtocolHTTPProtobuf:
 		return buildHTTP(ctx, cfg)
@@ -121,7 +120,8 @@ func buildHTTP(ctx context.Context, cfg Config) (sdktrace.SpanExporter, error) {
 	return exporter, nil
 }
 
-// If the OTEL_EXPORTER_OTLP_ENDPOINT or OTEL_EXPORTER_OTLP_TRACES_ENDPOINT
+// If the OTEL_EXPORTER_OTLP_ENDPOINT or OTEL_EXPORTER_OTLP_TRACES_ENDPOINT is
+// set then we will prefer that over what's in the Config
 func endpointFor[T any](cfg Config, opt func(string) T) T {
 	var epOption T
 

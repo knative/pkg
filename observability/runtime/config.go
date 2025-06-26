@@ -40,6 +40,7 @@ func (c *Config) Validate() error {
 		return fmt.Errorf("unsupported profile setting %q", c.Profiling)
 	}
 
+	// ExportInterval == 0 => OTel will use a default value
 	if c.ExportInterval < 0 {
 		return fmt.Errorf("export interval %q should be greater than zero", c.ExportInterval)
 	}

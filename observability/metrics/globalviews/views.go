@@ -25,13 +25,9 @@ import (
 
 var globalViews map[string][]metric.View = make(map[string][]metric.View)
 
+// Register should be called during package init
 func Register(pkg string, v ...metric.View) {
-	views, ok := globalViews[pkg]
-	if !ok {
-		// I would expect a single registration call per view
-		views = make([]metric.View, 0, 1)
-	}
-
+	views := globalViews[pkg]
 	globalViews[pkg] = append(views, v...)
 }
 

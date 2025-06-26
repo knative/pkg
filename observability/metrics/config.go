@@ -30,6 +30,10 @@ const (
 	ProtocolNone         = "none"
 )
 
+// Config provides a unified observability configuration which can be used to
+// manage Knative observability behavior.  Typically, this is extracted from a
+// Kubernetes ConfigMap during application startup, and accessed via the
+// GetConfig() method.
 type Config struct {
 	Protocol string
 	Endpoint string
@@ -39,20 +43,18 @@ type Config struct {
 
 func (c *Config) Validate() error {
 	switch c.Protocol {
-	case ProtocolGRPC,
-		ProtocolHTTPProtobuf,
-		ProtocolNone,
-		ProtocolPrometheus:
-	default:
-		return fmt.Errorf("unsupported protocol %q", c.Protocol)
-	}
-
-	if c.Protocol == ProtocolNone || c.Protocol == ProtocolPrometheus {
-		if len(c.Endpoint) > 0 {
+	case ProtocolGRPC, ProtocolHTTPProtobuf:
+		if c.Endpoint == "" {
+			return fmt.Errorf("endpoint should be set when protocol is %q", c.Protocol)
+		}
+	case ProtocolNone:
+		if c.Endpoint != "" {
 			return fmt.Errorf("endpoint should not be set when protocol is %q", c.Protocol)
 		}
-	} else if len(c.Endpoint) == 0 {
-		return fmt.Errorf("endpoint should be set when protocol is %q", c.Protocol)
+	case ProtocolPrometheus:
+		// Endpoint is not required, but can be used to indicate listen port
+	default:
+		return fmt.Errorf("unsupported protocol %q", c.Protocol)
 	}
 
 	if c.ExportInterval < 0 {
@@ -61,12 +63,15 @@ func (c *Config) Validate() error {
 	return nil
 }
 
+// DefaultConfig returns a configuration with default values set.
 func DefaultConfig() Config {
 	return Config{
 		Protocol: ProtocolNone,
 	}
 }
 
+// NewFromMap unpacks flat configuration values from a ConfigMap into
+// the configuration used by different observability modules.
 func NewFromMap(m map[string]string) (Config, error) {
 	return NewFromMapWithPrefix("", m)
 }

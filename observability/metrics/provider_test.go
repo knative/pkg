@@ -59,6 +59,46 @@ func TestNewMeterProviderProtocols(t *testing.T) {
 	}
 }
 
+func TestPrometheusEndpoint(t *testing.T) {
+	cases := []struct {
+		name    string
+		c       Config
+		wantErr bool
+	}{{
+		name: "ipv4",
+		c: Config{
+			Protocol: ProtocolPrometheus,
+			Endpoint: "0.0.0.0:9000", // IPv4 only on port 9000
+		},
+	}, {
+		name: "ipv6",
+		c: Config{
+			Protocol: ProtocolPrometheus,
+			Endpoint: "[::]:9000", // IPv6 only on port 9000
+		},
+	}, {
+		name: "bad endpoint",
+		c: Config{
+			Protocol: ProtocolPrometheus,
+			Endpoint: "[:::9000", // IPv6 only on port 9000
+		},
+		wantErr: true,
+	}}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			ctx := context.Background()
+			_, err := NewMeterProvider(ctx, tc.c)
+
+			if !tc.wantErr && err != nil {
+				t.Error("unexpected failed", err)
+			} else if tc.wantErr && err == nil {
+				t.Error("expected failure")
+			}
+		})
+	}
+}
+
 func TestEndpointFor(t *testing.T) {
 	cases := []string{
 		"OTEL_EXPORTER_OTLP_ENDPOINT",

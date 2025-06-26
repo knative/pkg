@@ -14,26 +14,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package configmap
-
-import (
-	"cmp"
-	"os"
-
-	corev1 "k8s.io/api/core/v1"
-	"knative.dev/pkg/observability"
-)
-
-const (
-	// The env var name for config-observability
-	configMapNameEnv = "CONFIG_OBSERVABILITY_NAME"
-	DefaultName      = "config-observability"
-)
-
-func Name() string {
-	return cmp.Or(os.Getenv(configMapNameEnv), DefaultName)
-}
-
-func Parse(c *corev1.ConfigMap) (*observability.Config, error) {
-	return observability.NewFromMap(c.Data)
-}
+// Package runtime provides configuration to publish Go runtime
+// statistics and HTTP helpers to expose Go runtime profiling data
+package runtime

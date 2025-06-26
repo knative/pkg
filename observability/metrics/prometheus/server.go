@@ -68,9 +68,10 @@ func NewServer(opts ...ServerOption) (*Server, error) {
 
 	return &Server{
 		http: &http.Server{
-			Addr:              addr,
-			Handler:           mux,
-			ReadHeaderTimeout: time.Minute,
+			Addr:    addr,
+			Handler: mux,
+			// https://medium.com/a-journey-with-go/go-understand-and-mitigate-slowloris-attack-711c1b1403f6
+			ReadHeaderTimeout: 5 * time.Second,
 		},
 	}, nil
 }

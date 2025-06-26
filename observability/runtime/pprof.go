@@ -69,7 +69,7 @@ func (h *ProfilingHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if h.enabled.Load() {
 		h.handler.ServeHTTP(w, r)
 	} else {
-		http.NotFoundHandler().ServeHTTP(w, r)
+		http.NotFound(w, r)
 	}
 }
 
@@ -91,7 +91,7 @@ func NewProfilingServer() *ProfilingServer {
 			Addr:    ":" + port,
 			Handler: h,
 			// https://medium.com/a-journey-with-go/go-understand-and-mitigate-slowloris-attack-711c1b1403f6
-			ReadHeaderTimeout: time.Minute,
+			ReadHeaderTimeout: 15 * time.Second,
 		},
 	}
 }

@@ -117,13 +117,12 @@ func buildHTTP(ctx context.Context, cfg Config) (sdkmetric.Reader, shutdownFunc,
 		return nil, noopFunc, fmt.Errorf("failed to build exporter: %w", err)
 	}
 
-	var rOpts []sdkmetric.PeriodicReaderOption
-
+	var opts []sdkmetric.PeriodicReaderOption
 	if opt := intervalFor(cfg); opt != nil {
-		rOpts = append(rOpts, opt)
+		opts = append(opts, opt)
 	}
 
-	return sdkmetric.NewPeriodicReader(exporter, rOpts...), noopFunc, nil
+	return sdkmetric.NewPeriodicReader(exporter, opts...), noopFunc, nil
 }
 
 func intervalFor(cfg Config) sdkmetric.PeriodicReaderOption {

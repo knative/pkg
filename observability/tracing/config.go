@@ -37,19 +37,16 @@ type Config struct {
 
 func (c *Config) Validate() error {
 	switch c.Protocol {
-	case ProtocolGRPC,
-		ProtocolHTTPProtobuf,
-		ProtocolNone:
+	case ProtocolGRPC, ProtocolHTTPProtobuf:
+		if c.Endpoint == "" {
+			return fmt.Errorf("endpoint should be set for protocol %q", c.Protocol)
+		}
+	case ProtocolNone:
+		if c.Endpoint != "" {
+			return errors.New("endpoint should not be set when protocol is 'none'")
+		}
 	default:
 		return fmt.Errorf("unsupported protocol %q", c.Protocol)
-	}
-
-	if c.Protocol == ProtocolNone && len(c.Endpoint) > 0 {
-		return errors.New("endpoint should not be set when protocol is 'none'")
-	}
-
-	if c.Protocol != ProtocolNone && len(c.Endpoint) == 0 {
-		return fmt.Errorf("endpoint should be set for protocol %q", c.Protocol)
 	}
 
 	if c.SamplingRate < 0 {
@@ -67,18 +64,7 @@ func DefaultConfig() Config {
 }
 
 func NewFromMap(m map[string]string) (Config, error) {
-	c := DefaultConfig()
-
-	err := configmap.Parse(m,
-		configmap.As("tracing-protocol", &c.Protocol),
-		configmap.As("tracing-endpoint", &c.Endpoint),
-		configmap.As("tracing-sampling-rate", &c.SamplingRate),
-	)
-	if err != nil {
-		return c, err
-	}
-
-	return c, c.Validate()
+	return NewFromMapWithPrefix("", m)
 }
 
 func NewFromMapWithPrefix(prefix string, m map[string]string) (Config, error) {
