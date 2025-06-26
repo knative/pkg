@@ -23,6 +23,8 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/sdk/resource"
 	semconv "go.opentelemetry.io/otel/semconv/v1.34.0"
+
+	_ "knative.dev/pkg/system/testing"
 )
 
 // Default returns a default OpenTelemetry Resource enriched
@@ -45,7 +47,7 @@ func Default(serviceName string) *resource.Resource {
 
 	// Ignore the error because it complains about semconv
 	// schema version differences
-	resource, _ := resource.Merge(
+	resource, err := resource.Merge(
 		resource.NewWithAttributes(
 			semconv.SchemaURL,
 			attrs...,
@@ -54,5 +56,9 @@ func Default(serviceName string) *resource.Resource {
 		// the service name etc. using env variables
 		resource.Default(),
 	)
+
+	if err != nil {
+		panic(err)
+	}
 	return resource
 }
