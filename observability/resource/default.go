@@ -54,7 +54,6 @@ func Default(serviceName string) *resource.Resource {
 		// the service name etc. using env variables
 		resource.Default(),
 	)
-
 	if err != nil {
 		panic(err)
 	}
