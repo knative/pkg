@@ -222,8 +222,6 @@ func testSetup(t *testing.T, opts ...func(*testOptions)) testContext {
 	provider := metric.NewMeterProvider(metric.WithReader(reader))
 	otel.SetMeterProvider(provider)
 
-	resetPackageMetrics()
-
 	for _, opt := range opts {
 		opt(testOpts)
 	}

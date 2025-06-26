@@ -41,11 +41,11 @@ type ConversionController interface {
 	Convert(context.Context, *apixv1.ConversionRequest) *apixv1.ConversionResponse
 }
 
-func conversionHandler(rootLogger *zap.SugaredLogger, c ConversionController) http.HandlerFunc {
+func conversionHandler(wh *Webhook, c ConversionController) http.HandlerFunc {
 	webhookTypeAttr := WebhookType.With(WebhookTypeConversion)
 
 	return func(w http.ResponseWriter, r *http.Request) {
-		logger := rootLogger
+		logger := wh.Logger
 		logger.Infof("Webhook ServeHTTP request=%#v", r)
 
 		var review apixv1.ConversionReview
@@ -76,7 +76,7 @@ func conversionHandler(rootLogger *zap.SugaredLogger, c ConversionController) ht
 			Response: c.Convert(ctx, review.Request),
 		}
 
-		recordHandlerDuration(ctx, time.Since(ttStart),
+		wh.metrics.recordHandlerDuration(ctx, time.Since(ttStart),
 			metric.WithAttributes(
 				versionAttr,
 				webhookTypeAttr,

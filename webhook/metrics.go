@@ -53,17 +53,24 @@ var (
 	handlerDuration metric.Float64Histogram
 )
 
-func init() {
-	resetPackageMetrics()
+type metrics struct {
+	handlerDuration metric.Float64Histogram
 }
 
-func resetPackageMetrics() {
+func newMetrics(o Options) *metrics {
 	var (
-		meter = otel.Meter(scopeName)
-		err   error
+		m        metrics
+		err      error
+		provider metric.MeterProvider = o.MeterProvider
 	)
 
-	handlerDuration, err = meter.Float64Histogram(
+	if provider == nil {
+		provider = otel.GetMeterProvider()
+	}
+
+	meter := otel.Meter(scopeName)
+
+	m.handlerDuration, err = meter.Float64Histogram(
 		"kn.webhook.handler.duration",
 		metric.WithDescription("The duration of task execution."),
 		metric.WithUnit("s"),
@@ -72,9 +79,11 @@ func resetPackageMetrics() {
 	if err != nil {
 		panic(err)
 	}
+
+	return &m
 }
 
-func recordHandlerDuration(ctx context.Context, d time.Duration, ro ...metric.RecordOption) {
+func (m *metrics) recordHandlerDuration(ctx context.Context, d time.Duration, ro ...metric.RecordOption) {
 	elapsedTime := float64(d) / float64(time.Second)
-	handlerDuration.Record(ctx, elapsedTime, ro...)
+	m.handlerDuration.Record(ctx, elapsedTime, ro...)
 }
