@@ -34,6 +34,7 @@ import (
 	"knative.dev/pkg/network/handlers"
 
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
+	"go.opentelemetry.io/otel/metric"
 
 	"go.uber.org/zap"
 	"golang.org/x/sync/errgroup"
@@ -100,6 +101,10 @@ type Options struct {
 	// * https://github.com/kubernetes/kubernetes/issues/121197
 	// * https://github.com/golang/go/issues/63417#issuecomment-1758858612
 	EnableHTTP2 bool
+
+	// MeterProvider is used to configure the MeterProvider used by the webhook
+	// If nil it will use the global meter provider
+	MeterProvider metric.MeterProvider
 }
 
 // Operation is the verb being operated on
@@ -130,6 +135,8 @@ type Webhook struct {
 
 	// testListener is only used in testing so we don't get port conflicts
 	testListener net.Listener
+
+	metrics *metrics
 }
 
 // New constructs a Webhook
@@ -164,6 +171,7 @@ func New(
 		Options: *opts,
 		Logger:  logger,
 		synced:  cancel,
+		metrics: newMetrics(*opts),
 	}
 
 	if opts.SecretName != "" {
@@ -216,11 +224,11 @@ func New(
 	for _, controller := range controllers {
 		switch c := controller.(type) {
 		case AdmissionController:
-			handler := admissionHandler(logger, c, syncCtx.Done())
+			handler := admissionHandler(webhook, c, syncCtx.Done())
 			webhook.mux.Handle(c.Path(), otelhttp.WithRouteTag(c.Path(), handler))
 
 		case ConversionController:
-			handler := conversionHandler(logger, c)
+			handler := conversionHandler(webhook, c)
 			webhook.mux.Handle(c.Path(), otelhttp.WithRouteTag(c.Path(), handler))
 
 		default:
@@ -257,10 +265,10 @@ func (wh *Webhook) Run(stop <-chan struct{}) error {
 		QuietPeriod: wh.Options.GracePeriod,
 	}
 
-	metricsHandler := otelhttp.NewHandler(
+	otelHandler := otelhttp.NewHandler(
 		drainer,
 		wh.Options.ServiceName,
-		// otelhttp.WithMeterProvider(wh.Options.MeterProvider),
+		otelhttp.WithMeterProvider(wh.Options.MeterProvider),
 	)
 
 	// If TLSNextProto is not nil, HTTP/2 support is not enabled automatically.
@@ -271,7 +279,7 @@ func (wh *Webhook) Run(stop <-chan struct{}) error {
 
 	server := &http.Server{
 		ErrorLog:          log.New(&zapWrapper{logger}, "", 0),
-		Handler:           metricsHandler,
+		Handler:           otelHandler,
 		Addr:              fmt.Sprint(":", wh.Options.Port),
 		TLSConfig:         wh.tlsConfig,
 		ReadHeaderTimeout: time.Minute, // https://medium.com/a-journey-with-go/go-understand-and-mitigate-slowloris-attack-711c1b1403f6

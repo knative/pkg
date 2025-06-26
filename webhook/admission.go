@@ -26,7 +26,6 @@ import (
 	"strings"
 	"time"
 
-	"go.uber.org/zap"
 	admissionv1 "k8s.io/api/admission/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"knative.dev/pkg/apis"
@@ -81,7 +80,7 @@ func MakeErrorStatus(reason string, args ...any) *admissionv1.AdmissionResponse 
 	}
 }
 
-func admissionHandler(rootLogger *zap.SugaredLogger, c AdmissionController, synced <-chan struct{}) http.HandlerFunc {
+func admissionHandler(wh *Webhook, c AdmissionController, synced <-chan struct{}) http.HandlerFunc {
 	webhookTypeAttr := WebhookType.With(WebhookTypeAdmission)
 
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -94,7 +93,7 @@ func admissionHandler(rootLogger *zap.SugaredLogger, c AdmissionController, sync
 			<-synced
 		}
 
-		logger := rootLogger
+		logger := wh.Logger
 		logger.Infof("Webhook ServeHTTP request=%#v", r)
 
 		var review admissionv1.AdmissionReview
@@ -150,7 +149,7 @@ func admissionHandler(rootLogger *zap.SugaredLogger, c AdmissionController, sync
 		attrs = append(attrs, allowedAttr)
 		labeler.Add(allowedAttr)
 
-		recordHandlerDuration(ctx,
+		wh.metrics.recordHandlerDuration(ctx,
 			time.Since(ttStart),
 			metric.WithAttributes(attrs...),
 		)
