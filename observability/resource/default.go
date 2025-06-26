@@ -25,7 +25,7 @@ import (
 	semconv "go.opentelemetry.io/otel/semconv/v1.34.0"
 )
 
-// New returns a default OpenTelemetry Resource enriched
+// Default returns a default OpenTelemetry Resource enriched
 // with common Knative/Kubernetes attributes.
 //
 // It will populate:

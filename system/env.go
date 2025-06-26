@@ -27,7 +27,8 @@ const (
 	NamespaceEnvKey = "SYSTEM_NAMESPACE"
 
 	// ResourceLabelEnvKey is the environment variable that specifies the system resource
-	// label. This label should be used to limit the
+	// label. This label should be used to limit the number of configmaps that are watched
+	// in the system namespace.
 	ResourceLabelEnvKey = "SYSTEM_RESOURCE_LABEL"
 )
 
@@ -79,7 +80,7 @@ func ResourceLabel() string {
 // Kubernetes behaviour that podman, cri-o and containerd have
 // inherited from docker.
 //
-// If none of tehse env-vars is set PodName will return an
+// If none of these env-vars is set PodName will return an
 // empty string
 func PodName() string {
 	return cmp.Or(
