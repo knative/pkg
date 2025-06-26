@@ -17,6 +17,7 @@ limitations under the License.
 package system
 
 import (
+	"cmp"
 	"fmt"
 	"os"
 )
@@ -24,8 +25,9 @@ import (
 const (
 	// NamespaceEnvKey is the environment variable that specifies the system namespace.
 	NamespaceEnvKey = "SYSTEM_NAMESPACE"
+
 	// ResourceLabelEnvKey is the environment variable that specifies the system resource
-	// label.
+	// label. This label should be used to limit the
 	ResourceLabelEnvKey = "SYSTEM_RESOURCE_LABEL"
 )
 
@@ -59,4 +61,29 @@ import (
 // components source their configuration from.
 func ResourceLabel() string {
 	return os.Getenv(ResourceLabelEnvKey)
+}
+
+// PodName will read various env vars to determine the name of the running
+// pod before falling back
+//
+// First it will read 'POD_NAME' this is expected to be populated using the
+// Kubernetes downward API.
+//
+//	env:
+//	- name: MY_POD_NAME
+//	  valueFrom:
+//	    fieldRef:
+//	      fieldPath: metadata.name
+//
+// As a fallback it will read HOSTNAME. This is undocumented
+// Kubernetes behaviour that podman, cri-o and containerd have
+// inherited from docker.
+//
+// If none of tehse env-vars is set PodName will return an
+// empty string
+func PodName() string {
+	return cmp.Or(
+		os.Getenv("POD_NAME"),
+		os.Getenv("HOSTNAME"),
+	)
 }

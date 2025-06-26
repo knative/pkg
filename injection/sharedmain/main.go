@@ -30,11 +30,8 @@ import (
 
 	"go.opentelemetry.io/contrib/instrumentation/runtime"
 	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/sdk/metric"
-	"go.opentelemetry.io/otel/sdk/resource"
 	"go.opentelemetry.io/otel/sdk/trace"
-	semconv "go.opentelemetry.io/otel/semconv/v1.32.0"
 
 	"go.uber.org/automaxprocs/maxprocs" // automatically set GOMAXPROCS based on cgroups
 	"go.uber.org/zap"
@@ -48,7 +45,6 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/rest"
 
-	"knative.dev/pkg/changeset"
 	kubeclient "knative.dev/pkg/client/injection/kube/client"
 	"knative.dev/pkg/configmap"
 	cminformer "knative.dev/pkg/configmap/informer"
@@ -61,6 +57,7 @@ import (
 	o11yconfigmap "knative.dev/pkg/observability/configmap"
 	"knative.dev/pkg/observability/metrics"
 	"knative.dev/pkg/observability/metrics/globalviews"
+	"knative.dev/pkg/observability/resource"
 	"knative.dev/pkg/observability/tracing"
 	"knative.dev/pkg/reconciler"
 	"knative.dev/pkg/signals"
@@ -369,7 +366,7 @@ func SetupLoggerOrDie(ctx context.Context, component string) (*zap.SugaredLogger
 	}
 	l, level := logging.NewLoggerFromConfig(loggingConfig, component)
 
-	if pn := getPodName(); pn != "" {
+	if pn := system.PodName(); pn != "" {
 		l = l.With(zap.String(logkey.Pod, pn))
 	}
 
@@ -391,7 +388,7 @@ func SetupObservabilityOrDie(
 
 	pprof.UpdateFromConfig(cfg.Runtime)
 
-	resource := getResource(component)
+	resource := resource.Default(component)
 
 	meterProvider, err := metrics.NewMeterProvider(
 		ctx,
@@ -520,46 +517,4 @@ func ControllersAndWebhooksFromCtors(ctx context.Context,
 	}
 
 	return controllers, webhooks
-}
-
-func getPodName() string {
-	// If PodName is injected into the env vars, set it on the logger.
-	// This is needed for HA components to distinguish logs from different
-	// pods.
-	if val := os.Getenv("POD_NAME"); val != "" {
-		return val
-	}
-
-	// CRI-O and containerd set HOSTNAME to the Pod Name.
-	// This seems to be K8s behaviour - originating from
-	// older docker behaviour
-	if val := os.Getenv("HOSTNAME"); val != "" {
-		return val
-	}
-	return ""
-}
-
-func getResource(component string) *resource.Resource {
-	attrs := []attribute.KeyValue{
-		semconv.K8SNamespaceName(system.Namespace()),
-		semconv.ServiceName(component),
-		semconv.ServiceVersion(changeset.Get()),
-	}
-
-	if pn := getPodName(); pn != "" {
-		attrs = append(attrs, semconv.K8SPodName(pn))
-	}
-
-	// Ignore the error because it complains about semconv
-	// schema version differences
-	resource, _ := resource.Merge(
-		resource.NewWithAttributes(
-			semconv.SchemaURL,
-			attrs...,
-		),
-		// We merge 'Default' last since this allows overriding
-		// the service name using env variables
-		resource.Default(),
-	)
-	return resource
 }
