@@ -16,7 +16,11 @@ limitations under the License.
 
 package resource
 
-import "testing"
+import (
+	"testing"
+
+	_ "knative.dev/pkg/system/testing"
+)
 
 func TestDefault(t *testing.T) {
 	r := Default("myservice")

@@ -23,8 +23,6 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/sdk/resource"
 	semconv "go.opentelemetry.io/otel/semconv/v1.34.0"
-
-	_ "knative.dev/pkg/system/testing"
 )
 
 // Default returns a default OpenTelemetry Resource enriched
