@@ -14,28 +14,20 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package globalviews
+package sharedmain
 
 import (
-	"maps"
-	"slices"
+	"context"
 
 	"go.opentelemetry.io/otel/sdk/metric"
 )
 
-var globalViews map[string][]metric.View = make(map[string][]metric.View)
+type otelviews struct{}
 
-// Register should be called during package init
-func Register(pkg string, v ...metric.View) {
-	views := globalViews[pkg]
-	globalViews[pkg] = append(views, v...)
+func WithOTelViews(ctx context.Context, views ...metric.View) context.Context {
+	return context.WithValue(ctx, otelviews{}, views)
 }
 
-func GetPackageViews(pkg string) []metric.View {
-	return globalViews[pkg]
-}
-
-func GetAllViews() []metric.View {
-	list := slices.Collect(maps.Values(globalViews))
-	return slices.Concat(list...)
+func OTelViews(ctx context.Context) []metric.View {
+	return ctx.Value(otelviews{}).([]metric.View)
 }

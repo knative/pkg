@@ -56,7 +56,6 @@ import (
 	"knative.dev/pkg/observability"
 	o11yconfigmap "knative.dev/pkg/observability/configmap"
 	"knative.dev/pkg/observability/metrics"
-	"knative.dev/pkg/observability/metrics/globalviews"
 	"knative.dev/pkg/observability/resource"
 	"knative.dev/pkg/observability/tracing"
 	"knative.dev/pkg/reconciler"
@@ -393,7 +392,7 @@ func SetupObservabilityOrDie(
 	meterProvider, err := metrics.NewMeterProvider(
 		ctx,
 		cfg.Metrics,
-		metric.WithView(globalviews.GetAllViews()...),
+		metric.WithView(OTelViews(ctx)...),
 		metric.WithResource(resource),
 	)
 	if err != nil {
