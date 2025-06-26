@@ -29,7 +29,6 @@ type pprofServer struct {
 
 func newProfilingServer(logger *zap.SugaredLogger) *pprofServer {
 	s := runtime.NewProfilingServer()
-	s.SetEnabled(false)
 
 	return &pprofServer{
 		ProfilingServer: s,
