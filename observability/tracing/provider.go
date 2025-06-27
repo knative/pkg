@@ -94,7 +94,7 @@ func exporterFor(ctx context.Context, cfg Config) (sdktrace.SpanExporter, error)
 func buildGRPC(ctx context.Context, cfg Config) (sdktrace.SpanExporter, error) {
 	var grpcOpts []otlptracegrpc.Option
 
-	if opt := endpointFor(cfg, otlptracegrpc.WithEndpoint); opt != nil {
+	if opt := endpointFor(cfg, otlptracegrpc.WithEndpointURL); opt != nil {
 		grpcOpts = append(grpcOpts, opt)
 	}
 
@@ -108,7 +108,7 @@ func buildGRPC(ctx context.Context, cfg Config) (sdktrace.SpanExporter, error) {
 func buildHTTP(ctx context.Context, cfg Config) (sdktrace.SpanExporter, error) {
 	var httpOpts []otlptracehttp.Option
 
-	if opt := endpointFor(cfg, otlptracehttp.WithEndpoint); opt != nil {
+	if opt := endpointFor(cfg, otlptracehttp.WithEndpointURL); opt != nil {
 		httpOpts = append(httpOpts, opt)
 	}
 

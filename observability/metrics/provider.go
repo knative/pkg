@@ -87,7 +87,7 @@ func readerFor(ctx context.Context, cfg Config) (sdkmetric.Reader, shutdownFunc,
 func buildGRPC(ctx context.Context, cfg Config) (sdkmetric.Reader, shutdownFunc, error) {
 	var grpcOpts []otlpmetricgrpc.Option
 
-	if opt := endpointFor(cfg, otlpmetricgrpc.WithEndpoint); opt != nil {
+	if opt := endpointFor(cfg, otlpmetricgrpc.WithEndpointURL); opt != nil {
 		grpcOpts = append(grpcOpts, opt)
 	}
 
@@ -108,7 +108,7 @@ func buildGRPC(ctx context.Context, cfg Config) (sdkmetric.Reader, shutdownFunc,
 func buildHTTP(ctx context.Context, cfg Config) (sdkmetric.Reader, shutdownFunc, error) {
 	var httpOpts []otlpmetrichttp.Option
 
-	if opt := endpointFor(cfg, otlpmetrichttp.WithEndpoint); opt != nil {
+	if opt := endpointFor(cfg, otlpmetrichttp.WithEndpointURL); opt != nil {
 		httpOpts = append(httpOpts, opt)
 	}
 
