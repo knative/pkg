@@ -26,12 +26,15 @@ import (
 	"strings"
 	"time"
 
-	"go.uber.org/zap"
 	admissionv1 "k8s.io/api/admission/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"knative.dev/pkg/apis"
 	"knative.dev/pkg/logging"
 	"knative.dev/pkg/logging/logkey"
+
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/metric"
 )
 
 const (
@@ -69,7 +72,7 @@ type StatelessAdmissionController interface {
 }
 
 // MakeErrorStatus creates an 'BadRequest' error AdmissionResponse
-func MakeErrorStatus(reason string, args ...interface{}) *admissionv1.AdmissionResponse {
+func MakeErrorStatus(reason string, args ...any) *admissionv1.AdmissionResponse {
 	result := apierrors.NewBadRequest(fmt.Sprintf(reason, args...)).Status()
 	return &admissionv1.AdmissionResponse{
 		Result:  &result,
@@ -77,7 +80,9 @@ func MakeErrorStatus(reason string, args ...interface{}) *admissionv1.AdmissionR
 	}
 }
 
-func admissionHandler(rootLogger *zap.SugaredLogger, stats StatsReporter, c AdmissionController, synced <-chan struct{}) http.HandlerFunc {
+func admissionHandler(wh *Webhook, c AdmissionController, synced <-chan struct{}) http.HandlerFunc {
+	webhookTypeAttr := WebhookType.With(WebhookTypeAdmission)
+
 	return func(w http.ResponseWriter, r *http.Request) {
 		if _, ok := c.(StatelessAdmissionController); ok {
 			// Stateless admission controllers do not require Informers to have
@@ -88,8 +93,7 @@ func admissionHandler(rootLogger *zap.SugaredLogger, stats StatsReporter, c Admi
 			<-synced
 		}
 
-		ttStart := time.Now()
-		logger := rootLogger
+		logger := wh.Logger
 		logger.Infof("Webhook ServeHTTP request=%#v", r)
 
 		var review admissionv1.AdmissionReview
@@ -99,6 +103,19 @@ func admissionHandler(rootLogger *zap.SugaredLogger, stats StatsReporter, c Admi
 			return
 		}
 		r.Body = io.NopCloser(&bodyBuffer)
+
+		labeler, _ := otelhttp.LabelerFromContext(r.Context())
+
+		attrs := []attribute.KeyValue{
+			AdmissionOperation.With(string(review.Request.Operation)),
+			AdmissionGroup.With(review.Request.Kind.Group),
+			AdmissionVersion.With(review.Request.Kind.Version),
+			AdmissionKind.With(review.Request.Kind.Kind),
+			AdmissionSubresource.With(review.Request.SubResource),
+			webhookTypeAttr,
+		}
+
+		labeler.Add(attrs...)
 
 		logger = logger.With(
 			logkey.Kind, review.Request.Kind.String(),
@@ -120,11 +137,22 @@ func admissionHandler(rootLogger *zap.SugaredLogger, stats StatsReporter, c Admi
 			TypeMeta: review.TypeMeta,
 		}
 
+		ttStart := time.Now()
 		reviewResponse := c.Admit(ctx, review.Request)
+
 		var patchType string
 		if reviewResponse.PatchType != nil {
 			patchType = string(*reviewResponse.PatchType)
 		}
+
+		allowedAttr := AdmissionAllowed.With(reviewResponse.Allowed)
+		attrs = append(attrs, allowedAttr)
+		labeler.Add(allowedAttr)
+
+		wh.metrics.recordHandlerDuration(ctx,
+			time.Since(ttStart),
+			metric.WithAttributes(attrs...),
+		)
 
 		if !reviewResponse.Allowed || reviewResponse.PatchType != nil || response.Response == nil {
 			response.Response = reviewResponse
@@ -154,11 +182,6 @@ func admissionHandler(rootLogger *zap.SugaredLogger, stats StatsReporter, c Admi
 		if err := json.NewEncoder(w).Encode(response); err != nil {
 			http.Error(w, fmt.Sprint("could not encode response:", err), http.StatusInternalServerError)
 			return
-		}
-
-		if stats != nil {
-			// Only report valid requests
-			stats.ReportAdmissionRequest(review.Request, response.Response, time.Since(ttStart))
 		}
 	}
 }

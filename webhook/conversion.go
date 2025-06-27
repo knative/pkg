@@ -21,8 +21,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
+	"go.opentelemetry.io/otel/metric"
 	"go.uber.org/zap"
 	apixv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"knative.dev/pkg/apis"
@@ -38,10 +41,11 @@ type ConversionController interface {
 	Convert(context.Context, *apixv1.ConversionRequest) *apixv1.ConversionResponse
 }
 
-func conversionHandler(rootLogger *zap.SugaredLogger, stats StatsReporter, c ConversionController) http.HandlerFunc {
+func conversionHandler(wh *Webhook, c ConversionController) http.HandlerFunc {
+	webhookTypeAttr := WebhookType.With(WebhookTypeConversion)
+
 	return func(w http.ResponseWriter, r *http.Request) {
-		ttStart := time.Now()
-		logger := rootLogger
+		logger := wh.Logger
 		logger.Infof("Webhook ServeHTTP request=%#v", r)
 
 		var review apixv1.ConversionReview
@@ -49,6 +53,11 @@ func conversionHandler(rootLogger *zap.SugaredLogger, stats StatsReporter, c Con
 			http.Error(w, fmt.Sprint("could not decode body:", err), http.StatusBadRequest)
 			return
 		}
+
+		versionAttr := ConversionDesiredAPIVersion.With(review.Request.DesiredAPIVersion)
+
+		labeler, _ := otelhttp.LabelerFromContext(r.Context())
+		labeler.Add(webhookTypeAttr, versionAttr)
 
 		logger = logger.With(
 			zap.String("uid", string(review.Request.UID)),
@@ -58,6 +67,7 @@ func conversionHandler(rootLogger *zap.SugaredLogger, stats StatsReporter, c Con
 		ctx := logging.WithLogger(r.Context(), logger)
 		ctx = apis.WithHTTPRequest(ctx, r)
 
+		ttStart := time.Now()
 		response := apixv1.ConversionReview{
 			// Use the same type meta as the request - this is required by the K8s API
 			// note: v1beta1 & v1 ConversionReview shapes are identical so even though
@@ -66,14 +76,21 @@ func conversionHandler(rootLogger *zap.SugaredLogger, stats StatsReporter, c Con
 			Response: c.Convert(ctx, review.Request),
 		}
 
+		wh.metrics.recordHandlerDuration(ctx, time.Since(ttStart),
+			metric.WithAttributes(
+				versionAttr,
+				webhookTypeAttr,
+				ConversionResultStatus.With(strings.ToLower(response.Response.Result.Status)),
+			),
+		)
+
+		labeler.Add(
+			ConversionResultStatus.With(strings.ToLower(response.Response.Result.Status)),
+		)
+
 		if err := json.NewEncoder(w).Encode(response); err != nil {
 			http.Error(w, fmt.Sprint("could not encode response:", err), http.StatusInternalServerError)
 			return
-		}
-
-		if stats != nil {
-			// Only report valid requests
-			stats.ReportConversionRequest(review.Request, response.Response, time.Since(ttStart))
 		}
 	}
 }
