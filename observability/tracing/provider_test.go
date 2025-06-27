@@ -42,6 +42,12 @@ func TestNewTrackerProviderProtocols(t *testing.T) {
 		name:    "bad protocol",
 		c:       Config{Protocol: "bad"},
 		wantErr: true,
+	}, {
+		name: "http with path in endpoint",
+		c: Config{
+			Protocol: ProtocolHTTPProtobuf,
+			Endpoint: "http://example.com:9090/api/v1/otlp/v1/traces",
+		},
 	}}
 
 	for _, tc := range cases {

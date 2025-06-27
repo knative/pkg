@@ -40,6 +40,12 @@ func TestNewMeterProviderProtocols(t *testing.T) {
 		name: "prometheus",
 		c:    Config{Protocol: ProtocolPrometheus},
 	}, {
+		name: "prometheus push with path in endpoint",
+		c: Config{
+			Protocol: ProtocolHTTPProtobuf,
+			Endpoint: "http://example.com:9090/api/v1/otlp/v1/metrics",
+		},
+	}, {
 		name:    "bad protocol",
 		c:       Config{Protocol: "bad"},
 		wantErr: true,
