@@ -18,17 +18,27 @@ package sharedmain
 
 import (
 	"context"
+	"testing"
 
 	"go.opentelemetry.io/otel/sdk/metric"
 )
 
-type otelviews struct{}
+func TestOTelViewOption(t *testing.T) {
+	ctx := context.Background()
+	views := OTelViews(ctx)
 
-func WithOTelViews(ctx context.Context, views ...metric.View) context.Context {
-	return context.WithValue(ctx, otelviews{}, views)
-}
+	if len(views) != 0 {
+		t.Error("expected no views")
+	}
 
-func OTelViews(ctx context.Context) []metric.View {
-	val, _ := ctx.Value(otelviews{}).([]metric.View)
-	return val
+	view := func(metric.Instrument) (metric.Stream, bool) {
+		return metric.Stream{}, false
+	}
+
+	ctx = WithOTelViews(ctx, view)
+	views = OTelViews(ctx)
+
+	if len(views) != 1 {
+		t.Error("expecte a single view")
+	}
 }
