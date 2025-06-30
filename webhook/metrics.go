@@ -49,8 +49,6 @@ var (
 
 	ConversionDesiredAPIVersion = attributekey.String("kn.webhook.convert.desired_api.version")
 	ConversionResultStatus      = attributekey.String("kn.webhook.conversion.result.status")
-
-	handlerDuration metric.Float64Histogram
 )
 
 type metrics struct {
@@ -61,14 +59,14 @@ func newMetrics(o Options) *metrics {
 	var (
 		m        metrics
 		err      error
-		provider metric.MeterProvider = o.MeterProvider
+		provider = o.MeterProvider
 	)
 
 	if provider == nil {
 		provider = otel.GetMeterProvider()
 	}
 
-	meter := otel.Meter(scopeName)
+	meter := provider.Meter(scopeName)
 
 	m.handlerDuration, err = meter.Float64Histogram(
 		"kn.webhook.handler.duration",
