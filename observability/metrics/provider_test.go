@@ -20,6 +20,9 @@ import (
 	"context"
 	"testing"
 	"time"
+
+	"github.com/google/go-cmp/cmp"
+	"knative.dev/pkg/ptr"
 )
 
 func TestNewMeterProviderProtocols(t *testing.T) {
@@ -36,6 +39,13 @@ func TestNewMeterProviderProtocols(t *testing.T) {
 	}, {
 		name: "http",
 		c:    Config{Protocol: ProtocolHTTPProtobuf},
+	}, {
+		name: "http - bad URL",
+		c: Config{
+			Protocol: ProtocolHTTPProtobuf,
+			Endpoint: "://hello",
+		},
+		wantErr: true,
 	}, {
 		name: "prometheus",
 		c:    Config{Protocol: ProtocolPrometheus},
@@ -119,7 +129,10 @@ func TestEndpointFor(t *testing.T) {
 		t.Run("override "+envKey, func(t *testing.T) {
 			t.Setenv(envKey, "https://override.example.com")
 
-			opt := endpointFor(Config{Endpoint: "https://otel.example.com"}, optFunc)
+			opt, err := endpointFor(Config{Endpoint: "https://otel.example.com"}, optFunc)
+			if err != nil {
+				t.Fatal("unexpected err", err)
+			}
 
 			if opt != nil {
 				t.Error("expected the option to not be present when 'OTEL_EXPORTER_OTLP_ENDPOINT' is set")
@@ -132,9 +145,27 @@ func TestEndpointFor(t *testing.T) {
 			result := "result"
 			return &result
 		}
-		opt := endpointFor(Config{Endpoint: "https://otel.example.com"}, optFunc)
+		opt, err := endpointFor(Config{Endpoint: "https://otel.example.com"}, optFunc)
+		if err != nil {
+			t.Fatal("unexpected err", err)
+		}
 		if *opt != "result" {
 			t.Error("expected option to work when no env vars are present")
+		}
+	})
+
+	t.Run("missing scheme - defaults to https", func(t *testing.T) {
+		optFunc := func(r string) *string {
+			return &r
+		}
+		got, err := endpointFor(Config{Endpoint: "otel.example.com:8080"}, optFunc)
+		if err != nil {
+			t.Fatal("unexpected err", err)
+		}
+
+		want := ptr.String("https://otel.example.com:8080")
+		if diff := cmp.Diff(want, got); diff != "" {
+			t.Error("expected option to work when no env vars are present: (-want +got): ", diff)
 		}
 	})
 }
