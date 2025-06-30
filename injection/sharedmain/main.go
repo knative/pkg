@@ -278,12 +278,13 @@ func MainWithConfig(ctx context.Context, component string, cfg *rest.Config, cto
 
 	mp, tp := SetupObservabilityOrDie(ctx, component, logger, pprof)
 	defer func() {
-		if err := mp.Shutdown(context.Background()); err != nil {
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+
+		if err := mp.Shutdown(ctx); err != nil {
 			logger.Errorw("Error flushing metrics", zap.Error(err))
 		}
-	}()
-	defer func() {
-		if err := tp.Shutdown(context.Background()); err != nil {
+		if err := tp.Shutdown(ctx); err != nil {
 			logger.Errorw("Error flushing traces", zap.Error(err))
 		}
 	}()
