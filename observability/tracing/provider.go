@@ -17,8 +17,10 @@ limitations under the License.
 package tracing
 
 import (
+	"cmp"
 	"context"
 	"fmt"
+	"net/url"
 	"os"
 	"strconv"
 
@@ -94,7 +96,10 @@ func exporterFor(ctx context.Context, cfg Config) (sdktrace.SpanExporter, error)
 func buildGRPC(ctx context.Context, cfg Config) (sdktrace.SpanExporter, error) {
 	var grpcOpts []otlptracegrpc.Option
 
-	if opt := endpointFor(cfg, otlptracegrpc.WithEndpointURL); opt != nil {
+	opt, err := endpointFor(cfg, otlptracegrpc.WithEndpointURL)
+	if err != nil {
+		return nil, fmt.Errorf("unable to process traces endpoint: %w", err)
+	} else if opt != nil {
 		grpcOpts = append(grpcOpts, opt)
 	}
 
@@ -108,7 +113,10 @@ func buildGRPC(ctx context.Context, cfg Config) (sdktrace.SpanExporter, error) {
 func buildHTTP(ctx context.Context, cfg Config) (sdktrace.SpanExporter, error) {
 	var httpOpts []otlptracehttp.Option
 
-	if opt := endpointFor(cfg, otlptracehttp.WithEndpointURL); opt != nil {
+	opt, err := endpointFor(cfg, otlptracehttp.WithEndpointURL)
+	if err != nil {
+		return nil, fmt.Errorf("unable to process traces endpoint: %w", err)
+	} else if opt != nil {
 		httpOpts = append(httpOpts, opt)
 	}
 
@@ -122,14 +130,30 @@ func buildHTTP(ctx context.Context, cfg Config) (sdktrace.SpanExporter, error) {
 
 // If the OTEL_EXPORTER_OTLP_ENDPOINT or OTEL_EXPORTER_OTLP_TRACES_ENDPOINT is
 // set then we will prefer that over what's in the Config
-func endpointFor[T any](cfg Config, opt func(string) T) T {
+func endpointFor[T any](cfg Config, opt func(string) T) (T, error) {
 	var epOption T
 
-	if (os.Getenv("OTEL_EXPORTER_OTLP_ENDPOINT") == "" &&
-		os.Getenv("OTEL_EXPORTER_OTLP_TRACES_ENDPOINT") == "") && cfg.Endpoint != "" {
-		epOption = opt(cfg.Endpoint)
+	override := cmp.Or(
+		os.Getenv("OTEL_EXPORTER_OTLP_ENDPOINT"),
+		os.Getenv("OTEL_EXPORTER_OTLP_TRACES_ENDPOINT"),
+	)
+
+	if override != "" {
+		return epOption, nil
 	}
-	return epOption
+
+	ep := cfg.Endpoint
+
+	u, err := url.Parse(cfg.Endpoint)
+	if err != nil {
+		return epOption, err
+	}
+	if u.Opaque != "" {
+		ep = "https://" + ep
+	}
+
+	epOption = opt(ep)
+	return epOption, nil
 }
 
 func sampleFor(cfg Config) (sdktrace.Sampler, error) {
