@@ -35,6 +35,8 @@ import (
 
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"go.opentelemetry.io/otel/metric"
+	"go.opentelemetry.io/otel/propagation"
+	"go.opentelemetry.io/otel/trace"
 
 	"go.uber.org/zap"
 	"golang.org/x/sync/errgroup"
@@ -105,6 +107,14 @@ type Options struct {
 	// MeterProvider is used to configure the MeterProvider used by the webhook
 	// If nil it will use the global meter provider
 	MeterProvider metric.MeterProvider
+
+	// TracerProvider is used to config the TracerProvider used by the webhook
+	// if nil it will use the global tracer provider
+	TracerProvider trace.TracerProvider
+
+	// TextMapPropagator is used to configure the TextMapPropagator used by the webhook
+	// if nil it will use the global text map propagator
+	TextMapPropagator propagation.TextMapPropagator
 }
 
 // Operation is the verb being operated on
@@ -269,6 +279,8 @@ func (wh *Webhook) Run(stop <-chan struct{}) error {
 		drainer,
 		wh.Options.ServiceName,
 		otelhttp.WithMeterProvider(wh.Options.MeterProvider),
+		otelhttp.WithTracerProvider(wh.Options.TracerProvider),
+		otelhttp.WithPropagators(wh.Options.TextMapPropagator),
 	)
 
 	// If TLSNextProto is not nil, HTTP/2 support is not enabled automatically.
