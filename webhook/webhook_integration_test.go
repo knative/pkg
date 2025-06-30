@@ -31,7 +31,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kubeclient "knative.dev/pkg/client/injection/kube/client/fake"
 
-	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/sdk/metric"
 
 	"knative.dev/pkg/system"
@@ -220,7 +219,7 @@ func testSetup(t *testing.T, opts ...func(*testOptions)) testContext {
 
 	reader := metric.NewManualReader()
 	provider := metric.NewMeterProvider(metric.WithReader(reader))
-	otel.SetMeterProvider(provider)
+	testOpts.Options.MeterProvider = provider
 
 	for _, opt := range opts {
 		opt(testOpts)
