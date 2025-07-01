@@ -134,3 +134,106 @@ func MetricsPresent(scopeName string, names ...string) AssertFunc {
 		}
 	}
 }
+
+func MetricsEqual(scopeName string, expected ...metricdata.Metrics) AssertFunc {
+	return func(t testingT, rm *metricdata.ResourceMetrics) {
+		t.Helper()
+		opts := metricdatatest.IgnoreTimestamp()
+
+		expectedSet := make(map[string]metricdata.Metrics)
+		for _, exp := range expected {
+			expectedSet[exp.Name] = exp
+		}
+
+		for _, sm := range rm.ScopeMetrics {
+			if sm.Scope.Name != scopeName {
+				continue
+			}
+
+			if len(sm.Metrics) != len(expected) {
+				t.Errorf("expected %d metrics in scope %q, got %d", len(expected), scopeName, len(sm.Metrics))
+				return
+			}
+
+			for _, actual := range sm.Metrics {
+				expected, exists := expectedSet[actual.Name]
+				if !exists {
+					t.Errorf("unexpected metric %q in scope %q", actual.Name, scopeName)
+					continue
+				}
+
+				// Compare metric properties
+				if actual.Name != expected.Name {
+					t.Errorf("metric name mismatch: expected %q, got %q", expected.Name, actual.Name)
+				}
+
+				if actual.Description != expected.Description {
+					t.Errorf("metric description mismatch for %q: expected %q, got %q", actual.Name, expected.Description, actual.Description)
+				}
+
+				if actual.Unit != expected.Unit {
+					t.Errorf("metric unit mismatch for %q: expected %q, got %q", actual.Name, expected.Unit, actual.Unit)
+				}
+
+				// Use metricdatatest to compare the actual metric data
+				mt := t.(metricdatatest.TestingT)
+				switch actualData := actual.Data.(type) {
+				case metricdata.Sum[int64]:
+					if expectedData, ok := expected.Data.(metricdata.Sum[int64]); ok {
+						metricdatatest.AssertEqual(mt, expectedData, actualData, opts)
+					} else {
+						t.Errorf("metric data type mismatch for %q: expected %T, got %T", actual.Name, expected.Data, actualData)
+					}
+				case metricdata.Sum[float64]:
+					if expectedData, ok := expected.Data.(metricdata.Sum[float64]); ok {
+						metricdatatest.AssertEqual(mt, expectedData, actualData, opts)
+					} else {
+						t.Errorf("metric data type mismatch for %q: expected %T, got %T", actual.Name, expected.Data, actualData)
+					}
+				case metricdata.Histogram[int64]:
+					if expectedData, ok := expected.Data.(metricdata.Histogram[int64]); ok {
+						metricdatatest.AssertEqual(mt, expectedData, actualData, opts)
+					} else {
+						t.Errorf("metric data type mismatch for %q: expected %T, got %T", actual.Name, expected.Data, actualData)
+					}
+				case metricdata.Histogram[float64]:
+					if expectedData, ok := expected.Data.(metricdata.Histogram[float64]); ok {
+						metricdatatest.AssertEqual(mt, expectedData, actualData, opts)
+					} else {
+						t.Errorf("metric data type mismatch for %q: expected %T, got %T", actual.Name, expected.Data, actualData)
+					}
+				case metricdata.ExponentialHistogram[int64]:
+					if expectedData, ok := expected.Data.(metricdata.ExponentialHistogram[int64]); ok {
+						metricdatatest.AssertEqual(mt, expectedData, actualData, opts)
+					} else {
+						t.Errorf("metric data type mismatch for %q: expected %T, got %T", actual.Name, expected.Data, actualData)
+					}
+				case metricdata.ExponentialHistogram[float64]:
+					if expectedData, ok := expected.Data.(metricdata.ExponentialHistogram[float64]); ok {
+						metricdatatest.AssertEqual(mt, expectedData, actualData, opts)
+					} else {
+						t.Errorf("metric data type mismatch for %q: expected %T, got %T", actual.Name, expected.Data, actualData)
+					}
+				case metricdata.Gauge[int64]:
+					if expectedData, ok := expected.Data.(metricdata.Gauge[int64]); ok {
+						metricdatatest.AssertEqual(mt, expectedData, actualData, opts)
+					} else {
+						t.Errorf("metric data type mismatch for %q: expected %T, got %T", actual.Name, expected.Data, actualData)
+					}
+				case metricdata.Gauge[float64]:
+					if expectedData, ok := expected.Data.(metricdata.Gauge[float64]); ok {
+						metricdatatest.AssertEqual(mt, expectedData, actualData, opts)
+					} else {
+						t.Errorf("metric data type mismatch for %q: expected %T, got %T", actual.Name, expected.Data, actualData)
+					}
+				default:
+					t.Errorf("unsupported metric data type for metric %q: %T", actual.Name, actualData)
+				}
+			}
+			return
+		}
+
+		// If we get here, the scope wasn't found
+		t.Errorf("scope %q not found in metrics", scopeName)
+	}
+}
