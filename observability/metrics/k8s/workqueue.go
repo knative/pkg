@@ -62,7 +62,7 @@ func NewWorkqueueMetricsProvider(opts ...Option) (*WorkqueueMetricsProvider, err
 		opt(&options)
 	}
 
-	meter := options.meterProvider.Meter("knative.dev/pkg/observability/metrics/k8s")
+	meter := options.meterProvider.Meter(scopeName)
 
 	w := &WorkqueueMetricsProvider{}
 

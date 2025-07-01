@@ -45,6 +45,8 @@ import (
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/rest"
+	k8stoolmetrics "k8s.io/client-go/tools/metrics"
+	"k8s.io/client-go/util/workqueue"
 	"k8s.io/klog/v2"
 
 	kubeclient "knative.dev/pkg/client/injection/kube/client"
@@ -58,6 +60,7 @@ import (
 	"knative.dev/pkg/observability"
 	o11yconfigmap "knative.dev/pkg/observability/configmap"
 	"knative.dev/pkg/observability/metrics"
+	k8smetrics "knative.dev/pkg/observability/metrics/k8s"
 	"knative.dev/pkg/observability/resource"
 	"knative.dev/pkg/observability/tracing"
 	"knative.dev/pkg/reconciler"
@@ -406,6 +409,27 @@ func SetupObservabilityOrDie(
 	}
 
 	otel.SetMeterProvider(meterProvider)
+
+	workQueueMetrics, err := k8smetrics.NewWorkqueueMetricsProvider(
+		k8smetrics.WithMeterProvider(meterProvider),
+	)
+	if err != nil {
+		logger.Fatalw("Failed to setup k8s workqueue metrics", zap.Error(err))
+	}
+
+	workqueue.SetProvider(workQueueMetrics)
+
+	clientMetrics, err := k8smetrics.NewClientMetricProvider(
+		k8smetrics.WithMeterProvider(meterProvider),
+	)
+	if err != nil {
+		logger.Fatalw("Failed to setup k8s client go metrics", zap.Error(err))
+	}
+
+	k8stoolmetrics.Register(k8stoolmetrics.RegisterOpts{
+		RequestLatency: clientMetrics.RequestLatencyMetric(),
+		RequestResult:  clientMetrics.RequestResultMetric(),
+	})
 
 	err = runtime.Start(
 		runtime.WithMinimumReadMemStatsInterval(cfg.Runtime.ExportInterval),
