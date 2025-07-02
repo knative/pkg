@@ -38,9 +38,7 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
-var (
-	tracer trace.Tracer
-)
+var tracer trace.Tracer
 
 func init() {
 	tracer = otel.GetTracerProvider().Tracer("knative.dev/pkg/test/spoof")
@@ -218,7 +216,6 @@ func (sc *SpoofingClient) Poll(req *http.Request, inState ResponseChecker, check
 
 		return inState(resp)
 	})
-
 	if err != nil {
 		return resp, fmt.Errorf("response: %s did not pass checks: %w", resp, err)
 	}

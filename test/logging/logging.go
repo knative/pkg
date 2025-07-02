@@ -25,7 +25,6 @@ import (
 	"os"
 	"strconv"
 	"sync"
-	"time"
 
 	"go.opentelemetry.io/otel/trace"
 	"go.opentelemetry.io/otel/trace/noop"
@@ -34,18 +33,7 @@ import (
 	"k8s.io/klog/v2"
 )
 
-const (
-	// 1 second was chosen arbitrarily
-	metricViewReportingPeriod = 1 * time.Second
-
-	// prefix attached to metric name that indicates to the
-	// ExportSpan method that span needs to be emitted.
-	emitableSpanNamePrefix = "emitspan-"
-)
-
-var (
-	noopTracer = noop.NewTracerProvider().Tracer("knative.dev/pkg/test/logging")
-)
+var noopTracer = noop.NewTracerProvider().Tracer("knative.dev/pkg/test/logging")
 
 // FormatLogger is a printf style function for logging in tests.
 type FormatLogger func(template string, args ...interface{})
@@ -55,7 +43,7 @@ type FormatLogger func(template string, args ...interface{})
 //
 //nolint:spancheck
 func GetEmitableSpan(ctx context.Context, metricName string) trace.Span {
-	ctx, span := noopTracer.Start(ctx, metricName)
+	_, span := noopTracer.Start(ctx, metricName)
 	return span
 }
 
