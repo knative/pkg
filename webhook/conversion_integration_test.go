@@ -252,9 +252,10 @@ func assertConversionMetrics(t *testing.T, tc testContext, status string) {
 		metricstest.HasAttributes(
 			"", // any scope
 			"", // any metric
-			WebhookType.With(WebhookTypeConversion),
-			ConversionDesiredAPIVersion.With("example.com/v1"),
-			ConversionResultStatus.With(strings.ToLower(status)),
+			WebhookTypeAttr.With(WebhookTypeConversion),
+			GroupAttr.With("example.com"),
+			VersionAttr.With("v1"),
+			StatusAttr.With(strings.ToLower(status)),
 		),
 	)
 }

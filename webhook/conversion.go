@@ -28,6 +28,8 @@ import (
 	"go.opentelemetry.io/otel/metric"
 	"go.uber.org/zap"
 	apixv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+
 	"knative.dev/pkg/apis"
 	"knative.dev/pkg/logging"
 )
@@ -52,11 +54,18 @@ func conversionHandler(wh *Webhook, c ConversionController) http.HandlerFunc {
 			return
 		}
 
+		gv, err := parseAPIVersion(review.Request.DesiredAPIVersion)
+		if err != nil {
+			http.Error(w, fmt.Sprint("could parse desired api version:", err), http.StatusBadRequest)
+			return
+		}
+
 		// otelhttp middleware creates the labeler
 		labeler, _ := otelhttp.LabelerFromContext(r.Context())
 		labeler.Add(
-			WebhookType.With(WebhookTypeConversion),
-			ConversionDesiredAPIVersion.With(review.Request.DesiredAPIVersion),
+			WebhookTypeAttr.With(WebhookTypeConversion),
+			GroupAttr.With(gv.Group),
+			VersionAttr.With(gv.Version),
 		)
 
 		logger = logger.With(
@@ -77,7 +86,7 @@ func conversionHandler(wh *Webhook, c ConversionController) http.HandlerFunc {
 		}
 
 		labeler.Add(
-			ConversionResultStatus.With(strings.ToLower(response.Response.Result.Status)),
+			StatusAttr.With(strings.ToLower(response.Response.Result.Status)),
 		)
 
 		wh.metrics.recordHandlerDuration(ctx, time.Since(ttStart),
@@ -89,4 +98,23 @@ func conversionHandler(wh *Webhook, c ConversionController) http.HandlerFunc {
 			return
 		}
 	}
+}
+
+func parseAPIVersion(apiVersion string) (schema.GroupVersion, error) {
+	gv, err := schema.ParseGroupVersion(apiVersion)
+	if err != nil {
+		err = fmt.Errorf("desired API version %q is not valid", apiVersion)
+		return schema.GroupVersion{}, err
+	}
+
+	if !isValidGV(gv) {
+		err = fmt.Errorf("desired API version %q is not valid", apiVersion)
+		return schema.GroupVersion{}, err
+	}
+
+	return gv, nil
+}
+
+func isValidGV(gk schema.GroupVersion) bool {
+	return gk.Group != "" && gk.Version != ""
 }

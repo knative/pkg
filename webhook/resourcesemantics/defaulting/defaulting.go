@@ -147,7 +147,7 @@ func (ac *reconciler) Path() string {
 func (ac *reconciler) Admit(ctx context.Context, request *admissionv1.AdmissionRequest) *admissionv1.AdmissionResponse {
 	// otelhttp middleware creates the labeler
 	labeler, _ := otelhttp.LabelerFromContext(ctx)
-	labeler.Add(webhook.WebhookType.With(webhook.WebhookTypeDefaulting))
+	labeler.Add(webhook.WebhookTypeAttr.With(webhook.WebhookTypeDefaulting))
 
 	if ac.withContext != nil {
 		ctx = ac.withContext(ctx)

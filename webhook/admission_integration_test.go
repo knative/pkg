@@ -689,6 +689,10 @@ func TestAdmissionValidResponseForRequestBody(t *testing.T) {
 }
 
 func assertAdmissionMetrics(t *testing.T, tc testContext, allowed bool) {
+	status := metav1.StatusFailure
+	if allowed {
+		status = metav1.StatusSuccess
+	}
 	metricstest.AssertMetrics(t, tc.metricReader,
 		metricstest.MetricsPresent(
 			otelhttp.ScopeName,
@@ -703,13 +707,13 @@ func assertAdmissionMetrics(t *testing.T, tc testContext, allowed bool) {
 		metricstest.HasAttributes(
 			"", // any scope
 			"", // any metric
-			WebhookType.With(WebhookTypeAdmission),
-			AdmissionOperation.With("CREATE"),
-			AdmissionGroup.With("pkg.knative.dev"),
-			AdmissionVersion.With("v1alpha1"),
-			AdmissionKind.With("Resource"),
-			AdmissionSubresource.With(""),
-			AdmissionAllowed.With(allowed),
+			WebhookTypeAttr.With(WebhookTypeAdmission),
+			OperationAttr.With("CREATE"),
+			GroupAttr.With("pkg.knative.dev"),
+			VersionAttr.With("v1alpha1"),
+			KindAttr.With("Resource"),
+			SubresourceAttr.With(""),
+			StatusAttr.With(strings.ToLower(status)),
 		),
 	)
 }

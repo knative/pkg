@@ -66,7 +66,7 @@ func (ac *reconciler) Admit(ctx context.Context, request *admissionv1.AdmissionR
 
 	// otelhttp middleware creates the labeler
 	labeler, _ := otelhttp.LabelerFromContext(ctx)
-	labeler.Add(webhook.WebhookType.With(webhook.WebhookTypeValidation))
+	labeler.Add(webhook.WebhookTypeAttr.With(webhook.WebhookTypeValidation))
 
 	if ac.withContext != nil {
 		ctx = ac.withContext(ctx)

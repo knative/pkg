@@ -38,18 +38,14 @@ const (
 var (
 	// WebhookType is an attribute that specifies whether the type of webhook is an admission
 	// eg. (defaulting/validation) or conversion
-	WebhookType = attributekey.String("kn.webhook.type")
+	WebhookTypeAttr = attributekey.String("kn.webhook.type")
 
-	AdmissionOperation   = attributekey.String("kn.webhook.admission.operation")
-	AdmissionGroup       = attributekey.String("kn.webhook.admission.group")
-	AdmissionVersion     = attributekey.String("kn.webhook.admission.version")
-	AdmissionKind        = attributekey.String("kn.webhook.admission.kind")
-	AdmissionSubresource = attributekey.String("kn.webhook.admission.subresource")
-	AdmissionAllowed     = attributekey.Bool("kn.webhook.admission.result.allowed")
-
-	ConversionDesiredAPIVersion = attributekey.String("kn.webhook.conversion.desired_api.version")
-	ConversionKind              = attributekey.String("kn.webhook.conversion.kind")
-	ConversionResultStatus      = attributekey.String("kn.webhook.conversion.result.status")
+	OperationAttr   = attributekey.String("kn.webhook.operation")
+	GroupAttr       = attributekey.String("kn.webhook.resource.group")
+	VersionAttr     = attributekey.String("kn.webhook.resource.version")
+	KindAttr        = attributekey.String("kn.webhook.resource.kind")
+	SubresourceAttr = attributekey.String("kn.webhook.subresource")
+	StatusAttr      = attributekey.String("kn.webhook.status")
 )
 
 type metrics struct {

@@ -28,6 +28,7 @@ import (
 
 	admissionv1 "k8s.io/api/admission/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"knative.dev/pkg/apis"
 	"knative.dev/pkg/logging"
 	"knative.dev/pkg/logging/logkey"
@@ -105,12 +106,12 @@ func admissionHandler(wh *Webhook, c AdmissionController, synced <-chan struct{}
 		labeler, _ := otelhttp.LabelerFromContext(r.Context())
 
 		labeler.Add(
-			AdmissionKind.With(review.Request.Kind.Kind),
-			AdmissionGroup.With(review.Request.Kind.Group),
-			AdmissionVersion.With(review.Request.Kind.Version),
-			AdmissionOperation.With(string(review.Request.Operation)),
-			AdmissionSubresource.With(review.Request.SubResource),
-			WebhookType.With(WebhookTypeAdmission),
+			KindAttr.With(review.Request.Kind.Kind),
+			GroupAttr.With(review.Request.Kind.Group),
+			VersionAttr.With(review.Request.Kind.Version),
+			OperationAttr.With(string(review.Request.Operation)),
+			SubresourceAttr.With(review.Request.SubResource),
+			WebhookTypeAttr.With(WebhookTypeAdmission),
 		)
 
 		logger = logger.With(
@@ -141,8 +142,12 @@ func admissionHandler(wh *Webhook, c AdmissionController, synced <-chan struct{}
 			patchType = string(*reviewResponse.PatchType)
 		}
 
-		allowedAttr := AdmissionAllowed.With(reviewResponse.Allowed)
-		labeler.Add(allowedAttr)
+		status := metav1.StatusFailure
+		if reviewResponse.Allowed {
+			status = metav1.StatusSuccess
+		}
+
+		labeler.Add(StatusAttr.With(strings.ToLower(status)))
 
 		wh.metrics.recordHandlerDuration(ctx,
 			time.Since(ttStart),
