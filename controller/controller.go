@@ -46,9 +46,6 @@ import (
 )
 
 const (
-	falseString = "false"
-	trueString  = "true"
-
 	// DefaultResyncPeriod is the default duration that is used when no
 	// resync period is associated with a controllers initialization context.
 	DefaultResyncPeriod = 10 * time.Hour
