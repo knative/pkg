@@ -24,13 +24,11 @@ import (
 	"flag"
 	"os"
 	"strconv"
-	"strings"
 	"sync"
 	"time"
 
-	"github.com/davecgh/go-spew/spew"
-	"go.opencensus.io/stats/view"
-	"go.opencensus.io/trace"
+	"go.opentelemetry.io/otel/trace"
+	"go.opentelemetry.io/otel/trace/noop"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"k8s.io/klog/v2"
@@ -45,43 +43,20 @@ const (
 	emitableSpanNamePrefix = "emitspan-"
 )
 
+var (
+	noopTracer = noop.NewTracerProvider().Tracer("knative.dev/pkg/test/logging")
+)
+
 // FormatLogger is a printf style function for logging in tests.
 type FormatLogger func(template string, args ...interface{})
-
-var exporter *zapMetricExporter
-
-// zapMetricExporter is a stats and trace exporter that logs the
-// exported data to the provided (probably test specific) zap logger.
-// It conforms to the view.Exporter and trace.Exporter interfaces.
-type zapMetricExporter struct {
-	logger *zap.SugaredLogger
-}
-
-// ExportView will emit the view data vd (i.e. the stats that have been
-// recorded) to the zap logger.
-func (e *zapMetricExporter) ExportView(vd *view.Data) {
-	// We are not currently consuming these metrics, so for now we'll juse
-	// dump the view.Data object as is.
-	e.logger.Debug(spew.Sprint(vd))
-}
 
 // GetEmitableSpan starts and returns a trace.Span with a name that
 // is used by the ExportSpan method to emit the span.
 //
 //nolint:spancheck
-func GetEmitableSpan(ctx context.Context, metricName string) *trace.Span {
-	_, span := trace.StartSpan(ctx, emitableSpanNamePrefix+metricName)
+func GetEmitableSpan(ctx context.Context, metricName string) trace.Span {
+	ctx, span := noopTracer.Start(ctx, metricName)
 	return span
-}
-
-// ExportSpan will emit the trace data to the zap logger. The span is emitted
-// only if the metric name is prefix with emitableSpanNamePrefix constant.
-func (e *zapMetricExporter) ExportSpan(vd *trace.SpanData) {
-	if strings.HasPrefix(vd.Name, emitableSpanNamePrefix) {
-		duration := vd.EndTime.Sub(vd.StartTime)
-		// We will start the log entry with `metric` to identify it as a metric for parsing
-		e.logger.Infof("metric %s %d %d %s", vd.Name[len(emitableSpanNamePrefix):], vd.StartTime.UnixNano(), vd.EndTime.UnixNano(), duration)
-	}
 }
 
 const (
@@ -101,25 +76,6 @@ func zapLevelFromLogrLevel(logrLevel int) zapcore.Level {
 	}
 
 	return l
-}
-
-// InitializeMetricExporter initializes the metric exporter logger
-func InitializeMetricExporter(context string) {
-	// If there was a previously registered exporter, unregister it so we only emit
-	// the metrics in the current context.
-	if exporter != nil {
-		view.UnregisterExporter(exporter)
-		trace.UnregisterExporter(exporter)
-	}
-
-	l := logger.Named(context).Sugar()
-
-	exporter = &zapMetricExporter{logger: l}
-	view.RegisterExporter(exporter)
-	trace.RegisterExporter(exporter)
-
-	view.SetReportingPeriod(metricViewReportingPeriod)
-	trace.ApplyConfig(trace.Config{DefaultSampler: trace.AlwaysSample()})
 }
 
 func printFlags() {
