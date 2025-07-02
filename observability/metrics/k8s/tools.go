@@ -101,7 +101,7 @@ func (l *latency) Observe(ctx context.Context, verb string, u url.URL, latency t
 
 	if portStr := u.Port(); portStr != "" {
 		port, err := strconv.ParseInt(portStr, 10, 64)
-		if err != nil && port > 0 {
+		if err != nil && port > 0 && port < 65535 {
 			serverPort = int(port)
 		}
 	}
@@ -126,7 +126,7 @@ func (r *result) Increment(ctx context.Context, code string, method string, host
 
 	if code == "200" {
 		// happy path - noop
-	} else if c, err := strconv.ParseInt(code, 10, 64); err != nil {
+	} else if c, err := strconv.ParseInt(code, 10, 64); err != nil && c >= 100 && c < 600 {
 		codeInt = int(c)
 	}
 
