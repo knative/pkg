@@ -259,7 +259,6 @@ func MainWithConfig(ctx context.Context, component string, cfg *rest.Config, cto
 	rest.SetDefaultWarningHandler(&logging.WarningHandler{Logger: logger})
 
 	pprof := newProfilingServer(logger.Named("pprof"))
-	defer pprof.Shutdown(context.Background())
 
 	CheckK8sClientMinimumVersionOrDie(ctx, logger)
 	cmw := SetupConfigMapWatchOrDie(ctx, logger)
@@ -339,6 +338,8 @@ func MainWithConfig(ctx context.Context, component string, cfg *rest.Config, cto
 	// This will block until either a signal arrives or one of the grouped functions
 	// returns an error.
 	<-egCtx.Done()
+
+	pprof.Shutdown(context.Background())
 
 	// Don't forward ErrServerClosed as that indicates we're already shutting down.
 	if err := eg.Wait(); err != nil && !errors.Is(err, http.ErrServerClosed) {
