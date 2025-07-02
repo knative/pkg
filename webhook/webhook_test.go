@@ -65,8 +65,6 @@ func newNonRunningTestWebhook(t *testing.T, options Options, acs ...interface{})
 		stopCb()
 	}
 
-	// acs = slices.DeleteFunc(acs, func(a any) bool { return a == nil })
-
 	ac, err = New(ctx, acs)
 	if err != nil {
 		t.Fatal("Failed to create new admission controller:", err)

@@ -79,10 +79,6 @@ type Options struct {
 	// before shutting down.
 	GracePeriod time.Duration
 
-	// // WithMeterProvider specifies a meter provider to use for creating a meter.
-	// // If none is specified, the global provider is used.
-	// MeterProvider metric.MeterProvider
-
 	// DisableNamespaceOwnership configures if the SYSTEM_NAMESPACE is added as an owner reference to the
 	// webhook configuration resources. Overridden by the WEBHOOK_DISABLE_NAMESPACE_OWNERSHIP environment variable.
 	// Disabling can be useful to avoid breaking systems that expect ownership to indicate a true controller
