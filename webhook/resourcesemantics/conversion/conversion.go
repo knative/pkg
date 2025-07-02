@@ -82,6 +82,7 @@ func (r *reconciler) convert(
 		return ret, err
 	}
 
+	// otelhttp middleware creates the labeler
 	labeler, _ := otelhttp.LabelerFromContext(ctx)
 	labeler.Add(
 		webhook.ConversionKind.With(inGVK.Kind),

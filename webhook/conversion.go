@@ -54,6 +54,7 @@ func conversionHandler(wh *Webhook, c ConversionController) http.HandlerFunc {
 			return
 		}
 
+		// otelhttp middleware creates the labeler
 		labeler, _ := otelhttp.LabelerFromContext(r.Context())
 		labeler.Add(
 			webhookTypeAttr,

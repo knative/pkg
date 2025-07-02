@@ -63,6 +63,8 @@ var _ webhook.AdmissionController = (*reconciler)(nil)
 
 // Admit implements AdmissionController
 func (ac *reconciler) Admit(ctx context.Context, request *admissionv1.AdmissionRequest) (resp *admissionv1.AdmissionResponse) {
+
+	// otelhttp middleware creates the labeler
 	labeler, _ := otelhttp.LabelerFromContext(ctx)
 	labeler.Add(webhook.WebhookType.With(webhook.WebhookTypeValidation))
 

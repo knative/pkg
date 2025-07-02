@@ -103,6 +103,7 @@ func admissionHandler(wh *Webhook, c AdmissionController, synced <-chan struct{}
 		}
 		r.Body = io.NopCloser(&bodyBuffer)
 
+		// otelhttp middleware creates the labeler
 		labeler, _ := otelhttp.LabelerFromContext(r.Context())
 
 		labeler.Add(
