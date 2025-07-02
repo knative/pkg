@@ -42,8 +42,6 @@ type ConversionController interface {
 }
 
 func conversionHandler(wh *Webhook, c ConversionController) http.HandlerFunc {
-	webhookTypeAttr := WebhookType.With(WebhookTypeConversion)
-
 	return func(w http.ResponseWriter, r *http.Request) {
 		logger := wh.Logger
 		logger.Infof("Webhook ServeHTTP request=%#v", r)
@@ -57,7 +55,7 @@ func conversionHandler(wh *Webhook, c ConversionController) http.HandlerFunc {
 		// otelhttp middleware creates the labeler
 		labeler, _ := otelhttp.LabelerFromContext(r.Context())
 		labeler.Add(
-			webhookTypeAttr,
+			WebhookType.With(WebhookTypeConversion),
 			ConversionDesiredAPIVersion.With(review.Request.DesiredAPIVersion),
 		)
 

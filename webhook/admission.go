@@ -80,8 +80,6 @@ func MakeErrorStatus(reason string, args ...any) *admissionv1.AdmissionResponse 
 }
 
 func admissionHandler(wh *Webhook, c AdmissionController, synced <-chan struct{}) http.HandlerFunc {
-	webhookTypeAttr := WebhookType.With(WebhookTypeAdmission)
-
 	return func(w http.ResponseWriter, r *http.Request) {
 		if _, ok := c.(StatelessAdmissionController); ok {
 			// Stateless admission controllers do not require Informers to have
@@ -112,7 +110,7 @@ func admissionHandler(wh *Webhook, c AdmissionController, synced <-chan struct{}
 			AdmissionVersion.With(review.Request.Kind.Version),
 			AdmissionOperation.With(string(review.Request.Operation)),
 			AdmissionSubresource.With(review.Request.SubResource),
-			webhookTypeAttr,
+			WebhookType.With(WebhookTypeAdmission),
 		)
 
 		logger = logger.With(
