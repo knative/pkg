@@ -107,10 +107,10 @@ func admissionHandler(wh *Webhook, c AdmissionController, synced <-chan struct{}
 		labeler, _ := otelhttp.LabelerFromContext(r.Context())
 
 		attrs := []attribute.KeyValue{
-			AdmissionOperation.With(string(review.Request.Operation)),
+			AdmissionKind.With(review.Request.Kind.Kind),
 			AdmissionGroup.With(review.Request.Kind.Group),
 			AdmissionVersion.With(review.Request.Kind.Version),
-			AdmissionKind.With(review.Request.Kind.Kind),
+			AdmissionOperation.With(string(review.Request.Operation)),
 			AdmissionSubresource.With(review.Request.SubResource),
 			webhookTypeAttr,
 		}

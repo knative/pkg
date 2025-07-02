@@ -47,7 +47,8 @@ var (
 	AdmissionSubresource = attributekey.String("kn.webhook.admission.subresource")
 	AdmissionAllowed     = attributekey.Bool("kn.webhook.admission.result.allowed")
 
-	ConversionDesiredAPIVersion = attributekey.String("kn.webhook.convert.desired_api.version")
+	ConversionDesiredAPIVersion = attributekey.String("kn.webhook.conversion.desired_api.version")
+	ConversionKind              = attributekey.String("kn.webhook.conversion.kind")
 	ConversionResultStatus      = attributekey.String("kn.webhook.conversion.result.status")
 )
 
