@@ -54,10 +54,11 @@ func conversionHandler(wh *Webhook, c ConversionController) http.HandlerFunc {
 			return
 		}
 
-		versionAttr := ConversionDesiredAPIVersion.With(review.Request.DesiredAPIVersion)
-
 		labeler, _ := otelhttp.LabelerFromContext(r.Context())
-		labeler.Add(webhookTypeAttr, versionAttr)
+		labeler.Add(
+			webhookTypeAttr,
+			ConversionDesiredAPIVersion.With(review.Request.DesiredAPIVersion),
+		)
 
 		logger = logger.With(
 			zap.String("uid", string(review.Request.UID)),
@@ -76,16 +77,12 @@ func conversionHandler(wh *Webhook, c ConversionController) http.HandlerFunc {
 			Response: c.Convert(ctx, review.Request),
 		}
 
-		wh.metrics.recordHandlerDuration(ctx, time.Since(ttStart),
-			metric.WithAttributes(
-				versionAttr,
-				webhookTypeAttr,
-				ConversionResultStatus.With(strings.ToLower(response.Response.Result.Status)),
-			),
-		)
-
 		labeler.Add(
 			ConversionResultStatus.With(strings.ToLower(response.Response.Result.Status)),
+		)
+
+		wh.metrics.recordHandlerDuration(ctx, time.Since(ttStart),
+			metric.WithAttributes(labeler.Get()...),
 		)
 
 		if err := json.NewEncoder(w).Encode(response); err != nil {

@@ -33,7 +33,6 @@ import (
 	"knative.dev/pkg/logging/logkey"
 
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
-	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
 )
 
@@ -106,16 +105,14 @@ func admissionHandler(wh *Webhook, c AdmissionController, synced <-chan struct{}
 
 		labeler, _ := otelhttp.LabelerFromContext(r.Context())
 
-		attrs := []attribute.KeyValue{
+		labeler.Add(
 			AdmissionKind.With(review.Request.Kind.Kind),
 			AdmissionGroup.With(review.Request.Kind.Group),
 			AdmissionVersion.With(review.Request.Kind.Version),
 			AdmissionOperation.With(string(review.Request.Operation)),
 			AdmissionSubresource.With(review.Request.SubResource),
 			webhookTypeAttr,
-		}
-
-		labeler.Add(attrs...)
+		)
 
 		logger = logger.With(
 			logkey.Kind, review.Request.Kind.String(),
@@ -146,12 +143,11 @@ func admissionHandler(wh *Webhook, c AdmissionController, synced <-chan struct{}
 		}
 
 		allowedAttr := AdmissionAllowed.With(reviewResponse.Allowed)
-		attrs = append(attrs, allowedAttr)
 		labeler.Add(allowedAttr)
 
 		wh.metrics.recordHandlerDuration(ctx,
 			time.Since(ttStart),
-			metric.WithAttributes(attrs...),
+			metric.WithAttributes(labeler.Get()...),
 		)
 
 		if !reviewResponse.Allowed || reviewResponse.PatchType != nil || response.Response == nil {
