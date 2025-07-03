@@ -37,7 +37,6 @@ const otelServiceNameKey = "OTEL_SERVICE_NAME"
 // - PodName using system.PodName
 // - ServiceVersion with changeset.Get
 func Default(serviceName string) *resource.Resource {
-
 	// We do this since a downstream user might want to
 	// change the service name but not change the attributes
 	// Currently OTel env detectors only override the service name
