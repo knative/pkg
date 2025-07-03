@@ -19,6 +19,9 @@ package resource
 import (
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
+	semconv "go.opentelemetry.io/otel/semconv/v1.34.0"
+
 	_ "knative.dev/pkg/system/testing"
 )
 
@@ -27,5 +30,36 @@ func TestDefault(t *testing.T) {
 
 	if r == nil {
 		t.Fatalf("expected resource to not be nil")
+	}
+
+	for _, v := range r.Attributes() {
+		if v.Key == semconv.ServiceNameKey {
+			got := v.Value.AsString()
+			want := "myservice"
+
+			if diff := cmp.Diff(want, got); diff != "" {
+				t.Error("unexpected service name diff (-want +got):", diff)
+			}
+		}
+	}
+}
+
+func TestDefaultWithEnvOverride(t *testing.T) {
+	t.Setenv(otelServiceNameKey, "another")
+	r := Default("myservice")
+
+	if r == nil {
+		t.Fatalf("expected resource to not be nil")
+	}
+
+	for _, v := range r.Attributes() {
+		if v.Key == semconv.ServiceNameKey {
+			got := v.Value.AsString()
+			want := "another"
+
+			if diff := cmp.Diff(want, got); diff != "" {
+				t.Error("unexpected service name diff (-want +got):", diff)
+			}
+		}
 	}
 }
