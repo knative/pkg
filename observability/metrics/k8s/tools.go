@@ -100,9 +100,8 @@ func (l *latency) Observe(ctx context.Context, verb string, u url.URL, latency t
 	}
 
 	if portStr := u.Port(); portStr != "" {
-		port, err := strconv.ParseInt(portStr, 10, 64)
-		if err != nil && port > 0 && port < 65535 {
-			serverPort = int(port)
+		if port, err := strconv.Atoi(portStr); err != nil {
+			serverPort = port
 		}
 	}
 
@@ -122,21 +121,28 @@ type result struct {
 }
 
 func (r *result) Increment(ctx context.Context, code string, method string, host string) {
-	codeInt := 200
+	var attrs attribute.Set
 
 	if code == "200" {
-		// happy path - noop
-	} else if c, err := strconv.ParseInt(code, 10, 64); err != nil && c >= 100 && c < 600 {
-		codeInt = int(c)
-	}
-
-	r.cp.resultMetric.Add(ctx, 1,
-		metric.WithAttributeSet(attribute.NewSet(
+		attrs = attribute.NewSet(
 			semconv.ServerAddressKey.String(host),
 			semconv.HTTPRequestMethodKey.String(strings.ToUpper(method)),
-			semconv.HTTPResponseStatusCodeKey.Int(codeInt),
-		)),
-	)
+			semconv.HTTPResponseStatusCodeKey.Int(200),
+		)
+	} else if c, err := strconv.Atoi(code); err != nil {
+		attrs = attribute.NewSet(
+			semconv.ServerAddressKey.String(host),
+			semconv.HTTPRequestMethodKey.String(strings.ToUpper(method)),
+			semconv.HTTPResponseStatusCodeKey.Int(c),
+		)
+	} else {
+		attrs = attribute.NewSet(
+			semconv.ServerAddressKey.String(host),
+			semconv.HTTPRequestMethodKey.String(strings.ToUpper(method)),
+		)
+	}
+
+	r.cp.resultMetric.Add(ctx, 1, metric.WithAttributeSet(attrs))
 }
 
 var (
