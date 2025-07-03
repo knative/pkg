@@ -60,8 +60,6 @@ func Default(serviceName string) *resource.Resource {
 	// Ignore the error because it complains about semconv
 	// schema version differences
 	resource, err := resource.Merge(
-		// We merge 'Default' last since this allows overriding
-		// the service name etc. using env variables
 		resource.Default(),
 		resource.NewWithAttributes(
 			semconv.SchemaURL,
