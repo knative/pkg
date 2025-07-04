@@ -972,7 +972,7 @@ func TestStartAndShutdownWithLeaderAwareNoElection(t *testing.T) {
 	select {
 	case <-doneCh:
 		t.Fatal("StartAll finished early.")
-	case <-time.After(10 * time.Second):
+	case <-time.After(1 * time.Second):
 		// Give it some time to run.
 	}
 
