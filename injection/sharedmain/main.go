@@ -44,6 +44,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/rest"
+	"k8s.io/klog/v2"
 
 	kubeclient "knative.dev/pkg/client/injection/kube/client"
 	"knative.dev/pkg/configmap"
@@ -254,6 +255,8 @@ func MainWithConfig(ctx context.Context, component string, cfg *rest.Config, cto
 	logger, atomicLevel := SetupLoggerOrDie(ctx, component)
 	defer logger.Sync()
 	ctx = logging.WithLogger(ctx, logger)
+
+	klog.SetLogger(zapr.NewLogger(logger.Desugar()))
 
 	// Override client-go's warning handler to give us nicely printed warnings.
 	rest.SetDefaultWarningHandler(&logging.WarningHandler{Logger: logger})
