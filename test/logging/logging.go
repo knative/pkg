@@ -26,14 +26,14 @@ import (
 	"strconv"
 	"sync"
 
+	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/trace"
-	"go.opentelemetry.io/otel/trace/noop"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"k8s.io/klog/v2"
 )
 
-var noopTracer = noop.NewTracerProvider().Tracer("knative.dev/pkg/test/logging")
+var tracer = otel.GetTracerProvider().Tracer("knative.dev/pkg/test/logging")
 
 // FormatLogger is a printf style function for logging in tests.
 type FormatLogger func(template string, args ...interface{})
@@ -43,7 +43,7 @@ type FormatLogger func(template string, args ...interface{})
 //
 //nolint:spancheck
 func GetEmitableSpan(ctx context.Context, metricName string) trace.Span {
-	_, span := noopTracer.Start(ctx, metricName)
+	_, span := tracer.Start(ctx, metricName)
 	return span
 }
 
