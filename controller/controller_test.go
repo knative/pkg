@@ -42,7 +42,6 @@ import (
 	"knative.dev/pkg/reconciler"
 	"knative.dev/pkg/system"
 
-	. "knative.dev/pkg/controller/testing"
 	. "knative.dev/pkg/logging/testing"
 	_ "knative.dev/pkg/system/testing"
 	. "knative.dev/pkg/testing"
@@ -755,7 +754,6 @@ func TestEnqueueAfter(t *testing.T) {
 	impl := NewContext(context.TODO(), &nopReconciler{}, ControllerOptions{
 		Logger:        TestLogger(t),
 		WorkQueueName: "Testing",
-		Reporter:      &FakeStatsReporter{},
 	})
 
 	t.Cleanup(func() {
@@ -822,7 +820,6 @@ func TestEnqueueKeyAfter(t *testing.T) {
 	impl := NewContext(context.TODO(), &nopReconciler{}, ControllerOptions{
 		Logger:        TestLogger(t),
 		WorkQueueName: "Testing",
-		Reporter:      &FakeStatsReporter{},
 	})
 	t.Cleanup(func() {
 		impl.WorkQueue().ShutDown()
@@ -884,7 +881,6 @@ func TestStartAndShutdown(t *testing.T) {
 	impl := NewContext(context.TODO(), &nopReconciler{}, ControllerOptions{
 		Logger:        TestLogger(t),
 		WorkQueueName: "Testing",
-		Reporter:      &FakeStatsReporter{},
 	})
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -960,7 +956,6 @@ func TestStartAndShutdownWithLeaderAwareNoElection(t *testing.T) {
 	impl := NewContext(context.TODO(), r, ControllerOptions{
 		Logger:        TestLogger(t),
 		WorkQueueName: "Testing",
-		Reporter:      &FakeStatsReporter{},
 	})
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -1042,7 +1037,6 @@ func TestStartAndShutdownWithLeaderAwareWithLostElection(t *testing.T) {
 	impl := NewContext(context.TODO(), &nopReconciler{}, ControllerOptions{
 		Logger:        TestLogger(t),
 		WorkQueueName: "Testing",
-		Reporter:      &FakeStatsReporter{},
 	})
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -1082,11 +1076,9 @@ func TestStartAndShutdownWithLeaderAwareWithLostElection(t *testing.T) {
 
 func TestStartAndShutdownWithWork(t *testing.T) {
 	r := &CountingReconciler{}
-	reporter := &FakeStatsReporter{}
 	impl := NewContext(context.TODO(), r, ControllerOptions{
 		Logger:        TestLogger(t),
 		WorkQueueName: "Testing",
-		Reporter:      reporter,
 	})
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -1123,8 +1115,6 @@ func TestStartAndShutdownWithWork(t *testing.T) {
 	if got, want := impl.WorkQueue().NumRequeues(types.NamespacedName{Namespace: "foo", Name: "bar"}), 0; got != want {
 		t.Errorf("requeues = %v, wanted %v", got, want)
 	}
-
-	checkStats(t, reporter, 1, 0, 1, trueString)
 }
 
 type fakeError struct{}
@@ -1190,7 +1180,6 @@ func TestStartAndShutdownWithErroringWork(t *testing.T) {
 	impl := NewContext(context.TODO(), &errorReconciler{}, ControllerOptions{
 		Logger:        TestLogger(t),
 		WorkQueueName: "Testing",
-		Reporter:      &FakeStatsReporter{},
 	})
 	impl.EnqueueKey(item)
 
@@ -1245,11 +1234,9 @@ func (er *permanentErrorReconciler) Reconcile(context.Context, string) error {
 
 func TestStartAndShutdownWithPermanentErroringWork(t *testing.T) {
 	r := &permanentErrorReconciler{}
-	reporter := &FakeStatsReporter{}
 	impl := NewContext(context.TODO(), r, ControllerOptions{
 		Logger:        TestLogger(t),
 		WorkQueueName: "Testing",
-		Reporter:      reporter,
 	})
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -1284,8 +1271,6 @@ func TestStartAndShutdownWithPermanentErroringWork(t *testing.T) {
 	if got, want := impl.WorkQueue().NumRequeues(types.NamespacedName{Namespace: "foo", Name: "bar"}), 0; got != want {
 		t.Errorf("Requeue count = %v, wanted %v", got, want)
 	}
-
-	checkStats(t, reporter, 1, 0, 1, falseString)
 }
 
 type requeueAfterReconciler struct {
@@ -1313,11 +1298,9 @@ func TestStartAndShutdownWithRequeuingWork(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			r := &requeueAfterReconciler{duration: test.duration}
-			reporter := &FakeStatsReporter{}
 			impl := NewContext(context.TODO(), r, ControllerOptions{
 				Logger:        TestLogger(t),
 				WorkQueueName: "Testing",
-				Reporter:      reporter,
 			})
 
 			ctx, cancel := context.WithCancel(context.Background())
@@ -1416,7 +1399,6 @@ func TestImplGlobalResync(t *testing.T) {
 	impl := NewContext(context.TODO(), r, ControllerOptions{
 		Logger:        TestLogger(t),
 		WorkQueueName: "Testing",
-		Reporter:      &FakeStatsReporter{},
 	})
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -1452,23 +1434,6 @@ func TestImplGlobalResync(t *testing.T) {
 
 	if got, want := r.count.Load(), int32(3); want != got {
 		t.Errorf("GlobalResync: want = %v, got = %v", want, got)
-	}
-}
-
-func checkStats(t *testing.T, r *FakeStatsReporter, reportCount, lastQueueDepth, reconcileCount int, lastReconcileSuccess string) {
-	qd := r.GetQueueDepths()
-	if got, want := len(qd), reportCount; got != want {
-		t.Errorf("Queue depth reports = %v, wanted %v", got, want)
-	}
-	if got, want := qd[len(qd)-1], int64(lastQueueDepth); got != want {
-		t.Errorf("Queue depth report = %v, wanted %v", got, want)
-	}
-	rd := r.GetReconcileData()
-	if got, want := len(rd), reconcileCount; got != want {
-		t.Errorf("Reconcile reports = %v, wanted %v", got, want)
-	}
-	if got, want := rd[len(rd)-1].Success, lastReconcileSuccess; got != want {
-		t.Errorf("Reconcile success = %v, wanted %v", got, want)
 	}
 }
 
