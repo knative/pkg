@@ -123,6 +123,8 @@ type result struct {
 func (r *result) Increment(ctx context.Context, code string, method string, host string) {
 	var attrs attribute.Set
 
+	// assume we hit the happy path most frequently then in
+	// that case we want to avoid the strconv.Atoi parsing
 	if code == "200" {
 		attrs = attribute.NewSet(
 			semconv.ServerAddressKey.String(host),
