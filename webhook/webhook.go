@@ -33,6 +33,11 @@ import (
 	kubeinformerfactory "knative.dev/pkg/injection/clients/namespacedkube/informers/factory"
 	"knative.dev/pkg/network/handlers"
 
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
+	"go.opentelemetry.io/otel/metric"
+	"go.opentelemetry.io/otel/propagation"
+	"go.opentelemetry.io/otel/trace"
+
 	"go.uber.org/zap"
 	"golang.org/x/sync/errgroup"
 	admissionv1 "k8s.io/api/admission/v1"
@@ -70,13 +75,6 @@ type Options struct {
 	// only a single port for the service.
 	Port int
 
-	// StatsReporterOptions are the options used to initialize the default StatsReporter
-	StatsReporterOptions []StatsReporterOption
-
-	// StatsReporter reports metrics about the webhook.
-	// This will be automatically initialized by the constructor if left uninitialized.
-	StatsReporter StatsReporter
-
 	// GracePeriod is how long to wait after failing readiness probes
 	// before shutting down.
 	GracePeriod time.Duration
@@ -101,6 +99,18 @@ type Options struct {
 	// * https://github.com/kubernetes/kubernetes/issues/121197
 	// * https://github.com/golang/go/issues/63417#issuecomment-1758858612
 	EnableHTTP2 bool
+
+	// MeterProvider is used to configure the MeterProvider used by the webhook
+	// If nil it will use the global meter provider
+	MeterProvider metric.MeterProvider
+
+	// TracerProvider is used to config the TracerProvider used by the webhook
+	// if nil it will use the global tracer provider
+	TracerProvider trace.TracerProvider
+
+	// TextMapPropagator is used to configure the TextMapPropagator used by the webhook
+	// if nil it will use the global text map propagator
+	TextMapPropagator propagation.TextMapPropagator
 }
 
 // Operation is the verb being operated on
@@ -131,6 +141,8 @@ type Webhook struct {
 
 	// testListener is only used in testing so we don't get port conflicts
 	testListener net.Listener
+
+	metrics *metrics
 }
 
 // New constructs a Webhook
@@ -149,15 +161,8 @@ func New(
 	if opts == nil {
 		return nil, errors.New("context must have Options specified")
 	}
-	logger := logging.FromContext(ctx)
 
-	if opts.StatsReporter == nil {
-		reporter, err := NewStatsReporter(opts.StatsReporterOptions...)
-		if err != nil {
-			return nil, err
-		}
-		opts.StatsReporter = reporter
-	}
+	logger := logging.FromContext(ctx)
 
 	defaultTLSMinVersion := uint16(tls.VersionTLS13)
 	if opts.TLSMinVersion == 0 {
@@ -172,6 +177,7 @@ func New(
 		Options: *opts,
 		Logger:  logger,
 		synced:  cancel,
+		metrics: newMetrics(*opts),
 	}
 
 	if opts.SecretName != "" {
@@ -224,12 +230,12 @@ func New(
 	for _, controller := range controllers {
 		switch c := controller.(type) {
 		case AdmissionController:
-			handler := admissionHandler(logger, opts.StatsReporter, c, syncCtx.Done())
-			webhook.mux.Handle(c.Path(), handler)
+			handler := admissionHandler(webhook, c, syncCtx.Done())
+			webhook.mux.Handle(c.Path(), otelhttp.WithRouteTag(c.Path(), handler))
 
 		case ConversionController:
-			handler := conversionHandler(logger, opts.StatsReporter, c)
-			webhook.mux.Handle(c.Path(), handler)
+			handler := conversionHandler(webhook, c)
+			webhook.mux.Handle(c.Path(), otelhttp.WithRouteTag(c.Path(), handler))
 
 		default:
 			return nil, fmt.Errorf("unknown webhook controller type:  %T", controller)
@@ -265,6 +271,14 @@ func (wh *Webhook) Run(stop <-chan struct{}) error {
 		QuietPeriod: wh.Options.GracePeriod,
 	}
 
+	otelHandler := otelhttp.NewHandler(
+		drainer,
+		wh.Options.ServiceName,
+		otelhttp.WithMeterProvider(wh.Options.MeterProvider),
+		otelhttp.WithTracerProvider(wh.Options.TracerProvider),
+		otelhttp.WithPropagators(wh.Options.TextMapPropagator),
+	)
+
 	// If TLSNextProto is not nil, HTTP/2 support is not enabled automatically.
 	nextProto := map[string]func(*http.Server, *tls.Conn, http.Handler){}
 	if wh.Options.EnableHTTP2 {
@@ -273,7 +287,7 @@ func (wh *Webhook) Run(stop <-chan struct{}) error {
 
 	server := &http.Server{
 		ErrorLog:          log.New(&zapWrapper{logger}, "", 0),
-		Handler:           drainer,
+		Handler:           otelHandler,
 		Addr:              fmt.Sprint(":", wh.Options.Port),
 		TLSConfig:         wh.tlsConfig,
 		ReadHeaderTimeout: time.Minute, // https://medium.com/a-journey-with-go/go-understand-and-mitigate-slowloris-attack-711c1b1403f6

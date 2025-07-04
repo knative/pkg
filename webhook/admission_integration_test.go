@@ -29,15 +29,17 @@ import (
 	"time"
 
 	"github.com/google/go-cmp/cmp"
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"golang.org/x/sync/errgroup"
 	jsonpatch "gomodules.xyz/jsonpatch/v2"
+
 	admissionv1 "k8s.io/api/admission/v1"
 	authenticationv1 "k8s.io/api/authentication/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	"knative.dev/pkg/apis"
 	kubeclient "knative.dev/pkg/client/injection/kube/client/fake"
-	"knative.dev/pkg/metrics/metricstest"
-	_ "knative.dev/pkg/metrics/testing"
+	"knative.dev/pkg/observability/metrics/metricstest"
 )
 
 type fixedAdmissionController struct {
@@ -99,7 +101,7 @@ func TestAdmissionEmptyRequestBody(t *testing.T) {
 func TestAdmissionValidResponseForResourceTLS(t *testing.T) {
 	ac := &fixedAdmissionController{
 		path:     "/bazinga",
-		response: &admissionv1.AdmissionResponse{},
+		response: &admissionv1.AdmissionResponse{Allowed: true},
 	}
 	test := testSetup(t, withController(ac))
 
@@ -195,6 +197,8 @@ func TestAdmissionValidResponseForResourceTLS(t *testing.T) {
 			t.Errorf("expected the response typeMeta to be the same as the request (-want, +got)\n%s", diff)
 			return
 		}
+
+		assertAdmissionMetrics(t, test, ac.response.Allowed)
 	}()
 
 	// Wait for the goroutine to launch.
@@ -216,14 +220,12 @@ func TestAdmissionValidResponseForResourceTLS(t *testing.T) {
 	case <-time.After(5 * time.Second):
 		t.Error("Timed out waiting on Admit to complete after informers synced.")
 	}
-
-	metricstest.CheckStatsReported(t, requestCountName, requestLatenciesName)
 }
 
 func TestAdmissionValidResponseForResource(t *testing.T) {
 	ac := &fixedAdmissionController{
 		path:     "/bazinga",
-		response: &admissionv1.AdmissionResponse{},
+		response: &admissionv1.AdmissionResponse{Allowed: true},
 	}
 	test := testSetup(t, withController(ac), withNoTLS())
 
@@ -316,6 +318,8 @@ func TestAdmissionValidResponseForResource(t *testing.T) {
 			t.Errorf("expected the response typeMeta to be the same as the request (-want, +got)\n%s", diff)
 			return
 		}
+
+		assertAdmissionMetrics(t, test, ac.response.Allowed)
 	}()
 
 	// Wait for the goroutine to launch.
@@ -337,8 +341,6 @@ func TestAdmissionValidResponseForResource(t *testing.T) {
 	case <-time.After(5 * time.Second):
 		t.Error("Timed out waiting on Admit to complete after informers synced.")
 	}
-
-	metricstest.CheckStatsReported(t, requestCountName, requestLatenciesName)
 }
 
 func TestAdmissionInvalidResponseForResource(t *testing.T) {
@@ -449,8 +451,7 @@ func TestAdmissionInvalidResponseForResource(t *testing.T) {
 		t.Error("Received unexpected response status message", reviewResponse.Response.Result.Message)
 	}
 
-	// Stats should be reported for requests that have admission disallowed
-	metricstest.CheckStatsReported(t, requestCountName, requestLatenciesName)
+	assertAdmissionMetrics(t, test, ac.response.Allowed)
 }
 
 func TestAdmissionWarningResponseForResource(t *testing.T) {
@@ -458,8 +459,11 @@ func TestAdmissionWarningResponseForResource(t *testing.T) {
 	// these three warnings
 	expectedWarnings := []string{"everything is not fine.", "like really", "for sure"}
 	ac := &fixedAdmissionController{
-		path:     "/warnmeplease",
-		response: &admissionv1.AdmissionResponse{Warnings: []string{"everything is not fine.\nlike really\nfor sure"}},
+		path: "/warnmeplease",
+		response: &admissionv1.AdmissionResponse{
+			Allowed:  true,
+			Warnings: []string{"everything is not fine.\nlike really\nfor sure"},
+		},
 	}
 	test := testSetup(t, withController(ac))
 
@@ -557,12 +561,16 @@ func TestAdmissionWarningResponseForResource(t *testing.T) {
 			t.Errorf("Unexpected warning want %s got %s", expectedWarnings[i], w)
 		}
 	}
+
+	assertAdmissionMetrics(t, test, ac.response.Allowed)
 }
 
 func TestAdmissionValidResponseForRequestBody(t *testing.T) {
 	ac := &readBodyTwiceAdmissionController{
-		path:     "/bazinga",
-		response: &admissionv1.AdmissionResponse{},
+		path: "/bazinga",
+		response: &admissionv1.AdmissionResponse{
+			Allowed: true,
+		},
 	}
 	test := testSetup(t, withController(ac), withNoTLS())
 
@@ -655,6 +663,8 @@ func TestAdmissionValidResponseForRequestBody(t *testing.T) {
 			t.Errorf("expected the response typeMeta to be the same as the request (-want, +got)\n%s", diff)
 			return
 		}
+
+		assertAdmissionMetrics(t, test, ac.response.Allowed)
 	}()
 
 	// Wait for the goroutine to launch.
@@ -676,6 +686,34 @@ func TestAdmissionValidResponseForRequestBody(t *testing.T) {
 	case <-time.After(5 * time.Second):
 		t.Error("Timed out waiting on Admit to complete after informers synced.")
 	}
+}
 
-	metricstest.CheckStatsReported(t, requestCountName, requestLatenciesName)
+func assertAdmissionMetrics(t *testing.T, tc testContext, allowed bool) {
+	status := metav1.StatusFailure
+	if allowed {
+		status = metav1.StatusSuccess
+	}
+	metricstest.AssertMetrics(t, tc.metricReader,
+		metricstest.MetricsPresent(
+			otelhttp.ScopeName,
+			"http.server.request.body.size",
+			"http.server.response.body.size",
+			"http.server.request.duration",
+		),
+		metricstest.MetricsPresent(
+			scopeName,
+			"kn.webhook.handler.duration",
+		),
+		metricstest.HasAttributes(
+			"", // any scope
+			"", // any metric
+			WebhookTypeAttr.With(WebhookTypeAdmission),
+			OperationAttr.With("CREATE"),
+			GroupAttr.With("pkg.knative.dev"),
+			VersionAttr.With("v1alpha1"),
+			KindAttr.With("Resource"),
+			SubresourceAttr.With(""),
+			StatusAttr.With(strings.ToLower(status)),
+		),
+	)
 }

@@ -21,10 +21,15 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
+	"go.opentelemetry.io/otel/metric"
 	"go.uber.org/zap"
 	apixv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+
 	"knative.dev/pkg/apis"
 	"knative.dev/pkg/logging"
 )
@@ -38,10 +43,9 @@ type ConversionController interface {
 	Convert(context.Context, *apixv1.ConversionRequest) *apixv1.ConversionResponse
 }
 
-func conversionHandler(rootLogger *zap.SugaredLogger, stats StatsReporter, c ConversionController) http.HandlerFunc {
+func conversionHandler(wh *Webhook, c ConversionController) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		ttStart := time.Now()
-		logger := rootLogger
+		logger := wh.Logger
 		logger.Infof("Webhook ServeHTTP request=%#v", r)
 
 		var review apixv1.ConversionReview
@@ -49,6 +53,20 @@ func conversionHandler(rootLogger *zap.SugaredLogger, stats StatsReporter, c Con
 			http.Error(w, fmt.Sprint("could not decode body:", err), http.StatusBadRequest)
 			return
 		}
+
+		gv, err := parseAPIVersion(review.Request.DesiredAPIVersion)
+		if err != nil {
+			http.Error(w, fmt.Sprint("could parse desired api version:", err), http.StatusBadRequest)
+			return
+		}
+
+		// otelhttp middleware creates the labeler
+		labeler, _ := otelhttp.LabelerFromContext(r.Context())
+		labeler.Add(
+			WebhookTypeAttr.With(WebhookTypeConversion),
+			GroupAttr.With(gv.Group),
+			VersionAttr.With(gv.Version),
+		)
 
 		logger = logger.With(
 			zap.String("uid", string(review.Request.UID)),
@@ -58,6 +76,7 @@ func conversionHandler(rootLogger *zap.SugaredLogger, stats StatsReporter, c Con
 		ctx := logging.WithLogger(r.Context(), logger)
 		ctx = apis.WithHTTPRequest(ctx, r)
 
+		ttStart := time.Now()
 		response := apixv1.ConversionReview{
 			// Use the same type meta as the request - this is required by the K8s API
 			// note: v1beta1 & v1 ConversionReview shapes are identical so even though
@@ -66,14 +85,36 @@ func conversionHandler(rootLogger *zap.SugaredLogger, stats StatsReporter, c Con
 			Response: c.Convert(ctx, review.Request),
 		}
 
+		labeler.Add(
+			StatusAttr.With(strings.ToLower(response.Response.Result.Status)),
+		)
+
+		wh.metrics.recordHandlerDuration(ctx, time.Since(ttStart),
+			metric.WithAttributes(labeler.Get()...),
+		)
+
 		if err := json.NewEncoder(w).Encode(response); err != nil {
 			http.Error(w, fmt.Sprint("could not encode response:", err), http.StatusInternalServerError)
 			return
 		}
-
-		if stats != nil {
-			// Only report valid requests
-			stats.ReportConversionRequest(review.Request, response.Response, time.Since(ttStart))
-		}
 	}
+}
+
+func parseAPIVersion(apiVersion string) (schema.GroupVersion, error) {
+	gv, err := schema.ParseGroupVersion(apiVersion)
+	if err != nil {
+		err = fmt.Errorf("desired API version %q is not valid", apiVersion)
+		return schema.GroupVersion{}, err
+	}
+
+	if !isValidGV(gv) {
+		err = fmt.Errorf("desired API version %q is not valid", apiVersion)
+		return schema.GroupVersion{}, err
+	}
+
+	return gv, nil
+}
+
+func isValidGV(gk schema.GroupVersion) bool {
+	return gk.Group != "" && gk.Version != ""
 }

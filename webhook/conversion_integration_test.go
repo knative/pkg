@@ -23,16 +23,20 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"golang.org/x/sync/errgroup"
+
 	apixv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
+
 	kubeclient "knative.dev/pkg/client/injection/kube/client/fake"
-	_ "knative.dev/pkg/metrics/testing"
+	"knative.dev/pkg/observability/metrics/metricstest"
 )
 
 type fixedConversionController struct {
@@ -64,6 +68,9 @@ func TestConversionValidResponse(t *testing.T) {
 		path: "/bazinga",
 		response: &apixv1.ConversionResponse{
 			UID: types.UID("some-uid"),
+			Result: metav1.Status{
+				Status: metav1.StatusSuccess,
+			},
 		},
 	}
 	test := testSetup(t, withController(cc))
@@ -139,6 +146,8 @@ func TestConversionValidResponse(t *testing.T) {
 	if diff := cmp.Diff(review.TypeMeta, reviewResponse.TypeMeta); diff != "" {
 		t.Errorf("expected the response typeMeta to be the same as the request (-want, +got)\n%s", diff)
 	}
+
+	assertConversionMetrics(t, test, cc.response.Result.Status)
 }
 
 func TestConversionInvalidResponse(t *testing.T) {
@@ -224,4 +233,29 @@ func TestConversionInvalidResponse(t *testing.T) {
 	if reviewResponse.Response.Result.Status != metav1.StatusFailure {
 		t.Errorf("expected the response uid to be the stubbed version")
 	}
+
+	assertConversionMetrics(t, test, cc.response.Result.Status)
+}
+
+func assertConversionMetrics(t *testing.T, tc testContext, status string) {
+	metricstest.AssertMetrics(t, tc.metricReader,
+		metricstest.MetricsPresent(
+			otelhttp.ScopeName,
+			"http.server.request.body.size",
+			"http.server.response.body.size",
+			"http.server.request.duration",
+		),
+		metricstest.MetricsPresent(
+			scopeName,
+			"kn.webhook.handler.duration",
+		),
+		metricstest.HasAttributes(
+			"", // any scope
+			"", // any metric
+			WebhookTypeAttr.With(WebhookTypeConversion),
+			GroupAttr.With("example.com"),
+			VersionAttr.With("v1"),
+			StatusAttr.With(strings.ToLower(status)),
+		),
+	)
 }

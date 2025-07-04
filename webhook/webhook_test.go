@@ -124,10 +124,3 @@ func TestTLSMinVersionWebhookOption(t *testing.T) {
 		}
 	})
 }
-
-type testContext struct {
-	webhook *Webhook
-	addr    string
-	ctx     context.Context
-	cancel  context.CancelFunc
-}
