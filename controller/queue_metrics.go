@@ -28,11 +28,14 @@ import (
 // Copyright The Kubernetes Authors.
 // Forked from: https://github.com/kubernetes/client-go/blob/release-1.33/util/workqueue/metrics.go
 
-// Unfortunately k8s package doesn't expose this variable so for now
-// we'll create our own and potentially upstream some changes in the future.
-var globalMetricsProvider workqueue.MetricsProvider = k8s.NewNoopWorkqueueMetricsProvider()
+var (
+	noopProvider = k8s.NewNoopWorkqueueMetricsProvider()
 
-var setGlobalMetricsProviderOnce sync.Once
+	// Unfortunately k8s package doesn't expose this variable so for now
+	// we'll create our own and potentially upstream some changes in the future.
+	globalMetricsProvider        workqueue.MetricsProvider = noopProvider
+	setGlobalMetricsProviderOnce sync.Once
+)
 
 func SetMetricsProvider(metricsProvider workqueue.MetricsProvider) {
 	setGlobalMetricsProviderOnce.Do(func() {
@@ -109,6 +112,9 @@ func (m *queueMetrics) done(item any) {
 }
 
 func (m *queueMetrics) updateUnfinishedWork() {
+	if m == nil {
+		return
+	}
 	// Note that a summary metric would be better for this, but prometheus
 	// doesn't seem to have non-hacky ways to reset the summary metrics.
 	var total float64

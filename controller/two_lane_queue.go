@@ -61,19 +61,10 @@ func newTwoLaneWorkQueue(name string, rl workqueue.TypedRateLimiter[any]) *twoLa
 		consumerQueue: workqueue.NewTyped[any](),
 		fastChan:      make(chan any),
 		slowChan:      make(chan any),
-
-		metrics: &queueMetrics{
-			clock:                   clock.RealClock{},
-			depth:                   mp.NewDepthMetric(name),
-			adds:                    mp.NewAddsMetric(name),
-			latency:                 mp.NewLatencyMetric(name),
-			workDuration:            mp.NewWorkDurationMetric(name),
-			unfinishedWorkSeconds:   mp.NewUnfinishedWorkSecondsMetric(name),
-			longestRunningProcessor: mp.NewUnfinishedWorkSecondsMetric(name),
-			addTimes:                make(map[any]time.Time),
-			processingStartTimes:    make(map[any]time.Time),
-		},
 	}
+
+	tlq.metrics = createMetrics(tlq, mp, name)
+
 	// Run consumer thread.
 	go tlq.runConsumer()
 	// Run producer threads.
@@ -96,6 +87,41 @@ func newTwoLaneWorkQueue(name string, rl workqueue.TypedRateLimiter[any]) *twoLa
 		),
 	}
 	return q
+}
+
+func createMetrics(q *twoLaneQueue, mp workqueue.MetricsProvider, name string) *queueMetrics {
+	if mp == noopProvider {
+		return nil
+	}
+
+	m := &queueMetrics{
+		clock:                   clock.RealClock{},
+		depth:                   mp.NewDepthMetric(name),
+		adds:                    mp.NewAddsMetric(name),
+		latency:                 mp.NewLatencyMetric(name),
+		workDuration:            mp.NewWorkDurationMetric(name),
+		unfinishedWorkSeconds:   mp.NewUnfinishedWorkSecondsMetric(name),
+		longestRunningProcessor: mp.NewUnfinishedWorkSecondsMetric(name),
+		addTimes:                make(map[any]time.Time),
+		processingStartTimes:    make(map[any]time.Time),
+	}
+
+	go updateUnfinishedWorkLoop(q)
+
+	return m
+}
+
+func updateUnfinishedWorkLoop(q *twoLaneQueue) {
+	t := time.NewTicker(time.Second)
+	defer t.Stop()
+
+	for range t.C {
+		if q.ShuttingDown() {
+			return
+		}
+
+		q.metrics.updateUnfinishedWork()
+	}
 }
 
 func process(q workqueue.TypedInterface[any], ch chan any) {
