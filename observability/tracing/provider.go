@@ -26,6 +26,7 @@ import (
 
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
+	"go.opentelemetry.io/otel/exporters/stdout/stdouttrace"
 	"go.opentelemetry.io/otel/propagation"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"go.opentelemetry.io/otel/trace"
@@ -88,9 +89,15 @@ func exporterFor(ctx context.Context, cfg Config) (sdktrace.SpanExporter, error)
 		return buildGRPC(ctx, cfg)
 	case ProtocolHTTPProtobuf:
 		return buildHTTP(ctx, cfg)
+	case ProtocolStdout:
+		return buildStdout()
 	default:
 		return nil, fmt.Errorf("unsupported metric exporter: %q", cfg.Protocol)
 	}
+}
+
+func buildStdout() (sdktrace.SpanExporter, error) {
+	return stdouttrace.New()
 }
 
 func buildGRPC(ctx context.Context, cfg Config) (sdktrace.SpanExporter, error) {
@@ -160,6 +167,10 @@ func sampleFor(cfg Config) (sdktrace.Sampler, error) {
 	// Don't override env arg
 	if os.Getenv("OTEL_TRACES_SAMPLER") != "" {
 		return nil, nil
+	}
+
+	if cfg.Protocol == ProtocolStdout {
+		return sdktrace.AlwaysSample(), nil
 	}
 
 	rate := cfg.SamplingRate
