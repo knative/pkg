@@ -418,6 +418,7 @@ func SetupObservabilityOrDie(
 	}
 
 	workqueue.SetProvider(workQueueMetrics)
+	controller.SetMetricsProvider(workQueueMetrics)
 
 	clientMetrics, err := k8smetrics.NewClientMetricProvider(
 		k8smetrics.WithMeterProvider(meterProvider),

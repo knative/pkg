@@ -55,14 +55,6 @@ func TestRateLimit(t *testing.T) {
 	}
 
 	q := newTwoLaneWorkQueue("live-in-the-limited-lane", rl)
-	// Verify the slow lane has the proper RL.
-	q.SlowLane().AddRateLimited("1")
-	select {
-	case <-rl.whenCalled:
-		// As desired.
-	default:
-		t.Error("Didn't go to the proper rate limiter.")
-	}
 
 	// Verify the fast lane has the proper RL.
 	q.AddRateLimited("2")
@@ -75,9 +67,9 @@ func TestRateLimit(t *testing.T) {
 
 	// Verify the items were properly added for consumption.
 	if wait.PollUntilContextTimeout(context.Background(), 10*time.Millisecond, 250*time.Millisecond, true, func(ctx context.Context) (bool, error) {
-		return q.Len() == 2, nil
+		return q.Len() == 1, nil
 	}) != nil {
-		t.Error("Queue length was never 2")
+		t.Error("Queue length was never 1")
 	}
 	// And drain.
 	q.ShutDown()
@@ -88,7 +80,7 @@ func TestRateLimit(t *testing.T) {
 
 func TestSlowQueue(t *testing.T) {
 	q := newTwoLaneWorkQueue("live-in-the-fast-lane", workqueue.DefaultTypedControllerRateLimiter[any]())
-	q.SlowLane().Add("1")
+	q.AddSlow("1")
 	// Queue has async moving parts so if we check at the wrong moment, this might still be 0.
 	if wait.PollUntilContextTimeout(context.Background(), 10*time.Millisecond, 250*time.Millisecond, true, func(ctx context.Context) (bool, error) {
 		return q.Len() == 1, nil
@@ -105,7 +97,7 @@ func TestSlowQueue(t *testing.T) {
 	}
 	q.Done(k)
 	q.ShutDown()
-	if !q.SlowLane().ShuttingDown() {
+	if !q.slowLane().ShuttingDown() {
 		t.Error("ShutDown did not propagate to the slow queue")
 	}
 	if _, done := q.Get(); !done {
@@ -128,7 +120,7 @@ func TestDoubleKey(t *testing.T) {
 	}
 
 	// This should not be read from the queue until we actually call `Done`.
-	q.SlowLane().Add("1")
+	q.AddSlow("1")
 	sentinel := make(chan struct{})
 	go func() {
 		defer close(sentinel)
@@ -175,7 +167,7 @@ func TestOrder(t *testing.T) {
 			q.Add(strconv.Itoa(i))
 			// Get fewer of those, to ensure the first priority select wins.
 			if i%2 == 0 {
-				q.SlowLane().Add("slow" + strconv.Itoa(i))
+				q.AddSlow("slow" + strconv.Itoa(i))
 			}
 			select {
 			case <-stop:

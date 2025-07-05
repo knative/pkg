@@ -199,7 +199,7 @@ type Impl struct {
 	// never processing the same item simultaneously in two different workers.
 	// The slow queue is used for global resync and other background processes
 	// which are not required to complete at the highest priority.
-	workQueue *twoLaneQueue
+	workQueue *twoLaneRateLimitingQueue
 
 	// Concurrency - The number of workers to use when processing the controller's workqueue.
 	Concurrency int
@@ -270,11 +270,11 @@ func (c *Impl) EnqueueAfter(obj interface{}, after time.Duration) {
 // EnqueueSlowKey takes a resource, converts it into a namespace/name string,
 // and enqueues that key in the slow lane.
 func (c *Impl) EnqueueSlowKey(key types.NamespacedName) {
-	c.workQueue.SlowLane().Add(key)
+	c.workQueue.AddSlow(key)
 
 	if logger := c.logger.Desugar(); logger.Core().Enabled(zapcore.DebugLevel) {
 		logger.Debug(fmt.Sprintf("Adding to the slow queue %s (depth(total/slow): %d/%d)",
-			safeKey(key), c.workQueue.Len(), c.workQueue.SlowLane().Len()),
+			safeKey(key), c.workQueue.Len(), c.workQueue.SlowLen()),
 			zap.String(logkey.Key, key.String()))
 	}
 }
