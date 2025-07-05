@@ -72,10 +72,11 @@ func NewTracerProvider(
 		return nil, fmt.Errorf("error creating tracer sampler: %w", err)
 	}
 
-	provider := sdktrace.NewTracerProvider(
+	opts = append(opts,
 		sdktrace.WithBatcher(exp),
 		sdktrace.WithSampler(sampler),
 	)
+	provider := sdktrace.NewTracerProvider(opts...)
 	return &TracerProvider{
 		TracerProvider: provider,
 		shutdown:       provider.Shutdown,
