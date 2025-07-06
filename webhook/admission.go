@@ -34,7 +34,9 @@ import (
 	"knative.dev/pkg/logging/logkey"
 
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
+	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/metric"
+	"go.opentelemetry.io/otel/trace"
 )
 
 const (
@@ -94,10 +96,14 @@ func admissionHandler(wh *Webhook, c AdmissionController, synced <-chan struct{}
 		logger := wh.Logger
 		logger.Infof("Webhook ServeHTTP request=%#v", r)
 
+		span := trace.SpanFromContext(r.Context())
+
 		var review admissionv1.AdmissionReview
 		bodyBuffer := bytes.Buffer{}
 		if err := json.NewDecoder(io.TeeReader(r.Body, &bodyBuffer)).Decode(&review); err != nil {
-			http.Error(w, fmt.Sprint("could not decode body:", err), http.StatusBadRequest)
+			err := fmt.Sprint("could not decode body:", err)
+			span.SetStatus(codes.Error, err)
+			http.Error(w, err, http.StatusBadRequest)
 			return
 		}
 		r.Body = io.NopCloser(&bodyBuffer)
@@ -145,6 +151,8 @@ func admissionHandler(wh *Webhook, c AdmissionController, synced <-chan struct{}
 		status := metav1.StatusFailure
 		if reviewResponse.Allowed {
 			status = metav1.StatusSuccess
+		} else {
+			span.SetStatus(codes.Error, reviewResponse.Result.Message)
 		}
 
 		labeler.Add(StatusAttr.With(strings.ToLower(status)))
@@ -183,6 +191,7 @@ func admissionHandler(wh *Webhook, c AdmissionController, synced <-chan struct{}
 			http.Error(w, fmt.Sprint("could not encode response:", err), http.StatusInternalServerError)
 			return
 		}
+		span.SetStatus(codes.Ok, "")
 	}
 }
 
