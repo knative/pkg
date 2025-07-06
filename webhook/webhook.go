@@ -274,7 +274,7 @@ func (wh *Webhook) Run(stop <-chan struct{}) error {
 
 	otelHandler := otelhttp.NewHandler(
 		drainer,
-		wh.Options.ServiceName,
+		wh.Options.ServiceName, // Note this service is k8s service name
 		otelhttp.WithMeterProvider(wh.Options.MeterProvider),
 		otelhttp.WithTracerProvider(wh.Options.TracerProvider),
 		otelhttp.WithPropagators(wh.Options.TextMapPropagator),
