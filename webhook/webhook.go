@@ -282,6 +282,12 @@ func (wh *Webhook) Run(stop <-chan struct{}) error {
 			// Don't trace kubelet probes
 			return !network.IsKubeletProbe(r)
 		}),
+		otelhttp.WithSpanNameFormatter(func(operation string, r *http.Request) string {
+			if r.URL.Path == "" {
+				return r.Method + " /"
+			}
+			return fmt.Sprintf("%s %s", r.Method, r.URL.Path)
+		}),
 	)
 
 	// If TLSNextProto is not nil, HTTP/2 support is not enabled automatically.
