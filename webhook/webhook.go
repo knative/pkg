@@ -31,6 +31,7 @@ import (
 
 	"knative.dev/pkg/controller"
 	kubeinformerfactory "knative.dev/pkg/injection/clients/namespacedkube/informers/factory"
+	"knative.dev/pkg/network"
 	"knative.dev/pkg/network/handlers"
 
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
@@ -277,6 +278,10 @@ func (wh *Webhook) Run(stop <-chan struct{}) error {
 		otelhttp.WithMeterProvider(wh.Options.MeterProvider),
 		otelhttp.WithTracerProvider(wh.Options.TracerProvider),
 		otelhttp.WithPropagators(wh.Options.TextMapPropagator),
+		otelhttp.WithFilter(func(r *http.Request) bool {
+			// Don't trace kubelet probes
+			return !network.IsKubeletProbe(r)
+		}),
 	)
 
 	// If TLSNextProto is not nil, HTTP/2 support is not enabled automatically.
