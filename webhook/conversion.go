@@ -25,7 +25,6 @@ import (
 	"time"
 
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
-	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/trace"
@@ -53,6 +52,12 @@ func conversionHandler(wh *Webhook, c ConversionController) http.HandlerFunc {
 		logger.Infof("Webhook ServeHTTP request=%#v", r)
 
 		span := trace.SpanFromContext(r.Context())
+		// otelhttp middleware creates the labeler
+		labeler, _ := otelhttp.LabelerFromContext(r.Context())
+
+		defer func() {
+			span.SetAttributes(labeler.Get()...)
+		}()
 
 		var review apixv1.ConversionReview
 		if err := json.NewDecoder(r.Body).Decode(&review); err != nil {
@@ -70,8 +75,6 @@ func conversionHandler(wh *Webhook, c ConversionController) http.HandlerFunc {
 			return
 		}
 
-		// otelhttp middleware creates the labeler
-		labeler, _ := otelhttp.LabelerFromContext(r.Context())
 		labeler.Add(
 			WebhookTypeAttr.With(WebhookTypeConversion),
 			GroupAttr.With(gv.Group),

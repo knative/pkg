@@ -97,6 +97,12 @@ func admissionHandler(wh *Webhook, c AdmissionController, synced <-chan struct{}
 		logger.Infof("Webhook ServeHTTP request=%#v", r)
 
 		span := trace.SpanFromContext(r.Context())
+		// otelhttp middleware creates the labeler
+		labeler, _ := otelhttp.LabelerFromContext(r.Context())
+
+		defer func() {
+			span.SetAttributes(labeler.Get()...)
+		}()
 
 		var review admissionv1.AdmissionReview
 		bodyBuffer := bytes.Buffer{}
@@ -107,9 +113,6 @@ func admissionHandler(wh *Webhook, c AdmissionController, synced <-chan struct{}
 			return
 		}
 		r.Body = io.NopCloser(&bodyBuffer)
-
-		// otelhttp middleware creates the labeler
-		labeler, _ := otelhttp.LabelerFromContext(r.Context())
 
 		labeler.Add(
 			KindAttr.With(review.Request.Kind.Kind),
