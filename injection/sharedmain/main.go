@@ -62,6 +62,7 @@ import (
 	"knative.dev/pkg/observability/metrics"
 	k8smetrics "knative.dev/pkg/observability/metrics/k8s"
 	"knative.dev/pkg/observability/resource"
+	k8sruntime "knative.dev/pkg/observability/runtime/k8s"
 	"knative.dev/pkg/observability/tracing"
 	"knative.dev/pkg/reconciler"
 	"knative.dev/pkg/signals"
@@ -265,7 +266,7 @@ func MainWithConfig(ctx context.Context, component string, cfg *rest.Config, cto
 	// Override client-go's warning handler to give us nicely printed warnings.
 	rest.SetDefaultWarningHandler(&logging.WarningHandler{Logger: logger})
 
-	pprof := newProfilingServer(logger.Named("pprof"))
+	pprof := k8sruntime.NewProfilingServer(logger.Named("pprof"))
 
 	CheckK8sClientMinimumVersionOrDie(ctx, logger)
 	cmw := SetupConfigMapWatchOrDie(ctx, logger)
@@ -387,7 +388,7 @@ func SetupObservabilityOrDie(
 	ctx context.Context,
 	component string,
 	logger *zap.SugaredLogger,
-	pprof *pprofServer,
+	pprof *k8sruntime.ProfilingServer,
 ) (*metrics.MeterProvider, *tracing.TracerProvider) {
 	cfg, err := GetObservabilityConfig(ctx)
 	if err != nil {
@@ -499,7 +500,7 @@ func WatchLoggingConfigOrDie(ctx context.Context, cmw *cminformer.InformedWatche
 func WatchObservabilityConfigOrDie(
 	ctx context.Context,
 	cmw *cminformer.InformedWatcher,
-	pprof *pprofServer,
+	pprof *k8sruntime.ProfilingServer,
 	logger *zap.SugaredLogger,
 	component string,
 ) {
