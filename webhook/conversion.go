@@ -56,22 +56,24 @@ func conversionHandler(wh *Webhook, c ConversionController) http.HandlerFunc {
 		labeler, _ := otelhttp.LabelerFromContext(r.Context())
 
 		defer func() {
+			// otelhttp doesn't add labeler attributes to spans
+			// so we have to do it manually
 			span.SetAttributes(labeler.Get()...)
 		}()
 
 		var review apixv1.ConversionReview
 		if err := json.NewDecoder(r.Body).Decode(&review); err != nil {
-			err := fmt.Sprint("could not decode body:", err)
-			span.SetStatus(codes.Error, err)
-			http.Error(w, err, http.StatusBadRequest)
+			msg := fmt.Sprint("could not decode body:", err)
+			span.SetStatus(codes.Error, msg)
+			http.Error(w, msg, http.StatusBadRequest)
 			return
 		}
 
 		gv, err := parseAPIVersion(review.Request.DesiredAPIVersion)
 		if err != nil {
-			err := fmt.Sprint("could parse desired api version:", err)
-			span.SetStatus(codes.Error, err)
-			http.Error(w, err, http.StatusBadRequest)
+			msg := fmt.Sprint("could parse desired api version:", err)
+			span.SetStatus(codes.Error, msg)
+			http.Error(w, msg, http.StatusBadRequest)
 			return
 		}
 

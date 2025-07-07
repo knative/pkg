@@ -101,15 +101,17 @@ func admissionHandler(wh *Webhook, c AdmissionController, synced <-chan struct{}
 		labeler, _ := otelhttp.LabelerFromContext(r.Context())
 
 		defer func() {
+			// otelhttp doesn't add labeler attributes to spans
+			// so we have to do it manually
 			span.SetAttributes(labeler.Get()...)
 		}()
 
 		var review admissionv1.AdmissionReview
 		bodyBuffer := bytes.Buffer{}
 		if err := json.NewDecoder(io.TeeReader(r.Body, &bodyBuffer)).Decode(&review); err != nil {
-			err := fmt.Sprint("could not decode body:", err)
-			span.SetStatus(codes.Error, err)
-			http.Error(w, err, http.StatusBadRequest)
+			msg := fmt.Sprint("could not decode body:", err)
+			span.SetStatus(codes.Error, msg)
+			http.Error(w, msg, http.StatusBadRequest)
 			return
 		}
 		r.Body = io.NopCloser(&bodyBuffer)
