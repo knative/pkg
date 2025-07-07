@@ -37,7 +37,7 @@ const (
 type Config struct {
 	Protocol       string        `json:"protocol,omitempty"`
 	Endpoint       string        `json:"endpoint,omitempty"`
-	ExportInterval time.Duration `json:"export_interval,omitempty"`
+	ExportInterval time.Duration `json:"exportInterval,omitempty"`
 }
 
 func (c *Config) Validate() error {
