@@ -25,9 +25,12 @@ import (
 	"time"
 
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
+	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/metric"
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 	apixv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	"knative.dev/pkg/apis"
@@ -48,20 +51,32 @@ func conversionHandler(wh *Webhook, c ConversionController) http.HandlerFunc {
 		logger := wh.Logger
 		logger.Infof("Webhook ServeHTTP request=%#v", r)
 
+		span := trace.SpanFromContext(r.Context())
+		// otelhttp middleware creates the labeler
+		labeler, _ := otelhttp.LabelerFromContext(r.Context())
+
+		defer func() {
+			// otelhttp doesn't add labeler attributes to spans
+			// so we have to do it manually
+			span.SetAttributes(labeler.Get()...)
+		}()
+
 		var review apixv1.ConversionReview
 		if err := json.NewDecoder(r.Body).Decode(&review); err != nil {
-			http.Error(w, fmt.Sprint("could not decode body:", err), http.StatusBadRequest)
+			msg := fmt.Sprint("could not decode body:", err)
+			span.SetStatus(codes.Error, msg)
+			http.Error(w, msg, http.StatusBadRequest)
 			return
 		}
 
 		gv, err := parseAPIVersion(review.Request.DesiredAPIVersion)
 		if err != nil {
-			http.Error(w, fmt.Sprint("could parse desired api version:", err), http.StatusBadRequest)
+			msg := fmt.Sprint("could parse desired api version:", err)
+			span.SetStatus(codes.Error, msg)
+			http.Error(w, msg, http.StatusBadRequest)
 			return
 		}
 
-		// otelhttp middleware creates the labeler
-		labeler, _ := otelhttp.LabelerFromContext(r.Context())
 		labeler.Add(
 			WebhookTypeAttr.With(WebhookTypeConversion),
 			GroupAttr.With(gv.Group),
@@ -89,6 +104,10 @@ func conversionHandler(wh *Webhook, c ConversionController) http.HandlerFunc {
 			StatusAttr.With(strings.ToLower(response.Response.Result.Status)),
 		)
 
+		if response.Response.Result.Status == metav1.StatusFailure {
+			span.SetStatus(codes.Error, response.Response.Result.Message)
+		}
+
 		wh.metrics.recordHandlerDuration(ctx, time.Since(ttStart),
 			metric.WithAttributes(labeler.Get()...),
 		)
@@ -97,6 +116,8 @@ func conversionHandler(wh *Webhook, c ConversionController) http.HandlerFunc {
 			http.Error(w, fmt.Sprint("could not encode response:", err), http.StatusInternalServerError)
 			return
 		}
+
+		span.SetStatus(codes.Ok, "")
 	}
 }
 
