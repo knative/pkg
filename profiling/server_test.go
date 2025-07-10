@@ -24,8 +24,9 @@ import (
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"knative.dev/pkg/metrics"
+	o11yconfigmap "knative.dev/pkg/observability/configmap"
 	"knative.dev/pkg/system"
+
 	_ "knative.dev/pkg/system/testing"
 )
 
@@ -42,7 +43,7 @@ func TestUpdateFromConfigMap(t *testing.T) {
 		config: &corev1.ConfigMap{
 			ObjectMeta: metav1.ObjectMeta{
 				Namespace: system.Namespace(),
-				Name:      metrics.ConfigMapName(),
+				Name:      o11yconfigmap.Name(),
 			},
 			Data: map[string]string{
 				"profiling.enable": "false",
@@ -55,7 +56,7 @@ func TestUpdateFromConfigMap(t *testing.T) {
 		config: &corev1.ConfigMap{
 			ObjectMeta: metav1.ObjectMeta{
 				Namespace: system.Namespace(),
-				Name:      metrics.ConfigMapName(),
+				Name:      o11yconfigmap.Name(),
 			},
 			Data: map[string]string{
 				"profiling.enable": "true",
@@ -68,7 +69,7 @@ func TestUpdateFromConfigMap(t *testing.T) {
 		config: &corev1.ConfigMap{
 			ObjectMeta: metav1.ObjectMeta{
 				Namespace: system.Namespace(),
-				Name:      metrics.ConfigMapName(),
+				Name:      o11yconfigmap.Name(),
 			},
 			Data: map[string]string{
 				"profiling.enable": "get me some profiles",
