@@ -9,12 +9,15 @@ updates:
     schedule:
       interval: "weekly"
     ignore:
-      - dependency-name: "k8s.io/*"
       - dependency-name: "knative.dev/*"
     groups:
       otel:
         patterns:
           - "go.opentelemetry.io/*"
+      k8s:
+        update-types: patch
+        patterns:
+          - "k8s.io/*"
       golang-x:
         patterns:
           - "golang.org/x/*"
