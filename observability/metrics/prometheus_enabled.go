@@ -39,7 +39,6 @@ func buildPrometheus(_ context.Context, cfg Config) (sdkmetric.Reader, shutdownF
 		otelprom.WithoutCounterSuffixes(),
 		otelprom.WithoutUnits(),
 	)
-
 	if err != nil {
 		return nil, noopFunc, fmt.Errorf("unable to create otel prometheus exporter: %w", err)
 	}
