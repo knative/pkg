@@ -55,6 +55,9 @@ func TestNewFromMapBadInput(t *testing.T) {
 	}, {
 		name: "bad export interval - not an integer",
 		m:    map[string]string{"metrics-export-interval": "bad-interval"},
+	}, {
+		name: "bad temporality - set to an unknown value",
+		m:    map[string]string{"metrics-temporality": "unknown"},
 	}}
 
 	for _, tc := range cases {

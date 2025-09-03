@@ -89,6 +89,10 @@ func readerFor(ctx context.Context, cfg Config) (sdkmetric.Reader, shutdownFunc,
 func buildGRPC(ctx context.Context, cfg Config) (sdkmetric.Reader, shutdownFunc, error) {
 	var grpcOpts []otlpmetricgrpc.Option
 
+	if ts := temporalitySelectorFor(cfg.Temporality); ts != nil {
+		grpcOpts = append(grpcOpts, otlpmetricgrpc.WithTemporalitySelector(ts))
+	}
+
 	opt, err := endpointFor(cfg, otlpmetricgrpc.WithEndpointURL)
 	if err != nil {
 		return nil, noopFunc, fmt.Errorf("unable to process metrics endpoint: %w", err)
@@ -112,6 +116,10 @@ func buildGRPC(ctx context.Context, cfg Config) (sdkmetric.Reader, shutdownFunc,
 
 func buildHTTP(ctx context.Context, cfg Config) (sdkmetric.Reader, shutdownFunc, error) {
 	var httpOpts []otlpmetrichttp.Option
+
+	if ts := temporalitySelectorFor(cfg.Temporality); ts != nil {
+		httpOpts = append(httpOpts, otlpmetrichttp.WithTemporalitySelector(ts))
+	}
 
 	opt, err := endpointFor(cfg, otlpmetrichttp.WithEndpointURL)
 	if err != nil {
