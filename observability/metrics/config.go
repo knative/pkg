@@ -18,6 +18,7 @@ package metrics
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	configmap "knative.dev/pkg/configmap/parser"
@@ -38,6 +39,7 @@ type Config struct {
 	Protocol       string        `json:"protocol,omitempty"`
 	Endpoint       string        `json:"endpoint,omitempty"`
 	ExportInterval time.Duration `json:"exportInterval,omitempty"`
+	Temporality    string        `json:"temporality"`
 }
 
 func (c *Config) Validate() error {
@@ -59,6 +61,13 @@ func (c *Config) Validate() error {
 	if c.ExportInterval < 0 {
 		return fmt.Errorf("export interval %q should be greater than zero", c.ExportInterval)
 	}
+
+	switch strings.ToLower(c.Temporality) {
+	case "cumulative", "delta", "lowmemory", "":
+	default:
+		return fmt.Errorf("temporality %q must be either unset, 'cumulative', 'delta', or 'lowmemory'", c.Temporality)
+	}
+
 	return nil
 }
 
@@ -82,6 +91,7 @@ func NewFromMapWithPrefix(prefix string, m map[string]string) (Config, error) {
 		configmap.As(prefix+"metrics-protocol", &c.Protocol),
 		configmap.As(prefix+"metrics-endpoint", &c.Endpoint),
 		configmap.As(prefix+"metrics-export-interval", &c.ExportInterval),
+		configmap.As(prefix+"metrics-temporality", &c.Temporality),
 	)
 	if err != nil {
 		return c, err

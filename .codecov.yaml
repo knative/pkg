@@ -18,13 +18,13 @@ comment:
   behavior: default
 ignore:
   - "**/zz_generated*.go" # Ignore generated files.
-  - "codegen/**/*" #TODO: fix coverage
-  - "injection/**/*" #TODO: fix coverage
-  - "test/**/*"
-  - "tracing/**/*" #TODO: fix coverage
   - "client"
+  - "codegen/**/*" #TODO: fix coverage
   - "hack"
+  - "injection/**/*" #TODO: fix coverage
   - "reconciler/testing"
+  # This file was copied from OTel Go repo
+  - "observability/metrics/temporality.go"
+  - "test/**/*"
   - "testing"
-  - "third_party"
   - "vendor"
