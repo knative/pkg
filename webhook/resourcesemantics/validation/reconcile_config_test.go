@@ -68,6 +68,7 @@ func TestReconcile(t *testing.T) {
 		},
 	}
 	nsRef := *metav1.NewControllerRef(ns, corev1.SchemeGroupVersion.WithKind("Namespace"))
+	nsRef.Controller = ptr.Bool(false)
 	expectedOwnerReferences := []metav1.OwnerReference{nsRef}
 
 	// This is the namespace selector setup
