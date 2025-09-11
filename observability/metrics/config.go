@@ -35,11 +35,14 @@ const (
 // manage Knative observability behavior.  Typically, this is extracted from a
 // Kubernetes ConfigMap during application startup, and accessed via the
 // GetConfig() method.
+//
+// Note the json keys are used simply for internal serialization and
+// are not considered stable
 type Config struct {
-	Protocol       string        `json:"protocol,omitempty"`
-	Endpoint       string        `json:"endpoint,omitempty"`
-	ExportInterval time.Duration `json:"exportInterval,omitempty"`
-	Temporality    string        `json:"temporality"`
+	Protocol              string        `json:"protocol,omitempty"`
+	Endpoint              string        `json:"endpoint,omitempty"`
+	ExportInterval        time.Duration `json:"exportInterval,omitempty"`
+	TemporalityPreference string        `json:"temporalityPref,omitempty"`
 }
 
 func (c *Config) Validate() error {
@@ -62,10 +65,10 @@ func (c *Config) Validate() error {
 		return fmt.Errorf("export interval %q should be greater than zero", c.ExportInterval)
 	}
 
-	switch strings.ToLower(c.Temporality) {
+	switch strings.ToLower(c.TemporalityPreference) {
 	case "cumulative", "delta", "lowmemory", "":
 	default:
-		return fmt.Errorf("temporality %q must be either unset, 'cumulative', 'delta', or 'lowmemory'", c.Temporality)
+		return fmt.Errorf("temporality %q must be either unset, 'cumulative', 'delta', or 'lowmemory'", c.TemporalityPreference)
 	}
 
 	return nil
@@ -91,7 +94,7 @@ func NewFromMapWithPrefix(prefix string, m map[string]string) (Config, error) {
 		configmap.As(prefix+"metrics-protocol", &c.Protocol),
 		configmap.As(prefix+"metrics-endpoint", &c.Endpoint),
 		configmap.As(prefix+"metrics-export-interval", &c.ExportInterval),
-		configmap.As(prefix+"metrics-temporality", &c.Temporality),
+		configmap.As(prefix+"metrics-temporality-preference", &c.TemporalityPreference),
 	)
 	if err != nil {
 		return c, err

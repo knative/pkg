@@ -89,7 +89,7 @@ func readerFor(ctx context.Context, cfg Config) (sdkmetric.Reader, shutdownFunc,
 func buildGRPC(ctx context.Context, cfg Config) (sdkmetric.Reader, shutdownFunc, error) {
 	var grpcOpts []otlpmetricgrpc.Option
 
-	if ts := temporalitySelectorFor(cfg.Temporality); ts != nil {
+	if ts := temporalitySelectorFor(cfg.TemporalityPreference); ts != nil {
 		grpcOpts = append(grpcOpts, otlpmetricgrpc.WithTemporalitySelector(ts))
 	}
 
@@ -117,7 +117,7 @@ func buildGRPC(ctx context.Context, cfg Config) (sdkmetric.Reader, shutdownFunc,
 func buildHTTP(ctx context.Context, cfg Config) (sdkmetric.Reader, shutdownFunc, error) {
 	var httpOpts []otlpmetrichttp.Option
 
-	if ts := temporalitySelectorFor(cfg.Temporality); ts != nil {
+	if ts := temporalitySelectorFor(cfg.TemporalityPreference); ts != nil {
 		httpOpts = append(httpOpts, otlpmetrichttp.WithTemporalitySelector(ts))
 	}
 
