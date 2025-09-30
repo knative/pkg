@@ -10,12 +10,15 @@ updates:
       interval: "weekly"
     ignore:
       - dependency-name: "knative.dev/*"
+      - dependency-name: "k8s.io/*"
+        update-types:
+          - "version-update:semver-major"
+          - "version-update:semver-minor"
     groups:
       otel:
         patterns:
           - "go.opentelemetry.io/*"
       k8s:
-        update-types: patch
         patterns:
           - "k8s.io/*"
       golang-x:
