@@ -66,6 +66,7 @@ func TestReconcile(t *testing.T) {
 		},
 	}
 	nsRef := *metav1.NewControllerRef(ns, corev1.SchemeGroupVersion.WithKind("Namespace"))
+	nsRef.Controller = ptr.Bool(false)
 	expectedOwnerReferences := []metav1.OwnerReference{nsRef}
 
 	ruleScope := admissionregistrationv1.NamespacedScope
