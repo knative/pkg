@@ -28,3 +28,4 @@ ignore:
   - "testing"
   - "third_party"
   - "vendor"
+  - "observability/semconv/**/*"

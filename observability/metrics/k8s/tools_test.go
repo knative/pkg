@@ -22,11 +22,12 @@ import (
 	"testing"
 	"time"
 
+	"knative.dev/pkg/observability/semconv"
+
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
-	semconv "go.opentelemetry.io/otel/semconv/v1.37.0"
 	"knative.dev/pkg/observability/metrics/metricstest"
 )
 

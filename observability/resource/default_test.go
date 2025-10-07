@@ -20,7 +20,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	semconv "go.opentelemetry.io/otel/semconv/v1.37.0"
+	"knative.dev/pkg/observability/semconv"
 
 	_ "knative.dev/pkg/system/testing"
 )
