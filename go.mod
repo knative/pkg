@@ -15,7 +15,7 @@ require (
 	github.com/hashicorp/golang-lru v1.0.2
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/prometheus/client_golang v1.23.2
-	github.com/prometheus/otlptranslator v0.0.2
+	github.com/prometheus/otlptranslator v1.0.0
 	github.com/spf13/pflag v1.0.10
 	github.com/tsenart/vegeta/v12 v12.12.0
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.63.0
@@ -66,7 +66,6 @@ require (
 	github.com/go-openapi/swag v0.23.0 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/google/gnostic-models v0.6.9 // indirect
-	github.com/grafana/regexp v0.0.0-20240518133315-a468a5bfb3bc // indirect
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.27.2 // indirect
 	github.com/influxdata/tdigest v0.0.1 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
