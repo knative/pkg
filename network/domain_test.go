@@ -36,19 +36,24 @@ options ndots:5
 `,
 		want: "abc.com",
 	}, {
-		name: "all good with env set but ignored",
+		name: "env variable takes precedence over resolv.conf",
 		resolvConf: `
 nameserver 1.1.1.1
 search default.svc.abc.com svc.abc.com abc.com
 options ndots:5
 `,
-		env:  "ignored.com",
-		want: "abc.com",
+		env:  "mesh.net",
+		want: "mesh.net",
 	}, {
-		name:       "all good from env",
+		name:       "env variable used when resolv.conf is empty",
 		resolvConf: ``,
 		env:        "abc.com",
 		want:       "abc.com",
+	}, {
+		name:       "env variable with custom domain",
+		resolvConf: ``,
+		env:        "custom.local",
+		want:       "custom.local",
 	}, {
 		name: "all good with trailing dot",
 		resolvConf: `
