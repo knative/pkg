@@ -266,7 +266,7 @@ func (e *ErrorResource) UnmarshalJSON(data []byte) (err error) {
 	if err == nil && e.Spec.Property == ErrorUnmarshal {
 		err = errors.New("boooom - unmarshal json")
 	}
-	return
+	return err
 }
 
 // MarshalJSON implements json.Marshaler

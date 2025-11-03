@@ -87,7 +87,7 @@ func newNonRunningTestConfigValidationController(t *testing.T) (
 	kubeClient = fakekubeclientset.NewSimpleClientset(initialConfigWebhook)
 
 	ac = newTestConfigValidationController(t)
-	return
+	return kubeClient, ac
 }
 
 func newTestConfigValidationController(t *testing.T) *reconciler {

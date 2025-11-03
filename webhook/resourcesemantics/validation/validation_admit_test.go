@@ -128,7 +128,7 @@ func newNonRunningTestResourceAdmissionController(t *testing.T) (
 	kubeClient = fakekubeclientset.NewSimpleClientset(initialResourceWebhook)
 
 	ac = newTestResourceAdmissionController(t)
-	return
+	return kubeClient, ac
 }
 
 func TestDeleteAllowed(t *testing.T) {
