@@ -69,7 +69,7 @@ func newNonRunningTestWebhook(t *testing.T, options Options, acs ...interface{})
 	if err != nil {
 		t.Fatal("Failed to create new admission controller:", err)
 	}
-	return
+	return ctx, ac, cancel
 }
 
 func TestRegistrationStopChanFire(t *testing.T) {

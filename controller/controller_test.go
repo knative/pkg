@@ -1347,7 +1347,7 @@ func drainWorkQueue(wq workqueue.TypedRateLimitingInterface[any]) (hasQueue []ty
 		}
 		hasQueue = append(hasQueue, key.(types.NamespacedName))
 	}
-	return
+	return hasQueue
 }
 
 type fakeInformer struct {
