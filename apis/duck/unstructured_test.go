@@ -114,8 +114,7 @@ func TestToUnstructured(t *testing.T) {
 				"apiVersion": "pkg.knative.dev/v2",
 				"kind":       "Resource",
 				"metadata": map[string]interface{}{
-					"creationTimestamp": nil,
-					"name":              "blah",
+					"name": "blah",
 				},
 				"spec": map[string]interface{}{},
 			},
@@ -136,8 +135,7 @@ func TestToUnstructured(t *testing.T) {
 				"apiVersion": "apps/v1",
 				"kind":       "Deployment",
 				"metadata": map[string]interface{}{
-					"creationTimestamp": nil,
-					"name":              "blah",
+					"name": "blah",
 				},
 				"spec": map[string]interface{}{},
 			},
