@@ -50,11 +50,6 @@ options ndots:5
 		env:        "abc.com",
 		want:       "abc.com",
 	}, {
-		name:       "env variable with custom domain",
-		resolvConf: ``,
-		env:        "custom.local",
-		want:       "custom.local",
-	}, {
 		name: "all good with trailing dot",
 		resolvConf: `
 nameserver 1.1.1.1
