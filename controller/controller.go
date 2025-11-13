@@ -28,6 +28,7 @@ import (
 
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
@@ -539,6 +540,13 @@ func (c *Impl) handleErr(logger *zap.SugaredLogger, err error, key types.Namespa
 	if ok, delay := IsRequeueKey(err); ok {
 		c.workQueue.AddAfter(key, delay)
 		logger.Debugf("Requeuing key %s (by request) after %v (depth: %d)", safeKey(key), delay, c.workQueue.Len())
+		return
+	}
+
+	// Conflict errors are expected, requeue to retry
+	if apierrors.IsConflict(err) {
+		logger.Debugw("Reconcile conflict", zap.Duration("duration", time.Since(startTime)))
+		c.workQueue.AddRateLimited(key)
 		return
 	}
 
