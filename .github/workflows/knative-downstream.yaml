@@ -50,7 +50,7 @@ jobs:
       uses: knative/actions/setup-go@main
 
     - name: Checkout upstream at ${{ github.base_ref }}
-      uses: actions/checkout@v5
+      uses: actions/checkout@v6
       with:
         fetch-depth: 0
         path: upstream
@@ -72,7 +72,7 @@ jobs:
 
     - name: Attempt checkout of downstream at ${{ github.base_ref }}
       id: checkout-downstream
-      uses: actions/checkout@v5
+      uses: actions/checkout@v6
       with:
         ref: ${{ github.base_ref }}
         repository: ${{ matrix.repo }}
@@ -81,7 +81,7 @@ jobs:
 
     - name: Checkout downstream with fallback branch
       if: steps.checkout-downstream.outcome == 'failure'
-      uses: actions/checkout@v5
+      uses: actions/checkout@v6
       with:
         ref: main
         repository: ${{ matrix.repo }}
