@@ -89,9 +89,10 @@ var _ http.Handler = (*Drainer)(nil)
 
 // ServeHTTP implements http.Handler
 func (d *Drainer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	draining := d.draining()
 	// Respond to probes regardless of path.
 	if d.isHealthCheckRequest(r) {
-		if d.draining() {
+		if draining {
 			http.Error(w, "shutting down", http.StatusServiceUnavailable)
 		} else if d.HealthCheck != nil {
 			d.HealthCheck(w, r)
@@ -101,7 +102,7 @@ func (d *Drainer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if isKProbe(r) {
-		if d.draining() {
+		if draining {
 			http.Error(w, "shutting down", http.StatusServiceUnavailable)
 		} else {
 			serveKProbe(w, r)
@@ -109,7 +110,14 @@ func (d *Drainer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	d.resetTimer()
+	if draining {
+		d.resetTimer()
+		if r.ProtoMajor == 1 {
+			// Setting the connection close header will hint the server to
+			// close the connection after handling the request
+			w.Header().Set("Connection", "close")
+		}
+	}
 	d.Inner.ServeHTTP(w, r)
 }
 
@@ -186,14 +194,6 @@ func (d *Drainer) Reset() {
 }
 
 func (d *Drainer) resetTimer() {
-	if func() bool {
-		d.RLock()
-		defer d.RUnlock()
-		return d.timer == nil
-	}() {
-		return
-	}
-
 	d.Lock()
 	defer d.Unlock()
 	if d.timer != nil && d.timer.Stop() {

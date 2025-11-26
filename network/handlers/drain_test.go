@@ -66,7 +66,7 @@ func (mt *mockTimer) tickChan() <-chan time.Time {
 
 func TestDrainMechanics(t *testing.T) {
 	var (
-		w     http.ResponseWriter
+		w     = httptest.NewRecorder()
 		req   = &http.Request{}
 		probe = &http.Request{
 			Header: http.Header{
@@ -239,7 +239,7 @@ func TestDrainMechanics(t *testing.T) {
 
 func TestDrainerKProbe(t *testing.T) {
 	var (
-		w          http.ResponseWriter
+		w          = httptest.NewRecorder()
 		req        = &http.Request{}
 		kprobehash = "hash"
 		kprobe     = &http.Request{
@@ -340,7 +340,7 @@ func TestHealthCheckWithProbeType(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			var (
-				w       http.ResponseWriter
+				w       = httptest.NewRecorder()
 				req     = &http.Request{}
 				cnt     = 0
 				inner   = http.HandlerFunc(func(http.ResponseWriter, *http.Request) { cnt++ })
@@ -585,4 +585,38 @@ func TestResetWithActiveRequests(t *testing.T) {
 
 	// We need requests to be active for a bit
 	time.Sleep(time.Second)
+}
+
+func BenchmarkNoDrain(b *testing.B) {
+	r, _ := http.NewRequest(http.MethodGet, "knative.dev", nil)
+	w := httptest.NewRecorder()
+	handler := func(http.ResponseWriter, *http.Request) {
+	}
+
+	d := Drainer{
+		QuietPeriod: 10 * time.Second,
+		Inner:       http.HandlerFunc(handler),
+	}
+
+	for b.Loop() {
+		d.ServeHTTP(w, r)
+	}
+}
+
+func BenchmarkDrain(b *testing.B) {
+	r, _ := http.NewRequest(http.MethodGet, "knative.dev", nil)
+	w := httptest.NewRecorder()
+	handler := func(http.ResponseWriter, *http.Request) {
+	}
+
+	d := Drainer{
+		QuietPeriod: 10 * time.Second,
+		Inner:       http.HandlerFunc(handler),
+	}
+
+	go d.Drain()
+
+	for b.Loop() {
+		d.ServeHTTP(w, r)
+	}
 }
