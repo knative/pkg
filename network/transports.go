@@ -134,6 +134,7 @@ func newHTTPTransport(
 	transport.ForceAttemptHTTP2 = false
 	transport.DisableCompression = disableCompression
 	transport.Protocols = &protocols
+
 	return transport
 }
 
@@ -156,6 +157,7 @@ func newHTTPSTransport(
 	transport.ForceAttemptHTTP2 = false
 	transport.DisableCompression = disableCompression
 	transport.DialTLSContext = tlsContext
+	transport.Protocols = &protocols
 
 	return transport
 }
