@@ -52,6 +52,12 @@ type Options struct {
 	// TLS 1.3 is the minimum version if not specified otherwise.
 	TLSMinVersion uint16
 
+	// TLSConfig allows for full customization of the TLS configuration used by the webhook server.
+	// Note: When providing TLSConfig, ensure MinVersion is set appropriately for security.
+	// If MinVersion is not set in the provided TLSConfig, it will default to Go's default
+	// (currently TLS 1.2), which may be less secure than the webhook's default of TLS 1.3.
+	TLSConfig *tls.Config
+
 	// ServiceName is the service name of the webhook.
 	ServiceName string
 
@@ -189,38 +195,68 @@ func New(
 		// a new secret informer from it.
 		secretInformer := kubeinformerfactory.Get(ctx).Core().V1().Secrets()
 
-		//nolint:gosec // operator configures TLS min version (default is 1.3)
-		webhook.tlsConfig = &tls.Config{
-			MinVersion: opts.TLSMinVersion,
+		// Prepare the GetCertificate function for dynamic certificate loading
+		getCertificate := func(*tls.ClientHelloInfo) (*tls.Certificate, error) {
+			secret, err := secretInformer.Lister().Secrets(system.Namespace()).Get(opts.SecretName)
+			if err != nil {
+				logger.Errorw("failed to fetch secret", zap.Error(err))
+				return nil, nil
+			}
+			webOpts := GetOptions(ctx)
+			sKey, sCert := getSecretDataKeyNamesOrDefault(webOpts.ServerPrivateKeyName, webOpts.ServerCertificateName)
+			serverKey, ok := secret.Data[sKey]
+			if !ok {
+				logger.Warn("server key missing")
+				return nil, nil
+			}
+			serverCert, ok := secret.Data[sCert]
+			if !ok {
+				logger.Warn("server cert missing")
+				return nil, nil
+			}
+			cert, err := tls.X509KeyPair(serverCert, serverKey)
+			if err != nil {
+				return nil, err
+			}
+			return &cert, nil
+		}
 
+		// Use custom TLSConfig if provided, otherwise create default config
+		if opts.TLSConfig != nil {
+			// Check if both custom TLSConfig and environment variable are set
+			if envTLSVersion := TLSMinVersionFromEnv(0); envTLSVersion != 0 {
+				logger.Warnw("Both TLSConfig and WEBHOOK_TLS_MIN_VERSION environment variable are set. Using TLSConfig and ignoring environment variable.",
+					zap.Uint16("TLSConfig.MinVersion", opts.TLSConfig.MinVersion),
+					zap.Uint16("EnvMinVersion", envTLSVersion))
+			}
+
+			// Clone the provided TLSConfig to avoid modifying the original
+			webhook.tlsConfig = opts.TLSConfig.Clone()
+
+			// Warn if MinVersion is not set in the provided TLSConfig
+			if webhook.tlsConfig.MinVersion == 0 {
+				logger.Warnw("TLSConfig.MinVersion is not set, will use Go's default (TLS 1.2). Consider setting MinVersion explicitly for better security.",
+					zap.Uint16("RecommendedMinVersion", tls.VersionTLS13))
+			}
+
+			// Always override GetCertificate to load certificates dynamically from the secret
 			// If we return (nil, error) the client sees - 'tls: internal error"
 			// If we return (nil, nil) the client sees - 'tls: no certificates configured'
 			//
 			// We'll return (nil, nil) when we don't find a certificate
-			GetCertificate: func(*tls.ClientHelloInfo) (*tls.Certificate, error) {
-				secret, err := secretInformer.Lister().Secrets(system.Namespace()).Get(opts.SecretName)
-				if err != nil {
-					logger.Errorw("failed to fetch secret", zap.Error(err))
-					return nil, nil
-				}
-				webOpts := GetOptions(ctx)
-				sKey, sCert := getSecretDataKeyNamesOrDefault(webOpts.ServerPrivateKeyName, webOpts.ServerCertificateName)
-				serverKey, ok := secret.Data[sKey]
-				if !ok {
-					logger.Warn("server key missing")
-					return nil, nil
-				}
-				serverCert, ok := secret.Data[sCert]
-				if !ok {
-					logger.Warn("server cert missing")
-					return nil, nil
-				}
-				cert, err := tls.X509KeyPair(serverCert, serverKey)
-				if err != nil {
-					return nil, err
-				}
-				return &cert, nil
-			},
+			webhook.tlsConfig.GetCertificate = getCertificate
+		} else {
+			// Default behavior: create TLS config with MinVersion from Options or env var
+			//nolint:gosec // operator configures TLS min version (default is 1.3)
+			webhook.tlsConfig = &tls.Config{
+				MinVersion: opts.TLSMinVersion,
+
+				// If we return (nil, error) the client sees - 'tls: internal error"
+				// If we return (nil, nil) the client sees - 'tls: no certificates configured'
+				//
+				// We'll return (nil, nil) when we don't find a certificate
+				GetCertificate: getCertificate,
+			}
 		}
 	}
 

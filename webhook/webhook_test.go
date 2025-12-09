@@ -124,3 +124,112 @@ func TestTLSMinVersionWebhookOption(t *testing.T) {
 		}
 	})
 }
+
+func TestCustomTLSConfigWebhookOption(t *testing.T) {
+	opts := newDefaultOptions()
+
+	t.Run("when custom TLSConfig is provided with MinVersion set", func(t *testing.T) {
+		opts.TLSConfig = &tls.Config{
+			MinVersion: tls.VersionTLS13,
+			CipherSuites: []uint16{
+				tls.TLS_AES_128_GCM_SHA256,
+				tls.TLS_AES_256_GCM_SHA384,
+			},
+		}
+		webhook, err := newAdmissionControllerWebhook(t, opts)
+		if err != nil {
+			t.Fatal("Unexpected error", err)
+		}
+
+		if webhook.tlsConfig == nil {
+			t.Fatal("Expected tlsConfig to be set")
+		}
+		if webhook.tlsConfig.MinVersion != tls.VersionTLS13 {
+			t.Errorf("Expected MinVersion to be TLS 1.3, got %d", webhook.tlsConfig.MinVersion)
+		}
+		if len(webhook.tlsConfig.CipherSuites) != 2 {
+			t.Errorf("Expected 2 cipher suites, got %d", len(webhook.tlsConfig.CipherSuites))
+		}
+		if webhook.tlsConfig.GetCertificate == nil {
+			t.Error("Expected GetCertificate function to be set for dynamic certificate loading")
+		}
+	})
+
+	t.Run("when custom TLSConfig is provided with CurvePreferences", func(t *testing.T) {
+		opts.TLSConfig = &tls.Config{
+			MinVersion: tls.VersionTLS13,
+			CurvePreferences: []tls.CurveID{
+				tls.X25519,
+				tls.CurveP256,
+			},
+		}
+		webhook, err := newAdmissionControllerWebhook(t, opts)
+		if err != nil {
+			t.Fatal("Unexpected error", err)
+		}
+
+		if webhook.tlsConfig == nil {
+			t.Fatal("Expected tlsConfig to be set")
+		}
+		if len(webhook.tlsConfig.CurvePreferences) != 2 {
+			t.Errorf("Expected 2 curve preferences, got %d", len(webhook.tlsConfig.CurvePreferences))
+		}
+	})
+
+	t.Run("when custom TLSConfig is nil, default behavior is used", func(t *testing.T) {
+		opts.TLSConfig = nil
+		opts.TLSMinVersion = tls.VersionTLS12
+		webhook, err := newAdmissionControllerWebhook(t, opts)
+		if err != nil {
+			t.Fatal("Unexpected error", err)
+		}
+
+		if webhook.tlsConfig == nil {
+			t.Fatal("Expected tlsConfig to be set")
+		}
+		if webhook.tlsConfig.MinVersion != tls.VersionTLS12 {
+			t.Errorf("Expected MinVersion to be TLS 1.2, got %d", webhook.tlsConfig.MinVersion)
+		}
+	})
+
+	t.Run("when custom TLSConfig is provided without SecretName", func(t *testing.T) {
+		optsNoSecret := Options{
+			ServiceName: "webhook",
+			Port:        8443,
+			TLSConfig: &tls.Config{
+				MinVersion: tls.VersionTLS13,
+			},
+		}
+		webhook, err := newAdmissionControllerWebhook(t, optsNoSecret)
+		if err != nil {
+			t.Fatal("Unexpected error", err)
+		}
+
+		if webhook.tlsConfig != nil {
+			t.Error("Expected tlsConfig to be nil when SecretName is not provided")
+		}
+	})
+
+	t.Run("when custom TLSConfig preserves original config", func(t *testing.T) {
+		originalConfig := &tls.Config{
+			MinVersion: tls.VersionTLS13,
+			CipherSuites: []uint16{
+				tls.TLS_AES_128_GCM_SHA256,
+			},
+		}
+		opts.TLSConfig = originalConfig
+
+		webhook, err := newAdmissionControllerWebhook(t, opts)
+		if err != nil {
+			t.Fatal("Unexpected error", err)
+		}
+
+		if webhook.tlsConfig == originalConfig {
+			t.Error("Expected TLSConfig to be cloned, not use the same pointer")
+		}
+
+		if originalConfig.GetCertificate != nil {
+			t.Error("Original TLSConfig should not have been modified")
+		}
+	})
+}

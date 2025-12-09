@@ -75,6 +75,39 @@ func main() {
 }
 ```
 
+### Customizing TLS Configuration
+
+By default, the webhook uses TLS 1.3 (or the version specified via `WEBHOOK_TLS_MIN_VERSION` environment variable).
+For full control over TLS settings (cipher suites, curves, etc.), you can provide a custom `TLSConfig`:
+
+```go
+func main() {
+	ctx := webhook.WithOptions(signals.NewContext(), webhook.Options{
+		ServiceName: "webhook",
+		Port:        8443,
+		SecretName:  "webhook-certs",
+		
+		// Optional: Custom TLS configuration
+		TLSConfig: &tls.Config{
+			MinVersion: tls.VersionTLS13,
+			CipherSuites: []uint16{
+				tls.TLS_AES_128_GCM_SHA256,
+				tls.TLS_AES_256_GCM_SHA384,
+			},
+			CurvePreferences: []tls.CurveID{
+				tls.X25519,
+				tls.CurveP256,
+			},
+		},
+	})
+
+	sharedmain.MainWithContext(ctx, "webhook",
+		certificates.NewController,
+		NewResourceAdmissionController,
+	)
+}
+```
+
 There is also a config map validation admission controller built in under
 `knative.dev/pkg/webhook/configmaps`.
 
