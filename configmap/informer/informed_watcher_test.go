@@ -489,7 +489,6 @@ func TestWatchWithDefaultAfterStart(t *testing.T) {
 	}
 }
 
-
 func TestDeleteConfigMapEventWithDeletedFinalStateUnknown(t *testing.T) {
 	defaultFooCM := &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
