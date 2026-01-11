@@ -28,6 +28,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/selection"
 	fakekubeclientset "k8s.io/client-go/kubernetes/fake"
+	"k8s.io/client-go/tools/cache"
 )
 
 type counter struct {
@@ -485,5 +486,141 @@ func TestWatchWithDefaultAfterStart(t *testing.T) {
 	var expected []*corev1.ConfigMap
 	if got, want := foo1.count(), len(expected); got != want {
 		t.Fatalf("foo1.count = %v, want %d", got, want)
+	}
+}
+
+func TestDeleteConfigMapEventWithDeletedFinalStateUnknown(t *testing.T) {
+	defaultFooCM := &corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: "default",
+			Name:      "foo",
+		},
+		Data: map[string]string{
+			"default": "from code",
+		},
+	}
+	fooCM := &corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: "default",
+			Name:      "foo",
+		},
+		Data: map[string]string{
+			"from": "k8s",
+		},
+	}
+
+	kc := fakekubeclientset.NewSimpleClientset(fooCM)
+	cmw := NewInformedWatcher(kc, "default")
+
+	foo1 := &counter{name: "foo1"}
+	cmw.WatchWithDefault(*defaultFooCM, foo1.callback)
+
+	stopCh := make(chan struct{})
+	defer close(stopCh)
+	if err := cmw.Start(stopCh); err != nil {
+		t.Fatal("cm.Start() =", err)
+	}
+
+	// Test that deleteConfigMapEvent does NOT panic when given cache.DeletedFinalStateUnknown with a ConfigMap
+	// This simulates the scenario where the informer receives a DeletedFinalStateUnknown tombstone.
+	tombstone := cache.DeletedFinalStateUnknown{
+		Key: "default/foo",
+		Obj: fooCM,
+	}
+
+	// This should not panic and should trigger the default ConfigMap
+	cmw.deleteConfigMapEvent(tombstone)
+
+	// We expect:
+	// 1. The default to be seen once during startup.
+	// 2. The real K8s version during the initial pass.
+	// 3. The default again, when the real K8s version is deleted via tombstone.
+	expected := []*corev1.ConfigMap{defaultFooCM, fooCM, defaultFooCM}
+	if got, want := foo1.count(), len(expected); got != want {
+		t.Fatalf("foo1.count = %v, want %d", got, want)
+	}
+	for i, cfg := range expected {
+		if got, want := foo1.cfg[i].Data, cfg.Data; !equality.Semantic.DeepEqual(want, got) {
+			t.Errorf("%d config seen should have been '%v', actually '%v'", i, want, got)
+		}
+	}
+}
+
+func TestDeleteConfigMapEventWithDeletedFinalStateUnknownInvalidObject(t *testing.T) {
+	defaultFooCM := &corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: "default",
+			Name:      "foo",
+		},
+		Data: map[string]string{
+			"default": "from code",
+		},
+	}
+
+	kc := fakekubeclientset.NewSimpleClientset()
+	cmw := NewInformedWatcher(kc, "default")
+
+	foo1 := &counter{name: "foo1"}
+	cmw.WatchWithDefault(*defaultFooCM, foo1.callback)
+
+	stopCh := make(chan struct{})
+	defer close(stopCh)
+	if err := cmw.Start(stopCh); err != nil {
+		t.Fatal("cm.Start() =", err)
+	}
+
+	initialCount := foo1.count()
+
+	// Test that deleteConfigMapEvent does NOT panic when given cache.DeletedFinalStateUnknown with an invalid object
+	// This simulates the scenario where the tombstone contains a non-ConfigMap object.
+	tombstone := cache.DeletedFinalStateUnknown{
+		Key: "default/foo",
+		Obj: "not-a-configmap", // Invalid object type
+	}
+
+	// This should not panic and should gracefully return without changing the count
+	cmw.deleteConfigMapEvent(tombstone)
+
+	// The count should remain unchanged since the object is invalid
+	if got, want := foo1.count(), initialCount; got != want {
+		t.Fatalf("foo1.count = %v, want %d (should not change)", got, want)
+	}
+}
+
+func TestDeleteConfigMapEventWithInvalidObject(t *testing.T) {
+	defaultFooCM := &corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: "default",
+			Name:      "foo",
+		},
+		Data: map[string]string{
+			"default": "from code",
+		},
+	}
+
+	kc := fakekubeclientset.NewSimpleClientset()
+	cmw := NewInformedWatcher(kc, "default")
+
+	foo1 := &counter{name: "foo1"}
+	cmw.WatchWithDefault(*defaultFooCM, foo1.callback)
+
+	stopCh := make(chan struct{})
+	defer close(stopCh)
+	if err := cmw.Start(stopCh); err != nil {
+		t.Fatal("cm.Start() =", err)
+	}
+
+	initialCount := foo1.count()
+
+	// Test that deleteConfigMapEvent does NOT panic when given a completely invalid object
+	// This simulates the scenario where the informer receives an unexpected object type.
+	invalidObj := "not-a-configmap"
+
+	// This should not panic and should gracefully return without changing the count
+	cmw.deleteConfigMapEvent(invalidObj)
+
+	// The count should remain unchanged since the object is invalid
+	if got, want := foo1.count(), initialCount; got != want {
+		t.Fatalf("foo1.count = %v, want %d (should not change)", got, want)
 	}
 }
