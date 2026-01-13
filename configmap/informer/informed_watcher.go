@@ -19,6 +19,7 @@ package informer
 import (
 	"errors"
 	"fmt"
+	"log"
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
@@ -171,6 +172,10 @@ func (i *InformedWatcher) Start(stopCh <-chan struct{}) error {
 		return errors.New("error waiting for ConfigMap informer to sync")
 	}
 
+	// Check which ConfigMaps exist and mark missing ones (without defaults) as done in the synced callback
+	// so we don't wait for them indefinitely
+	i.markMissingConfigMapsAsDone(s)
+
 	if err := i.checkObservedResourcesExist(); err != nil {
 		return err
 	}
@@ -199,14 +204,39 @@ func (i *InformedWatcher) registerCallbackAndStartInformer(addConfigMapEvent fun
 	return nil
 }
 
+func (i *InformedWatcher) markMissingConfigMapsAsDone(s *syncedCallback) {
+	i.RLock()
+	defer i.RUnlock()
+	// Mark ConfigMaps that don't exist and don't have defaults as done
+	// so we don't wait for them indefinitely
+	i.ForEach(func(k string, _ []configmap.Observer) error {
+		if _, err := i.informer.Lister().ConfigMaps(i.Namespace).Get(k); err != nil {
+			if k8serrors.IsNotFound(err) {
+				if _, ok := i.defaults[k]; !ok {
+					// ConfigMap doesn't exist and is not defaulted. Mark it as done
+					// so we don't wait for it. The watcher will pick it up if it's created later.
+					s.MarkKeyAsDone(k)
+				}
+			}
+		}
+		return nil
+	})
+}
+
 func (i *InformedWatcher) checkObservedResourcesExist() error {
 	i.RLock()
 	defer i.RUnlock()
 	// Check that all objects with Observers exist in our informers.
 	return i.ForEach(func(k string, _ []configmap.Observer) error {
 		if _, err := i.informer.Lister().ConfigMaps(i.Namespace).Get(k); err != nil {
-			if _, ok := i.defaults[k]; ok && k8serrors.IsNotFound(err) {
-				// It is defaulted, so it is OK that it doesn't exist.
+			if k8serrors.IsNotFound(err) {
+				if _, ok := i.defaults[k]; ok {
+					// It is defaulted, so it is OK that it doesn't exist.
+					return nil
+				}
+				// ConfigMap doesn't exist and is not defaulted. Log a warning but don't fail.
+				// The watcher will pick up the ConfigMap if it's created later.
+				log.Printf("WARNING: ConfigMap %q in namespace %q not found, using defaults and watching for creation", k, i.Namespace)
 				return nil
 			}
 			return err
