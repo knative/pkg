@@ -441,13 +441,14 @@ func TestOnConnectAndOnDisconnectCallbacks(t *testing.T) {
 	onConnectCalled := make(chan struct{}, 10)
 	onDisconnectCalled := make(chan error, 10)
 
-	conn := NewDurableSendingConnection(target, logger)
-	conn.OnConnect = func() {
-		onConnectCalled <- struct{}{}
-	}
-	conn.OnDisconnect = func(err error) {
-		onDisconnectCalled <- err
-	}
+	conn := NewDurableSendingConnection(target, logger,
+		WithOnConnect(func() {
+			onConnectCalled <- struct{}{}
+		}),
+		WithOnDisconnect(func(err error) {
+			onDisconnectCalled <- err
+		}),
+	)
 	defer conn.Shutdown()
 
 	// Wait for the first OnConnect call
