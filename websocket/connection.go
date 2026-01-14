@@ -86,6 +86,15 @@ type ManagedConnection struct {
 
 	// Used for the exponential backoff when connecting
 	connectionBackoff wait.Backoff
+
+	// OnConnect is called when a connection is successfully established.
+	// This callback is invoked each time the connection is established,
+	// including reconnections.
+	OnConnect func()
+
+	// OnDisconnect is called when a connection is lost.
+	// The error parameter contains the reason for the disconnection.
+	OnDisconnect func(error)
 }
 
 // NewDurableSendingConnection creates a new websocket connection
@@ -164,8 +173,14 @@ func NewDurableConnection(target string, messageChan chan []byte, logger *zap.Su
 					continue
 				}
 				logger.Debug("Connected to ", target)
+				if c.OnConnect != nil {
+					c.OnConnect()
+				}
 				if err := c.keepalive(); err != nil {
 					logger.Errorw(fmt.Sprintf("Connection to %s broke down, reconnecting...", target), zap.Error(err))
+					if c.OnDisconnect != nil {
+						c.OnDisconnect(err)
+					}
 				}
 				if err := c.closeConnection(); err != nil {
 					logger.Errorw("Failed to close the connection after crashing", zap.Error(err))
