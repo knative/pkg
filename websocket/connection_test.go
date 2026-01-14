@@ -419,6 +419,106 @@ func TestDurableConnectionSendsPingsRegularly(t *testing.T) {
 	}
 }
 
+func TestOnConnectAndOnDisconnectCallbacks(t *testing.T) {
+	reconnectChan := make(chan struct{})
+
+	upgrader := websocket.Upgrader{}
+	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		c, err := upgrader.Upgrade(w, r, nil)
+		if err != nil {
+			return
+		}
+
+		// Wait for signal to drop the connection.
+		<-reconnectChan
+		c.Close()
+	}))
+	defer s.Close()
+
+	logger := ktesting.TestLogger(t)
+	target := "ws" + strings.TrimPrefix(s.URL, "http")
+
+	onConnectCalled := make(chan struct{}, 10)
+	onDisconnectCalled := make(chan error, 10)
+
+	conn := NewDurableSendingConnection(target, logger,
+		WithOnConnect(func() {
+			onConnectCalled <- struct{}{}
+		}),
+		WithOnDisconnect(func(err error) {
+			onDisconnectCalled <- err
+		}),
+	)
+	defer conn.Shutdown()
+
+	// Wait for the first OnConnect call
+	select {
+	case <-onConnectCalled:
+		// Success - OnConnect was called
+	case <-time.After(propagationTimeout):
+		t.Fatal("Timed out waiting for OnConnect to be called")
+	}
+
+	// Trigger a disconnect by closing the server-side connection
+	reconnectChan <- struct{}{}
+
+	// Wait for OnDisconnect to be called
+	select {
+	case err := <-onDisconnectCalled:
+		if err == nil {
+			t.Error("Expected OnDisconnect to receive an error, got nil")
+		}
+	case <-time.After(propagationTimeout):
+		t.Fatal("Timed out waiting for OnDisconnect to be called")
+	}
+
+	// Wait for reconnection (OnConnect should be called again)
+	select {
+	case <-onConnectCalled:
+		// Success - OnConnect was called again after reconnection
+	case <-time.After(propagationTimeout):
+		t.Fatal("Timed out waiting for OnConnect to be called after reconnection")
+	}
+}
+
+func TestOnConnectAndOnDisconnectCallbacksNotSet(t *testing.T) {
+	reconnectChan := make(chan struct{})
+
+	upgrader := websocket.Upgrader{}
+	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		c, err := upgrader.Upgrade(w, r, nil)
+		if err != nil {
+			return
+		}
+
+		// Wait for signal to drop the connection.
+		<-reconnectChan
+		c.Close()
+	}))
+	defer s.Close()
+
+	logger := ktesting.TestLogger(t)
+	target := "ws" + strings.TrimPrefix(s.URL, "http")
+
+	// Create connection without setting callbacks - should not panic
+	conn := NewDurableSendingConnection(target, logger)
+	defer conn.Shutdown()
+
+	// Wait for connection to be established
+	err := wait.PollUntilContextTimeout(context.Background(), 50*time.Millisecond, propagationTimeout, true, func(ctx context.Context) (bool, error) {
+		return conn.Status() == nil, nil
+	})
+	if err != nil {
+		t.Fatal("Timed out waiting for connection to be established:", err)
+	}
+
+	// Trigger disconnect - should not panic even without callbacks
+	reconnectChan <- struct{}{}
+
+	// Wait a bit and verify no panic occurred
+	time.Sleep(100 * time.Millisecond)
+}
+
 func TestNewDurableSendingConnectionGuaranteed(t *testing.T) {
 	// Unhappy case.
 	logger := ktesting.TestLogger(t)
