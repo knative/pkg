@@ -40,16 +40,16 @@ func TestVersionCheck(t *testing.T) {
 		wantError       bool
 	}{{
 		name:          "greater version (patch)",
-		actualVersion: &testVersioner{version: "v1.33.1"},
+		actualVersion: &testVersioner{version: "v1.34.1"},
 	}, {
 		name:          "greater version (patch), no v",
-		actualVersion: &testVersioner{version: "1.33.1"},
+		actualVersion: &testVersioner{version: "1.34.1"},
 	}, {
 		name:          "greater version (patch), pre-release",
-		actualVersion: &testVersioner{version: "1.33.1-kpn-065dce"},
+		actualVersion: &testVersioner{version: "1.34.1-kpn-065dce"},
 	}, {
 		name:          "greater version (patch), pre-release with build",
-		actualVersion: &testVersioner{version: "1.33.1-1095+9689d22dc3121e-dirty"},
+		actualVersion: &testVersioner{version: "1.34.1-1095+9689d22dc3121e-dirty"},
 	}, {
 		name:            "greater version (patch), pre-release, envvar override",
 		actualVersion:   &testVersioner{version: "1.15.11-kpn-065dce"},
@@ -60,16 +60,16 @@ func TestVersionCheck(t *testing.T) {
 		versionOverride: "1.15.11-0",
 	}, {
 		name:          "greater version (minor)",
-		actualVersion: &testVersioner{version: "v1.34.0"},
+		actualVersion: &testVersioner{version: "v1.35.0"},
 	}, {
 		name:          "same version",
-		actualVersion: &testVersioner{version: "v1.33.0"},
+		actualVersion: &testVersioner{version: "v1.34.0"},
 	}, {
 		name:          "same version with build",
-		actualVersion: &testVersioner{version: "v1.33.0+k3s.1"},
+		actualVersion: &testVersioner{version: "v1.34.0+k3s.1"},
 	}, {
 		name:          "same version with pre-release",
-		actualVersion: &testVersioner{version: "v1.33.0-k3s.1"},
+		actualVersion: &testVersioner{version: "v1.34.0-k3s.1"},
 	}, {
 		name:          "smaller version",
 		actualVersion: &testVersioner{version: "v1.14.3"},
