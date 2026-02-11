@@ -58,7 +58,10 @@ func (dif *TypedInformerFactory) Get(ctx context.Context, gvr schema.GroupVersio
 		ListWithContextFunc:  asStructuredLister(dif.Client.Resource(gvr).List, listObj),
 		WatchFuncWithContext: AsStructuredWatcher(dif.Client.Resource(gvr).Watch, dif.Type),
 	}
-	inf := cache.NewSharedIndexInformer(lw, dif.Type, dif.ResyncPeriod, cache.Indexers{
+	// Wrap with detection for WatchList semantics support (K8s 1.35+)
+	// This is backward compatible - for K8s <1.35, the wrapper just passes through
+	wrappedLW := wrapListWatchWithWatchListDetection(lw, dif.Client)
+	inf := cache.NewSharedIndexInformer(wrappedLW, dif.Type, dif.ResyncPeriod, cache.Indexers{
 		cache.NamespaceIndex: cache.MetaNamespaceIndexFunc,
 	})
 
@@ -139,4 +142,39 @@ func AsStructuredWatcher(wf structuredWatcher, obj runtime.Object) cache.WatchFu
 
 		return watch.NewProxyWatcher(structuredCh), nil
 	}
+}
+
+// wrapListWatchWithWatchListDetection wraps a ListWatch to detect if the client
+// supports WatchList semantics. This is backward compatible - it only uses the
+// wrapper mechanism if it exists in the K8s version being used.
+func wrapListWatchWithWatchListDetection(lw *cache.ListWatch, client interface{}) cache.ListerWatcher {
+	// Check if the client implements IsWatchListSemanticsUnSupported()
+	// This method exists in fake clients from K8s 1.35+
+	type unSupportedWatchListSemantics interface {
+		IsWatchListSemanticsUnSupported() bool
+	}
+
+	clientSupportsDetection := false
+	if uwl, ok := client.(unSupportedWatchListSemantics); ok {
+		clientSupportsDetection = uwl.IsWatchListSemanticsUnSupported()
+	}
+
+	// Return a wrapper that implements the detection interface if needed
+	return &listWatcherWithWatchListDetection{
+		ListWatch:                     lw,
+		unsupportedWatchListSemantics: clientSupportsDetection,
+	}
+}
+
+// listWatcherWithWatchListDetection wraps cache.ListWatch and implements the
+// IsWatchListSemanticsUnSupported interface for K8s 1.35+ compatibility.
+type listWatcherWithWatchListDetection struct {
+	*cache.ListWatch
+	unsupportedWatchListSemantics bool
+}
+
+// IsWatchListSemanticsUnSupported returns true if the underlying client
+// doesn't support WatchList semantics (e.g., fake clients).
+func (lw *listWatcherWithWatchListDetection) IsWatchListSemanticsUnSupported() bool {
+	return lw.unsupportedWatchListSemantics
 }
