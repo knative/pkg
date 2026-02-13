@@ -486,11 +486,16 @@ func SetupConfigMapWatchOrDie(ctx context.Context, logger *zap.SugaredLogger) *c
 // calling log.Fatalw. Note, if the config does not exist, it will be defaulted
 // and this method will not die.
 func WatchLoggingConfigOrDie(ctx context.Context, cmw *cminformer.InformedWatcher, logger *zap.SugaredLogger, atomicLevel zap.AtomicLevel, component string) {
-	if _, err := kubeclient.Get(ctx).CoreV1().ConfigMaps(system.Namespace()).Get(ctx, logging.ConfigMapName(),
+	cmName := logging.ConfigMapName()
+	if _, err := kubeclient.Get(ctx).CoreV1().ConfigMaps(system.Namespace()).Get(ctx, cmName,
 		metav1.GetOptions{}); err == nil {
-		cmw.Watch(logging.ConfigMapName(), logging.UpdateLevelFromConfigMap(logger, atomicLevel, component))
-	} else if !apierrors.IsNotFound(err) {
-		logger.Fatalw("Error reading ConfigMap "+logging.ConfigMapName(), zap.Error(err))
+		cmw.Watch(cmName, logging.UpdateLevelFromConfigMap(logger, atomicLevel, component))
+	} else if apierrors.IsNotFound(err) {
+		// ConfigMap doesn't exist, but we still register a watcher so updates are picked up if it's created later.
+		logger.Warnw("ConfigMap "+cmName+" not found, using defaults and watching for creation", zap.String("configmap", cmName))
+		cmw.Watch(cmName, logging.UpdateLevelFromConfigMap(logger, atomicLevel, component))
+	} else {
+		logger.Fatalw("Error reading ConfigMap "+cmName, zap.Error(err))
 	}
 }
 
@@ -513,7 +518,11 @@ func WatchObservabilityConfigOrDie(
 
 	if _, err := client.Get(ctx, cmName, metav1.GetOptions{}); err == nil {
 		cmw.Watch(cmName, observers...)
-	} else if !apierrors.IsNotFound(err) {
+	} else if apierrors.IsNotFound(err) {
+		// ConfigMap doesn't exist, but we still register a watcher so updates are picked up if it's created later.
+		logger.Warnw("ConfigMap "+cmName+" not found, using defaults and watching for creation", zap.String("configmap", cmName))
+		cmw.Watch(cmName, observers...)
+	} else {
 		logger.Fatalw("Error reading ConfigMap "+cmName, zap.Error(err))
 	}
 }
