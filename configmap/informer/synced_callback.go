@@ -95,6 +95,12 @@ func (s *syncedCallback) Call(obj interface{}, key string) {
 	s.namedWaitGroup.Done(key)
 }
 
+// MarkKeyAsDone marks a key as done without calling the callback. This is useful for
+// keys that don't exist and don't have defaults, so we don't wait for them indefinitely.
+func (s *syncedCallback) MarkKeyAsDone(key string) {
+	s.namedWaitGroup.Done(key)
+}
+
 // WaitForAllKeys will block until s.Call has been called for all the keys we are tracking or the stop signal is
 // received.
 func (s *syncedCallback) WaitForAllKeys(stopCh <-chan struct{}) error {
