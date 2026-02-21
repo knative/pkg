@@ -67,3 +67,7 @@ func ServiceInstanceID(val string) attribute.KeyValue {
 func HTTPResponseStatusCode(val int) attribute.KeyValue {
 	return semconv.HTTPResponseStatusCode(val)
 }
+
+func HTTPRoute(r string) attribute.KeyValue {
+	return semconv.HTTPRoute(r)
+}
