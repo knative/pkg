@@ -242,6 +242,147 @@ func TestTLSCurvePreferencesWebhookOption(t *testing.T) {
 	})
 }
 
+func TestTLSConfigFromEnvironment(t *testing.T) {
+	t.Run("env min version used when opts min version is zero", func(t *testing.T) {
+		t.Setenv("WEBHOOK_TLS_MIN_VERSION", "1.2")
+		opts := newDefaultOptions()
+		wh, err := newAdmissionControllerWebhook(t, opts)
+		if err != nil {
+			t.Fatal("Unexpected error", err)
+		}
+		if wh.tlsConfig == nil {
+			t.Fatal("Expected tlsConfig to be set")
+		}
+		if wh.tlsConfig.MinVersion != tls.VersionTLS12 {
+			t.Errorf("Expected MinVersion from env to be TLS 1.2, got %d", wh.tlsConfig.MinVersion)
+		}
+	})
+
+	t.Run("opts min version takes precedence over env", func(t *testing.T) {
+		t.Setenv("WEBHOOK_TLS_MIN_VERSION", "1.2")
+		opts := newDefaultOptions()
+		opts.TLSMinVersion = tls.VersionTLS13
+		wh, err := newAdmissionControllerWebhook(t, opts)
+		if err != nil {
+			t.Fatal("Unexpected error", err)
+		}
+		if wh.tlsConfig == nil {
+			t.Fatal("Expected tlsConfig to be set")
+		}
+		if wh.tlsConfig.MinVersion != tls.VersionTLS13 {
+			t.Errorf("Expected MinVersion from opts (TLS 1.3), got %d", wh.tlsConfig.MinVersion)
+		}
+	})
+
+	t.Run("env max version used when opts max version is zero", func(t *testing.T) {
+		t.Setenv("WEBHOOK_TLS_MAX_VERSION", "1.3")
+		opts := newDefaultOptions()
+		wh, err := newAdmissionControllerWebhook(t, opts)
+		if err != nil {
+			t.Fatal("Unexpected error", err)
+		}
+		if wh.tlsConfig == nil {
+			t.Fatal("Expected tlsConfig to be set")
+		}
+		if wh.tlsConfig.MaxVersion != tls.VersionTLS13 {
+			t.Errorf("Expected MaxVersion from env to be TLS 1.3, got %d", wh.tlsConfig.MaxVersion)
+		}
+	})
+
+	t.Run("opts max version takes precedence over env", func(t *testing.T) {
+		t.Setenv("WEBHOOK_TLS_MAX_VERSION", "1.2")
+		opts := newDefaultOptions()
+		opts.TLSMaxVersion = tls.VersionTLS13
+		wh, err := newAdmissionControllerWebhook(t, opts)
+		if err != nil {
+			t.Fatal("Unexpected error", err)
+		}
+		if wh.tlsConfig == nil {
+			t.Fatal("Expected tlsConfig to be set")
+		}
+		if wh.tlsConfig.MaxVersion != tls.VersionTLS13 {
+			t.Errorf("Expected MaxVersion from opts (TLS 1.3), got %d", wh.tlsConfig.MaxVersion)
+		}
+	})
+
+	t.Run("env cipher suites used when opts cipher suites is nil", func(t *testing.T) {
+		t.Setenv("WEBHOOK_TLS_CIPHER_SUITES", "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256")
+		opts := newDefaultOptions()
+		wh, err := newAdmissionControllerWebhook(t, opts)
+		if err != nil {
+			t.Fatal("Unexpected error", err)
+		}
+		if wh.tlsConfig == nil {
+			t.Fatal("Expected tlsConfig to be set")
+		}
+		if len(wh.tlsConfig.CipherSuites) != 1 || wh.tlsConfig.CipherSuites[0] != tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256 {
+			t.Errorf("Expected CipherSuites from env, got %v", wh.tlsConfig.CipherSuites)
+		}
+	})
+
+	t.Run("opts cipher suites take precedence over env", func(t *testing.T) {
+		t.Setenv("WEBHOOK_TLS_CIPHER_SUITES", "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256")
+		opts := newDefaultOptions()
+		opts.TLSCipherSuites = []uint16{tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384}
+		wh, err := newAdmissionControllerWebhook(t, opts)
+		if err != nil {
+			t.Fatal("Unexpected error", err)
+		}
+		if wh.tlsConfig == nil {
+			t.Fatal("Expected tlsConfig to be set")
+		}
+		if len(wh.tlsConfig.CipherSuites) != 1 || wh.tlsConfig.CipherSuites[0] != tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384 {
+			t.Errorf("Expected CipherSuites from opts, got %v", wh.tlsConfig.CipherSuites)
+		}
+	})
+
+	t.Run("env curve preferences used when opts curve preferences is nil", func(t *testing.T) {
+		t.Setenv("WEBHOOK_TLS_CURVE_PREFERENCES", "X25519,CurveP256")
+		opts := newDefaultOptions()
+		wh, err := newAdmissionControllerWebhook(t, opts)
+		if err != nil {
+			t.Fatal("Unexpected error", err)
+		}
+		if wh.tlsConfig == nil {
+			t.Fatal("Expected tlsConfig to be set")
+		}
+		if len(wh.tlsConfig.CurvePreferences) != 2 {
+			t.Fatalf("Expected 2 curve preferences from env, got %d", len(wh.tlsConfig.CurvePreferences))
+		}
+		if wh.tlsConfig.CurvePreferences[0] != tls.X25519 {
+			t.Errorf("Expected CurvePreferences[0] = X25519, got %d", wh.tlsConfig.CurvePreferences[0])
+		}
+		if wh.tlsConfig.CurvePreferences[1] != tls.CurveP256 {
+			t.Errorf("Expected CurvePreferences[1] = CurveP256, got %d", wh.tlsConfig.CurvePreferences[1])
+		}
+	})
+
+	t.Run("opts curve preferences take precedence over env", func(t *testing.T) {
+		t.Setenv("WEBHOOK_TLS_CURVE_PREFERENCES", "X25519")
+		opts := newDefaultOptions()
+		opts.TLSCurvePreferences = []tls.CurveID{tls.CurveP384}
+		wh, err := newAdmissionControllerWebhook(t, opts)
+		if err != nil {
+			t.Fatal("Unexpected error", err)
+		}
+		if wh.tlsConfig == nil {
+			t.Fatal("Expected tlsConfig to be set")
+		}
+		if len(wh.tlsConfig.CurvePreferences) != 1 || wh.tlsConfig.CurvePreferences[0] != tls.CurveP384 {
+			t.Errorf("Expected CurvePreferences from opts, got %v", wh.tlsConfig.CurvePreferences)
+		}
+	})
+
+	t.Run("invalid env TLS config returns error", func(t *testing.T) {
+		t.Setenv("WEBHOOK_TLS_MIN_VERSION", "bad")
+		opts := newDefaultOptions()
+		_, err := newAdmissionControllerWebhook(t, opts)
+		if err == nil {
+			t.Fatal("Expected error for invalid env TLS min version")
+		}
+	})
+}
+
 func TestTLSConfigCombinedOptions(t *testing.T) {
 	opts := newDefaultOptions()
 	t.Run("when all TLS options are configured together", func(t *testing.T) {

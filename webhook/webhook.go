@@ -34,6 +34,7 @@ import (
 	"knative.dev/pkg/network"
 	"knative.dev/pkg/network/handlers"
 	"knative.dev/pkg/observability/semconv"
+	knativetls "knative.dev/pkg/tls"
 
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"go.opentelemetry.io/otel/attribute"
@@ -182,11 +183,33 @@ func New(
 
 	logger := logging.FromContext(ctx)
 
-	defaultTLSMinVersion := uint16(tls.VersionTLS13)
+	tlsCfg, err := knativetls.NewConfigFromEnv("WEBHOOK_")
+	if err != nil {
+		return nil, fmt.Errorf("reading TLS configuration from environment: %w", err)
+	}
+
+	// Replace the TLS configuration with the one from the environment if not set.
+	// Default to TLS 1.3 as the minimum version when neither the caller nor the
+	// environment specifies one.
 	if opts.TLSMinVersion == 0 {
-		opts.TLSMinVersion = TLSMinVersionFromEnv(defaultTLSMinVersion)
-	} else if opts.TLSMinVersion != tls.VersionTLS12 && opts.TLSMinVersion != tls.VersionTLS13 {
-		return nil, fmt.Errorf("unsupported TLS version: %d", opts.TLSMinVersion)
+		if tlsCfg.MinVersion != 0 {
+			opts.TLSMinVersion = tlsCfg.MinVersion
+		} else {
+			opts.TLSMinVersion = tls.VersionTLS13
+		}
+	}
+	if opts.TLSMaxVersion == 0 && tlsCfg.MaxVersion != 0 {
+		opts.TLSMaxVersion = tlsCfg.MaxVersion
+	}
+	if opts.TLSCipherSuites == nil && len(tlsCfg.CipherSuites) > 0 {
+		opts.TLSCipherSuites = tlsCfg.CipherSuites
+	}
+	if opts.TLSCurvePreferences == nil && len(tlsCfg.CurvePreferences) > 0 {
+		opts.TLSCurvePreferences = tlsCfg.CurvePreferences
+	}
+
+	if opts.TLSMinVersion != 0 && opts.TLSMinVersion != tls.VersionTLS12 && opts.TLSMinVersion != tls.VersionTLS13 {
+		return nil, fmt.Errorf("unsupported TLS minimum version %d: must be TLS 1.2 or TLS 1.3", opts.TLSMinVersion)
 	}
 
 	syncCtx, cancel := context.WithCancel(context.Background())
