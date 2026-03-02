@@ -21,7 +21,7 @@ import (
 	"testing"
 )
 
-func TestParseVersion(t *testing.T) {
+func Test_parseVersion(t *testing.T) {
 	tests := []struct {
 		name    string
 		input   string
@@ -39,24 +39,24 @@ func TestParseVersion(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			got, err := ParseVersion(tc.input)
+			got, err := parseVersion(tc.input)
 			if tc.wantErr {
 				if err == nil {
-					t.Fatalf("ParseVersion(%q) = %d, want error", tc.input, got)
+					t.Fatalf("parseVersion(%q) = %d, want error", tc.input, got)
 				}
 				return
 			}
 			if err != nil {
-				t.Fatalf("ParseVersion(%q) unexpected error: %v", tc.input, err)
+				t.Fatalf("parseVersion(%q) unexpected error: %v", tc.input, err)
 			}
 			if got != tc.want {
-				t.Errorf("ParseVersion(%q) = %d, want %d", tc.input, got, tc.want)
+				t.Errorf("parseVersion(%q) = %d, want %d", tc.input, got, tc.want)
 			}
 		})
 	}
 }
 
-func TestParseCipherSuites(t *testing.T) {
+func Test_parseCipherSuites(t *testing.T) {
 	tests := []struct {
 		name    string
 		input   string
@@ -102,29 +102,29 @@ func TestParseCipherSuites(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			got, err := ParseCipherSuites(tc.input)
+			got, err := parseCipherSuites(tc.input)
 			if tc.wantErr {
 				if err == nil {
-					t.Fatalf("ParseCipherSuites(%q) = %v, want error", tc.input, got)
+					t.Fatalf("parseCipherSuites(%q) = %v, want error", tc.input, got)
 				}
 				return
 			}
 			if err != nil {
-				t.Fatalf("ParseCipherSuites(%q) unexpected error: %v", tc.input, err)
+				t.Fatalf("parseCipherSuites(%q) unexpected error: %v", tc.input, err)
 			}
 			if len(got) != len(tc.want) {
-				t.Fatalf("ParseCipherSuites(%q) returned %d suites, want %d", tc.input, len(got), len(tc.want))
+				t.Fatalf("parseCipherSuites(%q) returned %d suites, want %d", tc.input, len(got), len(tc.want))
 			}
 			for i := range tc.want {
 				if got[i] != tc.want[i] {
-					t.Errorf("ParseCipherSuites(%q)[%d] = %d, want %d", tc.input, i, got[i], tc.want[i])
+					t.Errorf("parseCipherSuites(%q)[%d] = %d, want %d", tc.input, i, got[i], tc.want[i])
 				}
 			}
 		})
 	}
 }
 
-func TestParseCurvePreferences(t *testing.T) {
+func Test_parseCurvePreferences(t *testing.T) {
 	tests := []struct {
 		name    string
 		input   string
@@ -191,22 +191,22 @@ func TestParseCurvePreferences(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			got, err := ParseCurvePreferences(tc.input)
+			got, err := parseCurvePreferences(tc.input)
 			if tc.wantErr {
 				if err == nil {
-					t.Fatalf("ParseCurvePreferences(%q) = %v, want error", tc.input, got)
+					t.Fatalf("parseCurvePreferences(%q) = %v, want error", tc.input, got)
 				}
 				return
 			}
 			if err != nil {
-				t.Fatalf("ParseCurvePreferences(%q) unexpected error: %v", tc.input, err)
+				t.Fatalf("parseCurvePreferences(%q) unexpected error: %v", tc.input, err)
 			}
 			if len(got) != len(tc.want) {
-				t.Fatalf("ParseCurvePreferences(%q) returned %d curves, want %d", tc.input, len(got), len(tc.want))
+				t.Fatalf("parseCurvePreferences(%q) returned %d curves, want %d", tc.input, len(got), len(tc.want))
 			}
 			for i := range tc.want {
 				if got[i] != tc.want[i] {
-					t.Errorf("ParseCurvePreferences(%q)[%d] = %d, want %d", tc.input, i, got[i], tc.want[i])
+					t.Errorf("parseCurvePreferences(%q)[%d] = %d, want %d", tc.input, i, got[i], tc.want[i])
 				}
 			}
 		})
@@ -352,16 +352,14 @@ func TestNewConfigFromEnv(t *testing.T) {
 }
 
 func TestConfig_TLSConfig(t *testing.T) {
-	cfg := &Config{
-		MinVersion: cryptotls.VersionTLS12,
-		MaxVersion: cryptotls.VersionTLS13,
-		CipherSuites: []uint16{
-			cryptotls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
-		},
-		CurvePreferences: []cryptotls.CurveID{
-			cryptotls.X25519,
-			cryptotls.CurveP256,
-		},
+	t.Setenv(MinVersionEnvKey, "1.2")
+	t.Setenv(MaxVersionEnvKey, "1.3")
+	t.Setenv(CipherSuitesEnvKey, "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256")
+	t.Setenv(CurvePreferencesEnvKey, "X25519,CurveP256")
+
+	cfg, err := NewConfigFromEnv("")
+	if err != nil {
+		t.Fatal("unexpected error:", err)
 	}
 
 	tc := cfg.TLSConfig()
@@ -380,5 +378,8 @@ func TestConfig_TLSConfig(t *testing.T) {
 	}
 	if tc.CurvePreferences[0] != cryptotls.X25519 {
 		t.Errorf("CurvePreferences[0] = %d, want %d", tc.CurvePreferences[0], cryptotls.X25519)
+	}
+	if tc.CurvePreferences[1] != cryptotls.CurveP256 {
+		t.Errorf("CurvePreferences[1] = %d, want %d", tc.CurvePreferences[1], cryptotls.CurveP256)
 	}
 }

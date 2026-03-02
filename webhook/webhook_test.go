@@ -103,10 +103,16 @@ func newAdmissionControllerWebhook(t *testing.T, options Options, acs ...interfa
 
 func TestTLSMinVersionWebhookOption(t *testing.T) {
 	opts := newDefaultOptions()
-	t.Run("when TLSMinVersion is not configured, and the default is used", func(t *testing.T) {
-		_, err := newAdmissionControllerWebhook(t, opts)
+	t.Run("when TLSMinVersion is not configured, default is TLS 1.3", func(t *testing.T) {
+		wh, err := newAdmissionControllerWebhook(t, opts)
 		if err != nil {
 			t.Fatal("Unexpected error", err)
+		}
+		if wh.tlsConfig == nil {
+			t.Fatal("Expected tlsConfig to be set")
+		}
+		if wh.tlsConfig.MinVersion != tls.VersionTLS13 {
+			t.Errorf("Expected default MinVersion to be TLS 1.3 (%#x), got %#x", tls.VersionTLS13, wh.tlsConfig.MinVersion)
 		}
 	})
 	t.Run("when the TLS minimum version configured is supported", func(t *testing.T) {
@@ -165,6 +171,36 @@ func TestTLSMaxVersionWebhookOption(t *testing.T) {
 		}
 		if wh.tlsConfig.MaxVersion != tls.VersionTLS13 {
 			t.Errorf("Expected MaxVersion to be TLS 1.3, got %d", wh.tlsConfig.MaxVersion)
+		}
+	})
+}
+
+func TestTLSMinMaxVersionValidation(t *testing.T) {
+	t.Run("max version less than min version returns error", func(t *testing.T) {
+		opts := newDefaultOptions()
+		opts.TLSMinVersion = tls.VersionTLS13
+		opts.TLSMaxVersion = tls.VersionTLS12
+		_, err := newAdmissionControllerWebhook(t, opts)
+		if err == nil {
+			t.Fatal("Expected error when TLS max version is less than min version")
+		}
+	})
+	t.Run("max version equal to min version is ok", func(t *testing.T) {
+		opts := newDefaultOptions()
+		opts.TLSMinVersion = tls.VersionTLS13
+		opts.TLSMaxVersion = tls.VersionTLS13
+		_, err := newAdmissionControllerWebhook(t, opts)
+		if err != nil {
+			t.Fatal("Unexpected error:", err)
+		}
+	})
+	t.Run("max version zero skips validation", func(t *testing.T) {
+		opts := newDefaultOptions()
+		opts.TLSMinVersion = tls.VersionTLS13
+		opts.TLSMaxVersion = 0
+		_, err := newAdmissionControllerWebhook(t, opts)
+		if err != nil {
+			t.Fatal("Unexpected error:", err)
 		}
 	})
 }
@@ -315,7 +351,10 @@ func TestTLSConfigFromEnvironment(t *testing.T) {
 		if wh.tlsConfig == nil {
 			t.Fatal("Expected tlsConfig to be set")
 		}
-		if len(wh.tlsConfig.CipherSuites) != 1 || wh.tlsConfig.CipherSuites[0] != tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256 {
+		if len(wh.tlsConfig.CipherSuites) != 1 {
+			t.Fatalf("Expected 1 cipher suite from env, got %d", len(wh.tlsConfig.CipherSuites))
+		}
+		if wh.tlsConfig.CipherSuites[0] != tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256 {
 			t.Errorf("Expected CipherSuites from env, got %v", wh.tlsConfig.CipherSuites)
 		}
 	})
@@ -331,7 +370,10 @@ func TestTLSConfigFromEnvironment(t *testing.T) {
 		if wh.tlsConfig == nil {
 			t.Fatal("Expected tlsConfig to be set")
 		}
-		if len(wh.tlsConfig.CipherSuites) != 1 || wh.tlsConfig.CipherSuites[0] != tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384 {
+		if len(wh.tlsConfig.CipherSuites) != 1 {
+			t.Fatalf("Expected 1 cipher suite from opts, got %d", len(wh.tlsConfig.CipherSuites))
+		}
+		if wh.tlsConfig.CipherSuites[0] != tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384 {
 			t.Errorf("Expected CipherSuites from opts, got %v", wh.tlsConfig.CipherSuites)
 		}
 	})
@@ -368,7 +410,10 @@ func TestTLSConfigFromEnvironment(t *testing.T) {
 		if wh.tlsConfig == nil {
 			t.Fatal("Expected tlsConfig to be set")
 		}
-		if len(wh.tlsConfig.CurvePreferences) != 1 || wh.tlsConfig.CurvePreferences[0] != tls.CurveP384 {
+		if len(wh.tlsConfig.CurvePreferences) != 1 {
+			t.Fatalf("Expected 1 curve preference from opts, got %d", len(wh.tlsConfig.CurvePreferences))
+		}
+		if wh.tlsConfig.CurvePreferences[0] != tls.CurveP384 {
 			t.Errorf("Expected CurvePreferences from opts, got %v", wh.tlsConfig.CurvePreferences)
 		}
 	})

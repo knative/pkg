@@ -51,7 +51,7 @@ func NewConfigFromEnv(prefix string) (*Config, error) {
 	var cfg Config
 
 	if v := os.Getenv(prefix + MinVersionEnvKey); v != "" {
-		ver, err := ParseVersion(v)
+		ver, err := parseVersion(v)
 		if err != nil {
 			return nil, fmt.Errorf("invalid %s%s %q: %w", prefix, MinVersionEnvKey, v, err)
 		}
@@ -59,7 +59,7 @@ func NewConfigFromEnv(prefix string) (*Config, error) {
 	}
 
 	if v := os.Getenv(prefix + MaxVersionEnvKey); v != "" {
-		ver, err := ParseVersion(v)
+		ver, err := parseVersion(v)
 		if err != nil {
 			return nil, fmt.Errorf("invalid %s%s %q: %w", prefix, MaxVersionEnvKey, v, err)
 		}
@@ -67,7 +67,7 @@ func NewConfigFromEnv(prefix string) (*Config, error) {
 	}
 
 	if v := os.Getenv(prefix + CipherSuitesEnvKey); v != "" {
-		suites, err := ParseCipherSuites(v)
+		suites, err := parseCipherSuites(v)
 		if err != nil {
 			return nil, fmt.Errorf("invalid %s%s: %w", prefix, CipherSuitesEnvKey, err)
 		}
@@ -75,7 +75,7 @@ func NewConfigFromEnv(prefix string) (*Config, error) {
 	}
 
 	if v := os.Getenv(prefix + CurvePreferencesEnvKey); v != "" {
-		curves, err := ParseCurvePreferences(v)
+		curves, err := parseCurvePreferences(v)
 		if err != nil {
 			return nil, fmt.Errorf("invalid %s%s: %w", prefix, CurvePreferencesEnvKey, err)
 		}
@@ -97,9 +97,9 @@ func (c *Config) TLSConfig() *cryptotls.Config {
 	}
 }
 
-// ParseVersion converts a TLS version string to the corresponding
+// parseVersion converts a TLS version string to the corresponding
 // crypto/tls constant. Accepted values are "1.2" and "1.3".
-func ParseVersion(v string) (uint16, error) {
+func parseVersion(v string) (uint16, error) {
 	switch v {
 	case "1.2":
 		return cryptotls.VersionTLS12, nil
@@ -110,11 +110,11 @@ func ParseVersion(v string) (uint16, error) {
 	}
 }
 
-// ParseCipherSuites parses a comma-separated list of TLS cipher-suite names
+// parseCipherSuites parses a comma-separated list of TLS cipher-suite names
 // (e.g. "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384")
 // into a slice of cipher-suite IDs. Names must match those returned by
 // crypto/tls.CipherSuiteName.
-func ParseCipherSuites(s string) ([]uint16, error) {
+func parseCipherSuites(s string) ([]uint16, error) {
 	lookup := cipherSuiteLookup()
 	parts := strings.Split(s, ",")
 	suites := make([]uint16, 0, len(parts))
@@ -134,10 +134,10 @@ func ParseCipherSuites(s string) ([]uint16, error) {
 	return suites, nil
 }
 
-// ParseCurvePreferences parses a comma-separated list of elliptic-curve names
+// parseCurvePreferences parses a comma-separated list of elliptic-curve names
 // (e.g. "X25519,CurveP256") into a slice of crypto/tls.CurveID values.
 // Both Go constant names (CurveP256) and standard names (P-256) are accepted.
-func ParseCurvePreferences(s string) ([]cryptotls.CurveID, error) {
+func parseCurvePreferences(s string) ([]cryptotls.CurveID, error) {
 	parts := strings.Split(s, ",")
 	curves := make([]cryptotls.CurveID, 0, len(parts))
 
