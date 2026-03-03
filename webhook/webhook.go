@@ -191,20 +191,17 @@ func New(
 
 	logger := logging.FromContext(ctx)
 
-	tlsCfg, err := knativetls.NewConfigFromEnv("WEBHOOK_")
+	tlsCfg, err := knativetls.NewConfigFromEnv("WEBHOOK_", knativetls.Config{
+		MinVersion: knativetls.DefaultMinTLSVersion,
+	})
 	if err != nil {
 		return nil, fmt.Errorf("reading TLS configuration from environment: %w", err)
 	}
 
-	// Replace the TLS configuration with the one from the environment if not set.
-	// Default to TLS 1.3 as the minimum version when neither the caller nor the
-	// environment specifies one.
-	if opts.TLSMinVersion == 0 {
-		if tlsCfg.MinVersion != 0 {
-			opts.TLSMinVersion = tlsCfg.MinVersion
-		} else {
-			opts.TLSMinVersion = tls.VersionTLS13
-		}
+	// Apply environment / default TLS settings for any fields the caller
+	// has not already configured.
+	if opts.TLSMinVersion == 0 && tlsCfg.MinVersion != 0 {
+		opts.TLSMinVersion = tlsCfg.MinVersion
 	}
 	if opts.TLSMaxVersion == 0 && tlsCfg.MaxVersion != 0 {
 		opts.TLSMaxVersion = tlsCfg.MaxVersion

@@ -349,6 +349,68 @@ func TestNewConfigFromEnv(t *testing.T) {
 			t.Fatal("expected error for invalid curve")
 		}
 	})
+
+	t.Run("defaults used when env vars are unset", func(t *testing.T) {
+		defaults := Config{
+			MinVersion:   DefaultMinTLSVersion,
+			MaxVersion:   cryptotls.VersionTLS13,
+			CipherSuites: []uint16{cryptotls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256},
+			CurvePreferences: []cryptotls.CurveID{
+				cryptotls.X25519,
+			},
+		}
+		cfg, err := NewConfigFromEnv("", defaults)
+		if err != nil {
+			t.Fatal("unexpected error:", err)
+		}
+		if cfg.MinVersion != DefaultMinTLSVersion {
+			t.Errorf("MinVersion = %d, want %d", cfg.MinVersion, DefaultMinTLSVersion)
+		}
+		if cfg.MaxVersion != cryptotls.VersionTLS13 {
+			t.Errorf("MaxVersion = %d, want %d", cfg.MaxVersion, cryptotls.VersionTLS13)
+		}
+		if len(cfg.CipherSuites) != 1 || cfg.CipherSuites[0] != cryptotls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256 {
+			t.Errorf("CipherSuites = %v, want [%d]", cfg.CipherSuites, cryptotls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256)
+		}
+		if len(cfg.CurvePreferences) != 1 || cfg.CurvePreferences[0] != cryptotls.X25519 {
+			t.Errorf("CurvePreferences = %v, want [%d]", cfg.CurvePreferences, cryptotls.X25519)
+		}
+	})
+
+	t.Run("env vars override defaults", func(t *testing.T) {
+		t.Setenv(MinVersionEnvKey, "1.2")
+		t.Setenv(CurvePreferencesEnvKey, "CurveP256")
+
+		defaults := Config{
+			MinVersion: DefaultMinTLSVersion,
+			CurvePreferences: []cryptotls.CurveID{
+				cryptotls.X25519,
+			},
+		}
+		cfg, err := NewConfigFromEnv("", defaults)
+		if err != nil {
+			t.Fatal("unexpected error:", err)
+		}
+		if cfg.MinVersion != cryptotls.VersionTLS12 {
+			t.Errorf("MinVersion = %d, want %d (env should override default)", cfg.MinVersion, cryptotls.VersionTLS12)
+		}
+		if len(cfg.CurvePreferences) != 1 || cfg.CurvePreferences[0] != cryptotls.CurveP256 {
+			t.Errorf("CurvePreferences = %v, want [%d] (env should override default)", cfg.CurvePreferences, cryptotls.CurveP256)
+		}
+	})
+
+	t.Run("multiple defaults returns error", func(t *testing.T) {
+		_, err := NewConfigFromEnv("", Config{}, Config{})
+		if err == nil {
+			t.Fatal("expected error when passing multiple defaults")
+		}
+	})
+
+	t.Run("DefaultMinTLSVersion equals TLS 1.3", func(t *testing.T) {
+		if DefaultMinTLSVersion != cryptotls.VersionTLS13 {
+			t.Errorf("DefaultMinTLSVersion = %d, want %d (TLS 1.3)", DefaultMinTLSVersion, cryptotls.VersionTLS13)
+		}
+	})
 }
 
 func TestConfig_TLSConfig(t *testing.T) {

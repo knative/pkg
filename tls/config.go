@@ -23,6 +23,10 @@ import (
 	"strings"
 )
 
+// DefaultMinTLSVersion is the minimum TLS version used when no override
+// is provided via environment variable or caller-supplied defaults.
+const DefaultMinTLSVersion = cryptotls.VersionTLS13
+
 // Environment variable name suffixes for TLS configuration.
 // Use with a prefix to namespace them, e.g. "WEBHOOK_" + MinVersionEnvKey
 // reads the WEBHOOK_TLS_MIN_VERSION variable.
@@ -46,9 +50,19 @@ type Config struct {
 // returns a Config. The prefix is prepended to each standard env-var suffix;
 // for example with prefix "WEBHOOK_" the function reads
 // WEBHOOK_TLS_MIN_VERSION, WEBHOOK_TLS_MAX_VERSION, etc.
-// Fields whose corresponding env var is unset are left at their zero value.
-func NewConfigFromEnv(prefix string) (*Config, error) {
+//
+// An optional defaults Config may be supplied; its values are used for any
+// field whose corresponding environment variable is unset. When no defaults
+// are provided, unset fields remain at their zero value.
+func NewConfigFromEnv(prefix string, defaults ...Config) (*Config, error) {
+	if len(defaults) > 1 {
+		return nil, fmt.Errorf("at most one defaults Config may be provided, got %d", len(defaults))
+	}
+
 	var cfg Config
+	if len(defaults) == 1 {
+		cfg = defaults[0]
+	}
 
 	if v := os.Getenv(prefix + MinVersionEnvKey); v != "" {
 		ver, err := parseVersion(v)
