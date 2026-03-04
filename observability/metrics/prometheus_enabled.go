@@ -29,7 +29,7 @@ import (
 	"knative.dev/pkg/observability/metrics/prometheus"
 )
 
-func buildPrometheus(_ context.Context, cfg Config) (sdkmetric.Reader, shutdownFunc, error) {
+func buildPrometheus(ctx context.Context, cfg Config) (sdkmetric.Reader, shutdownFunc, error) {
 	r, err := otelprom.New(
 		otelprom.WithTranslationStrategy(otlptranslator.UnderscoreEscapingWithSuffixes),
 	)
@@ -54,10 +54,17 @@ func buildPrometheus(_ context.Context, cfg Config) (sdkmetric.Reader, shutdownF
 		)
 	}
 
+	// Check for TLSConfig in context (highest priority)
+	if tlsConfig := prometheus.TLSConfigFromContext(ctx); tlsConfig != nil {
+		opts = append(opts, prometheus.WithTLSConfig(tlsConfig))
+	}
+
 	server, err := prometheus.NewServer(opts...)
 
 	go func() {
-		server.ListenAndServe()
+		if err := server.ListenAndServe(); err != nil {
+			fmt.Printf("metrics server error: %v\n", err)
+		}
 	}()
 
 	return r, server.Shutdown, err
