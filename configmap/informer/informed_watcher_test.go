@@ -208,7 +208,7 @@ func TestFilterConfigByLabelExists(t *testing.T) {
 	}
 }
 
-func TestWatchMissingFailsOnStart(t *testing.T) {
+func TestWatchMissingDoesNotFailOnStart(t *testing.T) {
 	const (
 		labelKey = "test/label"
 		labelVal = "test"
@@ -232,18 +232,15 @@ func TestWatchMissingFailsOnStart(t *testing.T) {
 	testCases := map[string]struct {
 		initialObj []runtime.Object
 		watchNames []string
-		expectErr  string
 		labelReq   string
 	}{
 		"ConfigMap does not exist": {
 			initialObj: nil,
 			watchNames: []string{"foo"},
-			expectErr:  `configmap "foo" not found`,
 		},
 		"ConfigMap is missing required label": {
 			initialObj: []runtime.Object{cmWithLabel, cmWithoutLabel},
 			watchNames: []string{"with-label", "without-label"},
-			expectErr:  `configmap "without-label" not found`,
 			labelReq:   labelKey,
 		},
 	}
@@ -269,11 +266,9 @@ func TestWatchMissingFailsOnStart(t *testing.T) {
 			defer close(stopCh)
 			err := cmw.Start(stopCh)
 
-			switch {
-			case err == nil:
-				t.Fatal("Failed to start InformedWatcher =", err)
-			case err.Error() != tc.expectErr:
-				t.Fatal("Unexpected error =", err)
+			// Missing ConfigMaps should not cause Start to fail
+			if err != nil {
+				t.Fatal("Start should succeed even with missing ConfigMaps, got error =", err)
 			}
 		})
 	}
@@ -622,5 +617,60 @@ func TestDeleteConfigMapEventWithInvalidObject(t *testing.T) {
 	// The count should remain unchanged since the object is invalid
 	if got, want := foo1.count(), initialCount; got != want {
 		t.Fatalf("foo1.count = %v, want %d (should not change)", got, want)
+	}
+}
+
+func TestMissingConfigMapDoesNotCrash(t *testing.T) {
+	// Test that watching a non-existent ConfigMap does not cause a crash
+	// and that the ConfigMap is observed when created later.
+	kc := fakekubeclientset.NewSimpleClientset()
+	cmw := NewInformedWatcher(kc, "default")
+
+	foo1 := &counter{
+		name: "foo1",
+		wg:   &sync.WaitGroup{},
+	}
+	// Watch a ConfigMap that doesn't exist - this should not crash
+	cmw.Watch("missing-cm", foo1.callback)
+
+	stopCh := make(chan struct{})
+	defer close(stopCh)
+
+	// Start should succeed even though the ConfigMap doesn't exist
+	if err := cmw.Start(stopCh); err != nil {
+		t.Fatalf("cmw.Start() failed with missing ConfigMap: %v", err)
+	}
+
+	// Initially, the callback should not have been called since the ConfigMap doesn't exist
+	if got, want := foo1.count(), 0; got != want {
+		t.Fatalf("Initial foo1.count = %d, want %d", got, want)
+	}
+
+	// Now create the ConfigMap - it should be observed
+	foo1.wg.Add(1)
+	createdCM := &corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: "default",
+			Name:      "missing-cm",
+		},
+		Data: map[string]string{
+			"key": "value",
+		},
+	}
+	if _, err := kc.CoreV1().ConfigMaps("default").Create(context.Background(), createdCM, metav1.CreateOptions{}); err != nil {
+		t.Fatalf("Failed to create ConfigMap: %v", err)
+	}
+
+	// Wait for the callback to be invoked
+	foo1.wg.Wait()
+
+	// The callback should have been called once when the ConfigMap was created
+	if got, want := foo1.count(), 1; got != want {
+		t.Fatalf("After creation foo1.count = %d, want %d", got, want)
+	}
+
+	// Verify the ConfigMap data
+	if got, want := foo1.cfg[0].Data["key"], "value"; got != want {
+		t.Errorf("ConfigMap data = %q, want %q", got, want)
 	}
 }
