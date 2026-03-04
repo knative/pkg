@@ -213,14 +213,14 @@ func Test_parseCurvePreferences(t *testing.T) {
 	}
 }
 
-func TestNewConfigFromEnv(t *testing.T) {
-	t.Run("no env vars set returns zero value", func(t *testing.T) {
-		cfg, err := NewConfigFromEnv("")
+func TestDefaultConfigFromEnv(t *testing.T) {
+	t.Run("no env vars returns TLS 1.3 default", func(t *testing.T) {
+		cfg, err := DefaultConfigFromEnv("")
 		if err != nil {
 			t.Fatal("unexpected error:", err)
 		}
-		if cfg.MinVersion != 0 {
-			t.Errorf("MinVersion = %d, want 0", cfg.MinVersion)
+		if cfg.MinVersion != cryptotls.VersionTLS13 {
+			t.Errorf("MinVersion = %d, want %d", cfg.MinVersion, cryptotls.VersionTLS13)
 		}
 		if cfg.MaxVersion != 0 {
 			t.Errorf("MaxVersion = %d, want 0", cfg.MaxVersion)
@@ -233,9 +233,9 @@ func TestNewConfigFromEnv(t *testing.T) {
 		}
 	})
 
-	t.Run("min version from env", func(t *testing.T) {
+	t.Run("min version from env overrides default", func(t *testing.T) {
 		t.Setenv(MinVersionEnvKey, "1.2")
-		cfg, err := NewConfigFromEnv("")
+		cfg, err := DefaultConfigFromEnv("")
 		if err != nil {
 			t.Fatal("unexpected error:", err)
 		}
@@ -246,7 +246,7 @@ func TestNewConfigFromEnv(t *testing.T) {
 
 	t.Run("max version from env", func(t *testing.T) {
 		t.Setenv(MaxVersionEnvKey, "1.3")
-		cfg, err := NewConfigFromEnv("")
+		cfg, err := DefaultConfigFromEnv("")
 		if err != nil {
 			t.Fatal("unexpected error:", err)
 		}
@@ -257,7 +257,7 @@ func TestNewConfigFromEnv(t *testing.T) {
 
 	t.Run("cipher suites from env", func(t *testing.T) {
 		t.Setenv(CipherSuitesEnvKey, "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256")
-		cfg, err := NewConfigFromEnv("")
+		cfg, err := DefaultConfigFromEnv("")
 		if err != nil {
 			t.Fatal("unexpected error:", err)
 		}
@@ -268,7 +268,7 @@ func TestNewConfigFromEnv(t *testing.T) {
 
 	t.Run("curve preferences from env", func(t *testing.T) {
 		t.Setenv(CurvePreferencesEnvKey, "X25519,CurveP256")
-		cfg, err := NewConfigFromEnv("")
+		cfg, err := DefaultConfigFromEnv("")
 		if err != nil {
 			t.Fatal("unexpected error:", err)
 		}
@@ -285,7 +285,7 @@ func TestNewConfigFromEnv(t *testing.T) {
 
 	t.Run("prefix is prepended to env key", func(t *testing.T) {
 		t.Setenv("WEBHOOK_TLS_MIN_VERSION", "1.2")
-		cfg, err := NewConfigFromEnv("WEBHOOK_")
+		cfg, err := DefaultConfigFromEnv("WEBHOOK_")
 		if err != nil {
 			t.Fatal("unexpected error:", err)
 		}
@@ -300,7 +300,7 @@ func TestNewConfigFromEnv(t *testing.T) {
 		t.Setenv(CipherSuitesEnvKey, "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384")
 		t.Setenv(CurvePreferencesEnvKey, "X25519,P-256")
 
-		cfg, err := NewConfigFromEnv("")
+		cfg, err := DefaultConfigFromEnv("")
 		if err != nil {
 			t.Fatal("unexpected error:", err)
 		}
@@ -320,7 +320,7 @@ func TestNewConfigFromEnv(t *testing.T) {
 
 	t.Run("invalid min version", func(t *testing.T) {
 		t.Setenv(MinVersionEnvKey, "1.0")
-		_, err := NewConfigFromEnv("")
+		_, err := DefaultConfigFromEnv("")
 		if err == nil {
 			t.Fatal("expected error for invalid min version")
 		}
@@ -328,7 +328,7 @@ func TestNewConfigFromEnv(t *testing.T) {
 
 	t.Run("invalid max version", func(t *testing.T) {
 		t.Setenv(MaxVersionEnvKey, "bad")
-		_, err := NewConfigFromEnv("")
+		_, err := DefaultConfigFromEnv("")
 		if err == nil {
 			t.Fatal("expected error for invalid max version")
 		}
@@ -336,7 +336,7 @@ func TestNewConfigFromEnv(t *testing.T) {
 
 	t.Run("invalid cipher suite", func(t *testing.T) {
 		t.Setenv(CipherSuitesEnvKey, "NOT_A_REAL_CIPHER")
-		_, err := NewConfigFromEnv("")
+		_, err := DefaultConfigFromEnv("")
 		if err == nil {
 			t.Fatal("expected error for invalid cipher suite")
 		}
@@ -344,42 +344,9 @@ func TestNewConfigFromEnv(t *testing.T) {
 
 	t.Run("invalid curve", func(t *testing.T) {
 		t.Setenv(CurvePreferencesEnvKey, "NotACurve")
-		_, err := NewConfigFromEnv("")
+		_, err := DefaultConfigFromEnv("")
 		if err == nil {
 			t.Fatal("expected error for invalid curve")
 		}
 	})
-}
-
-func TestConfig_TLSConfig(t *testing.T) {
-	t.Setenv(MinVersionEnvKey, "1.2")
-	t.Setenv(MaxVersionEnvKey, "1.3")
-	t.Setenv(CipherSuitesEnvKey, "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256")
-	t.Setenv(CurvePreferencesEnvKey, "X25519,CurveP256")
-
-	cfg, err := NewConfigFromEnv("")
-	if err != nil {
-		t.Fatal("unexpected error:", err)
-	}
-
-	tc := cfg.TLSConfig()
-
-	if tc.MinVersion != cryptotls.VersionTLS12 {
-		t.Errorf("MinVersion = %d, want %d", tc.MinVersion, cryptotls.VersionTLS12)
-	}
-	if tc.MaxVersion != cryptotls.VersionTLS13 {
-		t.Errorf("MaxVersion = %d, want %d", tc.MaxVersion, cryptotls.VersionTLS13)
-	}
-	if len(tc.CipherSuites) != 1 || tc.CipherSuites[0] != cryptotls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256 {
-		t.Errorf("CipherSuites = %v, want [%d]", tc.CipherSuites, cryptotls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256)
-	}
-	if len(tc.CurvePreferences) != 2 {
-		t.Fatalf("CurvePreferences has %d entries, want 2", len(tc.CurvePreferences))
-	}
-	if tc.CurvePreferences[0] != cryptotls.X25519 {
-		t.Errorf("CurvePreferences[0] = %d, want %d", tc.CurvePreferences[0], cryptotls.X25519)
-	}
-	if tc.CurvePreferences[1] != cryptotls.CurveP256 {
-		t.Errorf("CurvePreferences[1] = %d, want %d", tc.CurvePreferences[1], cryptotls.CurveP256)
-	}
 }
