@@ -35,7 +35,7 @@ require (
 	go.uber.org/zap v1.27.1
 	go.yaml.in/yaml/v3 v3.0.4
 	golang.org/x/net v0.51.0
-	golang.org/x/sync v0.19.0
+	golang.org/x/sync v0.20.0
 	golang.org/x/tools v0.42.0
 	gomodules.xyz/jsonpatch/v2 v2.5.0
 	k8s.io/api v0.35.2
