@@ -20,8 +20,10 @@ package metrics
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net"
+	"net/http"
 
 	"github.com/prometheus/otlptranslator"
 	otelprom "go.opentelemetry.io/otel/exporters/prometheus"
@@ -29,7 +31,7 @@ import (
 	"knative.dev/pkg/observability/metrics/prometheus"
 )
 
-func buildPrometheus(_ context.Context, cfg Config) (sdkmetric.Reader, shutdownFunc, error) {
+func buildPrometheus(ctx context.Context, cfg Config) (sdkmetric.Reader, shutdownFunc, error) {
 	r, err := otelprom.New(
 		otelprom.WithTranslationStrategy(otlptranslator.UnderscoreEscapingWithSuffixes),
 	)
@@ -55,10 +57,15 @@ func buildPrometheus(_ context.Context, cfg Config) (sdkmetric.Reader, shutdownF
 	}
 
 	server, err := prometheus.NewServer(opts...)
+	if err != nil {
+		return nil, noopFunc, fmt.Errorf("create prometheus metrics server: %w", err)
+	}
 
 	go func() {
-		server.ListenAndServe()
+		if err := server.Serve(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			fmt.Printf("metrics server error: %v\n", err)
+		}
 	}()
 
-	return r, server.Shutdown, err
+	return r, server.Shutdown, nil
 }
