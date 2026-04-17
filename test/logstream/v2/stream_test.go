@@ -215,7 +215,7 @@ func TestNamespaceStream(t *testing.T) {
 	logFuncInvoked := make(chan string)
 	t.Cleanup(func() { close(logFuncInvoked) })
 	logFunc := func(format string, args ...interface{}) {
-		logFuncInvoked <- fmt.Sprintf(format, args)
+		logFuncInvoked <- fmt.Sprintf(format, args...)
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
