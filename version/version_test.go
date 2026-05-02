@@ -108,3 +108,9 @@ func TestVersionCheck(t *testing.T) {
 		})
 	}
 }
+
+func TestMinimumVersion(t *testing.T) {
+	if got := MinimumVersion(); got != defaultMinimumVersion {
+		t.Errorf("MinimumVersion() = %q, want %q", got, defaultMinimumVersion)
+	}
+}
