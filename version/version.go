@@ -36,6 +36,12 @@ const (
 	defaultMinimumVersion = "v1.34.0"
 )
 
+// MinimumVersion returns the minimum Kubernetes version Knative is built
+// and tested against. The returned value has a leading "v" (e.g. "v1.34.0").
+func MinimumVersion() string {
+	return defaultMinimumVersion
+}
+
 func getMinimumVersion() string {
 	if v := os.Getenv(KubernetesMinVersionKey); v != "" {
 		return v
