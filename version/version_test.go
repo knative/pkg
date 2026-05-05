@@ -99,18 +99,27 @@ func TestVersionCheck(t *testing.T) {
 
 			err := CheckMinimumVersion(test.actualVersion)
 			if err == nil && test.wantError {
-				t.Errorf("Expected an error for minimum: %q, actual: %v", getMinimumVersion(), test.actualVersion)
+				t.Errorf("Expected an error for minimum: %q, actual: %v", KubernetesMinimumVersion(), test.actualVersion)
 			}
 
 			if err != nil && !test.wantError {
-				t.Errorf("Expected no error but got %v for minimum: %q, actual: %v", err, getMinimumVersion(), test.actualVersion)
+				t.Errorf("Expected no error but got %v for minimum: %q, actual: %v", err, KubernetesMinimumVersion(), test.actualVersion)
 			}
 		})
 	}
 }
 
-func TestMinimumVersion(t *testing.T) {
-	if got := MinimumVersion(); got != defaultMinimumVersion {
-		t.Errorf("MinimumVersion() = %q, want %q", got, defaultMinimumVersion)
-	}
+func TestKubernetesMinimumVersion(t *testing.T) {
+	t.Run("default", func(t *testing.T) {
+		t.Setenv(KubernetesMinVersionKey, "")
+		if got := KubernetesMinimumVersion(); got != DefaultKubernetesMinVersion {
+			t.Errorf("KubernetesMinimumVersion() = %q, want %q", got, DefaultKubernetesMinVersion)
+		}
+	})
+	t.Run("override", func(t *testing.T) {
+		t.Setenv(KubernetesMinVersionKey, "v1.99.0")
+		if got := KubernetesMinimumVersion(); got != "v1.99.0" {
+			t.Errorf("KubernetesMinimumVersion() = %q, want %q", got, "v1.99.0")
+		}
+	})
 }
