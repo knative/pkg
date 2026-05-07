@@ -19,7 +19,7 @@ package testing
 import (
 	admissionregistrationv1 "k8s.io/api/admissionregistration/v1"
 	appsv1 "k8s.io/api/apps/v1"
-	autoscalingv2beta1 "k8s.io/api/autoscaling/v2beta1"
+	autoscalingv2 "k8s.io/api/autoscaling/v2"
 	corev1 "k8s.io/api/core/v1"
 	apixv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	apixlisters "k8s.io/apiextensions-apiserver/pkg/client/listers/apiextensions/v1"
@@ -29,7 +29,7 @@ import (
 
 	fakeapix "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/fake"
 	appsv1listers "k8s.io/client-go/listers/apps/v1"
-	autoscalingv2beta1listers "k8s.io/client-go/listers/autoscaling/v2beta1"
+	autoscalingv2listers "k8s.io/client-go/listers/autoscaling/v2"
 	corev1listers "k8s.io/client-go/listers/core/v1"
 	"k8s.io/client-go/tools/cache"
 	"knative.dev/pkg/reconciler/testing"
@@ -39,7 +39,7 @@ import (
 
 var clientSetSchemes = []func(*runtime.Scheme) error{
 	fakekubeclientset.AddToScheme,
-	autoscalingv2beta1.AddToScheme,
+	autoscalingv2.AddToScheme,
 	pkgtesting.AddToScheme,
 	pkgducktesting.AddToScheme,
 	fakeapix.AddToScheme,
@@ -104,8 +104,8 @@ func (l *Listers) GetAPIExtensionsObjects() []runtime.Object {
 }
 
 // GetHorizontalPodAutoscalerLister gets lister for HorizontalPodAutoscaler resources.
-func (l *Listers) GetHorizontalPodAutoscalerLister() autoscalingv2beta1listers.HorizontalPodAutoscalerLister {
-	return autoscalingv2beta1listers.NewHorizontalPodAutoscalerLister(l.IndexerFor(&autoscalingv2beta1.HorizontalPodAutoscaler{}))
+func (l *Listers) GetHorizontalPodAutoscalerLister() autoscalingv2listers.HorizontalPodAutoscalerLister {
+	return autoscalingv2listers.NewHorizontalPodAutoscalerLister(l.IndexerFor(&autoscalingv2.HorizontalPodAutoscaler{}))
 }
 
 // GetDeploymentLister gets lister for K8s Deployment resource.
