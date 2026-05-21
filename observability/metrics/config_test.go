@@ -66,7 +66,7 @@ func TestNewFromMapBadInput(t *testing.T) {
 	}
 }
 
-func TestNewFromMapAttributesDenyList(t *testing.T) {
+func TestNewFromMapAttributesDeny(t *testing.T) {
 	got, err := NewFromMap(map[string]string{
 		"metrics-attributes-deny": "cloudevents.type, messaging.destination.name",
 	})
@@ -75,19 +75,19 @@ func TestNewFromMapAttributesDenyList(t *testing.T) {
 	}
 
 	want := []string{"cloudevents.type", "messaging.destination.name"}
-	if diff := cmp.Diff(want, got.AttributesDenyList); diff != "" {
+	if diff := cmp.Diff(want, got.AttributesDenyList()); diff != "" {
 		t.Error("unexpected diff (-want +got): ", diff)
 	}
 }
 
-func TestNewFromMapAttributesDenyListEmpty(t *testing.T) {
+func TestNewFromMapAttributesDenyEmpty(t *testing.T) {
 	got, err := NewFromMap(nil)
 	if err != nil {
 		t.Fatal("unexpected error:", err)
 	}
 
-	if got.AttributesDenyList != nil {
-		t.Errorf("expected nil deny list, got %v", got.AttributesDenyList)
+	if got.AttributesDenyList() != nil {
+		t.Errorf("expected nil deny list, got %v", got.AttributesDenyList())
 	}
 }
 
@@ -104,10 +104,10 @@ func TestNewFromMapWithPrefix(t *testing.T) {
 	}
 
 	want := Config{
-		Protocol:           ProtocolGRPC,
-		Endpoint:           "https://blah.example.com",
-		ExportInterval:     15 * time.Second,
-		AttributesDenyList: []string{"cloudevents.type"},
+		Protocol:       ProtocolGRPC,
+		Endpoint:       "https://blah.example.com",
+		ExportInterval: 15 * time.Second,
+		AttributesDeny: "cloudevents.type",
 	}
 
 	if diff := cmp.Diff(want, got); diff != "" {

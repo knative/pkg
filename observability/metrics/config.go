@@ -40,9 +40,27 @@ type Config struct {
 	Endpoint       string        `json:"endpoint,omitempty"`
 	ExportInterval time.Duration `json:"exportInterval,omitempty"`
 
-	// AttributesDenyList is a list of metric attribute keys to filter out
-	// from all instruments (e.g. "cloudevents.type,messaging.destination.name").
-	AttributesDenyList []string `json:"attributesDenyList,omitempty"`
+	// AttributesDeny is a comma-separated list of metric attribute keys to
+	// filter out from all instruments (e.g. "cloudevents.type,messaging.destination.name").
+	// Stored as a string rather than []string to keep Config comparable,
+	// which is relied upon by downstream consumers. Use AttributesDenyList()
+	// to get the parsed list.
+	AttributesDeny string `json:"attributesDeny,omitempty"`
+}
+
+// AttributesDenyList returns the deny list parsed into individual keys.
+func (c *Config) AttributesDenyList() []string {
+	if c.AttributesDeny == "" {
+		return nil
+	}
+	parts := strings.Split(c.AttributesDeny, ",")
+	result := make([]string, 0, len(parts))
+	for _, p := range parts {
+		if t := strings.TrimSpace(p); t != "" {
+			result = append(result, t)
+		}
+	}
+	return result
 }
 
 func (c *Config) Validate() error {
@@ -83,17 +101,8 @@ func NewFromMap(m map[string]string) (Config, error) {
 func NewFromMapWithPrefix(prefix string, m map[string]string) (Config, error) {
 	c := DefaultConfig()
 
-	if v, ok := m[prefix+"metrics-attributes-deny"]; ok && v != "" {
-		parts := strings.Split(v, ",")
-		c.AttributesDenyList = make([]string, 0, len(parts))
-		for _, p := range parts {
-			if t := strings.TrimSpace(p); t != "" {
-				c.AttributesDenyList = append(c.AttributesDenyList, t)
-			}
-		}
-	}
-
 	err := configmap.Parse(m,
+		configmap.As(prefix+"metrics-attributes-deny", &c.AttributesDeny),
 		configmap.As(prefix+"metrics-protocol", &c.Protocol),
 		configmap.As(prefix+"metrics-endpoint", &c.Endpoint),
 		configmap.As(prefix+"metrics-export-interval", &c.ExportInterval),
