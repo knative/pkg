@@ -808,5 +808,32 @@ func TestHappyPathsByBoth(t *testing.T) {
 		if got, want := len(trk.GetObservers(thing1)), 0; got != want {
 			t.Fatalf("len(GetObservers()) = %v, wanted %v", got, want)
 		}
+		if got, want := len(trk.(*impl).exact), 0; got != want {
+			t.Fatalf("OnDeletedObserver() did not clean up exact map: len = %v, wanted %v", got, want)
+		}
+		if got, want := len(trk.(*impl).inexact), 0; got != want {
+			t.Fatalf("OnDeletedObserver() did not clean up inexact map: len = %v, wanted %v", got, want)
+		}
+	}
+
+	// Verify inexact map cleanup on expiry when exact tracker is also present.
+	{
+		if err := trk.TrackReference(ref1, thing2); err != nil {
+			t.Fatal("Track() =", err)
+		}
+		if err := trk.TrackReference(ref2, thing2); err != nil {
+			t.Fatal("Track() =", err)
+		}
+
+		time.Sleep(101 * time.Millisecond)
+
+		trk.GetObservers(thing1)
+
+		if got, want := len(trk.(*impl).exact), 0; got != want {
+			t.Fatalf("Timeout passed, but exact map not cleaned up: len = %v, wanted %v", got, want)
+		}
+		if got, want := len(trk.(*impl).inexact), 0; got != want {
+			t.Fatalf("Timeout passed, but inexact map not cleaned up: len = %v, wanted %v", got, want)
+		}
 	}
 }
