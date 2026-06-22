@@ -399,10 +399,15 @@ func SetupObservabilityOrDie(
 
 	resource := resource.Default(component)
 
+	views := OTelViews(ctx)
+	if denyList := cfg.Metrics.AttributesDenyList(); len(denyList) > 0 {
+		views = append(views, metrics.MetricAttributesDenyFilter(denyList))
+	}
+
 	meterProvider, err := metrics.NewMeterProvider(
 		ctx,
 		cfg.Metrics,
-		metric.WithView(OTelViews(ctx)...),
+		metric.WithView(views...),
 		metric.WithResource(resource),
 	)
 	if err != nil {
