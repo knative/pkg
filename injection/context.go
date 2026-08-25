@@ -22,9 +22,13 @@ import (
 	"k8s.io/client-go/rest"
 )
 
-// nsKey is the key that namespaces are associated with on
+// nsKey is the key that a single namespace is associated with on
 // contexts returned by WithNamespaceScope.
 type nsKey struct{}
+
+// nsScopesKey is the key that multiple namespaces are associated with on
+// contexts returned by WithNamespaceScopes.
+type nsScopesKey struct{}
 
 // WithNamespaceScope associates a namespace scoping with the
 // provided context, which will scope the informers produced
@@ -48,6 +52,30 @@ func GetNamespaceScope(ctx context.Context) string {
 		return ""
 	}
 	return value.(string)
+}
+
+// WithNamespaceScopes associates a multi-namespace allowlist with the
+// provided context. When non-empty, opt-in informer factory overrides may
+// scope specific informer types (for example secrets) to these namespaces.
+func WithNamespaceScopes(ctx context.Context, namespaces ...string) context.Context {
+	if len(namespaces) == 0 {
+		return ctx
+	}
+	return context.WithValue(ctx, nsScopesKey{}, namespaces)
+}
+
+// GetNamespaceScopes returns the multi-namespace allowlist from
+// WithNamespaceScopes. When unset, it falls back to a one-element slice from
+// GetNamespaceScope when a single namespace scope is present; otherwise nil.
+func GetNamespaceScopes(ctx context.Context) []string {
+	value := ctx.Value(nsScopesKey{})
+	if value != nil {
+		return value.([]string)
+	}
+	if ns := GetNamespaceScope(ctx); ns != "" {
+		return []string{ns}
+	}
+	return nil
 }
 
 // cfgKey is the key that the config is associated with.
