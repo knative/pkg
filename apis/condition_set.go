@@ -273,7 +273,7 @@ func (r conditionsImpl) MarkTrueWithReason(t ConditionType, reason, messageForma
 		Type:     t,
 		Status:   corev1.ConditionTrue,
 		Reason:   reason,
-		Message:  fmt.Sprintf(messageFormat, messageA...),
+		Message:  formatMessage(messageFormat, messageA...),
 		Severity: r.severity(t),
 	})
 	r.recomputeHappiness(t)
@@ -357,7 +357,7 @@ func (r conditionsImpl) MarkUnknown(t ConditionType, reason, messageFormat strin
 		Type:     t,
 		Status:   corev1.ConditionUnknown,
 		Reason:   reason,
-		Message:  fmt.Sprintf(messageFormat, messageA...),
+		Message:  formatMessage(messageFormat, messageA...),
 		Severity: r.severity(t),
 	})
 
@@ -385,7 +385,7 @@ func (r conditionsImpl) MarkUnknown(t ConditionType, reason, messageFormat strin
 			Type:     r.happy,
 			Status:   corev1.ConditionUnknown,
 			Reason:   reason,
-			Message:  fmt.Sprintf(messageFormat, messageA...),
+			Message:  formatMessage(messageFormat, messageA...),
 			Severity: r.severity(r.happy),
 		})
 	}
@@ -405,7 +405,7 @@ func (r conditionsImpl) MarkFalse(t ConditionType, reason, messageFormat string,
 			Type:     t,
 			Status:   corev1.ConditionFalse,
 			Reason:   reason,
-			Message:  fmt.Sprintf(messageFormat, messageA...),
+			Message:  formatMessage(messageFormat, messageA...),
 			Severity: r.severity(t),
 		})
 	}
@@ -447,4 +447,13 @@ func (r conditionsImpl) initializeTerminalCondition(t ConditionType, status core
 	}
 	r.SetCondition(c)
 	return &c
+}
+
+// formatMessage handles message provided as format string to avoid "non-constant format string in call" error
+func formatMessage(messageFormat string, messageA ...interface{}) string {
+	if len(messageA) > 0 {
+		return fmt.Sprintf(messageFormat, messageA...)
+	}
+	// no additional message provided, fallback to default formatting
+	return fmt.Sprintf("%s", messageFormat)
 }
