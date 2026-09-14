@@ -274,8 +274,8 @@ func (c *Impl) EnqueueSlowKey(key types.NamespacedName) {
 	c.workQueue.AddSlow(key)
 
 	if logger := c.logger.Desugar(); logger.Core().Enabled(zapcore.DebugLevel) {
-		logger.Debug(fmt.Sprintf("Adding to the slow queue %s (depth(total/slow): %d/%d)",
-			safeKey(key), c.workQueue.Len(), c.workQueue.SlowLen()),
+		logger.Debug(fmt.Sprintf("Adding to the slow queue %s (depth: %d)",
+			safeKey(key), c.workQueue.Len()),
 			zap.String(logkey.Key, key.String()))
 	}
 }
