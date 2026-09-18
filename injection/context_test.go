@@ -42,6 +42,40 @@ func TestContextNamespace(t *testing.T) {
 	}
 }
 
+func TestContextNamespaceScopes(t *testing.T) {
+	ctx := context.Background()
+
+	if got := GetNamespaceScopes(ctx); got != nil {
+		t.Errorf("GetNamespaceScopes() = %v, wanted nil", got)
+	}
+
+	want := []string{"ns-a", "ns-b"}
+	ctx = WithNamespaceScopes(ctx, want...)
+
+	if got := GetNamespaceScopes(ctx); len(got) != len(want) || got[0] != want[0] || got[1] != want[1] {
+		t.Errorf("GetNamespaceScopes() = %v, wanted %v", got, want)
+	}
+}
+
+func TestContextNamespaceScopesFallsBackToSingleScope(t *testing.T) {
+	ctx := WithNamespaceScope(context.Background(), "only-ns")
+
+	got := GetNamespaceScopes(ctx)
+	if len(got) != 1 || got[0] != "only-ns" {
+		t.Errorf("GetNamespaceScopes() = %v, wanted [only-ns]", got)
+	}
+}
+
+func TestContextNamespaceScopesPreferMultiOverSingle(t *testing.T) {
+	ctx := WithNamespaceScope(context.Background(), "single-ns")
+	ctx = WithNamespaceScopes(ctx, "multi-a", "multi-b")
+
+	got := GetNamespaceScopes(ctx)
+	if len(got) != 2 || got[0] != "multi-a" || got[1] != "multi-b" {
+		t.Errorf("GetNamespaceScopes() = %v, wanted [multi-a multi-b]", got)
+	}
+}
+
 func TestContextConfig(t *testing.T) {
 	ctx := context.Background()
 
