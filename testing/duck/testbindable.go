@@ -150,7 +150,7 @@ func (tbs *TestBindableStatus) InitializeConditions() {
 // MarkBindingUnavailable marks the TestBindable's Ready condition to False with
 // the provided reason and message.
 func (tbs *TestBindableStatus) MarkBindingUnavailable(reason, message string) {
-	tbCondSet.Manage(tbs).MarkFalse(apis.ConditionReady, reason, message)
+	tbCondSet.Manage(tbs).MarkFalse(apis.ConditionReady, reason, "%s", message)
 	tbs.clearLTT()
 }
 

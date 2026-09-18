@@ -163,6 +163,11 @@ func (fsii *fakeSharedIndexInformer) HasSynced() bool {
 	return false
 }
 
+func (fsii *fakeSharedIndexInformer) HasSyncedChecker() cache.DoneChecker {
+	fsii.t.Fatalf("NYI: HasSyncedChecker")
+	return nil
+}
+
 func (fsii *fakeSharedIndexInformer) LastSyncResourceVersion() string {
 	fsii.t.Fatalf("NYI: LastSyncResourceVersion")
 	return ""
