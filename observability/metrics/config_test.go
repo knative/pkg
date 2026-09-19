@@ -66,11 +66,38 @@ func TestNewFromMapBadInput(t *testing.T) {
 	}
 }
 
+func TestNewFromMapAttributesDeny(t *testing.T) {
+	got, err := NewFromMap(map[string]string{
+		"metrics-attributes-deny": "cloudevents.type, messaging.destination.name",
+	})
+	if err != nil {
+		t.Fatal("unexpected error:", err)
+	}
+
+	want := []string{"cloudevents.type", "messaging.destination.name"}
+	if diff := cmp.Diff(want, got.AttributesDenyList()); diff != "" {
+		t.Error("unexpected diff (-want +got): ", diff)
+	}
+}
+
+func TestNewFromMapAttributesDenyEmpty(t *testing.T) {
+	got, err := NewFromMap(nil)
+	if err != nil {
+		t.Fatal("unexpected error:", err)
+	}
+
+	if got.AttributesDenyList() != nil {
+		t.Errorf("expected nil deny list, got %v", got.AttributesDenyList())
+	}
+}
+
 func TestNewFromMapWithPrefix(t *testing.T) {
 	got, err := NewFromMapWithPrefix("request-", map[string]string{
 		"request-metrics-protocol":        ProtocolGRPC,
 		"request-metrics-endpoint":        "https://blah.example.com",
 		"request-metrics-export-interval": "15s",
+		"request-metrics-attributes-deny": "cloudevents.type",
+		"metrics-attributes-deny":         "should.be.ignored",
 	})
 	if err != nil {
 		t.Error("unexpected error", err)
@@ -80,6 +107,7 @@ func TestNewFromMapWithPrefix(t *testing.T) {
 		Protocol:       ProtocolGRPC,
 		Endpoint:       "https://blah.example.com",
 		ExportInterval: 15 * time.Second,
+		AttributesDeny: "cloudevents.type",
 	}
 
 	if diff := cmp.Diff(want, got); diff != "" {
