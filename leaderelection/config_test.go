@@ -34,6 +34,7 @@ const (
 	serviceNameEnv       = "STATEFUL_SERVICE_NAME"
 	servicePortEnv       = "STATEFUL_SERVICE_PORT"
 	serviceProtocolEnv   = "STATEFUL_SERVICE_PROTOCOL"
+	replicaCountEnv      = "STATEFUL_REPLICA_COUNT"
 )
 
 func okConfig() *Config {
@@ -255,20 +256,23 @@ func TestNewStatefulSetConfig(t *testing.T) {
 		service  string
 		port     string
 		protocol string
+		replicas string
 		wantErr  string
 		expected statefulSetConfig
 	}{{
-		name:    "success with default",
-		pod:     "as-42",
-		service: "autoscaler",
+		name:     "success with default",
+		pod:      "as-42",
+		service:  "autoscaler",
+		replicas: "3",
 		expected: statefulSetConfig{
 			StatefulSetID: statefulSetID{
 				ssName:  "as",
 				ordinal: 42,
 			},
-			ServiceName: "autoscaler",
-			Port:        "80",
-			Protocol:    "http",
+			ServiceName:  "autoscaler",
+			Port:         "80",
+			Protocol:     "http",
+			ReplicaCount: 3,
 		},
 	}, {
 		name:     "success with overriding",
@@ -276,22 +280,52 @@ func TestNewStatefulSetConfig(t *testing.T) {
 		service:  "autoscaler",
 		port:     "8080",
 		protocol: "ws",
+		replicas: "5",
 		expected: statefulSetConfig{
 			StatefulSetID: statefulSetID{
 				ssName:  "as",
 				ordinal: 42,
 			},
-			ServiceName: "autoscaler",
-			Port:        "8080",
-			Protocol:    "ws",
+			ServiceName:  "autoscaler",
+			Port:         "8080",
+			Protocol:     "ws",
+			ReplicaCount: 5,
 		},
 	}, {
-		name:    "failure with empty envs",
+		name:    "StatefulSet environment completely absent",
 		wantErr: "required key STATEFUL_CONTROLLER_ORDINAL missing value",
 	}, {
-		name:    "failure with invalid name",
+		name:    "malformed ordinal",
 		pod:     "as-abcd",
 		wantErr: `envconfig.Process: assigning STATEFUL_CONTROLLER_ORDINAL to StatefulSetID: converting 'as-abcd' to type leaderelection.statefulSetID. details: strconv.Atoi: parsing "abcd": invalid syntax`,
+	}, {
+		name:     "missing service when ordinal is present",
+		pod:      "as-0",
+		replicas: "1",
+		wantErr:  "required key STATEFUL_SERVICE_NAME missing value",
+	}, {
+		name:    "missing replica when ordinal is present",
+		pod:     "as-0",
+		service: "autoscaler",
+		wantErr: "required key STATEFUL_REPLICA_COUNT missing value",
+	}, {
+		name:     "malformed replica",
+		pod:      "as-0",
+		service:  "autoscaler",
+		replicas: "abc",
+		wantErr:  `envconfig.Process: assigning STATEFUL_REPLICA_COUNT to ReplicaCount: converting 'abc' to type int. details: strconv.ParseInt: parsing "abc": invalid syntax`,
+	}, {
+		name:     "zero replica count",
+		pod:      "as-0",
+		service:  "autoscaler",
+		replicas: "0",
+		wantErr:  "STATEFUL_REPLICA_COUNT must be >= 1, got 0",
+	}, {
+		name:     "negative replica count",
+		pod:      "as-0",
+		service:  "autoscaler",
+		replicas: "-1",
+		wantErr:  "STATEFUL_REPLICA_COUNT must be >= 1, got -1",
 	}}
 
 	for _, tc := range cases {
@@ -308,6 +342,9 @@ func TestNewStatefulSetConfig(t *testing.T) {
 			if tc.protocol != "" {
 				t.Setenv(serviceProtocolEnv, tc.protocol)
 			}
+			if tc.replicas != "" {
+				t.Setenv(replicaCountEnv, tc.replicas)
+			}
 
 			ssc, err := newStatefulSetConfig()
 			if err != nil {
@@ -315,10 +352,25 @@ func TestNewStatefulSetConfig(t *testing.T) {
 					t.Errorf("Got error: %s. want: %s", got, want)
 				}
 			} else {
+				if tc.wantErr != "" {
+					t.Error("newStatefulSetConfig() = nil, want error")
+				}
 				if got, want := *ssc, tc.expected; !cmp.Equal(got, want, cmp.AllowUnexported(statefulSetID{})) {
 					t.Errorf("Incorrect config: diff(-want,+got):\n%s", cmp.Diff(want, got))
 				}
 			}
 		})
+	}
+}
+
+func TestStatefulSetConfiguredEmptyOrdinal(t *testing.T) {
+	t.Setenv(controllerOrdinalEnv, "")
+
+	if !statefulSetConfigured() {
+		t.Fatal("statefulSetConfigured() = false, want true for empty STATEFUL_CONTROLLER_ORDINAL")
+	}
+
+	if _, err := newStatefulSetConfig(); err == nil {
+		t.Fatal("newStatefulSetConfig() = nil, want error for empty STATEFUL_CONTROLLER_ORDINAL")
 	}
 }
