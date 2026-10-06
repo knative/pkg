@@ -129,3 +129,18 @@ func TestParse(t *testing.T) {
 		})
 	}
 }
+
+func TestAsUint64(t *testing.T) {
+	var got uint64
+
+	// 2^32, one past what a uint32 can hold.
+	if err := Parse(map[string]string{"test-uint64": "4294967296"},
+		AsUint64("test-uint64", &got),
+	); err != nil {
+		t.Fatal("Failed to parse data:", err)
+	}
+
+	if want := uint64(1) << 32; got != want {
+		t.Errorf("AsUint64() = %d, want %d", got, want)
+	}
+}
