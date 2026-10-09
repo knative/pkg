@@ -190,10 +190,15 @@ linters:
     rules:
       - linters:
         - staticcheck
-        text: corev1.Endpoint.* is deprecated
+        text: (corev1.Endpoint|k8s.io/api/core/v1.Endpoints).* is deprecated
       - linters:
           - staticcheck
         text: .*NewSimpleClientset is deprecated
+      # These tests intentionally exercise fields marked as deprecated.
+      - linters:
+          - staticcheck
+        text: 'is deprecated: This field is deprecated'
+        path: _test\.go
       - linters:
           - gosec
           - noctx

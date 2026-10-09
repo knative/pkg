@@ -30,7 +30,8 @@ type testStruct struct {
 	StructField childStruct `json:"child"`
 	Omit        string      `json:"omit,omitempty"`
 	Ignore      string      `json:"-"`
-	Dash        string      `json:"-,"`
+	//nolint:staticcheck // We actually want to test this broken json option works.
+	Dash string `json:"-,"`
 	//nolint:staticcheck // We actually want to test this broken json options work
 	MultiComma string `json:"multi,omitempty,somethingelse"`
 }
