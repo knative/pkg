@@ -182,7 +182,7 @@ func TestHasAttributes(t *testing.T) {
 type metrics metricdata.ResourceMetrics
 
 func (f *metrics) Collect(ctx context.Context, rm *metricdata.ResourceMetrics) error {
-	*rm = (metricdata.ResourceMetrics)(*f)
+	*rm = metricdata.ResourceMetrics(*f)
 	return nil
 }
 

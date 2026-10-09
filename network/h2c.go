@@ -24,16 +24,20 @@ import (
 	"time"
 
 	"golang.org/x/net/http2"
-	"golang.org/x/net/http2/h2c"
 )
 
 // NewServer returns a new HTTP Server with HTTP2 handler.
 func NewServer(addr string, h http.Handler) *http.Server {
 	h1s := &http.Server{
 		Addr:              addr,
-		Handler:           h2c.NewHandler(h, &http2.Server{}),
+		Handler:           h,
 		ReadHeaderTimeout: time.Minute, // https://medium.com/a-journey-with-go/go-understand-and-mitigate-slowloris-attack-711c1b1403f6
+		Protocols:         new(http.Protocols),
 	}
+	// Serve HTTP/1.1 alongside unencrypted HTTP/2 (h2c) using the standard
+	// library instead of the deprecated golang.org/x/net/http2/h2c handler.
+	h1s.Protocols.SetHTTP1(true)
+	h1s.Protocols.SetUnencryptedHTTP2(true)
 
 	return h1s
 }
@@ -50,9 +54,8 @@ func newH2CTransport(disableCompression bool) http.RoundTripper {
 	return &http2.Transport{
 		AllowHTTP:          true,
 		DisableCompression: disableCompression,
-		DialTLS: func(netw, addr string, _ *tls.Config) (net.Conn, error) {
-			return DialWithBackOff(context.Background(),
-				netw, addr)
+		DialTLSContext: func(ctx context.Context, netw, addr string, _ *tls.Config) (net.Conn, error) {
+			return DialWithBackOff(ctx, netw, addr)
 		},
 	}
 }

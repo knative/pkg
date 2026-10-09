@@ -157,7 +157,6 @@ func waitForServerAvailable(t *testing.T, serverURL string, timeout time.Duratio
 		dialer   = &net.Dialer{
 			Timeout:   interval, // Initial duration.
 			KeepAlive: 5 * time.Second,
-			DualStack: true,
 		}
 	)
 

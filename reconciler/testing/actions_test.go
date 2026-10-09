@@ -109,4 +109,4 @@ func (f fakeRecorder) Actions() []clientgotesting.Action {
 	return f
 }
 
-var _ ActionRecorder = (fakeRecorder)(nil)
+var _ ActionRecorder = fakeRecorder(nil)
