@@ -18,12 +18,9 @@ package network
 
 import (
 	"context"
-	"crypto/tls"
 	"net"
 	"net/http"
 	"time"
-
-	"golang.org/x/net/http2"
 )
 
 // NewServer returns a new HTTP Server with HTTP2 handler.
@@ -51,22 +48,27 @@ func NewH2CTransport() http.RoundTripper {
 }
 
 func newH2CTransport(disableCompression bool) http.RoundTripper {
-	return &http2.Transport{
-		AllowHTTP:          true,
+	t := &http.Transport{
 		DisableCompression: disableCompression,
-		DialTLSContext: func(ctx context.Context, netw, addr string, _ *tls.Config) (net.Conn, error) {
+		DialContext: func(ctx context.Context, netw, addr string) (net.Conn, error) {
 			return DialWithBackOff(ctx, netw, addr)
 		},
+		Protocols: new(http.Protocols),
 	}
+	// Serve unencrypted HTTP/2 (h2c)
+	t.Protocols.SetUnencryptedHTTP2(true)
+	return t
 }
 
 // newH2Transport constructs a neew H2 transport. That transport will handles HTTPS traffic
 // with TLS config.
 func newH2Transport(disableCompression bool, tlsContext DialTLSContextFunc) http.RoundTripper {
-	return &http2.Transport{
+	t := &http.Transport{
 		DisableCompression: disableCompression,
-		DialTLSContext: func(ctx context.Context, network, addr string, cfg *tls.Config) (net.Conn, error) {
-			return tlsContext(ctx, network, addr)
-		},
+		DialTLSContext:     tlsContext,
+		Protocols:          new(http.Protocols),
 	}
+	// Serve encrypted HTTP/2 (h2)
+	t.Protocols.SetHTTP2(true)
+	return t
 }
