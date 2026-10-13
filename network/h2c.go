@@ -67,8 +67,11 @@ func newH2CTransport(disableCompression bool) http.RoundTripper {
 func newH2Transport(disableCompression bool, tlsContext DialTLSContextFunc) http.RoundTripper {
 	t := &http.Transport{
 		DisableCompression: disableCompression,
-		DialTLSContext:     tlsContext,
-		Protocols:          new(http.Protocols),
+		// Request h2 ALPN; dialer applies it when NextProtos is unset.
+		DialTLSContext: func(ctx context.Context, network, addr string) (net.Conn, error) {
+			return tlsContext(withH2ALPN(ctx), network, addr)
+		},
+		Protocols: new(http.Protocols),
 	}
 	// Serve encrypted HTTP/2 (h2)
 	t.Protocols.SetHTTP2(true)
