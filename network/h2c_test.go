@@ -29,62 +29,75 @@ import (
 	"net"
 	"net/http"
 	"net/http/httptest"
-	"strings"
 	"testing"
 	"time"
 )
 
-// TestNewH2CTransportRoundTrip verifies that the transport returned by
-// NewH2CTransport negotiates cleartext HTTP/2 (h2c) end-to-end against a
-// server created with NewServer.
+// TestNewH2CTransportRoundTrip verifies NewH2CTransport negotiates cleartext
+// HTTP/2 (h2c) end-to-end against a NewServer.
 func TestNewH2CTransportRoundTrip(t *testing.T) {
-	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.ProtoMajor != 2 {
-			t.Errorf("server saw ProtoMajor = %d, want 2", r.ProtoMajor)
-		}
-		io.WriteString(w, "ok")
-	})
-
 	l, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
 		t.Fatal("Unable to create listener:", err)
 	}
 	defer l.Close()
 
-	s := NewServer(l.Addr().String(), handler)
+	s := NewServer(l.Addr().String(), okHandler(t, 2))
 	go s.Serve(l) //nolint:errcheck // Serve always returns a non-nil error on close.
 	defer s.Close()
 
 	//goland:noinspection HttpUrlsUsage
-	req, err := http.NewRequest(http.MethodGet, "http://"+l.Addr().String(), nil)
-	if err != nil {
-		t.Fatal("NewRequest() =", err)
-	}
-
-	rt := NewH2CTransport()
-	resp, err := rt.RoundTrip(req)
-	if err != nil {
-		t.Fatal("RoundTrip() =", err)
-	}
-	defer resp.Body.Close()
-
-	if got := resp.Proto; got != "HTTP/2.0" {
-		t.Errorf("resp.Proto = %q, want HTTP/2.0", got)
-	}
-	if body, _ := io.ReadAll(resp.Body); string(body) != "ok" {
-		t.Errorf("body = %q, want %q", body, "ok")
-	}
+	assertRoundTripOK(t, NewH2CTransport(), "http://"+l.Addr().String(), "HTTP/2.0")
 }
 
-// TestNewServerH2OverTLS verifies a NewServer advertises h2 via ALPN and
+// TestNewServerH2OverTLS verifies NewServer advertises h2 via ALPN and
 // negotiates HTTP/2 over TLS end-to-end.
 func TestNewServerH2OverTLS(t *testing.T) {
-	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.ProtoMajor != 2 {
-			t.Errorf("server saw ProtoMajor = %d, want 2", r.ProtoMajor)
+	addr, pool := startTLSServer(t, okHandler(t, 2))
+	assertRoundTripOK(t, newH2Transport(false, h2DialerTLSContext(pool)), "https://"+addr, "HTTP/2.0")
+}
+
+// h2 must negotiate even when the caller's tls.Config omits NextProtos
+// (serving's activator/queue-proxy wiring).
+func TestH2BackoffDialerNegotiatesH2WithoutExplicitNextProtos(t *testing.T) {
+	addr, pool := startTLSServer(t, okHandler(t, 2))
+	assertRoundTripOK(t, newH2Transport(false, backoffTLSContext(pool)), "https://"+addr, "HTTP/2.0")
+}
+
+// h2 ALPN must not leak into the HTTP/1.1 branch sharing the same dialer.
+func TestProxyAutoTLSTransportHTTP1StillWorks(t *testing.T) {
+	addr, pool := startTLSServer(t, okHandler(t, 1))
+	assertRoundTripOK(t, NewProxyAutoTLSTransport(100, 100, backoffTLSContext(pool)), "https://"+addr, "HTTP/1.1")
+}
+
+// TestNewH2TransportRoundTrip verifies newH2Transport negotiates HTTP/2 over
+// TLS against a standard-library h2 server.
+func TestNewH2TransportRoundTrip(t *testing.T) {
+	s := httptest.NewUnstartedServer(okHandler(t, 2))
+	s.EnableHTTP2 = true
+	s.StartTLS()
+	defer s.Close()
+
+	pool := x509.NewCertPool()
+	pool.AddCert(s.Certificate())
+
+	assertRoundTripOK(t, newH2Transport(false, h2DialerTLSContext(pool)), s.URL, "HTTP/2.0")
+}
+
+// okHandler responds "ok" and asserts the server saw the expected HTTP version.
+func okHandler(t *testing.T, wantProtoMajor int) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.ProtoMajor != wantProtoMajor {
+			t.Errorf("server saw ProtoMajor = %d, want %d", r.ProtoMajor, wantProtoMajor)
 		}
 		io.WriteString(w, "ok")
 	})
+}
+
+// startTLSServer starts a TLS NewServer serving h and returns its address and a
+// pool trusting its certificate.
+func startTLSServer(t *testing.T, h http.Handler) (addr string, pool *x509.CertPool) {
+	t.Helper()
 
 	cert, pool := selfSignedCert(t)
 
@@ -92,17 +105,35 @@ func TestNewServerH2OverTLS(t *testing.T) {
 	if err != nil {
 		t.Fatal("Unable to create listener:", err)
 	}
-	defer l.Close()
 
-	s := NewServer(l.Addr().String(), handler)
+	s := NewServer(l.Addr().String(), h)
 	s.TLSConfig = &tls.Config{
 		Certificates: []tls.Certificate{cert},
 		MinVersion:   tls.VersionTLS12,
 	}
 	go s.ServeTLS(l, "", "") //nolint:errcheck // Serve always returns a non-nil error on close.
-	defer s.Close()
+	t.Cleanup(func() {
+		s.Close()
+		l.Close()
+	})
 
-	tlsContext := func(ctx context.Context, network, addr string) (net.Conn, error) {
+	return l.Addr().String(), pool
+}
+
+// backoffTLSContext dials via DialTLSWithBackOff without setting NextProtos,
+// mirroring serving.
+func backoffTLSContext(pool *x509.CertPool) DialTLSContextFunc {
+	return func(ctx context.Context, network, addr string) (net.Conn, error) {
+		return DialTLSWithBackOff(ctx, network, addr, &tls.Config{
+			RootCAs:    pool,
+			MinVersion: tls.VersionTLS12,
+		})
+	}
+}
+
+// h2DialerTLSContext dials with NextProtos ["h2"] set explicitly.
+func h2DialerTLSContext(pool *x509.CertPool) DialTLSContextFunc {
+	return func(ctx context.Context, network, addr string) (net.Conn, error) {
 		d := &tls.Dialer{Config: &tls.Config{
 			RootCAs:    pool,
 			NextProtos: []string{"h2"},
@@ -110,21 +141,24 @@ func TestNewServerH2OverTLS(t *testing.T) {
 		}}
 		return d.DialContext(ctx, network, addr)
 	}
+}
 
-	req, err := http.NewRequest(http.MethodGet, "https://"+l.Addr().String(), nil)
+// assertRoundTripOK GETs url on rt and asserts the protocol and "ok" body.
+func assertRoundTripOK(t *testing.T, rt http.RoundTripper, url, wantProto string) {
+	t.Helper()
+
+	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
 		t.Fatal("NewRequest() =", err)
 	}
-
-	rt := newH2Transport(false /*disableCompression*/, tlsContext)
 	resp, err := rt.RoundTrip(req)
 	if err != nil {
 		t.Fatal("RoundTrip() =", err)
 	}
 	defer resp.Body.Close()
 
-	if got := resp.Proto; got != "HTTP/2.0" {
-		t.Errorf("resp.Proto = %q, want HTTP/2.0", got)
+	if got := resp.Proto; got != wantProto {
+		t.Errorf("resp.Proto = %q, want %q", got, wantProto)
 	}
 	if body, _ := io.ReadAll(resp.Body); string(body) != "ok" {
 		t.Errorf("body = %q, want %q", body, "ok")
@@ -166,52 +200,4 @@ func selfSignedCert(t *testing.T) (tls.Certificate, *x509.CertPool) {
 	pool.AddCert(leaf)
 
 	return tls.Certificate{Certificate: [][]byte{der}, PrivateKey: priv, Leaf: leaf}, pool
-}
-
-// TestNewH2TransportRoundTrip verifies that the transport returned by
-// newH2Transport negotiates HTTP/2 over TLS end-to-end.
-func TestNewH2TransportRoundTrip(t *testing.T) {
-	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.ProtoMajor != 2 {
-			t.Errorf("server saw ProtoMajor = %d, want 2", r.ProtoMajor)
-		}
-		io.WriteString(w, "ok")
-	})
-
-	s := httptest.NewUnstartedServer(handler)
-	s.EnableHTTP2 = true
-	s.StartTLS()
-	defer s.Close()
-
-	rootCAs := x509.NewCertPool()
-	rootCAs.AddCert(s.Certificate())
-
-	tlsContext := func(ctx context.Context, network, addr string) (net.Conn, error) {
-		d := &tls.Dialer{Config: &tls.Config{
-			RootCAs:    rootCAs,
-			NextProtos: []string{"h2"},
-			MinVersion: tls.VersionTLS12,
-		}}
-		return d.DialContext(ctx, network, addr)
-	}
-
-	addr := strings.TrimPrefix(s.URL, "https://")
-	req, err := http.NewRequest(http.MethodGet, "https://"+addr, nil)
-	if err != nil {
-		t.Fatal("NewRequest() =", err)
-	}
-
-	rt := newH2Transport(false /*disableCompression*/, tlsContext)
-	resp, err := rt.RoundTrip(req)
-	if err != nil {
-		t.Fatal("RoundTrip() =", err)
-	}
-	defer resp.Body.Close()
-
-	if got := resp.Proto; got != "HTTP/2.0" {
-		t.Errorf("resp.Proto = %q, want HTTP/2.0", got)
-	}
-	if body, _ := io.ReadAll(resp.Body); string(body) != "ok" {
-		t.Errorf("body = %q, want %q", body, "ok")
-	}
 }
