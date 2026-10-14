@@ -22,6 +22,12 @@ limitations under the License.
 // management of multiple election strategies (currently, using Kubernetes
 // etcd-based election primitives or StatefulSet indexes and counts).
 //
+// StatefulSet ordinal mode is 1:1: ordinal N owns bucket N, whose identity is
+// the DNS name of pod N. It is selected when STATEFUL_CONTROLLER_ORDINAL is
+// set. STATEFUL_REPLICA_COUNT must equal the configured bucket count; extra
+// buckets are not redistributed. An explicitly configured but invalid
+// StatefulSet topology fails rather than falling back to standard election.
+//
 // For more details, see the original design document:
 // https://docs.google.com/document/d/e/2PACX-1vTh40N-Kk6EPNzYpITiLg8YJk0qZyZv7KgMpcQS72T9Lv_F2PQeGybx4TtH0E1N1aUgLQer7b8u3lDc/pub
 package leaderelection
