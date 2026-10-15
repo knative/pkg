@@ -143,6 +143,30 @@ func TestParse(t *testing.T) {
 		},
 		expectErr: true,
 	}, {
+		name: "float32 error",
+		data: map[string]string{
+			"test-float32": "foo",
+		},
+		expectErr: true,
+	}, {
+		name: "float32 out of range",
+		data: map[string]string{
+			"test-float32": "1e39",
+		},
+		expectErr: true,
+	}, {
+		name: "float32 negative out of range",
+		data: map[string]string{
+			"test-float32": "-3.5e38",
+		},
+		expectErr: true,
+	}, {
+		name: "float32 underflows to zero",
+		data: map[string]string{
+			"test-float32": "1e-50",
+		},
+		conf: testConfig{f32: 0},
+	}, {
 		name: "duration error",
 		data: map[string]string{
 			"test-duration": "foo",
