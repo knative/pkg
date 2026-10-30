@@ -29,6 +29,8 @@ import (
 	"go.uber.org/zap"
 
 	"k8s.io/apimachinery/pkg/api/resource"
+	"k8s.io/apimachinery/pkg/fields"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/sets"
 	clientgotesting "k8s.io/client-go/testing"
@@ -131,6 +133,25 @@ func objKey(o runtime.Object) string {
 	// namespace + name is not unique, and the tests don't populate k8s kind
 	// information, so use GoLang's type name as part of the key.
 	return path.Join(typeOf, on.GetNamespace(), on.GetName())
+}
+
+// deleteCollectionKey builds a unique string representing a DeleteCollection
+// call, so that got and want calls can be compared as sets.
+func deleteCollectionKey(a clientgotesting.DeleteCollectionAction, skipNamespaceValidation bool) string {
+	lr := a.GetListRestrictions()
+	labelSelector, fieldSelector := lr.Labels, lr.Fields
+	if labelSelector == nil {
+		labelSelector = labels.Everything()
+	}
+	if fieldSelector == nil {
+		fieldSelector = fields.Everything()
+	}
+
+	n := a.GetResource().Resource + "~~" + labelSelector.String() + "~~" + fieldSelector.String()
+	if !skipNamespaceValidation {
+		n += "~~" + a.GetNamespace()
+	}
+	return n
 }
 
 // Factory returns a Reconciler.Interface to perform reconciliation in table test, and
@@ -313,6 +334,27 @@ func (r *TableRow) Test(t *testing.T, factory Factory) {
 		}
 		if missing := wantDeletes.Difference(gotDeletes); len(missing) > 0 {
 			t.Error("Missing deletes:", missing.UnsortedList())
+		}
+	}
+
+	// Build a set of unique strings that represent type{-namespace}-labelSelector-fieldSelector
+	// to catch missing or unexpected DeleteCollection calls.
+	gotDeleteCollections := make(sets.Set[string], len(actions.DeleteCollections))
+	for _, w := range actions.DeleteCollections {
+		n := deleteCollectionKey(w, r.SkipNamespaceValidation)
+		gotDeleteCollections.Insert(n)
+	}
+	wantDeleteCollections := make(sets.Set[string], len(r.WantDeleteCollections))
+	for _, w := range r.WantDeleteCollections {
+		n := deleteCollectionKey(w, r.SkipNamespaceValidation)
+		wantDeleteCollections.Insert(n)
+	}
+	if !gotDeleteCollections.Equal(wantDeleteCollections) {
+		if extra := gotDeleteCollections.Difference(wantDeleteCollections); len(extra) > 0 {
+			t.Error("Extra or unexpected delete-collections:", extra.UnsortedList())
+		}
+		if missing := wantDeleteCollections.Difference(gotDeleteCollections); len(missing) > 0 {
+			t.Error("Missing delete-collections:", missing.UnsortedList())
 		}
 	}
 
