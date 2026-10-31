@@ -35,17 +35,25 @@ import (
 	"knative.dev/pkg/system"
 )
 
-// WithDynamicLeaderElectorBuilder sets up the statefulset elector based on environment,
-// falling back on the standard elector.
+// WithDynamicLeaderElectorBuilder selects StatefulSet ordinal leader election
+// when STATEFUL_CONTROLLER_ORDINAL is set, otherwise standard lease election.
+//
+// StatefulSet ordinal mode is 1:1: ordinal N owns bucket N. cc.Buckets is the
+// hash universe and must equal STATEFUL_REPLICA_COUNT. If StatefulSet mode is
+// explicitly configured but invalid, this helper fails rather than falling
+// back to standard election.
 func WithDynamicLeaderElectorBuilder(ctx context.Context, kc kubernetes.Interface, cc ComponentConfig) context.Context {
 	logger := logging.FromContext(ctx)
-	b, _, err := NewStatefulSetBucketAndSet(int(cc.Buckets))
-	if err == nil {
-		logger.Info("Running with StatefulSet leader election")
-		return WithStatefulSetElectorBuilder(ctx, cc, b)
+	if !statefulSetConfigured() {
+		logger.Info("Running with Standard leader election")
+		return WithStandardLeaderElectorBuilder(ctx, kc, cc)
 	}
-	logger.Info("Running with Standard leader election")
-	return WithStandardLeaderElectorBuilder(ctx, kc, cc)
+	b, _, err := NewStatefulSetBucketAndSet(int(cc.Buckets))
+	if err != nil {
+		logger.Fatal("Invalid StatefulSet leader election configuration: ", err)
+	}
+	logger.Info("Running with StatefulSet leader election")
+	return WithStatefulSetElectorBuilder(ctx, cc, b)
 }
 
 // WithStandardLeaderElectorBuilder infuses a context with the ability to build
@@ -221,13 +229,26 @@ func (b *statefulSetBuilder) buildElector(ctx context.Context, la reconciler.Lea
 	}, nil
 }
 
-// NewStatefulSetBucketAndSet creates a BucketSet for StatefulSet controller with
-// the given bucket size and the information from environment variables. Then uses
-// the created BucketSet to create a Bucket for this StatefulSet Pod.
+// NewStatefulSetBucketAndSet creates a BucketSet for a StatefulSet controller
+// with the given bucket count and the information from environment variables.
+// The universe has one bucket per configured count, named after StatefulSet
+// pod DNS. The returned Bucket is the one for this process's ordinal
+// (STATEFUL_CONTROLLER_ORDINAL).
+//
+// Assignment is 1:1: ordinal N owns bucket N. STATEFUL_REPLICA_COUNT must
+// equal buckets; extra buckets are not redistributed among fewer pods.
+// An error is returned if the StatefulSet environment is invalid, replica
+// count does not equal buckets, or the local ordinal is out of range
+// [0, buckets).
 func NewStatefulSetBucketAndSet(buckets int) (reconciler.Bucket, *hash.BucketSet, error) {
 	ssc, err := newStatefulSetConfig()
 	if err != nil {
 		return nil, nil, err
+	}
+
+	if ssc.ReplicaCount != buckets {
+		return nil, nil, fmt.Errorf("STATEFUL_REPLICA_COUNT (%d) must equal buckets (%d) for StatefulSet leader election",
+			ssc.ReplicaCount, buckets)
 	}
 
 	if ssc.StatefulSetID.ordinal >= buckets {

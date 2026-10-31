@@ -177,6 +177,14 @@ type statefulSetConfig struct {
 	ServiceName   string        `envconfig:"STATEFUL_SERVICE_NAME" required:"true"`
 	Port          string        `envconfig:"STATEFUL_SERVICE_PORT" default:"80"`
 	Protocol      string        `envconfig:"STATEFUL_SERVICE_PROTOCOL" default:"http"`
+	ReplicaCount  int           `envconfig:"STATEFUL_REPLICA_COUNT" required:"true"`
+}
+
+// statefulSetConfigured reports whether StatefulSet ordinal leader election
+// has been explicitly selected via STATEFUL_CONTROLLER_ORDINAL.
+func statefulSetConfigured() bool {
+	_, ok := os.LookupEnv("STATEFUL_CONTROLLER_ORDINAL")
+	return ok
 }
 
 // newStatefulSetConfig builds a stateful set LE config.
@@ -184,6 +192,9 @@ func newStatefulSetConfig() (*statefulSetConfig, error) {
 	ssc := &statefulSetConfig{}
 	if err := envconfig.Process("", ssc); err != nil {
 		return nil, err
+	}
+	if ssc.ReplicaCount < 1 {
+		return nil, fmt.Errorf("STATEFUL_REPLICA_COUNT must be >= 1, got %d", ssc.ReplicaCount)
 	}
 	return ssc, nil
 }
