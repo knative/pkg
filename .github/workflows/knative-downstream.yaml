@@ -31,7 +31,6 @@ jobs:
           - knative/eventing
           - knative/operator
           - knative/client
-          - knative-extensions/eventing-autoscaler-keda
           - knative-extensions/eventing-ceph
           - knative-extensions/eventing-github
           - knative-extensions/eventing-gitlab
