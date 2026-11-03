@@ -33,6 +33,14 @@ import (
 	_ "knative.dev/pkg/system/testing"
 )
 
+func TestRebalanceRequiresBucketDrainer(t *testing.T) {
+	cc := ComponentConfig{Buckets: 1, RebalancePodSelector: "app=ctrl"}
+	ctx := WithStandardLeaderElectorBuilder(context.Background(), fakekube.NewSimpleClientset(), cc)
+	if _, err := BuildElector(ctx, &reconciler.LeaderAwareFuncs{}, "queue", nil); err == nil {
+		t.Fatal("BuildElector accepted rebalancing without a bucket drainer")
+	}
+}
+
 func TestWithBuilder(t *testing.T) {
 	const buckets = 3
 	cc := ComponentConfig{
