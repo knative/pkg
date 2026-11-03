@@ -202,6 +202,24 @@ func TestNewConfigFromMap(t *testing.T) {
 				"reconciler": "reconciler1",
 			},
 		},
+	}, {
+		name: "ok config, rebalance pod selector",
+		data: map[string]string{
+			"rebalance-pod-selector": "app=controller",
+		},
+		want: Config{
+			Buckets:              1,
+			LeaseDuration:        60 * time.Second,
+			RenewDeadline:        40 * time.Second,
+			RetryPeriod:          10 * time.Second,
+			RebalancePodSelector: "app=controller",
+		},
+	}, {
+		name: "invalid rebalance pod selector",
+		data: map[string]string{
+			"rebalance-pod-selector": "app===invalid",
+		},
+		wantErr: true,
 	}}
 
 	for _, tc := range tt {
@@ -209,6 +227,9 @@ func TestNewConfigFromMap(t *testing.T) {
 			c, err := NewConfigFromMap(tc.data)
 			if tc.wantErr != (err != nil) {
 				t.Fatalf("want err %v got %v", tc.wantErr, err)
+			}
+			if tc.wantErr {
+				return
 			}
 			if diff := cmp.Diff(tc.want, *c); diff != "" {
 				t.Fatal("(-want, +got)", diff)
@@ -226,15 +247,17 @@ func TestGetComponentConfig(t *testing.T) {
 	}{{
 		name: "component enabled",
 		config: Config{
-			LeaseDuration: 15 * time.Second,
-			RenewDeadline: 10 * time.Second,
-			RetryPeriod:   2 * time.Second,
+			LeaseDuration:        15 * time.Second,
+			RenewDeadline:        10 * time.Second,
+			RetryPeriod:          2 * time.Second,
+			RebalancePodSelector: "app=controller",
 		},
 		expected: ComponentConfig{
-			Component:     expectedName,
-			LeaseDuration: 15 * time.Second,
-			RenewDeadline: 10 * time.Second,
-			RetryPeriod:   2 * time.Second,
+			Component:            expectedName,
+			LeaseDuration:        15 * time.Second,
+			RenewDeadline:        10 * time.Second,
+			RetryPeriod:          2 * time.Second,
+			RebalancePodSelector: "app=controller",
 		},
 	}}
 
