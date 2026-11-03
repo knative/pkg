@@ -18,8 +18,6 @@ package configmap
 
 import (
 	"errors"
-	"os"
-	"os/exec"
 	"testing"
 	"time"
 
@@ -177,33 +175,23 @@ func TestStoreConfigChange(t *testing.T) {
 	}
 }
 
-func TestStoreFailedFirstConversionCrashes(t *testing.T) {
-	if os.Getenv("CRASH") == "1" {
-		constructor := func(c *corev1.ConfigMap) (interface{}, error) {
-			return nil, errors.New("failure")
-		}
-
-		store := NewUntypedStore("name", TestLogger(t),
-			Constructors{config1: constructor},
-		)
-
-		store.OnConfigChanged(&corev1.ConfigMap{
-			ObjectMeta: metav1.ObjectMeta{
-				Name: config1,
-			},
-		})
-		return
+func TestStoreFailedFirstConversionLogs(t *testing.T) {
+	constructor := func(c *corev1.ConfigMap) (interface{}, error) {
+		return nil, errors.New("failure")
 	}
 
-	cmd := exec.Command(os.Args[0], "-test.run="+t.Name())
-	cmd.Env = append(os.Environ(), "CRASH=1")
-	err := cmd.Run()
+	store := NewUntypedStore("name", TestLogger(t),
+		Constructors{config1: constructor},
+	)
 
-	var errExit *exec.ExitError
-	if errors.As(err, &errExit) && !errExit.Success() {
-		return
+	store.OnConfigChanged(&corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: config1,
+		},
+	})
+	if store.UntypedLoad(config1) != nil {
+		t.Fatal("expected no config to be stored after failed initialization")
 	}
-	t.Fatal("process should have exited with status 1 - err", err)
 }
 
 func TestStoreFailedUpdate(t *testing.T) {
