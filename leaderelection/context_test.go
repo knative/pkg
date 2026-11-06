@@ -217,6 +217,14 @@ func TestBuilderWithCustomizedLeaseName(t *testing.T) {
 	}
 }
 
+func TestWithDynamicLeaderElectorBuilderWithoutOrdinal(t *testing.T) {
+	cc := ComponentConfig{Component: "the-component", Buckets: 3}
+	ctx := WithDynamicLeaderElectorBuilder(context.Background(), fakekube.NewSimpleClientset(), cc)
+	if _, ok := ctx.Value(builderKey{}).(*standardBuilder); !ok {
+		t.Fatalf("builder = %T, want *standardBuilder", ctx.Value(builderKey{}))
+	}
+}
+
 func TestNewStatefulSetBucketAndSet(t *testing.T) {
 	wantNames := []string{
 		"http://as-0.autoscaler.knative-testing.svc.cluster.local:80",
@@ -226,16 +234,19 @@ func TestNewStatefulSetBucketAndSet(t *testing.T) {
 
 	t.Setenv(controllerOrdinalEnv, "as-2")
 	t.Setenv(serviceNameEnv, "autoscaler")
+	t.Setenv(replicaCountEnv, "2")
 
 	_, _, err := NewStatefulSetBucketAndSet(2)
 	if err == nil {
-		// Ordinal 2 should be range [0, 2)
 		t.Fatal("Expected error from NewStatefulSetBucketAndSet but got nil")
 	}
+	if got, want := err.Error(), "ordinal 2 is out of range [0, 2)"; got != want {
+		t.Errorf("NewStatefulSetBucketAndSet() error = %q, want %q", got, want)
+	}
 
+	t.Setenv(replicaCountEnv, "3")
 	bkt, bs, err := NewStatefulSetBucketAndSet(3)
 	if err != nil {
-		// Ordinal 2 should be range [0, 2)
 		t.Fatal("NewStatefulSetBucketAndSet() = ", err)
 	}
 
@@ -246,6 +257,81 @@ func TestNewStatefulSetBucketAndSet(t *testing.T) {
 	gotNames := bs.BucketList()
 	if !cmp.Equal(gotNames, wantNames) {
 		t.Errorf("BucketSet.BucketList() = %q, want: %q", gotNames, wantNames)
+	}
+}
+
+func TestNewStatefulSetBucketAndSetReplicaMismatch(t *testing.T) {
+	t.Setenv(serviceNameEnv, "autoscaler")
+
+	t.Run("replicas less than buckets", func(t *testing.T) {
+		t.Setenv(controllerOrdinalEnv, "as-0")
+		t.Setenv(replicaCountEnv, "4")
+		_, _, err := NewStatefulSetBucketAndSet(8)
+		if err == nil {
+			t.Fatal("NewStatefulSetBucketAndSet() = nil, want replica/bucket mismatch error")
+		}
+		want := "STATEFUL_REPLICA_COUNT (4) must equal buckets (8) for StatefulSet leader election"
+		if got := err.Error(); got != want {
+			t.Errorf("error = %q, want %q", got, want)
+		}
+	})
+
+	t.Run("replicas greater than buckets", func(t *testing.T) {
+		t.Setenv(controllerOrdinalEnv, "as-0")
+		t.Setenv(replicaCountEnv, "8")
+		_, _, err := NewStatefulSetBucketAndSet(4)
+		if err == nil {
+			t.Fatal("NewStatefulSetBucketAndSet() = nil, want replica/bucket mismatch error")
+		}
+		want := "STATEFUL_REPLICA_COUNT (8) must equal buckets (4) for StatefulSet leader election"
+		if got := err.Error(); got != want {
+			t.Errorf("error = %q, want %q", got, want)
+		}
+	})
+}
+
+func TestNewStatefulSetBucketAndSetOneToOne(t *testing.T) {
+	const (
+		buckets = 8
+		ordinal = 3
+	)
+	wantNames := make([]string, buckets)
+	for i := range buckets {
+		wantNames[i] = fmt.Sprintf("http://as-%d.autoscaler.knative-testing.svc.cluster.local:80", i)
+	}
+
+	t.Setenv(controllerOrdinalEnv, "as-3")
+	t.Setenv(serviceNameEnv, "autoscaler")
+	t.Setenv(replicaCountEnv, "8")
+
+	bkt, bs, err := NewStatefulSetBucketAndSet(buckets)
+	if err != nil {
+		t.Fatal("NewStatefulSetBucketAndSet() = ", err)
+	}
+
+	if got, want := bkt.Name(), wantNames[ordinal]; got != want {
+		t.Errorf("Bucket.Name() = %s, want = %s", got, want)
+	}
+
+	gotNames := bs.BucketList()
+	if !cmp.Equal(gotNames, wantNames) {
+		t.Errorf("BucketSet.BucketList() = %q, want: %q", gotNames, wantNames)
+	}
+
+	all := bs.Buckets()
+	if len(all) != buckets {
+		t.Fatalf("len(Buckets()) = %d, want %d", len(all), buckets)
+	}
+	if got, want := all[ordinal].Name(), bkt.Name(); got != want {
+		t.Errorf("Buckets()[%d].Name() = %s, want %s", ordinal, got, want)
+	}
+	for i, other := range all {
+		if i == ordinal {
+			continue
+		}
+		if other.Name() == bkt.Name() {
+			t.Errorf("Buckets()[%d].Name() = %s, same as ordinal %d; assignment is 1:1", i, other.Name(), ordinal)
+		}
 	}
 }
 
@@ -268,6 +354,7 @@ func TestWithStatefulSetBuilder(t *testing.T) {
 
 	t.Setenv(controllerOrdinalEnv, "as-2")
 	t.Setenv(serviceNameEnv, "autoscaler")
+	t.Setenv(replicaCountEnv, "3")
 
 	ctx = WithDynamicLeaderElectorBuilder(ctx, nil, cc)
 	if !HasLeaderElection(ctx) {
