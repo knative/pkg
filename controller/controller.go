@@ -215,6 +215,9 @@ type Impl struct {
 	// Tracker allows reconcilers to associate a reference with particular key,
 	// such that when the reference changes the key is queued for reconciliation.
 	Tracker tracker.Interface
+
+	// bucketDrainer tracks worker calls for voluntary leader-election handoff.
+	bucketDrainer *bucketDrainer
 }
 
 // ControllerOptions encapsulates options for creating a new controller,
@@ -452,7 +455,8 @@ func (c *Impl) RunContext(ctx context.Context, threadiness int) error {
 
 	if la, ok := c.Reconciler.(reconciler.LeaderAware); ok {
 		// Build and execute an elector.
-		le, err := kle.BuildElector(ctx, la, c.Name, c.MaybeEnqueueBucketKey)
+		c.bucketDrainer = &bucketDrainer{LeaderAware: la, active: make(map[types.NamespacedName]chan struct{})}
+		le, err := kle.BuildElector(ctx, c.bucketDrainer, c.Name, c.MaybeEnqueueBucketKey)
 		if err != nil {
 			return err
 		}
@@ -516,6 +520,10 @@ func (c *Impl) processNextWorkItem() bool {
 	// to the Reconciler.
 	logger := c.logger.With(zap.String(logkey.TraceID, uuid.NewString()), zap.String(logkey.Key, keyStr))
 	ctx := logging.WithLogger(context.Background(), logger)
+	if c.bucketDrainer != nil {
+		done := c.bucketDrainer.start(key)
+		defer done()
+	}
 
 	// Run Reconcile, passing it the namespace/name string of the
 	// resource to be synced.

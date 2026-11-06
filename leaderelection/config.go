@@ -26,6 +26,7 @@ import (
 
 	"github.com/kelseyhightower/envconfig"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/uuid"
 	"k8s.io/client-go/tools/leaderelection/resourcelock"
 
@@ -59,12 +60,17 @@ func NewConfigFromMap(data map[string]string) (*Config, error) {
 		cm.AsUint32("buckets", &config.Buckets),
 
 		cm.CollectMapEntriesWithPrefix("map-lease-prefix", &config.LeaseNamesPrefixMapping),
+
+		cm.AsString("rebalance-pod-selector", &config.RebalancePodSelector),
 	); err != nil {
 		return nil, err
 	}
 
 	if config.Buckets < 1 || config.Buckets > MaxBuckets {
 		return nil, fmt.Errorf("buckets: value must be between %d <= %d <= %d", 1, config.Buckets, MaxBuckets)
+	}
+	if _, err := labels.Parse(config.RebalancePodSelector); err != nil {
+		return nil, fmt.Errorf("rebalance-pod-selector: %w", err)
 	}
 	return config, nil
 }
@@ -87,6 +93,7 @@ type Config struct {
 	RenewDeadline           time.Duration
 	RetryPeriod             time.Duration
 	LeaseNamesPrefixMapping map[string]string
+	RebalancePodSelector    string
 }
 
 type lecfg struct{}
@@ -115,6 +122,7 @@ func (c *Config) GetComponentConfig(name string) ComponentConfig {
 		RenewDeadline:           c.RenewDeadline,
 		RetryPeriod:             c.RetryPeriod,
 		LeaseNamesPrefixMapping: c.LeaseNamesPrefixMapping,
+		RebalancePodSelector:    c.RebalancePodSelector,
 	}
 }
 
@@ -151,6 +159,15 @@ type ComponentConfig struct {
 	// from <component>.<package>.<reconciler_type_name> to the
 	// associated value when using standardBuilder.
 	LeaseNamesPrefixMapping map[string]string
+
+	// RebalancePodSelector, when non-empty, enables bucket rebalancing for
+	// standardBuilder: each replica targets ceil(Buckets/R) buckets,
+	// where R is the number of Ready, non-terminating pods in the system
+	// namespace matching this label selector. Orphan takeovers retain extra
+	// capacity until Ready pod membership changes. Empty keeps default behavior.
+	// Direct BuildElector callers must implement reconciler.BucketDrainer;
+	// controller.Impl provides draining for its workers automatically.
+	RebalancePodSelector string
 }
 
 // statefulSetID is a envconfig Decodable controller ordinal and name.
