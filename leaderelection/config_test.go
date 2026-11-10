@@ -202,6 +202,23 @@ func TestNewConfigFromMap(t *testing.T) {
 				"reconciler": "reconciler1",
 			},
 		},
+	}, {
+		name: "key that only shares the prefix is not a mapping",
+		data: map[string]string{
+			"lease-duration":              "15s",
+			"buckets":                     "5",
+			"map-lease-prefixes":          "reconciler1",
+			"map-lease-prefix.reconciler": "reconciler2",
+		},
+		want: Config{
+			Buckets:       5,
+			LeaseDuration: 15 * time.Second,
+			RenewDeadline: 40 * time.Second,
+			RetryPeriod:   10 * time.Second,
+			LeaseNamesPrefixMapping: map[string]string{
+				"reconciler": "reconciler2",
+			},
+		},
 	}}
 
 	for _, tc := range tt {
