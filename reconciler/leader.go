@@ -17,6 +17,7 @@ limitations under the License.
 package reconciler
 
 import (
+	"context"
 	"sync"
 
 	"k8s.io/apimachinery/pkg/types"
@@ -59,6 +60,15 @@ type LeaderAware interface {
 
 	// Demote is called when we stop being the leader for the specified Bucket.
 	Demote(Bucket)
+}
+
+// BucketDrainer is required by bucket rebalancing. After Demote has stopped new
+// leader work, Drain waits for the bucket's in-flight reconciles to finish.
+// It returns nil only after they finish, or ctx.Err() when the wait is canceled.
+// controller.Impl supplies this for the work it executes. Direct users of
+// leaderelection.BuildElector must track and drain their own work.
+type BucketDrainer interface {
+	Drain(context.Context, Bucket) error
 }
 
 // LeaderAwareFuncs implements LeaderAware using the given functions for handling
