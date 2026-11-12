@@ -109,6 +109,18 @@ func TestParse(t *testing.T) {
 			"test-dict.": "v",
 		},
 		expectErr: false,
+	}, {
+		name: "key that only shares the prefix",
+		data: map[string]string{
+			"test-dictionary": "v",
+			"test-dict.k":     "v1",
+		},
+		want: testConfig{
+			dict: map[string]string{
+				"k": "v1",
+			},
+		},
+		expectErr: false,
 	}}
 
 	for _, test := range tests {
