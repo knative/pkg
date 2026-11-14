@@ -20,9 +20,9 @@ import (
 	"flag"
 	"os"
 
-	"knative.dev/pkg/apiextensions/storageversion/migrate"
+	"knative.dev/pkg/apiextensions/storageversion"
 )
 
 func main() {
-	migrate.Main(flag.CommandLine, os.Args[1:])
+	storageversion.Main(flag.CommandLine, os.Args[1:])
 }
