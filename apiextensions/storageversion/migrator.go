@@ -18,6 +18,7 @@ package storageversion
 
 import (
 	"context"
+	"errors"
 	"flag"
 	"fmt"
 	"log"
@@ -147,7 +148,7 @@ func Run(flags *flag.FlagSet, args []string) {
 	env.InitFlags(flags)
 
 	if err := flags.Parse(args); err != nil {
-		if err == flag.ErrHelp {
+		if errors.Is(err, flag.ErrHelp) {
 			return
 		}
 		logger.Fatal(err)
