@@ -137,9 +137,9 @@ const (
 	IgnoreNotFoundEnvKey = "IGNORE_NOT_FOUND"
 )
 
-// Main runs the storage-version migration command using the provided flag set
+// Run runs the storage-version migration command using the provided flag set
 // and arguments. It exits the process if migration fails.
-func Main(flags *flag.FlagSet, args []string) {
+func Run(flags *flag.FlagSet, args []string) {
 	logger := setupLogger()
 	defer logger.Sync()
 

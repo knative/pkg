@@ -24,5 +24,5 @@ import (
 )
 
 func main() {
-	storageversion.Main(flag.CommandLine, os.Args[1:])
+	storageversion.Run(flag.CommandLine, os.Args[1:])
 }
