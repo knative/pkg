@@ -39,23 +39,28 @@ const (
 	IgnoreNotFoundEnvKey = "IGNORE_NOT_FOUND"
 )
 
-// Main runs the storage-version migration command using command-line flags and
-// resource arguments. It exits the process if migration fails.
-func Main() {
+// Main runs the storage-version migration command using the provided flag set
+// and arguments. It exits the process if migration fails.
+func Main(flags *flag.FlagSet, args []string) {
 	logger := setupLogger()
 	defer logger.Sync()
 
 	env := environment.ClientConfig{}
-	env.InitFlags(flag.CommandLine)
+	env.InitFlags(flags)
 
-	flag.Parse()
+	if err := flags.Parse(args); err != nil {
+		if err == flag.ErrHelp {
+			return
+		}
+		logger.Fatal(err)
+	}
 
 	config, err := env.GetRESTConfig()
 	if err != nil {
 		logger.Fatalf("failed to get kubeconfig %s", err)
 	}
 
-	grs, err := parseResources(flag.Args())
+	grs, err := parseResources(flags.Args())
 	if err != nil {
 		logger.Fatal(err)
 	}

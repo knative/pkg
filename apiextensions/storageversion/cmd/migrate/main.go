@@ -16,8 +16,13 @@ limitations under the License.
 
 package main
 
-import "knative.dev/pkg/apiextensions/storageversion/migrate"
+import (
+	"flag"
+	"os"
+
+	"knative.dev/pkg/apiextensions/storageversion/migrate"
+)
 
 func main() {
-	migrate.Main()
+	migrate.Main(flag.CommandLine, os.Args[1:])
 }
