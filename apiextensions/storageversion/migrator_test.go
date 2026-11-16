@@ -244,6 +244,64 @@ func getPatchActions(actions []k8stesting.Action) []k8stesting.PatchAction {
 	return patches
 }
 
+func TestParseResources(t *testing.T) {
+	tests := []struct {
+		name    string
+		args    []string
+		want    []schema.GroupResource
+		wantErr string
+	}{
+		{
+			name: "no resources",
+			want: []schema.GroupResource{},
+		},
+		{
+			name: "group resources in argument order",
+			args: []string{"services.serving.knative.dev", "brokers.eventing.knative.dev"},
+			want: []schema.GroupResource{
+				{Resource: "services", Group: "serving.knative.dev"},
+				{Resource: "brokers", Group: "eventing.knative.dev"},
+			},
+		},
+		{
+			name: "core group resource",
+			args: []string{"pods"},
+			want: []schema.GroupResource{{Resource: "pods"}},
+		},
+		{
+			name:    "empty argument",
+			args:    []string{""},
+			wantErr: "unable to parse group version: ",
+		},
+		{
+			name:    "empty group and resource",
+			args:    []string{"."},
+			wantErr: "unable to parse group version: .",
+		},
+		{
+			name:    "invalid argument after valid resource",
+			args:    []string{"services.serving.knative.dev", ""},
+			wantErr: "unable to parse group version: ",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := parseResources(tt.args)
+			if tt.wantErr != "" {
+				if err == nil || err.Error() != tt.wantErr {
+					t.Fatalf("parseResources(%q) error = %v, want %q", tt.args, err, tt.wantErr)
+				}
+			} else if err != nil {
+				t.Fatalf("parseResources(%q) error = %v", tt.args, err)
+			}
+			if diff := cmp.Diff(tt.want, got); diff != "" {
+				t.Errorf("parseResources(%q) mismatch (-want +got):\n%s", tt.args, diff)
+			}
+		})
+	}
+}
+
 func fake(name string) runtime.Object {
 	return &unstructured.Unstructured{
 		Object: map[string]interface{}{
