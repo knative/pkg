@@ -165,6 +165,16 @@ func endpointFor[T any](cfg Config, opt func(string) T) (T, error) {
 	}
 	if u.Opaque != "" {
 		ep = "https://" + ep
+		u, err = url.Parse(ep)
+		if err != nil {
+			return epOption, err
+		}
+	}
+	// OpenTelemetry 1.45 stopped adding the default signal path to pathless
+	// WithEndpointURL values. Preserve the existing Knative configuration behavior.
+	if cfg.Protocol == ProtocolHTTPProtobuf && u.Path == "" {
+		u.Path = "/v1/metrics"
+		ep = u.String()
 	}
 
 	epOption = opt(ep)

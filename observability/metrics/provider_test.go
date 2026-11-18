@@ -18,6 +18,8 @@ package metrics
 
 import (
 	"context"
+	"net/http"
+	"net/http/httptest"
 	"testing"
 	"time"
 
@@ -140,34 +142,91 @@ func TestEndpointFor(t *testing.T) {
 		})
 	}
 
-	t.Run("normal", func(t *testing.T) {
-		optFunc := func(string) *string {
-			result := "result"
-			return &result
-		}
-		opt, err := endpointFor(Config{Endpoint: "https://otel.example.com"}, optFunc)
-		if err != nil {
-			t.Fatal("unexpected err", err)
-		}
-		if *opt != "result" {
-			t.Error("expected option to work when no env vars are present")
-		}
-	})
+	for _, tc := range []struct {
+		name     string
+		protocol string
+		endpoint string
+		want     string
+	}{{
+		name:     "pathless HTTP endpoint",
+		protocol: ProtocolHTTPProtobuf,
+		endpoint: "https://otel.example.com",
+		want:     "https://otel.example.com/v1/metrics",
+	}, {
+		name:     "explicit HTTP path",
+		protocol: ProtocolHTTPProtobuf,
+		endpoint: "https://otel.example.com/custom",
+		want:     "https://otel.example.com/custom",
+	}, {
+		name:     "explicit HTTP root",
+		protocol: ProtocolHTTPProtobuf,
+		endpoint: "https://otel.example.com/",
+		want:     "https://otel.example.com/",
+	}, {
+		name:     "pathless gRPC endpoint",
+		protocol: ProtocolGRPC,
+		endpoint: "https://otel.example.com",
+		want:     "https://otel.example.com",
+	}, {
+		name:     "missing scheme defaults to HTTPS",
+		protocol: ProtocolHTTPProtobuf,
+		endpoint: "otel.example.com:8080",
+		want:     "https://otel.example.com:8080/v1/metrics",
+	}} {
+		t.Run(tc.name, func(t *testing.T) {
+			got, err := endpointFor(Config{
+				Protocol: tc.protocol,
+				Endpoint: tc.endpoint,
+			}, ptr.String)
+			if err != nil {
+				t.Fatal("unexpected error", err)
+			}
 
-	t.Run("missing scheme - defaults to https", func(t *testing.T) {
-		optFunc := func(r string) *string {
-			return &r
-		}
-		got, err := endpointFor(Config{Endpoint: "otel.example.com:8080"}, optFunc)
-		if err != nil {
-			t.Fatal("unexpected err", err)
-		}
+			if diff := cmp.Diff(ptr.String(tc.want), got); diff != "" {
+				t.Error("unexpected endpoint (-want +got): ", diff)
+			}
+		})
+	}
+}
 
-		want := ptr.String("https://otel.example.com:8080")
-		if diff := cmp.Diff(want, got); diff != "" {
-			t.Error("expected option to work when no env vars are present: (-want +got): ", diff)
-		}
+func TestHTTPExporterUsesDefaultMetricsPath(t *testing.T) {
+	requests := make(chan string, 1)
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		requests <- r.URL.Path
+		w.Header().Set("Content-Type", "application/x-protobuf")
+		w.WriteHeader(http.StatusOK)
+	}))
+	t.Cleanup(server.Close)
+
+	ctx, cancel := context.WithTimeout(t.Context(), 5*time.Second)
+	defer cancel()
+
+	provider, err := NewMeterProvider(ctx, Config{
+		Protocol:       ProtocolHTTPProtobuf,
+		Endpoint:       server.URL,
+		ExportInterval: time.Hour,
 	})
+	if err != nil {
+		t.Fatal("failed to create meter provider", err)
+	}
+
+	counter, err := provider.Meter("endpoint-test").Int64Counter("test.counter")
+	if err != nil {
+		t.Fatal("failed to create counter", err)
+	}
+	counter.Add(ctx, 1)
+	if err := provider.Shutdown(ctx); err != nil {
+		t.Fatal("failed to export metric", err)
+	}
+
+	select {
+	case got := <-requests:
+		if got != "/v1/metrics" {
+			t.Errorf("request path = %q, want /v1/metrics", got)
+		}
+	case <-ctx.Done():
+		t.Fatal("collector received no metrics request", ctx.Err())
+	}
 }
 
 func TestIntervalFor(t *testing.T) {
