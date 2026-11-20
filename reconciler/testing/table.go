@@ -29,7 +29,11 @@ import (
 	"go.uber.org/zap"
 
 	"k8s.io/apimachinery/pkg/api/resource"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/fields"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/sets"
 	clientgotesting "k8s.io/client-go/testing"
 	"k8s.io/client-go/tools/cache"
@@ -316,6 +320,14 @@ func (r *TableRow) Test(t *testing.T, factory Factory) {
 		}
 	}
 
+	if len(r.WantDeleteCollections) != 0 || len(actions.DeleteCollections) != 0 {
+		want := deleteCollectionCalls(r.WantDeleteCollections, r.SkipNamespaceValidation)
+		got := deleteCollectionCalls(actions.DeleteCollections, r.SkipNamespaceValidation)
+		if diff := cmp.Diff(want, got, effectiveOpts...); diff != "" {
+			t.Errorf("Unexpected DeleteCollection calls (-want, +got):\n%s", diff)
+		}
+	}
+
 	for i, want := range r.WantPatches {
 		if i >= len(actions.Patches) {
 			t.Errorf("Missing patch: %#v; raw: %s", want, string(want.GetPatch()))
@@ -361,6 +373,61 @@ func (r *TableRow) Test(t *testing.T, factory Factory) {
 	for _, verify := range r.PostConditions {
 		verify(t, r)
 	}
+}
+
+type deleteCollectionCall struct {
+	Resource      schema.GroupVersionResource
+	Subresource   string
+	Namespace     string
+	ListOptions   metav1.ListOptions
+	DeleteOptions metav1.DeleteOptions
+}
+
+// Compare the public action fields. The client-go fake also records the original
+// list and delete options, which are optional on other ActionRecorders.
+func deleteCollectionCalls[T clientgotesting.DeleteCollectionAction](actions []T, skipNamespace bool) []deleteCollectionCall {
+	calls := make([]deleteCollectionCall, len(actions))
+	for i, action := range actions {
+		call := &calls[i]
+		call.Resource = action.GetResource()
+		call.Subresource = action.GetSubresource()
+		if !skipNamespace {
+			call.Namespace = action.GetNamespace()
+		}
+		if a, ok := any(action).(interface{ GetDeleteOptions() metav1.DeleteOptions }); ok {
+			call.DeleteOptions = a.GetDeleteOptions()
+		}
+		if a, ok := any(action).(interface{ GetListOptions() metav1.ListOptions }); ok {
+			call.ListOptions = a.GetListOptions()
+		}
+		restrictions := action.GetListRestrictions()
+		// Hand-built expectations can supply just ListOptions. Normalize those
+		// selectors the same way client-go does when it constructs an action.
+		if restrictions.Labels == nil && call.ListOptions.LabelSelector != "" {
+			restrictions.Labels, _ = labels.Parse(call.ListOptions.LabelSelector)
+		}
+		if restrictions.Fields == nil && call.ListOptions.FieldSelector != "" {
+			restrictions.Fields, _ = fields.ParseSelector(call.ListOptions.FieldSelector)
+		}
+		call.ListOptions.LabelSelector = selectorText(restrictions.Labels, call.ListOptions.LabelSelector)
+		call.ListOptions.FieldSelector = selectorText(restrictions.Fields, call.ListOptions.FieldSelector)
+	}
+	return calls
+}
+
+func selectorText(selector interface {
+	String() string
+	Empty() bool
+}, raw string) string {
+	if selector == nil {
+		return raw
+	}
+	value := selector.String()
+	// Both Everything and Nothing stringify to an empty string.
+	if value == "" && !selector.Empty() {
+		return "<nothing>"
+	}
+	return value
 }
 
 func filterUpdatesWithSubresource(
