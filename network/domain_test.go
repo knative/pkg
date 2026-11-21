@@ -17,6 +17,8 @@ limitations under the License.
 package network
 
 import (
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 )
@@ -76,12 +78,53 @@ options ndots:5
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if len(tt.env) > 0 {
-				t.Setenv(clusterDomainEnvKey, tt.env)
-			}
+			t.Setenv(clusterDomainEnvKey, tt.env)
 			got := getClusterDomainName(strings.NewReader(tt.resolvConf))
 			if got != tt.want {
 				t.Errorf("Test %s failed expected: %s but got: %s", tt.name, tt.want, got)
+			}
+		})
+	}
+}
+
+func TestGetDomainNameFromFile(t *testing.T) {
+	dir := t.TempDir()
+	resolvConf := filepath.Join(dir, "resolv.conf")
+	if err := os.WriteFile(resolvConf, []byte("search default.svc.abc.com svc.abc.com abc.com\n"), 0o600); err != nil {
+		t.Fatal("WriteFile() =", err)
+	}
+	missing := filepath.Join(dir, "missing")
+
+	tests := []struct {
+		name string
+		env  string
+		path string
+		want string
+	}{{
+		name: "resolv.conf",
+		path: resolvConf,
+		want: "abc.com",
+	}, {
+		name: "env variable takes precedence over resolv.conf",
+		env:  "mesh.net",
+		path: resolvConf,
+		want: "mesh.net",
+	}, {
+		name: "env variable used when resolv.conf is missing",
+		env:  "mesh.net",
+		path: missing,
+		want: "mesh.net",
+	}, {
+		name: "default when resolv.conf is missing",
+		path: missing,
+		want: defaultDomainName,
+	}}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Setenv(clusterDomainEnvKey, tt.env)
+			if got := getClusterDomainNameFromFile(tt.path); got != tt.want {
+				t.Errorf("getClusterDomainNameFromFile() = %s, want: %s", got, tt.want)
 			}
 		})
 	}
