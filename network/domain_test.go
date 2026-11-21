@@ -78,9 +78,7 @@ options ndots:5
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if len(tt.env) > 0 {
-				t.Setenv(clusterDomainEnvKey, tt.env)
-			}
+			t.Setenv(clusterDomainEnvKey, tt.env)
 			got := getClusterDomainName(strings.NewReader(tt.resolvConf))
 			if got != tt.want {
 				t.Errorf("Test %s failed expected: %s but got: %s", tt.name, tt.want, got)
