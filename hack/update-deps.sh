@@ -22,41 +22,22 @@ source $(dirname "$0")/../vendor/knative.dev/hack/library.sh
 
 go_update_deps "$@"
 
-# Sync semconv imports with the resolved OTEL module.
-log.step "Syncing semconv imports"
-OTEL_VERSION=$(go list -m -f '{{.Version}}' go.opentelemetry.io/otel 2>/dev/null || true)
-if [ -n "$OTEL_VERSION" ]; then
-  group "Detected go.opentelemetry.io/otel ${OTEL_VERSION}"
+# Match the SDK's resource schema, not the newest available semconv package.
+log.step "Syncing semconv imports with the OTel SDK"
+SEMCONV_IMPORT=$(go list -mod=mod -f '{{join .Imports "\n"}}' \
+  go.opentelemetry.io/otel/sdk/resource | grep -F 'go.opentelemetry.io/otel/semconv/')
 
-  # Semconv versions are package directories inside the OTEL module.
-  OTEL_DIR=$(GOFLAGS=-mod=mod go list -m -f '{{.Dir}}' go.opentelemetry.io/otel 2>/dev/null || true)
-  SEMCONV_VERSION=""
-  if [ -d "${OTEL_DIR}/semconv" ]; then
-    SEMCONV_VERSION=$(find "${OTEL_DIR}/semconv" -mindepth 1 -maxdepth 1 \
-      -type d -name 'v[0-9]*.[0-9]*.[0-9]*' -exec basename {} \; | sort -V | tail -1)
+SEMCONV_CHANGED=false
+while IFS= read -r -d '' file; do
+  sed -i.semconv-backup -E \
+    "s|go\\.opentelemetry\\.io/otel/semconv/v[0-9]+\\.[0-9]+\\.[0-9]+|${SEMCONV_IMPORT}|g" "$file"
+  if ! cmp -s "$file" "$file.semconv-backup"; then
+    SEMCONV_CHANGED=true
   fi
+  rm "$file.semconv-backup"
+done < <(find observability -type f -name '*.go' -print0)
 
-  if [ -n "$SEMCONV_VERSION" ]; then
-    group "Updating semconv imports to ${SEMCONV_VERSION}"
-    mapfile -t SEMCONV_FILES < <(
-      find observability -type f -name '*.go' -exec \
-        grep -lE 'go\.opentelemetry\.io/otel/semconv/v[0-9]+\.[0-9]+\.[0-9]+' {} + || true
-    )
-    SEMCONV_IMPORTS_CHANGED=false
-    for file in "${SEMCONV_FILES[@]}"; do
-      current_versions=$(grep -oE \
-        'go\.opentelemetry\.io/otel/semconv/v[0-9]+\.[0-9]+\.[0-9]+' "$file" | \
-        sed -E 's#.*(v[0-9]+\.[0-9]+\.[0-9]+)$#\1#' | sort -u)
-      if [ "$current_versions" != "$SEMCONV_VERSION" ]; then
-        group "  ${file}"
-        sed -i -E "s|(go.opentelemetry.io/otel/semconv/)v[0-9]+\.[0-9]+\.[0-9]+|\1$SEMCONV_VERSION|g" "$file"
-        SEMCONV_IMPORTS_CHANGED=true
-      fi
-    done
-
-    [ "$SEMCONV_IMPORTS_CHANGED" = true ] && go_update_deps
-
-  else
-    group "Could not determine semconv version, skipping"
-  fi
+# Refresh dependencies and vendoring only when imports changed.
+if [ "$SEMCONV_CHANGED" = true ]; then
+  go_update_deps
 fi
