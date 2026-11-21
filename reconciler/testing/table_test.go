@@ -86,105 +86,105 @@ func TestTableRowDeleteCollections(t *testing.T) {
 		want, got              calls
 		skipNamespace, matches bool
 	}{{
-		name:    "empty",
+		name:    "no expected or recorded collection deletes",
 		matches: true,
 	}, {
-		name:    "match",
+		name:    "collection deletes match expectations in order",
 		want:    calls{first, second},
 		got:     calls{first, second},
 		matches: true,
 	}, {
-		name: "missing",
+		name: "missing expected collection delete is rejected",
 		want: calls{first},
 	}, {
-		name: "extra",
+		name: "unexpected collection delete is rejected",
 		got:  calls{first},
 	}, {
-		name: "duplicate",
+		name: "duplicate collection delete is rejected",
 		want: calls{first},
 		got:  calls{first, first},
 	}, {
-		name: "order",
+		name: "collection deletes in the wrong order are rejected",
 		want: calls{first, second},
 		got:  calls{second, first},
 	}, {
-		name: "resource",
+		name: "collection delete with the wrong API group is rejected",
 		want: calls{first},
 		got:  calls{otherResource},
 	}, {
-		name: "namespace",
+		name: "collection delete in the wrong namespace is rejected",
 		want: calls{first},
 		got:  calls{otherNamespace},
 	}, {
-		name:          "skip_namespace",
+		name:          "namespace mismatch is allowed when namespace validation is skipped",
 		want:          calls{first},
 		got:           calls{otherNamespace},
 		skipNamespace: true,
 		matches:       true,
 	}, {
-		name: "labels",
+		name: "collection delete without the expected label selector is rejected",
 		want: calls{first},
 		got:  calls{clientgotesting.NewDeleteCollectionAction(pods, "ns", metav1.ListOptions{FieldSelector: selectors.FieldSelector})},
 	}, {
-		name: "fields",
+		name: "collection delete with a different field selector is rejected",
 		want: calls{first},
 		got:  calls{clientgotesting.NewDeleteCollectionAction(pods, "ns", otherFields)},
 	}, {
-		name:    "equivalent_labels",
+		name:    "equivalent label selectors with reordered requirements match",
 		want:    calls{first},
 		got:     calls{clientgotesting.NewDeleteCollectionAction(pods, "ns", reordered)},
 		matches: true,
 	}, {
-		name: "list_options",
+		name: "collection delete with an unexpected list limit is rejected",
 		want: calls{first},
 		got:  calls{clientgotesting.NewDeleteCollectionAction(pods, "ns", limited)},
 	}, {
-		name: "delete_options",
+		name: "collection delete with unexpected dry run options is rejected",
 		want: calls{first},
 		got:  calls{dryRun},
 	}, {
-		name: "subresource",
+		name: "collection delete with an unexpected subresource is rejected",
 		want: calls{first},
 		got:  calls{subresource},
 	}, {
-		name:    "list_options_literal",
+		name:    "selectors supplied only through list options match recorded restrictions",
 		want:    calls{literal},
 		got:     calls{first},
 		matches: true,
 	}, {
-		name:    "selector_only",
+		name:    "selector-only expectation matches a collection delete in the row namespace",
 		want:    calls{selectorOnly},
 		got:     calls{first},
 		matches: true,
 	}, {
-		name: "selector_only_wrong_namespace",
+		name: "selector-only expectation rejects a collection delete outside the row namespace",
 		want: calls{selectorOnly},
 		got:  calls{otherNamespace},
 	}, {
-		name:          "selector_only_skip_namespace",
+		name:          "selector-only expectation allows another namespace when namespace validation is skipped",
 		want:          calls{selectorOnly},
 		got:           calls{otherNamespace},
 		skipNamespace: true,
 		matches:       true,
 	}, {
-		name: "selector_only_wrong_labels",
+		name: "selector-only expectation rejects a different label selector",
 		want: calls{selectorOnly},
 		got:  calls{second},
 	}, {
-		name: "mixed_expectations_wrong_resource",
+		name: "selector-only expectation does not disable resource validation for other expectations",
 		want: calls{selectorOnly, first},
 		got:  calls{first, otherResource},
 	}, {
-		name:    "cluster_scoped",
+		name:    "cluster-scoped collection delete matches an explicit root action expectation",
 		want:    calls{root},
 		got:     calls{root},
 		matches: true,
 	}, {
-		name: "labels_match_nothing",
+		name: "label selector matching nothing does not match a selector matching everything",
 		want: calls{noLabels},
 		got:  calls{root},
 	}, {
-		name: "fields_match_nothing",
+		name: "field selector matching nothing does not match a selector matching everything",
 		want: calls{noFields},
 		got:  calls{root},
 	}}
