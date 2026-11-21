@@ -27,17 +27,18 @@ log.step "Syncing semconv imports with the OTel SDK"
 SEMCONV_IMPORT=$(go list -mod=mod -f '{{join .Imports "\n"}}' \
   go.opentelemetry.io/otel/sdk/resource | grep -F 'go.opentelemetry.io/otel/semconv/')
 
-SEMCONV_CHANGED=false
-while IFS= read -r -d '' file; do
-  sed -i.semconv-backup -E \
-    "s|go\\.opentelemetry\\.io/otel/semconv/v[0-9]+\\.[0-9]+\\.[0-9]+|${SEMCONV_IMPORT}|g" "$file"
-  if ! cmp -s "$file" "$file.semconv-backup"; then
-    SEMCONV_CHANGED=true
-  fi
-  rm "$file.semconv-backup"
-done < <(find observability -type f -name '*.go' -print0)
+OLD_IMPORT=$(go list -mod=mod -f '{{join .Imports "\n"}}' \
+  ./observability/semconv | grep -F 'go.opentelemetry.io/otel/semconv/')
 
-# Refresh dependencies and vendoring only when imports changed.
-if [ "$SEMCONV_CHANGED" = true ]; then
+if [ "$OLD_IMPORT" != "$SEMCONV_IMPORT" ]; then
+  imports=$(go list -mod=mod -f '{{join .Imports "\n"}}' \
+    ./observability/... | grep -F "$OLD_IMPORT" | sort -u)
+
+  while IFS= read -r old_import; do
+    new_import="${old_import/"$OLD_IMPORT"/"$SEMCONV_IMPORT"}"
+    gofmt -w -r "\"${old_import}\" -> \"${new_import}\"" observability
+  done <<< "$imports"
+
+  # Refresh dependencies and vendoring after changing imports.
   go_update_deps
 fi
