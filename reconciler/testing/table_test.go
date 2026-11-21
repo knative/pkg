@@ -85,32 +85,109 @@ func TestTableRowDeleteCollections(t *testing.T) {
 		name                   string
 		want, got              calls
 		skipNamespace, matches bool
-	}{
-		{name: "empty", matches: true},
-		{name: "match", want: calls{first, second}, got: calls{first, second}, matches: true},
-		{name: "missing", want: calls{first}},
-		{name: "extra", got: calls{first}},
-		{name: "duplicate", want: calls{first}, got: calls{first, first}},
-		{name: "order", want: calls{first, second}, got: calls{second, first}},
-		{name: "resource", want: calls{first}, got: calls{otherResource}},
-		{name: "namespace", want: calls{first}, got: calls{otherNamespace}},
-		{name: "skip_namespace", want: calls{first}, got: calls{otherNamespace}, skipNamespace: true, matches: true},
-		{name: "labels", want: calls{first}, got: calls{clientgotesting.NewDeleteCollectionAction(pods, "ns", metav1.ListOptions{FieldSelector: selectors.FieldSelector})}},
-		{name: "fields", want: calls{first}, got: calls{clientgotesting.NewDeleteCollectionAction(pods, "ns", otherFields)}},
-		{name: "equivalent_labels", want: calls{first}, got: calls{clientgotesting.NewDeleteCollectionAction(pods, "ns", reordered)}, matches: true},
-		{name: "list_options", want: calls{first}, got: calls{clientgotesting.NewDeleteCollectionAction(pods, "ns", limited)}},
-		{name: "delete_options", want: calls{first}, got: calls{dryRun}},
-		{name: "subresource", want: calls{first}, got: calls{subresource}},
-		{name: "list_options_literal", want: calls{literal}, got: calls{first}, matches: true},
-		{name: "selector_only", want: calls{selectorOnly}, got: calls{first}, matches: true},
-		{name: "selector_only_wrong_namespace", want: calls{selectorOnly}, got: calls{otherNamespace}},
-		{name: "selector_only_skip_namespace", want: calls{selectorOnly}, got: calls{otherNamespace}, skipNamespace: true, matches: true},
-		{name: "selector_only_wrong_labels", want: calls{selectorOnly}, got: calls{second}},
-		{name: "mixed_expectations_wrong_resource", want: calls{selectorOnly, first}, got: calls{first, otherResource}},
-		{name: "cluster_scoped", want: calls{root}, got: calls{root}, matches: true},
-		{name: "labels_match_nothing", want: calls{noLabels}, got: calls{root}},
-		{name: "fields_match_nothing", want: calls{noFields}, got: calls{root}},
-	}
+	}{{
+		name:    "empty",
+		matches: true,
+	}, {
+		name:    "match",
+		want:    calls{first, second},
+		got:     calls{first, second},
+		matches: true,
+	}, {
+		name: "missing",
+		want: calls{first},
+	}, {
+		name: "extra",
+		got:  calls{first},
+	}, {
+		name: "duplicate",
+		want: calls{first},
+		got:  calls{first, first},
+	}, {
+		name: "order",
+		want: calls{first, second},
+		got:  calls{second, first},
+	}, {
+		name: "resource",
+		want: calls{first},
+		got:  calls{otherResource},
+	}, {
+		name: "namespace",
+		want: calls{first},
+		got:  calls{otherNamespace},
+	}, {
+		name:          "skip_namespace",
+		want:          calls{first},
+		got:           calls{otherNamespace},
+		skipNamespace: true,
+		matches:       true,
+	}, {
+		name: "labels",
+		want: calls{first},
+		got:  calls{clientgotesting.NewDeleteCollectionAction(pods, "ns", metav1.ListOptions{FieldSelector: selectors.FieldSelector})},
+	}, {
+		name: "fields",
+		want: calls{first},
+		got:  calls{clientgotesting.NewDeleteCollectionAction(pods, "ns", otherFields)},
+	}, {
+		name:    "equivalent_labels",
+		want:    calls{first},
+		got:     calls{clientgotesting.NewDeleteCollectionAction(pods, "ns", reordered)},
+		matches: true,
+	}, {
+		name: "list_options",
+		want: calls{first},
+		got:  calls{clientgotesting.NewDeleteCollectionAction(pods, "ns", limited)},
+	}, {
+		name: "delete_options",
+		want: calls{first},
+		got:  calls{dryRun},
+	}, {
+		name: "subresource",
+		want: calls{first},
+		got:  calls{subresource},
+	}, {
+		name:    "list_options_literal",
+		want:    calls{literal},
+		got:     calls{first},
+		matches: true,
+	}, {
+		name:    "selector_only",
+		want:    calls{selectorOnly},
+		got:     calls{first},
+		matches: true,
+	}, {
+		name: "selector_only_wrong_namespace",
+		want: calls{selectorOnly},
+		got:  calls{otherNamespace},
+	}, {
+		name:          "selector_only_skip_namespace",
+		want:          calls{selectorOnly},
+		got:           calls{otherNamespace},
+		skipNamespace: true,
+		matches:       true,
+	}, {
+		name: "selector_only_wrong_labels",
+		want: calls{selectorOnly},
+		got:  calls{second},
+	}, {
+		name: "mixed_expectations_wrong_resource",
+		want: calls{selectorOnly, first},
+		got:  calls{first, otherResource},
+	}, {
+		name:    "cluster_scoped",
+		want:    calls{root},
+		got:     calls{root},
+		matches: true,
+	}, {
+		name: "labels_match_nothing",
+		want: calls{noLabels},
+		got:  calls{root},
+	}, {
+		name: "fields_match_nothing",
+		want: calls{noFields},
+		got:  calls{root},
+	}}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			row := TableRow{Key: "ns/test", WantDeleteCollections: tc.want, SkipNamespaceValidation: tc.skipNamespace}
