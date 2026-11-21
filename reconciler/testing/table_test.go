@@ -61,6 +61,12 @@ func TestTableRowDeleteCollections(t *testing.T) {
 	second := collectionDeleteAction(func(a *clientgotesting.DeleteCollectionActionImpl) {
 		a.ListOptions = metav1.ListOptions{LabelSelector: "other=true"}
 	})
+	otherNamespace := collectionDeleteAction(func(a *clientgotesting.DeleteCollectionActionImpl) {
+		a.Namespace = "other"
+	})
+	otherResource := collectionDeleteAction(func(a *clientgotesting.DeleteCollectionActionImpl) {
+		a.Resource.Group = "example.org"
+	})
 	selectorOnly := clientgotesting.DeleteCollectionActionImpl{ListRestrictions: first.ListRestrictions}
 	root := clientgotesting.NewRootDeleteCollectionAction(first.Resource, metav1.ListOptions{})
 
@@ -94,25 +100,19 @@ func TestTableRowDeleteCollections(t *testing.T) {
 		got:          calls{second, first},
 		wantMismatch: true,
 	}, {
-		name: "collection delete with the wrong API group is rejected",
-		want: calls{first},
-		got: calls{collectionDeleteAction(func(a *clientgotesting.DeleteCollectionActionImpl) {
-			a.Resource.Group = "example.org"
-		})},
+		name:         "collection delete with the wrong API group is rejected",
+		want:         calls{first},
+		got:          calls{otherResource},
 		wantMismatch: true,
 	}, {
-		name: "collection delete in the wrong namespace is rejected",
-		want: calls{first},
-		got: calls{collectionDeleteAction(func(a *clientgotesting.DeleteCollectionActionImpl) {
-			a.Namespace = "other"
-		})},
+		name:         "collection delete in the wrong namespace is rejected",
+		want:         calls{first},
+		got:          calls{otherNamespace},
 		wantMismatch: true,
 	}, {
-		name: "namespace mismatch is allowed when namespace validation is skipped",
-		want: calls{first},
-		got: calls{collectionDeleteAction(func(a *clientgotesting.DeleteCollectionActionImpl) {
-			a.Namespace = "other"
-		})},
+		name:          "namespace mismatch is allowed when namespace validation is skipped",
+		want:          calls{first},
+		got:           calls{otherNamespace},
 		skipNamespace: true,
 	}, {
 		name: "collection delete without the expected label selector is rejected",
@@ -170,18 +170,14 @@ func TestTableRowDeleteCollections(t *testing.T) {
 		want: calls{selectorOnly},
 		got:  calls{first},
 	}, {
-		name: "selector-only expectation rejects a collection delete outside the row namespace",
-		want: calls{selectorOnly},
-		got: calls{collectionDeleteAction(func(a *clientgotesting.DeleteCollectionActionImpl) {
-			a.Namespace = "other"
-		})},
+		name:         "selector-only expectation rejects a collection delete outside the row namespace",
+		want:         calls{selectorOnly},
+		got:          calls{otherNamespace},
 		wantMismatch: true,
 	}, {
-		name: "selector-only expectation allows another namespace when namespace validation is skipped",
-		want: calls{selectorOnly},
-		got: calls{collectionDeleteAction(func(a *clientgotesting.DeleteCollectionActionImpl) {
-			a.Namespace = "other"
-		})},
+		name:          "selector-only expectation allows another namespace when namespace validation is skipped",
+		want:          calls{selectorOnly},
+		got:           calls{otherNamespace},
 		skipNamespace: true,
 	}, {
 		name:         "selector-only expectation rejects a different label selector",
@@ -189,11 +185,9 @@ func TestTableRowDeleteCollections(t *testing.T) {
 		got:          calls{second},
 		wantMismatch: true,
 	}, {
-		name: "selector-only expectation does not disable resource validation for other expectations",
-		want: calls{selectorOnly, first},
-		got: calls{first, collectionDeleteAction(func(a *clientgotesting.DeleteCollectionActionImpl) {
-			a.Resource.Group = "example.org"
-		})},
+		name:         "selector-only expectation does not disable resource validation for other expectations",
+		want:         calls{selectorOnly, first},
+		got:          calls{first, otherResource},
 		wantMismatch: true,
 	}, {
 		name: "cluster-scoped collection delete matches an explicit root action expectation",
@@ -224,7 +218,11 @@ func TestTableRowDeleteCollections(t *testing.T) {
 	}}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			row := TableRow{Key: "ns/test", WantDeleteCollections: tc.want, SkipNamespaceValidation: tc.skipNamespace}
+			row := TableRow{
+				Key:                     "ns/test",
+				WantDeleteCollections:   tc.want,
+				SkipNamespaceValidation: tc.skipNamespace,
+			}
 			rec := &collectionReconciler{calls: tc.got}
 			recorders := ActionRecorderList{rec}
 			events := EventList{Recorder: record.NewFakeRecorder(1)}

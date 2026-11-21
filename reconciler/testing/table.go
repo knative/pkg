@@ -335,6 +335,8 @@ func (r *TableRow) run(t testing.TB, c controller.Reconciler, recorderList Actio
 		got := deleteCollectionCalls(actions.DeleteCollections, r.SkipNamespaceValidation)
 		for i := range min(len(want), len(got)) {
 			if r.WantDeleteCollections[i].ActionImpl == (clientgotesting.ActionImpl{}) {
+				// Selector-only expectations leave resource and subresource
+				// unspecified. Namespace validation still uses the row's namespace.
 				want[i].Resource = got[i].Resource
 				want[i].Subresource = got[i].Subresource
 				if !r.SkipNamespaceValidation {
@@ -398,8 +400,8 @@ type deleteCollectionCall struct {
 	DeleteOptions metav1.DeleteOptions
 }
 
-// Compare the public action fields. The client-go fake also records the original
-// list and delete options, which are optional on other ActionRecorders.
+// deleteCollectionCalls normalizes recorded actions for comparison.
+// List and delete options are included when exposed by the action.
 func deleteCollectionCalls[T clientgotesting.DeleteCollectionAction](actions []T, skipNamespace bool) []deleteCollectionCall {
 	calls := make([]deleteCollectionCall, len(actions))
 	for i, action := range actions {
