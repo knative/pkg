@@ -57,29 +57,12 @@ func (r *rowErrors) Errorf(format string, args ...any) {
 
 func TestTableRowDeleteCollections(t *testing.T) {
 	type calls = []clientgotesting.DeleteCollectionActionImpl
-	pods := schema.GroupVersionResource{Version: "v1", Resource: "pods"}
-	selectors := metav1.ListOptions{LabelSelector: "app=test,tier=web", FieldSelector: "status.phase=Running"}
-	first := clientgotesting.NewDeleteCollectionAction(pods, "ns", selectors)
-	second := clientgotesting.NewDeleteCollectionAction(pods, "ns", metav1.ListOptions{LabelSelector: "other=true"})
-	otherNamespace := clientgotesting.NewDeleteCollectionAction(pods, "other", selectors)
-	otherResource := clientgotesting.NewDeleteCollectionAction(schema.GroupVersionResource{Group: "example.org", Version: "v1", Resource: "pods"}, "ns", selectors)
-	otherFields := selectors
-	otherFields.FieldSelector = "status.phase=Pending"
-	reordered := selectors
-	reordered.LabelSelector = "tier=web,app=test"
-	limited := selectors
-	limited.Limit = 10
-	dryRun := clientgotesting.NewDeleteCollectionActionWithOptions(pods, "ns", metav1.DeleteOptions{DryRun: []string{metav1.DryRunAll}}, selectors)
-
-	subresource := first
-	subresource.Subresource = "status"
-	literal := clientgotesting.DeleteCollectionActionImpl{ActionImpl: first.ActionImpl, ListOptions: reordered}
+	first := collectionDeleteAction()
+	second := collectionDeleteAction(func(a *clientgotesting.DeleteCollectionActionImpl) {
+		a.ListOptions = metav1.ListOptions{LabelSelector: "other=true"}
+	})
 	selectorOnly := clientgotesting.DeleteCollectionActionImpl{ListRestrictions: first.ListRestrictions}
-	root := clientgotesting.NewRootDeleteCollectionAction(pods, metav1.ListOptions{})
-	noLabels := root
-	noLabels.ListRestrictions.Labels = labels.Nothing()
-	noFields := root
-	noFields.ListRestrictions.Fields = fields.Nothing()
+	root := clientgotesting.NewRootDeleteCollectionAction(first.Resource, metav1.ListOptions{})
 
 	cases := []struct {
 		name          string
@@ -111,66 +94,94 @@ func TestTableRowDeleteCollections(t *testing.T) {
 		got:          calls{second, first},
 		wantMismatch: true,
 	}, {
-		name:         "collection delete with the wrong API group is rejected",
-		want:         calls{first},
-		got:          calls{otherResource},
+		name: "collection delete with the wrong API group is rejected",
+		want: calls{first},
+		got: calls{collectionDeleteAction(func(a *clientgotesting.DeleteCollectionActionImpl) {
+			a.Resource.Group = "example.org"
+		})},
 		wantMismatch: true,
 	}, {
-		name:         "collection delete in the wrong namespace is rejected",
-		want:         calls{first},
-		got:          calls{otherNamespace},
+		name: "collection delete in the wrong namespace is rejected",
+		want: calls{first},
+		got: calls{collectionDeleteAction(func(a *clientgotesting.DeleteCollectionActionImpl) {
+			a.Namespace = "other"
+		})},
 		wantMismatch: true,
 	}, {
-		name:          "namespace mismatch is allowed when namespace validation is skipped",
-		want:          calls{first},
-		got:           calls{otherNamespace},
+		name: "namespace mismatch is allowed when namespace validation is skipped",
+		want: calls{first},
+		got: calls{collectionDeleteAction(func(a *clientgotesting.DeleteCollectionActionImpl) {
+			a.Namespace = "other"
+		})},
 		skipNamespace: true,
 	}, {
-		name:         "collection delete without the expected label selector is rejected",
-		want:         calls{first},
-		got:          calls{clientgotesting.NewDeleteCollectionAction(pods, "ns", metav1.ListOptions{FieldSelector: selectors.FieldSelector})},
+		name: "collection delete without the expected label selector is rejected",
+		want: calls{first},
+		got: calls{collectionDeleteAction(func(a *clientgotesting.DeleteCollectionActionImpl) {
+			a.ListOptions.LabelSelector = ""
+		})},
 		wantMismatch: true,
 	}, {
-		name:         "collection delete with a different field selector is rejected",
-		want:         calls{first},
-		got:          calls{clientgotesting.NewDeleteCollectionAction(pods, "ns", otherFields)},
+		name: "collection delete with a different field selector is rejected",
+		want: calls{first},
+		got: calls{collectionDeleteAction(func(a *clientgotesting.DeleteCollectionActionImpl) {
+			a.ListOptions.FieldSelector = "status.phase=Pending"
+		})},
 		wantMismatch: true,
 	}, {
 		name: "equivalent label selectors with reordered requirements match",
 		want: calls{first},
-		got:  calls{clientgotesting.NewDeleteCollectionAction(pods, "ns", reordered)},
+		got: calls{collectionDeleteAction(func(a *clientgotesting.DeleteCollectionActionImpl) {
+			a.ListOptions.LabelSelector = "tier=web,app=test"
+		})},
 	}, {
-		name:         "collection delete with an unexpected list limit is rejected",
-		want:         calls{first},
-		got:          calls{clientgotesting.NewDeleteCollectionAction(pods, "ns", limited)},
+		name: "collection delete with an unexpected list limit is rejected",
+		want: calls{first},
+		got: calls{collectionDeleteAction(func(a *clientgotesting.DeleteCollectionActionImpl) {
+			a.ListOptions.Limit = 10
+		})},
 		wantMismatch: true,
 	}, {
-		name:         "collection delete with unexpected dry run options is rejected",
-		want:         calls{first},
-		got:          calls{dryRun},
+		name: "collection delete with unexpected dry run options is rejected",
+		want: calls{first},
+		got: calls{collectionDeleteAction(func(a *clientgotesting.DeleteCollectionActionImpl) {
+			a.DeleteOptions.DryRun = []string{metav1.DryRunAll}
+		})},
 		wantMismatch: true,
 	}, {
-		name:         "collection delete with an unexpected subresource is rejected",
-		want:         calls{first},
-		got:          calls{subresource},
+		name: "collection delete with an unexpected subresource is rejected",
+		want: calls{first},
+		got: calls{collectionDeleteAction(func(a *clientgotesting.DeleteCollectionActionImpl) {
+			a.Subresource = "status"
+		})},
 		wantMismatch: true,
 	}, {
 		name: "selectors supplied only through list options match recorded restrictions",
-		want: calls{literal},
-		got:  calls{first},
+		want: calls{{
+			ActionImpl: first.ActionImpl,
+			ListOptions: metav1.ListOptions{
+				LabelSelector: "tier=web,app=test",
+				FieldSelector: "status.phase=Running",
+			},
+		}},
+		got: calls{first},
 	}, {
 		name: "selector-only expectation matches a collection delete in the row namespace",
 		want: calls{selectorOnly},
 		got:  calls{first},
 	}, {
-		name:         "selector-only expectation rejects a collection delete outside the row namespace",
-		want:         calls{selectorOnly},
-		got:          calls{otherNamespace},
+		name: "selector-only expectation rejects a collection delete outside the row namespace",
+		want: calls{selectorOnly},
+		got: calls{collectionDeleteAction(func(a *clientgotesting.DeleteCollectionActionImpl) {
+			a.Namespace = "other"
+		})},
 		wantMismatch: true,
 	}, {
-		name:          "selector-only expectation allows another namespace when namespace validation is skipped",
-		want:          calls{selectorOnly},
-		got:           calls{otherNamespace},
+		name: "selector-only expectation allows another namespace when namespace validation is skipped",
+		want: calls{selectorOnly},
+		got: calls{collectionDeleteAction(func(a *clientgotesting.DeleteCollectionActionImpl) {
+			a.Namespace = "other"
+		})},
 		skipNamespace: true,
 	}, {
 		name:         "selector-only expectation rejects a different label selector",
@@ -178,22 +189,36 @@ func TestTableRowDeleteCollections(t *testing.T) {
 		got:          calls{second},
 		wantMismatch: true,
 	}, {
-		name:         "selector-only expectation does not disable resource validation for other expectations",
-		want:         calls{selectorOnly, first},
-		got:          calls{first, otherResource},
+		name: "selector-only expectation does not disable resource validation for other expectations",
+		want: calls{selectorOnly, first},
+		got: calls{first, collectionDeleteAction(func(a *clientgotesting.DeleteCollectionActionImpl) {
+			a.Resource.Group = "example.org"
+		})},
 		wantMismatch: true,
 	}, {
 		name: "cluster-scoped collection delete matches an explicit root action expectation",
 		want: calls{root},
 		got:  calls{root},
 	}, {
-		name:         "label selector matching nothing does not match a selector matching everything",
-		want:         calls{noLabels},
+		name: "label selector matching nothing does not match a selector matching everything",
+		want: calls{{
+			ActionImpl: root.ActionImpl,
+			ListRestrictions: clientgotesting.ListRestrictions{
+				Labels: labels.Nothing(),
+				Fields: root.ListRestrictions.Fields,
+			},
+		}},
 		got:          calls{root},
 		wantMismatch: true,
 	}, {
-		name:         "field selector matching nothing does not match a selector matching everything",
-		want:         calls{noFields},
+		name: "field selector matching nothing does not match a selector matching everything",
+		want: calls{{
+			ActionImpl: root.ActionImpl,
+			ListRestrictions: clientgotesting.ListRestrictions{
+				Labels: root.ListRestrictions.Labels,
+				Fields: fields.Nothing(),
+			},
+		}},
 		got:          calls{root},
 		wantMismatch: true,
 	}}
@@ -218,4 +243,26 @@ func TestTableRowDeleteCollections(t *testing.T) {
 			}
 		})
 	}
+}
+
+// collectionDeleteAction constructs a namespaced pod collection delete with
+// label and field selectors. Apply overrides before constructing the action so
+// client-go keeps ListOptions and ListRestrictions consistent.
+func collectionDeleteAction(overrides ...func(*clientgotesting.DeleteCollectionActionImpl)) clientgotesting.DeleteCollectionActionImpl {
+	a := clientgotesting.DeleteCollectionActionImpl{
+		ActionImpl: clientgotesting.ActionImpl{
+			Resource:  schema.GroupVersionResource{Version: "v1", Resource: "pods"},
+			Namespace: "ns",
+		},
+		ListOptions: metav1.ListOptions{
+			LabelSelector: "app=test,tier=web",
+			FieldSelector: "status.phase=Running",
+		},
+	}
+	for _, override := range overrides {
+		override(&a)
+	}
+	call := clientgotesting.NewDeleteCollectionActionWithOptions(a.Resource, a.Namespace, a.DeleteOptions, a.ListOptions)
+	call.Subresource = a.Subresource
+	return call
 }
