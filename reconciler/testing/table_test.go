@@ -1,5 +1,5 @@
 /*
-Copyright 2026 The Knative Authors.
+Copyright 2026 The Knative Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -18,8 +18,7 @@ package testing
 
 import (
 	"context"
-	"os"
-	"os/exec"
+	"fmt"
 	"strings"
 	"testing"
 
@@ -47,6 +46,15 @@ func (r *collectionReconciler) Reconcile(context.Context, string) error {
 	return nil
 }
 
+type rowErrors struct {
+	*testing.T
+	messages []string
+}
+
+func (r *rowErrors) Errorf(format string, args ...any) {
+	r.messages = append(r.messages, fmt.Sprintf(format, args...))
+}
+
 func TestTableRowDeleteCollections(t *testing.T) {
 	type calls = []clientgotesting.DeleteCollectionActionImpl
 	pods := schema.GroupVersionResource{Version: "v1", Resource: "pods"}
@@ -66,6 +74,7 @@ func TestTableRowDeleteCollections(t *testing.T) {
 	subresource := first
 	subresource.Subresource = "status"
 	literal := clientgotesting.DeleteCollectionActionImpl{ActionImpl: first.ActionImpl, ListOptions: reordered}
+	selectorOnly := clientgotesting.DeleteCollectionActionImpl{ListRestrictions: first.ListRestrictions}
 	root := clientgotesting.NewRootDeleteCollectionAction(pods, metav1.ListOptions{})
 	noLabels := root
 	noLabels.ListRestrictions.Labels = labels.Nothing()
@@ -93,39 +102,34 @@ func TestTableRowDeleteCollections(t *testing.T) {
 		{name: "delete_options", want: calls{first}, got: calls{dryRun}},
 		{name: "subresource", want: calls{first}, got: calls{subresource}},
 		{name: "list_options_literal", want: calls{literal}, got: calls{first}, matches: true},
+		{name: "selector_only", want: calls{selectorOnly}, got: calls{first}, matches: true},
+		{name: "selector_only_wrong_namespace", want: calls{selectorOnly}, got: calls{otherNamespace}},
+		{name: "selector_only_skip_namespace", want: calls{selectorOnly}, got: calls{otherNamespace}, skipNamespace: true, matches: true},
+		{name: "selector_only_wrong_labels", want: calls{selectorOnly}, got: calls{second}},
+		{name: "mixed_expectations_wrong_resource", want: calls{selectorOnly, first}, got: calls{first, otherResource}},
 		{name: "cluster_scoped", want: calls{root}, got: calls{root}, matches: true},
 		{name: "labels_match_nothing", want: calls{noLabels}, got: calls{root}},
 		{name: "fields_match_nothing", want: calls{noFields}, got: calls{root}},
 	}
-	const child = "KNATIVE_TEST_DELETE_COLLECTION_ROWS"
-	if os.Getenv(child) == "1" {
-		for _, tc := range cases {
-			t.Run(tc.name, func(t *testing.T) {
-				row := TableRow{Key: "ns/test", WantDeleteCollections: tc.want, SkipNamespaceValidation: tc.skipNamespace}
-				row.Test(t, func(*testing.T, *TableRow) (controller.Reconciler, ActionRecorderList, EventList) {
-					r := &collectionReconciler{calls: tc.got}
-					return r, ActionRecorderList{r}, EventList{Recorder: record.NewFakeRecorder(1)}
-				})
-			})
-		}
-		return
-	}
-
-	// Run the rows in a child process so the expected t.Errorf calls do not fail this test.
-	cmd := exec.CommandContext(t.Context(), os.Args[0], "-test.run=^TestTableRowDeleteCollections$", "-test.v")
-	cmd.Env = append(os.Environ(), child+"=1")
-	output, err := cmd.CombinedOutput()
-	if _, ok := err.(*exec.ExitError); !ok {
-		t.Fatalf("expected failing rows, got %v\n%s", err, output)
-	}
 	for _, tc := range cases {
-		status := "FAIL"
-		if tc.matches {
-			status = "PASS"
-		}
-		if !strings.Contains(string(output), "--- "+status+": "+t.Name()+"/"+tc.name+" (") {
-			t.Errorf("%s: expected %s\n%s", tc.name, status, output)
-			return
-		}
+		t.Run(tc.name, func(t *testing.T) {
+			row := TableRow{Key: "ns/test", WantDeleteCollections: tc.want, SkipNamespaceValidation: tc.skipNamespace}
+			rec := &collectionReconciler{calls: tc.got}
+			recorders := ActionRecorderList{rec}
+			events := EventList{Recorder: record.NewFakeRecorder(1)}
+			if tc.matches {
+				row.Test(t, func(*testing.T, *TableRow) (controller.Reconciler, ActionRecorderList, EventList) {
+					return rec, recorders, events
+				})
+				return
+			}
+
+			// Capture the row's expected diagnostic without failing the enclosing test.
+			errs := &rowErrors{T: t}
+			row.run(errs, rec, recorders, events)
+			if len(errs.messages) != 1 || !strings.HasPrefix(errs.messages[0], "Unexpected DeleteCollection calls") {
+				t.Errorf("expected a DeleteCollection mismatch, got %q", errs.messages)
+			}
+		})
 	}
 }

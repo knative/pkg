@@ -77,6 +77,8 @@ type TableRow struct {
 	WantDeletes []clientgotesting.DeleteActionImpl
 
 	// WantDeleteCollections holds the ordered list of DeleteCollection calls we expect during reconciliation.
+	// With a zero ActionImpl, the expectation checks selectors and options in
+	// the row's namespace and leaves the resource and subresource unspecified.
 	WantDeleteCollections []clientgotesting.DeleteCollectionActionImpl
 
 	// WantPatches holds the ordered list of Patch calls we expect during reconciliation.
@@ -145,6 +147,14 @@ type Factory func(*testing.T, *TableRow) (controller.Reconciler, ActionRecorderL
 func (r *TableRow) Test(t *testing.T, factory Factory) {
 	t.Helper()
 	c, recorderList, eventList := factory(t, r)
+	r.run(t, c, recorderList, eventList)
+	for _, verify := range r.PostConditions {
+		verify(t, r)
+	}
+}
+
+func (r *TableRow) run(t testing.TB, c controller.Reconciler, recorderList ActionRecorderList, eventList EventList) {
+	t.Helper()
 
 	// Set the Reconciler for PostConditions to access it post-Reconcile()
 	r.Reconciler = c
@@ -323,6 +333,15 @@ func (r *TableRow) Test(t *testing.T, factory Factory) {
 	if len(r.WantDeleteCollections) != 0 || len(actions.DeleteCollections) != 0 {
 		want := deleteCollectionCalls(r.WantDeleteCollections, r.SkipNamespaceValidation)
 		got := deleteCollectionCalls(actions.DeleteCollections, r.SkipNamespaceValidation)
+		for i := range min(len(want), len(got)) {
+			if r.WantDeleteCollections[i].ActionImpl == (clientgotesting.ActionImpl{}) {
+				want[i].Resource = got[i].Resource
+				want[i].Subresource = got[i].Subresource
+				if !r.SkipNamespaceValidation {
+					want[i].Namespace = expectedNamespace
+				}
+			}
+		}
 		if diff := cmp.Diff(want, got, effectiveOpts...); diff != "" {
 			t.Errorf("Unexpected DeleteCollection calls (-want, +got):\n%s", diff)
 		}
@@ -369,10 +388,6 @@ func (r *TableRow) Test(t *testing.T, factory Factory) {
 			t.Error("Extra event:", extra)
 		}
 	}
-
-	for _, verify := range r.PostConditions {
-		verify(t, r)
-	}
 }
 
 type deleteCollectionCall struct {
@@ -415,10 +430,13 @@ func deleteCollectionCalls[T clientgotesting.DeleteCollectionAction](actions []T
 	return calls
 }
 
-func selectorText(selector interface {
-	String() string
-	Empty() bool
-}, raw string) string {
+func selectorText(
+	selector interface {
+		String() string
+		Empty() bool
+	},
+	raw string,
+) string {
 	if selector == nil {
 		return raw
 	}
