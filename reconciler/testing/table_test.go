@@ -82,111 +82,120 @@ func TestTableRowDeleteCollections(t *testing.T) {
 	noFields.ListRestrictions.Fields = fields.Nothing()
 
 	cases := []struct {
-		name                   string
-		want, got              calls
-		skipNamespace, matches bool
+		name          string
+		want, got     calls
+		skipNamespace bool
+		wantMismatch  bool
 	}{{
-		name:    "no expected or recorded collection deletes",
-		matches: true,
+		name: "no expected or recorded collection deletes",
 	}, {
-		name:    "collection deletes match expectations in order",
-		want:    calls{first, second},
-		got:     calls{first, second},
-		matches: true,
-	}, {
-		name: "missing expected collection delete is rejected",
-		want: calls{first},
-	}, {
-		name: "unexpected collection delete is rejected",
-		got:  calls{first},
-	}, {
-		name: "duplicate collection delete is rejected",
-		want: calls{first},
-		got:  calls{first, first},
-	}, {
-		name: "collection deletes in the wrong order are rejected",
+		name: "collection deletes match expectations in order",
 		want: calls{first, second},
-		got:  calls{second, first},
+		got:  calls{first, second},
 	}, {
-		name: "collection delete with the wrong API group is rejected",
-		want: calls{first},
-		got:  calls{otherResource},
+		name:         "missing expected collection delete is rejected",
+		want:         calls{first},
+		wantMismatch: true,
 	}, {
-		name: "collection delete in the wrong namespace is rejected",
-		want: calls{first},
-		got:  calls{otherNamespace},
+		name:         "unexpected collection delete is rejected",
+		got:          calls{first},
+		wantMismatch: true,
+	}, {
+		name:         "duplicate collection delete is rejected",
+		want:         calls{first},
+		got:          calls{first, first},
+		wantMismatch: true,
+	}, {
+		name:         "collection deletes in the wrong order are rejected",
+		want:         calls{first, second},
+		got:          calls{second, first},
+		wantMismatch: true,
+	}, {
+		name:         "collection delete with the wrong API group is rejected",
+		want:         calls{first},
+		got:          calls{otherResource},
+		wantMismatch: true,
+	}, {
+		name:         "collection delete in the wrong namespace is rejected",
+		want:         calls{first},
+		got:          calls{otherNamespace},
+		wantMismatch: true,
 	}, {
 		name:          "namespace mismatch is allowed when namespace validation is skipped",
 		want:          calls{first},
 		got:           calls{otherNamespace},
 		skipNamespace: true,
-		matches:       true,
 	}, {
-		name: "collection delete without the expected label selector is rejected",
+		name:         "collection delete without the expected label selector is rejected",
+		want:         calls{first},
+		got:          calls{clientgotesting.NewDeleteCollectionAction(pods, "ns", metav1.ListOptions{FieldSelector: selectors.FieldSelector})},
+		wantMismatch: true,
+	}, {
+		name:         "collection delete with a different field selector is rejected",
+		want:         calls{first},
+		got:          calls{clientgotesting.NewDeleteCollectionAction(pods, "ns", otherFields)},
+		wantMismatch: true,
+	}, {
+		name: "equivalent label selectors with reordered requirements match",
 		want: calls{first},
-		got:  calls{clientgotesting.NewDeleteCollectionAction(pods, "ns", metav1.ListOptions{FieldSelector: selectors.FieldSelector})},
+		got:  calls{clientgotesting.NewDeleteCollectionAction(pods, "ns", reordered)},
 	}, {
-		name: "collection delete with a different field selector is rejected",
-		want: calls{first},
-		got:  calls{clientgotesting.NewDeleteCollectionAction(pods, "ns", otherFields)},
+		name:         "collection delete with an unexpected list limit is rejected",
+		want:         calls{first},
+		got:          calls{clientgotesting.NewDeleteCollectionAction(pods, "ns", limited)},
+		wantMismatch: true,
 	}, {
-		name:    "equivalent label selectors with reordered requirements match",
-		want:    calls{first},
-		got:     calls{clientgotesting.NewDeleteCollectionAction(pods, "ns", reordered)},
-		matches: true,
+		name:         "collection delete with unexpected dry run options is rejected",
+		want:         calls{first},
+		got:          calls{dryRun},
+		wantMismatch: true,
 	}, {
-		name: "collection delete with an unexpected list limit is rejected",
-		want: calls{first},
-		got:  calls{clientgotesting.NewDeleteCollectionAction(pods, "ns", limited)},
+		name:         "collection delete with an unexpected subresource is rejected",
+		want:         calls{first},
+		got:          calls{subresource},
+		wantMismatch: true,
 	}, {
-		name: "collection delete with unexpected dry run options is rejected",
-		want: calls{first},
-		got:  calls{dryRun},
+		name: "selectors supplied only through list options match recorded restrictions",
+		want: calls{literal},
+		got:  calls{first},
 	}, {
-		name: "collection delete with an unexpected subresource is rejected",
-		want: calls{first},
-		got:  calls{subresource},
-	}, {
-		name:    "selectors supplied only through list options match recorded restrictions",
-		want:    calls{literal},
-		got:     calls{first},
-		matches: true,
-	}, {
-		name:    "selector-only expectation matches a collection delete in the row namespace",
-		want:    calls{selectorOnly},
-		got:     calls{first},
-		matches: true,
-	}, {
-		name: "selector-only expectation rejects a collection delete outside the row namespace",
+		name: "selector-only expectation matches a collection delete in the row namespace",
 		want: calls{selectorOnly},
-		got:  calls{otherNamespace},
+		got:  calls{first},
+	}, {
+		name:         "selector-only expectation rejects a collection delete outside the row namespace",
+		want:         calls{selectorOnly},
+		got:          calls{otherNamespace},
+		wantMismatch: true,
 	}, {
 		name:          "selector-only expectation allows another namespace when namespace validation is skipped",
 		want:          calls{selectorOnly},
 		got:           calls{otherNamespace},
 		skipNamespace: true,
-		matches:       true,
 	}, {
-		name: "selector-only expectation rejects a different label selector",
-		want: calls{selectorOnly},
-		got:  calls{second},
+		name:         "selector-only expectation rejects a different label selector",
+		want:         calls{selectorOnly},
+		got:          calls{second},
+		wantMismatch: true,
 	}, {
-		name: "selector-only expectation does not disable resource validation for other expectations",
-		want: calls{selectorOnly, first},
-		got:  calls{first, otherResource},
+		name:         "selector-only expectation does not disable resource validation for other expectations",
+		want:         calls{selectorOnly, first},
+		got:          calls{first, otherResource},
+		wantMismatch: true,
 	}, {
-		name:    "cluster-scoped collection delete matches an explicit root action expectation",
-		want:    calls{root},
-		got:     calls{root},
-		matches: true,
-	}, {
-		name: "label selector matching nothing does not match a selector matching everything",
-		want: calls{noLabels},
+		name: "cluster-scoped collection delete matches an explicit root action expectation",
+		want: calls{root},
 		got:  calls{root},
 	}, {
-		name: "field selector matching nothing does not match a selector matching everything",
-		want: calls{noFields},
-		got:  calls{root},
+		name:         "label selector matching nothing does not match a selector matching everything",
+		want:         calls{noLabels},
+		got:          calls{root},
+		wantMismatch: true,
+	}, {
+		name:         "field selector matching nothing does not match a selector matching everything",
+		want:         calls{noFields},
+		got:          calls{root},
+		wantMismatch: true,
 	}}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -194,7 +203,7 @@ func TestTableRowDeleteCollections(t *testing.T) {
 			rec := &collectionReconciler{calls: tc.got}
 			recorders := ActionRecorderList{rec}
 			events := EventList{Recorder: record.NewFakeRecorder(1)}
-			if tc.matches {
+			if !tc.wantMismatch {
 				row.Test(t, func(*testing.T, *TableRow) (controller.Reconciler, ActionRecorderList, EventList) {
 					return rec, recorders, events
 				})
