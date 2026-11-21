@@ -124,9 +124,7 @@ func TestGetDomainNameFromFile(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if len(tt.env) > 0 {
-				t.Setenv(clusterDomainEnvKey, tt.env)
-			}
+			t.Setenv(clusterDomainEnvKey, tt.env)
 			if got := getClusterDomainNameFromFile(tt.path); got != tt.want {
 				t.Errorf("getClusterDomainNameFromFile() = %s, want: %s", got, tt.want)
 			}
