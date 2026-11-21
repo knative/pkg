@@ -47,6 +47,7 @@ func GetClusterDomainName() string {
 	once.Do(func() {
 		f, err := os.Open(resolverFileName)
 		if err != nil {
+			domainName = getClusterDomainName(strings.NewReader(""))
 			return
 		}
 		defer f.Close()
