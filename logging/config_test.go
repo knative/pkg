@@ -488,3 +488,13 @@ func TestConfigMapName(t *testing.T) {
 		t.Errorf("ConfigMapName = %q, want: %q", got, want)
 	}
 }
+
+func TestJSONToConfigInvalidConfig(t *testing.T) {
+	got, err := JSONToConfig(`{"zap-logger-config":"{}","loglevel.controller":"bogus"}`)
+	if err != nil {
+		t.Fatal("JSONToConfig() =", err)
+	}
+	if diff := cmp.Diff(defaultConfig(), got); diff != "" {
+		t.Errorf("JSONToConfig() (-want, +got) =\n%s", diff)
+	}
+}
