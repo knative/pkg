@@ -37,11 +37,11 @@ require (
 	golang.org/x/sync v0.24.0
 	golang.org/x/tools v0.52.0
 	gomodules.xyz/jsonpatch/v2 v2.5.0
-	k8s.io/api v0.36.5
-	k8s.io/apiextensions-apiserver v0.36.5
-	k8s.io/apimachinery v0.36.5
-	k8s.io/client-go v0.36.5
-	k8s.io/code-generator v0.36.5
+	k8s.io/api v0.36.6
+	k8s.io/apiextensions-apiserver v0.36.6
+	k8s.io/apimachinery v0.36.6
+	k8s.io/client-go v0.36.6
+	k8s.io/code-generator v0.36.6
 	k8s.io/gengo/v2 v2.0.0-20250922181213-ec3ebc5fd46b
 	k8s.io/klog/v2 v2.140.0
 	k8s.io/utils v0.0.0-20260210185600-b8788abfbbc2
