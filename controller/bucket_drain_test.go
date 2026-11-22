@@ -53,18 +53,27 @@ func (r *slowLeaderReconciler) Reconcile(_ context.Context, key string) error {
 }
 
 func TestRebalanceDrainsInflightReconcile(t *testing.T) {
-	testRebalanceInflight(t, "app=ctrl", false)
+	testRebalanceInflight(t, localRebalance)
 }
 
 func TestRebalanceDrainTimeoutRestoresLeadership(t *testing.T) {
-	testRebalanceInflight(t, "app=ctrl", true)
+	testRebalanceInflight(t, drainTimeout)
 }
 
 func TestWithoutRebalanceKeepsInflightReconcile(t *testing.T) {
-	testRebalanceInflight(t, "", false)
+	testRebalanceInflight(t, rebalanceDisabled)
 }
 
-func testRebalanceInflight(t *testing.T, selector string, timeout bool) {
+type handoffScenario int
+
+const (
+	localRebalance handoffScenario = iota
+	drainTimeout
+	rebalanceDisabled
+	preferredHolderHandoff
+)
+
+func testRebalanceInflight(t *testing.T, scenario handoffScenario) {
 	t.Helper()
 	ctx, cancel := context.WithCancel(logtesting.TestContextWithLogger(t))
 	var wg sync.WaitGroup
@@ -82,15 +91,31 @@ func testRebalanceInflight(t *testing.T, selector string, timeout bool) {
 	}()
 	pod := func(name string) *corev1.Pod {
 		return &corev1.Pod{
-			ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: system.Namespace(), Labels: map[string]string{"app": "ctrl"}},
+			ObjectMeta: metav1.ObjectMeta{Name: "pod-" + name, UID: types.UID(name), Namespace: system.Namespace(), Labels: map[string]string{"app": "ctrl"}},
 			Status:     corev1.PodStatus{Conditions: []corev1.PodCondition{{Type: corev1.PodReady, Status: corev1.ConditionTrue}}},
 		}
 	}
 	kc := fakekube.NewSimpleClientset(pod("a"))
 	cc := leaderelection.ComponentConfig{
-		Buckets: 2, LeaseDuration: time.Second, RenewDeadline: 800 * time.Millisecond,
-		RetryPeriod: 100 * time.Millisecond, RebalancePodSelector: selector,
-		LeaseName: func(i uint32) string { return fmt.Sprintf("review-%d", i) },
+		Buckets: 2,
+		// Contenders compare records with second-precision renewal timestamps.
+		// Allow time to observe the next timestamp before the lease expires.
+		LeaseDuration: 2 * time.Second, RenewDeadline: 800 * time.Millisecond,
+		RetryPeriod: 100 * time.Millisecond,
+		LeaseName:   func(i uint32) string { return fmt.Sprintf("review-%d", i) },
+	}
+	if scenario == localRebalance || scenario == drainTimeout {
+		cc.RebalancePodSelector = "app=ctrl"
+	}
+	replicaContext := func(id string) context.Context {
+		cfg := cc
+		cfg.Identity = id
+		return leaderelection.WithStandardLeaderElectorBuilder(ctx, kc, cfg)
+	}
+	var place func()
+	if scenario == preferredHolderHandoff {
+		replicaContext, place = setupPreferredHolderPrototype(t, ctx, kc, cc)
+		place()
 	}
 	var keys []types.NamespacedName
 	bucketKeys := map[string]string{}
@@ -158,8 +183,7 @@ func testRebalanceInflight(t *testing.T, selector string, timeout bool) {
 			}
 			newOwner <- key
 		}
-		cc.Identity = id
-		cctx := leaderelection.WithStandardLeaderElectorBuilder(ctx, kc, cc)
+		cctx := replicaContext(id)
 		impl := NewContext(cctx, r, ControllerOptions{
 			WorkQueueName: "drain-queue",
 			Logger:        logtesting.TestLogger(t),
@@ -186,7 +210,10 @@ func testRebalanceInflight(t *testing.T, selector string, timeout bool) {
 		t.Fatal(err)
 	}
 	start("b")
-	if selector == "" {
+	if place != nil {
+		place()
+	}
+	if scenario == rebalanceDisabled {
 		select {
 		case bucket := <-demoted:
 			t.Fatalf("demoted %s with rebalancing disabled", bucket)
@@ -204,6 +231,9 @@ func testRebalanceInflight(t *testing.T, selector string, timeout bool) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	if scenario == preferredHolderHandoff && before.Labels[preferredHolderLabel] != "b" {
+		t.Fatalf("preferred holder during drain = %q, want b", before.Labels[preferredHolderLabel])
+	}
 	// Hold the old reconcile beyond both RetryPeriod and LeaseDuration. Renewal
 	// must continue until it exits, rather than releasing after a fixed delay.
 	select {
@@ -220,7 +250,7 @@ func testRebalanceInflight(t *testing.T, selector string, timeout bool) {
 		t.Fatalf("lease was not renewed by the old owner while draining: %+v", after.Spec)
 	}
 	key := bucketKeys[bucket]
-	if timeout {
+	if scenario == drainTimeout {
 		select {
 		case got := <-restored:
 			if got != bucket {
@@ -266,6 +296,15 @@ func testRebalanceInflight(t *testing.T, selector string, timeout bool) {
 		}
 	case <-time.After(8 * time.Second):
 		t.Fatal("did not transfer the drained bucket")
+	}
+	if scenario == preferredHolderHandoff {
+		lease, err := kc.CoordinationV1().Leases(system.Namespace()).Get(ctx, bucket, metav1.GetOptions{})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if lease.Spec.HolderIdentity == nil || *lease.Spec.HolderIdentity != "b" || lease.Labels[preferredHolderLabel] != "b" {
+			t.Fatalf("B processed the key without owning its assigned lease: %+v", lease)
+		}
 	}
 	mu.Lock()
 	defer mu.Unlock()

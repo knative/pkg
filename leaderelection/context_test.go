@@ -18,6 +18,7 @@ package leaderelection
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"testing"
 	"time"
@@ -32,6 +33,17 @@ import (
 	"knative.dev/pkg/reconciler"
 	_ "knative.dev/pkg/system/testing"
 )
+
+func TestDynamicBuilderPreservesCustomElector(t *testing.T) {
+	wantErr := errors.New("cannot build elector")
+	ctx := WithLeaderElectorBuilder(context.Background(), func(context.Context, reconciler.LeaderAware, string, func(reconciler.Bucket, types.NamespacedName)) (Elector, error) {
+		return nil, wantErr
+	})
+	ctx = WithDynamicLeaderElectorBuilder(ctx, fakekube.NewSimpleClientset(), ComponentConfig{Buckets: 1})
+	if _, err := BuildElector(ctx, &reconciler.LeaderAwareFuncs{}, "queue", nil); !errors.Is(err, wantErr) {
+		t.Errorf("BuildElector() error = %v, want %v", err, wantErr)
+	}
+}
 
 func TestRebalanceRequiresBucketDrainer(t *testing.T) {
 	cc := ComponentConfig{Buckets: 1, RebalancePodSelector: "app=ctrl"}

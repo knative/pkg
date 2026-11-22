@@ -28,20 +28,17 @@ import (
 
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
-	coordinationv1 "k8s.io/api/coordination/v1"
 	corev1 "k8s.io/api/core/v1"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	fakekube "k8s.io/client-go/kubernetes/fake"
-	ktesting "k8s.io/client-go/testing"
 	"k8s.io/client-go/tools/leaderelection/resourcelock"
 
 	"knative.dev/pkg/logging"
 	logtesting "knative.dev/pkg/logging/testing"
 	"knative.dev/pkg/reconciler"
 	"knative.dev/pkg/system"
+	"knative.dev/pkg/test/ha"
 )
 
 func testPod(name string, ready bool) *corev1.Pod {
@@ -556,29 +553,7 @@ func TestRebalanceConverges(t *testing.T) {
 		wg.Wait()
 	}()
 	kc := fakekube.NewSimpleClientset(testPod("a", true))
-	// The fake client serializes its reactors but accepts stale updates. Give
-	// competing electors the same resourceVersion conflicts as the API server.
-	var version int
-	stamp := func(lease *coordinationv1.Lease) {
-		version++
-		lease.ResourceVersion = strconv.Itoa(version)
-	}
-	kc.PrependReactor("create", "leases", func(action ktesting.Action) (bool, runtime.Object, error) {
-		stamp(action.(ktesting.CreateAction).GetObject().(*coordinationv1.Lease))
-		return false, nil, nil
-	})
-	kc.PrependReactor("update", "leases", func(action ktesting.Action) (bool, runtime.Object, error) {
-		lease := action.(ktesting.UpdateAction).GetObject().(*coordinationv1.Lease)
-		current, err := kc.Tracker().Get(action.GetResource(), action.GetNamespace(), lease.Name)
-		if err != nil {
-			return true, nil, err
-		}
-		if lease.ResourceVersion != current.(*coordinationv1.Lease).ResourceVersion {
-			return true, nil, apierrors.NewConflict(action.GetResource().GroupResource(), lease.Name, errors.New("stale resourceVersion"))
-		}
-		stamp(lease)
-		return false, nil, nil
-	})
+	ha.EnableLeaseResourceVersions(kc)
 
 	cc := ComponentConfig{
 		Component:            "component",
