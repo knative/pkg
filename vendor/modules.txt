@@ -1106,7 +1106,7 @@ k8s.io/utils/lru
 k8s.io/utils/net
 k8s.io/utils/ptr
 k8s.io/utils/trace
-# knative.dev/hack v0.0.0-20261118025754-120c8f556283
+# knative.dev/hack v0.0.0-20261120142159-5e9b644b541f
 ## explicit; go 1.24
 knative.dev/hack
 # sigs.k8s.io/json v0.0.0-20250730193827-2d320260d730
