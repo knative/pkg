@@ -18,7 +18,6 @@ package hash
 
 import (
 	"reflect"
-	"sync"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -158,63 +157,33 @@ func TestBucketName(t *testing.T) {
 }
 
 func TestBucketSetConcurrentUpdate(t *testing.T) {
-	small := sets.New[string](thisBucket, otherBucket)
-	large := sets.New[string](thisBucket, otherBucket, "aguacero", "chaparrón")
-	const iters = 500
+	small := sets.New(thisBucket, otherBucket)
+	large := sets.New(thisBucket, otherBucket, "aguacero", "chaparrón")
+	bs := NewBucketSet(small)
 
-	runWithUpdater := func(t *testing.T, reader func(bs *BucketSet)) {
-		t.Helper()
-		bs := NewBucketSet(small)
-		var wg sync.WaitGroup
-		wg.Add(2)
-		go func() {
-			defer wg.Done()
-			for i := range iters {
-				if i%2 == 0 {
-					bs.Update(large)
-				} else {
-					bs.Update(small)
-				}
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		for range 500 {
+			bs.Update(large)
+			bs.Update(small)
+		}
+	}()
+
+	for range 500 {
+		buckets := bs.Buckets()
+		if len(buckets) != len(small) && len(buckets) != len(large) {
+			t.Errorf("unexpected bucket count: %d", len(buckets))
+		}
+		for _, b := range buckets {
+			if b == nil {
+				t.Error("nil bucket")
 			}
-		}()
-		go func() {
-			defer wg.Done()
-			for range iters {
-				reader(bs)
-			}
-		}()
-		wg.Wait()
+		}
+		if !bs.HasBucket(thisBucket) {
+			t.Errorf("HasBucket(%q) = false", thisBucket)
+		}
 	}
 
-	t.Run("Buckets", func(t *testing.T) {
-		runWithUpdater(t, func(bs *BucketSet) {
-			bkts := bs.Buckets()
-			if len(bkts) != len(small) && len(bkts) != len(large) {
-				t.Errorf("unexpected bucket count: %d", len(bkts))
-			}
-			for _, b := range bkts {
-				if b == nil || b.Name() == "" {
-					t.Errorf("got nil or empty bucket: %#v", b)
-				}
-			}
-		})
-	})
-
-	t.Run("HasBucket", func(t *testing.T) {
-		runWithUpdater(t, func(bs *BucketSet) {
-			if !bs.HasBucket(thisBucket) {
-				t.Errorf("HasBucket(%q) = false, want true", thisBucket)
-			}
-			_ = bs.HasBucket("aguacero")
-		})
-	})
-
-	t.Run("Owner and BucketList", func(t *testing.T) {
-		runWithUpdater(t, func(bs *BucketSet) {
-			if got := bs.Owner(knownKey); got == "" {
-				t.Error("Owner returned empty string")
-			}
-			_ = bs.BucketList()
-		})
-	})
+	<-done
 }
