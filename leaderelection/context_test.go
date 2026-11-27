@@ -247,6 +247,21 @@ func TestNewStatefulSetBucketAndSet(t *testing.T) {
 	if !cmp.Equal(gotNames, wantNames) {
 		t.Errorf("BucketSet.BucketList() = %q, want: %q", gotNames, wantNames)
 	}
+
+	for _, ordinal := range []int{2, 10} {
+		pod := fmt.Sprintf("as-%d", ordinal)
+		t.Run(pod, func(t *testing.T) {
+			t.Setenv(controllerOrdinalEnv, pod)
+			bkt, _, err := NewStatefulSetBucketAndSet(11)
+			if err != nil {
+				t.Fatal("NewStatefulSetBucketAndSet() =", err)
+			}
+			want := "http://" + pod + ".autoscaler.knative-testing.svc.cluster.local:80"
+			if got := bkt.Name(); got != want {
+				t.Errorf("Bucket.Name() = %s, want %s", got, want)
+			}
+		})
+	}
 }
 
 func TestWithStatefulSetBuilder(t *testing.T) {
