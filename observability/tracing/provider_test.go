@@ -22,6 +22,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"knative.dev/pkg/ptr"
 )
 
@@ -148,34 +149,47 @@ func TestTracerProviderShutdown(t *testing.T) {
 }
 
 func TestSampleFor(t *testing.T) {
+	t.Setenv("OTEL_TRACES_SAMPLER", "")
+	t.Setenv("OTEL_TRACES_SAMPLER_ARG", "")
+
 	cfg := Config{
 		SamplingRate: 0.85,
 	}
 
 	cases := []struct {
-		name           string
-		env            map[string]string
-		wantNilSampler bool
-		wantErr        bool
+		name        string
+		env         map[string]string
+		wantSampler sdktrace.Sampler
+		wantErr     bool
 	}{{
 		name: "sampler override",
 		env: map[string]string{
 			"OTEL_TRACES_SAMPLER": "some-sampler",
 		},
-		wantNilSampler: true,
 	}, {
-		name:           "standard sampler",
-		wantNilSampler: false,
+		name:        "standard sampler",
+		wantSampler: sdktrace.ParentBased(sdktrace.TraceIDRatioBased(0.85)),
 	}, {
-		name:           "sample arg override",
-		wantNilSampler: false,
+		name:        "sample arg override to one",
+		wantSampler: sdktrace.AlwaysSample(),
 		env: map[string]string{
 			"OTEL_TRACES_SAMPLER_ARG": "1.0",
 		},
 	}, {
-		name:           "sample arg override - bad input",
-		wantNilSampler: true,
-		wantErr:        true,
+		name:        "sample arg override to a fraction",
+		wantSampler: sdktrace.ParentBased(sdktrace.TraceIDRatioBased(0.25)),
+		env: map[string]string{
+			"OTEL_TRACES_SAMPLER_ARG": "0.25",
+		},
+	}, {
+		name:        "sample arg override to zero",
+		wantSampler: sdktrace.NeverSample(),
+		env: map[string]string{
+			"OTEL_TRACES_SAMPLER_ARG": "0",
+		},
+	}, {
+		name:    "sample arg override - bad input",
+		wantErr: true,
 		env: map[string]string{
 			"OTEL_TRACES_SAMPLER_ARG": "bad-ratio",
 		},
@@ -188,10 +202,11 @@ func TestSampleFor(t *testing.T) {
 			}
 
 			got, err := sampleFor(cfg)
-			if tc.wantNilSampler && got != nil {
-				t.Error("expected a nil sampler")
-			} else if !tc.wantNilSampler && got == nil {
-				t.Error("expected a non-nil sampler")
+			switch {
+			case got == nil && tc.wantSampler != nil, got != nil && tc.wantSampler == nil:
+				t.Errorf("sampleFor() sampler = %v, want %v", got, tc.wantSampler)
+			case got != nil && got.Description() != tc.wantSampler.Description():
+				t.Errorf("sampleFor() sampler = %s, want %s", got.Description(), tc.wantSampler.Description())
 			}
 
 			if tc.wantErr && err == nil {
