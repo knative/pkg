@@ -308,18 +308,17 @@ func MainWithConfig(ctx context.Context, component string, cfg *rest.Config, cto
 	// So make sure that we have synchronized our configuration state before launching the
 	// webhooks, so that things are properly initialized.
 	logger.Info("Starting configmap watcher...")
-	configCtx := ctx
-	stopConfigWatch := func() {}
 	if len(webhooks) > 0 {
 		// Keep configuration live until webhook draining and HTTP shutdown finish.
-		configCtx, stopConfigWatch = context.WithCancel(context.WithoutCancel(ctx))
+		configCtx, stopConfigWatch := context.WithCancel(context.WithoutCancel(ctx))
+		defer stopConfigWatch()
+		// Preserve cancellation during initial synchronization.
+		stopStartupCancellation := context.AfterFunc(ctx, stopConfigWatch)
+		err = cmw.Start(configCtx.Done())
+		stopStartupCancellation()
+	} else {
+		err = cmw.Start(ctx.Done())
 	}
-	defer stopConfigWatch()
-	// Preserve cancellation during initial synchronization. Only a running
-	// webhook needs its configuration watcher to outlive the shutdown signal.
-	stopStartupCancellation := context.AfterFunc(ctx, stopConfigWatch)
-	err = cmw.Start(configCtx.Done())
-	stopStartupCancellation()
 	if ctx.Err() != nil {
 		return
 	}
