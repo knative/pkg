@@ -19,8 +19,15 @@ limitations under the License.
 // https://github.com/knative/pkg/blob/main/injection/README.md
 //
 // Leaderelection uses the context-stuffing mechanism to provide config-driven
-// management of multiple election strategies (currently, using Kubernetes
-// etcd-based election primitives or StatefulSet indexes and counts).
+// management of multiple election strategies using Kubernetes leader election
+// primitives or StatefulSet pod ordinals.
+//
+// StatefulSet ordinal mode requires a replica for every configured bucket,
+// starting at ordinal 0. Each bucket is owned by the replica with the matching
+// ordinal. If there are fewer replicas than buckets, the remaining buckets have
+// no owner and reconciliation for objects assigned to them stalls. Controllers
+// can compare the desired replica count with the bucket count at startup to
+// detect this configuration.
 //
 // For more details, see the original design document:
 // https://docs.google.com/document/d/e/2PACX-1vTh40N-Kk6EPNzYpITiLg8YJk0qZyZv7KgMpcQS72T9Lv_F2PQeGybx4TtH0E1N1aUgLQer7b8u3lDc/pub
