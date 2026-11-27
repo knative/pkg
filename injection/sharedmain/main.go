@@ -302,7 +302,6 @@ func MainWithConfig(ctx context.Context, component string, cfg *rest.Config, cto
 	WatchObservabilityConfigOrDie(ctx, cmw, pprof, logger, component)
 
 	eg, egCtx := errgroup.WithContext(ctx)
-	eg.Go(pprof.ListenAndServe)
 
 	// Many of the webhooks rely on configuration, e.g. configurable defaults, feature flags.
 	// So make sure that we have synchronized our configuration state before launching the
@@ -326,6 +325,8 @@ func MainWithConfig(ctx context.Context, component string, cfg *rest.Config, cto
 	if err != nil {
 		logger.Fatalw("Failed to start configmap watcher", zap.Error(err))
 	}
+
+	eg.Go(pprof.ListenAndServe)
 
 	// If we have one or more admission controllers, then start the webhook
 	// and pass them in.
