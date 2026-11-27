@@ -23,11 +23,47 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"go.uber.org/zap/zapcore"
 
+	"knative.dev/pkg/configmap"
 	"knative.dev/pkg/injection"
 	"knative.dev/pkg/leaderelection"
 	"knative.dev/pkg/logging"
 	"knative.dev/pkg/observability"
 )
+
+type startupWatcher struct {
+	configmap.Watcher
+	stop <-chan struct{}
+}
+
+func (w *startupWatcher) Start(stop <-chan struct{}) error {
+	w.stop = stop
+	return nil
+}
+
+func TestStartConfigMapWatcherForDrain(t *testing.T) {
+	ctx, cancel := context.WithCancel(t.Context())
+	defer cancel()
+	watcher := &startupWatcher{}
+	stop, err := startConfigMapWatcherForDrain(ctx, watcher)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer stop()
+
+	cancel()
+	select {
+	case <-watcher.stop:
+		t.Fatal("watcher stopped before draining completed")
+	default:
+	}
+
+	stop()
+	select {
+	case <-watcher.stop:
+	default:
+		t.Fatal("explicit stop did not stop watcher")
+	}
+}
 
 func TestEnabledControllers(t *testing.T) {
 	tests := []struct {
