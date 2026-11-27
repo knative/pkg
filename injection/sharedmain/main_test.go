@@ -19,15 +19,82 @@ package sharedmain
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/google/go-cmp/cmp"
 	"go.uber.org/zap/zapcore"
 
+	"knative.dev/pkg/configmap"
 	"knative.dev/pkg/injection"
 	"knative.dev/pkg/leaderelection"
 	"knative.dev/pkg/logging"
 	"knative.dev/pkg/observability"
 )
+
+type startupWatcher struct {
+	configmap.Watcher
+	start func(<-chan struct{}) error
+}
+
+func (w startupWatcher) Start(stop <-chan struct{}) error {
+	return w.start(stop)
+}
+
+func TestStartConfigMapWatcherForDrain(t *testing.T) {
+	for _, duringSync := range []bool{true, false} {
+		name := "after sync"
+		if duringSync {
+			name = "during sync"
+		}
+		t.Run(name, func(t *testing.T) {
+			ctx, cancel := context.WithCancel(t.Context())
+			defer cancel()
+			var watcherStop <-chan struct{}
+			watcher := startupWatcher{start: func(stop <-chan struct{}) error {
+				watcherStop = stop
+				if duringSync {
+					cancel()
+					select {
+					case <-stop:
+						return context.Canceled
+					case <-time.After(5 * time.Second):
+						t.Fatal("shutdown did not interrupt synchronization")
+					}
+				}
+				return nil
+			}}
+
+			stop, err := startConfigMapWatcherForDrain(ctx, watcher)
+			defer stop()
+			var wantErr error
+			if duringSync {
+				wantErr = context.Canceled
+			}
+			if err != wantErr {
+				t.Fatalf("Start error = %v, want %v", err, wantErr)
+			}
+
+			cancel()
+			select {
+			case <-watcherStop:
+				if !duringSync {
+					t.Fatal("watcher stopped before draining completed")
+				}
+			default:
+				if duringSync {
+					t.Fatal("watcher still running after startup cancellation")
+				}
+			}
+
+			stop()
+			select {
+			case <-watcherStop:
+			default:
+				t.Fatal("explicit stop did not stop watcher")
+			}
+		})
+	}
+}
 
 func TestEnabledControllers(t *testing.T) {
 	tests := []struct {

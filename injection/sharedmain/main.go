@@ -309,14 +309,9 @@ func MainWithConfig(ctx context.Context, component string, cfg *rest.Config, cto
 	// webhooks, so that things are properly initialized.
 	logger.Info("Starting configmap watcher...")
 	if len(webhooks) > 0 {
-		// Keep configuration live until webhook draining and HTTP shutdown finish.
-		configCtx := context.WithoutCancel(ctx)
-		configCtx, stopConfigWatch := context.WithCancel(configCtx)
+		var stopConfigWatch context.CancelFunc
+		stopConfigWatch, err = startConfigMapWatcherForDrain(ctx, cmw)
 		defer stopConfigWatch()
-		// Preserve cancellation during initial synchronization.
-		stopStartupCancellation := context.AfterFunc(ctx, stopConfigWatch)
-		err = cmw.Start(configCtx.Done())
-		stopStartupCancellation()
 	} else {
 		err = cmw.Start(ctx.Done())
 	}
@@ -371,6 +366,19 @@ func MainWithConfig(ctx context.Context, component string, cfg *rest.Config, cto
 	// This will block until either a signal arrives or one of the grouped functions
 	// returns an error.
 	<-egCtx.Done()
+}
+
+// startConfigMapWatcherForDrain respects shutdown during initial sync,
+// then keeps watching until the caller stops it after HTTP draining.
+func startConfigMapWatcherForDrain(ctx context.Context, watcher configmap.Watcher) (context.CancelFunc, error) {
+	watchCtx := context.WithoutCancel(ctx)
+	watchCtx, stop := context.WithCancel(watchCtx)
+
+	stopOnShutdown := context.AfterFunc(ctx, stop)
+	err := watcher.Start(watchCtx.Done())
+	stopOnShutdown()
+
+	return stop, err
 }
 
 type healthProbesDisabledKey struct{}
