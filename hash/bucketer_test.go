@@ -155,3 +155,35 @@ func TestBucketName(t *testing.T) {
 		t.Errorf("Name = %q, want: %q", got, want)
 	}
 }
+
+func TestBucketSetConcurrentUpdate(t *testing.T) {
+	small := sets.New(thisBucket, otherBucket)
+	large := sets.New(thisBucket, otherBucket, "aguacero", "chaparrón")
+	bs := NewBucketSet(small)
+
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		for range 500 {
+			bs.Update(large)
+			bs.Update(small)
+		}
+	}()
+
+	for range 500 {
+		buckets := bs.Buckets()
+		if len(buckets) != len(small) && len(buckets) != len(large) {
+			t.Errorf("unexpected bucket count: %d", len(buckets))
+		}
+		for _, b := range buckets {
+			if b == nil {
+				t.Error("nil bucket")
+			}
+		}
+		if !bs.HasBucket(thisBucket) {
+			t.Errorf("HasBucket(%q) = false", thisBucket)
+		}
+	}
+
+	<-done
+}
