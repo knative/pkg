@@ -189,10 +189,10 @@ func sampleFor(cfg Config) (sdktrace.Sampler, error) {
 		return sdktrace.AlwaysSample(), nil
 	}
 
-	if cfg.SamplingRate <= 0.0 {
+	if rate <= 0.0 {
 		return sdktrace.NeverSample(), nil
 	}
 
-	root := sdktrace.TraceIDRatioBased(cfg.SamplingRate)
+	root := sdktrace.TraceIDRatioBased(rate)
 	return sdktrace.ParentBased(root), nil
 }
