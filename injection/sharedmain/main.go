@@ -302,6 +302,7 @@ func MainWithConfig(ctx context.Context, component string, cfg *rest.Config, cto
 	WatchObservabilityConfigOrDie(ctx, cmw, pprof, logger, component)
 
 	eg, egCtx := errgroup.WithContext(ctx)
+	eg.Go(pprof.ListenAndServe)
 
 	// Many of the webhooks rely on configuration, e.g. configurable defaults, feature flags.
 	// So make sure that we have synchronized our configuration state before launching the
@@ -319,14 +320,21 @@ func MainWithConfig(ctx context.Context, component string, cfg *rest.Config, cto
 	} else {
 		err = cmw.Start(ctx.Done())
 	}
+	// Register cleanup after stopConfigWatch so HTTP draining finishes before
+	// the ConfigMap watcher is stopped. This also cleans up startup cancellation.
+	defer func() {
+		pprof.Shutdown(context.Background())
+		// Don't forward ErrServerClosed as that indicates we're already shutting down.
+		if err := eg.Wait(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			logger.Errorw("Error while running server", zap.Error(err))
+		}
+	}()
 	if ctx.Err() != nil {
 		return
 	}
 	if err != nil {
 		logger.Fatalw("Failed to start configmap watcher", zap.Error(err))
 	}
-
-	eg.Go(pprof.ListenAndServe)
 
 	// If we have one or more admission controllers, then start the webhook
 	// and pass them in.
@@ -363,13 +371,6 @@ func MainWithConfig(ctx context.Context, component string, cfg *rest.Config, cto
 	// This will block until either a signal arrives or one of the grouped functions
 	// returns an error.
 	<-egCtx.Done()
-
-	pprof.Shutdown(context.Background())
-
-	// Don't forward ErrServerClosed as that indicates we're already shutting down.
-	if err := eg.Wait(); err != nil && !errors.Is(err, http.ErrServerClosed) {
-		logger.Errorw("Error while running server", zap.Error(err))
-	}
 }
 
 type healthProbesDisabledKey struct{}
