@@ -310,7 +310,8 @@ func MainWithConfig(ctx context.Context, component string, cfg *rest.Config, cto
 	logger.Info("Starting configmap watcher...")
 	if len(webhooks) > 0 {
 		// Keep configuration live until webhook draining and HTTP shutdown finish.
-		configCtx, stopConfigWatch := context.WithCancel(context.WithoutCancel(ctx))
+		configCtx := context.WithoutCancel(ctx)
+		configCtx, stopConfigWatch := context.WithCancel(configCtx)
 		defer stopConfigWatch()
 		// Preserve cancellation during initial synchronization.
 		stopStartupCancellation := context.AfterFunc(ctx, stopConfigWatch)
