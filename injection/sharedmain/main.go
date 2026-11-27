@@ -308,7 +308,12 @@ func MainWithConfig(ctx context.Context, component string, cfg *rest.Config, cto
 	// So make sure that we have synchronized our configuration state before launching the
 	// webhooks, so that things are properly initialized.
 	logger.Info("Starting configmap watcher...")
-	configCtx, stopConfigWatch := configMapWatchContext(ctx, len(webhooks) > 0)
+	configCtx := ctx
+	stopConfigWatch := func() {}
+	if len(webhooks) > 0 {
+		// Keep configuration live until webhook draining and HTTP shutdown finish.
+		configCtx, stopConfigWatch = context.WithCancel(context.WithoutCancel(ctx))
+	}
 	defer stopConfigWatch()
 	// Preserve cancellation during initial synchronization. Only a running
 	// webhook needs its configuration watcher to outlive the shutdown signal.
@@ -364,16 +369,6 @@ func MainWithConfig(ctx context.Context, component string, cfg *rest.Config, cto
 	if err := eg.Wait(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 		logger.Errorw("Error while running server", zap.Error(err))
 	}
-}
-
-// configMapWatchContext keeps configuration updates running until the caller
-// stops the watcher after webhook draining and HTTP shutdown have completed.
-// Controller-only processes retain their usual context cancellation behavior.
-func configMapWatchContext(ctx context.Context, hasWebhooks bool) (context.Context, context.CancelFunc) {
-	if hasWebhooks {
-		ctx = context.WithoutCancel(ctx)
-	}
-	return context.WithCancel(ctx)
 }
 
 type healthProbesDisabledKey struct{}

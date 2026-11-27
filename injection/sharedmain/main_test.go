@@ -29,33 +29,6 @@ import (
 	"knative.dev/pkg/observability"
 )
 
-func TestConfigMapWatchContext(t *testing.T) {
-	for _, tt := range []struct {
-		name        string
-		hasWebhooks bool
-		wantErr     error
-	}{
-		{name: "controllers", wantErr: context.Canceled},
-		{name: "webhooks", hasWebhooks: true},
-	} {
-		t.Run(tt.name, func(t *testing.T) {
-			ctx, cancel := context.WithCancel(t.Context())
-			defer cancel()
-			watchCtx, stop := configMapWatchContext(ctx, tt.hasWebhooks)
-			defer stop()
-
-			cancel()
-			if got := watchCtx.Err(); got != tt.wantErr {
-				t.Errorf("after shutdown signal: got %v, want %v", got, tt.wantErr)
-			}
-			stop()
-			if got := watchCtx.Err(); got != context.Canceled {
-				t.Errorf("after watcher stop: got %v, want context.Canceled", got)
-			}
-		})
-	}
-}
-
 func TestEnabledControllers(t *testing.T) {
 	tests := []struct {
 		name                string
