@@ -248,6 +248,21 @@ func (i *InformedWatcher) deleteConfigMapEvent(obj interface{}) {
 
 	if def, ok := i.defaults[configMap.Name]; ok {
 		i.OnChange(def)
+		return
 	}
-	// If there is no default value, then don't do anything.
+	var watched bool
+	_ = i.ForEach(func(k string, _ []configmap.Observer) error {
+		if k == configMap.Name {
+			watched = true
+		}
+		return nil
+	})
+	if watched {
+		i.OnChange(&corev1.ConfigMap{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      configMap.Name,
+				Namespace: configMap.Namespace,
+			},
+		})
+	}
 }

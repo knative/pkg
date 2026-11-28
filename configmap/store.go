@@ -144,11 +144,7 @@ func (s *UntypedStore) OnConfigChanged(c *corev1.ConfigMap) {
 
 	if !errVal.IsNil() {
 		err := errVal.Interface()
-		if storage.Load() != nil {
-			s.logger.Errorf("Error updating %s config %q: %q", s.name, name, err)
-		} else {
-			s.logger.Fatalf("Error initializing %s config %q: %q", s.name, name, err)
-		}
+		s.logger.Errorf("Error updating %s config %q: %q", s.name, name, err)
 		return
 	}
 
