@@ -77,6 +77,17 @@ func (b *Bucket) Has(nn types.NamespacedName) bool {
 	return b.buckets.Owner(nn.String()) == b.name
 }
 
+// Bucket returns the bucket with the given name, if present.
+func (bs *BucketSet) Bucket(name string) (reconciler.Bucket, bool) {
+	if !bs.HasBucket(name) {
+		return nil, false
+	}
+	return &Bucket{
+		name:    name,
+		buckets: bs,
+	}, true
+}
+
 // Buckets creates a new list of all possible Bucket based on this bucketset
 // ordered by bucket name.
 func (bs *BucketSet) Buckets() []reconciler.Bucket {
