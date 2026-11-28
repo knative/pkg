@@ -20,6 +20,7 @@ import (
 	"cmp"
 	"context"
 	"fmt"
+	"math"
 	"net/url"
 	"os"
 	"strconv"
@@ -63,14 +64,14 @@ func NewTracerProvider(
 		}, nil
 	}
 
-	exp, err := exporterFor(ctx, cfg)
-	if err != nil {
-		return nil, fmt.Errorf("error creating tracer exporter: %w", err)
-	}
-
 	sampler, err := sampleFor(cfg)
 	if err != nil {
 		return nil, fmt.Errorf("error creating tracer sampler: %w", err)
+	}
+
+	exp, err := exporterFor(ctx, cfg)
+	if err != nil {
+		return nil, fmt.Errorf("error creating tracer exporter: %w", err)
 	}
 
 	opts = append(opts,
@@ -180,6 +181,9 @@ func sampleFor(cfg Config) (sdktrace.Sampler, error) {
 		override, err := strconv.ParseFloat(val, 64)
 		if err != nil {
 			return nil, fmt.Errorf("unable to parse sample rate override: %w", err)
+		}
+		if math.IsNaN(override) {
+			return nil, fmt.Errorf("sample rate override %q is not a number", val)
 		}
 
 		rate = override
