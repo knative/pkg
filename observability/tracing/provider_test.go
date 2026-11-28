@@ -215,11 +215,15 @@ func TestSampleFor(t *testing.T) {
 			}
 
 			got, err := sampleFor(Config{SamplingRate: tc.samplingRate})
-			switch {
-			case got == nil && tc.wantSampler != nil, got != nil && tc.wantSampler == nil:
-				t.Errorf("sampleFor() sampler = %v, want %v", got, tc.wantSampler)
-			case got != nil && got.Description() != tc.wantSampler.Description():
-				t.Errorf("sampleFor() sampler = %s, want %s", got.Description(), tc.wantSampler.Description())
+			gotDesc, wantDesc := "<nil>", "<nil>"
+			if got != nil {
+				gotDesc = got.Description()
+			}
+			if tc.wantSampler != nil {
+				wantDesc = tc.wantSampler.Description()
+			}
+			if gotDesc != wantDesc {
+				t.Errorf("sampleFor() sampler = %s, want %s", gotDesc, wantDesc)
 			}
 
 			if tc.wantErr && err == nil {
