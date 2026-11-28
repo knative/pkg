@@ -100,6 +100,28 @@ func TestBucketSetUpdate(t *testing.T) {
 	}
 }
 
+func TestBucketSetBucket(t *testing.T) {
+	bs := NewBucketSet(sets.New(thisBucket))
+
+	bkt, ok := bs.Bucket(thisBucket)
+	if !ok || bkt == nil {
+		t.Fatalf("Bucket(%q) = (%v, %v), want a bucket and true",
+			thisBucket, bkt, ok)
+	}
+	if got := bkt.Name(); got != thisBucket {
+		t.Errorf("Bucket.Name() = %q, want %q", got, thisBucket)
+	}
+	nn := types.NamespacedName{Namespace: "snow", Name: "hail"}
+	if !bkt.Has(nn) {
+		t.Errorf("Bucket.Has(%v) = false, want true", nn)
+	}
+
+	if bkt, ok := bs.Bucket(otherBucket); ok || bkt != nil {
+		t.Errorf("Bucket(%q) = (%v, %v), want (nil, false)",
+			otherBucket, bkt, ok)
+	}
+}
+
 func TestBucketSetBuckets(t *testing.T) {
 	bs := NewBucketSet(buckets)
 	bkts := bs.Buckets()
