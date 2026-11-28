@@ -31,7 +31,9 @@ limitations under the License.
 // leader election for that replica, which can lead to duplicate reconciliation
 // alongside replicas in ordinal mode. This package does not read the StatefulSet
 // replica count. Controllers can check the desired replica count against the
-// bucket count at startup.
+// bucket count at startup. Matching the desired replica count does not guarantee
+// that every bucket has an active owner; unavailable replicas leave their buckets
+// unowned. A startup check detects configuration mismatches only at startup.
 //
 // For more details, see the original design document:
 // https://docs.google.com/document/d/e/2PACX-1vTh40N-Kk6EPNzYpITiLg8YJk0qZyZv7KgMpcQS72T9Lv_F2PQeGybx4TtH0E1N1aUgLQer7b8u3lDc/pub
