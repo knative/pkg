@@ -241,9 +241,12 @@ func NewStatefulSetBucketAndSet(buckets int) (reconciler.Bucket, *hash.BucketSet
 	}
 
 	bs := hash.NewBucketSet(names)
-	// Buckets is sorted in order of names so we can use ordinal to
-	// get the correct Bucket for this binary.
-	return bs.Buckets()[ssc.StatefulSetID.ordinal], bs, nil
+	podDNS := statefulSetPodDNS(ssc.StatefulSetID.ordinal, ssc)
+	bkt, ok := bs.Bucket(podDNS)
+	if !ok {
+		return nil, nil, fmt.Errorf("no bucket for StatefulSet pod %q", podDNS)
+	}
+	return bkt, bs, nil
 }
 
 func statefulSetPodDNS(ordinal int, ssc *statefulSetConfig) string {
