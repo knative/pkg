@@ -236,12 +236,16 @@ func NewStatefulSetBucketAndSet(buckets int) (reconciler.Bucket, *hash.BucketSet
 	}
 
 	names := make(sets.Set[string], buckets)
+	var podDNS string
 	for i := range buckets {
-		names.Insert(statefulSetPodDNS(i, ssc))
+		name := statefulSetPodDNS(i, ssc)
+		names.Insert(name)
+		if i == ssc.StatefulSetID.ordinal {
+			podDNS = name
+		}
 	}
 
 	bs := hash.NewBucketSet(names)
-	podDNS := statefulSetPodDNS(ssc.StatefulSetID.ordinal, ssc)
 	for _, bkt := range bs.Buckets() {
 		if bkt.Name() == podDNS {
 			return bkt, bs, nil

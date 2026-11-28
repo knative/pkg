@@ -267,7 +267,7 @@ func TestNewStatefulSetBucketAndSet(t *testing.T) {
 func TestWithStatefulSetBuilder(t *testing.T) {
 	cc := ComponentConfig{
 		Component: "the-component",
-		Buckets:   3,
+		Buckets:   11,
 	}
 	const podDNS = "http://as-2.autoscaler.knative-testing.svc.cluster.local:80"
 	ctx := context.Background()
