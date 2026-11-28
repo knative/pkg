@@ -22,6 +22,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"knative.dev/pkg/ptr"
 )
 
@@ -148,36 +149,62 @@ func TestTracerProviderShutdown(t *testing.T) {
 }
 
 func TestSampleFor(t *testing.T) {
-	cfg := Config{
-		SamplingRate: 0.85,
-	}
+	t.Setenv("OTEL_TRACES_SAMPLER", "")
+	t.Setenv("OTEL_TRACES_SAMPLER_ARG", "")
 
 	cases := []struct {
-		name           string
-		env            map[string]string
-		wantNilSampler bool
-		wantErr        bool
+		name         string
+		samplingRate float64
+		env          map[string]string
+		wantSampler  sdktrace.Sampler
+		wantErr      bool
 	}{{
 		name: "sampler override",
 		env: map[string]string{
-			"OTEL_TRACES_SAMPLER": "some-sampler",
+			"OTEL_TRACES_SAMPLER":     "always_off",
+			"OTEL_TRACES_SAMPLER_ARG": "bad-ratio",
 		},
-		wantNilSampler: true,
 	}, {
-		name:           "standard sampler",
-		wantNilSampler: false,
+		name:         "standard sampler",
+		samplingRate: 0.85,
+		wantSampler:  sdktrace.ParentBased(sdktrace.TraceIDRatioBased(0.85)),
 	}, {
-		name:           "sample arg override",
-		wantNilSampler: false,
+		name:        "sample arg override to one",
+		wantSampler: sdktrace.AlwaysSample(),
 		env: map[string]string{
 			"OTEL_TRACES_SAMPLER_ARG": "1.0",
 		},
 	}, {
-		name:           "sample arg override - bad input",
-		wantNilSampler: true,
-		wantErr:        true,
+		name:         "sample arg override to a fraction",
+		samplingRate: 0.85,
+		wantSampler:  sdktrace.ParentBased(sdktrace.TraceIDRatioBased(0.25)),
+		env: map[string]string{
+			"OTEL_TRACES_SAMPLER_ARG": "0.25",
+		},
+	}, {
+		name:        "sample arg override from zero to a fraction",
+		wantSampler: sdktrace.ParentBased(sdktrace.TraceIDRatioBased(0.25)),
+		env: map[string]string{
+			"OTEL_TRACES_SAMPLER_ARG": "0.25",
+		},
+	}, {
+		name:         "sample arg override to zero",
+		samplingRate: 0.85,
+		wantSampler:  sdktrace.NeverSample(),
+		env: map[string]string{
+			"OTEL_TRACES_SAMPLER_ARG": "0",
+		},
+	}, {
+		name:    "sample arg override - bad input",
+		wantErr: true,
 		env: map[string]string{
 			"OTEL_TRACES_SAMPLER_ARG": "bad-ratio",
+		},
+	}, {
+		name:    "sample arg override to NaN",
+		wantErr: true,
+		env: map[string]string{
+			"OTEL_TRACES_SAMPLER_ARG": "NaN",
 		},
 	}}
 
@@ -187,17 +214,22 @@ func TestSampleFor(t *testing.T) {
 				t.Setenv(k, v)
 			}
 
-			got, err := sampleFor(cfg)
-			if tc.wantNilSampler && got != nil {
-				t.Error("expected a nil sampler")
-			} else if !tc.wantNilSampler && got == nil {
-				t.Error("expected a non-nil sampler")
+			got, err := sampleFor(Config{SamplingRate: tc.samplingRate})
+			gotDesc, wantDesc := "<nil>", "<nil>"
+			if got != nil {
+				gotDesc = got.Description()
+			}
+			if tc.wantSampler != nil {
+				wantDesc = tc.wantSampler.Description()
+			}
+			if gotDesc != wantDesc {
+				t.Errorf("sampleFor() sampler = %s, want %s", gotDesc, wantDesc)
 			}
 
 			if tc.wantErr && err == nil {
 				t.Error("expected an error")
 			} else if !tc.wantErr && err != nil {
-				t.Error("unexpected error")
+				t.Error("unexpected error:", err)
 			}
 		})
 	}
