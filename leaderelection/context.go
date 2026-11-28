@@ -18,6 +18,7 @@ package leaderelection
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 	"sync"
@@ -35,9 +36,22 @@ import (
 	"knative.dev/pkg/system"
 )
 
-// WithDynamicLeaderElectorBuilder sets up the statefulset elector based on environment,
-// falling back on the standard elector.
+// ElectorBuilder builds an elector for a controller's work queue. The elector
+// uses the supplied callbacks to change leadership and enqueue keys.
+type ElectorBuilder func(ctx context.Context, la reconciler.LeaderAware, queueName string, enq func(reconciler.Bucket, types.NamespacedName)) (Elector, error)
+
+// WithLeaderElectorBuilder configures BuildElector to use the supplied builder.
+func WithLeaderElectorBuilder(ctx context.Context, build ElectorBuilder) context.Context {
+	return context.WithValue(ctx, builderKey{}, build)
+}
+
+// WithDynamicLeaderElectorBuilder preserves a custom ElectorBuilder. Otherwise
+// it selects the StatefulSet elector based on the environment, falling back
+// to the standard elector.
 func WithDynamicLeaderElectorBuilder(ctx context.Context, kc kubernetes.Interface, cc ComponentConfig) context.Context {
+	if _, ok := ctx.Value(builderKey{}).(ElectorBuilder); ok {
+		return ctx
+	}
 	logger := logging.FromContext(ctx)
 	b, _, err := NewStatefulSetBucketAndSet(int(cc.Buckets))
 	if err == nil {
@@ -52,10 +66,19 @@ func WithDynamicLeaderElectorBuilder(ctx context.Context, kc kubernetes.Interfac
 // LeaderElectors with the provided component configuration acquiring resource
 // locks via the provided kubernetes client.
 func WithStandardLeaderElectorBuilder(ctx context.Context, kc kubernetes.Interface, cc ComponentConfig) context.Context {
-	return context.WithValue(ctx, builderKey{}, &standardBuilder{
+	b := &standardBuilder{
 		kc:  kc,
 		lec: cc,
-	})
+	}
+	if cc.RebalancePodSelector != "" {
+		b.rc = &replicaCounter{
+			kc:       kc,
+			selector: cc.RebalancePodSelector,
+			ttl:      cc.RetryPeriod,
+			logger:   logging.FromContext(ctx),
+		}
+	}
+	return context.WithValue(ctx, builderKey{}, b)
 }
 
 // WithStatefulSetElectorBuilder infuses a context with the ability to build
@@ -86,11 +109,13 @@ type ElectorWithInitialBuckets interface {
 	InitialBuckets() []reconciler.Bucket
 }
 
-// BuildElector builds a leaderelection.LeaderElector for the named LeaderAware
-// reconciler using a builder added to the context via WithStandardLeaderElectorBuilder.
+// BuildElector builds an elector for the named LeaderAware reconciler using
+// the builder configured on ctx.
 func BuildElector(ctx context.Context, la reconciler.LeaderAware, queueName string, enq func(reconciler.Bucket, types.NamespacedName)) (Elector, error) {
 	if val := ctx.Value(builderKey{}); val != nil {
 		switch builder := val.(type) {
+		case ElectorBuilder:
+			return builder(ctx, la, queueName, enq)
 		case *standardBuilder:
 			return builder.buildElector(ctx, la, queueName, enq)
 		case *statefulSetBuilder:
@@ -114,6 +139,7 @@ type builderKey struct{}
 type standardBuilder struct {
 	kc  kubernetes.Interface
 	lec ComponentConfig
+	rc  *replicaCounter // non-nil iff bucket rebalancing is enabled.
 }
 
 func (b *standardBuilder) buildElector(ctx context.Context, la reconciler.LeaderAware,
@@ -131,6 +157,13 @@ func (b *standardBuilder) buildElector(ctx context.Context, la reconciler.Leader
 	}
 
 	bkts := newStandardBuckets(queueName, b.lec)
+	var bal *balancer
+	if b.rc != nil {
+		if _, ok := la.(reconciler.BucketDrainer); !ok {
+			return nil, errors.New("bucket rebalancing requires a reconciler.BucketDrainer")
+		}
+		bal = newBalancer(logger, la, b.rc, len(bkts), b.lec)
+	}
 	electors := make([]Elector, 0, b.lec.Buckets)
 	for _, bkt := range bkts {
 		rl, err := resourcelock.New(knativeResourceLock,
@@ -146,15 +179,27 @@ func (b *standardBuilder) buildElector(ctx context.Context, la reconciler.Leader
 		}
 		logger.Infof("%s will run in leader-elected mode with id %q", bkt.Name(), rl.Identity())
 
+		lock := rl
+		var be *bucketElector
+		if bal != nil {
+			lock = bal.wrap(bkt, rl)
+			be = bal.elector(bkt)
+		}
 		le, err := leaderelection.NewLeaderElector(leaderelection.LeaderElectionConfig{
-			Lock:          rl,
+			Lock:          lock,
 			LeaseDuration: b.lec.LeaseDuration,
 			RenewDeadline: b.lec.RenewDeadline,
 			RetryPeriod:   b.lec.RetryPeriod,
 			Callbacks: leaderelection.LeaderCallbacks{
-				OnStartedLeading: func(context.Context) {
+				OnStartedLeading: func(ctx context.Context) {
 					logger.Infof("%q has started leading %q", rl.Identity(), bkt.Name())
-					if err := la.Promote(bkt, enq); err != nil {
+					var err error
+					if be != nil {
+						err = be.promote(ctx, enq)
+					} else {
+						err = la.Promote(bkt, enq)
+					}
+					if err != nil {
 						// TODO(mattmoor): We expect this to effectively never happen,
 						// but if it does, we should support wrapping `le` in an elector
 						// we can cancel here.
@@ -163,7 +208,11 @@ func (b *standardBuilder) buildElector(ctx context.Context, la reconciler.Leader
 				},
 				OnStoppedLeading: func() {
 					logger.Infof("%q has stopped leading %q", rl.Identity(), bkt.Name())
-					la.Demote(bkt)
+					if be != nil {
+						be.stopped()
+					} else {
+						la.Demote(bkt)
+					}
 				},
 			},
 			ReleaseOnCancel: true,
@@ -176,7 +225,15 @@ func (b *standardBuilder) buildElector(ctx context.Context, la reconciler.Leader
 		// if lec.WatchDog != nil {
 		// 	lec.WatchDog.SetLeaderElection(le)
 		// }
+		if be != nil {
+			be.le = le
+			electors = append(electors, be)
+			continue
+		}
 		electors = append(electors, &runUntilCancelled{Elector: le})
+	}
+	if bal != nil {
+		electors = append(electors, bal)
 	}
 	return &runAll{les: electors}, nil
 }
