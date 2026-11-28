@@ -152,23 +152,22 @@ func TestSampleFor(t *testing.T) {
 	t.Setenv("OTEL_TRACES_SAMPLER", "")
 	t.Setenv("OTEL_TRACES_SAMPLER_ARG", "")
 
-	cfg := Config{
-		SamplingRate: 0.85,
-	}
-
 	cases := []struct {
-		name        string
-		env         map[string]string
-		wantSampler sdktrace.Sampler
-		wantErr     bool
+		name         string
+		samplingRate float64
+		env          map[string]string
+		wantSampler  sdktrace.Sampler
+		wantErr      bool
 	}{{
 		name: "sampler override",
 		env: map[string]string{
-			"OTEL_TRACES_SAMPLER": "some-sampler",
+			"OTEL_TRACES_SAMPLER":     "always_off",
+			"OTEL_TRACES_SAMPLER_ARG": "bad-ratio",
 		},
 	}, {
-		name:        "standard sampler",
-		wantSampler: sdktrace.ParentBased(sdktrace.TraceIDRatioBased(0.85)),
+		name:         "standard sampler",
+		samplingRate: 0.85,
+		wantSampler:  sdktrace.ParentBased(sdktrace.TraceIDRatioBased(0.85)),
 	}, {
 		name:        "sample arg override to one",
 		wantSampler: sdktrace.AlwaysSample(),
@@ -176,14 +175,22 @@ func TestSampleFor(t *testing.T) {
 			"OTEL_TRACES_SAMPLER_ARG": "1.0",
 		},
 	}, {
-		name:        "sample arg override to a fraction",
+		name:         "sample arg override to a fraction",
+		samplingRate: 0.85,
+		wantSampler:  sdktrace.ParentBased(sdktrace.TraceIDRatioBased(0.25)),
+		env: map[string]string{
+			"OTEL_TRACES_SAMPLER_ARG": "0.25",
+		},
+	}, {
+		name:        "sample arg override from zero to a fraction",
 		wantSampler: sdktrace.ParentBased(sdktrace.TraceIDRatioBased(0.25)),
 		env: map[string]string{
 			"OTEL_TRACES_SAMPLER_ARG": "0.25",
 		},
 	}, {
-		name:        "sample arg override to zero",
-		wantSampler: sdktrace.NeverSample(),
+		name:         "sample arg override to zero",
+		samplingRate: 0.85,
+		wantSampler:  sdktrace.NeverSample(),
 		env: map[string]string{
 			"OTEL_TRACES_SAMPLER_ARG": "0",
 		},
@@ -193,6 +200,12 @@ func TestSampleFor(t *testing.T) {
 		env: map[string]string{
 			"OTEL_TRACES_SAMPLER_ARG": "bad-ratio",
 		},
+	}, {
+		name:    "sample arg override to NaN",
+		wantErr: true,
+		env: map[string]string{
+			"OTEL_TRACES_SAMPLER_ARG": "NaN",
+		},
 	}}
 
 	for _, tc := range cases {
@@ -201,7 +214,7 @@ func TestSampleFor(t *testing.T) {
 				t.Setenv(k, v)
 			}
 
-			got, err := sampleFor(cfg)
+			got, err := sampleFor(Config{SamplingRate: tc.samplingRate})
 			switch {
 			case got == nil && tc.wantSampler != nil, got != nil && tc.wantSampler == nil:
 				t.Errorf("sampleFor() sampler = %v, want %v", got, tc.wantSampler)
@@ -212,7 +225,7 @@ func TestSampleFor(t *testing.T) {
 			if tc.wantErr && err == nil {
 				t.Error("expected an error")
 			} else if !tc.wantErr && err != nil {
-				t.Error("unexpected error")
+				t.Error("unexpected error:", err)
 			}
 		})
 	}
